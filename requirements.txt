@@ -1,0 +1,7 @@
+pytorch-lightning==1.2.8
+-f https://download.pytorch.org/whl/torch_stable.html
+torch==1.8.1+cu111
+torchvision==0.9.1+cu111
+matplotlib>=3.4.1
+opencv-python>=4.5.1
+scikit-learn>=0.24.1
