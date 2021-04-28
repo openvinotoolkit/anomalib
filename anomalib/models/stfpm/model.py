@@ -140,13 +140,13 @@ class AnomalyMapGenerator:
         anomaly_map = np.ones([self.image_size, self.image_size])
         for layer in teacher_features.keys():
             layer_map = self.compute_layer_map(teacher_features[layer], student_features[layer])
-            layer_map = layer_map[0, 0, :, :].to("cpu").detach().numpy()  # check
+            layer_map = layer_map[0, 0, :, :].cpu().detach().numpy()
 
             anomaly_map *= layer_map
         return anomaly_map
 
     @staticmethod
-    def compute_heatmap(anomaly_map: np.ndarray):
+    def compute_heatmap(anomaly_map: np.ndarray) -> np.ndarray:
         anomaly_map = (anomaly_map - anomaly_map.min()) / np.ptp(anomaly_map)
         anomaly_map = anomaly_map * 255
         anomaly_map = anomaly_map.astype(np.uint8)
@@ -154,7 +154,7 @@ class AnomalyMapGenerator:
         heatmap = cv2.applyColorMap(anomaly_map, cv2.COLORMAP_JET)
         return heatmap
 
-    def apply_heatmap_on_image(self, heatmap, image):
+    def apply_heatmap_on_image(self, heatmap: np.ndarray, image: np.ndarray) -> np.ndarray:
         return cv2.addWeighted(heatmap, self.alpha, image, self.beta, self.gamma)
 
 
