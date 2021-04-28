@@ -6,33 +6,16 @@ from pathlib import Path
 import cv2
 import torch
 from sklearn.metrics import roc_auc_score
-from torchvision import transforms
 from torchvision.models import resnet18
 
 from anomalib.datasets import MVTecDataModule
 from anomalib.models.stfpm import FeatureExtractor, FeaturePyramidLoss, AnomalyMapGenerator
-
-# imagenet
-mean_train = [0.485, 0.456, 0.406]
-std_train = [0.229, 0.224, 0.225]
-
-
-def data_transforms(input_size=256, mean_train=mean_train, std_train=std_train):
-    data_transforms = transforms.Compose(
-        [
-            transforms.ToTensor(),
-            transforms.Resize((input_size, input_size)),
-            transforms.Normalize(mean=mean_train, std=std_train),
-        ]
-    )
-    return data_transforms
 
 
 class STFPM:
     def __init__(self, hparams: Namespace):
         self.hparams = hparams
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.data_transform = data_transforms(input_size=hparams.input_size, mean_train=mean_train, std_train=std_train)
         self.data_module = self.load_dataset()
 
         self.student_model = FeatureExtractor(resnet18(pretrained=False), ["layer1", "layer2", "layer3"])
@@ -56,7 +39,10 @@ class STFPM:
 
     def train(self):
         optimizer = torch.optim.SGD(
-            self.student_model.parameters(), lr=self.hparams.lr, momentum=0.9, weight_decay=0.0001
+            params=self.student_model.parameters(),
+            lr=self.hparams.lr,
+            momentum=self.hparams.momentum,
+            weight_decay=self.hparams.weight_decay,
         )
 
         self.teacher_model.to(self.device).eval()
@@ -132,6 +118,8 @@ def get_args():
     parser.add_argument("--category", default="zipper")
     parser.add_argument("--num_epochs", default=10)
     parser.add_argument("--lr", default=0.4)
+    parser.add_argument("--momentum", default=0.9)
+    parser.add_argument("--weight_decay", default=0.0001)
     parser.add_argument("--batch_size", default=32)
     parser.add_argument("--num_workers", default=36)
     parser.add_argument("--input_size", default=256)
@@ -149,21 +137,6 @@ def get_args():
 if __name__ == "__main__":
 
     args = get_args()
-    # phase = args.phase
-    # dataset_path = args.dataset_path
-    # category = dataset_path.split('\\')[-1]
-    # num_epochs = args.num_epoch
-    # lr = args.lr
-    # batch_size = args.batch_size
-    # save_weight = args.save_weight
-    # input_size = args.input_size
-    # project_path = args.project_path
-    # sample_path = os.path.join(project_path, 'sample')
-    # Create dirs.
-
-    # os.makedirs(sample_path, exist_ok=True)
-    # weight_save_path = os.path.join(project_path, "saved")
-    # os.makedirs(weight_save_path, exist_ok=True)
 
     model = STFPM(hparams=args)
     if args.phase == "train":
