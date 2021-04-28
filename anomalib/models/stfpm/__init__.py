@@ -1,1 +1,1 @@
-from .model import FeatureExtractor, FeaturePyramidLoss, StudentTeacherFeaturePyramidMatching
+from .model import FeatureExtractor, FeaturePyramidLoss, StudentTeacherFeaturePyramidMatching, AnomalyMapGenerator

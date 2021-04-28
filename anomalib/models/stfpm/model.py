@@ -1,13 +1,15 @@
 from argparse import Namespace
 from typing import Callable, Dict, Iterable, List, Optional
 
+import cv2
+import numpy as np
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 import torchvision
 from torch import Tensor, nn, optim
 
-__all__ = ["FeatureExtractor", "FeaturePyramidLoss", "StudentTeacherFeaturePyramidMatching"]
+__all__ = ["FeatureExtractor", "FeaturePyramidLoss", "AnomalyMapGenerator", "StudentTeacherFeaturePyramidMatching"]
 
 
 class FeatureExtractor(nn.Module):
@@ -37,7 +39,8 @@ class FeatureExtractor(nn.Module):
         super().__init__()
         self.model = model
         self.layers = layers
-        self._features = {layer: torch.empty(0) for layer in layers}
+        self._features = {layer: torch.empty(0) for layer in self.layers}
+        # self._features: List[Tensor] = []
 
         for layer_id in layers:
             layer = dict([*self.model.named_modules()])[layer_id]
@@ -46,10 +49,14 @@ class FeatureExtractor(nn.Module):
     def get_features(self, layer_id: str) -> Callable:
         def hook(_, __, output):
             self._features[layer_id] = output
+            # self._features.append(output)
 
         return hook
 
+    # def forward(self, x: Tensor) -> List[Tensor]:
     def forward(self, x: Tensor) -> Dict[str, Tensor]:
+        self._features = {layer: torch.empty(0) for layer in self.layers}
+        # self._features: List[Tensor] = []
         _ = self.model(x)
         return self._features
 
@@ -109,6 +116,48 @@ class FeaturePyramidLoss(nn.Module):
         return total_loss
 
 
+class AnomalyMapGenerator:
+    def __init__(self, batch_size: int = 1, image_size: int = 256, alpha: float = 0.4, gamma: int = 0):
+        super(AnomalyMapGenerator, self).__init__()
+        self.distance = torch.nn.PairwiseDistance(p=2, keepdim=True)
+        self.image_size = image_size
+        self.batch_size = batch_size
+
+        self.alpha = alpha
+        self.beta = 1 - self.alpha
+        self.gamma = gamma
+
+    def compute_layer_map(self, teacher_features: Tensor, student_features: Tensor) -> Tensor:
+        norm_teacher_features = F.normalize(teacher_features)
+        norm_student_features = F.normalize(student_features)
+
+        layer_map = 0.5 * self.distance(norm_student_features, norm_teacher_features) ** 2
+        layer_map = F.interpolate(layer_map, size=self.image_size, align_corners=False, mode="bilinear")
+        return layer_map
+
+    def compute_anomaly_map(self, teacher_features: Dict[str, Tensor], student_features: Dict[str, Tensor]):
+        # TODO: Reshape anomaly_map to handle batch_size > 1
+        anomaly_map = np.ones([self.image_size, self.image_size])
+        for layer in teacher_features.keys():
+            layer_map = self.compute_layer_map(teacher_features[layer], student_features[layer])
+            layer_map = layer_map[0, 0, :, :].to("cpu").detach().numpy()  # check
+
+            anomaly_map *= layer_map
+        return anomaly_map
+
+    @staticmethod
+    def compute_heatmap(anomaly_map: np.ndarray):
+        anomaly_map = (anomaly_map - anomaly_map.min()) / np.ptp(anomaly_map)
+        anomaly_map = anomaly_map * 255
+        anomaly_map = anomaly_map.astype(np.uint8)
+
+        heatmap = cv2.applyColorMap(anomaly_map, cv2.COLORMAP_JET)
+        return heatmap
+
+    def apply_heatmap_on_image(self, heatmap, image):
+        return cv2.addWeighted(heatmap, self.alpha, image, self.beta, self.gamma)
+
+
 class StudentTeacherFeaturePyramidMatching(pl.LightningModule):
     def __init__(self, hparams: Namespace, model: Optional[Callable] = None, layers: Optional[List[str]] = None):
         super().__init__()
@@ -129,12 +178,6 @@ class StudentTeacherFeaturePyramidMatching(pl.LightningModule):
     def forward(self, images):
         return self.student_model(images)
 
-    def training_step(self, batch, batch_idx):
-        teacher_features: Dict[str, Tensor] = self.teacher_model(batch)
-        student_features: Dict[str, Tensor] = self.forward(batch)
-        loss = self.loss(teacher_features, student_features)
-        self.log(name="loss", value=loss, on_step=True, on_epoch=True, prog_bar=True)
-
     def configure_optimizers(self):
         return optim.SGD(
             params=self.student_model.parameters(),
@@ -143,23 +186,33 @@ class StudentTeacherFeaturePyramidMatching(pl.LightningModule):
             weight_decay=self.hparams.weight_decay,
         )
 
+    def training_step(self, batch, batch_idx):
+        teacher_features: Dict[str, Tensor] = self.teacher_model(batch["image"])
+        student_features: Dict[str, Tensor] = self.forward(batch["image"])
+        loss = self.loss(teacher_features, student_features)
+        self.log(name="loss", value=loss, on_step=False, on_epoch=True, prog_bar=True)
+        return {'loss': loss}
+
     def validation_step(self, batch, batch_idx):
-        images, mask = batch
+        images, mask = batch["image"], batch["mask"]
         teacher_features = self.teacher_model(images)
         student_features = self.forward(images)
-        val_loss = self.loss(teacher_features, student_features)
-        self.log(name="val_loss", value=val_loss, on_step=False, on_epoch=True, prog_bar=True)
-        # return {"val_loss": val_loss, "log": {"val_loss": val_loss}}
+        loss = self.loss(teacher_features, student_features)
+        self.log(name="val_loss", value=loss, on_step=False, on_epoch=True, prog_bar=True)
+        # return loss
+        return {"val_loss": loss, "log": {"val_loss": loss}}
 
-    # def training_epoch_end(self, outputs):
-    #     avg_loss = torch.stack([x["loss"] for x in outputs]).mean()
-    #     log = {"train_loss": avg_loss}
-    #     return {"avg_train_loss": avg_loss, "log": log}
+    def training_epoch_end(self, outputs):
+        avg_loss = torch.stack([x["loss"] for x in outputs]).mean()
+        log = {"train_loss": avg_loss}
+        self.log(name="avg_train_loss", value=avg_loss, prog_bar=True)
+        # return {"avg_train_loss": avg_loss, "log": log}
 
-    # def validation_epoch_end(self, outputs):
-    #     avg_loss = torch.stack([x["val_loss"] for x in outputs]).mean()
-    #     log = {"val_loss": avg_loss}
-    #     return {"avg_val_loss": avg_loss, "log": log}
+    def validation_epoch_end(self, outputs):
+        avg_loss = torch.stack([x["val_loss"] for x in outputs]).mean()
+        self.log(name="val_loss", value=avg_loss)
+        log = {"val_loss": avg_loss}
+        # return {"avg_val_loss": avg_loss, "log": log}
 
     @staticmethod
     def add_model_specific_args(parent_parser):
