@@ -1,5 +1,6 @@
 # Directories
 datasets
+!anomalib/datasets
 lightning_logs
 results
 
