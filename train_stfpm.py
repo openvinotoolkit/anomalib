@@ -9,7 +9,7 @@ from sklearn.metrics import roc_auc_score
 from torchvision.models import resnet18
 
 from anomalib.datasets import MVTecDataModule
-from anomalib.models.stfpm import FeatureExtractor, FeaturePyramidLoss, AnomalyMapGenerator
+from anomalib.models.stfpm import FeatureExtractor, Loss, AnomalyMapGenerator
 
 
 class STFPM:
@@ -23,7 +23,7 @@ class STFPM:
         for parameter in self.teacher_model.parameters():
             parameter.requires_grad = False
 
-        self.loss = FeaturePyramidLoss()
+        self.loss = Loss()
         self.anomaly_generator = AnomalyMapGenerator(image_size=hparams.input_size)
 
     def load_dataset(self) -> MVTecDataModule:
@@ -96,8 +96,9 @@ class STFPM:
             student_features = self.student_model(images.to(self.device))
 
             anomaly_map = self.anomaly_generator.compute_anomaly_map(teacher_features, student_features)
-            heatmap = self.anomaly_generator.compute_heatmap(anomaly_map)
-            heatmap_on_image = self.anomaly_generator.apply_heatmap_on_image(heatmap, original_image)
+            # heatmap = self.anomaly_generator.compute_heatmap(anomaly_map)
+            heatmap_on_image = self.anomaly_generator.apply_heatmap_on_image(anomaly_map, original_image)
+            # heatmap_on_image = self.anomaly_generator.apply_heatmap_on_image(heatmap, original_image)
 
             true_mask_list.extend(masks.numpy().ravel())
             pred_mask_list.extend(anomaly_map.ravel())
