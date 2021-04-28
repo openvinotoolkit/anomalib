@@ -13,7 +13,7 @@ parser = StudentTeacherFeaturePyramidMatching.add_model_specific_args(parser)
 parser = Trainer.add_argparse_args(parser)
 args = parser.parse_args()
 
-trainer = Trainer(max_epochs=100)
+trainer = Trainer(max_epochs=100, gpus=1, check_val_every_n_epoch=50)
 datamodule = MVTecDataModule(args.dataroot, args.category, args.batch_size, args.num_workers)
 model = StudentTeacherFeaturePyramidMatching(args)
 trainer.fit(model=model, datamodule=datamodule)
