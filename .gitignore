@@ -3,6 +3,9 @@ datasets
 lightning_logs
 results
 
+backup.py
+train.ipynb
+
 # IDE
 .vscode
 .idea
