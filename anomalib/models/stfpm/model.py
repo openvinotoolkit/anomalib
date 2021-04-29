@@ -1,5 +1,5 @@
 from argparse import Namespace
-from typing import Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Callable, Dict, Iterable, List, Optional
 
 import cv2
 import numpy as np
@@ -135,7 +135,9 @@ class AnomalyMapGenerator:
         layer_map = F.interpolate(layer_map, size=self.image_size, align_corners=False, mode="bilinear")
         return layer_map
 
-    def compute_anomaly_map(self, teacher_features: Dict[str, Tensor], student_features: Dict[str, Tensor]):
+    def compute_anomaly_map(
+        self, teacher_features: Dict[str, Tensor], student_features: Dict[str, Tensor]
+    ) -> np.ndarray:
         # TODO: Reshape anomaly_map to handle batch_size > 1
         anomaly_map = np.ones([self.image_size, self.image_size])
         for layer in teacher_features.keys():
@@ -159,11 +161,14 @@ class AnomalyMapGenerator:
         heatmap_on_image = cv2.addWeighted(heatmap, self.alpha, image, self.beta, self.gamma)
         return heatmap_on_image
 
+    def __call__(self, teacher_features: Dict[str, Tensor], student_features: Dict[str, Tensor]) -> np.ndarray:
+        return self.compute_anomaly_map(teacher_features, student_features)
+
 
 class Model(pl.LightningModule):
     def __init__(self, hparams: Namespace, model: Optional[Callable] = None, layers: Optional[List[str]] = None):
         super().__init__()
-        self.params = hparams
+        self.hparams = hparams
         # TODO: model and layers are init parameters.
         # self.model = getattr(torchvision.models, hparams.model)
         self.model = torchvision.models.resnet18
@@ -185,16 +190,16 @@ class Model(pl.LightningModule):
     def configure_optimizers(self):
         return optim.SGD(
             params=self.student_model.parameters(),
-            lr=self.params.lr,
-            momentum=self.params.momentum,
-            weight_decay=self.params.weight_decay,
+            lr=self.hparams.lr,
+            momentum=self.hparams.momentum,
+            weight_decay=self.hparams.weight_decay,
         )
 
     def training_step(self, batch, batch_idx):
-        teacher_features, student_features = self.forward(batch['image'])
+        teacher_features, student_features = self.forward(batch["image"])
         loss = self.loss(teacher_features, student_features)
         self.log(name="train_loss", value=loss, on_step=False, on_epoch=True, prog_bar=True)
-        return {'loss': loss}
+        return {"loss": loss}
 
     def validation_step(self, batch, batch_idx):
         images, mask = batch["image"], batch["mask"]
