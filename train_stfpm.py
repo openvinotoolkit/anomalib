@@ -1,5 +1,4 @@
 import argparse
-import os
 from argparse import Namespace
 from pathlib import Path
 
@@ -85,10 +84,11 @@ class STFPM:
             image_path, mask_path = batch["image_path"][0], batch["mask_path"][0]
             images, masks = batch["image"], batch["mask"]
 
-            defect_type = os.path.split(os.path.split(image_path)[0])[1]
-            image_filename = os.path.split(image_path)[1].split(".")[0]
+            defect_type = Path(image_path).parent.name
+            image_filename = Path(image_path).stem
 
             # load image
+            # TODO: Use the image tensor instead, without re-reading it here!
             original_image = cv2.imread(image_path)
             original_image = cv2.resize(original_image, (self.hparams.input_size, self.hparams.input_size))
 
@@ -96,9 +96,7 @@ class STFPM:
             student_features = self.student_model(images.to(self.device))
 
             anomaly_map = self.anomaly_generator.compute_anomaly_map(teacher_features, student_features)
-            # heatmap = self.anomaly_generator.compute_heatmap(anomaly_map)
             heatmap_on_image = self.anomaly_generator.apply_heatmap_on_image(anomaly_map, original_image)
-            # heatmap_on_image = self.anomaly_generator.apply_heatmap_on_image(heatmap, original_image)
 
             true_mask_list.extend(masks.numpy().ravel())
             pred_mask_list.extend(anomaly_map.ravel())
