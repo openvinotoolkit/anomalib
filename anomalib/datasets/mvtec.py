@@ -41,7 +41,7 @@ def get_mask_transforms() -> Compose:
 class MVTec(VisionDataset):
     def __init__(
         self,
-        root: str,
+        root: Union[Path, str],
         category: str,
         train: bool = True,
         image_transforms: Optional[Callable] = None,
@@ -49,9 +49,8 @@ class MVTec(VisionDataset):
         loader: Optional[Callable[[str], Any]] = None,
         download: bool = False,
     ) -> None:
-        # TODO: transform could be transforms!!
         super().__init__(root, transform=image_transforms, target_transform=mask_transforms)
-        self.root = Path(root)
+        self.root = Path(root) if isinstance(root, str) else root
         self.category = self.root / category
         self.split = "train" if train else "test"
         self.image_transforms = image_transforms if image_transforms is not None else get_image_transforms()
@@ -139,8 +138,7 @@ class MVTec(VisionDataset):
 class MVTecDataModule(LightningDataModule):
     def __init__(
         self,
-        root: str,
-        category: str,
+        dataset_path: Union[str, Path],
         batch_size: int,
         num_workers: int,
         image_transforms: Optional[Callable] = None,
@@ -148,8 +146,9 @@ class MVTecDataModule(LightningDataModule):
         loader: Optional[Callable[[str], Any]] = None,
     ) -> None:
         super().__init__()
-        self.root = root
-        self.category = category
+        self.dataset_path = dataset_path if isinstance(dataset_path, Path) else Path(dataset_path)
+        self.root = self.dataset_path.parent
+        self.category = self.dataset_path.stem
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.image_transforms = image_transforms
@@ -157,7 +156,7 @@ class MVTecDataModule(LightningDataModule):
         self.loader = default_loader if loader is None else loader
 
     def prepare_data(self):
-        # Prepare Training Data
+        # Training Data
         MVTec(
             root=self.root,
             category=self.category,
@@ -166,7 +165,7 @@ class MVTecDataModule(LightningDataModule):
             mask_transforms=self.mask_transforms,
             download=True,
         )
-        # Prepare Test Data
+        # Test Data
         MVTec(
             root=self.root,
             category=self.category,
@@ -196,5 +195,6 @@ class MVTecDataModule(LightningDataModule):
         return DataLoader(self.train_data, shuffle=True, batch_size=self.batch_size, num_workers=self.num_workers)
 
     def val_dataloader(self) -> DataLoader:
+        # TODO: Handle batch_size > 1
         return DataLoader(self.val_data, shuffle=False, batch_size=1, num_workers=self.num_workers)
-        # return DataLoader(self.val_data, shuffle=False, batch_size=self.batch_size, num_workers=self.num_workers)
+
