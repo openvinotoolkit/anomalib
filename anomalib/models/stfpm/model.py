@@ -1,5 +1,8 @@
+import os.path
+import os
 from argparse import Namespace
-from typing import Callable, Dict, Iterable, List, Optional
+from typing import Callable, Dict, Iterable, Optional
+from typing import List
 
 import cv2
 import numpy as np
@@ -7,9 +10,11 @@ import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 import torchvision
+from pytorch_lightning.callbacks import Callback, EarlyStopping, ModelCheckpoint
+from sklearn.metrics import roc_auc_score
 from torch import Tensor, nn, optim
 
-__all__ = ["FeatureExtractor", "Loss", "AnomalyMapGenerator", "Model"]
+__all__ = ["FeatureExtractor", "Loss", "AnomalyMapGenerator", "STFPMModel"]
 
 
 class FeatureExtractor(nn.Module):
@@ -35,29 +40,25 @@ class FeatureExtractor(nn.Module):
         [torch.Size([32, 64, 64, 64]), torch.Size([32, 128, 32, 32]), torch.Size([32, 256, 16, 16])]
     """
 
-    def __init__(self, model: nn.Module, layers: Iterable[str]):
+    def __init__(self, backbone: nn.Module, layers: Iterable[str]):
         super().__init__()
-        self.model = model
+        self.backbone = backbone
         self.layers = layers
         self._features = {layer: torch.empty(0) for layer in self.layers}
-        # self._features: List[Tensor] = []
 
         for layer_id in layers:
-            layer = dict([*self.model.named_modules()])[layer_id]
+            layer = dict([*self.backbone.named_modules()])[layer_id]
             layer.register_forward_hook(self.get_features(layer_id))
 
     def get_features(self, layer_id: str) -> Callable:
         def hook(_, __, output):
             self._features[layer_id] = output
-            # self._features.append(output)
 
         return hook
 
-    # def forward(self, x: Tensor) -> List[Tensor]:
     def forward(self, x: Tensor) -> Dict[str, Tensor]:
         self._features = {layer: torch.empty(0) for layer in self.layers}
-        # self._features: List[Tensor] = []
-        _ = self.model(x)
+        _ = self.backbone(x)
         return self._features
 
 
@@ -87,7 +88,6 @@ class Loss(nn.Module):
     def __init__(self):
         super().__init__()
         self.mse_loss = nn.MSELoss(reduction="sum")
-        # self.cosine_similarity = torch.nn.CosineSimilarity(dim=1, eps=1e-08)
 
     def compute_layer_loss(self, teacher_feats: Tensor, student_feats: Tensor) -> Tensor:
         height, width = teacher_feats.shape[2:]
@@ -97,10 +97,6 @@ class Loss(nn.Module):
         layer_loss = (0.5 / (width * height)) * self.mse_loss(norm_teacher_features, norm_student_features)
 
         return layer_loss
-        # layer_loss = self.cosine_similarity(teacher_feats, student_feats)  # Eq (1)
-        # layer_loss = torch.mean(layer_loss, dim=[1, 2])  # Eq (2)
-        #
-        # return layer_loss
 
     def forward(self, teacher_features: Dict[str, Tensor], student_features: Dict[str, Tensor]) -> Tensor:
         layer_losses: List[Tensor] = []
@@ -108,12 +104,30 @@ class Loss(nn.Module):
             loss = self.compute_layer_loss(teacher_features[layer], student_features[layer])
             layer_losses.append(loss)
 
-        total_loss = sum(layer_losses)
-
-        # layer_losses = torch.stack(losses, dim=1)  # Eq (3): (NxL)
-        # total_loss = layer_losses.sum()
+        total_loss = torch.stack(layer_losses).sum()
 
         return total_loss
+
+
+class Callbacks:
+    def __init__(self, args):
+        self.args = args
+
+    def get_callbacks(self) -> List[Callback]:
+        checkpoint = ModelCheckpoint(
+            dirpath=os.path.join(self.args.project_path, 'weights'),
+            # dirpath=os.path.join(self.args.project_path, self.args.dataset, os.path.split(self.args.dataset_path)[-1]),
+            # filename="model-epoch{epoch:02d}-val_loss{val_loss:.2f}",
+            filename='model',
+            monitor=self.args.metric,
+        )
+        # checkpoint = ModelCheckpoint()
+        early_stopping = EarlyStopping(monitor=self.args.metric, patience=self.args.patience)
+        callbacks = [checkpoint, early_stopping]
+        return callbacks
+
+    def __call__(self):
+        return self.get_callbacks()
 
 
 class AnomalyMapGenerator:
@@ -137,13 +151,17 @@ class AnomalyMapGenerator:
 
     def compute_anomaly_map(
         self, teacher_features: Dict[str, Tensor], student_features: Dict[str, Tensor]
-    ) -> np.ndarray:
+    ) -> Tensor:
         # TODO: Reshape anomaly_map to handle batch_size > 1
+        # TODO: Use torch tensor instead
         anomaly_map = np.ones([self.image_size, self.image_size])
+        # device = list(teacher_features.values())[0].device
+        # anomaly_map = torch.empty((self.image_size, self.image_size), device=device)
         for layer in teacher_features.keys():
             layer_map = self.compute_layer_map(teacher_features[layer], student_features[layer])
-            layer_map = layer_map[0, 0, :, :].cpu().detach().numpy()
-            anomaly_map *= layer_map
+            layer_map = layer_map[0, 0, :, :]
+            anomaly_map *= layer_map.cpu().detach().numpy()
+            # anomaly_map *= layer_map
 
         return anomaly_map
 
@@ -165,24 +183,28 @@ class AnomalyMapGenerator:
         return self.compute_anomaly_map(teacher_features, student_features)
 
 
-class Model(pl.LightningModule):
+class STFPMModel(pl.LightningModule):
     def __init__(self, hparams: Namespace, model: Optional[Callable] = None, layers: Optional[List[str]] = None):
         super().__init__()
         self.hparams = hparams
         # TODO: model and layers are init parameters.
         # self.model = getattr(torchvision.models, hparams.model)
-        self.model = torchvision.models.resnet18
+        self.backbone = torchvision.models.resnet18
         self.layers = ["layer1", "layer2", "layer3"]
 
-        self.teacher_model = FeatureExtractor(model=self.model(pretrained=True), layers=self.layers)
-        self.student_model = FeatureExtractor(model=self.model(pretrained=False), layers=self.layers)
-        self.loss = Loss()
+        self.teacher_model = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
+        self.student_model = FeatureExtractor(backbone=self.backbone(pretrained=False), layers=self.layers)
 
         # teacher model is fixed
         for parameters in self.teacher_model.parameters():
             parameters.requires_grad = False
 
+        self.loss = Loss()
+        self.anomaly_map_generator = AnomalyMapGenerator(batch_size=1, image_size=256)
+        self.callbacks = Callbacks(hparams)()
+
     def forward(self, images):
+        self.teacher_model.eval()
         teacher_features: Dict[str, Tensor] = self.teacher_model(images)
         student_features: Dict[str, Tensor] = self.student_model(images)
         return teacher_features, student_features
@@ -198,35 +220,45 @@ class Model(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         teacher_features, student_features = self.forward(batch["image"])
         loss = self.loss(teacher_features, student_features)
-        self.log(name="train_loss", value=loss, on_step=False, on_epoch=True, prog_bar=True)
         return {"loss": loss}
 
     def validation_step(self, batch, batch_idx):
         images, mask = batch["image"], batch["mask"]
-        # teacher_features = self.teacher_model(images)
-        # student_features = self.forward(images)
+
         teacher_features, student_features = self.forward(images)
         loss = self.loss(teacher_features, student_features)
-        self.log(name="val_loss", value=loss, on_step=False, on_epoch=True, prog_bar=True)
-        # return loss
-        return {"val_loss": loss, "log": {"val_loss": loss}}
 
-    # def training_epoch_end(self, outputs):
-    #     avg_loss = torch.stack([x["loss"] for x in outputs]).mean()
-    #     log = {"train_loss": avg_loss}
-    #     self.log(name="avg_train_loss", value=avg_loss, prog_bar=True)
-    #     # return {"avg_train_loss": avg_loss, "log": log}
+        anomaly_map = self.anomaly_map_generator(teacher_features, student_features)
+        auc = roc_auc_score(mask.cpu().numpy().ravel(), anomaly_map.ravel())
+        # auc = roc_auc_score(mask.cpu().numpy().ravel(), anomaly_map.cpu().numpy().ravel())
+
+        # image_path, mask_path = batch["image_path"][0], batch["mask_path"][0]
+        # images, masks = batch["image"], batch["mask"]
+        #
+        # defect_type = Path(image_path).parent.name
+        # image_filename = Path(image_path).stem
+        #
+        # original_image = cv2.imread(image_path)
+        # original_image = cv2.resize(original_image, (256, 256))
+        #
+        # heatmap_on_image = self.anomaly_map_generator.apply_heatmap_on_image(anomaly_map, original_image)
+        #
+        # cv2.imwrite(str(Path("./results") / f"{defect_type}_{image_filename}.jpg"), original_image)
+        # cv2.imwrite(str(Path("./results") / f"{defect_type}_{image_filename}_heatmap.jpg"), heatmap_on_image)
+        # cv2.imwrite(str(Path("./results") / f"{defect_type}_{image_filename}_mask.jpg"), masks.cpu().numpy())
+
+        return {"val_loss": loss, "auc": auc}
 
     def validation_epoch_end(self, outputs):
         loss = torch.stack([x["val_loss"] for x in outputs]).mean()
-        self.log(name="val_loss", value=loss)
-        log = {"val_loss": loss}
-        # return {"avg_val_loss": avg_loss, "log": log}
+        auc = np.stack([x["auc"] for x in outputs]).mean()
+        self.log(name="val_loss", value=loss, on_epoch=True, prog_bar=True)
+        self.log(name="auc", value=auc, on_epoch=True, prog_bar=True)
 
     @staticmethod
     def add_model_specific_args(parent_parser):
         parser = parent_parser.add_argument_group("LitModel")
-        parser.add_argument("--model", type=str, default="resnet18")
+        parser.add_argument("--backbone", type=str, default="resnet18")
         parser.add_argument("--layers", nargs="+", default=["layer1", "layer2", "layer3"])
         parser.add_argument("--num_epochs", type=int, default=100)
         parser.add_argument("--batch_size", type=int, default=32)
@@ -234,4 +266,5 @@ class Model(pl.LightningModule):
         parser.add_argument("--lr", type=float, default=0.4)
         parser.add_argument("--momentum", type=float, default=0.9)
         parser.add_argument("--weight_decay", type=float, default=1e-4)
+        parser.add_argument("--patience", type=int, default=5, help="Early stopping patience")
         return parent_parser
