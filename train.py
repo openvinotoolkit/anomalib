@@ -1,19 +1,27 @@
 from argparse import ArgumentParser
+from pathlib import Path
 
 from pytorch_lightning import Trainer
+from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 
-from anomalib.datasets import MVTecDataModule
-from anomalib.models.stfpm import Model
+from anomalib.datasets import get_datamodule
+from anomalib.models import get_model
+from anomalib.models.stfpm import STFPMModel
 
 parser = ArgumentParser()
-parser.add_argument("--dataroot", type=str, default="./datasets/MVTec")
-parser.add_argument("--category", type=str, default="leather")
+parser.add_argument("--dataset", type=str, default="mvtec")
+parser.add_argument("--dataset_path", type=Path, default="./datasets/MVTec/zipper")
+parser.add_argument("--model", type=str, default="stfpm")
+parser.add_argument("--project_path", type=Path, default="./results")
+parser.add_argument("--metric", type=str, default="auc")
 
-parser = Model.add_model_specific_args(parser)
+parser = STFPMModel.add_model_specific_args(parser)
 parser = Trainer.add_argparse_args(parser)
 args = parser.parse_args()
 
-trainer = Trainer(max_epochs=100, gpus=1, check_val_every_n_epoch=50)
-datamodule = MVTecDataModule(args.dataroot, args.category, args.batch_size, args.num_workers)
-model = Model(args)
+
+datamodule = get_datamodule(args)
+model = get_model(args)
+trainer = Trainer(max_epochs=args.num_epochs, gpus=1, check_val_every_n_epoch=2, callbacks=model.callbacks)
+
 trainer.fit(model=model, datamodule=datamodule)
