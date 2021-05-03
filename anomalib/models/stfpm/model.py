@@ -1,7 +1,6 @@
-import os.path
 import os
-from argparse import Namespace
-from typing import Callable, Dict, Iterable, Optional
+import os.path
+from typing import Callable, Dict, Iterable
 from typing import List
 
 import cv2
@@ -115,10 +114,10 @@ class Callbacks:
 
     def get_callbacks(self) -> List[Callback]:
         checkpoint = ModelCheckpoint(
-            dirpath=os.path.join(self.args.project_path, 'weights'),
+            dirpath=os.path.join(self.args.project_path, "weights"),
             # dirpath=os.path.join(self.args.project_path, self.args.dataset, os.path.split(self.args.dataset_path)[-1]),
             # filename="model-epoch{epoch:02d}-val_loss{val_loss:.2f}",
-            filename='model',
+            filename="model",
             monitor=self.args.metric,
         )
         # checkpoint = ModelCheckpoint()
@@ -149,9 +148,7 @@ class AnomalyMapGenerator:
         layer_map = F.interpolate(layer_map, size=self.image_size, align_corners=False, mode="bilinear")
         return layer_map
 
-    def compute_anomaly_map(
-        self, teacher_features: Dict[str, Tensor], student_features: Dict[str, Tensor]
-    ) -> Tensor:
+    def compute_anomaly_map(self, teacher_features: Dict[str, Tensor], student_features: Dict[str, Tensor]) -> Tensor:
         # TODO: Reshape anomaly_map to handle batch_size > 1
         # TODO: Use torch tensor instead
         anomaly_map = np.ones([self.image_size, self.image_size])
@@ -184,13 +181,12 @@ class AnomalyMapGenerator:
 
 
 class STFPMModel(pl.LightningModule):
-    def __init__(self, hparams: Namespace, model: Optional[Callable] = None, layers: Optional[List[str]] = None):
+    def __init__(self, hparams):
+
         super().__init__()
-        self.hparams = hparams
-        # TODO: model and layers are init parameters.
-        # self.model = getattr(torchvision.models, hparams.model)
-        self.backbone = torchvision.models.resnet18
-        self.layers = ["layer1", "layer2", "layer3"]
+        self.save_hyperparameters(hparams)
+        self.backbone = getattr(torchvision.models, hparams.backbone)
+        self.layers = hparams.layers
 
         self.teacher_model = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
         self.student_model = FeatureExtractor(backbone=self.backbone(pretrained=False), layers=self.layers)
@@ -255,16 +251,16 @@ class STFPMModel(pl.LightningModule):
         self.log(name="val_loss", value=loss, on_epoch=True, prog_bar=True)
         self.log(name="auc", value=auc, on_epoch=True, prog_bar=True)
 
-    @staticmethod
-    def add_model_specific_args(parent_parser):
-        parser = parent_parser.add_argument_group("LitModel")
-        parser.add_argument("--backbone", type=str, default="resnet18")
-        parser.add_argument("--layers", nargs="+", default=["layer1", "layer2", "layer3"])
-        parser.add_argument("--num_epochs", type=int, default=100)
-        parser.add_argument("--batch_size", type=int, default=32)
-        parser.add_argument("--num_workers", type=int, default=36)
-        parser.add_argument("--lr", type=float, default=0.4)
-        parser.add_argument("--momentum", type=float, default=0.9)
-        parser.add_argument("--weight_decay", type=float, default=1e-4)
-        parser.add_argument("--patience", type=int, default=5, help="Early stopping patience")
-        return parent_parser
+    # @staticmethod
+    # def add_model_specific_args(parent_parser):
+    #     parser = parent_parser.add_argument_group("LitModel")
+    #     parser.add_argument("--backbone", type=str, default="resnet18")
+    #     parser.add_argument("--layers", nargs="+", default=["layer1", "layer2", "layer3"])
+    #     parser.add_argument("--num_epochs", type=int, default=100)
+    #     parser.add_argument("--batch_size", type=int, default=32)
+    #     parser.add_argument("--num_workers", type=int, default=36)
+    #     parser.add_argument("--lr", type=float, default=0.4)
+    #     parser.add_argument("--momentum", type=float, default=0.9)
+    #     parser.add_argument("--weight_decay", type=float, default=1e-4)
+    #     parser.add_argument("--patience", type=int, default=5, help="Early stopping patience")
+    #     return parent_parser
