@@ -1,1 +1,1 @@
-from .model import FeatureExtractor, Loss, Model, AnomalyMapGenerator
+from .model import FeatureExtractor, Loss, STFPMModel, AnomalyMapGenerator
