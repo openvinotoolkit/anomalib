@@ -1,6 +1,6 @@
 dataset:
   dataset: mvtec
-  dataset_path: ./datasets/MVTec/zipper
+  dataset_path: ./datasets/MVTec/leather
   batch_size: 32
   num_workers: 36
 
