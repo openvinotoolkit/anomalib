@@ -23,6 +23,3 @@ model = get_model(config.model)
 
 trainer = Trainer(callbacks=model.callbacks, **config.trainer)
 trainer.fit(model=model, datamodule=datamodule)
-trainer.save_checkpoint('./results/weights/pl_model.pth')
-import torch
-torch.save(model.student_model.state_dict(), './results/weights/student_model.pth')

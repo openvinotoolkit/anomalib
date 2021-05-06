@@ -116,12 +116,8 @@ class Callbacks:
     def get_callbacks(self) -> List[Callback]:
         checkpoint = ModelCheckpoint(
             dirpath=os.path.join(self.args.project_path, "weights"),
-            # dirpath=os.path.join(self.args.project_path, self.args.dataset, os.path.split(self.args.dataset_path)[-1]),
-            # filename="model-epoch{epoch:02d}-val_loss{val_loss:.2f}",
             filename="model",
-            monitor=self.args.metric,
         )
-        # checkpoint = ModelCheckpoint()
         early_stopping = EarlyStopping(monitor=self.args.metric, patience=self.args.patience)
         callbacks = [checkpoint, early_stopping]
         return callbacks
@@ -228,30 +224,12 @@ class STFPMModel(pl.LightningModule):
         anomaly_map = self.anomaly_map_generator(teacher_features, student_features)
         auc = roc_auc_score(mask.cpu().numpy().ravel(), anomaly_map.ravel())
 
-        image_path, mask_path = batch["image_path"][0], batch["mask_path"][0]
-        images, masks = batch["image"], batch["mask"]
-
-        defect_type = Path(image_path).parent.name
-        image_filename = Path(image_path).stem
-
-        original_image = cv2.imread(image_path)
-        original_image = cv2.resize(original_image, (256, 256))
-
-        heatmap_on_image = self.anomaly_map_generator.apply_heatmap_on_image(anomaly_map, original_image)
-
-        cv2.imwrite(str(Path("./results/images/val") / f"{defect_type}_{image_filename}.jpg"), original_image)
-        cv2.imwrite(str(Path("./results/images/val") / f"{defect_type}_{image_filename}_heatmap.jpg"), heatmap_on_image)
-        cv2.imwrite(str(Path("./results/images/val") / f"{defect_type}_{image_filename}_mask.jpg"), masks.cpu().numpy())
-
         return {"val_loss": loss, "auc": auc}
 
     def test_step(self, batch, batch_idx):
         images, mask = batch["image"], batch["mask"]
 
         teacher_features, student_features = self.forward(images)
-        # teacher_features = model.teacher_model(images.to(device))
-        # student_features = model.student_model(images.to(device))
-        # loss = model.loss(teacher_features, student_features)
 
         anomaly_map = self.anomaly_map_generator(teacher_features, student_features)
         auc = roc_auc_score(mask.cpu().numpy().ravel(), anomaly_map.ravel())
@@ -266,13 +244,9 @@ class STFPMModel(pl.LightningModule):
 
         heatmap_on_image = self.anomaly_map_generator.apply_heatmap_on_image(anomaly_map, original_image)
 
-        cv2.imwrite(str(Path("./results/images/test") / f"{defect_type}_{image_filename}.jpg"), original_image)
-        cv2.imwrite(
-            str(Path("./results/images/test") / f"{defect_type}_{image_filename}_heatmap.jpg"), heatmap_on_image
-        )
-        cv2.imwrite(
-            str(Path("./results/images/test") / f"{defect_type}_{image_filename}_mask.jpg"), masks.cpu().numpy()
-        )
+        cv2.imwrite(f"./results/images/test/{defect_type}_{image_filename}.jpg", original_image)
+        cv2.imwrite(f"./results/images/test/{defect_type}_{image_filename}_heatmap.jpg", heatmap_on_image)
+        cv2.imwrite(f"./results/images/test/{defect_type}_{image_filename}_mask.jpg", masks.cpu().numpy())
 
         return {"auc": auc}
 
@@ -285,17 +259,3 @@ class STFPMModel(pl.LightningModule):
     def test_epoch_end(self, outputs):
         auc = np.stack([x["auc"] for x in outputs]).mean()
         self.log(name="test_auc", value=auc, on_epoch=True, prog_bar=True)
-
-    @staticmethod
-    def add_model_specific_args(parent_parser):
-        parser = parent_parser.add_argument_group("LitModel")
-        parser.add_argument("--backbone", type=str, default="resnet18")
-        parser.add_argument("--layers", nargs="+", default=["layer1", "layer2", "layer3"])
-        parser.add_argument("--num_epochs", type=int, default=100)
-        parser.add_argument("--batch_size", type=int, default=32)
-        parser.add_argument("--num_workers", type=int, default=36)
-        parser.add_argument("--lr", type=float, default=0.4)
-        parser.add_argument("--momentum", type=float, default=0.9)
-        parser.add_argument("--weight_decay", type=float, default=1e-4)
-        parser.add_argument("--patience", type=int, default=5, help="Early stopping patience")
-        return parent_parser
