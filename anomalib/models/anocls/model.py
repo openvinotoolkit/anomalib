@@ -8,7 +8,8 @@ from attrdict import AttrDict
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 from sklearn.metrics import roc_auc_score
 
-from anomalib.models.anocls.features import resnet50_feature_extractor
+from torchvision.models import resnet50
+from anomalib.models.shared.feature_extractor import FeatureExtractor
 from anomalib.models.anocls.normality_model import NormalityModel
 
 
@@ -36,7 +37,7 @@ class AnoCLSModel(pl.LightningModule):
         self.threshold_steepness = 0.05
         self.threshold_offset = 12
 
-        self.feature_extractor = resnet50_feature_extractor().eval()
+        self.feature_extractor = FeatureExtractor(backbone=resnet50(pretrained=True), layers=['avgpool']).eval()
 
         self.normality_model = NormalityModel(
             filter_count=hparams.max_training_points,
@@ -50,7 +51,8 @@ class AnoCLSModel(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         self.feature_extractor.eval()
-        feature_vector = self.feature_extractor(batch["image"]).detach()
+        layer_outputs = self.feature_extractor(batch["image"])
+        feature_vector = torch.hstack(list(layer_outputs.values())).detach().squeeze()
         return {"feature_vector": feature_vector}
 
     def training_epoch_end(self, outputs):
@@ -60,8 +62,9 @@ class AnoCLSModel(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         self.feature_extractor.eval()
         images, mask = batch["image"], batch["mask"]
-        feature_vector = self.feature_extractor(images).detach()
-        probability = self.normality_model.predict(feature_vector)
+        layer_outputs = self.feature_extractor(batch["image"])
+        feature_vector = torch.hstack(list(layer_outputs.values())).detach()
+        probability = self.normality_model.predict(feature_vector.view(feature_vector.shape[:2]))
         prediction = 1 if probability > self.hparams.confidence_threshold else 0
         ground_truth = int(np.any(mask.cpu().numpy()))
         return {"probability": probability, "prediction": prediction, "ground_truth": ground_truth}
