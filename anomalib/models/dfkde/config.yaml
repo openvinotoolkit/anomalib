@@ -6,7 +6,7 @@ dataset:
   include_normal_images_in_val_set: True
 
 model:
-  model: anocls
+  model: dfkde
   max_training_points: 40000
   project_path: ./results
   confidence_threshold: 0.5

@@ -1,11 +1,11 @@
 from .stfpm import STFPMModel
-from .anocls import AnoCLSModel
+from .dfkde import DFKDEModel
 
 def get_model(args):
     if args.model == "stfpm":
         model = STFPMModel(args)
-    elif args.model == "anocls":
-        model = AnoCLSModel(args)
+    elif args.model == "dfkde":
+        model = DFKDEModel(args)
     else:
         raise ValueError("Unknown model name!")
 

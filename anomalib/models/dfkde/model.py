@@ -9,7 +9,7 @@ from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 from sklearn.metrics import roc_auc_score
 from torchvision.models import resnet50
 
-from anomalib.models.anocls.normality_model import NormalityModel
+from anomalib.models.dfkde.normality_model import NormalityModel
 from anomalib.models.shared.feature_extractor import FeatureExtractor
 
 
@@ -30,7 +30,7 @@ class Callbacks:
         return self.get_callbacks()
 
 
-class AnoCLSModel(pl.LightningModule):
+class DFKDEModel(pl.LightningModule):
     def __init__(self, hparams: AttrDict):
         super().__init__()
         self.hparams = hparams
