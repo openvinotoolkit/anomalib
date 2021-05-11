@@ -1,10 +1,7 @@
 import math
 
 import torch
-import torch.nn as nn
-import numpy as np
-import itertools
-from anomalib.models.anocls.dynamic_module import DynamicBufferModule
+from anomalib.utils.dynamic_module import DynamicBufferModule
 
 
 class GaussianKDE(DynamicBufferModule):
@@ -31,13 +28,11 @@ class GaussianKDE(DynamicBufferModule):
         return estimate
 
     def fit(self, dataset):
-        # compute scott's bandwidth factor
         n, d = dataset.shape
 
+        # compute scott's bandwidth factor
         factor = n ** (-1 / (d + 4))
 
-        #
-        # cov_mat = torch.Tensor(np.cov(dataset.T, bias=False))
         cov_mat = self.cov(dataset.T, bias=False)
         inv_cov_mat = torch.linalg.inv(cov_mat)
         inv_cov = inv_cov_mat / factor ** 2

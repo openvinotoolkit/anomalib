@@ -3,8 +3,8 @@ import random
 import torch
 import torch.nn as nn
 
-from anomalib.models.anocls.kde import GaussianKDE
-from anomalib.models.anocls.pca import PCA
+from anomalib.utils.kde import GaussianKDE
+from anomalib.utils.pca import PCA
 
 
 class NormalityModel(nn.Module):

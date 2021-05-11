@@ -1,6 +1,6 @@
 import torch
-import torch.nn as nn
-from anomalib.models.anocls.dynamic_module import DynamicBufferModule
+
+from anomalib.utils.dynamic_module import DynamicBufferModule
 
 
 class PCA(DynamicBufferModule):
