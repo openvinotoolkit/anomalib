@@ -1,4 +1,5 @@
 import random
+from typing import Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -8,13 +9,14 @@ from anomalib.models.shared.pca import PCA
 
 
 class NormalityModel(nn.Module):
-    def __init__(self,
-                 n_comps: int = 16,
-                 pre_processing: str = "scale",
-                 filter_count: int = 40000,
-                 threshold_steepness: float = 0.05,
-                 threshold_offset: float = 12.0
-                 ):
+    def __init__(
+        self,
+        n_comps: int = 16,
+        pre_processing: str = "scale",
+        filter_count: int = 40000,
+        threshold_steepness: float = 0.05,
+        threshold_offset: float = 12.0,
+    ):
         super().__init__()
         self.n_components = n_comps
         self.pre_processing = pre_processing
@@ -25,10 +27,10 @@ class NormalityModel(nn.Module):
         self.pca_model = PCA(n_components=self.n_components)
         self.kde_model = GaussianKDE()
 
-        self.register_buffer('max_length', torch.Tensor(torch.Size([])))
+        self.register_buffer("max_length", torch.Tensor(torch.Size([])))
 
-    def fit(self, dataset):
-        if dataset.size(0) < self.n_components:
+    def fit(self, dataset: torch.Tensor):
+        if dataset.shape[0] < self.n_components:
             print("Not enough features to commit. Not making a model.")
             return False
 
@@ -44,7 +46,7 @@ class NormalityModel(nn.Module):
         self.max_length = max_length
         self.kde_model.fit(feature_stack)
 
-    def preprocess(self, feature_stack, max_length=None):
+    def preprocess(self, feature_stack: torch.Tensor, max_length: Optional[int] = None) -> Tuple[torch.Tensor, int]:
         if self.pre_processing == "norm":
             feature_stack /= torch.norm(feature_stack, 2, 1)[:, None]
         elif self.pre_processing == "scale":
@@ -54,7 +56,9 @@ class NormalityModel(nn.Module):
             raise RuntimeError("Unknown pre-processing mode. Available modes are: Normalized and Scale.")
         return feature_stack, max_length
 
-    def evaluate(self, sem_feats, as_density, ln):
+    def evaluate(
+        self, sem_feats: torch.Tensor, as_density: Optional[bool] = False, ln: Optional[bool] = False
+    ) -> torch.Tensor:
 
         sem_feats = self.pca_model.transform(sem_feats)
         sem_feats, _ = self.preprocess(sem_feats, self.max_length)
@@ -68,7 +72,7 @@ class NormalityModel(nn.Module):
         else:
             return torch.log(1.0 / kde_scores) if ln else 1.0 / kde_scores
 
-    def predict(self, features: torch.Tensor):
+    def predict(self, features: torch.Tensor) -> torch.Tensor:
         """
         Predicts the probability that the features belong to the anomalous class.
         """
@@ -77,7 +81,7 @@ class NormalityModel(nn.Module):
 
         return probabilities
 
-    def to_probability(self, densities: torch.Tensor):
+    def to_probability(self, densities: torch.Tensor) -> torch.Tensor:
         """
         Converts density scores to anomaly probabilities
         (see https://www.desmos.com/calculator/ifju7eesg7)

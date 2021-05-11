@@ -15,7 +15,7 @@ class DynamicBufferModule(nn.Module):
 
         for param in local_buffers.keys():
             for key in state_dict.keys():
-                if key.startswith(prefix) and key[len(prefix):].split('.')[0] == param:
+                if key.startswith(prefix) and key[len(prefix) :].split(".")[0] == param:
                     if not local_buffers[param].shape == state_dict[key].shape:
                         self.__getattr__(param).resize_(state_dict[key].shape)
         super()._load_from_state_dict(state_dict, prefix, *args)

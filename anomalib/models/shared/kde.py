@@ -1,22 +1,23 @@
 import math
+from typing import Optional
 
 import torch
+
 from anomalib.models.shared.dynamic_module import DynamicBufferModule
 
 
 class GaussianKDE(DynamicBufferModule):
-    def __init__(self, dataset=None):
+    def __init__(self, dataset: Optional[torch.Tensor] = None):
         super().__init__()
 
         if dataset is not None:
             self.fit(dataset)
 
-        self.register_buffer('bw_transform', torch.Tensor())
-        self.register_buffer('dataset', torch.Tensor())
-        self.register_buffer('norm', torch.Tensor())
+        self.register_buffer("bw_transform", torch.Tensor())
+        self.register_buffer("dataset", torch.Tensor())
+        self.register_buffer("norm", torch.Tensor())
 
-    def forward(self, features):
-        # features = features.to(self.bw_transform.device)
+    def forward(self, features: torch.Tensor) -> torch.Tensor:
         features = torch.matmul(features, self.bw_transform)
 
         estimate = torch.zeros(features.shape[0])
@@ -27,7 +28,7 @@ class GaussianKDE(DynamicBufferModule):
 
         return estimate
 
-    def fit(self, dataset):
+    def fit(self, dataset: torch.Tensor):
         n, d = dataset.shape
 
         # compute scott's bandwidth factor
@@ -43,7 +44,7 @@ class GaussianKDE(DynamicBufferModule):
 
         #
         norm = torch.prod(torch.diag(bw_transform))
-        norm *= math.pow((2 * math.pi), (- d / 2))
+        norm *= math.pow((2 * math.pi), (-d / 2))
 
         # self.register_buffer('bw_transform', bw_transform)
         self.bw_transform = bw_transform
@@ -51,7 +52,7 @@ class GaussianKDE(DynamicBufferModule):
         self.norm = norm
 
     @staticmethod
-    def cov(X, bias=False):
+    def cov(X: torch.Tensor, bias: Optional[bool] = False) -> torch.Tensor:
         mean = torch.mean(X, dim=1)
         X -= mean[:, None]
         cov = torch.matmul(X, X.T) / (X.size(1) - int(not bias))

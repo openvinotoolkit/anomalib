@@ -7,10 +7,10 @@ import torch
 from attrdict import AttrDict
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 from sklearn.metrics import roc_auc_score
-
 from torchvision.models import resnet50
-from anomalib.models.shared.feature_extractor import FeatureExtractor
+
 from anomalib.models.anocls.normality_model import NormalityModel
+from anomalib.models.shared.feature_extractor import FeatureExtractor
 
 
 class Callbacks:
@@ -37,7 +37,7 @@ class AnoCLSModel(pl.LightningModule):
         self.threshold_steepness = 0.05
         self.threshold_offset = 12
 
-        self.feature_extractor = FeatureExtractor(backbone=resnet50(pretrained=True), layers=['avgpool']).eval()
+        self.feature_extractor = FeatureExtractor(backbone=resnet50(pretrained=True), layers=["avgpool"]).eval()
 
         self.normality_model = NormalityModel(
             filter_count=hparams.max_training_points,
@@ -49,17 +49,17 @@ class AnoCLSModel(pl.LightningModule):
     def configure_optimizers(self):
         return None
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch: dict, batch_idx: int) -> dict:
         self.feature_extractor.eval()
         layer_outputs = self.feature_extractor(batch["image"])
         feature_vector = torch.hstack(list(layer_outputs.values())).detach().squeeze()
         return {"feature_vector": feature_vector}
 
-    def training_epoch_end(self, outputs):
+    def training_epoch_end(self, outputs: dict):
         feature_stack = torch.vstack([output["feature_vector"] for output in outputs])
         self.normality_model.fit(feature_stack)
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch: dict, batch_idx: int) -> dict:
         self.feature_extractor.eval()
         images, mask = batch["image"], batch["mask"]
         layer_outputs = self.feature_extractor(batch["image"])
@@ -69,14 +69,14 @@ class AnoCLSModel(pl.LightningModule):
         ground_truth = int(np.any(mask.cpu().numpy()))
         return {"probability": probability, "prediction": prediction, "ground_truth": ground_truth}
 
-    def validation_epoch_end(self, outputs):
+    def validation_epoch_end(self, outputs: dict):
         pred = [output["probability"] for output in outputs]
         gt = [int(output["ground_truth"]) for output in outputs]
         auc = roc_auc_score(np.array(gt), np.array(torch.hstack(pred)))
         self.log(name="auc", value=auc, on_epoch=True, prog_bar=True)
 
-    def test_step(self, batch, batch_idx):
+    def test_step(self, batch: dict, batch_idx: dict) -> dict:
         return self.validation_step(batch, batch_idx)
 
-    def test_epoch_end(self, outputs):
+    def test_epoch_end(self, outputs: dict):
         self.validation_epoch_end(outputs)
