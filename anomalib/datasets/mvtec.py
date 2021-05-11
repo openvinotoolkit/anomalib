@@ -44,6 +44,7 @@ class MVTec(VisionDataset):
         root: Union[Path, str],
         category: str,
         train: bool = True,
+        include_normal = False,
         image_transforms: Optional[Callable] = None,
         mask_transforms: Optional[Callable] = None,
         loader: Optional[Callable[[str], Any]] = None,
@@ -57,6 +58,7 @@ class MVTec(VisionDataset):
         self.mask_transforms = mask_transforms if mask_transforms is not None else get_mask_transforms()
         self.loader = loader if loader is not None else default_loader
         self.download = download
+        self.include_normal = include_normal
 
         if self.download:
             self._download()
@@ -95,12 +97,11 @@ class MVTec(VisionDataset):
         samples = []
         for label in labels:
             for filename in (self.category / self.split / label).glob("*.*"):
-                # TODO: Remove below condition. We'd want good test samples during inference.
-                # if self.split == "train" or (self.split == "test" and label == "good"):
-                if self.split == "test" and label == "good":
-                    continue
-                elif self.split == "train":
-                    ground_truth = ""
+                if label == "good":
+                    if self.split == "train" or self.include_normal:
+                        ground_truth = ""
+                    else:
+                        continue
                 else:
                     ground_truth = str(self.category / "ground_truth" / label / (filename.stem + "_mask.png"))
 
@@ -141,6 +142,7 @@ class MVTecDataModule(LightningDataModule):
         dataset_path: Union[str, Path],
         batch_size: int,
         num_workers: int,
+        include_normal_images_in_val_set: bool = False,
         image_transforms: Optional[Callable] = None,
         mask_transforms: Optional[Callable] = None,
         loader: Optional[Callable[[str], Any]] = None,
@@ -154,6 +156,7 @@ class MVTecDataModule(LightningDataModule):
         self.image_transforms = image_transforms
         self.mask_transforms = mask_transforms
         self.loader = default_loader if loader is None else loader
+        self.include_normal = include_normal_images_in_val_set
 
     def prepare_data(self):
         # Training Data
@@ -187,6 +190,7 @@ class MVTecDataModule(LightningDataModule):
             root=self.root,
             category=self.category,
             train=False,
+            include_normal=self.include_normal,
             image_transforms=self.image_transforms,
             mask_transforms=self.mask_transforms,
         )
