@@ -24,13 +24,3 @@ This repo lists awesome anomaly detection papers. There could be some overlap be
 | [Gaussian AD](https://paperswithcode.com/paper/modeling-the-distribution-of-normal-data-in)   |         :x:          |        -         |       |        95.8        |
 | [DifferNet](https://paperswithcode.com/paper/same-same-but-differnet-semi-supervised)         |         :x:          |        -         |       |        94.9        |
 | [MOCCA](https://paperswithcode.com/paper/mocca-multi-layer-one-class-classification)          |         :x:          |       87.5       |       |        88.0        |
-
-## New Paper Entry
-For a new paper entry, please follow the following template format [template](./template.md).
- 1. Click on [Web IDE](https://gitlab-icv.inn.intel.com/-/ide/project/algo_rnd_team/awesome-algo-papers/edit/master) button.
- 2. Think up section name (classification, detection and etc.) for the new paper and create it (if needed).
- 3. Create a markdown file with a name `<paper name>.md` by following the template below:
-     - `# <Paper name>` - name of submitting paper
-     - `## Abstract` - copy abstract from the paper into this section
-     - `## Publication Venue` - Name of the journal or conference proceedings in which the paper is published.
-     - `### Notes` - For any notes and comments.
