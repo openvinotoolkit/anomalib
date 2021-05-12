@@ -17,7 +17,7 @@ from torch import Tensor, nn, optim
 
 __all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel"]
 
-from anomalib.models.shared.feature_extractor import FeatureExtractor
+from anomalib.models.shared import FeatureExtractor
 
 
 class Loss(nn.Module):
