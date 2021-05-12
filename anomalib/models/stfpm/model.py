@@ -10,6 +10,7 @@ import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 import torchvision
+from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.callbacks import Callback, EarlyStopping, ModelCheckpoint
 from sklearn.metrics import roc_auc_score
 from torch import Tensor, nn, optim
@@ -67,7 +68,7 @@ class Loss(nn.Module):
 
 
 class Callbacks:
-    def __init__(self, args):
+    def __init__(self, args: DictConfig):
         self.args = args
 
     def get_callbacks(self) -> List[Callback]:

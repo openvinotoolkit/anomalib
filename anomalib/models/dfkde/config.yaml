@@ -2,7 +2,7 @@ dataset:
   dataset: mvtec
   dataset_path: ./datasets/MVTec/zipper
   batch_size: 32
-  num_workers: 0
+  num_workers: 32
   include_normal_images_in_val_set: True
 
 model:

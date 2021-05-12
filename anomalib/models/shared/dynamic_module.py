@@ -6,7 +6,7 @@ class DynamicBufferModule(nn.Module):
     Torch module that allows loading variables from the state dict even in the case of shape mismatch.
     """
 
-    def _load_from_state_dict(self, state_dict, prefix, *args):
+    def _load_from_state_dict(self, state_dict: dict, prefix: str, *args):
         """
         overrides method from parent class. Resizes the local buffers to match those stored in the state dict.
         """

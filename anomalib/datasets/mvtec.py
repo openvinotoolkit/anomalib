@@ -44,7 +44,7 @@ class MVTec(VisionDataset):
         root: Union[Path, str],
         category: str,
         train: bool = True,
-        include_normal = False,
+        include_normal: bool = False,
         image_transforms: Optional[Callable] = None,
         mask_transforms: Optional[Callable] = None,
         loader: Optional[Callable[[str], Any]] = None,

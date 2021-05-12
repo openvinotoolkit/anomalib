@@ -5,6 +5,7 @@ import numpy as np
 import pytorch_lightning as pl
 import torch
 from attrdict import AttrDict
+from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 from sklearn.metrics import roc_auc_score
 from torchvision.models import resnet50
@@ -14,7 +15,7 @@ from anomalib.models.shared.feature_extractor import FeatureExtractor
 
 
 class Callbacks:
-    def __init__(self, args):
+    def __init__(self, args: DictConfig):
         self.args = args
 
     def get_callbacks(self) -> List[Callback]:
