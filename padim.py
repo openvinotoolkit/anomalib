@@ -2,7 +2,6 @@ import argparse
 import os
 import pickle
 import random
-from collections import OrderedDict
 from random import sample
 
 import matplotlib
@@ -10,6 +9,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn.functional as F
+from torchvision.utils import save_image
+from collections import OrderedDict
+# import tarfile
+from PIL import Image
 from scipy.ndimage import gaussian_filter
 from scipy.spatial.distance import mahalanobis
 from skimage import morphology
@@ -18,15 +21,30 @@ from sklearn.metrics import precision_recall_curve
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import roc_curve
 from torch.utils.data import DataLoader
+from torchvision import transforms as T
 from torchvision.models import wide_resnet50_2, resnet18
 from tqdm import tqdm
 
 import datasets.mvtec as mvtec
-
+from anomalib.datasets.mvtec import MVTecDataModule
 from anomalib.models.shared.feature_extractor import FeatureExtractor
+
+# import urllib.request
+
 # device setup
 use_cuda = torch.cuda.is_available()
 device = torch.device("cuda" if use_cuda else "cpu")
+
+# set transforms
+transform_x = T.Compose(
+    [
+        T.Resize(256, Image.ANTIALIAS),
+        T.CenterCrop(224),
+        T.ToTensor(),
+        T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ]
+)
+transform_mask = T.Compose([T.Resize(256, Image.NEAREST), T.CenterCrop(224), T.ToTensor()])
 
 
 def parse_args():
@@ -52,8 +70,8 @@ def main():
     feature_extractor = FeatureExtractor(backbone=model, layers=["layer1", "layer2", "layer3"])
     feature_extractor.to(device)
     feature_extractor.eval()
-    model.to(device)
-    model.eval()
+    # model.to(device)
+    # model.eval()
     random.seed(1024)
     torch.manual_seed(1024)
     if use_cuda:
@@ -61,15 +79,15 @@ def main():
 
     idx = torch.tensor(sample(range(0, t_d), d))
 
-    # set model's intermediate outputs
-    outputs = []
-
-    def hook(module, input, output):
-        outputs.append(output)
-
-    model.layer1[-1].register_forward_hook(hook)
-    model.layer2[-1].register_forward_hook(hook)
-    model.layer3[-1].register_forward_hook(hook)
+    # # set model's intermediate outputs
+    # outputs = []
+    #
+    # def hook(module, input, output):
+    #     outputs.append(output)
+    #
+    # model.layer1[-1].register_forward_hook(hook)
+    # model.layer2[-1].register_forward_hook(hook)
+    # model.layer3[-1].register_forward_hook(hook)
 
     os.makedirs(os.path.join(args.save_path, "temp_%s" % args.arch), exist_ok=True)
     fig, ax = plt.subplots(1, 2, figsize=(20, 10))
@@ -82,37 +100,49 @@ def main():
     for class_name in mvtec.CLASS_NAMES:
 
         train_dataset = mvtec.MVTecDataset(args.data_path, class_name=class_name, is_train=True)
-        train_dataloader = DataLoader(train_dataset, batch_size=32, pin_memory=True)
+        train_dataloader = DataLoader(train_dataset, batch_size=32, pin_memory=True, shuffle=False)
         test_dataset = mvtec.MVTecDataset(args.data_path, class_name=class_name, is_train=False)
-        test_dataloader = DataLoader(test_dataset, batch_size=32, pin_memory=True)
-
-        train_outputs = OrderedDict([("layer1", []), ("layer2", []), ("layer3", [])])
-        test_outputs = OrderedDict([("layer1", []), ("layer2", []), ("layer3", [])])
+        test_dataloader = DataLoader(test_dataset, batch_size=32, pin_memory=True, shuffle=False)
+        datamodule = MVTecDataModule(
+            dataset_path=os.path.join(args.data_path, class_name),
+            batch_size=32,
+            num_workers=0,
+            image_transforms=transform_x,
+            mask_transforms=transform_mask,
+            include_normal_images_in_val_set=True,
+        )
+        datamodule.setup()
+        # train_outputs = OrderedDict([("layer1", []), ("layer2", []), ("layer3", [])])
+        # test_outputs = OrderedDict([("layer1", []), ("layer2", []), ("layer3", [])])
         train_features = OrderedDict([("layer1", []), ("layer2", []), ("layer3", [])])
         test_features = OrderedDict([("layer1", []), ("layer2", []), ("layer3", [])])
 
         # extract train set features
         train_feature_filepath = os.path.join(args.save_path, "temp_%s" % args.arch, "train_%s.pkl" % class_name)
         if not os.path.exists(train_feature_filepath):
-            for (x, _, _) in tqdm(train_dataloader, "| feature extraction | train | %s |" % class_name):
+            for data in tqdm(datamodule.train_dataloader(), "| feature extraction | train | %s |" % class_name):
+                x = data['image']
+            # for (x, _, _) in tqdm(train_dataloader, "| feature extraction | train | %s |" % class_name):
+                # i, data = next(enumerate(datamodule.train_dataloader()))
+                # print((x - data['image']).sum())
                 # model prediction
                 with torch.no_grad():
-                    _ = model(x.to(device))
+                    # _ = model(x.to(device))
                     batch_features = feature_extractor(x.to(device))
                 # get intermediate layer outputs
-                for k, v in zip(train_outputs.keys(), outputs):
-                    train_outputs[k].append(v.cpu().detach())
+                # for k, v in zip(train_outputs.keys(), outputs):
+                #     train_outputs[k].append(v.cpu().detach())
                 for layer, features in batch_features.items():
                     train_features[layer].append(features.detach().cpu())
 
-                outputs = []
-            for k, v in train_outputs.items():
-                train_outputs[k] = torch.cat(v, 0)
+            #     outputs = []
+            # for k, v in train_outputs.items():
+            #     train_outputs[k] = torch.cat(v, 0)
             for layer, feature_list in train_features.items():
                 train_features[layer] = torch.cat(tensors=feature_list, dim=0)
 
-            for layer in train_features.keys():
-                print(f"{layer} Feature Diff: {(train_outputs[layer] - train_features[layer]).sum()}")
+            # for layer in train_features.keys():
+            #     print(f"{layer} Feature Diff: {(train_outputs[layer] - train_features[layer]).sum()}")
 
             # Embedding concat
             # embedding_vectors = train_outputs["layer1"]
@@ -148,30 +178,40 @@ def main():
         test_imgs = []
 
         # extract test set features
-        for (x, y, mask) in tqdm(test_dataloader, "| feature extraction | test | %s |" % class_name):
+        for data in tqdm(datamodule.test_dataloader(), "| feature extraction | test | %s |" % class_name):
+            x, y, mask = data['image'], data['label'], data['mask']
+        # i = 0
+        # for (x, y, mask, path) in tqdm(test_dataloader, "| feature extraction | test | %s |" % class_name):
+        #     _, data = next(enumerate(datamodule.test_dataloader()))
+            # print(f"Image diff: {(x - data['image']).sum()}")
+            # print(f"Label diff: {(y - data['gt']).sum()}")
+            # print(f"Masks diff: {(mask - data['mask']).sum()}")
+            # print(f"My labels {data['gt']}")
+            # print(f"His labels: {y}")
+
             test_imgs.extend(x.cpu().detach().numpy())
             gt_list.extend(y.cpu().detach().numpy())
             gt_mask_list.extend(mask.cpu().detach().numpy())
             # model prediction
             with torch.no_grad():
-                _ = model(x.to(device))
+                # _ = model(x.to(device))
                 batch_features = feature_extractor(x.to(device))
             # get intermediate layer outputs
-            for k, v in zip(test_outputs.keys(), outputs):
-                test_outputs[k].append(v.cpu().detach())
+            # for k, v in zip(test_outputs.keys(), outputs):
+            #     test_outputs[k].append(v.cpu().detach())
             for layer, features in batch_features.items():
                 test_features[layer].append(features.detach().cpu())
             # initialize hook outputs
             outputs = []
 
         # print("Concatenating features...")
-        for k, v in test_outputs.items():
-            test_outputs[k] = torch.cat(v, 0)
+        # for k, v in test_outputs.items():
+        #     test_outputs[k] = torch.cat(v, 0)
         for layer, feature_list in test_features.items():
             test_features[layer] = torch.cat(tensors=feature_list, dim=0)
 
-        for layer in test_features.keys():
-            print(f"{layer} Test Feature Diff: {(test_outputs[layer] - test_features[layer]).sum()}")
+        # for layer in test_features.keys():
+        #     print(f"{layer} Test Feature Diff: {(test_outputs[layer] - test_features[layer]).sum()}")
 
         # Embedding concat
         # print("Creating feature embedding...")
@@ -342,3 +382,16 @@ def embedding_concat(x, y):
 
 if __name__ == "__main__":
     main()
+    # args = parse_args()
+    # class_name = 'leather'
+    # test_dataset = mvtec.MVTecDataset(args.data_path, class_name=class_name, is_train=False)
+    # test_dataloader = DataLoader(test_dataset, batch_size=32, pin_memory=True, shuffle=False)
+    # datamodule = MVTecDataModule(
+    #     dataset_path=os.path.join(args.data_path, class_name),
+    #     batch_size=32,
+    #     num_workers=36,
+    #     image_transforms=transform_x,
+    #     mask_transforms=transform_mask,
+    #     include_normal_images_in_val_set=True,
+    # )
+    # datamodule.setup()

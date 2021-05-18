@@ -44,7 +44,6 @@ class MVTec(VisionDataset):
         root: Union[Path, str],
         category: str,
         train: bool = True,
-        include_normal: bool = False,
         image_transforms: Optional[Callable] = None,
         mask_transforms: Optional[Callable] = None,
         loader: Optional[Callable[[str], Any]] = None,
@@ -52,13 +51,12 @@ class MVTec(VisionDataset):
     ) -> None:
         super().__init__(root, transform=image_transforms, target_transform=mask_transforms)
         self.root = Path(root) if isinstance(root, str) else root
-        self.category = self.root / category
+        self.category: Path = self.root / category
         self.split = "train" if train else "test"
         self.image_transforms = image_transforms if image_transforms is not None else get_image_transforms()
         self.mask_transforms = mask_transforms if mask_transforms is not None else get_mask_transforms()
         self.loader = loader if loader is not None else default_loader
         self.download = download
-        self.include_normal = include_normal
 
         if self.download:
             self._download()
@@ -92,20 +90,22 @@ class MVTec(VisionDataset):
         logger.info("Cleaning up the tar file")
         self.filename.unlink()
 
-    def make_dataset(self) -> List[Tuple[str, str]]:
-        labels = [label.name for label in (self.category / self.split).iterdir() if label.is_dir()]
+    def make_dataset(self) -> List[Tuple[str, str, int]]:
+        labels = sorted([label.name for label in (self.category / self.split).iterdir() if label.is_dir()])
         samples = []
-        for label in labels:
-            for filename in (self.category / self.split / label).glob("*.*"):
-                if label == "good":
-                    if self.split == "train" or self.include_normal:
-                        ground_truth = ""
-                    else:
-                        continue
-                else:
-                    ground_truth = str(self.category / "ground_truth" / label / (filename.stem + "_mask.png"))
+        label_index: int
 
-                sample = (str(filename), ground_truth)
+        for label in labels:
+            image_filenames = sorted([filename for filename in (self.category / self.split / label).glob("**/*.png")])
+            for image_filename in image_filenames:
+                if label == "good":
+                    label_index = 0
+                    mask_filename = ""
+                else:
+                    label_index = 1
+                    mask_filename = self.category / "ground_truth" / label / (image_filename.stem + "_mask.png")
+
+                sample = (str(image_filename), str(mask_filename), label_index)
                 samples.append(sample)
 
         return samples
@@ -114,24 +114,38 @@ class MVTec(VisionDataset):
         return len(self.samples)
 
     def __getitem__(self, index: int) -> Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]:
-        image_path, mask_path = self.samples[index]
-        image = self.loader(image_path)
-        mask = self.loader(mask_path) if mask_path != "" else None
+        image_path, mask_path, label_index = self.samples[index]
 
+        # image = self.loader(image_path)
+        image = Image.open(image_path).convert("RGB")
         image_tensor = self.image_transforms(image)
 
         if self.split == "train":
-            # sample = image_tensor
-            sample = {'image': image_tensor}
+            sample = {"image": image_tensor}
         else:
-            if mask is None:
-                # Create empty mask for good test samples.
+            if label_index == 0:
                 mask = Image.new(mode="1", size=image.size)
-
-            mask = mask.convert(mode="1")
+            else:
+                mask = Image.open(mask_path).convert(mode="1")
+                # mask = self.loader(mask_path)
+                # mask = mask.convert(mode="1")
+            # mask = self.loader(mask_path) if class_index == 1 else Image.new(mode="1", size=image.size)
             mask_tensor = self.mask_transforms(mask).to(torch.uint8)
+        # else:
+        #     if mask is None:
+        #         # Create empty mask for good test samples.
+        #         mask = Image.new(mode="1", size=image.size)
+        #
+        #     mask = mask.convert(mode="1")
+        #     mask_tensor = self.mask_transforms(mask).to(torch.uint8)
             # sample = (image_tensor, mask_tensor)
-            sample = {"image_path": image_path, "mask_path": mask_path, "image": image_tensor, "mask": mask_tensor}
+            sample = {
+                "image_path": image_path,
+                "mask_path": mask_path,
+                "image": image_tensor,
+                "label": label_index,
+                "mask": mask_tensor,
+            }
 
         return sample
 
@@ -196,7 +210,7 @@ class MVTecDataModule(LightningDataModule):
         )
 
     def train_dataloader(self) -> DataLoader:
-        return DataLoader(self.train_data, shuffle=True, batch_size=self.batch_size, num_workers=self.num_workers)
+        return DataLoader(self.train_data, shuffle=False, batch_size=self.batch_size, num_workers=self.num_workers)
 
     def val_dataloader(self) -> DataLoader:
         # TODO: Handle batch_size > 1
@@ -204,4 +218,4 @@ class MVTecDataModule(LightningDataModule):
 
     def test_dataloader(self) -> DataLoader:
         # TODO: Handle batch_size > 1
-        return DataLoader(self.val_data, shuffle=False, batch_size=1, num_workers=self.num_workers)
+        return DataLoader(self.val_data, shuffle=False, batch_size=32, num_workers=self.num_workers)
