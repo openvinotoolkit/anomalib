@@ -204,7 +204,7 @@ class MVTecDataModule(LightningDataModule):
             root=self.root,
             category=self.category,
             train=False,
-            include_normal=self.include_normal,
+            # include_normal=self.include_normal,
             image_transforms=self.image_transforms,
             mask_transforms=self.mask_transforms,
         )

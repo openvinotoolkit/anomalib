@@ -1,8 +1,12 @@
 import argparse
+import torchvision
+import pytorch_lightning as pl
 import os
 import pickle
 import random
 from random import sample
+from torch import Tensor
+from typing import Dict, List
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -11,6 +15,7 @@ import torch
 import torch.nn.functional as F
 from torchvision.utils import save_image
 from collections import OrderedDict
+
 # import tarfile
 from PIL import Image
 from scipy.ndimage import gaussian_filter
@@ -55,6 +60,174 @@ def parse_args():
     return parser.parse_args()
 
 
+class MultiVariateGaussian(torch.nn.Module):
+    @staticmethod
+    def _cov(x, rowvar=False, bias=False, ddof=None, aweights=None):
+        """Estimates covariance matrix like numpy.cov"""
+        # ensure at least 2D
+        if x.dim() == 1:
+            x = x.view(-1, 1)
+
+        # treat each column as a data point, each row as a variable
+        if rowvar and x.shape[0] != 1:
+            x = x.t()
+
+        if ddof is None:
+            if bias == 0:
+                ddof = 1
+            else:
+                ddof = 0
+
+        w = aweights
+        if w is not None:
+            if not torch.is_tensor(w):
+                w = torch.tensor(w, dtype=torch.float)
+            w_sum = torch.sum(w)
+            avg = torch.sum(x * (w / w_sum)[:, None], 0)
+        else:
+            avg = torch.mean(x, 0)
+
+        # Determine the normalization
+        if w is None:
+            fact = x.shape[0] - ddof
+        elif ddof == 0:
+            fact = w_sum
+        elif aweights is None:
+            fact = w_sum - ddof
+        else:
+            fact = w_sum - ddof * torch.sum(w * w) / w_sum
+
+        xm = x.sub(avg.expand_as(x))
+
+        if w is None:
+            X_T = xm.t()
+        else:
+            X_T = torch.mm(torch.diag(w), xm).t()
+
+        c = torch.mm(X_T, xm)
+        c = c / fact
+
+        return c.squeeze()
+
+    def forward(self, embedding: torch.Tensor):
+        """
+        Calculate multivariate Gaussian distribution
+        :param embedding:
+        :return:
+        """
+        device = embedding.device
+
+        B, C, H, W = embedding.size()
+        embedding_vectors = embedding.view(B, C, H * W)
+        mean = torch.mean(embedding_vectors, dim=0)
+        # mean = torch.mean(embedding_vectors, dim=0).numpy()
+        cov = torch.zeros(size=(C, C, H * W), device=device)
+        # cov = torch.zeros(C, C, H * W).numpy()
+        I = torch.eye(C).to(device)
+        # I = np.identity(C)
+        for i in range(H * W):
+            # cov[:, :, i] = LedoitWolf().fit(embedding_vectors[:, :, i].numpy()).covariance_
+            cov[:, :, i] = self._cov(embedding_vectors[:, :, i], rowvar=False) + 0.01 * I
+            # cov[:, :, i] = np.cov(embedding_vectors[:, :, i].numpy(), rowvar=False) + 0.01 * I
+
+        return [mean, cov]
+
+    def fit(self, embedding: Tensor):
+        return self.forward(embedding)
+
+
+class Padim(torch.nn.Module):
+    def __init__(self, backbone: str, layers: List[str]):
+        super().__init__()
+        self.backbone = getattr(torchvision.models, backbone)
+        self.layers = layers
+        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
+        self.features: Dict[str, List[Tensor]] = {layer: [] for layer in layers}
+        self.gaussian = MultiVariateGaussian()
+
+    def forward(self, x):
+        return self.extract_features(x)
+
+    def extract_features(self, x: Tensor) -> Tensor:
+        with torch.no_grad():
+            features = self.feature_extractor(x)
+
+        return features
+
+    # def append_features(self, batch_features: Dict[str, Tensor]):
+    def append_features(self, batch_features):
+        for layer, features in batch_features.items():
+            self.features[layer].append(features.detach())
+
+        # return self.features
+
+    def concat_features(self):
+        concatenated_features: Dict[str, Tensor] = {}
+        for layer, feature_list in self.features.items():
+            concatenated_features[layer] = torch.cat(tensors=feature_list, dim=0)
+
+        return concatenated_features
+
+    @staticmethod
+    def generate_embedding(features):
+        def __generate_patch_embedding(x, y):
+            device = x.device
+            batch_x, channel_x, height_x, width_x = x.size()
+            _, channel_y, height_y, width_y = y.size()
+            stride = height_x // height_y
+            x = F.unfold(x, kernel_size=stride, stride=stride)
+            x = x.view(batch_x, channel_x, -1, height_y, width_y)
+            z = torch.zeros(size=(batch_x, channel_x + channel_y, x.size(2), height_y, width_y), device=device)
+
+            for i in range(x.size(2)):
+                z[:, :, i, :, :] = torch.cat((x[:, :, i, :, :], y), 1)
+            z = z.view(batch_x, -1, height_y * width_y)
+            z = F.fold(z, kernel_size=stride, output_size=(height_x, width_x), stride=stride)
+
+            return z
+
+        embedding_vectors = features["layer1"]
+        for layer_name in ["layer2", "layer3"]:
+            embedding_vectors = __generate_patch_embedding(embedding_vectors, features[layer_name])
+        return embedding_vectors
+
+    @staticmethod
+    def reduce_embedding_dimension(embedding, idx):
+        # randomly select d dimension
+        idx = idx.to(embedding.device)
+        embedding = torch.index_select(embedding, 1, idx)
+
+        return embedding
+
+
+class AnomalyMapGenerator:
+    def __init__(self, image_size: int = 224):
+        self.image_size = image_size
+
+    def compute_anomaly_map(self, outputs, embedding):
+        # calculate distance matrix
+        embedding_vectors = embedding.cpu()
+        B, C, H, W = embedding_vectors.size()
+        embedding_vectors = embedding_vectors.view(B, C, H * W).numpy()
+        dist_list = []
+        for i in range(H * W):
+            mean = outputs[0][:, i].cpu()
+            conv_inv = np.linalg.inv(outputs[1][:, :, i].cpu())
+            dist = [mahalanobis(sample[:, i], mean, conv_inv) for sample in embedding_vectors]
+            dist_list.append(dist)
+
+        dist_list = np.array(dist_list).transpose(1, 0).reshape(B, H, W)
+
+        # upsample
+        dist_list = torch.tensor(dist_list)
+        score_map = (
+            F.interpolate(dist_list.unsqueeze(1), size=self.image_size, mode="bilinear", align_corners=False)
+            .squeeze()
+            .numpy()
+        )
+        return score_map
+
+
 def main():
     args = parse_args()
 
@@ -67,27 +240,16 @@ def main():
         model = wide_resnet50_2(pretrained=True, progress=True)
         t_d = 1792
         d = 550
-    feature_extractor = FeatureExtractor(backbone=model, layers=["layer1", "layer2", "layer3"])
-    feature_extractor.to(device)
-    feature_extractor.eval()
-    # model.to(device)
-    # model.eval()
+
+    padim = Padim(backbone=args.arch, layers=["layer1", "layer2", "layer3"])
+    padim.to(device).eval()
+
     random.seed(1024)
     torch.manual_seed(1024)
     if use_cuda:
         torch.cuda.manual_seed_all(1024)
 
     idx = torch.tensor(sample(range(0, t_d), d))
-
-    # # set model's intermediate outputs
-    # outputs = []
-    #
-    # def hook(module, input, output):
-    #     outputs.append(output)
-    #
-    # model.layer1[-1].register_forward_hook(hook)
-    # model.layer2[-1].register_forward_hook(hook)
-    # model.layer3[-1].register_forward_hook(hook)
 
     os.makedirs(os.path.join(args.save_path, "temp_%s" % args.arch), exist_ok=True)
     fig, ax = plt.subplots(1, 2, figsize=(20, 10))
@@ -99,10 +261,6 @@ def main():
 
     for class_name in mvtec.CLASS_NAMES:
 
-        train_dataset = mvtec.MVTecDataset(args.data_path, class_name=class_name, is_train=True)
-        train_dataloader = DataLoader(train_dataset, batch_size=32, pin_memory=True, shuffle=False)
-        test_dataset = mvtec.MVTecDataset(args.data_path, class_name=class_name, is_train=False)
-        test_dataloader = DataLoader(test_dataset, batch_size=32, pin_memory=True, shuffle=False)
         datamodule = MVTecDataModule(
             dataset_path=os.path.join(args.data_path, class_name),
             batch_size=32,
@@ -112,66 +270,35 @@ def main():
             include_normal_images_in_val_set=True,
         )
         datamodule.setup()
-        # train_outputs = OrderedDict([("layer1", []), ("layer2", []), ("layer3", [])])
-        # test_outputs = OrderedDict([("layer1", []), ("layer2", []), ("layer3", [])])
-        train_features = OrderedDict([("layer1", []), ("layer2", []), ("layer3", [])])
-        test_features = OrderedDict([("layer1", []), ("layer2", []), ("layer3", [])])
 
         # extract train set features
         train_feature_filepath = os.path.join(args.save_path, "temp_%s" % args.arch, "train_%s.pkl" % class_name)
-        if not os.path.exists(train_feature_filepath):
-            for data in tqdm(datamodule.train_dataloader(), "| feature extraction | train | %s |" % class_name):
-                x = data['image']
-            # for (x, _, _) in tqdm(train_dataloader, "| feature extraction | train | %s |" % class_name):
-                # i, data = next(enumerate(datamodule.train_dataloader()))
-                # print((x - data['image']).sum())
-                # model prediction
-                with torch.no_grad():
-                    # _ = model(x.to(device))
-                    batch_features = feature_extractor(x.to(device))
-                # get intermediate layer outputs
-                # for k, v in zip(train_outputs.keys(), outputs):
-                #     train_outputs[k].append(v.cpu().detach())
-                for layer, features in batch_features.items():
-                    train_features[layer].append(features.detach().cpu())
+        for data in tqdm(datamodule.train_dataloader(), "| feature extraction | train | %s |" % class_name):
+            x = data["image"].to(device)
 
-            #     outputs = []
-            # for k, v in train_outputs.items():
-            #     train_outputs[k] = torch.cat(v, 0)
-            for layer, feature_list in train_features.items():
-                train_features[layer] = torch.cat(tensors=feature_list, dim=0)
+            batch_features = padim(x)
+            padim.append_features(batch_features)
 
-            # for layer in train_features.keys():
-            #     print(f"{layer} Feature Diff: {(train_outputs[layer] - train_features[layer]).sum()}")
+        train_features = padim.concat_features()
 
-            # Embedding concat
-            # embedding_vectors = train_outputs["layer1"]
-            # for layer_name in ["layer2", "layer3"]:
-            #     embedding_vectors = embedding_concat(embedding_vectors, train_outputs[layer_name])
-            # Embedding concat
-            embedding_vectors = train_features["layer1"]
-            for layer_name in ["layer2", "layer3"]:
-                embedding_vectors = embedding_concat(embedding_vectors, train_features[layer_name])
+        embedding = padim.generate_embedding(train_features)
+        embedding = padim.reduce_embedding_dimension(embedding, idx)
 
-            # randomly select d dimension
-            embedding_vectors = torch.index_select(embedding_vectors, 1, idx)
-            # calculate multivariate Gaussian distribution
-            B, C, H, W = embedding_vectors.size()
-            embedding_vectors = embedding_vectors.view(B, C, H * W)
-            mean = torch.mean(embedding_vectors, dim=0).numpy()
-            cov = torch.zeros(C, C, H * W).numpy()
-            I = np.identity(C)
-            for i in range(H * W):
-                # cov[:, :, i] = LedoitWolf().fit(embedding_vectors[:, :, i].numpy()).covariance_
-                cov[:, :, i] = np.cov(embedding_vectors[:, :, i].numpy(), rowvar=False) + 0.01 * I
-            # save learned distribution
-            train_outputs = [mean, cov]
-            with open(train_feature_filepath, "wb") as f:
-                pickle.dump(train_outputs, f)
-        else:
-            print("load train set feature from: %s" % train_feature_filepath)
-            with open(train_feature_filepath, "rb") as f:
-                train_outputs = pickle.load(f)
+        mean, cov = padim.gaussian.fit(embedding)
+
+        # save learned distribution
+        train_outputs = [mean, cov]
+        with open(train_feature_filepath, "wb") as f:
+            pickle.dump(train_outputs, f)
+
+        print("load train set feature from: %s" % train_feature_filepath)
+        with open(train_feature_filepath, "rb") as f:
+            train_outputs = pickle.load(f)
+
+        padim = Padim(backbone=args.arch, layers=["layer1", "layer2", "layer3"])
+        padim.to(device).eval()
+
+        anomaly_map_generator = AnomalyMapGenerator()
 
         gt_list = []
         gt_mask_list = []
@@ -179,88 +306,53 @@ def main():
 
         # extract test set features
         for data in tqdm(datamodule.test_dataloader(), "| feature extraction | test | %s |" % class_name):
-            x, y, mask = data['image'], data['label'], data['mask']
-        # i = 0
-        # for (x, y, mask, path) in tqdm(test_dataloader, "| feature extraction | test | %s |" % class_name):
-        #     _, data = next(enumerate(datamodule.test_dataloader()))
-            # print(f"Image diff: {(x - data['image']).sum()}")
-            # print(f"Label diff: {(y - data['gt']).sum()}")
-            # print(f"Masks diff: {(mask - data['mask']).sum()}")
-            # print(f"My labels {data['gt']}")
-            # print(f"His labels: {y}")
+            x, y, mask = data["image"].to(device), data["label"].to(device), data["mask"].to(device)
 
             test_imgs.extend(x.cpu().detach().numpy())
             gt_list.extend(y.cpu().detach().numpy())
             gt_mask_list.extend(mask.cpu().detach().numpy())
-            # model prediction
-            with torch.no_grad():
-                # _ = model(x.to(device))
-                batch_features = feature_extractor(x.to(device))
-            # get intermediate layer outputs
-            # for k, v in zip(test_outputs.keys(), outputs):
-            #     test_outputs[k].append(v.cpu().detach())
-            for layer, features in batch_features.items():
-                test_features[layer].append(features.detach().cpu())
-            # initialize hook outputs
-            outputs = []
 
-        # print("Concatenating features...")
-        # for k, v in test_outputs.items():
-        #     test_outputs[k] = torch.cat(v, 0)
-        for layer, feature_list in test_features.items():
-            test_features[layer] = torch.cat(tensors=feature_list, dim=0)
+            batch_features = padim(x)
+            padim.append_features(batch_features)
 
-        # for layer in test_features.keys():
-        #     print(f"{layer} Test Feature Diff: {(test_outputs[layer] - test_features[layer]).sum()}")
+        test_features = padim.concat_features()
 
-        # Embedding concat
-        # print("Creating feature embedding...")
-        # embedding_vectors = test_outputs["layer1"]
-        # for layer_name in ["layer2", "layer3"]:
-        #     embedding_vectors = embedding_concat(embedding_vectors, test_outputs[layer_name])
-        embedding_vectors = test_features["layer1"]
-        for layer_name in ["layer2", "layer3"]:
-            embedding_vectors = embedding_concat(embedding_vectors, test_features[layer_name])
+        embedding = padim.generate_embedding(test_features)
+        embedding = padim.reduce_embedding_dimension(embedding, idx)
 
-        # randomly select d dimension
-        # print("Reducing the dimensionality")
-        embedding_vectors = torch.index_select(embedding_vectors, 1, idx)
+        score_map = anomaly_map_generator.compute_anomaly_map(train_outputs, embedding)
 
-        # calculate distance matrix
-        # print("Calculating the distance matrix")
-        B, C, H, W = embedding_vectors.size()
-        embedding_vectors = embedding_vectors.view(B, C, H * W).numpy()
-        dist_list = []
-        for i in range(H * W):
-            mean = train_outputs[0][:, i]
-            conv_inv = np.linalg.inv(train_outputs[1][:, :, i])
-            dist = [mahalanobis(sample[:, i], mean, conv_inv) for sample in embedding_vectors]
-            dist_list.append(dist)
-
-        dist_list = np.array(dist_list).transpose(1, 0).reshape(B, H, W)
-
-        # upsample
-        # print("Upsampling distance list")
-        dist_list = torch.tensor(dist_list)
-        score_map = (
-            F.interpolate(dist_list.unsqueeze(1), size=x.size(2), mode="bilinear", align_corners=False)
-            .squeeze()
-            .numpy()
-        )
+        # # calculate distance matrix
+        # embedding_vectors = embedding.cpu()
+        # B, C, H, W = embedding_vectors.size()
+        # embedding_vectors = embedding_vectors.view(B, C, H * W).numpy()
+        # dist_list = []
+        # for i in range(H * W):
+        #     mean = train_outputs[0][:, i].cpu()
+        #     conv_inv = np.linalg.inv(train_outputs[1][:, :, i].cpu())
+        #     dist = [mahalanobis(sample[:, i], mean, conv_inv) for sample in embedding_vectors]
+        #     dist_list.append(dist)
+        #
+        # dist_list = np.array(dist_list).transpose(1, 0).reshape(B, H, W)
+        #
+        # # upsample
+        # dist_list = torch.tensor(dist_list)
+        # score_map = (
+        #     F.interpolate(dist_list.unsqueeze(1), size=x.size(2), mode="bilinear", align_corners=False)
+        #     .squeeze()
+        #     .numpy()
+        # )
 
         # apply gaussian smoothing on the score map
-        # print("Applying gaussian smoothin to the score map")
         for i in range(score_map.shape[0]):
             score_map[i] = gaussian_filter(score_map[i], sigma=4)
 
         # Normalization
-        # print("Normalizign the score map")
         max_score = score_map.max()
         min_score = score_map.min()
         scores = (score_map - min_score) / (max_score - min_score)
 
         # calculate image-level ROC AUC score
-        # print("Calculating the image-level AUC score.")
         img_scores = scores.reshape(scores.shape[0], -1).max(axis=1)
         gt_list = np.asarray(gt_list)
         fpr, tpr, _ = roc_curve(gt_list, img_scores)
@@ -270,7 +362,6 @@ def main():
         fig_img_rocauc.plot(fpr, tpr, label="%s img_ROCAUC: %.3f" % (class_name, img_roc_auc))
 
         # get optimal threshold
-        # print("Adjusting the threshold...")
         gt_mask = np.asarray(gt_mask_list)
         precision, recall, thresholds = precision_recall_curve(gt_mask.flatten(), scores.flatten())
         a = 2 * precision * recall
@@ -279,13 +370,11 @@ def main():
         threshold = thresholds[np.argmax(f1)]
 
         # calculate per-pixel level ROCAUC
-        # print("Calculating per-pixel level AUC")
         fpr, tpr, _ = roc_curve(gt_mask.flatten(), scores.flatten())
         per_pixel_rocauc = roc_auc_score(gt_mask.flatten(), scores.flatten())
         total_pixel_roc_auc.append(per_pixel_rocauc)
         print("pixel ROCAUC: %.3f" % (per_pixel_rocauc))
 
-        # print("Saving test image outputs.")
         fig_pixel_rocauc.plot(fpr, tpr, label="%s ROCAUC: %.3f" % (class_name, per_pixel_rocauc))
         save_dir = args.save_path + "/" + f"pictures_{args.arch}"
         os.makedirs(save_dir, exist_ok=True)
@@ -301,6 +390,12 @@ def main():
 
     fig.tight_layout()
     fig.savefig(os.path.join(args.save_path, "roc_curve.png"), dpi=100)
+
+
+def torch_mahalanobis(u, v, cov):
+    delta = u - v
+    m = torch.dot(delta, torch.matmul(torch.inverse(cov), delta))
+    return torch.sqrt(m)
 
 
 def plot_fig(test_img, scores, gts, threshold, save_dir, class_name):
@@ -365,33 +460,5 @@ def denormalization(x):
     return x
 
 
-def embedding_concat(x, y):
-    B, C1, H1, W1 = x.size()
-    _, C2, H2, W2 = y.size()
-    s = int(H1 / H2)
-    x = F.unfold(x, kernel_size=s, dilation=1, stride=s)
-    x = x.view(B, C1, -1, H2, W2)
-    z = torch.zeros(B, C1 + C2, x.size(2), H2, W2)
-    for i in range(x.size(2)):
-        z[:, :, i, :, :] = torch.cat((x[:, :, i, :, :], y), 1)
-    z = z.view(B, -1, H2 * W2)
-    z = F.fold(z, kernel_size=s, output_size=(H1, W1), stride=s)
-
-    return z
-
-
 if __name__ == "__main__":
     main()
-    # args = parse_args()
-    # class_name = 'leather'
-    # test_dataset = mvtec.MVTecDataset(args.data_path, class_name=class_name, is_train=False)
-    # test_dataloader = DataLoader(test_dataset, batch_size=32, pin_memory=True, shuffle=False)
-    # datamodule = MVTecDataModule(
-    #     dataset_path=os.path.join(args.data_path, class_name),
-    #     batch_size=32,
-    #     num_workers=36,
-    #     image_transforms=transform_x,
-    #     mask_transforms=transform_mask,
-    #     include_normal_images_in_val_set=True,
-    # )
-    # datamodule.setup()
