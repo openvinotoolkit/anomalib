@@ -7,6 +7,7 @@ import random
 from random import sample
 from torch import Tensor
 from typing import Dict, List
+import cv2
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -201,31 +202,94 @@ class Padim(torch.nn.Module):
 
 
 class AnomalyMapGenerator:
-    def __init__(self, image_size: int = 224):
+    def __init__(self, image_size: int = 224, sigma: int = 4, kernel_size: int = 4):
         self.image_size = image_size
+        self.sigma = sigma
+        self.kernel_size = kernel_size
 
-    def compute_anomaly_map(self, outputs, embedding):
+    def compute_distance(self, embedding, outputs):
         # calculate distance matrix
         embedding_vectors = embedding.cpu()
-        B, C, H, W = embedding_vectors.size()
-        embedding_vectors = embedding_vectors.view(B, C, H * W).numpy()
+        batch, channel, height, width = embedding_vectors.size()
+        embedding_vectors = embedding_vectors.view(batch, channel, height * width).numpy()
         dist_list = []
-        for i in range(H * W):
+        for i in range(height * width):
             mean = outputs[0][:, i].cpu()
             conv_inv = np.linalg.inv(outputs[1][:, :, i].cpu())
             dist = [mahalanobis(sample[:, i], mean, conv_inv) for sample in embedding_vectors]
             dist_list.append(dist)
 
-        dist_list = np.array(dist_list).transpose(1, 0).reshape(B, H, W)
-
-        # upsample
+        dist_list = np.array(dist_list).transpose(1, 0).reshape(batch, height, width)
         dist_list = torch.tensor(dist_list)
+
+        return dist_list
+
+    def upsample(self, dist_list):
         score_map = (
             F.interpolate(dist_list.unsqueeze(1), size=self.image_size, mode="bilinear", align_corners=False)
             .squeeze()
             .numpy()
         )
         return score_map
+
+    def smooth_anomaly_map(self, anomaly_map):
+        if isinstance(anomaly_map, Tensor):
+            anomaly_map = anomaly_map.cpu().numpy()
+
+        # apply gaussian smoothing on the score map
+        for i in range(anomaly_map.shape[0]):
+            anomaly_map[i] = gaussian_filter(anomaly_map[i], sigma=self.sigma)
+
+        return anomaly_map
+
+    @staticmethod
+    def normalize(anomaly_map):
+        # Normalization
+        max_score = anomaly_map.max()
+        min_score = anomaly_map.min()
+        scores = (anomaly_map - min_score) / (max_score - min_score)
+        return scores
+
+    def compute_anomaly_map(self, embedding, stats):
+        score_map = self.compute_distance(embedding, stats)
+        score_map = self.upsample(score_map)
+        score_map = self.smooth_anomaly_map(score_map)
+        score_map = self.normalize(score_map)
+        return score_map
+
+    @staticmethod
+    def compute_heatmap(anomaly_map: np.ndarray) -> np.ndarray:
+        anomaly_map = (anomaly_map - anomaly_map.min()) / np.ptp(anomaly_map)
+        anomaly_map = anomaly_map * 255
+        anomaly_map = anomaly_map.astype(np.uint8)
+
+        heatmap = cv2.applyColorMap(anomaly_map, cv2.COLORMAP_JET)
+        return heatmap
+
+    @staticmethod
+    def compute_adaptive_threshold(true_masks, anomaly_map):
+        # get optimal threshold
+        precision, recall, thresholds = precision_recall_curve(true_masks.flatten(), anomaly_map.flatten())
+        a = 2 * precision * recall
+        b = precision + recall
+        f1 = np.divide(a, b, out=np.zeros_like(a), where=b != 0)
+        threshold = thresholds[np.argmax(f1)]
+
+        return threshold
+
+    def compute_mask(self, anomaly_map: np.ndarray, threshold: float) -> np.ndarray:
+        mask = np.zeros_like(anomaly_map).astype(np.uint8)
+        mask[anomaly_map > threshold] = 1
+
+        # anomaly_map[anomaly_map > threshold] = 1
+        # anomaly_map[anomaly_map <= threshold] = 0
+
+        kernel = morphology.disk(self.kernel_size)
+        mask = morphology.opening(mask, kernel)
+
+        mask *= 255
+
+        return mask
 
 
 def main():
@@ -300,17 +364,19 @@ def main():
 
         anomaly_map_generator = AnomalyMapGenerator()
 
-        gt_list = []
-        gt_mask_list = []
+        true_labels = []
+        true_masks = []
         test_imgs = []
+        image_filenames = []
 
         # extract test set features
         for data in tqdm(datamodule.test_dataloader(), "| feature extraction | test | %s |" % class_name):
             x, y, mask = data["image"].to(device), data["label"].to(device), data["mask"].to(device)
 
+            image_filenames.extend(data['image_path'])
             test_imgs.extend(x.cpu().detach().numpy())
-            gt_list.extend(y.cpu().detach().numpy())
-            gt_mask_list.extend(mask.cpu().detach().numpy())
+            true_labels.extend(y.cpu().detach().numpy())
+            true_masks.extend(mask.cpu().detach().numpy())
 
             batch_features = padim(x)
             padim.append_features(batch_features)
@@ -320,76 +386,81 @@ def main():
         embedding = padim.generate_embedding(test_features)
         embedding = padim.reduce_embedding_dimension(embedding, idx)
 
-        score_map = anomaly_map_generator.compute_anomaly_map(train_outputs, embedding)
+        anomaly_maps = anomaly_map_generator.compute_anomaly_map(embedding, train_outputs)
 
-        # # calculate distance matrix
-        # embedding_vectors = embedding.cpu()
-        # B, C, H, W = embedding_vectors.size()
-        # embedding_vectors = embedding_vectors.view(B, C, H * W).numpy()
-        # dist_list = []
-        # for i in range(H * W):
-        #     mean = train_outputs[0][:, i].cpu()
-        #     conv_inv = np.linalg.inv(train_outputs[1][:, :, i].cpu())
-        #     dist = [mahalanobis(sample[:, i], mean, conv_inv) for sample in embedding_vectors]
-        #     dist_list.append(dist)
-        #
-        # dist_list = np.array(dist_list).transpose(1, 0).reshape(B, H, W)
-        #
-        # # upsample
-        # dist_list = torch.tensor(dist_list)
-        # score_map = (
-        #     F.interpolate(dist_list.unsqueeze(1), size=x.size(2), mode="bilinear", align_corners=False)
-        #     .squeeze()
-        #     .numpy()
-        # )
+        # Compute performance.
+        pred_labels = anomaly_maps.reshape(anomaly_maps.shape[0], -1).max(axis=1)
+        true_labels = np.asarray(true_labels)
+        true_masks = np.asarray(true_masks)
 
-        # apply gaussian smoothing on the score map
-        for i in range(score_map.shape[0]):
-            score_map[i] = gaussian_filter(score_map[i], sigma=4)
+        image_roc_auc = roc_auc_score(true_labels, pred_labels)
+        pixel_roc_auc = roc_auc_score(true_masks.flatten(), anomaly_maps.flatten())
+        print(f"Image-Level ROC AUC: {image_roc_auc:.3f}\n Pixel-Level ROC AUC: {pixel_roc_auc:.3f}")
 
-        # Normalization
-        max_score = score_map.max()
-        min_score = score_map.min()
-        scores = (score_map - min_score) / (max_score - min_score)
-
-        # calculate image-level ROC AUC score
-        img_scores = scores.reshape(scores.shape[0], -1).max(axis=1)
-        gt_list = np.asarray(gt_list)
-        fpr, tpr, _ = roc_curve(gt_list, img_scores)
-        img_roc_auc = roc_auc_score(gt_list, img_scores)
-        total_roc_auc.append(img_roc_auc)
-        print("image ROCAUC: %.3f" % (img_roc_auc))
-        fig_img_rocauc.plot(fpr, tpr, label="%s img_ROCAUC: %.3f" % (class_name, img_roc_auc))
-
-        # get optimal threshold
-        gt_mask = np.asarray(gt_mask_list)
-        precision, recall, thresholds = precision_recall_curve(gt_mask.flatten(), scores.flatten())
-        a = 2 * precision * recall
-        b = precision + recall
-        f1 = np.divide(a, b, out=np.zeros_like(a), where=b != 0)
-        threshold = thresholds[np.argmax(f1)]
-
-        # calculate per-pixel level ROCAUC
-        fpr, tpr, _ = roc_curve(gt_mask.flatten(), scores.flatten())
-        per_pixel_rocauc = roc_auc_score(gt_mask.flatten(), scores.flatten())
-        total_pixel_roc_auc.append(per_pixel_rocauc)
-        print("pixel ROCAUC: %.3f" % (per_pixel_rocauc))
-
-        fig_pixel_rocauc.plot(fpr, tpr, label="%s ROCAUC: %.3f" % (class_name, per_pixel_rocauc))
         save_dir = args.save_path + "/" + f"pictures_{args.arch}"
         os.makedirs(save_dir, exist_ok=True)
-        plot_fig(test_imgs, scores, gt_mask_list, threshold, save_dir, class_name)
+        threshold = anomaly_map_generator.compute_adaptive_threshold(true_masks, anomaly_maps)
 
-    print("Average ROCAUC: %.3f" % np.mean(total_roc_auc))
-    fig_img_rocauc.title.set_text("Average image ROCAUC: %.3f" % np.mean(total_roc_auc))
-    fig_img_rocauc.legend(loc="lower right")
+        vmax = anomaly_maps.max() * 255.0
+        vmin = anomaly_maps.min() * 255.0
+        for i, (filename, img, true_mask, anomaly_map) in enumerate(zip(image_filenames, test_imgs, true_masks, anomaly_maps)):
+            img = denormalization(img)
+            true_mask = true_mask.transpose(1, 2, 0).squeeze()
+            heat_map = anomaly_map * 255
 
-    print("Average pixel ROCUAC: %.3f" % np.mean(total_pixel_roc_auc))
-    fig_pixel_rocauc.title.set_text("Average pixel ROCAUC: %.3f" % np.mean(total_pixel_roc_auc))
-    fig_pixel_rocauc.legend(loc="lower right")
+            pred_mask = anomaly_map_generator.compute_mask(anomaly_map=anomaly_map, threshold=threshold)
 
-    fig.tight_layout()
-    fig.savefig(os.path.join(args.save_path, "roc_curve.png"), dpi=100)
+            vis_img = mark_boundaries(img, pred_mask, color=(1, 0, 0), mode="thick")
+            fig_img, ax_img = plt.subplots(1, 5, figsize=(12, 3))
+            fig_img.subplots_adjust(right=0.9)
+            norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
+            for ax_i in ax_img:
+                ax_i.axes.xaxis.set_visible(False)
+                ax_i.axes.yaxis.set_visible(False)
+            ax_img[0].imshow(img)
+            ax_img[0].title.set_text("Image")
+            ax_img[1].imshow(true_mask, cmap="gray")
+            ax_img[1].title.set_text("GroundTruth")
+            ax = ax_img[2].imshow(heat_map, cmap="jet", norm=norm)
+            ax_img[2].imshow(img, cmap="gray", interpolation="none")
+            ax_img[2].imshow(heat_map, cmap="jet", alpha=0.5, interpolation="none")
+            ax_img[2].title.set_text("Predicted heat map")
+            ax_img[3].imshow(pred_mask, cmap="gray")
+            ax_img[3].title.set_text("Predicted mask")
+            ax_img[4].imshow(vis_img)
+            ax_img[4].title.set_text("Segmentation result")
+            left = 0.92
+            bottom = 0.15
+            width = 0.015
+            height = 1 - 2 * bottom
+            rect = [left, bottom, width, height]
+            cbar_ax = fig_img.add_axes(rect)
+            cb = plt.colorbar(ax, shrink=0.6, cax=cbar_ax, fraction=0.046)
+            cb.ax.tick_params(labelsize=8)
+            font = {
+                "family": "serif",
+                "color": "black",
+                "weight": "normal",
+                "size": 8,
+            }
+            cb.set_label("Anomaly Score", fontdict=font)
+
+            # fig_img.savefig(os.path.join(save_dir, f"{class_name}_{filename}"), dpi=100)
+            fig_img.savefig(os.path.join(save_dir, class_name + "_{}".format(i)), dpi=100)
+            plt.close()
+
+
+
+    # print("Average ROCAUC: %.3f" % np.mean(total_roc_auc))
+    # fig_img_rocauc.title.set_text("Average image ROCAUC: %.3f" % np.mean(total_roc_auc))
+    # fig_img_rocauc.legend(loc="lower right")
+
+    # print("Average pixel ROCUAC: %.3f" % np.mean(total_pixel_roc_auc))
+    # fig_pixel_rocauc.title.set_text("Average pixel ROCAUC: %.3f" % np.mean(total_pixel_roc_auc))
+    # fig_pixel_rocauc.legend(loc="lower right")
+
+    # fig.tight_layout()
+    # fig.savefig(os.path.join(args.save_path, "roc_curve.png"), dpi=100)
 
 
 def torch_mahalanobis(u, v, cov):
@@ -398,22 +469,24 @@ def torch_mahalanobis(u, v, cov):
     return torch.sqrt(m)
 
 
-def plot_fig(test_img, scores, gts, threshold, save_dir, class_name):
-    num = len(scores)
-    vmax = scores.max() * 255.0
-    vmin = scores.min() * 255.0
+def plot_fig(test_img, pred_masks, true_masks, threshold, save_dir, class_name):
+    num = len(pred_masks)
+    vmax = pred_masks.max() * 255.0
+    vmin = pred_masks.min() * 255.0
     for i in range(num):
         img = test_img[i]
         img = denormalization(img)
-        gt = gts[i].transpose(1, 2, 0).squeeze()
-        heat_map = scores[i] * 255
-        mask = scores[i]
-        mask[mask > threshold] = 1
-        mask[mask <= threshold] = 0
+        true_mask = true_masks[i].transpose(1, 2, 0).squeeze()
+        heat_map = pred_masks[i] * 255
+
+        pred_mask = pred_masks[i]
+        pred_mask[pred_mask > threshold] = 1
+        pred_mask[pred_mask <= threshold] = 0
         kernel = morphology.disk(4)
-        mask = morphology.opening(mask, kernel)
-        mask *= 255
-        vis_img = mark_boundaries(img, mask, color=(1, 0, 0), mode="thick")
+        pred_mask = morphology.opening(pred_mask, kernel)
+        pred_mask *= 255
+
+        vis_img = mark_boundaries(img, pred_mask, color=(1, 0, 0), mode="thick")
         fig_img, ax_img = plt.subplots(1, 5, figsize=(12, 3))
         fig_img.subplots_adjust(right=0.9)
         norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
@@ -422,13 +495,13 @@ def plot_fig(test_img, scores, gts, threshold, save_dir, class_name):
             ax_i.axes.yaxis.set_visible(False)
         ax_img[0].imshow(img)
         ax_img[0].title.set_text("Image")
-        ax_img[1].imshow(gt, cmap="gray")
+        ax_img[1].imshow(true_mask, cmap="gray")
         ax_img[1].title.set_text("GroundTruth")
         ax = ax_img[2].imshow(heat_map, cmap="jet", norm=norm)
         ax_img[2].imshow(img, cmap="gray", interpolation="none")
         ax_img[2].imshow(heat_map, cmap="jet", alpha=0.5, interpolation="none")
         ax_img[2].title.set_text("Predicted heat map")
-        ax_img[3].imshow(mask, cmap="gray")
+        ax_img[3].imshow(pred_mask, cmap="gray")
         ax_img[3].title.set_text("Predicted mask")
         ax_img[4].imshow(vis_img)
         ax_img[4].title.set_text("Segmentation result")
