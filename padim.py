@@ -31,6 +31,11 @@ from anomalib.models.shared.feature_extractor import FeatureExtractor
 use_cuda = torch.cuda.is_available()
 device = torch.device("cuda" if use_cuda else "cpu")
 
+random.seed(1024)
+torch.manual_seed(1024)
+if use_cuda:
+    torch.cuda.manual_seed_all(1024)
+
 # set transforms
 transform_x = T.Compose(
     [
@@ -136,9 +141,10 @@ class Padim(torch.nn.Module):
         self.backbone = getattr(torchvision.models, backbone)
         self.layers = layers
         self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
-        self.features: Dict[str, List[Tensor]] = {layer: [] for layer in layers}
+        self.features: Dict[str, List[Tensor]] = {layer: [] for layer in self.layers}
         self.gaussian = MultiVariateGaussian()
         self.dims = DIMS[backbone]
+        self.idx = torch.tensor(sample(range(0, DIMS[backbone]["t_d"]), DIMS[backbone]["d"]))
 
     def forward(self, x):
         return self.extract_features(x)
@@ -163,7 +169,12 @@ class Padim(torch.nn.Module):
 
         return concatenated_features
 
-    def generate_embedding(self, features, reduce_dimension: bool = True):
+    def clear_features(self):
+        self.features: Dict[str, List[Tensor]] = {layer: [] for layer in self.layers}
+
+    # @staticmethod
+    # def generate_embedding(features, idx):
+    def generate_embedding(self, features):
         def __generate_patch_embedding(x, y):
             device = x.device
             batch_x, channel_x, height_x, width_x = x.size()
@@ -178,30 +189,25 @@ class Padim(torch.nn.Module):
             z = z.view(batch_x, -1, height_y * width_y)
             z = F.fold(z, kernel_size=stride, output_size=(height_x, width_x), stride=stride)
 
-
             return z
+
+        def __reduce_embedding_dimension(embedding, idx):
+            # randomly select d dimension
+            idx = idx.to(embedding.device)
+            embedding = torch.index_select(embedding, 1, idx)
+            return embedding
 
         embedding_vectors = features["layer1"]
         for layer_name in ["layer2", "layer3"]:
             embedding_vectors = __generate_patch_embedding(embedding_vectors, features[layer_name])
 
-        # if reduce_dimension:
-        #     # random.seed(1024)
-        #     # torch.manual_seed(1024)
-        #     # if use_cuda:
-        #     #     torch.cuda.manual_seed_all(1024)
-        #
-        #     idx = torch.tensor(sample(range(0, self.dims["t_d"]), self.dims["d"])).to(embedding_vectors.device)
-        #     embedding_vectors = torch.index_select(embedding_vectors, 1, idx)
+        embedding_vectors = __reduce_embedding_dimension(embedding_vectors, self.idx)
+
+        # # Reduce dimensions
+        # self.idx = self.idx.to(embedding_vectors.device)
+        # embedding_vectors = torch.index_select(embedding_vectors, 1, self.idx)
+
         return embedding_vectors
-
-    @staticmethod
-    def reduce_embedding_dimension(embedding, idx):
-        # randomly select d dimension
-        idx = idx.to(embedding.device)
-        embedding = torch.index_select(embedding, 1, idx)
-
-        return embedding
 
 
 class AnomalyMapGenerator:
@@ -213,8 +219,8 @@ class AnomalyMapGenerator:
         self.beta = 1 - self.alpha
         self.gamma = gamma
 
-    def compute_distance(self, embedding, outputs):
-        # calculate distance matrix
+    @staticmethod
+    def compute_distance(embedding, outputs):
         embedding_vectors = embedding.cpu()
         batch, channel, height, width = embedding_vectors.size()
         embedding_vectors = embedding_vectors.view(batch, channel, height * width).numpy()
@@ -276,6 +282,7 @@ class AnomalyMapGenerator:
     def apply_heatmap_on_image(self, anomaly_map: np.ndarray, image: np.ndarray) -> np.ndarray:
         heatmap = self.compute_heatmap(anomaly_map)
         heatmap_on_image = cv2.addWeighted(heatmap, self.alpha, image, self.beta, self.gamma)
+        heatmap_on_image = cv2.cvtColor(heatmap_on_image, cv2.COLOR_BGR2RGB)
         return heatmap_on_image
 
     @staticmethod
@@ -321,7 +328,6 @@ class Visualizer:
 
     def save(self, filename: str):
         self.figure.savefig(filename, dpi=100)
-        pass
 
     def close(self):
         plt.close(self.figure)
@@ -330,30 +336,14 @@ class Visualizer:
 def main():
     args = parse_args()
 
-    # load model
-    if args.arch == "resnet18":
-        model = resnet18(pretrained=True, progress=True)
-        t_d = 448
-        d = 100
-    elif args.arch == "wide_resnet50_2":
-        model = wide_resnet50_2(pretrained=True, progress=True)
-        t_d = 1792
-        d = 550
-
     padim = Padim(backbone=args.arch, layers=["layer1", "layer2", "layer3"])
     padim.to(device).eval()
 
-    random.seed(1024)
-    torch.manual_seed(1024)
-    if use_cuda:
-        torch.cuda.manual_seed_all(1024)
-
-    idx = torch.tensor(sample(range(0, t_d), d))
+    idx = torch.tensor(sample(range(0, DIMS[args.arch]["t_d"]), DIMS[args.arch]["d"]))
 
     os.makedirs(os.path.join(args.save_path, "temp_%s" % args.arch), exist_ok=True)
 
     for class_name in mvtec.CLASS_NAMES:
-
         datamodule = MVTecDataModule(
             dataset_path=os.path.join(args.data_path, class_name),
             batch_size=32,
@@ -365,32 +355,29 @@ def main():
         datamodule.setup()
         train_feature_filepath = os.path.join(args.save_path, "temp_%s" % args.arch, "train_%s.pkl" % class_name)
 
-        ## TRAINING
-        # # extract train set features
-        # for data in tqdm(datamodule.train_dataloader(), "| feature extraction | train | %s |" % class_name):
-        #     x = data["image"].to(device)
-        #
-        #     batch_features = padim(x)
-        #     padim.append_features(batch_features)
-        #
-        # train_features = padim.concat_features()
-        #
-        # embedding = padim.generate_embedding(train_features)
-        # embedding = padim.reduce_embedding_dimension(embedding, idx)
-        #
-        # mean, cov = padim.gaussian.fit(embedding)
-        #
-        # # save learned distribution
-        # train_outputs = [mean, cov]
-        # with open(train_feature_filepath, "wb") as f:
-        #     pickle.dump(train_outputs, f)
+        # TRAINING
+        # extract train set features
+        for data in tqdm(datamodule.train_dataloader(), "| feature extraction | train | %s |" % class_name):
+            x = data["image"].to(device)
+
+            batch_features = padim(x)
+            padim.append_features(batch_features)
+
+        train_features = padim.concat_features()
+        embedding = padim.generate_embedding(train_features)
+        mean, cov = padim.gaussian.fit(embedding)
+
+        # save learned distribution
+        train_outputs = [mean, cov]
+        with open(train_feature_filepath, "wb") as f:
+            pickle.dump(train_outputs, f)
 
         print("load train set feature from: %s" % train_feature_filepath)
         with open(train_feature_filepath, "rb") as f:
             train_outputs = pickle.load(f)
 
-        padim = Padim(backbone=args.arch, layers=["layer1", "layer2", "layer3"])
-        padim.to(device).eval()
+        # TEST
+        padim.clear_features()
 
         anomaly_map_generator = AnomalyMapGenerator()
 
@@ -413,10 +400,7 @@ def main():
             padim.append_features(batch_features)
 
         test_features = padim.concat_features()
-
-        embedding = padim.generate_embedding(test_features, reduce_dimension=True)
-        embedding = padim.reduce_embedding_dimension(embedding, idx)
-
+        embedding = padim.generate_embedding(test_features)
         anomaly_maps = anomaly_map_generator.compute_anomaly_map(embedding, train_outputs)
 
         # Compute performance.
@@ -438,46 +422,9 @@ def main():
             image = Denormalize()(image)
 
             heat_map = anomaly_map_generator.apply_heatmap_on_image(anomaly_map, image)
-            heat_map = cv2.cvtColor(heat_map, cv2.COLOR_BGR2RGB)
             pred_mask = anomaly_map_generator.compute_mask(anomaly_map=anomaly_map, threshold=threshold)
-
             vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
 
-            # fig_img, ax_img = plt.subplots(1, 5, figsize=(12, 3))
-            # fig_img.subplots_adjust(right=0.9)
-
-            # with open("./results.pkl", "wb") as f:
-            #     pickle.dump(
-            #         obj={
-            #             "image_filenames": image_filenames,
-            #             "images": test_imgs,
-            #             "true_masks": true_masks,
-            #             "anomaly_maps": anomaly_maps,
-            #             "threshold": threshold
-            #         },
-            #         file=f,
-            #     )
-
-            # for ax_i in ax_img:
-            #     ax_i.axes.xaxis.set_visible(False)
-            #     ax_i.axes.yaxis.set_visible(False)
-            # ax_img[0].imshow(img)
-            # ax_img[0].title.set_text("Image")
-            #
-            # ax_img[1].imshow(true_mask, cmap="gray")
-            # ax_img[1].title.set_text("GroundTruth")
-            #
-            # # ax = ax_img[2].imshow(heat_map, cmap="jet", norm=norm)
-            # # ax_img[2].imshow(img, cmap="gray", interpolation="none")
-            # # ax_img[2].imshow(heat_map, cmap="jet", alpha=0.5, interpolation="none")
-            # ax_img[2].imshow(heat_map)
-            # ax_img[2].title.set_text("Predicted heat map")
-            #
-            # ax_img[3].imshow(pred_mask, cmap="gray")
-            # ax_img[3].title.set_text("Predicted mask")
-            #
-            # ax_img[4].imshow(vis_img)
-            # ax_img[4].title.set_text("Segmentation result")
             visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
             visualizer.add_image(index=0, image=image, title="Image")
             visualizer.add_image(index=1, image=true_mask, cmap="gray", title="Ground Truth")
@@ -486,129 +433,12 @@ def main():
             visualizer.add_image(index=4, image=vis_img, title="Segmentation Result")
             visualizer.save(os.path.join(save_dir, class_name + "_{}".format(i)))
             visualizer.close()
-            # left = 0.92
-            # bottom = 0.15
-            # width = 0.015
-            # height = 1 - 2 * bottom
-            # rect = [left, bottom, width, height]
-            # cbar_ax = fig_img.add_axes(rect)
-            # cb = plt.colorbar(ax, shrink=0.6, cax=cbar_ax, fraction=0.046)
-            # cb.ax.tick_params(labelsize=8)
-            # font = {
-            #     "family": "serif",
-            #     "color": "black",
-            #     "weight": "normal",
-            #     "size": 8,
-            # }
-            # cb.set_label("Anomaly Score", fontdict=font)
-
-            # fig_img.savefig(os.path.join(save_dir, f"{class_name}_{filename}"), dpi=100)
-            # fig_img.savefig(os.path.join(save_dir, class_name + "_{}".format(i)), dpi=100)
-            # plt.close()
-
-    # print("Average ROCAUC: %.3f" % np.mean(total_roc_auc))
-    # fig_img_rocauc.title.set_text("Average image ROCAUC: %.3f" % np.mean(total_roc_auc))
-    # fig_img_rocauc.legend(loc="lower right")
-
-    # print("Average pixel ROCUAC: %.3f" % np.mean(total_pixel_roc_auc))
-    # fig_pixel_rocauc.title.set_text("Average pixel ROCAUC: %.3f" % np.mean(total_pixel_roc_auc))
-    # fig_pixel_rocauc.legend(loc="lower right")
-
-    # fig.tight_layout()
-    # fig.savefig(os.path.join(args.save_path, "roc_curve.png"), dpi=100)
 
 
 def torch_mahalanobis(u, v, cov):
     delta = u - v
     m = torch.dot(delta, torch.matmul(torch.inverse(cov), delta))
     return torch.sqrt(m)
-
-
-# def plot_fig(test_img, pred_masks, true_masks, threshold, save_dir, class_name):
-#     num = len(pred_masks)
-#     vmax = pred_masks.max() * 255.0
-#     vmin = pred_masks.min() * 255.0
-#     for i in range(num):
-#         img = test_img[i]
-#         img = denormalization(img)
-#         true_mask = true_masks[i].transpose(1, 2, 0).squeeze()
-#         heat_map = pred_masks[i] * 255
-#
-#         pred_mask = pred_masks[i]
-#         pred_mask[pred_mask > threshold] = 1
-#         pred_mask[pred_mask <= threshold] = 0
-#         kernel = morphology.disk(4)
-#         pred_mask = morphology.opening(pred_mask, kernel)
-#         pred_mask *= 255
-#
-#         vis_img = mark_boundaries(img, pred_mask, color=(1, 0, 0), mode="thick")
-#         fig_img, ax_img = plt.subplots(1, 5, figsize=(12, 3))
-#         fig_img.subplots_adjust(right=0.9)
-#         norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
-#         for ax_i in ax_img:
-#             ax_i.axes.xaxis.set_visible(False)
-#             ax_i.axes.yaxis.set_visible(False)
-#         ax_img[0].imshow(img)
-#         ax_img[0].title.set_text("Image")
-#         ax_img[1].imshow(true_mask, cmap="gray")
-#         ax_img[1].title.set_text("GroundTruth")
-#         ax = ax_img[2].imshow(heat_map, cmap="jet", norm=norm)
-#         ax_img[2].imshow(img, cmap="gray", interpolation="none")
-#         ax_img[2].imshow(heat_map, cmap="jet", alpha=0.5, interpolation="none")
-#         ax_img[2].title.set_text("Predicted heat map")
-#         ax_img[3].imshow(pred_mask, cmap="gray")
-#         ax_img[3].title.set_text("Predicted mask")
-#         ax_img[4].imshow(vis_img)
-#         ax_img[4].title.set_text("Segmentation result")
-#         left = 0.92
-#         bottom = 0.15
-#         width = 0.015
-#         height = 1 - 2 * bottom
-#         rect = [left, bottom, width, height]
-#         cbar_ax = fig_img.add_axes(rect)
-#         cb = plt.colorbar(ax, shrink=0.6, cax=cbar_ax, fraction=0.046)
-#         cb.ax.tick_params(labelsize=8)
-#         font = {
-#             "family": "serif",
-#             "color": "black",
-#             "weight": "normal",
-#             "size": 8,
-#         }
-#         cb.set_label("Anomaly Score", fontdict=font)
-#
-#         fig_img.savefig(os.path.join(save_dir, class_name + "_{}".format(i)), dpi=100)
-#         plt.close()
-
-
-# def denormalization(x):
-#     mean = np.array([0.485, 0.456, 0.406])
-#     std = np.array([0.229, 0.224, 0.225])
-#     x = (((x.transpose(1, 2, 0) * std) + mean) * 255.0).astype(np.uint8)
-#
-#     return x
-
-
-#
-# class UnNormalize(object):
-#     def __init__(self, mean: Optional[List[float]] = None, std: Optional[List[float]] = None):
-#         # If no mean and std provided, assign ImageNet values.
-#         self.mean = mean if mean is not None else [0.485, 0.456, 0.406]
-#         self.std = std if std is not None else [0.229, 0.224, 0.225]
-#
-#     def __call__(self, tensor: torch.Tensor) -> torch.Tensor:
-#         """
-#         Unnormalize the input
-#         :param tensor: Input tensor image (C, H, W)
-#         :return: Unnormalized tensor image.
-#         """
-#         # TODO: Check if batch is handled properly
-#         for t, m, s in zip(tensor, self.mean, self.std):
-#             t.mul_(s).add_(m)
-#             # The normalize code -> t.sub_(m).div_(s)
-#         return tensor
-#
-#     def __repr__(self):
-#         return self.__class__.__name__ + "()"
 
 
 if __name__ == "__main__":
