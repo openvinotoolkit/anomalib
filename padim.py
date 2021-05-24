@@ -19,7 +19,6 @@ from skimage.segmentation import mark_boundaries
 from sklearn.metrics import precision_recall_curve, roc_auc_score
 from torch import Tensor
 from torchvision import transforms as T
-from torchvision.models import resnet18, wide_resnet50_2
 from tqdm import tqdm
 
 import datasets.mvtec as mvtec
@@ -338,8 +337,6 @@ def main():
 
     padim = Padim(backbone=args.arch, layers=["layer1", "layer2", "layer3"])
     padim.to(device).eval()
-
-    idx = torch.tensor(sample(range(0, DIMS[args.arch]["t_d"]), DIMS[args.arch]["d"]))
 
     os.makedirs(os.path.join(args.save_path, "temp_%s" % args.arch), exist_ok=True)
 
