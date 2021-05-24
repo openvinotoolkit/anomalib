@@ -4,26 +4,48 @@ import numpy as np
 import torch
 
 
-class UnNormalize(object):
+class Denormalize(object):
     def __init__(self, mean: Optional[List[float]] = None, std: Optional[List[float]] = None):
         # If no mean and std provided, assign ImageNet values.
-        self.mean = mean if mean is not None else [0.485, 0.456, 0.406]
-        self.std = std if std is not None else [0.229, 0.224, 0.225]
+        self.mean = mean if mean is not None else torch.Tensor([0.485, 0.456, 0.406])
+        self.std = std if std is not None else torch.Tensor([0.229, 0.224, 0.225])
 
-    def __call__(self, tensor: torch.Tensor) -> torch.Tensor:
+    def __call__(self, tensor: torch.Tensor) -> np.ndarray:
         """
         Unnormalize the input
         :param tensor: Input tensor image (C, H, W)
-        :return: Unnormalized tensor image.
+        :return: Unnormalized numpy array (H, W, C).
         """
-        # TODO: Check if batch is handled properly
         for t, m, s in zip(tensor, self.mean, self.std):
             t.mul_(s).add_(m)
-            # The normalize code -> t.sub_(m).div_(s)
-        return tensor
+
+        array = (tensor * 255).permute(1, 2, 0).cpu().numpy().astype(np.uint8)
+        return array
 
     def __repr__(self):
         return self.__class__.__name__ + "()"
+
+
+# class UnNormalize(object):
+#     def __init__(self, mean: Optional[List[float]] = None, std: Optional[List[float]] = None):
+#         # If no mean and std provided, assign ImageNet values.
+#         self.mean = mean if mean is not None else [0.485, 0.456, 0.406]
+#         self.std = std if std is not None else [0.229, 0.224, 0.225]
+#
+#     def __call__(self, tensor: torch.Tensor) -> torch.Tensor:
+#         """
+#         Unnormalize the input
+#         :param tensor: Input tensor image (C, H, W)
+#         :return: Unnormalized tensor image.
+#         """
+#         # TODO: Check if batch is handled properly
+#         for t, m, s in zip(tensor, self.mean, self.std):
+#             t.mul_(s).add_(m)
+#             # The normalize code -> t.sub_(m).div_(s)
+#         return tensor
+#
+#     def __repr__(self):
+#         return self.__class__.__name__ + "()"
 
 
 class ToNumpy:
