@@ -11,6 +11,7 @@ from torch import Tensor
 from torch.utils.data import DataLoader
 from torchvision.datasets.folder import VisionDataset, default_loader
 from torchvision.transforms import Compose, Resize, Normalize, ToTensor
+import torchvision.transforms as T
 
 logger = logging.getLogger(name="Dataset: MVTec")
 
@@ -20,9 +21,13 @@ __all__ = ["MVTec", "MVTecDataModule"]
 def get_image_transforms() -> Compose:
     transform = Compose(
         [
-            ToTensor(),
-            Resize((256, 256)),
-            Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            # ToTensor(),
+            # Resize((256, 256)),
+            # Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            T.Resize(256, Image.ANTIALIAS),
+            T.CenterCrop(224),
+            T.ToTensor(),
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ]
     )
     return transform
@@ -31,8 +36,9 @@ def get_image_transforms() -> Compose:
 def get_mask_transforms() -> Compose:
     transform = Compose(
         [
-            ToTensor(),
-            Resize((256, 256)),
+            # ToTensor(),
+            # Resize((256, 256)),
+            T.Resize(256, Image.NEAREST), T.CenterCrop(224), T.ToTensor()
         ]
     )
     return transform
