@@ -159,7 +159,8 @@ class MVTec(VisionDataset):
 class MVTecDataModule(LightningDataModule):
     def __init__(
         self,
-        dataset_path: Union[str, Path],
+        root: str,
+        category: str,
         batch_size: int,
         num_workers: int,
         include_normal_images_in_val_set: bool = False,
@@ -168,9 +169,9 @@ class MVTecDataModule(LightningDataModule):
         loader: Optional[Callable[[str], Any]] = None,
     ) -> None:
         super().__init__()
-        self.dataset_path = dataset_path if isinstance(dataset_path, Path) else Path(dataset_path)
-        self.root = self.dataset_path.parent
-        self.category = self.dataset_path.stem
+        self.root = root if isinstance(root, Path) else Path(root)
+        self.category = category
+        self.dataset_path = self.root / self.category
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.image_transforms = image_transforms
@@ -210,7 +211,6 @@ class MVTecDataModule(LightningDataModule):
             root=self.root,
             category=self.category,
             train=False,
-            # include_normal=self.include_normal,
             image_transforms=self.image_transforms,
             mask_transforms=self.mask_transforms,
         )
