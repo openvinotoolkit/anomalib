@@ -1,4 +1,5 @@
 import argparse
+from torch import Tensor
 import os
 import pickle
 import random
@@ -442,6 +443,63 @@ def main():
 def torch_mahalanobis(u, v, cov):
     delta = u - v
     m = torch.dot(delta, torch.matmul(torch.inverse(cov), delta))
+    return torch.sqrt(m)
+
+
+def mahalanobis2(u, v, VI):
+    """
+    Compute the Mahalanobis distance between two 1-D arrays.
+
+    The Mahalanobis distance between 1-D arrays `u` and `v`, is defined as
+
+    .. math::
+
+       \\sqrt{ (u-v) V^{-1} (u-v)^T }
+
+    where ``V`` is the covariance matrix.  Note that the argument `VI`
+    is the inverse of ``V``.
+
+    Parameters
+    ----------
+    u : (N,) array_like
+        Input array.
+    v : (N,) array_like
+        Input array.
+    VI : ndarray
+        The inverse of the covariance matrix.
+
+    Returns
+    -------
+    mahalanobis : double
+        The Mahalanobis distance between vectors `u` and `v`.
+
+    Examples
+    --------
+    >>> from scipy.spatial import distance
+    >>> iv = [[1, 0.5, 0.5], [0.5, 1, 0.5], [0.5, 0.5, 1]]
+    >>> distance.mahalanobis([1, 0, 0], [0, 1, 0], iv)
+    1.0
+    >>> distance.mahalanobis([0, 2, 0], [0, 1, 0], iv)
+    1.0
+    >>> distance.mahalanobis([2, 0, 0], [0, 1, 0], iv)
+    1.7320508075688772
+
+    """
+
+    def _validate_vector(u: Tensor):
+        # XXX Is order='c' really necessary?
+        u = u.squeeze()
+        # Ensure values such as u=1 and u=[1] still return 1-D arrays.
+        u = torch.atleast_1d(u)
+        if u.ndim > 1:
+            raise ValueError("Input vector should be 1-D.")
+        return u
+
+    u = _validate_vector(u)
+    v = _validate_vector(v)
+    VI = torch.atleast_2d(VI)
+    delta = u - v
+    m = torch.dot(torch.dot(delta, VI), delta)
     return torch.sqrt(m)
 
 
