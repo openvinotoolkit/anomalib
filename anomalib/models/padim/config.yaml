@@ -1,22 +1,21 @@
 dataset:
-  dataset: mvtec
-  dataset_path: ./datasets/MVTec/leather
+  name: mvtec
+  path: ./datasets/MVTec
+  category: leather
   batch_size: 32
   num_workers: 0
 
 model:
-  model: padim
+  name: padim
   backbone: resnet18
   layers:
     - layer1
     - layer2
     - layer3
-#  lr: 0.4
-#  momentum: 0.9
-#  patience: 5
-#  weight_decay: 0.0001
-  project_path: ./results
   metric: auc
+
+project:
+  path: ./results
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
@@ -32,7 +31,7 @@ trainer:
   check_val_every_n_epoch: 1
   checkpoint_callback: true
   default_root_dir: null
-  deterministic: false
+  deterministic: true
   distributed_backend: null
   enable_pl_optimizer: null
   fast_dev_run: false
