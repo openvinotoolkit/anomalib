@@ -6,13 +6,15 @@ from pytorch_lightning import LightningDataModule
 from .mvtec import MVTecDataModule
 
 
-def get_datamodule(args: Union[DictConfig, ListConfig]):
+def get_datamodule(config: Union[DictConfig, ListConfig]):
     datamodule: LightningDataModule
-    if args.dataset.lower() == "mvtec":
-        datamodule = MVTecDataModule(args.dataset_path,
-                                     args.batch_size,
-                                     args.num_workers,
-                                     include_normal_images_in_val_set=args.include_normal_images_in_val_set)
+    if config.dataset.name.lower() == "mvtec":
+        datamodule = MVTecDataModule(
+            root=config.dataset.path,
+            category=config.dataset.category,
+            batch_size=config.dataset.batch_size,
+            num_workers=config.dataset.num_workers
+        )
     else:
         raise ValueError("Unknown dataset!")
 
