@@ -2,11 +2,11 @@ import argparse
 import os
 import os.path
 import pickle
-import random
+from pathlib import Path
 from random import sample
 from typing import Dict
 from typing import List
-from typing import Optional, Tuple
+from typing import Optional, Sequence, Tuple
 
 import cv2
 import matplotlib.pyplot as plt
@@ -16,7 +16,7 @@ import torch
 import torch.nn.functional as F
 import torchvision
 from omegaconf.dictconfig import DictConfig
-from pytorch_lightning.callbacks import Callback, EarlyStopping, ModelCheckpoint
+from pytorch_lightning.callbacks import ModelCheckpoint
 from scipy.ndimage import gaussian_filter
 from skimage import morphology
 from skimage.segmentation import mark_boundaries
@@ -26,24 +26,12 @@ from torch import Tensor
 
 from anomalib.datasets.utils import Denormalize
 from anomalib.models.shared.feature_extractor import FeatureExtractor
+from anomalib.models.shared.multi_variate_gaussian import MultiVariateGaussian
 
 __all__ = ["PADIMModel"]
 
 
-random.seed(1024)
-torch.manual_seed(1024)
-torch.cuda.manual_seed_all(1024)
-
-# # set transforms
-# transform_x = T.Compose(
-#     [
-#         T.Resize(256, Image.ANTIALIAS),
-#         T.CenterCrop(224),
-#         T.ToTensor(),
-#         T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-#     ]
-# )
-# transform_mask = T.Compose([T.Resize(256, Image.NEAREST), T.CenterCrop(224), T.ToTensor()])
+pl.seed_everything(42)
 
 
 def parse_args():
@@ -52,103 +40,6 @@ def parse_args():
     parser.add_argument("--save_path", type=str, default="./results")
     parser.add_argument("--arch", type=str, choices=["resnet18", "wide_resnet50_2"], default="resnet18")
     return parser.parse_args()
-
-
-np.cov
-
-
-class MultiVariateGaussian(torch.nn.Module):
-    @staticmethod
-    def _cov(x: Tensor, rowvar: bool = False, bias: bool = False, ddof: Optional[int] = None, aweights=None) -> Tensor:
-        """
-        Estimates covariance matrix like numpy.cov
-        :param x: A 1-D or 2-D array containing multiple variables and observations.
-                        Each row of `m` represents a variable, and each column a single
-                        observation of all those variables. Also see `rowvar` below.
-        :param rowvar: If `rowvar` is True (default), then each row represents a
-                        variable, with observations in the columns. Otherwise, the relationship
-                        is transposed: each column represents a variable, while the rows
-                        contain observations.
-        :param bias: Default normalization (False) is by ``(N - 1)``, where ``N`` is the
-                        number of observations given (unbiased estimate). If `bias` is True,
-                        then normalization is by ``N``. These values can be overridden by using
-                        the keyword ``ddof`` in numpy versions >= 1.5.
-        :param ddof: If not ``None`` the default value implied by `bias` is overridden.
-                        Note that ``ddof=1`` will return the unbiased estimate, even if both
-                        `fweights` and `aweights` are specified, and ``ddof=0`` will return
-                        the simple average. See the notes for the details. The default value
-                        is ``None``.
-        :param aweights: 1-D array of observation vector weights. These relative weights are
-                        typically large for observations considered "important" and smaller for
-                        observations considered less "important". If ``ddof=0`` the array of
-                        weights can be used to assign probabilities to observation vectors.
-        :return: The covariance matrix of the variables.
-        """
-        # ensure at least 2D
-        if x.dim() == 1:
-            x = x.view(-1, 1)
-
-        # treat each column as a data point, each row as a variable
-        if rowvar and x.shape[0] != 1:
-            x = x.t()
-
-        if ddof is None:
-            if bias == 0:
-                ddof = 1
-            else:
-                ddof = 0
-
-        w = aweights
-        if w is not None:
-            if not torch.is_tensor(w):
-                w = torch.tensor(w, dtype=torch.float)
-            w_sum = torch.sum(w)
-            avg = torch.sum(x * (w / w_sum)[:, None], 0)
-        else:
-            avg = torch.mean(x, 0)
-
-        # Determine the normalization
-        if w is None:
-            fact = x.shape[0] - ddof
-        elif ddof == 0:
-            fact = w_sum
-        elif aweights is None:
-            fact = w_sum - ddof
-        else:
-            fact = w_sum - ddof * torch.sum(w * w) / w_sum
-
-        xm = x.sub(avg.expand_as(x))
-
-        if w is None:
-            X_T = xm.t()
-        else:
-            X_T = torch.mm(torch.diag(w), xm).t()
-
-        c = torch.mm(X_T, xm)
-        c = c / fact
-
-        return c.squeeze()
-
-    def forward(self, embedding: Tensor) -> List[Tensor]:
-        """
-        Calculate multivariate Gaussian distribution
-        :param embedding: CNN features whose dimensionality is reduced via either random sampling or PCA.
-        :return: mean and covariance of the multi-variate gaussian distribution that fits the features.
-        """
-        device = embedding.device
-
-        batch, channel, height, width = embedding.size()
-        embedding_vectors = embedding.view(batch, channel, height * width)
-        mean = torch.mean(embedding_vectors, dim=0)
-        cov = torch.zeros(size=(channel, channel, height * width), device=device)
-        identity = torch.eye(channel).to(device)
-        for i in range(height * width):
-            cov[:, :, i] = self._cov(embedding_vectors[:, :, i], rowvar=False) + 0.01 * identity
-
-        return [mean, cov]
-
-    def fit(self, embedding: Tensor) -> List[Tensor]:
-        return self.forward(embedding)
 
 
 DIMS = {"resnet18": {"t_d": 448, "d": 100}, "wide_resnet50_2": {"t_d": 1792, "d": 550}}
@@ -236,19 +127,16 @@ class Padim(torch.nn.Module):
 
 
 class Callbacks:
-    def __init__(self, args: DictConfig):
-        self.args = args
+    def __init__(self, config: DictConfig):
+        self.config = config
 
-    def get_callbacks(self) -> List[Callback]:
+    def get_callbacks(self) -> Sequence:
         checkpoint = ModelCheckpoint(
-            dirpath=os.path.join(self.args.project_path, "weights"),
+            dirpath=os.path.join(self.config.project.path, "weights"),
             filename="model",
         )
-        early_stopping = EarlyStopping(monitor=self.args.metric, patience=self.args.patience)
-        callbacks = [
-            checkpoint,
-            # early_stopping
-        ]
+        callbacks = [checkpoint]
+
         return callbacks
 
     def __call__(self):
@@ -266,7 +154,7 @@ class AnomalyMapGenerator:
 
     @staticmethod
     def compute_distance(embedding: Tensor, outputs: List[Tensor]) -> Tensor:
-        def _mahalanobis(u: Tensor, v: Tensor, inverse_covariance: Tensor) -> Tensor:
+        def _mahalanobis(u: Tensor, v: Tensor, inv_cov: Tensor) -> Tensor:
             """
             Compute the Mahalanobis distance between two 1-D arrays.
             The Mahalanobis distance between 1-D arrays `u` and `v`, is defined as
@@ -278,11 +166,11 @@ class AnomalyMapGenerator:
             is the inverse of ``V``.
             :param u:  Input array
             :param v:  Input array
-            :param inverse_covariance: Inverse covariance matrix
+            :param inv_cov: Inverse covariance matrix
             :return: Mahalanobis distance of the inputs.
             """
             delta = u - v
-            mahalanobis_distance = torch.dot(torch.matmul(delta, inverse_covariance), delta)
+            mahalanobis_distance = torch.dot(torch.matmul(delta, inv_cov), delta)
             return torch.sqrt(mahalanobis_distance)
 
         batch, channel, height, width = embedding.shape
@@ -313,20 +201,12 @@ class AnomalyMapGenerator:
 
         return anomaly_map
 
-    @staticmethod
-    def normalize(anomaly_map: np.ndarray) -> np.ndarray:
-        max_score = anomaly_map.max()
-        min_score = anomaly_map.min()
-        scores = (anomaly_map - min_score) / (max_score - min_score)
-        return scores
-
     def compute_anomaly_map(self, embedding: Tensor, stats: List[Tensor]) -> np.ndarray:
         score_map = self.compute_distance(embedding, stats)
-        score_map = self.up_sample(score_map)
-        score_map = self.smooth_anomaly_map(score_map)
-        # score_map = self.normalize(score_map)
+        up_sampled_score_map = self.up_sample(score_map)
+        smoothed_anomaly_map = self.smooth_anomaly_map(up_sampled_score_map)
 
-        return score_map
+        return smoothed_anomaly_map
 
     @staticmethod
     def compute_heatmap(anomaly_map: np.ndarray) -> np.ndarray:
@@ -384,7 +264,8 @@ class Visualizer:
     def show(self):
         self.figure.show()
 
-    def save(self, filename: str):
+    def save(self, filename: Path):
+        filename.parent.mkdir(parents=True, exist_ok=True)
         self.figure.savefig(filename, dpi=100)
 
     def close(self):
@@ -395,8 +276,8 @@ class PADIMModel(pl.LightningModule):
     def __init__(self, hparams):
         super().__init__()
         self.save_hyperparameters(hparams)
-        self.layers = hparams.layers
-        self._model = Padim(hparams.backbone, hparams.layers).eval()
+        self.layers = hparams.model.layers
+        self._model = Padim(hparams.model.backbone, hparams.model.layers).eval()
 
         self.anomaly_map_generator = AnomalyMapGenerator()
         self.callbacks = Callbacks(hparams)()
@@ -416,7 +297,7 @@ class PADIMModel(pl.LightningModule):
         return {"filename": filename, "image": image, "features": features, "label": label, "mask": mask}
 
     def test_step(self, batch, batch_idx):
-        pass
+        return self.validation_step(batch, batch_idx)
 
     def training_epoch_end(self, outputs):
 
@@ -427,11 +308,11 @@ class PADIMModel(pl.LightningModule):
         self.stats = self._model.gaussian.fit(embedding)
 
         train_outputs = self.stats
-        with open("./results/pl_results.pkl", "wb") as f:
+        with open(os.path.join(self.hparams.project.path, "weights/stats.pkl"), "wb") as f:
             pickle.dump(train_outputs, f)
 
     def validation_epoch_end(self, outputs):
-        filenames = [f for x in outputs for f in x["filename"]]
+        filenames = [Path(f) for x in outputs for f in x["filename"]]
         images = [x["image"] for x in outputs]
         true_labels = torch.stack([x["label"] for x in outputs])
         true_masks = torch.stack([x["mask"].squeeze() for x in outputs])
@@ -452,8 +333,6 @@ class PADIMModel(pl.LightningModule):
         self.log(name="Image-Level AUC", value=image_roc_auc, on_epoch=True, prog_bar=True)
         self.log(name="Pixel-Level AUC", value=pixel_roc_auc, on_epoch=True, prog_bar=True)
 
-        save_dir = "./results/my_results"
-        os.makedirs(save_dir, exist_ok=True)
         threshold = self.anomaly_map_generator.compute_adaptive_threshold(true_masks, anomaly_maps)
 
         for i, (filename, image, true_mask, anomaly_map) in enumerate(zip(filenames, images, true_masks, anomaly_maps)):
@@ -469,8 +348,8 @@ class PADIMModel(pl.LightningModule):
             visualizer.add_image(index=2, image=heat_map, title="Predicted Heat Map")
             visualizer.add_image(index=3, image=pred_mask, cmap="gray", title="Predicted Mask")
             visualizer.add_image(index=4, image=vis_img, title="Segmentation Result")
-            visualizer.save(os.path.join(save_dir, os.path.split(filename)[1]))
+            visualizer.save(Path(self.hparams.project.path) / "images" / filename.parent.name / filename.name)
             visualizer.close()
 
     def test_epoch_end(self, outputs):
-        pass
+        self.validation_epoch_end(outputs)
