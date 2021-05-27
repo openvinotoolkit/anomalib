@@ -5,21 +5,21 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from urllib.request import urlretrieve
 
 import torch
+import torchvision.transforms as T
 from PIL import Image
 from pytorch_lightning.core.datamodule import LightningDataModule
 from torch import Tensor
 from torch.utils.data import DataLoader
 from torchvision.datasets.folder import VisionDataset, default_loader
-from torchvision.transforms import Compose, Resize, Normalize, ToTensor
-import torchvision.transforms as T
+from torchvision.transforms import Compose
 
 logger = logging.getLogger(name="Dataset: MVTec")
 
 __all__ = ["MVTec", "MVTecDataModule"]
 
 
-def get_image_transforms() -> Compose:
-    transform = Compose(
+def get_image_transforms() -> T.Compose:
+    transform = T.Compose(
         [
             # ToTensor(),
             # Resize((256, 256)),
@@ -33,12 +33,14 @@ def get_image_transforms() -> Compose:
     return transform
 
 
-def get_mask_transforms() -> Compose:
+def get_mask_transforms() -> T.Compose:
     transform = Compose(
         [
             # ToTensor(),
             # Resize((256, 256)),
-            T.Resize(256, Image.NEAREST), T.CenterCrop(224), T.ToTensor()
+            T.Resize(256, Image.NEAREST),
+            T.CenterCrop(224),
+            T.ToTensor(),
         ]
     )
     return transform
@@ -137,13 +139,13 @@ class MVTec(VisionDataset):
                 # mask = mask.convert(mode="1")
             # mask = self.loader(mask_path) if class_index == 1 else Image.new(mode="1", size=image.size)
             mask_tensor = self.mask_transforms(mask).to(torch.uint8)
-        # else:
-        #     if mask is None:
-        #         # Create empty mask for good test samples.
-        #         mask = Image.new(mode="1", size=image.size)
-        #
-        #     mask = mask.convert(mode="1")
-        #     mask_tensor = self.mask_transforms(mask).to(torch.uint8)
+            # else:
+            #     if mask is None:
+            #         # Create empty mask for good test samples.
+            #         mask = Image.new(mode="1", size=image.size)
+            #
+            #     mask = mask.convert(mode="1")
+            #     mask_tensor = self.mask_transforms(mask).to(torch.uint8)
             # sample = (image_tensor, mask_tensor)
             sample = {
                 "image_path": image_path,
