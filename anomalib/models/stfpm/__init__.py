@@ -1,2 +1,2 @@
-from .model import Loss, STFPMModel, AnomalyMapGenerator
+from .model import Loss, STFPMModel, AnomalyMapGenerator, STFPMLightning
 from ..shared.feature_extractor import FeatureExtractor

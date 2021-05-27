@@ -14,6 +14,10 @@ from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.callbacks import Callback, EarlyStopping, ModelCheckpoint
 from sklearn.metrics import roc_auc_score
 from torch import Tensor, nn, optim
+import torch
+import nncf
+from nncf import NNCFConfig, create_compressed_model, load_state, register_default_init_args
+from anomalib.models.stfpm.nncf_utils import InitLoader, criterion_fn
 
 __all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel"]
 
@@ -135,11 +139,11 @@ class AnomalyMapGenerator:
         return self.compute_anomaly_map(teacher_features, student_features)
 
 
-class STFPMModel(pl.LightningModule):
+class STFPMModel(nn.Module):
     def __init__(self, hparams):
 
         super().__init__()
-        self.save_hyperparameters(hparams)
+        # self.save_hyperparameters(hparams)
         self.backbone = getattr(torchvision.models, hparams.backbone)
         self.layers = hparams.layers
 
@@ -152,7 +156,7 @@ class STFPMModel(pl.LightningModule):
 
         self.loss = Loss()
         self.anomaly_map_generator = AnomalyMapGenerator(batch_size=1, image_size=256)
-        self.callbacks = Callbacks(hparams)()
+        # self.callbacks = Callbacks(hparams)()
 
     def forward(self, images):
         self.teacher_model.eval()
@@ -160,26 +164,42 @@ class STFPMModel(pl.LightningModule):
         student_features: Dict[str, Tensor] = self.student_model(images)
         return teacher_features, student_features
 
+
+class STFPMLightning(pl.LightningModule):
+    def __init__(self, hparams, train_loader):
+        super().__init__()
+        self.save_hyperparameters(hparams)
+        self.callbacks = Callbacks(hparams)()
+
+        model = STFPMModel(hparams)
+        nncf_config = NNCFConfig.from_json("anomalib/models/stfpm/nncf.json")
+        init_loader = InitLoader(train_loader)
+        nncf_config = register_default_init_args(nncf_config, init_loader, model.loss, criterion_fn=criterion_fn)
+        self.comp_ctrl, self.model = create_compressed_model(model, nncf_config)
+        self.compression_scheduler = self.comp_ctrl.scheduler
+
     def configure_optimizers(self):
         return optim.SGD(
-            params=self.student_model.parameters(),
+            params=self.model.student_model.parameters(),
             lr=self.hparams.lr,
             momentum=self.hparams.momentum,
             weight_decay=self.hparams.weight_decay,
         )
 
     def training_step(self, batch, batch_idx):
-        teacher_features, student_features = self.forward(batch["image"])
-        loss = self.loss(teacher_features, student_features)
+        self.compression_scheduler.step()
+        teacher_features, student_features = self.model.forward(batch["image"])
+        compression_loss = self.comp_ctrl.loss()
+        loss = self.model.loss(teacher_features, student_features) + compression_loss
         return {"loss": loss}
 
     def validation_step(self, batch, batch_idx):
         images, mask = batch["image"], batch["mask"]
 
-        teacher_features, student_features = self.forward(images)
-        loss = self.loss(teacher_features, student_features)
+        teacher_features, student_features = self.model.forward(images)
+        loss = self.model.loss(teacher_features, student_features)
 
-        anomaly_map = self.anomaly_map_generator(teacher_features, student_features)
+        anomaly_map = self.model.anomaly_map_generator(teacher_features, student_features)
         auc = roc_auc_score(mask.cpu().numpy().ravel(), anomaly_map.ravel())
 
         return {"val_loss": loss, "auc": auc}
@@ -187,9 +207,9 @@ class STFPMModel(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         images, mask = batch["image"], batch["mask"]
 
-        teacher_features, student_features = self.forward(images)
+        teacher_features, student_features = self.model.forward(images)
 
-        anomaly_map = self.anomaly_map_generator(teacher_features, student_features)
+        anomaly_map = self.model.anomaly_map_generator(teacher_features, student_features)
         auc = roc_auc_score(mask.cpu().numpy().ravel(), anomaly_map.ravel())
         image_path, mask_path = batch["image_path"][0], batch["mask_path"][0]
         images, masks = batch["image"], batch["mask"]
@@ -200,7 +220,7 @@ class STFPMModel(pl.LightningModule):
         original_image = cv2.imread(image_path)
         original_image = cv2.resize(original_image, (256, 256))
 
-        heatmap_on_image = self.anomaly_map_generator.apply_heatmap_on_image(anomaly_map, original_image)
+        heatmap_on_image = self.model.anomaly_map_generator.apply_heatmap_on_image(anomaly_map, original_image)
 
         cv2.imwrite(f"./results/images/test/{defect_type}_{image_filename}.jpg", original_image)
         cv2.imwrite(f"./results/images/test/{defect_type}_{image_filename}_heatmap.jpg", heatmap_on_image)

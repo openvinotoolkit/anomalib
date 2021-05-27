@@ -122,7 +122,13 @@ class MVTec(VisionDataset):
 
         if self.split == "train":
             # sample = image_tensor
-            sample = {'image': image_tensor}
+            if mask is None:
+                # Create empty mask for good test samples.
+                mask = Image.new(mode="1", size=image.size)
+
+            mask = mask.convert(mode="1")
+            mask_tensor = self.mask_transforms(mask).to(torch.uint8)
+            sample = {"image_path": image_path, "mask_path": mask_path, "image": image_tensor, "mask": mask_tensor}
         else:
             if mask is None:
                 # Create empty mask for good test samples.
