@@ -24,9 +24,9 @@ from sklearn.metrics import precision_recall_curve
 from sklearn.metrics import roc_auc_score
 from torch import Tensor
 
+from anomalib.core.model.feature_extractor import FeatureExtractor
+from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
 from anomalib.datasets.utils import Denormalize
-from anomalib.models.shared.feature_extractor import FeatureExtractor
-from anomalib.models.shared.multi_variate_gaussian import MultiVariateGaussian
 
 __all__ = ["PADIMModel"]
 
