@@ -10,13 +10,14 @@ import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 import torchvision
+from nncf import create_compressed_model, register_default_init_args
 from omegaconf.dictconfig import DictConfig
-from pytorch_lightning.callbacks import Callback, EarlyStopping, ModelCheckpoint
+from pytorch_lightning.callbacks import Callback
+from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from sklearn.metrics import roc_auc_score
 from torch import Tensor, nn, optim
-import torch
-import nncf
-from nncf import NNCFConfig, create_compressed_model, load_state, register_default_init_args
+
+from anomalib.models.stfpm.nncf_callback import NNCFCallback
 from anomalib.models.stfpm.nncf_utils import InitLoader, criterion_fn
 
 __all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel"]
@@ -82,6 +83,9 @@ class Callbacks:
         )
         early_stopping = EarlyStopping(monitor=self.args.metric, patience=self.args.patience)
         callbacks = [checkpoint, early_stopping]
+        if self.args.use_nncf:
+            callbacks.append(NNCFCallback(self.args.nncf_path))
+
         return callbacks
 
     def __call__(self):
@@ -171,12 +175,15 @@ class STFPMLightning(pl.LightningModule):
         self.save_hyperparameters(hparams)
         self.callbacks = Callbacks(hparams)()
 
-        model = STFPMModel(hparams)
-        nncf_config = NNCFConfig.from_json("anomalib/models/stfpm/nncf.json")
-        init_loader = InitLoader(train_loader)
-        nncf_config = register_default_init_args(nncf_config, init_loader, model.loss, criterion_fn=criterion_fn)
-        self.comp_ctrl, self.model = create_compressed_model(model, nncf_config)
-        self.compression_scheduler = self.comp_ctrl.scheduler
+        self.model = STFPMModel(hparams)
+        self.train_loader = train_loader
+        self.loss_val = 0
+
+        # init_loader = InitLoader(train_loader)
+        # nncf_config = register_default_init_args(self.nncf_config, init_loader, self.model.loss,
+        #                                          criterion_fn=criterion_fn)
+        # self.comp_ctrl, self.model = create_compressed_model(self.model, nncf_config)
+        # self.compression_scheduler = self.comp_ctrl.scheduler
 
     def configure_optimizers(self):
         return optim.SGD(
@@ -187,10 +194,11 @@ class STFPMLightning(pl.LightningModule):
         )
 
     def training_step(self, batch, batch_idx):
-        self.compression_scheduler.step()
+        # self.compression_scheduler.step()
         teacher_features, student_features = self.model.forward(batch["image"])
-        compression_loss = self.comp_ctrl.loss()
-        loss = self.model.loss(teacher_features, student_features) + compression_loss
+        # compression_loss = self.comp_ctrl.loss()
+        loss = self.loss_val + self.model.loss(teacher_features, student_features)
+        self.loss_val = 0
         return {"loss": loss}
 
     def validation_step(self, batch, batch_idx):

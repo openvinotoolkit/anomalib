@@ -17,6 +17,8 @@ model:
   weight_decay: 0.0001
   project_path: ./results
   metric: auc
+  use_nncf: False
+  nncf_path: ./anomalib/models/stfpm/nncf.json
 
 nncf:
   input_info:
