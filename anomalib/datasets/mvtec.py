@@ -226,4 +226,4 @@ class MVTecDataModule(LightningDataModule):
 
     def test_dataloader(self) -> DataLoader:
         # TODO: Handle batch_size > 1
-        return DataLoader(self.val_data, shuffle=False, batch_size=32, num_workers=self.num_workers)
+        return DataLoader(self.val_data, shuffle=False, batch_size=1, num_workers=self.num_workers)
