@@ -1,26 +1,23 @@
-import argparse
 import os
 import os.path
-import pickle
 from pathlib import Path
-from random import sample
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List
 
 import cv2
-import matplotlib.pyplot as plt
 import numpy as np
-import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 import torchvision
-from anomalib.datasets.utils import Denormalize
 from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.callbacks import Callback, EarlyStopping, ModelCheckpoint
-from scipy.ndimage import gaussian_filter
 from skimage import morphology
 from skimage.segmentation import mark_boundaries
 from sklearn.metrics import precision_recall_curve, roc_auc_score
 from torch import Tensor, nn, optim
+
+from anomalib.datasets.utils import Denormalize
+from anomalib.models.base.model import BaseAnomalyModel
+from anomalib.utils.visualizer import Visualizer
 
 __all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel"]
 
@@ -168,37 +165,11 @@ class AnomalyMapGenerator:
         return self.compute_anomaly_map(teacher_features, student_features)
 
 
-class Visualizer:
-    def __init__(self, num_rows: int, num_cols: int, figure_size: Tuple[int, int]):
-        self.figure_index: int = 0
-
-        self.figure, self.axis = plt.subplots(num_rows, num_cols, figsize=figure_size)
-        self.figure.subplots_adjust(right=0.9)
-
-        for axis in self.axis:
-            axis.axes.xaxis.set_visible(False)
-            axis.axes.yaxis.set_visible(False)
-
-    def add_image(self, index: int, image: np.ndarray, title: str, cmap: Optional[str] = None):
-        self.axis[index].imshow(image, cmap)
-        self.axis[index].title.set_text(title)
-
-    def show(self):
-        self.figure.show()
-
-    def save(self, filename: Path):
-        filename.parent.mkdir(parents=True, exist_ok=True)
-        self.figure.savefig(filename, dpi=100)
-
-    def close(self):
-        plt.close(self.figure)
-
-
-class STFPMModel(pl.LightningModule):
+class STFPMModel(BaseAnomalyModel):
+    # class STFPMModel(pl.LightningModule):
     def __init__(self, hparams):
 
-        super().__init__()
-        self.save_hyperparameters(hparams)
+        super().__init__(hparams)
         self.backbone = getattr(torchvision.models, hparams.model.backbone)
         self.layers = hparams.model.layers
 
@@ -213,17 +184,7 @@ class STFPMModel(pl.LightningModule):
         self.anomaly_map_generator = AnomalyMapGenerator(batch_size=1, image_size=224)
         self.callbacks = Callbacks(hparams)()
 
-        self.filenames = None
-        self.images = None
-        self.true_masks = None
-        self.anomaly_maps = None
-        self.true_labels = None
-        self.pred_labels = None
-        self.image_roc_auc = None
-        self.pixel_roc_auc = None
-
     def forward(self, images):
-        self.teacher_model.eval()
         teacher_features: Dict[str, Tensor] = self.teacher_model(images)
         student_features: Dict[str, Tensor] = self.student_model(images)
         return teacher_features, student_features
@@ -237,6 +198,7 @@ class STFPMModel(pl.LightningModule):
         )
 
     def training_step(self, batch, batch_idx):
+        self.teacher_model.eval()
         teacher_features, student_features = self.forward(batch["image"])
         loss = self.loss(teacher_features, student_features)
         return {"loss": loss}
@@ -250,7 +212,7 @@ class STFPMModel(pl.LightningModule):
             "filenames": filenames,
             "images": images,
             "true_labels": labels.cpu().numpy(),
-            "true_masks": masks.cpu().numpy(),
+            "true_masks": masks.squeeze().cpu().numpy(),
             "anomaly_maps": anomaly_maps,
         }
 
@@ -262,7 +224,7 @@ class STFPMModel(pl.LightningModule):
         self.filenames = [Path(f) for x in outputs for f in x["filenames"]]
         self.images = [x["images"] for x in outputs]
 
-        self.true_masks = np.stack([output["true_masks"].squeeze() for output in outputs])
+        self.true_masks = np.stack([output["true_masks"] for output in outputs])
         self.anomaly_maps = np.stack([output["anomaly_maps"] for output in outputs])
 
         self.true_labels = np.stack([output["true_labels"] for output in outputs])
@@ -289,10 +251,10 @@ class STFPMModel(pl.LightningModule):
             vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
 
             visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
-            visualizer.add_image(index=0, image=image, title="Image")
-            visualizer.add_image(index=1, image=true_mask, cmap="gray", title="Ground Truth")
-            visualizer.add_image(index=2, image=heat_map, title="Predicted Heat Map")
-            visualizer.add_image(index=3, image=pred_mask, cmap="gray", title="Predicted Mask")
-            visualizer.add_image(index=4, image=vis_img, title="Segmentation Result")
+            visualizer.add_image(image=image, title="Image")
+            visualizer.add_image(image=true_mask, color_map="gray", title="Ground Truth")
+            visualizer.add_image(image=heat_map, title="Predicted Heat Map")
+            visualizer.add_image(image=pred_mask, color_map="gray", title="Predicted Mask")
+            visualizer.add_image(image=vis_img, title="Segmentation Result")
             visualizer.save(Path(self.hparams.project.path) / "images" / filename.parent.name / filename.name)
             visualizer.close()
