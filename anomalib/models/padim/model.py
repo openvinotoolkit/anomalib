@@ -1,15 +1,13 @@
 import argparse
 import os
 import os.path
-import pickle
 from pathlib import Path
 from random import sample
 from typing import Dict
 from typing import List
-from typing import Optional, Sequence, Tuple
+from typing import Sequence
 
 import cv2
-import matplotlib.pyplot as plt
 import numpy as np
 import pytorch_lightning as pl
 import torch
@@ -27,6 +25,8 @@ from torch import Tensor
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
 from anomalib.datasets.utils import Denormalize
+from anomalib.models.base.model import BaseAnomalyModel
+from anomalib.utils.visualizer import Visualizer
 
 __all__ = ["PADIMModel"]
 
@@ -153,7 +153,7 @@ class AnomalyMapGenerator:
         self.gamma = gamma
 
     @staticmethod
-    def compute_distance(embedding: Tensor, outputs: List[Tensor]) -> Tensor:
+    def compute_distance(embedding: Tensor, stats: List[Tensor]) -> Tensor:
         def _mahalanobis(u: Tensor, v: Tensor, inv_cov: Tensor) -> Tensor:
             """
             Compute the Mahalanobis distance between two 1-D arrays.
@@ -178,8 +178,8 @@ class AnomalyMapGenerator:
 
         distance_list = []
         for i in range(height * width):
-            mean = outputs[0][:, i]
-            inverse_covariance = torch.linalg.inv(outputs[1][:, :, i])
+            mean = stats[0][:, i]
+            inverse_covariance = torch.linalg.inv(stats[1][:, :, i])
             distance = [_mahalanobis(emb[:, i], mean, inverse_covariance) for emb in embedding]
             distance_list.append(distance)
 
@@ -201,8 +201,8 @@ class AnomalyMapGenerator:
 
         return anomaly_map
 
-    def compute_anomaly_map(self, embedding: Tensor, stats: List[Tensor]) -> np.ndarray:
-        score_map = self.compute_distance(embedding, stats)
+    def compute_anomaly_map(self, embedding: Tensor, mean: Tensor, covariance: Tensor) -> np.ndarray:
+        score_map = self.compute_distance(embedding, stats=[mean, covariance])
         up_sampled_score_map = self.up_sample(score_map)
         smoothed_anomaly_map = self.smooth_anomaly_map(up_sampled_score_map)
 
@@ -225,7 +225,6 @@ class AnomalyMapGenerator:
 
     @staticmethod
     def compute_adaptive_threshold(true_masks, anomaly_map):
-        # get optimal threshold
         precision, recall, thresholds = precision_recall_curve(true_masks.flatten(), anomaly_map.flatten())
         a = 2 * precision * recall
         b = precision + recall
@@ -246,36 +245,9 @@ class AnomalyMapGenerator:
         return mask
 
 
-class Visualizer:
-    def __init__(self, num_rows: int, num_cols: int, figure_size: Tuple[int, int]):
-        self.figure_index: int = 0
-
-        self.figure, self.axis = plt.subplots(num_rows, num_cols, figsize=figure_size)
-        self.figure.subplots_adjust(right=0.9)
-
-        for axis in self.axis:
-            axis.axes.xaxis.set_visible(False)
-            axis.axes.yaxis.set_visible(False)
-
-    def add_image(self, index: int, image: np.ndarray, title: str, cmap: Optional[str] = None):
-        self.axis[index].imshow(image, cmap)
-        self.axis[index].title.set_text(title)
-
-    def show(self):
-        self.figure.show()
-
-    def save(self, filename: Path):
-        filename.parent.mkdir(parents=True, exist_ok=True)
-        self.figure.savefig(filename, dpi=100)
-
-    def close(self):
-        plt.close(self.figure)
-
-
-class PADIMModel(pl.LightningModule):
+class PADIMModel(BaseAnomalyModel):
     def __init__(self, hparams):
-        super().__init__()
-        self.save_hyperparameters(hparams)
+        super().__init__(hparams)
         self.layers = hparams.model.layers
         self._model = Padim(hparams.model.backbone, hparams.model.layers).eval()
 
@@ -292,9 +264,15 @@ class PADIMModel(pl.LightningModule):
         return {"features": features}
 
     def validation_step(self, batch, batch_idx):
-        filename, image, label, mask = batch["image_path"], batch["image"], batch["label"], batch["mask"]
-        features = self._model(image)
-        return {"filename": filename, "image": image, "features": features, "label": label, "mask": mask}
+        filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
+        features = self._model(images)
+        return {
+            "filenames": filenames,
+            "images": images,
+            "features": features,
+            "true_labels": labels.cpu().numpy(),
+            "true_masks": masks.squeeze().cpu().numpy(),
+        }
 
     def test_step(self, batch, batch_idx):
         return self.validation_step(batch, batch_idx)
@@ -307,35 +285,36 @@ class PADIMModel(pl.LightningModule):
         embedding = self._model.generate_embedding(features)
         self.stats = self._model.gaussian.fit(embedding)
 
-        train_outputs = self.stats
-        with open(os.path.join(self.hparams.project.path, "weights/stats.pkl"), "wb") as f:
-            pickle.dump(train_outputs, f)
-
     def validation_epoch_end(self, outputs):
-        filenames = [Path(f) for x in outputs for f in x["filename"]]
-        images = [x["image"] for x in outputs]
-        true_labels = torch.stack([x["label"] for x in outputs])
-        true_masks = torch.stack([x["mask"].squeeze() for x in outputs])
+        self.filenames = [Path(f) for x in outputs for f in x["filenames"]]
+        self.images = [x["images"] for x in outputs]
+
+        self.true_masks = np.stack([x["true_masks"] for x in outputs])
 
         test_features = self._model.append_features(outputs)
         test_features = self._model.concat_features(test_features)
+
         embedding = self._model.generate_embedding(test_features)
-        anomaly_maps = self.anomaly_map_generator.compute_anomaly_map(embedding, self.stats)
+        self.anomaly_maps = self.anomaly_map_generator.compute_anomaly_map(
+            embedding=embedding, mean=self._model.gaussian.mean, covariance=self._model.gaussian.covariance
+        )
 
-        # Compute performance.
-        pred_labels = anomaly_maps.reshape(anomaly_maps.shape[0], -1).max(axis=1)
-        true_labels = np.asarray(true_labels.cpu())
-        true_masks = np.asarray(true_masks.cpu())
+        self.true_labels = np.stack([x["true_labels"] for x in outputs])
+        self.pred_labels = self.anomaly_maps.reshape(self.anomaly_maps.shape[0], -1).max(axis=1)
 
-        image_roc_auc = roc_auc_score(true_labels, pred_labels)
-        pixel_roc_auc = roc_auc_score(true_masks.flatten(), anomaly_maps.flatten())
+        image_roc_auc = roc_auc_score(self.true_labels, self.pred_labels)
+        pixel_roc_auc = roc_auc_score(self.true_masks.flatten(), self.anomaly_maps.flatten())
 
         self.log(name="Image-Level AUC", value=image_roc_auc, on_epoch=True, prog_bar=True)
         self.log(name="Pixel-Level AUC", value=pixel_roc_auc, on_epoch=True, prog_bar=True)
 
-        threshold = self.anomaly_map_generator.compute_adaptive_threshold(true_masks, anomaly_maps)
+    def test_epoch_end(self, outputs):
+        self.validation_epoch_end(outputs)
+        threshold = self.anomaly_map_generator.compute_adaptive_threshold(self.true_masks, self.anomaly_maps)
 
-        for i, (filename, image, true_mask, anomaly_map) in enumerate(zip(filenames, images, true_masks, anomaly_maps)):
+        for (filename, image, true_mask, anomaly_map) in zip(
+            self.filenames, self.images, self.true_masks, self.anomaly_maps
+        ):
             image = Denormalize()(image.squeeze())
 
             heat_map = self.anomaly_map_generator.apply_heatmap_on_image(anomaly_map, image)
@@ -343,13 +322,10 @@ class PADIMModel(pl.LightningModule):
             vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
 
             visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
-            visualizer.add_image(index=0, image=image, title="Image")
-            visualizer.add_image(index=1, image=true_mask, cmap="gray", title="Ground Truth")
-            visualizer.add_image(index=2, image=heat_map, title="Predicted Heat Map")
-            visualizer.add_image(index=3, image=pred_mask, cmap="gray", title="Predicted Mask")
-            visualizer.add_image(index=4, image=vis_img, title="Segmentation Result")
+            visualizer.add_image(image=image, title="Image")
+            visualizer.add_image(image=true_mask, color_map="gray", title="Ground Truth")
+            visualizer.add_image(image=heat_map, title="Predicted Heat Map")
+            visualizer.add_image(image=pred_mask, color_map="gray", title="Predicted Mask")
+            visualizer.add_image(image=vis_img, title="Segmentation Result")
             visualizer.save(Path(self.hparams.project.path) / "images" / filename.parent.name / filename.name)
             visualizer.close()
-
-    def test_epoch_end(self, outputs):
-        self.validation_epoch_end(outputs)
