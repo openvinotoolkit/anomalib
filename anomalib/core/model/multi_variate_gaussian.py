@@ -4,8 +4,19 @@ from typing import Optional
 import torch
 from torch import Tensor
 
+from anomalib.core.model.dynamic_module import DynamicBufferModule
 
-class MultiVariateGaussian(torch.nn.Module):
+
+class MultiVariateGaussian(DynamicBufferModule):
+    def __init__(self):
+        super().__init__()
+        # TODO: Need to define these here. Otherwise, mypy is not happy
+        # self.mean: Optional[Tensor] = None
+        # self.covariance: Optional[Tensor] = None
+
+        self.register_buffer("mean", torch.Tensor())
+        self.register_buffer("covariance", torch.Tensor())
+
     @staticmethod
     def _cov(x: Tensor, rowvar: bool = False, bias: bool = False, ddof: Optional[int] = None, aweights=None) -> Tensor:
         """
@@ -87,13 +98,13 @@ class MultiVariateGaussian(torch.nn.Module):
 
         batch, channel, height, width = embedding.size()
         embedding_vectors = embedding.view(batch, channel, height * width)
-        mean = torch.mean(embedding_vectors, dim=0)
-        cov = torch.zeros(size=(channel, channel, height * width), device=device)
+        self.mean = torch.mean(embedding_vectors, dim=0)
+        self.covariance = torch.zeros(size=(channel, channel, height * width), device=device)
         identity = torch.eye(channel).to(device)
         for i in range(height * width):
-            cov[:, :, i] = self._cov(embedding_vectors[:, :, i], rowvar=False) + 0.01 * identity
+            self.covariance[:, :, i] = self._cov(embedding_vectors[:, :, i], rowvar=False) + 0.01 * identity
 
-        return [mean, cov]
+        return [self.mean, self.covariance]
 
     def fit(self, embedding: Tensor) -> List[Tensor]:
         return self.forward(embedding)
