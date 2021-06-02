@@ -9,7 +9,6 @@ from typing import Sequence
 
 import cv2
 import numpy as np
-import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 import torchvision
@@ -29,9 +28,6 @@ from anomalib.models.base.model import BaseAnomalyModel
 from anomalib.utils.visualizer import Visualizer
 
 __all__ = ["PADIMModel"]
-
-
-pl.seed_everything(42)
 
 
 def parse_args():

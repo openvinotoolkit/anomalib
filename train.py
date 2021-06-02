@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 
-from pytorch_lightning import Trainer
+from pytorch_lightning import Trainer, seed_everything
 
 from anomalib.config import get_configurable_parameters
 from anomalib.datasets import get_datamodule
@@ -17,6 +17,10 @@ def get_args():
 
 args = get_args()
 config = get_configurable_parameters(model_name=args.model, model_config_path=args.model_config_path)
+
+if config.project.seed != 0:
+    seed_everything(config.project.seed)
+
 datamodule = get_datamodule(config)
 model = get_model(config)
 

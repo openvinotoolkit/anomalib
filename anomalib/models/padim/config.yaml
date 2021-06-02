@@ -15,6 +15,7 @@ model:
   metric: auc
 
 project:
+  seed: 0
   path: ./results
 
 # PL Trainer Args. Don't add extra parameter here.
