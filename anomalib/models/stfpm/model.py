@@ -17,7 +17,7 @@ from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from sklearn.metrics import roc_auc_score
 from torch import Tensor, nn, optim
 
-from anomalib.models.stfpm.nncf_callback import NNCFCallback
+from anomalib.models.stfpm.nncf_callback import NNCFCallback, LoadModelCallback, TimerCallback
 from anomalib.models.stfpm.nncf_utils import InitLoader, criterion_fn
 
 __all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel"]
@@ -77,14 +77,15 @@ class Callbacks:
         self.args = args
 
     def get_callbacks(self) -> List[Callback]:
+        model_loader = LoadModelCallback(os.path.join(self.args.project_path, "weights/model.ckpt"))
         checkpoint = ModelCheckpoint(
             dirpath=os.path.join(self.args.project_path, "weights"),
             filename="model",
         )
         early_stopping = EarlyStopping(monitor=self.args.metric, patience=self.args.patience)
-        callbacks = [checkpoint, early_stopping]
-        if self.args.use_nncf:
-            callbacks.append(NNCFCallback(self.args.nncf_path))
+        callbacks = [model_loader, checkpoint, early_stopping, TimerCallback()]
+        if "nncf" in self.args.keys():
+            callbacks.insert(0, NNCFCallback(self.args.nncf))
 
         return callbacks
 

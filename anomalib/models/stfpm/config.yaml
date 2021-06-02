@@ -2,7 +2,7 @@ dataset:
   dataset: mvtec
   dataset_path: ./datasets/MVTec/leather
   batch_size: 32
-  num_workers: 36
+  num_workers: 0
 
 model:
   model: stfpm
@@ -17,17 +17,17 @@ model:
   weight_decay: 0.0001
   project_path: ./results
   metric: auc
-  use_nncf: False
-  nncf_path: ./anomalib/models/stfpm/nncf.json
-
-nncf:
-  input_info:
-    sample_size: [1,3,256,256]
-  compression:
-    algorithm: quantization
-    initializer:
-      range:
-        num_init_samples: 256
+  nncf:
+    input_info:
+      sample_size: [1,3,256,256]
+    compression:
+      algorithm: quantization
+      initializer:
+        range:
+          num_init_samples: 256
+        precision:
+          bits: [8]
+      ignored_scopes: ["{re}.*teacher*"]
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
