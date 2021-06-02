@@ -21,9 +21,6 @@ __all__ = ["MVTec", "MVTecDataModule"]
 def get_image_transforms() -> T.Compose:
     transform = T.Compose(
         [
-            # ToTensor(),
-            # Resize((256, 256)),
-            # Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             T.Resize(256, Image.ANTIALIAS),
             T.CenterCrop(224),
             T.ToTensor(),
@@ -36,8 +33,6 @@ def get_image_transforms() -> T.Compose:
 def get_mask_transforms() -> T.Compose:
     transform = Compose(
         [
-            # ToTensor(),
-            # Resize((256, 256)),
             T.Resize(256, Image.NEAREST),
             T.CenterCrop(224),
             T.ToTensor(),
