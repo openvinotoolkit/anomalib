@@ -3,12 +3,11 @@ import os
 import os.path
 from pathlib import Path
 from random import sample
-from typing import Dict
-from typing import List
-from typing import Sequence
+from typing import Dict, Optional, Union, List, Sequence
 
 import cv2
 import numpy as np
+import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 import torchvision
@@ -24,7 +23,6 @@ from torch import Tensor
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
 from anomalib.datasets.utils import Denormalize
-from anomalib.models.base.model import BaseAnomalyModel
 from anomalib.utils.visualizer import Visualizer
 
 __all__ = ["PADIMModel"]
@@ -241,15 +239,28 @@ class AnomalyMapGenerator:
         return mask
 
 
-class PADIMModel(BaseAnomalyModel):
+class PADIMModel(pl.LightningModule):
     def __init__(self, hparams):
-        super().__init__(hparams)
+        super().__init__()
+        self.save_hyperparameters(hparams)
         self.layers = hparams.model.layers
         self._model = Padim(hparams.model.backbone, hparams.model.layers).eval()
 
         self.anomaly_map_generator = AnomalyMapGenerator()
         self.callbacks = Callbacks(hparams)()
         self.stats: List[Tensor, Tensor] = []
+
+        self.filenames: Optional[List[Union[str, Path]]] = None
+        self.images: Optional[List[Union[np.ndarray, Tensor]]] = None
+
+        self.true_masks: Optional[List[Union[np.ndarray, Tensor]]] = None
+        self.anomaly_maps: Optional[List[Union[np.ndarray, Tensor]]] = None
+
+        self.true_labels: Optional[List[Union[np.ndarray, Tensor]]] = None
+        self.pred_labels: Optional[List[Union[np.ndarray, Tensor]]] = None
+
+        self.image_roc_auc: Optional[float] = None
+        self.pixel_roc_auc: Optional[float] = None
 
     def configure_optimizers(self):
         return None

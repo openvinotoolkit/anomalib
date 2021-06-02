@@ -1,10 +1,11 @@
 import os
 import os.path
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Union, Optional
 
 import cv2
 import numpy as np
+import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 import torchvision
@@ -16,7 +17,6 @@ from sklearn.metrics import precision_recall_curve, roc_auc_score
 from torch import Tensor, nn, optim
 
 from anomalib.datasets.utils import Denormalize
-from anomalib.models.base.model import BaseAnomalyModel
 from anomalib.utils.visualizer import Visualizer
 
 __all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel"]
@@ -165,11 +165,10 @@ class AnomalyMapGenerator:
         return self.compute_anomaly_map(teacher_features, student_features)
 
 
-class STFPMModel(BaseAnomalyModel):
-    # class STFPMModel(pl.LightningModule):
+class STFPMModel(pl.LightningModule):
     def __init__(self, hparams):
-
-        super().__init__(hparams)
+        super().__init__()
+        self.save_hyperparameters(hparams)
         self.backbone = getattr(torchvision.models, hparams.model.backbone)
         self.layers = hparams.model.layers
 
@@ -183,6 +182,18 @@ class STFPMModel(BaseAnomalyModel):
         self.loss = Loss()
         self.anomaly_map_generator = AnomalyMapGenerator(batch_size=1, image_size=224)
         self.callbacks = Callbacks(hparams)()
+
+        self.filenames: Optional[List[Union[str, Path]]] = None
+        self.images: Optional[List[Union[np.ndarray, Tensor]]] = None
+
+        self.true_masks: Optional[List[Union[np.ndarray, Tensor]]] = None
+        self.anomaly_maps: Optional[List[Union[np.ndarray, Tensor]]] = None
+
+        self.true_labels: Optional[List[Union[np.ndarray, Tensor]]] = None
+        self.pred_labels: Optional[List[Union[np.ndarray, Tensor]]] = None
+
+        self.image_roc_auc: Optional[float] = None
+        self.pixel_roc_auc: Optional[float] = None
 
     def forward(self, images):
         teacher_features: Dict[str, Tensor] = self.teacher_model(images)
