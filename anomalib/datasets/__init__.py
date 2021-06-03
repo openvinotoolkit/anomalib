@@ -1,5 +1,5 @@
-from argparse import Namespace
-from typing import Dict, Union
+from typing import Union
+
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning import LightningDataModule
 
@@ -13,7 +13,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]):
             root=config.dataset.path,
             category=config.dataset.category,
             batch_size=config.dataset.batch_size,
-            num_workers=config.dataset.num_workers
+            num_workers=config.dataset.num_workers,
         )
     else:
         raise ValueError("Unknown dataset!")
