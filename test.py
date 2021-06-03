@@ -4,7 +4,7 @@ import os
 import torch
 from pytorch_lightning import Trainer
 
-from anomalib.config import get_configurable_parameters
+from anomalib.config.config import get_configurable_parameters
 from anomalib.datasets import get_datamodule
 from anomalib.models import get_model
 
