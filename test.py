@@ -1,3 +1,4 @@
+from anomalib.helpers.sigopt_logger import SigoptLogger
 from argparse import ArgumentParser
 
 import torch
@@ -26,5 +27,7 @@ model = get_model(config.model)
 # model.load_from_checkpoint(checkpoint_path="./results/weights/pl_model.pth")
 model.load_state_dict(torch.load(args.weight_file)["state_dict"])
 
-trainer = Trainer(callbacks=model.callbacks, **config.trainer)
+logger = SigoptLogger(project="anomaly", name=f"{args.model}_test")
+
+trainer = Trainer(callbacks=model.callbacks, **config.trainer, logger=logger)
 trainer.test(model=model, datamodule=datamodule)

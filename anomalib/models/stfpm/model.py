@@ -206,6 +206,12 @@ class STFPMModel(pl.LightningModule):
         cv2.imwrite(f"./results/images/test/{defect_type}_{image_filename}_heatmap.jpg", heatmap_on_image)
         cv2.imwrite(f"./results/images/test/{defect_type}_{image_filename}_mask.jpg", masks.cpu().numpy())
 
+        # since log_image is a custom defined function
+        self.logger.log_image(name=f"{defect_type}_{image_filename}", image=np.roll(original_image, 1, axis=-1)) # bgr to rgb
+        self.logger.log_image(name=f"{defect_type}_{image_filename}_heatmap", image=np.roll(heatmap_on_image, 1, axis=-1))
+        self.logger.log_image(name=f"{defect_type}_{image_filename}_mask", image=masks.cpu().numpy().squeeze())
+        
+
         return {"auc": auc}
 
     def validation_epoch_end(self, outputs):
