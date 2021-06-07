@@ -5,6 +5,7 @@ import torch
 
 
 class Denormalize(object):
+    """ """
     def __init__(self, mean: Optional[List[float]] = None, std: Optional[List[float]] = None):
         # If no mean and std provided, assign ImageNet values.
         self.mean = mean if mean is not None else torch.Tensor([0.485, 0.456, 0.406])
@@ -27,6 +28,7 @@ class Denormalize(object):
 
 
 class ToNumpy:
+    """ """
     def __call__(self, tensor: torch.Tensor, dims: Optional[Tuple[int, ...]] = None) -> np.ndarray:
 
         # Default support is (C, H, W) or (N, C, H, W)

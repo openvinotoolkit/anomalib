@@ -5,26 +5,27 @@ from torch import nn, Tensor
 
 
 class FeatureExtractor(nn.Module):
-    """
-    FeatureExtractor [summary]
+    """FeatureExtractor [summary]
 
-    :param nn: [description]
-    :type nn: [type]
+        Args:
+          nn(type]
 
-    :Example:
+    :Example:): description]
 
-    >>> import torch
-    >>> import torchvision
-    >>> from anomalib.core.model.feature_extractor import FeatureExtractor
+        Returns:
 
-    >>> model = FeatureExtractor(model=torchvision.models.resnet18(), layers=['layer1', 'layer2', 'layer3'])
-    >>> input = torch.rand((32, 3, 256, 256))
-    >>> features = model(input)
+        >>> import torch
+        >>> import torchvision
+        >>> from anomalib.core.model.feature_extractor import FeatureExtractor
 
-    >>> [layer for layer in features.keys()]
-        ['layer1', 'layer2', 'layer3']
-    >>> [feature.shape for feature in features.values()]
-        [torch.Size([32, 64, 64, 64]), torch.Size([32, 128, 32, 32]), torch.Size([32, 256, 16, 16])]
+        >>> model = FeatureExtractor(model=torchvision.models.resnet18(), layers=['layer1', 'layer2', 'layer3'])
+        >>> input = torch.rand((32, 3, 256, 256))
+        >>> features = model(input)
+
+        >>> [layer for layer in features.keys()]
+            ['layer1', 'layer2', 'layer3']
+        >>> [feature.shape for feature in features.values()]
+            [torch.Size([32, 64, 64, 64]), torch.Size([32, 128, 32, 32]), torch.Size([32, 256, 16, 16])]
     """
 
     def __init__(self, backbone: nn.Module, layers: Iterable[str]):
@@ -38,12 +39,39 @@ class FeatureExtractor(nn.Module):
             layer.register_forward_hook(self.get_features(layer_id))
 
     def get_features(self, layer_id: str) -> Callable:
+        """
+
+        Args:
+          layer_id: str:
+
+        Returns:
+
+        """
+
         def hook(_, __, output):
+            """
+
+            Args:
+              _:
+              __:
+              output:
+
+            Returns:
+
+            """
             self._features[layer_id] = output
 
         return hook
 
     def forward(self, x: Tensor) -> Dict[str, Tensor]:
+        """
+
+        Args:
+          x: Tensor:
+
+        Returns:
+
+        """
         self._features = {layer: torch.empty(0) for layer in self.layers}
         _ = self.backbone(x)
         return self._features

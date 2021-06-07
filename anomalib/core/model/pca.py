@@ -4,6 +4,8 @@ from anomalib.core.model.dynamic_module import DynamicBufferModule
 
 
 class PCA(DynamicBufferModule):
+    """ """
+
     def __init__(self, n_components: int):
         super().__init__()
         self.n_components = n_components
@@ -14,6 +16,14 @@ class PCA(DynamicBufferModule):
         self.register_buffer("mean", torch.Tensor())
 
     def fit_transform(self, dataset: torch.Tensor) -> torch.Tensor:
+        """
+
+        Args:
+          dataset: torch.Tensor:
+
+        Returns:
+
+        """
         mean = torch.mean(dataset, axis=0)
         dataset -= mean
 
@@ -27,8 +37,24 @@ class PCA(DynamicBufferModule):
         return torch.matmul(dataset, V[:, : self.n_components])
 
     def transform(self, y: torch.Tensor) -> torch.Tensor:
+        """
+
+        Args:
+          y: torch.Tensor:
+
+        Returns:
+
+        """
         y -= self.mean
         return torch.matmul(y, self.V[:, : self.n_components])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+
+        Args:
+          x: torch.Tensor:
+
+        Returns:
+
+        """
         return self.transform(x)

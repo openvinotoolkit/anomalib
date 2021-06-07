@@ -10,6 +10,18 @@ def get_configurable_parameters(
     config_filename: Optional[str] = "config",
     config_file_extension: Optional[str] = "yaml",
 ) -> DictConfig:
+    """
+
+    Args:
+      model_name: Optional[str]:  (Default value = None)
+      model_config_path: Optional[Union[Path:
+      str]]:  (Default value = None)
+      config_filename: Optional[str]:  (Default value = "config")
+      config_file_extension: Optional[str]:  (Default value = "yaml")
+
+    Returns:
+
+    """
     if model_name is None and model_config_path is None:
         raise ValueError(
             "Both model_name and model config path cannot be None! "

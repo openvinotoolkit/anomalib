@@ -7,6 +7,8 @@ from anomalib.core.model.dynamic_module import DynamicBufferModule
 
 
 class GaussianKDE(DynamicBufferModule):
+    """ """
+
     def __init__(self, dataset: Optional[torch.Tensor] = None):
         super().__init__()
 
@@ -18,6 +20,14 @@ class GaussianKDE(DynamicBufferModule):
         self.register_buffer("norm", torch.Tensor())
 
     def forward(self, features: torch.Tensor) -> torch.Tensor:
+        """
+
+        Args:
+          features: torch.Tensor:
+
+        Returns:
+
+        """
         features = torch.matmul(features, self.bw_transform)
 
         estimate = torch.zeros(features.shape[0])
@@ -29,6 +39,14 @@ class GaussianKDE(DynamicBufferModule):
         return estimate
 
     def fit(self, dataset: torch.Tensor):
+        """
+
+        Args:
+          dataset: torch.Tensor:
+
+        Returns:
+
+        """
         n, d = dataset.shape
 
         # compute scott's bandwidth factor
@@ -53,6 +71,15 @@ class GaussianKDE(DynamicBufferModule):
 
     @staticmethod
     def cov(X: torch.Tensor, bias: Optional[bool] = False) -> torch.Tensor:
+        """
+
+        Args:
+          X: torch.Tensor:
+          bias: Optional[bool]:  (Default value = False)
+
+        Returns:
+
+        """
         mean = torch.mean(X, dim=1)
         X -= mean[:, None]
         cov = torch.matmul(X, X.T) / (X.size(1) - int(not bias))

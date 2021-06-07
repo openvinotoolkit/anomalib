@@ -8,6 +8,8 @@ from anomalib.core.model.dynamic_module import DynamicBufferModule
 
 
 class MultiVariateGaussian(DynamicBufferModule):
+    """ """
+
     def __init__(self):
         super().__init__()
         # TODO: Need to define these here. Otherwise, mypy is not happy
@@ -19,29 +21,37 @@ class MultiVariateGaussian(DynamicBufferModule):
 
     @staticmethod
     def _cov(x: Tensor, rowvar: bool = False, bias: bool = False, ddof: Optional[int] = None, aweights=None) -> Tensor:
-        """
-        Estimates covariance matrix like numpy.cov
-        :param x: A 1-D or 2-D array containing multiple variables and observations.
-                        Each row of `m` represents a variable, and each column a single
-                        observation of all those variables. Also see `rowvar` below.
-        :param rowvar: If `rowvar` is True (default), then each row represents a
-                        variable, with observations in the columns. Otherwise, the relationship
-                        is transposed: each column represents a variable, while the rows
-                        contain observations.
-        :param bias: Default normalization (False) is by ``(N - 1)``, where ``N`` is the
-                        number of observations given (unbiased estimate). If `bias` is True,
-                        then normalization is by ``N``. These values can be overridden by using
-                        the keyword ``ddof`` in numpy versions >= 1.5.
-        :param ddof: If not ``None`` the default value implied by `bias` is overridden.
-                        Note that ``ddof=1`` will return the unbiased estimate, even if both
-                        `fweights` and `aweights` are specified, and ``ddof=0`` will return
-                        the simple average. See the notes for the details. The default value
-                        is ``None``.
-        :param aweights: 1-D array of observation vector weights. These relative weights are
-                        typically large for observations considered "important" and smaller for
-                        observations considered less "important". If ``ddof=0`` the array of
-                        weights can be used to assign probabilities to observation vectors.
-        :return: The covariance matrix of the variables.
+        """Estimates covariance matrix like numpy.cov
+
+        Args:
+          x: A 1-D or 2-D array containing multiple variables and observations.
+        Each row of `m` represents a variable, and each column a single
+        observation of all those variables. Also see `rowvar` below.
+          rowvar: If `rowvar` is True (default), then each row represents a
+        variable, with observations in the columns. Otherwise, the relationship
+        is transposed: each column represents a variable, while the rows
+        contain observations.
+          bias: Default normalization (False) is by ``(N - 1)``, where ``N`` is the
+        number of observations given (unbiased estimate). If `bias` is True,
+        then normalization is by ``N``. These values can be overridden by using
+        the keyword ``ddof`` in numpy versions >= 1.5.
+          ddof: If not ``None`` the default value implied by `bias` is overridden.
+        Note that ``ddof=1`` will return the unbiased estimate, even if both
+        `fweights` and `aweights` are specified, and ``ddof=0`` will return
+        the simple average. See the notes for the details. The default value
+        is ``None``.
+          aweights: 1-D array of observation vector weights. These relative weights are
+        typically large for observations considered "important" and smaller for
+        observations considered less "important". If ``ddof=0`` the array of
+        weights can be used to assign probabilities to observation vectors. (Default value = None)
+          x: Tensor:
+          rowvar: bool:  (Default value = False)
+          bias: bool:  (Default value = False)
+          ddof: Optional[int]:  (Default value = None)
+
+        Returns:
+          The covariance matrix of the variables.
+
         """
         # ensure at least 2D
         if x.dim() == 1:
@@ -89,10 +99,15 @@ class MultiVariateGaussian(DynamicBufferModule):
         return c.squeeze()
 
     def forward(self, embedding: Tensor) -> List[Tensor]:
-        """
-        Calculate multivariate Gaussian distribution
-        :param embedding: CNN features whose dimensionality is reduced via either random sampling or PCA.
-        :return: mean and covariance of the multi-variate gaussian distribution that fits the features.
+        """Calculate multivariate Gaussian distribution
+
+        Args:
+          embedding: CNN features whose dimensionality is reduced via either random sampling or PCA.
+          embedding: Tensor:
+
+        Returns:
+          mean and covariance of the multi-variate gaussian distribution that fits the features.
+
         """
         device = embedding.device
 
@@ -107,4 +122,12 @@ class MultiVariateGaussian(DynamicBufferModule):
         return [self.mean, self.covariance]
 
     def fit(self, embedding: Tensor) -> List[Tensor]:
+        """
+
+        Args:
+          embedding: Tensor:
+
+        Returns:
+
+        """
         return self.forward(embedding)

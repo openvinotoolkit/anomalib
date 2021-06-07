@@ -29,11 +29,14 @@ from anomalib.core.model.feature_extractor import FeatureExtractor
 
 
 class Loss(nn.Module):
-    """
-    Feature Pyramid Loss
+    """Feature Pyramid Loss
     This class implmenents the feature pyramid loss function proposed in STFPM [1] paper.
 
     :Example:
+
+    Args:
+
+    Returns:
 
     >>> from anomalib.core.model.feature_extractor import FeatureExtractor
     >>> from anomalib.models.stfpm.model import Loss
@@ -56,12 +59,17 @@ class Loss(nn.Module):
         self.mse_loss = nn.MSELoss(reduction="sum")
 
     def compute_layer_loss(self, teacher_feats: Tensor, student_feats: Tensor) -> Tensor:
-        """
-        Compute layer loss based on Equation (1) in Section 3.2 of the paper.
+        """Compute layer loss based on Equation (1) in Section 3.2 of the paper.
 
-        :param teacher_feats: Teacher features
-        :param student_feats: Student features
-        :return: L2 distance between teacher and student features.
+        Args:
+          teacher_feats: Teacher features
+          student_feats: Student features
+          teacher_feats: Tensor:
+          student_feats: Tensor:
+
+        Returns:
+          L2 distance between teacher and student features.
+
         """
 
         height, width = teacher_feats.shape[2:]
@@ -73,13 +81,19 @@ class Loss(nn.Module):
         return layer_loss
 
     def forward(self, teacher_features: Dict[str, Tensor], student_features: Dict[str, Tensor]) -> Tensor:
-        """
-        Compute the overall loss via the weighted average of
+        """Compute the overall loss via the weighted average of
         the layer losses computed by the cosine similarity.
 
-        :param teacher_features: Teacher features
-        :param student_features: Student features
-        :return: Total loss, which is the weighted average of the layer losses.
+        Args:
+          teacher_features: Teacher features
+          student_features: Student features
+          teacher_features: Dict[str:
+          Tensor]:
+          student_features: Dict[str:
+
+        Returns:
+          Total loss, which is the weighted average of the layer losses.
+
         """
 
         layer_losses: List[Tensor] = []
@@ -93,17 +107,13 @@ class Loss(nn.Module):
 
 
 class Callbacks:
-    """
-    STFPM-specific callbacks
-    """
+    """STFPM-specific callbacks"""
 
     def __init__(self, config: DictConfig):
         self.config = config
 
     def get_callbacks(self) -> List[Callback]:
-        """
-        Get STFPM model callbacks.
-        """
+        """Get STFPM model callbacks."""
         checkpoint = ModelCheckpoint(
             dirpath=os.path.join(self.config.project.path, "weights"),
             filename="model",
@@ -117,9 +127,7 @@ class Callbacks:
 
 
 class AnomalyMapGenerator:
-    """
-    Generate Anomaly Heatmap
-    """
+    """Generate Anomaly Heatmap"""
 
     def __init__(self, batch_size: int = 1, image_size: int = 256, alpha: float = 0.4, gamma: int = 0):
         self.distance = torch.nn.PairwiseDistance(p=2, keepdim=True)
@@ -131,11 +139,17 @@ class AnomalyMapGenerator:
         self.gamma = gamma
 
     def compute_layer_map(self, teacher_features: Tensor, student_features: Tensor) -> Tensor:
-        """
-        Compute the layer map based on cosine similarity.
-        :param teacher_features: Teacher features
-        :param student_features: Student features
-        :return: Anomaly score based on cosine similarity.
+        """Compute the layer map based on cosine similarity.
+
+        Args:
+          teacher_features: Teacher features
+          student_features: Student features
+          teacher_features: Tensor:
+          student_features: Tensor:
+
+        Returns:
+          Anomaly score based on cosine similarity.
+
         """
         norm_teacher_features = F.normalize(teacher_features)
         norm_student_features = F.normalize(student_features)
@@ -147,12 +161,18 @@ class AnomalyMapGenerator:
     def compute_anomaly_map(
         self, teacher_features: Dict[str, Tensor], student_features: Dict[str, Tensor]
     ) -> np.ndarray:
-        """
-        Compute the overall anomaly map via element-wise production the interpolated anomaly maps.
+        """Compute the overall anomaly map via element-wise production the interpolated anomaly maps.
 
-        :param teacher_features: Teacher features
-        :param student_features: Student features
-        :return: Final anomaly map
+        Args:
+          teacher_features: Teacher features
+          student_features: Student features
+          teacher_features: Dict[str:
+          Tensor]:
+          student_features: Dict[str:
+
+        Returns:
+          Final anomaly map
+
         """
         # TODO: Reshape anomaly_map to handle batch_size > 1
         # TODO: Use torch tensor instead
@@ -169,10 +189,15 @@ class AnomalyMapGenerator:
 
     @staticmethod
     def compute_heatmap(anomaly_map: np.ndarray) -> np.ndarray:
-        """
-        Compute anomaly color heatmap
-        :param anomaly_map: Final anomaly map computed by the distance metric.
-        :return: Anomaly heatmap via Jet Color Map.
+        """Compute anomaly color heatmap
+
+        Args:
+          anomaly_map: Final anomaly map computed by the distance metric.
+          anomaly_map: np.ndarray:
+
+        Returns:
+          Anomaly heatmap via Jet Color Map.
+
         """
         anomaly_map = (anomaly_map - anomaly_map.min()) / np.ptp(anomaly_map)
         anomaly_map = anomaly_map * 255
@@ -182,12 +207,17 @@ class AnomalyMapGenerator:
         return heatmap
 
     def apply_heatmap_on_image(self, anomaly_map: np.ndarray, image: np.ndarray) -> np.ndarray:
-        """
-        Apply anomaly heatmap on input test image.
+        """Apply anomaly heatmap on input test image.
 
-        :param anomaly_map: Anomaly color map
-        :param image: Input test image
-        :return: Output image, where anomaly color map is blended on top of the input image.
+        Args:
+          anomaly_map: Anomaly color map
+          image: Input test image
+          anomaly_map: np.ndarray:
+          image: np.ndarray:
+
+        Returns:
+          Output image, where anomaly color map is blended on top of the input image.
+
         """
 
         heatmap = self.compute_heatmap(anomaly_map)
@@ -197,12 +227,15 @@ class AnomalyMapGenerator:
 
     @staticmethod
     def compute_adaptive_threshold(true_masks, anomaly_map):
-        """
-        Compute adaptive threshold, based on the f1 metric of the true and predicted anomaly masks.
+        """Compute adaptive threshold, based on the f1 metric of the true and predicted anomaly masks.
 
-        :param true_masks: Ground-truth anomaly mask showing the location of anomalies.
-        :param anomaly_map: Anomaly map that is predicted by the model.
-        :return: Threshold value based on the best f1 score.
+        Args:
+          true_masks: Ground-truth anomaly mask showing the location of anomalies.
+          anomaly_map: Anomaly map that is predicted by the model.
+
+        Returns:
+          Threshold value based on the best f1 score.
+
         """
 
         precision, recall, thresholds = precision_recall_curve(true_masks.flatten(), anomaly_map.flatten())
@@ -215,13 +248,19 @@ class AnomalyMapGenerator:
 
     @staticmethod
     def compute_mask(anomaly_map: np.ndarray, threshold: float, kernel_size: int = 4) -> np.ndarray:
-        """
-        Compute anomaly mask via thresholding the predicted anomaly map.
+        """Compute anomaly mask via thresholding the predicted anomaly map.
 
-        :param anomaly_map: Anomaly map predicted via the model
-        :param threshold: Value to threshold anomaly scores into 0-1 range.
-        :param kernel_size: Value to apply morphological operations to the predicted mask
-        :return: Predicted anomaly mask
+        Args:
+          anomaly_map: Anomaly map predicted via the model
+          threshold: Value to threshold anomaly scores into 0-1 range.
+          kernel_size: Value to apply morphological operations to the predicted mask
+          anomaly_map: np.ndarray:
+          threshold: float:
+          kernel_size: int:  (Default value = 4)
+
+        Returns:
+          Predicted anomaly mask
+
         """
 
         mask = np.zeros_like(anomaly_map).astype(np.uint8)
@@ -239,9 +278,7 @@ class AnomalyMapGenerator:
 
 
 class STFPMModel(pl.LightningModule):
-    """
-    STFPM: Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection
-    """
+    """STFPM: Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection"""
 
     def __init__(self, hparams):
         super().__init__()
@@ -273,21 +310,28 @@ class STFPMModel(pl.LightningModule):
         self.pixel_roc_auc: Optional[float] = None
 
     def forward(self, images):
-        """
-        Forward-pass images into the network to extract teacher and student network.
+        """Forward-pass images into the network to extract teacher and student network.
 
-        :param images: Batch of images.
-        :return: Teacher and student features.
+        Args:
+          images: Batch of images.
+
+        Returns:
+          Teacher and student features.
+
         """
         teacher_features: Dict[str, Tensor] = self.teacher_model(images)
         student_features: Dict[str, Tensor] = self.student_model(images)
         return teacher_features, student_features
 
     def configure_optimizers(self):
-        """
-        Configure optimizers by creating an SGD optimizer.
+        """Configure optimizers by creating an SGD optimizer.
 
         :return: SGD optimizer
+
+        Args:
+
+        Returns:
+
         """
         return optim.SGD(
             params=self.student_model.parameters(),
@@ -297,14 +341,17 @@ class STFPMModel(pl.LightningModule):
         )
 
     def training_step(self, batch, _):
-        """
-        Training Step of STFPM..
+        """Training Step of STFPM..
         For each batch, teacher and student and teacher features
             are extracted from the CNN.
 
-        :param batch: Input batch
-        :param _: Index of the batch.
-        :return: Hierarchical feature map
+        Args:
+          batch: Input batch
+          _: Index of the batch.
+
+        Returns:
+          Hierarchical feature map
+
         """
         self.teacher_model.eval()
         teacher_features, student_features = self.forward(batch["image"])
@@ -312,16 +359,19 @@ class STFPMModel(pl.LightningModule):
         return {"loss": loss}
 
     def validation_step(self, batch, _):
-        """
-        Validation Step of STFPM.
+        """Validation Step of STFPM.
             Similar to the training step, student/teacher features
             are extracted from the CNN for each batch, and anomaly
             map is computed.
 
-        :param batch: Input batch
-        :param _: Index of the batch.
-        :return: Dictionary containing images, anomaly maps, true labels and masks.
-                 These are required in `validation_epoch_end` for feature concatenation.
+        Args:
+          batch: Input batch
+          _: Index of the batch.
+
+        Returns:
+          Dictionary containing images, anomaly maps, true labels and masks.
+          These are required in `validation_epoch_end` for feature concatenation.
+
         """
         filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
         teacher_features, student_features = self.forward(images)
@@ -336,23 +386,30 @@ class STFPMModel(pl.LightningModule):
         }
 
     def test_step(self, batch, _):
-        """
-        Test Step of STFPM.
+        """Test Step of STFPM.
             Similar to the training and validation step, student/teacher
             features are extracted from the CNN for each batch, and anomaly
             map is computed.
 
-        :param batch: Input batch
-        :param _: Index of the batch.
-        :return: Dictionary containing images, features, true labels and masks.
-                 These are required in `validation_epoch_end` for feature concatenation.
+        Args:
+          batch: Input batch
+          _: Index of the batch.
+
+        Returns:
+          Dictionary containing images, features, true labels and masks.
+          These are required in `validation_epoch_end` for feature concatenation.
+
         """
         return self.validation_step(batch, _)
 
     def validation_epoch_end(self, outputs):
-        """
-        Compute image and pixel level roc scores.
-        :param outputs: Batch of outputs from the validation step
+        """Compute image and pixel level roc scores.
+
+        Args:
+          outputs: Batch of outputs from the validation step
+
+        Returns:
+
         """
 
         self.filenames = [Path(f) for x in outputs for f in x["filenames"]]
@@ -371,9 +428,13 @@ class STFPMModel(pl.LightningModule):
         self.log(name="Pixel-Level AUC", value=self.pixel_roc_auc, on_epoch=True, prog_bar=True)
 
     def test_epoch_end(self, outputs):
-        """
-        Compute image and pixel level roc scores, and save the output images.
-        :param outputs: Batch of outputs from the test step
+        """Compute image and pixel level roc scores, and save the output images.
+
+        Args:
+          outputs: Batch of outputs from the test step
+
+        Returns:
+
         """
 
         self.validation_epoch_end(outputs)

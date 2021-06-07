@@ -6,6 +6,8 @@ import numpy as np
 
 
 class Visualizer:
+    """ """
+
     def __init__(self, num_rows: int, num_cols: int, figure_size: Tuple[int, int]):
         self.figure_index: int = 0
 
@@ -17,6 +19,17 @@ class Visualizer:
             axis.axes.yaxis.set_visible(False)
 
     def add_image(self, image: np.ndarray, title: str, color_map: Optional[str] = None, index: Optional[int] = None):
+        """
+
+        Args:
+          image: np.ndarray:
+          title: str:
+          color_map: Optional[str]:  (Default value = None)
+          index: Optional[int]:  (Default value = None)
+
+        Returns:
+
+        """
         if index is None:
             index = self.figure_index
             self.figure_index += 1
@@ -25,11 +38,21 @@ class Visualizer:
         self.axis[index].title.set_text(title)
 
     def show(self):
+        """ """
         self.figure.show()
 
     def save(self, filename: Path):
+        """
+
+        Args:
+          filename: Path:
+
+        Returns:
+
+        """
         filename.parent.mkdir(parents=True, exist_ok=True)
         self.figure.savefig(filename, dpi=100)
 
     def close(self):
+        """ """
         plt.close(self.figure)

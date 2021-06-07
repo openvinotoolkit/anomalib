@@ -9,11 +9,15 @@ from .stfpm.model import STFPMModel
 
 
 def get_model(config: DictConfig):
-    """
-    Load model from the configuration file.
+    """Load model from the configuration file.
 
-    :param config: Configuration file
-    :return: Anomaly Model
+    Args:
+      config: Configuration file
+      config: DictConfig:
+
+    Returns:
+      Anomaly Model
+
     """
     if config.model.name == "padim":
         model = PADIMModel(config)

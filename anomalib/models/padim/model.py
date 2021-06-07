@@ -6,7 +6,7 @@ import os
 import os.path
 from pathlib import Path
 from random import sample
-from typing import Dict, Optional, Union, List, Sequence
+from typing import Dict, List, Optional, Sequence, Union
 
 import cv2
 import numpy as np
@@ -19,8 +19,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from scipy.ndimage import gaussian_filter
 from skimage import morphology
 from skimage.segmentation import mark_boundaries
-from sklearn.metrics import precision_recall_curve
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import precision_recall_curve, roc_auc_score
 from torch import Tensor
 
 from anomalib.core.model.feature_extractor import FeatureExtractor
@@ -35,9 +34,7 @@ DIMS = {"resnet18": {"t_d": 448, "d": 100}, "wide_resnet50_2": {"t_d": 1792, "d"
 
 
 class Padim(torch.nn.Module):
-    """
-    Padim Module
-    """
+    """Padim Module"""
 
     def __init__(self, backbone: str, layers: List[str]):
         super().__init__()
@@ -49,13 +46,16 @@ class Padim(torch.nn.Module):
         self.idx = torch.tensor(sample(range(0, DIMS[backbone]["t_d"]), DIMS[backbone]["d"]))
 
     def forward(self, input_tensor: Tensor) -> Dict[str, Tensor]:
-        """
-        Forward-pass image-batch (N, C, H, W) into model to extract features.
+        """Forward-pass image-batch (N, C, H, W) into model to extract features.
 
-        :param input_tensor: Image-batch (N, C, H, W)
-        :return: Features from single/multiple layers.
+        Args:
+          input_tensor: Image-batch (N, C, H, W)
+          input_tensor: Tensor:
 
-        :Example:
+        Returns:
+          Features from single/multiple layers.
+
+          :Example:
 
         >>> x = torch.randn(32, 3, 224, 224)
         >>> features = self.extract_features(input_tensor)
@@ -73,11 +73,16 @@ class Padim(torch.nn.Module):
         return features
 
     def append_features(self, outputs: List[Dict[str, Tensor]]) -> Dict[str, List[Tensor]]:
-        """
-        append_features from each batch to concatenate
+        """append_features from each batch to concatenate
 
-        :param outputs: [description]
-        :return: [description]
+        Args:
+          outputs: description]
+          outputs: List[Dict[str:
+          Tensor]]:
+
+        Returns:
+          description]
+
         """
         features: Dict[str, List[Tensor]] = {layer: [] for layer in self.layers}
         for batch in outputs:
@@ -88,11 +93,16 @@ class Padim(torch.nn.Module):
 
     @staticmethod
     def concat_features(features: Dict[str, List[Tensor]]) -> Dict[str, Tensor]:
-        """
-        Concatenate batch features to form one big feauture matrix.
+        """Concatenate batch features to form one big feauture matrix.
 
-        :param features: Features from batches.
-        :return: Concatenated feature map.
+        Args:
+          features: Features from batches.
+          features: Dict[str:
+          List[Tensor]]:
+
+        Returns:
+          Concatenated feature map.
+
         """
         concatenated_features: Dict[str, Tensor] = {}
         for layer, feature_list in features.items():
@@ -101,10 +111,16 @@ class Padim(torch.nn.Module):
         return concatenated_features
 
     def generate_embedding(self, features: Dict[str, Tensor]) -> Tensor:
-        """
-        Generate embedding from hierarchical feature map
-        :param features: Hierarchical feature map from a CNN (ResNet18 or WideResnet)
-        :return: Embedding vector
+        """Generate embedding from hierarchical feature map
+
+        Args:
+          features: Hierarchical feature map from a CNN (ResNet18 or WideResnet)
+          features: Dict[str:
+          Tensor]:
+
+        Returns:
+          Embedding vector
+
         """
 
         def __generate_patch_embedding(embedding: Tensor, layer_features: Tensor) -> Tensor:
@@ -163,17 +179,13 @@ class Padim(torch.nn.Module):
 
 
 class Callbacks:
-    """
-    PADIM-specific callbacks
-    """
+    """PADIM-specific callbacks"""
 
     def __init__(self, config: DictConfig):
         self.config = config
 
     def get_callbacks(self) -> Sequence:
-        """
-        Get PADIM model callbacks.
-        """
+        """Get PADIM model callbacks."""
         checkpoint = ModelCheckpoint(
             dirpath=os.path.join(self.config.project.path, "weights"),
             filename="model",
@@ -187,9 +199,7 @@ class Callbacks:
 
 
 class AnomalyMapGenerator:
-    """
-    Generate Anomaly Heatmap
-    """
+    """Generate Anomaly Heatmap"""
 
     def __init__(self, image_size: int = 224, alpha: float = 0.4, gamma: int = 0, sigma: int = 4):
         self.image_size = image_size
@@ -200,19 +210,23 @@ class AnomalyMapGenerator:
 
     @staticmethod
     def compute_distance(embedding: Tensor, stats: List[Tensor]) -> Tensor:
-        """
-        Compute anomaly score to the patch in position(i,j)of a test image
+        """Compute anomaly score to the patch in position(i,j)of a test image
         Ref: Equation (2), Section III-C of the paper.
 
-        :param embedding: Embedding Vector
-        :param stats: Mean and Covariance Matrix of the multivariate
-                      Gaussian distribution
-        :return: Anomaly score of a test image via mahalanobis distance.
+        Args:
+          embedding: Embedding Vector
+          stats: Mean and Covariance Matrix of the multivariate
+        Gaussian distribution
+          embedding: Tensor:
+          stats: List[Tensor]:
+
+        Returns:
+          Anomaly score of a test image via mahalanobis distance.
+
         """
 
         def _mahalanobis(tensor_u: Tensor, tensor_v: Tensor, inv_cov: Tensor) -> Tensor:
-            """
-            Compute the Mahalanobis distance between two 1-D arrays.
+            """Compute the Mahalanobis distance between two 1-D arrays.
             The Mahalanobis distance between 1-D arrays `u` and `v`, is defined as
 
             .. math::
@@ -220,10 +234,18 @@ class AnomalyMapGenerator:
 
             where ``V`` is the covariance matrix.  Note that the argument `VI`
             is the inverse of ``V``.
-            :param tensor_u:  Input array
-            :param tensor_v:  Input array
-            :param inv_cov: Inverse covariance matrix
-            :return: Mahalanobis distance of the inputs.
+
+            Args:
+              tensor_u: Input array
+              tensor_v: Input array
+              inv_cov: Inverse covariance matrix
+              tensor_u: Tensor:
+              tensor_v: Tensor:
+              inv_cov: Tensor:
+
+            Returns:
+              Mahalanobis distance of the inputs.
+
             """
             delta = tensor_u - tensor_v
             mahalanobis_distance = torch.dot(torch.matmul(delta, inv_cov), delta)
@@ -243,11 +265,15 @@ class AnomalyMapGenerator:
         return distance_tensor
 
     def up_sample(self, distance: Tensor) -> np.ndarray:
-        """
-        Up sample anomaly score to match the input image size.
+        """Up sample anomaly score to match the input image size.
 
-        :param distance: Anomaly score computed via the mahalanobis distance.
-        :return: Resized distance matrix matching the input image size
+        Args:
+          distance: Anomaly score computed via the mahalanobis distance.
+          distance: Tensor:
+
+        Returns:
+          Resized distance matrix matching the input image size
+
         """
 
         score_map = (
@@ -259,11 +285,15 @@ class AnomalyMapGenerator:
         return score_map
 
     def smooth_anomaly_map(self, anomaly_map: np.ndarray) -> np.ndarray:
-        """
-        Apply gaussian smoothing to the anomaly map
+        """Apply gaussian smoothing to the anomaly map
 
-        :param anomaly_map: Anomaly score for the test image(s)
-        :return: Filtered anomaly scores
+        Args:
+          anomaly_map: Anomaly score for the test image(s)
+          anomaly_map: np.ndarray:
+
+        Returns:
+          Filtered anomaly scores
+
         """
 
         for i in range(anomaly_map.shape[0]):
@@ -272,14 +302,20 @@ class AnomalyMapGenerator:
         return anomaly_map
 
     def compute_anomaly_map(self, embedding: Tensor, mean: Tensor, covariance: Tensor) -> np.ndarray:
-        """
-        Compute anomaly score based on embedding vector, mean and covariance of the multivariate
+        """Compute anomaly score based on embedding vector, mean and covariance of the multivariate
         gaussian distribution.
 
-        :param embedding: Embedding vector extracted from the test set.
-        :param mean: Mean of the multivariate gaussian distribution
-        :param covariance: Covariance matrix of the multivariate gaussian distribution.
-        :return: Output anomaly score.
+        Args:
+          embedding: Embedding vector extracted from the test set.
+          mean: Mean of the multivariate gaussian distribution
+          covariance: Covariance matrix of the multivariate gaussian distribution.
+          embedding: Tensor:
+          mean: Tensor:
+          covariance: Tensor:
+
+        Returns:
+          Output anomaly score.
+
         """
 
         score_map = self.compute_distance(embedding, stats=[mean, covariance])
@@ -290,10 +326,15 @@ class AnomalyMapGenerator:
 
     @staticmethod
     def compute_heatmap(anomaly_map: np.ndarray) -> np.ndarray:
-        """
-        Compute anomaly color heatmap
-        :param anomaly_map: Anomaly score computed via mahalanobis distance.
-        :return: Anomaly heatmap via Jet Color Map.
+        """Compute anomaly color heatmap
+
+        Args:
+          anomaly_map: Anomaly score computed via mahalanobis distance.
+          anomaly_map: np.ndarray:
+
+        Returns:
+          Anomaly heatmap via Jet Color Map.
+
         """
 
         anomaly_map = (anomaly_map - anomaly_map.min()) / np.ptp(anomaly_map)
@@ -304,12 +345,17 @@ class AnomalyMapGenerator:
         return heatmap
 
     def apply_heatmap_on_image(self, anomaly_map: np.ndarray, image: np.ndarray) -> np.ndarray:
-        """
-        Apply anomaly heatmap on input test image.
+        """Apply anomaly heatmap on input test image.
 
-        :param anomaly_map: Anomaly color map
-        :param image: Input test image
-        :return: Output image, where anomaly color map is blended on top of the input image.
+        Args:
+          anomaly_map: Anomaly color map
+          image: Input test image
+          anomaly_map: np.ndarray:
+          image: np.ndarray:
+
+        Returns:
+          Output image, where anomaly color map is blended on top of the input image.
+
         """
 
         heatmap = self.compute_heatmap(anomaly_map)
@@ -319,12 +365,15 @@ class AnomalyMapGenerator:
 
     @staticmethod
     def compute_adaptive_threshold(true_masks, anomaly_map):
-        """
-        Compute adaptive threshold, based on the f1 metric of the true and predicted anomaly masks.
+        """Compute adaptive threshold, based on the f1 metric of the true and predicted anomaly masks.
 
-        :param true_masks: Ground-truth anomaly mask showing the location of anomalies.
-        :param anomaly_map: Anomaly map that is predicted by the model.
-        :return: Threshold value based on the best f1 score.
+        Args:
+          true_masks: Ground-truth anomaly mask showing the location of anomalies.
+          anomaly_map: Anomaly map that is predicted by the model.
+
+        Returns:
+          Threshold value based on the best f1 score.
+
         """
 
         precision, recall, thresholds = precision_recall_curve(true_masks.flatten(), anomaly_map.flatten())
@@ -337,13 +386,19 @@ class AnomalyMapGenerator:
 
     @staticmethod
     def compute_mask(anomaly_map: np.ndarray, threshold: float, kernel_size: int = 4) -> np.ndarray:
-        """
-        Compute anomaly mask via thresholding the predicted anomaly map.
+        """Compute anomaly mask via thresholding the predicted anomaly map.
 
-        :param anomaly_map: Anomaly map predicted via the model
-        :param threshold: Value to threshold anomaly scores into 0-1 range.
-        :param kernel_size: Value to apply morphological operations to the predicted mask
-        :return: Predicted anomaly mask
+        Args:
+          anomaly_map: Anomaly map predicted via the model
+          threshold: Value to threshold anomaly scores into 0-1 range.
+          kernel_size: Value to apply morphological operations to the predicted mask
+          anomaly_map: np.ndarray:
+          threshold: float:
+          kernel_size: int:  (Default value = 4)
+
+        Returns:
+          Predicted anomaly mask
+
         """
 
         mask = np.zeros_like(anomaly_map).astype(np.uint8)
@@ -358,9 +413,7 @@ class AnomalyMapGenerator:
 
 
 class PADIMModel(pl.LightningModule):
-    """
-    PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization
-    """
+    """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization"""
 
     def __init__(self, hparams):
         super().__init__()
@@ -386,34 +439,38 @@ class PADIMModel(pl.LightningModule):
 
     @staticmethod
     def configure_optimizers():
-        """
-        PADIM doesn't require optimization, therefore returns no optimizers.
-        """
+        """PADIM doesn't require optimization, therefore returns no optimizers."""
         return None
 
     def training_step(self, batch, _):
-        """
-        Training Step of PADIM.
+        """Training Step of PADIM.
         For each batch, hierarchical features are extracted from the CNN.
 
-        :param batch: Input batch
-        :param _: Index of the batch.
-        :return: Hierarchical feature map
+        Args:
+          batch: Input batch
+          _: Index of the batch.
+
+        Returns:
+          Hierarchical feature map
+
         """
         self._model.eval()
         features = self._model(batch["image"])
         return {"features": features}
 
     def validation_step(self, batch, _):
-        """
-        Validation Step of PADIM.
+        """Validation Step of PADIM.
             Similar to the training step, hierarchical features
             are extracted from the CNN for each batch.
 
-        :param batch: Input batch
-        :param _: Index of the batch.
-        :return: Dictionary containing images, features, true labels and masks.
-                 These are required in `validation_epoch_end` for feature concatenation.
+        Args:
+          batch: Input batch
+          _: Index of the batch.
+
+        Returns:
+          Dictionary containing images, features, true labels and masks.
+          These are required in `validation_epoch_end` for feature concatenation.
+
         """
         filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
         features = self._model(images)
@@ -426,24 +483,30 @@ class PADIMModel(pl.LightningModule):
         }
 
     def test_step(self, batch, _):
-        """
-        Test Step of PADIM.
+        """Test Step of PADIM.
             Similar to the training and validation steps,
             hierarchical features are extracted from the
             CNN for each batch.
 
-        :param batch: Input batch
-        :param _: Index of the batch.
-        :return: Dictionary containing images, features, true labels and masks.
-                 These are required in `validation_epoch_end` for feature concatenation.
+        Args:
+          batch: Input batch
+          _: Index of the batch.
+
+        Returns:
+          Dictionary containing images, features, true labels and masks.
+          These are required in `validation_epoch_end` for feature concatenation.
+
         """
         return self.validation_step(batch, _)
 
     def training_epoch_end(self, outputs):
-        """
-        Fit a multivariate gaussian model on an embedding extracted from deep hierarchical CNN features.
+        """Fit a multivariate gaussian model on an embedding extracted from deep hierarchical CNN features.
 
-        :param outputs: Batch of outputs from the training step
+        Args:
+          outputs: Batch of outputs from the training step
+
+        Returns:
+
         """
 
         # TODO: Try to merge append and concat into one method.
@@ -453,11 +516,14 @@ class PADIMModel(pl.LightningModule):
         self.stats = self._model.gaussian.fit(embedding)
 
     def validation_epoch_end(self, outputs):
-        """
-        Compute anomaly scores of the validation set, based on the embedding
+        """Compute anomaly scores of the validation set, based on the embedding
             extracted from deep hierarchical CNN features.
 
-        :param outputs: Batch of outputs from the validation step
+        Args:
+          outputs: Batch of outputs from the validation step
+
+        Returns:
+
         """
         self.filenames = [Path(f) for x in outputs for f in x["filenames"]]
         self.images = [x["images"] for x in outputs]
@@ -482,11 +548,14 @@ class PADIMModel(pl.LightningModule):
         self.log(name="Pixel-Level AUC", value=pixel_roc_auc, on_epoch=True, prog_bar=True)
 
     def test_epoch_end(self, outputs):
-        """
-        Compute and save anomaly scores of the test set, based on the embedding
+        """Compute and save anomaly scores of the test set, based on the embedding
             extracted from deep hierarchical CNN features.
 
-        :param outputs: Batch of outputs from the validation step
+        Args:
+          outputs: Batch of outputs from the validation step
+
+        Returns:
+
         """
         self.validation_epoch_end(outputs)
         threshold = self.anomaly_map_generator.compute_adaptive_threshold(self.true_masks, self.anomaly_maps)

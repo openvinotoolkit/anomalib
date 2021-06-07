@@ -1,3 +1,10 @@
+"""
+    MVTec
+    This script contains PyTorch Dataset, Dataloader and PyTorch Lightning
+        DataModule for the MVTec dataset. If the dataset is not on the file
+        system, the script downloads and extracts the dataset and create
+        PyTorch data objects.
+"""
 import logging
 import tarfile
 from pathlib import Path
@@ -19,6 +26,14 @@ __all__ = ["MVTec", "MVTecDataModule"]
 
 
 def get_image_transforms() -> T.Compose:
+    """Get default ImageNet image transformations.
+
+    Args:
+
+    Returns:
+      T.Compose: List of imagenet transformations.
+
+    """
     transform = T.Compose(
         [
             T.Resize(256, Image.ANTIALIAS),
@@ -31,6 +46,15 @@ def get_image_transforms() -> T.Compose:
 
 
 def get_mask_transforms() -> T.Compose:
+    """Get default ImageNet transformations for the ground-truth
+        image masks.
+
+    Args:
+
+    Returns:
+      T.Compose: List of imagenet transformations.
+
+    """
     transform = Compose(
         [
             T.Resize(256, Image.NEAREST),
@@ -42,6 +66,10 @@ def get_mask_transforms() -> T.Compose:
 
 
 class MVTec(VisionDataset):
+    """
+    MVTec PyTorch Dataset
+    """
+
     def __init__(
         self,
         root: Union[Path, str],
@@ -69,6 +97,9 @@ class MVTec(VisionDataset):
             raise RuntimeError(f"Found 0 images in {self.category / self.split}")
 
     def _download(self) -> None:
+        """
+        Download the MVTec dataset
+        """
         if self.category.is_dir():
             logger.warning("Dataset directory exists.")
         else:
@@ -85,15 +116,27 @@ class MVTec(VisionDataset):
             self._clean()
 
     def _extract(self) -> None:
+        """
+        Extract MVTec Dataset
+        """
         logger.info("Extracting MVTec dataset")
         with tarfile.open(self.filename) as f:
             f.extractall(self.root)
 
     def _clean(self) -> None:
+        """
+        Cleanup MVTec Dataset tar file.
+        """
         logger.info("Cleaning up the tar file")
         self.filename.unlink()
 
     def make_dataset(self) -> List[Tuple[str, str, int]]:
+        """
+        Make MVTec dataset by returning image filenames and their corresponding ground-truth
+
+        Returns:
+            List[Tuple[str, str, int]]: Image filename, mask filename and anomaly label index (0 or 1)
+        """
         labels = sorted([label.name for label in (self.category / self.split).iterdir() if label.is_dir()])
         samples = []
         label_index: int
@@ -154,6 +197,8 @@ class MVTec(VisionDataset):
 
 
 class MVTecDataModule(LightningDataModule):
+    """ """
+
     def __init__(
         self,
         root: str,
@@ -177,6 +222,7 @@ class MVTecDataModule(LightningDataModule):
         self.include_normal = include_normal_images_in_val_set
 
     def prepare_data(self):
+        """ """
         # Training Data
         MVTec(
             root=self.root,
@@ -197,6 +243,15 @@ class MVTecDataModule(LightningDataModule):
         )
 
     def setup(self, stage: Optional[str] = None) -> None:
+        """
+
+        Args:
+          stage: Optional[str]:  (Default value = None)
+          stage: Optional[str]:  (Default value = None)
+
+        Returns:
+
+        """
         self.train_data = MVTec(
             root=self.root,
             category=self.category,
@@ -213,12 +268,15 @@ class MVTecDataModule(LightningDataModule):
         )
 
     def train_dataloader(self) -> DataLoader:
+        """ """
         return DataLoader(self.train_data, shuffle=False, batch_size=self.batch_size, num_workers=self.num_workers)
 
     def val_dataloader(self) -> DataLoader:
+        """ """
         # TODO: Handle batch_size > 1
         return DataLoader(self.val_data, shuffle=False, batch_size=1, num_workers=self.num_workers)
 
     def test_dataloader(self) -> DataLoader:
+        """ """
         # TODO: Handle batch_size > 1
         return DataLoader(self.val_data, shuffle=False, batch_size=1, num_workers=self.num_workers)

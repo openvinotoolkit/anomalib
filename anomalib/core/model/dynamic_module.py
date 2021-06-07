@@ -2,13 +2,18 @@ import torch.nn as nn
 
 
 class DynamicBufferModule(nn.Module):
-    """
-    Torch module that allows loading variables from the state dict even in the case of shape mismatch.
-    """
+    """Torch module that allows loading variables from the state dict even in the case of shape mismatch."""
 
     def _load_from_state_dict(self, state_dict: dict, prefix: str, *args):
-        """
-        overrides method from parent class. Resizes the local buffers to match those stored in the state dict.
+        """overrides method from parent class. Resizes the local buffers to match those stored in the state dict.
+
+        Args:
+          state_dict: dict:
+          prefix: str:
+          *args:
+
+        Returns:
+
         """
         persistent_buffers = {k: v for k, v in self._buffers.items() if k not in self._non_persistent_buffers_set}
         local_buffers = {k: v for k, v in persistent_buffers.items() if v is not None}

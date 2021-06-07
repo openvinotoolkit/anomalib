@@ -1,3 +1,7 @@
+"""
+Anomalib Datasets
+"""
+
 from typing import Union
 
 from omegaconf import DictConfig, ListConfig
@@ -7,6 +11,15 @@ from .mvtec import MVTecDataModule
 
 
 def get_datamodule(config: Union[DictConfig, ListConfig]):
+    """Get Anomaly Datamodule
+
+    Args:
+      config: Configuration of the anomaly model
+      config: Union[DictConfig, ListConfig]:
+
+    Returns:
+
+    """
     datamodule: LightningDataModule
     if config.dataset.name.lower() == "mvtec":
         datamodule = MVTecDataModule(
