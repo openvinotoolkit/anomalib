@@ -123,7 +123,6 @@ class MVTec(VisionDataset):
     def __getitem__(self, index: int) -> Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]:
         image_path, mask_path, label_index = self.samples[index]
 
-        # image = self.loader(image_path)
         image = Image.open(image_path).convert("RGB")
         image_tensor = self.image_transforms(image)
 
@@ -134,18 +133,9 @@ class MVTec(VisionDataset):
                 mask = Image.new(mode="1", size=image.size)
             else:
                 mask = Image.open(mask_path).convert(mode="1")
-                # mask = self.loader(mask_path)
-                # mask = mask.convert(mode="1")
-            # mask = self.loader(mask_path) if class_index == 1 else Image.new(mode="1", size=image.size)
+
             mask_tensor = self.mask_transforms(mask).to(torch.uint8)
-            # else:
-            #     if mask is None:
-            #         # Create empty mask for good test samples.
-            #         mask = Image.new(mode="1", size=image.size)
-            #
-            #     mask = mask.convert(mode="1")
-            #     mask_tensor = self.mask_transforms(mask).to(torch.uint8)
-            # sample = (image_tensor, mask_tensor)
+
             sample = {
                 "image_path": image_path,
                 "mask_path": mask_path,
