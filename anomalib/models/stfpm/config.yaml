@@ -4,6 +4,7 @@ dataset:
   category: leather
   batch_size: 32
   num_workers: 36
+  exclude_normal_images_in_validation: true
 
 model:
   name: stfpm

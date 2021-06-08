@@ -51,6 +51,7 @@ class MVTec(VisionDataset):
         mask_transforms: Optional[Callable] = None,
         loader: Optional[Callable[[str], Any]] = None,
         download: bool = False,
+        exclude_normal_images_in_validation: bool = False,
     ) -> None:
         super().__init__(root, transform=image_transforms, target_transform=mask_transforms)
         self.root = Path(root) if isinstance(root, str) else root
@@ -60,6 +61,7 @@ class MVTec(VisionDataset):
         self.mask_transforms = mask_transforms if mask_transforms is not None else get_mask_transforms()
         self.loader = loader if loader is not None else default_loader
         self.download = download
+        self.exclude_normal_images_in_validation = exclude_normal_images_in_validation
 
         if self.download:
             self._download()
@@ -102,6 +104,8 @@ class MVTec(VisionDataset):
             image_filenames = sorted([filename for filename in (self.category / self.split / label).glob("**/*.png")])
             for image_filename in image_filenames:
                 if label == "good":
+                    if self.split == "test" and self.exclude_normal_images_in_validation:
+                        continue
                     label_index = 0
                     mask_filename = ""
                 else:
@@ -160,10 +164,10 @@ class MVTecDataModule(LightningDataModule):
         category: str,
         batch_size: int,
         num_workers: int,
-        include_normal_images_in_val_set: bool = False,
         image_transforms: Optional[Callable] = None,
         mask_transforms: Optional[Callable] = None,
         loader: Optional[Callable[[str], Any]] = None,
+        exclude_normal_images_in_validation: bool = False,
     ) -> None:
         super().__init__()
         self.root = root if isinstance(root, Path) else Path(root)
@@ -174,7 +178,7 @@ class MVTecDataModule(LightningDataModule):
         self.image_transforms = image_transforms
         self.mask_transforms = mask_transforms
         self.loader = default_loader if loader is None else loader
-        self.include_normal = include_normal_images_in_val_set
+        self.exclude_normal_images_in_validation = exclude_normal_images_in_validation
 
     def prepare_data(self):
         # Training Data
@@ -185,6 +189,7 @@ class MVTecDataModule(LightningDataModule):
             image_transforms=self.image_transforms,
             mask_transforms=self.mask_transforms,
             download=True,
+            exclude_normal_images_in_validation=self.exclude_normal_images_in_validation,
         )
         # Test Data
         MVTec(
@@ -194,6 +199,7 @@ class MVTecDataModule(LightningDataModule):
             image_transforms=self.image_transforms,
             mask_transforms=self.mask_transforms,
             download=True,
+            exclude_normal_images_in_validation=self.exclude_normal_images_in_validation,
         )
 
     def setup(self, stage: Optional[str] = None) -> None:
@@ -203,6 +209,7 @@ class MVTecDataModule(LightningDataModule):
             train=True,
             image_transforms=self.image_transforms,
             mask_transforms=self.mask_transforms,
+            exclude_normal_images_in_validation=self.exclude_normal_images_in_validation,
         )
         self.val_data = MVTec(
             root=self.root,
@@ -210,6 +217,7 @@ class MVTecDataModule(LightningDataModule):
             train=False,
             image_transforms=self.image_transforms,
             mask_transforms=self.mask_transforms,
+            exclude_normal_images_in_validation=self.exclude_normal_images_in_validation,
         )
 
     def train_dataloader(self) -> DataLoader:

@@ -11,7 +11,7 @@ from sklearn.metrics import roc_auc_score
 from torchvision.models import resnet50
 
 from anomalib.models.dfkde.normality_model import NormalityModel
-from anomalib.core import FeatureExtractor
+from anomalib.core.model.feature_extractor import FeatureExtractor
 
 
 class Callbacks:
