@@ -4,8 +4,8 @@ from typing import Optional, Tuple
 import torch
 import torch.nn as nn
 
-from anomalib.models.shared.kde import GaussianKDE
-from anomalib.models.shared.pca import PCA
+from anomalib.core.model.kde import GaussianKDE
+from anomalib.core.model.pca import PCA
 
 
 class NormalityModel(nn.Module):

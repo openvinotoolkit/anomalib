@@ -1,9 +1,10 @@
 from argparse import ArgumentParser
+import os
 
 import torch
 from pytorch_lightning import Trainer
 
-from anomalib.config import get_configurable_parameters
+from anomalib.config.config import get_configurable_parameters
 from anomalib.datasets import get_datamodule
 from anomalib.models import get_model
 
@@ -19,12 +20,15 @@ def get_args():
 
 args = get_args()
 config = get_configurable_parameters(model_name=args.model, model_config_path=args.model_config_path)
-datamodule = get_datamodule(config.dataset)
+datamodule = get_datamodule(config)
 
-model = get_model(config.model)
+model = get_model(config)
 # TODO: load_from_checkpoint doesn't properly load the weights!!!
 # model.load_from_checkpoint(checkpoint_path="./results/weights/pl_model.pth")
-model.load_state_dict(torch.load(args.weight_file)["state_dict"])
+
+weight_file = os.path.join(config.project.path, "weights", "model.ckpt")
+model.load_state_dict(torch.load(weight_file)["state_dict"])
 
 trainer = Trainer(callbacks=model.callbacks, **config.trainer)
 trainer.test(model=model, datamodule=datamodule)
+

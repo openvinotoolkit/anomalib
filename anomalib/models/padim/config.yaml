@@ -3,21 +3,17 @@ dataset:
   path: ./datasets/MVTec
   category: leather
   batch_size: 32
-  num_workers: 36
+  num_workers: 0
   exclude_normal_images_in_validation: false
 
 model:
-  name: stfpm
+  name: padim
   backbone: resnet18
   layers:
     - layer1
     - layer2
     - layer3
-  lr: 0.4
-  momentum: 0.9
-  patience: 5
-  weight_decay: 0.0001
-  metric: Pixel-Level AUC
+  metric: auc
 
 project:
   seed: 0
@@ -32,12 +28,12 @@ trainer:
   auto_lr_find: false
   auto_scale_batch_size: false
   auto_select_gpus: false
-  automatic_optimization: null
+  automatic_optimization: False
   benchmark: false
-  check_val_every_n_epoch: 2
+  check_val_every_n_epoch: 1
   checkpoint_callback: true
   default_root_dir: null
-  deterministic: false
+  deterministic: true
   distributed_backend: null
   enable_pl_optimizer: null
   fast_dev_run: false
@@ -50,7 +46,8 @@ trainer:
   limit_val_batches: 1.0
   log_every_n_steps: 50
   log_gpu_memory: null
-  max_epochs: 100
+  logger: true
+  max_epochs: 1
   max_steps: null
   min_epochs: null
   min_steps: null
