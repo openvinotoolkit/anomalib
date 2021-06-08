@@ -27,6 +27,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]):
             category=config.dataset.category,
             batch_size=config.dataset.batch_size,
             num_workers=config.dataset.num_workers,
+            exclude_normal_images_in_validation=config.dataset.exclude_normal_images_in_validation,
         )
     else:
         raise ValueError("Unknown dataset!")

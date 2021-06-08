@@ -79,6 +79,7 @@ class MVTec(VisionDataset):
         mask_transforms: Optional[Callable] = None,
         loader: Optional[Callable[[str], Any]] = None,
         download: bool = False,
+        exclude_normal_images_in_validation: bool = False,
     ) -> None:
         super().__init__(root, transform=image_transforms, target_transform=mask_transforms)
         self.root = Path(root) if isinstance(root, str) else root
@@ -88,6 +89,7 @@ class MVTec(VisionDataset):
         self.mask_transforms = mask_transforms if mask_transforms is not None else get_mask_transforms()
         self.loader = loader if loader is not None else default_loader
         self.download = download
+        self.exclude_normal_images_in_validation = exclude_normal_images_in_validation
 
         if self.download:
             self._download()
@@ -145,6 +147,8 @@ class MVTec(VisionDataset):
             image_filenames = sorted([filename for filename in (self.category / self.split / label).glob("**/*.png")])
             for image_filename in image_filenames:
                 if label == "good":
+                    if self.split == "test" and self.exclude_normal_images_in_validation:
+                        continue
                     label_index = 0
                     mask_filename = ""
                 else:
@@ -162,7 +166,6 @@ class MVTec(VisionDataset):
     def __getitem__(self, index: int) -> Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]:
         image_path, mask_path, label_index = self.samples[index]
 
-        # image = self.loader(image_path)
         image = Image.open(image_path).convert("RGB")
         image_tensor = self.image_transforms(image)
 
@@ -173,18 +176,9 @@ class MVTec(VisionDataset):
                 mask = Image.new(mode="1", size=image.size)
             else:
                 mask = Image.open(mask_path).convert(mode="1")
-                # mask = self.loader(mask_path)
-                # mask = mask.convert(mode="1")
-            # mask = self.loader(mask_path) if class_index == 1 else Image.new(mode="1", size=image.size)
+
             mask_tensor = self.mask_transforms(mask).to(torch.uint8)
-            # else:
-            #     if mask is None:
-            #         # Create empty mask for good test samples.
-            #         mask = Image.new(mode="1", size=image.size)
-            #
-            #     mask = mask.convert(mode="1")
-            #     mask_tensor = self.mask_transforms(mask).to(torch.uint8)
-            # sample = (image_tensor, mask_tensor)
+
             sample = {
                 "image_path": image_path,
                 "mask_path": mask_path,
@@ -205,10 +199,10 @@ class MVTecDataModule(LightningDataModule):
         category: str,
         batch_size: int,
         num_workers: int,
-        include_normal_images_in_val_set: bool = False,
         image_transforms: Optional[Callable] = None,
         mask_transforms: Optional[Callable] = None,
         loader: Optional[Callable[[str], Any]] = None,
+        exclude_normal_images_in_validation: bool = False,
     ) -> None:
         super().__init__()
         self.root = root if isinstance(root, Path) else Path(root)
@@ -219,7 +213,7 @@ class MVTecDataModule(LightningDataModule):
         self.image_transforms = image_transforms
         self.mask_transforms = mask_transforms
         self.loader = default_loader if loader is None else loader
-        self.include_normal = include_normal_images_in_val_set
+        self.exclude_normal_images_in_validation = exclude_normal_images_in_validation
 
     def prepare_data(self):
         """ """
@@ -231,6 +225,7 @@ class MVTecDataModule(LightningDataModule):
             image_transforms=self.image_transforms,
             mask_transforms=self.mask_transforms,
             download=True,
+            exclude_normal_images_in_validation=self.exclude_normal_images_in_validation,
         )
         # Test Data
         MVTec(
@@ -240,6 +235,7 @@ class MVTecDataModule(LightningDataModule):
             image_transforms=self.image_transforms,
             mask_transforms=self.mask_transforms,
             download=True,
+            exclude_normal_images_in_validation=self.exclude_normal_images_in_validation,
         )
 
     def setup(self, stage: Optional[str] = None) -> None:
@@ -258,6 +254,7 @@ class MVTecDataModule(LightningDataModule):
             train=True,
             image_transforms=self.image_transforms,
             mask_transforms=self.mask_transforms,
+            exclude_normal_images_in_validation=self.exclude_normal_images_in_validation,
         )
         self.val_data = MVTec(
             root=self.root,
@@ -265,6 +262,7 @@ class MVTecDataModule(LightningDataModule):
             train=False,
             image_transforms=self.image_transforms,
             mask_transforms=self.mask_transforms,
+            exclude_normal_images_in_validation=self.exclude_normal_images_in_validation,
         )
 
     def train_dataloader(self) -> DataLoader:

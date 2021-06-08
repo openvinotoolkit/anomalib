@@ -4,6 +4,7 @@ dataset:
   category: leather
   batch_size: 32
   num_workers: 0
+  exclude_normal_images_in_validation: false
 
 model:
   name: padim
