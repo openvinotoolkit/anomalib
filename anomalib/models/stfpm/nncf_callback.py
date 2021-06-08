@@ -8,6 +8,7 @@ import torch
 import time
 from omegaconf import OmegaConf
 import yaml
+import os
 
 
 class TimerCallback(Callback):
@@ -29,7 +30,7 @@ class TimerCallback(Callback):
 
     def on_test_end(self, trainer, pl_module: LightningModule) -> None:
         """Called when the test ends."""
-        print("Testing took {} seconds".format(time.time() - self.start))
+        print("Testing took {} seconds.".format(time.time() - self.start))
 
 
 class LoadModelCallback(Callback):
@@ -44,9 +45,11 @@ class LoadModelCallback(Callback):
 
 class NNCFCallback(Callback):
 
-    def __init__(self, config):
+    def __init__(self, config, dirpath, filename):
         config_dict = yaml.safe_load(OmegaConf.to_yaml(config))
         self.nncf_config = NNCFConfig.from_dict(config_dict)
+        self.dirpath = dirpath
+        self.filename = filename
 
     def setup(self, trainer, pl_module: LightningModule, stage: str) -> None:
         """Called when fit or test begins"""
@@ -65,4 +68,8 @@ class NNCFCallback(Callback):
 
     def on_train_end(self, trainer, pl_module: LightningModule) -> None:
         """Called when the train ends."""
-        self.comp_ctrl.export_model("compressed_model.onnx")
+        os.makedirs(self.dirpath, exist_ok=True)
+        self.comp_ctrl.export_model(os.path.join(self.dirpath, self.filename + '.onnx'))
+
+    def on_train_epoch_end(self, trainer, pl_module: LightningModule, outputs: Any) -> None:
+        self.compression_scheduler.epoch_step()

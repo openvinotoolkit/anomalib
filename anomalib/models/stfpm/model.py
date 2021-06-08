@@ -24,6 +24,7 @@ __all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel"]
 
 from anomalib.models.shared import FeatureExtractor
 
+pl.seed_everything(42)
 
 class Loss(nn.Module):
     """
@@ -85,7 +86,11 @@ class Callbacks:
         early_stopping = EarlyStopping(monitor=self.args.metric, patience=self.args.patience)
         callbacks = [model_loader, checkpoint, early_stopping, TimerCallback()]
         if "nncf" in self.args.keys():
-            callbacks.insert(0, NNCFCallback(self.args.nncf))
+            callbacks.insert(0, NNCFCallback(
+                config=self.args.nncf,
+                dirpath=os.path.join(self.args.project_path, "compressed"),
+                filename="compressed_model"
+            ))
 
         return callbacks
 
