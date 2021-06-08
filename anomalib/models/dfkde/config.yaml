@@ -1,17 +1,22 @@
 dataset:
-  dataset: mvtec
-  dataset_path: ./datasets/MVTec/zipper
+  name: mvtec
+  path: ./datasets/MVTec
+  category: leather
   batch_size: 32
   num_workers: 32
   exclude_normal_images_in_validation: false
 
 model:
-  model: dfkde
+  name: dfkde
   max_training_points: 40000
   project_path: ./results
   confidence_threshold: 0.5
   pre_processing: scale
   n_components: 16
+
+project:
+  seed: 0
+  path: ./results
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:

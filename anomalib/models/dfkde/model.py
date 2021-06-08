@@ -20,7 +20,7 @@ class Callbacks:
 
     def get_callbacks(self) -> List[Callback]:
         checkpoint = ModelCheckpoint(
-            dirpath=os.path.join(self.args.project_path, "weights"),
+            dirpath=os.path.join(self.args.project.path, "weights"),
             filename="model",
             monitor=self.args.metric,
         )
@@ -66,7 +66,7 @@ class DFKDEModel(pl.LightningModule):
         layer_outputs = self.feature_extractor(batch["image"])
         feature_vector = torch.hstack(list(layer_outputs.values())).detach()
         probability = self.normality_model.predict(feature_vector.view(feature_vector.shape[:2]))
-        prediction = 1 if probability > self.hparams.confidence_threshold else 0
+        prediction = 1 if probability > self.hparams.model.confidence_threshold else 0
         ground_truth = int(np.any(mask.cpu().numpy()))
         return {"probability": probability, "prediction": prediction, "ground_truth": ground_truth}
 
