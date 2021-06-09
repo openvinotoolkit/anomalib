@@ -1,10 +1,5 @@
 from argparse import ArgumentParser
 
-from pytorch_lightning import Trainer
-import torch
-import nncf
-from nncf import NNCFConfig, create_compressed_model, load_state, register_default_init_args
-import json
 from pytorch_lightning import Trainer, seed_everything
 
 from anomalib.config.config import get_configurable_parameters
@@ -25,10 +20,8 @@ config = get_configurable_parameters(model_name=args.model, model_config_path=ar
 if config.project.seed != 0:
     seed_everything(config.project.seed)
 
-datamodule = get_datamodule(config.dataset)
-datamodule.setup()
-train_loader = datamodule.train_dataloader()
-model = get_model(config.model, train_loader)
+datamodule = get_datamodule(config)
+model = get_model(config)
 
 trainer = Trainer(callbacks=model.callbacks, **config.trainer)
 

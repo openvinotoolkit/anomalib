@@ -20,14 +20,16 @@ from sklearn.metrics import precision_recall_curve, roc_auc_score
 from torch import Tensor, nn, optim
 
 from anomalib.datasets.utils import Denormalize
-from anomalib.models.stfpm.nncf_callback import NNCFCallback, LoadModelCallback, TimerCallback
+from anomalib.core.callbacks.nncf_callback import NNCFCallback
+from anomalib.core.callbacks.model_loader import LoadModelCallback
+from anomalib.core.callbacks.timer import TimerCallback
+from anomalib.core.callbacks.compress import CompressModelCallback
 from anomalib.utils.visualizer import Visualizer
 
 __all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel"]
 
 from anomalib.core.model.feature_extractor import FeatureExtractor
 
-pl.seed_everything(42)
 
 class Loss(nn.Module):
     """
@@ -105,19 +107,26 @@ class Callbacks:
         """
         Get STFPM model callbacks.
         """
-        model_loader = LoadModelCallback(os.path.join(self.config.project_path, "weights/model.ckpt"))
         checkpoint = ModelCheckpoint(
             dirpath=os.path.join(self.config.project.path, "weights"),
             filename="model",
         )
-        early_stopping = EarlyStopping(monitor=self.config.metric, patience=self.config.patience)
-        callbacks = [model_loader, checkpoint, early_stopping, TimerCallback()]
+        early_stopping = EarlyStopping(monitor=self.config.model.metric, patience=self.config.model.patience)
+        callbacks = [checkpoint, early_stopping, TimerCallback()]
         if "nncf" in self.config.keys():
-            callbacks.insert(0, NNCFCallback(
-                config=self.config.nncf,
-                dirpath=os.path.join(self.config.project_path, "compressed"),
+            callbacks.append(NNCFCallback(
+                config=self.config,
+                dirpath=os.path.join(self.config.project.path, "compressed"),
                 filename="compressed_model"
             ))
+        else:
+            callbacks.append(CompressModelCallback(config=self.config,
+                                                   dirpath=os.path.join(self.config.project.path, "compressed"),
+                                                   filename="compressed_model"))
+        if "weight_file" in self.config.keys():
+            model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.weight_file))
+            callbacks.append(model_loader)
+
         return callbacks
 
     def __call__(self):
@@ -265,7 +274,7 @@ class STFPMModel(nn.Module):
             parameters.requires_grad = False
 
         self.loss = Loss()
-        self.anomaly_map_generator = AnomalyMapGenerator(batch_size=1, image_size=256)
+        self.anomaly_map_generator = AnomalyMapGenerator(batch_size=1, image_size=224)
         # self.callbacks = Callbacks(hparams)()
 
 
@@ -294,20 +303,13 @@ class STFPMModel(nn.Module):
 
 
 class STFPMLightning(pl.LightningModule):
-    def __init__(self, hparams, train_loader):
+    def __init__(self, hparams):
         super().__init__()
         self.save_hyperparameters(hparams)
         self.callbacks = Callbacks(hparams)()
 
         self.model = STFPMModel(hparams)
-        self.train_loader = train_loader
         self.loss_val = 0
-
-        # init_loader = InitLoader(train_loader)
-        # nncf_config = register_default_init_args(self.nncf_config, init_loader, self.model.loss,
-        #                                          criterion_fn=criterion_fn)
-        # self.comp_ctrl, self.model = create_compressed_model(self.model, nncf_config)
-        # self.compression_scheduler = self.comp_ctrl.scheduler
 
     def configure_optimizers(self):
         """
@@ -316,10 +318,10 @@ class STFPMLightning(pl.LightningModule):
         :return: SGD optimizer
         """
         return optim.SGD(
-                         params = self.student_model.parameters(),
-                         lr = self.hparams.model.lr,
-                         momentum = self.hparams.model.momentum,
-                         weight_decay = self.hparams.model.weight_decay,
+                         params=self.model.student_model.parameters(),
+                         lr=self.hparams.model.lr,
+                         momentum=self.hparams.model.momentum,
+                         weight_decay=self.hparams.model.weight_decay,
                         )
 
     def training_step(self, batch, batch_idx):
@@ -332,7 +334,7 @@ class STFPMLightning(pl.LightningModule):
         :param _: Index of the batch.
         :return: Hierarchical feature map
         """
-        self.teacher_model.eval()
+        self.model.teacher_model.eval()
         teacher_features, student_features = self.model.forward(batch["image"])
         loss = self.loss_val + self.model.loss(teacher_features, student_features)
         self.loss_val = 0
@@ -351,8 +353,8 @@ class STFPMLightning(pl.LightningModule):
                  These are required in `validation_epoch_end` for feature concatenation.
         """
         filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
-        teacher_features, student_features = self.forward(images)
-        anomaly_maps = self.anomaly_map_generator(teacher_features, student_features)
+        teacher_features, student_features = self.model.forward(images)
+        anomaly_maps = self.model.anomaly_map_generator(teacher_features, student_features)
 
         return {
             "filenames": filenames,
@@ -405,15 +407,15 @@ class STFPMLightning(pl.LightningModule):
 
         self.validation_epoch_end(outputs)
 
-        threshold = self.anomaly_map_generator.compute_adaptive_threshold(self.true_masks, self.anomaly_maps)
+        threshold = self.model.anomaly_map_generator.compute_adaptive_threshold(self.true_masks, self.anomaly_maps)
 
         for (filename, image, true_mask, anomaly_map) in zip(
             self.filenames, self.images, self.true_masks, self.anomaly_maps
         ):
             image = Denormalize()(image.squeeze())
 
-            heat_map = self.anomaly_map_generator.apply_heatmap_on_image(anomaly_map, image)
-            pred_mask = self.anomaly_map_generator.compute_mask(anomaly_map=anomaly_map, threshold=threshold)
+            heat_map = self.model.anomaly_map_generator.apply_heatmap_on_image(anomaly_map, image)
+            pred_mask = self.model.anomaly_map_generator.compute_mask(anomaly_map=anomaly_map, threshold=threshold)
             vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
 
             visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
