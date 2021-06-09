@@ -3,16 +3,17 @@ dataset:
   path: ./datasets/MVTec
   category: leather
   batch_size: 32
-  num_workers: 32
+  num_workers: 0
   exclude_normal_images_in_validation: false
 
 model:
-  name: dfkde
-  max_training_points: 40000
-  project_path: ./results
-  confidence_threshold: 0.5
-  pre_processing: scale
-  n_components: 16
+  name: padim
+  backbone: resnet18
+  layers:
+    - layer1
+    - layer2
+    - layer3
+  metric: auc
 
 project:
   seed: 0
@@ -32,7 +33,7 @@ trainer:
   check_val_every_n_epoch: 1
   checkpoint_callback: true
   default_root_dir: null
-  deterministic: false
+  deterministic: true
   distributed_backend: null
   enable_pl_optimizer: null
   fast_dev_run: false

@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Optional, Union
 
-from omegaconf import OmegaConf
+from omegaconf import DictConfig, OmegaConf
 
 
 def get_configurable_parameters(
@@ -9,7 +9,7 @@ def get_configurable_parameters(
     model_config_path: Optional[Union[Path, str]] = None,
     config_filename: Optional[str] = "config",
     config_file_extension: Optional[str] = "yaml",
-):
+) -> DictConfig:
     if model_name is None and model_config_path is None:
         raise ValueError(
             "Both model_name and model config path cannot be None! "
@@ -20,4 +20,11 @@ def get_configurable_parameters(
         model_config_path = Path(f"anomalib/models/{model_name}/{config_filename}.{config_file_extension}")
 
     config = OmegaConf.load(model_config_path)
+
+    # Add project path.
+    project_path = Path(config.project.path) / config.model.name / config.dataset.name / config.dataset.category
+    (project_path / "weights").mkdir(parents=True, exist_ok=True)
+    (project_path / "images").mkdir(parents=True, exist_ok=True)
+    config.project.path = str(project_path)
+
     return config
