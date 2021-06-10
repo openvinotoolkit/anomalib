@@ -11,7 +11,7 @@ from anomalib.models import get_model
 
 def get_args():
     parser = ArgumentParser()
-    parser.add_argument("--model", type=str, default="stfpm", help="Name of the algorithm to train/test")
+    parser.add_argument("--model", type=str, default="dfkde", help="Name of the algorithm to train/test")
     parser.add_argument("--model_config_path", type=str, required=False, help="Path to a model config file")
     parser.add_argument("--weight_file", type=str, default="./results/weights/model.ckpt")
     args = parser.parse_args()

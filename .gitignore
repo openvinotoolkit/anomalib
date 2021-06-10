@@ -7,6 +7,10 @@ results
 backup.py
 train.ipynb
 
+# VENV
+.anomalib
+.toxbase
+
 # IDE
 .vscode
 .idea

@@ -11,13 +11,15 @@ from .mvtec import MVTecDataModule
 
 
 def get_datamodule(config: Union[DictConfig, ListConfig]):
-    """Get Anomaly Datamodule
+    """
+    Get Anomaly Datamodule
 
     Args:
-      config: Configuration of the anomaly model
-      config: Union[DictConfig, ListConfig]:
+        config: Configuration of the anomaly model
+        config: Union[DictConfig, ListConfig]:
 
     Returns:
+        PyTorch Lightning DataModule
 
     """
     datamodule: LightningDataModule

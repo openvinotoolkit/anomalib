@@ -1,10 +1,11 @@
 """
-    MVTec
-    This script contains PyTorch Dataset, Dataloader and PyTorch Lightning
-        DataModule for the MVTec dataset. If the dataset is not on the file
-        system, the script downloads and extracts the dataset and create
-        PyTorch data objects.
+MVTec
+This script contains PyTorch Dataset, Dataloader and PyTorch Lightning
+    DataModule for the MVTec dataset. If the dataset is not on the file
+    system, the script downloads and extracts the dataset and create
+    PyTorch data objects.
 """
+
 import logging
 import tarfile
 from pathlib import Path
@@ -26,12 +27,11 @@ __all__ = ["MVTec", "MVTecDataModule"]
 
 
 def get_image_transforms() -> T.Compose:
-    """Get default ImageNet image transformations.
-
-    Args:
+    """
+    Get default ImageNet image transformations.
 
     Returns:
-      T.Compose: List of imagenet transformations.
+        T.Compose: List of imagenet transformations.
 
     """
     transform = T.Compose(
@@ -46,10 +46,8 @@ def get_image_transforms() -> T.Compose:
 
 
 def get_mask_transforms() -> T.Compose:
-    """Get default ImageNet transformations for the ground-truth
-        image masks.
-
-    Args:
+    """
+    Get default ImageNet transformations for the ground-truth image masks.
 
     Returns:
       T.Compose: List of imagenet transformations.
@@ -122,8 +120,8 @@ class MVTec(VisionDataset):
         Extract MVTec Dataset
         """
         logger.info("Extracting MVTec dataset")
-        with tarfile.open(self.filename) as f:
-            f.extractall(self.root)
+        with tarfile.open(self.filename) as file:
+            file.extractall(self.root)
 
     def _clean(self) -> None:
         """
@@ -191,7 +189,9 @@ class MVTec(VisionDataset):
 
 
 class MVTecDataModule(LightningDataModule):
-    """ """
+    """
+    MVTec Lightning Data Module
+    """
 
     def __init__(
         self,
@@ -215,9 +215,15 @@ class MVTecDataModule(LightningDataModule):
         self.loader = default_loader if loader is None else loader
         self.exclude_normal_images_in_validation = exclude_normal_images_in_validation
 
+        self.train_data: Optional[MVTec] = None
+        self.val_data: Optional[MVTec] = None
+
     def prepare_data(self):
-        """ """
-        # Training Data
+        """
+        Prepare MVTec Dataset
+        """
+
+        # Train
         MVTec(
             root=self.root,
             category=self.category,
@@ -227,7 +233,8 @@ class MVTecDataModule(LightningDataModule):
             download=True,
             exclude_normal_images_in_validation=self.exclude_normal_images_in_validation,
         )
-        # Test Data
+
+        # Test
         MVTec(
             root=self.root,
             category=self.category,
@@ -240,41 +247,38 @@ class MVTecDataModule(LightningDataModule):
 
     def setup(self, stage: Optional[str] = None) -> None:
         """
+        Setup train, validation and test data.
 
         Args:
           stage: Optional[str]:  (Default value = None)
-          stage: Optional[str]:  (Default value = None)
-
-        Returns:
 
         """
-        self.train_data = MVTec(
-            root=self.root,
-            category=self.category,
-            train=True,
-            image_transforms=self.image_transforms,
-            mask_transforms=self.mask_transforms,
-            exclude_normal_images_in_validation=self.exclude_normal_images_in_validation,
-        )
-        self.val_data = MVTec(
-            root=self.root,
-            category=self.category,
-            train=False,
-            image_transforms=self.image_transforms,
-            mask_transforms=self.mask_transforms,
-            exclude_normal_images_in_validation=self.exclude_normal_images_in_validation,
-        )
+        if stage in (None, 'fit'):
+            self.train_data = MVTec(
+                root=self.root,
+                category=self.category,
+                train=True,
+                image_transforms=self.image_transforms,
+                mask_transforms=self.mask_transforms,
+                exclude_normal_images_in_validation=self.exclude_normal_images_in_validation,
+            )
+            self.val_data = MVTec(
+                root=self.root,
+                category=self.category,
+                train=False,
+                image_transforms=self.image_transforms,
+                mask_transforms=self.mask_transforms,
+                exclude_normal_images_in_validation=self.exclude_normal_images_in_validation,
+            )
 
     def train_dataloader(self) -> DataLoader:
-        """ """
+        """Get train dataloader"""
         return DataLoader(self.train_data, shuffle=False, batch_size=self.batch_size, num_workers=self.num_workers)
 
     def val_dataloader(self) -> DataLoader:
-        """ """
-        # TODO: Handle batch_size > 1
+        """Get validation dataloader"""
         return DataLoader(self.val_data, shuffle=False, batch_size=1, num_workers=self.num_workers)
 
     def test_dataloader(self) -> DataLoader:
-        """ """
-        # TODO: Handle batch_size > 1
+        """Get test dataloader"""
         return DataLoader(self.val_data, shuffle=False, batch_size=1, num_workers=self.num_workers)

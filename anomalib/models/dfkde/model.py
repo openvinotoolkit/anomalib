@@ -19,17 +19,20 @@ from anomalib.core.model.feature_extractor import FeatureExtractor
 
 
 class Callbacks:
-    """DFKDE-specific callbacks"""
+    """
+    DFKDE-specific callbacks
+    """
 
-    def __init__(self, args: DictConfig):
-        self.args = args
+    def __init__(self, config: DictConfig):
+        self.config = config
 
     def get_callbacks(self) -> Sequence[Callback]:
-        """Get PADIM model callbacks."""
+        """
+        Get PADIM model callbacks.
+        """
         checkpoint = ModelCheckpoint(
-            dirpath=os.path.join(self.args.project.path, "weights"),
+            dirpath=os.path.join(self.config.project.path, "weights"),
             filename="model",
-            monitor=self.args.metric,
         )
         callbacks = [checkpoint]
         return callbacks
@@ -39,7 +42,9 @@ class Callbacks:
 
 
 class DFKDEModel(pl.LightningModule):
-    """DFKDE: Deep Featured Kernel Density Estimation"""
+    """
+    DFKDE: Deep Featured Kernel Density Estimation
+    """
 
     def __init__(self, hparams: AttrDict):
         super().__init__()
@@ -50,7 +55,7 @@ class DFKDEModel(pl.LightningModule):
         self.feature_extractor = FeatureExtractor(backbone=resnet50(pretrained=True), layers=["avgpool"]).eval()
 
         self.normality_model = NormalityModel(
-            filter_count=hparams.max_training_points,
+            filter_count=hparams.model.max_training_points,
             threshold_steepness=self.threshold_steepness,
             threshold_offset=self.threshold_offset,
         )
@@ -58,10 +63,12 @@ class DFKDEModel(pl.LightningModule):
 
     @staticmethod
     def configure_optimizers():
-        """DFKDE doesn't require optimization, therefore returns no optimizers."""
+        """
+        DFKDE doesn't require optimization, therefore returns no optimizers.
+        """
         return None
 
-    def training_step(self, batch: dict, batch_idx: int) -> dict:
+    def training_step(self, batch: dict, _) -> dict:
         """Training Step of DFKDE.
         For each batch, features are extracted from the CNN.
 
@@ -95,7 +102,7 @@ class DFKDEModel(pl.LightningModule):
         feature_stack = torch.vstack([output["feature_vector"] for output in outputs])
         self.normality_model.fit(feature_stack)
 
-    def validation_step(self, batch: dict, batch_idx: int) -> dict:
+    def validation_step(self, batch: dict, _) -> dict:
         """Validation Step of DFKDE.
             Similar to the training step, features
             are extracted from the CNN for each batch.
@@ -135,7 +142,7 @@ class DFKDEModel(pl.LightningModule):
         auc = roc_auc_score(np.array(true_labels), np.array(torch.hstack(pred_labels)))
         self.log(name="auc", value=auc, on_epoch=True, prog_bar=True)
 
-    def test_step(self, batch: dict, batch_idx: dict) -> dict:
+    def test_step(self, batch: dict, _) -> dict:
         """Test Step of DFKDE.
             Similar to the training and validation steps,
             features are extracted from the CNN for each batch.
@@ -150,7 +157,7 @@ class DFKDEModel(pl.LightningModule):
 
         """
 
-        return self.validation_step(batch, batch_idx)
+        return self.validation_step(batch, _)
 
     def test_epoch_end(self, outputs: dict):
         """Compute anomaly classification scores based on probability scores.

@@ -1,3 +1,7 @@
+"""
+Gaussian Kernel Density Estimation
+"""
+
 import math
 from typing import Optional
 
@@ -7,7 +11,9 @@ from anomalib.core.model.dynamic_module import DynamicBufferModule
 
 
 class GaussianKDE(DynamicBufferModule):
-    """ """
+    """
+    Gaussian Kernel Density Estimation
+    """
 
     def __init__(self, dataset: Optional[torch.Tensor] = None):
         super().__init__()
@@ -19,38 +25,44 @@ class GaussianKDE(DynamicBufferModule):
         self.register_buffer("dataset", torch.Tensor())
         self.register_buffer("norm", torch.Tensor())
 
+        self.bw_transform = torch.Tensor()
+        self.dataset = torch.Tensor()
+        self.norm = torch.Tensor()
+
     def forward(self, features: torch.Tensor) -> torch.Tensor:
         """
+        Get the KDE estimates from the feature map.
 
         Args:
-          features: torch.Tensor:
+          features: torch.Tensor: Feature map extracted from the CNN
 
-        Returns:
+        Returns: KDE Estimates
 
         """
         features = torch.matmul(features, self.bw_transform)
 
         estimate = torch.zeros(features.shape[0])
         for j in range(features.shape[0]):
-            x = torch.sum((self.dataset - features[j]) ** 2, axis=1)
-            x = torch.exp(-x / 2) * self.norm
-            estimate[j] = torch.mean(x)
+            embedding = torch.sum((self.dataset - features[j]) ** 2, axis=1)
+            embedding = torch.exp(-embedding / 2) * self.norm
+            estimate[j] = torch.mean(embedding)
 
         return estimate
 
     def fit(self, dataset: torch.Tensor):
         """
+        Fit a KDE model to the input dataset.
 
         Args:
-          dataset: torch.Tensor:
+          dataset: torch.Tensor: Input dataset.
 
         Returns:
 
         """
-        n, d = dataset.shape
+        num_samples, dimension = dataset.shape
 
         # compute scott's bandwidth factor
-        factor = n ** (-1 / (d + 4))
+        factor = num_samples ** (-1 / (dimension + 4))
 
         cov_mat = self.cov(dataset.T, bias=False)
         inv_cov_mat = torch.linalg.inv(cov_mat)
@@ -62,25 +74,26 @@ class GaussianKDE(DynamicBufferModule):
 
         #
         norm = torch.prod(torch.diag(bw_transform))
-        norm *= math.pow((2 * math.pi), (-d / 2))
+        norm *= math.pow((2 * math.pi), (-dimension / 2))
 
-        # self.register_buffer('bw_transform', bw_transform)
         self.bw_transform = bw_transform
         self.dataset = dataset
         self.norm = norm
 
     @staticmethod
-    def cov(X: torch.Tensor, bias: Optional[bool] = False) -> torch.Tensor:
+    def cov(tensor: torch.Tensor, bias: Optional[bool] = False) -> torch.Tensor:
         """
+        Calculate covariance matrix.
 
         Args:
-          X: torch.Tensor:
-          bias: Optional[bool]:  (Default value = False)
+            tensor: torch.Tensor: Input tensor from which covariance matrix is computed.
+            bias: Optional[bool]:  (Default value = False)
 
         Returns:
+            Output covariance matrix.
 
         """
-        mean = torch.mean(X, dim=1)
-        X -= mean[:, None]
-        cov = torch.matmul(X, X.T) / (X.size(1) - int(not bias))
+        mean = torch.mean(tensor, dim=1)
+        tensor -= mean[:, None]
+        cov = torch.matmul(tensor, tensor.T) / (tensor.size(1) - int(not bias))
         return cov

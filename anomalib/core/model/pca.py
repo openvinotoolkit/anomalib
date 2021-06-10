@@ -1,19 +1,32 @@
+"""
+Principle Component Analysis (PCA) with PyTorch
+"""
+
+from typing import Optional
+
 import torch
 
 from anomalib.core.model.dynamic_module import DynamicBufferModule
 
 
 class PCA(DynamicBufferModule):
-    """ """
+    """
+    Principle Component Analysis (PCA)
+    """
 
     def __init__(self, n_components: int):
         super().__init__()
         self.n_components = n_components
 
-        self.register_buffer("U", torch.Tensor())
-        self.register_buffer("S", torch.Tensor())
-        self.register_buffer("V", torch.Tensor())
+        self.register_buffer("tensor_u", torch.Tensor())
+        self.register_buffer("tensor_s", torch.Tensor())
+        self.register_buffer("tensor_v", torch.Tensor())
         self.register_buffer("mean", torch.Tensor())
+
+        self.tensor_u = torch.Tensor()
+        self.tensor_s = torch.Tensor()
+        self.tensor_v = torch.Tensor()
+        self.mean = torch.Tensor()
 
     def fit_transform(self, dataset: torch.Tensor) -> torch.Tensor:
         """
@@ -27,34 +40,34 @@ class PCA(DynamicBufferModule):
         mean = torch.mean(dataset, axis=0)
         dataset -= mean
 
-        U, S, V = torch.svd(dataset)
+        tensor_u, tensor_s, tensor_v = torch.svd(dataset)
 
-        self.U = U
-        self.S = S
-        self.V = V
+        self.tensor_u = tensor_u
+        self.tensor_s = tensor_s
+        self.tensor_v = tensor_v
         self.mean = mean
 
-        return torch.matmul(dataset, V[:, : self.n_components])
+        return torch.matmul(dataset, tensor_v[:, : self.n_components])
 
-    def transform(self, y: torch.Tensor) -> torch.Tensor:
+    def transform(self, features: torch.Tensor) -> torch.Tensor:
         """
 
         Args:
-          y: torch.Tensor:
+          features: torch.Tensor:
 
         Returns:
 
         """
-        y -= self.mean
-        return torch.matmul(y, self.V[:, : self.n_components])
+        features -= self.mean
+        return torch.matmul(features, self.tensor_v[:, : self.n_components])
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, features: torch.Tensor) -> torch.Tensor:
         """
 
         Args:
-          x: torch.Tensor:
+          features: torch.Tensor:
 
         Returns:
 
         """
-        return self.transform(x)
+        return self.transform(features)

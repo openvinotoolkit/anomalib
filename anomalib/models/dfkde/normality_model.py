@@ -1,6 +1,7 @@
 """
 Normality model of DFKDE
 """
+
 import random
 from typing import Optional, Tuple
 
@@ -12,7 +13,9 @@ from anomalib.core.model.pca import PCA
 
 
 class NormalityModel(nn.Module):
-    """Normality Model for the DFKDE algorithm"""
+    """
+    Normality Model for the DFKDE algorithm
+    """
 
     def __init__(
         self,
@@ -28,21 +31,23 @@ class NormalityModel(nn.Module):
         self.filter_count = filter_count
         self.threshold_steepness = threshold_steepness
         self.threshold_offset = threshold_offset
-        self.max_length: Optional[int] = None
 
         self.pca_model = PCA(n_components=self.n_components)
         self.kde_model = GaussianKDE()
 
         self.register_buffer("max_length", torch.Tensor(torch.Size([])))
+        self.max_length = torch.Tensor(torch.Size([]))
 
     def fit(self, dataset: torch.Tensor):
-        """Fit a kde model to dataset
+        """
+        Fit a kde model to dataset
 
         Args:
-          dataset: Input dataset to fit the model.
-          dataset: torch.Tensor:
+            dataset: Input dataset to fit the model.
+            dataset: torch.Tensor:
 
         Returns:
+            Boolean confirming whether the training is successful.
 
         """
 
@@ -87,16 +92,15 @@ class NormalityModel(nn.Module):
         return feature_stack, max_length
 
     def evaluate(
-        self, sem_feats: torch.Tensor, as_density: Optional[bool] = False, ln: Optional[bool] = False
+        self, sem_feats: torch.Tensor, as_density: Optional[bool] = False, as_log_likelihood: Optional[bool] = False
     ) -> torch.Tensor:
-        """Compute the KDE scores
+        """
+        Compute the KDE scores
 
         Args:
-          sem_feats: param as_density:
-          ln: return:
-          sem_feats: torch.Tensor:
-          as_density: Optional[bool]:  (Default value = False)
-          ln: Optional[bool]:  (Default value = False)
+            sem_feats:
+            as_density:
+            as_log_likelihood:
 
         Returns:
 
@@ -109,10 +113,10 @@ class NormalityModel(nn.Module):
         # add small constant to avoid zero division in log computation
         kde_scores += 1e-300
 
-        if as_density:
-            score = torch.log(kde_scores) if ln else kde_scores
-        else:
-            score = torch.log(1.0 / kde_scores) if ln else 1.0 / kde_scores
+        score = kde_scores if as_density else 1.0 / kde_scores
+
+        if as_log_likelihood:
+            score = torch.log(score)
 
         return score
 
@@ -128,7 +132,7 @@ class NormalityModel(nn.Module):
 
         """
 
-        densities = self.evaluate(features, as_density=True, ln=True)
+        densities = self.evaluate(features, as_density=True, as_log_likelihood=True)
         probabilities = self.to_probability(densities)
 
         return probabilities

@@ -8,3 +8,5 @@ scikit-learn>=0.24.1
 numpy >=1.20.2
 omegaconf >=2.0.6
 sigopt==7.4.0
+attrdict >= 2.0.1
+scikit-image >= 0.18.1

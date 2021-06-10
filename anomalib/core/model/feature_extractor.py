@@ -1,3 +1,8 @@
+"""
+Feature Extractor
+This script extracts features from a CNN network
+"""
+
 from typing import Iterable, Callable, Dict
 
 import torch
@@ -5,14 +10,10 @@ from torch import nn, Tensor
 
 
 class FeatureExtractor(nn.Module):
-    """FeatureExtractor [summary]
+    """
+    Extract features from a CNN
 
-        Args:
-          nn(type]
-
-    :Example:): description]
-
-        Returns:
+    Example:
 
         >>> import torch
         >>> import torchvision
@@ -40,38 +41,38 @@ class FeatureExtractor(nn.Module):
 
     def get_features(self, layer_id: str) -> Callable:
         """
+        Get layer features.
 
         Args:
-          layer_id: str:
+            layer_id: str: Layer ID
 
         Returns:
+            Layer features
 
         """
-
         def hook(_, __, output):
             """
+            Hook to extract features via a forward-pass.
 
             Args:
-              _:
-              __:
-              output:
-
-            Returns:
+              output: Feature map collected after the forward-pass.
 
             """
             self._features[layer_id] = output
 
         return hook
 
-    def forward(self, x: Tensor) -> Dict[str, Tensor]:
+    def forward(self, tensor: Tensor) -> Dict[str, Tensor]:
         """
+        Forward-pass input tensor into the CNN
 
         Args:
-          x: Tensor:
+            tensor: Tensor:
 
         Returns:
+            Feature map extracted from the CNN
 
         """
         self._features = {layer: torch.empty(0) for layer in self.layers}
-        _ = self.backbone(x)
+        _ = self.backbone(tensor)
         return self._features
