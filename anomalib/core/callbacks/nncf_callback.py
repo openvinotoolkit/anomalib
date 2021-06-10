@@ -15,7 +15,7 @@ def criterion_fn(outputs, criterion):
 
 
 class InitLoader(InitializingDataLoader):
-
+    """Initializing data loader for NNCF to be used with unsupervised training algorithms."""
     def __next__(self):
         loaded_item = next(self.data_loader_iter)
         return loaded_item["image"]
@@ -28,6 +28,11 @@ class InitLoader(InitializingDataLoader):
 
 
 class NNCFCallback(Callback):
+    """Callback for NNCF compression.
+
+    Assumes that the pl module contains a 'model' attribute, which is the PyTorch module
+    that must be compressed.
+    """
 
     def __init__(self, config, dirpath, filename):
         config_dict = yaml.safe_load(OmegaConf.to_yaml(config.nncf))
@@ -70,4 +75,5 @@ class NNCFCallback(Callback):
         os.system(optimize_command)
 
     def on_train_epoch_end(self, trainer, pl_module: LightningModule, outputs: Any) -> None:
+        """Called when the train epoch ends."""
         self.compression_scheduler.epoch_step()

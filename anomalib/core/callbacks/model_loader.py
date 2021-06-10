@@ -3,6 +3,7 @@ from pytorch_lightning import Callback, LightningModule
 
 
 class LoadModelCallback(Callback):
+    """Callback that loads model weights from the state dict."""
 
     def __init__(self, weights_path):
         self.weights_path = weights_path

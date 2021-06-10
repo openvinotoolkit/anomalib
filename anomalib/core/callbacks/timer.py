@@ -4,6 +4,7 @@ from pytorch_lightning import Callback, LightningModule
 
 
 class TimerCallback(Callback):
+    """Callback that measures the training and testing time of a PyTorch Lightning module."""
 
     def __init__(self):
         self.start = None

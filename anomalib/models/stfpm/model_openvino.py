@@ -6,11 +6,14 @@ import numpy as np
 import pytorch_lightning as pl
 from openvino.inference_engine import IECore
 from sklearn.metrics import roc_auc_score
+from typing import Dict
 
 from anomalib.core.callbacks.timer import TimerCallback
 
 
 class AnomalyMapGenerator:
+    """Generates anomaly heatmap."""
+
     def __init__(self, batch_size: int = 1, image_size: int = 256, alpha: float = 0.4, gamma: int = 0):
         super(AnomalyMapGenerator, self).__init__()
         self.image_size = image_size
@@ -20,7 +23,15 @@ class AnomalyMapGenerator:
         self.beta = 1 - self.alpha
         self.gamma = gamma
 
-    def compute_layer_map(self, teacher_features, student_features):
+    def compute_layer_map(self, teacher_features: np.ndarray, student_features: np.ndarray):
+        """Computes the anomaly map for a single layer based on cosine similarity.
+
+        Args:
+            teacher_features: Feature map produced by a single output layer of the teacher network.
+            student_features: Feature map produced by a single output layer of the student network.
+        Returns:
+            Numpy array that represents the anomaly map of the given layer, resized to the original image dimensions.
+        """
         norm_teacher_features = teacher_features / np.linalg.norm(teacher_features, axis=1)
         norm_student_features = student_features / np.linalg.norm(student_features, axis=1)
 
@@ -28,7 +39,18 @@ class AnomalyMapGenerator:
         layer_map = cv2.resize(layer_map[0, 0, ...], (self.image_size, self.image_size), interpolation=cv2.INTER_LINEAR)
         return layer_map
 
-    def compute_anomaly_map(self, teacher_features, student_features):
+    def compute_anomaly_map(self, teacher_features: Dict[str, np.ndarray], student_features: Dict[str, np.ndarray]):
+        """Computes the anomaly map between the set of teacher and student features.
+
+        Args:
+            teacher_features: Dictionary containing the feature maps for the different output layers of the teacher
+              network
+            student_features: Dictionary containing the feature maps for the different output layers of the student
+              network
+        Returns:
+            Numpy array which contains the pixel-level anomaly scores. The scores are computed as the product of the
+              anomaly heatmaps of the individual layers.
+        """
         anomaly_map = np.ones([self.image_size, self.image_size])
         for layer in teacher_features.keys():
             layer_map = self.compute_layer_map(teacher_features[layer], student_features[layer])
@@ -38,6 +60,7 @@ class AnomalyMapGenerator:
 
     @staticmethod
     def compute_heatmap(anomaly_map: np.ndarray) -> np.ndarray:
+        """Computes heatmap for visualization purposes."""
         anomaly_map = (anomaly_map - anomaly_map.min()) / np.ptp(anomaly_map)
         anomaly_map = anomaly_map * 255
         anomaly_map = anomaly_map.astype(np.uint8)
@@ -46,6 +69,7 @@ class AnomalyMapGenerator:
         return heatmap
 
     def apply_heatmap_on_image(self, anomaly_map: np.ndarray, image: np.ndarray) -> np.ndarray:
+        """Overlays a heatmap on an RGB image."""
         heatmap = self.compute_heatmap(anomaly_map)
         heatmap_on_image = cv2.addWeighted(heatmap, self.alpha, image, self.beta, self.gamma)
         return heatmap_on_image
@@ -55,6 +79,7 @@ class AnomalyMapGenerator:
 
 
 class STFPMOpenVino(pl.LightningModule):
+    """PyTorch Lightning module for the STFPM algorithm."""
 
     def __init__(self, hparams):
         super().__init__()

@@ -1,11 +1,16 @@
-from pytorch_lightning import Callback, LightningModule
-import torch
 import os
+
+import torch
+from omegaconf.dictconfig import DictConfig
+from pytorch_lightning import Callback, LightningModule
 
 
 class CompressModelCallback(Callback):
+    """
+    Callback that compresses a trained model by first exporting to .onnx format, and then converting to OpenVINO IR.
+    """
 
-    def __init__(self, config, dirpath, filename):
+    def __init__(self, config: DictConfig, dirpath: str, filename: str):
         self.config = config
         self.dirpath = dirpath
         self.filename = filename
