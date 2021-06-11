@@ -15,7 +15,7 @@ class FeatureExtractor(nn.Module):
 
     >>> import torch
     >>> import torchvision
-    >>> from model import FeatureExtractor
+    >>> from anomalib.core.model.feature_extractor import FeatureExtractor
 
     >>> model = FeatureExtractor(model=torchvision.models.resnet18(), layers=['layer1', 'layer2', 'layer3'])
     >>> input = torch.rand((32, 3, 256, 256))
