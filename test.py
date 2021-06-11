@@ -1,4 +1,3 @@
-from anomalib.helpers.sigopt_logger import SigoptLogger
 from argparse import ArgumentParser
 import os
 
