@@ -17,17 +17,17 @@ def get_args():
     args = parser.parse_args()
     return args
 
+if __name__ == '__main__':
+    args = get_args()
+    config = get_configurable_parameters(model_name=args.model, model_config_path=args.model_config_path)
+    datamodule = get_datamodule(config.dataset)
 
-args = get_args()
-config = get_configurable_parameters(model_name=args.model, model_config_path=args.model_config_path)
-datamodule = get_datamodule(config.dataset)
+    model = get_model(config.model)
+    # TODO: load_from_checkpoint doesn't properly load the weights!!!
+    # model.load_from_checkpoint(checkpoint_path="./results/weights/pl_model.pth")
+    model.load_state_dict(torch.load(args.weight_file)["state_dict"])
 
-model = get_model(config.model)
-# TODO: load_from_checkpoint doesn't properly load the weights!!!
-# model.load_from_checkpoint(checkpoint_path="./results/weights/pl_model.pth")
-model.load_state_dict(torch.load(args.weight_file)["state_dict"])
+    logger = SigoptLogger(project="anomaly", name=f"{args.model}_test")
 
-logger = SigoptLogger(project="anomaly", name=f"{args.model}_test")
-
-trainer = Trainer(callbacks=model.callbacks, **config.trainer, logger=logger)
-trainer.test(model=model, datamodule=datamodule)
+    trainer = Trainer(callbacks=model.callbacks, **config.trainer, logger=logger)
+    trainer.test(model=model, datamodule=datamodule)

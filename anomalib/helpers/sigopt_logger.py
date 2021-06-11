@@ -93,7 +93,7 @@ class SigoptLogger(LightningLoggerBase):
 
     @rank_zero_only
     def log_metrics(self, metrics: Dict[str, float], step: Optional[int]):
-        """Uses sigopt checkpoint to save the metrics. . This way you will get the graph.
+        """Uses sigopt checkpoint to save the metrics. This way you will get the graph.
             However it is unsafe as it does not check if number of checkpoints have crossed 200.
 
         :param metrics: Dictionary containing metrics. Current limitation is maximum of 4 metrics.

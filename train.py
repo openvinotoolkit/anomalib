@@ -15,14 +15,14 @@ def get_args():
     args = parser.parse_args()
     return args
 
+if __name__ == '__main__':
+    args = get_args()
 
-args = get_args()
+    config = get_configurable_parameters(model_name=args.model, model_config_path=args.model_config_path)
+    datamodule = get_datamodule(config.dataset)
+    model = get_model(config.model)
 
-config = get_configurable_parameters(model_name=args.model, model_config_path=args.model_config_path)
-datamodule = get_datamodule(config.dataset)
-model = get_model(config.model)
+    logger = SigoptLogger(project="anomaly", name=f"{args.model}_train")
 
-logger = SigoptLogger(project="anomaly", name=f"{args.model}_train")
-
-trainer = Trainer(callbacks=model.callbacks, **config.trainer, logger=logger)
-trainer.fit(model=model, datamodule=datamodule)
+    trainer = Trainer(callbacks=model.callbacks, **config.trainer, logger=logger)
+    trainer.fit(model=model, datamodule=datamodule)
