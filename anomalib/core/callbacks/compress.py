@@ -19,7 +19,6 @@ class CompressModelCallback(Callback):
     def on_train_end(self, trainer, pl_module: LightningModule) -> None:
         """Called when the train ends."""
         onnx_path = os.path.join(self.dirpath, self.filename + '.onnx')
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        torch.onnx.export(pl_module.model, torch.zeros((1, 3, 224, 224)).to(device), onnx_path)
+        torch.onnx.export(pl_module.model, torch.zeros((1, 3, 224, 224)).to(pl_module.device), onnx_path)
         optimize_command = "python " + self.mo_path + " --input_model " + onnx_path + " --output_dir " + self.dirpath
         os.system(optimize_command)
