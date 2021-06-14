@@ -14,7 +14,6 @@ def get_args():
 
     return parser.parse_args()
 
-
 args = get_args()
 config = get_configurable_parameters(model_name=args.model, model_config_path=args.model_config_path)
 
@@ -25,5 +24,6 @@ datamodule = get_datamodule(config)
 model = get_model(config)
 
 trainer = Trainer(callbacks=model.callbacks, **config.trainer)
+
 trainer.fit(model=model, datamodule=datamodule)
 trainer.test(model=model, datamodule=datamodule)
