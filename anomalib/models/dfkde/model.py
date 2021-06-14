@@ -10,28 +10,30 @@ from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 from sklearn.metrics import roc_auc_score
 from torchvision.models import resnet50
 
-from anomalib.models.dfkde.normality_model import NormalityModel
+from anomalib.core.callbacks.model_loader import LoadModelCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
+from anomalib.models.dfkde.normality_model import NormalityModel
 
 
 class Callbacks:
-    def __init__(self, args: DictConfig):
-        self.args = args
+    def __init__(self, config: DictConfig):
+        self.config = config
 
     def get_callbacks(self) -> List[Callback]:
         checkpoint = ModelCheckpoint(
-            dirpath=os.path.join(self.args.project.path, "weights"),
+            dirpath=os.path.join(self.config.project.path, "weights"),
             filename="model",
-            monitor=self.args.metric,
+            monitor=self.config.metric,
         )
-        callbacks = [checkpoint]
+        model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.weight_file))
+        callbacks = [checkpoint, model_loader]
         return callbacks
 
     def __call__(self):
         return self.get_callbacks()
 
 
-class DFKDEModel(pl.LightningModule):
+class DFKDELightning(pl.LightningModule):
     def __init__(self, hparams: AttrDict):
         super().__init__()
         self.hparams = hparams

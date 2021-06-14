@@ -23,18 +23,19 @@ from sklearn.metrics import precision_recall_curve
 from sklearn.metrics import roc_auc_score
 from torch import Tensor
 
+from anomalib.core.callbacks.model_loader import LoadModelCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
 from anomalib.datasets.utils import Denormalize
 from anomalib.utils.visualizer import Visualizer
 
-__all__ = ["PADIMModel"]
+__all__ = ["PADIMLightning"]
 
 
 DIMS = {"resnet18": {"t_d": 448, "d": 100}, "wide_resnet50_2": {"t_d": 1792, "d": 550}}
 
 
-class Padim(torch.nn.Module):
+class PadimModel(torch.nn.Module):
     """
     Padim Module
     """
@@ -178,7 +179,8 @@ class Callbacks:
             dirpath=os.path.join(self.config.project.path, "weights"),
             filename="model",
         )
-        callbacks = [checkpoint]
+        model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.weight_file))
+        callbacks = [checkpoint, model_loader]
 
         return callbacks
 
@@ -357,7 +359,7 @@ class AnomalyMapGenerator:
         return mask
 
 
-class PADIMModel(pl.LightningModule):
+class PADIMLightning(pl.LightningModule):
     """
     PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization
     """
@@ -366,7 +368,7 @@ class PADIMModel(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters(hparams)
         self.layers = hparams.model.layers
-        self._model = Padim(hparams.model.backbone, hparams.model.layers).eval()
+        self._model = PadimModel(hparams.model.backbone, hparams.model.layers).eval()
 
         self.anomaly_map_generator = AnomalyMapGenerator()
         self.callbacks = Callbacks(hparams)()
