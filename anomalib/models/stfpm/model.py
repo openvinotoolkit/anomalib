@@ -2,7 +2,6 @@
 STFPM: Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection
 https://arxiv.org/abs/2103.04257
 """
-import os
 import os.path
 from pathlib import Path
 from typing import Dict, List
@@ -16,12 +15,15 @@ from pytorch_lightning.callbacks import Callback, EarlyStopping, ModelCheckpoint
 from sklearn.metrics import roc_auc_score
 from torch import Tensor, nn, optim
 
+from anomalib.core.callbacks.compress import CompressModelCallback
+from anomalib.core.callbacks.model_loader import LoadModelCallback
+from anomalib.core.callbacks.nncf_callback import NNCFCallback
+from anomalib.core.callbacks.timer import TimerCallback
+from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
 from anomalib.models.base.model import BaseAnomalySegmentationModel
 
 __all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel"]
-
-from anomalib.core.model.feature_extractor import FeatureExtractor
 
 
 class Loss(nn.Module):
@@ -112,7 +114,27 @@ class Callbacks:
             filename="model",
         )
         early_stopping = EarlyStopping(monitor=self.config.model.metric, patience=self.config.model.patience)
-        callbacks = [checkpoint, early_stopping]
+        callbacks = [checkpoint, early_stopping, TimerCallback()]
+        if "nncf" in self.config.keys():
+            callbacks.append(
+                NNCFCallback(
+                    config=self.config,
+                    dirpath=os.path.join(self.config.project.path, "compressed"),
+                    filename="compressed_model",
+                )
+            )
+        else:
+            callbacks.append(
+                CompressModelCallback(
+                    config=self.config,
+                    dirpath=os.path.join(self.config.project.path, "compressed"),
+                    filename="compressed_model",
+                )
+            )
+        if "weight_file" in self.config.keys():
+            model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.weight_file))
+            callbacks.append(model_loader)
+
         return callbacks
 
     def __call__(self):
@@ -269,12 +291,13 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
 
 
 # class STFPMModel(pl.LightningModule):
-class STFPMModel(BaseAnomalySegmentationModel):
-    """STFPM: Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection"""
+class STFPMModel(nn.Module):
+    """
+    STFPM: Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection
+    """
 
     def __init__(self, hparams):
-        super().__init__(hparams)
-        # self.save_hyperparameters(hparams)
+        super().__init__()
         self.backbone = getattr(torchvision.models, hparams.model.backbone)
         self.layers = hparams.model.layers
 
@@ -287,7 +310,7 @@ class STFPMModel(BaseAnomalySegmentationModel):
 
         self.loss = Loss()
         self.anomaly_map_generator = AnomalyMapGenerator(batch_size=1, image_size=224)
-        self.callbacks = Callbacks(hparams)()
+        # self.callbacks = Callbacks(hparams)()
 
         # self.filenames: Optional[List[Union[str, Path]]] = None
         # self.images: Optional[List[Union[np.ndarray, Tensor]]] = None
@@ -315,6 +338,20 @@ class STFPMModel(BaseAnomalySegmentationModel):
         student_features: Dict[str, Tensor] = self.student_model(images)
         return teacher_features, student_features
 
+
+class STFPMLightning(BaseAnomalySegmentationModel):
+    """
+    PL Lightning Module for the STFPM algorithm.
+    """
+
+    def __init__(self, hparams):
+        super().__init__(hparams)
+        # self.save_hyperparameters(hparams)
+        self.callbacks = Callbacks(hparams)()
+
+        self.model = STFPMModel(hparams)
+        self.loss_val = 0
+
     def configure_optimizers(self):
         """Configure optimizers by creating an SGD optimizer.
 
@@ -326,7 +363,7 @@ class STFPMModel(BaseAnomalySegmentationModel):
 
         """
         return optim.SGD(
-            params=self.student_model.parameters(),
+            params=self.model.student_model.parameters(),
             lr=self.hparams.model.lr,
             momentum=self.hparams.model.momentum,
             weight_decay=self.hparams.model.weight_decay,
@@ -345,9 +382,10 @@ class STFPMModel(BaseAnomalySegmentationModel):
           Hierarchical feature map
 
         """
-        self.teacher_model.eval()
-        teacher_features, student_features = self.forward(batch["image"])
-        loss = self.loss(teacher_features, student_features)
+        self.model.teacher_model.eval()
+        teacher_features, student_features = self.model.forward(batch["image"])
+        loss = self.loss_val + self.model.loss(teacher_features, student_features)
+        self.loss_val = 0
         return {"loss": loss}
 
     def validation_step(self, batch, _):
@@ -366,8 +404,8 @@ class STFPMModel(BaseAnomalySegmentationModel):
 
         """
         filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
-        teacher_features, student_features = self.forward(images)
-        anomaly_maps = self.anomaly_map_generator(teacher_features, student_features)
+        teacher_features, student_features = self.model.forward(images)
+        anomaly_maps = self.model.anomaly_map_generator(teacher_features, student_features)
 
         return {
             "filenames": filenames,
@@ -431,7 +469,7 @@ class STFPMModel(BaseAnomalySegmentationModel):
 
     #     self.validation_epoch_end(outputs)
 
-    #     threshold = self.anomaly_map_generator.compute_adaptive_threshold(self.true_masks, self.anomaly_maps)
+    #    threshold = self.model.anomaly_map_generator.compute_adaptive_threshold(self.true_masks, self.anomaly_maps)
 
     #     for (filename, image, true_mask, anomaly_map) in zip(
     #         self.filenames, self.images, self.true_masks, self.anomaly_maps

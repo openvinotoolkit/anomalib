@@ -14,6 +14,7 @@ from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 from sklearn.metrics import roc_auc_score
 from torchvision.models import resnet50
 
+from anomalib.core.callbacks.model_loader import LoadModelCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.models.dfkde.normality_model import NormalityModel
 
@@ -33,8 +34,10 @@ class Callbacks:
         checkpoint = ModelCheckpoint(
             dirpath=os.path.join(self.config.project.path, "weights"),
             filename="model",
+            monitor=self.config.metric,
         )
-        callbacks = [checkpoint]
+        model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.weight_file))
+        callbacks = [checkpoint, model_loader]
         return callbacks
 
     def __call__(self):

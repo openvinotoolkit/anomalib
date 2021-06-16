@@ -11,6 +11,8 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 def get_configurable_parameters(
     model_name: Optional[str] = None,
     model_config_path: Optional[Union[Path, str]] = None,
+    weight_file: Optional[str] = None,
+    openvino: bool = False,
     config_filename: Optional[str] = "config",
     config_file_extension: Optional[str] = "yaml",
 ) -> Union[DictConfig, ListConfig]:
@@ -43,5 +45,12 @@ def get_configurable_parameters(
     (project_path / "weights").mkdir(parents=True, exist_ok=True)
     (project_path / "images").mkdir(parents=True, exist_ok=True)
     config.project.path = str(project_path)
+
+    if weight_file:
+        config.weight_file = weight_file
+
+    config.openvino = openvino
+    if openvino:
+        config.trainer.gpus = 0
 
     return config

@@ -18,19 +18,22 @@ from scipy.ndimage import gaussian_filter
 from sklearn.metrics import roc_auc_score
 from torch import Tensor
 
+from anomalib.core.callbacks.model_loader import LoadModelCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
 from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
 from anomalib.models.base.model import BaseAnomalySegmentationModel
 
-__all__ = ["PADIMModel"]
+__all__ = ["PADIMLightning"]
 
 
 DIMS = {"resnet18": {"t_d": 448, "d": 100}, "wide_resnet50_2": {"t_d": 1792, "d": 550}}
 
 
-class Padim(torch.nn.Module):
-    """Padim Module"""
+class PadimModel(torch.nn.Module):
+    """
+    Padim Module
+    """
 
     def __init__(self, backbone: str, layers: List[str]):
         super().__init__()
@@ -185,7 +188,8 @@ class Callbacks:
             dirpath=os.path.join(self.config.project.path, "weights"),
             filename="model",
         )
-        callbacks = [checkpoint]
+        model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.weight_file))
+        callbacks = [checkpoint, model_loader]
 
         return callbacks
 
@@ -408,14 +412,16 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
     #     return mask
 
 
-class PADIMModel(BaseAnomalySegmentationModel):
-    """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization"""
+class PADIMLightning(BaseAnomalySegmentationModel):
+    """
+    PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization
+    """
 
     def __init__(self, hparams):
         super().__init__(hparams)
         # self.save_hyperparameters(hparams)
         self.layers = hparams.model.layers
-        self._model = Padim(hparams.model.backbone, hparams.model.layers).eval()
+        self._model = PadimModel(hparams.model.backbone, hparams.model.layers).eval()
 
         self.anomaly_map_generator = AnomalyMapGenerator()
         self.callbacks = Callbacks(hparams)()
