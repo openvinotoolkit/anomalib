@@ -44,7 +44,7 @@ def mvtec_dataset_category() -> str:
     return category
 
 
-@pytest.mark.parametrize("model_name", ["dfkde"])
+@pytest.mark.parametrize("model_name", ["dfkde", "stfpm", "padim"])
 def test_model(mvtec_dataset_category, model_name):
     """
     Test Model Training and Test Pipeline.

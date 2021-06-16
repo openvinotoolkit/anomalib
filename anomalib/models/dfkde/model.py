@@ -44,7 +44,7 @@ class Callbacks:
         return self.get_callbacks()
 
 
-class DFKDEModel(pl.LightningModule):
+class DFKDELightning(pl.LightningModule):
     """
     DFKDE: Deep Featured Kernel Density Estimation
     """

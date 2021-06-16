@@ -35,7 +35,9 @@ class AnomalyMapGenerator:
         norm_teacher_features = teacher_features / np.linalg.norm(teacher_features, axis=1)
         norm_student_features = student_features / np.linalg.norm(student_features, axis=1)
 
-        layer_map = 0.5 * np.linalg.norm(norm_teacher_features - norm_student_features, ord=2, axis=-3, keepdims=True) ** 2
+        layer_map = (
+            0.5 * np.linalg.norm(norm_teacher_features - norm_student_features, ord=2, axis=-3, keepdims=True) ** 2
+        )
         layer_map = cv2.resize(layer_map[0, 0, ...], (self.image_size, self.image_size), interpolation=cv2.INTER_LINEAR)
         return layer_map
 
@@ -106,9 +108,9 @@ class STFPMOpenVino(pl.LightningModule):
         images = images.cpu().numpy()
 
         res = self.exec_net.infer(inputs={self.input_blob: images})
-        num_layers = int(len(res)/2)
+        num_layers = int(len(res) / 2)
         layer_names = [f"layer{num}" for num in range(num_layers)]
-        teacher_features = {key:value for key, value in zip(layer_names, list(res.values())[:num_layers])}
+        teacher_features = {key: value for key, value in zip(layer_names, list(res.values())[:num_layers])}
         student_features = {key: value for key, value in zip(layer_names, list(res.values())[num_layers:])}
 
         anomaly_maps = self.anomaly_map_generator(teacher_features, student_features)
