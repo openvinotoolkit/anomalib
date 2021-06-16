@@ -6,7 +6,7 @@ import os
 import os.path
 from pathlib import Path
 from random import sample
-from typing import Dict, List, Sequence
+from typing import Any, Dict, List, Sequence
 
 import numpy as np
 import torch
@@ -68,13 +68,12 @@ class Padim(torch.nn.Module):
 
         return features
 
-    def append_features(self, outputs: List[Dict[str, Tensor]]) -> Dict[str, List[Tensor]]:
+    def append_features(self, outputs: List[Dict[str, Any]]) -> Dict[str, List[Tensor]]:
         """append_features from each batch to concatenate
 
         Args:
                 outputs: description]
-                outputs: List[Dict[str:
-                Tensor]]:
+                outputs: List[Dict[str:Tensor]]:
 
         Returns:
                 description]
@@ -537,11 +536,11 @@ class PADIMModel(BaseAnomalySegmentationModel):
         self.true_labels = np.stack([x["true_labels"] for x in outputs])
         self.pred_labels = self.anomaly_maps.reshape(self.anomaly_maps.shape[0], -1).max(axis=1)
 
-        image_roc_auc = roc_auc_score(self.true_labels, self.pred_labels)
-        pixel_roc_auc = roc_auc_score(self.true_masks.flatten(), self.anomaly_maps.flatten())
+        self.image_roc_auc = roc_auc_score(self.true_labels, self.pred_labels)
+        self.pixel_roc_auc = roc_auc_score(self.true_masks.flatten(), self.anomaly_maps.flatten())
 
-        self.log(name="Image-Level AUC", value=image_roc_auc, on_epoch=True, prog_bar=True)
-        self.log(name="Pixel-Level AUC", value=pixel_roc_auc, on_epoch=True, prog_bar=True)
+        self.log(name="Image-Level AUC", value=self.image_roc_auc, on_epoch=True, prog_bar=True)
+        self.log(name="Pixel-Level AUC", value=self.pixel_roc_auc, on_epoch=True, prog_bar=True)
 
     # def test_epoch_end(self, outputs):
     #     """Compute and save anomaly scores of the test set, based on the embedding

@@ -69,23 +69,27 @@ class NormalityModel(nn.Module):
 
         return True
 
-    def preprocess(self, feature_stack: torch.Tensor, max_length: Optional[int] = None) -> Tuple[torch.Tensor, int]:
+    def preprocess(
+        self, feature_stack: torch.Tensor, max_length: Optional[torch.Tensor] = None
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Pre process the CNN features.
 
         Args:
           feature_stack: Features extracted from CNN
           max_length:
           feature_stack: torch.Tensor:
-          max_length: Optional[int]:  (Default value = None)
+          max_length: Optional[Tensor]:  (Default value = None)
 
         Returns:
 
         """
 
+        if max_length is None:
+            max_length = torch.max(torch.norm(feature_stack, 2, 1))
+
         if self.pre_processing == "norm":
             feature_stack /= torch.norm(feature_stack, 2, 1)[:, None]
         elif self.pre_processing == "scale":
-            max_length = max_length if max_length else torch.max(torch.norm(feature_stack, 2, 1))
             feature_stack /= max_length
         else:
             raise RuntimeError("Unknown pre-processing mode. Available modes are: Normalized and Scale.")

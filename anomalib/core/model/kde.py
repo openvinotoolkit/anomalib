@@ -43,7 +43,7 @@ class GaussianKDE(DynamicBufferModule):
 
         estimate = torch.zeros(features.shape[0])
         for j in range(features.shape[0]):
-            embedding = torch.sum((self.dataset - features[j]) ** 2, axis=1)
+            embedding = ((self.dataset - features[j]) ** 2).sum(dim=1)
             embedding = torch.exp(-embedding / 2) * self.norm
             estimate[j] = torch.mean(embedding)
 

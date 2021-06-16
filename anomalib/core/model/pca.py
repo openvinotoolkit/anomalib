@@ -2,8 +2,6 @@
 Principle Component Analysis (PCA) with PyTorch
 """
 
-from typing import Optional
-
 import torch
 
 from anomalib.core.model.dynamic_module import DynamicBufferModule
@@ -37,7 +35,7 @@ class PCA(DynamicBufferModule):
         Returns:
 
         """
-        mean = torch.mean(dataset, axis=0)
+        mean = dataset.mean(dim=0)
         dataset -= mean
 
         tensor_u, tensor_s, tensor_v = torch.svd(dataset)

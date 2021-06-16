@@ -2,7 +2,7 @@
 Multi Variate Gaussian Distribution
 """
 
-from typing import List, Optional, Union
+from typing import Any, List, Optional
 
 import torch
 from torch import Tensor
@@ -75,6 +75,7 @@ class MultiVariateGaussian(DynamicBufferModule):
                 ddof = 0
 
         weights = aweights
+        weights_sum: Any
 
         if weights is not None:
             if not torch.is_tensor(weights):

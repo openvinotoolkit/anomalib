@@ -72,3 +72,4 @@ class BaseAnomalySegmentationModel(BaseAnomalyModel):
             visualizer.add_image(image=pred_mask, color_map="gray", title="Predicted Mask")
             visualizer.add_image(image=vis_img, title="Segmentation Result")
             visualizer.save(Path(self.hparams.project.path) / "images" / filename.parent.name / filename.name)
+            visualizer.close()

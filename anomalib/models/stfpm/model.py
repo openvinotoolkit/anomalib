@@ -25,14 +25,11 @@ from anomalib.core.model.feature_extractor import FeatureExtractor
 
 
 class Loss(nn.Module):
-    """Feature Pyramid Loss
+    """
+    Feature Pyramid Loss
     This class implmenents the feature pyramid loss function proposed in STFPM [1] paper.
 
-    :Example:
-
-    Args:
-
-    Returns:
+    Example:
 
     >>> from anomalib.core.model.feature_extractor import FeatureExtractor
     >>> from anomalib.models.stfpm.model import Loss

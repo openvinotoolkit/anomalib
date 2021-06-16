@@ -18,6 +18,7 @@ from PIL import Image
 from pytorch_lightning.core.datamodule import LightningDataModule
 from torch import Tensor
 from torch.utils.data import DataLoader
+from torch.utils.data.dataset import Dataset
 from torchvision.datasets.folder import VisionDataset, default_loader
 from torchvision.transforms import Compose
 
@@ -140,6 +141,7 @@ class MVTec(VisionDataset):
         labels = sorted([label.name for label in (self.category / self.split).iterdir() if label.is_dir()])
         samples = []
         label_index: int
+        mask_filename: Optional[Union[str, Path]] = None
 
         for label in labels:
             image_filenames = sorted([filename for filename in (self.category / self.split / label).glob("**/*.png")])
@@ -215,8 +217,10 @@ class MVTecDataModule(LightningDataModule):
         self.loader = default_loader if loader is None else loader
         self.exclude_normal_images_in_validation = exclude_normal_images_in_validation
 
-        self.train_data: Optional[MVTec] = None
-        self.val_data: Optional[MVTec] = None
+        self.train_data: Dataset
+        self.val_data: Dataset
+        # self.train_data: Optional[MVTec] = None
+        # self.val_data: Optional[MVTec] = None
 
     def prepare_data(self):
         """
@@ -253,7 +257,7 @@ class MVTecDataModule(LightningDataModule):
           stage: Optional[str]:  (Default value = None)
 
         """
-        if stage in (None, 'fit'):
+        if stage in (None, "fit"):
             self.train_data = MVTec(
                 root=self.root,
                 category=self.category,

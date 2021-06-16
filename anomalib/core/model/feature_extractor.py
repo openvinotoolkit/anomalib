@@ -50,6 +50,7 @@ class FeatureExtractor(nn.Module):
             Layer features
 
         """
+
         def hook(_, __, output):
             """
             Hook to extract features via a forward-pass.

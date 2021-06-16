@@ -1,6 +1,8 @@
 """
 Load Anomaly Model
 """
+from typing import Type
+
 from omegaconf import DictConfig
 
 from .dfkde.model import DFKDEModel
@@ -19,13 +21,22 @@ def get_model(config: DictConfig):
       Anomaly Model
 
     """
+    model: Type[object]
     if config.model.name == "padim":
-        model = PADIMModel(config)
+        model = PADIMModel
     elif config.model.name == "stfpm":
-        model = STFPMModel(config)
+        model = STFPMModel
     elif config.model.name == "dfkde":
-        model = DFKDEModel(config)
+        model = DFKDEModel
     else:
         raise ValueError("Unknown model name!")
 
-    return model
+    # if config.model.name == "padim":
+    #     model = PADIMModel(config)
+    # elif config.model.name == "stfpm":
+    #     model = STFPMModel(config)
+    # elif config.model.name == "dfkde":
+    #     model = DFKDEModel(config)
+    # else:
+    #     raise ValueError("Unknown model name!")
+    return model(config)

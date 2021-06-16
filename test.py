@@ -1,5 +1,5 @@
-from argparse import ArgumentParser
 import os
+from argparse import ArgumentParser
 
 import torch
 from pytorch_lightning import Trainer
@@ -31,4 +31,3 @@ model.load_state_dict(torch.load(weight_file)["state_dict"])
 
 trainer = Trainer(callbacks=model.callbacks, **config.trainer)
 trainer.test(model=model, datamodule=datamodule)
-

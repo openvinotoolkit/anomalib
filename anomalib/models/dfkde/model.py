@@ -3,7 +3,7 @@ DFKDE: Deep Feature Kernel Density Estimation
 """
 
 import os
-from typing import Sequence
+from typing import Any, Dict, List, Optional, Sequence
 
 import numpy as np
 import pytorch_lightning as pl
@@ -14,8 +14,8 @@ from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 from sklearn.metrics import roc_auc_score
 from torchvision.models import resnet50
 
-from anomalib.models.dfkde.normality_model import NormalityModel
 from anomalib.core.model.feature_extractor import FeatureExtractor
+from anomalib.models.dfkde.normality_model import NormalityModel
 
 
 class Callbacks:
@@ -48,7 +48,7 @@ class DFKDEModel(pl.LightningModule):
 
     def __init__(self, hparams: AttrDict):
         super().__init__()
-        self.hparams = hparams
+        self.save_hyperparameters(hparams)
         self.threshold_steepness = 0.05
         self.threshold_offset = 12
 
@@ -60,6 +60,7 @@ class DFKDEModel(pl.LightningModule):
             threshold_offset=self.threshold_offset,
         )
         self.callbacks = Callbacks(hparams)()
+        self.image_roc_auc: Optional[float] = None
 
     @staticmethod
     def configure_optimizers():
@@ -68,7 +69,7 @@ class DFKDEModel(pl.LightningModule):
         """
         return None
 
-    def training_step(self, batch: dict, _) -> dict:
+    def training_step(self, batch, _):
         """Training Step of DFKDE.
         For each batch, features are extracted from the CNN.
 
@@ -88,7 +89,7 @@ class DFKDEModel(pl.LightningModule):
         feature_vector = torch.hstack(list(layer_outputs.values())).detach().squeeze()
         return {"feature_vector": feature_vector}
 
-    def training_epoch_end(self, outputs: dict):
+    def training_epoch_end(self, outputs: List[Dict[str, Any]]) -> None:
         """Fit a KDE model on deep CNN features.
 
         Args:
@@ -102,7 +103,7 @@ class DFKDEModel(pl.LightningModule):
         feature_stack = torch.vstack([output["feature_vector"] for output in outputs])
         self.normality_model.fit(feature_stack)
 
-    def validation_step(self, batch: dict, _) -> dict:
+    def validation_step(self, batch, _):
         """Validation Step of DFKDE.
             Similar to the training step, features
             are extracted from the CNN for each batch.
@@ -127,7 +128,7 @@ class DFKDEModel(pl.LightningModule):
         ground_truth = int(np.any(mask.cpu().numpy()))
         return {"probability": probability, "prediction": prediction, "ground_truth": ground_truth}
 
-    def validation_epoch_end(self, outputs: dict):
+    def validation_epoch_end(self, outputs: List[Dict[str, Any]]) -> None:
         """Compute anomaly classification scores based on probability scores.
 
         Args:
@@ -139,10 +140,10 @@ class DFKDEModel(pl.LightningModule):
         """
         pred_labels = [output["probability"] for output in outputs]
         true_labels = [int(output["ground_truth"]) for output in outputs]
-        auc = roc_auc_score(np.array(true_labels), np.array(torch.hstack(pred_labels)))
-        self.log(name="auc", value=auc, on_epoch=True, prog_bar=True)
+        self.image_roc_auc = roc_auc_score(np.array(true_labels), np.array(torch.hstack(pred_labels)))
+        self.log(name="auc", value=self.image_roc_auc, on_epoch=True, prog_bar=True)
 
-    def test_step(self, batch: dict, _) -> dict:
+    def test_step(self, batch, _):
         """Test Step of DFKDE.
             Similar to the training and validation steps,
             features are extracted from the CNN for each batch.
@@ -159,7 +160,7 @@ class DFKDEModel(pl.LightningModule):
 
         return self.validation_step(batch, _)
 
-    def test_epoch_end(self, outputs: dict):
+    def test_epoch_end(self, outputs: List[Dict[str, Any]]) -> None:
         """Compute anomaly classification scores based on probability scores.
 
         Args:
