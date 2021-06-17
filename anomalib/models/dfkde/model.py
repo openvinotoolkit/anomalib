@@ -34,10 +34,13 @@ class Callbacks:
         checkpoint = ModelCheckpoint(
             dirpath=os.path.join(self.config.project.path, "weights"),
             filename="model",
-            monitor=self.config.metric,
         )
-        model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.weight_file))
-        callbacks = [checkpoint, model_loader]
+        callbacks = [checkpoint]
+
+        if "weight_file" in self.config.keys():
+            model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.weight_file))
+            callbacks.append(model_loader)
+
         return callbacks
 
     def __call__(self):

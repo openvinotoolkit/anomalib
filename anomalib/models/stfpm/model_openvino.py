@@ -1,21 +1,25 @@
+"""
+OpenVINO Inference of STFPM Algorithm
+"""
+
 import os
 from pathlib import Path
+from typing import Dict
 
 import cv2
 import numpy as np
-import pytorch_lightning as pl
 from openvino.inference_engine import IECore
 from sklearn.metrics import roc_auc_score
-from typing import Dict
 
 from anomalib.core.callbacks.timer import TimerCallback
+from anomalib.models.base.model import BaseAnomalySegmentationLightning
 
 
 class AnomalyMapGenerator:
     """Generates anomaly heatmap."""
 
     def __init__(self, batch_size: int = 1, image_size: int = 256, alpha: float = 0.4, gamma: int = 0):
-        super(AnomalyMapGenerator, self).__init__()
+        super().__init__()
         self.image_size = image_size
         self.batch_size = batch_size
 
@@ -80,30 +84,46 @@ class AnomalyMapGenerator:
         return self.compute_anomaly_map(teacher_features, student_features)
 
 
-class STFPMOpenVino(pl.LightningModule):
+class STFPMOpenVino(BaseAnomalySegmentationLightning):
     """PyTorch Lightning module for the STFPM algorithm."""
 
     def __init__(self, hparams):
-        super().__init__()
-        self.save_hyperparameters(hparams)
-        ie = IECore()
+        super().__init__(hparams)
+        ie_core = IECore()
         bin_path = os.path.join(hparams.project.path, hparams.weight_file)
         xml_path = os.path.splitext(bin_path)[0] + ".xml"
-        net = ie.read_network(xml_path, bin_path)
+        net = ie_core.read_network(xml_path, bin_path)
         net.batch_size = 1
         self.input_blob = next(iter(net.input_info))
         self.out_blob = next(iter(net.outputs))
 
-        self.exec_net = ie.load_network(network=net, device_name="CPU")
+        self.exec_net = ie_core.load_network(network=net, device_name="CPU")
         self.anomaly_map_generator = AnomalyMapGenerator(batch_size=1, image_size=224)
 
         self.callbacks = [TimerCallback()]
 
-    def configure_optimizers(self):
+    @staticmethod
+    def configure_optimizers():
+        """
+        configure_optimizers [summary]
+
+        Returns:
+            None: No optimizer is returned
+        """
         # this module is only used in test mode, no need to configure optimizers
         return None
 
-    def test_step(self, batch, batch_idx):
+    def test_step(self, batch, _):
+        """
+        test_step [summary]
+
+        Args:
+            batch ([type]): [description]
+            _ ([type]): [description]
+
+        Returns:
+            [type]: [description]
+        """
         filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
         images = images.cpu().numpy()
 
@@ -124,7 +144,12 @@ class STFPMOpenVino(pl.LightningModule):
         }
 
     def test_epoch_end(self, outputs):
+        """
+        test_epoch_end [summary]
 
+        Args:
+            outputs ([type]): [description]
+        """
         self.filenames = [Path(f) for x in outputs for f in x["filenames"]]
         self.images = [x["images"] for x in outputs]
 

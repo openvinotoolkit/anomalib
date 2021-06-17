@@ -7,6 +7,7 @@ from typing import List, Optional, Union
 
 import numpy as np
 import pytorch_lightning as pl
+import torch
 from skimage.segmentation import mark_boundaries
 from torch import Tensor
 
@@ -14,7 +15,7 @@ from anomalib.datasets.utils import Denormalize
 from anomalib.utils.visualizer import Visualizer
 
 
-class BaseAnomalyModel(pl.LightningModule):
+class BaseAnomalyLightning(pl.LightningModule):
     """
     BaseAnomalyModel
     """
@@ -22,11 +23,12 @@ class BaseAnomalyModel(pl.LightningModule):
     def __init__(self, hparams):
         super().__init__()
         self.save_hyperparameters(hparams)
+        self.loss: torch.Tensor
 
 
-class BaseAnomalySegmentationModel(BaseAnomalyModel):
+class BaseAnomalySegmentationLightning(BaseAnomalyLightning):
     """
-    BaseAnomalySegmentationModel
+    BaseAnomalySegmentationLightning
     """
 
     def __init__(self, hparams):

@@ -1,8 +1,12 @@
+"""
+NNCF Callback
+"""
+
 import os
 from typing import Any
 
 import yaml
-from nncf import NNCFConfig, register_default_init_args, create_compressed_model
+from nncf import NNCFConfig, create_compressed_model, register_default_init_args
 from nncf.initialization import InitializingDataLoader
 from omegaconf import OmegaConf
 from pytorch_lightning import Callback, LightningModule
@@ -11,6 +15,16 @@ from anomalib.datasets import get_datamodule
 
 
 def criterion_fn(outputs, criterion):
+    """
+    criterion_fn [summary]
+
+    Args:
+        outputs ([type]): [description]
+        criterion ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
     return criterion(outputs)
 
 

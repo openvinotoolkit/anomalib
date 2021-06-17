@@ -22,7 +22,7 @@ from anomalib.core.callbacks.model_loader import LoadModelCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
 from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
-from anomalib.models.base.model import BaseAnomalySegmentationModel
+from anomalib.models.base.model import BaseAnomalySegmentationLightning
 
 __all__ = ["PADIMLightning"]
 
@@ -188,8 +188,11 @@ class Callbacks:
             dirpath=os.path.join(self.config.project.path, "weights"),
             filename="model",
         )
-        model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.weight_file))
-        callbacks = [checkpoint, model_loader]
+        callbacks = [checkpoint]
+
+        if "weight_file" in self.config.keys():
+            model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.weight_file))
+            callbacks.append(model_loader)
 
         return callbacks
 
@@ -203,10 +206,6 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
     def __init__(self, image_size: int = 224, alpha: float = 0.4, gamma: int = 0, sigma: int = 4):
         super().__init__(alpha=alpha, gamma=gamma, sigma=sigma)
         self.image_size = image_size
-        # self.sigma = sigma
-        # self.alpha = alpha
-        # self.beta = 1 - self.alpha
-        # self.gamma = gamma
 
     @staticmethod
     def compute_distance(embedding: Tensor, stats: List[Tensor]) -> Tensor:
@@ -324,95 +323,8 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
 
         return smoothed_anomaly_map
 
-    # @staticmethod
-    # def compute_heatmap(anomaly_map: np.ndarray) -> np.ndarray:
-    #     """Compute anomaly color heatmap
 
-    #     Args:
-    #             anomaly_map: Anomaly score computed via mahalanobis distance.
-    #             anomaly_map: np.ndarray:
-
-    #     Returns:
-    #             Anomaly heatmap via Jet Color Map.
-
-    #     """
-
-    #     anomaly_map = (anomaly_map - anomaly_map.min()) / np.ptp(anomaly_map)
-    #     anomaly_map = anomaly_map * 255
-    #     anomaly_map = anomaly_map.astype(np.uint8)
-
-    #     heatmap = cv2.applyColorMap(anomaly_map, cv2.COLORMAP_JET)
-    #     return heatmap
-
-    # def apply_heatmap_on_image(self, anomaly_map: np.ndarray, image: np.ndarray) -> np.ndarray:
-    #     """Apply anomaly heatmap on input test image.
-
-    #     Args:
-    #             anomaly_map: Anomaly color map
-    #             image: Input test image
-    #             anomaly_map: np.ndarray:
-    #             image: np.ndarray:
-
-    #     Returns:
-    #             Output image, where anomaly color map is blended on top of the input image.
-
-    #     """
-
-    #     heatmap = self.compute_heatmap(anomaly_map)
-    #     heatmap_on_image = cv2.addWeighted(heatmap, self.alpha, image, self.beta, self.gamma)
-    #     heatmap_on_image = cv2.cvtColor(heatmap_on_image, cv2.COLOR_BGR2RGB)
-    #     return heatmap_on_image
-
-    # @staticmethod
-    # def compute_adaptive_threshold(true_masks, anomaly_map):
-    #     """Compute adaptive threshold, based on the f1 metric of the true and predicted anomaly masks.
-
-    #     Args:
-    #             true_masks: Ground-truth anomaly mask showing the location of anomalies.
-    #             anomaly_map: Anomaly map that is predicted by the model.
-
-    #     Returns:
-    #             Threshold value based on the best f1 score.
-
-    #     """
-
-    #     precision, recall, thresholds = precision_recall_curve(true_masks.flatten(), anomaly_map.flatten())
-    #     numerator = 2 * precision * recall
-    #     denominator = precision + recall
-    #     f1_score = np.divide(numerator, denominator, out=np.zeros_like(numerator), where=denominator != 0)
-    #     threshold = thresholds[np.argmax(f1_score)]
-
-    #     return threshold
-
-    # @staticmethod
-    # def compute_mask(anomaly_map: np.ndarray, threshold: float, kernel_size: int = 4) -> np.ndarray:
-    #     """Compute anomaly mask via thresholding the predicted anomaly map.
-
-    #     Args:
-    #             anomaly_map: Anomaly map predicted via the model
-    #             threshold: Value to threshold anomaly scores into 0-1 range.
-    #             kernel_size: Value to apply morphological operations to the predicted mask
-    #             anomaly_map: np.ndarray:
-    #             threshold: float:
-    #             kernel_size: int:  (Default value = 4)
-
-    #     Returns:
-    #             Predicted anomaly mask
-
-    #     """
-
-    #     mask = np.zeros_like(anomaly_map).astype(np.uint8)
-    #     mask[anomaly_map > threshold] = 1
-
-    #     kernel = morphology.disk(kernel_size)
-    #     mask = morphology.opening(mask, kernel)
-
-    #     mask *= 255
-
-    #     return mask
-
-
-class PADIMLightning(BaseAnomalySegmentationModel):
+class PADIMLightning(BaseAnomalySegmentationLightning):
     """
     PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization
     """
@@ -426,18 +338,6 @@ class PADIMLightning(BaseAnomalySegmentationModel):
         self.anomaly_map_generator = AnomalyMapGenerator()
         self.callbacks = Callbacks(hparams)()
         self.stats: List[Tensor, Tensor] = []
-
-        # self.filenames: Optional[List[Union[str, Path]]] = None
-        # self.images: Optional[List[Union[np.ndarray, Tensor]]] = None
-
-        # self.true_masks: Optional[List[Union[np.ndarray, Tensor]]] = None
-        # self.anomaly_maps: Optional[List[Union[np.ndarray, Tensor]]] = None
-
-        # self.true_labels: Optional[List[Union[np.ndarray, Tensor]]] = None
-        # self.pred_labels: Optional[List[Union[np.ndarray, Tensor]]] = None
-
-        # self.image_roc_auc: Optional[float] = None
-        # self.pixel_roc_auc: Optional[float] = None
 
     @staticmethod
     def configure_optimizers():
@@ -547,33 +447,3 @@ class PADIMLightning(BaseAnomalySegmentationModel):
 
         self.log(name="Image-Level AUC", value=self.image_roc_auc, on_epoch=True, prog_bar=True)
         self.log(name="Pixel-Level AUC", value=self.pixel_roc_auc, on_epoch=True, prog_bar=True)
-
-    # def test_epoch_end(self, outputs):
-    #     """Compute and save anomaly scores of the test set, based on the embedding
-    #                     extracted from deep hierarchical CNN features.
-
-    #     Args:
-    #             outputs: Batch of outputs from the validation step
-
-    #     Returns:
-
-    #     """
-    #     self.validation_epoch_end(outputs)
-    #     threshold = self.anomaly_map_generator.compute_adaptive_threshold(self.true_masks, self.anomaly_maps)
-
-    #     for (filename, image, true_mask, anomaly_map) in zip(
-    #         self.filenames, self.images, self.true_masks, self.anomaly_maps
-    #     ):
-    #         image = Denormalize()(image.squeeze())
-
-    #         heat_map = self.anomaly_map_generator.apply_heatmap_on_image(anomaly_map, image)
-    #         pred_mask = self.anomaly_map_generator.compute_mask(anomaly_map=anomaly_map, threshold=threshold)
-    #         vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
-
-    #         visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
-    #         visualizer.add_image(image=image, title="Image")
-    #         visualizer.add_image(image=true_mask, color_map="gray", title="Ground Truth")
-    #         visualizer.add_image(image=heat_map, title="Predicted Heat Map")
-    #         visualizer.add_image(image=pred_mask, color_map="gray", title="Predicted Mask")
-    #         visualizer.add_image(image=vis_img, title="Segmentation Result")
-    #         visualizer.save(Path(self.hparams.project.path) / "images" / filename.parent.name / filename.name)
