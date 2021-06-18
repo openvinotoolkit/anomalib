@@ -10,6 +10,7 @@ try:
     import numpy as np
 
     import sigopt
+    from sigopt.exception import ApiException
     from sigopt.runs import RunFactoryProxyMethod
 except ImportError:
     sigopt = None
@@ -114,9 +115,10 @@ class SigoptLogger(LightningLoggerBase):
         assert rank_zero_only.rank == 0, "experiment tried to log from global_rank != 0"
         try:
             self.experiment.log_checkpoint(metrics)
-            self.experiment.log_metric(metrics)
-        except Exception as e:
-            raise Exception(
+            for k, v in metrics.items():
+                self.experiment.log_metric(name=k, value=v)
+        except ApiException as e:
+            raise (
                 "Exception occurred."
                 "It is possible that you are trying to write more that 200 checkpoints."
                 "Use `self.logger.log_checkpoint` for safer implementation"

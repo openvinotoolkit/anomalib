@@ -16,12 +16,15 @@ def get_args():
     args = parser.parse_args()
     return args
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     args = get_args()
-    config = get_configurable_parameters(model_name=args.model,
-                                     model_config_path=args.model_config_path,
-                                     weight_file=args.weight_file,
-                                     openvino=args.openvino)
+    config = get_configurable_parameters(
+        model_name=args.model,
+        model_config_path=args.model_config_path,
+        weight_file=args.weight_file,
+        openvino=args.openvino,
+    )
 
     datamodule = get_datamodule(config)
 
