@@ -12,7 +12,7 @@ def test_sigopt_logger_init(sigopt):
     logger = SigoptLogger(name="test_name", project="test_project")
     logger.log_metrics({"acc": 1.0})
     sigopt.create_run.assert_called_once_with(name="test_name", project="test_project")
-    sigopt.create_run().log_metric.assert_called_once_with({"acc": 1.0})
+    sigopt.create_run().log_metric.assert_called_once_with(name="acc", value=1.0)
     sigopt.create_run().log_checkpoint.assert_called_once_with({"acc": 1.0})
 
 
@@ -33,7 +33,7 @@ def test_sigopt_logger_experiment_object(sigopt):
 
     logger = SigoptLogger(name="test_name", project="test_project", experiment=experiment)
     logger.log_metrics({"acc": 1.0})
-    sigopt.Connection().experiments().create().log_metric.assert_called_once_with({"acc": 1.0})
+    sigopt.Connection().experiments().create().log_metric.assert_called_once_with(name="acc", value=1.0)
     sigopt.Connection().experiments().create().log_checkpoint.assert_called_once_with({"acc": 1.0})
 
 
