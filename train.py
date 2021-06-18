@@ -4,8 +4,8 @@ from pytorch_lightning import Trainer, seed_everything
 
 from anomalib.config.config import get_configurable_parameters
 from anomalib.datasets import get_datamodule
-from anomalib.models import get_model
 from anomalib.helpers.sigopt_logger import SigoptLogger
+from anomalib.models import get_model
 
 
 def get_args():

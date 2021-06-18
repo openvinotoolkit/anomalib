@@ -57,8 +57,6 @@ where the currently available models are:
 | PADIM |Wide ResNet| **0.974** | 0.990  | 0.970 |  0.991  | 0.940 | 0.954 | 0.982  | 0.963 |  0.985  |     -    |   0.974   | 0.961 |    -  |   0.988    |   0.973    | 0.986  |
 | STFPM |ResNet-18  |   0.961   | 0.984  | 0.988 |  0.982  | 0.957 | 0.940 | 0.981  | 0.940 |  0.974  |  0.983   |   0.968   | 0.973 | 0.983 |   0.984    |   0.800    | 0.983  |
 
-
-
 ## TODO
 * [ ]  Awesome Anomaly Papers directory.
 * [ ]  Github
