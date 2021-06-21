@@ -16,14 +16,10 @@ class PCA(DynamicBufferModule):
         super().__init__()
         self.n_components = n_components
 
-        self.register_buffer("tensor_u", torch.Tensor())
-        self.register_buffer("tensor_s", torch.Tensor())
-        self.register_buffer("tensor_v", torch.Tensor())
+        self.register_buffer("singularity_vector", torch.Tensor())
         self.register_buffer("mean", torch.Tensor())
 
-        self.tensor_u = torch.Tensor()
-        self.tensor_s = torch.Tensor()
-        self.tensor_v = torch.Tensor()
+        self.singularity_vector = torch.Tensor()
         self.mean = torch.Tensor()
 
     def fit_transform(self, dataset: torch.Tensor) -> torch.Tensor:
@@ -38,14 +34,10 @@ class PCA(DynamicBufferModule):
         mean = dataset.mean(dim=0)
         dataset -= mean
 
-        tensor_u, tensor_s, tensor_v = torch.svd(dataset)
-
-        self.tensor_u = tensor_u
-        self.tensor_s = tensor_s
-        self.tensor_v = tensor_v
+        self.singularity_vector = torch.svd(dataset)[-1]
         self.mean = mean
 
-        return torch.matmul(dataset, tensor_v[:, : self.n_components])
+        return torch.matmul(dataset, self.singularity_vector[:, : self.n_components])
 
     def transform(self, features: torch.Tensor) -> torch.Tensor:
         """
@@ -57,7 +49,7 @@ class PCA(DynamicBufferModule):
 
         """
         features -= self.mean
-        return torch.matmul(features, self.tensor_v[:, : self.n_components])
+        return torch.matmul(features, self.singularity_vector[:, : self.n_components])
 
     def forward(self, features: torch.Tensor) -> torch.Tensor:
         """
