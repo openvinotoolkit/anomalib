@@ -1,6 +1,8 @@
 """
 Load Anomaly Model
 """
+from typing import Type
+
 from omegaconf import DictConfig
 
 from .dfkde.model import DFKDELightning
@@ -10,25 +12,31 @@ from .stfpm.model_openvino import STFPMOpenVino
 
 
 def get_model(config: DictConfig):
-    """
-    Load model from the configuration file.
+    """Load model from the configuration file.
 
-    :param config: Configuration file
-    :return: Anomaly Model
+    Args:
+      config: Configuration file
+      config: DictConfig:
+
+    Returns:
+      Anomaly Model
+
     """
+    model: Type[object]
+
     if config.openvino:
         if config.model.name == "stfpm":
-            model = STFPMOpenVino(config)
+            model = STFPMOpenVino
         else:
             raise ValueError("Unknown model name for OpenVINO model!")
     else:
         if config.model.name == "padim":
-            model = PADIMLightning(config)
+            model = PADIMLightning
         elif config.model.name == "stfpm":
-            model = STFPMLightning(config)
+            model = STFPMLightning
         elif config.model.name == "dfkde":
-            model = DFKDELightning(config)
+            model = DFKDELightning
         else:
             raise ValueError("Unknown model name!")
 
-    return model
+    return model(config)

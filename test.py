@@ -1,4 +1,9 @@
-from argparse import ArgumentParser
+"""
+Test
+This script performs inference on the test dataset and saves the output
+    visualizations into a directory.
+"""
+from argparse import ArgumentParser, Namespace
 
 from pytorch_lightning import Trainer
 
@@ -7,14 +12,20 @@ from anomalib.datasets import get_datamodule
 from anomalib.models import get_model
 
 
-def get_args():
+def get_args() -> Namespace:
+    """
+    get_args [summary]
+
+    Returns:
+        Namespace: CLI arguments.
+    """
     parser = ArgumentParser()
     parser.add_argument("--model", type=str, default="stfpm", help="Name of the algorithm to train/test")
     parser.add_argument("--model_config_path", type=str, required=False, help="Path to a model config file")
     parser.add_argument("--weight_file", type=str, default="weights/model.ckpt")
     parser.add_argument("--openvino", type=bool, default=False)
-    args = parser.parse_args()
-    return args
+
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
@@ -27,7 +38,6 @@ if __name__ == "__main__":
     )
 
     datamodule = get_datamodule(config)
-
     model = get_model(config)
 
     trainer = Trainer(callbacks=model.callbacks, **config.trainer)

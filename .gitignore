@@ -1,11 +1,16 @@
-# Directories
+# Project related
 datasets
 !anomalib/datasets
 lightning_logs
 results
+*.dot
 
 backup.py
 train.ipynb
+
+# VENV
+.anomalib
+.toxbase
 
 # IDE
 .vscode

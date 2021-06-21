@@ -1,8 +1,12 @@
+"""
+NNCF Callback
+"""
+
 import os
 from typing import Any
 
 import yaml
-from nncf import NNCFConfig, register_default_init_args, create_compressed_model
+from nncf import NNCFConfig, create_compressed_model, register_default_init_args
 from nncf.initialization import InitializingDataLoader
 from omegaconf import OmegaConf
 from pytorch_lightning import Callback, LightningModule
@@ -11,11 +15,22 @@ from anomalib.datasets import get_datamodule
 
 
 def criterion_fn(outputs, criterion):
+    """
+    criterion_fn [summary]
+
+    Args:
+        outputs ([type]): [description]
+        criterion ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
     return criterion(outputs)
 
 
 class InitLoader(InitializingDataLoader):
     """Initializing data loader for NNCF to be used with unsupervised training algorithms."""
+
     def __next__(self):
         loaded_item = next(self.data_loader_iter)
         return loaded_item["image"]
@@ -54,8 +69,9 @@ class NNCFCallback(Callback):
         """Called when fit or test begins"""
         if self.comp_ctrl is None:
             init_loader = InitLoader(self.train_loader)
-            nncf_config = register_default_init_args(self.nncf_config, init_loader, pl_module.model.loss,
-                                                     criterion_fn=criterion_fn)
+            nncf_config = register_default_init_args(
+                self.nncf_config, init_loader, pl_module.model.loss, criterion_fn=criterion_fn
+            )
             self.comp_ctrl, pl_module.model = create_compressed_model(pl_module.model, nncf_config)
             self.compression_scheduler = self.comp_ctrl.scheduler
 
@@ -69,7 +85,7 @@ class NNCFCallback(Callback):
     def on_train_end(self, trainer, pl_module: LightningModule) -> None:
         """Called when the train ends."""
         os.makedirs(self.dirpath, exist_ok=True)
-        onnx_path = os.path.join(self.dirpath, self.filename + '.onnx')
+        onnx_path = os.path.join(self.dirpath, self.filename + ".onnx")
         self.comp_ctrl.export_model(onnx_path)
         optimize_command = "python " + self.mo_path + " --input_model " + onnx_path + " --output_dir " + self.dirpath
         os.system(optimize_command)

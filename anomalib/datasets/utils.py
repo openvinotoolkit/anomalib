@@ -1,23 +1,42 @@
+"""
+Dataset Utils
+"""
+
 from typing import List, Optional, Tuple
 
 import numpy as np
 import torch
 
 
-class Denormalize(object):
+class Denormalize:
+    """
+    Denormalize Torch Tensor into np image format.
+    """
+
     def __init__(self, mean: Optional[List[float]] = None, std: Optional[List[float]] = None):
         # If no mean and std provided, assign ImageNet values.
-        self.mean = mean if mean is not None else torch.Tensor([0.485, 0.456, 0.406])
-        self.std = std if std is not None else torch.Tensor([0.229, 0.224, 0.225])
+        if mean is None:
+            mean = [0.485, 0.456, 0.406]
+
+        if std is None:
+            std = [0.229, 0.224, 0.225]
+
+        self.mean = torch.Tensor(mean)
+        self.std = torch.Tensor(std)
 
     def __call__(self, tensor: torch.Tensor) -> np.ndarray:
         """
-        Unnormalize the input
-        :param tensor: Input tensor image (C, H, W)
-        :return: Unnormalized numpy array (H, W, C).
+        Denormalize the input
+
+        Args:
+            tensor: Input tensor image (C, H, W)
+
+        Returns:
+            Denormalized numpy array (H, W, C).
+
         """
-        for t, m, s in zip(tensor, self.mean, self.std):
-            t.mul_(s).add_(m)
+        for tnsr, mean, std in zip(tensor, self.mean, self.std):
+            tnsr.mul_(std).add_(mean)
 
         array = (tensor * 255).permute(1, 2, 0).cpu().numpy().astype(np.uint8)
         return array
@@ -27,6 +46,10 @@ class Denormalize(object):
 
 
 class ToNumpy:
+    """
+    Convert Tensor into Numpy Array
+    """
+
     def __call__(self, tensor: torch.Tensor, dims: Optional[Tuple[int, ...]] = None) -> np.ndarray:
 
         # Default support is (C, H, W) or (N, C, H, W)
