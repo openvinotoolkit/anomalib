@@ -50,7 +50,7 @@ class NNCFCallback(Callback):
     """
 
     def __init__(self, config, dirpath, filename):
-        config_dict = yaml.safe_load(OmegaConf.to_yaml(config.nncf))
+        config_dict = yaml.safe_load(OmegaConf.to_yaml(config.optimization.nncf))
         self.nncf_config = NNCFConfig.from_dict(config_dict)
         self.dirpath = dirpath
         self.filename = filename
