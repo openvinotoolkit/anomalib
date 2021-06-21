@@ -173,7 +173,7 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
 
     def compute_anomaly_map(
         self, teacher_features: Dict[str, Tensor], student_features: Dict[str, Tensor]
-    ) -> np.ndarray:
+    ) -> torch.Tensor:
         """
         Compute the overall anomaly map via element-wise production the interpolated anomaly maps.
 
@@ -186,15 +186,15 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         Returns:
           Final anomaly map
         """
-        anomaly_map = np.ones([self.image_size, self.image_size])
+        anomaly_map = torch.ones([self.image_size, self.image_size])
         for layer in teacher_features.keys():
             layer_map = self.compute_layer_map(teacher_features[layer], student_features[layer])
             layer_map = layer_map[0, 0, :, :]
-            anomaly_map *= layer_map.cpu().detach().numpy()
+            anomaly_map *= layer_map
 
         return anomaly_map
 
-    def __call__(self, teacher_features: Dict[str, Tensor], student_features: Dict[str, Tensor]) -> np.ndarray:
+    def __call__(self, teacher_features: Dict[str, Tensor], student_features: Dict[str, Tensor]) -> torch.Tensor:
         return self.compute_anomaly_map(teacher_features, student_features)
 
 
@@ -230,7 +230,10 @@ class STFPMModel(nn.Module):
         """
         teacher_features: Dict[str, Tensor] = self.teacher_model(images)
         student_features: Dict[str, Tensor] = self.student_model(images)
-        return teacher_features, student_features
+        if self.training:
+            return teacher_features, student_features
+        else:
+            return self.anomaly_map_generator(teacher_features, student_features)
 
 
 class STFPMLightning(BaseAnomalySegmentationLightning):
@@ -244,7 +247,6 @@ class STFPMLightning(BaseAnomalySegmentationLightning):
 
         self.model = STFPMModel(hparams)
         self.loss_val = 0
-        self.anomaly_map_generator = AnomalyMapGenerator(batch_size=1, image_size=224)
 
     def configure_optimizers(self):
         """Configure optimizers by creating an SGD optimizer.
@@ -298,8 +300,7 @@ class STFPMLightning(BaseAnomalySegmentationLightning):
 
         """
         filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
-        teacher_features, student_features = self.model.forward(images)
-        anomaly_maps = self.model.anomaly_map_generator(teacher_features, student_features)
+        anomaly_maps = self.model(images)
 
         return {
             "filenames": filenames,
