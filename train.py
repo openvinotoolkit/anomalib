@@ -9,10 +9,11 @@ from anomalib.models import get_model
 
 def get_args():
     parser = ArgumentParser()
-    parser.add_argument("--model", type=str, default="padim", help="Name of the algorithm to train/test")
+    parser.add_argument("--model", type=str, default="stfpm", help="Name of the algorithm to train/test")
     parser.add_argument("--model_config_path", type=str, required=False, help="Path to a model config file")
 
     return parser.parse_args()
+
 
 args = get_args()
 config = get_configurable_parameters(model_name=args.model, model_config_path=args.model_config_path)
