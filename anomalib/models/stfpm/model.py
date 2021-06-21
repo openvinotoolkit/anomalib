@@ -308,7 +308,7 @@ class STFPMLightning(BaseAnomalySegmentationLightning):
             "images": images,
             "true_labels": labels.cpu().numpy(),
             "true_masks": masks.squeeze().cpu().numpy(),
-            "anomaly_maps": anomaly_maps,
+            "anomaly_maps": anomaly_maps.cpu().numpy(),
         }
 
     def test_step(self, batch, _):
