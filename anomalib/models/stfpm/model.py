@@ -190,6 +190,7 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         for layer in teacher_features.keys():
             layer_map = self.compute_layer_map(teacher_features[layer], student_features[layer])
             layer_map = layer_map[0, 0, :, :]
+            anomaly_map = anomaly_map.to(layer_map.device)
             anomaly_map *= layer_map
 
         return anomaly_map
