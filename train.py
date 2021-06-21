@@ -14,6 +14,7 @@ def get_args():
 
     return parser.parse_args()
 
+
 args = get_args()
 config = get_configurable_parameters(model_name=args.model, model_config_path=args.model_config_path)
 

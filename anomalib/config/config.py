@@ -1,7 +1,11 @@
+"""
+Configurable Getter
+"""
+
 from pathlib import Path
 from typing import Optional, Union
 
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig, ListConfig, OmegaConf
 
 
 def get_configurable_parameters(
@@ -11,7 +15,20 @@ def get_configurable_parameters(
     openvino: bool = False,
     config_filename: Optional[str] = "config",
     config_file_extension: Optional[str] = "yaml",
-) -> DictConfig:
+) -> Union[DictConfig, ListConfig]:
+    """
+    Get configurable parameters
+
+    Args:
+        model_name: Optional[str]:  (Default value = None)
+        model_config_path: Optional[Union[Path, str]]:  (Default value = None)
+        config_filename: Optional[str]:  (Default value = "config")
+        config_file_extension: Optional[str]:  (Default value = "yaml")
+
+    Returns:
+        Configurable parameters in DictConfig object.
+
+    """
     if model_name is None and model_config_path is None:
         raise ValueError(
             "Both model_name and model config path cannot be None! "

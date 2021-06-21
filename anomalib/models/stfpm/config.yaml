@@ -24,17 +24,21 @@ project:
   path: ./results
   mo_path: /opt/intel/openvino_2021/deployment_tools/model_optimizer/mo.py
 
-nncf:
-  input_info:
-    sample_size: [1,3,224,224]
+optimization:
   compression:
-    algorithm: quantization
-    initializer:
-      range:
-        num_init_samples: 256
-      precision:
-        bits: [8]
-    ignored_scopes: ["{re}.*teacher*"]
+    apply: false
+  nncf:
+    apply: false
+    input_info:
+      sample_size: [1, 3, 224, 224]
+    compression:
+      algorithm: quantization
+      initializer:
+        range:
+          num_init_samples: 256
+        precision:
+          bits: [8]
+      ignored_scopes: ["{re}.*teacher*"]
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
