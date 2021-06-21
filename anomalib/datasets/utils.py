@@ -26,13 +26,13 @@ class Denormalize:
 
     def __call__(self, tensor: torch.Tensor) -> np.ndarray:
         """
-        Unnormalize the input
+        Denormalize the input
 
         Args:
             tensor: Input tensor image (C, H, W)
 
         Returns:
-            Unnormalized numpy array (H, W, C).
+            Denormalized numpy array (H, W, C).
 
         """
         for tnsr, mean, std in zip(tensor, self.mean, self.std):
