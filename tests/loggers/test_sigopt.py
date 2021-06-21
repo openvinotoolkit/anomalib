@@ -1,9 +1,9 @@
 from unittest import mock
 
 import numpy as np
+
 from anomalib.loggers.sigopt import SigoptLogger
 
-# logging images
 # TODO test for exception generated after logging more than 200 values
 
 
@@ -28,7 +28,7 @@ def test_sigopt_logger_experiment_object(sigopt):
             dict(name="test_param_1", type=int, bounds=dict(min=1, max=10)),
             dict(name="test_param_2", type=float, bounds=dict(min=0.1, max=0.9)),
         ],
-        metrics=[dict(name="test_metric", objective="maxamize")],
+        metrics=[dict(name="test_metric", objective="maximize")],
     )
 
     logger = SigoptLogger(name="test_name", project="test_project", experiment=experiment)

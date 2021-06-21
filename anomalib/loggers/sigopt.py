@@ -4,17 +4,21 @@ from argparse import Namespace
 from typing import Any, Dict, Optional, Union
 
 from pytorch_lightning.loggers.base import LightningLoggerBase, rank_zero_experiment
-from pytorch_lightning.utilities.distributed import rank_zero_only
+from pytorch_lightning.utilities import rank_zero_only
 
+# TODO refactor import check
 try:
-    import numpy as np
-
     import sigopt
     from sigopt.exception import ApiException
     from sigopt.runs import RunFactoryProxyMethod
 except ImportError:
-    sigopt = None
-    np = None
+    raise ImportError(
+        "You want to use `sigopt` logger which is not installed yet, install it with `pip install sigopt`."
+    )
+try:
+    import numpy as np
+except ImportError:
+    raise ImportError("`numpy` dependency not met. Install it with `pip install numpy`.")
 
 
 class SigoptLogger(LightningLoggerBase):
@@ -22,29 +26,19 @@ class SigoptLogger(LightningLoggerBase):
         """Logger for sigopt
 
         Args:
-        name: Name of your run
-        project: Name of your project
-        max_epochs: The maximum number of epochs. Leave empty only if you are sure
-        that your epochs won't go above 200 or your don't plan to use sigopt checkpoints, defaults to 200
-        experiment: sigopt experiment, defaults to None
+            name: Name of your run
+            project: Name of your project
+            max_epochs: The maximum number of epochs. Leave empty only if you are sure
+            that your epochs won't go above 200 or your don't plan to use sigopt checkpoints, defaults to 200
+            experiment: sigopt experiment, defaults to None
         """
-
-        if sigopt is None:
-            raise ImportError(
-                "You want to use `sigopt` logger which is not installed yet,"  # pragma: no-cover
-                " install it with `pip install sigopt`."
-            )
-        if np is None:
-            raise ImportError("`numpy` dependency not met." " install it with `pip install numpy`.")  # pragma: no-cover
-
         super().__init__()
 
         self._name = name
         self._project = project
 
         # since only 200 checkpoints can be saved.
-        # defaults to 1 if max_epochs > 200
-        self._update_freq = max(1, np.ceil(max_epochs / 200))
+        self._update_freq: int = max(1, np.ceil(max_epochs / 200))
 
         self._experiment = experiment
 
@@ -118,7 +112,7 @@ class SigoptLogger(LightningLoggerBase):
             for k, v in metrics.items():
                 self.experiment.log_metric(name=k, value=v)
         except ApiException as e:
-            raise (
+            raise ValueError(
                 "Exception occurred."
                 "It is possible that you are trying to write more that 200 checkpoints."
                 "Use `self.logger.log_checkpoint` for safer implementation"
@@ -140,7 +134,7 @@ class SigoptLogger(LightningLoggerBase):
     @property
     def name(self) -> str:
         """ """
-        self._name
+        return self._name
 
     @rank_zero_only
     def finalize(self, status) -> None:
@@ -153,7 +147,7 @@ class SigoptLogger(LightningLoggerBase):
         self._experiment.end()
 
     @property
-    def version(self) -> Optional[str]:
+    def version(self) -> int:
         """Added for PytorchLogger compatibility"""
         return 1
 
@@ -170,7 +164,7 @@ class SigoptLogger(LightningLoggerBase):
         """
         ret = {}
         for key, val in params.items():
-            if not type(val) == int and not type(val) == float and not type(val) == str:
+            if not isinstance(val, int) and not isinstance(val, float) and not isinstance(val, str):
                 val = str(val)
             ret[key] = val
 
