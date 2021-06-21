@@ -331,7 +331,6 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
 
     def __init__(self, hparams):
         super().__init__(hparams)
-        # self.save_hyperparameters(hparams)
         self.layers = hparams.model.layers
         self._model = PadimModel(hparams.model.backbone, hparams.model.layers).eval()
 
