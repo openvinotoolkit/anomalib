@@ -19,13 +19,6 @@ class BaseAnomalyMapGenerator:
         self.beta = 1 - self.alpha
         self.gamma = gamma
 
-    # @abstractmethod
-    # def compute_anomaly_map(self, *args, **kwargs):
-    #     """
-    #     Compute Anomaly Map
-    #     """
-    #     raise NotImplementedError
-
     @staticmethod
     def compute_heatmap(anomaly_map: np.ndarray) -> np.ndarray:
         """Compute anomaly color heatmap
