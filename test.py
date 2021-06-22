@@ -28,15 +28,17 @@ def get_args() -> Namespace:
     return parser.parse_args()
 
 
-args = get_args()
-config = get_configurable_parameters(
-    model_name=args.model,
-    model_config_path=args.model_config_path,
-    weight_file=args.weight_file,
-    openvino=args.openvino,
-)
-datamodule = get_datamodule(config)
-model = get_model(config)
+if __name__ == "__main__":
+    args = get_args()
+    config = get_configurable_parameters(
+        model_name=args.model,
+        model_config_path=args.model_config_path,
+        weight_file=args.weight_file,
+        openvino=args.openvino,
+    )
 
-trainer = Trainer(callbacks=model.callbacks, **config.trainer)
-trainer.test(model=model, datamodule=datamodule)
+    datamodule = get_datamodule(config)
+    model = get_model(config)
+
+    trainer = Trainer(callbacks=model.callbacks, **config.trainer)
+    trainer.test(model=model, datamodule=datamodule)
