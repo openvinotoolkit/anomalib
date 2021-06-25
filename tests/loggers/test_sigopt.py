@@ -1,6 +1,7 @@
 from unittest import mock
 
 import numpy as np
+import pytest
 
 from anomalib.loggers.sigopt import SigoptLogger
 
@@ -48,6 +49,13 @@ def test_sigopt_logger_frequency(sigopt):
     sigopt.create_run().log_checkpoint.assert_called_once()
 
 
+def type_checker(param: dict):
+    for k, v in param.items():
+        # uses type to check as we don't want to check the subclasses
+        if type(v) != int and type(v) != float and type(v) != str:
+            raise TypeError(f"Dict contains unsupported types {k}:{v} - {type(v)}")
+
+
 @mock.patch("anomalib.loggers.sigopt.sigopt")
 def test_sigopt_logger_hyperparameter(sigopt):
     logger = SigoptLogger(name="test_name", project="test_project")
@@ -58,7 +66,10 @@ def test_sigopt_logger_hyperparameter(sigopt):
         "f_lst": [0.1, 3.0, 0.5],
         "dict": {"a": 1, "b": 2, "c": 3},
         "str": "test_val",
-        1: "test_val_2",
+        2: "test_val_2",
+        "bool1": False,
+        "bool2": True,
+        True: False,
     }
 
     def fake_set_params(_, param):
@@ -68,9 +79,27 @@ def test_sigopt_logger_hyperparameter(sigopt):
         param = SigoptLogger._sanitize_other_params(param)
         return param
 
+    # passes when parameters have been properly sanitized
     with mock.patch("anomalib.loggers.sigopt.SigoptLogger.log_hyperparams", fake_set_params):
         ret = logger.log_hyperparams(hparams)
         assert type(ret) == dict
+        # raises type error if the dict has not been properly sanitized.
+        type_checker(ret)
+
+    def fake_sanitize_other_params(_, param):
+        param = SigoptLogger._convert_params(param)
+        param = SigoptLogger._flatten_dict(param)
+        param = SigoptLogger._sanitize_callable_params(param)
+        return param
+
+    # passes when parameters have not been properly sanitized and leads to an exception being thrown.
+    with mock.patch("anomalib.loggers.sigopt.SigoptLogger.log_hyperparams", fake_sanitize_other_params):
+        ret = logger.log_hyperparams(hparams)
+        # passes when error is raised
+        with pytest.raises(TypeError):
+            ret = logger.log_hyperparams(hparams)
+            print(ret)
+            type_checker(ret)
 
 
 @mock.patch("anomalib.loggers.sigopt.sigopt")
