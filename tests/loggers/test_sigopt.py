@@ -98,7 +98,6 @@ def test_sigopt_logger_hyperparameter(sigopt):
         # passes when error is raised
         with pytest.raises(TypeError):
             ret = logger.log_hyperparams(hparams)
-            print(ret)
             type_checker(ret)
 
 
