@@ -15,7 +15,7 @@ model:
   n_components: 16
 
 project:
-  seed: 0
+  seed: 42
   path: ./results
 
 # PL Trainer Args. Don't add extra parameter here.

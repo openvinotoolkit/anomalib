@@ -8,3 +8,6 @@ author = "Intel OpenVINO"
 author-email = "help@openvino.intel.com"
 description-file = "README.md"
 requires-python = ">=3.7"
+
+[tool.isort]
+sections = ['FUTURE', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'LOCALFOLDER']
