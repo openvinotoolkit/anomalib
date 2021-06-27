@@ -164,8 +164,9 @@ class SigoptLogger(LightningLoggerBase):
         """
         ret = {}
         for key, val in params.items():
-            if not isinstance(val, int) and not isinstance(val, float) and not isinstance(val, str):
+            # isinstance is not used for bool type as it returns true for int
+            if type(val) != int and not isinstance(val, float) and not isinstance(val, str):
                 val = str(val)
-            ret[key] = val
+            ret[str(key)] = val  # sanitize keys as well
 
         return ret
