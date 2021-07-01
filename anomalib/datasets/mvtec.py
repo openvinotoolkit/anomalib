@@ -130,8 +130,8 @@ def make_mvtec_dataset(path: Path, split: str = "train", split_ratio: float = 0.
     samples.loc[(samples.split == "test") & (samples.label == "good"), "mask_path"] = ""
 
     # Create label index for train (0) and test (1) sets.
-    samples.loc[samples.split == "train", "label_index"] = 0
-    samples.loc[samples.split == "test", "label_index"] = 1
+    samples.loc[(samples.label == 'good'), "label_index"] = 0
+    samples.loc[(samples.label != 'good'), "label_index"] = 1
     samples.label_index = samples.label_index.astype(int)
 
     # Get the data frame for the split.
@@ -219,7 +219,7 @@ class MVTec(VisionDataset):
         """
         Download the MVTec dataset
         """
-        if Path(self.category).is_dir():
+        if (self.root / self.category).is_dir():
         # TODO: Changed this.
         # if self.category.is_dir():
             logger.warning("Dataset directory exists.")
