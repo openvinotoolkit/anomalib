@@ -56,15 +56,15 @@ class BaseAnomalySegmentationLightning(BaseAnomalyLightning):
 
         """
         self.validation_epoch_end(outputs)
-        threshold = self.anomaly_map_generator.compute_adaptive_threshold(self.true_masks, self.anomaly_maps)
+        threshold = self.model.anomaly_map_generator.compute_adaptive_threshold(self.true_masks, self.anomaly_maps)
 
         for (filename, image, true_mask, anomaly_map) in zip(
             self.filenames, self.images, self.true_masks, self.anomaly_maps
         ):
             image = Denormalize()(image.squeeze())
 
-            heat_map = self.anomaly_map_generator.apply_heatmap_on_image(anomaly_map, image)
-            pred_mask = self.anomaly_map_generator.compute_mask(anomaly_map=anomaly_map, threshold=threshold)
+            heat_map = self.model.anomaly_map_generator.apply_heatmap_on_image(anomaly_map, image)
+            pred_mask = self.model.anomaly_map_generator.compute_mask(anomaly_map=anomaly_map, threshold=threshold)
             vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
 
             visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))

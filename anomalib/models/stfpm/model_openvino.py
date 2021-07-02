@@ -15,73 +15,73 @@ from anomalib.core.callbacks.timer import TimerCallback
 from anomalib.models.base.model import BaseAnomalySegmentationLightning
 
 
-class AnomalyMapGenerator:
-    """Generates anomaly heatmap."""
-
-    def __init__(self, batch_size: int = 1, image_size: int = 256, alpha: float = 0.4, gamma: int = 0):
-        super().__init__()
-        self.image_size = image_size
-        self.batch_size = batch_size
-
-        self.alpha = alpha
-        self.beta = 1 - self.alpha
-        self.gamma = gamma
-
-    def compute_layer_map(self, teacher_features: np.ndarray, student_features: np.ndarray):
-        """Computes the anomaly map for a single layer based on cosine similarity.
-
-        Args:
-            teacher_features: Feature map produced by a single output layer of the teacher network.
-            student_features: Feature map produced by a single output layer of the student network.
-        Returns:
-            Numpy array that represents the anomaly map of the given layer, resized to the original image dimensions.
-        """
-        norm_teacher_features = teacher_features / np.linalg.norm(teacher_features, axis=1)
-        norm_student_features = student_features / np.linalg.norm(student_features, axis=1)
-
-        layer_map = (
-            0.5 * np.linalg.norm(norm_teacher_features - norm_student_features, ord=2, axis=-3, keepdims=True) ** 2
-        )
-        layer_map = cv2.resize(layer_map[0, 0, ...], (self.image_size, self.image_size), interpolation=cv2.INTER_LINEAR)
-        return layer_map
-
-    def compute_anomaly_map(self, teacher_features: Dict[str, np.ndarray], student_features: Dict[str, np.ndarray]):
-        """Computes the anomaly map between the set of teacher and student features.
-
-        Args:
-            teacher_features: Dictionary containing the feature maps for the different output layers of the teacher
-              network
-            student_features: Dictionary containing the feature maps for the different output layers of the student
-              network
-        Returns:
-            Numpy array which contains the pixel-level anomaly scores. The scores are computed as the product of the
-              anomaly heatmaps of the individual layers.
-        """
-        anomaly_map = np.ones([self.image_size, self.image_size])
-        for layer in teacher_features.keys():
-            layer_map = self.compute_layer_map(teacher_features[layer], student_features[layer])
-            anomaly_map *= layer_map
-
-        return anomaly_map
-
-    @staticmethod
-    def compute_heatmap(anomaly_map: np.ndarray) -> np.ndarray:
-        """Computes heatmap for visualization purposes."""
-        anomaly_map = (anomaly_map - anomaly_map.min()) / np.ptp(anomaly_map)
-        anomaly_map = anomaly_map * 255
-        anomaly_map = anomaly_map.astype(np.uint8)
-
-        heatmap = cv2.applyColorMap(anomaly_map, cv2.COLORMAP_JET)
-        return heatmap
-
-    def apply_heatmap_on_image(self, anomaly_map: np.ndarray, image: np.ndarray) -> np.ndarray:
-        """Overlays a heatmap on an RGB image."""
-        heatmap = self.compute_heatmap(anomaly_map)
-        heatmap_on_image = cv2.addWeighted(heatmap, self.alpha, image, self.beta, self.gamma)
-        return heatmap_on_image
-
-    def __call__(self, teacher_features, student_features):
-        return self.compute_anomaly_map(teacher_features, student_features)
+# class AnomalyMapGenerator:
+#     """Generates anomaly heatmap."""
+#
+#     def __init__(self, batch_size: int = 1, image_size: int = 256, alpha: float = 0.4, gamma: int = 0):
+#         super().__init__()
+#         self.image_size = image_size
+#         self.batch_size = batch_size
+#
+#         self.alpha = alpha
+#         self.beta = 1 - self.alpha
+#         self.gamma = gamma
+#
+#     def compute_layer_map(self, teacher_features: np.ndarray, student_features: np.ndarray):
+#         """Computes the anomaly map for a single layer based on cosine similarity.
+#
+#         Args:
+#             teacher_features: Feature map produced by a single output layer of the teacher network.
+#             student_features: Feature map produced by a single output layer of the student network.
+#         Returns:
+#             Numpy array that represents the anomaly map of the given layer, resized to the original image dimensions.
+#         """
+#         norm_teacher_features = teacher_features / np.linalg.norm(teacher_features, axis=1)
+#         norm_student_features = student_features / np.linalg.norm(student_features, axis=1)
+#
+#         layer_map = (
+#             0.5 * np.linalg.norm(norm_teacher_features - norm_student_features, ord=2, axis=-3, keepdims=True) ** 2
+#         )
+#         layer_map = cv2.resize(layer_map[0, 0, ...], (self.image_size, self.image_size), interpolation=cv2.INTER_LINEAR)
+#         return layer_map
+#
+#     def compute_anomaly_map(self, teacher_features: Dict[str, np.ndarray], student_features: Dict[str, np.ndarray]):
+#         """Computes the anomaly map between the set of teacher and student features.
+#
+#         Args:
+#             teacher_features: Dictionary containing the feature maps for the different output layers of the teacher
+#               network
+#             student_features: Dictionary containing the feature maps for the different output layers of the student
+#               network
+#         Returns:
+#             Numpy array which contains the pixel-level anomaly scores. The scores are computed as the product of the
+#               anomaly heatmaps of the individual layers.
+#         """
+#         anomaly_map = np.ones([self.image_size, self.image_size])
+#         for layer in teacher_features.keys():
+#             layer_map = self.compute_layer_map(teacher_features[layer], student_features[layer])
+#             anomaly_map *= layer_map
+#
+#         return anomaly_map
+#
+#     @staticmethod
+#     def compute_heatmap(anomaly_map: np.ndarray) -> np.ndarray:
+#         """Computes heatmap for visualization purposes."""
+#         anomaly_map = (anomaly_map - anomaly_map.min()) / np.ptp(anomaly_map)
+#         anomaly_map = anomaly_map * 255
+#         anomaly_map = anomaly_map.astype(np.uint8)
+#
+#         heatmap = cv2.applyColorMap(anomaly_map, cv2.COLORMAP_JET)
+#         return heatmap
+#
+#     def apply_heatmap_on_image(self, anomaly_map: np.ndarray, image: np.ndarray) -> np.ndarray:
+#         """Overlays a heatmap on an RGB image."""
+#         heatmap = self.compute_heatmap(anomaly_map)
+#         heatmap_on_image = cv2.addWeighted(heatmap, self.alpha, image, self.beta, self.gamma)
+#         return heatmap_on_image
+#
+#     def __call__(self, teacher_features, student_features):
+#         return self.compute_anomaly_map(teacher_features, student_features)
 
 
 class STFPMOpenVino(BaseAnomalySegmentationLightning):
@@ -98,7 +98,7 @@ class STFPMOpenVino(BaseAnomalySegmentationLightning):
         self.out_blob = next(iter(net.outputs))
 
         self.exec_net = ie_core.load_network(network=net, device_name="CPU")
-        self.anomaly_map_generator = AnomalyMapGenerator(batch_size=1, image_size=224)
+        # self.anomaly_map_generator = AnomalyMapGenerator(batch_size=1, image_size=224)
 
         self.callbacks = [TimerCallback()]
 
@@ -127,13 +127,15 @@ class STFPMOpenVino(BaseAnomalySegmentationLightning):
         filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
         images = images.cpu().numpy()
 
-        res = self.exec_net.infer(inputs={self.input_blob: images})
-        num_layers = int(len(res) / 2)
-        layer_names = [f"layer{num}" for num in range(num_layers)]
-        teacher_features = {key: value for key, value in zip(layer_names, list(res.values())[:num_layers])}
-        student_features = {key: value for key, value in zip(layer_names, list(res.values())[num_layers:])}
-
-        anomaly_maps = self.anomaly_map_generator(teacher_features, student_features)
+        # res = self.exec_net.infer(inputs={self.input_blob: images})
+        # num_layers = int(len(res) / 2)
+        # layer_names = [f"layer{num}" for num in range(num_layers)]
+        # teacher_features = {key: value for key, value in zip(layer_names, list(res.values())[:num_layers])}
+        # student_features = {key: value for key, value in zip(layer_names, list(res.values())[num_layers:])}
+        #
+        # anomaly_maps = self.anomaly_map_generator(teacher_features, student_features)
+        anomaly_maps = self.exec_net.infer(inputs={self.input_blob: images})
+        anomaly_maps = list(anomaly_maps.values())
 
         return {
             "filenames": filenames,
