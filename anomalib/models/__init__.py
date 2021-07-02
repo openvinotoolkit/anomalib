@@ -1,9 +1,9 @@
 """
 Load Anomaly Model
 """
-from typing import Type
+from typing import Type, Union
 
-from omegaconf import DictConfig
+from omegaconf import DictConfig, ListConfig
 
 from .dfkde.model import DFKDELightning
 from .padim.model import PADIMLightning
@@ -11,7 +11,7 @@ from .stfpm.model import STFPMLightning
 from .stfpm.model_openvino import STFPMOpenVino
 
 
-def get_model(config: DictConfig):
+def get_model(config: Union[DictConfig, ListConfig]):
     """Load model from the configuration file.
 
     Args:
