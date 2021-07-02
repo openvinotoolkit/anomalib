@@ -1,0 +1,7 @@
+[report]
+exclude_lines = 
+    except ImportError
+    raise ImportError
+    except ApiException
+    raise ApiException
+    raise ValueError

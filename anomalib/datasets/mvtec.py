@@ -257,19 +257,19 @@ class MVTecDataModule(LightningDataModule):
           stage: Optional[str]:  (Default value = None)
 
         """
+        self.val_data = MVTec(
+            root=self.root,
+            category=self.category,
+            train=False,
+            image_transforms=self.image_transforms,
+            mask_transforms=self.mask_transforms,
+            exclude_normal_images_in_validation=self.exclude_normal_images_in_validation,
+        )
         if stage in (None, "fit"):
             self.train_data = MVTec(
                 root=self.root,
                 category=self.category,
                 train=True,
-                image_transforms=self.image_transforms,
-                mask_transforms=self.mask_transforms,
-                exclude_normal_images_in_validation=self.exclude_normal_images_in_validation,
-            )
-            self.val_data = MVTec(
-                root=self.root,
-                category=self.category,
-                train=False,
                 image_transforms=self.image_transforms,
                 mask_transforms=self.mask_transforms,
                 exclude_normal_images_in_validation=self.exclude_normal_images_in_validation,
