@@ -10,7 +10,7 @@ import logging
 import random
 import tarfile
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, Optional, Union
 from urllib.request import urlretrieve
 
 import pandas as pd
@@ -26,6 +26,7 @@ from torchvision.datasets.folder import VisionDataset
 from torchvision.transforms import Compose
 
 logger = logging.getLogger(name="Dataset: MVTec")
+logger.setLevel(logging.DEBUG)
 
 __all__ = ["MVTec", "MVTecDataModule"]
 
@@ -43,7 +44,7 @@ def split_normal_images_in_train_set(samples: DataFrame, split_ratio: float = 0.
     Args:
         samples (DataFrame): Dataframe containing dataset info such as filenames, splits etc.
         split_ratio (float, optional): Train-Test normal image split ratio. Defaults to 0.1.
-        seed (int, optional): Random seed to ensure reproducability. Defaults to 0.
+        seed (int, optional): Random seed to ensure reproducibility. Defaults to 0.
 
     Returns:
         DataFrame: Output dataframe where the part of the training set is assigned to test set.
@@ -129,9 +130,9 @@ def make_mvtec_dataset(path: Path, split: str = "train", split_ratio: float = 0.
     # Good images don't have mask
     samples.loc[(samples.split == "test") & (samples.label == "good"), "mask_path"] = ""
 
-    # Create label index for train (0) and test (1) sets.
-    samples.loc[(samples.label == 'good'), "label_index"] = 0
-    samples.loc[(samples.label != 'good'), "label_index"] = 1
+    # Create label index for normal (0) and anomalous (1) images.
+    samples.loc[(samples.label == "good"), "label_index"] = 0
+    samples.loc[(samples.label != "good"), "label_index"] = 1
     samples.label_index = samples.label_index.astype(int)
 
     # Get the data frame for the split.
@@ -141,7 +142,7 @@ def make_mvtec_dataset(path: Path, split: str = "train", split_ratio: float = 0.
     return samples
 
 
-def get_image_transforms() -> T.Compose:
+def get_image_transforms(image_size: tuple, crop_size: int) -> T.Compose:
     """
     Get default ImageNet image transformations.
 
@@ -151,8 +152,8 @@ def get_image_transforms() -> T.Compose:
     """
     transform = T.Compose(
         [
-            T.Resize(256, Image.ANTIALIAS),
-            T.CenterCrop(224),
+            T.Resize(image_size, Image.ANTIALIAS),
+            T.CenterCrop(crop_size),
             T.ToTensor(),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ]
@@ -160,7 +161,7 @@ def get_image_transforms() -> T.Compose:
     return transform
 
 
-def get_mask_transforms() -> T.Compose:
+def get_mask_transforms(image_size: tuple, crop_size: int) -> T.Compose:
     """
     Get default ImageNet transformations for the ground-truth image masks.
 
@@ -170,8 +171,8 @@ def get_mask_transforms() -> T.Compose:
     """
     transform = Compose(
         [
-            T.Resize(256, Image.NEAREST),
-            T.CenterCrop(224),
+            T.Resize(image_size, Image.NEAREST),
+            T.CenterCrop(crop_size),
             T.ToTensor(),
         ]
     )
@@ -188,40 +189,36 @@ class MVTec(VisionDataset):
         root: Union[Path, str],
         category: str,
         train: bool = True,
+        image_size: tuple = (256, 256),
+        crop_size: int = 224,
         image_transforms: Optional[Callable] = None,
         mask_transforms: Optional[Callable] = None,
-        loader: Optional[Callable[[str], Any]] = None,
         download: bool = False,
-        exclude_normal_images_in_validation: bool = False,
     ) -> None:
         super().__init__(root, transform=image_transforms, target_transform=mask_transforms)
         self.root = Path(root) if isinstance(root, str) else root
         self.category: str = category
-        # TODO: Commented out the below line.
-        # self.category: Path = self.root / category
         self.split = "train" if train else "test"
-        self.image_transforms = image_transforms if image_transforms is not None else get_image_transforms()
-        self.mask_transforms = mask_transforms if mask_transforms is not None else get_mask_transforms()
-        # self.loader = loader if loader is not None else default_loader
+        self.image_size = image_size
+        self.crop_size = crop_size
+        self.image_transforms = (
+            image_transforms if image_transforms is not None else get_image_transforms(image_size, crop_size)
+        )
+        self.mask_transforms = (
+            mask_transforms if mask_transforms is not None else get_mask_transforms(image_size, crop_size)
+        )
         self.download = download
-        # self.exclude_normal_images_in_validation = exclude_normal_images_in_validation
 
         if self.download:
             self._download()
 
-        # TODO: Changed this
-        # self.samples = self.make_dataset()
         self.samples = make_mvtec_dataset(path=self.root / category, split=self.split)
-        if len(self.samples) == 0:
-            raise RuntimeError(f"Found 0 images in {self.category / self.split}")
 
     def _download(self) -> None:
         """
         Download the MVTec dataset
         """
         if (self.root / self.category).is_dir():
-        # TODO: Changed this.
-        # if self.category.is_dir():
             logger.warning("Dataset directory exists.")
         else:
             self.root.mkdir(parents=True, exist_ok=True)
@@ -251,41 +248,10 @@ class MVTec(VisionDataset):
         logger.info("Cleaning up the tar file")
         self.filename.unlink()
 
-    def make_dataset(self) -> List[Tuple[str, str, int]]:
-        """
-        Make MVTec dataset by returning image filenames and their corresponding ground-truth
-
-        Returns:
-            List[Tuple[str, str, int]]: Image filename, mask filename and anomaly label index (0 or 1)
-        """
-        labels = sorted([label.name for label in (self.category / self.split).iterdir() if label.is_dir()])
-        samples = []
-        label_index: int
-        mask_filename: Optional[Union[str, Path]] = None
-
-        for label in labels:
-            image_filenames = sorted([filename for filename in (self.category / self.split / label).glob("**/*.png")])
-            for image_filename in image_filenames:
-                if label == "good":
-                    if self.split == "test" and self.exclude_normal_images_in_validation:
-                        continue
-                    label_index = 0
-                    mask_filename = ""
-                else:
-                    label_index = 1
-                    mask_filename = self.category / "ground_truth" / label / (image_filename.stem + "_mask.png")
-
-                sample = (str(image_filename), str(mask_filename), label_index)
-                samples.append(sample)
-
-        return samples
-
     def __len__(self) -> int:
         return len(self.samples)
 
     def __getitem__(self, index: int) -> Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]:
-        # TODO: Changed this.
-        # image_path, mask_path, label_index = self.samples[index]
         image_path = self.samples.image_path[index]
         mask_path = self.samples.mask_path[index]
         label_index = self.samples.label_index[index]
@@ -323,28 +289,26 @@ class MVTecDataModule(LightningDataModule):
         self,
         root: str,
         category: str,
+        image_size: tuple,
+        crop_size: int,
         batch_size: int,
         num_workers: int,
         image_transforms: Optional[Callable] = None,
         mask_transforms: Optional[Callable] = None,
-        loader: Optional[Callable[[str], Any]] = None,
-        exclude_normal_images_in_validation: bool = False,
     ) -> None:
         super().__init__()
         self.root = root if isinstance(root, Path) else Path(root)
         self.category = category
         self.dataset_path = self.root / self.category
+        self.image_size = image_size
+        self.crop_size = crop_size
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.image_transforms = image_transforms
         self.mask_transforms = mask_transforms
-        # self.loader = default_loader if loader is None else loader
-        self.exclude_normal_images_in_validation = exclude_normal_images_in_validation
 
         self.train_data: Dataset
         self.val_data: Dataset
-        # self.train_data: Optional[MVTec] = None
-        # self.val_data: Optional[MVTec] = None
 
     def prepare_data(self):
         """
@@ -359,7 +323,6 @@ class MVTecDataModule(LightningDataModule):
             image_transforms=self.image_transforms,
             mask_transforms=self.mask_transforms,
             download=True,
-            exclude_normal_images_in_validation=self.exclude_normal_images_in_validation,
         )
 
         # Test
@@ -370,7 +333,6 @@ class MVTecDataModule(LightningDataModule):
             image_transforms=self.image_transforms,
             mask_transforms=self.mask_transforms,
             download=True,
-            exclude_normal_images_in_validation=self.exclude_normal_images_in_validation,
         )
 
     def setup(self, stage: Optional[str] = None) -> None:
@@ -381,6 +343,7 @@ class MVTecDataModule(LightningDataModule):
           stage: Optional[str]:  (Default value = None)
 
         """
+
         if stage in (None, "fit"):
             self.train_data = MVTec(
                 root=self.root,
@@ -388,7 +351,6 @@ class MVTecDataModule(LightningDataModule):
                 train=True,
                 image_transforms=self.image_transforms,
                 mask_transforms=self.mask_transforms,
-                exclude_normal_images_in_validation=self.exclude_normal_images_in_validation,
             )
             self.val_data = MVTec(
                 root=self.root,
@@ -396,7 +358,6 @@ class MVTecDataModule(LightningDataModule):
                 train=False,
                 image_transforms=self.image_transforms,
                 mask_transforms=self.mask_transforms,
-                exclude_normal_images_in_validation=self.exclude_normal_images_in_validation,
             )
 
     def train_dataloader(self) -> DataLoader:

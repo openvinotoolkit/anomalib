@@ -28,6 +28,7 @@ if __name__ == "__main__":
 
     # TODO create sigopt logger object only if mentioned in configurable parameters.
     logger = SigoptLogger(project="anomaly", name=f"{args.model}_train")
+    logger=False
 
     trainer = Trainer(callbacks=model.callbacks, **config.trainer, logger=logger)
     trainer.fit(model=model, datamodule=datamodule)

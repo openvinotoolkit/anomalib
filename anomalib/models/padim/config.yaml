@@ -2,9 +2,9 @@ dataset:
   name: mvtec
   path: ./datasets/MVTec
   category: leather
+  image_size: 256
   batch_size: 32
-  num_workers: 0
-  exclude_normal_images_in_validation: false
+  num_workers: 36
 
 model:
   name: padim
