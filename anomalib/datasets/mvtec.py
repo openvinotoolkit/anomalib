@@ -265,7 +265,7 @@ class MVTecDataModule(LightningDataModule):
             mask_transforms=self.mask_transforms,
             exclude_normal_images_in_validation=self.exclude_normal_images_in_validation,
         )
-        if stage in (None, "fit", "test"):
+        if stage in (None, "fit"):
             self.train_data = MVTec(
                 root=self.root,
                 category=self.category,
