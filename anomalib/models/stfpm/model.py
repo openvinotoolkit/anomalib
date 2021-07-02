@@ -23,7 +23,7 @@ from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
 from anomalib.models.base.model import BaseAnomalySegmentationLightning
 
-__all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel"]
+__all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel", "STFPMLightning"]
 
 
 class Loss(nn.Module):
