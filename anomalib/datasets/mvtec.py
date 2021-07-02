@@ -16,8 +16,8 @@ from urllib.request import urlretrieve
 import pandas as pd
 import torch
 import torchvision.transforms as T
-from PIL import Image
 from pandas.core.frame import DataFrame
+from PIL import Image
 from pytorch_lightning.core.datamodule import LightningDataModule
 from torch import Tensor
 from torch.utils.data import DataLoader
@@ -343,19 +343,18 @@ class MVTecDataModule(LightningDataModule):
           stage: Optional[str]:  (Default value = None)
 
         """
-
+        self.val_data = MVTec(
+            root=self.root,
+            category=self.category,
+            train=False,
+            image_transforms=self.image_transforms,
+            mask_transforms=self.mask_transforms,
+        )
         if stage in (None, "fit"):
             self.train_data = MVTec(
                 root=self.root,
                 category=self.category,
                 train=True,
-                image_transforms=self.image_transforms,
-                mask_transforms=self.mask_transforms,
-            )
-            self.val_data = MVTec(
-                root=self.root,
-                category=self.category,
-                train=False,
                 image_transforms=self.image_transforms,
                 mask_transforms=self.mask_transforms,
             )
