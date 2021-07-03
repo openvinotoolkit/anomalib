@@ -68,6 +68,8 @@ class DFKDELightning(pl.LightningModule):
         self.callbacks = Callbacks(hparams)()
         self.image_roc_auc: Optional[float] = None
 
+        self.automatic_optimization = False # required from lightning 1.3.x
+
     @staticmethod
     def configure_optimizers():
         """

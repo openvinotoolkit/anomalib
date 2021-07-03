@@ -338,6 +338,8 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         self.callbacks = Callbacks(hparams)()
         self.stats: List[Tensor, Tensor] = []
 
+        self.automatic_optimization = False # required from lightning 1.3.x
+
     @staticmethod
     def configure_optimizers():
         """PADIM doesn't require optimization, therefore returns no optimizers."""
