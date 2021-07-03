@@ -9,6 +9,7 @@ backup.py
 train.ipynb
 
 # VENV
+.python-version
 .anomalib
 .toxbase
 

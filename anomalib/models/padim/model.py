@@ -337,6 +337,7 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         self.anomaly_map_generator = AnomalyMapGenerator()
         self.callbacks = Callbacks(hparams)()
         self.stats: List[Tensor, Tensor] = []
+        self.automatic_optimization = False
 
         self.automatic_optimization = False # required from lightning 1.3.x
 

@@ -22,6 +22,8 @@ def get_configurable_parameters(
     Args:
         model_name: Optional[str]:  (Default value = None)
         model_config_path: Optional[Union[Path, str]]:  (Default value = None)
+        weight_file: Path to the weight file
+        openvino: Use OpenVINO
         config_filename: Optional[str]:  (Default value = "config")
         config_file_extension: Optional[str]:  (Default value = "yaml")
 
