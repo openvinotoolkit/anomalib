@@ -22,6 +22,7 @@ model:
 project:
   seed: 0
   path: ./results
+  logger: sigopt
   mo_path: /opt/intel/openvino_2021/deployment_tools/model_optimizer/mo.py
 
 optimization:
