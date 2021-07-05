@@ -10,6 +10,13 @@ from pytorch_lightning.loggers import LightningLoggerBase
 from .sigopt import SigoptLogger
 
 
+class UnknownLogger(Exception):
+    """
+    This is raised when the logger option in config.yaml file is set incorrectly.
+    SigOpt is the only available logger for now.
+    """
+
+
 def get_logger(config: Union[DictConfig, ListConfig]) -> Union[LightningLoggerBase, bool]:
     """
     Return a logger based on the choice of logger in the config file.
@@ -33,6 +40,10 @@ def get_logger(config: Union[DictConfig, ListConfig]) -> Union[LightningLoggerBa
             name=f"{config.dataset.category} {config.model.name}",
         )
     else:
-        raise ValueError("Unknown logger type. Available loggers: false, sigopt, tensorboard")
+        raise UnknownLogger(
+            f"Unknown logger type: {config.project.logger}. Available loggers are: sigopt.\n"
+            f"To enable the logger, set `project.logger` to `true` or `sigopt` in config.yaml\n"
+            f"To disable the logger, set `project.logger` to `false`."
+        )
 
     return logger
