@@ -4,7 +4,8 @@ https://arxiv.org/abs/2103.04257
 """
 import os.path
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict
+from typing import List
 
 import numpy as np
 import torch
@@ -12,8 +13,10 @@ import torch.nn.functional as F
 import torchvision
 from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.callbacks import Callback, EarlyStopping, ModelCheckpoint
+from skimage.segmentation import mark_boundaries
 from sklearn.metrics import roc_auc_score
-from torch import Tensor, nn, optim
+from torch import Tensor
+from torch import nn, optim
 
 from anomalib.core.callbacks.compress import CompressModelCallback
 from anomalib.core.callbacks.model_loader import LoadModelCallback
@@ -21,7 +24,9 @@ from anomalib.core.callbacks.nncf_callback import NNCFCallback
 from anomalib.core.callbacks.timer import TimerCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
+from anomalib.datasets.utils import Denormalize
 from anomalib.models.base.model import BaseAnomalySegmentationLightning
+from anomalib.utils.visualizer import Visualizer
 
 __all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel", "STFPMLightning"]
 
@@ -233,8 +238,8 @@ class STFPMModel(nn.Module):
         student_features: Dict[str, Tensor] = self.student_model(images)
         if self.training:
             return teacher_features, student_features
-        else:
-            return self.anomaly_map_generator(teacher_features, student_features)
+
+        return self.anomaly_map_generator(teacher_features, student_features)
 
 
 class STFPMLightning(BaseAnomalySegmentationLightning):
@@ -352,3 +357,33 @@ class STFPMLightning(BaseAnomalySegmentationLightning):
 
         self.log(name="Image-Level AUC", value=self.image_roc_auc, on_epoch=True, prog_bar=True)
         self.log(name="Pixel-Level AUC", value=self.pixel_roc_auc, on_epoch=True, prog_bar=True)
+
+    def test_epoch_end(self, outputs):
+        """
+        Compute and save anomaly scores of the test set, based on the embedding
+            extracted from deep hierarchical CNN features.
+
+        Args:
+            outputs: Batch of outputs from the validation step
+
+        """
+        self.validation_epoch_end(outputs)
+        threshold = self.model.anomaly_map_generator.compute_adaptive_threshold(self.true_masks, self.anomaly_maps)
+
+        for (filename, image, true_mask, anomaly_map) in zip(
+            self.filenames, self.images, self.true_masks, self.anomaly_maps
+        ):
+            image = Denormalize()(image.squeeze())
+
+            heat_map = self.model.anomaly_map_generator.apply_heatmap_on_image(anomaly_map, image)
+            pred_mask = self.model.anomaly_map_generator.compute_mask(anomaly_map=anomaly_map, threshold=threshold)
+            vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
+
+            visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
+            visualizer.add_image(image=image, title="Image")
+            visualizer.add_image(image=true_mask, color_map="gray", title="Ground Truth")
+            visualizer.add_image(image=heat_map, title="Predicted Heat Map")
+            visualizer.add_image(image=pred_mask, color_map="gray", title="Predicted Mask")
+            visualizer.add_image(image=vis_img, title="Segmentation Result")
+            visualizer.save(Path(self.hparams.project.path) / "images" / filename.parent.name / filename.name)
+            visualizer.close()
