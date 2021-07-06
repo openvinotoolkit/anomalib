@@ -10,13 +10,13 @@ import torchvision
 from torch import Size, Tensor, nn
 
 
-class Patchify:
+class Tiler:
     """
-    Patchify Image.
+    Tile Image.
     """
 
-    def __init__(self, patch_size: int, stride: int, padding: int = 0, dilation: int = 1):
-        self.patch_size = patch_size
+    def __init__(self, tile_size: int, stride: int, padding: int = 0, dilation: int = 1):
+        self.tile_size = tile_size
         self.dilation = dilation
         self.padding = padding
         self.stride = stride
@@ -24,15 +24,15 @@ class Patchify:
         self.batch_size: int
         self.image_size: Size
 
-    def split_image(self, image: Tensor) -> Tensor:
+    def tile_image(self, image: Tensor) -> Tensor:
         """
-        Split an image into patches.
+        Split an image into tiles.
 
         Args:
             image: Input image
 
         Returns:
-            Patches from the original input image.
+            Tiles from the original input image.
 
         """
 
@@ -42,39 +42,39 @@ class Patchify:
         self.image_size = image.shape[2:]
         num_channels = image.shape[1]
 
-        # Image patches of size NxF**2xP, where F: patch size, P: # of patches.
-        image_patches = nn.Unfold(self.patch_size, self.dilation, self.padding, self.stride)(image)
+        # Image tiles of size NxF**2xP, where F: tile size, P: # of tiles.
+        image_tiles = nn.Unfold(self.tile_size, self.dilation, self.padding, self.stride)(image)
 
         # Permute dims to have the following dim: NxPxF**2
-        image_patches = image_patches.permute(0, 2, 1)
+        image_tiles = image_tiles.permute(0, 2, 1)
 
-        # converted tensor into NxPxHXW, Reshape patches into PxCxFxF
-        image_patches = image_patches.reshape(image_patches.shape[1], num_channels, self.patch_size, self.patch_size)
+        # converted tensor into NxPxHXW, Reshape tiles into PxCxFxF
+        image_tiles = image_tiles.reshape(image_tiles.shape[1], num_channels, self.tile_size, self.tile_size)
 
-        return image_patches
+        return image_tiles
 
-    def split_batch(self, batch: Tensor) -> Tensor:
+    def tile_batch(self, batch: Tensor) -> Tensor:
         """
-        Split Image Batch into Patches
+        Split Image Batch into tiles
 
         Args:
             batch (Tensor): Batch of images with NxCxHxW dims.
 
         Returns:
-            Tensor: Patches of batch of images.
+            Tensor: Tiles of batch of images.
         """
 
         self.batch_size = batch.shape[0]
         self.image_size = batch.shape[2:]
 
-        batch_patch_list: List[Tensor] = [self.split_image(image) for image in batch]
-        batch_patches: Tensor = torch.cat(batch_patch_list, dim=0)
+        batch_tiles_list: List[Tensor] = [self.tile_image(image) for image in batch]
+        batch_tiles: Tensor = torch.cat(batch_tiles_list, dim=0)
 
-        return batch_patches
+        return batch_tiles
 
-    def merge_image_patches(
+    def untile_image(
         self,
-        patches: Tensor,
+        tiles: Tensor,
         padding: int = 0,
         normalize: bool = True,
         pixel_range: Optional[tuple] = None,
@@ -82,30 +82,30 @@ class Patchify:
         pad_value: int = 0,
     ) -> Tensor:
         """
-        Merge the patches to form the original image.
+        Merge the tiles to form the original image.
         Args:
-            patches: Patches to merge (stitch)
-            padding: Number of pixels to skip when stitching the patches.
+            tiles: Tiles to merge (stitch)
+            padding: Number of pixels to skip when stitching the tiles.
             normalize: Normalize the output image.
             pixel_range: Pixel range of the output image.
-            scale_each: Scale each patch before merging.
-            pad_value: Pixel value of the pads between patches.
+            scale_each: Scale each tile before merging.
+            pad_value: Pixel value of the pads between tiles.
 
         Returns:
-            Output image by merging (stitching) the patches.
+            Output image by merging (stitching) the tiles.
 
         """
 
         _, img_width = self.image_size
-        num_rows = img_width // self.patch_size
+        num_rows = img_width // self.tile_size
 
-        grid = torchvision.utils.make_grid(patches, num_rows, padding, normalize, pixel_range, scale_each, pad_value)
+        grid = torchvision.utils.make_grid(tiles, num_rows, padding, normalize, pixel_range, scale_each, pad_value)
 
         return grid
 
-    def merge_batch_patches(
+    def untile_batch(
         self,
-        patches: Tensor,
+        tiles: Tensor,
         padding: int = 0,
         normalize: bool = True,
         pixel_range: Optional[tuple] = None,
@@ -113,25 +113,29 @@ class Patchify:
         pad_value: int = 0,
     ) -> Tensor:
         """
-        Merge the patches to form the original batch.
+        Merge the tiles to form the original batch.
         Args:
-            patches: Patches to merge (stitch)
-            padding: Number of pixels to skip when stitching the patches.
+            tiles: Tiles to merge (stitch)
+            padding: Number of pixels to skip when stitching the tiles.
             normalize: Normalize the output image.
             pixel_range: Pixel range of the output image.
-            scale_each: Scale each patch before merging.
-            pad_value: Pixel value of the pads between patches.
+            scale_each: Scale each tile before merging.
+            pad_value: Pixel value of the pads between tiles.
 
         Returns:
-            Output image by merging (stitching) the patches.
+            Output image by merging (stitching) the tiles.
 
         """
 
         batch_list: List[Tensor] = []
-        batch_patches = torch.chunk(input=patches, chunks=self.batch_size, dim=0)
+        batch_tiles = torch.chunk(input=tiles, chunks=self.batch_size, dim=0)
 
-        for image_patches in batch_patches:
-            image = self.merge_image_patches(image_patches, padding, normalize, pixel_range, scale_each, pad_value)
+        for image_tiles in batch_tiles:
+            image = self.untile_image(image_tiles, padding, normalize, pixel_range, scale_each, pad_value)
+
+            if len(image.shape) == 3:
+                image = image.unsqueeze(0)
+
             batch_list.append(image)
 
         batch = torch.cat(batch_list, dim=0)
@@ -139,7 +143,7 @@ class Patchify:
         return batch
 
     def __call__(self, batch: Tensor) -> Tensor:
-        return self.split_batch(batch)
+        return self.tile_batch(batch)
 
 
 class Denormalize:
