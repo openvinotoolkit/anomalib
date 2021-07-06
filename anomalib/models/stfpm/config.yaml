@@ -1,5 +1,6 @@
 dataset:
   name: mvtec
+  format: mvtec
   path: ./datasets/MVTec
   category: leather
   image_size: 256
