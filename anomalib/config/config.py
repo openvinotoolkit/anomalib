@@ -42,7 +42,21 @@ def get_configurable_parameters(
 
     config = OmegaConf.load(model_config_path)
 
-    # Add project path.
+    # Dataset Configs
+    if "format" not in config.dataset.keys():
+        config.dataset.format = "mvtec"
+
+    image_size = config.dataset.image_size
+    if isinstance(image_size, int):
+        config.dataset.image_size = (image_size, image_size)
+
+    if "crop_size" in config.dataset.keys():
+        if isinstance(config.dataset.crop_size, int):
+            config.dataset.crop_size = (config.dataset.crop_size,) * 2
+    else:
+        config.dataset.crop_size = config.dataset.image_size
+
+    # Project Configs
     project_path = Path(config.project.path) / config.model.name / config.dataset.name / config.dataset.category
     (project_path / "weights").mkdir(parents=True, exist_ok=True)
     (project_path / "images").mkdir(parents=True, exist_ok=True)
@@ -50,6 +64,13 @@ def get_configurable_parameters(
 
     if weight_file:
         config.weight_file = weight_file
+
+    # NNCF Parameters
+    crop_size = config.dataset.crop_size
+    sample_size = (crop_size, crop_size) if isinstance(crop_size, int) else crop_size
+    if "optimization" in config.keys():
+        if "nncf" in config.optimization.keys():
+            config.optimization.nncf.input_info.sample_size = [1, 3, *sample_size]
 
     config.openvino = openvino
     if openvino:
