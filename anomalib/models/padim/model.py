@@ -205,7 +205,7 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
 
     def __init__(self, image_size: int = 224, alpha: float = 0.4, gamma: int = 0, sigma: int = 4):
         super().__init__(alpha=alpha, gamma=gamma, sigma=sigma)
-        self.image_size = image_size
+        self.image_size = image_size if isinstance(image_size, int) else tuple(image_size)
 
     @staticmethod
     def compute_distance(embedding: Tensor, stats: List[Tensor]) -> Tensor:
