@@ -15,7 +15,7 @@ class Patchify:
     Patchify Image.
     """
 
-    def __init__(self, patch_size: int = 64, stride: int = 64, padding: int = 0, dilation: int = 1):
+    def __init__(self, patch_size: int, stride: int, padding: int = 0, dilation: int = 1):
         self.patch_size = patch_size
         self.dilation = dilation
         self.padding = padding
