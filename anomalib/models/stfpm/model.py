@@ -5,19 +5,18 @@ https://arxiv.org/abs/2103.04257
 import os
 import os.path
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 import torchvision
-from omegaconf.dictconfig import DictConfig
+from omegaconf import DictConfig, ListConfig
 from openvino.inference_engine import IECore
 from pytorch_lightning.callbacks import Callback, EarlyStopping, ModelCheckpoint
 from skimage.segmentation import mark_boundaries
 from sklearn.metrics import roc_auc_score
-from torch import Tensor
-from torch import nn, optim
+from torch import Tensor, nn, optim
 
 from anomalib.core.callbacks.compress import CompressModelCallback
 from anomalib.core.callbacks.model_loader import LoadModelCallback
@@ -151,10 +150,17 @@ class Callbacks:
 class AnomalyMapGenerator(BaseAnomalyMapGenerator):
     """Generate Anomaly Heatmap"""
 
-    def __init__(self, batch_size: int = 1, image_size: int = 256, alpha: float = 0.4, gamma: int = 0, sigma: int = 4):
+    def __init__(
+        self,
+        batch_size: int = 1,
+        image_size: Union[ListConfig, Tuple] = (256, 256),
+        alpha: float = 0.4,
+        gamma: int = 0,
+        sigma: int = 4,
+    ):
         super().__init__(alpha=alpha, gamma=gamma, sigma=sigma)
         self.distance = torch.nn.PairwiseDistance(p=2, keepdim=True)
-        self.image_size = image_size
+        self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
         self.batch_size = batch_size
 
     def compute_layer_map(self, teacher_features: Tensor, student_features: Tensor) -> Tensor:
@@ -192,7 +198,7 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         Returns:
           Final anomaly map
         """
-        anomaly_map = torch.ones([self.image_size, self.image_size])
+        anomaly_map = torch.ones(self.image_size)
         for layer in teacher_features.keys():
             layer_map = self.compute_layer_map(teacher_features[layer], student_features[layer])
             layer_map = layer_map[0, 0, :, :]
@@ -223,7 +229,7 @@ class STFPMModel(nn.Module):
             parameters.requires_grad = False
 
         self.loss = Loss()
-        self.anomaly_map_generator = AnomalyMapGenerator(batch_size=1, image_size=224)
+        self.anomaly_map_generator = AnomalyMapGenerator(batch_size=1, image_size=hparams.dataset.crop_size)
 
     def forward(self, images):
         """Forward-pass images into the network to extract teacher and student network.

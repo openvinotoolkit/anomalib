@@ -6,12 +6,13 @@ import os
 import os.path
 from pathlib import Path
 from random import sample
-from typing import Any, Sequence, Dict, List
+from typing import Any, Dict, List, Sequence, Tuple, Union
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 import torchvision
+from omegaconf import ListConfig
 from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.callbacks import ModelCheckpoint
 from scipy.ndimage import gaussian_filter
@@ -206,9 +207,9 @@ class Callbacks:
 class AnomalyMapGenerator(BaseAnomalyMapGenerator):
     """Generate Anomaly Heatmap"""
 
-    def __init__(self, image_size: int = 224, alpha: float = 0.4, gamma: int = 0, sigma: int = 4):
+    def __init__(self, image_size: Union[ListConfig, Tuple], alpha: float = 0.4, gamma: int = 0, sigma: int = 4):
         super().__init__(alpha=alpha, gamma=gamma, sigma=sigma)
-        self.image_size = image_size
+        self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
 
     @staticmethod
     def compute_distance(embedding: Tensor, stats: List[Tensor]) -> Tensor:
@@ -337,7 +338,7 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         self.layers = hparams.model.layers
         self._model = PadimModel(hparams.model.backbone, hparams.model.layers).eval()
 
-        self.anomaly_map_generator = AnomalyMapGenerator()
+        self.anomaly_map_generator = AnomalyMapGenerator(image_size=hparams.dataset.image_size)
         self.callbacks = Callbacks(hparams)()
         self.stats: List[Tensor, Tensor] = []
         self.automatic_optimization = False
