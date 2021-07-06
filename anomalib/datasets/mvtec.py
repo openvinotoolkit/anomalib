@@ -116,7 +116,12 @@ def make_mvtec_dataset(path: Path, split: str = "train", split_ratio: float = 0.
 
     # Create mask_path column
     samples["mask_path"] = (
-        samples.path + "/ground_truth/" + samples.label + "/" + samples.image_path.str.rstrip(".png") + "_mask.png"
+        samples.path
+        + "/ground_truth/"
+        + samples.label
+        + "/"
+        + samples.image_path.str.rstrip("png").str.rstrip(".")
+        + "_mask.png"
     )
 
     # Modify image_path column by converting to absolute path
