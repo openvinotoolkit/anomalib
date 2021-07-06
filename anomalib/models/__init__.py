@@ -7,8 +7,7 @@ from omegaconf import DictConfig, ListConfig
 
 from .dfkde.model import DFKDELightning
 from .padim.model import PADIMLightning
-from .stfpm.model import STFPMLightning
-from .stfpm.model_openvino import STFPMOpenVino
+from .stfpm.model import STFPMLightning, STFPMOpenVino
 
 
 def get_model(config: Union[DictConfig, ListConfig]):
