@@ -216,7 +216,7 @@ class STFPMModel(nn.Module):
             parameters.requires_grad = False
 
         self.loss = Loss()
-        self.anomaly_map_generator = AnomalyMapGenerator(batch_size=1, image_size=224)
+        self.anomaly_map_generator = AnomalyMapGenerator(batch_size=1, image_size=hparams.dataset.crop_size)
 
     def forward(self, images):
         """Forward-pass images into the network to extract teacher and student network.
@@ -244,7 +244,7 @@ class STFPMLightning(BaseAnomalySegmentationLightning):
 
         self.model = STFPMModel(hparams)
         self.loss_val = 0
-        self.anomaly_map_generator = AnomalyMapGenerator(batch_size=1, image_size=224)
+        self.anomaly_map_generator = AnomalyMapGenerator(batch_size=1, image_size=hparams.dataset.crop_size)
 
     def configure_optimizers(self):
         """Configure optimizers by creating an SGD optimizer.

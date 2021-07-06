@@ -334,7 +334,7 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         self.layers = hparams.model.layers
         self._model = PadimModel(hparams.model.backbone, hparams.model.layers).eval()
 
-        self.anomaly_map_generator = AnomalyMapGenerator()
+        self.anomaly_map_generator = AnomalyMapGenerator(image_size=hparams.dataset.image_size)
         self.callbacks = Callbacks(hparams)()
         self.stats: List[Tensor, Tensor] = []
         self.automatic_optimization = False
