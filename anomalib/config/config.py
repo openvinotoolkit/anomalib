@@ -50,7 +50,10 @@ def get_configurable_parameters(
     if isinstance(image_size, int):
         config.dataset.image_size = (image_size, image_size)
 
-    if "crop_size" not in config.dataset.keys():
+    if "crop_size" in config.dataset.keys():
+        if isinstance(config.dataset.crop_size, int):
+            config.dataset.crop_size = (config.dataset.crop_size,) * 2
+    else:
         config.dataset.crop_size = config.dataset.image_size
 
     # Project Configs
@@ -63,7 +66,7 @@ def get_configurable_parameters(
         config.weight_file = weight_file
 
     # NNCF Parameters
-    crop_size = config.dataset.image_size
+    crop_size = config.dataset.crop_size
     sample_size = (crop_size, crop_size) if isinstance(crop_size, int) else crop_size
     if "optimization" in config.keys():
         if "nncf" in config.optimization.keys():
