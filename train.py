@@ -1,14 +1,26 @@
-from argparse import ArgumentParser
+"""
+Anomalib Traning Script.
+    This script reads the name of the model or config file
+    from command line, train/test the anomaly model to get
+    quantitative and qualitative results.
+"""
+from argparse import ArgumentParser, Namespace
 
 from pytorch_lightning import Trainer, seed_everything
 
 from anomalib.config.config import get_configurable_parameters
 from anomalib.datasets import get_datamodule
-from anomalib.loggers.sigopt import SigoptLogger
+from anomalib.loggers import get_logger
 from anomalib.models import get_model
 
 
-def get_args():
+def get_args() -> Namespace:
+    """
+    Get command line arguments.
+
+    Returns:
+        Namespace: List of arguements.
+    """
     parser = ArgumentParser()
     parser.add_argument("--model", type=str, default="stfpm", help="Name of the algorithm to train/test")
     parser.add_argument("--model_config_path", type=str, required=False, help="Path to a model config file")
@@ -25,10 +37,7 @@ if __name__ == "__main__":
 
     datamodule = get_datamodule(config)
     model = get_model(config)
-
-    # TODO create sigopt logger object only if mentioned in configurable parameters.
-    logger = SigoptLogger(project="anomaly", name=f"{args.model}_train")
-    logger=False
+    logger = get_logger(config)
 
     trainer = Trainer(callbacks=model.callbacks, **config.trainer, logger=logger)
     trainer.fit(model=model, datamodule=datamodule)

@@ -17,6 +17,7 @@ model:
 project:
   seed: 42
   path: ./results
+  logger: sigopt
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
