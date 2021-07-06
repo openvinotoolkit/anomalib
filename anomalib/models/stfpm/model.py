@@ -4,8 +4,7 @@ https://arxiv.org/abs/2103.04257
 """
 import os.path
 from pathlib import Path
-from typing import Dict
-from typing import List
+from typing import Dict, List
 
 import numpy as np
 import torch
