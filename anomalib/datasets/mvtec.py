@@ -10,7 +10,7 @@ import logging
 import random
 import tarfile
 from pathlib import Path
-from typing import Callable, Dict, Optional, Union
+from typing import Callable, Dict, Optional, Sequence, Union
 from urllib.request import urlretrieve
 
 import pandas as pd
@@ -24,6 +24,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data.dataset import Dataset
 from torchvision.datasets.folder import VisionDataset
 from torchvision.transforms import Compose
+from torchvision.transforms.functional import crop
 
 logger = logging.getLogger(name="Dataset: MVTec")
 logger.setLevel(logging.DEBUG)
@@ -68,7 +69,7 @@ def make_mvtec_dataset(path: Path, split: str = "train", split_ratio: float = 0.
     This function creates MVTec samples by parsing the MVTec data file structure, based on the following
     structure:
         path/to/dataset/split/category/image_filename.png
-        path/to/dataset/ground_truth/mask_filename.png
+        path/to/dataset/ground_truth/category/mask_filename.png
 
     This function creates a dataframe to store the parsed information based on the following format:
     |---|---------------|-------|---------|---------------|---------------------------------------|-------------|
@@ -142,7 +143,7 @@ def make_mvtec_dataset(path: Path, split: str = "train", split_ratio: float = 0.
     return samples
 
 
-def get_image_transforms(image_size: tuple, crop_size: int) -> T.Compose:
+def get_image_transforms(image_size: Union[Sequence, int], crop_size: Union[Sequence, int]) -> T.Compose:
     """
     Get default ImageNet image transformations.
 
@@ -161,7 +162,7 @@ def get_image_transforms(image_size: tuple, crop_size: int) -> T.Compose:
     return transform
 
 
-def get_mask_transforms(image_size: tuple, crop_size: int) -> T.Compose:
+def get_mask_transforms(image_size: Union[Sequence, int], crop_size: Union[Sequence, int]) -> T.Compose:
     """
     Get default ImageNet transformations for the ground-truth image masks.
 
@@ -188,25 +189,17 @@ class MVTec(VisionDataset):
         self,
         root: Union[Path, str],
         category: str,
+        image_transforms: Callable,
+        mask_transforms: Callable,
         train: bool = True,
-        image_size: tuple = (256, 256),
-        crop_size: int = 224,
-        image_transforms: Optional[Callable] = None,
-        mask_transforms: Optional[Callable] = None,
         download: bool = False,
     ) -> None:
         super().__init__(root, transform=image_transforms, target_transform=mask_transforms)
         self.root = Path(root) if isinstance(root, str) else root
         self.category: str = category
         self.split = "train" if train else "test"
-        self.image_size = image_size
-        self.crop_size = crop_size
-        self.image_transforms = (
-            image_transforms if image_transforms is not None else get_image_transforms(image_size, crop_size)
-        )
-        self.mask_transforms = (
-            mask_transforms if mask_transforms is not None else get_mask_transforms(image_size, crop_size)
-        )
+        self.image_transforms = image_transforms
+        self.mask_transforms = mask_transforms
         self.download = download
 
         if self.download:
@@ -289,8 +282,8 @@ class MVTecDataModule(LightningDataModule):
         self,
         root: str,
         category: str,
-        image_size: tuple,
-        crop_size: int,
+        image_size: Union[Sequence, int],
+        crop_size: Union[Sequence, int],
         batch_size: int,
         num_workers: int,
         image_transforms: Optional[Callable] = None,
@@ -304,8 +297,13 @@ class MVTecDataModule(LightningDataModule):
         self.crop_size = crop_size
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.image_transforms = image_transforms
-        self.mask_transforms = mask_transforms
+
+        self.image_transforms = (
+            image_transforms if image_transforms is not None else get_image_transforms(image_size, crop_size)
+        )
+        self.mask_transforms = (
+            mask_transforms if mask_transforms is not None else get_mask_transforms(image_size, crop_size)
+        )
 
         self.train_data: Dataset
         self.val_data: Dataset
