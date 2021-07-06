@@ -148,7 +148,7 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
     def __init__(self, batch_size: int = 1, image_size: int = 256, alpha: float = 0.4, gamma: int = 0, sigma: int = 4):
         super().__init__(alpha=alpha, gamma=gamma, sigma=sigma)
         self.distance = torch.nn.PairwiseDistance(p=2, keepdim=True)
-        self.image_size = image_size
+        self.image_size = image_size if isinstance(image_size, int) else tuple(image_size)
         self.batch_size = batch_size
 
     def compute_layer_map(self, teacher_features: Tensor, student_features: Tensor) -> Tensor:
