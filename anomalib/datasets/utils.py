@@ -15,11 +15,11 @@ class Tiler:
     Tile Image.
     """
 
-    def __init__(self, tile_size: int, stride: int, padding: int = 0, dilation: int = 1):
+    def __init__(self, tile_size: int, padding: int = 0, dilation: int = 1):
         self.tile_size = tile_size
         self.dilation = dilation
         self.padding = padding
-        self.stride = stride
+        self.stride = tile_size
 
         self.batch_size: int
         self.image_size: Size
