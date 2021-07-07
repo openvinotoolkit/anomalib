@@ -1,29 +1,30 @@
-from argparse import ArgumentParser
+"""Loop for running the hpo sweep"""
+
 from typing import Union
-from pytorch_lightning import Trainer, seed_everything
-from sigopt import Connection
-from sigopt.resource import ApiResource
+
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
+from pytorch_lightning import Trainer
+from sigopt import Connection
 
-from anomalib.config.config import get_configurable_parameters
-from anomalib.config.sweep_config import get_experiment
 from anomalib.datasets import get_datamodule
+from anomalib.hpo.sweep.config import get_experiment
 from anomalib.models import get_model
 
 
-
-def sweep(connection: Connection, experiment: ApiResource , config: Union[DictConfig, ListConfig]) -> None:
+def run_sweep(config: Union[DictConfig, ListConfig]) -> None:
     """
     Encapsulates the hpo sweep loop
     Args:
-        connection: sigopt connection object
-        experiment: sigopt experiment object
         config: configs loaded with omegaconf
 
     Returns: None
 
     """
+
+    connection = Connection()
+    experiment = get_experiment(connection=connection, config=config)
+    print("Created: https://app.sigopt.com/experiment/" + experiment.id)
 
     while experiment.progress.observation_count < experiment.observation_budget:
 
@@ -53,9 +54,11 @@ def sweep(connection: Connection, experiment: ApiResource , config: Union[DictCo
                 value = metrics[experiment.metric.name]
 
         # is not assigned anything. Raises key error as key is not in dict.
-        if 'value' not in locals():
-            raise KeyError(f"Model does not return {experiment.metric.name} from test step. It is also possible that"
-                             f"you might have `prog_bar=True` in self.log()")
+        if "value" not in locals():
+            raise KeyError(
+                f"Model does not return {experiment.metric.name} from test step. It is also possible that"
+                f"you might have `prog_bar=True` in self.log()"
+            )
 
         connection.experiments(experiment.id).observations().create(
             suggestion=suggestion.id,
@@ -65,25 +68,3 @@ def sweep(connection: Connection, experiment: ApiResource , config: Union[DictCo
         # upload experiment result
         connection.experiments(experiment.id).observations().create(suggestion=suggestion.id, value=value)
         experiment = connection.experiments(experiment.id).fetch()
-
-
-def get_args():
-    parser = ArgumentParser()
-    parser.add_argument("--model", type=str, default="stfpm", help="Name of the algorithm to train/test")
-    parser.add_argument("--model_config_path", type=str, required=False, help="Path to a model config file")
-
-    return parser.parse_args()
-
-
-if __name__ == "__main__":
-    args = get_args()
-    config = get_configurable_parameters(model_name=args.model, model_config_path=args.model_config_path)
-
-    if config.project.seed != 0:
-        seed_everything(config.project.seed)
-
-    connection = Connection()
-    experiment = get_experiment(connection=connection, config=config)
-    print("Created: https://app.sigopt.com/experiment/" + experiment.id)
-
-    sweep(connection=connection, experiment=experiment, config=config)

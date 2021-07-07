@@ -343,7 +343,7 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         self.stats: List[Tensor, Tensor] = []
         self.automatic_optimization = False
 
-        self.automatic_optimization = False # required from lightning 1.3.x
+        self.automatic_optimization = False  # required from lightning 1.3.x
 
     @staticmethod
     def configure_optimizers():

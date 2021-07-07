@@ -1,19 +1,20 @@
 from unittest import mock
 
-import pytest
-from anomalib.config.sweep_config import MissingHPOConfiguration, get_experiment, IncorrectHPOConfiguration, \
-    validate_config, validate_dtypes
-from omegaconf import OmegaConf
-from tests.config.sweep_tests.dummy_lightning_model import DummyModel, XORDataModule
-from hpo_sweep import sweep
 import numpy as np
+import pytest
+from omegaconf import OmegaConf
+
+from anomalib.hpo.sweep import run_sweep
+from anomalib.hpo.sweep.config import MissingHPOConfiguration, get_experiment, IncorrectHPOConfiguration, \
+    validate_config, validate_dtypes
+from tests.hpo.sweep.dummy_lightning_model import DummyModel, XORDataModule
 
 
 @mock.patch("anomalib.loggers.sigopt.sigopt")
 def test_validate_params(sigopt):
     """This tests whether validation of hpo params works"""
     connection = sigopt.Connection()
-    config = OmegaConf.load("tests/config/sweep_tests/test_config.yaml")
+    config = OmegaConf.load("tests/hpo/sweep/test_config.yaml")
 
     # check when correct config is passed
     get_experiment(connection=connection, config=config)
@@ -36,7 +37,7 @@ def test_validate_params(sigopt):
     with pytest.raises(KeyError) as info:
         validate_config(config)
     assert "Missing key objective" in str(info.value)
-    config.hyperparameter_search.metric = {"val":"test_metric", 'objective': 'minimize'}
+    config.hyperparameter_search.metric = {"val": "test_metric", 'objective': 'minimize'}
     with pytest.raises(KeyError) as info:
         validate_config(config)
     assert "Missing key name" in str(info.value)
@@ -48,13 +49,15 @@ def test_validate_params(sigopt):
     assert "Objective should be one of [maximize, minimize]" in str(info.value)
 
     # multiple keys
-    config.hyperparameter_search.metric = {'name': 'test_metric1', 'objective': 'minimize', "name2": 'test_metric2', 'objective2': 'minimize'}
+    config.hyperparameter_search.metric = {'name': 'test_metric1', 'objective': 'minimize', "name2": 'test_metric2',
+                                           'objective2': 'minimize'}
     with pytest.raises(IncorrectHPOConfiguration) as info:
         validate_config(config)
     assert "Optimization metric should use one metric." in str(info.value)
 
+
 def test_validate_dtypes():
-    config = OmegaConf.create({"lr":{"type":"double", "min":0, "max":1}})
+    config = OmegaConf.create({"lr": {"type": "double", "min": 0, "max": 1}})
     with pytest.raises(IncorrectHPOConfiguration) as info:
         for param in config.values():
             validate_dtypes(dtype=param.type, min_val=param.min, max_val=param.max)
@@ -119,24 +122,21 @@ def mock_test_return_incorrect(*args, **kwargs):
     return [{"accuracy": 0.0}]
 
 
-@mock.patch("hpo_sweep.get_datamodule", mock_get_datamodule)
-@mock.patch("hpo_sweep.get_model", mock_get_model)
+@mock.patch("anomalib.hpo.sweep.sweep.get_datamodule", mock_get_datamodule)
+@mock.patch("anomalib.hpo.sweep.sweep.get_model", mock_get_model)
 def test_hpo():
     """This tests the sweep function"""
 
-    config = OmegaConf.load("tests/config/sweep_tests/test_config.yaml")
+    config = OmegaConf.load("tests/hpo/sweep/test_config.yaml")
 
-    connection = mock_connection()
-    experiment = connection.experiments().fetch()
-
-    sweep(connection=connection, experiment=experiment, config=config)
+    run_sweep(config=config)
 
     # test that value error is thrown
     with pytest.raises(ValueError):
-        with mock.patch("hpo_sweep.Trainer.test", mock_test_return_empty):
-            sweep(connection=connection, experiment=experiment, config=config)
+        with mock.patch("anomalib.hpo.sweep.sweep.Trainer.test", mock_test_return_empty):
+            run_sweep(config=config)
 
     # If wrong key is returned
     with pytest.raises(KeyError):
-        with mock.patch("hpo_sweep.Trainer.test", mock_test_return_incorrect):
-            sweep(connection=connection, experiment=experiment, config=config)
+        with mock.patch("anomalib.hpo.sweep.sweep.Trainer.test", mock_test_return_incorrect):
+            run_sweep(config=config)

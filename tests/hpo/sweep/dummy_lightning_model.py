@@ -1,13 +1,13 @@
+from typing import Union
+
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch import optim
-from torch.utils.data import Dataset, DataLoader
-import numpy as np
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
-from typing import Union
+from torch import optim
+from torch.utils.data import DataLoader, Dataset
 
 
 class XORDataset(Dataset):

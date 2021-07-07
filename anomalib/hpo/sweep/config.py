@@ -41,9 +41,9 @@ def get_parameters(configs: Dict) -> List:
 
 def validate_dtypes(dtype: str, min_val: Union[float, int], max_val: Union[float, int]):
     """Validates the dtypes in the parameters section of hpo"""
-    if dtype == 'double' and (not isinstance(min_val, float) or not isinstance(max_val, float)):
+    if dtype == "double" and (not isinstance(min_val, float) or not isinstance(max_val, float)):
         raise IncorrectHPOConfiguration("Type mismatch in parameter configuration. Expected float")
-    if dtype == 'int' and (not isinstance(min_val, int) or not isinstance(max_val, int)):
+    if dtype == "int" and (not isinstance(min_val, int) or not isinstance(max_val, int)):
         raise IncorrectHPOConfiguration("Type mismatch in parameter configuration. Expected integer")
 
 
@@ -58,12 +58,15 @@ def validate_config(config: Union[DictConfig, ListConfig]):
     if len(config.hyperparameter_search.metric) != 2:
         raise IncorrectHPOConfiguration("Optimization metric should use one metric. Please provide name and objective")
 
-    for key in ['name', 'objective']:
+    for key in ["name", "objective"]:
         if key not in config.hyperparameter_search.metric.keys():
             raise KeyError(f"Missing key {key} in hpo metrics")
 
-    if 'maximize' not in config.hyperparameter_search.metric.objective and 'minimize' not in config.hyperparameter_search.metric.objective:
-        raise IncorrectHPOConfiguration(f"Objective should be one of [maximize, minimize]")
+    if (
+        "maximize" not in config.hyperparameter_search.metric.objective
+        and "minimize" not in config.hyperparameter_search.metric.objective
+    ):
+        raise IncorrectHPOConfiguration("Objective should be one of [maximize, minimize]")
 
     # test if the ranges are valid (datatype corresponds to range values)
     for param in config.hyperparameter_search.parameters.values():
@@ -71,7 +74,7 @@ def validate_config(config: Union[DictConfig, ListConfig]):
 
 
 def get_experiment(connection: Connection, config: Union[DictConfig, ListConfig]) -> Experiment:
-    """
+    """Returns the sigopt experiment object
 
     Args:
       connection: Connection:Connection Object
