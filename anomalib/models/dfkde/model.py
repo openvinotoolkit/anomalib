@@ -69,6 +69,8 @@ class DFKDELightning(pl.LightningModule):
         self.image_roc_auc: Optional[float] = None
         self.automatic_optimization = False
 
+        self.automatic_optimization = False  # required from lightning 1.3.x
+
     @staticmethod
     def configure_optimizers():
         """

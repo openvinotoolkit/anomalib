@@ -1,56 +1,25 @@
 dataset:
-  name: mvtec
-  format: mvtec
-  path: ./datasets/MVTec
-  category: leather
-  image_size: 256
-  crop_size: 224
-  batch_size: 32
-  num_workers: 36
+  name: test_dataset
 
 model:
-  name: stfpm
-  backbone: resnet18
-  layers:
-    - layer1
-    - layer2
-    - layer3
-  lr: 0.4
-  momentum: 0.9
-  patience: 5
-  weight_decay: 0.0001
-  metric: Pixel-Level AUC
+  name: test_model
+  backbone: XOR
+  metric: loss
+  lr: 0
+  momentum: 0
+  patience: 0
+  weight_decay: 0
+  dropout: 0
 
-project:
-  seed: 0
-  path: ./results
-  logger: sigopt
-  mo_path: /opt/intel/openvino_2021/deployment_tools/model_optimizer/mo.py
-
-optimization:
-  compression:
-    apply: false
-  nncf:
-    apply: false
-    input_info:
-      sample_size: null
-    compression:
-      algorithm: quantization
-      initializer:
-        range:
-          num_init_samples: 256
-        precision:
-          bits: [8]
-      ignored_scopes: ["{re}.*teacher*"]
 
 hyperparameter_search:
   observation_budget: 10
-  project: anomaly
-  parallel_workers: 1
+  project: unit_test
+  parallel_workers: 2
 
   metric:
-    name: Pixel-Level AUC
-    objective: maximize
+    name: loss
+    objective: minimize
 
   parameters:
     lr:
@@ -59,16 +28,16 @@ hyperparameter_search:
       max: 1.0
     momentum:
       type: double
-      min: 0
-      max: 1
-    patience:
-      type: int
-      min: 1
-      max: 10
+      min: 0.0
+      max: 1.0
     weight_decay:
       type: double
       min: 1e-5
       max: 1e-3
+    dropout:
+      type: double
+      min: 0.0
+      max: 1.0
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
@@ -83,7 +52,7 @@ trainer:
   check_val_every_n_epoch: 2
   checkpoint_callback: true
   default_root_dir: null
-  deterministic: true
+  deterministic: false
   distributed_backend: null
   fast_dev_run: false
   flush_logs_every_n_steps: 100
