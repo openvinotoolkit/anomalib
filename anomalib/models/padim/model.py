@@ -6,15 +6,17 @@ import os
 import os.path
 from pathlib import Path
 from random import sample
-from typing import Any, Dict, List, Sequence
+from typing import Any, Dict, List, Sequence, Tuple, Union
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 import torchvision
+from omegaconf import ListConfig
 from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.callbacks import ModelCheckpoint
 from scipy.ndimage import gaussian_filter
+from skimage.segmentation import mark_boundaries
 from sklearn.metrics import roc_auc_score
 from torch import Tensor
 
@@ -22,7 +24,9 @@ from anomalib.core.callbacks.model_loader import LoadModelCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
 from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
+from anomalib.datasets.utils import Denormalize
 from anomalib.models.base.model import BaseAnomalySegmentationLightning
+from anomalib.utils.visualizer import Visualizer
 
 __all__ = ["PADIMLightning"]
 
@@ -203,9 +207,9 @@ class Callbacks:
 class AnomalyMapGenerator(BaseAnomalyMapGenerator):
     """Generate Anomaly Heatmap"""
 
-    def __init__(self, image_size: int = 224, alpha: float = 0.4, gamma: int = 0, sigma: int = 4):
+    def __init__(self, image_size: Union[ListConfig, Tuple], alpha: float = 0.4, gamma: int = 0, sigma: int = 4):
         super().__init__(alpha=alpha, gamma=gamma, sigma=sigma)
-        self.image_size = image_size
+        self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
 
     @staticmethod
     def compute_distance(embedding: Tensor, stats: List[Tensor]) -> Tensor:
@@ -334,7 +338,7 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         self.layers = hparams.model.layers
         self._model = PadimModel(hparams.model.backbone, hparams.model.layers).eval()
 
-        self.anomaly_map_generator = AnomalyMapGenerator()
+        self.anomaly_map_generator = AnomalyMapGenerator(image_size=hparams.dataset.image_size)
         self.callbacks = Callbacks(hparams)()
         self.stats: List[Tensor, Tensor] = []
         self.automatic_optimization = False
@@ -449,3 +453,33 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
 
         self.log(name="Image-Level AUC", value=self.image_roc_auc, on_epoch=True, prog_bar=True)
         self.log(name="Pixel-Level AUC", value=self.pixel_roc_auc, on_epoch=True, prog_bar=True)
+
+    def test_epoch_end(self, outputs):
+        """
+        Compute and save anomaly scores of the test set, based on the embedding
+            extracted from deep hierarchical CNN features.
+
+        Args:
+            outputs: Batch of outputs from the validation step
+
+        """
+        self.validation_epoch_end(outputs)
+        threshold = self.anomaly_map_generator.compute_adaptive_threshold(self.true_masks, self.anomaly_maps)
+
+        for (filename, image, true_mask, anomaly_map) in zip(
+            self.filenames, self.images, self.true_masks, self.anomaly_maps
+        ):
+            image = Denormalize()(image.squeeze())
+
+            heat_map = self.anomaly_map_generator.apply_heatmap_on_image(anomaly_map, image)
+            pred_mask = self.anomaly_map_generator.compute_mask(anomaly_map=anomaly_map, threshold=threshold)
+            vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
+
+            visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
+            visualizer.add_image(image=image, title="Image")
+            visualizer.add_image(image=true_mask, color_map="gray", title="Ground Truth")
+            visualizer.add_image(image=heat_map, title="Predicted Heat Map")
+            visualizer.add_image(image=pred_mask, color_map="gray", title="Predicted Mask")
+            visualizer.add_image(image=vis_img, title="Segmentation Result")
+            visualizer.save(Path(self.hparams.project.path) / "images" / filename.parent.name / filename.name)
+            visualizer.close()

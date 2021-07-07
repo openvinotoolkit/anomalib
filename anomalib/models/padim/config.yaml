@@ -1,10 +1,11 @@
 dataset:
   name: mvtec
+  format: mvtec
   path: ./datasets/MVTec
   category: leather
+  image_size: 256
   batch_size: 32
-  num_workers: 0
-  exclude_normal_images_in_validation: false
+  num_workers: 36
 
 model:
   name: padim
@@ -18,6 +19,7 @@ model:
 project:
   seed: 0
   path: ./results
+  logger: sigopt
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:

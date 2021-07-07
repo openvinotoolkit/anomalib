@@ -23,13 +23,15 @@ def get_datamodule(config: Union[DictConfig, ListConfig]):
 
     """
     datamodule: LightningDataModule
-    if config.dataset.name.lower() == "mvtec":
+
+    if config.dataset.format.lower() == "mvtec":
         datamodule = MVTecDataModule(
             root=config.dataset.path,
             category=config.dataset.category,
+            image_size=config.dataset.image_size,
+            crop_size=config.dataset.crop_size,
             batch_size=config.dataset.batch_size,
             num_workers=config.dataset.num_workers,
-            exclude_normal_images_in_validation=config.dataset.exclude_normal_images_in_validation,
         )
     else:
         raise ValueError("Unknown dataset!")
