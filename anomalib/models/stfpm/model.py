@@ -200,7 +200,9 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         Returns:
           Final anomaly map
         """
-        anomaly_map = torch.ones((next(iter(teacher_features.values())).shape[0], self.image_size[0], self.image_size[1]))
+        anomaly_map = torch.ones(
+            (next(iter(teacher_features.values())).shape[0], self.image_size[0], self.image_size[1])
+        )
         for layer in teacher_features.keys():
             layer_map = self.compute_layer_map(teacher_features[layer], student_features[layer])
             layer_map = layer_map[:, 0, :, :]

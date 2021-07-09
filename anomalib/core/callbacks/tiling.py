@@ -13,13 +13,14 @@ class TilingCallback(Callback):
 
     Subclass this class and override any of the relevant hooks
     """
+
     def __init__(self, hparams):
         self.tiler = Tiler(hparams.dataset.tile_size)
 
     def on_train_batch_start(
         self,
-        trainer: 'pl.Trainer',
-        pl_module: 'pl.LightningModule',
+        trainer: "pl.Trainer",
+        pl_module: "pl.LightningModule",
         batch: Any,
         batch_idx: int,
         dataloader_idx: int,
@@ -29,8 +30,8 @@ class TilingCallback(Callback):
 
     def on_validation_batch_start(
         self,
-        trainer: 'pl.Trainer',
-        pl_module: 'pl.LightningModule',
+        trainer: "pl.Trainer",
+        pl_module: "pl.LightningModule",
         batch: Any,
         batch_idx: int,
         dataloader_idx: int,
@@ -40,21 +41,21 @@ class TilingCallback(Callback):
 
     def on_validation_batch_end(
         self,
-        trainer: 'pl.Trainer',
-        pl_module: 'pl.LightningModule',
+        trainer: "pl.Trainer",
+        pl_module: "pl.LightningModule",
         outputs: Optional[STEP_OUTPUT],
         batch: Any,
         batch_idx: int,
         dataloader_idx: int,
     ) -> None:
         """Called when the validation batch ends."""
-        outputs["anomaly_maps"] = self.tiler.untile_batch(outputs["anomaly_maps"].unsqueeze(1))[:,0,:,:]
+        outputs["anomaly_maps"] = self.tiler.untile_batch(outputs["anomaly_maps"].unsqueeze(1))[:, 0, :, :]
         outputs["images"] = self.tiler.untile_image(outputs["images"])
 
     def on_test_batch_start(
         self,
-        trainer: 'pl.Trainer',
-        pl_module: 'pl.LightningModule',
+        trainer: "pl.Trainer",
+        pl_module: "pl.LightningModule",
         batch: Any,
         batch_idx: int,
         dataloader_idx: int,
@@ -64,13 +65,13 @@ class TilingCallback(Callback):
 
     def on_test_batch_end(
         self,
-        trainer: 'pl.Trainer',
-        pl_module: 'pl.LightningModule',
+        trainer: "pl.Trainer",
+        pl_module: "pl.LightningModule",
         outputs: Optional[STEP_OUTPUT],
         batch: Any,
         batch_idx: int,
         dataloader_idx: int,
     ) -> None:
         """Called when the test batch ends."""
-        outputs["anomaly_maps"] = self.tiler.untile_batch(outputs["anomaly_maps"].unsqueeze(1))[:,0,:,:]
+        outputs["anomaly_maps"] = self.tiler.untile_batch(outputs["anomaly_maps"].unsqueeze(1))[:, 0, :, :]
         outputs["images"] = self.tiler.untile_image(outputs["images"])
