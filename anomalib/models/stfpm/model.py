@@ -21,6 +21,7 @@ from torch import Tensor, nn, optim
 from anomalib.core.callbacks.compress import CompressModelCallback
 from anomalib.core.callbacks.model_loader import LoadModelCallback
 from anomalib.core.callbacks.nncf_callback import NNCFCallback
+from anomalib.core.callbacks.tiling import TilingCallback
 from anomalib.core.callbacks.timer import TimerCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
@@ -140,6 +141,9 @@ class Callbacks:
         if "weight_file" in self.config.keys():
             model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.weight_file))
             callbacks.append(model_loader)
+        if "tile_size" in self.config.dataset.keys() and self.config.dataset.tile_size is not None:
+            tiler = TilingCallback(self.config)
+            callbacks.append(tiler)
 
         return callbacks
 
@@ -152,7 +156,6 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
 
     def __init__(
         self,
-        batch_size: int = 1,
         image_size: Union[ListConfig, Tuple] = (256, 256),
         alpha: float = 0.4,
         gamma: int = 0,
@@ -161,7 +164,6 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         super().__init__(alpha=alpha, gamma=gamma, sigma=sigma)
         self.distance = torch.nn.PairwiseDistance(p=2, keepdim=True)
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
-        self.batch_size = batch_size
 
     def compute_layer_map(self, teacher_features: Tensor, student_features: Tensor) -> Tensor:
         """Compute the layer map based on cosine similarity.
@@ -198,10 +200,10 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         Returns:
           Final anomaly map
         """
-        anomaly_map = torch.ones(self.image_size)
+        anomaly_map = torch.ones((next(iter(teacher_features.values())).shape[0], self.image_size[0], self.image_size[1]))
         for layer in teacher_features.keys():
             layer_map = self.compute_layer_map(teacher_features[layer], student_features[layer])
-            layer_map = layer_map[0, 0, :, :]
+            layer_map = layer_map[:, 0, :, :]
             anomaly_map = anomaly_map.to(layer_map.device)
             anomaly_map *= layer_map
 
@@ -229,7 +231,7 @@ class STFPMModel(nn.Module):
             parameters.requires_grad = False
 
         self.loss = Loss()
-        self.anomaly_map_generator = AnomalyMapGenerator(batch_size=1, image_size=hparams.dataset.crop_size)
+        self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(hparams.model.input_size))
 
     def forward(self, images):
         """Forward-pass images into the network to extract teacher and student network.
@@ -315,14 +317,14 @@ class STFPMLightning(BaseAnomalySegmentationLightning):
 
         """
         filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
-        anomaly_maps = self.model(images)
+        anomaly_maps = self.model(batch["image"])
 
         return {
             "filenames": filenames,
             "images": images,
-            "true_labels": labels.cpu().numpy(),
-            "true_masks": masks.squeeze().cpu().numpy(),
-            "anomaly_maps": anomaly_maps.cpu().numpy(),
+            "true_labels": labels.cpu(),
+            "true_masks": masks.squeeze().cpu(),
+            "anomaly_maps": anomaly_maps.cpu(),
         }
 
     def test_step(self, batch, _):
@@ -355,8 +357,8 @@ class STFPMLightning(BaseAnomalySegmentationLightning):
         self.filenames = [Path(f) for x in outputs for f in x["filenames"]]
         self.images = [x["images"] for x in outputs]
 
-        self.true_masks = np.stack([output["true_masks"] for output in outputs])
-        self.anomaly_maps = np.stack([output["anomaly_maps"] for output in outputs])
+        self.true_masks = np.stack([output["true_masks"].numpy() for output in outputs])
+        self.anomaly_maps = np.vstack([output["anomaly_maps"].numpy() for output in outputs])
 
         self.true_labels = np.stack([output["true_labels"] for output in outputs])
         self.pred_labels = self.anomaly_maps.reshape(self.anomaly_maps.shape[0], -1).max(axis=1)
