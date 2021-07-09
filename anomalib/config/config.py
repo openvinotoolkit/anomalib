@@ -46,15 +46,22 @@ def get_configurable_parameters(
     if "format" not in config.dataset.keys():
         config.dataset.format = "mvtec"
 
-    image_size = config.dataset.image_size
-    if isinstance(image_size, int):
-        config.dataset.image_size = (image_size, image_size)
+    # handle image size
+    if isinstance(config.dataset.image_size, int):
+        config.dataset.image_size = (config.dataset.image_size,) * 2
 
     if "crop_size" in config.dataset.keys():
         if isinstance(config.dataset.crop_size, int):
             config.dataset.crop_size = (config.dataset.crop_size,) * 2
     else:
         config.dataset.crop_size = config.dataset.image_size
+
+    if "tile_size" in config.dataset.keys():
+        config.model.input_size = (config.dataset.tile_size, ) * 2
+    elif "crop_size" in config.dataset.keys():
+        config.model.input_size = config.dataset.crop_size
+    else:
+        config.model.input_size = config.dataset.image_size
 
     # Project Configs
     project_path = Path(config.project.path) / config.model.name / config.dataset.name / config.dataset.category
