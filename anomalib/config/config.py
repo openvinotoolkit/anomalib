@@ -50,15 +50,15 @@ def get_configurable_parameters(
     if isinstance(config.dataset.image_size, int):
         config.dataset.image_size = (config.dataset.image_size,) * 2
 
-    if "crop_size" in config.dataset.keys():
+    if "crop_size" in config.dataset.keys() and config.dataset.crop_size is not None:
         if isinstance(config.dataset.crop_size, int):
             config.dataset.crop_size = (config.dataset.crop_size,) * 2
     else:
         config.dataset.crop_size = config.dataset.image_size
 
-    if "tile_size" in config.dataset.keys():
+    if "tile_size" in config.dataset.keys() and config.dataset.tile_size is not None:
         config.model.input_size = (config.dataset.tile_size, ) * 2
-    elif "crop_size" in config.dataset.keys():
+    elif "crop_size" in config.dataset.keys() and config.dataset.crop_size is not None:
         config.model.input_size = config.dataset.crop_size
     else:
         config.model.input_size = config.dataset.image_size
