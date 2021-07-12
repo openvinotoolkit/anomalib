@@ -9,7 +9,7 @@ The repo is thoroughly tested based on the following configuration.
 *  Ubuntu 20.04
 *  NVIDIA GeForce RTX 3090
 
-You will need [Anaconda] (https://www.anaconda.com/products/individual) installed on your system before proceeding with the Anomaly Library install.
+You will need [Anaconda](https://www.anaconda.com/products/individual) installed on your system before proceeding with the Anomaly Library install.
 
 After downloading the Anomaly Library, extract the files and navigate to the extracted location.
 
@@ -21,7 +21,7 @@ pip install -r requirements.txt
 ```
 
 ## Training
-If you plan on using [SigOpt] (https://app.sigopt.com/docs/runs/get-started) as your logger, you will need to have that configured prior to running train.py.
+If you plan on using [SigOpt](https://app.sigopt.com/docs/runs/get-started) as your logger, you will need to have that configured prior to running train.py.
 
 By default [`python train.py`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/blob/samet/stfpm/train.py)
 runs [STFPM](https://arxiv.org/pdf/2103.04257.pdf) model [MVTec](https://www.mvtec.com/company/research/datasets/mvtec-ad) `leather` dataset.
