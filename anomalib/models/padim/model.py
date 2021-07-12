@@ -21,6 +21,7 @@ from sklearn.metrics import roc_auc_score
 from torch import Tensor
 
 from anomalib.core.callbacks.model_loader import LoadModelCallback
+from anomalib.core.callbacks.tiling import TilingCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
 from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
@@ -197,6 +198,9 @@ class Callbacks:
         if "weight_file" in self.config.keys():
             model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.weight_file))
             callbacks.append(model_loader)
+        if "tile_size" in self.config.dataset.keys() and self.config.dataset.tile_size is not None:
+            tiler = TilingCallback(self.config)
+            callbacks.append(tiler)
 
         return callbacks
 
