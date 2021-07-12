@@ -2,6 +2,7 @@
 STFPM: Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection
 https://arxiv.org/abs/2103.04257
 """
+import math
 import os
 import os.path
 from pathlib import Path
@@ -411,13 +412,38 @@ class STFPMOpenVino(BaseAnomalySegmentationLightning):
         bin_path = os.path.join(hparams.project.path, hparams.weight_file)
         xml_path = os.path.splitext(bin_path)[0] + ".xml"
         net = ie_core.read_network(xml_path, bin_path)
-        net.batch_size = 1
+
+        self.callbacks = [TimerCallback()]
+        if "tile_size" in hparams.dataset.keys() and hparams.dataset.tile_size is not None:
+            tiler = TilingCallback(hparams)
+            self.callbacks.append(tiler)
+            net.batch_size = self.compute_batch_size()
+        else:
+            net.batch_size = 1
+
         self.input_blob = next(iter(net.input_info))
         self.out_blob = next(iter(net.outputs))
 
         self.exec_net = ie_core.load_network(network=net, device_name="CPU")
 
-        self.callbacks = [TimerCallback()]
+    def compute_batch_size(self) -> int:
+        """
+        Compute the effective batch size when tiling is used. The batch size is computed based on the image size or crop
+         size and the tiling parameters, and is equal to the number of tiles in the image.
+
+        Returns:
+            [int]: batch size (equal to number of tiles).
+        """
+        if self.hparams.dataset.crop_size is not None:
+            image_size = self.hparams.dataset.crop_size
+        else:
+            image_size = self.hparams.dataset.image_size
+        tile_size = self.hparams.dataset.tile_size
+        stride = tile_size
+        height, width = image_size[0], image_size[1]
+        n_rows = math.ceil((height - tile_size) / stride) + 1
+        n_cols = math.ceil((width - tile_size) / stride) + 1
+        return n_rows * n_cols
 
     @staticmethod
     def configure_optimizers():
@@ -449,10 +475,10 @@ class STFPMOpenVino(BaseAnomalySegmentationLightning):
 
         return {
             "filenames": filenames,
-            "images": images,
-            "true_labels": labels.cpu().numpy(),
-            "true_masks": masks.squeeze().cpu().numpy(),
-            "anomaly_maps": anomaly_maps,
+            "images": torch.Tensor(images),
+            "true_labels": labels.cpu(),
+            "true_masks": masks.squeeze(),
+            "anomaly_maps": torch.Tensor(anomaly_maps[0]),
         }
 
     def test_epoch_end(self, outputs):
@@ -465,10 +491,10 @@ class STFPMOpenVino(BaseAnomalySegmentationLightning):
         self.filenames = [Path(f) for x in outputs for f in x["filenames"]]
         self.images = [x["images"] for x in outputs]
 
-        self.true_masks = np.stack([output["true_masks"] for output in outputs])
-        self.anomaly_maps = np.stack([output["anomaly_maps"] for output in outputs])
+        self.true_masks = np.stack([output["true_masks"].numpy() for output in outputs])
+        self.anomaly_maps = np.stack([output["anomaly_maps"].numpy() for output in outputs])
 
-        self.true_labels = np.stack([output["true_labels"] for output in outputs])
+        self.true_labels = np.stack([output["true_labels"].numpy() for output in outputs])
         self.pred_labels = self.anomaly_maps.reshape(self.anomaly_maps.shape[0], -1).max(axis=1)
 
         self.image_roc_auc = roc_auc_score(self.true_labels, self.pred_labels)
