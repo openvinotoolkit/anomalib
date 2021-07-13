@@ -2,148 +2,217 @@
 Dataset Utils
 """
 
-from typing import List, Optional, Tuple
+import warnings
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import torch
-import torchvision
-from torch import Size, Tensor, nn
+from omegaconf import ListConfig
+from torch import Tensor
+from torch.nn import functional as F
+
+
+def resize_edge(image_size: int, kernel_size: int, stride: int) -> int:
+    # return round(image_size / kernel_size) * kernel_size
+    # return (ceil((image_size - kernel_size) / stride) + 1) * kernel_size
+    return image_size // stride * stride + kernel_size
 
 
 class Tiler:
     """
-    Tile Image.
+    Tile Image into (non)overlapping Patches
+
+    Examples:
+        >>> import torch
+        >>> from torchvision import transforms
+        >>> from skimage.data import camera
+        >>> tiler = Tiler(tile_size=256, stride=128)
+        >>> image = transforms.ToTensor()(camera())
+        >>> tiles = tiler.tile(image)
+        >>> image.shape, tiles.shape
+        (torch.Size([3, 512, 512]), torch.Size([9, 3, 256, 256]))
+
+        >>> # Perform your operations on the tiles.
+
+        >>> # Untile the patches to reconstruct the image
+        >>> reconstructed_image = tiler.untile(tiles)
+        >>> reconstructed_image.shape
+        torch.Size([1, 3, 512, 512])
     """
 
-    def __init__(self, tile_size: int, padding: int = 0, dilation: int = 1):
-        self.tile_size = tile_size
-        self.dilation = dilation
-        self.padding = padding
-        self.stride = tile_size
+    # def __init__(self, tile_size: int, stride: int) -> None:
+    def __init__(self, tile_size: Union[int, ListConfig, Tuple], stride: Union[int, ListConfig, Tuple]) -> None:
+
+        self.tile_size_h, self.tile_size_w = self.__validate_size_type(tile_size)
+        self.stride_h, self.stride_w = self.__validate_size_type(stride)
+        self.overlapping = False if (self.stride_h == self.tile_size_h and self.stride_w == self.tile_size_w) else True
+
+        if self.stride_h > self.tile_size_h:
+            warnings.warn(
+                message="Height of the stride is greater than height of the tile size. "
+                "This could cause unreliable tiling issues. Hence setting height of the stride to tiling."
+            )
+            self.stride_h = self.tile_size_h
+
+        if self.stride_w > self.tile_size_w:
+            warnings.warn(
+                message="Width of the stride is greater than width of the tile size. "
+                "This could cause unreliable tiling issues. Hence setting width of the stride to tiling."
+            )
+            self.stride_w = self.tile_size_w
 
         self.batch_size: int
-        self.image_size: Size
+        self.num_channels: int
 
-    def tile_image(self, image: Tensor) -> Tensor:
+        self.input_h: int
+        self.input_w: int
+
+        self.resized_h: int
+        self.resized_w: int
+
+        self.num_patches_h: int
+        self.num_patches_w: int
+
+    @staticmethod
+    def __validate_size_type(parameter) -> Tuple:
+        if isinstance(parameter, tuple):
+            output = parameter
+        else:
+            if isinstance(parameter, int):
+                output = (parameter,) * 2
+            elif isinstance(parameter, ListConfig):
+                output = tuple(parameter)
+            else:
+                raise ValueError(
+                    f"Unknown type {type(parameter)} for tile or stride size. Could be int, tuple or ListConfig"
+                )
+        return output
+
+    def __unfold(self, tensor: Tensor) -> Tensor:
         """
-        Split an image into tiles.
+        Unfolds tensor into tiles. This is the core function to perform tiling operation.
 
         Args:
-            image: Input image
+            tensor: Input tensor from which tiles are generated.
 
-        Returns:
-            Tiles from the original input image.
+        Returns: Generated tiles
 
         """
+        tiles = tensor.unfold(2, self.tile_size_h, self.stride_h).unfold(3, self.tile_size_w, self.stride_w)
 
+        self.num_patches_h, self.num_patches_w = tiles.shape[2:4]
+        # [batch, num_patch_h, num_patch_w, num_channel, tile_size, tile_size]
+        tiles = tiles.permute(0, 2, 3, 1, 4, 5)
+        # [batch * num patches, kernel size, kernel size]
+        tiles = tiles.contiguous().view(-1, self.num_channels, self.tile_size_h, self.tile_size_w)
+
+        return tiles
+
+    def __fold(self, tiles: Tensor) -> Tensor:
+        """
+        Fold the tiles back into the original tensor. This is the core method to reconstruct
+        the original image from its tiled version.
+
+        Args:
+            tiles: Tiles from the input image, generated via __unfold method.
+
+        Returns:
+            Output that is the reconstructed version of the input tensor.
+
+        """
+        tiles = tiles.contiguous().view(
+            self.batch_size,
+            self.num_patches_h,
+            self.num_patches_w,
+            self.num_channels,
+            self.tile_size_h,
+            self.tile_size_w,
+        )
+        tiles = tiles.permute(0, 3, 1, 2, 4, 5)
+        tiles = tiles.contiguous().view(self.batch_size, self.num_channels, -1, self.tile_size_h * self.tile_size_w)
+        tiles = tiles.permute(0, 1, 3, 2)
+        tiles = tiles.contiguous().view(self.batch_size, self.num_channels * self.tile_size_h * self.tile_size_w, -1)
+        image = F.fold(
+            tiles,
+            output_size=(self.input_h, self.input_w),
+            kernel_size=(self.tile_size_h, self.tile_size_w),
+            stride=(self.stride_h, self.stride_w),
+        )
+        return image
+
+    def tile(self, image: Tensor) -> Tensor:
+        """
+        Tiles an input image to either overlapping or non-overlapping patches.
+
+        Args:
+            image: Input image to tile.
+
+        Examples:
+            >>> from anomalib.datasets.utils import Tiler
+            >>> tiler = Tiler(tile_size=512, stride=256)
+            >>> image = torch.rand(size=(2, 3, 1024, 1024))
+            >>> image.shape
+            torch.Size([2, 3, 1024, 1024])
+            >>> tiles = tiler.tile(image)
+            >>> tiles.shape
+            torch.Size([18, 3, 512, 512])
+
+        Returns:
+            Tiles generated from the image.
+
+        """
         if len(image.shape) == 3:
             image = image.unsqueeze(0)
 
-        self.image_size = image.shape[2:]
-        num_channels = image.shape[1]
+        self.batch_size, self.num_channels, self.input_h, self.input_w = image.shape
 
-        # Image tiles of size NxF**2xP, where F: tile size, P: # of tiles.
-        image_tiles = nn.Unfold(self.tile_size, self.dilation, self.padding, self.stride)(image)
+        # # Resize the image if tile size is not divisable.
+        # self.resized_h = resize_edge(self.input_h, self.tile_size_h, self.stride_h)
+        # self.resized_w = resize_edge(self.input_w, self.tile_size_w, self.stride_w)
+        # image = F.interpolate(input=image, size=(self.resized_h, self.resized_w))
 
-        # Permute dims to have the following dim: NxPxF**2
-        image_tiles = image_tiles.permute(0, 2, 1)
+        image_patches = self.__unfold(image)
+        return image_patches
 
-        # converted tensor into NxPxHXW, Reshape tiles into PxCxFxF
-        image_tiles = image_tiles.reshape(image_tiles.shape[1], num_channels, self.tile_size, self.tile_size)
-
-        return image_tiles
-
-    def tile_batch(self, batch: Tensor) -> Tensor:
+    def untile(self, tiles: Tensor) -> Tensor:
         """
-        Split Image Batch into tiles
+        Untiles patches to reconstruct the original input image. If patches, are overlapping
+        patches, the function averages the overlapping pixels, and return the reconstructed
+        image.
 
         Args:
-            batch (Tensor): Batch of images with NxCxHxW dims.
+            tiles: Tiles from the input image, generated via tile()..
+
+        Examples:
+
+            >>> from anomalib.datasets.utils import Tiler
+            >>> tiler = Tiler(tile_size=512, stride=256)
+            >>> image = torch.rand(size=(2, 3, 1024, 1024))
+            >>> image.shape
+            torch.Size([2, 3, 1024, 1024])
+            >>> tiles = tiler.tile(image)
+            >>> tiles.shape
+            torch.Size([18, 3, 512, 512])
+            >>> reconstructed_image = tiler.untile(tiles)
+            >>> reconstructed_image.shape
+            torch.Size([2, 3, 1024, 1024])
+            >>> torch.equal(image, reconstructed_image)
+            True
 
         Returns:
-            Tensor: Tiles of batch of images.
-        """
-
-        self.batch_size = batch.shape[0]
-        self.image_size = batch.shape[2:]
-
-        batch_tiles_list: List[Tensor] = [self.tile_image(image) for image in batch]
-        batch_tiles: Tensor = torch.cat(batch_tiles_list, dim=0)
-
-        return batch_tiles
-
-    def untile_image(
-        self,
-        tiles: Tensor,
-        padding: int = 0,
-        normalize: bool = True,
-        pixel_range: Optional[tuple] = None,
-        scale_each: bool = False,
-        pad_value: int = 0,
-    ) -> Tensor:
-        """
-        Merge the tiles to form the original image.
-        Args:
-            tiles: Tiles to merge (stitch)
-            padding: Number of pixels to skip when stitching the tiles.
-            normalize: Normalize the output image.
-            pixel_range: Pixel range of the output image.
-            scale_each: Scale each tile before merging.
-            pad_value: Pixel value of the pads between tiles.
-
-        Returns:
-            Output image by merging (stitching) the tiles.
+            Output that is the reconstructed version of the input tensor.
 
         """
+        image = self.__fold(tiles)
 
-        _, img_width = self.image_size
-        num_rows = img_width // self.tile_size
+        mask = torch.ones(image.shape)
+        tiled_mask = self.__unfold(mask)
+        untiled_mask = self.__fold(tiled_mask)
 
-        grid = torchvision.utils.make_grid(tiles, num_rows, padding, normalize, pixel_range, scale_each, pad_value)
+        image = torch.div(image, untiled_mask)
+        # image = F.interpolate(input=image, size=(self.input_h, self.input_w))
 
-        return grid
-
-    def untile_batch(
-        self,
-        tiles: Tensor,
-        padding: int = 0,
-        normalize: bool = True,
-        pixel_range: Optional[tuple] = None,
-        scale_each: bool = False,
-        pad_value: int = 0,
-    ) -> Tensor:
-        """
-        Merge the tiles to form the original batch.
-        Args:
-            tiles: Tiles to merge (stitch)
-            padding: Number of pixels to skip when stitching the tiles.
-            normalize: Normalize the output image.
-            pixel_range: Pixel range of the output image.
-            scale_each: Scale each tile before merging.
-            pad_value: Pixel value of the pads between tiles.
-
-        Returns:
-            Output image by merging (stitching) the tiles.
-
-        """
-
-        batch_list: List[Tensor] = []
-        batch_tiles = torch.chunk(input=tiles, chunks=self.batch_size, dim=0)
-
-        for image_tiles in batch_tiles:
-            image = self.untile_image(image_tiles, padding, normalize, pixel_range, scale_each, pad_value)
-
-            if len(image.shape) == 3:
-                image = image.unsqueeze(0)
-
-            batch_list.append(image)
-
-        batch = torch.cat(batch_list, dim=0)
-
-        return batch
-
-    def __call__(self, batch: Tensor) -> Tensor:
-        return self.tile_batch(batch)
+        return image
 
 
 class Denormalize:
