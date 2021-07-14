@@ -6,7 +6,6 @@ from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
-from omegaconf import ListConfig
 from torch import Tensor
 from torch.nn import functional as F
 
@@ -70,7 +69,6 @@ def pad_image(image: Tensor, input_size: Tuple, tile_size: Tuple, stride: Tuple)
     pad_w = __pad_edge(input_size[1], tile_size[1], stride[1])
 
     image = F.pad(image, [0, pad_w, 0, pad_h])
-    # image = F.pad(image, [0, pad_h, 0, pad_w])
 
     return image
 
@@ -120,7 +118,6 @@ def interpolate_image(image: Tensor, input_size: Tuple, tile_size: Tuple, stride
 
         return resized_edge
 
-    # Resize the image if tile size is not divisable.
     resized_h = resize_edge(input_size[0], tile_size[0], stride[0])
     resized_w = resize_edge(input_size[1], tile_size[1], stride[1])
     image = F.interpolate(input=image, size=(resized_h, resized_w))
@@ -149,7 +146,6 @@ class Tiler:
         torch.Size([1, 3, 512, 512])
     """
 
-    # def __init__(self, tile_size: int, stride: int) -> None:
     def __init__(
         self,
         tile_size: Union[int, Sequence],
@@ -206,17 +202,6 @@ class Tiler:
         if len(output) != 2:
             raise ValueError(f"Length of the size type must be 2 for height and width. Got {len(output)} instead.")
 
-        # if isinstance(parameter, tuple):
-        #     output = parameter
-        # else:
-        #     if isinstance(parameter, int):
-        #         output = (parameter,) * 2
-        #     elif isinstance(parameter, ListConfig):
-        #         output = tuple(parameter)
-        #     else:
-        #         raise ValueError(
-        #             f"Unknown type {type(parameter)} for tile or stride size. Could be int, tuple or ListConfig"
-        #         )
         return output
 
     def __unfold(self, tensor: Tensor) -> Tensor:
