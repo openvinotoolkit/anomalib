@@ -89,7 +89,7 @@ class PadimModel(torch.nn.Module):
         features: Dict[str, List[Tensor]] = {layer: [] for layer in self.layers}
         for batch in outputs:
             for layer in self.layers:
-                features[layer].append(batch["features"][layer].detach().to(torch.device("cuda")))
+                features[layer].append(batch["features"][layer].detach())
 
         return features
 
@@ -416,8 +416,8 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         Returns:
 
         """
-        for output in outputs:
-            output["features"] = {key: value.to(self.device) for (key, value) in output["features"].items()}
+        # for output in outputs:
+        #     output["features"] = {key: value.to(self.device) for (key, value) in output["features"].items()}
         features = self._model.append_features(outputs)
         features = self._model.concat_features(features)
         embedding = self._model.generate_embedding(features)
@@ -433,8 +433,8 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         Returns:
 
         """
-        for output in outputs:
-            output["features"] = {key: value.to(self.device) for (key, value) in output["features"].items()}
+        # for output in outputs:
+        #     output["features"] = {key: value.to(self.device) for (key, value) in output["features"].items()}
         self.filenames = [Path(f) for x in outputs for f in x["filenames"]]
         self.images = [x["images"] for x in outputs]
 
