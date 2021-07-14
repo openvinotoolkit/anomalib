@@ -1,9 +1,8 @@
 """
 Dataset Utils
 """
-
 import warnings
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
@@ -12,10 +11,120 @@ from torch import Tensor
 from torch.nn import functional as F
 
 
-def resize_edge(image_size: int, kernel_size: int, stride: int) -> int:
-    # return round(image_size / kernel_size) * kernel_size
-    # return (ceil((image_size - kernel_size) / stride) + 1) * kernel_size
-    return image_size // stride * stride + kernel_size
+class StrideSizeError(Exception):
+    """
+    StrideSizeError to raise exception when stride
+        size is greater than the tile size.
+
+    Args:
+        Exception ([type]): [description]
+    """
+
+
+def pad_image(image: Tensor, input_size: Tuple, tile_size: Tuple, stride: Tuple) -> Tensor:
+    """
+    This function pads image when the images size is not divisible by tile size and stride.
+
+    Args:
+        image (Tensor): Input image
+        input_size (Tuple): Size of the input height and width
+        tile_size (Tuple): Tile size - height and width
+        stride (Tuple): Stride - height and width
+
+    Examples:
+
+        >>> image = torch.rand(1, 3, 512, 512)
+        >>> image = pad_image(image, input_size=(512, 512), tile_size=(256, 256), stride=(128, 128))
+        >>> image.shape
+        torch.Size([1, 3, 512, 512])
+
+        >>> image = torch.rand(1, 3, 512, 512)
+        >>> image = pad_image(image, input_size=(512, 512), tile_size=(211, 200), stride=(99, 27))
+        >>> image.shape
+        torch.Size([1, 3, 686, 706])
+
+    Returns:
+        Tensor: [description]
+    """
+
+    def __pad_edge(edge_size: int, tile_size: int, stride: int) -> int:
+        """
+        __pad_edge [summary]
+
+        Args:
+            edge_size (int): [description]
+            tile_size (int): [description]
+            stride (int): [description]
+
+        Returns:
+            int: [description]
+        """
+        if edge_size % tile_size == 0 and edge_size % stride == 0:
+            pad = 0
+        else:
+            pad = ((edge_size // stride * stride) + tile_size) - edge_size
+
+        return pad
+
+    pad_h = __pad_edge(input_size[0], tile_size[0], stride[0])
+    pad_w = __pad_edge(input_size[1], tile_size[1], stride[1])
+
+    image = F.pad(image, [0, pad_w, 0, pad_h])
+    # image = F.pad(image, [0, pad_h, 0, pad_w])
+
+    return image
+
+
+def interpolate_image(image: Tensor, input_size: Tuple, tile_size: Tuple, stride: Tuple) -> Tensor:
+    """
+    This function interpolates image when the images size is not divisible by tile size and stride.
+
+    Args:
+        image (Tensor): Input image
+        input_size (Tuple): Size of the input height and width
+        tile_size (Tuple): Tile size - height and width
+        stride (Tuple): Stride - height and width
+
+    Examples:
+        >>> image = torch.rand(1, 3, 512, 512)
+        >>> image = interpolate_image(image, input_size=(512, 512), tile_size=(256, 256), stride=(128, 128))
+        >>> image.shape
+        torch.Size([1, 3, 512, 512])
+
+        >>> image = torch.rand(1, 3, 512, 512)
+        >>> image = interpolate_image(image, input_size=(512, 512), tile_size=(211, 200), stride=(99, 27))
+        >>> image.shape
+        torch.Size([1, 3, 706, 686])
+
+    Returns:
+        Tensor: [description]
+    """
+
+    def resize_edge(edge_size: int, tile_size: int, stride: int) -> int:
+        """
+        Resizes edges using tile size and stride via interpolation.
+
+        Args:
+            edge_size (int): Edge Size (Height or Width)
+            tile_size (int): Tile Size (Height or Width)
+            stride (int): Stride Size (Height or Width)
+
+        Returns:
+            int: Resized edge size.
+        """
+
+        if edge_size % tile_size == 0 and edge_size % stride == 0:
+            resized_edge = edge_size
+        else:
+            resized_edge = edge_size // stride * stride + tile_size
+
+        return resized_edge
+
+    # Resize the image if tile size is not divisable.
+    resized_h = resize_edge(input_size[0], tile_size[0], stride[0])
+    resized_w = resize_edge(input_size[1], tile_size[1], stride[1])
+    image = F.interpolate(input=image, size=(resized_h, resized_w))
+    return image
 
 
 class Tiler:
@@ -41,31 +150,41 @@ class Tiler:
     """
 
     # def __init__(self, tile_size: int, stride: int) -> None:
-    def __init__(self, tile_size: Union[int, ListConfig, Tuple], stride: Union[int, ListConfig, Tuple]) -> None:
+    def __init__(
+        self,
+        tile_size: Union[int, Sequence],
+        stride: Union[int, Sequence],
+        mode: str = "interpolation",
+    ) -> None:
 
         self.tile_size_h, self.tile_size_w = self.__validate_size_type(tile_size)
         self.stride_h, self.stride_w = self.__validate_size_type(stride)
         self.overlapping = False if (self.stride_h == self.tile_size_h and self.stride_w == self.tile_size_w) else True
+        self.mode = mode
 
-        if self.stride_h > self.tile_size_h:
-            warnings.warn(
-                message="Height of the stride is greater than height of the tile size. "
-                "This could cause unreliable tiling issues. Hence setting height of the stride to tiling."
+        if self.stride_h > self.tile_size_h or self.stride_w > self.tile_size_w:
+            raise StrideSizeError(
+                "Larger stride size than kernel size produces unreliable tiling results. "
+                "Please ensure stride size is less than or equal than tiling size."
             )
-            self.stride_h = self.tile_size_h
 
-        if self.stride_w > self.tile_size_w:
+        if self.mode not in ["padding", "interpolation"]:
+            raise ValueError(f"Unknown tiling mode {self.mode}. Available modes are padding and interpolation")
+
+        if self.mode == "padding":
             warnings.warn(
-                message="Width of the stride is greater than width of the tile size. "
-                "This could cause unreliable tiling issues. Hence setting width of the stride to tiling."
+                "Padding is not stable in this version. "
+                "If you want more stable results for edge cases, consider using interpolation."
             )
-            self.stride_w = self.tile_size_w
 
         self.batch_size: int
         self.num_channels: int
 
         self.input_h: int
         self.input_w: int
+
+        self.pad_h: int
+        self.pad_w: int
 
         self.resized_h: int
         self.resized_w: int
@@ -75,17 +194,29 @@ class Tiler:
 
     @staticmethod
     def __validate_size_type(parameter) -> Tuple:
-        if isinstance(parameter, tuple):
-            output = parameter
+        if isinstance(parameter, int):
+            output = (parameter,) * 2
+        elif isinstance(parameter, Sequence):
+            output = tuple(parameter)
         else:
-            if isinstance(parameter, int):
-                output = (parameter,) * 2
-            elif isinstance(parameter, ListConfig):
-                output = tuple(parameter)
-            else:
-                raise ValueError(
-                    f"Unknown type {type(parameter)} for tile or stride size. Could be int, tuple or ListConfig"
-                )
+            raise ValueError(
+                    f"Unknown type {type(parameter)} for tile or stride size. Could be int or Sequence type."
+            )
+
+        if len(output) != 2:
+            raise ValueError(f"Length of the size type must be 2 for height and width. Got {len(output)} instead.")
+
+        # if isinstance(parameter, tuple):
+        #     output = parameter
+        # else:
+        #     if isinstance(parameter, int):
+        #         output = (parameter,) * 2
+        #     elif isinstance(parameter, ListConfig):
+        #         output = tuple(parameter)
+        #     else:
+        #         raise ValueError(
+        #             f"Unknown type {type(parameter)} for tile or stride size. Could be int, tuple or ListConfig"
+        #         )
         return output
 
     def __unfold(self, tensor: Tensor) -> Tensor:
@@ -132,9 +263,10 @@ class Tiler:
         tiles = tiles.contiguous().view(self.batch_size, self.num_channels, -1, self.tile_size_h * self.tile_size_w)
         tiles = tiles.permute(0, 1, 3, 2)
         tiles = tiles.contiguous().view(self.batch_size, self.num_channels * self.tile_size_h * self.tile_size_w, -1)
+
         image = F.fold(
             tiles,
-            output_size=(self.input_h, self.input_w),
+            output_size=(self.resized_h, self.resized_w),
             kernel_size=(self.tile_size_h, self.tile_size_w),
             stride=(self.stride_h, self.stride_w),
         )
@@ -166,10 +298,15 @@ class Tiler:
 
         self.batch_size, self.num_channels, self.input_h, self.input_w = image.shape
 
-        # # Resize the image if tile size is not divisable.
-        # self.resized_h = resize_edge(self.input_h, self.tile_size_h, self.stride_h)
-        # self.resized_w = resize_edge(self.input_w, self.tile_size_w, self.stride_w)
-        # image = F.interpolate(input=image, size=(self.resized_h, self.resized_w))
+        # Resize image if needed
+        resize = pad_image if self.mode == "padding" else interpolate_image
+        image = resize(
+            image=image,
+            input_size=(self.input_h, self.input_w),
+            tile_size=(self.tile_size_h, self.tile_size_w),
+            stride=(self.stride_h, self.stride_w),
+        )
+        self.resized_h, self.resized_w = image.shape[2:]
 
         image_patches = self.__unfold(image)
         return image_patches
@@ -210,7 +347,11 @@ class Tiler:
         untiled_mask = self.__fold(tiled_mask)
 
         image = torch.div(image, untiled_mask)
-        # image = F.interpolate(input=image, size=(self.input_h, self.input_w))
+
+        if self.mode == "padding":
+            image = image[:, :, : self.input_h, : self.input_w]
+        else:
+            image = F.interpolate(input=image, size=(self.input_h, self.input_w))
 
         return image
 
