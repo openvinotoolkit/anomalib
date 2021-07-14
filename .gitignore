@@ -1,6 +1,7 @@
 # Project related
 datasets
 !anomalib/datasets
+!tests/datasets
 lightning_logs
 results
 *.dot
