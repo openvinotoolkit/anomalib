@@ -281,7 +281,7 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
 
         """
 
-        score_map = (F.interpolate(distance.unsqueeze(1), size=self.image_size, mode="bilinear", align_corners=False))
+        score_map = F.interpolate(distance.unsqueeze(1), size=self.image_size, mode="bilinear", align_corners=False)
         return score_map
 
     def smooth_anomaly_map(self, anomaly_map: torch.Tensor) -> Tensor:
