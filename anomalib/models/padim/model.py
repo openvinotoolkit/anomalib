@@ -412,8 +412,6 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         Returns:
 
         """
-        # for output in outputs:
-        #     output["features"] = {key: value.to(self.device) for (key, value) in output["features"].items()}
         features = self._model.append_features(outputs)
         features = self._model.concat_features(features)
         embedding = self._model.generate_embedding(features)
@@ -429,8 +427,6 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         Returns:
 
         """
-        # for output in outputs:
-        #     output["features"] = {key: value.to(self.device) for (key, value) in output["features"].items()}
         self.filenames = [Path(f) for x in outputs for f in x["filenames"]]
         self.images = [x["images"] for x in outputs]
 
