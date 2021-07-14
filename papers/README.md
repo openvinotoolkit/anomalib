@@ -4,6 +4,7 @@ This repo lists awesome anomaly detection papers. There could be some overlap be
 
 | Model                                                                                         | Featured in Anomalib | Segmentation AUC |       | Classification AUC |
 | --------------------------------------------------------------------------------------------- | :------------------: | :--------------: | :---: | :----------------: |
+| [PatchCore](https://paperswithcode.com/paper/towards-total-recall-in-industrial-anomaly)      |        :soon:        |       97.5       |       |        97.9        |
 | [PaDiM](https://paperswithcode.com/paper/padim-a-patch-distribution-modeling-framework)       |  :white_check_mark:  |       97.5       |       |        97.9        |
 | [STFPM](https://paperswithcode.com/paper/student-teacher-feature-pyramid-matching-for)        |  :white_check_mark:  |       97.0       |       |        95.5        |
 | [InTra](https://paperswithcode.com/paper/inpainting-transformer-for-anomaly-detection)        |        :soon:        |       96.9       |       |        95.9        |
