@@ -319,7 +319,7 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
 
         score_map = self.compute_distance(embedding, stats=[mean.to(embedding.device), covariance.to(embedding.device)])
         up_sampled_score_map = self.up_sample(score_map)
-        smoothed_anomaly_map = self.smooth_anomaly_map(up_sampled_score_map)
+        smoothed_anomaly_map = self.smooth_anomaly_map(up_sampled_score_map).squeeze(1)
 
         return smoothed_anomaly_map
 
