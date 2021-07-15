@@ -58,7 +58,7 @@ def pad_image(image: Tensor, input_size: Tuple, tile_size: Tuple, stride: Tuple)
         Returns:
             int: [description]
         """
-        if edge_size % tile_size == 0 and edge_size % stride == 0:
+        if (edge_size - tile_size) % stride == 0:
             pad = 0
         else:
             pad = ((edge_size // stride * stride) + tile_size) - edge_size
@@ -111,7 +111,7 @@ def interpolate_image(image: Tensor, input_size: Tuple, tile_size: Tuple, stride
             int: Resized edge size.
         """
 
-        if edge_size % tile_size == 0 and edge_size % stride == 0:
+        if (edge_size - tile_size) % stride == 0:
             resized_edge = edge_size
         else:
             resized_edge = edge_size // stride * stride + tile_size
@@ -194,9 +194,7 @@ class Tiler:
         elif isinstance(parameter, Sequence):
             output = tuple(parameter)
         else:
-            raise ValueError(
-                    f"Unknown type {type(parameter)} for tile or stride size. Could be int or Sequence type."
-            )
+            raise ValueError(f"Unknown type {type(parameter)} for tile or stride size. Could be int or Sequence type.")
 
         if len(output) != 2:
             raise ValueError(f"Length of the size type must be 2 for height and width. Got {len(output)} instead.")
