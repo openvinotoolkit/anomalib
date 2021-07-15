@@ -278,7 +278,7 @@ class Tiler:
             Tiles generated from the image.
 
         """
-        if len(image.shape) == 3:
+        if image.dim() == 3:
             image = image.unsqueeze(0)
 
         self.batch_size, self.num_channels, self.input_h, self.input_w = image.shape
