@@ -11,14 +11,14 @@ try:
     import sigopt
     from sigopt.exception import ApiException
     from sigopt.runs import RunFactoryProxyMethod
-except ImportError:
+except ImportError as e:
     raise ImportError(
         "You want to use `sigopt` logger which is not installed yet, install it with `pip install sigopt`."
-    )
+    ) from e
 try:
     import numpy as np
-except ImportError:
-    raise ImportError("`numpy` dependency not met. Install it with `pip install numpy`.")
+except ImportError as e:
+    raise ImportError("`numpy` dependency not met. Install it with `pip install numpy`.") from e
 
 
 class SigoptLogger(LightningLoggerBase):
@@ -133,7 +133,7 @@ class SigoptLogger(LightningLoggerBase):
 
     @property
     def name(self) -> str:
-        """ """
+        """returns name of the experiment"""
         return self._name
 
     @rank_zero_only

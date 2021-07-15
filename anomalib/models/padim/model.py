@@ -12,16 +12,17 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import torchvision
+from kornia import gaussian_blur2d
 from omegaconf import ListConfig
 from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.callbacks import ModelCheckpoint
-from scipy.ndimage import gaussian_filter
 from skimage.segmentation import mark_boundaries
 from sklearn.metrics import roc_auc_score
 from torch import Tensor
 
 from anomalib.core.callbacks.model_loader import LoadModelCallback
 from anomalib.core.callbacks.tiling import TilingCallback
+from anomalib.core.callbacks.timer import TimerCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
 from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
@@ -201,6 +202,7 @@ class Callbacks:
         if "tile_size" in self.config.dataset.keys() and self.config.dataset.tile_size is not None:
             tiler = TilingCallback(self.config)
             callbacks.append(tiler)
+        callbacks.append(TimerCallback())
 
         return callbacks
 
@@ -271,7 +273,7 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         distance_tensor = torch.tensor(distance_list).permute(1, 0).reshape(batch, height, width)
         return distance_tensor
 
-    def up_sample(self, distance: Tensor) -> np.ndarray:
+    def up_sample(self, distance: Tensor) -> Tensor:
         """Up sample anomaly score to match the input image size.
 
         Args:
@@ -283,32 +285,26 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
 
         """
 
-        score_map = (
-            F.interpolate(distance.unsqueeze(1), size=self.image_size, mode="bilinear", align_corners=False)
-            .squeeze()
-            .cpu()
-            .numpy()
-        )
+        score_map = F.interpolate(distance.unsqueeze(1), size=self.image_size, mode="bilinear", align_corners=False)
         return score_map
 
-    def smooth_anomaly_map(self, anomaly_map: np.ndarray) -> np.ndarray:
+    def smooth_anomaly_map(self, anomaly_map: Tensor) -> Tensor:
         """Apply gaussian smoothing to the anomaly map
 
         Args:
                 anomaly_map: Anomaly score for the test image(s)
-                anomaly_map: np.ndarray:
+                anomaly_map: Tensor:
 
         Returns:
                 Filtered anomaly scores
 
         """
-
-        for i in range(anomaly_map.shape[0]):
-            anomaly_map[i] = gaussian_filter(anomaly_map[i], sigma=self.sigma)
+        kernel_size = 2 * int(4.0 * self.sigma + 0.5) + 1
+        anomaly_map = gaussian_blur2d(anomaly_map, (kernel_size, kernel_size), sigma=(self.sigma, self.sigma))
 
         return anomaly_map
 
-    def compute_anomaly_map(self, embedding: Tensor, mean: Tensor, covariance: Tensor) -> np.ndarray:
+    def compute_anomaly_map(self, embedding: Tensor, mean: Tensor, covariance: Tensor) -> Tensor:
         """Compute anomaly score based on embedding vector, mean and covariance of the multivariate
         gaussian distribution.
 
@@ -325,9 +321,9 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
 
         """
 
-        score_map = self.compute_distance(embedding, stats=[mean, covariance])
+        score_map = self.compute_distance(embedding, stats=[mean.to(embedding.device), covariance.to(embedding.device)])
         up_sampled_score_map = self.up_sample(score_map)
-        smoothed_anomaly_map = self.smooth_anomaly_map(up_sampled_score_map)
+        smoothed_anomaly_map = self.smooth_anomaly_map(up_sampled_score_map).squeeze(1)
 
         return smoothed_anomaly_map
 
@@ -366,6 +362,7 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         """
         self._model.eval()
         features = self._model(batch["image"])
+        features = {key: value.cpu() for (key, value) in features.items()}
         return {"features": features}
 
     def validation_step(self, batch, _):
@@ -384,6 +381,7 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         """
         filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
         features = self._model(images)
+        features = {key: value.cpu() for (key, value) in features.items()}
         return {
             "filenames": filenames,
             "images": images,
@@ -418,7 +416,6 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         Returns:
 
         """
-
         features = self._model.append_features(outputs)
         features = self._model.concat_features(features)
         embedding = self._model.generate_embedding(features)
@@ -445,7 +442,7 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         embedding = self._model.generate_embedding(test_features)
         self.anomaly_maps = self.anomaly_map_generator.compute_anomaly_map(
             embedding=embedding, mean=self._model.gaussian.mean, covariance=self._model.gaussian.covariance
-        )
+        ).numpy()
 
         self.true_labels = np.stack([x["true_labels"] for x in outputs])
         self.pred_labels = self.anomaly_maps.reshape(self.anomaly_maps.shape[0], -1).max(axis=1)
