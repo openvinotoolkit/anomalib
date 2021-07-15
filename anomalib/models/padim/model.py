@@ -284,12 +284,12 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         score_map = F.interpolate(distance.unsqueeze(1), size=self.image_size, mode="bilinear", align_corners=False)
         return score_map
 
-    def smooth_anomaly_map(self, anomaly_map: torch.Tensor) -> Tensor:
+    def smooth_anomaly_map(self, anomaly_map: Tensor) -> Tensor:
         """Apply gaussian smoothing to the anomaly map
 
         Args:
                 anomaly_map: Anomaly score for the test image(s)
-                anomaly_map: torch.Tensor:
+                anomaly_map: Tensor:
 
         Returns:
                 Filtered anomaly scores
@@ -300,7 +300,7 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
 
         return anomaly_map
 
-    def compute_anomaly_map(self, embedding: Tensor, mean: Tensor, covariance: Tensor) -> torch.Tensor:
+    def compute_anomaly_map(self, embedding: Tensor, mean: Tensor, covariance: Tensor) -> Tensor:
         """Compute anomaly score based on embedding vector, mean and covariance of the multivariate
         gaussian distribution.
 
