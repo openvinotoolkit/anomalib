@@ -4,15 +4,6 @@ from omegaconf import ListConfig
 
 from anomalib.datasets.utils import StrideSizeError, Tiler
 
-# def test_unfold_handles_num_non_overlapping_patches():
-#     batch_size, num_channels, height, width = 2, 3, 1024, 1024
-#     image = torch.rand(batch_size, num_channels, height, width)
-#     tiler = Tiler(batch_size, (height, width), kernel_size=512, stride=512)
-#
-#     patches = tiler.tile_image(image)
-#
-#     print(patches.shape)
-
 tile_data = [
     ([3, 1024, 1024], 512, 512, torch.Size([4, 3, 512, 512])),
     ([1, 3, 1024, 1024], 512, 512, torch.Size([4, 3, 512, 512])),
@@ -42,11 +33,6 @@ def test_tiler_handles_single_image_without_batch_dimension(image_size, tile_siz
     image = torch.rand(image_size)
     patches = tiler.tile(image)
     assert patches.shape == shape
-
-
-def test_overlapping_disabled_when_kernel_size_equals_to_stride():
-    tiler = Tiler(tile_size=512, stride=512)
-    assert tiler.overlapping == False
 
 
 def test_stride_size_cannot_be_larger_than_tile_size():

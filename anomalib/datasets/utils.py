@@ -155,7 +155,6 @@ class Tiler:
 
         self.tile_size_h, self.tile_size_w = self.__validate_size_type(tile_size)
         self.stride_h, self.stride_w = self.__validate_size_type(stride)
-        self.overlapping = False if (self.stride_h == self.tile_size_h and self.stride_w == self.tile_size_w) else True
         self.mode = mode
 
         if self.stride_h > self.tile_size_h or self.stride_w > self.tile_size_w:
