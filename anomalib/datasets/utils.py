@@ -293,8 +293,8 @@ class Tiler:
         )
         self.resized_h, self.resized_w = image.shape[2:]
 
-        image_patches = self.__unfold(image)
-        return image_patches
+        image_tiles = self.__unfold(image)
+        return image_tiles
 
     def untile(self, tiles: Tensor) -> Tensor:
         """
