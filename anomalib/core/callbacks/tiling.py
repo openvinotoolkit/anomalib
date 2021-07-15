@@ -8,10 +8,10 @@ from anomalib.datasets.utils import Tiler
 
 
 class TilingCallback(Callback):
-    r"""
-    Abstract base class used to build new callbacks.
-
-    Subclass this class and override any of the relevant hooks
+    """
+    Callback that tiles and untiles images to help detect small defects. Tiles batches of images during training and
+    validation, before the batch is presented as input to the model. Untiles images and model predictions after the
+    forward pass is completed.
     """
 
     def __init__(self, hparams):
