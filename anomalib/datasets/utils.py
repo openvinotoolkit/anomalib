@@ -2,6 +2,7 @@
 Dataset Utils
 """
 import warnings
+from math import ceil
 from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
@@ -18,6 +19,80 @@ class StrideSizeError(Exception):
     Args:
         Exception ([type]): [description]
     """
+
+
+def compute_new_image_size(image_size: Tuple, tile_size: Tuple, stride: Tuple) -> Tuple:
+    def __compute_new_edge_size(edge_size: int, tile_size: int, stride: int) -> int:
+        """
+        compute_new_edge_size [summary]
+
+        Args:
+            edge_size (int): [description]
+            tile_size (int): [description]
+            stride (int): [description]
+
+        Returns:
+            int: [description]
+        """
+        if (edge_size - tile_size) % stride != 0:
+            edge_size = (ceil((edge_size - tile_size) / stride) * stride) + tile_size
+
+        return edge_size
+
+    resized_h = __compute_new_edge_size(image_size[0], tile_size[0], stride[0])
+    resized_w = __compute_new_edge_size(image_size[1], tile_size[1], stride[1])
+
+    return (resized_h, resized_w)
+
+
+def upscale_image(image: Tensor, upscale_size: Tuple, mode: str = "padding") -> Tensor:
+    """
+    upscale_image [summary]
+
+    Args:
+        image (Tensor): [description]
+        upscale_size (Tuple): [description]
+        mode (str, optional): [description]. Defaults to "padding".
+
+    Returns:
+        Tuple: [description]
+    """
+
+    image_h, image_w = image.shape[2:]
+    resize_h, resize_w = upscale_size
+
+    if mode == "padding":
+        pad_h = resize_h - image_h
+        pad_w = resize_w - image_w
+
+        image = F.pad(image, [0, pad_w, 0, pad_h])
+    elif mode == "interpolation":
+        image = F.interpolate(input=image, size=(resize_h, resize_w))
+    else:
+        raise ValueError(f"Unknown mode {mode}. Only padding and interpolation is available.")
+
+    return image
+
+
+def downscale_image(image: Tensor, size: Tuple, mode: str = "padding") -> Tensor:
+    """
+    downscale_image [summary]
+
+    Args:
+        image (Tensor): [description]
+        size (Tuple): [description]
+        mode (str, optional): [description]. Defaults to "padding".
+
+    Returns:
+        Tensor: [description]
+    """
+    input_h, input_w = size
+    if mode == "padding":
+        image = image[:, :, :input_h, :input_w]
+    else:
+        image = F.interpolate(input=image, size=(input_h, input_w))
+
+    return image
 
 
 def pad_image(image: Tensor, input_size: Tuple, tile_size: Tuple, stride: Tuple) -> Tensor:
@@ -61,12 +136,15 @@ def pad_image(image: Tensor, input_size: Tuple, tile_size: Tuple, stride: Tuple)
         if (edge_size - tile_size) % stride == 0:
             pad = 0
         else:
-            pad = ((edge_size // stride * stride) + tile_size) - edge_size
+            pad = (ceil((edge_size - tile_size) / stride) * stride) + tile_size
+            # pad = ((edge_size // stride * stride) + tile_size) - edge_size
 
         return pad
 
-    pad_h = __pad_edge(input_size[0], tile_size[0], stride[0])
-    pad_w = __pad_edge(input_size[1], tile_size[1], stride[1])
+    pad_h = compute_new_edge_size(input_size[0], tile_size[0], stride[0]) - input_size[0]
+    pad_w = compute_new_edge_size(input_size[1], tile_size[1], stride[1]) - input_size[1]
+    # pad_h = __pad_edge(input_size[0], tile_size[0], stride[0]) - input_size[0]
+    # pad_w = __pad_edge(input_size[1], tile_size[1], stride[1]) - input_size[1]
 
     image = F.pad(image, [0, pad_w, 0, pad_h])
 
@@ -118,8 +196,10 @@ def interpolate_image(image: Tensor, input_size: Tuple, tile_size: Tuple, stride
 
         return resized_edge
 
-    resized_h = resize_edge(input_size[0], tile_size[0], stride[0])
-    resized_w = resize_edge(input_size[1], tile_size[1], stride[1])
+    resized_h = compute_new_edge_size(input_size[0], tile_size[0], stride[0])
+    resized_w = compute_new_edge_size(input_size[1], tile_size[1], stride[1])
+    # resized_h = resize_edge(input_size[0], tile_size[0], stride[0])
+    # resized_w = resize_edge(input_size[1], tile_size[1], stride[1])
     image = F.interpolate(input=image, size=(resized_h, resized_w))
     return image
 
@@ -155,6 +235,7 @@ class Tiler:
 
         self.tile_size_h, self.tile_size_w = self.__validate_size_type(tile_size)
         self.stride_h, self.stride_w = self.__validate_size_type(stride)
+        self.overlapping = False if (self.stride_h == self.tile_size_h and self.stride_w == self.tile_size_w) else True
         self.mode = mode
 
         if self.stride_h > self.tile_size_h or self.stride_w > self.tile_size_w:
@@ -280,15 +361,22 @@ class Tiler:
 
         self.batch_size, self.num_channels, self.input_h, self.input_w = image.shape
 
-        # Resize image if needed
-        resize = pad_image if self.mode == "padding" else interpolate_image
-        image = resize(
-            image=image,
-            input_size=(self.input_h, self.input_w),
+        self.resized_h, self.resized_w = compute_new_image_size(
+            image_size=(self.input_h, self.input_w),
             tile_size=(self.tile_size_h, self.tile_size_w),
             stride=(self.stride_h, self.stride_w),
         )
-        self.resized_h, self.resized_w = image.shape[2:]
+
+        # Resize image if needed
+        # resize = pad_image if self.mode == "padding" else interpolate_image
+        # image = resize(
+        #     image=image,
+        #     input_size=(self.input_h, self.input_w),
+        #     tile_size=(self.tile_size_h, self.tile_size_w),
+        #     stride=(self.stride_h, self.stride_w),
+        # )
+        print(f"resized image size {image.shape}")
+        # self.resized_h, self.resized_w = image.shape[2:]
 
         image_tiles = self.__unfold(image)
         return image_tiles
@@ -324,11 +412,11 @@ class Tiler:
         """
         image = self.__fold(tiles)
 
-        mask = torch.ones(image.shape)
-        tiled_mask = self.__unfold(mask)
-        untiled_mask = self.__fold(tiled_mask)
-
-        image = torch.div(image, untiled_mask)
+        if self.overlapping:
+            mask = torch.ones(image.shape)
+            tiled_mask = self.__unfold(mask)
+            untiled_mask = self.__fold(tiled_mask)
+            image = torch.div(image, untiled_mask)
 
         if self.mode == "padding":
             image = image[:, :, : self.input_h, : self.input_w]
