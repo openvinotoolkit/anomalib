@@ -320,7 +320,7 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         self._model.eval()
         features = self._model(batch["image"])
         embedding = self._model.generate_embedding(features)
-        return {"embedding": embedding}
+        return {"embedding": embedding.cpu()}
 
     def validation_step(self, batch, _):
         """Validation Step of PADIM.
