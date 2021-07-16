@@ -131,9 +131,9 @@ class DFKDELightning(pl.LightningModule):
         layer_outputs = self.feature_extractor(images)
         feature_vector = torch.hstack(list(layer_outputs.values())).detach()
         probability = self.normality_model.predict(feature_vector.view(feature_vector.shape[:2]))
-        prediction = 1 if probability > self.hparams.model.confidence_threshold else 0
-        ground_truth = int(np.any(mask.cpu().numpy()))
-        return {"probability": probability, "prediction": prediction, "ground_truth": ground_truth}
+        prediction = (probability > self.hparams.model.confidence_threshold).int()
+        ground_truth = np.any(mask.cpu().numpy(), axis=(1,2,3)).astype(int)
+        return {"probability": probability, "ground_truth": ground_truth, "prediction": prediction}
 
     def validation_epoch_end(self, outputs: List[Dict[str, Any]]) -> None:
         """Compute anomaly classification scores based on probability scores.
@@ -145,9 +145,9 @@ class DFKDELightning(pl.LightningModule):
         Returns:
 
         """
-        pred_labels = [output["probability"] for output in outputs]
-        true_labels = [int(output["ground_truth"]) for output in outputs]
-        self.image_roc_auc = roc_auc_score(np.array(true_labels), np.array(torch.hstack(pred_labels)))
+        pred_labels = np.hstack([output["probability"] for output in outputs])
+        true_labels = np.hstack([output["ground_truth"] for output in outputs])
+        self.image_roc_auc = roc_auc_score(true_labels, pred_labels)
         self.log(name="auc", value=self.image_roc_auc, on_epoch=True, prog_bar=True)
 
     def test_step(self, batch, _):
