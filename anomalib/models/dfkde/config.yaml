@@ -5,6 +5,7 @@ dataset:
   category: leather
   image_size: 256
   batch_size: 32
+  inference_batch_size: 32
   num_workers: 36
 
 model:
