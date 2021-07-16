@@ -4,11 +4,9 @@ https://arxiv.org/abs/2011.08785
 """
 import os
 import os.path
-from pathlib import Path
 from random import sample
-from typing import Any, Dict, List, Sequence, Tuple, Union
+from typing import Dict, List, Sequence, Tuple, Union
 
-import numpy as np
 import torch
 import torch.nn.functional as F
 import torchvision
@@ -16,8 +14,6 @@ from kornia import gaussian_blur2d
 from omegaconf import ListConfig
 from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.callbacks import ModelCheckpoint
-from skimage.segmentation import mark_boundaries
-from sklearn.metrics import roc_auc_score
 from torch import Tensor
 
 from anomalib.core.callbacks.model_loader import LoadModelCallback
@@ -26,9 +22,7 @@ from anomalib.core.callbacks.timer import TimerCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
 from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
-from anomalib.datasets.utils import Denormalize
 from anomalib.models.base.model import BaseAnomalySegmentationLightning
-from anomalib.utils.visualizer import Visualizer
 
 __all__ = ["PADIMLightning"]
 
@@ -384,58 +378,3 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         """
         embeddings = torch.vstack([x["embedding"] for x in outputs])
         self.stats = self._model.gaussian.fit(embeddings)
-
-    def validation_epoch_end(self, outputs):
-        """Compute anomaly scores of the validation set, based on the embedding
-                        extracted from deep hierarchical CNN features.
-
-        Args:
-                outputs: Batch of outputs from the validation step
-
-        Returns:
-
-        """
-        self.filenames = [Path(f) for x in outputs for f in x["filenames"]]
-        self.images = torch.vstack([x["images"] for x in outputs])
-
-        self.true_masks = np.vstack([x["true_masks"] for x in outputs])
-        self.anomaly_maps = np.vstack([x["anomaly_maps"] for x in outputs])
-
-        self.true_labels = np.hstack([x["true_labels"] for x in outputs])
-        self.pred_labels = self.anomaly_maps.reshape(self.anomaly_maps.shape[0], -1).max(axis=1)
-
-        self.image_roc_auc = roc_auc_score(self.true_labels, self.pred_labels)
-        self.pixel_roc_auc = roc_auc_score(self.true_masks.flatten(), self.anomaly_maps.flatten())
-
-        self.log(name="Image-Level AUC", value=self.image_roc_auc, on_epoch=True, prog_bar=True)
-        self.log(name="Pixel-Level AUC", value=self.pixel_roc_auc, on_epoch=True, prog_bar=True)
-
-    def test_epoch_end(self, outputs):
-        """
-        Compute and save anomaly scores of the test set, based on the embedding
-            extracted from deep hierarchical CNN features.
-
-        Args:
-            outputs: Batch of outputs from the validation step
-
-        """
-        self.validation_epoch_end(outputs)
-        threshold = self.anomaly_map_generator.compute_adaptive_threshold(self.true_masks, self.anomaly_maps)
-
-        for (filename, image, true_mask, anomaly_map) in zip(
-            self.filenames, self.images, self.true_masks, self.anomaly_maps
-        ):
-            image = Denormalize()(image.squeeze())
-
-            heat_map = self.anomaly_map_generator.apply_heatmap_on_image(anomaly_map, image)
-            pred_mask = self.anomaly_map_generator.compute_mask(anomaly_map=anomaly_map, threshold=threshold)
-            vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
-
-            visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
-            visualizer.add_image(image=image, title="Image")
-            visualizer.add_image(image=true_mask, color_map="gray", title="Ground Truth")
-            visualizer.add_image(image=heat_map, title="Predicted Heat Map")
-            visualizer.add_image(image=pred_mask, color_map="gray", title="Predicted Mask")
-            visualizer.add_image(image=vis_img, title="Segmentation Result")
-            visualizer.save(Path(self.hparams.project.path) / "images" / filename.parent.name / filename.name)
-            visualizer.close()
