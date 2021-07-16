@@ -77,43 +77,6 @@ class PadimModel(torch.nn.Module):
 
         return features
 
-    def append_features(self, outputs: List[Dict[str, Any]]) -> Dict[str, List[Tensor]]:
-        """append_features from each batch to concatenate
-
-        Args:
-                outputs: description]
-                outputs: List[Dict[str:Tensor]]:
-
-        Returns:
-                description]
-
-        """
-        features: Dict[str, List[Tensor]] = {layer: [] for layer in self.layers}
-        for batch in outputs:
-            for layer in self.layers:
-                features[layer].append(batch["features"][layer].detach())
-
-        return features
-
-    @staticmethod
-    def concat_features(features: Dict[str, List[Tensor]]) -> Dict[str, Tensor]:
-        """Concatenate batch features to form one big feauture matrix.
-
-        Args:
-                        features: Features from batches.
-                        features: Dict[str:
-                        List[Tensor]]:
-
-        Returns:
-                        Concatenated feature map.
-
-        """
-        concatenated_features: Dict[str, Tensor] = {}
-        for layer, feature_list in features.items():
-            concatenated_features[layer] = torch.cat(tensors=feature_list, dim=0)
-
-        return concatenated_features
-
     def generate_embedding(self, features: Dict[str, Tensor]) -> Tensor:
         """Generate embedding from hierarchical feature map
 
