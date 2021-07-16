@@ -31,6 +31,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]):
             image_size=config.dataset.image_size,
             crop_size=config.dataset.crop_size,
             batch_size=config.dataset.batch_size,
+            inference_batch_size=config.dataset.inference_batch_size,
             num_workers=config.dataset.num_workers,
         )
     else:

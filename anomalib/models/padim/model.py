@@ -338,7 +338,7 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         self.layers = hparams.model.layers
         self._model = PadimModel(hparams.model.backbone, hparams.model.layers).eval()
 
-        self.anomaly_map_generator = AnomalyMapGenerator(image_size=hparams.dataset.image_size)
+        self.anomaly_map_generator = AnomalyMapGenerator(image_size=hparams.model.input_size)
         self.callbacks = Callbacks(hparams)()
         self.stats: List[Tensor, Tensor] = []
         self.automatic_optimization = False
@@ -362,8 +362,8 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         """
         self._model.eval()
         features = self._model(batch["image"])
-        features = {key: value.cpu() for (key, value) in features.items()}
-        return {"features": features}
+        embedding = self._model.generate_embedding(features)
+        return {"embedding": embedding}
 
     def validation_step(self, batch, _):
         """Validation Step of PADIM.
@@ -381,13 +381,16 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         """
         filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
         features = self._model(images)
-        features = {key: value.cpu() for (key, value) in features.items()}
+        embedding = self._model.generate_embedding(features)
+        anomaly_maps = self.anomaly_map_generator.compute_anomaly_map(
+            embedding=embedding, mean=self._model.gaussian.mean, covariance=self._model.gaussian.covariance
+        )
         return {
             "filenames": filenames,
             "images": images,
-            "features": features,
-            "true_labels": labels.cpu().numpy(),
-            "true_masks": masks.squeeze().cpu().numpy(),
+            "anomaly_maps": anomaly_maps.cpu(),
+            "true_labels": labels.cpu(),
+            "true_masks": masks.squeeze(1).cpu(),
         }
 
     def test_step(self, batch, _):
@@ -416,10 +419,8 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         Returns:
 
         """
-        features = self._model.append_features(outputs)
-        features = self._model.concat_features(features)
-        embedding = self._model.generate_embedding(features)
-        self.stats = self._model.gaussian.fit(embedding)
+        embeddings = torch.vstack([x["embedding"] for x in outputs])
+        self.stats = self._model.gaussian.fit(embeddings)
 
     def validation_epoch_end(self, outputs):
         """Compute anomaly scores of the validation set, based on the embedding
@@ -432,19 +433,12 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
 
         """
         self.filenames = [Path(f) for x in outputs for f in x["filenames"]]
-        self.images = [x["images"] for x in outputs]
+        self.images = torch.vstack([x["images"] for x in outputs])
 
-        self.true_masks = np.stack([x["true_masks"] for x in outputs])
+        self.true_masks = np.vstack([x["true_masks"] for x in outputs])
+        self.anomaly_maps = np.vstack([x["anomaly_maps"] for x in outputs])
 
-        test_features = self._model.append_features(outputs)
-        test_features = self._model.concat_features(test_features)
-
-        embedding = self._model.generate_embedding(test_features)
-        self.anomaly_maps = self.anomaly_map_generator.compute_anomaly_map(
-            embedding=embedding, mean=self._model.gaussian.mean, covariance=self._model.gaussian.covariance
-        ).numpy()
-
-        self.true_labels = np.stack([x["true_labels"] for x in outputs])
+        self.true_labels = np.hstack([x["true_labels"] for x in outputs])
         self.pred_labels = self.anomaly_maps.reshape(self.anomaly_maps.shape[0], -1).max(axis=1)
 
         self.image_roc_auc = roc_auc_score(self.true_labels, self.pred_labels)

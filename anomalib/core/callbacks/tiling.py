@@ -28,19 +28,6 @@ class TilingCallback(Callback):
         """Called when the train batch begins."""
         batch["image"] = self.tiler.tile_batch(batch["image"])
 
-    def on_train_batch_end(
-        self,
-        trainer: 'pl.Trainer',
-        pl_module: 'pl.LightningModule',
-        outputs: STEP_OUTPUT,
-        batch: Any,
-        batch_idx: int,
-        dataloader_idx: int,
-    ) -> None:
-        if "features" in outputs.keys():
-            for feature_name in outputs["features"]:
-                outputs["features"][feature_name] = self.tiler.untile_batch(outputs["features"][feature_name])
-
     def on_validation_batch_start(
         self,
         trainer: "pl.Trainer",
@@ -62,13 +49,8 @@ class TilingCallback(Callback):
         dataloader_idx: int,
     ) -> None:
         """Called when the validation batch ends."""
-        if "anomaly_maps" in outputs.keys():
-            outputs["anomaly_maps"] = self.tiler.untile_batch(outputs["anomaly_maps"].unsqueeze(1))[:, 0, :, :]
-        if "images" in outputs.keys():
-            outputs["images"] = self.tiler.untile_image(outputs["images"])
-        if "features" in outputs.keys():
-            for feature_name in outputs["features"]:
-                outputs["features"][feature_name] = self.tiler.untile_batch(outputs["features"][feature_name])
+        outputs["anomaly_maps"] = self.tiler.untile_batch(outputs["anomaly_maps"].unsqueeze(1))[:, 0, :, :]
+        outputs["images"] = self.tiler.untile_batch(outputs["images"])
 
     def on_test_batch_start(
         self,
@@ -91,10 +73,5 @@ class TilingCallback(Callback):
         dataloader_idx: int,
     ) -> None:
         """Called when the test batch ends."""
-        if "anomaly_maps" in outputs.keys():
-            outputs["anomaly_maps"] = self.tiler.untile_batch(outputs["anomaly_maps"].unsqueeze(1))[:, 0, :, :]
-        if "images" in outputs.keys():
-            outputs["images"] = self.tiler.untile_image(outputs["images"])
-        if "features" in outputs.keys():
-            for feature_name in outputs["features"]:
-                outputs["features"][feature_name] = self.tiler.untile_batch(outputs["features"][feature_name])
+        outputs["anomaly_maps"] = self.tiler.untile_batch(outputs["anomaly_maps"].unsqueeze(1))[:, 0, :, :]
+        outputs["images"] = self.tiler.untile_batch(outputs["images"])

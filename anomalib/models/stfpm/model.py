@@ -325,7 +325,7 @@ class STFPMLightning(BaseAnomalySegmentationLightning):
             "filenames": filenames,
             "images": images,
             "true_labels": labels.cpu(),
-            "true_masks": masks.squeeze().cpu(),
+            "true_masks": masks.squeeze(1).cpu(),
             "anomaly_maps": anomaly_maps.cpu(),
         }
 
@@ -357,12 +357,12 @@ class STFPMLightning(BaseAnomalySegmentationLightning):
         """
 
         self.filenames = [Path(f) for x in outputs for f in x["filenames"]]
-        self.images = [x["images"] for x in outputs]
+        self.images = torch.vstack([x["images"] for x in outputs])
 
-        self.true_masks = np.stack([output["true_masks"].numpy() for output in outputs])
-        self.anomaly_maps = np.vstack([output["anomaly_maps"].numpy() for output in outputs])
+        self.true_masks = np.vstack([output["true_masks"] for output in outputs])
+        self.anomaly_maps = np.vstack([output["anomaly_maps"] for output in outputs])
 
-        self.true_labels = np.stack([output["true_labels"] for output in outputs])
+        self.true_labels = np.hstack([output["true_labels"] for output in outputs])
         self.pred_labels = self.anomaly_maps.reshape(self.anomaly_maps.shape[0], -1).max(axis=1)
 
         self.image_roc_auc = roc_auc_score(self.true_labels, self.pred_labels)
