@@ -342,7 +342,7 @@ class STPM(pl.LightningModule):
         embedding_ = embedding_concat(embeddings[0], embeddings[1])
         embedding_test = np.array(reshape_embedding(np.array(embedding_)))
         # NN
-        nbrs = NearestNeighbors(n_neighbors=args.n_neighbors, algorithm="ball_tree", metric="minkowski", p=2).fit(
+        nbrs = NearestNeighbors(n_neighbors=self.hparams.model.num_neighbors, algorithm="ball_tree", metric="minkowski", p=2).fit(
             self.embedding_coreset
         )
         score_patches, _ = nbrs.kneighbors(embedding_test)
@@ -352,7 +352,7 @@ class STPM(pl.LightningModule):
         score = w * max(score_patches[:, 0])  # Image-level score
 
         gt_np = gt.cpu().numpy()[0, 0].astype(int)
-        anomaly_map_resized = cv2.resize(anomaly_map, (args.input_size, args.input_size))
+        anomaly_map_resized = cv2.resize(anomaly_map, tuple(self.hparams.dataset.crop_size))
         anomaly_map_resized_blur = gaussian_filter(anomaly_map_resized, sigma=4)
 
         self.gt_list_px_lvl.extend(gt_np.ravel())

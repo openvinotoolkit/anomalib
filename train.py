@@ -66,8 +66,8 @@ if __name__ == "__main__":
     logger = get_logger(config)
 
     trainer = Trainer(**config.trainer, logger=True)
-    trainer.fit(model=model)
-    trainer.test(model=model)
+    # trainer.fit(model=model)
+    # trainer.test(model=model)
     # trainer = Trainer(callbacks=model.callbacks, **config.trainer, logger=logger)
     # trainer.fit(model=model, datamodule=datamodule)
-    # trainer.test(model=model, datamodule=datamodule)
+    trainer.test(model=model, datamodule=datamodule)
