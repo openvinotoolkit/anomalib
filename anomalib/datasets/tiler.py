@@ -225,18 +225,19 @@ class Tiler:
             Output that is the reconstructed version of the input tensor.
 
         """
+        num_channels = tiles.shape[1]
         tiles = tiles.contiguous().view(
             self.batch_size,
             self.num_patches_h,
             self.num_patches_w,
-            self.num_channels,
+            num_channels,
             self.tile_size_h,
             self.tile_size_w,
         )
         tiles = tiles.permute(0, 3, 1, 2, 4, 5)
-        tiles = tiles.contiguous().view(self.batch_size, self.num_channels, -1, self.tile_size_h * self.tile_size_w)
+        tiles = tiles.contiguous().view(self.batch_size, num_channels, -1, self.tile_size_h * self.tile_size_w)
         tiles = tiles.permute(0, 1, 3, 2)
-        tiles = tiles.contiguous().view(self.batch_size, self.num_channels * self.tile_size_h * self.tile_size_w, -1)
+        tiles = tiles.contiguous().view(self.batch_size, num_channels * self.tile_size_h * self.tile_size_w, -1)
 
         image = F.fold(
             tiles,

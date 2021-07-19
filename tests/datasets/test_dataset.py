@@ -12,7 +12,13 @@ from anomalib.datasets.utils import Denormalize, ToNumpy
 @pytest.fixture(autouse=True)
 def data_module():
     datamodule = MVTecDataModule(
-        root="./datasets/MVTec", category="leather", image_size=(256, 256), crop_size=224, batch_size=1, num_workers=0
+        root="./datasets/MVTec",
+        category="leather",
+        image_size=(256, 256),
+        crop_size=224,
+        batch_size=1,
+        inference_batch_size=1,
+        num_workers=0,
     )
     datamodule.prepare_data()
     datamodule.setup()
@@ -31,8 +37,10 @@ class TestMVTecDataModule:
         """
         test_mvtec_datamodule [summary]
         """
-        _, data_sample = next(enumerate(data_module.train_dataloader()))
-        assert data_sample["image"].shape[0] == 1
+        _, train_data_sample = next(enumerate(data_module.train_dataloader()))
+        _, val_data_sample = next(enumerate(data_module.val_dataloader()))
+        assert train_data_sample["image"].shape[0] == 1
+        assert val_data_sample["image"].shape[0] == 1
 
     def test_val_and_test_dataloaders_has_mask_and_gt(self, data_module):
         """

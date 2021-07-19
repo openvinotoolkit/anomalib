@@ -4,7 +4,7 @@ import pytorch_lightning as pl
 from pytorch_lightning import Callback
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 
-from anomalib.datasets.utils import Tiler
+from anomalib.datasets.tiler import Tiler
 
 
 class TilingCallback(Callback):
@@ -15,7 +15,7 @@ class TilingCallback(Callback):
     """
 
     def __init__(self, hparams):
-        self.tiler = Tiler(hparams.dataset.tile_size)
+        self.tiler = Tiler(hparams.dataset.tile_size, hparams.dataset.stride)
 
     def on_train_batch_start(
         self,
@@ -26,7 +26,7 @@ class TilingCallback(Callback):
         dataloader_idx: int,
     ) -> None:
         """Called when the train batch begins."""
-        batch["image"] = self.tiler.tile_batch(batch["image"])
+        batch["image"] = self.tiler.tile(batch["image"])
 
     def on_validation_batch_start(
         self,
@@ -37,7 +37,7 @@ class TilingCallback(Callback):
         dataloader_idx: int,
     ) -> None:
         """Called when the validation batch begins."""
-        batch["image"] = self.tiler.tile_batch(batch["image"])
+        batch["image"] = self.tiler.tile(batch["image"])
 
     def on_validation_batch_end(
         self,
@@ -49,8 +49,8 @@ class TilingCallback(Callback):
         dataloader_idx: int,
     ) -> None:
         """Called when the validation batch ends."""
-        outputs["anomaly_maps"] = self.tiler.untile_batch(outputs["anomaly_maps"].unsqueeze(1))[:, 0, :, :]
-        outputs["images"] = self.tiler.untile_batch(outputs["images"])
+        outputs["anomaly_maps"] = self.tiler.untile(outputs["anomaly_maps"].unsqueeze(1))[:, 0, :, :]
+        outputs["images"] = self.tiler.untile(outputs["images"])
 
     def on_test_batch_start(
         self,
@@ -61,7 +61,7 @@ class TilingCallback(Callback):
         dataloader_idx: int,
     ) -> None:
         """Called when the test batch begins."""
-        batch["image"] = self.tiler.tile_batch(batch["image"])
+        batch["image"] = self.tiler.tile(batch["image"])
 
     def on_test_batch_end(
         self,
@@ -73,5 +73,5 @@ class TilingCallback(Callback):
         dataloader_idx: int,
     ) -> None:
         """Called when the test batch ends."""
-        outputs["anomaly_maps"] = self.tiler.untile_batch(outputs["anomaly_maps"].unsqueeze(1))[:, 0, :, :]
-        outputs["images"] = self.tiler.untile_batch(outputs["images"])
+        outputs["anomaly_maps"] = self.tiler.untile(outputs["anomaly_maps"].unsqueeze(1))[:, 0, :, :]
+        outputs["images"] = self.tiler.untile(outputs["images"])

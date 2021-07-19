@@ -132,7 +132,7 @@ class DFKDELightning(pl.LightningModule):
         feature_vector = torch.hstack(list(layer_outputs.values())).detach()
         probability = self.normality_model.predict(feature_vector.view(feature_vector.shape[:2]))
         prediction = (probability > self.hparams.model.confidence_threshold).int()
-        ground_truth = np.any(mask.cpu().numpy(), axis=(1,2,3)).astype(int)
+        ground_truth = np.any(mask.cpu().numpy(), axis=(1, 2, 3)).astype(int)
         return {"probability": probability, "ground_truth": ground_truth, "prediction": prediction}
 
     def validation_epoch_end(self, outputs: List[Dict[str, Any]]) -> None:
