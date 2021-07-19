@@ -147,7 +147,7 @@ class Tiler:
         self,
         tile_size: Union[int, Sequence],
         stride: Union[int, Sequence],
-        mode: str = "interpolation",
+        mode: str = "padding",
     ) -> None:
 
         self.tile_size_h, self.tile_size_w = self.__validate_size_type(tile_size)
