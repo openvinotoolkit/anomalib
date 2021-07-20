@@ -350,7 +350,7 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         )
         return {
             "filenames": filenames,
-            "images": images,
+            "images": images.cpu(),
             "anomaly_maps": anomaly_maps.cpu(),
             "true_labels": labels.cpu(),
             "true_masks": masks.squeeze(1).cpu(),
