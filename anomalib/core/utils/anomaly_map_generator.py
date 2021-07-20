@@ -75,8 +75,9 @@ class BaseAnomalyMapGenerator:
         denominator = precision + recall
         f1_score = np.divide(numerator, denominator, out=np.zeros_like(numerator), where=denominator != 0)
         threshold = thresholds[np.argmax(f1_score)]
+        max_f1 = np.max(f1_score)
 
-        return threshold
+        return threshold, max_f1
 
     @staticmethod
     def compute_mask(anomaly_map: np.ndarray, threshold: float, kernel_size: int = 4) -> np.ndarray:

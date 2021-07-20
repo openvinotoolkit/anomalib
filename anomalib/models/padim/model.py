@@ -407,7 +407,10 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         self.image_roc_auc = roc_auc_score(self.true_labels, self.pred_labels)
         self.pixel_roc_auc = roc_auc_score(self.true_masks.flatten(), self.anomaly_maps.flatten())
 
+        _, self.image_f1_score = self.anomaly_map_generator.compute_adaptive_threshold(self.true_labels, self.pred_labels)
+
         self.log(name="Image-Level AUC", value=self.image_roc_auc, on_epoch=True, prog_bar=True)
+        self.log(name="Image-Level F1", value=self.image_f1_score, on_epoch=True, prog_bar=True)
         self.log(name="Pixel-Level AUC", value=self.pixel_roc_auc, on_epoch=True, prog_bar=True)
 
     def test_epoch_end(self, outputs):
@@ -420,7 +423,7 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
 
         """
         self.validation_epoch_end(outputs)
-        threshold = self.anomaly_map_generator.compute_adaptive_threshold(self.true_masks, self.anomaly_maps)
+        threshold, _ = self.anomaly_map_generator.compute_adaptive_threshold(self.true_masks, self.anomaly_maps)
 
         for (filename, image, true_mask, anomaly_map) in zip(
             self.filenames, self.images, self.true_masks, self.anomaly_maps
