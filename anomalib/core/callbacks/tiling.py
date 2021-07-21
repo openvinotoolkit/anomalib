@@ -15,7 +15,7 @@ class TilingCallback(Callback):
     """
 
     def __init__(self, hparams):
-        self.tiler = Tiler(hparams.dataset.tile_size, hparams.dataset.stride)
+        self.tiler = Tiler(hparams.dataset.tiling.tile_size, hparams.dataset.tiling.stride)
 
     def on_train_batch_start(
         self,

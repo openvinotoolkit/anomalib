@@ -4,8 +4,10 @@ dataset:
   path: ./datasets/MVTec
   category: leather
   image_size: 256
-  tile_size: null
-  stride: null
+  tiling:
+    apply: false
+    tile_size: null
+    stride: null
   train_batch_size: 32
   test_batch_size: 32
   num_workers: 36
