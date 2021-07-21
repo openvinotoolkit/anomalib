@@ -319,7 +319,7 @@ class STFPMLightning(BaseAnomalySegmentationLightning):
 
         """
         filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
-        anomaly_maps = self.model(batch["image"])
+        anomaly_maps = self.model(images)
 
         return {
             "filenames": filenames,
