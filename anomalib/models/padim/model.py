@@ -162,7 +162,7 @@ class Callbacks:
         if "weight_file" in self.config.keys():
             model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.weight_file))
             callbacks.append(model_loader)
-        if "tile_size" in self.config.dataset.keys() and self.config.dataset.tiling.apply:
+        if "tiling" in self.config.dataset.keys() and self.config.dataset.tiling.apply:
             tiler = TilingCallback(self.config)
             callbacks.append(tiler)
         callbacks.append(TimerCallback())
