@@ -157,7 +157,7 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
 
     def __init__(
         self,
-        image_size: Union[ListConfig, Tuple] = (256, 256),
+        image_size: Union[ListConfig, Tuple],
         alpha: float = 0.4,
         gamma: int = 0,
         sigma: int = 4,
