@@ -3,23 +3,28 @@ import glob
 import os
 import pickle
 import shutil
+from pathlib import Path
+from typing import Any, Dict, List
 
 import cv2
 import numpy as np
 import pytorch_lightning as pl
 import torch
+import torchvision
 from PIL import Image
-from anomalib.models.patchcore.sampling_methods.kcenter_greedy import kCenterGreedy
 from scipy.ndimage import gaussian_filter
 from sklearn.metrics import confusion_matrix, roc_auc_score
 from sklearn.neighbors import NearestNeighbors
 from sklearn.random_projection import SparseRandomProjection
-from torch import nn
+from torch import Tensor, nn
 from torch.nn import functional as F
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 from torchvision.models import wide_resnet50_2
 
+from anomalib.core.model.feature_extractor import FeatureExtractor
+from anomalib.datasets.utils import Denormalize
+from anomalib.models.patchcore.sampling_methods.kcenter_greedy import kCenterGreedy
 
 # def copy_files(src, dst, ignores=[]):
 #     src_files = os.listdir(src)
@@ -82,69 +87,69 @@ mean_train = [0.485, 0.456, 0.406]
 std_train = [0.229, 0.224, 0.225]
 
 
-class MVTecDataset(Dataset):
-    def __init__(self, root, transform, gt_transform, phase):
-        if phase == "train":
-            self.img_path = os.path.join(root, "train")
-        else:
-            self.img_path = os.path.join(root, "test")
-            self.gt_path = os.path.join(root, "ground_truth")
-        self.transform = transform
-        self.gt_transform = gt_transform
-        # load dataset
-        (
-            self.img_paths,
-            self.gt_paths,
-            self.labels,
-            self.types,
-        ) = self.load_dataset()  # self.labels => good : 0, anomaly : 1
+# class MVTecDataset(Dataset):
+#     def __init__(self, root, transform, gt_transform, phase):
+#         if phase == "train":
+#             self.img_path = os.path.join(root, "train")
+#         else:
+#             self.img_path = os.path.join(root, "test")
+#             self.gt_path = os.path.join(root, "ground_truth")
+#         self.transform = transform
+#         self.gt_transform = gt_transform
+#         # load dataset
+#         (
+#             self.img_paths,
+#             self.gt_paths,
+#             self.labels,
+#             self.types,
+#         ) = self.load_dataset()  # self.labels => good : 0, anomaly : 1
 
-    def load_dataset(self):
+#     def load_dataset(self):
 
-        img_tot_paths = []
-        gt_tot_paths = []
-        tot_labels = []
-        tot_types = []
+#         img_tot_paths = []
+#         gt_tot_paths = []
+#         tot_labels = []
+#         tot_types = []
 
-        defect_types = os.listdir(self.img_path)
+#         defect_types = os.listdir(self.img_path)
 
-        for defect_type in defect_types:
-            if defect_type == "good":
-                img_paths = glob.glob(os.path.join(self.img_path, defect_type) + "/*.png")
-                img_tot_paths.extend(img_paths)
-                gt_tot_paths.extend([0] * len(img_paths))
-                tot_labels.extend([0] * len(img_paths))
-                tot_types.extend(["good"] * len(img_paths))
-            else:
-                img_paths = glob.glob(os.path.join(self.img_path, defect_type) + "/*.png")
-                gt_paths = glob.glob(os.path.join(self.gt_path, defect_type) + "/*.png")
-                img_paths.sort()
-                gt_paths.sort()
-                img_tot_paths.extend(img_paths)
-                gt_tot_paths.extend(gt_paths)
-                tot_labels.extend([1] * len(img_paths))
-                tot_types.extend([defect_type] * len(img_paths))
+#         for defect_type in defect_types:
+#             if defect_type == "good":
+#                 img_paths = glob.glob(os.path.join(self.img_path, defect_type) + "/*.png")
+#                 img_tot_paths.extend(img_paths)
+#                 gt_tot_paths.extend([0] * len(img_paths))
+#                 tot_labels.extend([0] * len(img_paths))
+#                 tot_types.extend(["good"] * len(img_paths))
+#             else:
+#                 img_paths = glob.glob(os.path.join(self.img_path, defect_type) + "/*.png")
+#                 gt_paths = glob.glob(os.path.join(self.gt_path, defect_type) + "/*.png")
+#                 img_paths.sort()
+#                 gt_paths.sort()
+#                 img_tot_paths.extend(img_paths)
+#                 gt_tot_paths.extend(gt_paths)
+#                 tot_labels.extend([1] * len(img_paths))
+#                 tot_types.extend([defect_type] * len(img_paths))
 
-        assert len(img_tot_paths) == len(gt_tot_paths), "Something wrong with test and ground truth pair!"
+#         assert len(img_tot_paths) == len(gt_tot_paths), "Something wrong with test and ground truth pair!"
 
-        return img_tot_paths, gt_tot_paths, tot_labels, tot_types
+#         return img_tot_paths, gt_tot_paths, tot_labels, tot_types
 
-    def __len__(self):
-        return len(self.img_paths)
+#     def __len__(self):
+#         return len(self.img_paths)
 
-    def __getitem__(self, idx):
-        img_path, gt, label, img_type = self.img_paths[idx], self.gt_paths[idx], self.labels[idx], self.types[idx]
-        img = Image.open(img_path).convert("RGB")
-        img = self.transform(img)
-        if gt == 0:
-            gt = torch.zeros([1, img.size()[-2], img.size()[-2]])
-        else:
-            gt = Image.open(gt)
-            gt = self.gt_transform(gt)
+#     def __getitem__(self, idx):
+#         img_path, gt, label, img_type = self.img_paths[idx], self.gt_paths[idx], self.labels[idx], self.types[idx]
+#         img = Image.open(img_path).convert("RGB")
+#         img = self.transform(img)
+#         if gt == 0:
+#             gt = torch.zeros([1, img.size()[-2], img.size()[-2]])
+#         else:
+#             gt = Image.open(gt)
+#             gt = self.gt_transform(gt)
 
-        assert img.size()[1:] == gt.size()[1:], "image.size != gt.size !!!"
+#         assert img.size()[1:] == gt.size()[1:], "image.size != gt.size !!!"
 
-        return img, gt, label, os.path.basename(img_path[:-4]), img_type
+#         return img, gt, label, os.path.basename(img_path[:-4]), img_type
 
 
 def cvt2heatmap(gray):
@@ -187,6 +192,82 @@ def cal_confusion_matrix(y_true, y_pred_no_thresh, thresh, img_path_list):
     print(false_n)
 
 
+class PatchcoreModel(torch.nn.Module):
+    """
+    Padim Module
+    """
+
+    def __init__(self, backbone: str, layers: List[str]):
+        super().__init__()
+        self.backbone = getattr(torchvision.models, backbone)
+        self.layers = layers
+        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
+
+    def forward(self, input_tensor: Tensor) -> Dict[str, Tensor]:
+        """Forward-pass image-batch (N, C, H, W) into model to extract features.
+
+        Args:
+                input_tensor: Image-batch (N, C, H, W)
+                input_tensor: Tensor:
+
+        Returns:
+                Features from single/multiple layers.
+
+                :Example:
+
+        >>> x = torch.randn(32, 3, 224, 224)
+        >>> features = self.extract_features(input_tensor)
+        >>> features.keys()
+        dict_keys(['layer1', 'layer2', 'layer3'])
+
+        >>> [v.shape for v in features.values()]
+        [torch.Size([32, 64, 56, 56]),
+         torch.Size([32, 128, 28, 28]),
+         torch.Size([32, 256, 14, 14])]
+        """
+        with torch.no_grad():
+            features = self.feature_extractor(input_tensor)
+
+        return features
+
+    def append_features(self, outputs: List[Dict[str, Any]]) -> Dict[str, List[Tensor]]:
+        """append_features from each batch to concatenate
+
+        Args:
+                outputs: description]
+                outputs: List[Dict[str:Tensor]]:
+
+        Returns:
+                description]
+
+        """
+        features: Dict[str, List[Tensor]] = {layer: [] for layer in self.layers}
+        for batch in outputs:
+            for layer in self.layers:
+                features[layer].append(batch["features"][layer].detach())
+
+        return features
+
+    @staticmethod
+    def concat_features(features: Dict[str, List[Tensor]]) -> Dict[str, Tensor]:
+        """Concatenate batch features to form one big feauture matrix.
+
+        Args:
+                        features: Features from batches.
+                        features: Dict[str:
+                        List[Tensor]]:
+
+        Returns:
+                        Concatenated feature map.
+
+        """
+        concatenated_features: Dict[str, Tensor] = {}
+        for layer, feature_list in features.items():
+            concatenated_features[layer] = torch.cat(tensors=feature_list, dim=0)
+
+        return concatenated_features
+
+
 class STPM(pl.LightningModule):
     def __init__(self, hparams):
         super(STPM, self).__init__()
@@ -200,6 +281,7 @@ class STPM(pl.LightningModule):
 
         # self.model = torch.hub.load('pytorch/vision:v0.10.0', 'wide_resnet50_2', pretrained=True)
         self.model = wide_resnet50_2(pretrained=True)
+        self._model = PatchcoreModel(backbone=hparams.model.backbone, layers=hparams.model.layers).eval()
 
         for param in self.model.parameters():
             param.requires_grad = False
@@ -211,21 +293,21 @@ class STPM(pl.LightningModule):
 
         self.init_results_list()
 
-        self.data_transforms = transforms.Compose(
-            [
-                transforms.Resize(tuple(hparams.dataset.image_size), Image.ANTIALIAS),
-                transforms.ToTensor(),
-                transforms.CenterCrop(tuple(hparams.dataset.crop_size)),
-                transforms.Normalize(mean=mean_train, std=std_train),
-            ]
-        )
-        self.gt_transforms = transforms.Compose(
-            [
-                transforms.Resize(tuple(hparams.dataset.image_size)),
-                transforms.ToTensor(),
-                transforms.CenterCrop(tuple(hparams.dataset.crop_size)),
-            ]
-        )
+        # self.data_transforms = transforms.Compose(
+        #     [
+        #         transforms.Resize(tuple(hparams.dataset.image_size), Image.ANTIALIAS),
+        #         transforms.ToTensor(),
+        #         transforms.CenterCrop(tuple(hparams.dataset.crop_size)),
+        #         transforms.Normalize(mean=mean_train, std=std_train),
+        #     ]
+        # )
+        # self.gt_transforms = transforms.Compose(
+        #     [
+        #         transforms.Resize(tuple(hparams.dataset.image_size)),
+        #         transforms.ToTensor(),
+        #         transforms.CenterCrop(tuple(hparams.dataset.crop_size)),
+        #     ]
+        # )
 
         self.inv_normalize = transforms.Normalize(
             mean=[-0.485 / 0.229, -0.456 / 0.224, -0.406 / 0.255], std=[1 / 0.229, 1 / 0.224, 1 / 0.255]
@@ -257,51 +339,59 @@ class STPM(pl.LightningModule):
         hm_on_img = heatmap_on_image(heatmap, input_img)
 
         # save images
-        cv2.imwrite(os.path.join(self.sample_path, f"{x_type}_{file_name}.jpg"), input_img)
-        cv2.imwrite(os.path.join(self.sample_path, f"{x_type}_{file_name}_amap.jpg"), anomaly_map_norm_hm)
-        cv2.imwrite(os.path.join(self.sample_path, f"{x_type}_{file_name}_amap_on_img.jpg"), hm_on_img)
-        cv2.imwrite(os.path.join(self.sample_path, f"{x_type}_{file_name}_gt.jpg"), gt_img)
-
-    def train_dataloader(self):
-        image_datasets = MVTecDataset(
-            root=os.path.join(self.hparams.dataset.path, self.hparams.dataset.category),
-            transform=self.data_transforms,
-            gt_transform=self.gt_transforms,
-            phase="train",
+        cv2.imwrite(os.path.join(self.hparams.project.path, "images", f"{x_type}_{file_name}.jpg"), input_img)
+        cv2.imwrite(
+            os.path.join(self.hparams.project.path, "images", f"{x_type}_{file_name}_amap.jpg"), anomaly_map_norm_hm
         )
-        train_loader = DataLoader(
-            image_datasets, batch_size=self.hparams.dataset.batch_size, shuffle=True, num_workers=0
-        )  # , pin_memory=True)
-        return train_loader
-
-    def test_dataloader(self):
-        test_datasets = MVTecDataset(
-            root=os.path.join(self.hparams.dataset.path, self.hparams.dataset.category),
-            transform=self.data_transforms,
-            gt_transform=self.gt_transforms,
-            phase="test",
+        cv2.imwrite(
+            os.path.join(self.hparams.project.path, "images", f"{x_type}_{file_name}_amap_on_img.jpg"), hm_on_img
         )
-        test_loader = DataLoader(
-            test_datasets, batch_size=1, shuffle=False, num_workers=0
-        )  # , pin_memory=True) # only work on batch_size=1, now.
-        return test_loader
+        cv2.imwrite(os.path.join(self.hparams.project.path, "images", f"{x_type}_{file_name}_gt.jpg"), gt_img)
+
+    # def train_dataloader(self):
+    #     image_datasets = MVTecDataset(
+    #         root=os.path.join(self.hparams.dataset.path, self.hparams.dataset.category),
+    #         transform=self.data_transforms,
+    #         gt_transform=self.gt_transforms,
+    #         phase="train",
+    #     )
+    #     train_loader = DataLoader(
+    #         image_datasets, batch_size=self.hparams.dataset.batch_size, shuffle=True, num_workers=0
+    #     )  # , pin_memory=True)
+    #     return train_loader
+
+    # def test_dataloader(self):
+    #     test_datasets = MVTecDataset(
+    #         root=os.path.join(self.hparams.dataset.path, self.hparams.dataset.category),
+    #         transform=self.data_transforms,
+    #         gt_transform=self.gt_transforms,
+    #         phase="test",
+    #     )
+    #     test_loader = DataLoader(
+    #         test_datasets, batch_size=1, shuffle=False, num_workers=0
+    #     )  # , pin_memory=True) # only work on batch_size=1, now.
+    #     return test_loader
 
     def configure_optimizers(self):
         return None
 
     def on_train_start(self):
         self.model.eval()  # to stop running_var move (maybe not critical)
-        self.embedding_dir_path, self.sample_path, self.source_code_save_path = prep_dirs(self.logger.log_dir, self.hparams.dataset.category)
+        self.embedding_dir_path, self.sample_path, self.source_code_save_path = prep_dirs(
+            self.logger.log_dir, self.hparams.dataset.category
+        )
         self.embedding_list = []
 
     def on_test_start(self):
         self.init_results_list()
-        self.embedding_dir_path, self.sample_path, self.source_code_save_path = prep_dirs(self.logger.log_dir, self.hparams.dataset.category)
+        self.embedding_dir_path, self.sample_path, self.source_code_save_path = prep_dirs(
+            self.logger.log_dir, self.hparams.dataset.category
+        )
 
     def training_step(self, batch, batch_idx):  # save locally aware patch features
-        x, _, _, file_name, _ = batch
-        features = self(x)
-        # features = self(batch['image'])
+        # x, _, _, file_name, _ = batch
+        # features = self(x)
+        features = self(batch["image"])
         embeddings = []
         for feature in features:
             m = torch.nn.AvgPool2d(3, 1, 1)
@@ -332,9 +422,23 @@ class STPM(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):  # Nearest Neighbour Search
         self.embedding_coreset = pickle.load(open(os.path.join(self.embedding_dir_path, "embedding.pickle"), "rb"))
-        x, gt, label, file_name, x_type = batch
+        # x, gt, label, file_name, x_type = batch
+        filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
+
+        filenames = Path(filenames[0])
+        filename = filenames.stem
+        category = filenames.parent.name
+        # features = self._model(images)
+        # return {
+        #     "filenames": filenames,
+        #     "images": images,
+        #     "features": features,
+        #     "true_labels": labels.cpu().numpy(),
+        #     "true_masks": masks.squeeze().cpu().numpy(),
+        # }
         # extract embedding
-        features = self(x)
+        features = self(images)
+        features2 = self._model(images)
         embeddings = []
         for feature in features:
             m = torch.nn.AvgPool2d(3, 1, 1)
@@ -342,28 +446,30 @@ class STPM(pl.LightningModule):
         embedding_ = embedding_concat(embeddings[0], embeddings[1])
         embedding_test = np.array(reshape_embedding(np.array(embedding_)))
         # NN
-        nbrs = NearestNeighbors(n_neighbors=self.hparams.model.num_neighbors, algorithm="ball_tree", metric="minkowski", p=2).fit(
-            self.embedding_coreset
-        )
+        nbrs = NearestNeighbors(
+            n_neighbors=self.hparams.model.num_neighbors, algorithm="ball_tree", metric="minkowski", p=2
+        ).fit(self.embedding_coreset)
         score_patches, _ = nbrs.kneighbors(embedding_test)
         anomaly_map = score_patches[:, 0].reshape((28, 28))
         N_b = score_patches[np.argmax(score_patches[:, 0])]
         w = 1 - (np.max(np.exp(N_b)) / np.sum(np.exp(N_b)))
         score = w * max(score_patches[:, 0])  # Image-level score
 
-        gt_np = gt.cpu().numpy()[0, 0].astype(int)
+        gt_np = masks.cpu().numpy()[0, 0].astype(int)
         anomaly_map_resized = cv2.resize(anomaly_map, tuple(self.hparams.dataset.crop_size))
         anomaly_map_resized_blur = gaussian_filter(anomaly_map_resized, sigma=4)
 
         self.gt_list_px_lvl.extend(gt_np.ravel())
         self.pred_list_px_lvl.extend(anomaly_map_resized_blur.ravel())
-        self.gt_list_img_lvl.append(label.cpu().numpy()[0])
+        self.gt_list_img_lvl.append(labels.cpu().numpy()[0])
         self.pred_list_img_lvl.append(score)
-        self.img_path_list.extend(file_name)
+        self.img_path_list.extend(filename)
         # save images
-        x = self.inv_normalize(x)
-        input_x = cv2.cvtColor(x.permute(0, 2, 3, 1).cpu().numpy()[0] * 255, cv2.COLOR_BGR2RGB)
-        self.save_anomaly_map(anomaly_map_resized_blur, input_x, gt_np * 255, file_name[0], x_type[0])
+        images = self.inv_normalize(images)
+        input_x = cv2.cvtColor(images.permute(0, 2, 3, 1).cpu().numpy()[0] * 255, cv2.COLOR_BGR2RGB)
+
+        self.save_anomaly_map(anomaly_map_resized_blur, input_x, gt_np * 255, filename, category)
+        # self.save_anomaly_map(anomaly_map_resized_blur, input_x, gt_np * 255, file_name[0], x_type[0])
 
     def test_epoch_end(self, outputs):
         print("Total pixel-level auc-roc score :")
