@@ -230,23 +230,22 @@ class PatchcoreModel(torch.nn.Module):
 
         return features
 
-    def append_features(self, outputs: List[Dict[str, Any]]) -> Dict[str, List[Tensor]]:
+    def append_features(self, features: Dict[str, Tensor]) -> List[Tensor]:
+        # def append_features(self, outputs: List[Dict[str, Any]]) -> Dict[str, List[Tensor]]:
         """append_features from each batch to concatenate
 
         Args:
-                outputs: description]
-                outputs: List[Dict[str:Tensor]]:
+                features description]
+                features: List[Dict[str:Tensor]]:
 
         Returns:
                 description]
 
         """
-        features: Dict[str, List[Tensor]] = {layer: [] for layer in self.layers}
-        for batch in outputs:
-            for layer in self.layers:
-                features[layer].append(batch["features"][layer].detach())
+        pool = torch.nn.AvgPool2d(3, 1, 1)
+        embeddings = [pool(feature) for feature in features.values()]
 
-        return features
+        return embeddings
 
     @staticmethod
     def concat_features(features: Dict[str, List[Tensor]]) -> Dict[str, Tensor]:
@@ -268,9 +267,9 @@ class PatchcoreModel(torch.nn.Module):
         return concatenated_features
 
 
-class STPM(pl.LightningModule):
+class PatchcoreLightning(pl.LightningModule):
     def __init__(self, hparams):
-        super(STPM, self).__init__()
+        super(PatchcoreLightning, self).__init__()
 
         self.save_hyperparameters(hparams)
 
@@ -377,16 +376,10 @@ class STPM(pl.LightningModule):
 
     def on_train_start(self):
         self.model.eval()  # to stop running_var move (maybe not critical)
-        self.embedding_dir_path, self.sample_path, self.source_code_save_path = prep_dirs(
-            self.logger.log_dir, self.hparams.dataset.category
-        )
         self.embedding_list = []
 
     def on_test_start(self):
         self.init_results_list()
-        self.embedding_dir_path, self.sample_path, self.source_code_save_path = prep_dirs(
-            self.logger.log_dir, self.hparams.dataset.category
-        )
 
     def training_step(self, batch, batch_idx):  # save locally aware patch features
         # x, _, _, file_name, _ = batch
@@ -417,11 +410,13 @@ class STPM(pl.LightningModule):
 
         print("initial embedding size : ", total_embeddings.shape)
         print("final embedding size : ", self.embedding_coreset.shape)
-        with open(os.path.join(self.embedding_dir_path, "embedding.pickle"), "wb") as f:
+        with open(os.path.join(self.hparams.project.path, "weights", "embedding.pickle"), "wb") as f:
             pickle.dump(self.embedding_coreset, f)
 
     def test_step(self, batch, batch_idx):  # Nearest Neighbour Search
-        self.embedding_coreset = pickle.load(open(os.path.join(self.embedding_dir_path, "embedding.pickle"), "rb"))
+        self.embedding_coreset = pickle.load(
+            open(os.path.join(self.hparams.project.path, "weights", "embedding.pickle"), "rb")
+        )
         # x, gt, label, file_name, x_type = batch
         filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
 
@@ -525,7 +520,7 @@ if __name__ == "__main__":
     trainer = pl.Trainer.from_argparse_args(
         args, default_root_dir=os.path.join(args.project_root_path, args.category), max_epochs=args.num_epochs, gpus=1
     )  # , check_val_every_n_epoch=args.val_freq,  num_sanity_val_steps=0) # ,fast_dev_run=True)
-    model = STPM(hparams=args)
+    model = PatchcoreLightning(hparams=args)
     if args.phase == "train":
         trainer.fit(model)
         trainer.test(model)
