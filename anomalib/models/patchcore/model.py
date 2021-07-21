@@ -202,8 +202,9 @@ class PatchcoreModel(torch.nn.Module):
         self.backbone = getattr(torchvision.models, backbone)
         self.layers = layers
         self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
+        self.pool = torch.nn.AvgPool2d(3, 1, 1)
 
-    def forward(self, input_tensor: Tensor) -> Dict[str, Tensor]:
+    def forward(self, input_tensor: Tensor) -> List[Tensor]:
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
 
         Args:
@@ -228,6 +229,8 @@ class PatchcoreModel(torch.nn.Module):
         with torch.no_grad():
             features = self.feature_extractor(input_tensor)
 
+        features = [self.pool(feature) for feature in features.values()]
+
         return features
 
     def append_features(self, features: Dict[str, Tensor]) -> List[Tensor]:
@@ -243,7 +246,8 @@ class PatchcoreModel(torch.nn.Module):
 
         """
         pool = torch.nn.AvgPool2d(3, 1, 1)
-        embeddings = [pool(feature) for feature in features.values()]
+        embeddings = [pool(feature) for feature in features]
+        # embeddings = [pool(feature) for feature in features.values()]
 
         return embeddings
 
@@ -288,7 +292,7 @@ class PatchcoreLightning(pl.LightningModule):
         self.model.layer2[-1].register_forward_hook(hook_t)
         self.model.layer3[-1].register_forward_hook(hook_t)
 
-        self.criterion = torch.nn.MSELoss(reduction="sum")
+        # self.criterion = torch.nn.MSELoss(reduction="sum")
 
         self.init_results_list()
 
@@ -382,13 +386,18 @@ class PatchcoreLightning(pl.LightningModule):
         self.init_results_list()
 
     def training_step(self, batch, batch_idx):  # save locally aware patch features
-        # x, _, _, file_name, _ = batch
-        # features = self(x)
-        features = self(batch["image"])
+        images = batch["image"]
+        # features = self(batch["image"])
+        features2 = self._model(batch["image"])
+
+        features = self(images)
+        features2 = self._model(images)
+
         embeddings = []
         for feature in features:
             m = torch.nn.AvgPool2d(3, 1, 1)
             embeddings.append(m(feature))
+        # embeddings = self._model(batch["image"])
         embedding = embedding_concat(embeddings[0], embeddings[1])
         self.embedding_list.extend(reshape_embedding(np.array(embedding)))
 
@@ -433,11 +442,13 @@ class PatchcoreLightning(pl.LightningModule):
         # }
         # extract embedding
         features = self(images)
-        features2 = self._model(images)
-        embeddings = []
-        for feature in features:
-            m = torch.nn.AvgPool2d(3, 1, 1)
-            embeddings.append(m(feature))
+        # features = self._model(images)
+        # embeddings = []
+        # for feature in features:
+        #     m = torch.nn.AvgPool2d(3, 1, 1)
+        #     embeddings.append(m(feature))
+        embeddings = self._model.append_features(features)
+        # embeddings = self._model(images)
         embedding_ = embedding_concat(embeddings[0], embeddings[1])
         embedding_test = np.array(reshape_embedding(np.array(embedding_)))
         # NN
@@ -491,38 +502,40 @@ class PatchcoreLightning(pl.LightningModule):
         #     f.write(args.category + ' : ' + str(values) + '\n')
 
 
-def get_args():
-    parser = argparse.ArgumentParser(description="ANOMALYDETECTION")
-    parser.add_argument("--phase", choices=["train", "test"], default="train")
-    parser.add_argument(
-        "--dataset_path", default=r"/home/sakcay/Projects/data/MVTec"
-    )  # 'D:\Dataset\mvtec_anomaly_detection')#
-    parser.add_argument("--category", default="carpet")
-    parser.add_argument("--num_epochs", default=1)
-    parser.add_argument("--batch_size", default=32)
-    parser.add_argument("--load_size", default=256)  # 256
-    parser.add_argument("--input_size", default=224)
-    parser.add_argument("--coreset_sampling_ratio", default=0.001)
-    parser.add_argument(
-        "--project_root_path", default=r"/home/sakcay/Projects/ote/anomalib/results/patchcore/mvtec/leather"
-    )  # 'D:\Project_Train_Results\mvtec_anomaly_detection\210624\test') #
-    parser.add_argument("--save_src_code", default=True)
-    parser.add_argument("--save_anomaly_map", default=True)
-    parser.add_argument("--n_neighbors", type=int, default=9)
-    args = parser.parse_args()
-    return args
+#
+#
+# def get_args():
+#     parser = argparse.ArgumentParser(description="ANOMALYDETECTION")
+#     parser.add_argument("--phase", choices=["train", "test"], default="train")
+#     parser.add_argument(
+#         "--dataset_path", default=r"/home/sakcay/Projects/data/MVTec"
+#     )  # 'D:\Dataset\mvtec_anomaly_detection')#
+#     parser.add_argument("--category", default="carpet")
+#     parser.add_argument("--num_epochs", default=1)
+#     parser.add_argument("--batch_size", default=32)
+#     parser.add_argument("--load_size", default=256)  # 256
+#     parser.add_argument("--input_size", default=224)
+#     parser.add_argument("--coreset_sampling_ratio", default=0.001)
+#     parser.add_argument(
+#         "--project_root_path", default=r"/home/sakcay/Projects/ote/anomalib/results/patchcore/mvtec/leather"
+#     )  # 'D:\Project_Train_Results\mvtec_anomaly_detection\210624\test') #
+#     parser.add_argument("--save_src_code", default=True)
+#     parser.add_argument("--save_anomaly_map", default=True)
+#     parser.add_argument("--n_neighbors", type=int, default=9)
+#     args = parser.parse_args()
+#     return args
 
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    args = get_args()
+#     args = get_args()
 
-    trainer = pl.Trainer.from_argparse_args(
-        args, default_root_dir=os.path.join(args.project_root_path, args.category), max_epochs=args.num_epochs, gpus=1
-    )  # , check_val_every_n_epoch=args.val_freq,  num_sanity_val_steps=0) # ,fast_dev_run=True)
-    model = PatchcoreLightning(hparams=args)
-    if args.phase == "train":
-        trainer.fit(model)
-        trainer.test(model)
-    elif args.phase == "test":
-        trainer.test(model)
+#     trainer = pl.Trainer.from_argparse_args(
+#         args, default_root_dir=os.path.join(args.project_root_path, args.category), max_epochs=args.num_epochs, gpus=1
+#     )  # , check_val_every_n_epoch=args.val_freq,  num_sanity_val_steps=0) # ,fast_dev_run=True)
+#     model = PatchcoreLightning(hparams=args)
+#     if args.phase == "train":
+#         trainer.fit(model)
+#         trainer.test(model)
+#     elif args.phase == "test":
+#         trainer.test(model)
