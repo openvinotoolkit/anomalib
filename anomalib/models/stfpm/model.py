@@ -416,9 +416,9 @@ class STFPMOpenVino(BaseAnomalySegmentationLightning):
         if "tile_size" in hparams.dataset.keys() and hparams.dataset.tile_size is not None:
             tiler = TilingCallback(hparams)
             self.callbacks.append(tiler)
-            net.batch_size = self.compute_batch_size()
+            net.train_batch_size = self.compute_batch_size()
         else:
-            net.batch_size = 1
+            net.train_batch_size = 1
 
         self.input_blob = next(iter(net.input_info))
         self.out_blob = next(iter(net.outputs))

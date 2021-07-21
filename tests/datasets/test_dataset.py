@@ -16,8 +16,8 @@ def data_module():
         category="leather",
         image_size=(256, 256),
         crop_size=224,
-        batch_size=1,
-        inference_batch_size=1,
+        train_batch_size=1,
+        test_batch_size=1,
         num_workers=0,
     )
     datamodule.prepare_data()

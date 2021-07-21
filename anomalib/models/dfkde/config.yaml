@@ -4,8 +4,8 @@ dataset:
   path: ./datasets/MVTec
   category: leather
   image_size: 256
-  batch_size: 32
-  inference_batch_size: 32
+  train_batch_size: 32
+  test_batch_size: 32
   num_workers: 36
 
 model:
