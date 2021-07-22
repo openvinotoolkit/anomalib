@@ -202,10 +202,10 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
           Final anomaly map
         """
         batch_size = list(teacher_features.values())[0].shape[0]
-        anomaly_map = torch.ones(batch_size, self.image_size[0], self.image_size[1])
+        anomaly_map = torch.ones(batch_size, 1, self.image_size[0], self.image_size[1])
         for layer in teacher_features.keys():
             layer_map = self.compute_layer_map(teacher_features[layer], student_features[layer])
-            layer_map = layer_map[:, 0, :, :]
+            layer_map = layer_map
             anomaly_map = anomaly_map.to(layer_map.device)
             anomaly_map *= layer_map
 
@@ -388,8 +388,8 @@ class STFPMLightning(BaseAnomalySegmentationLightning):
         ):
             image = Denormalize()(image.squeeze())
 
-            heat_map = self.model.anomaly_map_generator.apply_heatmap_on_image(anomaly_map, image)
-            pred_mask = self.model.anomaly_map_generator.compute_mask(anomaly_map=anomaly_map, threshold=threshold)
+            heat_map = self.model.anomaly_map_generator.apply_heatmap_on_image(anomaly_map.squeeze(), image)
+            pred_mask = self.model.anomaly_map_generator.compute_mask(anomaly_map=anomaly_map.squeeze(), threshold=threshold)
             vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
 
             visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))

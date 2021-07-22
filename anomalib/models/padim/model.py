@@ -286,7 +286,7 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
 
         score_map = self.compute_distance(embedding, stats=[mean.to(embedding.device), covariance.to(embedding.device)])
         up_sampled_score_map = self.up_sample(score_map)
-        smoothed_anomaly_map = self.smooth_anomaly_map(up_sampled_score_map).squeeze(1)
+        smoothed_anomaly_map = self.smooth_anomaly_map(up_sampled_score_map)
 
         return smoothed_anomaly_map
 
@@ -427,8 +427,8 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         ):
             image = Denormalize()(image.squeeze())
 
-            heat_map = self.anomaly_map_generator.apply_heatmap_on_image(anomaly_map, image)
-            pred_mask = self.anomaly_map_generator.compute_mask(anomaly_map=anomaly_map, threshold=threshold)
+            heat_map = self.anomaly_map_generator.apply_heatmap_on_image(anomaly_map.squeeze(), image)
+            pred_mask = self.anomaly_map_generator.compute_mask(anomaly_map=anomaly_map.squeeze(), threshold=threshold)
             vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
 
             visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
