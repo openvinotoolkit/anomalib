@@ -173,6 +173,13 @@ class Denormalize:
             Denormalized numpy array (H, W, C).
 
         """
+
+        if tensor.dim() == 4:
+            if tensor.size(0):
+                tensor = tensor.squeeze(0)
+            else:
+                raise ValueError(f"Tensor has batch size of {tensor.size(0)}. Only single batch is supported.")
+
         for tnsr, mean, std in zip(tensor, self.mean, self.std):
             tnsr.mul_(std).add_(mean)
 

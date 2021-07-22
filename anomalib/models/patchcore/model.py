@@ -4,13 +4,15 @@ import os
 import pickle
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple, Union
 
 import cv2
 import numpy as np
 import pytorch_lightning as pl
 import torch
 import torchvision
+from numpy.lib.arraysetops import isin
+from omegaconf import ListConfig
 from PIL import Image
 from scipy.ndimage import gaussian_filter
 from sklearn.metrics import confusion_matrix, roc_auc_score
@@ -23,6 +25,7 @@ from torchvision import transforms
 from torchvision.models import wide_resnet50_2
 
 from anomalib.core.model.feature_extractor import FeatureExtractor
+from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
 from anomalib.datasets.utils import Denormalize
 from anomalib.models.patchcore.sampling_methods.kcenter_greedy import kCenterGreedy
 
@@ -177,6 +180,54 @@ def cal_confusion_matrix(y_true, y_pred_no_thresh, thresh, img_path_list):
     print(false_n)
 
 
+class AnomalyMapGenerator(BaseAnomalyMapGenerator):
+    """
+    Generate Anomaly Heatmap
+    """
+
+    def __init__(
+        self,
+        batch_size: int = 1,
+        image_size: Union[ListConfig, Tuple] = (256, 256),
+        alpha: float = 0.4,
+        gamma: int = 0,
+        sigma: int = 4,
+    ):
+        super().__init__(alpha=alpha, gamma=gamma, sigma=sigma)
+        self.distance = torch.nn.PairwiseDistance(p=2, keepdim=True)
+        self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
+        self.batch_size = batch_size
+
+    def compute_anomaly_map(self, score_patches: np.ndarray) -> np.ndarray:
+        """
+        Pixel Level Anomaly Heatmap
+
+        Args:
+            score_patches (np.ndarray): [description]
+        """
+        anomaly_map = score_patches[:, 0].reshape((28, 28))
+        anomaly_map = cv2.resize(anomaly_map, self.image_size)
+        anomaly_map = gaussian_filter(anomaly_map, sigma=self.sigma)
+
+        return anomaly_map
+
+    @staticmethod
+    def compute_anomaly_score(score_patches: np.ndarray) -> np.ndarray:
+        """
+        Compute Image-Level Anomaly Score
+
+        Args:
+            score_patches (np.ndarray): [description]
+        """
+        N_b = score_patches[np.argmax(score_patches[:, 0])]
+        w = 1 - (np.max(np.exp(N_b)) / np.sum(np.exp(N_b)))
+        score = w * max(score_patches[:, 0])
+        return score
+
+    def __call__(self, score_patches: np.ndarray) -> np.ndarray:
+        return self.compute_anomaly_map(score_patches)
+
+
 class PatchcoreModel(torch.nn.Module):
     """
     Padim Module
@@ -187,9 +238,10 @@ class PatchcoreModel(torch.nn.Module):
         self.backbone = getattr(torchvision.models, backbone)
         self.layers = layers
         self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
-        self.pool = torch.nn.AvgPool2d(3, 1, 1)
+        self.feature_pooler = torch.nn.AvgPool2d(3, 1, 1)
+        self.nn_search = NearestNeighbors(n_neighbors=9)
 
-    def forward(self, input_tensor: Tensor) -> List[Tensor]:
+    def forward(self, input_tensor: Tensor) -> np.ndarray:
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
 
         Args:
@@ -214,46 +266,93 @@ class PatchcoreModel(torch.nn.Module):
         with torch.no_grad():
             features = self.feature_extractor(input_tensor)
 
-        features = [self.pool(feature) for feature in features.values()]
+        features = {layer: self.feature_pooler(feature) for layer, feature in features.items()}
+        embedding = self.generate_embedding(features)
+        # features = [self.feature_pooler(feature) for feature in features.values()]
 
-        return features
+        return embedding
 
-    def append_features(self, features: Dict[str, Tensor]) -> List[Tensor]:
-        # def append_features(self, outputs: List[Dict[str, Any]]) -> Dict[str, List[Tensor]]:
-        """append_features from each batch to concatenate
+    # def append_features(self, features: Dict[str, Tensor]) -> List[Tensor]:
+    #     # def append_features(self, outputs: List[Dict[str, Any]]) -> Dict[str, List[Tensor]]:
+    #     """append_features from each batch to concatenate
+
+    #     Args:
+    #             features description]
+    #             features: List[Dict[str:Tensor]]:
+
+    #     Returns:
+    #             description]
+
+    #     """
+    #     pool = torch.nn.AvgPool2d(3, 1, 1)
+    #     appended_features = [pool(feature) for feature in features]
+    #     # embeddings = [pool(feature) for feature in features.values()]
+
+    #     return appended_features
+    #
+    # @staticmethod
+    # def concat_features(features: Dict[str, List[Tensor]]) -> Dict[str, Tensor]:
+    #     """Concatenate batch features to form one big feauture matrix.
+
+    #     Args:
+    #                     features: Features from batches.
+    #                     features: Dict[str:
+    #                     List[Tensor]]:
+
+    #     Returns:
+    #                     Concatenated feature map.
+
+    #     """
+    #     concatenated_features: Dict[str, Tensor] = {}
+    #     for layer, feature_list in features.items():
+    #         concatenated_features[layer] = torch.cat(tensors=feature_list, dim=0)
+
+    #     return concatenated_features
+
+    def generate_embedding(self, features: Dict[str, Tensor]) -> np.ndarray:
+        """Generate embedding from hierarchical feature map
 
         Args:
-                features description]
-                features: List[Dict[str:Tensor]]:
+            features: Hierarchical feature map from a CNN (ResNet18 or WideResnet)
+            features: Dict[str:Tensor]:
 
         Returns:
-                description]
+                Embedding vector
 
         """
-        pool = torch.nn.AvgPool2d(3, 1, 1)
-        appended_features = [pool(feature) for feature in features]
-        # embeddings = [pool(feature) for feature in features.values()]
 
-        return appended_features
+        layer_embeddings = features[self.layers[0]]
+        for layer in self.layers[1:]:
+            layer_embeddings = concat_layer_embedding(layer_embeddings, features[layer])
+
+        embedding = reshape_embedding(layer_embeddings).cpu().numpy()
+        return embedding
 
     @staticmethod
-    def concat_features(features: Dict[str, List[Tensor]]) -> Dict[str, Tensor]:
-        """Concatenate batch features to form one big feauture matrix.
+    def subsample_embedding(embedding: np.ndarray, sampling_ratio: float) -> np.ndarray:
+        """
+        Subsample embedding based on coreset sampling
 
         Args:
-                        features: Features from batches.
-                        features: Dict[str:
-                        List[Tensor]]:
+            embedding (np.ndarray): Embedding tensor from the CNN
+            sampling_ratio (float): Coreset sampling ratio
 
         Returns:
-                        Concatenated feature map.
-
+            np.ndarray: Subsampled embedding whose dimensionality is reduced.
         """
-        concatenated_features: Dict[str, Tensor] = {}
-        for layer, feature_list in features.items():
-            concatenated_features[layer] = torch.cat(tensors=feature_list, dim=0)
 
-        return concatenated_features
+        # Random projection
+        random_projector = SparseRandomProjection(n_components="auto", eps=0.9)  # 'auto' => Johnson-Lindenstrauss lemma
+        random_projector.fit(embedding)
+        # Coreset Subsampling
+        selector = kCenterGreedy(embedding, 0, 0)
+        selected_idx = selector.select_batch(
+            model=random_projector,
+            already_selected=[],
+            N=int(embedding.shape[0] * sampling_ratio),
+        )
+        embedding_coreset = embedding[selected_idx]
+        return embedding_coreset
 
 
 class PatchcoreLightning(pl.LightningModule):
@@ -262,28 +361,28 @@ class PatchcoreLightning(pl.LightningModule):
 
         self.save_hyperparameters(hparams)
 
-        self.init_features()
+        # self.init_features()
 
-        def hook_t(module, input, output):
-            self.features.append(output)
+        # def hook_t(module, input, output):
+        #     self.features.append(output)
 
-        # self.model = torch.hub.load('pytorch/vision:v0.10.0', 'wide_resnet50_2', pretrained=True)
-        self.model = wide_resnet50_2(pretrained=True)
+        # self.model = wide_resnet50_2(pretrained=True)
         self._model = PatchcoreModel(backbone=hparams.model.backbone, layers=hparams.model.layers).eval()
+        self.anomaly_map_generator = AnomalyMapGenerator(image_size=hparams.dataset.crop_size)
 
-        for param in self.model.parameters():
-            param.requires_grad = False
+        # for param in self.model.parameters():
+        #     param.requires_grad = False
 
-        self.model.layer2[-1].register_forward_hook(hook_t)
-        self.model.layer3[-1].register_forward_hook(hook_t)
+        # self.model.layer2[-1].register_forward_hook(hook_t)
+        # self.model.layer3[-1].register_forward_hook(hook_t)
 
-        self.init_results_list()
+        # self.init_results_list()
 
         self.automatic_optimization = False
 
-        self.inv_normalize = transforms.Normalize(
-            mean=[-0.485 / 0.229, -0.456 / 0.224, -0.406 / 0.255], std=[1 / 0.229, 1 / 0.224, 1 / 0.255]
-        )
+        # self.inv_normalize = transforms.Normalize(
+        #     mean=[-0.485 / 0.229, -0.456 / 0.224, -0.406 / 0.255], std=[1 / 0.229, 1 / 0.224, 1 / 0.255]
+        # )
 
     def init_results_list(self):
         self.gt_list_px_lvl = []
@@ -292,29 +391,21 @@ class PatchcoreLightning(pl.LightningModule):
         self.pred_list_img_lvl = []
         self.img_path_list = []
 
-    def init_features(self):
-        self.features = []
+    # def init_features(self):
+    #     self.features = []
 
-    def forward(self, x_t):
-        self.init_features()
-        _ = self.model(x_t)
-        return self.features
+    # def forward(self, x_t):
+    #     self.init_features()
+    #     _ = self.model(x_t)
+    #     return self.features
 
-    def save_anomaly_map(self, anomaly_map, input_img, gt_img, file_name, x_type):
-        if anomaly_map.shape != input_img.shape:
-            anomaly_map = cv2.resize(anomaly_map, (input_img.shape[0], input_img.shape[1]))
-        anomaly_map_norm = min_max_norm(anomaly_map)
-        anomaly_map_norm_hm = cvt2heatmap(anomaly_map_norm * 255)
-
-        # anomaly map on image
-        heatmap = cvt2heatmap(anomaly_map_norm * 255)
-        hm_on_img = heatmap_on_image(heatmap, input_img)
+    def save_anomaly_map(self, hm_on_img, gt_img, file_name, x_type):
 
         # save images
-        cv2.imwrite(os.path.join(self.hparams.project.path, "images", f"{x_type}_{file_name}.jpg"), input_img)
-        cv2.imwrite(
-            os.path.join(self.hparams.project.path, "images", f"{x_type}_{file_name}_amap.jpg"), anomaly_map_norm_hm
-        )
+        # cv2.imwrite(os.path.join(self.hparams.project.path, "images", f"{x_type}_{file_name}.jpg"), input_img)
+        # cv2.imwrite(
+        #     os.path.join(self.hparams.project.path, "images", f"{x_type}_{file_name}_amap.jpg"), anomaly_map_norm_hm
+        # )
         cv2.imwrite(
             os.path.join(self.hparams.project.path, "images", f"{x_type}_{file_name}_amap_on_img.jpg"), hm_on_img
         )
@@ -347,61 +438,66 @@ class PatchcoreLightning(pl.LightningModule):
     def configure_optimizers(self):
         return None
 
-    def on_train_start(self):
-        self.model.eval()  # to stop running_var move (maybe not critical)
-        # self.embedding_list = []
+    # def on_train_start(self):
+    #     self.model.eval()  # to stop running_var move (maybe not critical)
+    # self.embedding_list = []
 
     def on_test_start(self):
         self.init_results_list()
 
     def training_step(self, batch, batch_idx):  # save locally aware patch features
-        images = batch["image"]
+        # images = batch["image"]
         # features = self(batch["image"])
         # features2 = self._model(batch["image"])
-
-        features = self(images)
-        # features2 = self._model(images)
+        self._model.eval()
+        embedding = self._model(batch["image"])
+        # features = self._model(batch["image"])
+        # features = self(batch["image"])
 
         # embeddings = []
         # for feature in features:
         #     m = torch.nn.AvgPool2d(3, 1, 1)
         #     embeddings.append(m(feature))
 
-        embeddings = self._model.append_features(features)
+        # embeddings = self._model.append_features(features)
         # embeddings = self._model(batch["image"])
         # embedding = embedding_concat(embeddings[0], embeddings[1])
-        embedding = concat_layer_embedding(embeddings[0], embeddings[1])
-        embedding = reshape_embedding(embedding)
+        # # TODO: self._model.generate_embedding
+        # embedding = concat_layer_embedding(features[0], features[1])
+        # embedding = reshape_embedding(embedding)
+        # embedding = self._model.generate_embedding(features)
+
+        # Embedding is used coreset subsampling which requires numpy arrays
+        # embedding = embedding.cpu().numpy()
 
         return {"embedding": embedding}
 
     def training_epoch_end(self, outputs):
         # total_embeddings = np.array(self.embedding_list)
-        total_embeddings = torch.vstack([output["embedding"] for output in outputs])
-        total_embeddings = total_embeddings.cpu().numpy()
+        # total_embeddings = total_embeddings.cpu().numpy()
+        embedding = np.vstack([output["embedding"] for output in outputs])
+        sampling_ratio = self.hparams.model.coreset_sampling_ratio
+        embedding = self._model.subsample_embedding(embedding, sampling_ratio)
         # Random projection
-        self.randomprojector = SparseRandomProjection(
-            n_components="auto", eps=0.9
-        )  # 'auto' => Johnson-Lindenstrauss lemma
-        self.randomprojector.fit(total_embeddings)
-        # Coreset Subsampling
-        selector = kCenterGreedy(total_embeddings, 0, 0)
-        selected_idx = selector.select_batch(
-            model=self.randomprojector,
-            already_selected=[],
-            N=int(total_embeddings.shape[0] * self.hparams.model.coreset_sampling_ratio),
-        )
-        self.embedding_coreset = total_embeddings[selected_idx]
+        # random_projector = SparseRandomProjection(n_components="auto", eps=0.9)  # 'auto' => Johnson-Lindenstrauss lemma
+        # random_projector.fit(embedding)
+        # # Coreset Subsampling
+        # selector = kCenterGreedy(embedding, 0, 0)
+        # selected_idx = selector.select_batch(
+        #     model=random_projector,
+        #     already_selected=[],
+        #     N=int(embedding.shape[0] * self.hparams.model.coreset_sampling_ratio),
+        # )
+        # embedding_coreset = embedding[selected_idx]
 
-        print("initial embedding size : ", total_embeddings.shape)
-        print("final embedding size : ", self.embedding_coreset.shape)
-        with open(os.path.join(self.hparams.project.path, "weights", "embedding.pickle"), "wb") as f:
-            pickle.dump(self.embedding_coreset, f)
+        # print("initial embedding size : ", embedding.shape)
+        # print("final embedding size : ", embedding.shape)
+        with open(os.path.join(self.hparams.project.path, "weights", "embedding.pickle"), "wb") as file:
+            pickle.dump(embedding, file)
 
     def test_step(self, batch, batch_idx):  # Nearest Neighbour Search
-        self.embedding_coreset = pickle.load(
-            open(os.path.join(self.hparams.project.path, "weights", "embedding.pickle"), "rb")
-        )
+        with open(os.path.join(self.hparams.project.path, "weights", "embedding.pickle"), "rb") as file:
+            memory_bank = pickle.load(file)
         # x, gt, label, file_name, x_type = batch
         filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
 
@@ -409,6 +505,59 @@ class PatchcoreLightning(pl.LightningModule):
         filename = filenames.stem
         category = filenames.parent.name
         # features = self._model(images)
+
+        # # extract embedding
+        # features = self(images)
+        # # features = self._model(images)
+        # # embeddings = []
+        # # for feature in features:
+        # #     m = torch.nn.AvgPool2d(3, 1, 1)
+        # #     embeddings.append(m(feature))
+        # embeddings = self._model.append_features(features)
+        # # embeddings = self._model(images)
+        # # embedding_ = embedding_concat(embeddings[0], embeddings[1])
+        # embedding = concat_layer_embedding(embeddings[0], embeddings[1])
+        # # embedding_test = np.array(reshape_embedding(np.array(embedding_.cpu())))
+        # embedding_test = reshape_embedding(embedding).cpu().numpy()
+
+        # features = self._model(images)
+        # embedding_test = self._model.generate_embedding(features)
+        embedding = self._model(images)
+
+        # nn_classifier = NearestNeighbors(n_neighbors=self.hparams.model.num_neighbors).fit(normal_embedding)
+        nn_search = self._model.nn_search.fit(memory_bank)
+        patch_scores, _ = nn_search.kneighbors(embedding)
+
+        # Pixel Level Anomaly Heatmap
+        # anomaly_map = score_patches[:, 0].reshape((28, 28))
+        # anomaly_map_resized = cv2.resize(anomaly_map, tuple(self.hparams.dataset.crop_size))
+        # anomaly_map_resized_blur = gaussian_filter(anomaly_map_resized, sigma=4)
+
+        anomaly_map = self.anomaly_map_generator.compute_anomaly_map(patch_scores)
+        score = self.anomaly_map_generator.compute_anomaly_score(patch_scores)
+        # # Image-Level Anomaly Score
+        # N_b = score_patches[np.argmax(score_patches[:, 0])]
+        # w = 1 - (np.max(np.exp(N_b)) / np.sum(np.exp(N_b)))
+        # score = w * max(score_patches[:, 0])  # Image-level score
+
+        gt_np = masks.cpu().numpy()[0, 0].astype(int)
+
+        self.gt_list_px_lvl.extend(gt_np.ravel())
+        self.pred_list_px_lvl.extend(anomaly_map.ravel())
+        self.gt_list_img_lvl.append(labels.cpu().numpy()[0])
+        self.pred_list_img_lvl.append(score)
+        self.img_path_list.extend(filename)
+        # save images
+        # images = self.inv_normalize(images)
+        images = Denormalize()(images)
+        input_x = cv2.cvtColor(images, cv2.COLOR_BGR2RGB)
+        # input_x = cv2.cvtColor(images.permute(0, 2, 3, 1).cpu().numpy()[0] * 255, cv2.COLOR_BGR2RGB)
+
+        anomaly_map_norm = min_max_norm(anomaly_map)
+        heatmap = cvt2heatmap(anomaly_map_norm * 255)
+        hm_on_img = heatmap_on_image(heatmap, input_x)
+
+        self.save_anomaly_map(hm_on_img, gt_np * 255, filename, category)
         # return {
         #     "filenames": filenames,
         #     "images": images,
@@ -416,44 +565,6 @@ class PatchcoreLightning(pl.LightningModule):
         #     "true_labels": labels.cpu().numpy(),
         #     "true_masks": masks.squeeze().cpu().numpy(),
         # }
-        # extract embedding
-        features = self(images)
-        # features = self._model(images)
-        # embeddings = []
-        # for feature in features:
-        #     m = torch.nn.AvgPool2d(3, 1, 1)
-        #     embeddings.append(m(feature))
-        embeddings = self._model.append_features(features)
-        # embeddings = self._model(images)
-        # embedding_ = embedding_concat(embeddings[0], embeddings[1])
-        embedding_ = concat_layer_embedding(embeddings[0], embeddings[1])
-        # embedding_test = np.array(reshape_embedding(np.array(embedding_.cpu())))
-        embedding_test = reshape_embedding(embedding_).cpu().numpy()
-        # NN
-        nbrs = NearestNeighbors(
-            n_neighbors=self.hparams.model.num_neighbors, algorithm="ball_tree", metric="minkowski", p=2
-        ).fit(self.embedding_coreset)
-        score_patches, _ = nbrs.kneighbors(embedding_test)
-        anomaly_map = score_patches[:, 0].reshape((28, 28))
-        N_b = score_patches[np.argmax(score_patches[:, 0])]
-        w = 1 - (np.max(np.exp(N_b)) / np.sum(np.exp(N_b)))
-        score = w * max(score_patches[:, 0])  # Image-level score
-
-        gt_np = masks.cpu().numpy()[0, 0].astype(int)
-        anomaly_map_resized = cv2.resize(anomaly_map, tuple(self.hparams.dataset.crop_size))
-        anomaly_map_resized_blur = gaussian_filter(anomaly_map_resized, sigma=4)
-
-        self.gt_list_px_lvl.extend(gt_np.ravel())
-        self.pred_list_px_lvl.extend(anomaly_map_resized_blur.ravel())
-        self.gt_list_img_lvl.append(labels.cpu().numpy()[0])
-        self.pred_list_img_lvl.append(score)
-        self.img_path_list.extend(filename)
-        # save images
-        images = self.inv_normalize(images)
-        input_x = cv2.cvtColor(images.permute(0, 2, 3, 1).cpu().numpy()[0] * 255, cv2.COLOR_BGR2RGB)
-
-        self.save_anomaly_map(anomaly_map_resized_blur, input_x, gt_np * 255, filename, category)
-        # self.save_anomaly_map(anomaly_map_resized_blur, input_x, gt_np * 255, file_name[0], x_type[0])
 
     def test_epoch_end(self, outputs):
         print("Total pixel-level auc-roc score :")
