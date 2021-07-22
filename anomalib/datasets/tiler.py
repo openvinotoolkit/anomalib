@@ -225,6 +225,7 @@ class Tiler:
             Output that is the reconstructed version of the input tensor.
 
         """
+        # number of channels differs between image and anomaly map, so infer from input tiles.
         num_channels = tiles.shape[1]
         tiles = tiles.contiguous().view(
             self.batch_size,
