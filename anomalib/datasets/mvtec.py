@@ -24,7 +24,6 @@ from torch.utils.data import DataLoader
 from torch.utils.data.dataset import Dataset
 from torchvision.datasets.folder import VisionDataset
 from torchvision.transforms import Compose
-from torchvision.transforms.functional import crop
 
 logger = logging.getLogger(name="Dataset: MVTec")
 logger.setLevel(logging.DEBUG)

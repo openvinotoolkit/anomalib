@@ -1,8 +1,11 @@
 dataset:
   name: mvtec
-  format: mvtec
+  format: anomaly_dataset
   path: ./datasets/MVTec
+  url: ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/mvtec_anomaly_detection.tar.xz
   category: leather
+  task: segmentation
+  label_format: None
   image_size: 256
   crop_size: 224
   batch_size: 32
