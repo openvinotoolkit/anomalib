@@ -8,6 +8,7 @@ from omegaconf import DictConfig, ListConfig
 from pytorch_lightning import LightningDataModule
 
 from .mvtec import MVTecDataModule
+from .anomaly_dataset import AnomalyDataModule
 
 
 def get_datamodule(config: Union[DictConfig, ListConfig]):
@@ -32,6 +33,16 @@ def get_datamodule(config: Union[DictConfig, ListConfig]):
             crop_size=config.dataset.crop_size,
             train_batch_size=config.dataset.train_batch_size,
             test_batch_size=config.dataset.test_batch_size,
+            num_workers=config.dataset.num_workers,
+        )
+    elif config.dataset.format.lower() == "anomaly_dataset":
+        datamodule = AnomalyDataModule(
+            root=config.dataset.path,
+            url=config.dataset.url,
+            category=config.dataset.category,
+            task=config.dataset.task,
+            label_format=config.dataset.label_format,
+            batch_size=config.dataset.batch_size,
             num_workers=config.dataset.num_workers,
         )
     else:
