@@ -389,7 +389,9 @@ class STFPMLightning(BaseAnomalySegmentationLightning):
             image = Denormalize()(image.squeeze())
 
             heat_map = self.model.anomaly_map_generator.apply_heatmap_on_image(anomaly_map.squeeze(), image)
-            pred_mask = self.model.anomaly_map_generator.compute_mask(anomaly_map=anomaly_map.squeeze(), threshold=threshold)
+            pred_mask = self.model.anomaly_map_generator.compute_mask(
+                anomaly_map=anomaly_map.squeeze(), threshold=threshold
+            )
             vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
 
             visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
