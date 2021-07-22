@@ -15,7 +15,7 @@ class TilingCallback(Callback):
     """
 
     def __init__(self, hparams):
-        self.tiler = Tiler(hparams.dataset.tile_size, hparams.dataset.stride)
+        self.tiler = Tiler(hparams.dataset.tiling.tile_size, hparams.dataset.tiling.stride)
 
     def on_train_batch_start(
         self,
@@ -49,7 +49,7 @@ class TilingCallback(Callback):
         dataloader_idx: int,
     ) -> None:
         """Called when the validation batch ends."""
-        outputs["anomaly_maps"] = self.tiler.untile(outputs["anomaly_maps"].unsqueeze(1))[:, 0, :, :]
+        outputs["anomaly_maps"] = self.tiler.untile(outputs["anomaly_maps"])
         outputs["images"] = self.tiler.untile(outputs["images"])
 
     def on_test_batch_start(
@@ -73,5 +73,5 @@ class TilingCallback(Callback):
         dataloader_idx: int,
     ) -> None:
         """Called when the test batch ends."""
-        outputs["anomaly_maps"] = self.tiler.untile(outputs["anomaly_maps"].unsqueeze(1))[:, 0, :, :]
+        outputs["anomaly_maps"] = self.tiler.untile(outputs["anomaly_maps"])
         outputs["images"] = self.tiler.untile(outputs["images"])

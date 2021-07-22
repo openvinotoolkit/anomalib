@@ -56,8 +56,8 @@ def get_configurable_parameters(
     else:
         config.dataset.crop_size = config.dataset.image_size
 
-    if "tile_size" in config.dataset.keys() and config.dataset.tile_size is not None:
-        config.model.input_size = (config.dataset.tile_size,) * 2
+    if "tiling" in config.dataset.keys() and config.dataset.tiling.apply:
+        config.model.input_size = (config.dataset.tiling.tile_size,) * 2
     elif "crop_size" in config.dataset.keys() and config.dataset.crop_size is not None:
         config.model.input_size = config.dataset.crop_size
     else:

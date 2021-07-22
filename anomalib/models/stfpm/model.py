@@ -142,7 +142,7 @@ class Callbacks:
         if "weight_file" in self.config.keys():
             model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.weight_file))
             callbacks.append(model_loader)
-        if "tile_size" in self.config.dataset.keys() and self.config.dataset.tile_size is not None:
+        if "tiling" in self.config.dataset.keys() and self.config.dataset.tiling.apply:
             tiler = TilingCallback(self.config)
             callbacks.append(tiler)
 
@@ -157,7 +157,7 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
 
     def __init__(
         self,
-        image_size: Union[ListConfig, Tuple] = (256, 256),
+        image_size: Union[ListConfig, Tuple],
         alpha: float = 0.4,
         gamma: int = 0,
         sigma: int = 4,
@@ -202,10 +202,10 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
           Final anomaly map
         """
         batch_size = list(teacher_features.values())[0].shape[0]
-        anomaly_map = torch.ones(batch_size, self.image_size[0], self.image_size[1])
+        anomaly_map = torch.ones(batch_size, 1, self.image_size[0], self.image_size[1])
         for layer in teacher_features.keys():
             layer_map = self.compute_layer_map(teacher_features[layer], student_features[layer])
-            layer_map = layer_map[:, 0, :, :]
+            layer_map = layer_map
             anomaly_map = anomaly_map.to(layer_map.device)
             anomaly_map *= layer_map
 
@@ -319,7 +319,7 @@ class STFPMLightning(BaseAnomalySegmentationLightning):
 
         """
         filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
-        anomaly_maps = self.model(batch["image"])
+        anomaly_maps = self.model(images)
 
         return {
             "filenames": filenames,
@@ -392,8 +392,10 @@ class STFPMLightning(BaseAnomalySegmentationLightning):
         ):
             image = Denormalize()(image.squeeze())
 
-            heat_map = self.model.anomaly_map_generator.apply_heatmap_on_image(anomaly_map, image)
-            pred_mask = self.model.anomaly_map_generator.compute_mask(anomaly_map=anomaly_map, threshold=threshold)
+            heat_map = self.model.anomaly_map_generator.apply_heatmap_on_image(anomaly_map.squeeze(), image)
+            pred_mask = self.model.anomaly_map_generator.compute_mask(
+                anomaly_map=anomaly_map.squeeze(), threshold=threshold
+            )
             vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
 
             visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
@@ -420,9 +422,9 @@ class STFPMOpenVino(BaseAnomalySegmentationLightning):
         if "tile_size" in hparams.dataset.keys() and hparams.dataset.tile_size is not None:
             tiler = TilingCallback(hparams)
             self.callbacks.append(tiler)
-            net.batch_size = self.compute_batch_size()
+            net.train_batch_size = self.compute_batch_size()
         else:
-            net.batch_size = 1
+            net.train_batch_size = 1
 
         self.input_blob = next(iter(net.input_info))
         self.out_blob = next(iter(net.outputs))
