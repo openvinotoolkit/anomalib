@@ -57,6 +57,39 @@ def prep_dirs(root, category):
     return embeddings_path, sample_path, source_code_save_path
 
 
+def concat_layer_embedding(embedding: Tensor, layer_embedding: Tensor) -> Tensor:
+    """
+    Generate patch embedding via pixel patches. A quote from Section IIIA from the paper:
+
+    "As activation maps have a lower resolution  than  the  input  image,
+    many  pixels  have  the  same embeddings  and  then  form  pixel  patches
+    with  no  overlap  in the  original  image  resolution.  Hence,  an  input
+    image  can  be divided  in  a  grid  of (i,j) ∈ [1,W] × [1,H] positions  where
+    WxH is  the  resolution  of  the  largest  activation  map  used  to
+    generate embeddings."
+
+    :param embedding: Embedding vector from the earlier layers
+    :param layer_features: Feature map from the subsequent layer.
+    :return:
+    """
+    device = embedding.device
+    batch_x, channel_x, height_x, width_x = embedding.size()
+    _, channel_y, height_y, width_y = layer_embedding.size()
+    stride = height_x // height_y
+    embedding = F.unfold(embedding, kernel_size=stride, stride=stride)
+    embedding = embedding.view(batch_x, channel_x, -1, height_y, width_y)
+    updated_embedding = torch.zeros(
+        size=(batch_x, channel_x + channel_y, embedding.size(2), height_y, width_y), device=device
+    )
+
+    for i in range(embedding.size(2)):
+        updated_embedding[:, :, i, :, :] = torch.cat((embedding[:, :, i, :, :], layer_embedding), 1)
+    updated_embedding = updated_embedding.view(batch_x, -1, height_y * width_y)
+    updated_embedding = F.fold(updated_embedding, kernel_size=stride, output_size=(height_x, width_x), stride=stride)
+
+    return updated_embedding
+
+
 def embedding_concat(x, y):
     # from https://github.com/xiahaifeng1995/PaDiM-Anomaly-Detection-Localization-master
     B, C1, H1, W1 = x.size()
@@ -73,13 +106,30 @@ def embedding_concat(x, y):
     return z
 
 
-def reshape_embedding(embedding):
-    embedding_list = []
-    for k in range(embedding.shape[0]):
-        for i in range(embedding.shape[2]):
-            for j in range(embedding.shape[3]):
-                embedding_list.append(embedding[k, :, i, j])
-    return embedding_list
+# def reshape_embedding(embedding):
+#     embedding_list = []
+#     for k in range(embedding.shape[0]):
+#         for i in range(embedding.shape[2]):
+#             for j in range(embedding.shape[3]):
+#                 embedding_list.append(embedding[k, :, i, j])
+#     return embedding_list
+
+
+def reshape_embedding(embedding: Tensor) -> Tensor:
+    """
+    Reshapes Embedding to the following format:
+    [Batch, Embedding, Patch, Patch] to [Batch*Patch*Patch, Embedding]
+
+    Args:
+        embedding (Tensor): Embedding tensor extracted from CNN features.
+
+    Returns:
+        Tensor: Reshaped embedding tensor.
+    """
+    # [batch, embedding, patch, patch] -> [batch*patch*patch, embedding]
+    embedding_size = embedding.size(1)
+    embedding = embedding.permute(0, 2, 3, 1).reshape(-1, embedding_size)
+    return embedding
 
 
 # imagenet
@@ -208,13 +258,13 @@ class PatchcoreModel(torch.nn.Module):
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
 
         Args:
-                input_tensor: Image-batch (N, C, H, W)
-                input_tensor: Tensor:
+            input_tensor: Image-batch (N, C, H, W)
+            input_tensor: Tensor:
 
         Returns:
-                Features from single/multiple layers.
+            Features from single/multiple layers.
 
-                :Example:
+        Examples:
 
         >>> x = torch.randn(32, 3, 224, 224)
         >>> features = self.extract_features(input_tensor)
@@ -246,10 +296,10 @@ class PatchcoreModel(torch.nn.Module):
 
         """
         pool = torch.nn.AvgPool2d(3, 1, 1)
-        embeddings = [pool(feature) for feature in features]
+        appended_features = [pool(feature) for feature in features]
         # embeddings = [pool(feature) for feature in features.values()]
 
-        return embeddings
+        return appended_features
 
     @staticmethod
     def concat_features(features: Dict[str, List[Tensor]]) -> Dict[str, Tensor]:
@@ -296,6 +346,7 @@ class PatchcoreLightning(pl.LightningModule):
 
         self.init_results_list()
 
+        self.automatic_optimization = False
         # self.data_transforms = transforms.Compose(
         #     [
         #         transforms.Resize(tuple(hparams.dataset.image_size), Image.ANTIALIAS),
@@ -380,7 +431,7 @@ class PatchcoreLightning(pl.LightningModule):
 
     def on_train_start(self):
         self.model.eval()  # to stop running_var move (maybe not critical)
-        self.embedding_list = []
+        # self.embedding_list = []
 
     def on_test_start(self):
         self.init_results_list()
@@ -388,10 +439,10 @@ class PatchcoreLightning(pl.LightningModule):
     def training_step(self, batch, batch_idx):  # save locally aware patch features
         images = batch["image"]
         # features = self(batch["image"])
-        features2 = self._model(batch["image"])
+        # features2 = self._model(batch["image"])
 
         features = self(images)
-        features2 = self._model(images)
+        # features2 = self._model(images)
 
         embeddings = []
         for feature in features:
@@ -399,10 +450,15 @@ class PatchcoreLightning(pl.LightningModule):
             embeddings.append(m(feature))
         # embeddings = self._model(batch["image"])
         embedding = embedding_concat(embeddings[0], embeddings[1])
-        self.embedding_list.extend(reshape_embedding(np.array(embedding)))
+        # TODO:Compare the new view_embedding function with reshape_embedding
+        # self.embedding_list.extend(reshape_embedding(np.array(embedding)))
+
+        return {"embedding": reshape_embedding(embedding)}
 
     def training_epoch_end(self, outputs):
-        total_embeddings = np.array(self.embedding_list)
+        # total_embeddings = np.array(self.embedding_list)
+        total_embeddings = torch.vstack([output["embedding"] for output in outputs])
+        total_embeddings = total_embeddings.cpu().numpy()
         # Random projection
         self.randomprojector = SparseRandomProjection(
             n_components="auto", eps=0.9
@@ -449,8 +505,10 @@ class PatchcoreLightning(pl.LightningModule):
         #     embeddings.append(m(feature))
         embeddings = self._model.append_features(features)
         # embeddings = self._model(images)
-        embedding_ = embedding_concat(embeddings[0], embeddings[1])
-        embedding_test = np.array(reshape_embedding(np.array(embedding_)))
+        # embedding_ = embedding_concat(embeddings[0], embeddings[1])
+        embedding_ = concat_layer_embedding(embeddings[0], embeddings[1])
+        # embedding_test = np.array(reshape_embedding(np.array(embedding_.cpu())))
+        embedding_test = reshape_embedding(embedding_).cpu().numpy()
         # NN
         nbrs = NearestNeighbors(
             n_neighbors=self.hparams.model.num_neighbors, algorithm="ball_tree", metric="minkowski", p=2
