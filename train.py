@@ -39,6 +39,6 @@ if __name__ == "__main__":
     model = get_model(config)
     logger = get_logger(config)
 
-    trainer = Trainer(**config.trainer, logger=logger)
+    trainer = Trainer(callbacks=model.callbacks, **config.trainer, logger=logger)
     trainer.fit(model=model, datamodule=datamodule)
     trainer.test(model=model, datamodule=datamodule)
