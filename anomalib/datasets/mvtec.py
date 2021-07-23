@@ -289,7 +289,8 @@ class MVTecDataModule(LightningDataModule):
         category: str,
         image_size: Union[Sequence, int],
         crop_size: Union[Sequence, int],
-        batch_size: int,
+        train_batch_size: int,
+        test_batch_size: int,
         num_workers: int,
         image_transforms: Optional[Callable] = None,
         mask_transforms: Optional[Callable] = None,
@@ -300,7 +301,8 @@ class MVTecDataModule(LightningDataModule):
         self.dataset_path = self.root / self.category
         self.image_size = image_size
         self.crop_size = crop_size
-        self.batch_size = batch_size
+        self.train_batch_size = train_batch_size
+        self.test_batch_size = test_batch_size
         self.num_workers = num_workers
 
         self.image_transforms = (
@@ -364,12 +366,16 @@ class MVTecDataModule(LightningDataModule):
 
     def train_dataloader(self) -> DataLoader:
         """Get train dataloader"""
-        return DataLoader(self.train_data, shuffle=False, batch_size=self.batch_size, num_workers=self.num_workers)
+        return DataLoader(self.train_data, shuffle=False, batch_size=self.train_batch_size, num_workers=self.num_workers)
 
     def val_dataloader(self) -> DataLoader:
         """Get validation dataloader"""
-        return DataLoader(self.val_data, shuffle=False, batch_size=1, num_workers=self.num_workers)
+        return DataLoader(
+            self.val_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers
+        )
 
     def test_dataloader(self) -> DataLoader:
         """Get test dataloader"""
-        return DataLoader(self.val_data, shuffle=False, batch_size=1, num_workers=self.num_workers)
+        return DataLoader(
+            self.val_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers
+        )

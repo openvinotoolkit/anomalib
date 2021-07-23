@@ -2,6 +2,7 @@
 STFPM: Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection
 https://arxiv.org/abs/2103.04257
 """
+import math
 import os
 import os.path
 from pathlib import Path
@@ -21,6 +22,7 @@ from torch import Tensor, nn, optim
 from anomalib.core.callbacks.compress import CompressModelCallback
 from anomalib.core.callbacks.model_loader import LoadModelCallback
 from anomalib.core.callbacks.nncf_callback import NNCFCallback
+from anomalib.core.callbacks.tiling import TilingCallback
 from anomalib.core.callbacks.timer import TimerCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
@@ -140,6 +142,9 @@ class Callbacks:
         if "weight_file" in self.config.keys():
             model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.weight_file))
             callbacks.append(model_loader)
+        if "tiling" in self.config.dataset.keys() and self.config.dataset.tiling.apply:
+            tiler = TilingCallback(self.config)
+            callbacks.append(tiler)
 
         return callbacks
 
@@ -152,8 +157,7 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
 
     def __init__(
         self,
-        batch_size: int = 1,
-        image_size: Union[ListConfig, Tuple] = (256, 256),
+        image_size: Union[ListConfig, Tuple],
         alpha: float = 0.4,
         gamma: int = 0,
         sigma: int = 4,
@@ -161,7 +165,6 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         super().__init__(alpha=alpha, gamma=gamma, sigma=sigma)
         self.distance = torch.nn.PairwiseDistance(p=2, keepdim=True)
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
-        self.batch_size = batch_size
 
     def compute_layer_map(self, teacher_features: Tensor, student_features: Tensor) -> Tensor:
         """Compute the layer map based on cosine similarity.
@@ -198,10 +201,11 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         Returns:
           Final anomaly map
         """
-        anomaly_map = torch.ones(self.image_size)
+        batch_size = list(teacher_features.values())[0].shape[0]
+        anomaly_map = torch.ones(batch_size, 1, self.image_size[0], self.image_size[1])
         for layer in teacher_features.keys():
             layer_map = self.compute_layer_map(teacher_features[layer], student_features[layer])
-            layer_map = layer_map[0, 0, :, :]
+            layer_map = layer_map
             anomaly_map = anomaly_map.to(layer_map.device)
             anomaly_map *= layer_map
 
@@ -229,7 +233,7 @@ class STFPMModel(nn.Module):
             parameters.requires_grad = False
 
         self.loss = Loss()
-        self.anomaly_map_generator = AnomalyMapGenerator(batch_size=1, image_size=hparams.dataset.crop_size)
+        self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(hparams.model.input_size))
 
     def forward(self, images):
         """Forward-pass images into the network to extract teacher and student network.
@@ -320,9 +324,9 @@ class STFPMLightning(BaseAnomalySegmentationLightning):
         return {
             "filenames": filenames,
             "images": images,
-            "true_labels": labels.cpu().numpy(),
-            "true_masks": masks.squeeze().cpu().numpy(),
-            "anomaly_maps": anomaly_maps.cpu().numpy(),
+            "true_labels": labels.cpu(),
+            "true_masks": masks.squeeze(1).cpu(),
+            "anomaly_maps": anomaly_maps.cpu(),
         }
 
     def test_step(self, batch, _):
@@ -353,12 +357,12 @@ class STFPMLightning(BaseAnomalySegmentationLightning):
         """
 
         self.filenames = [Path(f) for x in outputs for f in x["filenames"]]
-        self.images = [x["images"] for x in outputs]
+        self.images = torch.vstack([x["images"] for x in outputs])
 
-        self.true_masks = np.stack([output["true_masks"] for output in outputs])
-        self.anomaly_maps = np.stack([output["anomaly_maps"] for output in outputs])
+        self.true_masks = np.vstack([output["true_masks"] for output in outputs])
+        self.anomaly_maps = np.vstack([output["anomaly_maps"] for output in outputs])
 
-        self.true_labels = np.stack([output["true_labels"] for output in outputs])
+        self.true_labels = np.hstack([output["true_labels"] for output in outputs])
         self.pred_labels = self.anomaly_maps.reshape(self.anomaly_maps.shape[0], -1).max(axis=1)
 
         self.image_roc_auc = roc_auc_score(self.true_labels, self.pred_labels)
@@ -384,8 +388,10 @@ class STFPMLightning(BaseAnomalySegmentationLightning):
         ):
             image = Denormalize()(image.squeeze())
 
-            heat_map = self.model.anomaly_map_generator.apply_heatmap_on_image(anomaly_map, image)
-            pred_mask = self.model.anomaly_map_generator.compute_mask(anomaly_map=anomaly_map, threshold=threshold)
+            heat_map = self.model.anomaly_map_generator.apply_heatmap_on_image(anomaly_map.squeeze(), image)
+            pred_mask = self.model.anomaly_map_generator.compute_mask(
+                anomaly_map=anomaly_map.squeeze(), threshold=threshold
+            )
             vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
 
             visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
@@ -407,13 +413,38 @@ class STFPMOpenVino(BaseAnomalySegmentationLightning):
         bin_path = os.path.join(hparams.project.path, hparams.weight_file)
         xml_path = os.path.splitext(bin_path)[0] + ".xml"
         net = ie_core.read_network(xml_path, bin_path)
-        net.batch_size = 1
+
+        self.callbacks = [TimerCallback()]
+        if "tile_size" in hparams.dataset.keys() and hparams.dataset.tile_size is not None:
+            tiler = TilingCallback(hparams)
+            self.callbacks.append(tiler)
+            net.train_batch_size = self.compute_batch_size()
+        else:
+            net.train_batch_size = 1
+
         self.input_blob = next(iter(net.input_info))
         self.out_blob = next(iter(net.outputs))
 
         self.exec_net = ie_core.load_network(network=net, device_name="CPU")
 
-        self.callbacks = [TimerCallback()]
+    def compute_batch_size(self) -> int:
+        """
+        Compute the effective batch size when tiling is used. The batch size is computed based on the image size or crop
+         size and the tiling parameters, and is equal to the number of tiles in the image.
+
+        Returns:
+            [int]: batch size (equal to number of tiles).
+        """
+        if self.hparams.dataset.crop_size is not None:
+            image_size = self.hparams.dataset.crop_size
+        else:
+            image_size = self.hparams.dataset.image_size
+        tile_size = self.hparams.dataset.tile_size
+        stride = tile_size
+        height, width = image_size[0], image_size[1]
+        n_rows = math.ceil((height - tile_size) / stride) + 1
+        n_cols = math.ceil((width - tile_size) / stride) + 1
+        return n_rows * n_cols
 
     @staticmethod
     def configure_optimizers():
@@ -445,10 +476,10 @@ class STFPMOpenVino(BaseAnomalySegmentationLightning):
 
         return {
             "filenames": filenames,
-            "images": images,
-            "true_labels": labels.cpu().numpy(),
-            "true_masks": masks.squeeze().cpu().numpy(),
-            "anomaly_maps": anomaly_maps,
+            "images": torch.Tensor(images),
+            "true_labels": labels.cpu(),
+            "true_masks": masks.squeeze(),
+            "anomaly_maps": torch.Tensor(anomaly_maps[0]),
         }
 
     def test_epoch_end(self, outputs):
@@ -461,10 +492,10 @@ class STFPMOpenVino(BaseAnomalySegmentationLightning):
         self.filenames = [Path(f) for x in outputs for f in x["filenames"]]
         self.images = [x["images"] for x in outputs]
 
-        self.true_masks = np.stack([output["true_masks"] for output in outputs])
-        self.anomaly_maps = np.stack([output["anomaly_maps"] for output in outputs])
+        self.true_masks = np.stack([output["true_masks"].numpy() for output in outputs])
+        self.anomaly_maps = np.stack([output["anomaly_maps"].numpy() for output in outputs])
 
-        self.true_labels = np.stack([output["true_labels"] for output in outputs])
+        self.true_labels = np.stack([output["true_labels"].numpy() for output in outputs])
         self.pred_labels = self.anomaly_maps.reshape(self.anomaly_maps.shape[0], -1).max(axis=1)
 
         self.image_roc_auc = roc_auc_score(self.true_labels, self.pred_labels)
