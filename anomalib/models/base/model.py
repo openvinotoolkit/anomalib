@@ -41,3 +41,5 @@ class BaseAnomalySegmentationLightning(BaseAnomalyLightning):
 
         self.image_roc_auc: Optional[float] = None
         self.pixel_roc_auc: Optional[float] = None
+
+        self.image_f1_score: Optional[float] = None
