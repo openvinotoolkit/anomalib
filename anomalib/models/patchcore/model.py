@@ -276,7 +276,7 @@ class PatchcoreLightning(BaseAnomalySegmentationLightning):
 
         self.save_hyperparameters(hparams)
         self._model = PatchcoreModel(
-            backbone=hparams.model.backbone, layers=hparams.model.layers, input_size=hparams.dataset.crop_size
+            backbone=hparams.model.backbone, layers=hparams.model.layers, input_size=hparams.model.input_size
         ).eval()
         self.automatic_optimization = False
         self.callbacks = Callbacks(hparams)()
