@@ -51,8 +51,7 @@ def split_normal_images_in_train_set(samples: DataFrame, split_ratio: float = 0.
         DataFrame: Output dataframe where the part of the training set is assigned to test set.
     """
 
-    if seed > 0:
-        random.seed(seed)
+    random.seed(seed)
 
     normal_train_image_indices = samples.index[(samples.split == "train") & (samples.label == "good")].to_list()
     num_normal_train_images = len(normal_train_image_indices)
