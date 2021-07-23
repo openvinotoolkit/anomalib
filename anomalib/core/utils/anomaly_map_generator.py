@@ -62,25 +62,27 @@ class BaseAnomalyMapGenerator:
         return heatmap_on_image
 
     @staticmethod
-    def compute_adaptive_threshold(true_masks, anomaly_map):
-        """Compute adaptive threshold, based on the f1 metric of the true and predicted anomaly masks.
+    def compute_adaptive_threshold(ground_truth: np.ndarray, predictions: np.ndarray) -> Tuple[float, float]:
+        """Compute adaptive threshold, based on the f1 metric of the true labels and the predicted anomaly scores
 
         Args:
-          true_masks: Ground-truth anomaly mask showing the location of anomalies.
-          anomaly_map: Anomaly map that is predicted by the model.
+          ground_truth: Pixel-level or image-level ground truth labels.
+          predictions: Anomaly scores predicted by the model.
 
         Returns:
           Threshold value based on the best f1 score.
+          Value of the best f1 score.
 
         """
 
-        precision, recall, thresholds = precision_recall_curve(true_masks.flatten(), anomaly_map.flatten())
+        precision, recall, thresholds = precision_recall_curve(ground_truth.flatten(), predictions.flatten())
         numerator = 2 * precision * recall
         denominator = precision + recall
         f1_score = np.divide(numerator, denominator, out=np.zeros_like(numerator), where=denominator != 0)
         threshold = thresholds[np.argmax(f1_score)]
+        max_f1_score = np.max(f1_score)
 
-        return threshold
+        return threshold, max_f1_score
 
     @staticmethod
     def compute_mask(anomaly_map: np.ndarray, threshold: float, kernel_size: int = 4) -> np.ndarray:
