@@ -4,9 +4,8 @@ https://arxiv.org/abs/2106.08265
 """
 
 import os
-import pickle
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Sequence, Tuple, Union
 
 import cv2
 import numpy as np
@@ -21,65 +20,16 @@ from sklearn.metrics import roc_auc_score
 from sklearn.neighbors import NearestNeighbors
 from sklearn.random_projection import SparseRandomProjection
 from torch import Tensor
-from torch.nn import functional as F
 
 from anomalib.core.callbacks.model_loader import LoadModelCallback
+from anomalib.core.model.dynamic_module import DynamicBufferModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
 from anomalib.datasets.utils import Denormalize
 from anomalib.models.base.model import BaseAnomalySegmentationLightning
+from anomalib.models.padim.model import concat_layer_embedding
 from anomalib.models.patchcore.sampling_methods.kcenter_greedy import kCenterGreedy
 from anomalib.utils.visualizer import Visualizer
-
-
-def concat_layer_embedding(embedding: Tensor, layer_embedding: Tensor) -> Tensor:
-    """
-    Generate patch embedding via pixel patches. A quote from Section IIIA from the paper:
-
-    "As activation maps have a lower resolution  than  the  input  image,
-    many  pixels  have  the  same embeddings  and  then  form  pixel  patches
-    with  no  overlap  in the  original  image  resolution.  Hence,  an  input
-    image  can  be divided  in  a  grid  of (i,j) ∈ [1,W] × [1,H] positions  where
-    WxH is  the  resolution  of  the  largest  activation  map  used  to
-    generate embeddings."
-
-    :param embedding: Embedding vector from the earlier layers
-    :param layer_features: Feature map from the subsequent layer.
-    :return:
-    """
-    device = embedding.device
-    batch_x, channel_x, height_x, width_x = embedding.size()
-    _, channel_y, height_y, width_y = layer_embedding.size()
-    stride = height_x // height_y
-    embedding = F.unfold(embedding, kernel_size=stride, stride=stride)
-    embedding = embedding.view(batch_x, channel_x, -1, height_y, width_y)
-    updated_embedding = torch.zeros(
-        size=(batch_x, channel_x + channel_y, embedding.size(2), height_y, width_y), device=device
-    )
-
-    for i in range(embedding.size(2)):
-        updated_embedding[:, :, i, :, :] = torch.cat((embedding[:, :, i, :, :], layer_embedding), 1)
-    updated_embedding = updated_embedding.view(batch_x, -1, height_y * width_y)
-    updated_embedding = F.fold(updated_embedding, kernel_size=stride, output_size=(height_x, width_x), stride=stride)
-
-    return updated_embedding
-
-
-def reshape_embedding(embedding: Tensor) -> Tensor:
-    """
-    Reshapes Embedding to the following format:
-    [Batch, Embedding, Patch, Patch] to [Batch*Patch*Patch, Embedding]
-
-    Args:
-        embedding (Tensor): Embedding tensor extracted from CNN features.
-
-    Returns:
-        Tensor: Reshaped embedding tensor.
-    """
-    # [batch, embedding, patch, patch] -> [batch*patch*patch, embedding]
-    embedding_size = embedding.size(1)
-    embedding = embedding.permute(0, 2, 3, 1).reshape(-1, embedding_size)
-    return embedding
 
 
 class Callbacks:
@@ -96,7 +46,7 @@ class Callbacks:
         )
         callbacks = [checkpoint]
 
-        # TODO: Check if we load the model properly.
+        # TODO: Check if we load the model properly: https://jira.devtools.intel.com/browse/IAAALD-13
         if "weight_file" in self.config.model.keys():
             model_loader = LoadModelCallback(
                 weights_path=os.path.join(self.config.project.path, "weights", self.config.model.weight_file)
@@ -156,7 +106,7 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         return anomaly_map, anomaly_score
 
 
-class PatchcoreModel(torch.nn.Module):
+class PatchcoreModel(DynamicBufferModule):
     """
     Padim Module
     """
@@ -172,23 +122,17 @@ class PatchcoreModel(torch.nn.Module):
         self.nn_search = NearestNeighbors(n_neighbors=9)
         self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
 
-        # TODO: Define memory_bank here.
-        # self.register_buffer("memory_bank", torch.Tensor())
-        # self.memory_bank: Optional[Tensor] = None
+        # TODO: Define memory_bank here: https://jira.devtools.intel.com/browse/IAAALD-13
+        self.register_buffer("memory_bank", torch.Tensor())
 
-    # TODO: replace memory_bank with is_train
-    def forward(
-        self, input_tensor: Tensor, memory_bank: Optional[Union[np.ndarray, Tensor]] = None
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+    def forward(self, input_tensor: Tensor) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         """
         Get features from a CNN.
         Generate embedding based on the feautures.
-        Compute anomaly map in test mode. (If memory bank is provided.)
+        Compute anomaly map in test mode.
 
         Args:
             input_tensor (Tensor): Input tensor
-            memory_bank (Optional[np.ndarray], optional): Memory bank
-                based on training embedding. Defaults to None.
 
         Returns:
             Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]: Embedding for training,
@@ -201,18 +145,10 @@ class PatchcoreModel(torch.nn.Module):
         features = {layer: self.feature_pooler(feature) for layer, feature in features.items()}
         embedding = self.generate_embedding(features)
 
-        if memory_bank is None:
-            # Memory bank is None during training.
-            # the model return the embedding to form the memory bank.
+        if self.training:
             output = embedding
         else:
-            # During the test, memory bank is used to compute
-            # anomaly scores of the local patches.
-            if isinstance(memory_bank, Tensor):
-                memory_bank = memory_bank.cpu().numpy()
-
-            nn_search = self.nn_search.fit(memory_bank)
-            patch_scores, _ = nn_search.kneighbors(embedding)
+            patch_scores, _ = self.nn_search.kneighbors(embedding)
 
             anomaly_map, anomaly_score = self.anomaly_map_generator(patch_scores)
             output = (anomaly_map, anomaly_score)
@@ -236,7 +172,23 @@ class PatchcoreModel(torch.nn.Module):
         for layer in self.layers[1:]:
             layer_embeddings = concat_layer_embedding(layer_embeddings, features[layer])
 
-        embedding = reshape_embedding(layer_embeddings).cpu().numpy()
+        embedding = self.reshape_embedding(layer_embeddings).cpu().numpy()
+        return embedding
+
+    @staticmethod
+    def reshape_embedding(embedding: Tensor) -> Tensor:
+        """
+        Reshapes Embedding to the following format:
+        [Batch, Embedding, Patch, Patch] to [Batch*Patch*Patch, Embedding]
+
+        Args:
+            embedding (Tensor): Embedding tensor extracted from CNN features.
+
+        Returns:
+            Tensor: Reshaped embedding tensor.
+        """
+        embedding_size = embedding.size(1)
+        embedding = embedding.permute(0, 2, 3, 1).reshape(-1, embedding_size)
         return embedding
 
     @staticmethod
@@ -255,6 +207,7 @@ class PatchcoreModel(torch.nn.Module):
         # Random projection
         random_projector = SparseRandomProjection(n_components="auto", eps=0.9)  # 'auto' => Johnson-Lindenstrauss lemma
         random_projector.fit(embedding)
+
         # Coreset Subsampling
         selector = kCenterGreedy(embedding, 0, 0)
         selected_idx = selector.select_batch(
@@ -273,11 +226,11 @@ class PatchcoreLightning(BaseAnomalySegmentationLightning):
 
     def __init__(self, hparams):
         super().__init__(hparams)
-
         self.save_hyperparameters(hparams)
-        self._model = PatchcoreModel(
-            backbone=hparams.model.backbone, layers=hparams.model.layers, input_size=hparams.model.input_size
-        ).eval()
+
+        backbone, layers, input_size = hparams.model.backbone, hparams.model.layers, hparams.model.input_size
+        self._model = PatchcoreModel(backbone=backbone, layers=layers, input_size=input_size)
+
         self.automatic_optimization = False
         self.callbacks = Callbacks(hparams)()
 
@@ -302,7 +255,7 @@ class PatchcoreLightning(BaseAnomalySegmentationLightning):
         Returns:
             Dict[str, np.ndarray]: Embedding Vector
         """
-        self._model.eval()
+        self._model.feature_extractor.eval()
         embedding = self._model(batch["image"])
 
         return {"embedding": embedding}
@@ -318,11 +271,9 @@ class PatchcoreLightning(BaseAnomalySegmentationLightning):
         embedding = np.vstack([output["embedding"] for output in outputs])
         sampling_ratio = self.hparams.model.coreset_sampling_ratio
         embedding = self._model.subsample_embedding(embedding, sampling_ratio)
-        self._model.memory_bank = torch.from_numpy(embedding)
 
-        # TODO: Remove this and Use Checkpoint callback
-        with open(os.path.join(self.hparams.project.path, "weights", "embedding.pickle"), "wb") as file:
-            pickle.dump(embedding, file)
+        self._model.nn_search = self._model.nn_search.fit(embedding)
+        self._model.memory_bank = torch.from_numpy(embedding)
 
     def validation_step(self, batch, batch_idx):
         """
@@ -338,15 +289,10 @@ class PatchcoreLightning(BaseAnomalySegmentationLightning):
         Returns:
             Dict[str, Any]: Image filenames, test images, GT and predicted label/masks
         """
-        # TODO: Remove this Use Model Load Callback
-        with open(os.path.join(self.hparams.project.path, "weights", "embedding.pickle"), "rb") as file:
-            memory_bank = pickle.load(file)
+        # TODO: Remove this Use Model Load Callback: https://jira.devtools.intel.com/browse/IAAALD-13
         filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
 
-        # TODO: is_train=False
-        # TODO: Use self._model.memory_bank here
-        anomaly_map, _ = self._model(images, memory_bank)
-        # anomaly_map, _ = self._model(images, self._model.memory_bank)
+        anomaly_map, _ = self._model(images)
 
         return {
             "filenames": filenames,
@@ -376,7 +322,12 @@ class PatchcoreLightning(BaseAnomalySegmentationLightning):
         self.image_roc_auc = roc_auc_score(self.true_labels, self.pred_labels)
         self.pixel_roc_auc = roc_auc_score(self.true_masks.flatten(), self.anomaly_maps.flatten())
 
+        _, self.image_f1_score = self._model.anomaly_map_generator.compute_adaptive_threshold(
+            self.true_labels, self.pred_labels
+        )
+
         self.log(name="Image-Level AUC", value=self.image_roc_auc, on_epoch=True, prog_bar=True)
+        self.log(name="Image-Level F1", value=self.image_f1_score, on_epoch=True, prog_bar=True)
         self.log(name="Pixel-Level AUC", value=self.pixel_roc_auc, on_epoch=True, prog_bar=True)
 
     def test_step(self, batch, batch_idx):
@@ -399,7 +350,7 @@ class PatchcoreLightning(BaseAnomalySegmentationLightning):
 
         """
         self.validation_epoch_end(outputs)
-        threshold = self._model.anomaly_map_generator.compute_adaptive_threshold(self.true_masks, self.anomaly_maps)
+        threshold, _ = self._model.anomaly_map_generator.compute_adaptive_threshold(self.true_masks, self.anomaly_maps)
 
         for (filename, image, true_mask, anomaly_map) in zip(
             self.filenames, self.images, self.true_masks, self.anomaly_maps
