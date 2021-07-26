@@ -7,6 +7,7 @@ from omegaconf import DictConfig, ListConfig
 
 from .dfkde.model import DFKDELightning
 from .padim.model import PADIMLightning
+from .patchcore.model import PatchcoreLightning
 from .stfpm.model import STFPMLightning, STFPMOpenVino
 
 
@@ -35,6 +36,8 @@ def get_model(config: Union[DictConfig, ListConfig]):
             model = STFPMLightning
         elif config.model.name == "dfkde":
             model = DFKDELightning
+        elif config.model.name == "patchcore":
+            model = PatchcoreLightning
         else:
             raise ValueError("Unknown model name!")
 

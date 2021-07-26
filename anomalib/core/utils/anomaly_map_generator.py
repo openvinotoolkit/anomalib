@@ -2,10 +2,11 @@
 Anomaly Map Generator
 """
 
-from typing import Tuple
+from typing import Tuple, Union
 
 import cv2
 import numpy as np
+from omegaconf import ListConfig
 from skimage import morphology
 from sklearn.metrics import precision_recall_curve
 
@@ -15,7 +16,8 @@ class BaseAnomalyMapGenerator:
     BaseAnomalyMapGenerator
     """
 
-    def __init__(self, alpha: float = 0.4, gamma: int = 0, sigma: int = 4):
+    def __init__(self, input_size: Union[ListConfig, Tuple], alpha: float = 0.4, gamma: int = 0, sigma: int = 4):
+        self.input_size = input_size if isinstance(input_size, tuple) else tuple(input_size)
         self.sigma = sigma
         self.alpha = alpha
         self.beta = 1 - self.alpha
