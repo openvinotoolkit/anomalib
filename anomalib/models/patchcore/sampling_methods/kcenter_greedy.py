@@ -1,3 +1,5 @@
+# TODO: Write our own implementation.
+# TODO: https://jira.devtools.intel.com/browse/IAAALD-14
 # Copyright 2017 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,9 +28,7 @@ Can be extended to a robust k centers algorithm that ignores a certain number of
 outlier datapoints.  Resulting centers are solution to multiple integer program.
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 from sklearn.metrics import pairwise_distances
