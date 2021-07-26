@@ -22,7 +22,7 @@ def get_args() -> Namespace:
         Namespace: List of arguements.
     """
     parser = ArgumentParser()
-    parser.add_argument("--model", type=str, default="patchcore", help="Name of the algorithm to train/test")
+    parser.add_argument("--model", type=str, default="padim", help="Name of the algorithm to train/test")
     parser.add_argument("--model_config_path", type=str, required=False, help="Path to a model config file")
 
     return parser.parse_args()
