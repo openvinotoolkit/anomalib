@@ -45,6 +45,16 @@ def get_datamodule(config: Union[DictConfig, ListConfig]):
             batch_size=config.dataset.batch_size,
             num_workers=config.dataset.num_workers,
         )
+    elif config.dataset.format.lower() == "anomaly_dataset":
+        datamodule = AnomalyDataModule(
+            root=config.dataset.path,
+            url=config.dataset.url,
+            category=config.dataset.category,
+            task=config.dataset.task,
+            label_format=config.dataset.label_format,
+            batch_size=config.dataset.batch_size,
+            num_workers=config.dataset.num_workers,
+        )
     else:
         raise ValueError("Unknown dataset!")
 
