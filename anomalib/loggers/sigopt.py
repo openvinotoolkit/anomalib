@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional, Union
 from pytorch_lightning.loggers.base import LightningLoggerBase, rank_zero_experiment
 from pytorch_lightning.utilities import rank_zero_only
 
-# TODO refactor import check
+# TODO refactor import check https://jira.devtools.intel.com/browse/IAAALD-24
 try:
     import sigopt
     from sigopt.exception import ApiException
@@ -129,7 +129,15 @@ class SigoptLogger(LightningLoggerBase):
         params = self._flatten_dict(params)
         params = self._sanitize_callable_params(params)
         params = self._sanitize_other_params(params)
-        self.experiment.set_parameters(params)
+
+        # SigOpt allows only 100 keys at a time. This is a simple fix which splits the values into chunks of 100
+        if len(params) > 100:
+            entries = list(params.items())
+            for i in range(0,len(params), 100):
+                subset = dict(entries[i:i+100])
+                self.experiment.set_parameters(subset)
+        else:
+            self.experiment.set_parameters(params)
 
     @property
     def name(self) -> str:
