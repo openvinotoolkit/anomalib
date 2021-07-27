@@ -133,8 +133,8 @@ class SigoptLogger(LightningLoggerBase):
         # SigOpt allows only 100 keys at a time. This is a simple fix which splits the values into chunks of 100
         if len(params) > 100:
             entries = list(params.items())
-            for i in range(0,len(params), 100):
-                subset = dict(entries[i:i+100])
+            for i in range(0, len(params), 100):
+                subset = dict(entries[i : i + 100])
                 self.experiment.set_parameters(subset)
         else:
             self.experiment.set_parameters(params)
