@@ -3,7 +3,7 @@ This script contains parsers for different annotations for object detection task
     Parsers include pascal-voc,.
 """
 import logging
-from typing import Dict, Union, Any, Optional
+from typing import Dict, Union, Any, Optional, List
 
 from xml.etree import ElementTree
 from lxml import etree
@@ -18,20 +18,20 @@ class PascalVocReader:
     """
     Data parser for Pascal-VOC labels
     """
+
     def __init__(self, file_path: str):
         # shapes type:
-        self.boxes = None
-        self.labels: list = list()
-        self.boxe: list = list()
+        self.labels: List[str] = list()
+        self.boxes: List[List[int]] = list()
         self.file_path = file_path
         self.verified: bool = False
-        self.xml_tree: ElementTree.Element = None
+        self.xml_tree: Optional[ElementTree.Element] = None
         try:
             self.parse_xml()
         except RuntimeError:
-            logger.warning("Incorrect format: Unable to parse xml file.")
+            logger.warning(f"Incorrect format: Unable to parse xml from {file_path}")
 
-    def get_shapes(self) -> Dict[str, Union[list, Any]]:
+    def get_shapes(self) -> Dict[str, Union[List, Any]]:
         """
         Returns:
             annotated bounding boxes and corresponding labels

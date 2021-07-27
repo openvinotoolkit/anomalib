@@ -7,6 +7,7 @@ This script contains PyTorch Dataset, Dataloader and PyTorch Lightning
 """
 
 import logging
+from warnings import warn
 import random
 import tarfile
 from pathlib import Path
@@ -294,6 +295,9 @@ class MVTecDataModule(LightningDataModule):
         mask_transforms: Optional[Callable] = None,
     ) -> None:
         super().__init__()
+
+        warn("MVTec DataModule will be deprecated. Use AnomalyDataModule instead")
+
         self.root = root if isinstance(root, Path) else Path(root)
         self.category = category
         self.dataset_path = self.root / self.category
@@ -364,16 +368,14 @@ class MVTecDataModule(LightningDataModule):
 
     def train_dataloader(self) -> DataLoader:
         """Get train dataloader"""
-        return DataLoader(self.train_data, shuffle=False, batch_size=self.train_batch_size, num_workers=self.num_workers)
+        return DataLoader(
+            self.train_data, shuffle=False, batch_size=self.train_batch_size, num_workers=self.num_workers
+        )
 
     def val_dataloader(self) -> DataLoader:
         """Get validation dataloader"""
-        return DataLoader(
-            self.val_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers
-        )
+        return DataLoader(self.val_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
 
     def test_dataloader(self) -> DataLoader:
         """Get test dataloader"""
-        return DataLoader(
-            self.val_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers
-        )
+        return DataLoader(self.val_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)

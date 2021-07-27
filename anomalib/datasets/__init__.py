@@ -29,8 +29,8 @@ def get_datamodule(config: Union[DictConfig, ListConfig]):
         datamodule = MVTecDataModule(
             root=config.dataset.path,
             category=config.dataset.category,
-            image_size=config.dataset.image_size,
-            crop_size=config.dataset.crop_size,
+            image_size=config.transform.image_size,
+            crop_size=config.transform.crop_size,
             train_batch_size=config.dataset.train_batch_size,
             test_batch_size=config.dataset.test_batch_size,
             num_workers=config.dataset.num_workers,
@@ -42,8 +42,10 @@ def get_datamodule(config: Union[DictConfig, ListConfig]):
             category=config.dataset.category,
             task=config.dataset.task,
             label_format=config.dataset.label_format,
-            batch_size=config.dataset.batch_size,
+            train_batch_size=config.dataset.train_batch_size,
+            test_batch_size=config.dataset.test_batch_size,
             num_workers=config.dataset.num_workers,
+            transform_params=config.transform,
         )
     else:
         raise ValueError("Unknown dataset!")

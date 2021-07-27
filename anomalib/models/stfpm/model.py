@@ -440,10 +440,10 @@ class STFPMOpenVino(BaseAnomalySegmentationLightning):
         Returns:
             [int]: batch size (equal to number of tiles).
         """
-        if self.hparams.dataset.crop_size is not None:
-            image_size = self.hparams.dataset.crop_size
+        if self.hparams.transform.crop_size is not None:
+            image_size = self.hparams.transform.crop_size
         else:
-            image_size = self.hparams.dataset.image_size
+            image_size = self.hparams.transform.image_size
         tile_size = self.hparams.dataset.tile_size
         stride = tile_size
         height, width = image_size[0], image_size[1]

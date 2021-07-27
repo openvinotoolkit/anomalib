@@ -1,4 +1,3 @@
-
 # TODO: Write our own implementation.
 # TODO: https://jira.devtools.intel.com/browse/IAAALD-14
 

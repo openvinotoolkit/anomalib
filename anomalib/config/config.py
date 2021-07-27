@@ -47,21 +47,21 @@ def get_configurable_parameters(
         config.dataset.format = "mvtec"
 
     # handle image size
-    if isinstance(config.dataset.image_size, int):
-        config.dataset.image_size = (config.dataset.image_size,) * 2
+    if isinstance(config.transform.image_size, int):
+        config.transform.image_size = (config.transform.image_size,) * 2
 
-    if "crop_size" in config.dataset.keys() and config.dataset.crop_size is not None:
-        if isinstance(config.dataset.crop_size, int):
-            config.dataset.crop_size = (config.dataset.crop_size,) * 2
+    if "crop_size" in config.transform.keys() and config.transform.crop_size is not None:
+        if isinstance(config.transform.crop_size, int):
+            config.transform.crop_size = (config.transform.crop_size,) * 2
     else:
-        config.dataset.crop_size = config.dataset.image_size
+        config.transform.crop_size = config.transform.image_size
 
     if "tiling" in config.dataset.keys() and config.dataset.tiling.apply:
         config.model.input_size = (config.dataset.tiling.tile_size,) * 2
-    elif "crop_size" in config.dataset.keys() and config.dataset.crop_size is not None:
-        config.model.input_size = config.dataset.crop_size
+    elif "crop_size" in config.transform.keys() and config.transform.crop_size is not None:
+        config.model.input_size = config.transform.crop_size
     else:
-        config.model.input_size = config.dataset.image_size
+        config.model.input_size = config.transform.image_size
 
     # Project Configs
     project_path = Path(config.project.path) / config.model.name / config.dataset.name / config.dataset.category
@@ -73,7 +73,7 @@ def get_configurable_parameters(
         config.weight_file = weight_file
 
     # NNCF Parameters
-    crop_size = config.dataset.crop_size
+    crop_size = config.transform.crop_size
     sample_size = (crop_size, crop_size) if isinstance(crop_size, int) else crop_size
     if "optimization" in config.keys():
         if "nncf" in config.optimization.keys():

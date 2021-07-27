@@ -10,7 +10,7 @@ import logging
 import random
 import tarfile
 from pathlib import Path
-from typing import Any, Callable, Dict, Union, Optional
+from typing import Any, Dict, Union, Optional
 from urllib.request import urlretrieve
 
 import cv2
@@ -26,13 +26,13 @@ from torchvision.datasets.folder import VisionDataset
 import albumentations as a
 from albumentations.pytorch import ToTensorV2
 
-from omegaconf import OmegaConf
+from omegaconf import DictConfig, ListConfig
 from .parser import PascalVocReader
 
 logger = logging.getLogger(name="Dataset: Anomaly")
 
 __all__ = [
-    "_AnomalyDataset",
+    "BaseAnomalyDataset",
     "AnomalyTrainDS",
     "AnomalyTestSegmentationDS",
     "AnomalyTestClassificationDS",
@@ -41,8 +41,23 @@ __all__ = [
 ]
 
 
-def split_normal_images_in_train_set(samples: DataFrame, split_ratio: float = 0.1, seed: int = 0) -> DataFrame:
+def read_image(path: str) -> np.ndarray:
+    """
+    read_image
+        reads image from disk in RGB format
+    Args:
+        path: path to the image file
 
+    Returns:
+        image as numpy array
+    """
+    image = cv2.imread(path)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    return image
+
+
+def split_normal_images_in_train_set(samples: DataFrame, split_ratio: float = 0.1, seed: int = 0) -> DataFrame:
     """
     split_normal_images_in_train_set
         This function splits the normal images in training set and assigns the
@@ -75,7 +90,6 @@ def split_normal_images_in_train_set(samples: DataFrame, split_ratio: float = 0.
 
 
 def make_dataset(path: Path, split_ratio: float = 0.1, seed: int = 0) -> DataFrame:
-
     """
     This function creates MVTec samples by parsing the MVTec data file structure, based on the following
     structure:
@@ -149,7 +163,7 @@ def make_dataset(path: Path, split_ratio: float = 0.1, seed: int = 0) -> DataFra
     return samples
 
 
-def get_transform() -> a.Compose:
+def get_transform(aug_prob: float = 0.0, t: Union[DictConfig, ListConfig] = None) -> a.Compose:
     """
     get_transforms:
         Build a pipeline of image transforms each with different probability defined in config file
@@ -157,11 +171,10 @@ def get_transform() -> a.Compose:
     return:
         a.compose: composed augmentation pipeline
     """
-    t = OmegaConf.load("anomalib/datasets/augmentation_config.yaml")
 
     return a.Compose(
         [
-            a.Resize(t.resize.height, t.resize.width, always_apply=True),
+            a.Resize(t.image_size[0], t.image_size[1], always_apply=True),
             a.OneOf(
                 [
                     a.RandomRotate90(),
@@ -208,16 +221,16 @@ def get_transform() -> a.Compose:
                 quality_lower=t.image_compression.quality_lower,
                 quality_upper=t.image_compression.quality_upper,
             ),
-            a.CenterCrop(t.centercrop.height, t.centercrop.width, always_apply=True),
+            a.CenterCrop(t.crop_size[0], t.crop_size[1], always_apply=True),
             a.Normalize(mean=t.normalize.mean, std=t.normalize.std, always_apply=True),
             a.ToGray(always_apply=True),
             ToTensorV2(always_apply=True),
         ],
-        p=t.p,
+        p=aug_prob,
     )
 
 
-class _AnomalyDataset(VisionDataset):
+class BaseAnomalyDataset(VisionDataset):
     """
     Anomaly PyTorch Dataset
     """
@@ -229,28 +242,35 @@ class _AnomalyDataset(VisionDataset):
         self,
         root: Union[Path, str],
         category: Path,
-        label_parser: Optional[Callable[[str], Any]] = None,
-        transform: Optional[Callable] = None,
+        label_format: str = None,
+        transform_params: Union[DictConfig, ListConfig] = None,
         download: bool = False,
-        download_url: str = None,
-        samples: DataFrame = None,
+        download_url: Optional[str] = None,
+        samples: Optional[DataFrame] = None,
     ) -> None:
-        super().__init__(root, transform=transform)
+        super().__init__(root, transform=None)
         self.root = Path(root) if isinstance(root, str) else root
         self.category: Path = category
-        self.label_parser = label_parser
-        self.transform = transform if transform is not None else get_transform()
-        self.download = download
+        self.label_format = label_format
         self.download_url = download_url
 
-        if self.download:
+        if transform_params is None:
+            raise ValueError(f"Transform parameters not defined!")
+
+        aug_prob: float = 0.0
+        if self._SPLIT == "train":
+            aug_prob = transform_params.p
+
+        self.transform = get_transform(aug_prob, transform_params)
+
+        if download:
             self._download()
 
-        self.samples = samples
+        if samples is not None:
+            self.samples = samples
 
-        if not self.download:
-            if len(self.samples) == 0:
-                raise RuntimeError(f"Found 0 images in {self.category / self._SPLIT}")
+        if download is False and len(self.samples) == 0:
+            raise RuntimeError(f"Found 0 images in {self.category / self._SPLIT}")
 
     def _download(self) -> None:
         """
@@ -297,7 +317,7 @@ class _AnomalyDataset(VisionDataset):
         raise NotImplementedError()
 
 
-class AnomalyTrainDS(_AnomalyDataset):
+class AnomalyTrainDS(BaseAnomalyDataset):
     """
     Anomaly Training dataset
     """
@@ -307,8 +327,7 @@ class AnomalyTrainDS(_AnomalyDataset):
     def __getitem__(self, index: int) -> Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]:
         image_path = self.samples.image_path[index]
 
-        image_t = cv2.imread(image_path)
-        image_t = cv2.cvtColor(image_t, cv2.COLOR_BGR2RGB)
+        image_t = read_image(image_path)
         augmented = self.transform(image=image_t)
         image = augmented["image"]
 
@@ -317,18 +336,18 @@ class AnomalyTrainDS(_AnomalyDataset):
         return sample
 
 
-class AnomalyTestClassificationDS(_AnomalyDataset):
+class AnomalyTestClassificationDS(BaseAnomalyDataset):
     """
     Anomaly classification - test dataset
     """
+
     _SPLIT = "test"
 
     def __getitem__(self, index: int) -> Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]:
         image_path = self.samples.image_path[index]
         label_index = self.samples.label_index[index]
 
-        image_t = cv2.imread(image_path)
-        image_t = cv2.cvtColor(image_t, cv2.COLOR_BGR2RGB)
+        image_t = read_image(image_path)
         augmented = self.transform(image=image_t)
         image_tensor = augmented["image"]
 
@@ -341,7 +360,7 @@ class AnomalyTestClassificationDS(_AnomalyDataset):
         return sample
 
 
-class AnomalyTestSegmentationDS(_AnomalyDataset):
+class AnomalyTestSegmentationDS(BaseAnomalyDataset):
     """
     Anomaly segmentation - test dataset
     """
@@ -354,8 +373,7 @@ class AnomalyTestSegmentationDS(_AnomalyDataset):
         mask_path = self.samples.target_path[index]
         label_index = self.samples.label_index[index]
 
-        image_t = cv2.imread(image_path)
-        image_t = cv2.cvtColor(image_t, cv2.COLOR_BGR2RGB)
+        image_t = read_image(image_path)
         if label_index == 0:
             mask = np.zeros((image_t.shape[0], image_t.shape[1]))
         else:
@@ -376,7 +394,7 @@ class AnomalyTestSegmentationDS(_AnomalyDataset):
         return sample
 
 
-class AnomalyTestDetectionDS(_AnomalyDataset):
+class AnomalyTestDetectionDS(BaseAnomalyDataset):
     """
     Anomaly detection - test dataset
     """
@@ -384,14 +402,30 @@ class AnomalyTestDetectionDS(_AnomalyDataset):
     _TARGET_FILE_EXT = ".xml"
     _SPLIT = "test"
 
+    def __init__(
+        self,
+        root: Union[Path, str],
+        category: Path,
+        label_format: str = None,
+        transform_params: Union[DictConfig, ListConfig] = None,
+        download: bool = False,
+        download_url: Optional[str] = None,
+        samples: Optional[DataFrame] = None,
+    ) -> None:
+        super().__init__(root, category, label_format, transform_params, download, download_url, samples)
+
+        if self.label_format == "pascal_voc":
+            self.label_parser = PascalVocReader
+        else:
+            raise ValueError(f"Unknown data annotation format: {self.label_format}!")
+
     def __getitem__(self, index: int) -> Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]:
         image_path = self.samples.image_path[index]
         target_path = self.samples.target_path[index]
         label_index = self.samples.label_index[index]
 
-        image_t = cv2.imread(image_path)
-        image_t = cv2.cvtColor(image_t, cv2.COLOR_BGR2RGB)
-        gt_bbox = {}
+        image_t = read_image(image_path)
+        gt_bbox: Dict[str, Any] = {}
         if label_index != 0 and self.label_parser is not None:
             gt_bbox = self.label_parser(target_path + self._TARGET_FILE_EXT).get_shapes()
 
@@ -422,19 +456,20 @@ class AnomalyDataModule(LightningDataModule):
         label_format: data format for annotations/labels
         batch_size: number of images per batch
         num_workers: number of parallel thread to be used for data loading
-        transform: image transforms for the data
+        transform_params: paremeters for image transforms
     """
 
     def __init__(
         self,
         root: Union[Path, str],
-        url: str,
+        url: Optional[str],
         category: str,
         task: str,
         label_format: str,
-        batch_size: int,
+        train_batch_size: int,
+        test_batch_size: int,
         num_workers: int,
-        transform: Optional[Callable] = None,
+        transform_params: Union[DictConfig, ListConfig],
     ) -> None:
         super().__init__()
 
@@ -444,13 +479,14 @@ class AnomalyDataModule(LightningDataModule):
         self.task = task
         self.label_format = label_format
         self.dataset_path = self.root / self.category
-        self.batch_size = batch_size
+        self.train_batch_size = train_batch_size
+        self.test_batch_size = test_batch_size
         self.num_workers = num_workers
-        self.transform = transform
+        self.transform_params = transform_params
         self.train_dataset = AnomalyTrainDS
 
-        self.train_data = None
-        self.test_data = None
+        self.train_data: BaseAnomalyDataset = None
+        self.test_data: BaseAnomalyDataset = None
 
         if self.task == "detection":
             self.test_dataset = AnomalyTestDetectionDS
@@ -460,13 +496,6 @@ class AnomalyDataModule(LightningDataModule):
             self.test_dataset = AnomalyTestSegmentationDS
         else:
             raise ValueError(f"Unknown task type: {self.task}!")
-
-        self.label_parser = None
-        if self.task == "detection":
-            if self.label_format == "pascal_voc":
-                self.label_parser = PascalVocReader
-            else:
-                raise ValueError(f"Unknown data annotation format: {self.label_format}!")
 
     def prepare_data(self):
         """
@@ -478,8 +507,8 @@ class AnomalyDataModule(LightningDataModule):
         self.train_dataset(
             root=self.root,
             category=self.category,
-            label_parser=self.label_parser,
-            transform=self.transform,
+            label_format=self.label_format,
+            transform_params=self.transform_params,
             download=True,
             download_url=self.url,
         )
@@ -487,8 +516,8 @@ class AnomalyDataModule(LightningDataModule):
         self.test_dataset(
             root=self.root,
             category=self.category,
-            label_parser=self.label_parser,
-            transform=self.transform,
+            label_format=self.label_format,
+            transform_params=self.transform_params,
             download=True,
             download_url=self.url,
         )
@@ -509,8 +538,8 @@ class AnomalyDataModule(LightningDataModule):
         self.train_data = self.train_dataset(
             root=self.root,
             category=self.category,
-            label_parser=self.label_parser,
-            transform=self.transform,
+            label_format=self.label_format,
+            transform_params=self.transform_params,
             samples=samples_train,
         )
 
@@ -520,8 +549,8 @@ class AnomalyDataModule(LightningDataModule):
         self.test_data = self.test_dataset(
             root=self.root,
             category=self.category,
-            label_parser=self.label_parser,
-            transform=self.transform,
+            label_format=self.label_format,
+            transform_params=self.transform_params,
             samples=samples_test,
         )
 
@@ -529,16 +558,18 @@ class AnomalyDataModule(LightningDataModule):
         """
         Train Dataloader
         """
-        return DataLoader(self.train_data, shuffle=False, batch_size=self.batch_size, num_workers=self.num_workers)
+        return DataLoader(
+            self.train_data, shuffle=False, batch_size=self.train_batch_size, num_workers=self.num_workers
+        )
 
     def val_dataloader(self) -> DataLoader:
         """
         Validation Dataloader
         """
-        return DataLoader(self.test_data, shuffle=False, batch_size=1, num_workers=self.num_workers)
+        return DataLoader(self.test_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
 
     def test_dataloader(self) -> DataLoader:
         """
         Test Dataloader
         """
-        return DataLoader(self.test_data, shuffle=False, batch_size=1, num_workers=self.num_workers)
+        return DataLoader(self.test_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
