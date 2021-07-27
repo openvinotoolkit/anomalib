@@ -5,7 +5,7 @@ This script contains PyTorch Dataset, Dataloader and PyTorch Lightning
     system, the script downloads and extracts the dataset from URL and create
     PyTorch data objects.
 """
-
+import abc
 import logging
 import random
 import tarfile
@@ -292,8 +292,9 @@ class _AnomalyDataset(VisionDataset):
     def __len__(self) -> int:
         return len(self.samples)
 
+    @abc.abstractmethod
     def __getitem__(self, index: int) -> Any:
-        pass
+        raise NotImplementedError()
 
 
 class AnomalyTrainDS(_AnomalyDataset):
@@ -390,9 +391,8 @@ class AnomalyTestDetectionDS(_AnomalyDataset):
 
         image_t = cv2.imread(image_path)
         image_t = cv2.cvtColor(image_t, cv2.COLOR_BGR2RGB)
-        if label_index == 0:
-            gt_bbox = {}
-        else:
+        gt_bbox = {}
+        if label_index != 0 and self.label_parser is not None:
             gt_bbox = self.label_parser(target_path + self._TARGET_FILE_EXT).get_shapes()
 
         augmented = self.transform(image=image_t, bbox=gt_bbox)
@@ -413,11 +413,21 @@ class AnomalyTestDetectionDS(_AnomalyDataset):
 class AnomalyDataModule(LightningDataModule):
     """
     Anomaly data Lightning Module
+
+    init parameters:
+        root: folder containing the dataset
+        url: web link to download a dataset
+        category: subcategory or class label
+        task: specifies usage of dataset to either classification, detection or segmentation
+        label_format: data format for annotations/labels
+        batch_size: number of images per batch
+        num_workers: number of parallel thread to be used for data loading
+        transform: image transforms for the data
     """
 
     def __init__(
         self,
-        root: str,
+        root: Union[Path, str],
         url: str,
         category: str,
         task: str,
@@ -449,14 +459,14 @@ class AnomalyDataModule(LightningDataModule):
         elif self.task == "segmentation":
             self.test_dataset = AnomalyTestSegmentationDS
         else:
-            raise ValueError("Unknown task type!")
+            raise ValueError(f"Unknown task type: {self.task}!")
 
         self.label_parser = None
         if self.task == "detection":
             if self.label_format == "pascal_voc":
                 self.label_parser = PascalVocReader
             else:
-                raise ValueError("Unknown data annotation format!")
+                raise ValueError(f"Unknown data annotation format: {self.label_format}!")
 
     def prepare_data(self):
         """
