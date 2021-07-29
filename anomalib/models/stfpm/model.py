@@ -162,7 +162,7 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         gamma: int = 0,
         sigma: int = 4,
     ):
-        super().__init__(alpha=alpha, gamma=gamma, sigma=sigma)
+        super().__init__(input_size=image_size, alpha=alpha, gamma=gamma, sigma=sigma)
         self.distance = torch.nn.PairwiseDistance(p=2, keepdim=True)
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
 
@@ -368,8 +368,9 @@ class STFPMLightning(BaseAnomalySegmentationLightning):
         self.image_roc_auc = roc_auc_score(self.true_labels, self.pred_labels)
         self.pixel_roc_auc = roc_auc_score(self.true_masks.flatten(), self.anomaly_maps.flatten())
 
-        _, self.image_f1_score = self.model.anomaly_map_generator.compute_adaptive_threshold(self.true_labels,
-                                                                                             self.pred_labels)
+        _, self.image_f1_score = self.model.anomaly_map_generator.compute_adaptive_threshold(
+            self.true_labels, self.pred_labels
+        )
 
         self.log(name="Image-Level AUC", value=self.image_roc_auc, on_epoch=True, prog_bar=True)
         self.log(name="Image-Level F1", value=self.image_f1_score, on_epoch=True, prog_bar=True)
