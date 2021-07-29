@@ -2,14 +2,10 @@
 Normality model of DFKDE
 """
 
-import random
-from typing import Optional, Tuple
-
 import torch
 import torch.nn as nn
 import numpy as np
 
-from anomalib.core.model.kde import GaussianKDE
 from sklearn.decomposition import PCA
 
 
@@ -34,8 +30,7 @@ class PCAModel(nn.Module):
             dataset: Input dataset to fit the model.
             dataset: torch.Tensor:
 
-        Returns:
-            Boolean confirming whether the training is successful.
+        Returns:          
 
         """
 
@@ -43,17 +38,16 @@ class PCAModel(nn.Module):
         selected_features = dataset
         self.pca_model.fit(selected_features.cpu().numpy())
 
-        return True
 
-
-    def score(self, sem_feats: torch.Tensor) -> torch.Tensor:
+    def score(self, sem_feats: torch.Tensor) -> np.array:
         """
         Compute the PCA scores
 
         Args:
-            sem_feats:
+            sem_feats: semantic features on which PCA and density modeling is performed.
 
-        Returns:
+        Returns: 
+            score: numpy array of scores
 
         """
         feats_orig = sem_feats.cpu().numpy()

@@ -2,7 +2,6 @@
 DFM: Deep Feature Kernel Density Estimation
 """
 
-from anomalib.models.dfm.pca_model import PCAModel
 import os
 from typing import Any, Dict, List, Optional, Sequence
 
