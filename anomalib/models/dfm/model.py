@@ -79,10 +79,8 @@ class DFMLightning(pl.LightningModule):
         For each batch, features are extracted from the CNN.
 
         Args:
-          batch: Input batch
-          batch_idx: Index of the batch.
-          batch: dict:
-          batch_idx: int:
+          batch: Dict: Input batch
+          batch_idx: int: Index of the batch.
 
         Returns:
           Deep CNN features.
@@ -114,13 +112,11 @@ class DFMLightning(pl.LightningModule):
             are extracted from the CNN for each batch.
 
         Args:
-          batch: Input batch
-          batch_idx: Index of the batch.
-          batch: dict:
-          batch_idx: int:
+          batch: Dict: Input batch
+          batch_idx: int: Index of the batch.
 
         Returns:
-          Dictionary containing probability, prediction and ground truth values.
+          Dictionary containing FRE anomaly scores and ground-truth.
 
         """
 

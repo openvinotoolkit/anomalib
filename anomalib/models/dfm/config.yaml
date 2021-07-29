@@ -1,7 +1,7 @@
 dataset:
   name: mvtec
   format: mvtec
-  path: /media/nahuja/Data2/mvtec
+  path: ./datasets/MVTec
   category: leather
   image_size: 256
   train_batch_size: 32
