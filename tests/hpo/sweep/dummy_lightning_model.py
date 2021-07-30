@@ -33,7 +33,6 @@ class XORDataModule(pl.LightningDataModule):
     def train_dataloader(self):
         return DataLoader(XORDataset(), batch_size=self.batch_size)
 
-
     def test_dataloader(self):
         return DataLoader(XORDataset(), batch_size=self.batch_size)
 
@@ -67,7 +66,10 @@ class DummyModel(pl.LightningModule):
         loss = self.loss_fn(y_hat, y)
         self.log(name="loss", value=loss.item(), prog_bar=True)
 
-
     def configure_optimizers(self):
-        return optim.SGD(self.parameters(), lr=self.hparams.model.lr, momentum=self.hparams.model.momentum,
-                         weight_decay=self.hparams.model.weight_decay)
+        return optim.SGD(
+            self.parameters(),
+            lr=self.hparams.model.lr,
+            momentum=self.hparams.model.momentum,
+            weight_decay=self.hparams.model.weight_decay,
+        )

@@ -10,8 +10,9 @@ def get_args():
     parser = ArgumentParser()
     parser.add_argument("--model", type=str, default="stfpm", help="Name of the algorithm to train/test")
     parser.add_argument("--model_config_path", type=str, required=False, help="Path to a model config file")
-    parser.add_argument("--hpo_type", type=str, default="sweep", required=False,
-                        help="Type of hyperparameter optimization.")
+    parser.add_argument(
+        "--hpo_type", type=str, default="sweep", required=False, help="Type of hyperparameter optimization."
+    )
 
     return parser.parse_args()
 
