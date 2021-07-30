@@ -1,0 +1,12 @@
+__pycache__
+.pytest_cache
+.tox
+.vscode
+{toxworkdir}
+datasets/
+results/
+lightning_logs/
+lightning_test/
+embeddings/
+papers/
+results/
