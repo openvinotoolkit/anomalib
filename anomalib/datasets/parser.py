@@ -39,7 +39,7 @@ class PascalVocReader:
 
         return {"boxes": self.boxes, "labels": self.labels}
 
-    def add_shape(self, label: str, bnd_box: Optional[ElementTree.Element]):
+    def add_shape(self, label: str, bnd_box: ElementTree.Element):
         """
         Args:
             label: label for target object

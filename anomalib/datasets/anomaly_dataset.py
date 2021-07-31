@@ -163,7 +163,7 @@ def make_dataset(path: Path, split_ratio: float = 0.1, seed: int = 0) -> DataFra
     return samples
 
 
-def get_transform(aug_prob: float = 0.0, t: Union[DictConfig, ListConfig] = None) -> a.Compose:
+def get_transform(aug_prob: float, t: Union[DictConfig, ListConfig]) -> a.Compose:
     """
     get_transforms:
         Build a pipeline of image transforms each with different probability defined in config file
@@ -242,8 +242,8 @@ class BaseAnomalyDataset(VisionDataset):
         self,
         root: Union[Path, str],
         category: Path,
-        label_format: str = None,
-        transform_params: Union[DictConfig, ListConfig] = None,
+        label_format: Optional[str] = None,
+        transform_params: Optional[Union[DictConfig, ListConfig]] = None,
         download: bool = False,
         download_url: Optional[str] = None,
         samples: Optional[DataFrame] = None,
@@ -327,11 +327,11 @@ class AnomalyTrainDS(BaseAnomalyDataset):
     def __getitem__(self, index: int) -> Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]:
         image_path = self.samples.image_path[index]
 
-        image_t = read_image(image_path)
-        augmented = self.transform(image=image_t)
-        image = augmented["image"]
+        image = read_image(image_path)
+        augmented = self.transform(image=image)
+        image_tensor = augmented["image"]
 
-        sample = {"image": image}
+        sample = {"image": image_tensor}
 
         return sample
 
@@ -347,8 +347,8 @@ class AnomalyTestClassificationDS(BaseAnomalyDataset):
         image_path = self.samples.image_path[index]
         label_index = self.samples.label_index[index]
 
-        image_t = read_image(image_path)
-        augmented = self.transform(image=image_t)
+        image = read_image(image_path)
+        augmented = self.transform(image=image)
         image_tensor = augmented["image"]
 
         sample = {
@@ -373,13 +373,13 @@ class AnomalyTestSegmentationDS(BaseAnomalyDataset):
         mask_path = self.samples.target_path[index]
         label_index = self.samples.label_index[index]
 
-        image_t = read_image(image_path)
+        image = read_image(image_path)
         if label_index == 0:
-            mask = np.zeros((image_t.shape[0], image_t.shape[1]))
+            mask = np.zeros((image.shape[0], image.shape[1]))
         else:
             mask = cv2.imread((mask_path + self._TARGET_FILE_EXT), 0) / 255.0
 
-        augmented = self.transform(image=image_t, mask=mask)
+        augmented = self.transform(image=image, mask=mask)
         image_tensor = augmented["image"]
         mask_tensor = augmented["mask"]
 
@@ -424,12 +424,12 @@ class AnomalyTestDetectionDS(BaseAnomalyDataset):
         target_path = self.samples.target_path[index]
         label_index = self.samples.label_index[index]
 
-        image_t = read_image(image_path)
+        image = read_image(image_path)
         gt_bbox: Dict[str, Any] = {}
         if label_index != 0 and self.label_parser is not None:
             gt_bbox = self.label_parser(target_path + self._TARGET_FILE_EXT).get_shapes()
 
-        augmented = self.transform(image=image_t, bbox=gt_bbox)
+        augmented = self.transform(image=image, bbox=gt_bbox)
         image_tensor = augmented["image"]
         bbox_t = augmented["bbox"]
 
@@ -456,13 +456,13 @@ class AnomalyDataModule(LightningDataModule):
         label_format: data format for annotations/labels
         batch_size: number of images per batch
         num_workers: number of parallel thread to be used for data loading
-        transform_params: paremeters for image transforms
+        transform_params: parameters for image transforms
     """
 
     def __init__(
         self,
         root: Union[Path, str],
-        url: Optional[str],
+        url: str,
         category: str,
         task: str,
         label_format: str,
@@ -485,8 +485,8 @@ class AnomalyDataModule(LightningDataModule):
         self.transform_params = transform_params
         self.train_dataset = AnomalyTrainDS
 
-        self.train_data: BaseAnomalyDataset = None
-        self.test_data: BaseAnomalyDataset = None
+        self.train_data: BaseAnomalyDataset
+        self.test_data: BaseAnomalyDataset
 
         if self.task == "detection":
             self.test_dataset = AnomalyTestDetectionDS
