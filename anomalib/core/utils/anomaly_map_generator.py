@@ -56,7 +56,7 @@ class BaseAnomalyMapGenerator:
 
         """
 
-        heatmap = self.compute_heatmap(anomaly_map)
+        heatmap = self.compute_heatmap(anomaly_map.squeeze())
         heatmap_on_image = cv2.addWeighted(heatmap, self.alpha, image, self.beta, self.gamma)
         heatmap_on_image = cv2.cvtColor(heatmap_on_image, cv2.COLOR_BGR2RGB)
         return heatmap_on_image
@@ -101,6 +101,7 @@ class BaseAnomalyMapGenerator:
 
         """
 
+        anomaly_map = anomaly_map.squeeze()
         mask = np.zeros_like(anomaly_map).astype(np.uint8)
         mask[anomaly_map > threshold] = 1
 

@@ -15,21 +15,20 @@ from omegaconf import ListConfig
 from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.callbacks import ModelCheckpoint
 from scipy.ndimage import gaussian_filter
-from skimage.segmentation import mark_boundaries
 from sklearn.metrics import roc_auc_score
 from sklearn.neighbors import NearestNeighbors
 from sklearn.random_projection import SparseRandomProjection
 from torch import Tensor
 
 from anomalib.core.callbacks.model_loader import LoadModelCallback
+from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.core.model.dynamic_module import DynamicBufferModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
-from anomalib.datasets.utils import Denormalize
-from anomalib.models.base.model import BaseAnomalySegmentationLightning
+from anomalib.models.base import BaseAnomalySegmentationLightning
+from anomalib.models.base.torch_modules import BaseAnomalySegmentationModule
 from anomalib.models.padim.model import concat_layer_embedding
 from anomalib.models.patchcore.sampling_methods.kcenter_greedy import kCenterGreedy
-from anomalib.utils.visualizer import Visualizer
 
 
 class Callbacks:
@@ -44,7 +43,7 @@ class Callbacks:
             dirpath=os.path.join(self.config.project.path, "weights"),
             filename="model",
         )
-        callbacks = [checkpoint]
+        callbacks = [checkpoint, VisualizerCallback()]
 
         # TODO: Check if we load the model properly: https://jira.devtools.intel.com/browse/IAAALD-13
         if "weight_file" in self.config.model.keys():
@@ -106,7 +105,7 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         return anomaly_map, anomaly_score
 
 
-class PatchcoreModel(DynamicBufferModule):
+class PatchcoreModel(DynamicBufferModule, BaseAnomalySegmentationModule):
     """
     Padim Module
     """
@@ -229,7 +228,7 @@ class PatchcoreLightning(BaseAnomalySegmentationLightning):
         self.save_hyperparameters(hparams)
 
         backbone, layers, input_size = hparams.model.backbone, hparams.model.layers, hparams.model.input_size
-        self._model = PatchcoreModel(backbone=backbone, layers=layers, input_size=input_size)
+        self.model = PatchcoreModel(backbone=backbone, layers=layers, input_size=input_size)
 
         self.automatic_optimization = False
         self.callbacks = Callbacks(hparams)()
@@ -255,8 +254,8 @@ class PatchcoreLightning(BaseAnomalySegmentationLightning):
         Returns:
             Dict[str, np.ndarray]: Embedding Vector
         """
-        self._model.feature_extractor.eval()
-        embedding = self._model(batch["image"])
+        self.model.feature_extractor.eval()
+        embedding = self.model(batch["image"])
 
         return {"embedding": embedding}
 
@@ -270,10 +269,10 @@ class PatchcoreLightning(BaseAnomalySegmentationLightning):
         """
         embedding = np.vstack([output["embedding"] for output in outputs])
         sampling_ratio = self.hparams.model.coreset_sampling_ratio
-        embedding = self._model.subsample_embedding(embedding, sampling_ratio)
+        embedding = self.model.subsample_embedding(embedding, sampling_ratio)
 
-        self._model.nn_search = self._model.nn_search.fit(embedding)
-        self._model.memory_bank = torch.from_numpy(embedding)
+        self.model.nn_search = self.model.nn_search.fit(embedding)
+        self.model.memory_bank = torch.from_numpy(embedding)
 
     def validation_step(self, batch, batch_idx):
         """
@@ -292,7 +291,7 @@ class PatchcoreLightning(BaseAnomalySegmentationLightning):
         # TODO: Remove this Use Model Load Callback: https://jira.devtools.intel.com/browse/IAAALD-13
         filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
 
-        anomaly_map, _ = self._model(images)
+        anomaly_map, _ = self.model(images)
 
         return {
             "filenames": filenames,
@@ -322,7 +321,7 @@ class PatchcoreLightning(BaseAnomalySegmentationLightning):
         self.image_roc_auc = roc_auc_score(self.true_labels, self.pred_labels)
         self.pixel_roc_auc = roc_auc_score(self.true_masks.flatten(), self.anomaly_maps.flatten())
 
-        _, self.image_f1_score = self._model.anomaly_map_generator.compute_adaptive_threshold(
+        _, self.image_f1_score = self.model.anomaly_map_generator.compute_adaptive_threshold(
             self.true_labels, self.pred_labels
         )
 
@@ -350,22 +349,3 @@ class PatchcoreLightning(BaseAnomalySegmentationLightning):
 
         """
         self.validation_epoch_end(outputs)
-        threshold, _ = self._model.anomaly_map_generator.compute_adaptive_threshold(self.true_masks, self.anomaly_maps)
-
-        for (filename, image, true_mask, anomaly_map) in zip(
-            self.filenames, self.images, self.true_masks, self.anomaly_maps
-        ):
-            image = Denormalize()(image.squeeze())
-
-            heat_map = self._model.anomaly_map_generator.apply_heatmap_on_image(anomaly_map, image)
-            pred_mask = self._model.anomaly_map_generator.compute_mask(anomaly_map=anomaly_map, threshold=threshold)
-            vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
-
-            visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
-            visualizer.add_image(image=image, title="Image")
-            visualizer.add_image(image=true_mask, color_map="gray", title="Ground Truth")
-            visualizer.add_image(image=heat_map, title="Predicted Heat Map")
-            visualizer.add_image(image=pred_mask, color_map="gray", title="Predicted Mask")
-            visualizer.add_image(image=vis_img, title="Segmentation Result")
-            visualizer.save(Path(self.hparams.project.path) / "images" / filename.parent.name / filename.name)
-            visualizer.close()
