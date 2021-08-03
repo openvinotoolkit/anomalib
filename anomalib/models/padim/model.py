@@ -6,7 +6,7 @@ import os
 import os.path
 from pathlib import Path
 from random import sample
-from typing import Any, Dict, List, Sequence, Tuple, Union
+from typing import Dict, List, Sequence, Tuple, Union
 
 import numpy as np
 import torch
@@ -16,19 +16,18 @@ from kornia import gaussian_blur2d
 from omegaconf import ListConfig
 from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.callbacks import ModelCheckpoint
-from skimage.segmentation import mark_boundaries
 from sklearn.metrics import roc_auc_score
 from torch import Tensor
 
 from anomalib.core.callbacks.model_loader import LoadModelCallback
 from anomalib.core.callbacks.tiling import TilingCallback
 from anomalib.core.callbacks.timer import TimerCallback
+from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
 from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
-from anomalib.datasets.utils import Denormalize
-from anomalib.models.base.model import BaseAnomalySegmentationLightning
-from anomalib.utils.visualizer import Visualizer
+from anomalib.models.base import BaseAnomalySegmentationLightning
+from anomalib.models.base.torch_modules import BaseAnomalySegmentationModule
 
 __all__ = ["PADIMLightning", "concat_layer_embedding"]
 
@@ -70,12 +69,12 @@ def concat_layer_embedding(embedding: Tensor, layer_embedding: Tensor) -> Tensor
     return updated_embedding
 
 
-class PadimModel(torch.nn.Module):
+class PadimModel(BaseAnomalySegmentationModule):
     """
     Padim Module
     """
 
-    def __init__(self, backbone: str, layers: List[str]):
+    def __init__(self, backbone: str, layers: List[str], input_size: Union[ListConfig, Tuple]):
         super().__init__()
         self.backbone = getattr(torchvision.models, backbone)
         self.layers = layers
@@ -83,6 +82,7 @@ class PadimModel(torch.nn.Module):
         self.gaussian = MultiVariateGaussian()
         self.dims = DIMS[backbone]
         self.idx = torch.tensor(sample(range(0, DIMS[backbone]["t_d"]), DIMS[backbone]["d"]))
+        self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
 
     def forward(self, input_tensor: Tensor) -> Dict[str, Tensor]:
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
@@ -157,7 +157,7 @@ class Callbacks:
             dirpath=os.path.join(self.config.project.path, "weights"),
             filename="model",
         )
-        callbacks = [checkpoint]
+        callbacks = [checkpoint, VisualizerCallback()]
 
         if "weight_file" in self.config.keys():
             model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.weight_file))
@@ -299,9 +299,10 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
     def __init__(self, hparams):
         super().__init__(hparams)
         self.layers = hparams.model.layers
-        self._model = PadimModel(hparams.model.backbone, hparams.model.layers).eval()
+        self.model = PadimModel(
+            backbone=hparams.model.backbone, layers=hparams.model.layers, input_size=hparams.model.input_size
+        ).eval()
 
-        self.anomaly_map_generator = AnomalyMapGenerator(image_size=hparams.model.input_size)
         self.callbacks = Callbacks(hparams)()
         self.stats: List[Tensor, Tensor] = []
         self.automatic_optimization = False
@@ -323,9 +324,9 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
                 Hierarchical feature map
 
         """
-        self._model.eval()
-        features = self._model(batch["image"])
-        embedding = self._model.generate_embedding(features)
+        self.model.eval()
+        features = self.model(batch["image"])
+        embedding = self.model.generate_embedding(features)
         return {"embedding": embedding.cpu()}
 
     def validation_step(self, batch, _):
@@ -343,10 +344,10 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
 
         """
         filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
-        features = self._model(images)
-        embedding = self._model.generate_embedding(features)
-        anomaly_maps = self.anomaly_map_generator.compute_anomaly_map(
-            embedding=embedding, mean=self._model.gaussian.mean, covariance=self._model.gaussian.covariance
+        features = self.model(images)
+        embedding = self.model.generate_embedding(features)
+        anomaly_maps = self.model.anomaly_map_generator.compute_anomaly_map(
+            embedding=embedding, mean=self.model.gaussian.mean, covariance=self.model.gaussian.covariance
         )
         return {
             "filenames": filenames,
@@ -383,7 +384,7 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
 
         """
         embeddings = torch.vstack([x["embedding"] for x in outputs])
-        self.stats = self._model.gaussian.fit(embeddings)
+        self.stats = self.model.gaussian.fit(embeddings)
 
     def validation_epoch_end(self, outputs):
         """Compute anomaly scores of the validation set, based on the embedding
@@ -407,7 +408,7 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         self.image_roc_auc = roc_auc_score(self.true_labels, self.pred_labels)
         self.pixel_roc_auc = roc_auc_score(self.true_masks.flatten(), self.anomaly_maps.flatten())
 
-        _, self.image_f1_score = self.anomaly_map_generator.compute_adaptive_threshold(
+        _, self.image_f1_score = self.model.anomaly_map_generator.compute_adaptive_threshold(
             self.true_labels, self.pred_labels
         )
 
@@ -425,22 +426,3 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
 
         """
         self.validation_epoch_end(outputs)
-        threshold, _ = self.anomaly_map_generator.compute_adaptive_threshold(self.true_masks, self.anomaly_maps)
-
-        for (filename, image, true_mask, anomaly_map) in zip(
-            self.filenames, self.images, self.true_masks, self.anomaly_maps
-        ):
-            image = Denormalize()(image.squeeze())
-
-            heat_map = self.anomaly_map_generator.apply_heatmap_on_image(anomaly_map.squeeze(), image)
-            pred_mask = self.anomaly_map_generator.compute_mask(anomaly_map=anomaly_map.squeeze(), threshold=threshold)
-            vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
-
-            visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
-            visualizer.add_image(image=image, title="Image")
-            visualizer.add_image(image=true_mask, color_map="gray", title="Ground Truth")
-            visualizer.add_image(image=heat_map, title="Predicted Heat Map")
-            visualizer.add_image(image=pred_mask, color_map="gray", title="Predicted Mask")
-            visualizer.add_image(image=vis_img, title="Segmentation Result")
-            visualizer.save(Path(self.hparams.project.path) / "images" / filename.parent.name / filename.name)
-            visualizer.close()

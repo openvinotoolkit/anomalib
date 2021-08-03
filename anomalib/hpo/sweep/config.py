@@ -77,7 +77,7 @@ def get_experiment(connection: Connection, config: Union[DictConfig, ListConfig]
     """Returns the sigopt experiment object
 
     Args:
-      connection: Connection:Connection Object
+      connection: Connection: Connection Object
       config: Union[DictConfig |ListConfig]: Config read by omegaconf
 
 
