@@ -146,7 +146,8 @@ class SigoptLogger(LightningLoggerBase):
           status: Not used
 
         """
-        self._experiment.end()
+        if self._experiment is not None:
+            self._experiment.end()
 
     @property
     def version(self) -> int:
