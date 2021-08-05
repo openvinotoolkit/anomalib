@@ -46,9 +46,7 @@ class VisualizerCallback(Callback):
             image = Denormalize()(image)
 
             heat_map = module.model.anomaly_map_generator.apply_heatmap_on_image(anomaly_map, image)
-            pred_mask = module.model.anomaly_map_generator.compute_mask(
-                anomaly_map=anomaly_map, threshold=threshold
-            )
+            pred_mask = module.model.anomaly_map_generator.compute_mask(anomaly_map, threshold)
             vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
 
             visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))

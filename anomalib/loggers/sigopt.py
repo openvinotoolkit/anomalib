@@ -3,26 +3,13 @@
 from argparse import Namespace
 from typing import Any, Dict, Optional, Union
 
+import numpy as np
+import sigopt
+from matplotlib.figure import Figure
 from pytorch_lightning.loggers.base import LightningLoggerBase, rank_zero_experiment
 from pytorch_lightning.utilities import rank_zero_only
-
-# TODO refactor import check https://jira.devtools.intel.com/browse/IAAALD-24
-try:
-    import sigopt
-    from sigopt.exception import ApiException
-    from sigopt.runs import RunFactoryProxyMethod
-except ImportError as e:
-    raise ImportError(
-        "You want to use `sigopt` logger which is not installed yet, install it with `pip install sigopt`."
-    ) from e
-try:
-    import numpy as np
-except ImportError as e:
-    raise ImportError("`numpy` dependency not met. Install it with `pip install numpy`.") from e
-try:
-    from matplotlib.figure import Figure
-except ImportError as e:
-    raise ImportError("`matplotlib` dependency not met. Install it with `pip install matplotlib`") from e
+from sigopt.exception import ApiException
+from sigopt.runs import RunFactoryProxyMethod
 
 
 class SigoptLogger(LightningLoggerBase):
@@ -36,7 +23,9 @@ class SigoptLogger(LightningLoggerBase):
         experiment: sigopt experiment, defaults to None
     """
 
-    def __init__(self, name: str, project: str, max_epochs: Optional[int] = 200, experiment=None):
+    def __init__(
+        self, name: str, project: str, max_epochs: int = 200, experiment: Optional[RunFactoryProxyMethod] = None
+    ):
         super().__init__()
 
         self._name = name

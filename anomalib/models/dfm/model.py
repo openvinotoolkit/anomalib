@@ -54,15 +54,13 @@ class DFMLightning(pl.LightningModule):
 
     def __init__(self, hparams: AttrDict):
         super().__init__()
-        self.save_hyperparameters(hparams)        
+        self.save_hyperparameters(hparams)
         self.threshold_steepness = 0.05
         self.threshold_offset = 12
 
         self.feature_extractor = FeatureExtractor(backbone=resnet18(pretrained=True), layers=["avgpool"]).eval()
 
-        self.pca_model = PCAModel(
-          n_comps=hparams.model.pca_level
-        )
+        self.pca_model = PCAModel(n_comps=hparams.model.pca_level)
         self.callbacks = Callbacks(hparams)()
         self.image_roc_auc: Optional[float] = None
         self.automatic_optimization = False
