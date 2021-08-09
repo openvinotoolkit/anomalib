@@ -5,8 +5,10 @@ Anomalib Traning Script.
     quantitative and qualitative results.
 """
 from argparse import ArgumentParser, Namespace
+import os
 
 from pytorch_lightning import Trainer, seed_everything
+from torch import load
 
 from anomalib.config.config import get_configurable_parameters
 from anomalib.datasets import get_datamodule
@@ -38,6 +40,9 @@ if __name__ == "__main__":
     datamodule = get_datamodule(config)
     model = get_model(config)
     logger = get_logger(config)
+
+    if "init_weights" in config.keys():
+        model.load_state_dict(load(os.path.join(config.project.path, config.init_weights))['state_dict'], strict=False)
 
     trainer = Trainer(**config.trainer, logger=logger)
     trainer.fit(model=model, datamodule=datamodule)

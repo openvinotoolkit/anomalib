@@ -6,8 +6,11 @@ import os
 from typing import Any
 
 import yaml
-from nncf import NNCFConfig, create_compressed_model, register_default_init_args
-from nncf.initialization import InitializingDataLoader
+from nncf import NNCFConfig
+from nncf.torch import create_compressed_model
+from nncf.torch import register_default_init_args
+from nncf.torch.initialization import PTInitializingDataLoader
+
 from omegaconf import OmegaConf
 from pytorch_lightning import Callback, LightningModule
 
@@ -28,11 +31,15 @@ def criterion_fn(outputs, criterion):
     return criterion(outputs)
 
 
-class InitLoader(InitializingDataLoader):
+class InitLoader(PTInitializingDataLoader):
     """Initializing data loader for NNCF to be used with unsupervised training algorithms."""
 
-    def __next__(self):
-        loaded_item = next(self.data_loader_iter)
+    def __iter__(self):
+        self._data_loader_iter = iter(self._data_loader)
+        return self
+
+    def __next__(self) -> Any:
+        loaded_item = next(self._data_loader_iter)
         return loaded_item["image"]
 
     def get_inputs(self, dataloader_output):

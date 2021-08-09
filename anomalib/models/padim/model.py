@@ -30,6 +30,8 @@ from anomalib.datasets.utils import Denormalize
 from anomalib.models.base.model import BaseAnomalySegmentationLightning
 from anomalib.utils.visualizer import Visualizer
 
+from anomalib.core.callbacks.nncf_callback import NNCFCallback
+
 __all__ = ["PADIMLightning", "concat_layer_embedding"]
 
 
@@ -83,6 +85,7 @@ class PadimModel(torch.nn.Module):
         self.gaussian = MultiVariateGaussian()
         self.dims = DIMS[backbone]
         self.idx = torch.tensor(sample(range(0, DIMS[backbone]["t_d"]), DIMS[backbone]["d"]))
+        self.loss = None
 
     def forward(self, input_tensor: Tensor) -> Dict[str, Tensor]:
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
@@ -159,9 +162,19 @@ class Callbacks:
         )
         callbacks = [checkpoint]
 
+        if self.config.optimization.nncf.apply:
+            callbacks.append(
+                NNCFCallback(
+                    config=self.config,
+                    dirpath=os.path.join(self.config.project.path, "export"),
+                    filename="model",
+                )
+            )
+
         if "weight_file" in self.config.keys():
             model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.weight_file))
             callbacks.append(model_loader)
+
         if "tiling" in self.config.dataset.keys() and self.config.dataset.tiling.apply:
             tiler = TilingCallback(self.config)
             callbacks.append(tiler)
@@ -299,7 +312,7 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
     def __init__(self, hparams):
         super().__init__(hparams)
         self.layers = hparams.model.layers
-        self._model = PadimModel(hparams.model.backbone, hparams.model.layers).eval()
+        self.model = PadimModel(hparams.model.backbone, hparams.model.layers).eval()
 
         self.anomaly_map_generator = AnomalyMapGenerator(image_size=hparams.model.input_size)
         self.callbacks = Callbacks(hparams)()
@@ -323,9 +336,9 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
                 Hierarchical feature map
 
         """
-        self._model.eval()
-        features = self._model(batch["image"])
-        embedding = self._model.generate_embedding(features)
+        self.model.eval()
+        features = self.model(batch["image"])
+        embedding = self.model.generate_embedding(features)
         return {"embedding": embedding.cpu()}
 
     def validation_step(self, batch, _):
@@ -343,10 +356,10 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
 
         """
         filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
-        features = self._model(images)
-        embedding = self._model.generate_embedding(features)
+        features = self.model(images)
+        embedding = self.model.generate_embedding(features)
         anomaly_maps = self.anomaly_map_generator.compute_anomaly_map(
-            embedding=embedding, mean=self._model.gaussian.mean, covariance=self._model.gaussian.covariance
+            embedding=embedding, mean=self.model.gaussian.mean, covariance=self.model.gaussian.covariance
         )
         return {
             "filenames": filenames,
@@ -383,7 +396,7 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
 
         """
         embeddings = torch.vstack([x["embedding"] for x in outputs])
-        self.stats = self._model.gaussian.fit(embeddings)
+        self.stats = self.model.gaussian.fit(embeddings)
 
     def validation_epoch_end(self, outputs):
         """Compute anomaly scores of the validation set, based on the embedding

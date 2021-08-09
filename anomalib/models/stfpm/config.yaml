@@ -45,9 +45,6 @@ optimization:
       initializer:
         range:
           num_init_samples: 256
-        precision:
-          bits: [8]
-      ignored_scopes: ["{re}.*teacher*"]
 
 hyperparameter_search:
   observation_budget: 10

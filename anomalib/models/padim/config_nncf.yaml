@@ -2,7 +2,7 @@ dataset:
   name: mvtec
   format: mvtec
   path: ./datasets/MVTec
-  category: leather
+  category: transistor
   image_size: 256
   tiling:
     apply: false
@@ -25,12 +25,13 @@ project:
   seed: 0
   path: ./results
   logger: sigopt
+  mo_path: /opt/intel/openvino_2021/deployment_tools/model_optimizer/mo.py
 
 optimization:
   compression:
     apply: false
   nncf:
-    apply: false
+    apply: true
     input_info:
       sample_size: [1, 3, 256, 256]
     compression:
@@ -39,7 +40,6 @@ optimization:
         range:
           num_init_samples: 256
       ignored_scopes: []
-
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
