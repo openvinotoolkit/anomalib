@@ -10,7 +10,7 @@ from anomalib.hpo.sweep.config import (
     MissingHPOConfiguration,
     get_experiment,
     validate_config,
-    validate_dtypes,
+    validate_search_params,
 )
 from tests.hpo.sweep.dummy_lightning_model import DummyModel, XORDataModule
 
@@ -69,13 +69,13 @@ def test_validate_dtypes():
     config = OmegaConf.create({"lr": {"type": "double", "min": 0, "max": 1}})
     with pytest.raises(IncorrectHPOConfiguration) as info:
         for param in config.values():
-            validate_dtypes(dtype=param.type, min_val=param.min, max_val=param.max)
+            validate_search_params(params=param)
         assert "Type mismatch in parameter configuration. Expected float" in str(info.value)
 
     config = OmegaConf.create({"patience": {"type": "int", "min": 0.0, "max": 1.0}})
     with pytest.raises(IncorrectHPOConfiguration) as info:
         for param in config.values():
-            validate_dtypes(dtype=param.type, min_val=param.min, max_val=param.max)
+            validate_search_params(params=param)
         assert "Type mismatch in parameter configuration. Expected integer" in str(info.value)
 
 
