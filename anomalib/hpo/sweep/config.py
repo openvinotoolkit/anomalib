@@ -18,7 +18,7 @@ class IncorrectHPOConfiguration(Exception):
     """Raise when the HPO has incorrect exception"""
 
 
-def get_parameters(configs: Dict) -> List:
+def get_parameters(configs: Dict) -> List[Dict]:
     """Return list of params
 
     Args:
@@ -104,10 +104,7 @@ def validate_config(config: Union[DictConfig, ListConfig]):
         if key not in config.hyperparameter_search.metric.keys():
             raise KeyError(f"Missing key {key} in hpo metrics")
 
-    if (
-        "maximize" not in config.hyperparameter_search.metric.objective
-        and "minimize" not in config.hyperparameter_search.metric.objective
-    ):
+    if config.hyperparameter_search.metric.objective not in ["maximize", "minimize"]:
         raise IncorrectHPOConfiguration("Objective should be one of [maximize, minimize]")
 
     # test if the ranges are valid (datatype corresponds to range values)
@@ -121,7 +118,6 @@ def get_experiment(connection: Connection, config: Union[DictConfig, ListConfig]
     Args:
       connection: Connection: Connection Object
       config: Union[DictConfig |ListConfig]: Config read by omegaconf
-
 
     Returns: Experiment object created from the parameters
     """

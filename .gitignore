@@ -156,3 +156,9 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+
+# Documentations
+docs/source/generated
+docs/source/api
+docs/source/models
