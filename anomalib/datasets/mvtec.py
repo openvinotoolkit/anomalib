@@ -7,24 +7,26 @@ This script contains PyTorch Dataset, Dataloader and PyTorch Lightning
 """
 
 import logging
-from warnings import warn
 import random
 import tarfile
 from pathlib import Path
 from typing import Callable, Dict, Optional, Sequence, Union
 from urllib.request import urlretrieve
+from warnings import warn
 
 import pandas as pd
 import torch
 import torchvision.transforms as T
-from pandas.core.frame import DataFrame
 from PIL import Image
+from pandas.core.frame import DataFrame
 from pytorch_lightning.core.datamodule import LightningDataModule
 from torch import Tensor
 from torch.utils.data import DataLoader
 from torch.utils.data.dataset import Dataset
 from torchvision.datasets.folder import VisionDataset
 from torchvision.transforms import Compose
+
+from anomalib.utils.download_progress_bar import DownloadProgressBar
 
 logger = logging.getLogger(name="Dataset: MVTec")
 logger.setLevel(logging.DEBUG)
@@ -222,10 +224,14 @@ class MVTec(VisionDataset):
             self.filename = self.root / "mvtec_anomaly_detection.tar.xz"
 
             logger.info("Downloading MVTec Dataset")
-            urlretrieve(
-                url="ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/mvtec_anomaly_detection.tar.xz",
-                filename=self.filename,
-            )
+            with DownloadProgressBar(
+                    unit="B", unit_scale=True, miniters=1, desc="mvtec_anomaly_detection.tar.xz"
+            ) as progress_bar:
+                urlretrieve(
+                    url="ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/mvtec_anomaly_detection.tar.xz",
+                    filename=self.filename,
+                    reporthook=progress_bar.update_to,
+                )
 
             self._extract()
             self._clean()

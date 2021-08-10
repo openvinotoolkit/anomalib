@@ -10,23 +10,22 @@ import logging
 import random
 import tarfile
 from pathlib import Path
-from typing import Any, Dict, Union, Optional
+from typing import Any, Dict, Optional, Union
 from urllib.request import urlretrieve
 
+import albumentations as a
 import cv2
 import numpy as np
 import pandas as pd
+from albumentations.pytorch import ToTensorV2
+from omegaconf import DictConfig, ListConfig
 from pandas.core.frame import DataFrame
-
 from pytorch_lightning.core.datamodule import LightningDataModule
 from torch import Tensor
 from torch.utils.data import DataLoader
 from torchvision.datasets.folder import VisionDataset
 
-import albumentations as a
-from albumentations.pytorch import ToTensorV2
-
-from omegaconf import DictConfig, ListConfig
+from anomalib.utils.download_progress_bar import DownloadProgressBar
 from .parser import PascalVocReader
 
 logger = logging.getLogger(name="Dataset: Anomaly")
@@ -286,10 +285,10 @@ class BaseAnomalyDataset(VisionDataset):
                 raise RuntimeError("Please specify url to download dataset")
 
             logger.info("Downloading Anomaly Dataset")
-            urlretrieve(
-                url=self.download_url,
-                filename=self.filename,
-            )
+            with DownloadProgressBar(
+                    unit="B", unit_scale=True, miniters=1, desc=self.download_url.split("/")[-1]
+            ) as progress_bar:
+                urlretrieve(url=self.download_url, filename=self.filename, reporthook=progress_bar.update_to)
 
             self._extract()
             self._clean()
