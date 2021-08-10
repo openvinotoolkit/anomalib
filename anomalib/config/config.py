@@ -8,6 +8,17 @@ from typing import Optional, Union
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
 
+def update_config_for_nncf(config):
+    crop_size = config.transform.crop_size
+    sample_size = (crop_size, crop_size) if isinstance(crop_size, int) else crop_size
+    if "optimization" in config.keys():
+        if "nncf" in config.optimization.keys():
+            config.optimization.nncf.input_info.sample_size = [1, 3, *sample_size]
+            if config.optimization.nncf.apply:
+                if "update_config" in config.optimization.nncf:
+                    return OmegaConf.merge(config, config.optimization.nncf.update_config)
+    return config
+
 def get_configurable_parameters(
     model_name: Optional[str] = None,
     model_config_path: Optional[Union[Path, str]] = None,
@@ -73,14 +84,7 @@ def get_configurable_parameters(
         config.weight_file = weight_file
 
     # NNCF Parameters
-    crop_size = config.transform.crop_size
-    sample_size = (crop_size, crop_size) if isinstance(crop_size, int) else crop_size
-    if "optimization" in config.keys():
-        if "nncf" in config.optimization.keys():
-            config.optimization.nncf.input_info.sample_size = [1, 3, *sample_size]
-            if config.optimization.nncf.apply:
-                if "update_config" in config.optimization.nncf:
-                    config = OmegaConf.merge(config, config.optimization.nncf.update_config)
+    config = update_config_for_nncf(config)
 
     config.openvino = openvino
     if openvino:

@@ -16,3 +16,4 @@ kornia==0.5.6
 openvino
 lxml
 albumentations
+pytest
