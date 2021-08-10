@@ -103,8 +103,8 @@ hyperparameter_search:
       max: 1.0
     momentum:
       type: double
-      min: 0
-      max: 1
+      min: 0.0
+      max: 1.0
     patience:
       type: int
       min: 1

@@ -3,7 +3,7 @@ Base Anomaly Lightning Models
 """
 
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Union
 
 import numpy as np
 import pytorch_lightning as pl

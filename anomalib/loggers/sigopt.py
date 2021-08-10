@@ -168,7 +168,8 @@ class SigoptLogger(LightningLoggerBase):
         ret = {}
         for key, val in params.items():
             # isinstance is not used for bool type as it returns true for int
-            if type(val) != int and not isinstance(val, float) and not isinstance(val, str):
+            # mypy complains about using isinstance instead of type hence this line is ignored
+            if type(val) != int and not isinstance(val, float) and not isinstance(val, str):  # type: ignore
                 val = str(val)
             ret[str(key)] = val  # sanitize keys as well
 

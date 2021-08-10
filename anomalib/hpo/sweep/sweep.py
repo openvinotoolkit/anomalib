@@ -15,6 +15,7 @@ from anomalib.models import get_model
 def run_sweep(config: Union[DictConfig, ListConfig]) -> None:
     """
     Encapsulates the hpo sweep loop
+
     Args:
         config: configs loaded with omegaconf
 
