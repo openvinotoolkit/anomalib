@@ -5,8 +5,13 @@ import pytest
 from omegaconf import OmegaConf
 
 from anomalib.hpo.sweep import run_sweep
-from anomalib.hpo.sweep.config import MissingHPOConfiguration, get_experiment, IncorrectHPOConfiguration, \
-    validate_config, validate_dtypes
+from anomalib.hpo.sweep.config import (
+    IncorrectHPOConfiguration,
+    MissingHPOConfiguration,
+    get_experiment,
+    validate_config,
+    validate_search_params,
+)
 from tests.hpo.sweep.dummy_lightning_model import DummyModel, XORDataModule
 
 
@@ -20,12 +25,12 @@ def test_validate_params(sigopt):
     get_experiment(connection=connection, config=config)
 
     # check when no HPO is passed to in config
-    config.pop('hyperparameter_search', None)
+    config.pop("hyperparameter_search", None)
     with pytest.raises(MissingHPOConfiguration) as info:
         validate_config(config)
     assert "does not contain parameters for hyperparameter optimization." in str(info.value)
 
-    config['hyperparameter_search'] = {}
+    config["hyperparameter_search"] = {}
     # empty metric
     config.hyperparameter_search.metric = {}
     with pytest.raises(IncorrectHPOConfiguration) as info:
@@ -33,24 +38,28 @@ def test_validate_params(sigopt):
     assert "Optimization metric should use one metric" in str(info.value)
 
     # missing keys
-    config.hyperparameter_search.metric = {'name': 'test_metric', 'goal': 'minimize'}
+    config.hyperparameter_search.metric = {"name": "test_metric", "goal": "minimize"}
     with pytest.raises(KeyError) as info:
         validate_config(config)
     assert "Missing key objective" in str(info.value)
-    config.hyperparameter_search.metric = {"val": "test_metric", 'objective': 'minimize'}
+    config.hyperparameter_search.metric = {"val": "test_metric", "objective": "minimize"}
     with pytest.raises(KeyError) as info:
         validate_config(config)
     assert "Missing key name" in str(info.value)
 
     # incorrect objective
-    config.hyperparameter_search.metric = {'name': 'test_objective', 'objective': 'max'}
+    config.hyperparameter_search.metric = {"name": "test_objective", "objective": "max"}
     with pytest.raises(IncorrectHPOConfiguration) as info:
         validate_config(config)
     assert "Objective should be one of [maximize, minimize]" in str(info.value)
 
     # multiple keys
-    config.hyperparameter_search.metric = {'name': 'test_metric1', 'objective': 'minimize', "name2": 'test_metric2',
-                                           'objective2': 'minimize'}
+    config.hyperparameter_search.metric = {
+        "name": "test_metric1",
+        "objective": "minimize",
+        "name2": "test_metric2",
+        "objective2": "minimize",
+    }
     with pytest.raises(IncorrectHPOConfiguration) as info:
         validate_config(config)
     assert "Optimization metric should use one metric." in str(info.value)
@@ -60,13 +69,13 @@ def test_validate_dtypes():
     config = OmegaConf.create({"lr": {"type": "double", "min": 0, "max": 1}})
     with pytest.raises(IncorrectHPOConfiguration) as info:
         for param in config.values():
-            validate_dtypes(dtype=param.type, min_val=param.min, max_val=param.max)
+            validate_search_params(params=param)
         assert "Type mismatch in parameter configuration. Expected float" in str(info.value)
 
     config = OmegaConf.create({"patience": {"type": "int", "min": 0.0, "max": 1.0}})
     with pytest.raises(IncorrectHPOConfiguration) as info:
         for param in config.values():
-            validate_dtypes(dtype=param.type, min_val=param.min, max_val=param.max)
+            validate_search_params(params=param)
         assert "Type mismatch in parameter configuration. Expected integer" in str(info.value)
 
 
@@ -93,22 +102,29 @@ def mock_connection():
                 observation_count=i,
             ),
             observation_budget=budget,
-            metric=Name()
+            metric=Name(),
+            id="dummy_id",
         )
         for i in range(budget + 1)
     ]
     connection = mock.Mock()
     experiment_resource = mock.Mock(
+        create=mock.Mock(side_effect=experiment_mocks),
         fetch=mock.Mock(side_effect=experiment_mocks),
         suggestions=mock.Mock(
             return_value=mock.Mock(
                 create=mock.Mock(
                     return_value=mock.Mock(
-                        assignments={"lr": np.random.uniform(low=1e-3, high=1.0),
-                                     "momentum": np.random.uniform(low=0, high=1.0),
-                                     "patience": np.random.randint(low=1, high=10),
-                                     "weight_decay": np.random.uniform(low=1e-5, high=1e-3)
-                                     }))))
+                        assignments={
+                            "lr": np.random.uniform(low=1e-3, high=1.0),
+                            "momentum": np.random.uniform(low=0, high=1.0),
+                            "patience": np.random.randint(low=1, high=10),
+                            "weight_decay": np.random.uniform(low=1e-5, high=1e-3),
+                        }
+                    )
+                )
+            )
+        ),
     )
     connection.experiments = mock.Mock(return_value=experiment_resource)
     return connection
@@ -122,6 +138,7 @@ def mock_test_return_incorrect(*args, **kwargs):
     return [{"accuracy": 0.0}]
 
 
+@mock.patch("anomalib.hpo.sweep.sweep.Connection", mock_connection)
 @mock.patch("anomalib.hpo.sweep.sweep.get_datamodule", mock_get_datamodule)
 @mock.patch("anomalib.hpo.sweep.sweep.get_model", mock_get_model)
 def test_hpo():

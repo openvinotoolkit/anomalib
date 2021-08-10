@@ -15,7 +15,6 @@ import torchvision
 from omegaconf import DictConfig, ListConfig
 from openvino.inference_engine import IECore
 from pytorch_lightning.callbacks import Callback, EarlyStopping, ModelCheckpoint
-from skimage.segmentation import mark_boundaries
 from sklearn.metrics import roc_auc_score
 from torch import Tensor, nn, optim
 
@@ -24,11 +23,11 @@ from anomalib.core.callbacks.model_loader import LoadModelCallback
 from anomalib.core.callbacks.nncf_callback import NNCFCallback
 from anomalib.core.callbacks.tiling import TilingCallback
 from anomalib.core.callbacks.timer import TimerCallback
+from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
-from anomalib.datasets.utils import Denormalize
-from anomalib.models.base.model import BaseAnomalySegmentationLightning
-from anomalib.utils.visualizer import Visualizer
+from anomalib.models.base import BaseAnomalySegmentationLightning
+from anomalib.models.base.torch_modules import BaseAnomalySegmentationModule
 
 __all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel", "STFPMLightning"]
 
@@ -121,7 +120,7 @@ class Callbacks:
             filename="model",
         )
         early_stopping = EarlyStopping(monitor=self.config.model.metric, patience=self.config.model.patience)
-        callbacks = [checkpoint, early_stopping, TimerCallback()]
+        callbacks = [checkpoint, early_stopping, TimerCallback(), VisualizerCallback()]
 
         if self.config.optimization.nncf.apply:
             callbacks.append(
@@ -215,7 +214,7 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         return self.compute_anomaly_map(teacher_features, student_features)
 
 
-class STFPMModel(nn.Module):
+class STFPMModel(BaseAnomalySegmentationModule):
     """
     STFPM: Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection
     """
@@ -386,27 +385,6 @@ class STFPMLightning(BaseAnomalySegmentationLightning):
 
         """
         self.validation_epoch_end(outputs)
-        threshold, _ = self.model.anomaly_map_generator.compute_adaptive_threshold(self.true_masks, self.anomaly_maps)
-
-        for (filename, image, true_mask, anomaly_map) in zip(
-            self.filenames, self.images, self.true_masks, self.anomaly_maps
-        ):
-            image = Denormalize()(image.squeeze())
-
-            heat_map = self.model.anomaly_map_generator.apply_heatmap_on_image(anomaly_map.squeeze(), image)
-            pred_mask = self.model.anomaly_map_generator.compute_mask(
-                anomaly_map=anomaly_map.squeeze(), threshold=threshold
-            )
-            vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
-
-            visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
-            visualizer.add_image(image=image, title="Image")
-            visualizer.add_image(image=true_mask, color_map="gray", title="Ground Truth")
-            visualizer.add_image(image=heat_map, title="Predicted Heat Map")
-            visualizer.add_image(image=pred_mask, color_map="gray", title="Predicted Mask")
-            visualizer.add_image(image=vis_img, title="Segmentation Result")
-            visualizer.save(Path(self.hparams.project.path) / "images" / filename.parent.name / filename.name)
-            visualizer.close()
 
 
 class STFPMOpenVino(BaseAnomalySegmentationLightning):
@@ -440,10 +418,10 @@ class STFPMOpenVino(BaseAnomalySegmentationLightning):
         Returns:
             [int]: batch size (equal to number of tiles).
         """
-        if self.hparams.dataset.crop_size is not None:
-            image_size = self.hparams.dataset.crop_size
+        if self.hparams.transform.crop_size is not None:
+            image_size = self.hparams.transform.crop_size
         else:
-            image_size = self.hparams.dataset.image_size
+            image_size = self.hparams.transform.image_size
         tile_size = self.hparams.dataset.tile_size
         stride = tile_size
         height, width = image_size[0], image_size[1]

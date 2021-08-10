@@ -22,29 +22,71 @@ def get_parameters(configs: Dict) -> List:
     """Return list of params
 
     Args:
-      configs: Dict: parameter configurations
+      configs: Dict: Parameter configurations. Assumes that these parameters have been sanitized and validated.
     Returns:
       list of dict containing parameters in sigopt format
 
     """
     params = []
     for config in configs.items():
-        # TODO add support for categorical values
-        if config[1].type in ["double", "int"]:
+        # TODO add support for categorical values. https://jira.devtools.intel.com/browse/IAAALD-35
+        param = None
+        if "grid" in config[1]:
+            param = dict(name=config[0], type=config[1].type, grid=config[1].grid)
+        elif config[1].type in ["double", "int"]:
             param = dict(
                 name=config[0], type=config[1].type, bounds=dict(min=float(config[1].min), max=float(config[1].max))
             )
+        if param is not None:
             params.append(param)
 
     return params
 
 
-def validate_dtypes(dtype: str, min_val: Union[float, int], max_val: Union[float, int]):
-    """Validates the dtypes in the parameters section of hpo"""
-    if dtype == "double" and (not isinstance(min_val, float) or not isinstance(max_val, float)):
-        raise IncorrectHPOConfiguration("Type mismatch in parameter configuration. Expected float")
-    if dtype == "int" and (not isinstance(min_val, int) or not isinstance(max_val, int)):
-        raise IncorrectHPOConfiguration("Type mismatch in parameter configuration. Expected integer")
+def validate_search_params(params: Dict[str, str]):
+    """Validates the keys and data types in the parameters section of hpo"""
+
+    keys = set(params.keys())  # cache keys in set for faster lookup
+
+    # Check if grid or range is passed
+
+    ## check if the right key exists. There might be a better way to do this
+    if len(set(["grid", "min", "max"]).intersection(keys)) == 0:
+        raise IncorrectHPOConfiguration("Expected search parameters to have either grid or a range(min, max)")
+
+    ## check if only one of grid/range is passed
+    if ("grid" in keys and (len(set(["min", "max"]).intersection(keys)) != 0)) or (
+            (len(set(["min", "max"]).intersection(keys)) == 2) and "grid" in keys
+    ):
+        raise IncorrectHPOConfiguration("Found both grid and range(min,max) keys in configuration. Please use only one")
+
+    ## Check datatype
+    if "grid" in keys:
+        if params["type"] == "double":
+            for val in params["grid"]:
+                if not isinstance(val, float):
+                    raise IncorrectHPOConfiguration(
+                        f"Type mismatch in parameter configuration. Expected float. Found {type(val)}"
+                    )
+        elif params["type"] == "int":
+            for val in params["grid"]:
+                if not isinstance(val, int):
+                    raise IncorrectHPOConfiguration(
+                        f"Type mismatch in parameter configuration. Expected Integer. Found {type(val)}"
+                    )
+    else:
+        if params["type"] == "double" and (
+                not isinstance(params["min"], float) or not isinstance(params["max"], float)
+        ):
+            raise IncorrectHPOConfiguration(
+                f"Type mismatch in parameter configuration. Expected float."
+                f"Found min: {type(params['min'])}, max: {type(params['max'])}"
+            )
+        if params["type"] == "int" and (not isinstance(params["min"], int) or not isinstance(params["max"], int)):
+            raise IncorrectHPOConfiguration(
+                f"Type mismatch in parameter configuration. Expected Integer."
+                f"Found min: {type(params['min'])}, max: {type(params['max'])}"
+            )
 
 
 def validate_config(config: Union[DictConfig, ListConfig]):
@@ -70,14 +112,14 @@ def validate_config(config: Union[DictConfig, ListConfig]):
 
     # test if the ranges are valid (datatype corresponds to range values)
     for param in config.hyperparameter_search.parameters.values():
-        validate_dtypes(dtype=param.type, min_val=param.min, max_val=param.max)
+        validate_search_params(params=param)
 
 
 def get_experiment(connection: Connection, config: Union[DictConfig, ListConfig]) -> Experiment:
     """Returns the sigopt experiment object
 
     Args:
-      connection: Connection:Connection Object
+      connection: Connection: Connection Object
       config: Union[DictConfig |ListConfig]: Config read by omegaconf
 
 

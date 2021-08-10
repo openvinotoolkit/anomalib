@@ -3,35 +3,29 @@
 from argparse import Namespace
 from typing import Any, Dict, Optional, Union
 
+import numpy as np
+import sigopt
+from matplotlib.figure import Figure
 from pytorch_lightning.loggers.base import LightningLoggerBase, rank_zero_experiment
 from pytorch_lightning.utilities import rank_zero_only
-
-# TODO refactor import check https://jira.devtools.intel.com/browse/IAAALD-24
-try:
-    import sigopt
-    from sigopt.exception import ApiException
-    from sigopt.runs import RunFactoryProxyMethod
-except ImportError as e:
-    raise ImportError(
-        "You want to use `sigopt` logger which is not installed yet, install it with `pip install sigopt`."
-    ) from e
-try:
-    import numpy as np
-except ImportError as e:
-    raise ImportError("`numpy` dependency not met. Install it with `pip install numpy`.") from e
+from sigopt.exception import ApiException
+from sigopt.runs import RunFactoryProxyMethod
 
 
 class SigoptLogger(LightningLoggerBase):
-    def __init__(self, name: str, project: str, max_epochs: Optional[int] = 200, experiment=None):
-        """Logger for sigopt
+    """Logger for sigopt
 
-        Args:
-            name: Name of your run
-            project: Name of your project
-            max_epochs: The maximum number of epochs. Leave empty only if you are sure
-            that your epochs won't go above 200 or your don't plan to use sigopt checkpoints, defaults to 200
-            experiment: sigopt experiment, defaults to None
-        """
+    Args:
+        name: Name of your run
+        project: Name of your project
+        max_epochs: The maximum number of epochs. Leave empty only if you are sure
+        that your epochs won't go above 200 or your don't plan to use sigopt checkpoints, defaults to 200
+        experiment: sigopt experiment, defaults to None
+    """
+
+    def __init__(
+        self, name: str, project: str, max_epochs: int = 200, experiment: Optional[RunFactoryProxyMethod] = None
+    ):
         super().__init__()
 
         self._name = name
@@ -54,11 +48,11 @@ class SigoptLogger(LightningLoggerBase):
         return self._experiment
 
     @rank_zero_only
-    def log_image(self, image: np.ndarray, name: Optional[str] = None):
+    def log_image(self, image: Union[np.ndarray, Figure], name: Optional[str] = None) -> None:
         """Logs images
 
         Args:
-          image: np.ndarray: image in h w c (rgb/rgba) format. Supports multiple formats.
+          image: Union[np.ndarray, Figure]: image in h w c (rgb/rgba) format. Supports multiple formats.
             See https://app.sigopt.com/docs/runs/reference#log_image
           name: Optional[str]: Name of the image, defaults to None
 
@@ -109,8 +103,8 @@ class SigoptLogger(LightningLoggerBase):
         assert rank_zero_only.rank == 0, "experiment tried to log from global_rank != 0"
         try:
             self.experiment.log_checkpoint(metrics)
-            for k, v in metrics.items():
-                self.experiment.log_metric(name=k, value=v)
+            for key, value in metrics.items():
+                self.experiment.log_metric(name=key, value=value)
         except ApiException as e:
             raise ValueError(
                 "Exception occurred."
@@ -152,7 +146,8 @@ class SigoptLogger(LightningLoggerBase):
           status: Not used
 
         """
-        self._experiment.end()
+        if self._experiment is not None:
+            self._experiment.end()
 
     @property
     def version(self) -> int:

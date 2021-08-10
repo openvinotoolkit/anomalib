@@ -21,7 +21,7 @@ def get_args() -> Namespace:
     Get command line arguments.
 
     Returns:
-        Namespace: List of arguements.
+        Namespace: List of arguments.
     """
     parser = ArgumentParser()
     parser.add_argument("--model", type=str, default="stfpm", help="Name of the algorithm to train/test")
@@ -41,9 +41,13 @@ if __name__ == "__main__":
     model = get_model(config)
     logger = get_logger(config)
 
+<<<<<<< HEAD
     if "init_weights" in config.keys():
         model.load_state_dict(load(os.path.join(config.project.path, config.init_weights))['state_dict'], strict=False)
 
     trainer = Trainer(**config.trainer, logger=logger)
+=======
+    trainer = Trainer(**config.trainer, logger=logger, callbacks=model.callbacks)
+>>>>>>> development
     trainer.fit(model=model, datamodule=datamodule)
     trainer.test(model=model, datamodule=datamodule)
