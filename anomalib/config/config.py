@@ -78,6 +78,9 @@ def get_configurable_parameters(
     if "optimization" in config.keys():
         if "nncf" in config.optimization.keys():
             config.optimization.nncf.input_info.sample_size = [1, 3, *sample_size]
+            if config.optimization.nncf.apply:
+                if "update_config" in config.optimization.nncf:
+                    config = OmegaConf.merge(config, config.optimization.nncf.update_config)
 
     config.openvino = openvino
     if openvino:

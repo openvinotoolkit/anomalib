@@ -79,6 +79,10 @@ optimization:
         range:
           num_init_samples: 256
       ignored_scopes: []
+    update_config:
+      init_weights: snapshot.ckpt
+      project:
+        path: ./results_nncf
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:

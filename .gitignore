@@ -4,6 +4,7 @@ datasets
 !tests/datasets
 lightning_logs
 results
+results_nncf
 *.dot
 
 backup.py
