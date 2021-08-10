@@ -64,6 +64,7 @@ project:
   path: ./results
   log_images_to: [sigopt, local]
   logger: sigopt
+  mo_path: /opt/intel/openvino_2021/deployment_tools/model_optimizer/mo.py
 
 optimization:
   compression:
@@ -78,7 +79,6 @@ optimization:
         range:
           num_init_samples: 256
       ignored_scopes: []
-
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:

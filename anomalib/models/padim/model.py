@@ -360,7 +360,7 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
         features = self.model(images)
         embedding = self.model.generate_embedding(features)
-        anomaly_maps = self.anomaly_map_generator.compute_anomaly_map(
+        anomaly_maps = self.model.anomaly_map_generator.compute_anomaly_map(
             embedding=embedding, mean=self.model.gaussian.mean, covariance=self.model.gaussian.covariance
         )
         return {

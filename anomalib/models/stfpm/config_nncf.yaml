@@ -14,6 +14,42 @@ dataset:
   inference_batch_size: 32
   num_workers: 36
 
+transform:
+  image_size: 256
+  crop_size: 224
+  normalize:
+    mean: [ 0.485, 0.456, 0.406 ]
+    std: [ 0.229, 0.224, 0.225 ]
+  rotate_flip_p: 0.2
+  gauss_noise_p: 0.001
+  blur:
+    motion_blur_p: 0.2
+    median_blur:
+      blur_limit: 3
+      p: 0.1
+    blur:
+      blur_limit: 3
+      p: 0.1
+    p: 0.02
+  shift_scale_rotate:
+    shift_limit: 0.0625
+    scale_limit: 0.2
+    rotate_limit: 10
+    p: 0.2
+  geometric_transforms:
+    optical_distortion_p: 0.3
+    grid_distortion_p: 0.1
+    affine_p: 0.3
+    p: 0.1
+  image_adjustments:
+    clahe_clip_limit: 2
+    p: 0.2
+  image_compression:
+    quality_lower: 55
+    quality_upper: 99
+    p: 0.2
+  p: 0.0
+
 model:
   name: stfpm
   backbone: resnet18
