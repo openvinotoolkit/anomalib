@@ -2,7 +2,9 @@
 Load Anomaly Model
 """
 from typing import Type, Union
+import os
 
+from torch import load
 from omegaconf import DictConfig, ListConfig
 
 from .dfkde.model import DFKDELightning
@@ -44,4 +46,9 @@ def get_model(config: Union[DictConfig, ListConfig]):
         else:
             raise ValueError("Unknown model name!")
 
-    return model(config)
+    model = model(config)
+
+    if "init_weights" in config.keys() and config.init_weights:
+        model.load_state_dict(load(os.path.join(config.project.path, config.init_weights))['state_dict'], strict=False)
+
+    return model

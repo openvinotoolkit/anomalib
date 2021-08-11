@@ -83,9 +83,15 @@ optimization:
       initializer:
         range:
           num_init_samples: 256
-        precision:
-          bits: [8]
-      ignored_scopes: ["{re}.*teacher*"]
+    update_config:
+      project:
+        path: ./results_nncf
+      init_weights: snapshot.ckpt
+      hyperparameter_search:
+        parameters:
+          lr:
+            min: 1e-4
+            max: 1e-2
 
 hyperparameter_search:
   observation_budget: 10

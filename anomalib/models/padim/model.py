@@ -29,6 +29,8 @@ from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
 from anomalib.models.base import BaseAnomalySegmentationLightning
 from anomalib.models.base.torch_modules import BaseAnomalySegmentationModule
 
+from anomalib.core.callbacks.nncf_callback import NNCFCallback
+
 __all__ = ["PADIMLightning", "concat_layer_embedding"]
 
 
@@ -82,6 +84,7 @@ class PadimModel(BaseAnomalySegmentationModule):
         self.gaussian = MultiVariateGaussian()
         self.dims = DIMS[backbone]
         self.idx = torch.tensor(sample(range(0, DIMS[backbone]["t_d"]), DIMS[backbone]["d"]))
+        self.loss = None
         self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
 
     def forward(self, input_tensor: Tensor) -> Dict[str, Tensor]:
@@ -159,9 +162,19 @@ class Callbacks:
         )
         callbacks = [checkpoint, VisualizerCallback()]
 
+        if self.config.optimization.nncf.apply:
+            callbacks.append(
+                NNCFCallback(
+                    config=self.config,
+                    dirpath=os.path.join(self.config.project.path, "export"),
+                    filename="model",
+                )
+            )
+
         if "weight_file" in self.config.keys():
             model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.weight_file))
             callbacks.append(model_loader)
+
         if "tiling" in self.config.dataset.keys() and self.config.dataset.tiling.apply:
             tiler = TilingCallback(self.config)
             callbacks.append(tiler)
@@ -302,6 +315,7 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         self.model = PadimModel(
             backbone=hparams.model.backbone, layers=hparams.model.layers, input_size=hparams.model.input_size
         ).eval()
+
 
         self.callbacks = Callbacks(hparams)()
         self.stats: List[Tensor, Tensor] = []
