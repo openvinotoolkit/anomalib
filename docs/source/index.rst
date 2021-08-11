@@ -41,6 +41,7 @@ repo is constantly updated with new algorithms, so keep checking.
 
    guides/developing_on_docker
    guides/structure_of_documentation
+   guides/using_tox
 
 .. toctree::
    :maxdepth: 1
