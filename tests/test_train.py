@@ -17,3 +17,7 @@ class Test_Train_Results():
         call(['python3', 'train.py', '--model', 'padim'])
         model_file_size = os.stat('./results/padim/mvtec/leather/weights/model.ckpt').st_size
         assert model_file_size == 212337483
+# run unit test to verify train.py runs with patchcore model and create checkpoint file size = 277.3 MB
+        call(['python3', 'train.py', '--model', 'patchcore'])
+        model_file_size = os.stat('./results/patchcore/mvtec/carpet/weights/model.ckpt').st_size
+        assert model_file_size == 277302264
