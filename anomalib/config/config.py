@@ -19,6 +19,7 @@ def update_config_for_nncf(config):
                     return OmegaConf.merge(config, config.optimization.nncf.update_config)
     return config
 
+
 def get_configurable_parameters(
     model_name: Optional[str] = None,
     model_config_path: Optional[Union[Path, str]] = None,

@@ -47,7 +47,7 @@ class Callbacks:
         return self.get_callbacks()
 
 
-class DFMLightning(pl.LightningModule):
+class DfmLightning(pl.LightningModule):
     """
     DFM: Deep Featured Kernel Density Estimation
     """

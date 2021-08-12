@@ -8,8 +8,7 @@ import tempfile
 import pytest
 from pytorch_lightning import Trainer
 
-from anomalib.config.config import get_configurable_parameters
-from anomalib.config.config import update_config_for_nncf
+from anomalib.config.config import get_configurable_parameters, update_config_for_nncf
 from anomalib.datasets import get_datamodule
 from anomalib.models import get_model
 
@@ -45,13 +44,16 @@ def mvtec_dataset_category() -> str:
     return category
 
 
-@pytest.mark.parametrize("model_name,nncf", [
-    ("dfkde", False),
-    ("stfpm", False),
-    ("padim", False),
-    ("stfpm", True),
-    ("padim", True),
-])
+@pytest.mark.parametrize(
+    "model_name,nncf",
+    [
+        ("padim", False),
+        ("padim", True),
+        ("dfkde", False),
+        ("stfpm", False),
+        ("stfpm", True),
+    ],
+)
 def test_model(mvtec_dataset_category, model_name, nncf):
     """
     Test Model Training and Test Pipeline.
