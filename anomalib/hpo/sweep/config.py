@@ -50,17 +50,17 @@ def validate_search_params(params: Dict[str, str]):
 
     # Check if grid or range is passed
 
-    ## check if the right key exists. There might be a better way to do this
+    # check if the right key exists. There might be a better way to do this
     if len(set(["grid", "min", "max"]).intersection(keys)) == 0:
         raise IncorrectHPOConfiguration("Expected search parameters to have either grid or a range(min, max)")
 
-    ## check if only one of grid/range is passed
+    # check if only one of grid/range is passed
     if ("grid" in keys and (len(set(["min", "max"]).intersection(keys)) != 0)) or (
-            (len(set(["min", "max"]).intersection(keys)) == 2) and "grid" in keys
+        (len(set(["min", "max"]).intersection(keys)) == 2) and "grid" in keys
     ):
         raise IncorrectHPOConfiguration("Found both grid and range(min,max) keys in configuration. Please use only one")
 
-    ## Check datatype
+    # Check datatype
     if "grid" in keys:
         if params["type"] == "double":
             for val in params["grid"]:
@@ -76,7 +76,7 @@ def validate_search_params(params: Dict[str, str]):
                     )
     else:
         if params["type"] == "double" and (
-                not isinstance(params["min"], float) or not isinstance(params["max"], float)
+            not isinstance(params["min"], float) or not isinstance(params["max"], float)
         ):
             raise IncorrectHPOConfiguration(
                 f"Type mismatch in parameter configuration. Expected float."

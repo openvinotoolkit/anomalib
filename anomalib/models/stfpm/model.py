@@ -29,7 +29,7 @@ from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
 from anomalib.models.base import BaseAnomalySegmentationLightning
 from anomalib.models.base.torch_modules import BaseAnomalySegmentationModule
 
-__all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel", "STFPMLightning"]
+__all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel", "StfpmLightning"]
 
 
 class Loss(nn.Module):
@@ -254,7 +254,7 @@ class STFPMModel(BaseAnomalySegmentationModule):
         return output
 
 
-class STFPMLightning(BaseAnomalySegmentationLightning):
+class StfpmLightning(BaseAnomalySegmentationLightning):
     """
     PL Lightning Module for the STFPM algorithm.
     """
@@ -387,7 +387,7 @@ class STFPMLightning(BaseAnomalySegmentationLightning):
         self.validation_epoch_end(outputs)
 
 
-class STFPMOpenVino(BaseAnomalySegmentationLightning):
+class StfpmOpenVino(BaseAnomalySegmentationLightning):
     """PyTorch Lightning module for the STFPM algorithm."""
 
     def __init__(self, hparams):

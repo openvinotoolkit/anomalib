@@ -20,6 +20,7 @@ from sklearn.metrics import roc_auc_score
 from torch import Tensor
 
 from anomalib.core.callbacks.model_loader import LoadModelCallback
+from anomalib.core.callbacks.nncf_callback import NNCFCallback
 from anomalib.core.callbacks.tiling import TilingCallback
 from anomalib.core.callbacks.timer import TimerCallback
 from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
@@ -29,9 +30,7 @@ from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
 from anomalib.models.base import BaseAnomalySegmentationLightning
 from anomalib.models.base.torch_modules import BaseAnomalySegmentationModule
 
-from anomalib.core.callbacks.nncf_callback import NNCFCallback
-
-__all__ = ["PADIMLightning", "concat_layer_embedding"]
+__all__ = ["PadimLightning", "concat_layer_embedding"]
 
 
 DIMS = {"resnet18": {"t_d": 448, "d": 100}, "wide_resnet50_2": {"t_d": 1792, "d": 550}}
@@ -304,7 +303,7 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         return smoothed_anomaly_map
 
 
-class PADIMLightning(BaseAnomalySegmentationLightning):
+class PadimLightning(BaseAnomalySegmentationLightning):
     """
     PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization
     """
@@ -315,7 +314,6 @@ class PADIMLightning(BaseAnomalySegmentationLightning):
         self.model = PadimModel(
             backbone=hparams.model.backbone, layers=hparams.model.layers, input_size=hparams.model.input_size
         ).eval()
-
 
         self.callbacks = Callbacks(hparams)()
         self.stats: List[Tensor, Tensor] = []

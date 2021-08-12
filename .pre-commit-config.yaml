@@ -22,6 +22,7 @@ repos:
     rev: 5.8.0
     hooks:
       - id: isort
+        args: ["--profile", "black"]
 
   # yaml formatting
   - repo: https://github.com/pre-commit/mirrors-prettier

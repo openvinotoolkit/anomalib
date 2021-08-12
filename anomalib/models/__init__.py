@@ -1,54 +1,56 @@
 """
 Load Anomaly Model
 """
-from typing import Type, Union
 import os
+from importlib import import_module
+from typing import List, Union
 
-from torch import load
+import pytorch_lightning as pl
 from omegaconf import DictConfig, ListConfig
-
-from .dfkde.model import DFKDELightning
-from .padim.model import PADIMLightning
-from .patchcore.model import PatchcoreLightning
-from .stfpm.model import STFPMLightning, STFPMOpenVino
-from .dfm.model import DFMLightning
+from torch import load
 
 
-def get_model(config: Union[DictConfig, ListConfig]):
+def get_model(config: Union[DictConfig, ListConfig]) -> pl.LightningModule:
     """Load model from the configuration file.
+    Works only when the convention for model naming is followed.
+
+    The convention for writing model classes is
+    `anomalib.models.<model_name>.model.<Model_name>Lightning`
+    `anomalib.models.stfpm.model.StfpmLightning`
+
+    and for OpenVINO
+    `anomalib.models.<model-name>.model.<Model_name>OpenVino`
+    `anomalib.models.stfpm.model.StfpmOpenVino`
 
     Args:
-      config: Configuration file
-      config: DictConfig:
+        config (Union[DictConfig, ListConfig]): Config.yaml loaded using OmegaConf
+
+    Raises:
+        ValueError: If unsupported model is passed
 
     Returns:
-      Anomaly Model
-
+        pl.LightningModule: Anomaly Model
     """
-    model: Type[object]
+    openvino_model_list: List[str] = ["stfpm"]
+    torch_model_list: List[str] = ["padim", "stfpm", "dfkde", "dfm", "patchcore"]
+    model: pl.LightningModule
 
     if config.openvino:
-        if config.model.name == "stfpm":
-            model = STFPMOpenVino
+        if config.model.name in openvino_model_list:
+            module = import_module(f"anomalib.models.{config.model.name}.model")
+            model = getattr(module, f"{config.model.name.capitalize()}OpenVino")
         else:
-            raise ValueError("Unknown model name for OpenVINO model!")
+            raise ValueError(f"Unknown model {config.model.name} for OpenVINO model!")
     else:
-        if config.model.name == "padim":
-            model = PADIMLightning
-        elif config.model.name == "stfpm":
-            model = STFPMLightning
-        elif config.model.name == "dfkde":
-            model = DFKDELightning
-        elif config.model.name == "dfm":
-            model = DFMLightning
-        elif config.model.name == "patchcore":
-            model = PatchcoreLightning
+        if config.model.name in torch_model_list:
+            module = import_module(f"anomalib.models.{config.model.name}.model")
+            model = getattr(module, f"{config.model.name.capitalize()}Lightning")
         else:
-            raise ValueError("Unknown model name!")
+            raise ValueError(f"Unknown model {config.model.name}!")
 
     model = model(config)
 
     if "init_weights" in config.keys() and config.init_weights:
-        model.load_state_dict(load(os.path.join(config.project.path, config.init_weights))['state_dict'], strict=False)
+        model.load_state_dict(load(os.path.join(config.project.path, config.init_weights))["state_dict"], strict=False)
 
     return model

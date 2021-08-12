@@ -7,10 +7,8 @@ from typing import Any
 
 import yaml
 from nncf import NNCFConfig
-from nncf.torch import create_compressed_model
-from nncf.torch import register_default_init_args
+from nncf.torch import create_compressed_model, register_default_init_args
 from nncf.torch.initialization import PTInitializingDataLoader
-
 from omegaconf import OmegaConf
 from pytorch_lightning import Callback, LightningModule
 
