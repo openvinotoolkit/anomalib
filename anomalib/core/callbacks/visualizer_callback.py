@@ -23,6 +23,7 @@ class VisualizerCallback(Callback):
     To write the images to the Sigopt logger, add the 'sigopt' keyword to the project.log_images_to parameter in the
     config.yaml file. To save the images to the filesystem, add the 'local' keyword.
     """
+
     def __init__(self):
         super(VisualizerCallback, self).__init__()
 
