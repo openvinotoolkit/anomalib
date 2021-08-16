@@ -16,6 +16,7 @@ from anomalib.utils.visualizer import Visualizer
 
 
 class VisualizerCallback(Callback):
+
     def __init__(self):
         super(VisualizerCallback, self).__init__()
 

@@ -3,9 +3,9 @@ This script contains parsers for different annotations for object detection task
     Parsers include pascal-voc,.
 """
 import logging
-from typing import Dict, Union, Any, Optional, List
-
+from typing import Any, Dict, List, Optional, Union
 from xml.etree import ElementTree
+
 from lxml import etree
 
 XML_EXT = ".xml"
