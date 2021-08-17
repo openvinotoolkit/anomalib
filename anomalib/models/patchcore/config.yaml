@@ -61,8 +61,8 @@ model:
 project:
   seed: 0
   path: ./results
-  log_images_to: [sigopt, local]
-  logger: sigopt
+  log_images_to: [local]
+  logger: false
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:

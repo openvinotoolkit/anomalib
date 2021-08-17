@@ -3,10 +3,10 @@ Feature Extractor
 This script extracts features from a CNN network
 """
 
-from typing import Iterable, Callable, Dict
+from typing import Callable, Dict, Iterable
 
 import torch
-from torch import nn, Tensor
+from torch import Tensor, nn
 
 
 class FeatureExtractor(nn.Module):

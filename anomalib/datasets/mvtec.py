@@ -17,8 +17,8 @@ from warnings import warn
 import pandas as pd
 import torch
 import torchvision.transforms as T
-from PIL import Image
 from pandas.core.frame import DataFrame
+from PIL import Image
 from pytorch_lightning.core.datamodule import LightningDataModule
 from torch import Tensor
 from torch.utils.data import DataLoader

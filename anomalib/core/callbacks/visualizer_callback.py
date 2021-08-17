@@ -16,6 +16,14 @@ from anomalib.utils.visualizer import Visualizer
 
 
 class VisualizerCallback(Callback):
+    """
+    Callback that visualizes the inference results of a model. The callback generates a figure showing the original
+    image, the ground truth segmentation mask, the predicted error heat map, and the predicted segmentation mask.
+
+    To write the images to the Sigopt logger, add the 'sigopt' keyword to the project.log_images_to parameter in the
+    config.yaml file. To save the images to the filesystem, add the 'local' keyword.
+    """
+
     def __init__(self):
         super(VisualizerCallback, self).__init__()
 

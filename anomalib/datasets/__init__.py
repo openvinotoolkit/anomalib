@@ -7,8 +7,8 @@ from typing import Union
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning import LightningDataModule
 
-from .mvtec import MVTecDataModule
 from .anomaly_dataset import AnomalyDataModule
+from .mvtec import MVTecDataModule
 
 
 def get_datamodule(config: Union[DictConfig, ListConfig]):

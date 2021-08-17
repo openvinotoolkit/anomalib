@@ -26,6 +26,7 @@ from torch.utils.data import DataLoader
 from torchvision.datasets.folder import VisionDataset
 
 from anomalib.utils.download_progress_bar import DownloadProgressBar
+
 from .parser import PascalVocReader
 
 logger = logging.getLogger(name="Dataset: Anomaly")
