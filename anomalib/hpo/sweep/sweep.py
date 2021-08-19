@@ -46,6 +46,7 @@ def run_sweep(config: Union[DictConfig, ListConfig]) -> None:
         for index, callback in enumerate(model.callbacks):
             if isinstance(callback, VisualizerCallback):
                 model.callbacks.pop(index)
+                break
 
         trainer = Trainer(callbacks=model.callbacks, **config.trainer, logger=False)
         trainer.fit(model=model, datamodule=datamodule)
