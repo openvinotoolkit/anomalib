@@ -7,6 +7,7 @@ from omegaconf.listconfig import ListConfig
 from pytorch_lightning import Trainer
 from sigopt import Connection
 
+from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.datasets import get_datamodule
 from anomalib.hpo.sweep.config import get_experiment
 from anomalib.models import get_model
@@ -41,7 +42,12 @@ def run_sweep(config: Union[DictConfig, ListConfig]) -> None:
 
         model = get_model(config)
 
-        trainer = Trainer(callbacks=model.callbacks, **config.trainer)
+        # remove visualizer_callback if it is in model
+        for index, callback in enumerate(model.callbacks):
+            if isinstance(callback, VisualizerCallback):
+                model.callbacks.pop(index)
+
+        trainer = Trainer(callbacks=model.callbacks, **config.trainer, logger=False)
         trainer.fit(model=model, datamodule=datamodule)
         result = trainer.test(model=model, datamodule=datamodule)
 
