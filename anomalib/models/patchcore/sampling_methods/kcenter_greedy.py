@@ -87,16 +87,10 @@ class kCenterGreedy(SamplingMethod):
           indices of points selected to minimize distance to cluster centers
         """
 
-        try:
-            # Assumes that the transform function takes in original data and not
-            # flattened data.
-            print("Getting transformed features...")
-            self.features = model.transform(self.X)
-            print("Calculating distances...")
-            self.update_distances(already_selected, only_new=False, reset_dist=True)
-        except:
-            print("Using flat_X as features.")
-            self.update_distances(already_selected, only_new=True, reset_dist=False)
+        print("Getting transformed features...")
+        self.features = model.transform(self.X)
+        print("Calculating distances...")
+        self.update_distances(already_selected, only_new=False, reset_dist=True)
 
         new_batch = []
 

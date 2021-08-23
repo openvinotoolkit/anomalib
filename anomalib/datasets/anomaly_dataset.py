@@ -255,7 +255,7 @@ class BaseAnomalyDataset(VisionDataset):
         self.download_url = download_url
 
         if transform_params is None:
-            raise ValueError(f"Transform parameters not defined!")
+            raise ValueError("Transform parameters not defined!")
 
         aug_prob: float = 0.0
         if self._SPLIT == "train":
