@@ -302,6 +302,30 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
 
         return smoothed_anomaly_map
 
+    def __call__(self, **kwds):
+        """
+        Returns anomaly_map.
+        Expects `embedding`, `mean` and `covariance` keywords to be passed explicitly
+
+        Example
+        >>> anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
+        >>> output = anomaly_map_generator(embedding=embedding, mean=mean, covariance=covariance)
+
+        Raises:
+            ValueError: `embedding`. `mean` or `covariance` keys are not found
+
+        Returns:
+            torch.Tensor: anomaly map
+        """
+        if not ("embedding" in kwds and "mean" in kwds and "covariance" in kwds):
+            raise ValueError(f"Expected keys `embedding`, `mean` and `covariance`. Found {kwds.keys()}")
+
+        embedding: Tensor = kwds["embedding"]
+        mean: Tensor = kwds["mean"]
+        covariance: Tensor = kwds["covariance"]
+
+        return self.compute_anomaly_map(embedding, mean, covariance)
+
 
 class PadimLightning(BaseAnomalySegmentationLightning):
     """
@@ -358,7 +382,7 @@ class PadimLightning(BaseAnomalySegmentationLightning):
         filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
         features = self.model(images)
         embedding = self.model.generate_embedding(features)
-        anomaly_maps = self.model.anomaly_map_generator.compute_anomaly_map(
+        anomaly_maps = self.model.anomaly_map_generator(
             embedding=embedding, mean=self.model.gaussian.mean, covariance=self.model.gaussian.covariance
         )
         return {

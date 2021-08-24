@@ -6,7 +6,7 @@ import random
 from typing import Optional, Tuple
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from anomalib.core.model.kde import GaussianKDE
 from anomalib.core.model.pca import PCA

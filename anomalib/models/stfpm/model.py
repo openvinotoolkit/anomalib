@@ -204,7 +204,6 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         anomaly_map = torch.ones(batch_size, 1, self.image_size[0], self.image_size[1])
         for layer in teacher_features.keys():
             layer_map = self.compute_layer_map(teacher_features[layer], student_features[layer])
-            layer_map = layer_map
             anomaly_map = anomaly_map.to(layer_map.device)
             anomaly_map *= layer_map
 
@@ -226,13 +225,13 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
             torch.Tensor: anomaly map
         """
 
-        if "teacher_features" in kwds and "student_features" in kwds:
-            teacher_features: Dict[str, Tensor] = kwds["teacher_features"]
-            student_features: Dict[str, Tensor] = kwds["student_features"]
-
-            return self.compute_anomaly_map(teacher_features, student_features)
-        else:
+        if not ("teacher_features" in kwds and "student_features" in kwds):
             raise ValueError(f"Expected keys `teacher_features` and `student_features. Found {kwds.keys()}")
+
+        teacher_features: Dict[str, Tensor] = kwds["teacher_features"]
+        student_features: Dict[str, Tensor] = kwds["student_features"]
+
+        return self.compute_anomaly_map(teacher_features, student_features)
 
 
 class STFPMModel(BaseAnomalySegmentationModule):

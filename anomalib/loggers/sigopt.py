@@ -87,7 +87,7 @@ class SigoptLogger(LightningLoggerBase):
         self.experiment.log_checkpoint(metrics)
 
     @rank_zero_only
-    def log_metrics(self, metrics: Dict[str, float], step: Optional[int] = None) -> None:
+    def log_metrics(self, metrics: Dict[str, float], step: Optional[int] = None) -> None:  # pylint: disable=W0613
         """Uses sigopt checkpoint to save the metrics. This way you will get the graph.
             However it is unsafe as it does not check if number of checkpoints have crossed 200.
 
@@ -134,7 +134,7 @@ class SigoptLogger(LightningLoggerBase):
         return self._name
 
     @rank_zero_only
-    def finalize(self, status) -> None:
+    def finalize(self, status) -> None:  # pylint: disable=W0613
         """Closes the experiment object
 
         Args:
@@ -163,7 +163,8 @@ class SigoptLogger(LightningLoggerBase):
         ret = {}
         for key, val in params.items():
             # isinstance is not used for bool type as it returns true for int
-            # mypy complains about using isinstance instead of type hence this line is ignored
+            # mypy and pylint complain about using isinstance instead of type hence this line is ignored
+            # pylint: disable=C0123
             if type(val) != int and not isinstance(val, float) and not isinstance(val, str):  # type: ignore
                 val = str(val)
             ret[str(key)] = val  # sanitize keys as well

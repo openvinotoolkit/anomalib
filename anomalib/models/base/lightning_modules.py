@@ -36,9 +36,6 @@ class BaseAnomalyClassificationLightning(BaseAnomalyLightning):
     The actual algorithm should be contained within `self.model`.
     """
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]):
-        super().__init__(hparams)
-
 
 class BaseAnomalySegmentationLightning(BaseAnomalyLightning):
     """
