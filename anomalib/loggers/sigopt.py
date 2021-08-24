@@ -36,7 +36,7 @@ class SigoptLogger(LightningLoggerBase):
 
         self._experiment = experiment
 
-    @property
+    @property  # type: ignore
     @rank_zero_experiment
     def experiment(self) -> RunFactoryProxyMethod:
         """Create experiment object"""
@@ -57,8 +57,6 @@ class SigoptLogger(LightningLoggerBase):
           name: Optional[str]: Name of the image, defaults to None
 
         """
-        assert rank_zero_only.rank == 0, "experiment tried to log from global_rank != 0"
-
         self.experiment.log_image(image, name)
 
     @rank_zero_only
@@ -82,8 +80,6 @@ class SigoptLogger(LightningLoggerBase):
         >>>         loss += entry['loss']
         >>>         self.logger.log_checkpoint(metrics={"loss": loss/len(outputs)}, epoch=self.trainer.current_epoch)
         """
-
-        assert rank_zero_only.rank == 0, "experiment tried to log from global_rank != 0"
         # Use the epoch information to ensure that maximum of 200 checkpoints are saved
         if (epoch + 1) % self._update_freq != 0:
             return
@@ -100,7 +96,6 @@ class SigoptLogger(LightningLoggerBase):
             Also uses `log_metric` to log other metrics
           step: trainer step. Not used here
         """
-        assert rank_zero_only.rank == 0, "experiment tried to log from global_rank != 0"
         try:
             self.experiment.log_checkpoint(metrics)
             for key, value in metrics.items():

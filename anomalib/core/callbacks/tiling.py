@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 import pytorch_lightning as pl
 from pytorch_lightning import Callback
@@ -49,8 +49,9 @@ class TilingCallback(Callback):
         dataloader_idx: int,
     ) -> None:
         """Called when the validation batch ends."""
-        outputs["anomaly_maps"] = self.tiler.untile(outputs["anomaly_maps"])
-        outputs["images"] = self.tiler.untile(outputs["images"])
+        if isinstance(outputs, Dict):
+            outputs["anomaly_maps"] = self.tiler.untile(outputs["anomaly_maps"])
+            outputs["images"] = self.tiler.untile(outputs["images"])
 
     def on_test_batch_start(
         self,
@@ -73,5 +74,6 @@ class TilingCallback(Callback):
         dataloader_idx: int,
     ) -> None:
         """Called when the test batch ends."""
-        outputs["anomaly_maps"] = self.tiler.untile(outputs["anomaly_maps"])
-        outputs["images"] = self.tiler.untile(outputs["images"])
+        if outputs is not None:
+            outputs["anomaly_maps"] = self.tiler.untile(outputs["anomaly_maps"])
+            outputs["images"] = self.tiler.untile(outputs["images"])
