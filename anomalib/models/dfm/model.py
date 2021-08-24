@@ -3,7 +3,7 @@ DFM: Deep Feature Kernel Density Estimation
 """
 
 import os
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 import numpy as np
 import pytorch_lightning as pl
@@ -12,6 +12,7 @@ from attrdict import AttrDict
 from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 from sklearn.metrics import roc_auc_score
+from torch import Tensor
 from torchvision.models import resnet18
 
 from anomalib.core.callbacks.model_loader import LoadModelCallback
@@ -90,7 +91,7 @@ class DfmLightning(pl.LightningModule):
         feature_vector = torch.hstack(list(layer_outputs.values())).detach().squeeze()
         return {"feature_vector": feature_vector}
 
-    def training_epoch_end(self, outputs: List[Dict[str, Any]]) -> None:
+    def training_epoch_end(self, outputs: List[Union[Tensor, Dict[str, Any]]]) -> None:
         """Fit a KDE model on deep CNN features.
 
         Args:
@@ -126,7 +127,7 @@ class DfmLightning(pl.LightningModule):
         ground_truth = np.any(mask.cpu().numpy(), axis=(1, 2, 3)).astype(int)
         return {"fre_scores": feature_reconstruction_error, "ground_truth": ground_truth}
 
-    def validation_epoch_end(self, outputs: List[Dict[str, Any]]) -> None:
+    def validation_epoch_end(self, outputs: List[Union[Tensor, Dict[str, Any]]]) -> None:
         """Compute anomaly classification scores based on probability scores.
 
         Args:
@@ -158,7 +159,7 @@ class DfmLightning(pl.LightningModule):
 
         return self.validation_step(batch, _)
 
-    def test_epoch_end(self, outputs: List[Dict[str, Any]]) -> None:
+    def test_epoch_end(self, outputs: List[Union[Tensor, Dict[str, Any]]]) -> None:
         """Compute anomaly classification scores based on probability scores.
 
         Args:

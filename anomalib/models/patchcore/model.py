@@ -98,11 +98,29 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         score = weights * max(patch_scores[:, 0])
         return score
 
-    def __call__(self, patch_scores: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        anomaly_map = self.compute_anomaly_map(patch_scores)
-        anomaly_score = self.compute_anomaly_score(patch_scores)
+    def __call__(self, **kwds: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Returns anomaly_map and anomaly_score.
+        Expects `patch_scores` keyword to be passed explicitly
 
-        return anomaly_map, anomaly_score
+        Example
+        >>> anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
+        >>> map, score = anomaly_map_generator(patch_scores=numpy_array)
+
+        Raises:
+            ValueError: If `patch_scores` key is not found
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: anomaly_map, anomaly_score
+        """
+        if "patch_scores" in kwds:
+            patch_scores: np.ndarray = kwds["patch_scores"]
+            anomaly_map = self.compute_anomaly_map(patch_scores)
+            anomaly_score = self.compute_anomaly_score(patch_scores)
+
+            return anomaly_map, anomaly_score
+        else:
+            raise ValueError(f"Expected key `patch_scores`. Found {kwds.keys()}")
 
 
 class PatchcoreModel(DynamicBufferModule, BaseAnomalySegmentationModule):
@@ -149,7 +167,7 @@ class PatchcoreModel(DynamicBufferModule, BaseAnomalySegmentationModule):
         else:
             patch_scores, _ = self.nn_search.kneighbors(embedding)
 
-            anomaly_map, anomaly_score = self.anomaly_map_generator(patch_scores)
+            anomaly_map, anomaly_score = self.anomaly_map_generator(patch_scores=patch_scores)
             output = (anomaly_map, anomaly_score)
 
         return output
