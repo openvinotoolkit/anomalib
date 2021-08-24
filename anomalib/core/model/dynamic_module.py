@@ -4,8 +4,7 @@ Dynamic Buffer Module
 
 from abc import ABC
 
-import torch.nn as nn
-from torch import Tensor
+from torch import Tensor, nn
 
 
 class DynamicBufferModule(ABC, nn.Module):

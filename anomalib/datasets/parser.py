@@ -20,15 +20,16 @@ class PascalVocReader:
     """
 
     def __init__(self, file_path: str):
-        self.labels: List[str] = list()
-        self.boxes: List[List[int]] = list()
+        # shapes type:
+        self.labels: List[str] = []
+        self.boxes: List[List[int]] = []
         self.file_path = file_path
         self.verified: bool = False
         self.xml_tree: ElementTree.Element
         try:
             self.parse_xml()
         except RuntimeError:
-            logger.warning(f"Incorrect format: Unable to parse xml from {file_path}")
+            logger.warning("Incorrect format: Unable to parse xml from %s", file_path)
 
     def get_shapes(self) -> Dict[str, Union[List, Any]]:
         """

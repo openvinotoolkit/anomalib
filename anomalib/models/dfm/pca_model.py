@@ -4,8 +4,8 @@ Normality model of DFKDE
 
 import numpy as np
 import torch
-import torch.nn as nn
 from sklearn.decomposition import PCA
+from torch import nn
 
 
 class PCAModel(nn.Module):

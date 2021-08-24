@@ -1,7 +1,7 @@
 """
 Base Anomaly Models
 """
-import torch.nn as nn
+from torch import nn
 
 from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
 
