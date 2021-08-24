@@ -86,16 +86,21 @@ class kCenterGreedy(SamplingMethod):
         Returns:
           indices of points selected to minimize distance to cluster centers
         """
-
-        print("Getting transformed features...")
-        self.features = model.transform(self.X)
-        print("Calculating distances...")
-        self.update_distances(already_selected, only_new=False, reset_dist=True)
+        if self.X.ndim == 2:
+            print("Getting transformed features...")
+            self.features = model.transform(self.X)
+            print("Calculating distances...")
+            self.update_distances(already_selected, only_new=False, reset_dist=True)
+        else:
+            print("Using flat_X as features.")
+            self.update_distances(cluster_centers=already_selected, only_new=True, reset_dist=False)
 
         new_batch = []
 
         for _ in range(N):
-            if self.already_selected is None:
+            # If we don't check for length then when self.already_selected is [],
+            # the default index is taken as 0
+            if self.already_selected is None or len(self.already_selected) == 0:
                 # Initialize centers with a randomly selected datapoint
                 ind = np.random.choice(np.arange(self.n_obs))
             else:
