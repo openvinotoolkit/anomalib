@@ -9,6 +9,8 @@ from omegaconf.listconfig import ListConfig
 from torch import optim
 from torch.utils.data import DataLoader, Dataset
 
+from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
+
 
 class XORDataset(Dataset):
     def __init__(self):
@@ -45,7 +47,7 @@ class DummyModel(pl.LightningModule):
         self.fc1 = nn.Linear(2, 3)
         self.fc2 = nn.Linear(3, 1)
         self.loss_fn = nn.MSELoss()
-        self.callbacks = None
+        self.callbacks = [VisualizerCallback()]  # test if this is removed
         self.save_hyperparameters(hparams)
 
     def forward(self, x):
