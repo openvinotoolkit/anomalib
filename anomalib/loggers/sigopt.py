@@ -87,14 +87,14 @@ class SigoptLogger(LightningLoggerBase):
         self.experiment.log_checkpoint(metrics)
 
     @rank_zero_only
-    def log_metrics(self, metrics: Dict[str, float], step: Optional[int] = None) -> None:  # pylint: disable=W0613
+    def log_metrics(self, metrics: Dict[str, float], _step: Optional[int] = None) -> None:
         """Uses sigopt checkpoint to save the metrics. This way you will get the graph.
             However it is unsafe as it does not check if number of checkpoints have crossed 200.
 
         Args:
           metrics: Dictionary containing metrics. Current limitation is maximum of 4 metrics.
             Also uses `log_metric` to log other metrics
-          step: trainer step. Not used here
+          _step: trainer step. Not used here
         """
         try:
             self.experiment.log_checkpoint(metrics)
@@ -134,11 +134,11 @@ class SigoptLogger(LightningLoggerBase):
         return self._name
 
     @rank_zero_only
-    def finalize(self, status) -> None:  # pylint: disable=W0613
+    def finalize(self, _status) -> None:
         """Closes the experiment object
 
         Args:
-          status: Not used
+          _status: Not used
 
         """
         if self._experiment is not None:
@@ -150,7 +150,7 @@ class SigoptLogger(LightningLoggerBase):
         return 1
 
     @staticmethod
-    def _sanitize_other_params(params: Dict) -> Dict:
+    def _sanitize_other_params(params: Union[Dict[str, Any], Namespace]) -> Dict:
         """convert all params that are not string or numbers to string
 
         Args:

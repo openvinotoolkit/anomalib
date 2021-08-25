@@ -36,3 +36,22 @@ repos:
     rev: 3.9.2
     hooks:
       - id: flake8
+        args: [--config=tox.ini]
+        exclude: "tests/"
+
+  # python linting
+  - repo: https://github.com/PyCQA/pylint
+    rev: v2.10.2
+    hooks:
+      - id: pylint
+        args: [--rcfile=tox.ini]
+        exclude: "tests|docs"
+
+  # python static type checking
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: "v0.910"
+    hooks:
+      - id: mypy
+        args: [--config-file=tox.ini]
+        additional_dependencies: [types-PyYAML]
+        exclude: "tests/"

@@ -5,7 +5,7 @@ API Reference
 
 .. everything except the `model` directory is recursively fetched.
 
-.. autosummary:: 
+.. autosummary::
     :toctree: api
     :nosignatures:
     :recursive:

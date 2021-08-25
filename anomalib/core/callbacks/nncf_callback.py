@@ -3,7 +3,7 @@ NNCF Callback
 """
 
 import os
-from typing import Any, Optional
+from typing import Any, Dict, Iterator, Optional, Tuple
 
 import pytorch_lightning as pl
 import yaml
@@ -12,7 +12,8 @@ from nncf.api.compression import CompressionAlgorithmController, CompressionSche
 from nncf.torch import create_compressed_model, register_default_init_args
 from nncf.torch.initialization import PTInitializingDataLoader
 from omegaconf import OmegaConf
-from pytorch_lightning import Callback, LightningModule
+from pytorch_lightning import Callback
+from torch.utils.data.dataloader import DataLoader
 
 from anomalib.datasets import get_datamodule
 
@@ -34,6 +35,10 @@ def criterion_fn(outputs, criterion):
 class InitLoader(PTInitializingDataLoader):
     """Initializing data loader for NNCF to be used with unsupervised training algorithms."""
 
+    def __init__(self, data_loader: DataLoader):
+        super().__init__(data_loader)
+        self._data_loader_iter: Iterator
+
     def __iter__(self):
         self._data_loader_iter = iter(self._data_loader)
         return self
@@ -42,10 +47,22 @@ class InitLoader(PTInitializingDataLoader):
         loaded_item = next(self._data_loader_iter)
         return loaded_item["image"]
 
-    def get_inputs(self, dataloader_output):
+    def get_inputs(self, dataloader_output) -> Tuple[Tuple, Dict]:
+        """
+        Returns:
+            (dataloader_output,), {}: Tuple[Tuple, Dict]: The current model call to be made during
+            the initialization process
+        """
         return (dataloader_output,), {}
 
-    def get_target(self, dataloader_output):
+    def get_target(self):
+        """
+        Parses the generic data loader output and returns a structure to be used as
+        ground truth in the loss criterion.
+
+        Returns:
+            None
+        """
         return None
 
 
@@ -72,7 +89,7 @@ class NNCFCallback(Callback):
 
         self.mo_path = config.project.mo_path
 
-    def setup(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", stage: Optional[str] = None) -> None:
+    def setup(self, _: pl.Trainer, pl_module: pl.LightningModule, __: Optional[str] = None) -> None:
         """Called when fit or test begins"""
         if self.comp_ctrl is None:
             init_loader = InitLoader(self.train_loader)
@@ -83,14 +100,14 @@ class NNCFCallback(Callback):
             self.compression_scheduler = self.comp_ctrl.scheduler
 
     def on_train_batch_start(
-        self, trainer, pl_module: LightningModule, batch: Any, batch_idx: int, dataloader_idx: int
+        self, trainer, _pl_module: pl.LightningModule, _batch: Any, _batch_idx: int, _dataloader_idx: int
     ) -> None:
         """Called when the train batch begins."""
         self.compression_scheduler.step()
         if self.comp_ctrl is not None:
             trainer.model.loss_val = self.comp_ctrl.loss()
 
-    def on_train_end(self, trainer, pl_module: LightningModule) -> None:
+    def on_train_end(self, _trainer, _pl_module: pl.LightningModule) -> None:
         """Called when the train ends."""
         os.makedirs(self.dirpath, exist_ok=True)
         onnx_path = os.path.join(self.dirpath, self.filename + ".onnx")
@@ -100,7 +117,7 @@ class NNCFCallback(Callback):
         os.system(optimize_command)
 
     def on_train_epoch_end(
-        self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", unused: Optional[Any] = None
+        self, _trainer: pl.Trainer, _pl_module: pl.LightningModule, _unused: Optional[Any] = None
     ) -> None:
         """Called when the train epoch ends."""
         self.compression_scheduler.epoch_step()

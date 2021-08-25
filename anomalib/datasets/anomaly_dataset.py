@@ -287,7 +287,7 @@ class BaseAnomalyDataset(VisionDataset):
 
             logger.info("Downloading Anomaly Dataset")
             with DownloadProgressBar(
-                    unit="B", unit_scale=True, miniters=1, desc=self.download_url.split("/")[-1]
+                unit="B", unit_scale=True, miniters=1, desc=self.download_url.split("/")[-1]
             ) as progress_bar:
                 urlretrieve(url=self.download_url, filename=self.filename, reporthook=progress_bar.update_to)
 

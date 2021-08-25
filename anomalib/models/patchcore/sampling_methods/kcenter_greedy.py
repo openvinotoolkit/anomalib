@@ -22,7 +22,7 @@ Convolutional Neural Networks. https://arxiv.org/abs/1708.00489 2017
 
 Distance metric defaults to l2 distance.  Features used to calculate distance
 are either raw features or if a model has transform method then uses the output
-of model.transform(X).
+of model.transform(x).
 
 Can be extended to a robust k centers algorithm that ignores a certain number of
 outlier datapoints.  Resulting centers are solution to multiple integer program.
@@ -30,23 +30,27 @@ outlier datapoints.  Resulting centers are solution to multiple integer program.
 
 from __future__ import absolute_import, division, print_function
 
+from typing import List
+
 import numpy as np
 from sklearn.metrics import pairwise_distances
 
 from anomalib.models.patchcore.sampling_methods.sampling_def import SamplingMethod
 
 
-class kCenterGreedy(SamplingMethod):
-    def __init__(self, X, y, seed, metric="euclidean"):
-        self.X = X
-        self.y = y
-        self.flat_X = self.flatten_X()
+class KCenterGreedy(SamplingMethod):
+    """
+    Implements k-center-greedy method
+    """
+
+    def __init__(self, x: np.ndarray, y, seed, metric="euclidean"):
+        super().__init__(x, y, seed)
         self.name = "kcenter"
-        self.features = self.flat_X
+        self.features: np.ndarray
         self.metric = metric
         self.min_distances = None
-        self.n_obs = self.X.shape[0]
-        self.already_selected = []
+        self.n_obs = self.embeddings.shape[0]
+        self.already_selected: List[int] = []
 
     def update_distances(self, cluster_centers, only_new=True, reset_dist=False):
         """Update min distances given cluster centers.
@@ -64,15 +68,15 @@ class kCenterGreedy(SamplingMethod):
             cluster_centers = [d for d in cluster_centers if d not in self.already_selected]
         if cluster_centers:
             # Update min_distances for all examples given new cluster center.
-            x = self.features[cluster_centers]
-            dist = pairwise_distances(self.features, x, metric=self.metric)
+            centers = self.features[cluster_centers]
+            dist = pairwise_distances(self.features, centers, metric=self.metric)
 
             if self.min_distances is None:
                 self.min_distances = np.min(dist, axis=1).reshape(-1, 1)
             else:
                 self.min_distances = np.minimum(self.min_distances, dist)
 
-    def select_batch_(self, model, already_selected, N, **kwargs):
+    def select_batch_(self, model, already_selected, batch_size):
         """
         Diversity promoting active learning method that greedily forms a batch
         to minimize the maximum distance to a cluster center among all unlabeled
@@ -86,18 +90,19 @@ class kCenterGreedy(SamplingMethod):
         Returns:
           indices of points selected to minimize distance to cluster centers
         """
-        if self.X.ndim == 2:
+        if self.embeddings.ndim == 2:
             print("Getting transformed features...")
-            self.features = model.transform(self.X)
+            self.features = model.transform(self.embeddings)
             print("Calculating distances...")
             self.update_distances(already_selected, only_new=False, reset_dist=True)
         else:
-            print("Using flat_X as features.")
+            print("Using flattened features.")
+            self.features = self.flatten_x()
             self.update_distances(cluster_centers=already_selected, only_new=True, reset_dist=False)
 
         new_batch = []
 
-        for _ in range(N):
+        for _ in range(batch_size):
             # If we don't check for length then when self.already_selected is [],
             # the default index is taken as 0
             if self.already_selected is None or len(self.already_selected) == 0:
