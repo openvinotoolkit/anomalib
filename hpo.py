@@ -1,3 +1,4 @@
+"""Entry point for hyperparameter optimization"""
 from argparse import ArgumentParser
 
 from pytorch_lightning import seed_everything
@@ -7,6 +8,7 @@ from anomalib.hpo.sweep import run_sweep
 
 
 def get_args():
+    """Gets parameters from commandline"""
     parser = ArgumentParser()
     parser.add_argument("--model", type=str, default="stfpm", help="Name of the algorithm to train/test")
     parser.add_argument("--model_config_path", type=str, required=False, help="Path to a model config file")

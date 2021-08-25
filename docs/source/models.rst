@@ -79,8 +79,8 @@ Features are extracted by feeding the images through a ResNet18 backbone, which 
 Anomaly Detection
 ******************
 
-In the anomaly classification stage, class-conditional PCA transformations and Gaussian Density models are learned. Two types of scores are calculated 
-    (i) Feature-reconstruction scores (norm of the difference between the high-dimensional pre-image of a reduced dimension feature and the original high-dimensional feature), and 
+In the anomaly classification stage, class-conditional PCA transformations and Gaussian Density models are learned. Two types of scores are calculated
+    (i) Feature-reconstruction scores (norm of the difference between the high-dimensional pre-image of a reduced dimension feature and the original high-dimensional feature), and
 
     (ii) Negative log-likelihood under the learnt density models. Either of these scores can be used for anomaly detection.
 

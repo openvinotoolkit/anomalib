@@ -62,3 +62,16 @@ the scripts automatically finds the corresponding config file.
 
 To see a list of currently supported models, refer to page: :ref:`available models`
 
+Development
+===========
+
+To setup the development environment, you will need to install development requirements. :code:`pip install -r requirements_dev.txt`
+
+Developers are also required to install pre-commit hooks
+
+::
+
+    pre-commit install
+
+When submitting an MR developers should run Tox. See the :ref:`Using Tox<using_tox>` section for more details.
+Submit an MR only when all the checks are passed in Tox.

@@ -1,3 +1,4 @@
+(using_tox)=
 # Using Tox
 
 The quality of code for `anomalib` maintained by using tools such as `black`, `mypy`, and `flake8`. In order to enforce these, we use Tox. This is also the reason why we don't have dependencies such as `pytest` in the `requirements.txt` file.
