@@ -8,7 +8,16 @@ from typing import Optional, Union
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
 
-def update_config_for_nncf(config):
+def update_config_for_nncf(config: Union[DictConfig, ListConfig]):
+    """
+    Set the NNCF input size based on the value of the crop_size parameter in the configurable parameters object.
+
+    Args:
+        config: Dictconfig: Configurable parameters of the current run.
+
+    Returns:
+        Updated configurable parameters in DictConfig object.
+    """
     crop_size = config.transform.crop_size
     sample_size = (crop_size, crop_size) if isinstance(crop_size, int) else crop_size
     if "optimization" in config.keys():

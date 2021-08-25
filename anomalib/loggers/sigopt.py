@@ -36,7 +36,7 @@ class SigoptLogger(LightningLoggerBase):
 
         self._experiment = experiment
 
-    @property
+    @property  # type: ignore
     @rank_zero_experiment
     def experiment(self) -> RunFactoryProxyMethod:
         """Create experiment object"""
@@ -57,8 +57,6 @@ class SigoptLogger(LightningLoggerBase):
           name: Optional[str]: Name of the image, defaults to None
 
         """
-        assert rank_zero_only.rank == 0, "experiment tried to log from global_rank != 0"
-
         self.experiment.log_image(image, name)
 
     @rank_zero_only
@@ -82,8 +80,6 @@ class SigoptLogger(LightningLoggerBase):
         >>>         loss += entry['loss']
         >>>         self.logger.log_checkpoint(metrics={"loss": loss/len(outputs)}, epoch=self.trainer.current_epoch)
         """
-
-        assert rank_zero_only.rank == 0, "experiment tried to log from global_rank != 0"
         # Use the epoch information to ensure that maximum of 200 checkpoints are saved
         if (epoch + 1) % self._update_freq != 0:
             return
@@ -91,7 +87,7 @@ class SigoptLogger(LightningLoggerBase):
         self.experiment.log_checkpoint(metrics)
 
     @rank_zero_only
-    def log_metrics(self, metrics: Dict[str, float], step: Optional[int] = None) -> None:
+    def log_metrics(self, metrics: Dict[str, float], step: Optional[int] = None) -> None:  # pylint: disable=W0613
         """Uses sigopt checkpoint to save the metrics. This way you will get the graph.
             However it is unsafe as it does not check if number of checkpoints have crossed 200.
 
@@ -100,7 +96,6 @@ class SigoptLogger(LightningLoggerBase):
             Also uses `log_metric` to log other metrics
           step: trainer step. Not used here
         """
-        assert rank_zero_only.rank == 0, "experiment tried to log from global_rank != 0"
         try:
             self.experiment.log_checkpoint(metrics)
             for key, value in metrics.items():
@@ -139,7 +134,7 @@ class SigoptLogger(LightningLoggerBase):
         return self._name
 
     @rank_zero_only
-    def finalize(self, status) -> None:
+    def finalize(self, status) -> None:  # pylint: disable=W0613
         """Closes the experiment object
 
         Args:
@@ -168,7 +163,8 @@ class SigoptLogger(LightningLoggerBase):
         ret = {}
         for key, val in params.items():
             # isinstance is not used for bool type as it returns true for int
-            # mypy complains about using isinstance instead of type hence this line is ignored
+            # mypy and pylint complain about using isinstance instead of type hence this line is ignored
+            # pylint: disable=C0123
             if type(val) != int and not isinstance(val, float) and not isinstance(val, str):  # type: ignore
                 val = str(val)
             ret[str(key)] = val  # sanitize keys as well

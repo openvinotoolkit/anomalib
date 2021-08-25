@@ -3,10 +3,12 @@ NNCF Callback
 """
 
 import os
-from typing import Any
+from typing import Any, Optional
 
+import pytorch_lightning as pl
 import yaml
 from nncf import NNCFConfig
+from nncf.api.compression import CompressionAlgorithmController, CompressionScheduler
 from nncf.torch import create_compressed_model, register_default_init_args
 from nncf.torch.initialization import PTInitializingDataLoader
 from omegaconf import OmegaConf
@@ -65,12 +67,12 @@ class NNCFCallback(Callback):
         datamodule.setup()
         self.train_loader = datamodule.train_dataloader()
 
-        self.comp_ctrl = None
-        self.compression_scheduler = None
+        self.comp_ctrl: Optional[CompressionAlgorithmController] = None
+        self.compression_scheduler: CompressionScheduler
 
         self.mo_path = config.project.mo_path
 
-    def setup(self, trainer, pl_module: LightningModule, stage: str) -> None:
+    def setup(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", stage: Optional[str] = None) -> None:
         """Called when fit or test begins"""
         if self.comp_ctrl is None:
             init_loader = InitLoader(self.train_loader)
@@ -85,16 +87,20 @@ class NNCFCallback(Callback):
     ) -> None:
         """Called when the train batch begins."""
         self.compression_scheduler.step()
-        trainer.model.loss_val = self.comp_ctrl.loss()
+        if self.comp_ctrl is not None:
+            trainer.model.loss_val = self.comp_ctrl.loss()
 
     def on_train_end(self, trainer, pl_module: LightningModule) -> None:
         """Called when the train ends."""
         os.makedirs(self.dirpath, exist_ok=True)
         onnx_path = os.path.join(self.dirpath, self.filename + ".onnx")
-        self.comp_ctrl.export_model(onnx_path)
+        if self.comp_ctrl is not None:
+            self.comp_ctrl.export_model(onnx_path)
         optimize_command = "python " + self.mo_path + " --input_model " + onnx_path + " --output_dir " + self.dirpath
         os.system(optimize_command)
 
-    def on_train_epoch_end(self, trainer, pl_module: LightningModule, outputs: Any) -> None:
+    def on_train_epoch_end(
+        self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", unused: Optional[Any] = None
+    ) -> None:
         """Called when the train epoch ends."""
         self.compression_scheduler.epoch_step()

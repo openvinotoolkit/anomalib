@@ -2,13 +2,14 @@
 Anomaly Map Generator
 """
 
-from typing import Tuple, Union
+from typing import Any, Tuple, Union
 
 import cv2
 import numpy as np
 from omegaconf import ListConfig
 from skimage import morphology
 from sklearn.metrics import precision_recall_curve
+from torch import Tensor
 
 
 class BaseAnomalyMapGenerator:
@@ -62,7 +63,9 @@ class BaseAnomalyMapGenerator:
         return heatmap_on_image
 
     @staticmethod
-    def compute_adaptive_threshold(ground_truth: np.ndarray, predictions: np.ndarray) -> Tuple[float, float]:
+    def compute_adaptive_threshold(
+        ground_truth: Union[Tensor, np.ndarray], predictions: Union[Tensor, np.ndarray]
+    ) -> Tuple[float, float]:
         """Compute adaptive threshold, based on the f1 metric of the true labels and the predicted anomaly scores
 
         Args:
@@ -102,7 +105,7 @@ class BaseAnomalyMapGenerator:
         """
 
         anomaly_map = anomaly_map.squeeze()
-        mask = np.zeros_like(anomaly_map).astype(np.uint8)
+        mask: np.ndarray = np.zeros_like(anomaly_map).astype(np.uint8)
         mask[anomaly_map > threshold] = 1
 
         kernel = morphology.disk(kernel_size)
@@ -111,3 +114,15 @@ class BaseAnomalyMapGenerator:
         mask *= 255
 
         return mask
+
+    def __call__(self, **kwds: Any) -> Any:
+        """
+        A few models support `__call__` and hence this is added for mypy compatibility.
+        It breaks the coding guideline by not being decorated with `@abc.abstractmethod` but mypy does not allow it.
+
+        The idea behind using keyword arguments is to force the implementers to be explicit when passing the arguments
+
+        Returns:
+            Any: Actual type is defined in the derived classes
+        """
+        raise NotImplementedError()
