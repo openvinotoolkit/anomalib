@@ -28,7 +28,7 @@ from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
 from anomalib.models.base import BaseAnomalySegmentationLightning
 from anomalib.models.base.torch_modules import BaseAnomalySegmentationModule
 from anomalib.models.padim.model import concat_layer_embedding
-from anomalib.models.patchcore.sampling_methods.kcenter_greedy import kCenterGreedy
+from anomalib.models.patchcore.sampling_methods.kcenter_greedy import KCenterGreedy
 
 
 class Callbacks:
@@ -98,10 +98,28 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         score = weights * max(patch_scores[:, 0])
         return score
 
-    def __call__(self, patch_scores: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def __call__(self, **kwds: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Returns anomaly_map and anomaly_score.
+        Expects `patch_scores` keyword to be passed explicitly
+
+        Example
+        >>> anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
+        >>> map, score = anomaly_map_generator(patch_scores=numpy_array)
+
+        Raises:
+            ValueError: If `patch_scores` key is not found
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: anomaly_map, anomaly_score
+        """
+
+        if "patch_scores" not in kwds:
+            raise ValueError(f"Expected key `patch_scores`. Found {kwds.keys()}")
+
+        patch_scores: np.ndarray = kwds["patch_scores"]
         anomaly_map = self.compute_anomaly_map(patch_scores)
         anomaly_score = self.compute_anomaly_score(patch_scores)
-
         return anomaly_map, anomaly_score
 
 
@@ -149,7 +167,7 @@ class PatchcoreModel(DynamicBufferModule, BaseAnomalySegmentationModule):
         else:
             patch_scores, _ = self.nn_search.kneighbors(embedding)
 
-            anomaly_map, anomaly_score = self.anomaly_map_generator(patch_scores)
+            anomaly_map, anomaly_score = self.anomaly_map_generator(patch_scores=patch_scores)
             output = (anomaly_map, anomaly_score)
 
         return output
@@ -208,7 +226,7 @@ class PatchcoreModel(DynamicBufferModule, BaseAnomalySegmentationModule):
         random_projector.fit(embedding)
 
         # Coreset Subsampling
-        selector = kCenterGreedy(embedding, 0, 0)
+        selector = KCenterGreedy(embedding, 0, 0)
         selected_idx = selector.select_batch(
             model=random_projector,
             already_selected=[],
@@ -242,7 +260,7 @@ class PatchcoreLightning(BaseAnomalySegmentationLightning):
         """
         return None
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch, _batch_idx):
         """
         Generate feature embedding of the batch.
 
@@ -272,9 +290,9 @@ class PatchcoreLightning(BaseAnomalySegmentationLightning):
         embedding = self.model.subsample_embedding(embedding, sampling_ratio)
 
         self.model.nn_search = self.model.nn_search.fit(embedding)
-        self.model.memory_bank = torch.from_numpy(embedding)
+        self.model.memory_bank = torch.from_numpy(embedding)  # pylint: disable=W0201:
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch, _batch_idx):
         """
         Load the normal embedding to use it as memory bank.
         Apply nearest neighborhood to the embedding.

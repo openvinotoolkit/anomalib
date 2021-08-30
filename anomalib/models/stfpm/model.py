@@ -204,13 +204,33 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         anomaly_map = torch.ones(batch_size, 1, self.image_size[0], self.image_size[1])
         for layer in teacher_features.keys():
             layer_map = self.compute_layer_map(teacher_features[layer], student_features[layer])
-            layer_map = layer_map
             anomaly_map = anomaly_map.to(layer_map.device)
             anomaly_map *= layer_map
 
         return anomaly_map
 
-    def __call__(self, teacher_features: Dict[str, Tensor], student_features: Dict[str, Tensor]) -> torch.Tensor:
+    def __call__(self, **kwds: Dict[str, Tensor]) -> torch.Tensor:
+        """
+        Returns anomaly_map.
+        Expects `teach_featuers` and `student_featuers` keywords to be passed explicitly
+
+        Example
+        >>> anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(hparams.model.input_size))
+        >>> output = self.anomaly_map_generator(teacher_features=teacher_features, student_features=student_features)
+
+        Raises:
+            ValueError: `teach_featuers` and `student_featuers` keys are not found
+
+        Returns:
+            torch.Tensor: anomaly map
+        """
+
+        if not ("teacher_features" in kwds and "student_features" in kwds):
+            raise ValueError(f"Expected keys `teacher_features` and `student_features. Found {kwds.keys()}")
+
+        teacher_features: Dict[str, Tensor] = kwds["teacher_features"]
+        student_features: Dict[str, Tensor] = kwds["student_features"]
+
         return self.compute_anomaly_map(teacher_features, student_features)
 
 
@@ -249,7 +269,7 @@ class STFPMModel(BaseAnomalySegmentationModule):
         if self.training:
             output = teacher_features, student_features
         else:
-            output = self.anomaly_map_generator(teacher_features, student_features)
+            output = self.anomaly_map_generator(teacher_features=teacher_features, student_features=student_features)
 
         return output
 

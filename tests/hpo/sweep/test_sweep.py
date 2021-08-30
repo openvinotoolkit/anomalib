@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 from omegaconf import OmegaConf
 
+from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.hpo.sweep import run_sweep
 from anomalib.hpo.sweep.config import (
     IncorrectHPOConfiguration,
@@ -157,3 +158,26 @@ def test_hpo():
     with pytest.raises(KeyError):
         with mock.patch("anomalib.hpo.sweep.sweep.Trainer.test", mock_test_return_incorrect):
             run_sweep(config=config)
+
+
+def check_visualizer_callback_exists(callbacks, **kwargs):
+    # raise a key error if visualizer is not removed and exit the test
+    # trainer is set to None if no key error is raised.
+    # This will cause the sweep to fail with AttributeError thus ending the test before entire sweep is run
+    for index, callback in enumerate(callbacks):
+        if isinstance(callback, VisualizerCallback):
+            raise KeyError("Visualizer Callback exists in the model")
+    return None
+
+
+@mock.patch("anomalib.hpo.sweep.sweep.Connection", mock_connection)
+@mock.patch("anomalib.hpo.sweep.sweep.get_datamodule", mock_get_datamodule)
+@mock.patch("anomalib.hpo.sweep.sweep.get_model", mock_get_model)
+def test_remove_visualizer_callback():
+    """Tests whether visualizer callback is removed during hpo"""
+    config = OmegaConf.load("tests/hpo/sweep/test_config.yaml")
+    # raise a key error if visualizer is not removed and exit the test.
+    # If it is removed then trainer object is set to none and the sweep function returns AttributeError
+    with pytest.raises(AttributeError):
+        with mock.patch("anomalib.hpo.sweep.sweep.Trainer", check_visualizer_callback_exists):
+            run_sweep(config)

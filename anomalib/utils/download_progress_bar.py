@@ -46,7 +46,7 @@ class DownloadProgressBar(tqdm):
                                                 Tweak this and `mininterval` to get very efficient loops.
                                                 If your progress is erratic with both fast and slow iterations
                                                 (network, skipping items, etc) you should set miniters=1.
-            ascii (Optional[Union[bool, str]]): If unspecified or False, use unicode (smooth blocks) to fill
+            use_ascii (Optional[Union[bool, str]]): If unspecified or False, use unicode (smooth blocks) to fill
                                             the meter. The fallback is to use ASCII characters " 123456789#".
             disable (Optional[bool]): Whether to disable the entire progressbar wrapper
                                         [default: False]. If set to None, disable on non-TTY.
@@ -114,7 +114,7 @@ class DownloadProgressBar(tqdm):
         mininterval: Optional[float] = 0.1,
         maxinterval: Optional[float] = 10.0,
         miniters: Optional[Union[int, float]] = None,
-        ascii: Optional[Union[bool, str]] = None,
+        use_ascii: Optional[Union[bool, str]] = None,
         disable: Optional[bool] = False,
         unit: Optional[str] = "it",
         unit_scale: Optional[Union[bool, int, float]] = False,
@@ -143,7 +143,7 @@ class DownloadProgressBar(tqdm):
             mininterval=mininterval,
             maxinterval=maxinterval,
             miniters=miniters,
-            ascii=ascii,
+            ascii=use_ascii,
             disable=disable,
             unit=unit,
             unit_scale=unit_scale,
@@ -162,6 +162,7 @@ class DownloadProgressBar(tqdm):
             gui=gui,
             **kwargs
         )
+        self.total: Optional[Union[int, float]]
 
     def update_to(self, chunk_number: int = 1, max_chunk_size: int = 1, total_size=None):
         """Progress bar hook for tqdm. The implementor does not have to bother about passing parameters to this

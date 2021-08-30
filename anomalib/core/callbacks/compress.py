@@ -1,3 +1,4 @@
+"""Callback that compresses a trained model by first exporting to .onnx format, and then converting to OpenVINO IR."""
 import os
 
 import torch
@@ -16,7 +17,7 @@ class CompressModelCallback(Callback):
         self.filename = filename
         self.mo_path = self.config.project.mo_path
 
-    def on_train_end(self, trainer, pl_module: LightningModule) -> None:
+    def on_train_end(self, trainer, pl_module: LightningModule) -> None:  # pylint: disable=W0613
         """Called when the train ends."""
         os.makedirs(self.dirpath, exist_ok=True)
         onnx_path = os.path.join(self.dirpath, self.filename + ".onnx")

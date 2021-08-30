@@ -3,19 +3,20 @@ DFKDE: Deep Feature Kernel Density Estimation
 """
 
 import os
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Union
 
 import numpy as np
-import pytorch_lightning as pl
 import torch
-from attrdict import AttrDict
 from omegaconf.dictconfig import DictConfig
+from omegaconf.listconfig import ListConfig
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 from sklearn.metrics import roc_auc_score
+from torch import Tensor
 from torchvision.models import resnet50
 
 from anomalib.core.callbacks.model_loader import LoadModelCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
+from anomalib.models.base.lightning_modules import BaseAnomalyClassificationLightning
 from anomalib.models.dfkde.normality_model import NormalityModel
 
 
@@ -24,18 +25,19 @@ class Callbacks:
     DFKDE-specific callbacks
     """
 
-    def __init__(self, config: DictConfig):
+    def __init__(self, config: Union[DictConfig, ListConfig]):
         self.config = config
 
-    def get_callbacks(self) -> Sequence[Callback]:
+    def get_callbacks(self) -> List[Callback]:
         """
         Get PADIM model callbacks.
         """
+        callbacks: List[Callback] = []
         checkpoint = ModelCheckpoint(
             dirpath=os.path.join(self.config.project.path, "weights"),
             filename="model",
         )
-        callbacks = [checkpoint]
+        callbacks.append(checkpoint)
 
         if "weight_file" in self.config.keys():
             model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.weight_file))
@@ -47,14 +49,13 @@ class Callbacks:
         return self.get_callbacks()
 
 
-class DfkdeLightning(pl.LightningModule):
+class DfkdeLightning(BaseAnomalyClassificationLightning):
     """
     DFKDE: Deep Featured Kernel Density Estimation
     """
 
-    def __init__(self, hparams: AttrDict):
-        super().__init__()
-        self.save_hyperparameters(hparams)
+    def __init__(self, hparams: Union[DictConfig, ListConfig]):
+        super().__init__(hparams)
         self.threshold_steepness = 0.05
         self.threshold_offset = 12
 
@@ -66,7 +67,7 @@ class DfkdeLightning(pl.LightningModule):
             threshold_offset=self.threshold_offset,
         )
         self.callbacks = Callbacks(hparams)()
-        self.image_roc_auc: Optional[float] = None
+        self.image_roc_auc: float
         self.automatic_optimization = False
 
     @staticmethod
@@ -135,7 +136,7 @@ class DfkdeLightning(pl.LightningModule):
         ground_truth = np.any(mask.cpu().numpy(), axis=(1, 2, 3)).astype(int)
         return {"probability": probability, "ground_truth": ground_truth, "prediction": prediction}
 
-    def validation_epoch_end(self, outputs: List[Dict[str, Any]]) -> None:
+    def validation_epoch_end(self, outputs: List[Union[Tensor, Dict[str, Any]]]) -> None:
         """Compute anomaly classification scores based on probability scores.
 
         Args:
@@ -167,7 +168,7 @@ class DfkdeLightning(pl.LightningModule):
 
         return self.validation_step(batch, _)
 
-    def test_epoch_end(self, outputs: List[Dict[str, Any]]) -> None:
+    def test_epoch_end(self, outputs: List[Union[Tensor, Dict[str, Any]]]) -> None:
         """Compute anomaly classification scores based on probability scores.
 
         Args:

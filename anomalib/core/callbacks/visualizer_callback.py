@@ -24,13 +24,10 @@ class VisualizerCallback(Callback):
     config.yaml file. To save the images to the filesystem, add the 'local' keyword.
     """
 
-    def __init__(self):
-        super(VisualizerCallback, self).__init__()
-
-    def on_test_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
+    def on_test_epoch_end(self, _trainer: Trainer, pl_module: LightningModule) -> None:
         """Log images at the end of training
         Args:
-            trainer (Trainer): Pytorch lightning trainer object
+            _trainer (Trainer): Pytorch lightning trainer object (unused)
             pl_module (LightningModule): Lightning modules derived from BaseAnomalySegmentationLightning object as
             currently only they support logging images.
         """

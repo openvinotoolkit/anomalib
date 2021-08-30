@@ -1,8 +1,7 @@
 # Anomalib
 
-This repository contains state-of-the art anomaly detection algorithms trained 
-and evaluated on both public and private benchmark datasets. The repo is 
-constantly updated with new algorithms, so keep checking.
+This repository contains state-of-the art anomaly detection algorithms trained and evaluated on both public and private
+benchmark datasets. The repo is constantly updated with new algorithms, so keep checking.
 
 ## Installation
 The repo is thoroughly tested based on the following configuration.
@@ -29,9 +28,10 @@ runs [STFPM](https://arxiv.org/pdf/2103.04257.pdf) model [MVTec](https://www.mvt
 python train.py    # Train STFPM on MVTec leather
 ```
 
-Training a model on a specific dataset and category requires further configuration. Each model has its own 
-configuration file, [`config.yaml`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/blob/samet/stfpm/anomalib/models/stfpm/config.yaml), which contains data, model and training 
-configurable parameters. To train a specific model on a specific dataset and category, the config file is to be provided:
+Training a model on a specific dataset and category requires further configuration. Each model has its own configuration
+file, [`config.yaml`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/blob/samet/stfpm/anomalib/models/stfpm/config.yaml)
+, which contains data, model and training configurable parameters. To train a specific model on a specific dataset and
+category, the config file is to be provided:
 ```
 python train.py --model_config_path <path/to/model/config.yaml>
 ```
@@ -62,4 +62,3 @@ where the currently available models are:
 | PADIM |ResNet-18  |   0.964   | 0.986  | 0.919 |  0.992  | 0.916 | 0.937 | 0.980  | 0.957 |  0.980  |  0.972   |   0.957   | 0.951 | 0.973 |   0.986    |   0.968    | 0.980  |
 | PADIM |Wide ResNet| **0.974** | 0.990  | 0.970 |  0.991  | 0.940 | 0.954 | 0.982  | 0.963 |  0.985  |     -    |   0.974   | 0.961 |    -  |   0.988    |   0.973    | 0.986  |
 | STFPM |ResNet-18  |   0.961   | 0.984  | 0.988 |  0.982  | 0.957 | 0.940 | 0.981  | 0.940 |  0.974  |  0.983   |   0.968   | 0.973 | 0.983 |   0.984    |   0.800    | 0.983  |
-

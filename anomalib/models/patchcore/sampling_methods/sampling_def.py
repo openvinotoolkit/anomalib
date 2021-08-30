@@ -29,28 +29,33 @@ import abc
 import numpy as np
 
 
-class SamplingMethod(object):
+class SamplingMethod:
+    """Abstract class for sampling methods."""
+
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
-    def __init__(self, X, y, seed, **kwargs):
-        self.X = X
-        self.y = y
+    def __init__(self, x, y, seed, **kwargs):
+        self.embeddings = x
+        self.targets = y
         self.seed = seed
 
-    def flatten_X(self):
-        shape = self.X.shape
-        flat_X = self.X
+    def flatten_x(self):
+        """If shape of embedding vector is greater than 2, it is reshaped to 2"""
+        shape = self.embeddings.shape
+        flat_x = self.embeddings
         if len(shape) > 2:
-            flat_X = np.reshape(self.X, (shape[0], np.product(shape[1:])))
-        return flat_X
+            flat_x = np.reshape(self.embeddings, (shape[0], np.product(shape[1:])))
+        return flat_x
 
     @abc.abstractmethod
-    def select_batch_(self):
+    def select_batch_(self, model, already_selected, batch_size):
+        """
+        Abstract method for forming a batch which minimizes the maximum distance to a cluster center among all
+        unlabeled datapoint
+        """
         return
 
     def select_batch(self, **kwargs):
+        """Intended to return points which minimize cluster centers"""
         return self.select_batch_(**kwargs)
-
-    def to_dict(self):
-        return None

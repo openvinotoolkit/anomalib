@@ -11,7 +11,6 @@ model:
   weight_decay: 0
   dropout: 0
 
-
 hyperparameter_search:
   observation_budget: 10
   project: unit_test
@@ -36,7 +35,7 @@ hyperparameter_search:
       max: 1e-3
     dropout:
       type: double
-      grid: [ 0.1, 0.2, 0.5 ]
+      grid: [0.1, 0.2, 0.5]
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:

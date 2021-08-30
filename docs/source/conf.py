@@ -15,17 +15,16 @@ import sys
 
 sys.path.insert(0, os.path.abspath("../.."))
 
-import anomalib
+import anomalib  # noqa
 
 # -- Project information -----------------------------------------------------
 
-project = "Anomalib"
-copyright = "2021, Anomalib Contributors"
-author = "Anomalib Contributors"
-version = anomalib.__version__
+PROJECT = "Anomalib"
+COPYRIGHT = "2021, Anomalib Contributors"
+AUTHOR = "Anomalib Contributors"
+VERSION = anomalib.__version__
 
-html_title = " ".join((project, version, "documentation"))
-
+html_title = " ".join((PROJECT, COPYRIGHT, "documentation"))
 
 # -- General configuration ---------------------------------------------------
 
@@ -61,7 +60,7 @@ templates_path = ["_templates"]
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []
+# exclude_patterns = []
 
 
 # -- Options for HTML output -------------------------------------------------

@@ -163,7 +163,7 @@ def make_dataset(path: Path, split_ratio: float = 0.1, seed: int = 0) -> DataFra
     return samples
 
 
-def get_transform(aug_prob: float, t: Union[DictConfig, ListConfig]) -> a.Compose:
+def get_transform(aug_prob: float, config: Union[DictConfig, ListConfig]) -> a.Compose:
     """
     get_transforms:
         Build a pipeline of image transforms each with different probability defined in config file
@@ -174,55 +174,55 @@ def get_transform(aug_prob: float, t: Union[DictConfig, ListConfig]) -> a.Compos
 
     return a.Compose(
         [
-            a.Resize(t.image_size[0], t.image_size[1], always_apply=True),
+            a.Resize(config.image_size[0], config.image_size[1], always_apply=True),
             a.OneOf(
                 [
                     a.RandomRotate90(),
                     a.HorizontalFlip(),
                     # Transpose(),
                 ],
-                p=t.rotate_flip_p,
+                p=config.rotate_flip_p,
             ),
-            a.GaussNoise(p=t.gauss_noise_p),
+            a.GaussNoise(p=config.gauss_noise_p),
             a.OneOf(
                 [
-                    a.MotionBlur(p=t.blur.motion_blur_p),
-                    a.MedianBlur(blur_limit=t.blur.median_blur.blur_limit, p=t.blur.median_blur.p),
-                    a.Blur(blur_limit=t.blur.blur.blur_limit, p=t.blur.blur.p),
+                    a.MotionBlur(p=config.blur.motion_blur_p),
+                    a.MedianBlur(blur_limit=config.blur.median_blur.blur_limit, p=config.blur.median_blur.p),
+                    a.Blur(blur_limit=config.blur.blur.blur_limit, p=config.blur.blur.p),
                 ],
-                p=t.blur.p,
+                p=config.blur.p,
             ),
             a.ShiftScaleRotate(
-                shift_limit=t.shift_scale_rotate.shift_limit,
-                scale_limit=t.shift_scale_rotate.scale_limit,
-                rotate_limit=t.shift_scale_rotate.rotate_limit,
-                p=t.shift_scale_rotate.p,
+                shift_limit=config.shift_scale_rotate.shift_limit,
+                scale_limit=config.shift_scale_rotate.scale_limit,
+                rotate_limit=config.shift_scale_rotate.rotate_limit,
+                p=config.shift_scale_rotate.p,
             ),
             a.OneOf(
                 [
-                    a.OpticalDistortion(p=t.geometric_transforms.optical_distortion_p),
-                    a.GridDistortion(p=t.geometric_transforms.grid_distortion_p),
-                    a.PiecewiseAffine(p=t.geometric_transforms.affine_p),
+                    a.OpticalDistortion(p=config.geometric_transforms.optical_distortion_p),
+                    a.GridDistortion(p=config.geometric_transforms.grid_distortion_p),
+                    a.PiecewiseAffine(p=config.geometric_transforms.affine_p),
                 ],
-                p=t.geometric_transforms.p,
+                p=config.geometric_transforms.p,
             ),
             a.OneOf(
                 [
-                    a.CLAHE(clip_limit=t.image_adjustments.clahe_clip_limit),
+                    a.CLAHE(clip_limit=config.image_adjustments.clahe_clip_limit),
                     a.Sharpen(),
                     a.Emboss(),
                     a.RandomBrightnessContrast(),
                     a.HueSaturationValue(),
                 ],
-                p=t.image_adjustments.p,
+                p=config.image_adjustments.p,
             ),
             a.ImageCompression(
-                p=t.image_compression.p,
-                quality_lower=t.image_compression.quality_lower,
-                quality_upper=t.image_compression.quality_upper,
+                p=config.image_compression.p,
+                quality_lower=config.image_compression.quality_lower,
+                quality_upper=config.image_compression.quality_upper,
             ),
-            a.CenterCrop(t.crop_size[0], t.crop_size[1], always_apply=True),
-            a.Normalize(mean=t.normalize.mean, std=t.normalize.std, always_apply=True),
+            a.CenterCrop(config.crop_size[0], config.crop_size[1], always_apply=True),
+            a.Normalize(mean=config.normalize.mean, std=config.normalize.std, always_apply=True),
             a.ToGray(always_apply=True),
             ToTensorV2(always_apply=True),
         ],
@@ -255,7 +255,7 @@ class BaseAnomalyDataset(VisionDataset):
         self.download_url = download_url
 
         if transform_params is None:
-            raise ValueError(f"Transform parameters not defined!")
+            raise ValueError("Transform parameters not defined!")
 
         aug_prob: float = 0.0
         if self._SPLIT == "train":
@@ -287,7 +287,7 @@ class BaseAnomalyDataset(VisionDataset):
 
             logger.info("Downloading Anomaly Dataset")
             with DownloadProgressBar(
-                    unit="B", unit_scale=True, miniters=1, desc=self.download_url.split("/")[-1]
+                unit="B", unit_scale=True, miniters=1, desc=self.download_url.split("/")[-1]
             ) as progress_bar:
                 urlretrieve(url=self.download_url, filename=self.filename, reporthook=progress_bar.update_to)
 
@@ -532,16 +532,17 @@ class AnomalyDataModule(LightningDataModule):
         """
         samples_df = make_dataset(path=self.root / self.category)
 
-        # Get the data frame for the train dataset.
-        samples_train = samples_df[samples_df.split == "train"]
-        samples_train = samples_train.reset_index(drop=True)
-        self.train_data = self.train_dataset(
-            root=self.root,
-            category=self.category,
-            label_format=self.label_format,
-            transform_params=self.transform_params,
-            samples=samples_train,
-        )
+        if stage in (None, "fit"):
+            # Get the data frame for the train dataset.
+            samples_train = samples_df[samples_df.split == "train"]
+            samples_train = samples_train.reset_index(drop=True)
+            self.train_data = self.train_dataset(
+                root=self.root,
+                category=self.category,
+                label_format=self.label_format,
+                transform_params=self.transform_params,
+                samples=samples_train,
+            )
 
         # Get the data frame for the test dataset.
         samples_test = samples_df[samples_df.split == "test"]
