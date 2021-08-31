@@ -221,15 +221,13 @@ class MVTec(VisionDataset):
             logger.warning("Dataset directory exists.")
         else:
             self.root.mkdir(parents=True, exist_ok=True)
-            self.filename = self.root / "mvtec_anomaly_detection.tar.xz"
+            dataset_name = "mvtec_anomaly_detection.tar.xz"
+            self.filename = self.root / dataset_name
 
             logger.info("Downloading MVTec Dataset")
-            with DownloadProgressBar(
-                unit="B", unit_scale=True, miniters=1, desc="mvtec_anomaly_detection.tar.xz"
-            ) as progress_bar:
+            with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc=dataset_name) as progress_bar:
                 urlretrieve(
-                    url="ftp://guest:GU.205dldo@ftp.softronics.ch/\
-                    mvtec_anomaly_detection/mvtec_anomaly_detection.tar.xz",
+                    url=f"ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/{dataset_name}",
                     filename=self.filename,
                     reporthook=progress_bar.update_to,
                 )
