@@ -67,11 +67,35 @@ Development
 
 To setup the development environment, you will need to install development requirements. :code:`pip install -r requirements_dev.txt`
 
-Developers are also required to install pre-commit hooks
+To enforce consistency within the repo, we use several formatters, linters, and style- and type checkers:
 
-::
+.. list-table::
+   :widths: 1 1 1
+   :header-rows: 1
 
-    pre-commit install
+   * - Tool
+     - Function
+     - Documentation
+   * - Black
+     - Code formatting
+     - https://black.readthedocs.io/en/stable/
+   * - isort
+     - Organize import statements
+     - https://pycqa.github.io/isort/
+   * - Flake8
+     - Code style
+     - https://flake8.pycqa.org/en/latest/
+   * - Pylint
+     - Linting
+     - http://pylint.pycqa.org/en/latest/
+   * - MyPy
+     - Type checking
+     - https://mypy.readthedocs.io/en/stable/
 
-When submitting an MR developers should run Tox. See the :ref:`Using Tox<using_tox>` section for more details.
-Submit an MR only when all the checks are passed in Tox.
+Instead of running each of these tools manually, we automatically run them before each commit and merge request. To achieve this we use pre-commit hooks and tox. Every developer is expected to use pre-commit hooks and tox to make sure that their code remains free of typing and linting issues, and complies with the coding style requirements. More detailed explanations of how to work with these tools is given in the respective guides:
+
+Pre-commit hooks: :ref:`Pre-commit hooks guide<pre-commit_hooks>`
+
+Tox: :ref:`Using Tox<using_tox>`
+
+In rare cases it might be desired to ignore certain errors or warnings for a particular part of your code. Flake8, Pylint and MyPy allow disabling specific errors for a line or block of code. The instructions for this can be found in the the documentations of each of these tools. Please make sure to only ignore errors/warnings when absolutely necessary, and always add a comment in your code stating why you chose to ignore it.
