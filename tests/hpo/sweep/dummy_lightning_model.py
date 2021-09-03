@@ -43,7 +43,7 @@ class DummyModel(pl.LightningModule):
     """A dummy model which fits xor problem"""
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
-        super(DummyModel, self).__init__()
+        super().__init__()
         self.fc1 = nn.Linear(2, 3)
         self.fc2 = nn.Linear(3, 1)
         self.loss_fn = nn.MSELoss()

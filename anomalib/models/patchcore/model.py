@@ -230,7 +230,7 @@ class PatchcoreModel(DynamicBufferModule, BaseAnomalySegmentationModule):
         selected_idx = selector.select_batch(
             model=random_projector,
             already_selected=[],
-            N=int(embedding.shape[0] * sampling_ratio),
+            batch_size=int(embedding.shape[0] * sampling_ratio),
         )
         embedding_coreset = embedding[selected_idx]
         return embedding_coreset
@@ -327,6 +327,10 @@ class PatchcoreLightning(BaseAnomalySegmentationLightning):
           outputs: Batch of outputs from the validation step
 
         """
+        # These have been defined in the __init__ of the base class. It is a known issue that pylint fails in such
+        # scenarios. See https://github.com/PyCQA/pylint/issues/2981 for example.
+        # pylint: disable=attribute-defined-outside-init
+
         self.filenames = [Path(f) for x in outputs for f in x["filenames"]]
         self.images = [x["images"] for x in outputs]
 

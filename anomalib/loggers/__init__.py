@@ -2,18 +2,23 @@
 Load PyTorch Lightning Loggers.
 """
 
+
 from typing import Union
 
-from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.loggers import LightningLoggerBase
+from omegaconf.dictconfig import DictConfig
+from omegaconf.listconfig import ListConfig
+from pytorch_lightning.loggers.base import LightningLoggerBase
 
 from .sigopt import SigoptLogger
+from .tensorboard import AnomalibTensorBoardLogger
+
+__all__ = ["SigoptLogger", "AnomalibTensorBoardLogger", "get_logger"]
+AVAILABLE_LOGGERS = ["sigopt", "tensorboard"]
 
 
 class UnknownLogger(Exception):
     """
     This is raised when the logger option in config.yaml file is set incorrectly.
-    SigOpt is the only available logger for now.
     """
 
 
@@ -30,6 +35,7 @@ def get_logger(config: Union[DictConfig, ListConfig]) -> Union[LightningLoggerBa
     Returns:
         Union[LightningLoggerBase, Iterable[LightningLoggerBase], bool]: Logger
     """
+
     logger: Union[LightningLoggerBase, bool]
 
     if config.project.logger in [None, False]:
@@ -39,10 +45,16 @@ def get_logger(config: Union[DictConfig, ListConfig]) -> Union[LightningLoggerBa
             project=config.dataset.name,
             name=f"{config.dataset.category} {config.model.name}",
         )
+    elif config.project.logger == "tensorboard":
+        logger = AnomalibTensorBoardLogger(
+            name=f"{config.dataset.name} {config.dataset.category} {config.model.name}",
+            save_dir="tensorboard_logs",
+        )
     else:
         raise UnknownLogger(
-            f"Unknown logger type: {config.project.logger}. Available loggers are: sigopt.\n"
-            f"To enable the logger, set `project.logger` to `true` or `sigopt` in config.yaml\n"
+            f"Unknown logger type: {config.project.logger}. "
+            f"Available loggers are: {AVAILABLE_LOGGERS}.\n"
+            f"To enable the logger, set `project.logger` to `true` or use one of available loggers in config.yaml\n"
             f"To disable the logger, set `project.logger` to `false`."
         )
 

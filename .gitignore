@@ -5,6 +5,7 @@ datasets
 lightning_logs
 results
 results_nncf
+tensorboard_logs
 *.dot
 
 backup.py

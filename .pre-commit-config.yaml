@@ -40,11 +40,13 @@ repos:
         exclude: "tests/"
 
   # python linting
-  - repo: https://github.com/PyCQA/pylint
-    rev: v2.10.2
+  - repo: local
     hooks:
       - id: pylint
-        args: [--rcfile=tox.ini]
+        name: pylint
+        entry: pylint --rcfile=tox.ini
+        language: system
+        types: [python]
         exclude: "tests|docs"
 
   # python static type checking
