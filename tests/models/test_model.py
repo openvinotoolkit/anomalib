@@ -52,6 +52,7 @@ def mvtec_dataset_category() -> str:
         ("dfkde", False),
         ("stfpm", False),
         ("stfpm", True),
+        ("patchcore", False),
     ],
 )
 def test_model(mvtec_dataset_category, model_name, nncf):

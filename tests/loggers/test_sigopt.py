@@ -5,8 +5,6 @@ import pytest
 
 from anomalib.loggers.sigopt import SigoptLogger
 
-# TODO test for exception generated after logging more than 200 values
-
 
 @mock.patch("anomalib.loggers.sigopt.sigopt")
 def test_sigopt_logger_init(sigopt):
@@ -102,9 +100,9 @@ def test_sigopt_logger_hyperparameter(sigopt):
 
 
 @mock.patch("anomalib.loggers.sigopt.sigopt")
-def test_sigopt_log_images(sigopt):
+def test_sigopt_add_images(sigopt):
     logger = SigoptLogger(name="test_name", project="test_project")
     # without name
-    logger.log_image(image=np.ones((255, 255, 3)))
+    logger.add_image(image=np.ones((255, 255, 3)))
     # with name
-    logger.log_image(image=np.ones((255, 255, 3)), name="test_image")
+    logger.add_image(image=np.ones((255, 255, 3)), name="test_image")

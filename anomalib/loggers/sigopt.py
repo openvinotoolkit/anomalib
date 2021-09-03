@@ -11,8 +11,10 @@ from pytorch_lightning.utilities import rank_zero_only
 from sigopt.exception import ApiException
 from sigopt.runs import RunFactoryProxyMethod
 
+from .base import ImageLoggerBase
 
-class SigoptLogger(LightningLoggerBase):
+
+class SigoptLogger(ImageLoggerBase, LightningLoggerBase):
     """Logger for sigopt
 
     Args:
@@ -48,14 +50,13 @@ class SigoptLogger(LightningLoggerBase):
         return self._experiment
 
     @rank_zero_only
-    def log_image(self, image: Union[np.ndarray, Figure], name: Optional[str] = None) -> None:
+    def add_image(self, image: Union[np.ndarray, Figure], name: Optional[str] = None, **_kwargs) -> None:
         """Logs images
 
         Args:
           image: Union[np.ndarray, Figure]: image in h w c (rgb/rgba) format. Supports multiple formats.
             See https://app.sigopt.com/docs/runs/reference#log_image
           name: Optional[str]: Name of the image, defaults to None
-
         """
         self.experiment.log_image(image, name)
 
@@ -108,7 +109,7 @@ class SigoptLogger(LightningLoggerBase):
             ) from e
 
     @rank_zero_only
-    def log_hyperparams(self, params: Union[Dict[str, Any], Namespace]) -> None:
+    def log_hyperparams(self, params: Union[Dict[str, Any], Namespace], *_args, **_kwargs) -> None:
         """
 
         Args:
