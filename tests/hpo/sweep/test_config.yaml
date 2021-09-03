@@ -1,5 +1,11 @@
 dataset:
   name: test_dataset
+  tiling:
+    apply: false
+    tile_size: null
+
+transform:
+  image_size: null
 
 model:
   name: test_model

@@ -157,6 +157,7 @@ def get_image_transforms(image_size: Union[Sequence, int], crop_size: Union[Sequ
         T.Compose: List of imagenet transformations.
 
     """
+    crop_size = image_size if crop_size is None else crop_size
     transform = T.Compose(
         [
             T.Resize(image_size, Image.ANTIALIAS),
@@ -176,6 +177,7 @@ def get_mask_transforms(image_size: Union[Sequence, int], crop_size: Union[Seque
       T.Compose: List of imagenet transformations.
 
     """
+    crop_size = image_size if crop_size is None else crop_size
     transform = Compose(
         [
             T.Resize(image_size, Image.NEAREST),
