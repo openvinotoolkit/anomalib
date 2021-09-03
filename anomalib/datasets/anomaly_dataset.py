@@ -171,7 +171,7 @@ def get_transform(aug_prob: float, config: Union[DictConfig, ListConfig]) -> a.C
     return:
         a.compose: composed augmentation pipeline
     """
-
+    crop_size = config.image_size if config.crop_size is None else config.crop_size
     return a.Compose(
         [
             a.Resize(config.image_size[0], config.image_size[1], always_apply=True),
@@ -221,7 +221,7 @@ def get_transform(aug_prob: float, config: Union[DictConfig, ListConfig]) -> a.C
                 quality_lower=config.image_compression.quality_lower,
                 quality_upper=config.image_compression.quality_upper,
             ),
-            a.CenterCrop(config.crop_size[0], config.crop_size[1], always_apply=True),
+            a.CenterCrop(crop_size[0], crop_size[1], always_apply=True),
             a.Normalize(mean=config.normalize.mean, std=config.normalize.std, always_apply=True),
             a.ToGray(always_apply=True),
             ToTensorV2(always_apply=True),

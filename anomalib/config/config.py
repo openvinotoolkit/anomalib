@@ -18,7 +18,7 @@ def update_config_for_nncf(config: Union[DictConfig, ListConfig]):
     Returns:
         Updated configurable parameters in DictConfig object.
     """
-    crop_size = config.transform.crop_size
+    crop_size = config.transform.crop_size if config.transform.crop_size is not None else config.transform.image_size
     sample_size = (crop_size, crop_size) if isinstance(crop_size, int) else crop_size
     if "optimization" in config.keys():
         if "nncf" in config.optimization.keys():
@@ -67,22 +67,7 @@ def get_configurable_parameters(
     if "format" not in config.dataset.keys():
         config.dataset.format = "mvtec"
 
-    # handle image size
-    if isinstance(config.transform.image_size, int):
-        config.transform.image_size = (config.transform.image_size,) * 2
-
-    if "crop_size" in config.transform.keys() and config.transform.crop_size is not None:
-        if isinstance(config.transform.crop_size, int):
-            config.transform.crop_size = (config.transform.crop_size,) * 2
-    else:
-        config.transform.crop_size = config.transform.image_size
-
-    if "tiling" in config.dataset.keys() and config.dataset.tiling.apply:
-        config.model.input_size = (config.dataset.tiling.tile_size,) * 2
-    elif "crop_size" in config.transform.keys() and config.transform.crop_size is not None:
-        config.model.input_size = config.transform.crop_size
-    else:
-        config.model.input_size = config.transform.image_size
+    config = update_input_size(config)
 
     # Project Configs
     project_path = Path(config.project.path) / config.model.name / config.dataset.name / config.dataset.category
@@ -100,4 +85,35 @@ def get_configurable_parameters(
     if openvino:
         config.trainer.gpus = 0
 
+    return config
+
+
+def update_input_size(config):
+    """
+    Convert integer image size parameters into tuples and calculate the effective input size based on image size,
+    crop size and tile size.
+
+    Args:
+        config: Dictconfig: Configurable parameters object
+
+    Returns:
+        Configurable parameters with updated values
+
+    """
+    # handle image size
+    if isinstance(config.transform.image_size, int):
+        config.transform.image_size = (config.transform.image_size,) * 2
+
+    if "crop_size" in config.transform.keys() and config.transform.crop_size is not None:
+        if isinstance(config.transform.crop_size, int):
+            config.transform.crop_size = (config.transform.crop_size,) * 2
+
+    if "tiling" in config.dataset.keys() and config.dataset.tiling.apply:
+        config.model.input_size = (config.dataset.tiling.tile_size,) * 2
+        if config.dataset.tiling.stride is None:
+            config.dataset.tiling.stride = config.dataset.tiling.tile_size
+    elif "crop_size" in config.transform.keys() and config.transform.crop_size is not None:
+        config.model.input_size = config.transform.crop_size
+    else:
+        config.model.input_size = config.transform.image_size
     return config

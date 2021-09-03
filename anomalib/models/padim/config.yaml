@@ -16,7 +16,7 @@ dataset:
 
 transform:
   image_size: 256
-  crop_size: 224
+  crop_size: null
   normalize:
     mean: [0.485, 0.456, 0.406]
     std: [0.229, 0.224, 0.225]
@@ -83,6 +83,26 @@ optimization:
       init_weights: snapshot.ckpt
       project:
         path: ./results_nncf
+
+hyperparameter_search:
+  observation_budget: 10
+  project: anomaly
+  parallel_workers: 1
+
+  metric:
+    name: Pixel-Level AUC
+    objective: maximize
+
+  parameters:
+    transform:
+      image_size:
+        type: int
+        grid: [512, 1024]
+    dataset:
+      tiling:
+        tile_size:
+          type: int
+          grid: [128, 256, 512]
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:

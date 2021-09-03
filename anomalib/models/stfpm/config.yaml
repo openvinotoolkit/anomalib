@@ -103,22 +103,24 @@ hyperparameter_search:
     objective: maximize
 
   parameters:
-    lr:
-      type: double
-      min: 1e-3
-      max: 1.0
-    momentum:
-      type: double
-      min: 0.0
-      max: 1.0
-    patience:
-      type: int
-      min: 1
-      max: 10
-    weight_decay:
-      type: double
-      min: 1e-5
-      max: 1e-3
+    model:
+      lr:
+        type: double
+        min: 1e-3
+        max: 1.0
+      momentum:
+        type: double
+        min: 0.0
+        max: 1.0
+      weight_decay:
+        type: double
+        min: 1e-5
+        max: 1e-3
+    dataset:
+      tiling:
+        tile_size:
+          type: int
+          grid: [128, 256, 512]
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
