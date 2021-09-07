@@ -99,3 +99,15 @@ Pre-commit hooks: :ref:`Pre-commit hooks guide<pre-commit_hooks>`
 Tox: :ref:`Using Tox<using_tox>`
 
 In rare cases it might be desired to ignore certain errors or warnings for a particular part of your code. Flake8, Pylint and MyPy allow disabling specific errors for a line or block of code. The instructions for this can be found in the the documentations of each of these tools. Please make sure to only ignore errors/warnings when absolutely necessary, and always add a comment in your code stating why you chose to ignore it.
+
+
+Installing and Configuring SigOpt
+=================================
+
+Anomalib uses `SigOpt <https://sigopt.com/>`_ for experiment tracking and hyperparameter optimization.
+To get started:
+
+1. If you have installed the requirements from :code:`requirements.txt`, it should automatically install SigOpt. However, you can also install it using :code:`pip install sigopt`.
+2. Type :code:`sigopt config` in the terminal
+3. Go to `<https://app.sigopt.com/tokens/info>`_ and copy the API token.
+4. You can then enable log collection and code tracking if you want.

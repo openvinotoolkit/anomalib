@@ -27,7 +27,7 @@ repo is constantly updated with new algorithms, so keep checking.
    :maxdepth: 1
    :caption: Python API Reference
 
-   api_references
+   api/index
 
 .. toctree::
    :maxdepth: 1
@@ -42,6 +42,7 @@ repo is constantly updated with new algorithms, so keep checking.
    guides/developing_on_docker
    guides/structure_of_documentation
    guides/using_tox
+   guides/using_pre_commit
 
 .. toctree::
    :maxdepth: 1
