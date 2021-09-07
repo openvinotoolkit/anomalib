@@ -39,8 +39,12 @@ extensions = [
     "sphinxemoji.sphinxemoji",
     "sphinx.ext.autosectionlabel",
     "myst_parser",
+    "autoapi.extension",
 ]
 
+autoapi_dirs = ["../../anomalib"]
+autoapi_root = "api"
+autoapi_type = "python"
 
 autosummary_generate = True
 autodoc_member_order = "groupwise"
