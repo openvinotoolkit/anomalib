@@ -81,6 +81,8 @@ def test_validate_dtypes():
 
 
 def mock_get_model(config):
+    if config.model.backbone == "XOR":
+        raise Exception("HPO is not suggesting backbones")
     return DummyModel(hparams=config)
 
 
@@ -115,14 +117,18 @@ def mock_connection():
         suggestions=mock.Mock(
             return_value=mock.Mock(
                 create=mock.Mock(
-                    return_value=mock.Mock(
-                        assignments={
-                            "lr": np.random.uniform(low=1e-3, high=1.0),
-                            "momentum": np.random.uniform(low=0, high=1.0),
-                            "patience": np.random.randint(low=1, high=10),
-                            "weight_decay": np.random.uniform(low=1e-5, high=1e-3),
-                        }
-                    )
+                    side_effect=[
+                        mock.Mock(
+                            assignments={
+                                "model.lr": np.random.uniform(low=1e-3, high=1.0),
+                                "model.momentum": np.random.uniform(low=0, high=1.0),
+                                "model.patience": np.random.randint(low=1, high=10),
+                                "model.weight_decay": np.random.uniform(low=1e-5, high=1e-3),
+                                "model.backbone": model,
+                            }
+                        )
+                        for model in ["DummyModel1", "DummyModel2"] * 2
+                    ]
                 )
             )
         ),

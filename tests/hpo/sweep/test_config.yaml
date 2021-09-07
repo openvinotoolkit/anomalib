@@ -27,21 +27,25 @@ hyperparameter_search:
     objective: minimize
 
   parameters:
-    lr:
-      type: double
-      min: 1e-3
-      max: 1.0
-    momentum:
-      type: double
-      min: 0.0
-      max: 1.0
-    weight_decay:
-      type: double
-      min: 1e-5
-      max: 1e-3
-    dropout:
-      type: double
-      grid: [0.1, 0.2, 0.5]
+    model:
+      lr:
+        type: double
+        min: 1e-3
+        max: 1.0
+      momentum:
+        type: double
+        min: 0.0
+        max: 1.0
+      weight_decay:
+        type: double
+        min: 1e-5
+        max: 1e-3
+      dropout:
+        type: double
+        grid: [0.1, 0.2, 0.5]
+      backbone:
+        type: categorical
+        categorical_values: ["DummyModel1", "DummyModel1"]
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:

@@ -29,7 +29,6 @@ def get_parameters(configs: DictConfig) -> List[Dict]:
     """
     params = []
     for config in configs.items():
-        # TODO add support for categorical values. https://jira.devtools.intel.com/browse/IAAALD-35
         param = None
         if "grid" in config[1]:
             param = dict(name=config[0], type=config[1].type, grid=config[1].grid)
@@ -37,6 +36,8 @@ def get_parameters(configs: DictConfig) -> List[Dict]:
             param = dict(
                 name=config[0], type=config[1].type, bounds=dict(min=float(config[1].min), max=float(config[1].max))
             )
+        elif config[1].type == "categorical":
+            param = dict(name=config[0], type=config[1].type, categorical_values=config[1].categorical_values)
         if param is not None:
             params.append(param)
 
@@ -87,15 +88,20 @@ def validate_search_params(params: DictConfig):
         # Check if grid or range is passed
 
         # check if the right key exists. There might be a better way to do this
-        if len(set(["grid", "min", "max"]).intersection(keys)) == 0:
-            raise IncorrectHPOConfiguration("Expected search parameters to have either grid or a range(min, max)")
+        if len({"grid", "min", "max", "categorical_values"}.intersection(keys)) == 0:
+            raise IncorrectHPOConfiguration(
+                "Expected search parameters to have either grid or range(min, max)" " or categorical_values"
+            )
 
-        # check if only one of grid/range is passed
-        if ("grid" in keys and (len(set(["min", "max"]).intersection(keys)) != 0)) or (
-            (len(set(["min", "max"]).intersection(keys)) == 2) and "grid" in keys
+        # check if only one of grid, range or categorical is passed
+        # the multiple keys are present and they are not equal to min and max then throw an error
+        if (
+            len({"min", "max", "grid", "categorical_values"}.intersection(keys)) != 1
+            and "min" not in keys
+            and "max" not in keys
         ):
             raise IncorrectHPOConfiguration(
-                "Found both grid and range(min,max) keys in configuration. Please use only one"
+                "Found multiple keys in configuration. Use only one of grid, range(min,max) or categorical_values"
             )
 
         # Check datatype
