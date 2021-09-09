@@ -88,14 +88,14 @@ class SigoptLogger(ImageLoggerBase, LightningLoggerBase):
         self.experiment.log_checkpoint(metrics)
 
     @rank_zero_only
-    def log_metrics(self, metrics: Dict[str, float], _step: Optional[int] = None) -> None:
+    def log_metrics(self, metrics: Dict[str, float], step: Optional[int] = None) -> None:
         """Uses sigopt checkpoint to save the metrics. This way you will get the graph.
             However it is unsafe as it does not check if number of checkpoints have crossed 200.
 
         Args:
           metrics: Dictionary containing metrics. Current limitation is maximum of 4 metrics.
             Also uses `log_metric` to log other metrics
-          _step: trainer step. Not used here
+          step: trainer step. Not used here
         """
         try:
             self.experiment.log_checkpoint(metrics)
@@ -103,7 +103,7 @@ class SigoptLogger(ImageLoggerBase, LightningLoggerBase):
                 self.experiment.log_metric(name=key, value=value)
         except ApiException as e:
             raise ValueError(
-                "Exception occurred."
+                f"Exception occurred at trainer step {step}."
                 "It is possible that you are trying to write more that 200 checkpoints."
                 "Use `self.logger.log_checkpoint` for safer implementation"
             ) from e
