@@ -55,6 +55,7 @@ def mvtec_dataset_category() -> str:
         ("patchcore", False),
     ],
 )
+@pytest.mark.flaky(reruns=2)
 def test_model(mvtec_dataset_category, model_name, nncf):
     """
     Test Model Training and Test Pipeline.

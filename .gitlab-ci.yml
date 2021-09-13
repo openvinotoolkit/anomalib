@@ -1,0 +1,32 @@
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+stages:
+  - coverage
+
+coverage:
+  image: nvidia/cuda:11.4.0-devel-ubuntu20.04
+  stage: coverage
+  tags:
+    - docker
+  before_script:
+    - mkdir -p $HOME/.docker/
+    - 'echo "{ \"proxies\": { \"default\": { \"httpProxy\": \"http://proxy-dmz.intel.com:912\", \"httpsProxy\": \"http://proxy-dmz.intel.com:912\",, \"ftpProxy\": \"http://proxy-dmz.intel.com:912\", \"noProxy\": \"$NO_PROXY\" } } }" > $HOME/.docker/config.json'
+    - 'echo "{ \"proxies\": { \"default\": { \"httpProxy\": \"http://proxy-dmz.intel.com:912\", \"httpsProxy\": \"http://proxy-dmz.intel.com:912\", , \"ftpProxy\": \"http://proxy-dmz.intel.com:912\", \"noProxy\": \"$NO_PROXY\" } } }" '
+  script:
+    - nvidia-smi
+    - export http_proxy=http://proxy-dmz.intel.com:912
+    - export https_proxy=http://proxy-dmz.intel.com:912
+    - export ftp_proxy=http://proxy-dmz.intel.com:912
+    - apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y wget ffmpeg libpython3.8
+    - wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh
+    - bash ~/miniconda.sh -b -p /opt/conda
+    - export PATH="/opt/conda/bin:${PATH}"
+    - conda install python=3.8
+    - pip install tox
+    - tox
+  timeout: 3h
+  artifacts:
+    reports:
+      cobertura: .tox/coverage.xml

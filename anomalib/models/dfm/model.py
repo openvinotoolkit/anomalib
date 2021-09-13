@@ -3,7 +3,7 @@ DFM: Deep Feature Kernel Density Estimation
 """
 
 import os
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 import pytorch_lightning as pl
@@ -28,15 +28,16 @@ class Callbacks:
     def __init__(self, config: DictConfig):
         self.config = config
 
-    def get_callbacks(self) -> Sequence[Callback]:
+    def get_callbacks(self) -> List[Callback]:
         """
         Get PADIM model callbacks.
         """
+        callbacks: List[Callback] = []
         checkpoint = ModelCheckpoint(
             dirpath=os.path.join(self.config.project.path, "weights"),
             filename="model",
         )
-        callbacks = [checkpoint]
+        callbacks.append(checkpoint)
 
         if "weight_file" in self.config.keys():
             model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.weight_file))
