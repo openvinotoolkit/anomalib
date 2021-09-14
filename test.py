@@ -28,7 +28,11 @@ def get_args() -> Namespace:
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+def test():
+    """
+    Test an anomaly classification and segmentation model that is initially trained via `train.py`.
+    The script is able to write the results into both filesystem and  a logger such as SigOpt and Tensorboard.
+    """
     args = get_args()
     config = get_configurable_parameters(
         model_name=args.model,
@@ -42,3 +46,7 @@ if __name__ == "__main__":
 
     trainer = Trainer(callbacks=model.callbacks, **config.trainer)
     trainer.test(model=model, datamodule=datamodule)
+
+
+if __name__ == "__main__":
+    test()

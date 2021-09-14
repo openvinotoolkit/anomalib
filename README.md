@@ -18,11 +18,11 @@ You will need [Anaconda](https://www.anaconda.com/products/individual) installed
 
 After downloading the Anomaly Library, extract the files and navigate to the extracted location.
 
-To perform a development install, run the following:
+To perform an installation, run the following:
 ```
 yes | conda create -n anomalib python=3.8
 conda activate anomalib
-pip install -r requirements.txt
+pip install -r requirements/requirements.txt
 ```
 
 ## Training
