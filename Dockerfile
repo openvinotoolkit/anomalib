@@ -5,6 +5,11 @@
 FROM nvidia/cuda:11.4.0-devel-ubuntu20.04 AS python_base_cuda
 LABEL MAINTAINER="Anomalib Development Team"
 
+# Setup Proxies
+ENV http_proxy=http://proxy-dmz.intel.com:912
+ENV https_proxy=http://proxy-dmz.intel.com:912
+ENV ftp_proxy=http://proxy-dmz.intel.com:912
+
 # Update system and install wget
 RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y wget ffmpeg libpython3.8
 
