@@ -1,8 +1,8 @@
 """
 Anomalib Traning Script.
-    This script reads the name of the model or config file
-    from command line, train/test the anomaly model to get
-    quantitative and qualitative results.
+This script reads the name of the model or config file
+from command line, train/test the anomaly model to get
+quantitative and qualitative results.
 """
 from argparse import ArgumentParser, Namespace
 
@@ -28,7 +28,10 @@ def get_args() -> Namespace:
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+def train():
+    """
+    Train an anomaly classification or segmentation model based on a provided configuration file.
+    """
     args = get_args()
     config = get_configurable_parameters(model_name=args.model, model_config_path=args.model_config_path)
 
@@ -42,3 +45,7 @@ if __name__ == "__main__":
     trainer = Trainer(**config.trainer, logger=logger, callbacks=model.callbacks)
     trainer.fit(model=model, datamodule=datamodule)
     trainer.test(model=model, datamodule=datamodule)
+
+
+if __name__ == "__main__":
+    train()

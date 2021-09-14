@@ -5,6 +5,7 @@ Configurable Getter
 from pathlib import Path
 from typing import Optional, Union
 
+import torch
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
 
@@ -83,6 +84,10 @@ def get_configurable_parameters(
 
     config.openvino = openvino
     if openvino:
+        config.trainer.gpus = 0
+
+    # XPU Configuration
+    if not torch.cuda.is_available():
         config.trainer.gpus = 0
 
     return config
