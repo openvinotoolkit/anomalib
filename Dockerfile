@@ -27,8 +27,8 @@ RUN conda install python=3.8
 FROM python_base_cuda as anomalib_development_env
 
 # Install all anomalib requirements
-COPY ./requirements.txt /tmp/anomalib/requirements.txt
-RUN pip install -r /tmp/anomalib/requirements.txt
+COPY ./requirements/requirements.txt /tmp/anomalib/requirements/requirements.txt
+RUN pip install -r /tmp/anomalib/requirements/requirements.txt
 
 # Install other requirements related to development
 RUN apt-get install -y git
