@@ -8,7 +8,7 @@ papers here.
 ============== ==================== ================ ==================
 Model          Featured in Anomalib Segmentation AUC  Classification AUC
 ============== ==================== ================ ==================
-`PatchCore`_   ✅                   -                 -
+`PatchCore`_   ✅                   98.1              99.1
 `PaDiM`_       ✅                   97.5              97.9
 `STFPM`_       ✅                   97.0              95.5
 `InTra`_       🔜                   96.9              95.9
