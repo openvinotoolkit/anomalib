@@ -21,12 +21,27 @@ untile_data = [
 ]
 
 overlapping_data = [
-    (torch.Size([1, 3, 1024, 1024]), 512, 256, torch.Size([16, 3, 512, 512]), "padding"),
-    (torch.Size([1, 3, 1024, 1024]), 512, 256, torch.Size([16, 3, 512, 512]), "interpolation"),
+    (
+        torch.Size([1, 3, 1024, 1024]),
+        512,
+        256,
+        torch.Size([16, 3, 512, 512]),
+        "padding",
+    ),
+    (
+        torch.Size([1, 3, 1024, 1024]),
+        512,
+        256,
+        torch.Size([16, 3, 512, 512]),
+        "interpolation",
+    ),
 ]
 
 
-@pytest.mark.parametrize("tile_size, stride", [(512, 256), ([512, 512], [256, 256]), (ListConfig([512, 512]), 256)])
+@pytest.mark.parametrize(
+    "tile_size, stride",
+    [(512, 256), ([512, 512], [256, 256]), (ListConfig([512, 512]), 256)],
+)
 def test_size_types_should_be_int_tuple_or_list_config(tile_size, stride):
     """
     Size type could only be integer, tuple or ListConfig type.
@@ -87,15 +102,33 @@ def test_upscale_downscale_mode(mode):
 
 
 @pytest.mark.parametrize("image_size, kernel_size, stride, tile_size, mode", overlapping_data)
-def test_untile_overlapping_patches(image_size, kernel_size, stride, tile_size, mode):
+@pytest.mark.parametrize("remove_border_count", [0, 5])
+def test_untile_overlapping_patches(image_size, kernel_size, stride, remove_border_count, tile_size, mode):
     """
     Overlapping Tiling/Untiling should return the same image size.
     """
-    tiler = Tiler(tile_size=kernel_size, stride=stride, mode=mode)
+    tiler = Tiler(
+        tile_size=kernel_size,
+        stride=stride,
+        remove_border_count=remove_border_count,
+        mode=mode,
+    )
 
     image = torch.rand(image_size)
     tiles = tiler.tile(image)
     reconstructed_image = tiler.untile(tiles)
+    image = image[
+        :,
+        :,
+        remove_border_count:-remove_border_count,
+        remove_border_count:-remove_border_count,
+    ]
+    reconstructed_image = reconstructed_image[
+        :,
+        :,
+        remove_border_count:-remove_border_count,
+        remove_border_count:-remove_border_count,
+    ]
     assert torch.equal(image, reconstructed_image)
 
 
@@ -109,7 +142,7 @@ def test_divisible_tile_size_and_stride(image_size, tile_size, stride, mode):
         Tiler should up samples the image before tiling, and downscales
         before untiling.
     """
-    tiler = Tiler(tile_size, stride, mode)
+    tiler = Tiler(tile_size, stride, mode=mode)
     image = torch.rand(image_size)
     tiles = tiler.tile(image)
     reconstructed_image = tiler.untile(tiles)
