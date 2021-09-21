@@ -9,8 +9,10 @@ from omegaconf import ListConfig
 from anomalib.datasets.tiler import StrideSizeError, Tiler
 
 tile_data = [
-    ([3, 1024, 1024], 512, 512, torch.Size([4, 3, 512, 512])),
-    ([1, 3, 1024, 1024], 512, 512, torch.Size([4, 3, 512, 512])),
+    ([3, 1024, 1024], 512, 512, torch.Size([4, 3, 512, 512]), False),
+    ([1, 3, 1024, 1024], 512, 512, torch.Size([4, 3, 512, 512]), False),
+    ([3, 1024, 1024], 512, 512, torch.Size([4, 3, 512, 512]), True),
+    ([1, 3, 1024, 1024], 512, 512, torch.Size([4, 3, 512, 512]), True),
 ]
 
 untile_data = [
@@ -34,14 +36,14 @@ def test_size_types_should_be_int_tuple_or_list_config(tile_size, stride):
     assert isinstance(tiler.stride_w, int)
 
 
-@pytest.mark.parametrize("image_size, tile_size, stride, shape", tile_data)
-def test_tiler_handles_single_image_without_batch_dimension(image_size, tile_size, stride, shape):
+@pytest.mark.parametrize("image_size, tile_size, stride, shape, use_random_tiling", tile_data)
+def test_tiler_handles_single_image_without_batch_dimension(image_size, tile_size, stride, shape, use_random_tiling):
     """
     Tiler should add batch dimension if image is 3D (CxHxW).
     """
     tiler = Tiler(tile_size=tile_size, stride=stride)
     image = torch.rand(image_size)
-    patches = tiler.tile(image)
+    patches = tiler.tile(image, use_random_tiling=use_random_tiling)
     assert patches.shape == shape
 
 

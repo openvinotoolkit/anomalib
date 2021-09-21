@@ -16,7 +16,12 @@ class TilingCallback(Callback):
     """
 
     def __init__(self, hparams):
-        self.tiler = Tiler(hparams.dataset.tiling.tile_size, hparams.dataset.tiling.stride)
+        self.tiler = Tiler(
+            hparams.dataset.tiling.tile_size,
+            hparams.dataset.tiling.stride,
+            tile_count=hparams.dataset.tiling.random_tile_count,
+        )
+        self.use_random_tiling = hparams.dataset.tiling.use_random_tiling
 
     def on_train_batch_start(
         self,
@@ -27,7 +32,7 @@ class TilingCallback(Callback):
         _dataloader_idx: int,
     ) -> None:
         """Called when the train batch begins."""
-        batch["image"] = self.tiler.tile(batch["image"])
+        batch["image"] = self.tiler.tile(batch["image"], self.use_random_tiling)
 
     def on_validation_batch_start(
         self,
