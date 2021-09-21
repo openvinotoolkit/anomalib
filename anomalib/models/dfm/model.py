@@ -30,7 +30,7 @@ class Callbacks:
 
     def get_callbacks(self) -> List[Callback]:
         """
-        Get PADIM model callbacks.
+        Get DFM model callbacks.
         """
         callbacks: List[Callback] = []
         checkpoint = ModelCheckpoint(
@@ -74,7 +74,7 @@ class DfmLightning(pl.LightningModule):
         """
         return None
 
-    def training_step(self, batch, _):
+    def training_step(self, batch, _):  # pylint: disable=arguments-differ
         """Training Step of DFM.
         For each batch, features are extracted from the CNN.
 
@@ -106,7 +106,7 @@ class DfmLightning(pl.LightningModule):
         feature_stack = torch.vstack([output["feature_vector"] for output in outputs])
         self.pca_model.fit(feature_stack)
 
-    def validation_step(self, batch, _):
+    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Validation Step of DFM.
             Similar to the training step, features
             are extracted from the CNN for each batch.
@@ -143,7 +143,7 @@ class DfmLightning(pl.LightningModule):
         self.image_roc_auc = roc_auc_score(true_labels, pred_labels)
         self.log(name="auc", value=self.image_roc_auc, on_epoch=True, prog_bar=True)
 
-    def test_step(self, batch, _):
+    def test_step(self, batch, _):  # pylint: disable=arguments-differ
         """Test Step of DFM.
             Similar to the training and validation steps,
             features are extracted from the CNN for each batch.

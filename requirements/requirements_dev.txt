@@ -1,2 +1,5 @@
 pre-commit>=2.15.0
 tox>=3.24.3
+mypy
+flake8
+pytest

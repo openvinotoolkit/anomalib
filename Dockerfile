@@ -26,10 +26,17 @@ RUN conda install python=3.8
 
 FROM python_base_cuda as anomalib_development_env
 
+# Get MVTec Dataset
+# cache datasets first as changes to requirements do no affect this stage
+RUN wget ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/mvtec_anomaly_detection.tar.xz --quiet
+RUN mkdir -p /tmp/anomalib/datasets/MVTec
+RUN tar -xf mvtec_anomaly_detection.tar.xz -C /tmp/anomalib/datasets/MVTec
+
 # Install all anomalib requirements
 COPY ./requirements/requirements.txt /tmp/anomalib/requirements/requirements.txt
 RUN pip install -r /tmp/anomalib/requirements/requirements.txt
 
 # Install other requirements related to development
 RUN apt-get install -y git
-RUN pip install mypy flake8 pytest tox
+COPY ./requirements/requirements_dev.txt /tmp/anomalib/requirements/requirements_dev.txt
+RUN pip install -r /tmp/anomalib/requirements/requirements_dev.txt

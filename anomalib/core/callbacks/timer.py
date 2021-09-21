@@ -24,4 +24,4 @@ class TimerCallback(Callback):
 
     def on_test_end(self, trainer, pl_module: LightningModule) -> None:  # pylint: disable=W0613
         """Called when the test ends."""
-        print(f"Training took {time.time() - self.start} seconds")
+        print(f"Testing took {time.time() - self.start} seconds.")
