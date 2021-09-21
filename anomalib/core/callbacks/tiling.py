@@ -17,8 +17,9 @@ class TilingCallback(Callback):
 
     def __init__(self, hparams):
         self.tiler = Tiler(
-            hparams.dataset.tiling.tile_size,
-            hparams.dataset.tiling.stride,
+            tile_size=hparams.dataset.tiling.tile_size,
+            stride=hparams.dataset.tiling.stride,
+            remove_border_count=hparams.dataset.tiling.remove_border_count,
             tile_count=hparams.dataset.tiling.random_tile_count,
         )
         self.use_random_tiling = hparams.dataset.tiling.use_random_tiling

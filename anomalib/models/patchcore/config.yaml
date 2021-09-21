@@ -8,6 +8,7 @@ dataset:
     apply: false
     tile_size: null
     stride: null
+    remove_border_count: 0
     use_random_tiling: False
     random_tile_count: 16
   train_batch_size: 32
