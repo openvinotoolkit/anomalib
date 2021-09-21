@@ -3,9 +3,10 @@ Image Tiler
 """
 
 from math import ceil
-from typing import Sequence, Tuple, Union
+from typing import Optional, Sequence, SupportsIndex, Tuple, Union
 
 import torch
+import torchvision.transforms as T
 from torch import Tensor
 from torch.nn import functional as F
 
@@ -129,7 +130,7 @@ class Tiler:
         >>> import torch
         >>> from torchvision import transforms
         >>> from skimage.data import camera
-        >>> tiler = Tiler(tile_size=256, stride=128)
+        >>> tiler = Tiler(tile_size=256,stride=128)
         >>> image = transforms.ToTensor()(camera())
         >>> tiles = tiler.tile(image)
         >>> image.shape, tiles.shape
@@ -148,9 +149,11 @@ class Tiler:
         tile_size: Union[int, Sequence],
         stride: Union[int, Sequence],
         mode: str = "padding",
+        tile_count: SupportsIndex = 4
     ) -> None:
 
         self.tile_size_h, self.tile_size_w = self.__validate_size_type(tile_size)
+        self.tile_count = tile_count
         self.stride_h, self.stride_w = self.__validate_size_type(stride)
         self.overlapping = not (self.stride_h == self.tile_size_h and self.stride_w == self.tile_size_w)
         self.mode = mode
@@ -192,6 +195,18 @@ class Tiler:
             raise ValueError(f"Length of the size type must be 2 for height and width. Got {len(output)} instead.")
 
         return output
+
+    def __random_tile(self, image: Tensor) -> Tensor:
+        """
+        Randomly crop tiles from the given image
+
+        Args:
+            image: input image to be cropped
+
+        Returns: Randomly cropped tiles from the image
+
+        """
+        return torch.vstack([T.RandomCrop(self.tile_size_h)(image) for i in range(self.tile_count)])
 
     def __unfold(self, tensor: Tensor) -> Tensor:
         """
@@ -248,16 +263,16 @@ class Tiler:
         )
         return image
 
-    def tile(self, image: Tensor) -> Tensor:
+    def tile(self, image: Tensor, use_random_tiling: Optional[bool] = False) -> Tensor:
         """
-        Tiles an input image to either overlapping or non-overlapping patches.
+        Tiles an input image to either overlapping, non-overlapping or random patches.
 
         Args:
             image: Input image to tile.
 
         Examples:
             >>> from anomalib.datasets.tiler import Tiler
-            >>> tiler = Tiler(tile_size=512, stride=256)
+            >>> tiler = Tiler(tile_size=512,stride=256)
             >>> image = torch.rand(size=(2, 3, 1024, 1024))
             >>> image.shape
             torch.Size([2, 3, 1024, 1024])
@@ -288,7 +303,10 @@ class Tiler:
 
         image = upscale_image(image, size=(self.resized_h, self.resized_w), mode=self.mode)
 
-        image_tiles = self.__unfold(image)
+        if use_random_tiling:
+            image_tiles = self.__random_tile(image)
+        else:
+            image_tiles = self.__unfold(image)
         return image_tiles
 
     def untile(self, tiles: Tensor) -> Tensor:
@@ -303,7 +321,7 @@ class Tiler:
         Examples:
 
             >>> from anomalib.datasets.tiler import Tiler
-            >>> tiler = Tiler(tile_size=512, stride=256)
+            >>> tiler = Tiler(tile_size=512,stride=256)
             >>> image = torch.rand(size=(2, 3, 1024, 1024))
             >>> image.shape
             torch.Size([2, 3, 1024, 1024])

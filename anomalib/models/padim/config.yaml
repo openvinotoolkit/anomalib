@@ -10,6 +10,8 @@ dataset:
     apply: false
     tile_size: null
     stride: null
+    use_random_tiling: False
+    random_tile_count: 16
   train_batch_size: 32
   test_batch_size: 32
   num_workers: 36
