@@ -11,6 +11,7 @@ from pytorch_lightning import Trainer
 from anomalib.config.config import get_configurable_parameters, update_config_for_nncf
 from anomalib.datasets import get_datamodule
 from anomalib.models import get_model
+from tests.helpers.dataset import get_dataset_path
 
 
 @pytest.fixture(autouse=True)
@@ -50,12 +51,13 @@ def mvtec_dataset_category() -> str:
         ("padim", False),
         ("padim", True),
         ("dfkde", False),
+        ("dfm", False),
         ("stfpm", False),
         ("stfpm", True),
         ("patchcore", False),
     ],
 )
-@pytest.mark.flaky(reruns=2)
+@pytest.mark.flaky(max_runs=2)
 def test_model(mvtec_dataset_category, model_name, nncf):
     """
     Test Model Training and Test Pipeline.
@@ -67,6 +69,7 @@ def test_model(mvtec_dataset_category, model_name, nncf):
     config = get_configurable_parameters(model_name=model_name)
     config.project.seed = 1234
     config.dataset.category = mvtec_dataset_category
+    config.dataset.path = get_dataset_path()
 
     if nncf:
         config.optimization.nncf.apply = True
@@ -87,5 +90,5 @@ def test_model(mvtec_dataset_category, model_name, nncf):
 
     assert model.image_roc_auc >= 0.6
 
-    if model_name != "dfkde":
+    if model_name not in ("dfkde", "dfm"):
         assert model.pixel_roc_auc >= 0.6
