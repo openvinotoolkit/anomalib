@@ -23,7 +23,7 @@ def get_dummy_logger(config, tempdir):
 def test_add_images():
     """Tests if tensorboard logs are generated"""
     with tempfile.TemporaryDirectory() as dir_loc:
-        config = OmegaConf.create({"project": {"path": dir_loc, "log_images_to": ["tensorboard", "local"]}})
+        config = OmegaConf.create({"dataset": {"task": "segmentation"},"project": {"path": dir_loc, "log_images_to": ["tensorboard", "local"]}})
         logger = get_dummy_logger(config, dir_loc)
         model = get_dummy_module(config)
         trainer = pl.Trainer(callbacks=model.callbacks, logger=logger)

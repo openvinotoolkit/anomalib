@@ -26,8 +26,8 @@ from anomalib.core.callbacks.timer import TimerCallback
 from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
-from anomalib.models.base import BaseAnomalySegmentationLightning
-from anomalib.models.base.torch_modules import BaseAnomalySegmentationModule
+from anomalib.models.base import BaseAnomalyLightning
+from anomalib.models.base.torch_modules import BaseAnomalyModule
 
 __all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel", "StfpmLightning"]
 
@@ -234,7 +234,7 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         return self.compute_anomaly_map(teacher_features, student_features)
 
 
-class STFPMModel(BaseAnomalySegmentationModule):
+class STFPMModel(BaseAnomalyModule):
     """
     STFPM: Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection
     """
@@ -274,7 +274,7 @@ class STFPMModel(BaseAnomalySegmentationModule):
         return output
 
 
-class StfpmLightning(BaseAnomalySegmentationLightning):
+class StfpmLightning(BaseAnomalyLightning):
     """
     PL Lightning Module for the STFPM algorithm.
     """
@@ -284,6 +284,8 @@ class StfpmLightning(BaseAnomalySegmentationLightning):
         self.callbacks = Callbacks(hparams)()
 
         self.model = STFPMModel(hparams)
+        self.supported_tasks = ["segmentation", "classification"]
+        self.check_task_support(task=hparams.dataset.task)
         self.loss_val = 0
 
     def configure_optimizers(self):
@@ -337,77 +339,12 @@ class StfpmLightning(BaseAnomalySegmentationLightning):
           These are required in `validation_epoch_end` for feature concatenation.
 
         """
-        filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
-        anomaly_maps = self.model(images)
+        batch["anomaly_maps"] = self.model(batch["image"])
 
-        return {
-            "filenames": filenames,
-            "images": images,
-            "true_labels": labels.cpu(),
-            "true_masks": masks.squeeze(1).cpu(),
-            "anomaly_maps": anomaly_maps.cpu(),
-        }
-
-    def test_step(self, batch, _):
-        """Test Step of STFPM.
-            Similar to the training and validation step, student/teacher
-            features are extracted from the CNN for each batch, and anomaly
-            map is computed.
-
-        Args:
-          batch: Input batch
-          _: Index of the batch.
-
-        Returns:
-          Dictionary containing images, features, true labels and masks.
-          These are required in `validation_epoch_end` for feature concatenation.
-
-        """
-        return self.validation_step(batch, _)
-
-    def validation_epoch_end(self, outputs):
-        """Compute image and pixel level roc scores.
-
-        Args:
-          outputs: Batch of outputs from the validation step
-
-        Returns:
-
-        """
-
-        self.filenames = [Path(f) for x in outputs for f in x["filenames"]]
-        self.images = torch.vstack([x["images"] for x in outputs])
-
-        self.true_masks = np.vstack([output["true_masks"] for output in outputs])
-        self.anomaly_maps = np.vstack([output["anomaly_maps"] for output in outputs])
-
-        self.true_labels = np.hstack([output["true_labels"] for output in outputs])
-        self.pred_labels = self.anomaly_maps.reshape(self.anomaly_maps.shape[0], -1).max(axis=1)
-
-        self.image_roc_auc = roc_auc_score(self.true_labels, self.pred_labels)
-        self.pixel_roc_auc = roc_auc_score(self.true_masks.flatten(), self.anomaly_maps.flatten())
-
-        _, self.image_f1_score = self.model.anomaly_map_generator.compute_adaptive_threshold(
-            self.true_labels, self.pred_labels
-        )
-
-        self.log(name="Image-Level AUC", value=self.image_roc_auc, on_epoch=True, prog_bar=True)
-        self.log(name="Image-Level F1", value=self.image_f1_score, on_epoch=True, prog_bar=True)
-        self.log(name="Pixel-Level AUC", value=self.pixel_roc_auc, on_epoch=True, prog_bar=True)
-
-    def test_epoch_end(self, outputs):
-        """
-        Compute and save anomaly scores of the test set, based on the embedding
-            extracted from deep hierarchical CNN features.
-
-        Args:
-            outputs: Batch of outputs from the validation step
-
-        """
-        self.validation_epoch_end(outputs)
+        return batch
 
 
-class StfpmOpenVino(BaseAnomalySegmentationLightning):
+class StfpmOpenVino(BaseAnomalyLightning):
     """PyTorch Lightning module for the STFPM algorithm."""
 
     def __init__(self, hparams):

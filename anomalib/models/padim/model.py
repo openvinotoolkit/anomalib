@@ -4,11 +4,9 @@ https://arxiv.org/abs/2011.08785
 """
 import os
 import os.path
-from pathlib import Path
 from random import sample
 from typing import Dict, List, Sequence, Tuple, Union
 
-import numpy as np
 import torch
 import torch.nn.functional as F
 import torchvision
@@ -16,7 +14,6 @@ from kornia import gaussian_blur2d
 from omegaconf import ListConfig
 from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.callbacks import ModelCheckpoint
-from sklearn.metrics import roc_auc_score
 from torch import Tensor
 
 from anomalib.core.callbacks.model_loader import LoadModelCallback
@@ -27,8 +24,8 @@ from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
 from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
-from anomalib.models.base import BaseAnomalySegmentationLightning
-from anomalib.models.base.torch_modules import BaseAnomalySegmentationModule
+from anomalib.models.base import BaseAnomalyLightning
+from anomalib.models.base.torch_modules import BaseAnomalyModule
 
 __all__ = ["PadimLightning", "concat_layer_embedding"]
 
@@ -70,7 +67,7 @@ def concat_layer_embedding(embedding: Tensor, layer_embedding: Tensor) -> Tensor
     return updated_embedding
 
 
-class PadimModel(BaseAnomalySegmentationModule):
+class PadimModel(BaseAnomalyModule):
     """
     Padim Module
     """
@@ -327,7 +324,7 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         return self.compute_anomaly_map(embedding, mean, covariance)
 
 
-class PadimLightning(BaseAnomalySegmentationLightning):
+class PadimLightning(BaseAnomalyLightning):
     """
     PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization
     """
@@ -338,6 +335,9 @@ class PadimLightning(BaseAnomalySegmentationLightning):
         self.model = PadimModel(
             backbone=hparams.model.backbone, layers=hparams.model.layers, input_size=hparams.model.input_size
         ).eval()
+
+        self.supported_tasks = ["segmentation", "classification"]
+        self.check_task_support(task=hparams.dataset.task)
 
         self.callbacks = Callbacks(hparams)()
         self.stats: List[Tensor, Tensor] = []
@@ -365,6 +365,18 @@ class PadimLightning(BaseAnomalySegmentationLightning):
         embedding = self.model.generate_embedding(features)
         return {"embedding": embedding.cpu()}
 
+    def training_epoch_end(self, outputs):
+        """Fit a multivariate gaussian model on an embedding extracted from deep hierarchical CNN features.
+
+        Args:
+                outputs: Batch of outputs from the training step
+
+        Returns:
+
+        """
+        embeddings = torch.vstack([x["embedding"] for x in outputs])
+        self.stats = self.model.gaussian.fit(embeddings)
+
     def validation_step(self, batch, _):
         """Validation Step of PADIM.
                         Similar to the training step, hierarchical features
@@ -379,86 +391,9 @@ class PadimLightning(BaseAnomalySegmentationLightning):
                 These are required in `validation_epoch_end` for feature concatenation.
 
         """
-        filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
-        features = self.model(images)
+        features = self.model(batch["image"])
         embedding = self.model.generate_embedding(features)
-        anomaly_maps = self.model.anomaly_map_generator(
+        batch["anomaly_maps"] = self.model.anomaly_map_generator(
             embedding=embedding, mean=self.model.gaussian.mean, covariance=self.model.gaussian.covariance
         )
-        return {
-            "filenames": filenames,
-            "images": images.cpu(),
-            "anomaly_maps": anomaly_maps.cpu(),
-            "true_labels": labels.cpu(),
-            "true_masks": masks.squeeze(1).cpu(),
-        }
-
-    def test_step(self, batch, _):
-        """Test Step of PADIM.
-                        Similar to the training and validation steps,
-                        hierarchical features are extracted from the
-                        CNN for each batch.
-
-        Args:
-                batch: Input batch
-                _: Index of the batch.
-
-        Returns:
-                Dictionary containing images, features, true labels and masks.
-                These are required in `validation_epoch_end` for feature concatenation.
-
-        """
-        return self.validation_step(batch, _)
-
-    def training_epoch_end(self, outputs):
-        """Fit a multivariate gaussian model on an embedding extracted from deep hierarchical CNN features.
-
-        Args:
-                outputs: Batch of outputs from the training step
-
-        Returns:
-
-        """
-        embeddings = torch.vstack([x["embedding"] for x in outputs])
-        self.stats = self.model.gaussian.fit(embeddings)
-
-    def validation_epoch_end(self, outputs):
-        """Compute anomaly scores of the validation set, based on the embedding
-                        extracted from deep hierarchical CNN features.
-
-        Args:
-                outputs: Batch of outputs from the validation step
-
-        Returns:
-
-        """
-        self.filenames = [Path(f) for x in outputs for f in x["filenames"]]
-        self.images = torch.vstack([x["images"] for x in outputs])
-
-        self.true_masks = np.vstack([x["true_masks"] for x in outputs])
-        self.anomaly_maps = np.vstack([x["anomaly_maps"] for x in outputs])
-
-        self.true_labels = np.hstack([x["true_labels"] for x in outputs])
-        self.pred_labels = self.anomaly_maps.reshape(self.anomaly_maps.shape[0], -1).max(axis=1)
-
-        self.image_roc_auc = roc_auc_score(self.true_labels, self.pred_labels)
-        self.pixel_roc_auc = roc_auc_score(self.true_masks.flatten(), self.anomaly_maps.flatten())
-
-        _, self.image_f1_score = self.model.anomaly_map_generator.compute_adaptive_threshold(
-            self.true_labels, self.pred_labels
-        )
-
-        self.log(name="Image-Level AUC", value=self.image_roc_auc, on_epoch=True, prog_bar=True)
-        self.log(name="Image-Level F1", value=self.image_f1_score, on_epoch=True, prog_bar=True)
-        self.log(name="Pixel-Level AUC", value=self.pixel_roc_auc, on_epoch=True, prog_bar=True)
-
-    def test_epoch_end(self, outputs):
-        """
-        Compute and save anomaly scores of the test set, based on the embedding
-            extracted from deep hierarchical CNN features.
-
-        Args:
-            outputs: Batch of outputs from the validation step
-
-        """
-        self.validation_epoch_end(outputs)
+        return batch

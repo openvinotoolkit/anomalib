@@ -6,8 +6,8 @@ from torch import nn
 from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
 
 
-class BaseAnomalySegmentationModule(nn.Module):
-    """Base Anomaly Segmentation module. All segmentation models should be derived from this class"""
+class BaseAnomalyModule(nn.Module):
+    """Base Anomaly module. All image anomaly models should be derived from this class"""
 
     def __init__(self):
         super().__init__()
