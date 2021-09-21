@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 from anomalib import loggers
 from anomalib.datasets.utils import Denormalize
-from anomalib.models.base import BaseAnomalySegmentationLightning
+from anomalib.models.base import BaseAnomalyLightning
 from anomalib.utils.visualizer import Visualizer
 
 
@@ -30,7 +30,7 @@ class VisualizerCallback(Callback):
     def _add_images(
         self,
         visualizer: Visualizer,
-        module: BaseAnomalySegmentationLightning,
+        module: BaseAnomalyLightning,
         filename: Path,
     ):
 
@@ -60,37 +60,39 @@ class VisualizerCallback(Callback):
         """Log images at the end of training
         Args:
             _trainer (Trainer): Pytorch lightning trainer object (unused)
-            pl_module (LightningModule): Lightning modules derived from BaseAnomalySegmentationLightning object as
+            pl_module (LightningModule): Lightning modules derived from BaseAnomalyLightning object as
             currently only they support logging images.
         """
 
         # while this check is in place, this might not work as all modules are subclasses of LightningModule
-        # including BaseAnomalySegmentationLightning
+        # including BaseAnomalyLightning
         assert isinstance(
-            pl_module, BaseAnomalySegmentationLightning
-        ), "This callback currently only supports a lightning module of instance BaseAnomalySegmentationLightning"
+            pl_module, BaseAnomalyLightning
+        ), "This callback currently only supports a lightning module of instance BaseAnomalyLightning"
 
-        module = cast(BaseAnomalySegmentationLightning, pl_module)  # placate mypy
+        module = cast(BaseAnomalyLightning, pl_module)  # placate mypy
 
-        threshold, _ = module.model.anomaly_map_generator.compute_adaptive_threshold(
-            module.true_masks, module.anomaly_maps
-        )
-        for (filename, image, true_mask, anomaly_map) in tqdm(
-            zip(module.filenames, module.images, module.true_masks, module.anomaly_maps),
-            desc="Saving Results",
-            total=len(module.filenames),
-        ):
-            image = Denormalize()(image)
+        if module.hparams.dataset.task == "segmentation":
 
-            heat_map = module.model.anomaly_map_generator.apply_heatmap_on_image(anomaly_map, image)
-            pred_mask = module.model.anomaly_map_generator.compute_mask(anomaly_map, threshold)
-            vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
+            threshold, _ = module.model.anomaly_map_generator.compute_adaptive_threshold(
+                module.true_masks, module.anomaly_maps
+            )
+            for (filename, image, true_mask, anomaly_map) in tqdm(
+                zip(module.filenames, module.images, module.true_masks, module.anomaly_maps),
+                desc="Saving Results",
+                total=len(module.filenames),
+            ):
+                image = Denormalize()(image)
 
-            visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
-            visualizer.add_image(image=image, title="Image")
-            visualizer.add_image(image=true_mask, color_map="gray", title="Ground Truth")
-            visualizer.add_image(image=heat_map, title="Predicted Heat Map")
-            visualizer.add_image(image=pred_mask, color_map="gray", title="Predicted Mask")
-            visualizer.add_image(image=vis_img, title="Segmentation Result")
-            self._add_images(visualizer, module, filename)
-            visualizer.close()
+                heat_map = module.model.anomaly_map_generator.apply_heatmap_on_image(anomaly_map, image)
+                pred_mask = module.model.anomaly_map_generator.compute_mask(anomaly_map, threshold)
+                vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
+
+                visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
+                visualizer.add_image(image=image, title="Image")
+                visualizer.add_image(image=true_mask, color_map="gray", title="Ground Truth")
+                visualizer.add_image(image=heat_map, title="Predicted Heat Map")
+                visualizer.add_image(image=pred_mask, color_map="gray", title="Predicted Mask")
+                visualizer.add_image(image=vis_img, title="Segmentation Result")
+                self._add_images(visualizer, module, filename)
+                visualizer.close()

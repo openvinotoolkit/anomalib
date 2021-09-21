@@ -4,7 +4,6 @@ https://arxiv.org/abs/2106.08265
 """
 
 import os
-from pathlib import Path
 from typing import Dict, List, Sequence, Tuple, Union
 
 import cv2
@@ -15,7 +14,6 @@ from omegaconf import ListConfig
 from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.callbacks import ModelCheckpoint
 from scipy.ndimage import gaussian_filter
-from sklearn.metrics import roc_auc_score
 from sklearn.neighbors import NearestNeighbors
 from sklearn.random_projection import SparseRandomProjection
 from torch import Tensor
@@ -25,8 +23,8 @@ from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.core.model.dynamic_module import DynamicBufferModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
-from anomalib.models.base import BaseAnomalySegmentationLightning
-from anomalib.models.base.torch_modules import BaseAnomalySegmentationModule
+from anomalib.models.base import BaseAnomalyLightning
+from anomalib.models.base.torch_modules import BaseAnomalyModule
 from anomalib.models.padim.model import concat_layer_embedding
 from anomalib.models.patchcore.sampling_methods.kcenter_greedy import KCenterGreedy
 
@@ -123,7 +121,7 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         return anomaly_map, anomaly_score
 
 
-class PatchcoreModel(DynamicBufferModule, BaseAnomalySegmentationModule):
+class PatchcoreModel(DynamicBufferModule, BaseAnomalyModule):
     """
     Padim Module
     """
@@ -236,7 +234,7 @@ class PatchcoreModel(DynamicBufferModule, BaseAnomalySegmentationModule):
         return embedding_coreset
 
 
-class PatchcoreLightning(BaseAnomalySegmentationLightning):
+class PatchcoreLightning(BaseAnomalyLightning):
     """
     PatchcoreLightning Module to train PatchCore algorithm
     """
@@ -244,6 +242,9 @@ class PatchcoreLightning(BaseAnomalySegmentationLightning):
     def __init__(self, hparams):
         super().__init__(hparams)
         self.save_hyperparameters(hparams)
+
+        self.supported_tasks = ["segmentation", "classification"]
+        self.check_task_support(task=hparams.dataset.task)
 
         backbone, layers, input_size = hparams.model.backbone, hparams.model.layers, hparams.model.input_size
         self.model = PatchcoreModel(backbone=backbone, layers=layers, input_size=input_size)
@@ -307,67 +308,8 @@ class PatchcoreLightning(BaseAnomalySegmentationLightning):
             Dict[str, Any]: Image filenames, test images, GT and predicted label/masks
         """
         # TODO: Remove this Use Model Load Callback: https://jira.devtools.intel.com/browse/IAAALD-13
-        filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
 
-        anomaly_map, _ = self.model(images)
+        anomaly_maps, _ = self.model(batch["image"])
+        batch["anomaly_maps"] = torch.Tensor(anomaly_maps).unsqueeze(0).unsqueeze(0)
 
-        return {
-            "filenames": filenames,
-            "images": images,
-            "true_labels": labels.cpu().numpy(),
-            "true_masks": masks.squeeze().cpu().numpy(),
-            "anomaly_maps": anomaly_map,
-        }
-
-    def validation_epoch_end(self, outputs):
-        """
-        Compute image and pixel level roc scores.
-
-        Args:
-          outputs: Batch of outputs from the validation step
-
-        """
-        # These have been defined in the __init__ of the base class. It is a known issue that pylint fails in such
-        # scenarios. See https://github.com/PyCQA/pylint/issues/2981 for example.
-        # pylint: disable=attribute-defined-outside-init
-
-        self.filenames = [Path(f) for x in outputs for f in x["filenames"]]
-        self.images = [x["images"] for x in outputs]
-
-        self.true_masks = np.stack([output["true_masks"] for output in outputs])
-        self.anomaly_maps = np.stack([output["anomaly_maps"] for output in outputs])
-
-        self.true_labels = np.stack([output["true_labels"] for output in outputs])
-        self.pred_labels = self.anomaly_maps.reshape(self.anomaly_maps.shape[0], -1).max(axis=1)
-
-        self.image_roc_auc = roc_auc_score(self.true_labels, self.pred_labels)
-        self.pixel_roc_auc = roc_auc_score(self.true_masks.flatten(), self.anomaly_maps.flatten())
-
-        _, self.image_f1_score = self.model.anomaly_map_generator.compute_adaptive_threshold(
-            self.true_labels, self.pred_labels
-        )
-
-        self.log(name="Image-Level AUC", value=self.image_roc_auc, on_epoch=True, prog_bar=True)
-        self.log(name="Image-Level F1", value=self.image_f1_score, on_epoch=True, prog_bar=True)
-        self.log(name="Pixel-Level AUC", value=self.pixel_roc_auc, on_epoch=True, prog_bar=True)
-
-    def test_step(self, batch, batch_idx):
-        """
-        Similar to validation, compute image and pixel level roc scores.
-
-        Args:
-            outputs: Batch of outputs from the test step
-
-        """
-        return self.validation_step(batch, batch_idx)
-
-    def test_epoch_end(self, outputs):
-        """
-        Compute and save anomaly scores of the test set, based on the embedding
-            extracted from deep hierarchical CNN features.
-
-        Args:
-            outputs: Batch of outputs from the validation step
-
-        """
-        self.validation_epoch_end(outputs)
+        return batch

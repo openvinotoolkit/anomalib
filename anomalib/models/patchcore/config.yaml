@@ -2,6 +2,7 @@ dataset:
   name: mvtec
   format: mvtec
   path: ./datasets/MVTec
+  task: segmentation
   category: carpet
   tiling:
     apply: false
