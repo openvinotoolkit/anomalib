@@ -1,6 +1,6 @@
 dataset:
   name: mvtec
-  format: mvtec
+  format: anomaly_dataset
   path: ./datasets/MVTec
   url: ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/mvtec_anomaly_detection.tar.xz
   category: leather
@@ -21,6 +21,12 @@ dataset:
 transform:
   image_size: 256
   crop_size: 224
+  grayscale: 0
+  bilateral_filter:
+    diameter: 9
+    sigma_color: 75
+    sigma_space: 75
+    always_apply: 1
   normalize:
     mean: [0.485, 0.456, 0.406]
     std: [0.229, 0.224, 0.225]
