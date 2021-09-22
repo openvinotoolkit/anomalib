@@ -25,6 +25,7 @@ from torch import Tensor
 from torch.utils.data import DataLoader
 from torchvision.datasets.folder import VisionDataset
 
+import anomalib.datasets.transforms as t
 from anomalib.utils.download_progress_bar import DownloadProgressBar
 
 from .parser import PascalVocReader
@@ -131,7 +132,7 @@ def make_dataset(path: Path, split_ratio: float = 0.1, seed: int = 0) -> DataFra
     Returns:
         DataFrame: an output dataframe containing all samples
     """
-    samples_list = [(str(path),) + filename.parts[3:] for filename in path.glob("**/*.png")]
+    samples_list = [(str(path),) + filename.parts[-3:] for filename in path.glob("**/*.png")]
     if len(samples_list) == 0:
         raise RuntimeError(f"Found 0 images in {path}")
 
@@ -175,6 +176,12 @@ def get_transform(aug_prob: float, config: Union[DictConfig, ListConfig]) -> a.C
     return a.Compose(
         [
             a.Resize(config.image_size[0], config.image_size[1], always_apply=True),
+            t.BilateralFilter(
+                diameter=config.bilateral_filter.diameter,
+                sigma_color=config.bilateral_filter.sigma_color,
+                sigma_space=config.bilateral_filter.sigma_space,
+                always_apply=config.bilateral_filter.always_apply,
+            ),
             a.OneOf(
                 [
                     a.RandomRotate90(),
@@ -223,7 +230,7 @@ def get_transform(aug_prob: float, config: Union[DictConfig, ListConfig]) -> a.C
             ),
             a.CenterCrop(crop_size[0], crop_size[1], always_apply=True),
             a.Normalize(mean=config.normalize.mean, std=config.normalize.std, always_apply=True),
-            a.ToGray(always_apply=True),
+            t.RgbToGray(always_apply=config.grayscale),
             ToTensorV2(always_apply=True),
         ],
         p=aug_prob,
@@ -330,7 +337,6 @@ class AnomalyTrainDS(BaseAnomalyDataset):
         image = read_image(image_path)
         augmented = self.transform(image=image)
         image_tensor = augmented["image"]
-
         sample = {"image": image_tensor}
 
         return sample
@@ -528,7 +534,7 @@ class AnomalyDataModule(LightningDataModule):
             Data preparation - split for train, test & val
 
         Args:
-            stage: optinal argument to specify if train or test
+            stage: optional argument to specify if train or test
         """
         samples_df = make_dataset(path=self.root / self.category)
 
