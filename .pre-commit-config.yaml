@@ -44,7 +44,7 @@ repos:
     hooks:
       - id: pylint
         name: pylint
-        entry: pylint --rcfile=tox.ini
+        entry: pylint --score=no --rcfile=tox.ini
         language: system
         types: [python]
         exclude: "tests|docs"

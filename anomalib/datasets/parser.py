@@ -6,7 +6,7 @@ import logging
 from typing import Any, Dict, List, Union
 from xml.etree import ElementTree
 
-from lxml import etree
+from lxml.etree import XMLParser  # pylint: disable=no-name-in-module
 
 XML_EXT = ".xml"
 ENCODE_METHOD = "utf-8"
@@ -66,7 +66,7 @@ class PascalVocReader:
         """
 
         assert self.file_path.endswith(XML_EXT), "Unsupported file format"
-        parser = etree.XMLParser(encoding=ENCODE_METHOD)
+        parser = XMLParser(encoding=ENCODE_METHOD)
         self.xml_tree = ElementTree.parse(self.file_path, parser=parser).getroot()
         if "verified" in self.xml_tree.attrib and self.xml_tree.attrib["verified"] == "yes":
             self.verified = True

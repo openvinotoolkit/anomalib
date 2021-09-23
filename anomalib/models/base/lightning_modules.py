@@ -58,7 +58,7 @@ class BaseAnomalyLightning(pl.LightningModule):
                 f"Please change task type in config file to one of {self.supported_tasks}"
             )
 
-    def test_step(self, batch, _):
+    def test_step(self, batch, _):  # pylint: disable=arguments-differ
         """Calls validation_step for anomaly map/score calculation.
 
         Args:

@@ -55,7 +55,7 @@ class InitLoader(PTInitializingDataLoader):
         """
         return (dataloader_output,), {}
 
-    def get_target(self):
+    def get_target(self, _):
         """
         Parses the generic data loader output and returns a structure to be used as
         ground truth in the loss criterion.

@@ -43,8 +43,8 @@ class KCenterGreedy(SamplingMethod):
     Implements k-center-greedy method
     """
 
-    def __init__(self, x: np.ndarray, y, seed, metric="euclidean"):
-        super().__init__(x, y, seed)
+    def __init__(self, x_data: np.ndarray, y_data, seed, metric="euclidean"):
+        super().__init__(x_data, y_data, seed)
         self.name = "kcenter"
         self.features: np.ndarray
         self.metric = metric
@@ -116,7 +116,8 @@ class KCenterGreedy(SamplingMethod):
 
             self.update_distances([ind], only_new=True, reset_dist=False)
             new_batch.append(ind)
-        print("Maximum distance from cluster centers is %0.2f" % max(self.min_distances))
+        max_distance = float(max(self.min_distances))
+        print(f"Maximum distance from cluster centers is {max_distance:0.2f}")
 
         self.already_selected = already_selected
 

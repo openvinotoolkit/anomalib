@@ -2,6 +2,7 @@
 STFPM: Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection
 https://arxiv.org/abs/2103.04257
 """
+
 import math
 import os
 import os.path
@@ -13,7 +14,7 @@ import torch
 import torch.nn.functional as F
 import torchvision
 from omegaconf import DictConfig, ListConfig
-from openvino.inference_engine import IECore
+from openvino.inference_engine import IECore  # pylint: disable=no-name-in-module
 from pytorch_lightning.callbacks import Callback, EarlyStopping, ModelCheckpoint
 from sklearn.metrics import roc_auc_score
 from torch import Tensor, nn, optim
@@ -305,7 +306,7 @@ class StfpmLightning(BaseAnomalyLightning):
             weight_decay=self.hparams.model.weight_decay,
         )
 
-    def training_step(self, batch, _):
+    def training_step(self, batch, _):  # pylint: disable=arguments-differ
         """Training Step of STFPM..
         For each batch, teacher and student and teacher features
             are extracted from the CNN.
@@ -324,7 +325,7 @@ class StfpmLightning(BaseAnomalyLightning):
         self.loss_val = 0
         return {"loss": loss}
 
-    def validation_step(self, batch, _):
+    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Validation Step of STFPM.
             Similar to the training step, student/teacher features
             are extracted from the CNN for each batch, and anomaly

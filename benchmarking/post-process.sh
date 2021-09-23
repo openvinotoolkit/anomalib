@@ -25,7 +25,7 @@ results_dir=$1
 pushd $results_dir
 
 echo "train.py CPU %:"
-grep train.py top.log | awk '{ sum += $9} END { if (NR > 0) printf ("%0.3f\n", sum / NR)}' 
+grep train.py top.log | awk '{ sum += $9} END { if (NR > 0) printf ("%0.3f\n", sum / NR)}'
 
 echo "Memory Read, Write, IO (GB/s):"
 grep ^MEM -A2 pcm.log | grep SKT | awk '{print $3}' | awk '{sum += $1 } END { if (NR > 0) printf ("%0.3f, ", sum / NR)}'

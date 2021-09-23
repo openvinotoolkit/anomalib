@@ -57,6 +57,7 @@ class NormalityModel(nn.Module):
 
         # if max training points is non-zero and smaller than number of staged features, select random subset
         if self.filter_count and dataset.shape[0] > self.filter_count:
+            # pylint: disable=not-callable
             selected_idx = torch.tensor(random.sample(range(dataset.shape[0]), self.filter_count))
             selected_features = dataset[selected_idx]
         else:
@@ -155,3 +156,9 @@ class NormalityModel(nn.Module):
         """
 
         return 1 / (1 + torch.exp(self.threshold_steepness * (densities - self.threshold_offset)))
+
+    def forward(self, features: torch.Tensor) -> torch.Tensor:
+        """
+        Make module callable
+        """
+        return self.predict(features)
