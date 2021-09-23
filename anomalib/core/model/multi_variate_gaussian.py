@@ -79,7 +79,7 @@ class MultiVariateGaussian(DynamicBufferModule):
 
         if weights is not None:
             if not torch.is_tensor(weights):
-                weights = torch.tensor(weights, dtype=torch.float)
+                weights = torch.tensor(weights, dtype=torch.float)  # pylint: disable=not-callable
             weights_sum = torch.sum(weights)
             avg = torch.sum(observations * (weights / weights_sum)[:, None], 0)
         else:

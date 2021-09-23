@@ -261,14 +261,14 @@ class PatchcoreLightning(BaseAnomalyLightning):
         """
         return None
 
-    def training_step(self, batch, _batch_idx):
+    def training_step(self, batch, _):  # pylint: disable=arguments-differ
         """
         Generate feature embedding of the batch.
 
         Args:
             batch (Dict[str, Any]): Batch containing image filename,
                                     image, label and mask
-            batch_idx (int): Batch Index
+            _ (int): Batch Index
 
         Returns:
             Dict[str, np.ndarray]: Embedding Vector
@@ -293,7 +293,7 @@ class PatchcoreLightning(BaseAnomalyLightning):
         self.model.nn_search = self.model.nn_search.fit(embedding)
         self.model.memory_bank = torch.from_numpy(embedding)  # pylint: disable=W0201:
 
-    def validation_step(self, batch, _batch_idx):
+    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """
         Load the normal embedding to use it as memory bank.
         Apply nearest neighborhood to the embedding.
@@ -302,7 +302,7 @@ class PatchcoreLightning(BaseAnomalyLightning):
         Args:
             batch (Dict[str, Any]): Batch containing image filename,
                                     image, label and mask
-            batch_idx (int): Batch Index
+            _ (int): Batch Index
 
         Returns:
             Dict[str, Any]: Image filenames, test images, GT and predicted label/masks

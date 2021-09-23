@@ -80,15 +80,13 @@ class DfkdeLightning(BaseAnomalyLightning):
         """
         return None
 
-    def training_step(self, batch, _):
+    def training_step(self, batch, _):  # pylint: disable=arguments-differ
         """Training Step of DFKDE.
         For each batch, features are extracted from the CNN.
 
         Args:
           batch: Input batch
-          batch_idx: Index of the batch.
-          batch: dict:
-          batch_idx: int:
+          _: Index of the batch.
 
         Returns:
           Deep CNN features.
@@ -114,16 +112,14 @@ class DfkdeLightning(BaseAnomalyLightning):
         feature_stack = torch.vstack([output["feature_vector"] for output in outputs])
         self.normality_model.fit(feature_stack)
 
-    def validation_step(self, batch, _):
+    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Validation Step of DFKDE.
             Similar to the training step, features
             are extracted from the CNN for each batch.
 
         Args:
           batch: Input batch
-          batch_idx: Index of the batch.
-          batch: dict:
-          batch_idx: int:
+          _: Index of the batch.
 
         Returns:
           Dictionary containing probability, prediction and ground truth values.

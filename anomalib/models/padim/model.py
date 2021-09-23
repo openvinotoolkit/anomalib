@@ -2,6 +2,7 @@
 PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization
 https://arxiv.org/abs/2011.08785
 """
+
 import os
 import os.path
 from random import sample
@@ -79,6 +80,7 @@ class PadimModel(BaseAnomalyModule):
         self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
         self.gaussian = MultiVariateGaussian()
         self.dims = DIMS[backbone]
+        # pylint: disable=not-callable
         self.idx = torch.tensor(sample(range(0, DIMS[backbone]["t_d"]), DIMS[backbone]["d"]))
         self.loss = None
         self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
@@ -242,6 +244,7 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
             distance = [_mahalanobis(emb[:, i], mean, inverse_covariance) for emb in embedding]
             distance_list.append(distance)
 
+        # pylint: disable=not-callable
         distance_tensor = torch.tensor(distance_list).permute(1, 0).reshape(batch, height, width)
         return distance_tensor
 
@@ -348,7 +351,7 @@ class PadimLightning(BaseAnomalyLightning):
         """PADIM doesn't require optimization, therefore returns no optimizers."""
         return None
 
-    def training_step(self, batch, _):
+    def training_step(self, batch, _):  # pylint: disable=arguments-differ
         """Training Step of PADIM.
         For each batch, hierarchical features are extracted from the CNN.
 
@@ -377,7 +380,7 @@ class PadimLightning(BaseAnomalyLightning):
         embeddings = torch.vstack([x["embedding"] for x in outputs])
         self.stats = self.model.gaussian.fit(embeddings)
 
-    def validation_step(self, batch, _):
+    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Validation Step of PADIM.
                         Similar to the training step, hierarchical features
                         are extracted from the CNN for each batch.

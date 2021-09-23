@@ -52,3 +52,9 @@ class PCAModel(nn.Module):
         feats_reconstructed = self.pca_model.inverse_transform(feats_projected)
         score = np.sum(np.square(feats_orig - feats_reconstructed), axis=1)
         return score
+
+    def forward(self, sem_feats: torch.Tensor) -> np.ndarray:
+        """
+        Make module callable
+        """
+        return self.score(sem_feats)

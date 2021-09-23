@@ -12,3 +12,9 @@ class BaseAnomalyModule(nn.Module):
     def __init__(self):
         super().__init__()
         self.anomaly_map_generator: BaseAnomalyMapGenerator
+
+    def forward(self, _):
+        """
+        To be implemented in the subclass
+        """
+        raise NotImplementedError

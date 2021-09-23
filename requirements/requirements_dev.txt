@@ -3,3 +3,4 @@ tox>=3.24.3
 mypy
 flake8
 pytest
+pylint
