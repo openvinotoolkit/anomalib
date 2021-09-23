@@ -70,6 +70,10 @@ def test_sigopt_logger_hyperparameter(sigopt):
         True: False,
     }
 
+    # test basic logging function
+    logger = SigoptLogger(name="test_name", project="test_project", max_epochs=400)
+    logger.log_hyperparams(hparams)
+
     def fake_set_params(_, param):
         param = SigoptLogger._convert_params(param)
         param = SigoptLogger._flatten_dict(param)
