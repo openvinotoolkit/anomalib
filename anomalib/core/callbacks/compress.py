@@ -1,8 +1,9 @@
 """Callback that compresses a trained model by first exporting to .onnx format, and then converting to OpenVINO IR."""
 import os
+from typing import Union
 
 import torch
-from omegaconf.dictconfig import DictConfig
+from omegaconf import DictConfig, ListConfig
 from pytorch_lightning import Callback, LightningModule
 
 
@@ -11,7 +12,7 @@ class CompressModelCallback(Callback):
     Callback that compresses a trained model by first exporting to .onnx format, and then converting to OpenVINO IR.
     """
 
-    def __init__(self, config: DictConfig, dirpath: str, filename: str):
+    def __init__(self, config: Union[ListConfig, DictConfig], dirpath: str, filename: str):
         self.config = config
         self.dirpath = dirpath
         self.filename = filename

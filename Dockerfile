@@ -11,13 +11,24 @@ ENV https_proxy=http://proxy-dmz.intel.com:912
 ENV ftp_proxy=http://proxy-dmz.intel.com:912
 
 # Update system and install wget
-RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y wget ffmpeg libpython3.8
+RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y wget ffmpeg libpython3.8 git sudo
 
 # Install Conda
-RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh --quiet
 RUN bash ~/miniconda.sh -b -p /opt/conda
 ENV PATH "/opt/conda/bin:${PATH}"
 RUN conda install python=3.8
+
+# Install OpenVINO
+ARG OPENVINO_VERSION=l_openvino_toolkit_data_dev_ubuntu20_p_2021.4.689
+RUN wget https://storage.openvinotoolkit.org/repositories/openvino/packages/2021.4.1/$OPENVINO_VERSION.tgz --quiet && \
+    mkdir -p /opt/intel && tar -xzf $OPENVINO_VERSION.tgz -C /opt/intel && \
+    ln -s /opt/intel/$OPENVINO_VERSION/ /opt/intel/openvino_2021 && \
+    /opt/intel/openvino_2021/install_dependencies/install_openvino_dependencies.sh -y && \
+    /opt/intel/openvino_2021/deployment_tools/model_optimizer/install_prerequisites/install_prerequisites.sh && \
+    /opt/intel/openvino_2021/bin/setupvars.sh && \
+    rm -r $OPENVINO_VERSION.tgz
+
 
 
 #########################################################
@@ -37,6 +48,5 @@ COPY ./requirements/requirements.txt /tmp/anomalib/requirements/requirements.txt
 RUN pip install -r /tmp/anomalib/requirements/requirements.txt
 
 # Install other requirements related to development
-RUN apt-get install -y git
 COPY ./requirements/requirements_dev.txt /tmp/anomalib/requirements/requirements_dev.txt
 RUN pip install -r /tmp/anomalib/requirements/requirements_dev.txt
