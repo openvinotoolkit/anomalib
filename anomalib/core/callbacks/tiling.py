@@ -23,6 +23,7 @@ class TilingCallback(Callback):
             tile_count=hparams.dataset.tiling.random_tile_count,
         )
         self.use_random_tiling = hparams.dataset.tiling.use_random_tiling
+        self.tiling_targets = ["image", "images", "anomaly_maps"]
 
     def on_train_batch_start(
         self,
@@ -57,8 +58,8 @@ class TilingCallback(Callback):
     ) -> None:
         """Called when the validation batch ends."""
         if isinstance(outputs, Dict):
-            outputs["anomaly_maps"] = self.tiler.untile(outputs["anomaly_maps"])
-            outputs["images"] = self.tiler.untile(outputs["images"])
+            for key in set(outputs.keys()).intersection(self.tiling_targets):
+                outputs[key] = self.tiler.untile(outputs[key])
 
     def on_test_batch_start(
         self,
@@ -82,5 +83,5 @@ class TilingCallback(Callback):
     ) -> None:
         """Called when the test batch ends."""
         if outputs is not None:
-            outputs["anomaly_maps"] = self.tiler.untile(outputs["anomaly_maps"])
-            outputs["images"] = self.tiler.untile(outputs["images"])
+            for key in set(outputs.keys()).intersection(self.tiling_targets):
+                outputs[key] = self.tiler.untile(outputs[key])
