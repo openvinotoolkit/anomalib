@@ -17,7 +17,7 @@ from torchvision.models import resnet18
 
 from anomalib.core.callbacks.model_loader import LoadModelCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
-from anomalib.models.dfm.pca_model import PCAModel
+from anomalib.models.dfm.dfm_model import DFMModel
 
 
 class Callbacks:
@@ -62,7 +62,7 @@ class DfmLightning(pl.LightningModule):
 
         self.feature_extractor = FeatureExtractor(backbone=resnet18(pretrained=True), layers=["avgpool"]).eval()
 
-        self.pca_model = PCAModel(n_comps=hparams.model.pca_level)
+        self.dfm_model = DFMModel(n_comps=hparams.model.pca_level, score_type=hparams.model.score_type)
         self.callbacks = Callbacks(hparams)()
         self.image_roc_auc: Optional[float] = None
         self.automatic_optimization = False
@@ -104,7 +104,7 @@ class DfmLightning(pl.LightningModule):
         """
 
         feature_stack = torch.vstack([output["feature_vector"] for output in outputs])
-        self.pca_model.fit(feature_stack)
+        self.dfm_model.fit(feature_stack)
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Validation Step of DFM.
@@ -124,9 +124,9 @@ class DfmLightning(pl.LightningModule):
         images, mask = batch["image"], batch["mask"]
         layer_outputs = self.feature_extractor(images)
         feature_vector = torch.hstack(list(layer_outputs.values())).detach()
-        feature_reconstruction_error = self.pca_model.score(feature_vector.view(feature_vector.shape[:2]))
+        dfm_scores = self.dfm_model.score(feature_vector.view(feature_vector.shape[:2]))
         ground_truth = np.any(mask.cpu().numpy(), axis=(1, 2, 3)).astype(int)
-        return {"fre_scores": feature_reconstruction_error, "ground_truth": ground_truth}
+        return {"dfm_scores": dfm_scores, "ground_truth": ground_truth}
 
     def validation_epoch_end(self, outputs: List[Union[Tensor, Dict[str, Any]]]) -> None:
         """Compute anomaly classification scores based on probability scores.
@@ -138,7 +138,7 @@ class DfmLightning(pl.LightningModule):
         Returns:
 
         """
-        pred_labels = np.hstack([output["fre_scores"] for output in outputs])
+        pred_labels = np.hstack([output["dfm_scores"] for output in outputs])
         true_labels = np.hstack([output["ground_truth"] for output in outputs])
         self.image_roc_auc = roc_auc_score(true_labels, pred_labels)
         self.log(name="auc", value=self.image_roc_auc, on_epoch=True, prog_bar=True)
