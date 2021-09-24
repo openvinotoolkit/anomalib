@@ -10,7 +10,7 @@ import numpy as np
 from albumentations.core.transforms_interface import ImageOnlyTransform
 
 
-class RgbToGray(ImageOnlyTransform):
+class RgbToGray(ImageOnlyTransform):  # pylint: disable=abstract-method
     """
     Transform for RGB to 1-channel gray image transform
     """
@@ -28,7 +28,7 @@ class RgbToGray(ImageOnlyTransform):
         return cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
 
-class BilateralFilter(ImageOnlyTransform):
+class BilateralFilter(ImageOnlyTransform):  # pylint: disable=abstract-method
     """
     Transform to apply image filter to reduce noise while retaining edges
     """
