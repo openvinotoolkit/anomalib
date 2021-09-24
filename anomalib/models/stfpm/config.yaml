@@ -69,9 +69,11 @@ model:
     - layer3
   lr: 0.4
   momentum: 0.9
-  patience: 5
   weight_decay: 0.0001
-  metric: Pixel-Level AUC
+  early_stopping:
+    patience: 3
+    metric: Pixel-Level AUC
+    mode: max
 
 project:
   seed: 0

@@ -120,7 +120,11 @@ class Callbacks:
             dirpath=os.path.join(self.config.project.path, "weights"),
             filename="model",
         )
-        early_stopping = EarlyStopping(monitor=self.config.model.metric, patience=self.config.model.patience)
+        early_stopping = EarlyStopping(
+            monitor=self.config.model.early_stopping.metric,
+            patience=self.config.model.early_stopping.patience,
+            mode=self.config.model.early_stopping.mode,
+        )
         callbacks = [checkpoint, early_stopping, TimerCallback(), VisualizerCallback()]
 
         if self.config.optimization.nncf.apply:
