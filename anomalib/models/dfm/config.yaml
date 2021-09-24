@@ -4,7 +4,7 @@ dataset:
   path: ./datasets/MVTec
   url: ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/mvtec_anomaly_detection.tar.xz
   category: leather
-  task: segmentation
+  task: classification
   label_format: None
   train_batch_size: 32
   test_batch_size: 32
@@ -49,6 +49,7 @@ transform:
 model:
   name: dfm
   pca_level: 0.97
+  score_type: fre # nll: for Gaussian modeling, fre: pca feature reconstruction error
   project_path: ./results
 
 project:
