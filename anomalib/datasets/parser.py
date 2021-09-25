@@ -8,28 +8,26 @@ from xml.etree import ElementTree
 
 from lxml.etree import XMLParser  # pylint: disable=no-name-in-module
 
-XML_EXT = ".xml"
-ENCODE_METHOD = "utf-8"
-
 logger = logging.getLogger(name="Dataset: Anomaly")
 
 
 class PascalVocReader:
     """
     Data parser for Pascal-VOC labels
+
+    Args:
+        file_path (str): Path to XML file
     """
 
     def __init__(self, file_path: str):
-        # shapes type:
+        self._xml_ext = ".xml"
+        self._encode_method = "utf-8"
         self.labels: List[str] = []
         self.boxes: List[List[int]] = []
         self.file_path = file_path
         self.verified: bool = False
         self.xml_tree: ElementTree.Element
-        try:
-            self.parse_xml()
-        except RuntimeError:
-            logger.warning("Incorrect format: Unable to parse xml from %s", file_path)
+        self.parse_xml()
 
     def get_shapes(self) -> Dict[str, Union[List, Any]]:
         """
@@ -65,16 +63,18 @@ class PascalVocReader:
         Function to read xml file and parse annotations
         """
 
-        assert self.file_path.endswith(XML_EXT), "Unsupported file format"
-        parser = XMLParser(encoding=ENCODE_METHOD)
-        self.xml_tree = ElementTree.parse(self.file_path, parser=parser).getroot()
-        if "verified" in self.xml_tree.attrib and self.xml_tree.attrib["verified"] == "yes":
-            self.verified = True
-        else:
-            self.verified = False
+        if self.file_path.endswith(self._xml_ext):
+            parser = XMLParser(encoding=self._encode_method)
+            self.xml_tree = ElementTree.parse(self.file_path, parser=parser).getroot()
+            if "verified" in self.xml_tree.attrib and self.xml_tree.attrib["verified"] == "yes":
+                self.verified = True
+            else:
+                self.verified = False
 
-        for object_iter in self.xml_tree.findall("object"):
-            bnd_box = object_iter.find("bndbox")
-            label = object_iter.find("name")
-            if bnd_box is not None and label is not None:
-                self.add_shape(str(label.text), bnd_box)
+            for object_iter in self.xml_tree.findall("object"):
+                bnd_box = object_iter.find("bndbox")
+                label = object_iter.find("name")
+                if bnd_box is not None and label is not None:
+                    self.add_shape(str(label.text), bnd_box)
+        else:
+            logger.warning("Incorrect format: Unable to parse xml from %s", self.file_path)
