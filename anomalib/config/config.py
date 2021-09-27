@@ -3,7 +3,8 @@ Configurable Getter
 """
 
 from pathlib import Path
-from typing import Optional, Union
+from typing import List, Optional, Union
+from warnings import warn
 
 import torch
 from omegaconf import DictConfig, ListConfig, OmegaConf
@@ -27,6 +28,45 @@ def update_config_for_nncf(config: Union[DictConfig, ListConfig]):
             if config.optimization.nncf.apply:
                 if "update_config" in config.optimization.nncf:
                     return OmegaConf.merge(config, config.optimization.nncf.update_config)
+    return config
+
+
+def update_config_for_multi_gpu_training(config: Union[DictConfig, ListConfig]) -> Union[DictConfig, ListConfig]:
+    """Updates the config to change learning rate based on number of gpus assigned
+        and ensures only ddp accelerator is used
+
+    Args:
+        config (Union[DictConfig, ListConfig]): Configurable parameters for the current run
+
+    Raises:
+        ValueError: If unsupported accelerator is passed
+
+    Returns:
+        Union[DictConfig, ListConfig]: Updated config
+    """
+    # validate accelerator
+    if config.trainer.accelerator is not None:
+        if config.trainer.accelerator.lower() != "ddp":
+            if config.trainer.accelerator.lower() in ("dp", "ddp_spawn", "ddp2"):
+                warn(
+                    f"Using accelerator {config.trainer.accelerator.lower()} is discouraged. "
+                    f"Please use one of [null, ddp]. Setting accelerator to ddp"
+                )
+                config.trainer.accelerator = "ddp"
+            else:
+                raise ValueError(
+                    f"Unsupported accelerator found: {config.trainer.accelerator}. Should be one of [null, ddp]"
+                )
+    # Increase learning rate
+    # since pytorch averages the gradient over devices, the idea is to
+    # increase the learning rate by the number of devices
+    if "lr" in config.model:
+        # Number of GPUs can either be passed as gpus: 2 or gpus: [0,1]
+        n_gpus: Union[int, List] = 1
+        if "trainer" in config and "gpus" in config.trainer:
+            n_gpus = config.trainer.gpus
+        lr_scaler = n_gpus if isinstance(n_gpus, int) else len(n_gpus)
+        config.model.lr = config.model.lr * lr_scaler
     return config
 
 
@@ -89,6 +129,9 @@ def get_configurable_parameters(
     # XPU Configuration
     if not torch.cuda.is_available():
         config.trainer.gpus = 0
+
+    # Handle multi-gpu training
+    config = update_config_for_multi_gpu_training(config)
 
     return config
 
