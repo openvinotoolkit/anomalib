@@ -7,7 +7,7 @@ from omegaconf import OmegaConf
 
 from anomalib.config.config import update_input_size
 from anomalib.datasets.anomaly_dataset import AnomalyDataModule
-from tests.helpers.dataset import get_dataset_path
+from tests.helpers.dataset import TestDataset, get_dataset_path
 from tests.helpers.detection import BBFromMasks
 
 tasks = ["detection", "classification", "segmentation"]
@@ -68,19 +68,22 @@ class DummyModule(pl.LightningModule):
 
 
 @pytest.mark.parametrize("task", ["classification", "segmentation", "detection"])
-def test_anomaly_dataset(task):
-    """Test anomaly dataset using MVTec dataset"""
+@TestDataset(num_train=200, num_test=10, path=get_dataset_path(), use_mvtec=False)
+def test_anomaly_dataset(task, path=get_dataset_path(), category="leather"):
+    """Test anomaly dataset using MVTec dataset
+    Used to check whether the dataloader works as intended. The category of the dataset does not matter.
+    """
 
     DATASET_URL = "ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/mvtec_anomaly_detection.tar.xz"
 
     config = OmegaConf.load("tests/datasets/dummy_config.yml")
     config = update_input_size(config)  # convert image_size to a tuple
 
-    with BBFromMasks(root=get_dataset_path()):
+    with BBFromMasks(root=path):
         datamodule = AnomalyDataModule(
-            root=get_dataset_path(),
+            root=path,
             url=DATASET_URL,
-            category="leather",
+            category=category,
             task=task,
             label_format="pascal_voc",
             train_batch_size=1,

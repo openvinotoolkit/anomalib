@@ -11,13 +11,12 @@ from pytorch_lightning import Trainer
 from anomalib.config.config import get_configurable_parameters, update_config_for_nncf
 from anomalib.datasets import get_datamodule
 from anomalib.models import get_model
-from tests.helpers.dataset import get_dataset_path
+from tests.helpers.dataset import TestDataset, get_dataset_path
 
 
 @pytest.fixture(autouse=True)
-def mvtec_dataset_category() -> str:
+def category() -> str:
     """
-    mvtec_dataset_category
     PyTest fixture to randomly return an MVTec category.
 
     Returns:
@@ -57,19 +56,20 @@ def mvtec_dataset_category() -> str:
         ("patchcore", False),
     ],
 )
-@pytest.mark.flaky(max_runs=2)
-def test_model(mvtec_dataset_category, model_name, nncf):
+@pytest.mark.flaky(max_runs=3)
+@TestDataset(num_train=200, num_test=10, path=get_dataset_path(), use_mvtec=False)
+def test_model(category, model_name, nncf, path="./datasets/MVTec"):
     """
     Test Model Training and Test Pipeline.
 
     Args:
-        mvtec_dataset_category ([type]): [description]
-        model_name ([type]): [description]
+        category (str): Category to test on
+        model_name (str): Name of the model
     """
     config = get_configurable_parameters(model_name=model_name)
     config.project.seed = 1234
-    config.dataset.category = mvtec_dataset_category
-    config.dataset.path = get_dataset_path()
+    config.dataset.category = category
+    config.dataset.path = path
 
     if nncf:
         config.optimization.nncf.apply = True
