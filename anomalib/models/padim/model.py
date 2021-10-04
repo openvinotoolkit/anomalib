@@ -335,8 +335,11 @@ class PadimLightning(BaseAnomalyLightning):
     def __init__(self, hparams):
         super().__init__(hparams)
         self.layers = hparams.model.layers
+        input_size = (
+            hparams.transform.image_size if hparams.transform.crop_size is None else hparams.transform.crop_size
+        )
         self.model = PadimModel(
-            backbone=hparams.model.backbone, layers=hparams.model.layers, input_size=hparams.model.input_size
+            backbone=hparams.model.backbone, layers=hparams.model.layers, input_size=input_size
         ).eval()
 
         self.supported_tasks = ["segmentation", "classification"]
@@ -366,7 +369,7 @@ class PadimLightning(BaseAnomalyLightning):
         self.model.eval()
         features = self.model(batch["image"])
         embedding = self.model.generate_embedding(features)
-        return {"embedding": embedding.cpu()}
+        return {"embeddings": embedding.cpu()}
 
     def training_epoch_end(self, outputs):
         """Fit a multivariate gaussian model on an embedding extracted from deep hierarchical CNN features.
@@ -377,7 +380,7 @@ class PadimLightning(BaseAnomalyLightning):
         Returns:
 
         """
-        embeddings = torch.vstack([x["embedding"] for x in outputs])
+        embeddings = torch.vstack([x["embeddings"] for x in outputs])
         self.stats = self.model.gaussian.fit(embeddings)
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
@@ -396,7 +399,21 @@ class PadimLightning(BaseAnomalyLightning):
         """
         features = self.model(batch["image"])
         embedding = self.model.generate_embedding(features)
-        batch["anomaly_maps"] = self.model.anomaly_map_generator(
-            embedding=embedding, mean=self.model.gaussian.mean, covariance=self.model.gaussian.covariance
-        )
+        batch["embeddings"] = embedding
         return batch
+
+    def validation_epoch_end(self, outputs):
+        """Compute anomaly scores of the validation set, based on the embedding
+                        extracted from deep hierarchical CNN features.
+
+        Args:
+                outputs: Batch of outputs from the validation step
+
+        Returns:
+
+        """
+        for output in outputs:
+            output["anomaly_maps"] = self.model.anomaly_map_generator(
+                embedding=output["embeddings"], mean=self.model.gaussian.mean, covariance=self.model.gaussian.covariance
+            )
+        super().validation_epoch_end(outputs)
