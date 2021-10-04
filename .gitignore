@@ -2,6 +2,7 @@
 datasets
 !anomalib/datasets
 !tests/datasets
+checkpoints
 lightning_logs
 results
 results_nncf
@@ -164,3 +165,6 @@ cython_debug/
 docs/source/generated
 docs/source/api
 docs/source/models
+
+# Misc
+.DS_Store
