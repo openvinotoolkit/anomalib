@@ -45,7 +45,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]):
             train_batch_size=config.dataset.train_batch_size,
             test_batch_size=config.dataset.test_batch_size,
             num_workers=config.dataset.num_workers,
-            transform_params=config.transform,
+            transform_config=config.transform,
         )
     else:
         raise ValueError("Unknown dataset!")

@@ -15,17 +15,27 @@ class FakeDataModule(pl.LightningDataModule):
     def __init__(self, batch_size: int = 32):
         super(FakeDataModule, self).__init__()
         self.batch_size = batch_size
-        self.transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
+        self.pre_process = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
 
     def train_dataloader(self):
         return DataLoader(
-            FakeData(size=1000, num_classes=10, transform=self.transform, image_size=(3, 32, 32)),
+            FakeData(
+                size=1000,
+                num_classes=10,
+                transform=self.pre_process,
+                image_size=(3, 32, 32),
+            ),
             batch_size=self.batch_size,
         )
 
     def test_dataloader(self):
         return DataLoader(
-            FakeData(size=100, num_classes=10, transform=self.transform, image_size=(3, 32, 32)),
+            FakeData(
+                size=100,
+                num_classes=10,
+                transform=self.pre_process,
+                image_size=(3, 32, 32),
+            ),
             batch_size=self.batch_size,
         )
 

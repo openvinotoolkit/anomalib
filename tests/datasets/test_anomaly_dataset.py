@@ -27,7 +27,11 @@ class DummyModule(pl.LightningModule):
             raise TypeError(f"image should be of type torch.Tensor. Found {type(images[0])}")
 
     def validation_step(self, batch, _) -> None:
-        image_paths, images, labels = batch["image_path"], batch["image"], batch["label"]
+        image_paths, images, labels = (
+            batch["image_path"],
+            batch["image"],
+            batch["label"],
+        )
 
         assert images.shape[0] == 1, "Expected batch to be of size 1"
 
@@ -89,7 +93,7 @@ def test_anomaly_dataset(task, path=get_dataset_path(), category="leather"):
             train_batch_size=1,
             test_batch_size=1,
             num_workers=0,
-            transform_params=config.transform,
+            transform_config=config.transform,
         )
 
         model = DummyModule(task=task)

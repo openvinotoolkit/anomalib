@@ -13,11 +13,9 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union
 from urllib.request import urlretrieve
 
-import albumentations as a
 import cv2
 import numpy as np
 import pandas as pd
-from albumentations.pytorch import ToTensorV2
 from omegaconf import DictConfig, ListConfig
 from pandas.core.frame import DataFrame
 from pytorch_lightning.core.datamodule import LightningDataModule
@@ -25,7 +23,7 @@ from torch import Tensor
 from torch.utils.data import DataLoader
 from torchvision.datasets.folder import VisionDataset
 
-import anomalib.datasets.transforms as t
+from anomalib.datasets.transforms import PreProcessor
 from anomalib.utils.download_progress_bar import DownloadProgressBar
 
 from .parser import PascalVocReader
@@ -164,79 +162,6 @@ def make_dataset(path: Path, split_ratio: float = 0.1, seed: int = 0) -> DataFra
     return samples
 
 
-def get_transform(aug_prob: float, config: Union[DictConfig, ListConfig]) -> a.Compose:
-    """
-    get_transforms:
-        Build a pipeline of image transforms each with different probability defined in config file
-
-    return:
-        a.compose: composed augmentation pipeline
-    """
-    crop_size = config.image_size if config.crop_size is None else config.crop_size
-    return a.Compose(
-        [
-            a.Resize(config.image_size[0], config.image_size[1], always_apply=True),
-            t.BilateralFilter(
-                diameter=config.bilateral_filter.diameter,
-                sigma_color=config.bilateral_filter.sigma_color,
-                sigma_space=config.bilateral_filter.sigma_space,
-                always_apply=config.bilateral_filter.always_apply,
-            ),
-            a.OneOf(
-                [
-                    a.RandomRotate90(),
-                    a.HorizontalFlip(),
-                    # Transpose(),
-                ],
-                p=config.rotate_flip_p,
-            ),
-            a.GaussNoise(p=config.gauss_noise_p),
-            a.OneOf(
-                [
-                    a.MotionBlur(p=config.blur.motion_blur_p),
-                    a.MedianBlur(blur_limit=config.blur.median_blur.blur_limit, p=config.blur.median_blur.p),
-                    a.Blur(blur_limit=config.blur.blur.blur_limit, p=config.blur.blur.p),
-                ],
-                p=config.blur.p,
-            ),
-            a.ShiftScaleRotate(
-                shift_limit=config.shift_scale_rotate.shift_limit,
-                scale_limit=config.shift_scale_rotate.scale_limit,
-                rotate_limit=config.shift_scale_rotate.rotate_limit,
-                p=config.shift_scale_rotate.p,
-            ),
-            a.OneOf(
-                [
-                    a.OpticalDistortion(p=config.geometric_transforms.optical_distortion_p),
-                    a.GridDistortion(p=config.geometric_transforms.grid_distortion_p),
-                    a.PiecewiseAffine(p=config.geometric_transforms.affine_p),
-                ],
-                p=config.geometric_transforms.p,
-            ),
-            a.OneOf(
-                [
-                    a.CLAHE(clip_limit=config.image_adjustments.clahe_clip_limit),
-                    a.Sharpen(),
-                    a.Emboss(),
-                    a.RandomBrightnessContrast(),
-                    a.HueSaturationValue(),
-                ],
-                p=config.image_adjustments.p,
-            ),
-            a.ImageCompression(
-                p=config.image_compression.p,
-                quality_lower=config.image_compression.quality_lower,
-                quality_upper=config.image_compression.quality_upper,
-            ),
-            a.CenterCrop(crop_size[0], crop_size[1], always_apply=True),
-            a.Normalize(mean=config.normalize.mean, std=config.normalize.std, always_apply=True),
-            t.RgbToGray(always_apply=config.grayscale),
-            ToTensorV2(always_apply=True),
-        ],
-        p=aug_prob,
-    )
-
-
 class BaseAnomalyDataset(VisionDataset):
     """
     Anomaly PyTorch Dataset
@@ -249,8 +174,8 @@ class BaseAnomalyDataset(VisionDataset):
         self,
         root: Union[Path, str],
         category: Path,
+        transform_config: Union[DictConfig, ListConfig],
         label_format: Optional[str] = None,
-        transform_params: Optional[Union[DictConfig, ListConfig]] = None,
         download: bool = False,
         download_url: Optional[str] = None,
         samples: Optional[DataFrame] = None,
@@ -261,14 +186,7 @@ class BaseAnomalyDataset(VisionDataset):
         self.label_format = label_format
         self.download_url = download_url
 
-        if transform_params is None:
-            raise ValueError("Transform parameters not defined!")
-
-        aug_prob: float = 0.0
-        if self._SPLIT == "train":
-            aug_prob = transform_params.p
-
-        self.transform = get_transform(aug_prob, transform_params)
+        self.pre_process = PreProcessor(config=transform_config, is_train=self._SPLIT == "train")
 
         if download:
             self._download()
@@ -294,9 +212,16 @@ class BaseAnomalyDataset(VisionDataset):
 
             logger.info("Downloading Anomaly Dataset")
             with DownloadProgressBar(
-                unit="B", unit_scale=True, miniters=1, desc=self.download_url.split("/")[-1]
+                unit="B",
+                unit_scale=True,
+                miniters=1,
+                desc=self.download_url.split("/")[-1],
             ) as progress_bar:
-                urlretrieve(url=self.download_url, filename=self.filename, reporthook=progress_bar.update_to)
+                urlretrieve(
+                    url=self.download_url,
+                    filename=self.filename,
+                    reporthook=progress_bar.update_to,
+                )
 
             self._extract()
             self._clean()
@@ -335,7 +260,7 @@ class AnomalyTrainDS(BaseAnomalyDataset):
         image_path = self.samples.image_path[index]
 
         image = read_image(image_path)
-        augmented = self.transform(image=image)
+        augmented = self.pre_process(image=image)
         image_tensor = augmented["image"]
         sample = {"image": image_tensor}
 
@@ -354,7 +279,7 @@ class AnomalyTestClassificationDS(BaseAnomalyDataset):
         label_index = self.samples.label_index[index]
 
         image = read_image(image_path)
-        augmented = self.transform(image=image)
+        augmented = self.pre_process(image=image)
         image_tensor = augmented["image"]
 
         sample = {
@@ -385,7 +310,7 @@ class AnomalyTestSegmentationDS(BaseAnomalyDataset):
         else:
             mask = cv2.imread((mask_path + self._TARGET_FILE_EXT), 0) / 255.0
 
-        augmented = self.transform(image=image, mask=mask)
+        augmented = self.pre_process(image=image, mask=mask)
         image_tensor = augmented["image"]
         mask_tensor = augmented["mask"]
 
@@ -412,13 +337,21 @@ class AnomalyTestDetectionDS(BaseAnomalyDataset):
         self,
         root: Union[Path, str],
         category: Path,
+        transform_config: Union[DictConfig, ListConfig],
         label_format: str = None,
-        transform_params: Union[DictConfig, ListConfig] = None,
         download: bool = False,
         download_url: Optional[str] = None,
         samples: Optional[DataFrame] = None,
     ) -> None:
-        super().__init__(root, category, label_format, transform_params, download, download_url, samples)
+        super().__init__(
+            root=root,
+            category=category,
+            transform_config=transform_config,
+            label_format=label_format,
+            download=download,
+            download_url=download_url,
+            samples=samples,
+        )
 
         if self.label_format == "pascal_voc":
             self.label_parser = PascalVocReader
@@ -435,7 +368,7 @@ class AnomalyTestDetectionDS(BaseAnomalyDataset):
         if label_index != 0 and self.label_parser is not None:
             gt_bbox = self.label_parser(target_path + self._TARGET_FILE_EXT).get_shapes()
 
-        augmented = self.transform(image=image, bbox=gt_bbox)
+        augmented = self.pre_process(image=image, bbox=gt_bbox)
         image_tensor = augmented["image"]
         bbox_t = augmented["bbox"]
 
@@ -462,7 +395,7 @@ class AnomalyDataModule(LightningDataModule):
         label_format: data format for annotations/labels
         batch_size: number of images per batch
         num_workers: number of parallel thread to be used for data loading
-        transform_params: parameters for image transforms
+        transform_config: parameters for image transforms
     """
 
     def __init__(
@@ -475,7 +408,7 @@ class AnomalyDataModule(LightningDataModule):
         train_batch_size: int,
         test_batch_size: int,
         num_workers: int,
-        transform_params: Union[DictConfig, ListConfig],
+        transform_config: Union[DictConfig, ListConfig],
     ) -> None:
         super().__init__()
 
@@ -488,7 +421,7 @@ class AnomalyDataModule(LightningDataModule):
         self.train_batch_size = train_batch_size
         self.test_batch_size = test_batch_size
         self.num_workers = num_workers
-        self.transform_params = transform_params
+        self.transform_config = transform_config
         self.train_dataset = AnomalyTrainDS
 
         self.train_data: BaseAnomalyDataset
@@ -514,7 +447,7 @@ class AnomalyDataModule(LightningDataModule):
             root=self.root,
             category=self.category,
             label_format=self.label_format,
-            transform_params=self.transform_params,
+            transform_config=self.transform_config,
             download=True,
             download_url=self.url,
         )
@@ -523,7 +456,7 @@ class AnomalyDataModule(LightningDataModule):
             root=self.root,
             category=self.category,
             label_format=self.label_format,
-            transform_params=self.transform_params,
+            transform_config=self.transform_config,
             download=True,
             download_url=self.url,
         )
@@ -546,7 +479,7 @@ class AnomalyDataModule(LightningDataModule):
                 root=self.root,
                 category=self.category,
                 label_format=self.label_format,
-                transform_params=self.transform_params,
+                transform_config=self.transform_config,
                 samples=samples_train,
             )
 
@@ -557,7 +490,7 @@ class AnomalyDataModule(LightningDataModule):
             root=self.root,
             category=self.category,
             label_format=self.label_format,
-            transform_params=self.transform_params,
+            transform_config=self.transform_config,
             samples=samples_test,
         )
 
@@ -566,17 +499,30 @@ class AnomalyDataModule(LightningDataModule):
         Train Dataloader
         """
         return DataLoader(
-            self.train_data, shuffle=False, batch_size=self.train_batch_size, num_workers=self.num_workers
+            self.train_data,
+            shuffle=False,
+            batch_size=self.train_batch_size,
+            num_workers=self.num_workers,
         )
 
     def val_dataloader(self) -> DataLoader:
         """
         Validation Dataloader
         """
-        return DataLoader(self.test_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
+        return DataLoader(
+            self.test_data,
+            shuffle=False,
+            batch_size=self.test_batch_size,
+            num_workers=self.num_workers,
+        )
 
     def test_dataloader(self) -> DataLoader:
         """
         Test Dataloader
         """
-        return DataLoader(self.test_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
+        return DataLoader(
+            self.test_data,
+            shuffle=False,
+            batch_size=self.test_batch_size,
+            num_workers=self.num_workers,
+        )
