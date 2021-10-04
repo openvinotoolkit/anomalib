@@ -23,7 +23,7 @@ class TilingCallback(Callback):
             tile_count=hparams.dataset.tiling.random_tile_count,
         )
         self.use_random_tiling = hparams.dataset.tiling.use_random_tiling
-        self.tiling_targets = ["image", "images", "anomaly_maps"]
+        self.tiling_targets = ["image", "images", "anomaly_maps", "embeddings"]
 
     def on_train_batch_start(
         self,
@@ -35,6 +35,20 @@ class TilingCallback(Callback):
     ) -> None:
         """Called when the train batch begins."""
         batch["image"] = self.tiler.tile(batch["image"], self.use_random_tiling)
+
+    def on_train_batch_end(
+        self,
+        _trainer: "pl.Trainer",
+        _pl_module: "pl.LightningModule",
+        outputs: STEP_OUTPUT,
+        _batch: Any,
+        _batch_idx: int,
+        _dataloader_idx: int,
+    ) -> None:
+        """Called when the train batch ends."""
+        if isinstance(outputs, Dict):
+            for key in set(outputs.keys()).intersection(self.tiling_targets):
+                outputs[key] = self.tiler.untile(outputs[key])
 
     def on_validation_batch_start(
         self,

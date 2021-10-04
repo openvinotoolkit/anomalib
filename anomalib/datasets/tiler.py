@@ -232,7 +232,8 @@ class Tiler:
         device = tensor.device
 
         # extract and calculate parameters
-        batch, channels, image_h, image_w = tensor.shape[:]
+        batch, channels, image_h, image_w = tensor.shape
+
         self.num_patches_h = int((image_h - self.tile_size_h) / self.stride_h) + 1
         self.num_patches_w = int((image_w - self.tile_size_w) / self.stride_w) + 1
 
@@ -272,14 +273,15 @@ class Tiler:
 
         """
         # number of channels differs between image and anomaly map, so infer from input tiles.
-        num_channels = tiles.shape[1]
+        _, num_channels, tile_size_h, tile_size_w = tiles.shape
+        scale_h, scale_w = (tile_size_h / self.tile_size_h), (tile_size_w / self.tile_size_w)
         # identify device type based on input tensor
         device = tiles.device
         # calculate tile size after borders removed
-        reduced_tile_h = self.tile_size_h - (2 * self.remove_border_count)
-        reduced_tile_w = self.tile_size_w - (2 * self.remove_border_count)
+        reduced_tile_h = tile_size_h - (2 * self.remove_border_count)
+        reduced_tile_w = tile_size_w - (2 * self.remove_border_count)
         # reconstructed image dimension
-        image_size = (self.batch_size, num_channels, self.resized_h, self.resized_w)
+        image_size = (self.batch_size, num_channels, int(self.resized_h * scale_h), int(self.resized_w * scale_w))
 
         # rearrange input tiles in format [tile_count, batch, channel, tile_h, tile_w]
         tiles = tiles.contiguous().view(
@@ -287,11 +289,11 @@ class Tiler:
             self.num_patches_h,
             self.num_patches_w,
             num_channels,
-            self.tile_size_h,
-            self.tile_size_w,
+            tile_size_h,
+            tile_size_w,
         )
         tiles = tiles.permute(0, 3, 1, 2, 4, 5)
-        tiles = tiles.contiguous().view(self.batch_size, num_channels, -1, self.tile_size_h, self.tile_size_w)
+        tiles = tiles.contiguous().view(self.batch_size, num_channels, -1, tile_size_h, tile_size_w)
         tiles = tiles.permute(2, 0, 1, 3, 4)
 
         # remove tile borders by defined count
@@ -313,8 +315,16 @@ class Tiler:
         for patch, (loc_i, loc_j) in zip(
             tiles,
             product(
-                range(self.remove_border_count, self.resized_h - reduced_tile_h + 1, self.stride_h),
-                range(self.remove_border_count, self.resized_w - reduced_tile_w + 1, self.stride_w),
+                range(
+                    self.remove_border_count,
+                    int(self.resized_h * scale_h) - reduced_tile_h + 1,
+                    int(self.stride_h * scale_h),
+                ),
+                range(
+                    self.remove_border_count,
+                    int(self.resized_w * scale_w) - reduced_tile_w + 1,
+                    int(self.stride_w * scale_w),
+                ),
             ),
         ):
             img[:, :, loc_i : (loc_i + reduced_tile_h), loc_j : (loc_j + reduced_tile_w)] += patch
