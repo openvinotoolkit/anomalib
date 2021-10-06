@@ -15,7 +15,7 @@ from kornia import gaussian_blur2d
 from omegaconf import ListConfig
 from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.callbacks import ModelCheckpoint
-from torch import Tensor
+from torch import Tensor, nn
 
 from anomalib.core.callbacks.model_loader import LoadModelCallback
 from anomalib.core.callbacks.nncf_callback import NNCFCallback
@@ -24,9 +24,7 @@ from anomalib.core.callbacks.timer import TimerCallback
 from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
-from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
 from anomalib.models.base import BaseAnomalyLightning
-from anomalib.models.base.torch_modules import BaseAnomalyModule
 
 __all__ = ["PadimLightning", "concat_layer_embedding"]
 
@@ -57,7 +55,8 @@ def concat_layer_embedding(embedding: Tensor, layer_embedding: Tensor) -> Tensor
     embedding = F.unfold(embedding, kernel_size=stride, stride=stride)
     embedding = embedding.view(batch_x, channel_x, -1, height_y, width_y)
     updated_embedding = torch.zeros(
-        size=(batch_x, channel_x + channel_y, embedding.size(2), height_y, width_y), device=device
+        size=(batch_x, channel_x + channel_y, embedding.size(2), height_y, width_y),
+        device=device,
     )
 
     for i in range(embedding.size(2)):
@@ -68,7 +67,7 @@ def concat_layer_embedding(embedding: Tensor, layer_embedding: Tensor) -> Tensor
     return updated_embedding
 
 
-class PadimModel(BaseAnomalyModule):
+class PadimModel(nn.Module):
     """
     Padim Module
     """
@@ -184,24 +183,25 @@ class Callbacks:
         return self.get_callbacks()
 
 
-class AnomalyMapGenerator(BaseAnomalyMapGenerator):
+class AnomalyMapGenerator:
     """Generate Anomaly Heatmap"""
 
-    def __init__(self, image_size: Union[ListConfig, Tuple], alpha: float = 0.4, gamma: int = 0, sigma: int = 4):
-        super().__init__(input_size=image_size, alpha=alpha, gamma=gamma, sigma=sigma)
+    def __init__(self, image_size: Union[ListConfig, Tuple], sigma: int = 4):
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
+        self.sigma = sigma
 
     @staticmethod
     def compute_distance(embedding: Tensor, stats: List[Tensor]) -> Tensor:
-        """Compute anomaly score to the patch in position(i,j)of a test image
+        """
+        Compute anomaly score to the patch in position(i,j) of a test image
         Ref: Equation (2), Section III-C of the paper.
 
         Args:
-                embedding: Embedding Vector
-                stats: Mean and Covariance Matrix of the multivariate
+            embedding: Embedding Vector
+            stats: Mean and Covariance Matrix of the multivariate
         Gaussian distribution
-                embedding: Tensor:
-                stats: List[Tensor]:
+            embedding: Tensor:
+            stats: List[Tensor]:
 
         Returns:
                 Anomaly score of a test image via mahalanobis distance.
@@ -209,7 +209,8 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         """
 
         def _mahalanobis(tensor_u: Tensor, tensor_v: Tensor, inv_cov: Tensor) -> Tensor:
-            """Compute the Mahalanobis distance between two 1-D arrays.
+            """
+            Compute the Mahalanobis distance between two 1-D arrays.
             The Mahalanobis distance between 1-D arrays `u` and `v`, is defined as
 
             .. math::
@@ -219,15 +220,15 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
             is the inverse of ``V``.
 
             Args:
-                    tensor_u: Input array
-                    tensor_v: Input array
-                    inv_cov: Inverse covariance matrix
-                    tensor_u: Tensor:
-                    tensor_v: Tensor:
-                    inv_cov: Tensor:
+                tensor_v: Input array
+                tensor_u: Input array
+                inv_cov: Inverse covariance matrix
+                tensor_u: Tensor:
+                tensor_v: Tensor:
+                inv_cov: Tensor:
 
             Returns:
-                    Mahalanobis distance of the inputs.
+                Mahalanobis distance of the inputs.
 
             """
             delta = tensor_u - tensor_v
@@ -249,29 +250,36 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         return distance_tensor
 
     def up_sample(self, distance: Tensor) -> Tensor:
-        """Up sample anomaly score to match the input image size.
+        """
+        Up sample anomaly score to match the input image size.
 
         Args:
-                distance: Anomaly score computed via the mahalanobis distance.
-                distance: Tensor:
+            distance: Anomaly score computed via the mahalanobis distance.
+            distance: Tensor:
 
         Returns:
-                Resized distance matrix matching the input image size
+            Resized distance matrix matching the input image size
 
         """
 
-        score_map = F.interpolate(distance.unsqueeze(1), size=self.image_size, mode="bilinear", align_corners=False)
+        score_map = F.interpolate(
+            distance.unsqueeze(1),
+            size=self.image_size,
+            mode="bilinear",
+            align_corners=False,
+        )
         return score_map
 
     def smooth_anomaly_map(self, anomaly_map: Tensor) -> Tensor:
-        """Apply gaussian smoothing to the anomaly map
+        """
+        Apply gaussian smoothing to the anomaly map
 
         Args:
-                anomaly_map: Anomaly score for the test image(s)
-                anomaly_map: Tensor:
+            anomaly_map: Anomaly score for the test image(s)
+            anomaly_map: Tensor:
 
         Returns:
-                Filtered anomaly scores
+            Filtered anomaly scores
 
         """
         kernel_size = 2 * int(4.0 * self.sigma + 0.5) + 1
@@ -280,23 +288,27 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         return anomaly_map
 
     def compute_anomaly_map(self, embedding: Tensor, mean: Tensor, covariance: Tensor) -> Tensor:
-        """Compute anomaly score based on embedding vector, mean and covariance of the multivariate
+        """
+        Compute anomaly score based on embedding vector, mean and covariance of the multivariate
         gaussian distribution.
 
         Args:
-                        embedding: Embedding vector extracted from the test set.
-                        mean: Mean of the multivariate gaussian distribution
-                        covariance: Covariance matrix of the multivariate gaussian distribution.
-                        embedding: Tensor:
-                        mean: Tensor:
-                        covariance: Tensor:
+            embedding: Embedding vector extracted from the test set.
+            mean: Mean of the multivariate gaussian distribution
+            covariance: Covariance matrix of the multivariate gaussian distribution.
+            embedding: Tensor:
+            mean: Tensor:
+            covariance: Tensor:
 
         Returns:
-                Output anomaly score.
+            Output anomaly score.
 
         """
 
-        score_map = self.compute_distance(embedding, stats=[mean.to(embedding.device), covariance.to(embedding.device)])
+        score_map = self.compute_distance(
+            embedding=embedding,
+            stats=[mean.to(embedding.device), covariance.to(embedding.device)],
+        )
         up_sampled_score_map = self.up_sample(score_map)
         smoothed_anomaly_map = self.smooth_anomaly_map(up_sampled_score_map)
 
@@ -307,7 +319,7 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         Returns anomaly_map.
         Expects `embedding`, `mean` and `covariance` keywords to be passed explicitly
 
-        Example
+        Example:
         >>> anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
         >>> output = anomaly_map_generator(embedding=embedding, mean=mean, covariance=covariance)
 
@@ -339,7 +351,9 @@ class PadimLightning(BaseAnomalyLightning):
             hparams.transform.image_size if hparams.transform.crop_size is None else hparams.transform.crop_size
         )
         self.model = PadimModel(
-            backbone=hparams.model.backbone, layers=hparams.model.layers, input_size=input_size
+            backbone=hparams.model.backbone,
+            layers=hparams.model.layers,
+            input_size=input_size,
         ).eval()
 
         self.supported_tasks = ["segmentation", "classification"]
@@ -414,6 +428,8 @@ class PadimLightning(BaseAnomalyLightning):
         """
         for output in outputs:
             output["anomaly_maps"] = self.model.anomaly_map_generator(
-                embedding=output["embeddings"], mean=self.model.gaussian.mean, covariance=self.model.gaussian.covariance
+                embedding=output["embeddings"],
+                mean=self.model.gaussian.mean,
+                covariance=self.model.gaussian.covariance,
             )
         super().validation_epoch_end(outputs)

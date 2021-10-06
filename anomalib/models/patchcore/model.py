@@ -16,15 +16,13 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from scipy.ndimage import gaussian_filter
 from sklearn.neighbors import NearestNeighbors
 from sklearn.random_projection import SparseRandomProjection
-from torch import Tensor
+from torch import Tensor, nn
 
 from anomalib.core.callbacks.model_loader import LoadModelCallback
 from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.core.model.dynamic_module import DynamicBufferModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
-from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
 from anomalib.models.base import BaseAnomalyLightning
-from anomalib.models.base.torch_modules import BaseAnomalyModule
 from anomalib.models.padim.model import concat_layer_embedding
 from anomalib.models.patchcore.sampling_methods.kcenter_greedy import KCenterGreedy
 
@@ -56,7 +54,7 @@ class Callbacks:
         return self.get_callbacks()
 
 
-class AnomalyMapGenerator(BaseAnomalyMapGenerator):
+class AnomalyMapGenerator:
     """
     Generate Anomaly Heatmap
     """
@@ -64,11 +62,10 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
     def __init__(
         self,
         input_size: Union[ListConfig, Tuple],
-        alpha: float = 0.4,
-        gamma: int = 0,
         sigma: int = 4,
     ):
-        super().__init__(input_size=input_size, alpha=alpha, gamma=gamma, sigma=sigma)
+        self.input_size = input_size
+        self.sigma = sigma
 
     def compute_anomaly_map(self, score_patches: np.ndarray) -> np.ndarray:
         """
@@ -121,7 +118,7 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         return anomaly_map, anomaly_score
 
 
-class PatchcoreModel(DynamicBufferModule, BaseAnomalyModule):
+class PatchcoreModel(DynamicBufferModule, nn.Module):
     """
     Padim Module
     """
@@ -246,7 +243,11 @@ class PatchcoreLightning(BaseAnomalyLightning):
         self.supported_tasks = ["segmentation", "classification"]
         self.check_task_support(task=hparams.dataset.task)
 
-        backbone, layers, input_size = hparams.model.backbone, hparams.model.layers, hparams.model.input_size
+        backbone, layers, input_size = (
+            hparams.model.backbone,
+            hparams.model.layers,
+            hparams.model.input_size,
+        )
         self.model = PatchcoreModel(backbone=backbone, layers=layers, input_size=input_size)
 
         self.automatic_optimization = False

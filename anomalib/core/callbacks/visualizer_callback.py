@@ -12,6 +12,8 @@ from tqdm import tqdm
 from anomalib import loggers
 from anomalib.datasets.utils import Denormalize
 from anomalib.models.base import BaseAnomalyLightning
+from anomalib.utils.metrics import compute_threshold_and_f1_score
+from anomalib.utils.post_process import compute_mask, superimpose_anomaly_map
 from anomalib.utils.visualizer import Visualizer
 
 
@@ -74,9 +76,7 @@ class VisualizerCallback(Callback):
 
         if module.hparams.dataset.task == "segmentation":
 
-            threshold, _ = module.model.anomaly_map_generator.compute_adaptive_threshold(
-                module.true_masks, module.anomaly_maps
-            )
+            threshold, _ = compute_threshold_and_f1_score(module.true_masks, module.anomaly_maps)
             for (filename, image, true_mask, anomaly_map) in tqdm(
                 zip(module.filenames, module.images, module.true_masks, module.anomaly_maps),
                 desc="Saving Results",
@@ -84,8 +84,8 @@ class VisualizerCallback(Callback):
             ):
                 image = Denormalize()(image)
 
-                heat_map = module.model.anomaly_map_generator.apply_heatmap_on_image(anomaly_map, image)
-                pred_mask = module.model.anomaly_map_generator.compute_mask(anomaly_map, threshold)
+                heat_map = superimpose_anomaly_map(anomaly_map, image)
+                pred_mask = compute_mask(anomaly_map, threshold)
                 vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
 
                 visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))

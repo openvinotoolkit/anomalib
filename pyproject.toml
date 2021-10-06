@@ -12,3 +12,6 @@ requires-python = ">=3.7"
 [tool.isort]
 profile = "black"
 sections = ['FUTURE', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'LOCALFOLDER']
+
+[tool.black]
+line-length = 120

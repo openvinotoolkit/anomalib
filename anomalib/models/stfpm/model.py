@@ -26,9 +26,7 @@ from anomalib.core.callbacks.tiling import TilingCallback
 from anomalib.core.callbacks.timer import TimerCallback
 from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
-from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
 from anomalib.models.base import BaseAnomalyLightning
-from anomalib.models.base.torch_modules import BaseAnomalyModule
 
 __all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel", "StfpmLightning"]
 
@@ -156,17 +154,13 @@ class Callbacks:
         return self.get_callbacks()
 
 
-class AnomalyMapGenerator(BaseAnomalyMapGenerator):
+class AnomalyMapGenerator:
     """Generate Anomaly Heatmap"""
 
     def __init__(
         self,
         image_size: Union[ListConfig, Tuple],
-        alpha: float = 0.4,
-        gamma: int = 0,
-        sigma: int = 4,
     ):
-        super().__init__(input_size=image_size, alpha=alpha, gamma=gamma, sigma=sigma)
         self.distance = torch.nn.PairwiseDistance(p=2, keepdim=True)
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
 
@@ -217,14 +211,14 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
     def __call__(self, **kwds: Dict[str, Tensor]) -> torch.Tensor:
         """
         Returns anomaly_map.
-        Expects `teach_featuers` and `student_featuers` keywords to be passed explicitly
+        Expects `teach_features` and `student_features` keywords to be passed explicitly
 
         Example
         >>> anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(hparams.model.input_size))
         >>> output = self.anomaly_map_generator(teacher_features=teacher_features, student_features=student_features)
 
         Raises:
-            ValueError: `teach_featuers` and `student_featuers` keys are not found
+            ValueError: `teach_features` and `student_features` keys are not found
 
         Returns:
             torch.Tensor: anomaly map
@@ -239,7 +233,7 @@ class AnomalyMapGenerator(BaseAnomalyMapGenerator):
         return self.compute_anomaly_map(teacher_features, student_features)
 
 
-class STFPMModel(BaseAnomalyModule):
+class STFPMModel(nn.Module):
     """
     STFPM: Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection
     """
@@ -260,7 +254,10 @@ class STFPMModel(BaseAnomalyModule):
         self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(hparams.model.input_size))
 
     def forward(self, images):
-        """Forward-pass images into the network to extract teacher and student network.
+        """
+        Forward-pass images into the network. During the training mode
+        the model extracts the features from the teacher and student networks.
+        During the evaluation mode, it returns the predicted anomaly map.
 
         Args:
           images: Batch of images.
@@ -294,7 +291,8 @@ class StfpmLightning(BaseAnomalyLightning):
         self.loss_val = 0
 
     def configure_optimizers(self):
-        """Configure optimizers by creating an SGD optimizer.
+        """
+        Configure optimizers by creating an SGD optimizer.
 
         :return: SGD optimizer
 
@@ -311,7 +309,8 @@ class StfpmLightning(BaseAnomalyLightning):
         )
 
     def training_step(self, batch, _):  # pylint: disable=arguments-differ
-        """Training Step of STFPM..
+        """
+        Training Step of STFPM..
         For each batch, teacher and student and teacher features
             are extracted from the CNN.
 
@@ -330,10 +329,9 @@ class StfpmLightning(BaseAnomalyLightning):
         return {"loss": loss}
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
-        """Validation Step of STFPM.
-            Similar to the training step, student/teacher features
-            are extracted from the CNN for each batch, and anomaly
-            map is computed.
+        """
+        Validation Step of STFPM. Similar to the training step, student/teacher
+        features are extracted from the CNN for each batch, and anomaly map is computed.
 
         Args:
           batch: Input batch
@@ -413,7 +411,12 @@ class StfpmOpenVino(BaseAnomalyLightning):
         Returns:
             [type]: [description]
         """
-        filenames, images, labels, masks = batch["image_path"], batch["image"], batch["label"], batch["mask"]
+        filenames, images, labels, masks = (
+            batch["image_path"],
+            batch["image"],
+            batch["label"],
+            batch["mask"],
+        )
         images = images.cpu().numpy()
 
         anomaly_maps = self.exec_net.infer(inputs={self.input_blob: images})
