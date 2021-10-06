@@ -7,12 +7,11 @@ import pytorch_lightning as pl
 import torch
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
+from torch import nn
 from torch.utils.data import DataLoader, Dataset
 
 from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
-from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
 from anomalib.models.base.lightning_modules import BaseAnomalyLightning
-from anomalib.models.base.torch_modules import BaseAnomalyModule
 
 
 class DummyDataset(Dataset):
@@ -31,12 +30,13 @@ class DummyDataModule(pl.LightningDataModule):
         return DataLoader(DummyDataset())
 
 
-class DummyAnomalyMapGenerator(BaseAnomalyMapGenerator):
+class DummyAnomalyMapGenerator:
     def __init__(self):
-        super().__init__(input_size=(100, 100), alpha=0.4, gamma=0, sigma=4)
+        self.input_size = (100, 100)
+        self.sigma = 4
 
 
-class DummyModel(BaseAnomalyModule):
+class DummyModel(nn.Module):
     def __init__(self):
         super().__init__()
         self.anomaly_map_generator = DummyAnomalyMapGenerator()

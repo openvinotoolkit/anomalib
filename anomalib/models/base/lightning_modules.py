@@ -12,10 +12,9 @@ from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
 from pytorch_lightning.callbacks.base import Callback
 from sklearn.metrics import roc_auc_score
-from torch import Tensor
+from torch import Tensor, nn
 
-from anomalib.core.utils.anomaly_map_generator import BaseAnomalyMapGenerator
-from anomalib.models.base.torch_modules import BaseAnomalyModule
+from anomalib.utils.metrics import compute_threshold_and_f1_score
 
 
 class BaseAnomalyLightning(pl.LightningModule):
@@ -46,7 +45,7 @@ class BaseAnomalyLightning(pl.LightningModule):
 
         self.image_f1_score: float
 
-        self.model: BaseAnomalyModule
+        self.model: nn.Module
 
     def check_task_support(self, task):
         """
@@ -93,7 +92,7 @@ class BaseAnomalyLightning(pl.LightningModule):
             self.pred_labels = np.hstack([output["pred_labels"].cpu() for output in outputs])
         self.image_roc_auc = roc_auc_score(self.true_labels, self.pred_labels)
 
-        _, self.image_f1_score = BaseAnomalyMapGenerator.compute_adaptive_threshold(self.true_labels, self.pred_labels)
+        _, self.image_f1_score = compute_threshold_and_f1_score(self.true_labels, self.pred_labels)
 
         self.log(
             name="Image-Level AUC",
