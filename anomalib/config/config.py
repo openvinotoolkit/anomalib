@@ -138,8 +138,8 @@ def get_configurable_parameters(
 
 def update_input_size(config):
     """
-    Convert integer image size parameters into tuples and calculate the effective input size based on image size,
-    crop size and tile size.
+    Convert integer image size parameters into tuples, calculate the effective input size based on image size and crop
+    size, and set tiling stride if undefined.
 
     Args:
         config: Dictconfig: Configurable parameters object
@@ -155,13 +155,14 @@ def update_input_size(config):
     if "crop_size" in config.transform.keys() and config.transform.crop_size is not None:
         if isinstance(config.transform.crop_size, int):
             config.transform.crop_size = (config.transform.crop_size,) * 2
-
-    if "tiling" in config.dataset.keys() and config.dataset.tiling.apply:
-        config.model.input_size = (config.dataset.tiling.tile_size,) * 2
-        if config.dataset.tiling.stride is None:
-            config.dataset.tiling.stride = config.dataset.tiling.tile_size
-    elif "crop_size" in config.transform.keys() and config.transform.crop_size is not None:
         config.model.input_size = config.transform.crop_size
     else:
         config.model.input_size = config.transform.image_size
+
+    if "tiling" in config.dataset.keys() and config.dataset.tiling.apply:
+        if isinstance(config.dataset.tiling.tile_size, int):
+            config.dataset.tiling.tile_size = (config.dataset.tiling.tile_size,) * 2
+        if config.dataset.tiling.stride is None:
+            config.dataset.tiling.stride = config.dataset.tiling.tile_size
+
     return config

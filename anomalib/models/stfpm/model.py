@@ -3,7 +3,6 @@ STFPM: Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detecti
 https://arxiv.org/abs/2103.04257
 """
 
-import math
 import os
 import os.path
 from pathlib import Path
@@ -22,10 +21,10 @@ from torch import Tensor, nn, optim
 from anomalib.core.callbacks.compress import CompressModelCallback
 from anomalib.core.callbacks.model_loader import LoadModelCallback
 from anomalib.core.callbacks.nncf_callback import NNCFCallback
-from anomalib.core.callbacks.tiling import TilingCallback
 from anomalib.core.callbacks.timer import TimerCallback
 from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
+from anomalib.datasets.tiler import Tiler
 from anomalib.models.base import BaseAnomalyLightning
 
 __all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel", "StfpmLightning"]
@@ -144,9 +143,6 @@ class Callbacks:
         if "weight_file" in self.config.keys():
             model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.weight_file))
             callbacks.append(model_loader)
-        if "tiling" in self.config.dataset.keys() and self.config.dataset.tiling.apply:
-            tiler = TilingCallback(self.config)
-            callbacks.append(tiler)
 
         return callbacks
 
@@ -251,7 +247,12 @@ class STFPMModel(nn.Module):
             parameters.requires_grad = False
 
         self.loss = Loss()
-        self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(hparams.model.input_size))
+        self.hparams = hparams
+        if hparams.dataset.tiling.apply:
+            self.tiler = Tiler(hparams.dataset.tiling.tile_size, hparams.dataset.tiling.stride)
+            self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(hparams.dataset.tiling.tile_size))
+        else:
+            self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(hparams.model.input_size))
 
     def forward(self, images):
         """
@@ -266,12 +267,16 @@ class STFPMModel(nn.Module):
           Teacher and student features when in training mode, otherwise the predicted anomaly maps.
 
         """
+        if self.hparams.dataset.tiling.apply:
+            images = self.tiler.tile(images)
         teacher_features: Dict[str, Tensor] = self.teacher_model(images)
         student_features: Dict[str, Tensor] = self.student_model(images)
         if self.training:
             output = teacher_features, student_features
         else:
             output = self.anomaly_map_generator(teacher_features=teacher_features, student_features=student_features)
+            if self.hparams.dataset.tiling.apply:
+                output = self.tiler.untile(output)
 
         return output
 
@@ -358,36 +363,11 @@ class StfpmOpenVino(BaseAnomalyLightning):
         net = ie_core.read_network(xml_path, bin_path)
 
         self.callbacks = [TimerCallback()]
-        if "tile_size" in hparams.dataset.keys() and hparams.dataset.tile_size is not None:
-            tiler = TilingCallback(hparams)
-            self.callbacks.append(tiler)
-            net.train_batch_size = self.compute_batch_size()
-        else:
-            net.train_batch_size = 1
 
         self.input_blob = next(iter(net.input_info))
         self.out_blob = next(iter(net.outputs))
 
         self.exec_net = ie_core.load_network(network=net, device_name="CPU")
-
-    def compute_batch_size(self) -> int:
-        """
-        Compute the effective batch size when tiling is used. The batch size is computed based on the image size or crop
-         size and the tiling parameters, and is equal to the number of tiles in the image.
-
-        Returns:
-            [int]: batch size (equal to number of tiles).
-        """
-        if self.hparams.transform.crop_size is not None:
-            image_size = self.hparams.transform.crop_size
-        else:
-            image_size = self.hparams.transform.image_size
-        tile_size = self.hparams.dataset.tile_size
-        stride = tile_size
-        height, width = image_size[0], image_size[1]
-        n_rows = math.ceil((height - tile_size) / stride) + 1
-        n_cols = math.ceil((width - tile_size) / stride) + 1
-        return n_rows * n_cols
 
     @staticmethod
     def configure_optimizers():

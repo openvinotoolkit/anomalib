@@ -48,7 +48,6 @@ def category() -> str:
     "model_name,nncf",
     [
         ("padim", False),
-        ("padim", True),
         ("dfkde", False),
         ("dfm", False),
         ("stfpm", False),

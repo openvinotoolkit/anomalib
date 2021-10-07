@@ -4,7 +4,7 @@ https://arxiv.org/abs/2106.08265
 """
 
 import os
-from typing import Dict, List, Sequence, Tuple, Union
+from typing import Dict, Sequence, Tuple, Union
 
 import cv2
 import numpy as np
@@ -22,6 +22,7 @@ from anomalib.core.callbacks.model_loader import LoadModelCallback
 from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.core.model.dynamic_module import DynamicBufferModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
+from anomalib.datasets.tiler import Tiler
 from anomalib.models.base import BaseAnomalyLightning
 from anomalib.models.padim.model import concat_layer_embedding
 from anomalib.models.patchcore.sampling_methods.kcenter_greedy import KCenterGreedy
@@ -123,16 +124,21 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
     Padim Module
     """
 
-    def __init__(self, backbone: str, layers: List[str], input_size: Union[ListConfig, Tuple]):
+    def __init__(self, hparams):
         super().__init__()
-        self.backbone = getattr(torchvision.models, backbone)
-        self.layers = layers
-        self.input_size = input_size
+
+        self.hparams = hparams
+        self.backbone = getattr(torchvision.models, hparams.model.backbone)
+        self.layers = hparams.model.layers
+        self.input_size = hparams.model.input_size
 
         self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
         self.feature_pooler = torch.nn.AvgPool2d(3, 1, 1)
         self.nn_search = NearestNeighbors(n_neighbors=9)
-        self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
+        self.anomaly_map_generator = AnomalyMapGenerator(input_size=hparams.model.input_size)
+
+        if hparams.dataset.tiling.apply:
+            self.tiler = Tiler(hparams.dataset.tiling.tile_size, hparams.dataset.tiling.stride)
 
         # TODO: Define memory_bank here: https://jira.devtools.intel.com/browse/IAAALD-13
         self.register_buffer("memory_bank", torch.Tensor())
@@ -150,12 +156,19 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]: Embedding for training,
                 anomaly map and anomaly score for testing.
         """
+        if self.hparams.dataset.tiling.apply:
+            input_tensor = self.tiler.tile(input_tensor)
 
         with torch.no_grad():
             features = self.feature_extractor(input_tensor)
 
         features = {layer: self.feature_pooler(feature) for layer, feature in features.items()}
         embedding = self.generate_embedding(features)
+
+        if self.hparams.dataset.tiling.apply:
+            embedding = self.tiler.untile(embedding)
+
+        embedding = self.reshape_embedding(embedding).cpu().numpy()
 
         if self.training:
             output = embedding
@@ -167,7 +180,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
 
         return output
 
-    def generate_embedding(self, features: Dict[str, Tensor]) -> np.ndarray:
+    def generate_embedding(self, features: Dict[str, Tensor]) -> torch.Tensor:
         """
         Generate embedding from hierarchical feature map
 
@@ -184,8 +197,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         for layer in self.layers[1:]:
             layer_embeddings = concat_layer_embedding(layer_embeddings, features[layer])
 
-        embedding = self.reshape_embedding(layer_embeddings).cpu().numpy()
-        return embedding
+        return layer_embeddings
 
     @staticmethod
     def reshape_embedding(embedding: Tensor) -> Tensor:
@@ -215,7 +227,6 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         Returns:
             np.ndarray: Subsampled embedding whose dimensionality is reduced.
         """
-
         # Random projection
         random_projector = SparseRandomProjection(n_components="auto", eps=0.9)  # 'auto' => Johnson-Lindenstrauss lemma
         random_projector.fit(embedding)
@@ -243,12 +254,7 @@ class PatchcoreLightning(BaseAnomalyLightning):
         self.supported_tasks = ["segmentation", "classification"]
         self.check_task_support(task=hparams.dataset.task)
 
-        backbone, layers, input_size = (
-            hparams.model.backbone,
-            hparams.model.layers,
-            hparams.model.input_size,
-        )
-        self.model = PatchcoreModel(backbone=backbone, layers=layers, input_size=input_size)
+        self.model = PatchcoreModel(hparams)
 
         self.automatic_optimization = False
         self.callbacks = Callbacks(hparams)()
@@ -289,6 +295,7 @@ class PatchcoreLightning(BaseAnomalyLightning):
         """
         embedding = np.vstack([output["embedding"] for output in outputs])
         sampling_ratio = self.hparams.model.coreset_sampling_ratio
+
         embedding = self.model.subsample_embedding(embedding, sampling_ratio)
 
         self.model.nn_search = self.model.nn_search.fit(embedding)
