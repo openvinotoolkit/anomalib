@@ -19,11 +19,11 @@ from torch import Tensor, nn
 
 from anomalib.core.callbacks.model_loader import LoadModelCallback
 from anomalib.core.callbacks.nncf_callback import NNCFCallback
-from anomalib.core.callbacks.tiling import TilingCallback
 from anomalib.core.callbacks.timer import TimerCallback
 from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
+from anomalib.datasets.tiler import Tiler
 from anomalib.models.base import BaseAnomalyLightning
 
 __all__ = ["PadimLightning", "concat_layer_embedding"]
@@ -72,19 +72,28 @@ class PadimModel(nn.Module):
     Padim Module
     """
 
-    def __init__(self, backbone: str, layers: List[str], input_size: Union[ListConfig, Tuple]):
+    def __init__(self, hparams: DictConfig):
         super().__init__()
-        self.backbone = getattr(torchvision.models, backbone)
-        self.layers = layers
+        self.hparams = hparams
+        self.backbone = getattr(torchvision.models, hparams.model.backbone)
+        self.layers = hparams.model.layers
         self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
         self.gaussian = MultiVariateGaussian()
-        self.dims = DIMS[backbone]
+        self.dims = DIMS[hparams.model.backbone]
         # pylint: disable=not-callable
-        self.idx = torch.tensor(sample(range(0, DIMS[backbone]["t_d"]), DIMS[backbone]["d"]))
+        self.idx = torch.tensor(
+            sample(range(0, DIMS[hparams.model.backbone]["t_d"]), DIMS[hparams.model.backbone]["d"])
+        )
         self.loss = None
+        input_size = (
+            hparams.transform.image_size if hparams.transform.crop_size is None else hparams.transform.crop_size
+        )
         self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
 
-    def forward(self, input_tensor: Tensor) -> Dict[str, Tensor]:
+        if hparams.dataset.tiling.apply:
+            self.tiler = Tiler(hparams.dataset.tiling.tile_size, hparams.dataset.tiling.stride)
+
+    def forward(self, input_tensor: Tensor) -> Tensor:
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
 
         Args:
@@ -106,10 +115,19 @@ class PadimModel(nn.Module):
          torch.Size([32, 128, 28, 28]),
          torch.Size([32, 256, 14, 14])]
         """
+        if self.hparams.dataset.tiling.apply:
+            input_tensor = self.tiler.tile(input_tensor)
         with torch.no_grad():
             features = self.feature_extractor(input_tensor)
+            embeddings = self.generate_embedding(features)
+        if self.hparams.dataset.tiling.apply:
+            embeddings = self.tiler.untile(embeddings)
+        if not self.training:
+            return self.anomaly_map_generator(
+                embedding=embeddings, mean=self.gaussian.mean, covariance=self.gaussian.covariance
+            )
 
-        return features
+        return embeddings
 
     def generate_embedding(self, features: Dict[str, Tensor]) -> Tensor:
         """Generate embedding from hierarchical feature map
@@ -172,9 +190,6 @@ class Callbacks:
             model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.weight_file))
             callbacks.append(model_loader)
 
-        if "tiling" in self.config.dataset.keys() and self.config.dataset.tiling.apply:
-            tiler = TilingCallback(self.config)
-            callbacks.append(tiler)
         callbacks.append(TimerCallback())
 
         return callbacks
@@ -347,14 +362,7 @@ class PadimLightning(BaseAnomalyLightning):
     def __init__(self, hparams):
         super().__init__(hparams)
         self.layers = hparams.model.layers
-        input_size = (
-            hparams.transform.image_size if hparams.transform.crop_size is None else hparams.transform.crop_size
-        )
-        self.model = PadimModel(
-            backbone=hparams.model.backbone,
-            layers=hparams.model.layers,
-            input_size=input_size,
-        ).eval()
+        self.model = PadimModel(hparams).eval()
 
         self.supported_tasks = ["segmentation", "classification"]
         self.check_task_support(task=hparams.dataset.task)
@@ -380,10 +388,9 @@ class PadimLightning(BaseAnomalyLightning):
                 Hierarchical feature map
 
         """
-        self.model.eval()
-        features = self.model(batch["image"])
-        embedding = self.model.generate_embedding(features)
-        return {"embeddings": embedding.cpu()}
+        self.model.feature_extractor.eval()
+        embeddings = self.model(batch["image"])
+        return {"embeddings": embeddings.cpu()}
 
     def training_epoch_end(self, outputs):
         """Fit a multivariate gaussian model on an embedding extracted from deep hierarchical CNN features.
@@ -411,25 +418,5 @@ class PadimLightning(BaseAnomalyLightning):
                 These are required in `validation_epoch_end` for feature concatenation.
 
         """
-        features = self.model(batch["image"])
-        embedding = self.model.generate_embedding(features)
-        batch["embeddings"] = embedding
+        batch["anomaly_maps"] = self.model(batch["image"])
         return batch
-
-    def validation_epoch_end(self, outputs):
-        """Compute anomaly scores of the validation set, based on the embedding
-                        extracted from deep hierarchical CNN features.
-
-        Args:
-                outputs: Batch of outputs from the validation step
-
-        Returns:
-
-        """
-        for output in outputs:
-            output["anomaly_maps"] = self.model.anomaly_map_generator(
-                embedding=output["embeddings"],
-                mean=self.model.gaussian.mean,
-                covariance=self.model.gaussian.covariance,
-            )
-        super().validation_epoch_end(outputs)

@@ -87,8 +87,6 @@ class NNCFCallback(Callback):
         self.comp_ctrl: Optional[CompressionAlgorithmController] = None
         self.compression_scheduler: CompressionScheduler
 
-        self.mo_path = config.project.mo_path
-
     def setup(self, _: pl.Trainer, pl_module: pl.LightningModule, __: Optional[str] = None) -> None:
         """Called when fit or test begins"""
         if self.comp_ctrl is None:
@@ -113,7 +111,7 @@ class NNCFCallback(Callback):
         onnx_path = os.path.join(self.dirpath, self.filename + ".onnx")
         if self.comp_ctrl is not None:
             self.comp_ctrl.export_model(onnx_path)
-        optimize_command = "python " + self.mo_path + " --input_model " + onnx_path + " --output_dir " + self.dirpath
+        optimize_command = "mo --input_model " + onnx_path + " --output_dir " + self.dirpath
         os.system(optimize_command)
 
     def on_train_epoch_end(

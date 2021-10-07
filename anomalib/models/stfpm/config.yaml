@@ -80,7 +80,6 @@ project:
   path: ./results
   log_images_to: [local]
   logger: false
-  mo_path: /opt/intel/openvino_2021/deployment_tools/model_optimizer/mo.py
 
 optimization:
   compression:
