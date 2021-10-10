@@ -16,7 +16,7 @@ from torchvision.models import resnet50
 
 from anomalib.core.callbacks.model_loader import LoadModelCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
-from anomalib.models.base.lightning_modules import BaseAnomalyLightning
+from anomalib.models.base.lightning_modules import ClassificationModule
 from anomalib.models.dfkde.normality_model import NormalityModel
 
 
@@ -49,7 +49,7 @@ class Callbacks:
         return self.get_callbacks()
 
 
-class DfkdeLightning(BaseAnomalyLightning):
+class DfkdeLightning(ClassificationModule):
     """
     DFKDE: Deep Featured Kernel Density Estimation
     """
@@ -59,9 +59,6 @@ class DfkdeLightning(BaseAnomalyLightning):
         self.threshold_steepness = 0.05
         self.threshold_offset = 12
 
-        self.supported_tasks = ["classification"]
-        self.check_task_support(task=hparams.dataset.task)
-
         self.feature_extractor = FeatureExtractor(backbone=resnet50(pretrained=True), layers=["avgpool"]).eval()
 
         self.normality_model = NormalityModel(
@@ -70,7 +67,6 @@ class DfkdeLightning(BaseAnomalyLightning):
             threshold_offset=self.threshold_offset,
         )
         self.callbacks = Callbacks(hparams)()
-        self.image_roc_auc: float
         self.automatic_optimization = False
 
     @staticmethod
@@ -145,8 +141,8 @@ class DfkdeLightning(BaseAnomalyLightning):
         """
         pred_labels = np.hstack([output["probability"] for output in outputs])
         true_labels = np.hstack([output["label"] for output in outputs])
-        self.image_roc_auc = roc_auc_score(true_labels, pred_labels)
-        self.log(name="auc", value=self.image_roc_auc, on_epoch=True, prog_bar=True)
+        self.results.performance["image_roc_auc"] = roc_auc_score(true_labels, pred_labels)
+        self.log(name="auc", value=self.results.performance["image_roc_auc"], on_epoch=True, prog_bar=True)
 
     def test_step(self, batch, _):
         """Test Step of DFKDE.

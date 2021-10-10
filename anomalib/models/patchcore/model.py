@@ -23,7 +23,7 @@ from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.core.model.dynamic_module import DynamicBufferModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.datasets.tiler import Tiler
-from anomalib.models.base import BaseAnomalyLightning
+from anomalib.models.base import SegmentationModule
 from anomalib.models.padim.model import concat_layer_embedding
 from anomalib.models.patchcore.sampling_methods.kcenter_greedy import KCenterGreedy
 
@@ -242,20 +242,15 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         return embedding_coreset
 
 
-class PatchcoreLightning(BaseAnomalyLightning):
+class PatchcoreLightning(SegmentationModule):
     """
     PatchcoreLightning Module to train PatchCore algorithm
     """
 
     def __init__(self, hparams):
         super().__init__(hparams)
-        self.save_hyperparameters(hparams)
-
-        self.supported_tasks = ["segmentation", "classification"]
-        self.check_task_support(task=hparams.dataset.task)
 
         self.model = PatchcoreModel(hparams)
-
         self.automatic_optimization = False
         self.callbacks = Callbacks(hparams)()
 

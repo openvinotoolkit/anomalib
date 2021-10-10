@@ -11,6 +11,7 @@ from pytorch_lightning import Trainer
 from anomalib.config.config import get_configurable_parameters, update_config_for_nncf
 from anomalib.datasets import get_datamodule
 from anomalib.models import get_model
+from anomalib.models.base.lightning_modules import SegmentationModule
 from tests.helpers.dataset import TestDataset, get_dataset_path
 
 
@@ -87,7 +88,7 @@ def test_model(category, model_name, nncf, path="./datasets/MVTec"):
         config.project.path = temporary_directory
         trainer.test(model=model, datamodule=datamodule)
 
-    assert model.image_roc_auc >= 0.6
+    assert model.results.performance["image_roc_auc"] >= 0.6
 
-    if model_name not in ("dfkde", "dfm"):
-        assert model.pixel_roc_auc >= 0.6
+    if isinstance(model, SegmentationModule):
+        assert model.results.performance["pixel_roc_auc"] >= 0.6

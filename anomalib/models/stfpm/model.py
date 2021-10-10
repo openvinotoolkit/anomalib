@@ -25,7 +25,7 @@ from anomalib.core.callbacks.timer import TimerCallback
 from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.datasets.tiler import Tiler
-from anomalib.models.base import BaseAnomalyLightning
+from anomalib.models.base import SegmentationModule
 
 __all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel", "StfpmLightning"]
 
@@ -281,7 +281,7 @@ class STFPMModel(nn.Module):
         return output
 
 
-class StfpmLightning(BaseAnomalyLightning):
+class StfpmLightning(SegmentationModule):
     """
     PL Lightning Module for the STFPM algorithm.
     """
@@ -291,8 +291,6 @@ class StfpmLightning(BaseAnomalyLightning):
         self.callbacks = Callbacks(hparams)()
 
         self.model = STFPMModel(hparams)
-        self.supported_tasks = ["segmentation", "classification"]
-        self.check_task_support(task=hparams.dataset.task)
         self.loss_val = 0
 
     def configure_optimizers(self):
@@ -352,7 +350,7 @@ class StfpmLightning(BaseAnomalyLightning):
         return batch
 
 
-class StfpmOpenVino(BaseAnomalyLightning):
+class StfpmOpenVino(SegmentationModule):
     """PyTorch Lightning module for the STFPM algorithm."""
 
     def __init__(self, hparams):
@@ -417,17 +415,19 @@ class StfpmOpenVino(BaseAnomalyLightning):
         Args:
             outputs ([type]): [description]
         """
-        self.filenames = [Path(f) for x in outputs for f in x["filenames"]]
-        self.images = [x["images"] for x in outputs]
+        self.results.filenames = [Path(f) for x in outputs for f in x["filenames"]]
+        self.results.images = [x["images"] for x in outputs]
 
-        self.true_masks = np.stack([output["true_masks"].numpy() for output in outputs])
-        self.anomaly_maps = np.stack([output["anomaly_maps"].numpy() for output in outputs])
+        self.results.true_masks = np.stack([output["true_masks"].numpy() for output in outputs])
+        self.results.anomaly_maps = np.stack([output["anomaly_maps"].numpy() for output in outputs])
 
-        self.true_labels = np.stack([output["true_labels"].numpy() for output in outputs])
-        self.pred_labels = self.anomaly_maps.reshape(self.anomaly_maps.shape[0], -1).max(axis=1)
+        self.results.true_labels = np.stack([output["true_labels"].numpy() for output in outputs])
+        self.results.pred_labels = self.results.anomaly_maps.reshape(self.results.anomaly_maps.shape[0], -1).max(axis=1)
 
-        self.image_roc_auc = roc_auc_score(self.true_labels, self.pred_labels)
-        self.pixel_roc_auc = roc_auc_score(self.true_masks.flatten(), self.anomaly_maps.flatten())
+        self.results.performance["image_roc_auc"] = roc_auc_score(self.results.true_labels, self.results.pred_labels)
+        self.results.performance["pixel_roc_auc"] = roc_auc_score(
+            self.results.true_masks.flatten(), self.results.anomaly_maps.flatten()
+        )
 
-        self.log(name="Image-Level AUC", value=self.image_roc_auc, on_epoch=True, prog_bar=True)
-        self.log(name="Pixel-Level AUC", value=self.pixel_roc_auc, on_epoch=True, prog_bar=True)
+        self.log(name="Image-Level AUC", value=self.results.performance["image_roc_auc"], on_epoch=True, prog_bar=True)
+        self.log(name="Pixel-Level AUC", value=self.results.performance["pixel_roc_auc"], on_epoch=True, prog_bar=True)
