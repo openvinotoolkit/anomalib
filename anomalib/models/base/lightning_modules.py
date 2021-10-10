@@ -1,5 +1,5 @@
 """
-Base Anomaly Lightning Models
+Base Anomaly Lightning Models for classification and segmentation
 """
 
 from pathlib import Path
@@ -8,18 +8,18 @@ from typing import List, Union
 import numpy as np
 import pytorch_lightning as pl
 import torch
-from omegaconf.dictconfig import DictConfig
-from omegaconf.listconfig import ListConfig
+from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks.base import Callback
 from sklearn.metrics import roc_auc_score
-from torch import Tensor, nn
+from torch import nn
 
+from anomalib.core.results import ClassificationResults, SegmentationResults
 from anomalib.utils.metrics import compute_threshold_and_f1_score
 
 
-class BaseAnomalyLightning(pl.LightningModule):
+class ClassificationModule(pl.LightningModule):
     """
-    BaseAnomalyModel
+    BaseAnomalyModel for classification-based algorithms.
     """
 
     def __init__(self, params: Union[DictConfig, ListConfig]):
@@ -27,38 +27,15 @@ class BaseAnomalyLightning(pl.LightningModule):
         # Force the type for hparams so that it works with OmegaConfig style of accessing
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(params)
-        self.supported_tasks: List[str]
         self.loss: torch.Tensor
         self.callbacks: List[Callback]
 
-        self.filenames: List[Union[str, Path]]
-        self.images: List[Union[np.ndarray, Tensor]]
-
-        self.true_masks: List[Union[np.ndarray, Tensor]]
-        self.anomaly_maps: List[Union[np.ndarray, Tensor]]
-
-        self.true_labels: List[Union[np.ndarray, Tensor]]
-        self.pred_labels: List[Union[np.ndarray, Tensor]]
-
-        self.image_roc_auc: float
-        self.pixel_roc_auc: float
-
-        self.image_f1_score: float
-
         self.model: nn.Module
-
-    def check_task_support(self, task):
-        """
-        Check if the task type is supported by the algorithm, if not stop with error.
-        """
-        if task not in self.supported_tasks:
-            raise ValueError(
-                f"{task} is not supported by {self.hparams.model.name} model. "
-                f"Please change task type in config file to one of {self.supported_tasks}"
-            )
+        self.results = ClassificationResults()
 
     def test_step(self, batch, _):  # pylint: disable=arguments-differ
-        """Calls validation_step for anomaly map/score calculation.
+        """
+        Calls validation_step for anomaly map/score calculation.
 
         Args:
           batch: Input batch
@@ -72,52 +49,93 @@ class BaseAnomalyLightning(pl.LightningModule):
         return self.validation_step(batch, _)
 
     def validation_epoch_end(self, outputs):
-        """Compute image and pixel level roc scores depending on task type
+        """
+        Compute image-level performance metrics
 
         Args:
           outputs: Batch of outputs from the validation step
 
-        Returns:
 
         """
 
-        self.filenames = [Path(f) for x in outputs for f in x["image_path"]]
-        self.images = torch.vstack([x["image"] for x in outputs])
+        self.results.filenames = [Path(f) for x in outputs for f in x["image_path"]]
+        self.results.images = torch.vstack([x["image"] for x in outputs])
 
-        self.true_labels = np.hstack([output["label"].cpu() for output in outputs])
+        self.results.true_labels = np.hstack([output["label"].cpu() for output in outputs])
+
         if "pred_labels" not in outputs[0] and "anomaly_maps" in outputs[0]:
-            self.anomaly_maps = np.vstack([output["anomaly_maps"].cpu() for output in outputs])
-            self.pred_labels = self.anomaly_maps.reshape(self.anomaly_maps.shape[0], -1).max(axis=1)
+            self.results.anomaly_maps = np.vstack([output["anomaly_maps"].cpu() for output in outputs])
+            self.results.pred_labels = self.results.anomaly_maps.reshape(self.results.anomaly_maps.shape[0], -1).max(
+                axis=1
+            )
         else:
-            self.pred_labels = np.hstack([output["pred_labels"].cpu() for output in outputs])
-        self.image_roc_auc = roc_auc_score(self.true_labels, self.pred_labels)
+            self.results.pred_labels = np.hstack([output["pred_labels"].cpu() for output in outputs])
 
-        _, self.image_f1_score = compute_threshold_and_f1_score(self.true_labels, self.pred_labels)
+        self.results.performance["image_roc_auc"] = roc_auc_score(self.results.true_labels, self.results.pred_labels)
+        _, self.results.performance["image_f1_score"] = compute_threshold_and_f1_score(
+            self.results.true_labels, self.results.pred_labels
+        )
 
         self.log(
             name="Image-Level AUC",
-            value=self.image_roc_auc,
+            value=self.results.performance["image_roc_auc"],
             on_epoch=True,
             prog_bar=True,
         )
         self.log(
             name="Image-Level F1",
-            value=self.image_f1_score,
+            value=self.results.performance["image_f1_score"],
             on_epoch=True,
             prog_bar=True,
         )
 
-        if self.hparams.dataset.task == "segmentation":
-            self.true_masks = np.vstack([output["mask"].squeeze(1).cpu() for output in outputs])
-            self.anomaly_maps = np.vstack([output["anomaly_maps"].cpu() for output in outputs])
-            self.pixel_roc_auc = roc_auc_score(self.true_masks.flatten(), self.anomaly_maps.flatten())
+    def test_epoch_end(self, outputs):
+        """
+        Compute and save anomaly scores of the test set.
 
-            self.log(
-                name="Pixel-Level AUC",
-                value=self.pixel_roc_auc,
-                on_epoch=True,
-                prog_bar=True,
-            )
+        Args:
+            outputs: Batch of outputs from the validation step
+
+        """
+        self.validation_epoch_end(outputs)
+
+
+class SegmentationModule(ClassificationModule):
+    """
+    BaseAnomalyModel for segmentation-based algorithms.
+    """
+
+    def __init__(self, params: Union[DictConfig, ListConfig]):
+        super().__init__(params=params)
+
+        self.model: nn.Module
+        self.results = SegmentationResults()
+
+    def validation_epoch_end(self, outputs):
+        """
+        Compute image and pixel level roc scores.
+
+        Args:
+          outputs: Batch of outputs from the validation step
+
+        """
+
+        # Segmentation tasks first run the classification results.
+        # Then run the segmentation-results, based on pixel-level.
+        super().validation_epoch_end(outputs)
+
+        self.results.true_masks = np.vstack([output["mask"].squeeze(1).cpu() for output in outputs])
+        self.results.anomaly_maps = np.vstack([output["anomaly_maps"].cpu() for output in outputs])
+        self.results.performance["pixel_roc_auc"] = roc_auc_score(
+            self.results.true_masks.flatten(), self.results.anomaly_maps.flatten()
+        )
+
+        self.log(
+            name="Pixel-Level AUC",
+            value=self.results.performance["pixel_roc_auc"],
+            on_epoch=True,
+            prog_bar=True,
+        )
 
     def test_epoch_end(self, outputs):
         """

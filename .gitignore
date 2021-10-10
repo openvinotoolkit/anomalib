@@ -5,6 +5,7 @@ datasets
 checkpoints
 lightning_logs
 results
+!anomalib/core/results
 results_nncf
 tensorboard_logs
 *.dot

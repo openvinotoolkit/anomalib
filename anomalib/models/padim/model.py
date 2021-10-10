@@ -24,7 +24,7 @@ from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
 from anomalib.datasets.tiler import Tiler
-from anomalib.models.base import BaseAnomalyLightning
+from anomalib.models.base import SegmentationModule
 
 __all__ = ["PadimLightning", "concat_layer_embedding"]
 
@@ -354,7 +354,7 @@ class AnomalyMapGenerator:
         return self.compute_anomaly_map(embedding, mean, covariance)
 
 
-class PadimLightning(BaseAnomalyLightning):
+class PadimLightning(SegmentationModule):
     """
     PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization
     """
@@ -363,9 +363,6 @@ class PadimLightning(BaseAnomalyLightning):
         super().__init__(hparams)
         self.layers = hparams.model.layers
         self.model = PadimModel(hparams).eval()
-
-        self.supported_tasks = ["segmentation", "classification"]
-        self.check_task_support(task=hparams.dataset.task)
 
         self.callbacks = Callbacks(hparams)()
         self.stats: List[Tensor, Tensor] = []
@@ -381,8 +378,8 @@ class PadimLightning(BaseAnomalyLightning):
         For each batch, hierarchical features are extracted from the CNN.
 
         Args:
-                batch: Input batch
-                _: Index of the batch.
+            batch: Input batch
+            _: Index of the batch.
 
         Returns:
                 Hierarchical feature map
@@ -396,7 +393,7 @@ class PadimLightning(BaseAnomalyLightning):
         """Fit a multivariate gaussian model on an embedding extracted from deep hierarchical CNN features.
 
         Args:
-                outputs: Batch of outputs from the training step
+            outputs: Batch of outputs from the training step
 
         Returns:
 
@@ -405,17 +402,18 @@ class PadimLightning(BaseAnomalyLightning):
         self.stats = self.model.gaussian.fit(embeddings)
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
-        """Validation Step of PADIM.
-                        Similar to the training step, hierarchical features
-                        are extracted from the CNN for each batch.
+        """
+        Validation Step of PADIM.
+        Similar to the training step, hierarchical features
+            are extracted from the CNN for each batch.
 
         Args:
-                batch: Input batch
-                _: Index of the batch.
+            batch: Input batch
+            _: Index of the batch.
 
         Returns:
-                Dictionary containing images, features, true labels and masks.
-                These are required in `validation_epoch_end` for feature concatenation.
+            Dictionary containing images, features, true labels and masks.
+            These are required in `validation_epoch_end` for feature concatenation.
 
         """
         batch["anomaly_maps"] = self.model(batch["image"])

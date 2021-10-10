@@ -2,7 +2,6 @@
 Visualizer Callback
 """
 from pathlib import Path
-from typing import cast
 from warnings import warn
 
 from pytorch_lightning import Callback, LightningModule, Trainer
@@ -10,8 +9,9 @@ from skimage.segmentation import mark_boundaries
 from tqdm import tqdm
 
 from anomalib import loggers
+from anomalib.core.results import SegmentationResults
 from anomalib.datasets.utils import Denormalize
-from anomalib.models.base import BaseAnomalyLightning
+from anomalib.models.base import ClassificationModule, SegmentationModule
 from anomalib.utils.metrics import compute_threshold_and_f1_score
 from anomalib.utils.post_process import compute_mask, superimpose_anomaly_map
 from anomalib.utils.visualizer import Visualizer
@@ -32,7 +32,7 @@ class VisualizerCallback(Callback):
     def _add_images(
         self,
         visualizer: Visualizer,
-        module: BaseAnomalyLightning,
+        module: ClassificationModule,
         filename: Path,
     ):
 
@@ -66,33 +66,35 @@ class VisualizerCallback(Callback):
             currently only they support logging images.
         """
 
-        # while this check is in place, this might not work as all modules are subclasses of LightningModule
-        # including BaseAnomalyLightning
-        assert isinstance(
-            pl_module, BaseAnomalyLightning
-        ), "This callback currently only supports a lightning module of instance BaseAnomalyLightning"
+        if not isinstance(pl_module, SegmentationModule):
+            raise ValueError("This callback only supports Segmentation Modules.")
 
-        module = cast(BaseAnomalyLightning, pl_module)  # placate mypy
+        if isinstance(pl_module.results, SegmentationResults):
+            results = pl_module.results
+        else:
+            raise ValueError("Result Set must be of type `SegmentationResults`")
 
-        if module.hparams.dataset.task == "segmentation":
+        if results.images is None or results.true_masks is None or results.anomaly_maps is None:
+            raise ValueError("Result set cannot be empty!")
 
-            threshold, _ = compute_threshold_and_f1_score(module.true_masks, module.anomaly_maps)
-            for (filename, image, true_mask, anomaly_map) in tqdm(
-                zip(module.filenames, module.images, module.true_masks, module.anomaly_maps),
-                desc="Saving Results",
-                total=len(module.filenames),
-            ):
-                image = Denormalize()(image)
+        threshold, _ = compute_threshold_and_f1_score(results.true_masks, results.anomaly_maps)
 
-                heat_map = superimpose_anomaly_map(anomaly_map, image)
-                pred_mask = compute_mask(anomaly_map, threshold)
-                vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
+        for (filename, image, true_mask, anomaly_map) in tqdm(
+            zip(results.filenames, results.images, results.true_masks, results.anomaly_maps),
+            desc="Saving Results",
+            total=len(results.filenames),
+        ):
+            image = Denormalize()(image)
 
-                visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
-                visualizer.add_image(image=image, title="Image")
-                visualizer.add_image(image=true_mask, color_map="gray", title="Ground Truth")
-                visualizer.add_image(image=heat_map, title="Predicted Heat Map")
-                visualizer.add_image(image=pred_mask, color_map="gray", title="Predicted Mask")
-                visualizer.add_image(image=vis_img, title="Segmentation Result")
-                self._add_images(visualizer, module, filename)
-                visualizer.close()
+            heat_map = superimpose_anomaly_map(anomaly_map, image)
+            pred_mask = compute_mask(anomaly_map, threshold)
+            vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
+
+            visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
+            visualizer.add_image(image=image, title="Image")
+            visualizer.add_image(image=true_mask, color_map="gray", title="Ground Truth")
+            visualizer.add_image(image=heat_map, title="Predicted Heat Map")
+            visualizer.add_image(image=pred_mask, color_map="gray", title="Predicted Mask")
+            visualizer.add_image(image=vis_img, title="Segmentation Result")
+            self._add_images(visualizer, pl_module, filename)
+            visualizer.close()

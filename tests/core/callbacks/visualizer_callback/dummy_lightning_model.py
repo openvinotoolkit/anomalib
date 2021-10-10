@@ -11,7 +11,7 @@ from torch import nn
 from torch.utils.data import DataLoader, Dataset
 
 from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
-from anomalib.models.base.lightning_modules import BaseAnomalyLightning
+from anomalib.models.base.lightning_modules import SegmentationModule
 
 
 class DummyDataset(Dataset):
@@ -42,7 +42,7 @@ class DummyModel(nn.Module):
         self.anomaly_map_generator = DummyAnomalyMapGenerator()
 
 
-class DummyModule(BaseAnomalyLightning):
+class DummyModule(SegmentationModule):
     """A dummy model which calls visualizer callback on fake images and masks"""
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
@@ -50,10 +50,10 @@ class DummyModule(BaseAnomalyLightning):
         self.model = DummyModel()
         self.task = "segmentation"
         self.callbacks = [VisualizerCallback()]  # test if this is removed
-        self.filenames = [Path("test1.jpg"), Path("test2.jpg")]
-        self.images = [torch.rand((1, 3, 100, 100))] * 2
-        self.true_masks = np.zeros((2, 100, 100))
-        self.anomaly_maps = np.ones((2, 100, 100))
+        self.results.filenames = [Path("test1.jpg"), Path("test2.jpg")]
+        self.results.images = [torch.rand((1, 3, 100, 100))] * 2
+        self.results.true_masks = np.zeros((2, 100, 100))
+        self.results.anomaly_maps = np.ones((2, 100, 100))
 
     def test_step(self, batch, _):
         """Only used to trigger on_test_epoch_end"""

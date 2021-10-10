@@ -3,7 +3,7 @@ DFM: Deep Feature Kernel Density Estimation
 """
 
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Union
 
 import numpy as np
 import pytorch_lightning as pl
@@ -17,6 +17,7 @@ from torchvision.models import resnet18
 
 from anomalib.core.callbacks.model_loader import LoadModelCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
+from anomalib.core.results import ClassificationResults
 from anomalib.models.dfm.dfm_model import DFMModel
 
 
@@ -64,7 +65,7 @@ class DfmLightning(pl.LightningModule):
 
         self.dfm_model = DFMModel(n_comps=hparams.model.pca_level, score_type=hparams.model.score_type)
         self.callbacks = Callbacks(hparams)()
-        self.image_roc_auc: Optional[float] = None
+        self.results = ClassificationResults()
         self.automatic_optimization = False
 
     @staticmethod
@@ -140,8 +141,8 @@ class DfmLightning(pl.LightningModule):
         """
         pred_labels = np.hstack([output["dfm_scores"] for output in outputs])
         true_labels = np.hstack([output["ground_truth"] for output in outputs])
-        self.image_roc_auc = roc_auc_score(true_labels, pred_labels)
-        self.log(name="auc", value=self.image_roc_auc, on_epoch=True, prog_bar=True)
+        self.results.performance["image_roc_auc"] = roc_auc_score(true_labels, pred_labels)
+        self.log(name="auc", value=self.results.performance["image_roc_auc"], on_epoch=True, prog_bar=True)
 
     def test_step(self, batch, _):  # pylint: disable=arguments-differ
         """Test Step of DFM.
