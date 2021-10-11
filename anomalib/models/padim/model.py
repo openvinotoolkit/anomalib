@@ -81,9 +81,12 @@ class PadimModel(nn.Module):
         self.gaussian = MultiVariateGaussian()
         self.dims = DIMS[hparams.model.backbone]
         # pylint: disable=not-callable
-        self.idx = torch.tensor(
-            sample(range(0, DIMS[hparams.model.backbone]["t_d"]), DIMS[hparams.model.backbone]["d"])
+        # Since idx is randomaly selected, save it with model to get same results
+        self.register_buffer(
+            "idx",
+            torch.tensor(sample(range(0, DIMS[hparams.model.backbone]["t_d"]), DIMS[hparams.model.backbone]["d"])),
         )
+        self.idx: Tensor
         self.loss = None
         input_size = (
             hparams.transform.image_size if hparams.transform.crop_size is None else hparams.transform.crop_size
@@ -191,8 +194,8 @@ class Callbacks:
                 )
             )
 
-        if "weight_file" in self.config.keys():
-            model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.weight_file))
+        if "weight_file" in self.config.model.keys():
+            model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.model.weight_file))
             callbacks.append(model_loader)
 
         callbacks.append(TimerCallback())

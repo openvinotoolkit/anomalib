@@ -39,8 +39,8 @@ class Callbacks:
         )
         callbacks.append(checkpoint)
 
-        if "weight_file" in self.config.keys():
-            model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.weight_file))
+        if "weight_file" in self.config.model.keys():
+            model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.model.weight_file))
             callbacks.append(model_loader)
 
         return callbacks

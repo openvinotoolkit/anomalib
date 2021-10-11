@@ -19,8 +19,8 @@ class PCA(DynamicBufferModule):
         self.register_buffer("singular_vectors", torch.Tensor())
         self.register_buffer("mean", torch.Tensor())
 
-        self.singular_vectors = torch.Tensor()
-        self.mean = torch.Tensor()
+        self.singular_vectors: torch.Tensor
+        self.mean: torch.Tensor
 
     def fit_transform(self, dataset: torch.Tensor) -> torch.Tensor:
         """

@@ -97,6 +97,6 @@ def test_anomaly_dataset(task, path=get_dataset_path(), category="leather"):
         )
 
         model = DummyModule(task=task)
-        trainer = pl.Trainer(logger=False, gpus=0, check_val_every_n_epoch=1, max_epochs=1)
+        trainer = pl.Trainer(logger=False, gpus=0, check_val_every_n_epoch=1, max_epochs=1, fast_dev_run=True)
         trainer.fit(model, datamodule=datamodule)
         trainer.test(model, datamodule=datamodule)
