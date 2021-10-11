@@ -55,7 +55,6 @@ transform:
 model:
   name: dfkde
   max_training_points: 40000
-  project_path: ./results
   confidence_threshold: 0.5
   pre_processing: scale
   n_components: 16

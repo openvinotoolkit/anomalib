@@ -33,7 +33,9 @@ from __future__ import absolute_import, division, print_function
 from typing import List
 
 import numpy as np
-from sklearn.metrics import pairwise_distances
+import torch
+import torch.nn.functional as F
+from torch import Tensor
 
 from anomalib.models.patchcore.sampling_methods.sampling_def import SamplingMethod
 
@@ -43,10 +45,10 @@ class KCenterGreedy(SamplingMethod):
     Implements k-center-greedy method
     """
 
-    def __init__(self, x_data: np.ndarray, y_data, seed, metric="euclidean"):
+    def __init__(self, x_data: Tensor, y_data, seed, metric="euclidean"):
         super().__init__(x_data, y_data, seed)
         self.name = "kcenter"
-        self.features: np.ndarray
+        self.features: Tensor
         self.metric = metric
         self.min_distances = None
         self.n_obs = self.embeddings.shape[0]
@@ -69,12 +71,12 @@ class KCenterGreedy(SamplingMethod):
         if cluster_centers:
             # Update min_distances for all examples given new cluster center.
             centers = self.features[cluster_centers]
-            dist = pairwise_distances(self.features, centers, metric=self.metric)
+            dist = F.pairwise_distance(self.features, centers, p=2).reshape(-1, 1)
 
             if self.min_distances is None:
-                self.min_distances = np.min(dist, axis=1).reshape(-1, 1)
+                self.min_distances = torch.min(dist, dim=1).values.reshape(-1, 1)
             else:
-                self.min_distances = np.minimum(self.min_distances, dist)
+                self.min_distances = torch.minimum(self.min_distances, dist)
 
     def select_batch_(self, model, already_selected, batch_size):
         """

@@ -21,8 +21,8 @@ class MultiVariateGaussian(DynamicBufferModule):
         self.register_buffer("mean", torch.Tensor())
         self.register_buffer("covariance", torch.Tensor())
 
-        self.mean: Optional[Tensor] = None
-        self.covariance: Optional[Tensor] = None
+        self.mean: Tensor
+        self.covariance: Tensor
 
     @staticmethod
     def _cov(

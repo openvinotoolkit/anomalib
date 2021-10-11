@@ -68,13 +68,35 @@ model:
   coreset_sampling_ratio: 0.001
   num_neighbors: 9
   metric: auc
-  weight_file: model.ckpt
+  weight_file: weights/model.ckpt
 
 project:
   seed: 0
   path: ./results
   log_images_to: [local]
   logger: false
+
+optimization:
+  compression:
+    apply: false
+  nncf:
+    apply: false
+    input_info:
+      sample_size: null
+    compression:
+      algorithm: quantization
+      initializer:
+        range:
+          num_init_samples: 256
+    update_config:
+      project:
+        path: ./results_nncf
+      init_weights: snapshot.ckpt
+      hyperparameter_search:
+        parameters:
+          lr:
+            min: 1e-4
+            max: 1e-2
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:

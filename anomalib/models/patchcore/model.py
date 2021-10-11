@@ -14,14 +14,14 @@ from omegaconf import ListConfig
 from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.callbacks import ModelCheckpoint
 from scipy.ndimage import gaussian_filter
-from sklearn.neighbors import NearestNeighbors
-from sklearn.random_projection import SparseRandomProjection
 from torch import Tensor, nn
 
 from anomalib.core.callbacks.model_loader import LoadModelCallback
 from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.core.model.dynamic_module import DynamicBufferModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
+from anomalib.core.model.nearest_neighbors import NearestNeighbors
+from anomalib.core.utils.random_projection import SparseRandomProjection
 from anomalib.datasets.tiler import Tiler
 from anomalib.models.base import SegmentationModule
 from anomalib.models.padim.model import concat_layer_embedding
@@ -29,23 +29,22 @@ from anomalib.models.patchcore.sampling_methods.kcenter_greedy import KCenterGre
 
 
 class Callbacks:
-    """PADIM-specific callbacks"""
+    """PatchCore-specific callbacks"""
 
     def __init__(self, config: DictConfig):
         self.config = config
 
     def get_callbacks(self) -> Sequence:
-        """Get PADIM model callbacks."""
+        """Get PatchCore model callbacks."""
         checkpoint = ModelCheckpoint(
             dirpath=os.path.join(self.config.project.path, "weights"),
             filename="model",
         )
         callbacks = [checkpoint, VisualizerCallback()]
 
-        # TODO: Check if we load the model properly: https://jira.devtools.intel.com/browse/IAAALD-13
         if "weight_file" in self.config.model.keys():
             model_loader = LoadModelCallback(
-                weights_path=os.path.join(self.config.project.path, "weights", self.config.model.weight_file)
+                weights_path=os.path.join(self.config.project.path, self.config.model.weight_file)
             )
             callbacks.append(model_loader)
 
@@ -113,7 +112,7 @@ class AnomalyMapGenerator:
         if "patch_scores" not in kwds:
             raise ValueError(f"Expected key `patch_scores`. Found {kwds.keys()}")
 
-        patch_scores: np.ndarray = kwds["patch_scores"]
+        patch_scores: np.ndarray = kwds["patch_scores"].cpu().numpy()
         anomaly_map = self.compute_anomaly_map(patch_scores)
         anomaly_score = self.compute_anomaly_score(patch_scores)
         return anomaly_map, anomaly_score
@@ -140,10 +139,10 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         if hparams.dataset.tiling.apply:
             self.tiler = Tiler(hparams.dataset.tiling.tile_size, hparams.dataset.tiling.stride)
 
-        # TODO: Define memory_bank here: https://jira.devtools.intel.com/browse/IAAALD-13
         self.register_buffer("memory_bank", torch.Tensor())
+        self.memory_bank: torch.Tensor
 
-    def forward(self, input_tensor: Tensor) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+    def forward(self, input_tensor: Tensor) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
         """
         Get features from a CNN.
         Generate embedding based on the feautures.
@@ -153,7 +152,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             input_tensor (Tensor): Input tensor
 
         Returns:
-            Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]: Embedding for training,
+            Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]: Embedding for training,
                 anomaly map and anomaly score for testing.
         """
         if self.hparams.dataset.tiling.apply:
@@ -168,7 +167,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         if self.hparams.dataset.tiling.apply:
             embedding = self.tiler.untile(embedding)
 
-        embedding = self.reshape_embedding(embedding).cpu().numpy()
+        embedding = self.reshape_embedding(embedding)
 
         if self.training:
             output = embedding
@@ -216,7 +215,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         return embedding
 
     @staticmethod
-    def subsample_embedding(embedding: np.ndarray, sampling_ratio: float) -> np.ndarray:
+    def subsample_embedding(embedding: torch.Tensor, sampling_ratio: float) -> torch.Tensor:
         """
         Subsample embedding based on coreset sampling
 
@@ -228,7 +227,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             np.ndarray: Subsampled embedding whose dimensionality is reduced.
         """
         # Random projection
-        random_projector = SparseRandomProjection(n_components="auto", eps=0.9)  # 'auto' => Johnson-Lindenstrauss lemma
+        random_projector = SparseRandomProjection(eps=0.9)
         random_projector.fit(embedding)
 
         # Coreset Subsampling
@@ -288,13 +287,13 @@ class PatchcoreLightning(SegmentationModule):
         Args:
             outputs (List[Dict[str, np.ndarray]]): List of embedding vectors
         """
-        embedding = np.vstack([output["embedding"] for output in outputs])
+        embedding = torch.vstack([output["embedding"] for output in outputs])
         sampling_ratio = self.hparams.model.coreset_sampling_ratio
 
         embedding = self.model.subsample_embedding(embedding, sampling_ratio)
 
-        self.model.nn_search = self.model.nn_search.fit(embedding)
-        self.model.memory_bank = torch.from_numpy(embedding)  # pylint: disable=W0201:
+        self.model.nn_search.fit(embedding)
+        self.model.memory_bank = embedding
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """
@@ -310,7 +309,6 @@ class PatchcoreLightning(SegmentationModule):
         Returns:
             Dict[str, Any]: Image filenames, test images, GT and predicted label/masks
         """
-        # TODO: Remove this Use Model Load Callback: https://jira.devtools.intel.com/browse/IAAALD-13
 
         anomaly_maps, _ = self.model(batch["image"])
         batch["anomaly_maps"] = torch.Tensor(anomaly_maps).unsqueeze(0).unsqueeze(0)
