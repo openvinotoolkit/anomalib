@@ -14,7 +14,7 @@ import torchvision
 from kornia import gaussian_blur2d
 from omegaconf import ListConfig
 from omegaconf.dictconfig import DictConfig
-from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 from torch import Tensor, nn
 
 from anomalib.core.callbacks.model_loader import LoadModelCallback
@@ -171,11 +171,16 @@ class Callbacks:
 
     def get_callbacks(self) -> Sequence:
         """Get PADIM model callbacks."""
+        callbacks: List[Callback] = []
+
         checkpoint = ModelCheckpoint(
             dirpath=os.path.join(self.config.project.path, "weights"),
             filename="model",
         )
-        callbacks = [checkpoint, VisualizerCallback()]
+        callbacks.append(checkpoint)
+
+        if not self.config.project.log_images_to == []:
+            callbacks.append(VisualizerCallback())
 
         if self.config.optimization.nncf.apply:
             callbacks.append(
@@ -223,46 +228,19 @@ class AnomalyMapGenerator:
 
         """
 
-        def _mahalanobis(tensor_u: Tensor, tensor_v: Tensor, inv_cov: Tensor) -> Tensor:
-            """
-            Compute the Mahalanobis distance between two 1-D arrays.
-            The Mahalanobis distance between 1-D arrays `u` and `v`, is defined as
-
-            .. math::
-            \\sqrt{ (u-v) V^{-1} (u-v)^T }
-
-            where ``V`` is the covariance matrix.  Note that the argument `VI`
-            is the inverse of ``V``.
-
-            Args:
-                tensor_v: Input array
-                tensor_u: Input array
-                inv_cov: Inverse covariance matrix
-                tensor_u: Tensor:
-                tensor_v: Tensor:
-                inv_cov: Tensor:
-
-            Returns:
-                Mahalanobis distance of the inputs.
-
-            """
-            delta = tensor_u - tensor_v
-            mahalanobis_distance = torch.dot(torch.matmul(delta, inv_cov), delta)
-            return torch.sqrt(mahalanobis_distance)
-
         batch, channel, height, width = embedding.shape
         embedding = embedding.reshape(batch, channel, height * width)
 
-        distance_list = []
-        for i in range(height * width):
-            mean = stats[0][:, i]
-            inverse_covariance = torch.linalg.inv(stats[1][:, :, i])
-            distance = [_mahalanobis(emb[:, i], mean, inverse_covariance) for emb in embedding]
-            distance_list.append(distance)
+        # calculate mahalanobis distances
+        mean, covariance = stats
+        delta = (embedding - mean).permute(2, 0, 1)
+        inverse_covariance = torch.linalg.inv(covariance.permute(2, 0, 1))
 
-        # pylint: disable=not-callable
-        distance_tensor = torch.tensor(distance_list).permute(1, 0).reshape(batch, height, width)
-        return distance_tensor
+        distances = (torch.matmul(delta, inverse_covariance) * delta).sum(2).T
+        distances = distances.reshape(batch, height, width)
+        distances = torch.sqrt(distances)
+
+        return distances
 
     def up_sample(self, distance: Tensor) -> Tensor:
         """
