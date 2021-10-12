@@ -58,7 +58,7 @@ trainer:
   auto_select_gpus: false
   benchmark: false
   check_val_every_n_epoch: 2
-  checkpoint_callback: true
+  checkpoint_callback: false
   default_root_dir: null
   deterministic: false
   distributed_backend: null

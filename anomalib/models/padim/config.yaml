@@ -89,8 +89,6 @@ optimization:
       ignored_scopes: []
     update_config:
       init_weights: snapshot.ckpt
-      project:
-        path: ./results_nncf
 
 hyperparameter_search:
   observation_budget: 10

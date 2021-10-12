@@ -30,7 +30,7 @@ class Callbacks:
 
     def get_callbacks(self) -> List[Callback]:
         """
-        Get PADIM model callbacks.
+        Get DFKDE model callbacks.
         """
         callbacks: List[Callback] = []
         checkpoint = ModelCheckpoint(

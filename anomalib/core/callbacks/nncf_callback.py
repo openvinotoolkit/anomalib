@@ -94,7 +94,8 @@ class NNCFCallback(Callback):
             nncf_config = register_default_init_args(
                 self.nncf_config, init_loader, pl_module.model.loss, criterion_fn=criterion_fn
             )
-            self.comp_ctrl, pl_module.model = create_compressed_model(pl_module.model, nncf_config)
+            # if dump_graphs is not set to False, nncf will generate intermediate .dot files in the current dir
+            self.comp_ctrl, pl_module.model = create_compressed_model(pl_module.model, nncf_config, dump_graphs=False)
             self.compression_scheduler = self.comp_ctrl.scheduler
 
     def on_train_batch_start(

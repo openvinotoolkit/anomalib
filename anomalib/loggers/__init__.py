@@ -3,6 +3,7 @@ Load PyTorch Lightning Loggers.
 """
 
 
+import os
 from typing import Union
 
 from omegaconf.dictconfig import DictConfig
@@ -47,8 +48,8 @@ def get_logger(config: Union[DictConfig, ListConfig]) -> Union[LightningLoggerBa
         )
     elif config.project.logger == "tensorboard":
         logger = AnomalibTensorBoardLogger(
-            name=f"{config.dataset.name} {config.dataset.category} {config.model.name}",
-            save_dir="tensorboard_logs",
+            name="Tensorboard Logs",
+            save_dir=os.path.join(config.project.path, "logs"),
         )
     else:
         raise UnknownLogger(

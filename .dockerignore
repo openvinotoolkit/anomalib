@@ -11,5 +11,3 @@ lightning_logs/
 lightning_test/
 papers/
 results/
-results_nncf/
-tensorboard_logs/

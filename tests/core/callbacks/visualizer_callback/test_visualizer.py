@@ -31,7 +31,7 @@ def test_add_images():
         )
         logger = get_dummy_logger(config, dir_loc)
         model = get_dummy_module(config)
-        trainer = pl.Trainer(callbacks=model.callbacks, logger=logger)
+        trainer = pl.Trainer(callbacks=model.callbacks, logger=logger, checkpoint_callback=False)
         trainer.test(model=model, datamodule=DummyDataModule())
         # test if images are logged
         if len(glob.glob(os.path.join(dir_loc, "images", "*.jpg"))) != 2:
