@@ -94,8 +94,6 @@ optimization:
         range:
           num_init_samples: 256
     update_config:
-      project:
-        path: ./results_nncf
       init_weights: snapshot.ckpt
       hyperparameter_search:
         parameters:

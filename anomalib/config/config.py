@@ -115,6 +115,8 @@ def get_configurable_parameters(
     (project_path / "weights").mkdir(parents=True, exist_ok=True)
     (project_path / "images").mkdir(parents=True, exist_ok=True)
     config.project.path = str(project_path)
+    # loggers should write to results/model/dataset/category/ folder
+    config.trainer.default_root_dir = str(project_path)
 
     if weight_file:
         config.weight_file = weight_file

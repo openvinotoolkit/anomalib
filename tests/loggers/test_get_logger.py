@@ -13,7 +13,11 @@ def test_get_logger():
     """Test whether the right logger is returned"""
 
     config = OmegaConf.create(
-        {"project": {"logger": None}, "dataset": {"name": "dummy", "category": "cat1"}, "model": {"name": "DummyModel"}}
+        {
+            "project": {"logger": None, "path": "/tmp"},
+            "dataset": {"name": "dummy", "category": "cat1"},
+            "model": {"name": "DummyModel"},
+        }
     )
 
     # get no logger
