@@ -3,10 +3,10 @@ Hyperparameter Optimization using SigOpt
 
 This tutorial focuses on hyperparameter optimization (HPO) using `SigOpt <https://sigopt.com/>`_. For this example, the :ref:`models:STFPM` model will be used but you can refer to the :ref:`available models` page for a list of all the available models in this repository.
 
-Understanding the ``hpo.py`` file
+Understanding the ``tools/hpo.py`` file
 ----------------------------------
 
-The ``hpo.py`` file is the entry point for searching optimal hyperparameters. It takes in three parameters ``--model <model-name>``, ``--model_config_path <path to config.yaml>``, and ``--hpo_type <sweep, bayesian, evolutionary, etc>``. As of now, only ``sweep`` method is supported by ``hpo.py``. The ``--model_config_path`` option is optional and if left empty, will take the default configuration file defined by the model.
+The ``tools/hpo.py`` file is the entry point for searching optimal hyperparameters. It takes in three parameters ``--model <model-name>``, ``--model_config_path <path to config.yaml>``, and ``--hpo_type <sweep, bayesian, evolutionary, etc>``. As of now, only ``sweep`` method is supported by ``tools/hpo.py``. The ``--model_config_path`` option is optional and if left empty, will take the default configuration file defined by the model.
 
 Understanding the `config.yaml` file
 -------------------------------------
@@ -93,7 +93,7 @@ Finding Optimal Parameters
 
 Now, all that's left is to run the optimizer. Since we are going to use the default configuration provided with stfpm, you can just use the model name. However, for completeness, here is the entire command.
 
-``python hpo.py --model stfpm --model_config_path anomalib/models/stfpm/config.yaml --hpo_type sweep``
+``python tools/hpo.py --model stfpm --model_config_path anomalib/models/stfpm/config.yaml --hpo_type sweep``
 
 It should print a link to the SigOpt dashboard where you will be able to see the results of optimization.
 

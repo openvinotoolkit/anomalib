@@ -5,7 +5,7 @@ function stop_all() {
         echo "Stopping processes"
         pkill top
         pkill pcm
-        tokill=`ps aux | grep train.py | grep -v grep | head -n 1 | awk '{print $2}'`
+        tokill=`ps aux | grep tools/train.py | grep -v grep | head -n 1 | awk '{print $2}'`
 	kill "${tokill}"
 }
 
@@ -34,7 +34,7 @@ echo ${rundir}
 
 #Run training
 pushd ..
-python train.py "$@" 2>&1 | tee -a ${rundir}/train.log &
+python tools/train.py "$@" 2>&1 | tee -a ${rundir}/train.log &
 popd
 sleep 10
 

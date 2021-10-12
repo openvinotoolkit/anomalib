@@ -30,7 +30,7 @@ def get_args() -> Namespace:
 
 def test():
     """
-    Test an anomaly classification and segmentation model that is initially trained via `train.py`.
+    Test an anomaly classification and segmentation model that is initially trained via `tools/train.py`.
     The script is able to write the results into both filesystem and  a logger such as SigOpt and Tensorboard.
     """
     args = get_args()

@@ -3,7 +3,7 @@
 These bash scripts will assist in measuring the training performance of the anomalib library.
 
 ## Usage
-Run the train.sh with the same args as the train.py. Refer to [`../README.md`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/README.md) for those details.
+Run the train.sh with the same args as the tools/train.py. Refer to [`../README.md`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/README.md) for those details.
 
 Note: To collect memory read/write numbers, run the script with sudo priviledges. Otherwise, those values will be blank.
 

@@ -26,25 +26,25 @@ pip install -r requirements/requirements.txt
 ```
 
 ## Training
-If you plan on using [SigOpt](https://app.sigopt.com/docs/runs/get-started) as your logger, you will need to have that configured prior to running train.py.
+If you plan on using [SigOpt](https://app.sigopt.com/docs/runs/get-started) as your logger, you will need to have that configured prior to running tools/train.py.
 
-By default [`python train.py`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/blob/samet/stfpm/train.py)
-runs [STFPM](https://arxiv.org/pdf/2103.04257.pdf) model [MVTec](https://www.mvtec.com/company/research/datasets/mvtec-ad) `leather` dataset.
+By default [`python tools/train.py`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/-/blob/development/train.py)
+runs [PADIM](https://arxiv.org/abs/2011.08785) model [MVTec](https://www.mvtec.com/company/research/datasets/mvtec-ad) `leather` dataset.
 ```
-python train.py    # Train STFPM on MVTec leather
+python tools/train.py    # Train PADIM on MVTec leather
 ```
 
 Training a model on a specific dataset and category requires further configuration. Each model has its own configuration
-file, [`config.yaml`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/blob/samet/stfpm/anomalib/models/stfpm/config.yaml)
+file, [`config.yaml`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/-/blob/development/stfpm/anomalib/models/stfpm/config.yaml)
 , which contains data, model and training configurable parameters. To train a specific model on a specific dataset and
 category, the config file is to be provided:
 ```
-python train.py --model_config_path <path/to/model/config.yaml>
+python tools/train.py --model_config_path <path/to/model/config.yaml>
 ```
 
 Alternatively, a model name could also be provided as an argument, where the scripts automatically finds the corresponding config file.
 ```
-python train.py --model stfpm
+python tools/train.py --model stfpm
 ```
 where the currently available models are:
 *  [`stfpm`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/tree/samet/stfpm/anomalib/models/stfpm)
@@ -56,15 +56,15 @@ where the currently available models are:
 ### [MVTec Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 
 ### Image-Level AUC
-| Model |Backbone   |    Avg    | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
-| ----- |-----------| :-------: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
-| PADIM |ResNet-18  |   0.909   | 0.988  | 0.923 |  0.985  | 0.940 | 0.984 | 0.994  | 0.871 |  0.874  |  0.796   |   0.974   | 0.872 | 0.779 |   0.939    |   0.954    | 0.761  |
-| PADIM |Wide ResNet| **0.965** | 0.998  | 0.957 |  0.999  | 0.983 | 0.993 | 0.999  | 0.898 |  0.907  |    -     |   0.992   | 0.951 |   -   |   0.981    |   0.973    | 0.909  |
-| DFKDE |ResNet-18  |   0.779   | 0.650  | 0.403 |  0.977  | 0.972 | 0.954 | 0.940  | 0.749 |  0.766  |  0.806   |   0.623   | 0.672 | 0.677 |   0.797    |   0.813    | 0.879  |
+| Model | Backbone    |    Avg    | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
+| ----- | ----------- | :-------: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
+| PADIM | ResNet-18   |   0.909   | 0.988  | 0.923 |  0.985  | 0.940 | 0.984 | 0.994  | 0.871 |  0.874  |  0.796   |   0.974   | 0.872 | 0.779 |   0.939    |   0.954    | 0.761  |
+| PADIM | Wide ResNet | **0.965** | 0.998  | 0.957 |  0.999  | 0.983 | 0.993 | 0.999  | 0.898 |  0.907  |    -     |   0.992   | 0.951 |   -   |   0.981    |   0.973    | 0.909  |
+| DFKDE | ResNet-18   |   0.779   | 0.650  | 0.403 |  0.977  | 0.972 | 0.954 | 0.940  | 0.749 |  0.766  |  0.806   |   0.623   | 0.672 | 0.677 |   0.797    |   0.813    | 0.879  |
 
 ### Pixel-Level AUC
-| Model |Backbone   |    Avg    | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
-| ----- |-----------| :-------: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
-| PADIM |ResNet-18  |   0.964   | 0.986  | 0.919 |  0.992  | 0.916 | 0.937 | 0.980  | 0.957 |  0.980  |  0.972   |   0.957   | 0.951 | 0.973 |   0.986    |   0.968    | 0.980  |
-| PADIM |Wide ResNet| **0.974** | 0.990  | 0.970 |  0.991  | 0.940 | 0.954 | 0.982  | 0.963 |  0.985  |     -    |   0.974   | 0.961 |    -  |   0.988    |   0.973    | 0.986  |
-| STFPM |ResNet-18  |   0.961   | 0.984  | 0.988 |  0.982  | 0.957 | 0.940 | 0.981  | 0.940 |  0.974  |  0.983   |   0.968   | 0.973 | 0.983 |   0.984    |   0.800    | 0.983  |
+| Model | Backbone    |    Avg    | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
+| ----- | ----------- | :-------: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
+| PADIM | ResNet-18   |   0.964   | 0.986  | 0.919 |  0.992  | 0.916 | 0.937 | 0.980  | 0.957 |  0.980  |  0.972   |   0.957   | 0.951 | 0.973 |   0.986    |   0.968    | 0.980  |
+| PADIM | Wide ResNet | **0.974** | 0.990  | 0.970 |  0.991  | 0.940 | 0.954 | 0.982  | 0.963 |  0.985  |    -     |   0.974   | 0.961 |   -   |   0.988    |   0.973    | 0.986  |
+| STFPM | ResNet-18   |   0.961   | 0.984  | 0.988 |  0.982  | 0.957 | 0.940 | 0.981  | 0.940 |  0.974  |  0.983   |   0.968   | 0.973 | 0.983 |   0.984    |   0.800    | 0.983  |
