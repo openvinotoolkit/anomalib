@@ -30,17 +30,17 @@ Training
 
 If you plan on using
 `SigOpt <https://app.sigopt.com/docs/runs/get-started>`__ as your
-logger, you will need to have that configured prior to running train.py.
+logger, you will need to have that configured prior to running tools/train.py.
 
 By default
-`python train.py <https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/blob/samet/stfpm/train.py>`__
+`python tools/train.py <https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/blob/samet/stfpm/tools/train.py>`__
 runs `STFPM <https://arxiv.org/pdf/2103.04257.pdf>`__ model
 `MVTec <https://www.mvtec.com/company/research/datasets/mvtec-ad>`__
 ``leather`` dataset.
 
 ::
 
-    python train.py    # Train STFPM on MVTec leather
+    python tools/train.py    # Train STFPM on MVTec leather
 
 Training a model on a specific dataset and category requires further
 configuration. Each model has its own configuration file,
@@ -51,14 +51,14 @@ file is to be provided:
 
 ::
 
-    python train.py --model_config_path <path/to/model/config.yaml>
+    python tools/train.py --model_config_path <path/to/model/config.yaml>
 
 Alternatively, a model name could also be provided as an argument, where
 the scripts automatically finds the corresponding config file.
 
 ::
 
-    python train.py --model stfpm
+    python tools/train.py --model stfpm
 
 To see a list of currently supported models, refer to page: :ref:`available models`
 
