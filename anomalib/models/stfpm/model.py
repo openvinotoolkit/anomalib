@@ -122,7 +122,7 @@ class Callbacks:
             patience=self.config.model.early_stopping.patience,
             mode=self.config.model.early_stopping.mode,
         )
-        callbacks = [checkpoint, early_stopping, TimerCallback(), VisualizerCallback()]
+        callbacks: List[Callback] = [checkpoint, early_stopping, TimerCallback(), VisualizerCallback()]
 
         if self.config.optimization.nncf.apply:
             callbacks.append(

@@ -5,16 +5,14 @@ DFKDE: Deep Feature Kernel Density Estimation
 import os
 from typing import Any, Dict, List, Union
 
-import numpy as np
 import torch
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
-from sklearn.metrics import roc_auc_score
-from torch import Tensor
 from torchvision.models import resnet50
 
 from anomalib.core.callbacks.model_loader import LoadModelCallback
+from anomalib.core.callbacks.timer import TimerCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.models.base.lightning_modules import ClassificationModule
 from anomalib.models.dfkde.normality_model import NormalityModel
@@ -32,12 +30,11 @@ class Callbacks:
         """
         Get DFKDE model callbacks.
         """
-        callbacks: List[Callback] = []
         checkpoint = ModelCheckpoint(
             dirpath=os.path.join(self.config.project.path, "weights"),
             filename="model",
         )
-        callbacks.append(checkpoint)
+        callbacks: List[Callback] = [checkpoint, TimerCallback()]
 
         if "weight_file" in self.config.model.keys():
             model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.model.weight_file))
@@ -123,40 +120,8 @@ class DfkdeLightning(ClassificationModule):
         """
 
         self.feature_extractor.eval()
-        images, label = batch["image"], batch["label"]
-        layer_outputs = self.feature_extractor(images)
+        layer_outputs = self.feature_extractor(batch["image"])
         feature_vector = torch.hstack(list(layer_outputs.values())).detach()
-        probability = self.normality_model.predict(feature_vector.view(feature_vector.shape[:2]))
-        return {"probability": probability, "label": label.cpu().numpy()}
+        batch["pred_labels"] = self.normality_model.predict(feature_vector.view(feature_vector.shape[:2]))
 
-    def validation_epoch_end(self, outputs: List[Union[Tensor, Dict[str, Any]]]) -> None:
-        """Compute anomaly classification scores based on probability scores.
-
-        Args:
-          outputs: Batch of outputs from the validation step
-          outputs: dict:
-
-        Returns:
-
-        """
-        pred_labels = np.hstack([output["probability"] for output in outputs])
-        true_labels = np.hstack([output["label"] for output in outputs])
-        self.results.performance["image_roc_auc"] = roc_auc_score(true_labels, pred_labels)
-        self.log(name="auc", value=self.results.performance["image_roc_auc"], on_epoch=True, prog_bar=True)
-
-    def test_step(self, batch, _):
-        """Test Step of DFKDE.
-            Similar to the training and validation steps,
-            features are extracted from the CNN for each batch.
-
-        Args:
-          batch: Input batch
-          batch_idx: Index of the batch.
-          batch: dict:
-          batch_idx: dict:
-
-        Returns:
-
-        """
-
-        return self.validation_step(batch, _)
+        return batch
