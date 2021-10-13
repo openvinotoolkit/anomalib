@@ -16,6 +16,7 @@ from torch import Tensor
 from torchvision.models import resnet18
 
 from anomalib.core.callbacks.model_loader import LoadModelCallback
+from anomalib.core.callbacks.timer import TimerCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.results import ClassificationResults
 from anomalib.models.dfm.dfm_model import DFMModel
@@ -33,12 +34,11 @@ class Callbacks:
         """
         Get DFM model callbacks.
         """
-        callbacks: List[Callback] = []
         checkpoint = ModelCheckpoint(
             dirpath=os.path.join(self.config.project.path, "weights"),
             filename="model",
         )
-        callbacks.append(checkpoint)
+        callbacks: List[Callback] = [checkpoint, TimerCallback()]
 
         if "weight_file" in self.config.model.keys():
             model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.weight_file))

@@ -4,7 +4,7 @@ https://arxiv.org/abs/2106.08265
 """
 
 import os
-from typing import Dict, Sequence, Tuple, Union
+from typing import Dict, List, Sequence, Tuple, Union
 
 import cv2
 import numpy as np
@@ -12,11 +12,12 @@ import torch
 import torchvision
 from omegaconf import ListConfig
 from omegaconf.dictconfig import DictConfig
-from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 from scipy.ndimage import gaussian_filter
 from torch import Tensor, nn
 
 from anomalib.core.callbacks.model_loader import LoadModelCallback
+from anomalib.core.callbacks.timer import TimerCallback
 from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.core.model.dynamic_module import DynamicBufferModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
@@ -40,7 +41,7 @@ class Callbacks:
             dirpath=os.path.join(self.config.project.path, "weights"),
             filename="model",
         )
-        callbacks = [checkpoint, VisualizerCallback()]
+        callbacks: List[Callback] = [checkpoint, VisualizerCallback(), TimerCallback()]
 
         if "weight_file" in self.config.model.keys():
             model_loader = LoadModelCallback(

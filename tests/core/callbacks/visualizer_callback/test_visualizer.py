@@ -3,6 +3,7 @@ import os
 import tempfile
 from unittest import mock
 
+import pytest
 import pytorch_lightning as pl
 from omegaconf.omegaconf import OmegaConf
 
@@ -20,12 +21,13 @@ def get_dummy_logger(config, tempdir):
     return logger
 
 
-def test_add_images():
+@pytest.mark.parametrize("dataset", ["segmentation", "classification"])
+def test_add_images(dataset):
     """Tests if tensorboard logs are generated"""
     with tempfile.TemporaryDirectory() as dir_loc:
         config = OmegaConf.create(
             {
-                "dataset": {"task": "segmentation"},
+                "dataset": {"task": dataset},
                 "project": {"path": dir_loc, "log_images_to": ["tensorboard", "local"]},
             }
         )
