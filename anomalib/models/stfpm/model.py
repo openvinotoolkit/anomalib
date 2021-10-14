@@ -12,17 +12,14 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import torchvision
-from omegaconf import DictConfig, ListConfig
+from omegaconf import ListConfig
 from openvino.inference_engine import IECore  # pylint: disable=no-name-in-module
-from pytorch_lightning.callbacks import Callback, EarlyStopping, ModelCheckpoint
+from pytorch_lightning.callbacks import Callback, EarlyStopping
 from sklearn.metrics import roc_auc_score
 from torch import Tensor, nn, optim
 
-from anomalib.core.callbacks.compress import CompressModelCallback
-from anomalib.core.callbacks.model_loader import LoadModelCallback
-from anomalib.core.callbacks.nncf_callback import NNCFCallback
+from anomalib.core.callbacks import get_callbacks
 from anomalib.core.callbacks.timer import TimerCallback
-from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.datasets.tiler import Tiler
 from anomalib.models.base import SegmentationModule
@@ -103,51 +100,6 @@ class Loss(nn.Module):
         total_loss = torch.stack(layer_losses).sum()
 
         return total_loss
-
-
-class Callbacks:
-    """STFPM-specific callbacks"""
-
-    def __init__(self, config: DictConfig):
-        self.config = config
-
-    def get_callbacks(self) -> List[Callback]:
-        """Get STFPM model callbacks."""
-        checkpoint = ModelCheckpoint(
-            dirpath=os.path.join(self.config.project.path, "weights"),
-            filename="model",
-        )
-        early_stopping = EarlyStopping(
-            monitor=self.config.model.early_stopping.metric,
-            patience=self.config.model.early_stopping.patience,
-            mode=self.config.model.early_stopping.mode,
-        )
-        callbacks: List[Callback] = [checkpoint, early_stopping, TimerCallback(), VisualizerCallback()]
-
-        if self.config.optimization.nncf.apply:
-            callbacks.append(
-                NNCFCallback(
-                    config=self.config,
-                    dirpath=os.path.join(self.config.project.path, "compressed"),
-                    filename="compressed_model",
-                )
-            )
-        if self.config.optimization.compression.apply:
-            callbacks.append(
-                CompressModelCallback(
-                    config=self.config,
-                    dirpath=os.path.join(self.config.project.path, "compressed"),
-                    filename="compressed_model",
-                )
-            )
-        if "weight_file" in self.config.model.keys():
-            model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.model.weight_file))
-            callbacks.append(model_loader)
-
-        return callbacks
-
-    def __call__(self):
-        return self.get_callbacks()
 
 
 class AnomalyMapGenerator:
@@ -288,7 +240,7 @@ class StfpmLightning(SegmentationModule):
 
     def __init__(self, hparams):
         super().__init__(hparams)
-        self.callbacks = Callbacks(hparams)()
+        self.callbacks = get_callbacks(hparams)
 
         self.model = STFPMModel(hparams)
         self.loss_val = 0
@@ -310,6 +262,16 @@ class StfpmLightning(SegmentationModule):
             momentum=self.hparams.model.momentum,
             weight_decay=self.hparams.model.weight_decay,
         )
+
+    def configure_callbacks(self):
+        callbacks: List[Callback] = []
+        early_stopping = EarlyStopping(
+            monitor=self.hparams.model.early_stopping.metric,
+            patience=self.hparams.model.early_stopping.patience,
+            mode=self.hparams.model.early_stopping.mode,
+        )
+        callbacks.append(early_stopping)
+        return callbacks
 
     def training_step(self, batch, _):  # pylint: disable=arguments-differ
         """
@@ -360,7 +322,7 @@ class StfpmOpenVino(SegmentationModule):
         xml_path = os.path.splitext(bin_path)[0] + ".xml"
         net = ie_core.read_network(xml_path, bin_path)
 
-        self.callbacks = [TimerCallback()]
+        self.callbacks = [TimerCallback()]  # TODO refactor this https://jira.devtools.intel.com/browse/IAAALD-183
 
         self.input_blob = next(iter(net.input_info))
         self.out_blob = next(iter(net.outputs))

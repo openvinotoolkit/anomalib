@@ -2,8 +2,8 @@ pillow==8.2.0
 nncf>=2.0.0
 pytorch-lightning==1.3.6
 -f https://download.pytorch.org/whl/torch_stable.html
-torch==1.9.1+cu111
-torchvision==0.10.1+cu111
+torch==1.8.1+cu111
+torchvision==0.9.1+cu111
 matplotlib>=3.4.1
 opencv-python>=4.5.1
 scikit-learn>=0.24.1

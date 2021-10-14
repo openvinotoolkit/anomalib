@@ -3,22 +3,17 @@ Towards Total Recall in Industrial Anomaly Detection
 https://arxiv.org/abs/2106.08265
 """
 
-import os
-from typing import Dict, List, Sequence, Tuple, Union
+from typing import Dict, Tuple, Union
 
 import cv2
 import numpy as np
 import torch
 import torchvision
 from omegaconf import ListConfig
-from omegaconf.dictconfig import DictConfig
-from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 from scipy.ndimage import gaussian_filter
 from torch import Tensor, nn
 
-from anomalib.core.callbacks.model_loader import LoadModelCallback
-from anomalib.core.callbacks.timer import TimerCallback
-from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
+from anomalib.core.callbacks import get_callbacks
 from anomalib.core.model.dynamic_module import DynamicBufferModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.nearest_neighbors import NearestNeighbors
@@ -27,32 +22,6 @@ from anomalib.datasets.tiler import Tiler
 from anomalib.models.base import SegmentationModule
 from anomalib.models.padim.model import concat_layer_embedding
 from anomalib.models.patchcore.sampling_methods.kcenter_greedy import KCenterGreedy
-
-
-class Callbacks:
-    """PatchCore-specific callbacks"""
-
-    def __init__(self, config: DictConfig):
-        self.config = config
-
-    def get_callbacks(self) -> Sequence:
-        """Get PatchCore model callbacks."""
-        checkpoint = ModelCheckpoint(
-            dirpath=os.path.join(self.config.project.path, "weights"),
-            filename="model",
-        )
-        callbacks: List[Callback] = [checkpoint, VisualizerCallback(), TimerCallback()]
-
-        if "weight_file" in self.config.model.keys():
-            model_loader = LoadModelCallback(
-                weights_path=os.path.join(self.config.project.path, self.config.model.weight_file)
-            )
-            callbacks.append(model_loader)
-
-        return callbacks
-
-    def __call__(self):
-        return self.get_callbacks()
 
 
 class AnomalyMapGenerator:
@@ -252,7 +221,7 @@ class PatchcoreLightning(SegmentationModule):
 
         self.model = PatchcoreModel(hparams)
         self.automatic_optimization = False
-        self.callbacks = Callbacks(hparams)()
+        self.callbacks = get_callbacks(hparams)
 
     def configure_optimizers(self):
         """
