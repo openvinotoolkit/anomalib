@@ -39,6 +39,7 @@ class ClassificationResults:
     filenames: List[Union[str, Path]] = field(default_factory=list)
     images: Optional[Tensor] = None
     true_labels: Optional[np.ndarray] = None
+    pred_scores: Optional[np.ndarray] = None
     pred_labels: Optional[np.ndarray] = None
     # TODO: Use MetricCollection: https://jira.devtools.intel.com/browse/IAAALD-170
     performance: Dict[str, Any] = field(default_factory=dict)

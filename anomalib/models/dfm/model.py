@@ -139,9 +139,9 @@ class DfmLightning(pl.LightningModule):
         Returns:
 
         """
-        pred_labels = np.hstack([output["dfm_scores"] for output in outputs])
+        pred_scores = np.hstack([output["dfm_scores"] for output in outputs])
         true_labels = np.hstack([output["ground_truth"] for output in outputs])
-        self.results.performance["image_roc_auc"] = roc_auc_score(true_labels, pred_labels)
+        self.results.performance["image_roc_auc"] = roc_auc_score(true_labels, pred_scores)
         self.log(name="auc", value=self.results.performance["image_roc_auc"], on_epoch=True, prog_bar=True)
 
     def test_step(self, batch, _):  # pylint: disable=arguments-differ

@@ -122,6 +122,6 @@ class DfkdeLightning(ClassificationModule):
         self.feature_extractor.eval()
         layer_outputs = self.feature_extractor(batch["image"])
         feature_vector = torch.hstack(list(layer_outputs.values())).detach()
-        batch["pred_labels"] = self.normality_model.predict(feature_vector.view(feature_vector.shape[:2]))
+        batch["pred_scores"] = self.normality_model.predict(feature_vector.view(feature_vector.shape[:2]))
 
         return batch

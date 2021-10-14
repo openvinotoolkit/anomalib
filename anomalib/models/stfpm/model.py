@@ -422,9 +422,9 @@ class StfpmOpenVino(SegmentationModule):
         self.results.anomaly_maps = np.stack([output["anomaly_maps"].numpy() for output in outputs])
 
         self.results.true_labels = np.stack([output["true_labels"].numpy() for output in outputs])
-        self.results.pred_labels = self.results.anomaly_maps.reshape(self.results.anomaly_maps.shape[0], -1).max(axis=1)
+        self.results.pred_scores = self.results.anomaly_maps.reshape(self.results.anomaly_maps.shape[0], -1).max(axis=1)
 
-        self.results.performance["image_roc_auc"] = roc_auc_score(self.results.true_labels, self.results.pred_labels)
+        self.results.performance["image_roc_auc"] = roc_auc_score(self.results.true_labels, self.results.pred_scores)
         self.results.performance["pixel_roc_auc"] = roc_auc_score(
             self.results.true_masks.flatten(), self.results.anomaly_maps.flatten()
         )
