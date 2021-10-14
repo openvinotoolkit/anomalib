@@ -49,37 +49,23 @@ class SparseRandomProjection:
             components = 1 / np.sqrt(self.n_components) * components
 
         else:
-            # generate location of non zero elements
-            col_indices = torch.IntTensor()
-            crow_indices = torch.zeros(self.n_components + 1, dtype=torch.int64)
+            # Sparse matrix is not being generated here as it is stored as dense anyways
+            components = torch.zeros((self.n_components, n_features), dtype=torch.float64)
             for i in range(self.n_components):
                 # find the indices of the non-zero components for row i
-                n_nonzero_i = torch.distributions.Binomial(total_count=n_features, probs=density).sample()
+                nnz_idx = torch.distributions.Binomial(total_count=n_features, probs=density).sample()
+                # get nnz_idx column indices
                 # pylint: disable=not-callable
-                indices_i = torch.tensor(
+                c_idx = torch.tensor(
                     sample_without_replacement(
-                        n_population=n_features, n_samples=n_nonzero_i, random_state=self.random_state
+                        n_population=n_features, n_samples=nnz_idx, random_state=self.random_state
                     )
                 )
-                col_indices = torch.cat((col_indices, indices_i), dim=0)
-                crow_indices[i + 1] = crow_indices[i] + n_nonzero_i
+                data = torch.distributions.Binomial(total_count=1, probs=0.5).sample(sample_shape=c_idx.size()) * 2 - 1
+                # assign data to only those columns
+                components[i, c_idx] = data.double()
 
-            crow_indices[-1] = len(col_indices)  # last number is the number of non-zeros
-            data = (
-                torch.distributions.Binomial(total_count=1, probs=0.5).sample(sample_shape=col_indices.size()) * 2 - 1
-            )
-            data = np.sqrt(1 / density) / np.sqrt(self.n_components) * data
-
-            # build the CSR structure by concatenating the rows.
-            # Weird that officially, pytorch uses a protected member
-            # https://pytorch.org/docs/stable/generated/torch._sparse_csr_tensor.html
-            # pylint: disable=protected-access
-            components = torch._sparse_csr_tensor(
-                crow_indices=crow_indices,
-                col_indices=col_indices,
-                values=data.to(torch.double),
-                size=(self.n_components, n_features),
-            )
+            components *= np.sqrt(1 / density) / np.sqrt(self.n_components)
 
         return components
 
@@ -116,7 +102,7 @@ class SparseRandomProjection:
         # torch can't multiply directly on sparse matrix and moving sparse matrix to cuda throws error
         # (Could not run 'aten::empty_strided' with arguments from the 'SparseCsrCUDA' backend)
         # hence sparse matrix is stored as a dense matrix on the device
-        self.sparse_random_matrix = self._sparse_random_matrix(n_features=n_features).to_dense().to(device)
+        self.sparse_random_matrix = self._sparse_random_matrix(n_features=n_features).to(device)
 
         return self
 

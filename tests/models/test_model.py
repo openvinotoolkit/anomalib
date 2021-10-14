@@ -56,11 +56,10 @@ def category() -> str:
         ("stfpm", False),
         ("stfpm", True),
         ("patchcore", False),
-        ("patchcore", True),
     ],
 )
 @pytest.mark.flaky(max_runs=3)
-@TestDataset(num_train=200, num_test=10, path=get_dataset_path(), use_mvtec=False)
+@TestDataset(num_train=200, num_test=10, path=get_dataset_path(), use_mvtec=True)
 def test_model(category, model_name, nncf, path="./datasets/MVTec"):
     """
     Test Model Training and Test Pipeline.
@@ -75,6 +74,7 @@ def test_model(category, model_name, nncf, path="./datasets/MVTec"):
     config.dataset.path = path
     with tempfile.TemporaryDirectory() as temporary_directory:
         config.project.path = temporary_directory
+        config.model.weight_file = "weights/model.ckpt"  # add model weights to the config
 
         if nncf:
             config.optimization.nncf.apply = True
@@ -86,12 +86,10 @@ def test_model(category, model_name, nncf, path="./datasets/MVTec"):
         datamodule = get_datamodule(config)
         model = get_model(config)
 
-        new_callbacks = []
         for index, callback in enumerate(model.callbacks):
-            # Remove the load model callback as we want to test the performance before loading
-            if not isinstance(callback, LoadModelCallback) and not isinstance(callback, VisualizerCallback):
-                new_callbacks.append(callback)
-        model.callbacks = new_callbacks
+            if isinstance(callback, VisualizerCallback):
+                model.callbacks.pop(index)
+                break
 
         # Train the model.
         trainer = Trainer(callbacks=model.callbacks, **config.trainer)
@@ -108,13 +106,13 @@ def test_model(category, model_name, nncf, path="./datasets/MVTec"):
         # Test loading the model
         # TODO add support for dfm once pca is available
         if model_name != "dfm":
-            config.model.weight_file = "weights/model.ckpt"  # add model weights to the config
             loaded_model = get_model(config)  # get new model
 
             for index, callback in enumerate(loaded_model.callbacks):
                 # Remove visualizer callback as saving results takes time
                 if isinstance(callback, VisualizerCallback):
                     loaded_model.callbacks.pop(index)
+                    break
 
             # create new trainer object with LoadModel callback (assumes it is present)
             trainer = Trainer(callbacks=loaded_model.callbacks, **config.trainer)

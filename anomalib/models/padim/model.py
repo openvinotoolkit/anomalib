@@ -3,10 +3,8 @@ PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localiz
 https://arxiv.org/abs/2011.08785
 """
 
-import os
-import os.path
 from random import sample
-from typing import Dict, List, Sequence, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import torch
 import torch.nn.functional as F
@@ -14,13 +12,9 @@ import torchvision
 from kornia import gaussian_blur2d
 from omegaconf import ListConfig
 from omegaconf.dictconfig import DictConfig
-from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 from torch import Tensor, nn
 
-from anomalib.core.callbacks.model_loader import LoadModelCallback
-from anomalib.core.callbacks.nncf_callback import NNCFCallback
-from anomalib.core.callbacks.timer import TimerCallback
-from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
+from anomalib.core.callbacks import get_callbacks
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
 from anomalib.datasets.tiler import Tiler
@@ -166,46 +160,6 @@ class PadimModel(nn.Module):
         return embedding_vectors
 
 
-class Callbacks:
-    """PADIM-specific callbacks"""
-
-    def __init__(self, config: DictConfig):
-        self.config = config
-
-    def get_callbacks(self) -> Sequence:
-        """Get PADIM model callbacks."""
-        callbacks: List[Callback] = []
-
-        checkpoint = ModelCheckpoint(
-            dirpath=os.path.join(self.config.project.path, "weights"),
-            filename="model",
-        )
-        callbacks.append(checkpoint)
-
-        if not self.config.project.log_images_to == []:
-            callbacks.append(VisualizerCallback())
-
-        if self.config.optimization.nncf.apply:
-            callbacks.append(
-                NNCFCallback(
-                    config=self.config,
-                    dirpath=os.path.join(self.config.project.path, "export"),
-                    filename="model",
-                )
-            )
-
-        if "weight_file" in self.config.model.keys():
-            model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.model.weight_file))
-            callbacks.append(model_loader)
-
-        callbacks.append(TimerCallback())
-
-        return callbacks
-
-    def __call__(self):
-        return self.get_callbacks()
-
-
 class AnomalyMapGenerator:
     """Generate Anomaly Heatmap"""
 
@@ -345,7 +299,7 @@ class PadimLightning(SegmentationModule):
         self.layers = hparams.model.layers
         self.model = PadimModel(hparams).eval()
 
-        self.callbacks = Callbacks(hparams)()
+        self.callbacks = get_callbacks(hparams)
         self.stats: List[Tensor, Tensor] = []
         self.automatic_optimization = False
 

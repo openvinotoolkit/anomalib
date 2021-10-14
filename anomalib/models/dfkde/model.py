@@ -2,48 +2,17 @@
 DFKDE: Deep Feature Kernel Density Estimation
 """
 
-import os
 from typing import Any, Dict, List, Union
 
 import torch
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
-from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 from torchvision.models import resnet50
 
-from anomalib.core.callbacks.model_loader import LoadModelCallback
-from anomalib.core.callbacks.timer import TimerCallback
+from anomalib.core.callbacks import get_callbacks
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.models.base.lightning_modules import ClassificationModule
 from anomalib.models.dfkde.normality_model import NormalityModel
-
-
-class Callbacks:
-    """
-    DFKDE-specific callbacks
-    """
-
-    def __init__(self, config: Union[DictConfig, ListConfig]):
-        self.config = config
-
-    def get_callbacks(self) -> List[Callback]:
-        """
-        Get DFKDE model callbacks.
-        """
-        checkpoint = ModelCheckpoint(
-            dirpath=os.path.join(self.config.project.path, "weights"),
-            filename="model",
-        )
-        callbacks: List[Callback] = [checkpoint, TimerCallback()]
-
-        if "weight_file" in self.config.model.keys():
-            model_loader = LoadModelCallback(os.path.join(self.config.project.path, self.config.model.weight_file))
-            callbacks.append(model_loader)
-
-        return callbacks
-
-    def __call__(self):
-        return self.get_callbacks()
 
 
 class DfkdeLightning(ClassificationModule):
@@ -63,7 +32,7 @@ class DfkdeLightning(ClassificationModule):
             threshold_steepness=self.threshold_steepness,
             threshold_offset=self.threshold_offset,
         )
-        self.callbacks = Callbacks(hparams)()
+        self.callbacks = get_callbacks(hparams)
         self.automatic_optimization = False
 
     @staticmethod

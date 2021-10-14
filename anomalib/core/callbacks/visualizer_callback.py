@@ -67,7 +67,8 @@ class VisualizerCallback(Callback):
         """
 
         if not isinstance(pl_module, SegmentationModule):
-            raise ValueError("This callback only supports Segmentation Modules.")
+            warn(f"This callback only supports Segmentation Modules. Found {type(pl_module)}. Skipping visualization.")
+            return
 
         if isinstance(pl_module.results, SegmentationResults):
             results = pl_module.results
