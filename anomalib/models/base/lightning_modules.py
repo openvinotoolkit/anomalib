@@ -10,7 +10,7 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks.base import Callback
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import balanced_accuracy_score, roc_auc_score
 from torch import nn
 
 from anomalib.core.results import ClassificationResults, SegmentationResults
@@ -63,19 +63,31 @@ class ClassificationModule(pl.LightningModule):
 
         self.results.true_labels = np.hstack([output["label"].cpu() for output in outputs])
 
-        if "pred_labels" not in outputs[0] and "anomaly_maps" in outputs[0]:
+        if "pred_scores" not in outputs[0] and "anomaly_maps" in outputs[0]:
             self.results.anomaly_maps = np.vstack([output["anomaly_maps"].cpu() for output in outputs])
-            self.results.pred_labels = self.results.anomaly_maps.reshape(self.results.anomaly_maps.shape[0], -1).max(
+            self.results.pred_scores = self.results.anomaly_maps.reshape(self.results.anomaly_maps.shape[0], -1).max(
                 axis=1
             )
         else:
-            self.results.pred_labels = np.hstack([output["pred_labels"].cpu() for output in outputs])
+            self.results.pred_scores = np.hstack([output["pred_scores"].cpu() for output in outputs])
 
-        self.results.performance["image_roc_auc"] = roc_auc_score(self.results.true_labels, self.results.pred_labels)
-        _, self.results.performance["image_f1_score"] = compute_threshold_and_f1_score(
+        self.results.performance["image_roc_auc"] = roc_auc_score(self.results.true_labels, self.results.pred_scores)
+        threshold_value, self.results.performance["image_f1_score"] = compute_threshold_and_f1_score(
+            self.results.true_labels, self.results.pred_scores
+        )
+
+        self.results.pred_labels = self.results.pred_scores > threshold_value
+
+        self.results.performance["balanced_accuracy_score"] = balanced_accuracy_score(
             self.results.true_labels, self.results.pred_labels
         )
 
+        self.log(
+            name="Image-Level accuracy",
+            value=self.results.performance["balanced_accuracy_score"],
+            on_epoch=True,
+            prog_bar=True,
+        )
         self.log(
             name="Image-Level AUC",
             value=self.results.performance["image_roc_auc"],
