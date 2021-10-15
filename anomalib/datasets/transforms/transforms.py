@@ -17,10 +17,10 @@ def get_transforms(config: Union[DictConfig, ListConfig], is_train: bool = True,
 
     Args:
         config: Transformation configurations
-        is_train: Training or Inference phase. For training, a probability is passed to the list
+        is_train: Training or Inferencer phase. For training, a probability is passed to the list
             of transformations.
         to_tensor: Boolean to convert the list of transforms to tensor. This is to be `True` if
-            training or inference is done with `PyTorch`. For `OpenVINO` Inference, this is to set
+            training or inference is done with `PyTorch`. For `OpenVINO` Inferencer, this is to set
             to `False`.
 
     Returns:

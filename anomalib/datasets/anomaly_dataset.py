@@ -24,6 +24,7 @@ from torch.utils.data import DataLoader
 from torchvision.datasets.folder import VisionDataset
 
 from anomalib.datasets.transforms import PreProcessor
+from anomalib.datasets.utils import read_image
 from anomalib.utils.download_progress_bar import DownloadProgressBar
 
 from .parser import PascalVocReader
@@ -38,22 +39,6 @@ __all__ = [
     "AnomalyTestDetectionDS",
     "AnomalyDataModule",
 ]
-
-
-def read_image(path: str) -> np.ndarray:
-    """
-    read_image
-        reads image from disk in RGB format
-    Args:
-        path: path to the image file
-
-    Returns:
-        image as numpy array
-    """
-    image = cv2.imread(path)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-    return image
 
 
 def split_normal_images_in_train_set(samples: DataFrame, split_ratio: float = 0.1, seed: int = 0) -> DataFrame:
