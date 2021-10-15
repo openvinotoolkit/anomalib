@@ -3,8 +3,25 @@ Dataset Utils
 """
 from typing import List, Optional, Tuple
 
+import cv2
 import numpy as np
 from torch import Tensor
+
+
+def read_image(path: str) -> np.ndarray:
+    """
+    read_image
+        reads image from disk in RGB format
+    Args:
+        path: path to the image file
+
+    Returns:
+        image as numpy array
+    """
+    image = cv2.imread(path)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    return image
 
 
 class Denormalize:

@@ -33,6 +33,18 @@ class ClassificationModule(pl.LightningModule):
         self.model: nn.Module
         self.results = ClassificationResults()
 
+    def forward(self, x):  # pylint: disable=arguments-differ
+        """
+        Forward-pass input tensor to the module
+
+        Args:
+            x (Tensor): Input Tensor
+
+        Returns:
+            [Tensor]: Output tensor from the model.
+        """
+        return self.model(x)
+
     def test_step(self, batch, _):  # pylint: disable=arguments-differ
         """
         Calls validation_step for anomaly map/score calculation.
