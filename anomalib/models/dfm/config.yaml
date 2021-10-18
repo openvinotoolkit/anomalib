@@ -57,6 +57,7 @@ project:
   path: ./results
   log_images_to: [local]
   logger: false
+  save_to_csv: false
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:

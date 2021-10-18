@@ -73,6 +73,7 @@ project:
   path: ./results
   log_images_to: [local]
   logger: false
+  save_to_csv: false
 
 optimization:
   compression:
