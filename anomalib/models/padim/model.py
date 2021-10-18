@@ -20,45 +20,10 @@ from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
 from anomalib.datasets.tiler import Tiler
 from anomalib.models.base import SegmentationModule
 
-__all__ = ["PadimLightning", "concat_layer_embedding"]
+__all__ = ["PadimLightning"]
 
 
 DIMS = {"resnet18": {"t_d": 448, "d": 100}, "wide_resnet50_2": {"t_d": 1792, "d": 550}}
-
-
-def concat_layer_embedding(embedding: Tensor, layer_embedding: Tensor) -> Tensor:
-    """
-    Generate patch embedding via pixel patches. A quote from Section IIIA from the paper:
-
-    "As activation maps have a lower resolution  than  the  input  image,
-    many  pixels  have  the  same embeddings  and  then  form  pixel  patches
-    with  no  overlap  in the  original  image  resolution.  Hence,  an  input
-    image  can  be divided  in  a  grid  of (i,j) ∈ [1,W] × [1,H] positions  where
-    WxH is  the  resolution  of  the  largest  activation  map  used  to
-    generate embeddings."
-
-    Args:
-        embedding: Embedding vector from the earlier layers
-        layer_embedding: Feature map from the subsequent layer.
-    """
-    device = embedding.device
-    batch_x, channel_x, height_x, width_x = embedding.size()
-    _, channel_y, height_y, width_y = layer_embedding.size()
-    stride = height_x // height_y
-
-    embedding = F.unfold(embedding, kernel_size=stride, stride=stride)
-    embedding = embedding.view(batch_x, channel_x, -1, height_y, width_y)
-    updated_embedding = torch.zeros(
-        size=(batch_x, channel_x + channel_y, embedding.size(2), height_y, width_y),
-        device=device,
-    )
-
-    for i in range(embedding.size(2)):
-        updated_embedding[:, :, i, :, :] = torch.cat((embedding[:, :, i, :, :], layer_embedding), 1)
-    updated_embedding = updated_embedding.view(batch_x, -1, height_y * width_y)
-    updated_embedding = F.fold(updated_embedding, kernel_size=stride, output_size=(height_x, width_x), stride=stride)
-
-    return updated_embedding
 
 
 class PadimModel(nn.Module):
@@ -119,10 +84,6 @@ class PadimModel(nn.Module):
             embeddings = self.generate_embedding(features)
         if self.hparams.dataset.tiling.apply:
             embeddings = self.tiler.untile(embeddings)
-        if not self.training:
-            return self.anomaly_map_generator(
-                embedding=embeddings, mean=self.gaussian.mean, covariance=self.gaussian.covariance
-            )
 
         return embeddings
 
@@ -138,26 +99,16 @@ class PadimModel(nn.Module):
                 Embedding vector
 
         """
-
-        def __reduce_embedding_dimension(embedding: Tensor, idx: Tensor) -> Tensor:
-            """
-            Reduce the dimension of the embedding via Random Sampling.
-
-            :param embedding: Embedding vector extracted from the feature maps.
-            :param idx: Randomly generated index values from which to sample.
-            :return: Updated embedding vector with fewer dimensionality.
-            """
-            idx = idx.to(embedding.device)
-            embedding = torch.index_select(embedding, 1, idx)
-            return embedding
-
-        embedding_vectors = features[self.layers[0]]
+        embeddings = features[self.layers[0]]
         for layer in self.layers[1:]:
-            embedding_vectors = concat_layer_embedding(embedding_vectors, features[layer])
+            layer_embedding = features[layer]
+            layer_embedding = F.interpolate(layer_embedding, size=embeddings.shape[-2:], mode="nearest")
+            embeddings = torch.cat((embeddings, layer_embedding), 1)
 
-        embedding_vectors = __reduce_embedding_dimension(embedding_vectors, self.idx)
-
-        return embedding_vectors
+        # subsample embeddings
+        idx = self.idx.to(embeddings.device)
+        embeddings = torch.index_select(embeddings, 1, idx)
+        return embeddings
 
 
 class AnomalyMapGenerator:
@@ -351,5 +302,9 @@ class PadimLightning(SegmentationModule):
             These are required in `validation_epoch_end` for feature concatenation.
 
         """
-        batch["anomaly_maps"] = self.model(batch["image"])
+        embeddings = self.model(batch["image"])
+        batch["anomaly_maps"] = self.model.anomaly_map_generator(
+            embedding=embeddings, mean=self.model.gaussian.mean, covariance=self.model.gaussian.covariance
+        )
+
         return batch
