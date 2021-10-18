@@ -9,15 +9,11 @@ from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 
 from .compress import CompressModelCallback
 from .model_loader import LoadModelCallback
+from .save_to_csv import SaveToCSVCallback
 from .timer import TimerCallback
 from .visualizer_callback import VisualizerCallback
 
-__all__ = [
-    "CompressModelCallback",
-    "LoadModelCallback",
-    "TimerCallback",
-    "VisualizerCallback",
-]
+__all__ = ["CompressModelCallback", "LoadModelCallback", "TimerCallback", "VisualizerCallback", "SaveToCSVCallback"]
 
 
 def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
@@ -71,5 +67,9 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
     if "weight_file" in config.model.keys():
         load_model = LoadModelCallback(os.path.join(config.project.path, config.model.weight_file))
         callbacks.append(load_model)
+
+    if "save_to_csv" in config.project.keys():
+        if config.project.save_to_csv:
+            callbacks.append(SaveToCSVCallback())
 
     return callbacks
