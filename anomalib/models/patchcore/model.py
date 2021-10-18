@@ -8,6 +8,7 @@ from typing import Dict, Tuple, Union
 import cv2
 import numpy as np
 import torch
+import torch.nn.functional as F
 import torchvision
 from omegaconf import ListConfig
 from scipy.ndimage import gaussian_filter
@@ -20,7 +21,6 @@ from anomalib.core.model.nearest_neighbors import NearestNeighbors
 from anomalib.core.utils.random_projection import SparseRandomProjection
 from anomalib.datasets.tiler import Tiler
 from anomalib.models.base import SegmentationModule
-from anomalib.models.padim.model import concat_layer_embedding
 from anomalib.models.patchcore.sampling_methods.kcenter_greedy import KCenterGreedy
 
 
@@ -162,11 +162,13 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
 
         """
 
-        layer_embeddings = features[self.layers[0]]
+        embeddings = features[self.layers[0]]
         for layer in self.layers[1:]:
-            layer_embeddings = concat_layer_embedding(layer_embeddings, features[layer])
+            layer_embedding = features[layer]
+            layer_embedding = F.interpolate(layer_embedding, size=embeddings.shape[-2:], mode="nearest")
+            embeddings = torch.cat((embeddings, layer_embedding), 1)
 
-        return layer_embeddings
+        return embeddings
 
     @staticmethod
     def reshape_embedding(embedding: Tensor) -> Tensor:
