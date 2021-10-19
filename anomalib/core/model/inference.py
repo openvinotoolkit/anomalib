@@ -17,6 +17,10 @@ from torch import Tensor, nn
 from anomalib.datasets.transforms.pre_process import PreProcessor
 from anomalib.datasets.utils import read_image
 from anomalib.models import get_model
+from anomalib.models.base.lightning_modules import (
+    ClassificationModule,
+    SegmentationModule,
+)
 from anomalib.utils.post_process import superimpose_anomaly_map
 
 
@@ -97,9 +101,14 @@ class TorchInferencer(Inferencer):
         path (Union[str, Path]): Path to the model ckpt file.
     """
 
-    def __init__(self, config: Union[DictConfig, ListConfig], path: Union[str, Path]):
+    def __init__(
+        self, config: Union[DictConfig, ListConfig], model: Union[str, Path, ClassificationModule, SegmentationModule]
+    ):
         self.config = config
-        self.model = self.load_model(path)
+        if isinstance(model, (ClassificationModule, SegmentationModule)):
+            self.model = model
+        else:
+            self.model = self.load_model(model)
 
     def load_model(self, path: Union[str, Path]) -> nn.Module:
         """
