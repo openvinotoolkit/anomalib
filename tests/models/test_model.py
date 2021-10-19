@@ -9,6 +9,7 @@ import pytest
 from pytorch_lightning import Trainer
 
 from anomalib.config.config import get_configurable_parameters, update_config_for_nncf
+from anomalib.core.callbacks import get_callbacks
 from anomalib.core.callbacks.model_loader import LoadModelCallback
 from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.datasets import get_datamodule
@@ -86,13 +87,17 @@ def test_model(category, model_name, nncf, path="./datasets/MVTec"):
         datamodule = get_datamodule(config)
         model = get_model(config)
 
-        for index, callback in enumerate(model.callbacks):
+        callbacks = get_callbacks(config)
+        if hasattr(model, "callbacks"):
+            callbacks.extend(model.callbacks)
+
+        for index, callback in enumerate(callbacks):
             if isinstance(callback, VisualizerCallback):
-                model.callbacks.pop(index)
+                callbacks.pop(index)
                 break
 
         # Train the model.
-        trainer = Trainer(callbacks=model.callbacks, **config.trainer)
+        trainer = Trainer(callbacks=callbacks, **config.trainer)
         trainer.fit(model=model, datamodule=datamodule)
 
         # Test the model.
@@ -108,14 +113,18 @@ def test_model(category, model_name, nncf, path="./datasets/MVTec"):
         if model_name != "dfm":
             loaded_model = get_model(config)  # get new model
 
-            for index, callback in enumerate(loaded_model.callbacks):
+            callbacks = get_callbacks(config)
+            if hasattr(model, "callbacks"):
+                callbacks.extend(model.callbacks)
+
+            for index, callback in enumerate(callbacks):
                 # Remove visualizer callback as saving results takes time
                 if isinstance(callback, VisualizerCallback):
-                    loaded_model.callbacks.pop(index)
+                    callbacks.pop(index)
                     break
 
             # create new trainer object with LoadModel callback (assumes it is present)
-            trainer = Trainer(callbacks=loaded_model.callbacks, **config.trainer)
+            trainer = Trainer(callbacks=callbacks, **config.trainer)
             # Assumes the new model has LoadModel callback and the old one had ModelCheckpoint callback
             trainer.test(model=loaded_model, datamodule=datamodule)
             if isinstance(model, SegmentationModule):

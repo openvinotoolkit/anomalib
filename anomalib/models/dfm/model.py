@@ -9,8 +9,8 @@ from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 from torchvision.models import resnet18
 
-from anomalib.core.callbacks import get_callbacks
 from anomalib.core.model.feature_extractor import FeatureExtractor
+from anomalib.core.results import ClassificationResults
 from anomalib.models.base.lightning_modules import ClassificationModule
 from anomalib.models.dfm.dfm_model import DFMModel
 
@@ -29,7 +29,7 @@ class DfmLightning(ClassificationModule):
         self.feature_extractor = FeatureExtractor(backbone=resnet18(pretrained=True), layers=["avgpool"]).eval()
 
         self.dfm_model = DFMModel(n_comps=hparams.model.pca_level, score_type=hparams.model.score_type)
-        self.callbacks = get_callbacks(hparams)
+        self.results = ClassificationResults()
         self.automatic_optimization = False
 
     @staticmethod

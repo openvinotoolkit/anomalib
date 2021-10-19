@@ -8,6 +8,7 @@ from argparse import ArgumentParser, Namespace
 from pytorch_lightning import Trainer
 
 from anomalib.config.config import get_configurable_parameters
+from anomalib.core.callbacks import get_callbacks
 from anomalib.datasets import get_datamodule
 from anomalib.models import get_model
 
@@ -44,7 +45,11 @@ def test():
     datamodule = get_datamodule(config)
     model = get_model(config)
 
-    trainer = Trainer(callbacks=model.callbacks, **config.trainer)
+    callbacks = get_callbacks(config)
+    if hasattr(model, "callbacks"):
+        callbacks.extend(model.callbacks)
+
+    trainer = Trainer(callbacks=callbacks, **config.trainer)
     trainer.test(model=model, datamodule=datamodule)
 
 

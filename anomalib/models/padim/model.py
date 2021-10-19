@@ -14,7 +14,6 @@ from omegaconf import ListConfig
 from omegaconf.dictconfig import DictConfig
 from torch import Tensor, nn
 
-from anomalib.core.callbacks import get_callbacks
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
 from anomalib.datasets.tiler import Tiler
@@ -250,7 +249,6 @@ class PadimLightning(SegmentationModule):
         self.layers = hparams.model.layers
         self.model = PadimModel(hparams).eval()
 
-        self.callbacks = get_callbacks(hparams)
         self.stats: List[Tensor, Tensor] = []
         self.automatic_optimization = False
 

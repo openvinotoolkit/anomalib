@@ -9,7 +9,6 @@ from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
 from torchvision.models import resnet50
 
-from anomalib.core.callbacks import get_callbacks
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.models.base.lightning_modules import ClassificationModule
 from anomalib.models.dfkde.normality_model import NormalityModel
@@ -32,7 +31,6 @@ class DfkdeLightning(ClassificationModule):
             threshold_steepness=self.threshold_steepness,
             threshold_offset=self.threshold_offset,
         )
-        self.callbacks = get_callbacks(hparams)
         self.automatic_optimization = False
 
     @staticmethod
