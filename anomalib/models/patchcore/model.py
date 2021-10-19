@@ -14,7 +14,6 @@ from omegaconf import ListConfig
 from scipy.ndimage import gaussian_filter
 from torch import Tensor, nn
 
-from anomalib.core.callbacks import get_callbacks
 from anomalib.core.model.dynamic_module import DynamicBufferModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.nearest_neighbors import NearestNeighbors
@@ -223,7 +222,6 @@ class PatchcoreLightning(SegmentationModule):
 
         self.model = PatchcoreModel(hparams)
         self.automatic_optimization = False
-        self.callbacks = get_callbacks(hparams)
 
     def configure_optimizers(self):
         """

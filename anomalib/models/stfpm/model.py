@@ -18,7 +18,6 @@ from pytorch_lightning.callbacks import Callback, EarlyStopping
 from sklearn.metrics import roc_auc_score
 from torch import Tensor, nn, optim
 
-from anomalib.core.callbacks import get_callbacks
 from anomalib.core.callbacks.timer import TimerCallback
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.datasets.tiler import Tiler
@@ -240,10 +239,16 @@ class StfpmLightning(SegmentationModule):
 
     def __init__(self, hparams):
         super().__init__(hparams)
-        self.callbacks = get_callbacks(hparams)
 
         self.model = STFPMModel(hparams)
         self.loss_val = 0
+        self.callbacks: List[Callback] = [
+            EarlyStopping(
+                monitor=self.hparams.model.early_stopping.metric,
+                patience=self.hparams.model.early_stopping.patience,
+                mode=self.hparams.model.early_stopping.mode,
+            )
+        ]
 
     def configure_optimizers(self):
         """
@@ -262,16 +267,6 @@ class StfpmLightning(SegmentationModule):
             momentum=self.hparams.model.momentum,
             weight_decay=self.hparams.model.weight_decay,
         )
-
-    def configure_callbacks(self):
-        callbacks: List[Callback] = []
-        early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
-        )
-        callbacks.append(early_stopping)
-        return callbacks
 
     def training_step(self, batch, _):  # pylint: disable=arguments-differ
         """
