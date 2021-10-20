@@ -47,6 +47,14 @@ RUN tar -xf mvtec_anomaly_detection.tar.xz -C /tmp/anomalib/datasets/MVTec
 COPY ./requirements/requirements.txt /tmp/anomalib/requirements/requirements.txt
 RUN pip install -r /tmp/anomalib/requirements/requirements.txt
 
+COPY ./requirements/requirements_openvino_mo.txt /tmp/anomalib/requirements/requirements_openvino_mo.txt
+RUN pip install -r /tmp/anomalib/requirements/requirements_openvino_mo.txt
+
 # Install other requirements related to development
 COPY ./requirements/requirements_dev.txt /tmp/anomalib/requirements/requirements_dev.txt
 RUN pip install -r /tmp/anomalib/requirements/requirements_dev.txt
+
+# Install ote_sdk
+COPY ./impt/src/ote_sdk/ /tmp/impt/src/ote_sdk/
+RUN cd /tmp/impt/src/ote_sdk && \
+    pip install -e .

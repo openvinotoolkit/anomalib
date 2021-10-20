@@ -4,3 +4,6 @@ mypy
 flake8
 pytest
 pylint
+black
+isort
+coverage

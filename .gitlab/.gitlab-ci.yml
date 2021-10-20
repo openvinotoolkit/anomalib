@@ -12,6 +12,7 @@ build_image:
   tags:
     - build-image
   script:
+    - git clone ssh://git@gitlab.devtools.intel.com:29418/vmc-eip/IMPT/impt.git
     - export http_proxy=http://proxy-dmz.intel.com:912
     - export https_proxy=http://proxy-dmz.intel.com:912
     - docker build -t registry-icv.inn.intel.com/anomalib_dev/anomalib_development_env .
@@ -21,6 +22,8 @@ build_image:
     changes:
       - Dockerfile
       - requirements/requirements.txt
+      - requirements/requirements_dev.txt
+      - requirements/requirements_openvino_mo.txt
   except:
     - /^feature/
 
@@ -49,11 +52,20 @@ coverage:
     - 'echo "{ \"proxies\": { \"default\": { \"httpProxy\": \"http://proxy-dmz.intel.com:912\", \"httpsProxy\": \"http://proxy-dmz.intel.com:912\",, \"ftpProxy\": \"http://proxy-dmz.intel.com:912\", \"noProxy\": \"$NO_PROXY\" } } }" > $HOME/.docker/config.json'
     - 'echo "{ \"proxies\": { \"default\": { \"httpProxy\": \"http://proxy-dmz.intel.com:912\", \"httpsProxy\": \"http://proxy-dmz.intel.com:912\", , \"ftpProxy\": \"http://proxy-dmz.intel.com:912\", \"noProxy\": \"$NO_PROXY\" } } }" '
   script:
-    - nvidia-smi
-    - tox
+    - black --check --diff anomalib -l 120
+    - isort --check-only --df anomalib --profile=black
+    - flake8 anomalib
+    - pylint anomalib --rcfile=tox.ini
+    - python -m mypy --install-types --non-interactive anomalib --config-file tox.ini
+    - python -m mypy --install-types --non-interactive tools/train.py --config-file tox.ini
+    - python -m mypy --install-types --non-interactive tools/test.py --config-file tox.ini
+    - python -m mypy --install-types --non-interactive tools/test.py --config-file tox.ini
+    - coverage run --include=anomalib/* -m pytest -ra
+    - coverage report -m --fail-under=90
+    - coverage xml -o coverage.xml
   timeout: 3h
   artifacts:
     reports:
-      cobertura: .tox/coverage.xml
+      cobertura: coverage.xml
   except:
     - /^feature/
