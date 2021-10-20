@@ -59,7 +59,7 @@ def category() -> str:
     ],
 )
 @pytest.mark.flaky(max_runs=3)
-@TestDataset(num_train=200, num_test=10, path=get_dataset_path(), use_mvtec=True)
+@TestDataset(num_train=200, num_test=10, path=get_dataset_path(), use_mvtec=False)
 def test_model(category, model_name, nncf, path="./datasets/MVTec"):
     """
     Test Model Training and Test Pipeline.

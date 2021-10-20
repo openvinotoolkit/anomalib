@@ -7,8 +7,9 @@ from tempfile import mkdtemp
 from typing import Dict, List, Optional, Union
 
 import numpy as np
-from skimage.draw import random_shapes
 from skimage.io import imsave
+
+from .shapes import random_shapes
 
 
 def get_dataset_path(path: Union[str, Path] = "./datasets/MVTec"):
@@ -29,10 +30,9 @@ def get_dataset_path(path: Union[str, Path] = "./datasets/MVTec"):
 def generate_random_anomaly_image(
     image_width: int,
     image_height: int,
-    shapes: List[str] = ["circle", "rectangle"],
-    max_shapes: int = 5,
-    max_size: Optional[int] = None,
-    return_mask: bool = False,
+    shapes: List[str] = ["triangle", "rectangle"],
+    max_shapes: Optional[int] = 5,
+    generate_mask: Optional[bool] = False,
 ) -> Dict:
     """Generate a random image with the corresponding shape entities.
 
@@ -42,25 +42,30 @@ def generate_random_anomaly_image(
         shapes (List[str]): List of shapes to draw in the image. Make sure these are different from `anomalous_shapes`
         max_shapes (int): Maximum shapes of a kind in the image. Defaults to 5.
         max_size (Optional[int], optional): Maximum size of the test shapes. Defaults to 10.
-        return_mask (bool): Generates the mask for the image. Defaults to False.
+        generate_mask (bool): Toggle between train/test split. Train images are restricted to first quadrant.
+                    Also generates the mask for the image. Defaults to False.
     Returns:
-        Tuple: image, bounding box if `return_mask` is False. Else return image, bounding box, mask
+        Tuple: image if `train` is False. Else return image, mask
     """
 
-    image = np.full((image_height, image_width, 3), 255, dtype=np.uint8)
-    shape_labels = []
+    image: np.ndarray = np.full((image_height, image_width, 3), 255, dtype=np.uint8)
+
+    # first quadrant for train
+    if not generate_mask:
+        input_region = [0, 0, image_width // 2, image_height // 2]
+    # 3rd quadrant for test
+    else:
+        input_region = [image_width // 2, image_height // 2, image_width, image_height]
+
     for shape in shapes:
-        shape_image, labels = random_shapes(
-            (image_height, image_width), max_shapes=max_shapes, shape=shape, max_size=max_size
-        )
-        shape_labels.extend(labels)
+        shape_image = random_shapes(input_region, (image_height, image_width), max_shapes=max_shapes, shape=shape)
         image = np.minimum(image, shape_image)  # since white is 255
 
-    result = {"image": image, "shape_labels": shape_labels}
+    result = {"image": image}
 
-    if return_mask:
+    if generate_mask:
         mask = np.zeros((image_height, image_width), dtype=np.uint8)
-        # if color exsits in any channel turn the mask bit white.
+        # if color exists in any channel turn the mask bit white.
         # not sure if there is a better way to do this.
         mask[image[..., 0] < 255] = 255
         mask[image[..., 1] < 255] = 255
@@ -78,8 +83,8 @@ class TestDataset:
         img_height: int = 128,
         img_width: int = 128,
         max_size: int = 10,
-        train_shapes: List[str] = ["circle", "rectangle"],
-        test_shapes: List[str] = ["triangle", "ellipse"],
+        train_shapes: List[str] = ["triangle", "rectangle"],
+        test_shapes: List[str] = ["hexagon", "star"],
         path: Union[str, Path] = "./datasets/MVTec",
         use_mvtec: bool = False,
     ) -> None:
@@ -94,7 +99,7 @@ class TestDataset:
             img_width (int, optional): Width of the image. Defaults to 128.
             max_size (Optional[int], optional): Maximum size of the test shapes. Defaults to 10.
             train_shapes (List[str], optional): List of good shapes. Defaults to ["circle", "rectangle"].
-            test_shapes (List[str], optional): List of anamolous shapes. Defaults to ["triangle", "ellipse"].
+            test_shapes (List[str], optional): List of anomalous shapes. Defaults to ["triangle", "ellipse"].
             path (Union[str, Path], optional): Path to MVTec dataset. Defaults to "./datasets/MVTec".
             use_mvtec (bool, optional): Use MVTec dataset or dummy dataset. Defaults to False.
 
@@ -149,7 +154,7 @@ class GeneratedDummyDataset(ContextDecorator):
             img_width (int, optional): Width of the image. Defaults to 128.
             max_size (Optional[int], optional): Maximum size of the test shapes. Defaults to 10.
             train_shapes (List[str], optional): List of good shapes. Defaults to ["circle", "rectangle"].
-            test_shapes (List[str], optional): List of anamolous shapes. Defaults to ["triangle", "ellipse"].
+            test_shapes (List[str], optional): List of anomalous shapes. Defaults to ["triangle", "ellipse"].
     """
 
     def __init__(
@@ -159,8 +164,8 @@ class GeneratedDummyDataset(ContextDecorator):
         img_height: int = 128,
         img_width: int = 128,
         max_size: Optional[int] = 10,
-        train_shapes: List[str] = ["circle", "rectangle"],
-        test_shapes: List[str] = ["triangle", "ellipse"],
+        train_shapes: List[str] = ["triangle", "rectangle"],
+        test_shapes: List[str] = ["star", "hexagon"],
     ) -> None:
         self.root_dir = mkdtemp()
         self.num_train = num_train
@@ -181,7 +186,7 @@ class GeneratedDummyDataset(ContextDecorator):
                 image_width=self.image_width,
                 image_height=self.image_height,
                 shapes=self.train_shapes,
-                return_mask=False,
+                generate_mask=False,
             )
             image = result["image"]
             imsave(os.path.join(train_path, f"{i:03}.png"), image, check_contrast=False)
@@ -198,15 +203,13 @@ class GeneratedDummyDataset(ContextDecorator):
                     image_width=self.image_width,
                     image_height=self.image_height,
                     shapes=self.train_shapes,
-                    return_mask=False,
+                    generate_mask=False,
                 )
-                # since ellipses are indistinguishable from circles in certain instances the max_size parameter is set.
                 result = generate_random_anomaly_image(
                     image_width=self.image_width,
                     image_height=self.image_height,
                     shapes=[test_category],
-                    return_mask=True,
-                    max_size=self.max_size,
+                    generate_mask=True,
                 )
                 correct_shapes = correct_shapes["image"]
                 image, mask = result["image"], result["mask"]
