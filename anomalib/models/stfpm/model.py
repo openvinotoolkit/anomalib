@@ -3,25 +3,18 @@ STFPM: Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detecti
 https://arxiv.org/abs/2103.04257
 """
 
-import os
-import os.path
-from pathlib import Path
 from typing import Dict, List, Tuple, Union
 
-import numpy as np
 import torch
 import torch.nn.functional as F
 import torchvision
 from omegaconf import ListConfig
-from openvino.inference_engine import IECore  # pylint: disable=no-name-in-module
 from pytorch_lightning.callbacks import Callback, EarlyStopping
-from sklearn.metrics import roc_auc_score
 from torch import Tensor, nn, optim
 
-from anomalib.core.callbacks.timer import TimerCallback
+from anomalib.core.model import AnomalyModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.datasets.tiler import Tiler
-from anomalib.models.base import SegmentationModule
 
 __all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel", "StfpmLightning"]
 
@@ -232,7 +225,7 @@ class STFPMModel(nn.Module):
         return output
 
 
-class StfpmLightning(SegmentationModule):
+class StfpmLightning(AnomalyModule):
     """
     PL Lightning Module for the STFPM algorithm.
     """
@@ -305,86 +298,3 @@ class StfpmLightning(SegmentationModule):
         batch["anomaly_maps"] = self.model(batch["image"])
 
         return batch
-
-
-class StfpmOpenVino(SegmentationModule):
-    """PyTorch Lightning module for the STFPM algorithm."""
-
-    def __init__(self, hparams):
-        super().__init__(hparams)
-        ie_core = IECore()
-        bin_path = os.path.join(hparams.project.path, hparams.weight_file)
-        xml_path = os.path.splitext(bin_path)[0] + ".xml"
-        net = ie_core.read_network(xml_path, bin_path)
-
-        self.callbacks = [TimerCallback()]  # TODO refactor this https://jira.devtools.intel.com/browse/IAAALD-183
-
-        self.input_blob = next(iter(net.input_info))
-        self.out_blob = next(iter(net.outputs))
-
-        self.exec_net = ie_core.load_network(network=net, device_name="CPU")
-
-    @staticmethod
-    def configure_optimizers():
-        """
-        configure_optimizers [summary]
-
-        Returns:
-            None: No optimizer is returned
-        """
-        # this module is only used in test mode, no need to configure optimizers
-        return None
-
-    def test_step(self, batch, _):
-        """
-        test_step [summary]
-
-        Args:
-            batch ([type]): [description]
-            _ ([type]): [description]
-
-        Returns:
-            [type]: [description]
-        """
-        filenames, images, labels, masks = (
-            batch["image_path"],
-            batch["image"],
-            batch["label"],
-            batch["mask"],
-        )
-        images = images.cpu().numpy()
-
-        anomaly_maps = self.exec_net.infer(inputs={self.input_blob: images})
-        anomaly_maps = list(anomaly_maps.values())
-
-        return {
-            "filenames": filenames,
-            "images": torch.Tensor(images),
-            "true_labels": labels.cpu(),
-            "true_masks": masks.squeeze(),
-            "anomaly_maps": torch.Tensor(anomaly_maps[0]),
-        }
-
-    def test_epoch_end(self, outputs):
-        """
-        test_epoch_end [summary]
-
-        Args:
-            outputs ([type]): [description]
-        """
-        self.results.filenames = [Path(f) for x in outputs for f in x["filenames"]]
-        self.results.images = [x["images"] for x in outputs]
-
-        self.results.true_masks = np.stack([output["true_masks"].numpy() for output in outputs])
-        self.results.anomaly_maps = np.stack([output["anomaly_maps"].numpy() for output in outputs])
-
-        self.results.true_labels = np.stack([output["true_labels"].numpy() for output in outputs])
-        self.results.pred_scores = self.results.anomaly_maps.reshape(self.results.anomaly_maps.shape[0], -1).max(axis=1)
-
-        self.results.performance["image_roc_auc"] = roc_auc_score(self.results.true_labels, self.results.pred_scores)
-        self.results.performance["pixel_roc_auc"] = roc_auc_score(
-            self.results.true_masks.flatten(), self.results.anomaly_maps.flatten()
-        )
-
-        self.log(name="Image-Level AUC", value=self.results.performance["image_roc_auc"], on_epoch=True, prog_bar=True)
-        self.log(name="Pixel-Level AUC", value=self.results.performance["pixel_roc_auc"], on_epoch=True, prog_bar=True)

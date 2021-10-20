@@ -14,12 +14,12 @@ from omegaconf import ListConfig
 from scipy.ndimage import gaussian_filter
 from torch import Tensor, nn
 
+from anomalib.core.model import AnomalyModule
 from anomalib.core.model.dynamic_module import DynamicBufferModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.nearest_neighbors import NearestNeighbors
 from anomalib.core.utils.random_projection import SparseRandomProjection
 from anomalib.datasets.tiler import Tiler
-from anomalib.models.base import SegmentationModule
 from anomalib.models.patchcore.sampling_methods.kcenter_greedy import KCenterGreedy
 
 
@@ -212,7 +212,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         return embedding_coreset
 
 
-class PatchcoreLightning(SegmentationModule):
+class PatchcoreLightning(AnomalyModule):
     """
     PatchcoreLightning Module to train PatchCore algorithm
     """

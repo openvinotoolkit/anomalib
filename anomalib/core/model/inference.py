@@ -14,13 +14,10 @@ from omegaconf import DictConfig, ListConfig
 from openvino.inference_engine import IECore  # pylint: disable=no-name-in-module
 from torch import Tensor, nn
 
+from anomalib.core.model import AnomalyModule
 from anomalib.datasets.transforms.pre_process import PreProcessor
 from anomalib.datasets.utils import read_image
 from anomalib.models import get_model
-from anomalib.models.base.lightning_modules import (
-    ClassificationModule,
-    SegmentationModule,
-)
 from anomalib.utils.post_process import superimpose_anomaly_map
 
 
@@ -101,11 +98,9 @@ class TorchInferencer(Inferencer):
         path (Union[str, Path]): Path to the model ckpt file.
     """
 
-    def __init__(
-        self, config: Union[DictConfig, ListConfig], model: Union[str, Path, ClassificationModule, SegmentationModule]
-    ):
+    def __init__(self, config: Union[DictConfig, ListConfig], model: Union[str, Path, AnomalyModule]):
         self.config = config
-        if isinstance(model, (ClassificationModule, SegmentationModule)):
+        if isinstance(model, AnomalyModule):
             self.model = model
         else:
             self.model = self.load_model(model)

@@ -1,5 +1,5 @@
 """
-Base Anomaly Lightning Models for classification and segmentation
+Base Anomaly Module for Training Task
 """
 
 from pathlib import Path
@@ -17,12 +17,16 @@ from anomalib.core.results import ClassificationResults, SegmentationResults
 from anomalib.utils.metrics import compute_threshold_and_f1_score
 
 
-class ClassificationModule(pl.LightningModule):
+class AnomalyModule(pl.LightningModule):
     """
-    BaseAnomalyModel for classification-based algorithms.
+    AnomalyModule to train, validate, predict and test images.
+
+    Args:
+        params (Union[DictConfig, ListConfig]): Configuration
     """
 
     def __init__(self, params: Union[DictConfig, ListConfig]):
+
         super().__init__()
         # Force the type for hparams so that it works with OmegaConfig style of accessing
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
@@ -31,7 +35,14 @@ class ClassificationModule(pl.LightningModule):
         self.callbacks: List[Callback]
 
         self.model: nn.Module
-        self.results = ClassificationResults()
+
+        self.results: Union[ClassificationResults, SegmentationResults]
+        if params.dataset.task == "classification":
+            self.results = ClassificationResults()
+        elif params.dataset.task == "segmentation":
+            self.results = SegmentationResults()
+        else:
+            raise NotImplementedError("Only Classification and Segmentation tasks are supported in this version.")
 
     def forward(self, x):  # pylint: disable=arguments-differ
         """
@@ -94,72 +105,15 @@ class ClassificationModule(pl.LightningModule):
             self.results.true_labels, self.results.pred_labels
         )
 
-        self.log(
-            name="Image-Level accuracy",
-            value=self.results.performance["balanced_accuracy_score"],
-            on_epoch=True,
-            prog_bar=True,
-        )
-        self.log(
-            name="Image-Level AUC",
-            value=self.results.performance["image_roc_auc"],
-            on_epoch=True,
-            prog_bar=True,
-        )
-        self.log(
-            name="Image-Level F1",
-            value=self.results.performance["image_f1_score"],
-            on_epoch=True,
-            prog_bar=True,
-        )
+        if self.hparams.dataset.task == "segmentation":
+            self.results.true_masks = np.vstack([output["mask"].squeeze(1).cpu() for output in outputs])
+            self.results.anomaly_maps = np.vstack([output["anomaly_maps"].cpu() for output in outputs])
+            self.results.performance["pixel_roc_auc"] = roc_auc_score(
+                self.results.true_masks.flatten(), self.results.anomaly_maps.flatten()
+            )
 
-    def test_epoch_end(self, outputs):
-        """
-        Compute and save anomaly scores of the test set.
-
-        Args:
-            outputs: Batch of outputs from the validation step
-
-        """
-        self.validation_epoch_end(outputs)
-
-
-class SegmentationModule(ClassificationModule):
-    """
-    BaseAnomalyModel for segmentation-based algorithms.
-    """
-
-    def __init__(self, params: Union[DictConfig, ListConfig]):
-        super().__init__(params=params)
-
-        self.model: nn.Module
-        self.results = SegmentationResults()
-
-    def validation_epoch_end(self, outputs):
-        """
-        Compute image and pixel level roc scores.
-
-        Args:
-          outputs: Batch of outputs from the validation step
-
-        """
-
-        # Segmentation tasks first run the classification results.
-        # Then run the segmentation-results, based on pixel-level.
-        super().validation_epoch_end(outputs)
-
-        self.results.true_masks = np.vstack([output["mask"].squeeze(1).cpu() for output in outputs])
-        self.results.anomaly_maps = np.vstack([output["anomaly_maps"].cpu() for output in outputs])
-        self.results.performance["pixel_roc_auc"] = roc_auc_score(
-            self.results.true_masks.flatten(), self.results.anomaly_maps.flatten()
-        )
-
-        self.log(
-            name="Pixel-Level AUC",
-            value=self.results.performance["pixel_roc_auc"],
-            on_epoch=True,
-            prog_bar=True,
-        )
+        for name, value in self.results.performance.items():
+            self.log(name=name, value=value, on_epoch=True, prog_bar=True)
 
     def test_epoch_end(self, outputs):
         """

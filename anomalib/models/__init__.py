@@ -8,13 +8,10 @@ from typing import List, Union
 from omegaconf import DictConfig, ListConfig
 from torch import load
 
-from anomalib.models.base.lightning_modules import (
-    ClassificationModule,
-    SegmentationModule,
-)
+from anomalib.core.model import AnomalyModule
 
 
-def get_model(config: Union[DictConfig, ListConfig]) -> Union[ClassificationModule, SegmentationModule]:
+def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     """Load model from the configuration file.
     Works only when the convention for model naming is followed.
 
@@ -33,11 +30,11 @@ def get_model(config: Union[DictConfig, ListConfig]) -> Union[ClassificationModu
         ValueError: If unsupported model is passed
 
     Returns:
-        Union[ClassificationModule, SegmentationModule]: Anomaly Model
+        AnomalyModule: Anomaly Model
     """
     openvino_model_list: List[str] = ["stfpm"]
     torch_model_list: List[str] = ["padim", "stfpm", "dfkde", "dfm", "patchcore"]
-    model: Union[ClassificationModule, SegmentationModule]
+    model: AnomalyModule
 
     if config.openvino:
         if config.model.name in openvino_model_list:

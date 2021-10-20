@@ -9,9 +9,9 @@ from skimage.segmentation import mark_boundaries
 from tqdm import tqdm
 
 from anomalib import loggers
+from anomalib.core.model import AnomalyModule
 from anomalib.core.results import SegmentationResults
 from anomalib.datasets.utils import Denormalize
-from anomalib.models.base import ClassificationModule, SegmentationModule
 from anomalib.utils.metrics import compute_threshold_and_f1_score
 from anomalib.utils.post_process import compute_mask, superimpose_anomaly_map
 from anomalib.utils.visualizer import Visualizer
@@ -32,7 +32,7 @@ class VisualizerCallback(Callback):
     def _add_images(
         self,
         visualizer: Visualizer,
-        module: ClassificationModule,
+        module: AnomalyModule,
         filename: Path,
     ):
 
@@ -66,14 +66,10 @@ class VisualizerCallback(Callback):
             currently only they support logging images.
         """
 
-        if not isinstance(pl_module, SegmentationModule):
-            warn(f"This callback only supports Segmentation Modules. Found {type(pl_module)}. Skipping visualization.")
-            return
-
         if isinstance(pl_module.results, SegmentationResults):
             results = pl_module.results
         else:
-            raise ValueError("Result Set must be of type `SegmentationResults`")
+            raise ValueError("Visualizer callback only supported for segmentation tasks.")
 
         if results.images is None or results.true_masks is None or results.anomaly_maps is None:
             raise ValueError("Result set cannot be empty!")

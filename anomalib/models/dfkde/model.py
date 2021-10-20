@@ -9,12 +9,12 @@ from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
 from torchvision.models import resnet50
 
+from anomalib.core.model import AnomalyModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
-from anomalib.models.base.lightning_modules import ClassificationModule
 from anomalib.models.dfkde.normality_model import NormalityModel
 
 
-class DfkdeLightning(ClassificationModule):
+class DfkdeLightning(AnomalyModule):
     """
     DFKDE: Deep Featured Kernel Density Estimation
     """

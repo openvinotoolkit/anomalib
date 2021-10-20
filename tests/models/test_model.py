@@ -10,11 +10,9 @@ from pytorch_lightning import Trainer
 
 from anomalib.config.config import get_configurable_parameters, update_config_for_nncf
 from anomalib.core.callbacks import get_callbacks
-from anomalib.core.callbacks.model_loader import LoadModelCallback
 from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.datasets import get_datamodule
 from anomalib.models import get_model
-from anomalib.models.base.lightning_modules import SegmentationModule
 from tests.helpers.dataset import TestDataset, get_dataset_path
 
 
@@ -105,7 +103,7 @@ def test_model(category, model_name, nncf, path="./datasets/MVTec"):
 
         assert model.results.performance["image_roc_auc"] >= 0.6
 
-        if isinstance(model, SegmentationModule):
+        if config.dataset.task == "segmentation":
             assert model.results.performance["pixel_roc_auc"] >= 0.6
 
         # Test loading the model
@@ -127,7 +125,7 @@ def test_model(category, model_name, nncf, path="./datasets/MVTec"):
             trainer = Trainer(callbacks=callbacks, **config.trainer)
             # Assumes the new model has LoadModel callback and the old one had ModelCheckpoint callback
             trainer.test(model=loaded_model, datamodule=datamodule)
-            if isinstance(model, SegmentationModule):
+            if config.dataset.task == "segmentation":
                 assert (
                     model.results.performance["pixel_roc_auc"] == loaded_model.results.performance["pixel_roc_auc"]
                 ), "Loaded model does not give same performance"
