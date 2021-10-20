@@ -9,13 +9,13 @@ from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 from torchvision.models import resnet18
 
+from anomalib.core.model import AnomalyModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.results import ClassificationResults
-from anomalib.models.base.lightning_modules import ClassificationModule
 from anomalib.models.dfm.dfm_model import DFMModel
 
 
-class DfmLightning(ClassificationModule):
+class DfmLightning(AnomalyModule):
     """
     DFM: Deep Featured Kernel Density Estimation
     """

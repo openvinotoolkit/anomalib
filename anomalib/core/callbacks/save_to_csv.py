@@ -2,13 +2,12 @@
 SaveToCSV Callback
 """
 from pathlib import Path
-from typing import Union
 
 import numpy as np
 import pandas as pd
 from pytorch_lightning import Callback, Trainer
 
-from anomalib.models.base import ClassificationModule, SegmentationModule
+from anomalib.core.model import AnomalyModule
 
 
 class SaveToCSVCallback(Callback):
@@ -20,7 +19,7 @@ class SaveToCSVCallback(Callback):
     def __init__(self):
         """SaveToCSV callback"""
 
-    def on_test_epoch_end(self, _trainer: Trainer, pl_module: Union[ClassificationModule, SegmentationModule]) -> None:
+    def on_test_epoch_end(self, _trainer: Trainer, pl_module: AnomalyModule) -> None:
         """Save Results at the end of training
         Args:
             _trainer (Trainer): Pytorch lightning trainer object (unused)

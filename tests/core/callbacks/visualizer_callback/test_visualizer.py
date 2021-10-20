@@ -21,7 +21,7 @@ def get_dummy_logger(config, tempdir):
     return logger
 
 
-@pytest.mark.parametrize("dataset", ["segmentation", "classification"])
+@pytest.mark.parametrize("dataset", ["segmentation"])
 def test_add_images(dataset):
     """Tests if tensorboard logs are generated"""
     with tempfile.TemporaryDirectory() as dir_loc:

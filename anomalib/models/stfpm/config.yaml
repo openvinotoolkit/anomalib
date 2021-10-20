@@ -72,7 +72,7 @@ model:
   weight_decay: 0.0001
   early_stopping:
     patience: 3
-    metric: Pixel-Level AUC
+    metric: pixel_roc_auc
     mode: max
 
 project:
@@ -108,7 +108,7 @@ hyperparameter_search:
   parallel_workers: 1
 
   metric:
-    name: Pixel-Level AUC
+    name: pixel_roc_auc
     objective: maximize
 
   parameters:

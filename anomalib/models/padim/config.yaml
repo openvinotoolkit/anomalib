@@ -97,7 +97,7 @@ hyperparameter_search:
   parallel_workers: 1
 
   metric:
-    name: Pixel-Level AUC
+    name: pixel_roc_auc
     objective: maximize
 
   parameters:

@@ -14,10 +14,10 @@ from omegaconf import ListConfig
 from omegaconf.dictconfig import DictConfig
 from torch import Tensor, nn
 
+from anomalib.core.model import AnomalyModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
 from anomalib.datasets.tiler import Tiler
-from anomalib.models.base import SegmentationModule
 
 __all__ = ["PadimLightning"]
 
@@ -239,7 +239,7 @@ class AnomalyMapGenerator:
         return self.compute_anomaly_map(embedding, mean, covariance)
 
 
-class PadimLightning(SegmentationModule):
+class PadimLightning(AnomalyModule):
     """
     PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization
     """

@@ -23,7 +23,7 @@ The HPO configuration of the file is produced below:
         parallel_workers: 1
 
         metric:
-            name: Pixel-Level AUC
+            name: pixel_roc_auc
             objective: maximize
 
         parameters:
@@ -51,7 +51,7 @@ To search for hyperparameters, SigOpt first needs to know a how many total combi
 
 We are going to skip the ``parallel_workers`` part as it has not been implemented yet. But in the future, you will be able to run the observations in parallel.
 
-The ``metric`` field defines the metric you want to optimize for. SigOpt allows you option between ``maximize`` and ``minimize``. In our case, we want to monitor the ``Pixel-Level AUC`` of the :ref:`models:STFPM` model and we want to maximize this metric.
+The ``metric`` field defines the metric you want to optimize for. SigOpt allows you option between ``maximize`` and ``minimize``. In our case, we want to monitor the ``pixel_roc_auc`` of the :ref:`models:STFPM` model and we want to maximize this metric.
 
 .. warning:: This is only for the developers. Make sure that when you log your metrics, you set ``prog_bar=True`` in ``self.log()``. Otherwise ``trainer.test()`` returns an empty dict.
 
@@ -70,7 +70,7 @@ Now, comes the actual parameters for which we want to find the optimal values. T
         momentum: 0.9
         patience: 5
         weight_decay: 0.0001
-        metric: Pixel-Level AUC
+        metric: pixel_roc_auc
 
 We can see that the model takes in values for learning rate, momentum, patience and weight decay. So let's try to optimize these. In the config file, we define a ``parameter`` key and define the data type and range for each of the parameters.
 
