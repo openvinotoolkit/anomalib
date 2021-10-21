@@ -2,15 +2,12 @@
 Base Anomaly Module for Training Task
 """
 
-from pathlib import Path
 from typing import List, Union
 
-import numpy as np
 import pytorch_lightning as pl
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks.base import Callback
-from sklearn.metrics import balanced_accuracy_score, roc_auc_score
 from torch import nn
 
 from anomalib.core.results import ClassificationResults, SegmentationResults
@@ -33,6 +30,8 @@ class AnomalyModule(pl.LightningModule):
         self.save_hyperparameters(params)
         self.loss: torch.Tensor
         self.callbacks: List[Callback]
+        self.register_buffer("threshold", torch.Tensor([params.model.threshold.default]))
+        self.threshold: torch.Tensor
 
         self.model: nn.Module
 
@@ -44,17 +43,33 @@ class AnomalyModule(pl.LightningModule):
         else:
             raise NotImplementedError("Only Classification and Segmentation tasks are supported in this version.")
 
-    def forward(self, x):  # pylint: disable=arguments-differ
+    def forward(self, batch):  # pylint: disable=arguments-differ
         """
         Forward-pass input tensor to the module
 
         Args:
-            x (Tensor): Input Tensor
+            batch (Tensor): Input Tensor
 
         Returns:
             [Tensor]: Output tensor from the model.
         """
-        return self.model(x)
+        return self.model(batch)
+
+    def predict_step(self, batch, batch_idx, _):  # pylint: disable=arguments-differ, signature-differs
+        """
+        Step function called during :meth:`~pytorch_lightning.trainer.trainer.Trainer.predict`.
+        By default, it calls :meth:`~pytorch_lightning.core.lightning.LightningModule.forward`.
+        Override to add any processing logic.
+
+        Args:
+            batch: Current batch
+            batch_idx: Index of current batch
+            dataloader_idx: Index of the current dataloader
+
+        Return:
+            Predicted output
+        """
+        return self._post_process(self.validation_step(batch, batch_idx), predict_labels=True)
 
     def test_step(self, batch, _):  # pylint: disable=arguments-differ
         """
@@ -71,6 +86,18 @@ class AnomalyModule(pl.LightningModule):
         """
         return self.validation_step(batch, _)
 
+    def validation_step_end(self, val_step_outputs):  # pylint: disable=arguments-differ
+        """
+        Called at the end of each validation step.
+        """
+        return self._post_process(val_step_outputs)
+
+    def test_step_end(self, test_step_outputs):  # pylint: disable=arguments-differ
+        """
+        Called at the end of each validation step.
+        """
+        return self._post_process(test_step_outputs)
+
     def validation_epoch_end(self, outputs):
         """
         Compute image-level performance metrics
@@ -80,40 +107,12 @@ class AnomalyModule(pl.LightningModule):
 
 
         """
-
-        self.results.filenames = [Path(f) for x in outputs for f in x["image_path"]]
-        self.results.images = torch.vstack([x["image"] for x in outputs])
-
-        self.results.true_labels = np.hstack([output["label"].cpu() for output in outputs])
-
-        if "pred_scores" not in outputs[0] and "anomaly_maps" in outputs[0]:
-            self.results.anomaly_maps = np.vstack([output["anomaly_maps"].cpu() for output in outputs])
-            self.results.pred_scores = self.results.anomaly_maps.reshape(self.results.anomaly_maps.shape[0], -1).max(
-                axis=1
-            )
-        else:
-            self.results.pred_scores = np.hstack([output["pred_scores"].cpu() for output in outputs])
-
-        self.results.performance["image_roc_auc"] = roc_auc_score(self.results.true_labels, self.results.pred_scores)
-        threshold_value, self.results.performance["image_f1_score"] = compute_threshold_and_f1_score(
-            self.results.true_labels, self.results.pred_scores
-        )
-
-        self.results.pred_labels = self.results.pred_scores > threshold_value
-
-        self.results.performance["balanced_accuracy_score"] = balanced_accuracy_score(
-            self.results.true_labels, self.results.pred_labels
-        )
-
-        if self.hparams.dataset.task == "segmentation":
-            self.results.true_masks = np.vstack([output["mask"].squeeze(1).cpu() for output in outputs])
-            self.results.anomaly_maps = np.vstack([output["anomaly_maps"].cpu() for output in outputs])
-            self.results.performance["pixel_roc_auc"] = roc_auc_score(
-                self.results.true_masks.flatten(), self.results.anomaly_maps.flatten()
-            )
-
-        for name, value in self.results.performance.items():
-            self.log(name=name, value=value, on_epoch=True, prog_bar=True)
+        self.results.store_outputs(outputs)
+        if self.hparams.model.threshold.adaptive:
+            threshold, _ = compute_threshold_and_f1_score(self.results.true_labels, self.results.pred_scores)
+            self.threshold = torch.Tensor([threshold])
+        self.results.evaluate(self.threshold.item())
+        self._log_metrics()
 
     def test_epoch_end(self, outputs):
         """
@@ -123,4 +122,25 @@ class AnomalyModule(pl.LightningModule):
             outputs: Batch of outputs from the validation step
 
         """
-        self.validation_epoch_end(outputs)
+        self.results.store_outputs(outputs)
+        self.results.evaluate(self.threshold.item())
+        self._log_metrics()
+
+    def _post_process(self, outputs, predict_labels=False):
+        """
+        Compute labels based on model predictions.
+        """
+        if "pred_scores" not in outputs and "anomaly_maps" in outputs:
+            outputs["pred_scores"] = (
+                outputs["anomaly_maps"].reshape(outputs["anomaly_maps"].shape[0], -1).max(axis=1).values
+            )
+        if predict_labels:
+            outputs["pred_labels"] = outputs["pred_scores"] >= self.threshold.item()
+        return outputs
+
+    def _log_metrics(self):
+        """
+        Log computed performance metrics
+        """
+        for name, value in self.results.performance.items():
+            self.log(name=name, value=value, on_epoch=True, prog_bar=True)

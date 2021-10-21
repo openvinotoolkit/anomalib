@@ -51,6 +51,9 @@ model:
   pca_level: 0.97
   score_type: fre # nll: for Gaussian modeling, fre: pca feature reconstruction error
   project_path: ./results
+  threshold:
+    default: 0
+    adaptive: true
 
 project:
   seed: 42

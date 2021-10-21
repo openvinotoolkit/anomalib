@@ -58,6 +58,9 @@ model:
   confidence_threshold: 0.5
   pre_processing: scale
   n_components: 16
+  threshold:
+    default: 0
+    adaptive: true
 
 project:
   seed: 42
