@@ -69,6 +69,9 @@ model:
   num_neighbors: 9
   metric: auc
   weight_file: weights/model.ckpt
+  threshold:
+    default: 0
+    adaptive: true
 
 project:
   seed: 0

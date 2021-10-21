@@ -62,7 +62,13 @@ class DummyModule(AnomalyModule):
         """Only used to trigger on_test_epoch_end"""
         self.log(name="loss", value=0.0, prog_bar=True)
 
+    def test_step_end(self, test_step_outputs):
+        return None
+
     def validation_epoch_end(self, output):
+        return None
+
+    def test_epoch_end(self, outputs):
         return None
 
     def configure_optimizers(self):

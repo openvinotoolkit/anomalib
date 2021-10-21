@@ -67,11 +67,14 @@ model:
     - layer2
     - layer3
   metric: auc
+  threshold:
+    default: 12
+    adaptive: true
 
 project:
-  seed: 0
+  seed: 42
   path: ./results
-  log_images_to: [local]
+  log_images_to: []
   logger: false
   save_to_csv: false
 

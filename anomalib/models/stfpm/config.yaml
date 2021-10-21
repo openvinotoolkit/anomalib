@@ -74,6 +74,9 @@ model:
     patience: 3
     metric: pixel_roc_auc
     mode: max
+  threshold:
+    default: 0
+    adaptive: true
 
 project:
   seed: 0
