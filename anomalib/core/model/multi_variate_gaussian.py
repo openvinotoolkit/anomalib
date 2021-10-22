@@ -5,21 +5,19 @@ Multi Variate Gaussian Distribution
 from typing import Any, List, Optional
 
 import torch
-from torch import Tensor
-
-from anomalib.core.model.dynamic_module import DynamicBufferModule
+from torch import Tensor, nn
 
 
-class MultiVariateGaussian(DynamicBufferModule):
+class MultiVariateGaussian(nn.Module):
     """
     Multi Variate Gaussian Distribution
     """
 
-    def __init__(self):
+    def __init__(self, n_features, n_patches):
         super().__init__()
 
-        self.register_buffer("mean", torch.Tensor())
-        self.register_buffer("covariance", torch.Tensor())
+        self.register_buffer("mean", torch.zeros(n_features, n_patches))
+        self.register_buffer("covariance", torch.eye(n_features).unsqueeze(2).repeat(1, 1, n_patches))
 
         self.mean: Tensor
         self.covariance: Tensor
