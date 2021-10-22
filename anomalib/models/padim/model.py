@@ -22,7 +22,10 @@ from anomalib.datasets.tiler import Tiler
 __all__ = ["PadimLightning"]
 
 
-DIMS = {"resnet18": {"t_d": 448, "d": 100}, "wide_resnet50_2": {"t_d": 1792, "d": 550}}
+DIMS = {
+    "resnet18": {"orig_dims": 448, "reduced_dims": 100, "emb_scale": 4},
+    "wide_resnet50_2": {"orig_dims": 1792, "reduced_dims": 550, "emb_scale": 4},
+}
 
 
 class PadimModel(nn.Module):
@@ -36,13 +39,16 @@ class PadimModel(nn.Module):
         self.backbone = getattr(torchvision.models, hparams.model.backbone)
         self.layers = hparams.model.layers
         self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
-        self.gaussian = MultiVariateGaussian()
         self.dims = DIMS[hparams.model.backbone]
         # pylint: disable=not-callable
         # Since idx is randomaly selected, save it with model to get same results
         self.register_buffer(
             "idx",
-            torch.tensor(sample(range(0, DIMS[hparams.model.backbone]["t_d"]), DIMS[hparams.model.backbone]["d"])),
+            torch.tensor(
+                sample(
+                    range(0, DIMS[hparams.model.backbone]["orig_dims"]), DIMS[hparams.model.backbone]["reduced_dims"]
+                )
+            ),
         )
         self.idx: Tensor
         self.loss = None
@@ -50,6 +56,11 @@ class PadimModel(nn.Module):
             hparams.transform.image_size if hparams.transform.crop_size is None else hparams.transform.crop_size
         )
         self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
+
+        n_features = DIMS[hparams.model.backbone]["reduced_dims"]
+        patches_dims = torch.tensor(input_size) / DIMS[hparams.model.backbone]["emb_scale"]
+        n_patches = patches_dims.prod().int().item()
+        self.gaussian = MultiVariateGaussian(n_features, n_patches)
 
         if hparams.dataset.tiling.apply:
             self.tiler = Tiler(hparams.dataset.tiling.tile_size, hparams.dataset.tiling.stride)
