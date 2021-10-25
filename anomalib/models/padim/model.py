@@ -95,7 +95,14 @@ class PadimModel(nn.Module):
         if self.hparams.dataset.tiling.apply:
             embeddings = self.tiler.untile(embeddings)
 
-        return embeddings
+        if self.training:
+            output = embeddings
+        else:
+            output = self.anomaly_map_generator(
+                embedding=embeddings, mean=self.gaussian.mean, inv_covariance=self.gaussian.inv_covariance
+            )
+
+        return output
 
     def generate_embedding(self, features: Dict[str, Tensor]) -> Tensor:
         """Generate embedding from hierarchical feature map
@@ -150,11 +157,10 @@ class AnomalyMapGenerator:
         embedding = embedding.reshape(batch, channel, height * width)
 
         # calculate mahalanobis distances
-        mean, covariance = stats
+        mean, inv_covariance = stats
         delta = (embedding - mean).permute(2, 0, 1)
-        inverse_covariance = torch.linalg.inv(covariance.permute(2, 0, 1))
 
-        distances = (torch.matmul(delta, inverse_covariance) * delta).sum(2).T
+        distances = (torch.matmul(delta, inv_covariance) * delta).sum(2).permute(1, 0)
         distances = distances.reshape(batch, height, width)
         distances = torch.sqrt(distances)
 
@@ -198,18 +204,18 @@ class AnomalyMapGenerator:
 
         return anomaly_map
 
-    def compute_anomaly_map(self, embedding: Tensor, mean: Tensor, covariance: Tensor) -> Tensor:
+    def compute_anomaly_map(self, embedding: Tensor, mean: Tensor, inv_covariance: Tensor) -> Tensor:
         """
-        Compute anomaly score based on embedding vector, mean and covariance of the multivariate
+        Compute anomaly score based on embedding vector, mean and inv_covariance of the multivariate
         gaussian distribution.
 
         Args:
             embedding: Embedding vector extracted from the test set.
             mean: Mean of the multivariate gaussian distribution
-            covariance: Covariance matrix of the multivariate gaussian distribution.
+            inv_covariance: Inverse Covariance matrix of the multivariate gaussian distribution.
             embedding: Tensor:
             mean: Tensor:
-            covariance: Tensor:
+            inv_covariance: Tensor:
 
         Returns:
             Output anomaly score.
@@ -218,7 +224,7 @@ class AnomalyMapGenerator:
 
         score_map = self.compute_distance(
             embedding=embedding,
-            stats=[mean.to(embedding.device), covariance.to(embedding.device)],
+            stats=[mean.to(embedding.device), inv_covariance.to(embedding.device)],
         )
         up_sampled_score_map = self.up_sample(score_map)
         smoothed_anomaly_map = self.smooth_anomaly_map(up_sampled_score_map)
@@ -240,14 +246,14 @@ class AnomalyMapGenerator:
         Returns:
             torch.Tensor: anomaly map
         """
-        if not ("embedding" in kwds and "mean" in kwds and "covariance" in kwds):
+        if not ("embedding" in kwds and "mean" in kwds and "inv_covariance" in kwds):
             raise ValueError(f"Expected keys `embedding`, `mean` and `covariance`. Found {kwds.keys()}")
 
         embedding: Tensor = kwds["embedding"]
         mean: Tensor = kwds["mean"]
-        covariance: Tensor = kwds["covariance"]
+        inv_covariance: Tensor = kwds["inv_covariance"]
 
-        return self.compute_anomaly_map(embedding, mean, covariance)
+        return self.compute_anomaly_map(embedding, mean, inv_covariance)
 
 
 class PadimLightning(AnomalyModule):
@@ -311,9 +317,6 @@ class PadimLightning(AnomalyModule):
             These are required in `validation_epoch_end` for feature concatenation.
 
         """
-        embeddings = self.model(batch["image"])
-        batch["anomaly_maps"] = self.model.anomaly_map_generator(
-            embedding=embeddings, mean=self.model.gaussian.mean, covariance=self.model.gaussian.covariance
-        )
+        batch["anomaly_maps"] = self.model(batch["image"])
 
         return batch

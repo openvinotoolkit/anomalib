@@ -17,10 +17,10 @@ class MultiVariateGaussian(nn.Module):
         super().__init__()
 
         self.register_buffer("mean", torch.zeros(n_features, n_patches))
-        self.register_buffer("covariance", torch.eye(n_features).unsqueeze(2).repeat(1, 1, n_patches))
+        self.register_buffer("inv_covariance", torch.eye(n_features).unsqueeze(0).repeat(n_patches, 1, 1))
 
         self.mean: Tensor
-        self.covariance: Tensor
+        self.inv_covariance: Tensor
 
     @staticmethod
     def _cov(
@@ -114,7 +114,7 @@ class MultiVariateGaussian(nn.Module):
           embedding: Tensor:
 
         Returns:
-          mean and covariance of the multi-variate gaussian distribution that fits the features.
+          mean and inverse covariance of the multi-variate gaussian distribution that fits the features.
 
         """
         device = embedding.device
@@ -122,12 +122,15 @@ class MultiVariateGaussian(nn.Module):
         batch, channel, height, width = embedding.size()
         embedding_vectors = embedding.view(batch, channel, height * width)
         self.mean = torch.mean(embedding_vectors, dim=0)
-        self.covariance = torch.zeros(size=(channel, channel, height * width), device=device)
+        covariance = torch.zeros(size=(channel, channel, height * width), device=device)
         identity = torch.eye(channel).to(device)
         for i in range(height * width):
-            self.covariance[:, :, i] = self._cov(embedding_vectors[:, :, i], rowvar=False) + 0.01 * identity
+            covariance[:, :, i] = self._cov(embedding_vectors[:, :, i], rowvar=False) + 0.01 * identity
 
-        return [self.mean, self.covariance]
+        # calculate inverse covariance as we need only the inverse
+        self.inv_covariance = torch.linalg.inv(covariance.permute(2, 0, 1))
+
+        return [self.mean, self.inv_covariance]
 
     def fit(self, embedding: Tensor) -> List[Tensor]:
         """
