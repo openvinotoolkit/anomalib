@@ -129,8 +129,8 @@ class TestModel:
         ],
     )
     @pytest.mark.flaky(max_runs=3)
-    @TestDataset(num_train=200, num_test=10, path=get_dataset_path(), use_mvtec=False)
-    def test_model(self, category, model_name, nncf, use_mvtec=False, path="./datasets/MVTec"):
+    @TestDataset(num_train=200, num_test=10, path=get_dataset_path(), use_mvtec=True)
+    def test_model(self, category, model_name, nncf, use_mvtec=True, path="./datasets/MVTec"):
         """Driver for all the tests in the class"""
 
         with tempfile.TemporaryDirectory() as project_path:
