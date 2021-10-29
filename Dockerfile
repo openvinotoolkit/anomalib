@@ -14,10 +14,9 @@ ENV ftp_proxy=http://proxy-dmz.intel.com:912
 RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y wget ffmpeg libpython3.8 git sudo
 
 # Install Conda
-RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh --quiet
-RUN bash ~/miniconda.sh -b -p /opt/conda
-ENV PATH "/opt/conda/bin:${PATH}"
-RUN conda install python=3.8
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh --quiet && \
+    bash ~/miniconda.sh -b -p /opt/conda
+ENV PATH "/opt/conda/bin:${PATH}" && conda install python=3.8
 
 
 #########################################################
