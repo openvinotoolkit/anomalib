@@ -19,17 +19,6 @@ RUN bash ~/miniconda.sh -b -p /opt/conda
 ENV PATH "/opt/conda/bin:${PATH}"
 RUN conda install python=3.8
 
-# Install OpenVINO
-ARG OPENVINO_VERSION=l_openvino_toolkit_data_dev_ubuntu20_p_2021.4.689
-RUN wget https://storage.openvinotoolkit.org/repositories/openvino/packages/2021.4.1/$OPENVINO_VERSION.tgz --quiet && \
-    mkdir -p /opt/intel && tar -xzf $OPENVINO_VERSION.tgz -C /opt/intel && \
-    ln -s /opt/intel/$OPENVINO_VERSION/ /opt/intel/openvino_2021 && \
-    /opt/intel/openvino_2021/install_dependencies/install_openvino_dependencies.sh -y && \
-    /opt/intel/openvino_2021/deployment_tools/model_optimizer/install_prerequisites/install_prerequisites.sh && \
-    /opt/intel/openvino_2021/bin/setupvars.sh && \
-    rm -r $OPENVINO_VERSION.tgz
-
-
 
 #########################################################
 ## Anomalib Development Env
@@ -39,9 +28,9 @@ FROM python_base_cuda as anomalib_development_env
 
 # Get MVTec Dataset
 # cache datasets first as changes to requirements do no affect this stage
-RUN wget ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/mvtec_anomaly_detection.tar.xz --quiet
-RUN mkdir -p /tmp/anomalib/datasets/MVTec
-RUN tar -xf mvtec_anomaly_detection.tar.xz -C /tmp/anomalib/datasets/MVTec
+RUN wget ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/mvtec_anomaly_detection.tar.xz --quiet && \
+    mkdir -p /tmp/anomalib/datasets/MVTec && \
+    tar -xf mvtec_anomaly_detection.tar.xz -C /tmp/anomalib/datasets/MVTec
 
 # Install all anomalib requirements
 COPY ./requirements/requirements.txt /tmp/anomalib/requirements/requirements.txt

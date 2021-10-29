@@ -13,7 +13,13 @@ from .save_to_csv import SaveToCSVCallback
 from .timer import TimerCallback
 from .visualizer_callback import VisualizerCallback
 
-__all__ = ["CompressModelCallback", "LoadModelCallback", "TimerCallback", "VisualizerCallback", "SaveToCSVCallback"]
+__all__ = [
+    "CompressModelCallback",
+    "LoadModelCallback",
+    "TimerCallback",
+    "VisualizerCallback",
+    "SaveToCSVCallback",
+]
 
 
 def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:

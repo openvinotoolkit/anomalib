@@ -3,29 +3,29 @@ workflow:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 stages:
-  - build
+  #  - build
   #  - docs
   - coverage
 
-build_image:
-  stage: build
-  tags:
-    - build-image
-  script:
-    - git clone ssh://git@gitlab.devtools.intel.com:29418/vmc-eip/IMPT/impt.git
-    - export http_proxy=http://proxy-dmz.intel.com:912
-    - export https_proxy=http://proxy-dmz.intel.com:912
-    - docker build -t registry-icv.inn.intel.com/anomalib_dev/anomalib_development_env .
-  only:
-    refs:
-      - merge_requests
-    changes:
-      - Dockerfile
-      - requirements/requirements.txt
-      - requirements/requirements_dev.txt
-      - requirements/requirements_openvino_mo.txt
-  except:
-    - /^feature/
+#build_image:
+#  stage: build
+#  tags:
+#    - build-image
+#  script:
+#    - git clone ssh://git@gitlab.devtools.intel.com:29418/vmc-eip/IMPT/impt.git
+#    - export http_proxy=http://proxy-dmz.intel.com:912
+#    - export https_proxy=http://proxy-dmz.intel.com:912
+#    - docker build -t registry-icv.inn.intel.com/anomalib_dev/anomalib_development_env .
+#  only:
+#    refs:
+#      - merge_requests
+#    changes:
+#      - Dockerfile
+#      - requirements/requirements.txt
+#      - requirements/requirements_dev.txt
+#      - requirements/requirements_openvino_mo.txt
+#  except:
+#    - /^feature/
 
 #pages:
 #  image: registry-icv.inn.intel.com/anomalib_dev/anomalib_development_env
@@ -52,20 +52,19 @@ coverage:
     - 'echo "{ \"proxies\": { \"default\": { \"httpProxy\": \"http://proxy-dmz.intel.com:912\", \"httpsProxy\": \"http://proxy-dmz.intel.com:912\",, \"ftpProxy\": \"http://proxy-dmz.intel.com:912\", \"noProxy\": \"$NO_PROXY\" } } }" > $HOME/.docker/config.json'
     - 'echo "{ \"proxies\": { \"default\": { \"httpProxy\": \"http://proxy-dmz.intel.com:912\", \"httpsProxy\": \"http://proxy-dmz.intel.com:912\", , \"ftpProxy\": \"http://proxy-dmz.intel.com:912\", \"noProxy\": \"$NO_PROXY\" } } }" '
   script:
-    - black --check --diff anomalib -l 120
-    - isort --check-only --df anomalib --profile=black
-    - flake8 anomalib
-    - pylint anomalib --rcfile=tox.ini
+    - echo $PATH
+    - black --check --diff anomalib apis -l 120
+    - isort --check-only --df anomalib apis --profile=black
+    - flake8 anomalib apis
+    - pylint anomalib apis --rcfile=tox.ini
     - python -m mypy --install-types --non-interactive anomalib --config-file tox.ini
     - python -m mypy --install-types --non-interactive tools/train.py --config-file tox.ini
     - python -m mypy --install-types --non-interactive tools/test.py --config-file tox.ini
     - python -m mypy --install-types --non-interactive tools/test.py --config-file tox.ini
-    - coverage run --include=anomalib/* -m pytest -ra
+    - coverage run --include=anomalib/*,apis/* -m pytest -ra
     - coverage report -m --fail-under=90
     - coverage xml -o coverage.xml
   timeout: 3h
   artifacts:
     reports:
       cobertura: coverage.xml
-  except:
-    - /^feature/

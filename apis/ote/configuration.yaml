@@ -1,0 +1,182 @@
+description: Configuration for an anomaly classification task
+header: Configuration for an anomaly classification task
+type: CONFIGURABLE_PARAMETERS
+visible_in_ui: true
+
+model:
+  description: Model Parameters
+  header: Model Parameters
+  type: PARAMETER_GROUP
+  visible_in_ui: true
+  name:
+    affects_outcome_of: TRAINING
+    default_value: padim
+    description: The name of the anomaly classification algorithm.
+    editable: True
+    header: Model Name
+    enum_name: AnomalyModel
+    options:
+      PADIM: padim
+      STFPM: stfpm
+    type: SELECTABLE
+    ui_rules:
+      action: DISABLE_EDITING
+      operator: AND
+      rules: []
+      type: UI_RULES
+    value: padim
+    visible_in_ui: True
+    warning: null
+  backbone:
+    affects_outcome_of: TRAINING
+    default_value: resnet18
+    description: The backbone of the feature extractor.
+    editable: True
+    header: Backbone
+    enum_name: Backbone
+    options:
+      RESNET18: resnet18
+      WIDE_RESNET50: wide_resnet50
+    type: SELECTABLE
+    ui_rules:
+      action: DISABLE_EDITING
+      operator: AND
+      rules: []
+      type: UI_RULES
+    value: resnet18
+    visible_in_ui: True
+    warning: null
+
+dataset:
+  description: Dataset Parameters
+  header: Dataset Parameters
+  task:
+    affects_outcome_of: INFERENCE
+    default_value: classification
+    description: The type of analysis that should be done on the dataset.
+    editable: True
+    header: Model Name
+    enum_name: AnomalyModel
+    options:
+      CLASSIFICATION: classification
+      SEGMENTATION: segmentation
+    type: SELECTABLE
+    ui_rules:
+      action: DISABLE_EDITING
+      operator: AND
+      rules: []
+      type: UI_RULES
+    value: classification
+    visible_in_ui: False
+    warning: null
+  train_batch_size:
+    affects_outcome_of: TRAINING
+    default_value: 32
+    description:
+      The number of training samples seen in each iteration of training.
+      Increasing this value improves training time and may make the training more
+      stable. A larger batch size has higher memory requirements.
+    editable: true
+    header: Batch size
+    max_value: 512
+    min_value: 1
+    type: INTEGER
+    ui_rules:
+      action: DISABLE_EDITING
+      operator: AND
+      rules: []
+      type: UI_RULES
+    value: 5
+    visible_in_ui: true
+    warning:
+      Increasing this value may cause the system to use more memory than available,
+      potentially causing out of memory errors, please update with caution.
+  num_workers:
+    affects_outcome_of: NONE
+    default_value: 0
+    description:
+      Increasing this value might improve training speed however it might
+      cause out of memory errors. If the number of workers is set to zero, data loading
+      will happen in the main training thread.
+    editable: true
+    header: Number of cpu threads to use during batch generation
+    max_value: 8
+    min_value: 0
+    type: INTEGER
+    ui_rules:
+      action: DISABLE_EDITING
+      operator: AND
+      rules: []
+      type: UI_RULES
+    value: 0
+    visible_in_ui: true
+    warning: null
+  type: PARAMETER_GROUP
+  visible_in_ui: true
+
+trainer:
+  description: Parameters for the PyTorch Lightning Trainer
+  header: Trainer Parameters
+  type: PARAMETER_GROUP
+  visible_in_ui: false
+  num_sanity_val_steps:
+    affects_outcome_of: NONE
+    default_value: -1
+    description:
+      This is needed to ensure that the pytorch lightning trainer starts a
+      validation run on the full validation set before training.
+    editable: false
+    header: Number of validation steps in the sanity check
+    max_value: -1
+    min_value: -1
+    type: INTEGER
+    ui_rules:
+      action: DISABLE_EDITING
+      operator: AND
+      rules: []
+      type: UI_RULES
+    value: -1
+    visible_in_ui: false
+    warning: null
+
+pot_parameters:
+  description: POT Parameters
+  header: POT Parameters
+  preset:
+    affects_outcome_of: NONE
+    default_value: Performance
+    description: Quantization preset that defines quantization scheme
+    editable: False
+    enum_name: POTQuantizationPreset
+    header: Preset
+    options:
+      MIXED: Mixed
+      PERFORMANCE: Performance
+    type: SELECTABLE
+    ui_rules:
+      action: DISABLE_EDITING
+      operator: AND
+      rules: []
+      type: UI_RULES
+    value: Performance
+    visible_in_ui: False
+    warning: null
+  stat_subset_size:
+    affects_outcome_of: NONE
+    default_value: 300
+    description: Number of data samples used for post-training optimization
+    editable: True
+    header: Number of data samples
+    max_value: 9223372036854775807
+    min_value: 1
+    type: INTEGER
+    ui_rules:
+      action: DISABLE_EDITING
+      operator: AND
+      rules: []
+      type: UI_RULES
+    value: 300
+    visible_in_ui: True
+    warning: null
+  type: PARAMETER_GROUP
+  visible_in_ui: true

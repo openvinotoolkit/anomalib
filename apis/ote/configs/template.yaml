@@ -1,0 +1,38 @@
+# Description.
+name: OTE Anomaly Classification PADIM
+task_type: ANOMALY_CLASSIFICATION
+task_family: VISION
+instantiation: "CLASS"
+summary: Anomaly Classification Model
+application: ~
+
+# Algo backend.
+framework: Anomalib
+
+# Task implementations.
+entrypoints:
+  base: apis.ote.AnomalyClassificationTask
+  openvino: apis.ote.OpenVINOAnomalyClassificationTask
+
+# Hyperparameters.
+hyper_parameters:
+  base_path: ../configuration.yaml
+  parameter_overrides:
+    model:
+      name:
+        default_value: padim
+    dataset:
+      train_batch_size:
+        default_value: 32
+
+# Training resources.
+max_nodes: 1
+training_targets:
+  - GPU
+  - CPU
+
+# Inference options. Defined by OpenVINO capabilities, not Algo Backend or Platform.
+inference_targets:
+  - CPU
+  - GPU
+  - VPU

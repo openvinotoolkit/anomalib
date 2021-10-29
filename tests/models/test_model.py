@@ -5,6 +5,7 @@ Test Models - STFPM
 import random
 import tempfile
 
+import numpy as np
 import pytest
 from pytorch_lightning import Trainer
 
@@ -113,9 +114,10 @@ class TestModel:
             # Assumes the new model has LoadModel callback and the old one had ModelCheckpoint callback
             trainer.test(model=loaded_model, datamodule=datamodule)
             if config.dataset.task == "segmentation":
-                assert (
-                    model.results.performance["pixel_roc_auc"] == loaded_model.results.performance["pixel_roc_auc"]
-                ), "Loaded model does not give same performance"
+                is_close = np.isclose(
+                    model.results.performance["pixel_roc_auc"], loaded_model.results.performance["pixel_roc_auc"]
+                )
+                assert is_close, "Loaded model does not yield close performance results"
 
     @pytest.mark.parametrize(
         ["model_name", "nncf"],
