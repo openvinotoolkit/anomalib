@@ -5,7 +5,7 @@ and its Torch and OpenVINO implementations.
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Tuple, Union
 
 import cv2
 import numpy as np
@@ -185,34 +185,39 @@ class OpenVinoInferencer(Inferencer):
         path (Union[str, Path]): Path to the openvino onnx, xml or bin file
     """
 
-    def __init__(self, config: Union[DictConfig, ListConfig], path: Union[str, Path]):
+    def __init__(self, config: Union[DictConfig, ListConfig], path: Union[str, Path, Tuple[bytes, bytes]]):
         self.config = config
         self.input_blob, self.output_blob, self.network = self.load_model(path)
 
-    def load_model(self, path: Union[str, Path]):
+    def load_model(self, path: Union[str, Path, Tuple[bytes, bytes]]):
         """
         Load the OpenVINO model.
 
         Args:
-            path (Union[str, Path]): Path to the onnx, xml or bin files.
+            path (Union[str, Path, Tuple[bytes, bytes]]): Path to the onnx or xml and bin files
+                                                        or tuple of .xml and .bin data as bytes.
 
         Returns:
             [Tuple[str, str, ExecutableNetwork]]: Input and Output blob names
                 together with the Executable network.
         """
-        path = path if isinstance(path, Path) else Path(path)
-
         ie_core = IECore()
-        if path.suffix in (".bin", ".xml"):
-            if path.suffix == ".bin":
-                bin_path, xml_path = path, path.with_suffix(".xml")
-            elif path.suffix == ".xml":
-                xml_path, bin_path = path, path.with_suffix(".bin")
-            network = ie_core.read_network(xml_path, bin_path)
-        elif path.suffix == ".onnx":
-            network = ie_core.read_network(path)
+        # If tuple of bytes is passed
+
+        if isinstance(path, tuple):
+            network = ie_core.read_network(model=path[0], weights=path[1], init_from_buffer=True)
         else:
-            raise ValueError(f"Path must be .onnx, .bin or .xml file. Got {path.suffix}")
+            path = path if isinstance(path, Path) else Path(path)
+            if path.suffix in (".bin", ".xml"):
+                if path.suffix == ".bin":
+                    bin_path, xml_path = path, path.with_suffix(".xml")
+                elif path.suffix == ".xml":
+                    xml_path, bin_path = path, path.with_suffix(".bin")
+                network = ie_core.read_network(xml_path, bin_path)
+            elif path.suffix == ".onnx":
+                network = ie_core.read_network(path)
+            else:
+                raise ValueError(f"Path must be .onnx, .bin or .xml file. Got {path.suffix}")
 
         input_blob = next(iter(network.input_info))
         output_blob = next(iter(network.outputs))

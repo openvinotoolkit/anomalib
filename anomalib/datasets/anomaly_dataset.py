@@ -73,7 +73,37 @@ def split_normal_images_in_train_set(samples: DataFrame, split_ratio: float = 0.
     return samples
 
 
-def make_dataset(path: Path, split_ratio: float = 0.1, seed: int = 0) -> DataFrame:
+def create_validation_set_from_test_set(samples: DataFrame, seed: int = 0) -> DataFrame:
+    """
+    This function creates a validation set from test set by splitting both
+    normal and abnormal samples to two.
+
+    Args:
+        samples (DataFrame): Dataframe containing dataset info such as filenames, splits etc.
+        seed (int, optional): Random seed to ensure reproducibility. Defaults to 0.
+    """
+
+    if seed > 0:
+        random.seed(seed)
+
+    # Split normal images.
+    normal_test_image_indices = samples.index[(samples.split == "test") & (samples.label == "good")].to_list()
+    num_normal_valid_images = len(normal_test_image_indices) // 2
+
+    indices_to_sample = random.sample(population=normal_test_image_indices, k=num_normal_valid_images)
+    samples.loc[indices_to_sample, "split"] = "val"
+
+    # Split abnormal images.
+    abnormal_test_image_indices = samples.index[(samples.split == "test") & (samples.label != "good")].to_list()
+    num_abnormal_valid_images = len(abnormal_test_image_indices) // 2
+
+    indices_to_sample = random.sample(population=abnormal_test_image_indices, k=num_abnormal_valid_images)
+    samples.loc[indices_to_sample, "split"] = "val"
+
+    return samples
+
+
+def make_dataset(path: Path, split_ratio: float = 0.1, seed: int = 0, create_validation_set: bool = False) -> DataFrame:
     """
     This function creates MVTec samples by parsing the MVTec data file structure, based on the following
     structure:
@@ -93,6 +123,8 @@ def make_dataset(path: Path, split_ratio: float = 0.1, seed: int = 0) -> DataFra
                                        test set in case test set doesn't contain any normal images.
                                        Defaults to 0.1.
         seed (int, optional): Random seed to ensure reproducibility when splitting. Defaults to 0.
+        create_validation_set (bool, optional): Create validation set from the test set by splitting
+            it to half. Default to False.
 
     Example:
         The following example shows how to get training samples from MVTec bottle category:
@@ -143,6 +175,9 @@ def make_dataset(path: Path, split_ratio: float = 0.1, seed: int = 0) -> DataFra
     samples.loc[(samples.label == "good"), "label_index"] = 0
     samples.loc[(samples.label != "good"), "label_index"] = 1
     samples.label_index = samples.label_index.astype(int)
+
+    if create_validation_set:
+        samples = create_validation_set_from_test_set(samples)
 
     return samples
 

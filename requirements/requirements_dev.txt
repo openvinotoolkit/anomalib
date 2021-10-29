@@ -7,4 +7,6 @@ pylint
 black
 isort
 coverage
+types-PyYAML
+types-setuptools
 flaky
