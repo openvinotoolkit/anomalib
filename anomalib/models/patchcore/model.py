@@ -223,6 +223,14 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
 class PatchcoreLightning(AnomalyModule):
     """
     PatchcoreLightning Module to train PatchCore algorithm
+
+    Args:
+        layers (List[str]): Layers used for feature extraction
+        input_size (Tuple[int, int]): Input size for the model.
+        tile_size (Tuple[int, int]): Tile size
+        tile_stride (int): Stride for tiling
+        backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
+        apply_tiling (bool, optional): Apply tiling. Defaults to False.
     """
 
     def __init__(self, hparams):

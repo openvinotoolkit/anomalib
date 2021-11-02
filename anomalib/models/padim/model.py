@@ -30,6 +30,14 @@ DIMS = {
 class PadimModel(nn.Module):
     """
     Padim Module
+
+    Args:
+        layers (List[str]): Layers used for feature extraction
+        input_size (Tuple[int, int]): Input size for the model.
+        tile_size (Tuple[int, int]): Tile size
+        tile_stride (int): Stride for tiling
+        apply_tiling (bool, optional): Apply tiling. Defaults to False.
+        backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
     """
 
     def __init__(
