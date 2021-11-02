@@ -178,25 +178,31 @@ class STFPMModel(nn.Module):
     STFPM: Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection
     """
 
-    def __init__(self, hparams):
+    def __init__(
+        self,
+        layers: List[str],
+        input_size: Tuple[int, int],
+        tile_size: Tuple[int, int],
+        tile_stride: int,
+        backbone: str = "resnet18",
+        apply_tiling: bool = False,
+    ):
         super().__init__()
-        self.backbone = getattr(torchvision.models, hparams.model.backbone)
-        self.layers = hparams.model.layers
-
-        self.teacher_model = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
-        self.student_model = FeatureExtractor(backbone=self.backbone(pretrained=False), layers=self.layers)
+        self.backbone = getattr(torchvision.models, backbone)
+        self.apply_tiling = apply_tiling
+        self.teacher_model = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=layers)
+        self.student_model = FeatureExtractor(backbone=self.backbone(pretrained=False), layers=layers)
 
         # teacher model is fixed
         for parameters in self.teacher_model.parameters():
             parameters.requires_grad = False
 
         self.loss = Loss()
-        self.hparams = hparams
-        if hparams.dataset.tiling.apply:
-            self.tiler = Tiler(hparams.dataset.tiling.tile_size, hparams.dataset.tiling.stride)
-            self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(hparams.dataset.tiling.tile_size))
+        if self.apply_tiling:
+            self.tiler = Tiler(tile_size, tile_stride)
+            self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(tile_size))
         else:
-            self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(hparams.model.input_size))
+            self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(input_size))
 
     def forward(self, images):
         """
@@ -211,7 +217,7 @@ class STFPMModel(nn.Module):
           Teacher and student features when in training mode, otherwise the predicted anomaly maps.
 
         """
-        if self.hparams.dataset.tiling.apply:
+        if self.apply_tiling:
             images = self.tiler.tile(images)
         teacher_features: Dict[str, Tensor] = self.teacher_model(images)
         student_features: Dict[str, Tensor] = self.student_model(images)
@@ -219,7 +225,7 @@ class STFPMModel(nn.Module):
             output = teacher_features, student_features
         else:
             output = self.anomaly_map_generator(teacher_features=teacher_features, student_features=student_features)
-            if self.hparams.dataset.tiling.apply:
+            if self.apply_tiling:
                 output = self.tiler.untile(output)
 
         return output
@@ -233,7 +239,14 @@ class StfpmLightning(AnomalyModule):
     def __init__(self, hparams):
         super().__init__(hparams)
 
-        self.model = STFPMModel(hparams)
+        self.model = STFPMModel(
+            layers=hparams.model.layers,
+            input_size=hparams.transform.image_size,
+            tile_size=hparams.dataset.tiling.tile_size,
+            tile_stride=hparams.dataset.tiling.stride,
+            backbone=hparams.model.backbone,
+            apply_tiling=hparams.dataset.tiling.apply,
+        )
         self.loss_val = 0
         self.callbacks: List[Callback] = [
             EarlyStopping(
