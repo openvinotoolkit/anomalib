@@ -35,7 +35,7 @@ class PadimModel(nn.Module):
     def __init__(
         self,
         layers: List[str],
-        img_size: Tuple[int, int],
+        input_size: Tuple[int, int],
         tile_size: Tuple[int, int],
         tile_stride: int,
         apply_tiling: bool = False,
@@ -55,10 +55,10 @@ class PadimModel(nn.Module):
         )
         self.idx: Tensor
         self.loss = None
-        self.anomaly_map_generator = AnomalyMapGenerator(image_size=img_size)
+        self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
 
         n_features = DIMS[backbone]["reduced_dims"]
-        patches_dims = torch.tensor(img_size) / DIMS[backbone]["emb_scale"]
+        patches_dims = torch.tensor(input_size) / DIMS[backbone]["emb_scale"]
         n_patches = patches_dims.prod().int().item()
         self.gaussian = MultiVariateGaussian(n_features, n_patches)
 
@@ -266,7 +266,7 @@ class PadimLightning(AnomalyModule):
         self.layers = hparams.model.layers
         self.model = PadimModel(
             layers=hparams.model.layers,
-            img_size=hparams.transform.image_size,
+            input_size=hparams.model.input_size,
             tile_size=hparams.dataset.tiling.tile_size,
             tile_stride=hparams.dataset.tiling.stride,
             apply_tiling=hparams.dataset.tiling.apply,

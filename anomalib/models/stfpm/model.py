@@ -241,7 +241,7 @@ class StfpmLightning(AnomalyModule):
 
         self.model = STFPMModel(
             layers=hparams.model.layers,
-            input_size=hparams.transform.image_size,
+            input_size=hparams.model.input_size,
             tile_size=hparams.dataset.tiling.tile_size,
             tile_stride=hparams.dataset.tiling.stride,
             backbone=hparams.model.backbone,
