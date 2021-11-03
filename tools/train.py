@@ -44,8 +44,6 @@ def train():
     logger = get_logger(config)
 
     callbacks = get_callbacks(config)
-    if hasattr(model, "callbacks"):
-        callbacks.extend(model.callbacks)
 
     trainer = Trainer(**config.trainer, logger=logger, callbacks=callbacks)
     trainer.fit(model=model, datamodule=datamodule)

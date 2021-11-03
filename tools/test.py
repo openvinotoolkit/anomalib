@@ -46,8 +46,6 @@ def test():
     model = get_model(config)
 
     callbacks = get_callbacks(config)
-    if hasattr(model, "callbacks"):
-        callbacks.extend(model.callbacks)
 
     trainer = Trainer(callbacks=callbacks, **config.trainer)
     trainer.test(model=model, datamodule=datamodule)
