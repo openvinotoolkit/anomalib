@@ -71,8 +71,6 @@ class TestModel:
         model = get_model(config)
 
         callbacks = get_callbacks(config)
-        if hasattr(model, "callbacks"):
-            callbacks.extend(model.callbacks)
 
         for index, callback in enumerate(callbacks):
             if isinstance(callback, VisualizerCallback):
@@ -100,8 +98,6 @@ class TestModel:
             loaded_model = get_model(config)  # get new model
 
             callbacks = get_callbacks(config)
-            if hasattr(model, "callbacks"):
-                callbacks.extend(model.callbacks)
 
             for index, callback in enumerate(callbacks):
                 # Remove visualizer callback as saving results takes time

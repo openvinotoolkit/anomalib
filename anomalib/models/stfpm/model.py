@@ -9,7 +9,7 @@ import torch
 import torch.nn.functional as F
 import torchvision
 from omegaconf import ListConfig
-from pytorch_lightning.callbacks import Callback, EarlyStopping
+from pytorch_lightning.callbacks import EarlyStopping
 from torch import Tensor, nn, optim
 
 from anomalib.core.model import AnomalyModule
@@ -235,13 +235,17 @@ class StfpmLightning(AnomalyModule):
 
         self.model = STFPMModel(hparams)
         self.loss_val = 0
-        self.callbacks: List[Callback] = [
-            EarlyStopping(
-                monitor=self.hparams.model.early_stopping.metric,
-                patience=self.hparams.model.early_stopping.patience,
-                mode=self.hparams.model.early_stopping.mode,
-            )
-        ]
+
+    def configure_callbacks(self):
+        """
+        Configure model-specific callbacks.
+        """
+        early_stopping = EarlyStopping(
+            monitor=self.hparams.model.early_stopping.metric,
+            patience=self.hparams.model.early_stopping.patience,
+            mode=self.hparams.model.early_stopping.mode,
+        )
+        return [early_stopping]
 
     def configure_optimizers(self):
         """
