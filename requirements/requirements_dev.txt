@@ -10,3 +10,4 @@ coverage
 types-PyYAML
 types-setuptools
 flaky
+setuptools
