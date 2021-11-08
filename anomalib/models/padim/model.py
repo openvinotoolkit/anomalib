@@ -4,14 +4,13 @@ https://arxiv.org/abs/2011.08785
 """
 
 from random import sample
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 import torch.nn.functional as F
 import torchvision
 from kornia import gaussian_blur2d
 from omegaconf import ListConfig
-from omegaconf.dictconfig import DictConfig
 from torch import Tensor, nn
 
 from anomalib.core.model import AnomalyModule
@@ -31,39 +30,50 @@ DIMS = {
 class PadimModel(nn.Module):
     """
     Padim Module
+
+    Args:
+        layers (List[str]): Layers used for feature extraction
+        input_size (Tuple[int, int]): Input size for the model.
+        tile_size (Tuple[int, int]): Tile size
+        tile_stride (int): Stride for tiling
+        apply_tiling (bool, optional): Apply tiling. Defaults to False.
+        backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
     """
 
-    def __init__(self, hparams: DictConfig):
+    def __init__(
+        self,
+        layers: List[str],
+        input_size: Tuple[int, int],
+        backbone: str = "resnet18",
+        apply_tiling: bool = False,
+        tile_size: Optional[Tuple[int, int]] = None,
+        tile_stride: Optional[int] = None,
+    ):
         super().__init__()
-        self.hparams = hparams
-        self.backbone = getattr(torchvision.models, hparams.model.backbone)
-        self.layers = hparams.model.layers
+        self.backbone = getattr(torchvision.models, backbone)
+        self.layers = layers
+        self.apply_tiling = apply_tiling
         self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
-        self.dims = DIMS[hparams.model.backbone]
+        self.dims = DIMS[backbone]
         # pylint: disable=not-callable
-        # Since idx is randomaly selected, save it with model to get same results
+        # Since idx is randomly selected, save it with model to get same results
         self.register_buffer(
             "idx",
-            torch.tensor(
-                sample(
-                    range(0, DIMS[hparams.model.backbone]["orig_dims"]), DIMS[hparams.model.backbone]["reduced_dims"]
-                )
-            ),
+            torch.tensor(sample(range(0, DIMS[backbone]["orig_dims"]), DIMS[backbone]["reduced_dims"])),
         )
         self.idx: Tensor
         self.loss = None
-        input_size = (
-            hparams.transform.image_size if hparams.transform.crop_size is None else hparams.transform.crop_size
-        )
         self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
 
-        n_features = DIMS[hparams.model.backbone]["reduced_dims"]
-        patches_dims = torch.tensor(input_size) / DIMS[hparams.model.backbone]["emb_scale"]
+        n_features = DIMS[backbone]["reduced_dims"]
+        patches_dims = torch.tensor(input_size) / DIMS[backbone]["emb_scale"]
         n_patches = patches_dims.prod().int().item()
         self.gaussian = MultiVariateGaussian(n_features, n_patches)
 
-        if hparams.dataset.tiling.apply:
-            self.tiler = Tiler(hparams.dataset.tiling.tile_size, hparams.dataset.tiling.stride)
+        if apply_tiling:
+            assert tile_size is not None
+            assert tile_stride is not None
+            self.tiler = Tiler(tile_size, tile_stride)
 
     def forward(self, input_tensor: Tensor) -> Tensor:
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
@@ -87,12 +97,12 @@ class PadimModel(nn.Module):
          torch.Size([32, 128, 28, 28]),
          torch.Size([32, 256, 14, 14])]
         """
-        if self.hparams.dataset.tiling.apply:
+        if self.apply_tiling:
             input_tensor = self.tiler.tile(input_tensor)
         with torch.no_grad():
             features = self.feature_extractor(input_tensor)
             embeddings = self.generate_embedding(features)
-        if self.hparams.dataset.tiling.apply:
+        if self.apply_tiling:
             embeddings = self.tiler.untile(embeddings)
 
         if self.training:
@@ -264,9 +274,16 @@ class PadimLightning(AnomalyModule):
     def __init__(self, hparams):
         super().__init__(hparams)
         self.layers = hparams.model.layers
-        self.model = PadimModel(hparams).eval()
+        self.model = PadimModel(
+            layers=hparams.model.layers,
+            input_size=hparams.model.input_size,
+            tile_size=hparams.dataset.tiling.tile_size,
+            tile_stride=hparams.dataset.tiling.stride,
+            apply_tiling=hparams.dataset.tiling.apply,
+            backbone=hparams.model.backbone,
+        ).eval()
 
-        self.stats: List[Tensor, Tensor] = []
+        self.stats: List[Tensor] = []
         self.automatic_optimization = False
 
     @staticmethod
