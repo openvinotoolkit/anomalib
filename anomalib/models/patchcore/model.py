@@ -3,7 +3,7 @@ Towards Total Recall in Industrial Anomaly Detection
 https://arxiv.org/abs/2106.08265
 """
 
-from typing import Dict, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import cv2
 import numpy as np
@@ -89,24 +89,34 @@ class AnomalyMapGenerator:
 
 class PatchcoreModel(DynamicBufferModule, nn.Module):
     """
-    Padim Module
+    Patchcore Module
     """
 
-    def __init__(self, hparams):
+    def __init__(
+        self,
+        layers: List[str],
+        input_size: Tuple[int, int],
+        backbone: str = "wide_resnet50_2",
+        apply_tiling: bool = False,
+        tile_size: Optional[Tuple[int, int]] = None,
+        tile_stride: Optional[int] = None,
+    ):
         super().__init__()
 
-        self.hparams = hparams
-        self.backbone = getattr(torchvision.models, hparams.model.backbone)
-        self.layers = hparams.model.layers
-        self.input_size = hparams.model.input_size
+        self.backbone = getattr(torchvision.models, backbone)
+        self.layers = layers
+        self.input_size = input_size
+        self.apply_tiling = apply_tiling
 
         self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
         self.feature_pooler = torch.nn.AvgPool2d(3, 1, 1)
         self.nn_search = NearestNeighbors(n_neighbors=9)
-        self.anomaly_map_generator = AnomalyMapGenerator(input_size=hparams.model.input_size)
+        self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
 
-        if hparams.dataset.tiling.apply:
-            self.tiler = Tiler(hparams.dataset.tiling.tile_size, hparams.dataset.tiling.stride)
+        if apply_tiling:
+            assert tile_size is not None
+            assert tile_stride is not None
+            self.tiler = Tiler(tile_size, tile_stride)
 
         self.register_buffer("memory_bank", torch.Tensor())
         self.memory_bank: torch.Tensor
@@ -124,7 +134,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]: Embedding for training,
                 anomaly map and anomaly score for testing.
         """
-        if self.hparams.dataset.tiling.apply:
+        if self.apply_tiling:
             input_tensor = self.tiler.tile(input_tensor)
 
         with torch.no_grad():
@@ -133,7 +143,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         features = {layer: self.feature_pooler(feature) for layer, feature in features.items()}
         embedding = self.generate_embedding(features)
 
-        if self.hparams.dataset.tiling.apply:
+        if self.apply_tiling:
             embedding = self.tiler.untile(embedding)
 
         embedding = self.reshape_embedding(embedding)
@@ -215,12 +225,27 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
 class PatchcoreLightning(AnomalyModule):
     """
     PatchcoreLightning Module to train PatchCore algorithm
+
+    Args:
+        layers (List[str]): Layers used for feature extraction
+        input_size (Tuple[int, int]): Input size for the model.
+        tile_size (Tuple[int, int]): Tile size
+        tile_stride (int): Stride for tiling
+        backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
+        apply_tiling (bool, optional): Apply tiling. Defaults to False.
     """
 
     def __init__(self, hparams):
         super().__init__(hparams)
 
-        self.model = PatchcoreModel(hparams)
+        self.model = PatchcoreModel(
+            layers=hparams.model.layers,
+            input_size=hparams.model.input_size,
+            tile_size=hparams.dataset.tiling.tile_size,
+            tile_stride=hparams.dataset.tiling.stride,
+            backbone=hparams.model.backbone,
+            apply_tiling=hparams.dataset.tiling.apply,
+        )
         self.automatic_optimization = False
 
     def configure_optimizers(self):
