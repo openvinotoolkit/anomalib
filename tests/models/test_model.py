@@ -1,5 +1,5 @@
 """
-Test Models - STFPM
+Test Models
 """
 
 import random
@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 from pytorch_lightning import Trainer
 
-from anomalib.config.config import get_configurable_parameters, update_config_for_nncf
+from anomalib.config import get_configurable_parameters, update_nncf_config
 from anomalib.core.callbacks import get_callbacks
 from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.datasets import get_datamodule
@@ -61,7 +61,7 @@ class TestModel:
 
         if nncf:
             config.optimization.nncf.apply = True
-            config = update_config_for_nncf(config)
+            config = update_nncf_config(config)
             config.init_weights = None
 
         # reassign project path as config is updated in `update_config_for_nncf`

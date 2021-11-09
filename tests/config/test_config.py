@@ -4,7 +4,7 @@ Test Config Getter.
 
 import pytest
 
-from anomalib.config.config import get_configurable_parameters
+from anomalib.config import get_configurable_parameters
 
 
 class TestConfig:

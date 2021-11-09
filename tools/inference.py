@@ -8,7 +8,7 @@ from argparse import ArgumentParser, Namespace
 
 import cv2
 
-from anomalib.config.config import get_configurable_parameters
+from anomalib.config import get_configurable_parameters
 from anomalib.core.model.inference import (
     Inferencer,
     OpenVinoInferencer,
