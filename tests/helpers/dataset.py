@@ -50,12 +50,7 @@ def generate_random_anomaly_image(
 
     image: np.ndarray = np.full((image_height, image_width, 3), 255, dtype=np.uint8)
 
-    # first quadrant for train
-    if not generate_mask:
-        input_region = [0, 0, image_width // 2, image_height // 2]
-    # 3rd quadrant for test
-    else:
-        input_region = [image_width // 2, image_height // 2, image_width, image_height]
+    input_region = [0, 0, image_width, image_height]
 
     for shape in shapes:
         shape_image = random_shapes(input_region, (image_height, image_width), max_shapes=max_shapes, shape=shape)
