@@ -46,7 +46,7 @@ from ote_sdk.usecases.tasks.interfaces.optimization_interface import (
     OptimizationType,
 )
 
-from anomalib.core.model.inference import OpenVinoInferencer
+from anomalib.core.model.inference import OpenVINOInferencer
 
 logger = logging.getLogger(__name__)
 
@@ -57,10 +57,10 @@ class OTEOpenVINOAnomalyDataloader(DataLoader):
 
     Args:
         dataset (DatasetEntity): SC dataset entity
-        inferencer (OpenVinoInferencer): Openvino Inferencer
+        inferencer (OpenVINOInferencer): Openvino Inferencer
     """
 
-    def __init__(self, config: Union[DictConfig, ListConfig], dataset: DatasetEntity, inferencer: OpenVinoInferencer):
+    def __init__(self, config: Union[DictConfig, ListConfig], dataset: DatasetEntity, inferencer: OpenVINOInferencer):
         super().__init__(config=config)
         self.dataset = dataset
         self.inferencer = inferencer
@@ -122,7 +122,7 @@ class OpenVINOAnomalyClassificationTask(IInferenceTask, IEvaluationTask, IOptimi
         optimization_parameters: Optional[OptimizationParameters],
     ):
         if optimization_type is not OptimizationType.POT:
-            raise ValueError("POT is the only supported optimization type for OpenVino models")
+            raise ValueError("POT is the only supported optimization type for OpenVINO models")
 
         data_loader = OTEOpenVINOAnomalyDataloader(config=self.config, dataset=dataset, inferencer=self.inferencer)
 
@@ -179,14 +179,14 @@ class OpenVINOAnomalyClassificationTask(IInferenceTask, IEvaluationTask, IOptimi
         self.task_environment.model = output_model
         self.inferencer = self.load_inferencer()
 
-    def load_inferencer(self) -> OpenVinoInferencer:
+    def load_inferencer(self) -> OpenVINOInferencer:
         """
         Create the OpenVINO inverencer object
 
         Returns:
-            OpenVinoInferencer object
+            OpenVINOInferencer object
         """
-        return OpenVinoInferencer(
+        return OpenVINOInferencer(
             config=self.config,
             path=(
                 self.task_environment.model.get_data("openvino.xml"),

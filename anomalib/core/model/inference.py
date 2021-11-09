@@ -98,12 +98,12 @@ class TorchInferencer(Inferencer):
         path (Union[str, Path]): Path to the model ckpt file.
     """
 
-    def __init__(self, config: Union[DictConfig, ListConfig], model: Union[str, Path, AnomalyModule]):
+    def __init__(self, config: Union[DictConfig, ListConfig], path: Union[str, Path, AnomalyModule]):
         self.config = config
-        if isinstance(model, AnomalyModule):
-            self.model = model
+        if isinstance(path, AnomalyModule):
+            self.model = path
         else:
-            self.model = self.load_model(model)
+            self.model = self.load_model(path)
 
     def load_model(self, path: Union[str, Path]) -> nn.Module:
         """
@@ -175,7 +175,7 @@ class TorchInferencer(Inferencer):
         return predictions
 
 
-class OpenVinoInferencer(Inferencer):
+class OpenVINOInferencer(Inferencer):
     """
     OpenVINO implementation for the inference.
 

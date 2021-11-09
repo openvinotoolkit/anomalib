@@ -8,7 +8,7 @@ from argparse import ArgumentParser, Namespace
 
 from pytorch_lightning import Trainer, seed_everything
 
-from anomalib.config.config import get_configurable_parameters
+from anomalib.config import get_configurable_parameters
 from anomalib.core.callbacks import get_callbacks
 from anomalib.datasets import get_datamodule
 from anomalib.loggers import get_logger

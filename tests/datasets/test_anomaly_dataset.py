@@ -5,7 +5,7 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import OmegaConf
 
-from anomalib.config.config import update_input_size
+from anomalib.config import update_input_size_config
 from anomalib.datasets.anomaly_dataset import AnomalyDataModule
 from tests.helpers.dataset import TestDataset, get_dataset_path
 from tests.helpers.detection import BBFromMasks
@@ -81,7 +81,7 @@ def test_anomaly_dataset(task, path=get_dataset_path(), category="leather"):
     DATASET_URL = "ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/mvtec_anomaly_detection.tar.xz"
 
     config = OmegaConf.load("tests/datasets/dummy_config.yml")
-    config = update_input_size(config)  # convert image_size to a tuple
+    config = update_input_size_config(config)  # convert image_size to a tuple
 
     with BBFromMasks(root=path):
         datamodule = AnomalyDataModule(

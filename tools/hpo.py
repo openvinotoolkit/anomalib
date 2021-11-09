@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 
 from pytorch_lightning import seed_everything
 
-from anomalib.config.config import get_configurable_parameters
+from anomalib.config import get_configurable_parameters
 from anomalib.hpo.sweep import run_sweep
 
 
