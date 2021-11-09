@@ -24,7 +24,7 @@ class PreProcessor:
         is_train: To check whether training mode is on. When on trianing mode,
             Transformations are applied with a probability
         to_tensor: Convert the final transformed output
-            to `torch.Tensor`. For OpenVino inference, this is set to False
+            to `torch.Tensor`. For OpenVINO inference, this is set to False
             to return `np.ndarray`. Defaults to True.
 
     Examples:

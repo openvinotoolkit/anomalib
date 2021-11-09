@@ -9,7 +9,7 @@ from omegaconf.listconfig import ListConfig
 from pytorch_lightning import Trainer
 from sigopt import Connection
 
-from anomalib.config.config import update_input_size
+from anomalib.config import update_input_size_config
 from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.datasets import get_datamodule
 from anomalib.hpo.sweep.config import get_experiment
@@ -68,7 +68,7 @@ def run_sweep(config: Union[DictConfig, ListConfig]) -> None:
         for param in params:
             set_in_nested_config(config, param.split("."), suggestion.assignments[param])
 
-        config = update_input_size(config)
+        config = update_input_size_config(config)
 
         model = get_model(config)
         datamodule = get_datamodule(config)

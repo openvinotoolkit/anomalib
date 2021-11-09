@@ -2,6 +2,9 @@
 Configurable Getter
 """
 
+# TODO: This would require a new design.
+# TODO: https://jira.devtools.intel.com/browse/IAAALD-149
+
 from pathlib import Path
 from typing import List, Optional, Union
 from warnings import warn
@@ -10,7 +13,39 @@ import torch
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
 
-def update_config_for_nncf(config: Union[DictConfig, ListConfig]):
+def update_input_size_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfig, ListConfig]:
+    """
+    Convert integer image size parameters into tuples, calculate the effective input size based on image size and crop
+    size, and set tiling stride if undefined.
+
+    Args:
+        config: Dictconfig: Configurable parameters object
+
+    Returns:
+        Configurable parameters with updated values
+
+    """
+    # handle image size
+    if isinstance(config.transform.image_size, int):
+        config.transform.image_size = (config.transform.image_size,) * 2
+
+    if "crop_size" in config.transform.keys() and config.transform.crop_size is not None:
+        if isinstance(config.transform.crop_size, int):
+            config.transform.crop_size = (config.transform.crop_size,) * 2
+        config.model.input_size = config.transform.crop_size
+    else:
+        config.model.input_size = config.transform.image_size
+
+    if "tiling" in config.dataset.keys() and config.dataset.tiling.apply:
+        if isinstance(config.dataset.tiling.tile_size, int):
+            config.dataset.tiling.tile_size = (config.dataset.tiling.tile_size,) * 2
+        if config.dataset.tiling.stride is None:
+            config.dataset.tiling.stride = config.dataset.tiling.tile_size
+
+    return config
+
+
+def update_nncf_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfig, ListConfig]:
     """
     Set the NNCF input size based on the value of the crop_size parameter in the configurable parameters object.
 
@@ -31,7 +66,7 @@ def update_config_for_nncf(config: Union[DictConfig, ListConfig]):
     return config
 
 
-def update_config_for_multi_gpu_training(config: Union[DictConfig, ListConfig]) -> Union[DictConfig, ListConfig]:
+def update_multi_gpu_training_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfig, ListConfig]:
     """Updates the config to change learning rate based on number of gpus assigned
         and ensures only ddp accelerator is used
 
@@ -67,6 +102,34 @@ def update_config_for_multi_gpu_training(config: Union[DictConfig, ListConfig]) 
             n_gpus = config.trainer.gpus
         lr_scaler = n_gpus if isinstance(n_gpus, int) else len(n_gpus)
         config.model.lr = config.model.lr * lr_scaler
+    return config
+
+
+def update_device_config(config: Union[DictConfig, ListConfig], openvino: bool) -> Union[DictConfig, ListConfig]:
+    """
+    Update XPU Device Config
+    This function ensures devices are configured correctly by the user.
+
+    Args:
+        config (Union[DictConfig, ListConfig]): Input config
+        openvino (bool): Boolean to check if OpenVINO Inference is enabled.
+
+    Returns:
+        Union[DictConfig, ListConfig]: Updated config
+    """
+
+    config.openvino = openvino
+    if openvino:
+        config.trainer.gpus = 0
+
+    if not torch.cuda.is_available():
+        config.trainer.gpus = 0
+
+    if config.trainer.gpus == 0 and torch.cuda.is_available():
+        config.trainer.gpus = 1
+
+    config = update_multi_gpu_training_config(config)
+
     return config
 
 
@@ -108,7 +171,7 @@ def get_configurable_parameters(
     if "format" not in config.dataset.keys():
         config.dataset.format = "mvtec"
 
-    config = update_input_size(config)
+    config = update_input_size_config(config)
 
     # Project Configs
     project_path = Path(config.project.path) / config.model.name / config.dataset.name / config.dataset.category
@@ -121,50 +184,7 @@ def get_configurable_parameters(
     if weight_file:
         config.weight_file = weight_file
 
-    # NNCF Parameters
-    config = update_config_for_nncf(config)
-
-    config.openvino = openvino
-    if openvino:
-        config.trainer.gpus = 0
-
-    # XPU Configuration
-    if not torch.cuda.is_available():
-        config.trainer.gpus = 0
-
-    # Handle multi-gpu training
-    config = update_config_for_multi_gpu_training(config)
-
-    return config
-
-
-def update_input_size(config):
-    """
-    Convert integer image size parameters into tuples, calculate the effective input size based on image size and crop
-    size, and set tiling stride if undefined.
-
-    Args:
-        config: Dictconfig: Configurable parameters object
-
-    Returns:
-        Configurable parameters with updated values
-
-    """
-    # handle image size
-    if isinstance(config.transform.image_size, int):
-        config.transform.image_size = (config.transform.image_size,) * 2
-
-    if "crop_size" in config.transform.keys() and config.transform.crop_size is not None:
-        if isinstance(config.transform.crop_size, int):
-            config.transform.crop_size = (config.transform.crop_size,) * 2
-        config.model.input_size = config.transform.crop_size
-    else:
-        config.model.input_size = config.transform.image_size
-
-    if "tiling" in config.dataset.keys() and config.dataset.tiling.apply:
-        if isinstance(config.dataset.tiling.tile_size, int):
-            config.dataset.tiling.tile_size = (config.dataset.tiling.tile_size,) * 2
-        if config.dataset.tiling.stride is None:
-            config.dataset.tiling.stride = config.dataset.tiling.tile_size
+    config = update_nncf_config(config)
+    config = update_device_config(config, openvino)
 
     return config

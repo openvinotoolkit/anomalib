@@ -8,10 +8,10 @@ from argparse import ArgumentParser, Namespace
 
 import cv2
 
-from anomalib.config.config import get_configurable_parameters
+from anomalib.config import get_configurable_parameters
 from anomalib.core.model.inference import (
     Inferencer,
-    OpenVinoInferencer,
+    OpenVINOInferencer,
     TorchInferencer,
 )
 
@@ -51,7 +51,7 @@ def infer() -> None:
         inference = TorchInferencer(config=config, path=args.weight_path)
 
     elif extension in (".onnx", ".bin", ".xml"):
-        inference = OpenVinoInferencer(config=config, path=args.weight_path)
+        inference = OpenVINOInferencer(config=config, path=args.weight_path)
 
     else:
         raise ValueError(
