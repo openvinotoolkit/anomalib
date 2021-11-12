@@ -175,7 +175,7 @@ class TorchInferencer(Inferencer):
         return predictions
 
 
-class OpenVinoInferencer(Inferencer):
+class OpenVINOInferencer(Inferencer):
     """
     OpenVINO implementation for the inference.
 

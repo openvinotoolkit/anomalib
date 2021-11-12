@@ -20,8 +20,8 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     `anomalib.models.stfpm.model.StfpmLightning`
 
     and for OpenVINO
-    `anomalib.models.<model-name>.model.<Model_name>OpenVino`
-    `anomalib.models.stfpm.model.StfpmOpenVino`
+    `anomalib.models.<model-name>.model.<Model_name>OpenVINO`
+    `anomalib.models.stfpm.model.StfpmOpenVINO`
 
     Args:
         config (Union[DictConfig, ListConfig]): Config.yaml loaded using OmegaConf
@@ -39,7 +39,7 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     if config.openvino:
         if config.model.name in openvino_model_list:
             module = import_module(f"anomalib.models.{config.model.name}.model")
-            model = getattr(module, f"{config.model.name.capitalize()}OpenVino")
+            model = getattr(module, f"{config.model.name.capitalize()}OpenVINO")
         else:
             raise ValueError(f"Unknown model {config.model.name} for OpenVINO model!")
     else:

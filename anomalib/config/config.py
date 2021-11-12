@@ -105,7 +105,7 @@ def update_multi_gpu_training_config(config: Union[DictConfig, ListConfig]) -> U
     return config
 
 
-def update_xpu_device_config(config: Union[DictConfig, ListConfig], openvino: bool) -> Union[DictConfig, ListConfig]:
+def update_device_config(config: Union[DictConfig, ListConfig], openvino: bool) -> Union[DictConfig, ListConfig]:
     """
     Update XPU Device Config
     This function ensures devices are configured correctly by the user.
@@ -185,6 +185,6 @@ def get_configurable_parameters(
         config.weight_file = weight_file
 
     config = update_nncf_config(config)
-    config = update_xpu_device_config(config, openvino)
+    config = update_device_config(config, openvino)
 
     return config

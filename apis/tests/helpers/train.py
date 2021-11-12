@@ -155,10 +155,10 @@ class OTEAnomalyTrainer:
         optimize: bool = False,
     ) -> ResultSetEntity:
         """
-        Run one epoch on the inference dataset using Base or OpenVino Inferencer.
+        Run one epoch on the inference dataset using Base or OpenVINO Inferencer.
 
         Args:
-            task (Union[AnomalyClassificationTask, OpenVINOAnomalyClassificationTask]): Base or OpenVino inferencer
+            task (Union[AnomalyClassificationTask, OpenVINOAnomalyClassificationTask]): Base or OpenVINO inferencer
             subset (Subset, optional): Validation or Test split. Defaults to Subset.TESTING.
             optimize (bool, optional): Boolean to optimize the model via POT.
 
@@ -214,7 +214,7 @@ class OTEAnomalyTrainer:
 
     def export(self):
         """
-        Export the OpenVino Model
+        Export the OpenVINO Model
         """
         self.base_task.export(ExportType.OPENVINO, self.output_model)
         self.openvino_task = OpenVINOAnomalyClassificationTask(
