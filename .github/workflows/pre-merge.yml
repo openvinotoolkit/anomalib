@@ -6,17 +6,14 @@ on:
   pull_request:
 
 jobs:
-  Code-Quality-Checks:
+  Tox:
     runs-on: [self-hosted, linux, x64]
     container: registry-icv.inn.intel.com/anomalib_dev/anomalib_development_env
     steps:
       - name: Print GPU status
         run: nvidia-smi
-      - run: black --check --diff anomalib apis -l 120
-      - run: isort --check-only --df anomalib apis --profile=black
-      - run: flake8 anomalib apis
-      - run: pylint anomalib apis --rcfile=tox.ini
-      - run: python -m mypy --install-types --non-interactive anomalib --config-file tox.ini
-      - run: python -m mypy --install-types --non-interactive tools/train.py --config-file tox.ini
-      - run: python -m mypy --install-types --non-interactive tools/test.py --config-file tox.ini
-      - run: python -m mypy --install-types --non-interactive tools/test.py --config-file tox.ini
+      - name: Print PATH
+        run: echo $PATH
+      - name: Install Tox
+        run: pip install tox
+      - run: tox
