@@ -1,0 +1,53 @@
+name: Build Docs
+
+on:
+  push:
+    branches: [ development ]
+    paths-ignore:
+      - '.github/**' # Ignore changes towards the .github directory
+
+
+jobs:
+  Tox:
+    runs-on: [self-hosted, linux, x64]
+    steps:
+      - name: CHECKOUT REPOSITORY
+        uses: actions/checkout@v2
+      - name: Install requirements
+        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt
+        run: pip install -r requirements_openvino_mo.txt
+      - name: Build and Commit Docs
+        run: cd docs
+        run: pip install -r requirements.txt
+        run: sphinx-build -b html source build
+      - name: Create gh-pages branch
+        run: |
+          echo ::set-output name=SOURCE_NAME::${GITHUB_REF#refs/*/}
+          echo ::set-output name=SOURCE_BRANCH::${GITHUB_REF#refs/heads/}
+          echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
+        run: |
+          existed_in_remote=$(git ls-remote --heads origin gh-pages)
+
+          if [[ -z ${existed_in_remote} ]]; then
+            echo "Creating gh-pages branch"
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            git checkout --orphan gh-pages
+            git reset --hard
+            git commit --allow-empty -m "Initializing gh-pages branch"
+            git push origin gh-pages
+            git checkout ${{steps.branch_name.outputs.SOURCE_NAME}}
+            echo "Created gh-pages branch"
+          else
+            echo "Branch gh-pages already exists"
+          fi
+      - name: Push docs to gh-pages branch
+        run: |
+          cp -r docs/_build/html/* gh-pages/
+          cd gh-pages
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m "Update documentation" -a || true
+          git push origin gh-pages
