@@ -2,7 +2,7 @@
 [![black](https://img.shields.io/badge/code%20style-black-000000.svg)]()
 [![python](https://img.shields.io/badge/python-3.6%2B-green)]()
 [![pytorch](https://img.shields.io/badge/pytorch-1.7.1%2B-orange)]()
-[![openvino](https://img.shields.io/badge/openvino-2021.4-blue)]()
+[![openvino](https://img.shields.io/badge/openvino-2021.4-purple)]()
 ![example branch parameter](https://github.com/openvinotoolkit/anomalib/actions/workflows/tox.yml/badge.svg?branch=development)
 [![coverage report](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/badges/development/coverage.svg)](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/-/commits/development)
 
