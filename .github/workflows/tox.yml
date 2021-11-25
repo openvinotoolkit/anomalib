@@ -20,7 +20,7 @@ jobs:
       - name: Code quality checks
         run: tox -e black,isort,flake8,pylint,mypy
       - name: Coverage
-        run: tox
+        run: tox -e coverage
       - name: Upload coverage result
         uses: actions/upload-artifact@v2
         with:
