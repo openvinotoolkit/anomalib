@@ -13,6 +13,8 @@ jobs:
         run: nvidia-smi
       - name: Print PATH
         run: echo $PATH
+      - name: CHECKOUT REPOSITORY
+        uses: actions/checkout@v2
       - name: Install Tox
         run: pip install tox
       - run: tox
