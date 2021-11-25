@@ -17,9 +17,12 @@ jobs:
         uses: actions/checkout@v2
       - name: Install Tox
         run: pip install tox
-      - run: tox
+      - name: Code quality checks
+        run: tox -e black,isort,flake8,pylint,mypy
+      - name: Coverage
+        run: tox -e coverage
       - name: Upload coverage result
         uses: actions/upload-artifact@v2
         with:
           name: coverage
-          path: coverage.xml
+          path: .tox/coverage.xml
