@@ -45,7 +45,9 @@ jobs:
           fi
       - name: Push docs to gh-pages branch
         run: |
-          cp -r build/html/* gh-pages/
+          pwd
+          ls
+          cp -r docs/build/html/* gh-pages/
           cd gh-pages
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
