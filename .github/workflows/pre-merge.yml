@@ -8,7 +8,6 @@ on:
 jobs:
   Code-Quality-Checks:
     runs-on: [self-hosted, linux, x64]
-    container: registry-icv.inn.intel.com/anomalib_dev/anomalib_development_env
     steps:
       - name: Print GPU status
         run: nvidia-smi
