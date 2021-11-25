@@ -13,13 +13,15 @@ jobs:
       - name: CHECKOUT REPOSITORY
         uses: actions/checkout@v2
       - name: Install requirements
-        run: pip install -r requirements.txt
-        run: pip install -r requirements.txt
-        run: pip install -r requirements_openvino_mo.txt
+        run: |
+             pip install -r requirements.txt
+             pip install -r requirements.txt
+             pip install -r requirements_openvino_mo.txt
       - name: Build and Commit Docs
-        run: cd docs
-        run: pip install -r requirements.txt
-        run: sphinx-build -b html source build
+        run: |
+             cd docs
+             pip install -r requirements.txt
+             sphinx-build -b html source build
       - name: Create gh-pages branch
         run: |
           echo ::set-output name=SOURCE_NAME::${GITHUB_REF#refs/*/}
