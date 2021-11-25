@@ -14,14 +14,14 @@ jobs:
         uses: actions/checkout@v2
       - name: Install requirements
         run: |
-             pip install -r requirements/requirements.txt
-             pip install -r requirements/requirements_dev.txt
-             pip install -r requirements/requirements_openvino_mo.txt
+          pip install -r requirements/requirements.txt
+          pip install -r requirements/requirements_dev.txt
+          pip install -r requirements/requirements_openvino_mo.txt
       - name: Build and Commit Docs
         run: |
-             cd docs
-             pip install -r requirements.txt
-             sphinx-build -b html source build
+          cd docs
+          pip install -r requirements.txt
+          make html
       - name: Create gh-pages branch
         run: |
           echo ::set-output name=SOURCE_NAME::${GITHUB_REF#refs/*/}
@@ -45,7 +45,7 @@ jobs:
           fi
       - name: Push docs to gh-pages branch
         run: |
-          cp -r docs/build/html/* gh-pages/
+          cp -r build/html/* gh-pages/
           cd gh-pages
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
