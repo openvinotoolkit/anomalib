@@ -110,30 +110,28 @@ class DFMModel(nn.Module):
             dataset (Tensor): Input dataset to fit the model.
         """
 
-        selected_features = dataset
-        self.pca_model.fit(selected_features)
-        features_reduced = self.pca_model.transform(selected_features)
+        self.pca_model.fit(dataset)
+        features_reduced = self.pca_model.transform(dataset)
         self.gaussian_model.fit(features_reduced.T)
 
-    def score(self, sem_feats: Tensor) -> Tensor:
+    def score(self, features: Tensor) -> Tensor:
         """
         Compute the PCA-based feature reconstruction error (FRE) scores and
         the Gaussian density-based NLL scores
 
         Args:
-            sem_feats (torch.Tensor): semantic features on which PCA and density modeling is performed.
+            features (torch.Tensor): semantic features on which PCA and density modeling is performed.
 
         Returns:
             score (Tensor): numpy array of scores
 
         """
-        feats_orig = sem_feats
-        feats_projected = self.pca_model.transform(feats_orig)
+        feats_projected = self.pca_model.transform(features)
         if self.score_type == "nll":
             score = self.gaussian_model.score_samples(feats_projected)
         elif self.score_type == "fre":
             feats_reconstructed = self.pca_model.inverse_transform(feats_projected)
-            score = torch.sum(torch.square(feats_orig - feats_reconstructed), dim=1)
+            score = torch.sum(torch.square(features - feats_reconstructed), dim=1)
         else:
             raise ValueError(f"unsupported score type: {self.score_type}")
 
