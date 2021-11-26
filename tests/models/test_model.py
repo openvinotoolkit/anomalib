@@ -31,7 +31,7 @@ from pytorch_lightning import Trainer
 from anomalib.config import get_configurable_parameters, update_nncf_config
 from anomalib.core.callbacks import get_callbacks
 from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
-from anomalib.datasets import get_datamodule
+from anomalib.data import get_datamodule
 from anomalib.models import get_model
 from tests.helpers.dataset import TestDataset, get_dataset_path
 
