@@ -1,0 +1,59 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.4.0
+    hooks:
+      # list of supported hooks: https://pre-commit.com/hooks.html
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: debug-statements
+      - id: detect-private-key
+
+  # python code formatting
+  - repo: https://github.com/psf/black
+    rev: 20.8b1
+    hooks:
+      - id: black
+        args: [--line-length, "120"]
+
+  # python import sorting
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.8.0
+    hooks:
+      - id: isort
+        args: ["--profile", "black"]
+
+  # yaml formatting
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v2.3.0
+    hooks:
+      - id: prettier
+        types: [yaml]
+
+  # python code analysis
+  - repo: https://github.com/PyCQA/flake8
+    rev: 3.9.2
+    hooks:
+      - id: flake8
+        args: [--config=tox.ini]
+        exclude: "tests/"
+
+  # python linting
+  - repo: local
+    hooks:
+      - id: pylint
+        name: pylint
+        entry: pylint --score=no --rcfile=tox.ini
+        language: system
+        types: [python]
+        exclude: "tests|docs"
+
+  # python static type checking
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: "v0.910"
+    hooks:
+      - id: mypy
+        args: [--config-file=tox.ini]
+        additional_dependencies: [types-PyYAML]
+        exclude: "tests/"

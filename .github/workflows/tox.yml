@@ -1,0 +1,28 @@
+name: Pre-merge Checks
+
+on:
+  push:
+    branches: [development, master]
+  pull_request:
+
+jobs:
+  Tox:
+    runs-on: [self-hosted, linux, x64]
+    steps:
+      - name: Print GPU status
+        run: nvidia-smi
+      - name: Print PATH
+        run: echo $PATH
+      - name: CHECKOUT REPOSITORY
+        uses: actions/checkout@v2
+      - name: Install Tox
+        run: pip install tox
+      - name: Code quality checks
+        run: tox -e black,isort,flake8,pylint,mypy
+      - name: Coverage
+        run: tox -e coverage
+      - name: Upload coverage result
+        uses: actions/upload-artifact@v2
+        with:
+          name: coverage
+          path: .tox/coverage.xml
