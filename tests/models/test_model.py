@@ -121,40 +121,38 @@ class TestModel:
     def _test_metrics(self, trainer, config, model, datamodule):
         """Tests the model metrics but also acts as a setup"""
 
-        trainer.test(model=model, datamodule=datamodule)
+        results = trainer.test(model=model, datamodule=datamodule)
 
-        assert model.results.performance["image_roc_auc"] >= 0.6
-
-        if config.dataset.task == "segmentation":
-            assert model.results.performance["pixel_roc_auc"] >= 0.6
-
-    def _test_model_load(self, config, datamodule, model):
-        loaded_model = get_model(config)  # get new model
-
-        callbacks = get_callbacks(config)
-
-        for index, callback in enumerate(callbacks):
-            # Remove visualizer callback as saving results takes time
-            if isinstance(callback, VisualizerCallback):
-                callbacks.pop(index)
-                break
-
-        # create new trainer object with LoadModel callback (assumes it is present)
-        trainer = Trainer(callbacks=callbacks, **config.trainer)
-        # Assumes the new model has LoadModel callback and the old one had ModelCheckpoint callback
-        trainer.test(model=loaded_model, datamodule=datamodule)
-
-        # Common for both classification and segmentation
-        is_close = np.isclose(
-            model.results.performance["image_roc_auc"], loaded_model.results.performance["image_roc_auc"]
-        )
-        assert is_close, "Loaded model does not yield close performance results"
+        assert results[0]["image_AUROC"] >= 0.6
 
         if config.dataset.task == "segmentation":
-            is_close = np.isclose(
-                model.results.performance["pixel_roc_auc"], loaded_model.results.performance["pixel_roc_auc"]
-            )
-            assert is_close, "Loaded model does not yield close performance results"
+            assert results[0]["pixel_AUROC"] >= 0.6
+        return results
+
+    def _test_model_load(self, model_name, config, datamodule, results):
+        # TODO add support for dfm once pca is available
+        if model_name != "dfm":
+            loaded_model = get_model(config)  # get new model
+
+            callbacks = get_callbacks(config)
+
+            for index, callback in enumerate(callbacks):
+                # Remove visualizer callback as saving results takes time
+                if isinstance(callback, VisualizerCallback):
+                    callbacks.pop(index)
+                    break
+
+            # create new trainer object with LoadModel callback (assumes it is present)
+            trainer = Trainer(callbacks=callbacks, **config.trainer)
+            # Assumes the new model has LoadModel callback and the old one had ModelCheckpoint callback
+            new_results = trainer.test(model=loaded_model, datamodule=datamodule)
+            assert np.isclose(
+                results[0]["image_AUROC"], new_results[0]["image_AUROC"]
+            ), "Loaded model does not yield close performance results"
+            if config.dataset.task == "segmentation":
+                assert np.isclose(
+                    results[0]["pixel_AUROC"], new_results[0]["pixel_AUROC"]
+                ), "Loaded model does not yield close performance results"
 
     @pytest.mark.parametrize(
         ["model_name", "nncf"],
@@ -184,7 +182,7 @@ class TestModel:
             )
 
             # test model metrics
-            self._test_metrics(trainer=trainer, config=config, model=model, datamodule=datamodule)
+            results = self._test_metrics(trainer=trainer, config=config, model=model, datamodule=datamodule)
 
             # test model load
-            self._test_model_load(config=config, datamodule=datamodule, model=model)
+            self._test_model_load(model_name=model_name, config=config, datamodule=datamodule, results=results)
