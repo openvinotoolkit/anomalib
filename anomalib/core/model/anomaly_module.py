@@ -44,7 +44,7 @@ class AnomalyModule(pl.LightningModule):
         self.save_hyperparameters(params)
         self.loss: torch.Tensor
         self.callbacks: List[Callback]
-        self.register_buffer("threshold", torch.tensor(params.model.threshold.default))
+        self.register_buffer("threshold", torch.tensor(params.model.threshold.default))  # pylint: disable=not-callable
         self.threshold: torch.Tensor
 
         self.model: nn.Module
