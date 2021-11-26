@@ -19,13 +19,12 @@ https://arxiv.org/abs/2106.08265
 
 from typing import Dict, List, Optional, Tuple, Union
 
-import cv2
 import numpy as np
 import torch
 import torch.nn.functional as F
 import torchvision
+from kornia import gaussian_blur2d
 from omegaconf import ListConfig
-from scipy.ndimage import gaussian_filter
 from torch import Tensor, nn
 
 from anomalib.core.model import AnomalyModule
@@ -52,33 +51,35 @@ class AnomalyMapGenerator:
         self.input_size = input_size
         self.sigma = sigma
 
-    def compute_anomaly_map(self, score_patches: np.ndarray) -> np.ndarray:
+    def compute_anomaly_map(self, score_patches: torch.Tensor) -> torch.Tensor:
         """
         Pixel Level Anomaly Heatmap
 
         Args:
             score_patches (np.ndarray): [description]
         """
-        anomaly_map = score_patches[:, 0].reshape((28, 28))
-        anomaly_map = cv2.resize(anomaly_map, self.input_size)
-        anomaly_map = gaussian_filter(anomaly_map, sigma=self.sigma)
+        anomaly_map = score_patches[:, 0].reshape((1, 1, 28, 28))
+        anomaly_map = F.interpolate(anomaly_map, size=(self.input_size[0], self.input_size[1]))
+
+        kernel_size = 2 * int(4.0 * self.sigma + 0.5) + 1
+        anomaly_map = gaussian_blur2d(anomaly_map, (kernel_size, kernel_size), sigma=(self.sigma, self.sigma))
 
         return anomaly_map
 
     @staticmethod
-    def compute_anomaly_score(patch_scores: np.ndarray) -> np.ndarray:
+    def compute_anomaly_score(patch_scores: torch.Tensor) -> torch.Tensor:
         """
         Compute Image-Level Anomaly Score
 
         Args:
             patch_scores (np.ndarray): [description]
         """
-        confidence = patch_scores[np.argmax(patch_scores[:, 0])]
-        weights = 1 - (np.max(np.exp(confidence)) / np.sum(np.exp(confidence)))
+        confidence = patch_scores[torch.argmax(patch_scores[:, 0])]
+        weights = 1 - (torch.max(torch.exp(confidence)) / torch.sum(torch.exp(confidence)))
         score = weights * max(patch_scores[:, 0])
         return score
 
-    def __call__(self, **kwds: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def __call__(self, **kwds: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Returns anomaly_map and anomaly_score.
         Expects `patch_scores` keyword to be passed explicitly
@@ -97,7 +98,7 @@ class AnomalyMapGenerator:
         if "patch_scores" not in kwds:
             raise ValueError(f"Expected key `patch_scores`. Found {kwds.keys()}")
 
-        patch_scores: np.ndarray = kwds["patch_scores"].cpu().numpy()
+        patch_scores = kwds["patch_scores"]
         anomaly_map = self.compute_anomaly_map(patch_scores)
         anomaly_score = self.compute_anomaly_score(patch_scores)
         return anomaly_map, anomaly_score
@@ -317,6 +318,6 @@ class PatchcoreLightning(AnomalyModule):
         """
 
         anomaly_maps, _ = self.model(batch["image"])
-        batch["anomaly_maps"] = torch.Tensor(anomaly_maps).unsqueeze(0).unsqueeze(0)
+        batch["anomaly_maps"] = anomaly_maps
 
         return batch
