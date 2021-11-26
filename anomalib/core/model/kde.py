@@ -55,7 +55,7 @@ class GaussianKDE(DynamicBufferModule):
         """
         features = torch.matmul(features, self.bw_transform)
 
-        estimate = torch.zeros(features.shape[0])
+        estimate = torch.zeros(features.shape[0]).to(features.device)
         for i in range(features.shape[0]):
             embedding = ((self.dataset - features[i]) ** 2).sum(dim=1)
             embedding = torch.exp(-embedding / 2) * self.norm

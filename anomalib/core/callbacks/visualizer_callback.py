@@ -2,17 +2,16 @@
 Visualizer Callback
 """
 from pathlib import Path
+from typing import Any, Dict
 from warnings import warn
 
-from pytorch_lightning import Callback, LightningModule, Trainer
+import pytorch_lightning as pl
+from pytorch_lightning import Callback
 from skimage.segmentation import mark_boundaries
-from tqdm import tqdm
 
 from anomalib import loggers
 from anomalib.core.model import AnomalyModule
-from anomalib.core.results import SegmentationResults
 from anomalib.datasets.utils import Denormalize
-from anomalib.utils.metrics import compute_threshold_and_f1_score
 from anomalib.utils.post_process import compute_mask, superimpose_anomaly_map
 from anomalib.utils.visualizer import Visualizer
 
@@ -22,8 +21,8 @@ class VisualizerCallback(Callback):
     Callback that visualizes the inference results of a model. The callback generates a figure showing the original
     image, the ground truth segmentation mask, the predicted error heat map, and the predicted segmentation mask.
 
-    To save the images to the filesystem, add the 'local' keyword to the project.log_images_to parameter in the
-    config.yaml file. .
+    To write the images to the Sigopt logger, add the 'sigopt' keyword to the project.log_images_to parameter in the
+    config.yaml file. To save the images to the filesystem, add the 'local' keyword.
     """
 
     def __init__(self):
@@ -58,33 +57,28 @@ class VisualizerCallback(Callback):
         if "local" in module.hparams.project.log_images_to:
             visualizer.save(Path(module.hparams.project.path) / "images" / filename.parent.name / filename.name)
 
-    def on_test_epoch_end(self, _trainer: Trainer, pl_module: LightningModule) -> None:
-        """Log images at the end of training
-        Args:
-            _trainer (Trainer): Pytorch lightning trainer object (unused)
-            pl_module (LightningModule): Lightning modules derived from BaseAnomalyLightning object as
-            currently only they support logging images.
+    def on_test_batch_end(
+        self,
+        _trainer: pl.Trainer,
+        pl_module: pl.LightningModule,
+        outputs: Dict,
+        _batch: Any,
+        _batch_idx: int,
+        _dataloader_idx: int,
+    ) -> None:
+        """
+        Visualize the results for the current batch of images.
         """
 
-        if isinstance(pl_module.results, SegmentationResults):
-            results = pl_module.results
-        else:
-            raise ValueError("Visualizer callback only supported for segmentation tasks.")
-
-        if results.images is None or results.true_masks is None or results.anomaly_maps is None:
-            raise ValueError("Result set cannot be empty!")
-
-        threshold, _ = compute_threshold_and_f1_score(results.true_masks, results.anomaly_maps)
-
-        for (filename, image, true_mask, anomaly_map) in tqdm(
-            zip(results.filenames, results.images, results.true_masks, results.anomaly_maps),
-            desc="Saving Results",
-            total=len(results.filenames),
+        for (filename, image, true_mask, anomaly_map) in zip(
+            outputs["image_path"], outputs["image"], outputs["mask"], outputs["anomaly_maps"]
         ):
-            image = Denormalize()(image)
+            image = Denormalize()(image.cpu())
+            true_mask = true_mask.cpu().numpy()
+            anomaly_map = anomaly_map.cpu().numpy()
 
             heat_map = superimpose_anomaly_map(anomaly_map, image)
-            pred_mask = compute_mask(anomaly_map, threshold)
+            pred_mask = compute_mask(anomaly_map, pl_module.threshold.item())
             vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
 
             visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
@@ -93,5 +87,5 @@ class VisualizerCallback(Callback):
             visualizer.add_image(image=heat_map, title="Predicted Heat Map")
             visualizer.add_image(image=pred_mask, color_map="gray", title="Predicted Mask")
             visualizer.add_image(image=vis_img, title="Segmentation Result")
-            self._add_images(visualizer, pl_module, filename)
+            self._add_images(visualizer, pl_module, Path(filename))
             visualizer.close()
