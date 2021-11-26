@@ -5,8 +5,8 @@ Test Dataset
 import numpy as np
 import pytest
 
-from anomalib.datasets.mvtec import MVTecDataModule
-from anomalib.datasets.utils import Denormalize, ToNumpy
+from anomalib.data.mvtec import MVTecDataModule
+from anomalib.data.utils import Denormalize, ToNumpy
 from tests.helpers.dataset import get_dataset_path
 
 

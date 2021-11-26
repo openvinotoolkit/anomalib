@@ -6,7 +6,7 @@ import torch
 from omegaconf import OmegaConf
 
 from anomalib.config import update_input_size_config
-from anomalib.datasets.anomaly_dataset import AnomalyDataModule
+from anomalib.data.anomaly_dataset import AnomalyDataModule
 from tests.helpers.dataset import TestDataset, get_dataset_path
 from tests.helpers.detection import BBFromMasks
 

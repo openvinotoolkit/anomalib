@@ -15,7 +15,7 @@ from omegaconf import OmegaConf
 from pytorch_lightning import Callback
 from torch.utils.data.dataloader import DataLoader
 
-from anomalib.datasets import get_datamodule
+from anomalib.data import get_datamodule
 
 
 def criterion_fn(outputs, criterion):

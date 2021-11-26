@@ -11,7 +11,7 @@ from tqdm import tqdm
 from anomalib import loggers
 from anomalib.core.model import AnomalyModule
 from anomalib.core.results import SegmentationResults
-from anomalib.datasets.utils import Denormalize
+from anomalib.data.utils import Denormalize
 from anomalib.utils.metrics import compute_threshold_and_f1_score
 from anomalib.utils.post_process import compute_mask, superimpose_anomaly_map
 from anomalib.utils.visualizer import Visualizer

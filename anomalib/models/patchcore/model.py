@@ -31,7 +31,7 @@ from torch import Tensor, nn
 from anomalib.core.model import AnomalyModule
 from anomalib.core.model.dynamic_module import DynamicBufferModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
-from anomalib.datasets.tiler import Tiler
+from anomalib.data.tiler import Tiler
 from anomalib.models.patchcore.utils.sampling import (
     KCenterGreedy,
     NearestNeighbors,

@@ -28,7 +28,7 @@ from torch import Tensor, nn, optim
 
 from anomalib.core.model import AnomalyModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
-from anomalib.datasets.tiler import Tiler
+from anomalib.data.tiler import Tiler
 
 __all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel", "StfpmLightning"]
 

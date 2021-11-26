@@ -38,8 +38,8 @@ from torch import Tensor
 from torch.utils.data import DataLoader
 from torchvision.datasets.folder import VisionDataset
 
-from anomalib.datasets.transforms import PreProcessor
-from anomalib.datasets.utils import read_image
+from anomalib.data.transforms import PreProcessor
+from anomalib.data.utils import read_image
 from anomalib.utils.download_progress_bar import DownloadProgressBar
 
 from .parser import PascalVocReader
