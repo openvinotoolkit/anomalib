@@ -19,7 +19,6 @@ https://arxiv.org/abs/2106.08265
 
 from typing import Dict, List, Optional, Tuple, Union
 
-import numpy as np
 import torch
 import torch.nn.functional as F
 import torchvision
@@ -56,7 +55,7 @@ class AnomalyMapGenerator:
         Pixel Level Anomaly Heatmap
 
         Args:
-            score_patches (np.ndarray): [description]
+            score_patches (torch.Tensor): [description]
         """
         anomaly_map = score_patches[:, 0].reshape((1, 1, 28, 28))
         anomaly_map = F.interpolate(anomaly_map, size=(self.input_size[0], self.input_size[1]))
@@ -72,7 +71,7 @@ class AnomalyMapGenerator:
         Compute Image-Level Anomaly Score
 
         Args:
-            patch_scores (np.ndarray): [description]
+            patch_scores (torch.Tensor): [description]
         """
         confidence = patch_scores[torch.argmax(patch_scores[:, 0])]
         weights = 1 - (torch.max(torch.exp(confidence)) / torch.sum(torch.exp(confidence)))
@@ -92,7 +91,7 @@ class AnomalyMapGenerator:
             ValueError: If `patch_scores` key is not found
 
         Returns:
-            Tuple[np.ndarray, np.ndarray]: anomaly_map, anomaly_score
+            Tuple[torch.Tensor, torch.Tensor]: anomaly_map, anomaly_score
         """
 
         if "patch_scores" not in kwds:
