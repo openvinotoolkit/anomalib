@@ -1,6 +1,4 @@
-"""
-Visualizer Callback
-"""
+"""Visualizer Callback."""
 from pathlib import Path
 from warnings import warn
 
@@ -11,23 +9,24 @@ from tqdm import tqdm
 from anomalib import loggers
 from anomalib.core.model import AnomalyModule
 from anomalib.core.results import SegmentationResults
-from anomalib.data.utils import Denormalize
+from anomalib.data.transforms import Denormalize
 from anomalib.utils.metrics import compute_threshold_and_f1_score
 from anomalib.utils.post_process import compute_mask, superimpose_anomaly_map
 from anomalib.utils.visualizer import Visualizer
 
 
 class VisualizerCallback(Callback):
-    """
-    Callback that visualizes the inference results of a model. The callback generates a figure showing the original
+    """Callback that visualizes the inference results of a model.
+
+    The callback generates a figure showing the original
     image, the ground truth segmentation mask, the predicted error heat map, and the predicted segmentation mask.
 
     To save the images to the filesystem, add the 'local' keyword to the project.log_images_to parameter in the
-    config.yaml file. .
+    config.yaml file.
     """
 
     def __init__(self):
-        """Visualizer callback"""
+        """Visualizer callback."""
 
     def _add_images(
         self,
@@ -59,13 +58,13 @@ class VisualizerCallback(Callback):
             visualizer.save(Path(module.hparams.project.path) / "images" / filename.parent.name / filename.name)
 
     def on_test_epoch_end(self, _trainer: Trainer, pl_module: LightningModule) -> None:
-        """Log images at the end of training
+        """Log images at the end of training.
+
         Args:
             _trainer (Trainer): Pytorch lightning trainer object (unused)
             pl_module (LightningModule): Lightning modules derived from BaseAnomalyLightning object as
             currently only they support logging images.
         """
-
         if isinstance(pl_module.results, SegmentationResults):
             results = pl_module.results
         else:
