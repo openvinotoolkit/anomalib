@@ -1,5 +1,6 @@
 """
-MVTec
+MVTec Dataset.
+
 This script contains PyTorch Dataset, Dataloader and PyTorch Lightning
 DataModule for the MVTec dataset. If the dataset is not on the file
 system, the script downloads and extracts the dataset and create
@@ -24,22 +25,22 @@ import logging
 import random
 import tarfile
 from pathlib import Path
-from typing import Callable, Dict, Optional, Sequence, Union
+from typing import Dict, Optional, Tuple, Union
 from urllib.request import urlretrieve
-from warnings import warn
 
+import albumentations as A
+import cv2
+import numpy as np
 import pandas as pd
-import torch
-import torchvision.transforms as T
 from pandas.core.frame import DataFrame
-from PIL import Image
 from pytorch_lightning.core.datamodule import LightningDataModule
 from torch import Tensor
 from torch.utils.data import DataLoader
 from torch.utils.data.dataset import Dataset
 from torchvision.datasets.folder import VisionDataset
-from torchvision.transforms import Compose
 
+from anomalib.data.transforms import PreProcessor
+from anomalib.data.utils import read_image
 from anomalib.utils.download_progress_bar import DownloadProgressBar
 
 logger = logging.getLogger(name="Dataset: MVTec")
@@ -50,13 +51,14 @@ __all__ = ["MVTec", "MVTecDataModule"]
 
 def split_normal_images_in_train_set(samples: DataFrame, split_ratio: float = 0.1, seed: int = 0) -> DataFrame:
     """
-    split_normal_images_in_train_set
-        This function splits the normal images in training set and assigns the
-        values to the test set. This is particularly useful especially when the
-        test set does not contain any normal images.
+    Split normal images in train set.
 
-        This is important because when the test set doesn't have any normal images,
-        AUC computation fails due to having single class.
+    This function splits the normal images in training set and assigns the
+    values to the test set. This is particularly useful especially when the
+    test set does not contain any normal images.
+
+    This is important because when the test set doesn't have any normal images,
+    AUC computation fails due to having single class.
 
     Args:
         samples (DataFrame): Dataframe containing dataset info such as filenames, splits etc.
@@ -66,7 +68,6 @@ def split_normal_images_in_train_set(samples: DataFrame, split_ratio: float = 0.
     Returns:
         DataFrame: Output dataframe where the part of the training set is assigned to test set.
     """
-
     random.seed(seed)
 
     normal_train_image_indices = samples.index[(samples.split == "train") & (samples.label == "good")].to_list()
@@ -81,6 +82,8 @@ def split_normal_images_in_train_set(samples: DataFrame, split_ratio: float = 0.
 
 def make_mvtec_dataset(path: Path, split: str = "train", split_ratio: float = 0.1, seed: int = 0) -> DataFrame:
     """
+    Make MVTec Dataset.
+
     This function creates MVTec samples by parsing the MVTec data file structure, based on the following
     structure:
         path/to/dataset/split/category/image_filename.png
@@ -163,76 +166,74 @@ def make_mvtec_dataset(path: Path, split: str = "train", split_ratio: float = 0.
     return samples
 
 
-def get_image_transforms(image_size: Union[Sequence, int], crop_size: Union[Sequence, int]) -> T.Compose:
-    """
-    Get default ImageNet image transformations.
-
-    Returns:
-        T.Compose: List of imagenet transformations.
-
-    """
-    crop_size = image_size if crop_size is None else crop_size
-    transform = T.Compose(
-        [
-            T.Resize(image_size, Image.ANTIALIAS),
-            T.CenterCrop(crop_size),
-            T.ToTensor(),
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ]
-    )
-    return transform
-
-
-def get_mask_transforms(image_size: Union[Sequence, int], crop_size: Union[Sequence, int]) -> T.Compose:
-    """
-    Get default ImageNet transformations for the ground-truth image masks.
-
-    Returns:
-      T.Compose: List of imagenet transformations.
-
-    """
-    crop_size = image_size if crop_size is None else crop_size
-    transform = Compose(
-        [
-            T.Resize(image_size, Image.NEAREST),
-            T.CenterCrop(crop_size),
-            T.ToTensor(),
-        ]
-    )
-    return transform
-
-
 class MVTec(VisionDataset):
-    """
-    MVTec PyTorch Dataset
-    """
+    """MVTec PyTorch Dataset."""
 
     def __init__(
         self,
         root: Union[Path, str],
         category: str,
-        image_transforms: Callable,
-        mask_transforms: Callable,
-        train: bool = True,
+        pre_process: PreProcessor,
+        task: str = "segmentation",
+        is_train: bool = True,
         download: bool = False,
     ) -> None:
-        super().__init__(root, transform=image_transforms, target_transform=mask_transforms)
+        """
+        Mvtec Dataset class.
+
+        Args:
+            root: Path to the MVTec dataset
+            category: Name of the MVTec category.
+            pre_process: List of pre_processing object containing albumentation compose.
+            task: ``classification`` or ``segmentation``
+            is_train: Boolean to check if the split is training
+            download: Boolean to download the MVTec dataset.
+
+        Examples:
+            >>> from anomalib.data.mvtec import MVTec
+            >>> from anomalib.data.transforms import PreProcessor
+            >>> pre_process = PreProcessor(image_size=256)
+            >>> dataset = MVTec(
+            ...     root='./datasets/MVTec',
+            ...     category='leather',
+            ...     pre_process=pre_process,
+            ...     task="classification",
+            ...     is_train=True,
+            ... )
+            >>> dataset[0].keys()
+            dict_keys(['image'])
+
+            >>> dataset.split = "test"
+            >>> dataset[0].keys()
+            dict_keys(['image', 'image_path', 'label'])
+
+            >>> dataset.task = "segmentation"
+            >>> dataset.split = "train"
+            >>> dataset[0].keys()
+            dict_keys(['image'])
+
+            >>> dataset.split = "test"
+            >>> dataset[0].keys()
+            dict_keys(['image_path', 'label', 'mask_path', 'image', 'mask'])
+
+            >>> dataset[0]["image"].shape, dataset[0]["mask"].shape
+            (torch.Size([3, 256, 256]), torch.Size([256, 256]))
+        """
+        super().__init__(root)
         self.root = Path(root) if isinstance(root, str) else root
         self.category: str = category
-        self.split = "train" if train else "test"
-        self.image_transforms = image_transforms
-        self.mask_transforms = mask_transforms
-        self.download = download
+        self.split = "train" if is_train else "test"
+        self.task = task
 
-        if self.download:
+        self.pre_process = pre_process
+
+        if download:
             self._download()
 
         self.samples = make_mvtec_dataset(path=self.root / category, split=self.split)
 
     def _download(self) -> None:
-        """
-        Download the MVTec dataset
-        """
+        """Download the MVTec dataset."""
         if (self.root / self.category).is_dir():
             logger.warning("Dataset directory exists.")
         else:
@@ -252,104 +253,138 @@ class MVTec(VisionDataset):
             self._clean()
 
     def _extract(self) -> None:
-        """
-        Extract MVTec Dataset
-        """
+        """Extract MVTec Dataset."""
         logger.info("Extracting MVTec dataset")
         with tarfile.open(self.filename) as file:
             file.extractall(self.root)
 
     def _clean(self) -> None:
-        """
-        Cleanup MVTec Dataset tar file.
-        """
+        """Cleanup MVTec Dataset tar file."""
         logger.info("Cleaning up the tar file")
         self.filename.unlink()
 
     def __len__(self) -> int:
+        """Get length of the dataset."""
         return len(self.samples)
 
-    def __getitem__(self, index: int) -> Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]:
+    def __getitem__(self, index: int) -> Dict[str, Union[str, Tensor]]:
+        """
+        Get dataset item for the index ``index``.
+
+        Args:
+            index: Index to get the item.
+
+        Returns:
+            Dataset Item
+        """
+        item: Dict[str, Union[str, Tensor]] = {}
+
         image_path = self.samples.image_path[index]
-        mask_path = self.samples.mask_path[index]
-        label_index = self.samples.label_index[index]
+        image = read_image(image_path)
 
-        image = Image.open(image_path).convert("RGB")
-        image_tensor = self.image_transforms(image)
+        if self.split == "train" or self.task == "classification":
+            pre_processed = self.pre_process(image=image)
+            item = {"image": pre_processed["image"]}
 
-        if self.split == "train":
-            sample = {"image": image_tensor}
-        else:
-            if label_index == 0:
-                mask = Image.new(mode="1", size=image.size)
-            else:
-                mask = Image.open(mask_path).convert(mode="1")
+        if self.split == "test":
+            label_index = self.samples.label_index[index]
 
-            mask_tensor = self.mask_transforms(mask).to(torch.uint8)
+            item["image_path"] = image_path
+            item["label"] = label_index
 
-            sample = {
-                "image_path": image_path,
-                "mask_path": mask_path,
-                "image": image_tensor,
-                "label": label_index,
-                "mask": mask_tensor,
-            }
+            if self.task == "segmentation":
+                mask_path = self.samples.mask_path[index]
 
-        return sample
+                # Only Anomalous (1) images has masks in MVTec dataset.
+                # Therefore, create empty mask for Normal (0) images.
+                if label_index == 0:
+                    mask = np.zeros(shape=image.shape[:2])
+                else:
+                    mask = cv2.imread(mask_path, flags=0) / 255.0
+
+                pre_processed = self.pre_process(image=image, mask=mask)
+
+                item["mask_path"] = mask_path
+                item["image"] = pre_processed["image"]
+                item["mask"] = pre_processed["mask"]
+
+        return item
 
 
 class MVTecDataModule(LightningDataModule):
-    """
-    MVTec Lightning Data Module
-    """
+    """MVTec Lightning Data Module."""
 
     def __init__(
         self,
         root: str,
         category: str,
-        image_size: Union[Sequence, int],
-        crop_size: Union[Sequence, int],
-        train_batch_size: int,
-        test_batch_size: int,
-        num_workers: int,
-        image_transforms: Optional[Callable] = None,
-        mask_transforms: Optional[Callable] = None,
+        # TODO: Remove default values. IAAALD-211
+        image_size: Optional[Union[int, Tuple[int, int]]] = None,
+        train_batch_size: int = 32,
+        test_batch_size: int = 32,
+        num_workers: int = 8,
+        transform_config: Optional[Union[str, A.Compose]] = None,
     ) -> None:
-        super().__init__()
+        """
+        Mvtec Lightning Data Module.
 
-        warn("MVTec DataModule will be deprecated. Use AnomalyDataModule instead")
+        Args:
+            root: Path to the MVTec dataset
+            category: Name of the MVTec category.
+            image_size: Variable to which image is resized.
+            train_batch_size: Training batch size.
+            test_batch_size: Testing batch size.
+            num_workers: Number of workers.
+            transform_config: Config for pre-processing.
+
+        Examples
+            >>> from anomalib.data import MVTecDataModule
+            >>> datamodule = MVTecDataModule(
+            ...     root="./datasets/MVTec",
+            ...     category="leather",
+            ...     image_size=256,
+            ...     train_batch_size=32,
+            ...     test_batch_size=32,
+            ...     num_workers=8,
+            ...     transform_config=None,
+            ... )
+            >>> datamodule.setup()
+
+            >>> i, data = next(enumerate(datamodule.train_dataloader()))
+            >>> data.keys()
+            dict_keys(['image'])
+            >>> data["image"].shape
+            torch.Size([32, 3, 256, 256])
+
+            >>> i, data = next(enumerate(datamodule.val_dataloader()))
+            >>> data.keys()
+            dict_keys(['image_path', 'label', 'mask_path', 'image', 'mask'])
+            >>> data["image"].shape, data["mask"].shape
+            (torch.Size([32, 3, 256, 256]), torch.Size([32, 256, 256]))
+        """
+        super().__init__()
 
         self.root = root if isinstance(root, Path) else Path(root)
         self.category = category
         self.dataset_path = self.root / self.category
-        self.image_size = image_size
-        self.crop_size = crop_size
+
+        self.pre_process = PreProcessor(config=transform_config, image_size=image_size)
+
         self.train_batch_size = train_batch_size
         self.test_batch_size = test_batch_size
         self.num_workers = num_workers
-
-        self.image_transforms = (
-            image_transforms if image_transforms is not None else get_image_transforms(image_size, crop_size)
-        )
-        self.mask_transforms = (
-            mask_transforms if mask_transforms is not None else get_mask_transforms(image_size, crop_size)
-        )
 
         self.train_data: Dataset
         self.val_data: Dataset
 
     def prepare_data(self):
-        """
-        Prepare MVTec Dataset
-        """
-
+        """Prepare MVTec Dataset."""
         # Train
         MVTec(
             root=self.root,
             category=self.category,
-            train=True,
-            image_transforms=self.image_transforms,
-            mask_transforms=self.mask_transforms,
+            pre_process=self.pre_process,
+            is_train=True,
             download=True,
         )
 
@@ -357,15 +392,14 @@ class MVTecDataModule(LightningDataModule):
         MVTec(
             root=self.root,
             category=self.category,
-            train=False,
-            image_transforms=self.image_transforms,
-            mask_transforms=self.mask_transforms,
+            pre_process=self.pre_process,
+            is_train=False,
             download=True,
         )
 
     def setup(self, stage: Optional[str] = None) -> None:
         """
-        Setup train, validation and test data.
+        Set up train, validation and test data.
 
         Args:
           stage: Optional[str]:  (Default value = None)
@@ -374,29 +408,27 @@ class MVTecDataModule(LightningDataModule):
         self.val_data = MVTec(
             root=self.root,
             category=self.category,
-            train=False,
-            image_transforms=self.image_transforms,
-            mask_transforms=self.mask_transforms,
+            pre_process=self.pre_process,
+            is_train=False,
         )
         if stage in (None, "fit"):
             self.train_data = MVTec(
                 root=self.root,
                 category=self.category,
-                train=True,
-                image_transforms=self.image_transforms,
-                mask_transforms=self.mask_transforms,
+                pre_process=self.pre_process,
+                is_train=True,
             )
 
     def train_dataloader(self) -> DataLoader:
-        """Get train dataloader"""
+        """Get train dataloader."""
         return DataLoader(
             self.train_data, shuffle=False, batch_size=self.train_batch_size, num_workers=self.num_workers
         )
 
     def val_dataloader(self) -> DataLoader:
-        """Get validation dataloader"""
+        """Get validation dataloader."""
         return DataLoader(self.val_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
 
     def test_dataloader(self) -> DataLoader:
-        """Get test dataloader"""
+        """Get test dataloader."""
         return DataLoader(self.val_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)

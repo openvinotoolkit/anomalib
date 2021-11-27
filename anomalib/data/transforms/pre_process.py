@@ -1,5 +1,6 @@
 """
-Pre Process
+Pre Process.
+
 This module contains `PreProcessor` class that applies preprocessing
 to an input image before the forward-pass stage.
 """
@@ -25,57 +26,7 @@ from albumentations.pytorch import ToTensorV2
 
 
 class PreProcessor:
-    """
-    PreProcessor class applies pre-processing and data augmentations
-    to the input and returns the transformed output, which could be
-    either numpy ndarray or torch tensor. When `PreProcessor` class is
-    used for training, the output would be `torch.Tensor`. For the inference
-    it returns a numpy array
-
-    Args:
-        config (Optional[Union[str, A.Compose]], optional): Transformation configurations.
-            When it is ``None``, ``PreProcessor`` only applies resizing. When it is ``str``
-            it loads the config via ``albumentations`` deserialisation methos . Defaults to None.
-        image_size (Optional[Union[int, Tuple[int, int]]], optional): When there is no config,
-        ``image_size`` resizes the image. Defaults to None.
-        to_tensor (bool, optional): Boolean to check whether the augmented image is transformed
-            into a tensor or not. Defaults to True.
-
-    Examples:
-        >>> import skimage
-        >>> image = skimage.data.astronaut()
-
-        >>> pre_processor = PreProcessor(image_size=256, to_tensor=False)
-        >>> output = pre_processor(image=image)
-        >>> output["image"].shape
-        (256, 256, 3)
-
-        >>> pre_processor = PreProcessor(image_size=256, to_tensor=True)
-        >>> output = pre_processor(image=image)
-        >>> output["image"].shape
-        torch.Size([3, 256, 256])
-
-
-        Transforms could be read from albumentations Compose object.
-        >>> import albumentations as A
-        >>> from albumentations.pytorch import ToTensorV2
-        >>> config = A.Compose([A.Resize(512, 512), ToTensorV2()])
-        >>> pre_processor = PreProcessor(config=config, to_tensor=False)
-        >>> output = pre_processor(image=image)
-        >>> output["image"].shape
-        (512, 512, 3)
-        >>> type(output["image"])
-        numpy.ndarray
-
-        Transforms could be deserialized from a yaml file.
-        >>> transforms = A.Compose([A.Resize(1024, 1024), ToTensorV2()])
-        >>> A.save(transforms, "/tmp/transforms.yaml", data_format="yaml")
-
-        >>> pre_processor = PreProcessor(config="/tmp/transforms.yaml")
-        >>> output = pre_processor(image=image)
-        >>> output["image"].shape
-        torch.Size([3, 1024, 1024])
-    """
+    """Image PreProcessor."""
 
     def __init__(
         self,
@@ -83,6 +34,58 @@ class PreProcessor:
         image_size: Optional[Union[int, Tuple[int, int]]] = None,
         to_tensor: bool = True,
     ) -> None:
+        """
+        Image PreProcessor.
+
+        PreProcessor class applies pre-processing and data augmentations
+        to the input and returns the transformed output, which could be
+        either numpy ndarray or torch tensor. When `PreProcessor` class is
+        used for training, the output would be `torch.Tensor`. For the inference
+        it returns a numpy array
+
+        Args:
+            config (Optional[Union[str, A.Compose]], optional): Transformation configurations.
+                When it is ``None``, ``PreProcessor`` only applies resizing. When it is ``str``
+                it loads the config via ``albumentations`` deserialisation methos . Defaults to None.
+            image_size (Optional[Union[int, Tuple[int, int]]], optional): When there is no config,
+            ``image_size`` resizes the image. Defaults to None.
+            to_tensor (bool, optional): Boolean to check whether the augmented image is transformed
+                into a tensor or not. Defaults to True.
+
+        Examples:
+            >>> import skimage
+            >>> image = skimage.data.astronaut()
+
+            >>> pre_processor = PreProcessor(image_size=256, to_tensor=False)
+            >>> output = pre_processor(image=image)
+            >>> output["image"].shape
+            (256, 256, 3)
+
+            >>> pre_processor = PreProcessor(image_size=256, to_tensor=True)
+            >>> output = pre_processor(image=image)
+            >>> output["image"].shape
+            torch.Size([3, 256, 256])
+
+            Transforms could be read from albumentations Compose object.
+            >>> import albumentations as A
+            >>> from albumentations.pytorch import ToTensorV2
+            >>> config = A.Compose([A.Resize(512, 512), ToTensorV2()])
+            >>> pre_processor = PreProcessor(config=config, to_tensor=False)
+            >>> output = pre_processor(image=image)
+            >>> output["image"].shape
+            (512, 512, 3)
+            >>> type(output["image"])
+            numpy.ndarray
+
+            Transforms could be deserialized from a yaml file.
+            >>> transforms = A.Compose([A.Resize(1024, 1024), ToTensorV2()])
+            >>> A.save(transforms, "/tmp/transforms.yaml", data_format="yaml")
+
+            >>> pre_processor = PreProcessor(config="/tmp/transforms.yaml")
+            >>> output = pre_processor(image=image)
+            >>> output["image"].shape
+            torch.Size([3, 1024, 1024])
+        """
         self.config = config
         self.image_size = image_size
         self.to_tensor = to_tensor
@@ -91,21 +94,20 @@ class PreProcessor:
 
     def get_transforms(self) -> A.Compose:
         """
-        Get transforms from config or image size
+        Get transforms from config or image size.
 
         Returns:
             A.Compose: List of albumentation transformations to apply to the
                 input image.
         """
-
-        transforms: A.Compose
-
         if self.config is None and self.image_size is None:
             raise ValueError(
                 "Both config and image_size cannot be `None`. "
                 "Provide either config file to de-serialize transforms "
                 "or image_size to get the default transformations"
             )
+
+        transforms: A.Compose
 
         if self.config is None and self.image_size is not None:
             if isinstance(self.image_size, int):
@@ -138,4 +140,5 @@ class PreProcessor:
         return transforms
 
     def __call__(self, *args, **kwargs):
+        """Call PreProcess Class."""
         return self.transforms(*args, **kwargs)
