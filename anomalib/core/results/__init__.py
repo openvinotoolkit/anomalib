@@ -1,8 +1,4 @@
-"""
-Result
-This module contains Result dataclass objects to store
-classification and segmentation results.
-"""
+"""This module contains Result dataclass objects to store classification and segmentation results."""
 
 # Copyright (C) 2020 Intel Corporation
 #

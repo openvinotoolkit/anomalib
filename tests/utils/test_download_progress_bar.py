@@ -1,6 +1,4 @@
-"""
-Tests whether progress bar is visible in the UI
-"""
+"""Tests whether progress bar is visible in the UI."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -24,7 +22,7 @@ from anomalib.utils.download_progress_bar import DownloadProgressBar
 
 
 def test_output_on_download(capfd):
-    """Test whether progress bar is shown"""
+    """Test whether progress bar is shown."""
     url = "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/SIPI_Jelly_Beans_4.1.07.tiff/lossy-page1-256px-SIPI_Jelly_Beans_4.1.07.tiff.jpg"
     with tempfile.TemporaryDirectory() as dir_loc:
         destination = os.path.join(dir_loc, "jelly.jpg")

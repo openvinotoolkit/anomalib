@@ -57,3 +57,14 @@ repos:
         args: [--config-file=tox.ini]
         additional_dependencies: [types-PyYAML]
         exclude: "tests/"
+
+  - repo: https://github.com/PyCQA/pydocstyle
+    rev: 6.1.1
+    hooks:
+      - id: pydocstyle
+        name: pydocstyle
+        entry: pydocstyle
+        language: python
+        types: [python]
+        args: [--config=tox.ini]
+        exclude: "tests|docs"

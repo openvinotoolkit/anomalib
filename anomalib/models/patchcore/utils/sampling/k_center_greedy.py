@@ -1,9 +1,8 @@
-"""
-This module comprises PatchCore Sampling Methods for the embedding.
-    - k Center Greedy Method
-        Returns points that minimizes the maximum distance of any point to a center.
-        . https://arxiv.org/abs/1708.00489
+"""This module comprises PatchCore Sampling Methods for the embedding.
 
+- k Center Greedy Method
+    Returns points that minimizes the maximum distance of any point to a center.
+    . https://arxiv.org/abs/1708.00489
 """
 
 from typing import List, Optional
@@ -16,8 +15,7 @@ from .random_projection import SparseRandomProjection
 
 
 class KCenterGreedy:
-    """
-    Implements k-center-greedy method
+    """Implements k-center-greedy method.
 
     Args:
         model: model with scikit-like API with decision_function. Defaults to SparseRandomProjection.
@@ -45,14 +43,11 @@ class KCenterGreedy:
         self.already_selected_idxs: List[int] = []
 
     def reset_distances(self) -> None:
-        """
-        Reset minimum distances
-        """
+        """Reset minimum distances."""
         self.min_distances = None
 
     def get_new_cluster_centers(self, cluster_centers: List[int]) -> List[int]:
-        """
-        Get new cluster center indexes from the list of cluster indexes.
+        """Get new cluster center indexes from the list of cluster indexes.
 
         Args:
             cluster_centers (List[int]): List of cluster center indexes.
@@ -63,8 +58,7 @@ class KCenterGreedy:
         return [d for d in cluster_centers if d not in self.already_selected_idxs]
 
     def update_distances(self, cluster_centers: List[int]) -> None:
-        """
-        Update min distances given cluster centers.
+        """Update min distances given cluster centers.
 
         Args:
             cluster_centers (List[int]): indices of cluster centers
@@ -82,9 +76,9 @@ class KCenterGreedy:
                 self.min_distances = torch.minimum(self.min_distances, distance)
 
     def get_new_idx(self) -> int:
-        """
-        Get index value of a sample based on (i) either minimum distance of the cluster
-        or (ii) random subsampling from the embedding.
+        """Get index value of a sample.
+
+        Based on (i) either minimum distance of the cluster or (ii) random subsampling from the embedding.
 
         Returns:
             int: Sample index
@@ -102,8 +96,7 @@ class KCenterGreedy:
         return idx
 
     def select_coreset_idxs(self, selected_idxs: Optional[List[int]] = None) -> List[int]:
-        """
-        Greedily form a coreset to minimize the maximum distance of a cluster.
+        """Greedily form a coreset to minimize the maximum distance of a cluster.
 
         Args:
             selected_idxs: index of samples already selected. Defaults to an empty set.
@@ -136,8 +129,7 @@ class KCenterGreedy:
         return selected_coreset_idxs
 
     def sample_coreset(self, selected_idxs: Optional[List[int]] = None) -> Tensor:
-        """
-        Select coreset from the embedding
+        """Select coreset from the embedding.
 
         Args:
             selected_idxs: index of samples already selected. Defaults to an empty set.

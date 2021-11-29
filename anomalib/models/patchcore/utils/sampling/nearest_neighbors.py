@@ -1,7 +1,6 @@
-"""
-This module comprises PatchCore Sampling Methods for the embedding.
-    - Nearest Neighbours
+"""This module comprises PatchCore Sampling Methods for the embedding.
 
+- Nearest Neighbours
 """
 
 # Copyright (C) 2020 Intel Corporation
@@ -27,8 +26,7 @@ from anomalib.core.model.dynamic_module import DynamicBufferModule
 
 
 class NearestNeighbors(DynamicBufferModule):
-    """
-    Nearest Neighbours using brute force method and euclidean norm
+    """Nearest Neighbours using brute force method and euclidean norm.
 
     Args:
         n_neighbors (int): Number of neighbors to look at
@@ -42,8 +40,7 @@ class NearestNeighbors(DynamicBufferModule):
         self._fit_x: Tensor
 
     def fit(self, train_features: Tensor):
-        """
-        Saves the train features for NN search later
+        """Saves the train features for NN search later.
 
         Args:
             train_features (Tensor): Training data
@@ -51,8 +48,9 @@ class NearestNeighbors(DynamicBufferModule):
         self._fit_x = train_features
 
     def kneighbors(self, test_features: Tensor) -> Tuple[Tensor, Tensor]:
-        """
-        Return k-nearest neighbors. It is calculated based on bruteforce method.
+        """Return k-nearest neighbors.
+
+        It is calculated based on bruteforce method.
 
         Args:
             test_features (Tensor): test data

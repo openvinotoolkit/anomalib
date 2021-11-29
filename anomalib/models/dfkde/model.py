@@ -1,6 +1,4 @@
-"""
-DFKDE: Deep Feature Kernel Density Estimation
-"""
+"""DFKDE: Deep Feature Kernel Density Estimation."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -29,9 +27,7 @@ from anomalib.models.dfkde.normality_model import NormalityModel
 
 
 class DfkdeLightning(AnomalyModule):
-    """
-    DFKDE: Deep Featured Kernel Density Estimation
-    """
+    """DFKDE: Deep Featured Kernel Density Estimation."""
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         super().__init__(hparams)
@@ -49,14 +45,11 @@ class DfkdeLightning(AnomalyModule):
 
     @staticmethod
     def configure_optimizers():
-        """
-        DFKDE doesn't require optimization, therefore returns no optimizers.
-        """
+        """DFKDE doesn't require optimization, therefore returns no optimizers."""
         return None
 
     def training_step(self, batch, _):  # pylint: disable=arguments-differ
-        """Training Step of DFKDE.
-        For each batch, features are extracted from the CNN.
+        """Training Step of DFKDE. For each batch, features are extracted from the CNN.
 
         Args:
           batch: Input batch
@@ -64,7 +57,6 @@ class DfkdeLightning(AnomalyModule):
 
         Returns:
           Deep CNN features.
-
         """
 
         self.feature_extractor.eval()
@@ -80,7 +72,7 @@ class DfkdeLightning(AnomalyModule):
           outputs: dict:
 
         Returns:
-
+          None
         """
 
         feature_stack = torch.vstack([output["feature_vector"] for output in outputs])
@@ -88,8 +80,8 @@ class DfkdeLightning(AnomalyModule):
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Validation Step of DFKDE.
-            Similar to the training step, features
-            are extracted from the CNN for each batch.
+
+        Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
           batch: Input batch
@@ -97,7 +89,6 @@ class DfkdeLightning(AnomalyModule):
 
         Returns:
           Dictionary containing probability, prediction and ground truth values.
-
         """
 
         self.feature_extractor.eval()

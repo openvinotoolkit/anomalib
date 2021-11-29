@@ -1,4 +1,4 @@
-"""Callbacks for Anomalib models"""
+"""Callbacks for Anomalib models."""
 
 import os
 from importlib import import_module
@@ -23,12 +23,12 @@ __all__ = [
 
 
 def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
-    """Return base callbacks for all the lightning models
+    """Return base callbacks for all the lightning models.
 
     Args:
         config (DictConfig): model config
 
-    Returns:
+    Return:
         (List[Callback]): List of callbacks
     """
     callbacks: List[Callback] = []
@@ -65,7 +65,7 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
         if config.optimization.compression.apply:
             callbacks.append(
                 CompressModelCallback(
-                    config=config,
+                    input_size=config.model.input_size,
                     dirpath=os.path.join(config.project.path, "compressed"),
                     filename="compressed_model",
                 )

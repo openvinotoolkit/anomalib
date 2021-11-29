@@ -1,7 +1,7 @@
-"""
-Anomalib Inferencer Script.
-This script performs inference by reading a model config
-file from command line, and show the visualization results.
+"""Anomalib Inferencer Script.
+
+This script performs inference by reading a model config file from
+command line, and show the visualization results.
 """
 
 # Copyright (C) 2020 Intel Corporation
@@ -32,8 +32,7 @@ from anomalib.core.model.inference import (
 
 
 def get_args() -> Namespace:
-    """
-    Get command line arguments.
+    """Get command line arguments.
 
     Returns:
         Namespace: List of arguments.
@@ -48,9 +47,7 @@ def get_args() -> Namespace:
 
 
 def infer() -> None:
-    """
-    Perform inference on an input image.
-    """
+    """Perform inference on an input image."""
 
     # Get the command line arguments, and config from the config.yaml file.
     # This config file is also used for training and contains all the relevant

@@ -1,6 +1,4 @@
-"""
-Load Anomaly Model
-"""
+"""Load Anomaly Model."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -28,6 +26,7 @@ from anomalib.core.model import AnomalyModule
 
 def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     """Load model from the configuration file.
+
     Works only when the convention for model naming is followed.
 
     The convention for writing model classes is

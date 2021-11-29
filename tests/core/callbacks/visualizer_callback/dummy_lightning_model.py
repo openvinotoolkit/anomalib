@@ -44,7 +44,8 @@ class DummyModel(nn.Module):
 
 
 class DummyModule(AnomalyModule):
-    """A dummy model which calls visualizer callback on fake images and masks"""
+    """A dummy model which calls visualizer callback on fake images and
+    masks."""
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         super().__init__(hparams)
@@ -59,7 +60,7 @@ class DummyModule(AnomalyModule):
             self.results.anomaly_maps = np.ones((2, 100, 100))
 
     def test_step(self, batch, _):
-        """Only used to trigger on_test_epoch_end"""
+        """Only used to trigger on_test_epoch_end."""
         self.log(name="loss", value=0.0, prog_bar=True)
 
     def test_step_end(self, test_step_outputs):

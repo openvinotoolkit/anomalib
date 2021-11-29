@@ -5,7 +5,7 @@ from skimage.draw import polygon
 
 
 def random_square_patch(input_region: List[int], min_width: int = 10) -> List[int]:
-    """Gets a random patch in the input region
+    """Gets a random patch in the input region.
 
     Args:
         input_region (List[int]): Coordinates of the input region. [x1, y1, x2, y2]
@@ -47,7 +47,7 @@ def random_square_patch(input_region: List[int], min_width: int = 10) -> List[in
 
 
 def triangle(input_region: List[int]) -> Tuple[List[int], List[int]]:
-    """Get coordinates of points inside a triangle
+    """Get coordinates of points inside a triangle.
 
     Args:
         input_region (List[int]): Region in which to draw the triangle. [x1, y1, x2, y2]
@@ -70,7 +70,8 @@ def triangle(input_region: List[int]) -> Tuple[List[int], List[int]]:
 
 
 def rectangle(input_region: List[int], min_side: int = 10) -> Tuple[List[int], List[int]]:
-    """Get coordinates of corners of a rectangle. Only vertical rectangles are generated.
+    """Get coordinates of corners of a rectangle. Only vertical rectangles are
+    generated.
 
     Args:
         input_region (List[int]): Region in which to draw the rectangle. [x1, y1, x2, y2]
@@ -103,7 +104,7 @@ def rectangle(input_region: List[int], min_side: int = 10) -> Tuple[List[int], L
 
 
 def hexagon(input_region: List[int]) -> Tuple[List[int], List[int]]:
-    """Get coordinates of points inside a hexagon
+    """Get coordinates of points inside a hexagon.
 
     Args:
         input_region (List[int]): Region in which to draw the hexagon. [x1, y1, x2, y2]
@@ -132,7 +133,7 @@ def hexagon(input_region: List[int]) -> Tuple[List[int], List[int]]:
 
 
 def star(input_region: List[int]) -> Tuple[List[int], List[int]]:
-    """Get coordinates of points inside a star
+    """Get coordinates of points inside a star.
 
     Args:
         input_region (List[int]): Region in which to draw the star. [x1, y1, x2, y2]
@@ -175,7 +176,7 @@ def star(input_region: List[int]) -> Tuple[List[int], List[int]]:
 def random_shapes(
     input_region: List[int], size: Tuple[int, int], max_shapes: int, shape: str = "rectangle"
 ) -> np.ndarray:
-    """Generate image with random shape
+    """Generate image with random shape.
 
     Args:
         input_region (List[int]): Coordinates of the input region. [x1, y1, x2, y2]

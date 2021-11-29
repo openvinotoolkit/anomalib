@@ -1,6 +1,4 @@
-"""
-Setup file for anomalib
-"""
+"""Setup file for anomalib."""
 
 # Copyright (C) 2020 Intel Corporation
 #

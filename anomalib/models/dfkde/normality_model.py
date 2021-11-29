@@ -1,6 +1,4 @@
-"""
-Normality model of DFKDE
-"""
+"""Normality model of DFKDE."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -27,9 +25,7 @@ from anomalib.core.model.pca import PCA
 
 
 class NormalityModel(nn.Module):
-    """
-    Normality Model for the DFKDE algorithm
-    """
+    """Normality Model for the DFKDE algorithm."""
 
     def __init__(
         self,
@@ -53,8 +49,7 @@ class NormalityModel(nn.Module):
         self.max_length = torch.Tensor(torch.Size([]))
 
     def fit(self, dataset: torch.Tensor):
-        """
-        Fit a kde model to dataset
+        """Fit a kde model to dataset.
 
         Args:
             dataset: Input dataset to fit the model.
@@ -62,7 +57,6 @@ class NormalityModel(nn.Module):
 
         Returns:
             Boolean confirming whether the training is successful.
-
         """
 
         if dataset.shape[0] < self.n_components:
@@ -96,7 +90,7 @@ class NormalityModel(nn.Module):
           max_length: Optional[Tensor]:  (Default value = None)
 
         Returns:
-
+            (Tuple): Stacked features and length
         """
 
         if max_length is None:
@@ -111,23 +105,23 @@ class NormalityModel(nn.Module):
         return feature_stack, max_length
 
     def evaluate(
-        self, sem_feats: torch.Tensor, as_density: Optional[bool] = False, as_log_likelihood: Optional[bool] = False
+        self, features: torch.Tensor, as_density: Optional[bool] = False, as_log_likelihood: Optional[bool] = False
     ) -> torch.Tensor:
-        """
-        Compute the KDE scores
+        # TODO
+        """Compute the KDE scores.
 
         Args:
-            sem_feats:
-            as_density:
-            as_log_likelihood:
+            features (torch.Tensor): Features
+            as_density (Optional[bool], optional): [description]. Defaults to False.
+            as_log_likelihood (Optional[bool], optional): [description]. Defaults to False.
 
         Returns:
-
+            torch.Tensor: Score
         """
 
-        sem_feats = self.pca_model.transform(sem_feats)
-        sem_feats, _ = self.preprocess(sem_feats, self.max_length)
-        kde_scores = self.kde_model(sem_feats)
+        features = self.pca_model.transform(features)
+        features, _ = self.preprocess(features, self.max_length)
+        kde_scores = self.kde_model(features)
 
         # add small constant to avoid zero division in log computation
         kde_scores += 1e-300
@@ -143,12 +137,10 @@ class NormalityModel(nn.Module):
         """Predicts the probability that the features belong to the anomalous class.
 
         Args:
-          features: Feature from which the output probabilities are detected.
-          features: torch.Tensor:
+          features (torch.Tensor): Feature from which the output probabilities are detected.
 
         Returns:
           Detection probabilities
-
         """
 
         densities = self.evaluate(features, as_density=True, as_log_likelihood=True)
@@ -157,8 +149,7 @@ class NormalityModel(nn.Module):
         return probabilities
 
     def to_probability(self, densities: torch.Tensor) -> torch.Tensor:
-        """Converts density scores to anomaly probabilities
-        (see https://www.desmos.com/calculator/ifju7eesg7)
+        """Converts density scores to anomaly probabilities (see https://www.desmos.com/calculator/ifju7eesg7).
 
         Args:
           densities: density of an image
@@ -166,13 +157,10 @@ class NormalityModel(nn.Module):
 
         Returns:
           probability that image with {density} is anomalous
-
         """
 
         return 1 / (1 + torch.exp(self.threshold_steepness * (densities - self.threshold_offset)))
 
     def forward(self, features: torch.Tensor) -> torch.Tensor:
-        """
-        Make module callable
-        """
+        """Make module callable."""
         return self.predict(features)

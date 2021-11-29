@@ -13,7 +13,7 @@ from tests.core.callbacks.compress_callback.dummy_lightning_model import (
 
 
 def test_compress_model_callback():
-    """Tests if an optimized model is created"""
+    """Tests if an optimized model is created."""
 
     config = get_configurable_parameters(model_config_path="tests/core/callbacks/compress_callback/dummy_config.yml")
 

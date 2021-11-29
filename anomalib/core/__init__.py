@@ -1,6 +1,4 @@
-"""
-This module holds common components such as callbacks, custom modules and utils
-"""
+"""This module holds common components such as callbacks, custom modules and utils."""
 
 # Copyright (C) 2020 Intel Corporation
 #
