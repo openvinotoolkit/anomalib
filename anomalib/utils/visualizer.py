@@ -38,10 +38,10 @@ class Visualizer:
         """Add image to figure.
 
         Args:
-          image: np.ndarray:
-          title: str: Image title shown on the plot.
-          color_map: Optional[str]:  (Default value = None)
-          index: Optional[int]:  (Default value = None)
+          image (np.ndarray): Image which should be added to the figure.
+          title (str): Image title shown on the plot.
+          color_map (Optional[str]): Name of matplotlib color map used to map scalar data to colours. Defaults to None.
+          index (Optional[int]): Figure index. Defaults to None.
         """
         if index is None:
             index = self.figure_index

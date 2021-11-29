@@ -56,7 +56,7 @@ def superimpose_anomaly_map(
             I' = (alpha*I1 + (1-alpha)*I2) + gamma
 
     Returns:
-        np.ndarray: [description]
+        np.ndarray: Image with anomaly map superimposed on top of it.
     """
 
     anomaly_map = anomaly_map_to_color_map(anomaly_map.squeeze())
