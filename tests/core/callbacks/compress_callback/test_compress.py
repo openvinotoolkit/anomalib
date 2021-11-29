@@ -21,7 +21,9 @@ def test_compress_model_callback():
         config.project.path = tmp_dir
         model = DummyLightningModule(hparams=config)
         model.callbacks = [
-            CompressModelCallback(config=config, dirpath=os.path.join(tmp_dir), filename="compressed_model"),
+            CompressModelCallback(
+                input_size=config.model.input_size, dirpath=os.path.join(tmp_dir), filename="compressed_model"
+            ),
             EarlyStopping(monitor=config.model.metric),
         ]
         datamodule = FakeDataModule()

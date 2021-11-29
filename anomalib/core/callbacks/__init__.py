@@ -26,10 +26,10 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
     """Return base callbacks for all the lightning models.
 
     Args:
-        config (DictConfig): model config
+        config (DictConfig): Model config
 
     Return:
-        (List[Callback]): List of callbacks
+        (List[Callback]): List of callbacks.
     """
     callbacks: List[Callback] = []
 
