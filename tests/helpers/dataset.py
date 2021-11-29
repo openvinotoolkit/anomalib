@@ -50,7 +50,11 @@ def generate_random_anomaly_image(
 
     image: np.ndarray = np.full((image_height, image_width, 3), 255, dtype=np.uint8)
 
+<<<<<<< HEAD
     input_region = [0, 0, image_width - 1, image_height - 1]
+=======
+    input_region = [0, 0, image_width, image_height]
+>>>>>>> 35a97d4 (Initial commit)
 
     for shape in shapes:
         shape_image = random_shapes(input_region, (image_height, image_width), max_shapes=max_shapes, shape=shape)
