@@ -2,7 +2,6 @@
 Implementation of Optimal F1 score based on TorchMetrics.
 """
 import torch
-from torch import Tensor
 from torchmetrics import Metric, PrecisionRecallCurve
 
 
@@ -17,12 +16,13 @@ class OptimalF1(Metric):
 
         self.precision_recall_curve = PrecisionRecallCurve(num_classes=num_classes, compute_on_step=False)
 
-        self.threshold: Tensor
+        self.threshold: torch.Tensor
 
-    def update(self, preds: Tensor, target: Tensor) -> None:  # type: ignore  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ
+    def update(self, preds: torch.Tensor, target: torch.Tensor) -> None:  # type: ignore
         self.precision_recall_curve.update(preds, target)
 
-    def compute(self) -> Tensor:
+    def compute(self) -> torch.Tensor:
         """
         Compute the F1 scores while varying the threshold. Store the optimal
         threshold as attribute and return the maximum value of the F1 score.
@@ -30,9 +30,9 @@ class OptimalF1(Metric):
         Returns:
             Value of the F1 score at the optimal threshold.
         """
-        precision: Tensor
-        recall: Tensor
-        thresholds: Tensor
+        precision: torch.Tensor
+        recall: torch.Tensor
+        thresholds: torch.Tensor
 
         precision, recall, thresholds = self.precision_recall_curve.compute()
         f1_score = (2 * precision * recall) / (precision + recall + 1e-10)
