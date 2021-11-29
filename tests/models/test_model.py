@@ -130,29 +130,27 @@ class TestModel:
         return results
 
     def _test_model_load(self, model_name, config, datamodule, results):
-        # TODO add support for dfm once pca is available
-        if model_name != "dfm":
-            loaded_model = get_model(config)  # get new model
+        loaded_model = get_model(config)  # get new model
 
-            callbacks = get_callbacks(config)
+        callbacks = get_callbacks(config)
 
-            for index, callback in enumerate(callbacks):
-                # Remove visualizer callback as saving results takes time
-                if isinstance(callback, VisualizerCallback):
-                    callbacks.pop(index)
-                    break
+        for index, callback in enumerate(callbacks):
+            # Remove visualizer callback as saving results takes time
+            if isinstance(callback, VisualizerCallback):
+                callbacks.pop(index)
+                break
 
-            # create new trainer object with LoadModel callback (assumes it is present)
-            trainer = Trainer(callbacks=callbacks, **config.trainer)
-            # Assumes the new model has LoadModel callback and the old one had ModelCheckpoint callback
-            new_results = trainer.test(model=loaded_model, datamodule=datamodule)
+        # create new trainer object with LoadModel callback (assumes it is present)
+        trainer = Trainer(callbacks=callbacks, **config.trainer)
+        # Assumes the new model has LoadModel callback and the old one had ModelCheckpoint callback
+        new_results = trainer.test(model=loaded_model, datamodule=datamodule)
+        assert np.isclose(
+            results[0]["image_AUROC"], new_results[0]["image_AUROC"]
+        ), "Loaded model does not yield close performance results"
+        if config.dataset.task == "segmentation":
             assert np.isclose(
-                results[0]["image_AUROC"], new_results[0]["image_AUROC"]
+                results[0]["pixel_AUROC"], new_results[0]["pixel_AUROC"]
             ), "Loaded model does not yield close performance results"
-            if config.dataset.task == "segmentation":
-                assert np.isclose(
-                    results[0]["pixel_AUROC"], new_results[0]["pixel_AUROC"]
-                ), "Loaded model does not yield close performance results"
 
     @pytest.mark.parametrize(
         ["model_name", "nncf"],
