@@ -1,5 +1,4 @@
-"""
-Pre Process.
+"""Pre Process.
 
 This module contains `PreProcessor` class that applies preprocessing
 to an input image before the forward-pass stage.
@@ -26,8 +25,7 @@ from albumentations.pytorch import ToTensorV2
 
 
 class PreProcessor:
-    """
-    Applies pre-processing and data augmentations to the input and returns the transformed output.
+    """Applies pre-processing and data augmentations to the input and returns the transformed output.
 
     Output could be either numpy ndarray or torch tensor.
     When `PreProcessor` class is used for training, the output would be `torch.Tensor`.

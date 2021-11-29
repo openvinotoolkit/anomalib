@@ -19,8 +19,7 @@ import numpy as np
 
 
 def read_image(path: str) -> np.ndarray:
-    """
-    Read image from disk in RGB format.
+    """Read image from disk in RGB format.
 
     Args:
         path: path to the image file

@@ -24,8 +24,7 @@ class Denormalize:
     """Denormalize Torch Tensor into np image format."""
 
     def __init__(self, mean: Optional[List[float]] = None, std: Optional[List[float]] = None):
-        """
-        Denormalize Torch Tensor into np image format.
+        """Denormalize Torch Tensor into np image format.
 
         Args:
             mean: Mean
@@ -42,8 +41,7 @@ class Denormalize:
         self.std = Tensor(std)
 
     def __call__(self, tensor: Tensor) -> np.ndarray:
-        """
-        Denormalize the input.
+        """Denormalize the input.
 
         Args:
             tensor (Tensor): Input tensor image (C, H, W)
@@ -72,8 +70,7 @@ class ToNumpy:
     """Convert Tensor into Numpy Array."""
 
     def __call__(self, tensor: Tensor, dims: Optional[Tuple[int, ...]] = None) -> np.ndarray:
-        """
-        Convert Tensor into Numpy Array.
+        """Convert Tensor into Numpy Array.
 
         Args:
             tensor: Tensor to convert

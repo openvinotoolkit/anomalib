@@ -1,4 +1,4 @@
-""" MVTec Dataset.
+"""MVTec Dataset.
 
 MVTec This script contains PyTorch Dataset, Dataloader and PyTorch
 Lightning DataModule for the MVTec dataset.
@@ -172,8 +172,7 @@ class MVTec(VisionDataset):
         is_train: bool = True,
         download: bool = False,
     ) -> None:
-        """
-        Mvtec Dataset class.
+        """Mvtec Dataset class.
 
         Args:
             root: Path to the MVTec dataset
@@ -262,8 +261,7 @@ class MVTec(VisionDataset):
         return len(self.samples)
 
     def __getitem__(self, index: int) -> Dict[str, Union[str, Tensor]]:
-        """
-        Get dataset item for the index ``index``.
+        """Get dataset item for the index ``index``.
 
         Args:
             index (int): Index to get the item.
@@ -320,8 +318,7 @@ class MVTecDataModule(LightningDataModule):
         num_workers: int = 8,
         transform_config: Optional[Union[str, A.Compose]] = None,
     ) -> None:
-        """
-        Mvtec Lightning Data Module.
+        """Mvtec Lightning Data Module.
 
         Args:
             root: Path to the MVTec dataset
