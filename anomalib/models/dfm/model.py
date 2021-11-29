@@ -49,11 +49,14 @@ class DfmLightning(AnomalyModule):
     def training_step(self, batch, _):  # pylint: disable=arguments-differ
         """Training Step of DFM.
         For each batch, features are extracted from the CNN.
+
         Args:
           batch: Input batch
           _: Index of the batch.
+
         Returns:
           Deep CNN features.
+
         """
 
         self.feature_extractor.eval()
@@ -63,10 +66,13 @@ class DfmLightning(AnomalyModule):
 
     def training_epoch_end(self, outputs: List[Dict[str, Any]]) -> None:
         """Fit a KDE model on deep CNN features.
+
         Args:
           outputs: Batch of outputs from the training step
           outputs: dict:
+
         Returns:
+
         """
 
         feature_stack = torch.vstack([output["feature_vector"] for output in outputs])
@@ -76,11 +82,14 @@ class DfmLightning(AnomalyModule):
         """Validation Step of DFM.
             Similar to the training step, features
             are extracted from the CNN for each batch.
+
         Args:
           batch: Dict: Input batch
           batch_idx: int: Index of the batch.
+
         Returns:
           Dictionary containing FRE anomaly scores and ground-truth.
+
         """
 
         self.feature_extractor.eval()

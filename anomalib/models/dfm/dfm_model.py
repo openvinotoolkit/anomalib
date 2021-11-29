@@ -1,5 +1,5 @@
 """
-Normality model of DFKDE
+Normality model of DFM
 """
 
 # Copyright (C) 2020 Intel Corporation
@@ -50,6 +50,7 @@ class SingleClassGaussian(DynamicBufferModule):
             Hence,
                 C = U.S^2.U^T
             This simplifies the calculation of the log-likelihood without requiring full matrix inversion.
+
         Args:
             dataset (Tensor): Input dataset to fit the model.
         """
@@ -62,10 +63,13 @@ class SingleClassGaussian(DynamicBufferModule):
     def score_samples(self, features: Tensor) -> Tensor:
         """
         Compute the NLL (negative log likelihood) scores
+
         Args:
             features (Tensor): semantic features on which density modeling is performed.
+
         Returns:
             nll (Tensor): Torch tensor of scores
+
         """
         features_transformed = torch.matmul(features - self.mean_vec, self.u_mat / self.sigma_mat)
         nll = torch.sum(features_transformed * features_transformed, dim=1) + 2 * torch.sum(torch.log(self.sigma_mat))
@@ -75,6 +79,7 @@ class SingleClassGaussian(DynamicBufferModule):
         """
         Provides the same functionality as `fit`. Transforms the input dataset based on singular values calculated
         earlier.
+
         Args:
             dataset (Tensor): Input dataset
         """
@@ -84,6 +89,7 @@ class SingleClassGaussian(DynamicBufferModule):
 class DFMModel(nn.Module):
     """
     Model for the DFM algorithm
+
     Args:
         n_comps (float, optional): Ratio from which number of components for PCA are calculated. Defaults to 0.97.
         score_type (str, optional): Scoring type. Options are `fre` and `nll`. Defaults to "fre".
@@ -99,6 +105,7 @@ class DFMModel(nn.Module):
     def fit(self, dataset: Tensor) -> None:
         """
         Fit a pca transformation and a Gaussian model to dataset
+
         Args:
             dataset (Tensor): Input dataset to fit the model.
         """
@@ -111,10 +118,13 @@ class DFMModel(nn.Module):
         """
         Compute the PCA-based feature reconstruction error (FRE) scores and
         the Gaussian density-based NLL scores
+
         Args:
             features (torch.Tensor): semantic features on which PCA and density modeling is performed.
+
         Returns:
             score (Tensor): numpy array of scores
+
         """
         feats_projected = self.pca_model.transform(features)
         if self.score_type == "nll":
@@ -131,6 +141,7 @@ class DFMModel(nn.Module):
         """
         Provides the same functionality as `fit`. Transforms the input dataset based on singular values calculated
         earlier.
+
         Args:
             dataset (Tensor): Input dataset
         """
