@@ -2,11 +2,12 @@
 Visualizer Callback
 """
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Optional
 from warnings import warn
 
 import pytorch_lightning as pl
 from pytorch_lightning import Callback
+from pytorch_lightning.utilities.types import STEP_OUTPUT
 from skimage.segmentation import mark_boundaries
 
 from anomalib import loggers
@@ -61,7 +62,7 @@ class VisualizerCallback(Callback):
         self,
         _trainer: pl.Trainer,
         pl_module: pl.LightningModule,
-        outputs: Dict,
+        outputs: Optional[STEP_OUTPUT],
         _batch: Any,
         _batch_idx: int,
         _dataloader_idx: int,
@@ -69,6 +70,7 @@ class VisualizerCallback(Callback):
         """
         Visualize the results for the current batch of images.
         """
+        assert outputs is not None
 
         for (filename, image, true_mask, anomaly_map) in zip(
             outputs["image_path"], outputs["image"], outputs["mask"], outputs["anomaly_maps"]

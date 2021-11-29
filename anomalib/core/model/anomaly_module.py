@@ -54,7 +54,7 @@ class AnomalyModule(pl.LightningModule):
             [AUROC(num_classes=1, pos_label=1, compute_on_step=False)], prefix="image_"
         )
         if params.model.threshold.adaptive:
-            self.image_metrics.add_metrics([OptimalF1(num_classes=1, compute_on_step=False)])
+            self.image_metrics.add_metrics([OptimalF1(num_classes=1)])
         else:
             self.image_metrics.add_metrics([F1(num_classes=1, compute_on_step=False, threshold=self.threshold.item())])
         if self.hparams.dataset.task == "segmentation":
