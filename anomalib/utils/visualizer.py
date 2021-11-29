@@ -1,6 +1,4 @@
-"""
-Anomaly Visualization
-"""
+"""Anomaly Visualization."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -24,9 +22,7 @@ import numpy as np
 
 
 class Visualizer:
-    """
-    Anomaly Visualization
-    """
+    """Anomaly Visualization."""
 
     def __init__(self, num_rows: int, num_cols: int, figure_size: Tuple[int, int]):
         self.figure_index: int = 0
@@ -39,15 +35,13 @@ class Visualizer:
             axis.axes.yaxis.set_visible(False)
 
     def add_image(self, image: np.ndarray, title: str, color_map: Optional[str] = None, index: Optional[int] = None):
-        """
-        Add image to figure
+        """Add image to figure.
 
         Args:
-          image: np.ndarray:
-          title: str: Image title shown on the plot.
-          color_map: Optional[str]:  (Default value = None)
-          index: Optional[int]:  (Default value = None)
-
+          image (np.ndarray): Image which should be added to the figure.
+          title (str): Image title shown on the plot.
+          color_map (Optional[str]): Name of matplotlib color map used to map scalar data to colours. Defaults to None.
+          index (Optional[int]): Figure index. Defaults to None.
         """
         if index is None:
             index = self.figure_index
@@ -57,14 +51,11 @@ class Visualizer:
         self.axis[index].title.set_text(title)
 
     def show(self):
-        """
-        Show image on a matplotlib figure.
-        """
+        """Show image on a matplotlib figure."""
         self.figure.show()
 
     def save(self, filename: Path):
-        """
-        Save image.
+        """Save image.
 
         Args:
           filename: Path: Filename to save image
@@ -73,7 +64,5 @@ class Visualizer:
         self.figure.savefig(filename, dpi=100)
 
     def close(self):
-        """
-        Close figure.
-        """
+        """Close figure."""
         plt.close(self.figure)

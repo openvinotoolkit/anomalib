@@ -1,6 +1,4 @@
-"""
-Tests for configuration getters/setters
-"""
+"""Tests for configuration getters/setters."""
 
 # Copyright (C) 2020 Intel Corporation
 #

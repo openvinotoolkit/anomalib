@@ -31,7 +31,6 @@ def get_datamodule(config: Union[DictConfig, ListConfig]):
 
     Returns:
         PyTorch Lightning DataModule
-
     """
     datamodule: LightningDataModule
 

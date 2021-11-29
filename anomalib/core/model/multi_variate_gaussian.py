@@ -1,6 +1,4 @@
-"""
-Multi Variate Gaussian Distribution
-"""
+"""Multi Variate Gaussian Distribution."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -23,9 +21,7 @@ from torch import Tensor, nn
 
 
 class MultiVariateGaussian(nn.Module):
-    """
-    Multi Variate Gaussian Distribution
-    """
+    """Multi Variate Gaussian Distribution."""
 
     def __init__(self, n_features, n_patches):
         super().__init__()
@@ -40,7 +36,7 @@ class MultiVariateGaussian(nn.Module):
     def _cov(
         observations: Tensor, rowvar: bool = False, bias: bool = False, ddof: Optional[int] = None, aweights=None
     ) -> Tensor:
-        """Estimates covariance matrix like numpy.cov
+        """Estimates covariance matrix like numpy.cov.
 
         Args:
             observations: A 1-D or 2-D array containing multiple variables and observations.
@@ -70,7 +66,6 @@ class MultiVariateGaussian(nn.Module):
 
         Returns:
           The covariance matrix of the variables.
-
         """
         # ensure at least 2D
         if observations.dim() == 1:
@@ -120,8 +115,7 @@ class MultiVariateGaussian(nn.Module):
         return covariance.squeeze()
 
     def forward(self, embedding: Tensor) -> List[Tensor]:
-        """
-        Calculate multivariate Gaussian distribution
+        """Calculate multivariate Gaussian distribution.
 
         Args:
           embedding: CNN features whose dimensionality is reduced via either random sampling or PCA.
@@ -129,7 +123,6 @@ class MultiVariateGaussian(nn.Module):
 
         Returns:
           mean and inverse covariance of the multi-variate gaussian distribution that fits the features.
-
         """
         device = embedding.device
 
@@ -147,14 +140,12 @@ class MultiVariateGaussian(nn.Module):
         return [self.mean, self.inv_covariance]
 
     def fit(self, embedding: Tensor) -> List[Tensor]:
-        """
-        Fit multi-variate gaussian distribution to the input embedding.
+        """Fit multi-variate gaussian distribution to the input embedding.
 
         Args:
             embedding: Tensor: Embedding vector extracted from CNN.
 
         Returns:
             Mean and the covariance of the embedding.
-
         """
         return self.forward(embedding)

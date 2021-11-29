@@ -1,6 +1,4 @@
-"""
-Anomalib Core Model Entities
-"""
+"""Anomalib Core Model Entities."""
 
 # Copyright (C) 2020 Intel Corporation
 #

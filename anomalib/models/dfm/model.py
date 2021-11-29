@@ -1,6 +1,4 @@
-"""
-DFM: Deep Feature Kernel Density Estimation
-"""
+"""DFM: Deep Feature Kernel Density Estimation."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -28,9 +26,7 @@ from anomalib.models.dfm.dfm_model import DFMModel
 
 
 class DfmLightning(AnomalyModule):
-    """
-    DFM: Deep Featured Kernel Density Estimation
-    """
+    """DFM: Deep Featured Kernel Density Estimation."""
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         super().__init__(hparams)
@@ -40,14 +36,13 @@ class DfmLightning(AnomalyModule):
         self.automatic_optimization = False
 
     @staticmethod
-    def configure_optimizers():
-        """
-        DFM doesn't require optimization, therefore returns no optimizers.
-        """
+    def configure_optimizers() -> None:
+        """DFM doesn't require optimization, therefore returns no optimizers."""
         return None
 
     def training_step(self, batch, _):  # pylint: disable=arguments-differ
         """Training Step of DFM.
+
         For each batch, features are extracted from the CNN.
 
         Args:
@@ -56,7 +51,6 @@ class DfmLightning(AnomalyModule):
 
         Returns:
           Deep CNN features.
-
         """
 
         self.feature_extractor.eval()
@@ -72,7 +66,7 @@ class DfmLightning(AnomalyModule):
           outputs: dict:
 
         Returns:
-
+          None
         """
 
         feature_stack = torch.vstack([output["feature_vector"] for output in outputs])
@@ -80,8 +74,8 @@ class DfmLightning(AnomalyModule):
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Validation Step of DFM.
-            Similar to the training step, features
-            are extracted from the CNN for each batch.
+
+        Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
           batch: Dict: Input batch
@@ -89,7 +83,6 @@ class DfmLightning(AnomalyModule):
 
         Returns:
           Dictionary containing FRE anomaly scores and ground-truth.
-
         """
 
         self.feature_extractor.eval()

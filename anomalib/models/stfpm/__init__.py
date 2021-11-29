@@ -1,6 +1,4 @@
-"""
-STFPM Model
-"""
+"""STFPM Model."""
 
 # Copyright (C) 2020 Intel Corporation
 #

@@ -1,8 +1,4 @@
-"""
-Test
-This script performs inference on the test dataset and saves the output
-    visualizations into a directory.
-"""
+"""Test This script performs inference on the test dataset and saves the output visualizations into a directory."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -29,8 +25,7 @@ from anomalib.models import get_model
 
 
 def get_args() -> Namespace:
-    """
-    get_args [summary]
+    """Get CLI arguments.
 
     Returns:
         Namespace: CLI arguments.
@@ -45,9 +40,9 @@ def get_args() -> Namespace:
 
 
 def test():
-    """
-    Test an anomaly classification and segmentation model that is initially trained via `tools/train.py`.
-    The script is able to write the results into both filesystem and  a logger such as Tensorboard.
+    """Test an anomaly classification and segmentation model that is initially trained via `tools/train.py`.
+
+    The script is able to write the results into both filesystem and a logger such as Tensorboard.
     """
     args = get_args()
     config = get_configurable_parameters(

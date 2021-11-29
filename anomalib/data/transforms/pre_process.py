@@ -26,47 +26,38 @@ from albumentations.pytorch import ToTensorV2
 
 
 class PreProcessor:
-    """Image PreProcessor."""
+    """
+    Applies pre-processing and data augmentations to the input and returns the transformed output.
 
-    def __init__(
-        self,
-        config: Optional[Union[str, A.Compose]] = None,
-        image_size: Optional[Union[int, Tuple[int, int]]] = None,
-        to_tensor: bool = True,
-    ) -> None:
-        """
-        Image PreProcessor.
+    Output could be either numpy ndarray or torch tensor.
+    When `PreProcessor` class is used for training, the output would be `torch.Tensor`.
+    For the inference it returns a numpy array.
 
-        PreProcessor class applies pre-processing and data augmentations
-        to the input and returns the transformed output, which could be
-        either numpy ndarray or torch tensor. When `PreProcessor` class is
-        used for training, the output would be `torch.Tensor`. For the inference
-        it returns a numpy array
+    Args:
+        config (Optional[Union[str, A.Compose]], optional): Transformation configurations.
+            When it is ``None``, ``PreProcessor`` only applies resizing. When it is ``str``
+            it loads the config via ``albumentations`` deserialisation methos . Defaults to None.
+        image_size (Optional[Union[int, Tuple[int, int]]], optional): When there is no config,
+        ``image_size`` resizes the image. Defaults to None.
+        to_tensor (bool, optional): Boolean to check whether the augmented image is transformed
+            into a tensor or not. Defaults to True.
 
-        Args:
-            config (Optional[Union[str, A.Compose]], optional): Transformation configurations.
-                When it is ``None``, ``PreProcessor`` only applies resizing. When it is ``str``
-                it loads the config via ``albumentations`` deserialisation methos . Defaults to None.
-            image_size (Optional[Union[int, Tuple[int, int]]], optional): When there is no config,
-            ``image_size`` resizes the image. Defaults to None.
-            to_tensor (bool, optional): Boolean to check whether the augmented image is transformed
-                into a tensor or not. Defaults to True.
+    Examples:
+        >>> import skimage
+        >>> image = skimage.data.astronaut()
 
-        Examples:
-            >>> import skimage
-            >>> image = skimage.data.astronaut()
+        >>> pre_processor = PreProcessor(image_size=256, to_tensor=False)
+        >>> output = pre_processor(image=image)
+        >>> output["image"].shape
+        (256, 256, 3)
 
-            >>> pre_processor = PreProcessor(image_size=256, to_tensor=False)
-            >>> output = pre_processor(image=image)
-            >>> output["image"].shape
-            (256, 256, 3)
+        >>> pre_processor = PreProcessor(image_size=256, to_tensor=True)
+        >>> output = pre_processor(image=image)
+        >>> output["image"].shape
+        torch.Size([3, 256, 256])
 
-            >>> pre_processor = PreProcessor(image_size=256, to_tensor=True)
-            >>> output = pre_processor(image=image)
-            >>> output["image"].shape
-            torch.Size([3, 256, 256])
 
-            Transforms could be read from albumentations Compose object.
+        Transforms could be read from albumentations Compose object.
             >>> import albumentations as A
             >>> from albumentations.pytorch import ToTensorV2
             >>> config = A.Compose([A.Resize(512, 512), ToTensorV2()])
@@ -77,15 +68,21 @@ class PreProcessor:
             >>> type(output["image"])
             numpy.ndarray
 
-            Transforms could be deserialized from a yaml file.
+        Transforms could be deserialized from a yaml file.
             >>> transforms = A.Compose([A.Resize(1024, 1024), ToTensorV2()])
             >>> A.save(transforms, "/tmp/transforms.yaml", data_format="yaml")
-
             >>> pre_processor = PreProcessor(config="/tmp/transforms.yaml")
             >>> output = pre_processor(image=image)
             >>> output["image"].shape
             torch.Size([3, 1024, 1024])
-        """
+    """
+
+    def __init__(
+        self,
+        config: Optional[Union[str, A.Compose]] = None,
+        image_size: Optional[Union[int, Tuple[int, int]]] = None,
+        to_tensor: bool = True,
+    ) -> None:
         self.config = config
         self.image_size = image_size
         self.to_tensor = to_tensor
@@ -93,8 +90,7 @@ class PreProcessor:
         self.transforms = self.get_transforms()
 
     def get_transforms(self) -> A.Compose:
-        """
-        Get transforms from config or image size.
+        """Get transforms from config or image size.
 
         Returns:
             A.Compose: List of albumentation transformations to apply to the
@@ -140,5 +136,5 @@ class PreProcessor:
         return transforms
 
     def __call__(self, *args, **kwargs):
-        """Call PreProcess Class."""
+        """Return transformed arguments."""
         return self.transforms(*args, **kwargs)

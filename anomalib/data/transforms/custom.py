@@ -46,11 +46,10 @@ class Denormalize:
         Denormalize the input.
 
         Args:
-            tensor: Input tensor image (C, H, W)
+            tensor (Tensor): Input tensor image (C, H, W)
 
         Returns:
             Denormalized numpy array (H, W, C).
-
         """
         if tensor.dim() == 4:
             if tensor.size(0):

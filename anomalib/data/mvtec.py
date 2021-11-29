@@ -1,10 +1,10 @@
-"""
-MVTec Dataset.
+""" MVTec Dataset.
 
-This script contains PyTorch Dataset, Dataloader and PyTorch Lightning
-DataModule for the MVTec dataset. If the dataset is not on the file
-system, the script downloads and extracts the dataset and create
-PyTorch data objects.
+MVTec This script contains PyTorch Dataset, Dataloader and PyTorch
+Lightning DataModule for the MVTec dataset.
+
+If the dataset is not on the file system, the script downloads and
+extracts the dataset and create PyTorch data objects.
 """
 
 # Copyright (C) 2020 Intel Corporation
@@ -50,13 +50,9 @@ __all__ = ["MVTec", "MVTecDataModule"]
 
 
 def split_normal_images_in_train_set(samples: DataFrame, split_ratio: float = 0.1, seed: int = 0) -> DataFrame:
-    """
-    Split normal images in train set.
+    """This function splits the normal images in training set and assigns the values to the test set.
 
-    This function splits the normal images in training set and assigns the
-    values to the test set. This is particularly useful especially when the
-    test set does not contain any normal images.
-
+    This is particularly useful especially when the test set does not contain any normal images.
     This is important because when the test set doesn't have any normal images,
     AUC computation fails due to having single class.
 
@@ -81,11 +77,9 @@ def split_normal_images_in_train_set(samples: DataFrame, split_ratio: float = 0.
 
 
 def make_mvtec_dataset(path: Path, split: str = "train", split_ratio: float = 0.1, seed: int = 0) -> DataFrame:
-    """
-    Make MVTec Dataset.
+    """Create MVTec samples by parsing the MVTec data file structure.
 
-    This function creates MVTec samples by parsing the MVTec data file structure, based on the following
-    structure:
+    The files are expected to follow the structure:
         path/to/dataset/split/category/image_filename.png
         path/to/dataset/ground_truth/category/mask_filename.png
 
@@ -272,10 +266,11 @@ class MVTec(VisionDataset):
         Get dataset item for the index ``index``.
 
         Args:
-            index: Index to get the item.
+            index (int): Index to get the item.
 
         Returns:
-            Dataset Item
+            Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]: Dict of image tensor during training.
+                Otherwise, Dict containing image path, target path, image tensor, label and transformed bounding box.
         """
         item: Dict[str, Union[str, Tensor]] = {}
 
@@ -398,12 +393,10 @@ class MVTecDataModule(LightningDataModule):
         )
 
     def setup(self, stage: Optional[str] = None) -> None:
-        """
-        Set up train, validation and test data.
+        """Setup train, validation and test data.
 
         Args:
-          stage: Optional[str]:  (Default value = None)
-
+          stage: Optional[str]:  Train/Val/Test stages. (Default value = None)
         """
         self.val_data = MVTec(
             root=self.root,

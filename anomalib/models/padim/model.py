@@ -1,6 +1,6 @@
-"""
-PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization
-https://arxiv.org/abs/2011.08785
+"""PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
+
+Paper https://arxiv.org/abs/2011.08785
 """
 
 # Copyright (C) 2020 Intel Corporation
@@ -42,8 +42,7 @@ DIMS = {
 
 
 class PadimModel(nn.Module):
-    """
-    Padim Module
+    """Padim Module.
 
     Args:
         layers (List[str]): Layers used for feature extraction
@@ -93,24 +92,24 @@ class PadimModel(nn.Module):
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
 
         Args:
-                input_tensor: Image-batch (N, C, H, W)
-                input_tensor: Tensor:
+            input_tensor: Image-batch (N, C, H, W)
+            input_tensor: Tensor:
 
         Returns:
-                Features from single/multiple layers.
+            Features from single/multiple layers.
 
-                :Example:
+        Example:
+            >>> x = torch.randn(32, 3, 224, 224)
+            >>> features = self.extract_features(input_tensor)
+            >>> features.keys()
+            dict_keys(['layer1', 'layer2', 'layer3'])
 
-        >>> x = torch.randn(32, 3, 224, 224)
-        >>> features = self.extract_features(input_tensor)
-        >>> features.keys()
-        dict_keys(['layer1', 'layer2', 'layer3'])
-
-        >>> [v.shape for v in features.values()]
-        [torch.Size([32, 64, 56, 56]),
-         torch.Size([32, 128, 28, 28]),
-         torch.Size([32, 256, 14, 14])]
+            >>> [v.shape for v in features.values()]
+            [torch.Size([32, 64, 56, 56]),
+            torch.Size([32, 128, 28, 28]),
+            torch.Size([32, 256, 14, 14])]
         """
+
         if self.apply_tiling:
             input_tensor = self.tiler.tile(input_tensor)
         with torch.no_grad():
@@ -129,17 +128,17 @@ class PadimModel(nn.Module):
         return output
 
     def generate_embedding(self, features: Dict[str, Tensor]) -> Tensor:
-        """Generate embedding from hierarchical feature map
+        """Generate embedding from hierarchical feature map.
 
         Args:
-                features: Hierarchical feature map from a CNN (ResNet18 or WideResnet)
-                features: Dict[str:
-                Tensor]:
+            features: Hierarchical feature map from a CNN (ResNet18 or WideResnet)
+            features: Dict[str:
+            Tensor]:
 
         Returns:
-                Embedding vector
-
+            Embedding vector
         """
+
         embeddings = features[self.layers[0]]
         for layer in self.layers[1:]:
             layer_embedding = features[layer]
@@ -153,7 +152,7 @@ class PadimModel(nn.Module):
 
 
 class AnomalyMapGenerator:
-    """Generate Anomaly Heatmap"""
+    """Generate Anomaly Heatmap."""
 
     def __init__(self, image_size: Union[ListConfig, Tuple], sigma: int = 4):
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
@@ -161,8 +160,8 @@ class AnomalyMapGenerator:
 
     @staticmethod
     def compute_distance(embedding: Tensor, stats: List[Tensor]) -> Tensor:
-        """
-        Compute anomaly score to the patch in position(i,j) of a test image
+        """Compute anomaly score to the patch in position(i,j) of a test image.
+
         Ref: Equation (2), Section III-C of the paper.
 
         Args:
@@ -173,8 +172,7 @@ class AnomalyMapGenerator:
             stats: List[Tensor]:
 
         Returns:
-                Anomaly score of a test image via mahalanobis distance.
-
+            Anomaly score of a test image via mahalanobis distance.
         """
 
         batch, channel, height, width = embedding.shape
@@ -191,8 +189,7 @@ class AnomalyMapGenerator:
         return distances
 
     def up_sample(self, distance: Tensor) -> Tensor:
-        """
-        Up sample anomaly score to match the input image size.
+        """Up sample anomaly score to match the input image size.
 
         Args:
             distance: Anomaly score computed via the mahalanobis distance.
@@ -200,7 +197,6 @@ class AnomalyMapGenerator:
 
         Returns:
             Resized distance matrix matching the input image size
-
         """
 
         score_map = F.interpolate(
@@ -212,8 +208,7 @@ class AnomalyMapGenerator:
         return score_map
 
     def smooth_anomaly_map(self, anomaly_map: Tensor) -> Tensor:
-        """
-        Apply gaussian smoothing to the anomaly map
+        """Apply gaussian smoothing to the anomaly map.
 
         Args:
             anomaly_map: Anomaly score for the test image(s)
@@ -221,17 +216,18 @@ class AnomalyMapGenerator:
 
         Returns:
             Filtered anomaly scores
-
         """
+
         kernel_size = 2 * int(4.0 * self.sigma + 0.5) + 1
         anomaly_map = gaussian_blur2d(anomaly_map, (kernel_size, kernel_size), sigma=(self.sigma, self.sigma))
 
         return anomaly_map
 
     def compute_anomaly_map(self, embedding: Tensor, mean: Tensor, inv_covariance: Tensor) -> Tensor:
-        """
-        Compute anomaly score based on embedding vector, mean and inv_covariance of the multivariate
-        gaussian distribution.
+        """Compute anomaly score.
+
+        Scores are calculated based on embedding vector, mean and inv_covariance of the multivariate gaussian
+        distribution.
 
         Args:
             embedding: Embedding vector extracted from the test set.
@@ -243,7 +239,6 @@ class AnomalyMapGenerator:
 
         Returns:
             Output anomaly score.
-
         """
 
         score_map = self.compute_distance(
@@ -256,9 +251,9 @@ class AnomalyMapGenerator:
         return smoothed_anomaly_map
 
     def __call__(self, **kwds):
-        """
-        Returns anomaly_map.
-        Expects `embedding`, `mean` and `covariance` keywords to be passed explicitly
+        """Returns anomaly_map.
+
+        Expects `embedding`, `mean` and `covariance` keywords to be passed explicitly.
 
         Example:
         >>> anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
@@ -270,6 +265,7 @@ class AnomalyMapGenerator:
         Returns:
             torch.Tensor: anomaly map
         """
+
         if not ("embedding" in kwds and "mean" in kwds and "inv_covariance" in kwds):
             raise ValueError(f"Expected keys `embedding`, `mean` and `covariance`. Found {kwds.keys()}")
 
@@ -281,9 +277,7 @@ class AnomalyMapGenerator:
 
 
 class PadimLightning(AnomalyModule):
-    """
-    PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization
-    """
+    """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization."""
 
     def __init__(self, hparams):
         super().__init__(hparams)
@@ -306,8 +300,7 @@ class PadimLightning(AnomalyModule):
         return None
 
     def training_step(self, batch, _):  # pylint: disable=arguments-differ
-        """Training Step of PADIM.
-        For each batch, hierarchical features are extracted from the CNN.
+        """Training Step of PADIM. For each batch, hierarchical features are extracted from the CNN.
 
         Args:
             batch: Input batch
@@ -315,29 +308,29 @@ class PadimLightning(AnomalyModule):
 
         Returns:
                 Hierarchical feature map
-
         """
+
         self.model.feature_extractor.eval()
         embeddings = self.model(batch["image"])
         return {"embeddings": embeddings.cpu()}
 
-    def training_epoch_end(self, outputs):
+    def training_epoch_end(self, outputs) -> None:
         """Fit a multivariate gaussian model on an embedding extracted from deep hierarchical CNN features.
 
         Args:
             outputs: Batch of outputs from the training step
 
         Returns:
-
+            None
         """
+
         embeddings = torch.vstack([x["embeddings"] for x in outputs])
         self.stats = self.model.gaussian.fit(embeddings)
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
-        """
-        Validation Step of PADIM.
-        Similar to the training step, hierarchical features
-            are extracted from the CNN for each batch.
+        """Validation Step of PADIM.
+
+        Similar to the training step, hierarchical features are extracted from the CNN for each batch.
 
         Args:
             batch: Input batch
@@ -346,8 +339,8 @@ class PadimLightning(AnomalyModule):
         Returns:
             Dictionary containing images, features, true labels and masks.
             These are required in `validation_epoch_end` for feature concatenation.
-
         """
+
         batch["anomaly_maps"] = self.model(batch["image"])
 
         return batch

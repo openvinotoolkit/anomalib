@@ -1,6 +1,4 @@
-"""
-Result Set
-"""
+"""This module defines Result Sets."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -28,12 +26,10 @@ from torch import Tensor
 
 @dataclass
 class ClassificationResults:
-    """
-    Dataclass to store classification-task results.
-    A classification task would return a anomaly
-    classification score, which is used to compute
-    the overall performance by comparing it with the
-    true_labels (ground-truth).
+    """Dataclass to store classification-task results.
+
+    A classification task would return a anomaly classification score, which is used to compute
+    the overall performance by comparing it with the true_labels (ground-truth).
 
     Args:
         filenames: List[Union[str, Path]]
@@ -61,9 +57,7 @@ class ClassificationResults:
     performance: Dict[str, Any] = field(default_factory=dict)
 
     def store_outputs(self, outputs: List[dict]):
-        """
-        Concatenate the outputs from the individual batches and store in the result set
-        """
+        """Concatenate the outputs from the individual batches and store in the result set."""
         if "image_path" in outputs[0].keys():
             self.filenames = [Path(f) for x in outputs for f in x["image_path"]]
         self.images = torch.vstack([x["image"] for x in outputs])
@@ -71,9 +65,7 @@ class ClassificationResults:
         self.pred_scores = np.hstack([output["pred_scores"].cpu() for output in outputs])
 
     def evaluate(self, threshold: float):
-        """
-        Compute performance metrics
-        """
+        """Compute performance metrics."""
         self.pred_labels = self.pred_scores >= threshold
         self.performance["image_f1_score"] = f1_score(self.true_labels, self.pred_labels)
         self.performance["balanced_accuracy_score"] = balanced_accuracy_score(self.true_labels, self.pred_labels)
@@ -82,12 +74,10 @@ class ClassificationResults:
 
 @dataclass
 class SegmentationResults(ClassificationResults):
-    """
-    Dataclass to store segmentation-based task results.
-    An anomaly segmentation task returns anomaly maps in
-    addition to anomaly scores, which are then used to
-    compute anomaly masks to compare against the true
-    segmentation masks.
+    """Dataclass to store segmentation-based task results.
+
+    An anomaly segmentation task returns anomaly maps in addition to anomaly scores, which are then used to
+    compute anomaly masks to compare against the true segmentation masks.
 
     Args:
         anomaly_maps: List[Union[np.ndarray, Tensor]]
@@ -109,16 +99,12 @@ class SegmentationResults(ClassificationResults):
     pred_masks: Optional[np.ndarray] = None
 
     def store_outputs(self, outputs: List[dict]):
-        """
-        Concatenate the outputs from the individual batches and store in the result set
-        """
+        """Concatenate the outputs from the individual batches and store in the result set."""
         super().store_outputs(outputs)
         self.true_masks = np.vstack([output["mask"].squeeze(1).cpu() for output in outputs])
         self.anomaly_maps = np.vstack([output["anomaly_maps"].cpu() for output in outputs])
 
     def evaluate(self, threshold: float):
-        """
-        First compute common metrics, then compute segmentation-specific metrics
-        """
+        """First compute common metrics, then compute segmentation-specific metrics."""
         super().evaluate(threshold)
         self.performance["pixel_roc_auc"] = roc_auc_score(self.true_masks.flatten(), self.anomaly_maps.flatten())

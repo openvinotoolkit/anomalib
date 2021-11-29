@@ -42,8 +42,7 @@ class FakeDataModule(pl.LightningDataModule):
 
 class DummyModel(nn.Module):
     """Creates a very basic CNN model to fit image data for classification task
-    The test uses this to check if this model is converted to OpenVINO IR
-    """
+    The test uses this to check if this model is converted to OpenVINO IR."""
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         super().__init__()
@@ -68,7 +67,7 @@ class DummyModel(nn.Module):
 
 
 class DummyLightningModule(pl.LightningModule):
-    """A dummy model which fits the torchvision FakeData dataset"""
+    """A dummy model which fits the torchvision FakeData dataset."""
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         super().__init__()
