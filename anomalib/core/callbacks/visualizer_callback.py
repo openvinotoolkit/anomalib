@@ -22,8 +22,8 @@ class VisualizerCallback(Callback):
     Callback that visualizes the inference results of a model. The callback generates a figure showing the original
     image, the ground truth segmentation mask, the predicted error heat map, and the predicted segmentation mask.
 
-    To write the images to the Sigopt logger, add the 'sigopt' keyword to the project.log_images_to parameter in the
-    config.yaml file. To save the images to the filesystem, add the 'local' keyword.
+    To save the images to the filesystem, add the 'local' keyword to the project.log_images_to parameter in the
+    config.yaml file. .
     """
 
     def __init__(self):
@@ -67,8 +67,15 @@ class VisualizerCallback(Callback):
         _batch_idx: int,
         _dataloader_idx: int,
     ) -> None:
-        """
-        Visualize the results for the current batch of images.
+        """Log images at the end of every batch
+        Args:
+            _trainer (Trainer): Pytorch lightning trainer object (unused).
+            pl_module (LightningModule): Lightning modules derived from BaseAnomalyLightning object as
+            currently only they support logging images.
+            outputs (Dict[str, Any]): Outputs of the current test step.
+            _batch (Any): Input batch of the current test step (unused).
+            _batch_idx (int): Index of the current test batch (unused).
+            _dataloader_idx (int): Index of the dataloader that yielded the current batch (unused).
         """
         assert outputs is not None
 
