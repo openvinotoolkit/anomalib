@@ -7,27 +7,25 @@ on:
       - ".github/**" # Ignore changes towards the .github directory
 
 jobs:
-  Build-and-Publish-Documentation:
+  Tox:
     runs-on: [self-hosted, linux, x64]
     steps:
       - name: CHECKOUT REPOSITORY
         uses: actions/checkout@v2
       - name: Install requirements
-        run: |
-          pip install -r requirements/requirements.txt
-          pip install -r requirements/requirements_dev.txt
-          pip install -r requirements/requirements_openvino_mo.txt
+        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt
+        run: pip install -r requirements_openvino_mo.txt
       - name: Build and Commit Docs
-        run: |
-          cd docs
-          pip install -r requirements.txt
-          make html
+        run: cd docs
+        run: pip install -r requirements.txt
+        run: sphinx-build -b html source build
       - name: Create gh-pages branch
         run: |
           echo ::set-output name=SOURCE_NAME::${GITHUB_REF#refs/*/}
           echo ::set-output name=SOURCE_BRANCH::${GITHUB_REF#refs/heads/}
           echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
-
+        run: |
           existed_in_remote=$(git ls-remote --heads origin gh-pages)
 
           if [[ -z ${existed_in_remote} ]]; then
@@ -36,9 +34,7 @@ jobs:
             git config --local user.name "GitHub Action"
             git checkout --orphan gh-pages
             git reset --hard
-            touch .nojekyll
-            git add .nojekyll
-            git commit -m "Initializing gh-pages branch"
+            git commit --allow-empty -m "Initializing gh-pages branch"
             git push origin gh-pages
             git checkout ${{steps.branch_name.outputs.SOURCE_NAME}}
             echo "Created gh-pages branch"
@@ -47,8 +43,8 @@ jobs:
           fi
       - name: Push docs to gh-pages branch
         run: |
-          git checkout gh-pages
-          cp -r docs/build/html/* ./
+          cp -r docs/_build/html/* gh-pages/
+          cd gh-pages
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add .
