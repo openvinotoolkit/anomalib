@@ -35,7 +35,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]):
     """
     datamodule: LightningDataModule
 
-    if config.dataset.name.lower() == "mvtec":
+    if config.dataset.format.lower() == "mvtec":
         datamodule = MVTecDataModule(
             # TODO: Remove config values. IAAALD-211
             root=config.dataset.path,
