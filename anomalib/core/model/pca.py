@@ -16,14 +16,10 @@ Principle Component Analysis (PCA) with PyTorch
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-<<<<<<< HEAD
 from typing import Union
 
 import torch
 from torch import Tensor
-=======
-import torch
->>>>>>> 35a97d4 (Initial commit)
 
 from anomalib.core.model.dynamic_module import DynamicBufferModule
 
@@ -31,8 +27,6 @@ from anomalib.core.model.dynamic_module import DynamicBufferModule
 class PCA(DynamicBufferModule):
     """
     Principle Component Analysis (PCA)
-<<<<<<< HEAD
-
     Args:
         n_components (float): Number of components. Can be either integer number of components
         or a ratio between 0-1.
@@ -54,7 +48,6 @@ class PCA(DynamicBufferModule):
     def fit(self, dataset: Tensor) -> None:
         """
         Fits the PCA model to the dataset
-
         Args:
           dataset (Tensor): Input dataset to fit the model.
         """
@@ -77,37 +70,12 @@ class PCA(DynamicBufferModule):
 
     def fit_transform(self, dataset: Tensor) -> Tensor:
         """
-
         Args:
           dataset (Tensor): Dataset to which the PCA if fit and transformed
-
         Returns: Transformed dataset
-=======
-    """
-
-    def __init__(self, n_components: int):
-        super().__init__()
-        self.n_components = n_components
-
-        self.register_buffer("singular_vectors", torch.Tensor())
-        self.register_buffer("mean", torch.Tensor())
-
-        self.singular_vectors: torch.Tensor
-        self.mean: torch.Tensor
-
-    def fit_transform(self, dataset: torch.Tensor) -> torch.Tensor:
-        """
-
-        Args:
-          dataset: torch.Tensor:
-
-        Returns:
->>>>>>> 35a97d4 (Initial commit)
-
         """
         mean = dataset.mean(dim=0)
         dataset -= mean
-<<<<<<< HEAD
         num_components = int(self.n_components)
         self.num_components = Tensor([num_components])
 
@@ -120,10 +88,8 @@ class PCA(DynamicBufferModule):
     def transform(self, features: Tensor) -> Tensor:
         """
         Transforms the features based on singular vectors calculated earlier.
-
         Args:
           features (Tensor): Input features
-
         Returns: Transformed features
         """
 
@@ -133,10 +99,8 @@ class PCA(DynamicBufferModule):
     def inverse_transform(self, features: Tensor) -> Tensor:
         """
         Inverses the transformed features
-
         Args:
           features (Tensor): Transformed features
-
         Returns: Inverse features
         """
         inv_features = torch.matmul(features, self.singular_vectors.transpose(-2, -1))
@@ -145,38 +109,8 @@ class PCA(DynamicBufferModule):
     def forward(self, features: Tensor) -> Tensor:
         """
         Transforms the features
-
         Args:
           features (Tensor): Input features
-
         Returns: Transformed features
-=======
-
-        self.singular_vectors = torch.svd(dataset)[-1]
-        self.mean = mean
-
-        return torch.matmul(dataset, self.singular_vectors[:, : self.n_components])
-
-    def transform(self, features: torch.Tensor) -> torch.Tensor:
-        """
-
-        Args:
-          features: torch.Tensor:
-
-        Returns:
-
-        """
-        features -= self.mean
-        return torch.matmul(features, self.singular_vectors[:, : self.n_components])
-
-    def forward(self, features: torch.Tensor) -> torch.Tensor:
-        """
-
-        Args:
-          features: torch.Tensor:
-
-        Returns:
-
->>>>>>> 35a97d4 (Initial commit)
         """
         return self.transform(features)

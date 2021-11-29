@@ -5,6 +5,7 @@
 [![openvino](https://img.shields.io/badge/openvino-2021.4-purple)]()
 ![example branch parameter](https://github.com/openvinotoolkit/anomalib/actions/workflows/tox.yml/badge.svg?branch=development)
 
+
 This repository contains state-of-the art anomaly detection algorithms trained and evaluated on both public and private
 benchmark datasets. The repo is constantly updated with new algorithms, so keep checking.
 

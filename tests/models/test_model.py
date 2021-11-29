@@ -18,11 +18,8 @@ Test Models
 
 import random
 import tempfile
-<<<<<<< HEAD
 from functools import wraps
 from typing import Generator
-=======
->>>>>>> 35a97d4 (Initial commit)
 
 import numpy as np
 import pytest
@@ -31,7 +28,7 @@ from pytorch_lightning import Trainer
 from anomalib.config import get_configurable_parameters, update_nncf_config
 from anomalib.core.callbacks import get_callbacks
 from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
-from anomalib.data import get_datamodule
+from anomalib.datasets import get_datamodule
 from anomalib.models import get_model
 from tests.helpers.dataset import TestDataset, get_dataset_path
 
@@ -66,7 +63,6 @@ def category() -> str:
     return category
 
 
-<<<<<<< HEAD
 class AddDFMScores:
     """
     Function wrapper for checking both scores of DFM
@@ -91,21 +87,11 @@ class TestModel:
         config = get_configurable_parameters(model_name=model_name)
         if score_type is not None:
             config.model.score_type = score_type
-=======
-class TestModel:
-    """Test model"""
-
-    def _setup(self, model_name, use_mvtec, dataset_path, project_path, nncf, category):
-        config = get_configurable_parameters(model_name=model_name)
->>>>>>> 35a97d4 (Initial commit)
         config.project.seed = 1234
         config.dataset.category = category
         config.dataset.path = dataset_path
         config.model.weight_file = "weights/model.ckpt"  # add model weights to the config
-<<<<<<< HEAD
 
-=======
->>>>>>> 35a97d4 (Initial commit)
         if not use_mvtec:
             config.dataset.category = "shapes"
 
@@ -142,7 +128,6 @@ class TestModel:
         if config.dataset.task == "segmentation":
             assert model.results.performance["pixel_roc_auc"] >= 0.6
 
-<<<<<<< HEAD
     def _test_model_load(self, config, datamodule, model):
         loaded_model = get_model(config)  # get new model
 
@@ -170,30 +155,6 @@ class TestModel:
                 model.results.performance["pixel_roc_auc"], loaded_model.results.performance["pixel_roc_auc"]
             )
             assert is_close, "Loaded model does not yield close performance results"
-=======
-    def _test_model_load(self, model_name, config, datamodule, model):
-        # TODO add support for dfm once pca is available
-        if model_name != "dfm":
-            loaded_model = get_model(config)  # get new model
-
-            callbacks = get_callbacks(config)
-
-            for index, callback in enumerate(callbacks):
-                # Remove visualizer callback as saving results takes time
-                if isinstance(callback, VisualizerCallback):
-                    callbacks.pop(index)
-                    break
-
-            # create new trainer object with LoadModel callback (assumes it is present)
-            trainer = Trainer(callbacks=callbacks, **config.trainer)
-            # Assumes the new model has LoadModel callback and the old one had ModelCheckpoint callback
-            trainer.test(model=loaded_model, datamodule=datamodule)
-            if config.dataset.task == "segmentation":
-                is_close = np.isclose(
-                    model.results.performance["pixel_roc_auc"], loaded_model.results.performance["pixel_roc_auc"]
-                )
-                assert is_close, "Loaded model does not yield close performance results"
->>>>>>> 35a97d4 (Initial commit)
 
     @pytest.mark.parametrize(
         ["model_name", "nncf"],
@@ -208,15 +169,9 @@ class TestModel:
     )
     @pytest.mark.flaky(max_runs=3)
     @TestDataset(num_train=200, num_test=10, path=get_dataset_path(), use_mvtec=True)
-<<<<<<< HEAD
     @AddDFMScores()
     def test_model(self, category, model_name, nncf, use_mvtec=True, path="./datasets/MVTec", score_type=None):
         """Driver for all the tests in the class"""
-=======
-    def test_model(self, category, model_name, nncf, use_mvtec=True, path="./datasets/MVTec"):
-        """Driver for all the tests in the class"""
-
->>>>>>> 35a97d4 (Initial commit)
         with tempfile.TemporaryDirectory() as project_path:
             model, config, datamodule, trainer = self._setup(
                 model_name=model_name,
@@ -225,18 +180,11 @@ class TestModel:
                 nncf=nncf,
                 project_path=project_path,
                 category=category,
-<<<<<<< HEAD
                 score_type=score_type,
-=======
->>>>>>> 35a97d4 (Initial commit)
             )
 
             # test model metrics
             self._test_metrics(trainer=trainer, config=config, model=model, datamodule=datamodule)
 
             # test model load
-<<<<<<< HEAD
             self._test_model_load(config=config, datamodule=datamodule, model=model)
-=======
-            self._test_model_load(model_name=model_name, config=config, datamodule=datamodule, model=model)
->>>>>>> 35a97d4 (Initial commit)
