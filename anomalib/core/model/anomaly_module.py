@@ -1,6 +1,4 @@
-"""
-Base Anomaly Module for Training Task
-"""
+"""Base Anomaly Module for Training Task."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -29,8 +27,7 @@ from anomalib.utils.metrics import compute_threshold_and_f1_score
 
 
 class AnomalyModule(pl.LightningModule):
-    """
-    AnomalyModule to train, validate, predict and test images.
+    """AnomalyModule to train, validate, predict and test images.
 
     Args:
         params (Union[DictConfig, ListConfig]): Configuration
@@ -58,8 +55,7 @@ class AnomalyModule(pl.LightningModule):
             raise NotImplementedError("Only Classification and Segmentation tasks are supported in this version.")
 
     def forward(self, batch):  # pylint: disable=arguments-differ
-        """
-        Forward-pass input tensor to the module
+        """Forward-pass input tensor to the module.
 
         Args:
             batch (Tensor): Input Tensor
@@ -70,8 +66,8 @@ class AnomalyModule(pl.LightningModule):
         return self.model(batch)
 
     def predict_step(self, batch, batch_idx, _):  # pylint: disable=arguments-differ, signature-differs
-        """
-        Step function called during :meth:`~pytorch_lightning.trainer.trainer.Trainer.predict`.
+        """Step function called during :meth:`~pytorch_lightning.trainer.trainer.Trainer.predict`.
+
         By default, it calls :meth:`~pytorch_lightning.core.lightning.LightningModule.forward`.
         Override to add any processing logic.
 
@@ -86,8 +82,7 @@ class AnomalyModule(pl.LightningModule):
         return self._post_process(self.validation_step(batch, batch_idx), predict_labels=True)
 
     def test_step(self, batch, _):  # pylint: disable=arguments-differ
-        """
-        Calls validation_step for anomaly map/score calculation.
+        """Calls validation_step for anomaly map/score calculation.
 
         Args:
           batch: Input batch
@@ -96,30 +91,22 @@ class AnomalyModule(pl.LightningModule):
         Returns:
           Dictionary containing images, features, true labels and masks.
           These are required in `validation_epoch_end` for feature concatenation.
-
         """
         return self.validation_step(batch, _)
 
     def validation_step_end(self, val_step_outputs):  # pylint: disable=arguments-differ
-        """
-        Called at the end of each validation step.
-        """
+        """Called at the end of each validation step."""
         return self._post_process(val_step_outputs)
 
     def test_step_end(self, test_step_outputs):  # pylint: disable=arguments-differ
-        """
-        Called at the end of each validation step.
-        """
+        """Called at the end of each validation step."""
         return self._post_process(test_step_outputs)
 
     def validation_epoch_end(self, outputs):
-        """
-        Compute image-level performance metrics
+        """Compute image-level performance metrics.
 
         Args:
           outputs: Batch of outputs from the validation step
-
-
         """
         self.results.store_outputs(outputs)
         if self.hparams.model.threshold.adaptive:
@@ -129,21 +116,17 @@ class AnomalyModule(pl.LightningModule):
         self._log_metrics()
 
     def test_epoch_end(self, outputs):
-        """
-        Compute and save anomaly scores of the test set.
+        """Compute and save anomaly scores of the test set.
 
         Args:
             outputs: Batch of outputs from the validation step
-
         """
         self.results.store_outputs(outputs)
         self.results.evaluate(self.threshold.item())
         self._log_metrics()
 
     def _post_process(self, outputs, predict_labels=False):
-        """
-        Compute labels based on model predictions.
-        """
+        """Compute labels based on model predictions."""
         if "pred_scores" not in outputs and "anomaly_maps" in outputs:
             outputs["pred_scores"] = (
                 outputs["anomaly_maps"].reshape(outputs["anomaly_maps"].shape[0], -1).max(axis=1).values
@@ -153,8 +136,6 @@ class AnomalyModule(pl.LightningModule):
         return outputs
 
     def _log_metrics(self):
-        """
-        Log computed performance metrics
-        """
+        """Log computed performance metrics."""
         for name, value in self.results.performance.items():
             self.log(name=name, value=value, on_epoch=True, prog_bar=True)

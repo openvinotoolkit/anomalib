@@ -1,6 +1,4 @@
-"""
-PatchCore model
-"""
+"""PatchCore model."""
 
 # Copyright (C) 2020 Intel Corporation
 #

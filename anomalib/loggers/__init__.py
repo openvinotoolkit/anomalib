@@ -1,6 +1,4 @@
-"""
-Load PyTorch Lightning Loggers.
-"""
+"""Load PyTorch Lightning Loggers."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -31,14 +29,11 @@ AVAILABLE_LOGGERS = ["tensorboard"]
 
 
 class UnknownLogger(Exception):
-    """
-    This is raised when the logger option in config.yaml file is set incorrectly.
-    """
+    """This is raised when the logger option in config.yaml file is set incorrectly."""
 
 
 def get_logger(config: Union[DictConfig, ListConfig]) -> Union[LightningLoggerBase, bool]:
-    """
-    Return a logger based on the choice of logger in the config file.
+    """Return a logger based on the choice of logger in the config file.
 
     Args:
         config (DictConfig): config.yaml file for the corresponding anomalib model.
@@ -49,7 +44,6 @@ def get_logger(config: Union[DictConfig, ListConfig]) -> Union[LightningLoggerBa
     Returns:
         Union[LightningLoggerBase, Iterable[LightningLoggerBase], bool]: Logger
     """
-
     logger: Union[LightningLoggerBase, bool]
 
     if config.project.logger in [None, False]:

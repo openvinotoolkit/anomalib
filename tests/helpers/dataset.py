@@ -13,11 +13,12 @@ from .shapes import random_shapes
 
 
 def get_dataset_path(path: Union[str, Path] = "./datasets/MVTec"):
-    """
-    Selects path based on tests in local system or docker image.
-    Local install assumes dataset is downloaded to anomaly/datasets/MVTec.
-    In either case, if the location is empty, the dataset is downloaded again.
-    This speeds up tests in docker images where dataset is already stored in /tmp/anomalib
+    """Selects path based on tests in local system or docker image.
+
+    Local install assumes dataset is downloaded to
+    anomaly/datasets/MVTec. In either case, if the location is empty,
+    the dataset is downloaded again. This speeds up tests in docker
+    images where dataset is already stored in /tmp/anomalib
     """
     # when running locally
     path = str(path)
@@ -172,7 +173,8 @@ class GeneratedDummyDataset(ContextDecorator):
         self.max_size = max_size
 
     def _generate_dataset(self):
-        """Generates dummy dataset in a temporary directory using the same convention as MVTec"""
+        """Generates dummy dataset in a temporary directory using the same
+        convention as MVTec."""
         # create train images
         train_path = os.path.join(self.root_dir, "shapes", "train", "good")
         os.makedirs(train_path, exist_ok=True)
@@ -224,10 +226,10 @@ class GeneratedDummyDataset(ContextDecorator):
             imsave(os.path.join(test_good, f"{i:03}.png"), image, check_contrast=False)
 
     def __enter__(self):
-        """Creates the dataset in temp folder"""
+        """Creates the dataset in temp folder."""
         self._generate_dataset()
         return self.root_dir
 
     def __exit__(self, _exc_type, _exc_value, _exc_traceback):
-        """Cleanup the directory"""
+        """Cleanup the directory."""
         shutil.rmtree(self.root_dir)

@@ -1,8 +1,8 @@
-"""
-Anomalib Traning Script.
-This script reads the name of the model or config file
-from command line, train/test the anomaly model to get
-quantitative and qualitative results.
+"""Anomalib Traning Script.
+
+This script reads the name of the model or config file from command
+line, train/test the anomaly model to get quantitative and qualitative
+results.
 """
 
 # Copyright (C) 2020 Intel Corporation
@@ -31,8 +31,7 @@ from anomalib.models import get_model
 
 
 def get_args() -> Namespace:
-    """
-    Get command line arguments.
+    """Get command line arguments.
 
     Returns:
         Namespace: List of arguments.
@@ -45,9 +44,7 @@ def get_args() -> Namespace:
 
 
 def train():
-    """
-    Train an anomaly classification or segmentation model based on a provided configuration file.
-    """
+    """Train an anomaly classification or segmentation model based on a provided configuration file."""
     args = get_args()
     config = get_configurable_parameters(model_name=args.model, model_config_path=args.model_config_path)
 

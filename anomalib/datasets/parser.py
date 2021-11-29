@@ -1,6 +1,6 @@
-"""
-This script contains parsers for different annotations for object detection task.
-    Parsers include pascal-voc.
+"""This script contains parsers for different annotations for object detection task.
+
+Parsers include pascal-voc.
 """
 
 # Copyright (C) 2020 Intel Corporation
@@ -27,8 +27,7 @@ logger = logging.getLogger(name="Dataset: Anomaly")
 
 
 class PascalVocReader:
-    """
-    Data parser for Pascal-VOC labels
+    """Data parser for Pascal-VOC labels.
 
     Args:
         file_path (str): Path to XML file
@@ -45,7 +44,8 @@ class PascalVocReader:
         self.parse_xml()
 
     def get_shapes(self) -> Dict[str, Union[List, Any]]:
-        """
+        """Return bounding boxes and associated labels.
+
         Returns:
             annotated bounding boxes and corresponding labels
         """
@@ -53,10 +53,11 @@ class PascalVocReader:
         return {"boxes": self.boxes, "labels": self.labels}
 
     def add_shape(self, label: str, bnd_box: ElementTree.Element):
-        """
+        """Extract bounding box from the xml element and store it in a list.
+
         Args:
-            label: label for target object
-            bnd_box: bounding box coordinates
+            label (str): label for target object
+            bnd_box (ElementTree): bounding box coordinates
         """
         _x_min, _y_min, _x_max, _y_max = (
             bnd_box.find("xmin"),
@@ -74,9 +75,7 @@ class PascalVocReader:
             self.labels.append(label)
 
     def parse_xml(self):
-        """
-        Function to read xml file and parse annotations
-        """
+        """Function to read xml file and parse annotations."""
 
         if self.file_path.endswith(self._xml_ext):
             parser = XMLParser(encoding=self._encode_method)

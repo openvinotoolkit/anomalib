@@ -1,6 +1,4 @@
-"""
-Anomalib Data Transforms
-"""
+"""Anomalib Data Transforms."""
 
 # Copyright (C) 2020 Intel Corporation
 #

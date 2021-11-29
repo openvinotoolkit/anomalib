@@ -1,6 +1,4 @@
-"""
-Anomalib library for research and benchmarking
-"""
+"""Anomalib library for research and benchmarking."""
 
 # Copyright (C) 2020 Intel Corporation
 #

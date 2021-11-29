@@ -1,4 +1,4 @@
-"""Test Anomaly Dataset"""
+"""Test Anomaly Dataset."""
 
 import pytest
 import pytorch_lightning as pl
@@ -74,8 +74,10 @@ class DummyModule(pl.LightningModule):
 @pytest.mark.parametrize("task", ["classification", "segmentation", "detection"])
 @TestDataset(num_train=200, num_test=10, path=get_dataset_path(), use_mvtec=False)
 def test_anomaly_dataset(task, path=get_dataset_path(), category="leather"):
-    """Test anomaly dataset using MVTec dataset
-    Used to check whether the dataloader works as intended. The category of the dataset does not matter.
+    """Test anomaly dataset using MVTec dataset Used to check whether the
+    dataloader works as intended.
+
+    The category of the dataset does not matter.
     """
 
     DATASET_URL = "ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/mvtec_anomaly_detection.tar.xz"

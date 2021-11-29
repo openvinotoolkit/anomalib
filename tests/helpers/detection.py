@@ -1,4 +1,4 @@
-"""Helpers for detection tests"""
+"""Helpers for detection tests."""
 import os
 import xml.etree.cElementTree as ET
 from glob import glob
@@ -9,8 +9,9 @@ import numpy as np
 
 
 class BBFromMasks:
-    """Creates temporary XML files from masks for testing. Intended to be used as a context so that
-        the XML files are automatically deleted when the execution goes out of scope
+    """Creates temporary XML files from masks for testing. Intended to be used
+    as a context so that the XML files are automatically deleted when the
+    execution goes out of scope.
 
     Example:
 
@@ -28,7 +29,7 @@ class BBFromMasks:
         self.generated_xml_files: List[str] = []
 
     def __enter__(self):
-        """Generate XML files"""
+        """Generate XML files."""
         for mask_path in glob(os.path.join(self.root, "*/ground_truth/*/*_mask.png")):
             path_tree = mask_path.split("/")
             image = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
@@ -50,14 +51,14 @@ class BBFromMasks:
             self.generated_xml_files.append(output_loc)
 
     def __exit__(self, _exc_type, _exc_value, _exc_traceback):
-        """Cleans up generated XML files"""
+        """Cleans up generated XML files."""
         for file in self.generated_xml_files:
             os.remove(file)
 
     def _create_xml_contents(
         self, boxes: List[List[List[np.int]]], path_tree: List[str], image_size: Tuple[int, int]
     ) -> ET.Element:
-        """Create the contents of the annotation file in Pascal VOC format
+        """Create the contents of the annotation file in Pascal VOC format.
 
         Args:
             boxes (List[List[List[np.int]]]): The calculated pox corners from the masks

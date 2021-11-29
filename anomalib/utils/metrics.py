@@ -1,7 +1,4 @@
-"""
-Metrics
-This module contains metric-related util functions.
-"""
+"""Metrics This module contains metric-related util functions."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -28,9 +25,7 @@ from torch import Tensor
 def compute_threshold_and_f1_score(
     ground_truth: Union[Tensor, np.ndarray], predictions: Union[Tensor, np.ndarray]
 ) -> Tuple[float, float]:
-    """
-    Compute adaptive threshold, based on the f1 metric of the
-    true labels and the predicted anomaly scores
+    """Compute adaptive threshold, based on the f1 metric of the true labels and the predicted anomaly scores.
 
     Args:
         ground_truth: Pixel-level or image-level ground truth labels.
@@ -47,7 +42,6 @@ def compute_threshold_and_f1_score(
     Returns:
         Threshold value based on the best f1 score.
         Value of the best f1 score.
-
     """
 
     precision, recall, thresholds = precision_recall_curve(ground_truth.flatten(), predictions.flatten())

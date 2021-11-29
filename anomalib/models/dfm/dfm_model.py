@@ -1,6 +1,4 @@
-"""
-Normality model of DFKDE
-"""
+"""Normality model of DFKDE."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -26,9 +24,7 @@ from anomalib.core.model.pca import PCA
 
 
 class SingleClassGaussian(DynamicBufferModule):
-    """
-    Model Gaussian distribution over a set of points
-    """
+    """Model Gaussian distribution over a set of points."""
 
     def __init__(self):
         super().__init__()
@@ -41,8 +37,8 @@ class SingleClassGaussian(DynamicBufferModule):
         self.sigma_mat: Tensor
 
     def fit(self, dataset: Tensor) -> None:
-        """
-        Fit a Gaussian model to dataset X.
+        """Fit a Gaussian model to dataset X.
+
             Covariance matrix is not calculated directly using:
                 C = X.X^T
             Instead, it is represented in terms of the Singular Value Decomposition of X:
@@ -61,24 +57,22 @@ class SingleClassGaussian(DynamicBufferModule):
         self.u_mat, self.sigma_mat, _ = torch.linalg.svd(data_centered, full_matrices=False)
 
     def score_samples(self, features: Tensor) -> Tensor:
-        """
-        Compute the NLL (negative log likelihood) scores
+        """Compute the NLL (negative log likelihood) scores.
 
         Args:
             features (Tensor): semantic features on which density modeling is performed.
 
         Returns:
             nll (Tensor): Torch tensor of scores
-
         """
         features_transformed = torch.matmul(features - self.mean_vec, self.u_mat / self.sigma_mat)
         nll = torch.sum(features_transformed * features_transformed, dim=1) + 2 * torch.sum(torch.log(self.sigma_mat))
         return nll
 
     def forward(self, dataset: Tensor) -> None:
-        """
-        Provides the same functionality as `fit`. Transforms the input dataset based on singular values calculated
-        earlier.
+        """Provides the same functionality as `fit`.
+
+        Transforms the input dataset based on singular values calculated earlier.
 
         Args:
             dataset (Tensor): Input dataset
@@ -87,8 +81,7 @@ class SingleClassGaussian(DynamicBufferModule):
 
 
 class DFMModel(nn.Module):
-    """
-    Model for the DFM algorithm
+    """Model for the DFM algorithm.
 
     Args:
         n_comps (float, optional): Ratio from which number of components for PCA are calculated. Defaults to 0.97.
@@ -103,8 +96,7 @@ class DFMModel(nn.Module):
         self.score_type = score_type
 
     def fit(self, dataset: Tensor) -> None:
-        """
-        Fit a pca transformation and a Gaussian model to dataset
+        """Fit a pca transformation and a Gaussian model to dataset.
 
         Args:
             dataset (Tensor): Input dataset to fit the model.
@@ -115,8 +107,9 @@ class DFMModel(nn.Module):
         self.gaussian_model.fit(features_reduced.T)
 
     def score(self, features: Tensor) -> Tensor:
-        """
-        Compute the PCA-based feature reconstruction error (FRE) scores and
+        """Compute scores.
+
+        Scores are either PCA-based feature reconstruction error (FRE) scores or
         the Gaussian density-based NLL scores
 
         Args:
@@ -124,7 +117,6 @@ class DFMModel(nn.Module):
 
         Returns:
             score (Tensor): numpy array of scores
-
         """
         feats_projected = self.pca_model.transform(features)
         if self.score_type == "nll":
@@ -138,9 +130,9 @@ class DFMModel(nn.Module):
         return score
 
     def forward(self, dataset: Tensor) -> None:
-        """
-        Provides the same functionality as `fit`. Transforms the input dataset based on singular values calculated
-        earlier.
+        """Provides the same functionality as `fit`.
+
+        Transforms the input dataset based on singular values calculated earlier.
 
         Args:
             dataset (Tensor): Input dataset

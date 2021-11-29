@@ -1,6 +1,4 @@
-"""
-This modules contains helpers for downloading files, calculating metrics, computing anomaly maps, and visualization
-"""
+"""Helpers for downloading files, calculating metrics, computing anomaly maps, and visualization."""
 
 # Copyright (C) 2020 Intel Corporation
 #

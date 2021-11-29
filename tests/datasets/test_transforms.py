@@ -1,5 +1,4 @@
-"""
-Data transformation test
+"""Data transformation test.
 
 This test contains the following test:
     - Transformations could be ``None``, ``yaml``, ``json`` or ``dict``.
@@ -18,20 +17,16 @@ from anomalib.datasets.transforms import PreProcessor
 
 
 def test_transforms_and_image_size_cannot_be_none():
-    """
-    When transformations ``config`` and ``image_size`` are ``None``
-    ``PreProcessor`` class should raise a ``ValueError``.
-    """
+    """When transformations ``config`` and ``image_size`` are ``None``
+    ``PreProcessor`` class should raise a ``ValueError``."""
 
     with pytest.raises(ValueError):
         PreProcessor(config=None, image_size=None)
 
 
 def test_image_size_could_be_int_or_tuple():
-    """
-    When ``config`` is None, ``image_size`` could be
-    either ``int`` or ``Tuple[int, int]``.
-    """
+    """When ``config`` is None, ``image_size`` could be either ``int`` or
+    ``Tuple[int, int]``."""
 
     PreProcessor(config=None, image_size=256)
     PreProcessor(config=None, image_size=(256, 512))
@@ -40,10 +35,9 @@ def test_image_size_could_be_int_or_tuple():
 
 
 def test_load_transforms_from_string():
-    """
-    When the pre-processor is instantiated via a transform config file,
-    it should work with either string or A.Compose and return a ValueError otherwise.
-    """
+    """When the pre-processor is instantiated via a transform config file, it
+    should work with either string or A.Compose and return a ValueError
+    otherwise."""
 
     # Create a dummy transformation.
     transforms = A.Compose(
@@ -69,10 +63,8 @@ def test_load_transforms_from_string():
 
 
 def test_to_tensor_returns_correct_type():
-    """
-    `to_tensor` flag should ensure that pre-processor returns the expected
-    type.
-    """
+    """`to_tensor` flag should ensure that pre-processor returns the expected
+    type."""
     image = skimage.data.astronaut()
 
     pre_processor = PreProcessor(config=None, image_size=256, to_tensor=True)
