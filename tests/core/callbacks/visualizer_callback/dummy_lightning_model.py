@@ -64,9 +64,6 @@ class DummyModule(AnomalyModule):
         )
         return outputs
 
-    # def test_step_end(self, test_step_outputs):
-    #     return None
-
     def validation_epoch_end(self, output):
         return None
 

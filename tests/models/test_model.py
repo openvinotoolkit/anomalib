@@ -124,7 +124,7 @@ class TestModel:
             assert results[0]["pixel_AUROC"] >= 0.6
         return results
 
-    def _test_model_load(self, model_name, config, datamodule, results):
+    def _test_model_load(self, config, datamodule, results):
         loaded_model = get_model(config)  # get new model
 
         callbacks = get_callbacks(config)
@@ -178,4 +178,4 @@ class TestModel:
             results = self._test_metrics(trainer=trainer, config=config, model=model, datamodule=datamodule)
 
             # test model load
-            self._test_model_load(model_name=model_name, config=config, datamodule=datamodule, results=results)
+            self._test_model_load(config=config, datamodule=datamodule, results=results)
