@@ -13,12 +13,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions
 # and limitations under the License.
-
+import abc
 from typing import List, Union
 
 import pytorch_lightning as pl
 import torch
-from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks.base import Callback
 from torch import nn
 
@@ -26,30 +25,33 @@ from anomalib.core.results import ClassificationResults, SegmentationResults
 from anomalib.utils.metrics import compute_threshold_and_f1_score
 
 
-class AnomalyModule(pl.LightningModule):
-    """AnomalyModule to train, validate, predict and test images.
+class AnomalyModule(pl.LightningModule, abc.ABC):
+    """AnomalyModule to train, validate, predict and test images."""
 
-    Args:
-        params (Union[DictConfig, ListConfig]): Configuration
-    """
+    def __init__(self, task: str, adaptive_threshold: bool, default_threshold: float):
+        """BaseAnomalyModule.
 
-    def __init__(self, params: Union[DictConfig, ListConfig]):
+        Args:
+            task (str): Task type could be either ``classification`` or ``segmentation``
+            adaptive_threshold (bool): Boolean to check if threshold is adaptively computed.
+            default_threshold (float): Default threshold value.
+        """
+        # TODO: Address threshold parameters in the next PR.
 
         super().__init__()
-        # Force the type for hparams so that it works with OmegaConfig style of accessing
-        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
-        self.save_hyperparameters(params)
+        self.save_hyperparameters()
         self.loss: torch.Tensor
         self.callbacks: List[Callback]
-        self.register_buffer("threshold", torch.Tensor([params.model.threshold.default]))
+        self.adaptive_threshold = adaptive_threshold
+        self.register_buffer("threshold", torch.Tensor([default_threshold]))
         self.threshold: torch.Tensor
 
         self.model: nn.Module
 
         self.results: Union[ClassificationResults, SegmentationResults]
-        if params.dataset.task == "classification":
+        if task == "classification":
             self.results = ClassificationResults()
-        elif params.dataset.task == "segmentation":
+        elif task == "segmentation":
             self.results = SegmentationResults()
         else:
             raise NotImplementedError("Only Classification and Segmentation tasks are supported in this version.")
@@ -109,7 +111,7 @@ class AnomalyModule(pl.LightningModule):
           outputs: Batch of outputs from the validation step
         """
         self.results.store_outputs(outputs)
-        if self.hparams.model.threshold.adaptive:
+        if self.adaptive_threshold:
             threshold, _ = compute_threshold_and_f1_score(self.results.true_labels, self.results.pred_scores)
             self.threshold = torch.Tensor([threshold])
         self.results.evaluate(self.threshold.item())
