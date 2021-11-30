@@ -1,4 +1,7 @@
-"""This module contains inference-related abstract class and its Torch and OpenVINO implementations."""
+"""
+This module contains inference-related abstract class
+and its Torch and OpenVINO implementations.
+"""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -26,42 +29,50 @@ from openvino.inference_engine import IECore  # pylint: disable=no-name-in-modul
 from torch import Tensor, nn
 
 from anomalib.core.model import AnomalyModule
-from anomalib.data.transforms.pre_process import PreProcessor
-from anomalib.data.utils import read_image
+from anomalib.datasets.transforms.pre_process import PreProcessor
+from anomalib.datasets.utils import read_image
 from anomalib.models import get_model
 from anomalib.utils.post_process import superimpose_anomaly_map
 
 
 class Inferencer(ABC):
-    """Abstract class for the inference.
-
+    """
+    Abstract class for the inference.
     This is used by both Torch and OpenVINO inference.
     """
 
     @abstractmethod
     def load_model(self, path: Union[str, Path]):
-        """Load Model."""
+        """
+        Load Model
+        """
         raise NotImplementedError
 
     @abstractmethod
     def pre_process(self, image: np.ndarray) -> Union[np.ndarray, Tensor]:
-        """Pre-process."""
+        """
+        Pre-process
+        """
         raise NotImplementedError
 
     @abstractmethod
     def forward(self, image: Union[np.ndarray, Tensor]) -> Union[np.ndarray, Tensor]:
-        """Forward-Pass input to model."""
+        """
+        Forward-Pass input to model
+        """
         raise NotImplementedError
 
     @abstractmethod
     def post_process(self, predictions: Union[np.ndarray, Tensor], meta_data: Optional[Dict]) -> np.ndarray:
-        """Post-Process."""
+        """
+        Post-Process
+        """
         raise NotImplementedError
 
     def predict(self, image: Union[str, np.ndarray], superimpose: bool = True) -> np.ndarray:
-        """Perform a prediction for a given input image.
-
-        The main workflow is (i) pre-processing, (ii) forward-pass, (iii) post-process.
+        """
+        Perform a prediction for a given input image. The main workflow is
+        (i) pre-processing, (ii) forward-pass, (iii) post-process.
 
         Args:
             image (Union[str, np.ndarray]): Input image whose output is to be predicted.
@@ -74,6 +85,7 @@ class Inferencer(ABC):
         Returns:
             np.ndarray: Output predictions to be visualized.
         """
+
         if isinstance(image, str):
             image = read_image(image)
 
@@ -87,19 +99,12 @@ class Inferencer(ABC):
         return output
 
     def __call__(self, image: np.ndarray) -> np.ndarray:
-        """Call predict on the Image.
-
-        Args:
-            image (np.ndarray): Input Image
-
-        Returns:
-            np.ndarray: Output predictions to be visualized
-        """
         return self.predict(image)
 
 
 class TorchInferencer(Inferencer):
-    """PyTorch implementation for the inference.
+    """
+    PyTorch implementation for the inference.
 
     Args:
         config (DictConfig): Configurable parameters that are used
@@ -115,7 +120,8 @@ class TorchInferencer(Inferencer):
             self.model = self.load_model(path)
 
     def load_model(self, path: Union[str, Path]) -> nn.Module:
-        """Load the PyTorch model.
+        """
+        Load the PyTorch model.
 
         Args:
             path (Union[str, Path]): Path to model ckpt file.
@@ -129,7 +135,8 @@ class TorchInferencer(Inferencer):
         return model
 
     def pre_process(self, image: np.ndarray) -> Tensor:
-        """Pre process the input image by applying transformations.
+        """
+        Pre process the input image by applying transformations.
 
         Args:
             image (np.ndarray): Input image
@@ -146,7 +153,8 @@ class TorchInferencer(Inferencer):
         return processed_image
 
     def forward(self, image: Tensor) -> Tensor:
-        """Forward-Pass input tensor to the model.
+        """
+        Forward-Pass input tensor to the model.
 
         Args:
             image (Tensor): Input tensor.
@@ -157,7 +165,8 @@ class TorchInferencer(Inferencer):
         return self.model(image)
 
     def post_process(self, predictions: Tensor, meta_data: Optional[Dict] = None) -> np.ndarray:
-        """Post process the output predictions.
+        """
+        Post process the output predictions.
 
         Args:
             predictions (Tensor): Raw output predicted by the model.
@@ -168,6 +177,7 @@ class TorchInferencer(Inferencer):
         Returns:
             np.ndarray: Post processed predictions that are ready to be visualized.
         """
+
         if meta_data is None:
             meta_data = {}
 
@@ -180,7 +190,8 @@ class TorchInferencer(Inferencer):
 
 
 class OpenVINOInferencer(Inferencer):
-    """OpenVINO implementation for the inference.
+    """
+    OpenVINO implementation for the inference.
 
     Args:
         config (DictConfig): Configurable parameters that are used
@@ -193,7 +204,8 @@ class OpenVINOInferencer(Inferencer):
         self.input_blob, self.output_blob, self.network = self.load_model(path)
 
     def load_model(self, path: Union[str, Path, Tuple[bytes, bytes]]):
-        """Load the OpenVINO model.
+        """
+        Load the OpenVINO model.
 
         Args:
             path (Union[str, Path, Tuple[bytes, bytes]]): Path to the onnx or xml and bin files
@@ -228,7 +240,8 @@ class OpenVINOInferencer(Inferencer):
         return input_blob, output_blob, executable_network
 
     def pre_process(self, image: np.ndarray) -> np.ndarray:
-        """Pre process the input image by applying transformations.
+        """
+        Pre process the input image by applying transformations.
 
         Args:
             image (np.ndarray): Input image.
@@ -236,7 +249,7 @@ class OpenVINOInferencer(Inferencer):
         Returns:
             np.ndarray: pre-processed image.
         """
-        pre_processor = PreProcessor(config=self.config.transform, to_tensor=False)
+        pre_processor = PreProcessor(config=self.config.transform, is_train=False, to_tensor=False)
         processed_image = pre_processor(image=image)["image"]
 
         if len(processed_image.shape) == 3:
@@ -248,7 +261,8 @@ class OpenVINOInferencer(Inferencer):
         return processed_image
 
     def forward(self, image: np.ndarray) -> np.ndarray:
-        """Forward-Pass input tensor to the model.
+        """
+        Forward-Pass input tensor to the model.
 
         Args:
             image (np.ndarray): Input tensor.
@@ -259,7 +273,8 @@ class OpenVINOInferencer(Inferencer):
         return self.network.infer(inputs={self.input_blob: image})
 
     def post_process(self, predictions: np.ndarray, meta_data: Optional[Dict] = None) -> np.ndarray:
-        """Post process the output predictions.
+        """
+        Post process the output predictions.
 
         Args:
             predictions (np.ndarray): Raw output predicted by the model.
