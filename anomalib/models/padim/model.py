@@ -279,16 +279,27 @@ class AnomalyMapGenerator:
 class PadimLightning(AnomalyModule):
     """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization."""
 
-    def __init__(self, hparams):
-        super().__init__(hparams)
-        self.layers = hparams.model.layers
+    def __init__(
+        self,
+        task: str,
+        adaptive_threshold: bool,
+        default_threshold: float,
+        layers: List[str],
+        input_size: Tuple[int, int],
+        backbone: str = "resnet18",
+        apply_tiling: bool = False,
+        tile_size: Optional[Tuple[int, int]] = None,
+        tile_stride: Optional[int] = None,
+    ):
+
+        super().__init__(task, adaptive_threshold, default_threshold)
         self.model = PadimModel(
-            layers=hparams.model.layers,
-            input_size=hparams.model.input_size,
-            tile_size=hparams.dataset.tiling.tile_size,
-            tile_stride=hparams.dataset.tiling.stride,
-            apply_tiling=hparams.dataset.tiling.apply,
-            backbone=hparams.model.backbone,
+            layers=layers,
+            input_size=input_size,
+            tile_size=tile_size,
+            tile_stride=tile_stride,
+            apply_tiling=apply_tiling,
+            backbone=backbone,
         ).eval()
 
         self.stats: List[Tensor] = []

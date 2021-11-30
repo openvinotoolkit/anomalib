@@ -63,7 +63,21 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
         else:
             raise ValueError(f"Unknown model {config.model.name}!")
 
-    model = model(config)
+    # TODO: This is a temporary solution.
+    if config.model.name == "padim":
+        model = model(
+            task=config.dataset.task,
+            adaptive_threshold=config.model.threshold.adaptive,
+            default_threshold=config.model.threshold.default,
+            layers=config.model.layers,
+            input_size=config.model.input_size,
+            backbone=config.model.backbone,
+            apply_tiling=config.dataset.tiling.apply,
+            tile_size=config.dataset.tiling.tile_size,
+            tile_stride=config.dataset.tiling.stride,
+        )
+    else:
+        raise ValueError("This interim method only works for PADIM.")
 
     if "init_weights" in config.keys() and config.init_weights:
         model.load_state_dict(load(os.path.join(config.project.path, config.init_weights))["state_dict"], strict=False)
