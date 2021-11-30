@@ -10,7 +10,7 @@ from skimage.segmentation import mark_boundaries
 
 from anomalib import loggers
 from anomalib.core.model import AnomalyModule
-from anomalib.datasets.utils import Denormalize
+from anomalib.data.transforms import Denormalize
 from anomalib.utils.post_process import compute_mask, superimpose_anomaly_map
 from anomalib.utils.visualizer import Visualizer
 
@@ -22,7 +22,7 @@ class VisualizerCallback(Callback):
     the predicted error heat map, and the predicted segmentation mask.
 
     To save the images to the filesystem, add the 'local' keyword to the project.log_images_to parameter in the
-    config.yaml file. .
+    config.yaml file.
     """
 
     def __init__(self):

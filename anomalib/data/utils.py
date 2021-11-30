@@ -1,4 +1,4 @@
-"""Anomalib library for research and benchmarking."""
+"""Dataset Utils."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -14,4 +14,20 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-__version__ = "0.1.1"
+import cv2
+import numpy as np
+
+
+def read_image(path: str) -> np.ndarray:
+    """Read image from disk in RGB format.
+
+    Args:
+        path: path to the image file
+
+    Returns:
+        image as numpy array
+    """
+    image = cv2.imread(path)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    return image

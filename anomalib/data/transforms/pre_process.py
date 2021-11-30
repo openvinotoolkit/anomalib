@@ -1,4 +1,8 @@
-"""`PreProcessor` class that applies preprocessing to an input image before the forward-pass stage."""
+"""Pre Process.
+
+This module contains `PreProcessor` class that applies preprocessing
+to an input image before the forward-pass stage.
+"""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -90,15 +94,14 @@ class PreProcessor:
             A.Compose: List of albumentation transformations to apply to the
                 input image.
         """
-
-        transforms: A.Compose
-
         if self.config is None and self.image_size is None:
             raise ValueError(
                 "Both config and image_size cannot be `None`. "
                 "Provide either config file to de-serialize transforms "
                 "or image_size to get the default transformations"
             )
+
+        transforms: A.Compose
 
         if self.config is None and self.image_size is not None:
             if isinstance(self.image_size, int):

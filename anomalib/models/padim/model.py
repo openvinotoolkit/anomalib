@@ -30,7 +30,7 @@ from torch import Tensor, nn
 from anomalib.core.model import AnomalyModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
-from anomalib.datasets.tiler import Tiler
+from anomalib.data.tiler import Tiler
 
 __all__ = ["PadimLightning"]
 

@@ -1,6 +1,6 @@
 dataset:
   name: mvtec
-  format: anomaly_dataset
+  format: mvtec
   path: ./datasets/MVTec
   url: ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/mvtec_anomaly_detection.tar.xz
   category: leather

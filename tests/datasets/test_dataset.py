@@ -3,8 +3,8 @@
 import numpy as np
 import pytest
 
-from anomalib.datasets.mvtec import MVTecDataModule
-from anomalib.datasets.utils import Denormalize, ToNumpy
+from anomalib.data.mvtec import MVTecDataModule
+from anomalib.data.transforms import Denormalize, ToNumpy
 from tests.helpers.dataset import get_dataset_path
 
 
@@ -14,7 +14,6 @@ def data_module():
         root=get_dataset_path(),
         category="leather",
         image_size=(256, 256),
-        crop_size=224,
         train_batch_size=1,
         test_batch_size=1,
         num_workers=0,
