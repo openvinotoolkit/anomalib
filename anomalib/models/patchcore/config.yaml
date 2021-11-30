@@ -43,8 +43,6 @@ project:
 trainer:
   accelerator: null
   accumulate_grad_batches: 1
-  amp_backend: native
-  amp_level: O2
   auto_lr_find: false
   auto_scale_batch_size: false
   auto_select_gpus: false
@@ -53,7 +51,6 @@ trainer:
   checkpoint_callback: true
   default_root_dir: null
   deterministic: true
-  distributed_backend: null
   fast_dev_run: false
   flush_logs_every_n_steps: 100
   gpus: 1
@@ -88,7 +85,6 @@ trainer:
   terminate_on_nan: false
   tpu_cores: null
   track_grad_norm: -1
-  truncated_bptt_steps: null
   val_check_interval: 1.0
   weights_save_path: null
   weights_summary: top
