@@ -1,6 +1,4 @@
-"""
-Deep Feature Extraction (DFM) model
-"""
+"""Deep Feature Extraction (DFM) model."""
 
 # Copyright (C) 2020 Intel Corporation
 #

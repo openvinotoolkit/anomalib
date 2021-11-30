@@ -1,14 +1,13 @@
-"""
-Implementation of Optimal F1 score based on TorchMetrics.
-"""
+"""Implementation of Optimal F1 score based on TorchMetrics."""
 import torch
 from torchmetrics import Metric, PrecisionRecallCurve
 
 
 class OptimalF1(Metric):
-    """
-    Compute the optimal F1 score at the adaptive threshold, based on the F1 metric of the
-    true labels and the predicted anomaly scores.
+    """Optimal F1 Metric.
+
+    Compute the optimal F1 score at the adaptive threshold, based on the F1 metric of the true labels and the
+    predicted anomaly scores.
     """
 
     def __init__(self, num_classes: int, **kwargs):
@@ -20,10 +19,12 @@ class OptimalF1(Metric):
 
     # pylint: disable=arguments-differ
     def update(self, preds: torch.Tensor, target: torch.Tensor) -> None:  # type: ignore
+        """Update the precision-recall curve metric."""
         self.precision_recall_curve.update(preds, target)
 
     def compute(self) -> torch.Tensor:
-        """
+        """Compute the value of the optimal F1 score.
+
         Compute the F1 scores while varying the threshold. Store the optimal
         threshold as attribute and return the maximum value of the F1 score.
 

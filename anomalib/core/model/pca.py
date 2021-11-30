@@ -1,6 +1,4 @@
-"""
-Principle Component Analysis (PCA) with PyTorch
-"""
+"""Principle Component Analysis (PCA) with PyTorch."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -25,12 +23,11 @@ from anomalib.core.model.dynamic_module import DynamicBufferModule
 
 
 class PCA(DynamicBufferModule):
-    """
-    Principle Component Analysis (PCA)
+    """Principle Component Analysis (PCA).
 
     Args:
         n_components (float): Number of components. Can be either integer number of components
-        or a ratio between 0-1.
+          or a ratio between 0-1.
     """
 
     def __init__(self, n_components: Union[float, int]):
@@ -47,8 +44,7 @@ class PCA(DynamicBufferModule):
         self.num_components: Tensor
 
     def fit(self, dataset: Tensor) -> None:
-        """
-        Fits the PCA model to the dataset
+        """Fits the PCA model to the dataset.
 
         Args:
           dataset (Tensor): Input dataset to fit the model.
@@ -71,13 +67,13 @@ class PCA(DynamicBufferModule):
         self.mean = mean
 
     def fit_transform(self, dataset: Tensor) -> Tensor:
-        """
+        """Fit and transform PCA to dataset.
 
         Args:
           dataset (Tensor): Dataset to which the PCA if fit and transformed
 
-        Returns: Transformed dataset
-
+        Returns:
+          Transformed dataset
         """
         mean = dataset.mean(dim=0)
         dataset -= mean
@@ -91,21 +87,20 @@ class PCA(DynamicBufferModule):
         return torch.matmul(dataset, self.singular_vectors)
 
     def transform(self, features: Tensor) -> Tensor:
-        """
-        Transforms the features based on singular vectors calculated earlier.
+        """Transforms the features based on singular vectors calculated earlier.
 
         Args:
           features (Tensor): Input features
 
-        Returns: Transformed features
+        Returns:
+          Transformed features
         """
 
         features -= self.mean
         return torch.matmul(features, self.singular_vectors)
 
     def inverse_transform(self, features: Tensor) -> Tensor:
-        """
-        Inverses the transformed features
+        """Inverses the transformed features.
 
         Args:
           features (Tensor): Transformed features
@@ -116,12 +111,12 @@ class PCA(DynamicBufferModule):
         return inv_features
 
     def forward(self, features: Tensor) -> Tensor:
-        """
-        Transforms the features
+        """Transforms the features.
 
         Args:
           features (Tensor): Input features
 
-        Returns: Transformed features
+        Returns:
+          Transformed features
         """
         return self.transform(features)

@@ -1,6 +1,4 @@
-"""
-Dynamic Buffer Module
-"""
+"""Dynamic Buffer Module."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -22,19 +20,19 @@ from torch import Tensor, nn
 
 
 class DynamicBufferModule(ABC, nn.Module):
-    """
-    Torch module that allows loading variables from the state dict even in the case of shape mismatch.
-    """
+    """Torch module that allows loading variables from the state dict even in the case of shape mismatch."""
 
     def get_tensor_attribute(self, attribute_name: str) -> Tensor:
-        """
-        get_tensor [summary]
+        """Get attribute of the tensor given the name.
 
         Args:
-            attribute_name (str): [description]
+            attribute_name (str): Name of the tensor
+
+        Raises:
+            ValueError: `attribute_name` is not a torch Tensor
 
         Returns:
-            Tensor: [description]
+            Tensor: Tensor attribute
         """
         attribute = self.__getattr__(attribute_name)
         if isinstance(attribute, Tensor):
@@ -43,14 +41,14 @@ class DynamicBufferModule(ABC, nn.Module):
         raise ValueError(f"Attribute with name '{attribute_name}' is not a torch Tensor")
 
     def _load_from_state_dict(self, state_dict: dict, prefix: str, *args):
-        """
-        Overrides method from parent class. Resizes the local buffers to match those stored in the state dict.
+        """Resizes the local buffers to match those stored in the state dict.
+
+        Overrides method from parent class.
 
         Args:
-          state_dict: dict: State dictionary containing weights
-          prefix: str: Prefix of the weight file.
+          state_dict (dict): State dictionary containing weights
+          prefix (str): Prefix of the weight file.
           *args:
-
         """
         persistent_buffers = {k: v for k, v in self._buffers.items() if k not in self._non_persistent_buffers_set}
         local_buffers = {k: v for k, v in persistent_buffers.items() if v is not None}

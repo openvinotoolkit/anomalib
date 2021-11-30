@@ -1,9 +1,7 @@
-"""
-MVTec
-This script contains PyTorch Dataset, Dataloader and PyTorch Lightning
-DataModule for the MVTec dataset. If the dataset is not on the file
-system, the script downloads and extracts the dataset and create
-PyTorch data objects.
+"""MVTec This script contains PyTorch Dataset, Dataloader and PyTorch Lightning DataModule for the MVTec dataset.
+
+If the dataset is not on the file system, the script downloads and
+extracts the dataset and create PyTorch data objects.
 """
 
 # Copyright (C) 2020 Intel Corporation
@@ -49,14 +47,11 @@ __all__ = ["MVTec", "MVTecDataModule"]
 
 
 def split_normal_images_in_train_set(samples: DataFrame, split_ratio: float = 0.1, seed: int = 0) -> DataFrame:
-    """
-    split_normal_images_in_train_set
-        This function splits the normal images in training set and assigns the
-        values to the test set. This is particularly useful especially when the
-        test set does not contain any normal images.
+    """This function splits the normal images in training set and assigns the values to the test set.
 
-        This is important because when the test set doesn't have any normal images,
-        AUC computation fails due to having single class.
+    This is particularly useful especially when the test set does not contain any normal images.
+    This is important because when the test set doesn't have any normal images,
+    AUC computation fails due to having single class.
 
     Args:
         samples (DataFrame): Dataframe containing dataset info such as filenames, splits etc.
@@ -80,9 +75,9 @@ def split_normal_images_in_train_set(samples: DataFrame, split_ratio: float = 0.
 
 
 def make_mvtec_dataset(path: Path, split: str = "train", split_ratio: float = 0.1, seed: int = 0) -> DataFrame:
-    """
-    This function creates MVTec samples by parsing the MVTec data file structure, based on the following
-    structure:
+    """Create MVTec samples by parsing the MVTec data file structure.
+
+    The files are expected to follow the structure:
         path/to/dataset/split/category/image_filename.png
         path/to/dataset/ground_truth/category/mask_filename.png
 
@@ -164,12 +159,10 @@ def make_mvtec_dataset(path: Path, split: str = "train", split_ratio: float = 0.
 
 
 def get_image_transforms(image_size: Union[Sequence, int], crop_size: Union[Sequence, int]) -> T.Compose:
-    """
-    Get default ImageNet image transformations.
+    """Get default ImageNet image transformations.
 
     Returns:
         T.Compose: List of imagenet transformations.
-
     """
     crop_size = image_size if crop_size is None else crop_size
     transform = T.Compose(
@@ -184,12 +177,10 @@ def get_image_transforms(image_size: Union[Sequence, int], crop_size: Union[Sequ
 
 
 def get_mask_transforms(image_size: Union[Sequence, int], crop_size: Union[Sequence, int]) -> T.Compose:
-    """
-    Get default ImageNet transformations for the ground-truth image masks.
+    """Get default ImageNet transformations for the ground-truth image masks.
 
     Returns:
       T.Compose: List of imagenet transformations.
-
     """
     crop_size = image_size if crop_size is None else crop_size
     transform = Compose(
@@ -203,9 +194,7 @@ def get_mask_transforms(image_size: Union[Sequence, int], crop_size: Union[Seque
 
 
 class MVTec(VisionDataset):
-    """
-    MVTec PyTorch Dataset
-    """
+    """MVTec PyTorch Dataset."""
 
     def __init__(
         self,
@@ -230,9 +219,7 @@ class MVTec(VisionDataset):
         self.samples = make_mvtec_dataset(path=self.root / category, split=self.split)
 
     def _download(self) -> None:
-        """
-        Download the MVTec dataset
-        """
+        """Download the MVTec dataset."""
         if (self.root / self.category).is_dir():
             logger.warning("Dataset directory exists.")
         else:
@@ -252,24 +239,30 @@ class MVTec(VisionDataset):
             self._clean()
 
     def _extract(self) -> None:
-        """
-        Extract MVTec Dataset
-        """
+        """Extract MVTec Dataset."""
         logger.info("Extracting MVTec dataset")
         with tarfile.open(self.filename) as file:
             file.extractall(self.root)
 
     def _clean(self) -> None:
-        """
-        Cleanup MVTec Dataset tar file.
-        """
+        """Cleanup MVTec Dataset tar file."""
         logger.info("Cleaning up the tar file")
         self.filename.unlink()
 
     def __len__(self) -> int:
+        """Return length of dataset."""
         return len(self.samples)
 
     def __getitem__(self, index: int) -> Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]:
+        """Get single instance from dataset.
+
+        Args:
+            index (int): Index of the item to fetch.
+
+        Returns:
+            Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]: Dict of image tensor during training.
+                Otherwise, Dict containing image path, target path, image tensor, label and transformed bounding box.
+        """
         image_path = self.samples.image_path[index]
         mask_path = self.samples.mask_path[index]
         label_index = self.samples.label_index[index]
@@ -299,9 +292,7 @@ class MVTec(VisionDataset):
 
 
 class MVTecDataModule(LightningDataModule):
-    """
-    MVTec Lightning Data Module
-    """
+    """MVTec Lightning Data Module."""
 
     def __init__(
         self,
@@ -339,9 +330,7 @@ class MVTecDataModule(LightningDataModule):
         self.val_data: Dataset
 
     def prepare_data(self):
-        """
-        Prepare MVTec Dataset
-        """
+        """Prepare MVTec Dataset."""
 
         # Train
         MVTec(
@@ -364,12 +353,10 @@ class MVTecDataModule(LightningDataModule):
         )
 
     def setup(self, stage: Optional[str] = None) -> None:
-        """
-        Setup train, validation and test data.
+        """Setup train, validation and test data.
 
         Args:
           stage: Optional[str]:  (Default value = None)
-
         """
         self.val_data = MVTec(
             root=self.root,
@@ -388,15 +375,15 @@ class MVTecDataModule(LightningDataModule):
             )
 
     def train_dataloader(self) -> DataLoader:
-        """Get train dataloader"""
+        """Get train dataloader."""
         return DataLoader(
             self.train_data, shuffle=False, batch_size=self.train_batch_size, num_workers=self.num_workers
         )
 
     def val_dataloader(self) -> DataLoader:
-        """Get validation dataloader"""
+        """Get validation dataloader."""
         return DataLoader(self.val_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
 
     def test_dataloader(self) -> DataLoader:
-        """Get test dataloader"""
+        """Get test dataloader."""
         return DataLoader(self.val_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)

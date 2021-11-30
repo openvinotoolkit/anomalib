@@ -1,7 +1,4 @@
-"""
-Towards Total Recall in Industrial Anomaly Detection
-https://arxiv.org/abs/2106.08265
-"""
+"""Towards Total Recall in Industrial Anomaly Detection https://arxiv.org/abs/2106.08265."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -38,9 +35,7 @@ from anomalib.models.patchcore.utils.sampling import (
 
 
 class AnomalyMapGenerator:
-    """
-    Generate Anomaly Heatmap
-    """
+    """Generate Anomaly Heatmap."""
 
     def __init__(
         self,
@@ -51,8 +46,7 @@ class AnomalyMapGenerator:
         self.sigma = sigma
 
     def compute_anomaly_map(self, patch_scores: torch.Tensor) -> torch.Tensor:
-        """
-        Pixel Level Anomaly Heatmap
+        """Pixel Level Anomaly Heatmap.
 
         Args:
             patch_scores (torch.Tensor): Patch-level anomaly scores
@@ -69,8 +63,7 @@ class AnomalyMapGenerator:
 
     @staticmethod
     def compute_anomaly_score(patch_scores: torch.Tensor) -> torch.Tensor:
-        """
-        Compute Image-Level Anomaly Score
+        """Compute Image-Level Anomaly Score.
 
         Args:
             patch_scores (torch.Tensor): Patch-level anomaly scores
@@ -83,8 +76,8 @@ class AnomalyMapGenerator:
         return score
 
     def __call__(self, **kwds: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        """
-        Returns anomaly_map and anomaly_score.
+        """Returns anomaly_map and anomaly_score.
+
         Expects `patch_scores` keyword to be passed explicitly
 
         Example
@@ -108,9 +101,7 @@ class AnomalyMapGenerator:
 
 
 class PatchcoreModel(DynamicBufferModule, nn.Module):
-    """
-    Patchcore Module
-    """
+    """Patchcore Module."""
 
     def __init__(
         self,
@@ -142,10 +133,12 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         self.memory_bank: torch.Tensor
 
     def forward(self, input_tensor: Tensor) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
-        """
-        Get features from a CNN.
-        Generate embedding based on the feautures.
-        Compute anomaly map in test mode.
+        """Return Embedding during training, or a tuple of anomaly map and anomaly score during testing.
+
+        Steps performed:
+        1. Get features from a CNN.
+        2. Generate embedding based on the features.
+        3. Compute anomaly map in test mode.
 
         Args:
             input_tensor (Tensor): Input tensor
@@ -179,8 +172,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         return output
 
     def generate_embedding(self, features: Dict[str, Tensor]) -> torch.Tensor:
-        """
-        Generate embedding from hierarchical feature map
+        """Generate embedding from hierarchical feature map.
 
         Args:
             features: Hierarchical feature map from a CNN (ResNet18 or WideResnet)
@@ -188,7 +180,6 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
 
         Returns:
             Embedding vector
-
         """
 
         embeddings = features[self.layers[0]]
@@ -201,7 +192,8 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
 
     @staticmethod
     def reshape_embedding(embedding: Tensor) -> Tensor:
-        """
+        """Reshape Embedding.
+
         Reshapes Embedding to the following format:
         [Batch, Embedding, Patch, Patch] to [Batch*Patch*Patch, Embedding]
 
@@ -217,8 +209,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
 
     @staticmethod
     def subsample_embedding(embedding: torch.Tensor, sampling_ratio: float) -> torch.Tensor:
-        """
-        Subsample embedding based on coreset sampling
+        """Subsample embedding based on coreset sampling.
 
         Args:
             embedding (np.ndarray): Embedding tensor from the CNN
@@ -238,8 +229,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
 
 
 class PatchcoreLightning(AnomalyModule):
-    """
-    PatchcoreLightning Module to train PatchCore algorithm
+    """PatchcoreLightning Module to train PatchCore algorithm.
 
     Args:
         layers (List[str]): Layers used for feature extraction
@@ -264,8 +254,7 @@ class PatchcoreLightning(AnomalyModule):
         self.automatic_optimization = False
 
     def configure_optimizers(self):
-        """
-        Configure optimizers
+        """Configure optimizers.
 
         Returns:
             None: Do not set optimizers by returning None.
@@ -273,8 +262,7 @@ class PatchcoreLightning(AnomalyModule):
         return None
 
     def training_step(self, batch, _):  # pylint: disable=arguments-differ
-        """
-        Generate feature embedding of the batch.
+        """Generate feature embedding of the batch.
 
         Args:
             batch (Dict[str, Any]): Batch containing image filename,
@@ -290,8 +278,8 @@ class PatchcoreLightning(AnomalyModule):
         return {"embedding": embedding}
 
     def training_epoch_end(self, outputs):
-        """
-        Concatenate batch embeddings to generate normal embedding.
+        """Concatenate batch embeddings to generate normal embedding.
+
         Apply coreset subsampling to the embedding set for dimensionality reduction.
 
         Args:
@@ -306,10 +294,7 @@ class PatchcoreLightning(AnomalyModule):
         self.model.memory_bank = embedding
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
-        """
-        Load the normal embedding to use it as memory bank.
-        Apply nearest neighborhood to the embedding.
-        Generate the anomaly map.
+        """Get batch of anomaly maps from input image batch.
 
         Args:
             batch (Dict[str, Any]): Batch containing image filename,

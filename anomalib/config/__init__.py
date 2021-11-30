@@ -1,6 +1,4 @@
-"""
-Utilities to get configurable parameters
-"""
+"""Utilities to get configurable parameters."""
 
 # Copyright (C) 2020 Intel Corporation
 #

@@ -1,6 +1,4 @@
-"""
-Test supported loggers
-"""
+"""Test supported loggers."""
 
 # Copyright (C) 2020 Intel Corporation
 #

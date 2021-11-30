@@ -1,6 +1,4 @@
-"""
-tensorboard logger with add image interface
-"""
+"""Tensorboard logger with add image interface."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -27,7 +25,8 @@ from .base import ImageLoggerBase
 
 
 class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
-    """Logger for tensorboard
+    """Logger for tensorboard.
+
     Adds interface for `add_image` in the logger rather than calling the experiment object.
     The rest is same as the Tensorboard Logger provided by PyTorch Lightning and the doc string
     for which is reporduced below
@@ -36,11 +35,10 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
     preinstalled.
 
     Example:
-
-    >>> from pytorch_lightning import Trainer
-    >>> from pytorch_lightning.loggers import TensorBoardLogger
-    >>> logger = TensorBoardLogger("tb_logs", name="my_model")
-    >>> trainer = Trainer(logger=logger)
+        >>> from pytorch_lightning import Trainer
+        >>> from pytorch_lightning.loggers import TensorBoardLogger
+        >>> logger = TensorBoardLogger("tb_logs", name="my_model")
+        >>> trainer = Trainer(logger=logger)
 
     Args:
         save_dir: Save directory
@@ -58,7 +56,6 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
         prefix: A string to put at the beginning of metric keys.
         **kwargs: Additional arguments like `comment`, `filename_suffix`, etc. used by
             :class:`SummaryWriter` can be passed as keyword arguments in this logger.
-
     """
 
     def __init__(
@@ -83,12 +80,12 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
 
     @rank_zero_only
     def add_image(self, image: Union[np.ndarray, Figure], name: Optional[str] = None, **kwargs: Any):
-        """Interface to add image to tensorboard logger
+        """Interface to add image to tensorboard logger.
 
         Args:
-            image (np.ndarray): Image to log
-            name Optional (str): The tag of the image
-            global_step (int): The step at which to log the image
+            image (Union[np.ndarray, Figure]): Image to log
+            name (Optional[str]): The tag of the image
+            kwargs: Accepts only `global_step` (int). The step at which to log the image.
         """
         if "global_step" not in kwargs:
             raise ValueError("`global_step` is required for tensorboard logger")

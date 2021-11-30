@@ -1,6 +1,4 @@
-"""
-Deep Feature Kernel Density Estimation model
-"""
+"""Deep Feature Kernel Density Estimation model."""
 
 # Copyright (C) 2020 Intel Corporation
 #

@@ -1,6 +1,4 @@
-"""
-Visualizer Callback
-"""
+"""Visualizer Callback."""
 from pathlib import Path
 from typing import Any, Optional
 from warnings import warn
@@ -18,16 +16,17 @@ from anomalib.utils.visualizer import Visualizer
 
 
 class VisualizerCallback(Callback):
-    """
-    Callback that visualizes the inference results of a model. The callback generates a figure showing the original
-    image, the ground truth segmentation mask, the predicted error heat map, and the predicted segmentation mask.
+    """Callback that visualizes the inference results of a model.
+
+    The callback generates a figure showing the original image, the ground truth segmentation mask,
+    the predicted error heat map, and the predicted segmentation mask.
 
     To save the images to the filesystem, add the 'local' keyword to the project.log_images_to parameter in the
     config.yaml file. .
     """
 
     def __init__(self):
-        """Visualizer callback"""
+        """Visualizer callback."""
 
     def _add_images(
         self,
@@ -67,7 +66,8 @@ class VisualizerCallback(Callback):
         _batch_idx: int,
         _dataloader_idx: int,
     ) -> None:
-        """Log images at the end of every batch
+        """Log images at the end of every batch.
+
         Args:
             _trainer (Trainer): Pytorch lightning trainer object (unused).
             pl_module (LightningModule): Lightning modules derived from BaseAnomalyLightning object as

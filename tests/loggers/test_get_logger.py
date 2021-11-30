@@ -1,6 +1,4 @@
-"""
-Tests to ascertain requested logger
-"""
+"""Tests to ascertain requested logger."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -23,7 +21,7 @@ from anomalib.loggers import AnomalibTensorBoardLogger, UnknownLogger, get_logge
 
 
 def test_get_logger():
-    """Test whether the right logger is returned"""
+    """Test whether the right logger is returned."""
 
     config = OmegaConf.create(
         {

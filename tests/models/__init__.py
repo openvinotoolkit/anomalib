@@ -1,6 +1,4 @@
-"""
-Test models
-"""
+"""Test models."""
 
 # Copyright (C) 2020 Intel Corporation
 #

@@ -1,6 +1,4 @@
-"""
-Anomalib Datasets
-"""
+"""Anomalib Datasets."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -26,8 +24,7 @@ from .mvtec import MVTecDataModule
 
 
 def get_datamodule(config: Union[DictConfig, ListConfig]):
-    """
-    Get Anomaly Datamodule
+    """Get Anomaly Datamodule.
 
     Args:
         config: Configuration of the anomaly model
@@ -35,7 +32,6 @@ def get_datamodule(config: Union[DictConfig, ListConfig]):
 
     Returns:
         PyTorch Lightning DataModule
-
     """
     datamodule: LightningDataModule
 

@@ -1,5 +1,5 @@
-"""
-STFPM: Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection
+"""STFPM: Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection.
+
 https://arxiv.org/abs/2103.04257
 """
 
@@ -34,26 +34,23 @@ __all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel", "StfpmLightning"]
 
 
 class Loss(nn.Module):
-    """
-    Feature Pyramid Loss
-    This class implmenents the feature pyramid loss function proposed in STFPM [1] paper.
+    """Feature Pyramid Loss This class implmenents the feature pyramid loss function proposed in STFPM [1] paper.
 
     Example:
+        >>> from anomalib.core.model.feature_extractor import FeatureExtractor
+        >>> from anomalib.models.stfpm.model import Loss
+        >>> from torchvision.models import resnet18
 
-    >>> from anomalib.core.model.feature_extractor import FeatureExtractor
-    >>> from anomalib.models.stfpm.model import Loss
-    >>> from torchvision.models import resnet18
+        >>> layers = ['layer1', 'layer2', 'layer3']
+        >>> teacher_model = FeatureExtractor(model=resnet18(pretrained=True), layers=layers)
+        >>> student_model = FeatureExtractor(model=resnet18(pretrained=False), layers=layers)
+        >>> loss = Loss()
 
-    >>> layers = ['layer1', 'layer2', 'layer3']
-    >>> teacher_model = FeatureExtractor(model=resnet18(pretrained=True), layers=layers)
-    >>> student_model = FeatureExtractor(model=resnet18(pretrained=False), layers=layers)
-    >>> loss = Loss()
-
-    >>> inp = torch.rand((4, 3, 256, 256))
-    >>> teacher_features = teacher_model(inp)
-    >>> student_features = student_model(inp)
-    >>> loss(student_features, teacher_features)
-        tensor(51.2015, grad_fn=<SumBackward0>)
+        >>> inp = torch.rand((4, 3, 256, 256))
+        >>> teacher_features = teacher_model(inp)
+        >>> student_features = student_model(inp)
+        >>> loss(student_features, teacher_features)
+            tensor(51.2015, grad_fn=<SumBackward0>)
     """
 
     def __init__(self):
@@ -71,7 +68,6 @@ class Loss(nn.Module):
 
         Returns:
           L2 distance between teacher and student features.
-
         """
 
         height, width = teacher_feats.shape[2:]
@@ -83,8 +79,7 @@ class Loss(nn.Module):
         return layer_loss
 
     def forward(self, teacher_features: Dict[str, Tensor], student_features: Dict[str, Tensor]) -> Tensor:
-        """Compute the overall loss via the weighted average of
-        the layer losses computed by the cosine similarity.
+        """Compute the overall loss via the weighted average of the layer losses computed by the cosine similarity.
 
         Args:
           teacher_features: Teacher features
@@ -95,7 +90,6 @@ class Loss(nn.Module):
 
         Returns:
           Total loss, which is the weighted average of the layer losses.
-
         """
 
         layer_losses: List[Tensor] = []
@@ -109,7 +103,7 @@ class Loss(nn.Module):
 
 
 class AnomalyMapGenerator:
-    """Generate Anomaly Heatmap"""
+    """Generate Anomaly Heatmap."""
 
     def __init__(
         self,
@@ -129,7 +123,6 @@ class AnomalyMapGenerator:
 
         Returns:
           Anomaly score based on cosine similarity.
-
         """
         norm_teacher_features = F.normalize(teacher_features)
         norm_student_features = F.normalize(student_features)
@@ -141,8 +134,7 @@ class AnomalyMapGenerator:
     def compute_anomaly_map(
         self, teacher_features: Dict[str, Tensor], student_features: Dict[str, Tensor]
     ) -> torch.Tensor:
-        """
-        Compute the overall anomaly map via element-wise production the interpolated anomaly maps.
+        """Compute the overall anomaly map via element-wise production the interpolated anomaly maps.
 
         Args:
           teacher_features: Teacher features
@@ -163,13 +155,16 @@ class AnomalyMapGenerator:
         return anomaly_map
 
     def __call__(self, **kwds: Dict[str, Tensor]) -> torch.Tensor:
-        """
-        Returns anomaly_map.
-        Expects `teach_features` and `student_features` keywords to be passed explicitly
+        """Returns anomaly map.
 
-        Example
-        >>> anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(hparams.model.input_size))
-        >>> output = self.anomaly_map_generator(teacher_features=teacher_features, student_features=student_features)
+        Expects `teach_features` and `student_features` keywords to be passed explicitly.
+
+        Example:
+            >>> anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(hparams.model.input_size))
+            >>> output = self.anomaly_map_generator(
+                    teacher_features=teacher_features,
+                    student_features=student_features
+                )
 
         Raises:
             ValueError: `teach_features` and `student_features` keys are not found
@@ -188,8 +183,7 @@ class AnomalyMapGenerator:
 
 
 class STFPMModel(nn.Module):
-    """
-    STFPM: Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection
+    """STFPM: Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection.
 
     Args:
         layers (List[str]): Layers used for feature extraction
@@ -229,9 +223,9 @@ class STFPMModel(nn.Module):
             self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(input_size))
 
     def forward(self, images):
-        """
-        Forward-pass images into the network. During the training mode
-        the model extracts the features from the teacher and student networks.
+        """Forward-pass images into the network.
+
+        During the training mode the model extracts the features from the teacher and student networks.
         During the evaluation mode, it returns the predicted anomaly map.
 
         Args:
@@ -239,7 +233,6 @@ class STFPMModel(nn.Module):
 
         Returns:
           Teacher and student features when in training mode, otherwise the predicted anomaly maps.
-
         """
         if self.apply_tiling:
             images = self.tiler.tile(images)
@@ -256,9 +249,7 @@ class STFPMModel(nn.Module):
 
 
 class StfpmLightning(AnomalyModule):
-    """
-    PL Lightning Module for the STFPM algorithm.
-    """
+    """PL Lightning Module for the STFPM algorithm."""
 
     def __init__(self, hparams):
         super().__init__(hparams)
@@ -274,9 +265,7 @@ class StfpmLightning(AnomalyModule):
         self.loss_val = 0
 
     def configure_callbacks(self):
-        """
-        Configure model-specific callbacks.
-        """
+        """Configure model-specific callbacks."""
         early_stopping = EarlyStopping(
             monitor=self.hparams.model.early_stopping.metric,
             patience=self.hparams.model.early_stopping.patience,
@@ -284,16 +273,11 @@ class StfpmLightning(AnomalyModule):
         )
         return [early_stopping]
 
-    def configure_optimizers(self):
-        """
-        Configure optimizers by creating an SGD optimizer.
-
-        :return: SGD optimizer
-
-        Args:
+    def configure_optimizers(self) -> torch.optim.Optimizer:
+        """Configure optimizers by creating an SGD optimizer.
 
         Returns:
-
+            (Optimizer): SGD optimizer
         """
         return optim.SGD(
             params=self.model.student_model.parameters(),
@@ -303,10 +287,9 @@ class StfpmLightning(AnomalyModule):
         )
 
     def training_step(self, batch, _):  # pylint: disable=arguments-differ
-        """
-        Training Step of STFPM..
-        For each batch, teacher and student and teacher features
-            are extracted from the CNN.
+        """Training Step of STFPM.
+
+        For each batch, teacher and student and teacher features are extracted from the CNN.
 
         Args:
           batch: Input batch
@@ -314,7 +297,6 @@ class StfpmLightning(AnomalyModule):
 
         Returns:
           Hierarchical feature map
-
         """
         self.model.teacher_model.eval()
         teacher_features, student_features = self.model.forward(batch["image"])
@@ -323,9 +305,10 @@ class StfpmLightning(AnomalyModule):
         return {"loss": loss}
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
-        """
-        Validation Step of STFPM. Similar to the training step, student/teacher
-        features are extracted from the CNN for each batch, and anomaly map is computed.
+        """Validation Step of STFPM.
+
+        Similar to the training step, student/teacher features are extracted from the CNN for each batch, and
+        anomaly map is computed.
 
         Args:
           batch: Input batch
@@ -334,7 +317,6 @@ class StfpmLightning(AnomalyModule):
         Returns:
           Dictionary containing images, anomaly maps, true labels and masks.
           These are required in `validation_epoch_end` for feature concatenation.
-
         """
         batch["anomaly_maps"] = self.model(batch["image"])
 

@@ -1,6 +1,4 @@
-"""
-Custom anomaly evaluation metrics.
-"""
+"""Custom anomaly evaluation metrics."""
 from .auroc import AUROC
 from .optimal_f1 import OptimalF1
 

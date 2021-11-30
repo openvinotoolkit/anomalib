@@ -1,6 +1,4 @@
-"""
-Get configurable parameters
-"""
+"""Get configurable parameters."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -28,16 +26,16 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 
 
 def update_input_size_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfig, ListConfig]:
-    """
-    Convert integer image size parameters into tuples, calculate the effective input size based on image size and crop
-    size, and set tiling stride if undefined.
+    """Update config with image size as tuple, effective input size and tiling stride.
+
+    Convert integer image size parameters into tuples, calculate the effective input size based on image size
+    and crop size, and set tiling stride if undefined.
 
     Args:
-        config: Dictconfig: Configurable parameters object
+        config (Union[DictConfig, ListConfig]): Configurable parameters object
 
     Returns:
         Configurable parameters with updated values
-
     """
     # handle image size
     if isinstance(config.dataset.image_size, int):
@@ -55,8 +53,7 @@ def update_input_size_config(config: Union[DictConfig, ListConfig]) -> Union[Dic
 
 
 def update_nncf_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfig, ListConfig]:
-    """
-    Set the NNCF input size based on the value of the crop_size parameter in the configurable parameters object.
+    """Set the NNCF input size based on the value of the crop_size parameter in the configurable parameters object.
 
     Args:
         config: Dictconfig: Configurable parameters of the current run.
@@ -76,8 +73,9 @@ def update_nncf_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfi
 
 
 def update_multi_gpu_training_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfig, ListConfig]:
-    """Updates the config to change learning rate based on number of gpus assigned
-        and ensures only ddp accelerator is used
+    """Updates the config to change learning rate based on number of gpus assigned.
+
+    Current behaviour is to ensure only ddp accelerator is used.
 
     Args:
         config (Union[DictConfig, ListConfig]): Configurable parameters for the current run
@@ -115,9 +113,7 @@ def update_multi_gpu_training_config(config: Union[DictConfig, ListConfig]) -> U
 
 
 def update_device_config(config: Union[DictConfig, ListConfig], openvino: bool) -> Union[DictConfig, ListConfig]:
-    """
-    Update XPU Device Config
-    This function ensures devices are configured correctly by the user.
+    """Update XPU Device Config This function ensures devices are configured correctly by the user.
 
     Args:
         config (Union[DictConfig, ListConfig]): Input config
@@ -150,8 +146,7 @@ def get_configurable_parameters(
     config_filename: Optional[str] = "config",
     config_file_extension: Optional[str] = "yaml",
 ) -> Union[DictConfig, ListConfig]:
-    """
-    Get configurable parameters
+    """Get configurable parameters.
 
     Args:
         model_name: Optional[str]:  (Default value = None)
@@ -163,7 +158,6 @@ def get_configurable_parameters(
 
     Returns:
         Configurable parameters in DictConfig object.
-
     """
     if model_name is None and model_config_path is None:
         raise ValueError(

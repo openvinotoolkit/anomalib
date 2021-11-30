@@ -1,6 +1,4 @@
-"""
-SaveToCSV Callback
-"""
+"""Callback to save metrics to CSV."""
 from pathlib import Path
 
 import numpy as np
@@ -11,21 +9,22 @@ from anomalib.core.model import AnomalyModule
 
 
 class SaveToCSVCallback(Callback):
-    """
-    Callback that saves the inference results of a model. The callback generates a csv file that saves different
-    performance metrics and results.
+    """Callback that saves the inference results of a model.
+
+    The callback generates a csv file that saves different performance
+    metrics and results.
     """
 
     def __init__(self):
-        """SaveToCSV callback"""
+        """Callback to save metrics to CSV."""
 
     def on_test_epoch_end(self, _trainer: Trainer, pl_module: AnomalyModule) -> None:
-        """Save Results at the end of training
+        """Save Results at the end of training.
+
         Args:
             _trainer (Trainer): Pytorch lightning trainer object (unused)
             pl_module (LightningModule): Lightning modules derived from BaseAnomalyLightning object.
         """
-
         results = pl_module.results
         data_frame = pd.DataFrame(
             {

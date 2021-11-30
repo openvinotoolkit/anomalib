@@ -1,6 +1,4 @@
-"""
-Test Models
-"""
+"""Test Models."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -35,8 +33,7 @@ from tests.helpers.dataset import TestDataset, get_dataset_path
 
 @pytest.fixture(autouse=True)
 def category() -> str:
-    """
-    PyTest fixture to randomly return an MVTec category.
+    """PyTest fixture to randomly return an MVTec category.
 
     Returns:
         str: Random MVTec category to train/test.
@@ -64,9 +61,7 @@ def category() -> str:
 
 
 class AddDFMScores:
-    """
-    Function wrapper for checking both scores of DFM
-    """
+    """Function wrapper for checking both scores of DFM."""
 
     def __call__(self, func):
         @wraps(func)
@@ -81,7 +76,7 @@ class AddDFMScores:
 
 
 class TestModel:
-    """Test model"""
+    """Test model."""
 
     def _setup(self, model_name, use_mvtec, dataset_path, project_path, nncf, category, score_type=None):
         config = get_configurable_parameters(model_name=model_name)
@@ -119,7 +114,7 @@ class TestModel:
         return model, config, datamodule, trainer
 
     def _test_metrics(self, trainer, config, model, datamodule):
-        """Tests the model metrics but also acts as a setup"""
+        """Tests the model metrics but also acts as a setup."""
 
         results = trainer.test(model=model, datamodule=datamodule)
 
@@ -167,7 +162,7 @@ class TestModel:
     @TestDataset(num_train=200, num_test=10, path=get_dataset_path(), use_mvtec=True)
     @AddDFMScores()
     def test_model(self, category, model_name, nncf, use_mvtec=True, path="./datasets/MVTec", score_type=None):
-        """Driver for all the tests in the class"""
+        """Driver for all the tests in the class."""
         with tempfile.TemporaryDirectory() as project_path:
             model, config, datamodule, trainer = self._setup(
                 model_name=model_name,

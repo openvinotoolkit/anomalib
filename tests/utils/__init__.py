@@ -1,6 +1,4 @@
-"""
-Tests for utils
-"""
+"""Tests for utils."""
 
 # Copyright (C) 2020 Intel Corporation
 #

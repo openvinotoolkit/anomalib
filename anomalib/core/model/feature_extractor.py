@@ -1,5 +1,5 @@
-"""
-Feature Extractor
+"""Feature Extractor.
+
 This script extracts features from a CNN network
 """
 
@@ -24,11 +24,9 @@ from torch import Tensor, nn
 
 
 class FeatureExtractor(nn.Module):
-    """
-    Extract features from a CNN
+    """Extract features from a CNN.
 
     Example:
-
         >>> import torch
         >>> import torchvision
         >>> from anomalib.core.model.feature_extractor import FeatureExtractor
@@ -54,40 +52,34 @@ class FeatureExtractor(nn.Module):
             layer.register_forward_hook(self.get_features(layer_id))
 
     def get_features(self, layer_id: str) -> Callable:
-        """
-        Get layer features.
+        """Get layer features.
 
         Args:
             layer_id: str: Layer ID
 
         Returns:
             Layer features
-
         """
 
         def hook(_, __, output):
-            """
-            Hook to extract features via a forward-pass.
+            """Hook to extract features via a forward-pass.
 
             Args:
               output: Feature map collected after the forward-pass.
-
             """
             self._features[layer_id] = output
 
         return hook
 
-    def forward(self, tensor: Tensor) -> Dict[str, Tensor]:
-        """
-        Forward-pass input tensor into the CNN
+    def forward(self, input_tensor: Tensor) -> Dict[str, Tensor]:
+        """Forward-pass input tensor into the CNN.
 
         Args:
-            tensor: Tensor:
+            input_tensor (Tensor): Input tensor
 
         Returns:
             Feature map extracted from the CNN
-
         """
         self._features = {layer: torch.empty(0) for layer in self.layers}
-        _ = self.backbone(tensor)
+        _ = self.backbone(input_tensor)
         return self._features

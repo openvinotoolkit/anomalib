@@ -1,8 +1,4 @@
-"""
-Post Process
-This module contains utils function to apply post-processing
-to the output predictions.
-"""
+"""Post Process This module contains utils function to apply post-processing to the output predictions."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -25,8 +21,7 @@ from skimage import morphology
 
 
 def anomaly_map_to_color_map(anomaly_map: np.ndarray, normalize: bool = True) -> np.ndarray:
-    """
-    Compute anomaly color heatmap
+    """Compute anomaly color heatmap.
 
     Args:
         anomaly_map (np.ndarray): Final anomaly map computed by the distance metric.
@@ -48,8 +43,7 @@ def anomaly_map_to_color_map(anomaly_map: np.ndarray, normalize: bool = True) ->
 def superimpose_anomaly_map(
     anomaly_map: np.ndarray, image: np.ndarray, alpha: float = 0.4, gamma: int = 0
 ) -> np.ndarray:
-    """
-    Superimpose anomaly map on top of in the input image
+    """Superimpose anomaly map on top of in the input image.
 
     Args:
         anomaly_map (np.ndarray): Anomaly map
@@ -62,7 +56,7 @@ def superimpose_anomaly_map(
             I' = (alpha*I1 + (1-alpha)*I2) + gamma
 
     Returns:
-        np.ndarray: [description]
+        np.ndarray: Image with anomaly map superimposed on top of it.
     """
 
     anomaly_map = anomaly_map_to_color_map(anomaly_map.squeeze())
@@ -72,8 +66,7 @@ def superimpose_anomaly_map(
 
 
 def compute_mask(anomaly_map: np.ndarray, threshold: float, kernel_size: int = 4) -> np.ndarray:
-    """
-    Compute anomaly mask via thresholding the predicted anomaly map.
+    """Compute anomaly mask via thresholding the predicted anomaly map.
 
     Args:
         anomaly_map: Anomaly map predicted via the model
@@ -85,7 +78,6 @@ def compute_mask(anomaly_map: np.ndarray, threshold: float, kernel_size: int = 4
 
     Returns:
         Predicted anomaly mask
-
     """
 
     anomaly_map = anomaly_map.squeeze()

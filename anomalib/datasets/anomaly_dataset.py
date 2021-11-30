@@ -1,8 +1,8 @@
-"""
-Anomaly Dataset
-This script contains PyTorch Dataset, Dataloader and PyTorch Lightning
-DataModule for the Anomaly dataset. If the dataset is not on the file
-system, the script downloads and extracts the dataset from URL and create
+"""Anomaly Dataset.
+
+This script contains PyTorch Dataset, Dataloader and PyTorch Lightning DataModule for the Anomaly dataset.
+
+If the dataset is not on the file system, the script downloads and extracts the dataset from URL and create
 PyTorch data objects.
 """
 
@@ -57,14 +57,12 @@ __all__ = [
 
 
 def split_normal_images_in_train_set(samples: DataFrame, split_ratio: float = 0.1, seed: int = 0) -> DataFrame:
-    """
-    split_normal_images_in_train_set
-        This function splits the normal images in training set and assigns the
-        values to the test set. This is particularly useful especially when the
-        test set does not contain any normal images.
+    """This function splits the normal images in training set and assigns the values to the test set.
 
-        This is important because when the test set doesn't have any normal images,
-        AUC computation fails due to having single class.
+    This is particularly useful especially when the test set does not contain any normal images.
+
+    This is important because when the test set doesn't have any normal images,
+    AUC computation fails due to having single class.
 
     Args:
         samples (DataFrame): Dataframe containing dataset info such as filenames, splits etc.
@@ -89,9 +87,7 @@ def split_normal_images_in_train_set(samples: DataFrame, split_ratio: float = 0.
 
 
 def create_validation_set_from_test_set(samples: DataFrame, seed: int = 0) -> DataFrame:
-    """
-    This function creates a validation set from test set by splitting both
-    normal and abnormal samples to two.
+    """This function creates a validation set from test set by splitting both normal and abnormal samples to two.
 
     Args:
         samples (DataFrame): Dataframe containing dataset info such as filenames, splits etc.
@@ -119,9 +115,9 @@ def create_validation_set_from_test_set(samples: DataFrame, seed: int = 0) -> Da
 
 
 def make_dataset(path: Path, split_ratio: float = 0.1, seed: int = 0, create_validation_set: bool = False) -> DataFrame:
-    """
-    This function creates MVTec samples by parsing the MVTec data file structure, based on the following
-    structure:
+    """Create MVTec samples by parsing the MVTec data file structure.
+
+    The files are expected to follow the structure:
         path/to/dataset/split/category/image_filename.png
         path/to/dataset/ground_truth/category/mask_filename.png
 
@@ -198,9 +194,7 @@ def make_dataset(path: Path, split_ratio: float = 0.1, seed: int = 0, create_val
 
 
 class BaseAnomalyDataset(VisionDataset):
-    """
-    Anomaly PyTorch Dataset
-    """
+    """Anomaly PyTorch Dataset."""
 
     _TARGET_FILE_EXT: str
     _SPLIT: str
@@ -234,9 +228,7 @@ class BaseAnomalyDataset(VisionDataset):
             raise RuntimeError(f"Found 0 images in {self.category / self._SPLIT}")
 
     def _download(self) -> None:
-        """
-        Download the Anomaly dataset from URL
-        """
+        """Download the Anomaly dataset from URL."""
         if (self.root / self.category).is_dir():
             logger.warning("Dataset directory exists.")
         else:
@@ -263,36 +255,40 @@ class BaseAnomalyDataset(VisionDataset):
             self._clean()
 
     def _extract(self) -> None:
-        """
-        Extract Anomaly Dataset
-        """
+        """Extract Anomaly Dataset."""
         logger.info("Extracting Anomaly dataset")
         with tarfile.open(self.filename) as file:
             file.extractall(self.root)
 
     def _clean(self) -> None:
-        """
-        Cleanup Anomaly Dataset tar file.
-        """
+        """Cleanup Anomaly Dataset tar file."""
         logger.info("Cleaning up the tar file")
         self.filename.unlink()
 
     def __len__(self) -> int:
+        """Return length of samples."""
         return len(self.samples)
 
     @abc.abstractmethod
     def __getitem__(self, index: int) -> Any:
+        """Get item from dataset."""
         raise NotImplementedError()
 
 
 class AnomalyTrainDS(BaseAnomalyDataset):
-    """
-    Anomaly Training dataset
-    """
+    """Anomaly Training dataset."""
 
     _SPLIT = "train"
 
     def __getitem__(self, index: int) -> Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]:
+        """Get item from train dataset.
+
+        Args:
+            index (int): Index of the item to fetch.
+
+        Returns:
+            Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]: Dictionary containing image tensor.
+        """
         image_path = self.samples.image_path[index]
 
         image = read_image(image_path)
@@ -304,13 +300,20 @@ class AnomalyTrainDS(BaseAnomalyDataset):
 
 
 class AnomalyTestClassificationDS(BaseAnomalyDataset):
-    """
-    Anomaly classification - test dataset
-    """
+    """Anomaly classification - test dataset."""
 
     _SPLIT = "test"
 
     def __getitem__(self, index: int) -> Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]:
+        """Get item from train dataset.
+
+        Args:
+            index (int): Index of the item to fetch.
+
+        Returns:
+            Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]: Dictionary containing image path, image tensor,
+                and label index.
+        """
         image_path = self.samples.image_path[index]
         label_index = self.samples.label_index[index]
 
@@ -328,14 +331,21 @@ class AnomalyTestClassificationDS(BaseAnomalyDataset):
 
 
 class AnomalyTestSegmentationDS(BaseAnomalyDataset):
-    """
-    Anomaly segmentation - test dataset
-    """
+    """Anomaly segmentation - test dataset."""
 
     _TARGET_FILE_EXT = "_mask.png"
     _SPLIT = "test"
 
     def __getitem__(self, index: int) -> Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]:
+        """Get single instance from dataset.
+
+        Args:
+            index (int): Index of the item to fetch.
+
+        Returns:
+            Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]: Dict containing image path, mask path,
+                image tensor, label and mask tensor.
+        """
         image_path = self.samples.image_path[index]
         mask_path = self.samples.target_path[index]
         label_index = self.samples.label_index[index]
@@ -362,9 +372,7 @@ class AnomalyTestSegmentationDS(BaseAnomalyDataset):
 
 
 class AnomalyTestDetectionDS(BaseAnomalyDataset):
-    """
-    Anomaly detection - test dataset
-    """
+    """Anomaly detection - test dataset."""
 
     _TARGET_FILE_EXT = ".xml"
     _SPLIT = "test"
@@ -397,6 +405,15 @@ class AnomalyTestDetectionDS(BaseAnomalyDataset):
             raise ValueError(f"Unknown data annotation format: {self.label_format}!")
 
     def __getitem__(self, index: int) -> Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]:
+        """Get single instance from dataset.
+
+        Args:
+            index (int): Index of the item to fetch.
+
+        Returns:
+            Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]: Dict containing image path, target path,
+                image tensor, label and transformed bounding box.
+        """
         image_path = self.samples.image_path[index]
         target_path = self.samples.target_path[index]
         label_index = self.samples.label_index[index]
@@ -422,10 +439,9 @@ class AnomalyTestDetectionDS(BaseAnomalyDataset):
 
 
 class AnomalyDataModule(LightningDataModule):
-    """
-    Anomaly data Lightning Module
+    """Anomaly data Lightning Module.
 
-    init parameters:
+    Args:
         root: folder containing the dataset
         url: web link to download a dataset
         category: subcategory or class label
@@ -477,10 +493,7 @@ class AnomalyDataModule(LightningDataModule):
             raise ValueError(f"Unknown task type: {self.task}!")
 
     def prepare_data(self):
-        """
-        prepare_data
-            download training data if not available
-        """
+        """Download training data if not available."""
 
         # Training Data
         self.train_dataset(
@@ -504,9 +517,7 @@ class AnomalyDataModule(LightningDataModule):
         )
 
     def setup(self, stage: Optional[str] = None) -> None:
-        """
-        setup:
-            Data preparation - split for train, test & val
+        """Data preparation - split for train, test & val.
 
         Args:
             stage: optional argument to specify if train or test
@@ -539,9 +550,7 @@ class AnomalyDataModule(LightningDataModule):
         )
 
     def train_dataloader(self) -> DataLoader:
-        """
-        Train Dataloader
-        """
+        """Train Dataloader."""
         return DataLoader(
             self.train_data,
             shuffle=False,
@@ -550,9 +559,7 @@ class AnomalyDataModule(LightningDataModule):
         )
 
     def val_dataloader(self) -> DataLoader:
-        """
-        Validation Dataloader
-        """
+        """Validation Dataloader."""
         return DataLoader(
             self.test_data,
             shuffle=False,
@@ -561,9 +568,7 @@ class AnomalyDataModule(LightningDataModule):
         )
 
     def test_dataloader(self) -> DataLoader:
-        """
-        Test Dataloader
-        """
+        """Test Dataloader."""
         return DataLoader(
             self.test_data,
             shuffle=False,

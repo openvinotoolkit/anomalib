@@ -1,6 +1,4 @@
-"""
-PADIM model
-"""
+"""PADIM model."""
 
 # Copyright (C) 2020 Intel Corporation
 #
