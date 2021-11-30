@@ -4,7 +4,7 @@ import pytest
 import torch
 from omegaconf import ListConfig
 
-from anomalib.datasets.tiler import StrideSizeError, Tiler
+from anomalib.data.tiler import StrideSizeError, Tiler
 
 tile_data = [
     ([3, 1024, 1024], 512, 512, torch.Size([4, 3, 512, 512]), False),

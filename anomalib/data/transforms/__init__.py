@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+from .custom import Denormalize, ToNumpy
 from .pre_process import PreProcessor
 
-__all__ = ["PreProcessor"]
+__all__ = ["Denormalize", "PreProcessor", "ToNumpy"]

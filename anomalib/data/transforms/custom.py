@@ -1,4 +1,4 @@
-"""Dataset Utils."""
+"""Custom Image/Tensor Transforms."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -16,35 +16,20 @@
 
 from typing import List, Optional, Tuple
 
-import cv2
 import numpy as np
 from torch import Tensor
 
 
-def read_image(path: str) -> np.ndarray:
-    """Read image from disk in RGB format.
-
-    Args:
-        path (str): path to the image file
-
-    Returns:
-        image as numpy array
-    """
-    image = cv2.imread(path)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-    return image
-
-
 class Denormalize:
-    """Denormalize Torch Tensor into np image format.
-
-    Args:
-        mean (Optional[List[float]], optional): Mean used for denormalizing. Defaults to None.
-        std (Optional[List[float]], optional): Standard deviation used for denormalizing. Defaults to None.
-    """
+    """Denormalize Torch Tensor into np image format."""
 
     def __init__(self, mean: Optional[List[float]] = None, std: Optional[List[float]] = None):
+        """Denormalize Torch Tensor into np image format.
+
+        Args:
+            mean: Mean
+            std: Standard deviation.
+        """
         # If no mean and std provided, assign ImageNet values.
         if mean is None:
             mean = [0.485, 0.456, 0.406]
@@ -64,7 +49,6 @@ class Denormalize:
         Returns:
             Denormalized numpy array (H, W, C).
         """
-
         if tensor.dim() == 4:
             if tensor.size(0):
                 tensor = tensor.squeeze(0)
@@ -77,12 +61,8 @@ class Denormalize:
         array = (tensor * 255).permute(1, 2, 0).cpu().numpy().astype(np.uint8)
         return array
 
-    def __repr__(self) -> str:
-        """Prints `Denormalize()`.
-
-        Returns:
-            (str): Return string with class name
-        """
+    def __repr__(self):
+        """Representational string."""
         return self.__class__.__name__ + "()"
 
 
@@ -90,15 +70,14 @@ class ToNumpy:
     """Convert Tensor into Numpy Array."""
 
     def __call__(self, tensor: Tensor, dims: Optional[Tuple[int, ...]] = None) -> np.ndarray:
-        """Convert torch tensor to numpy.
+        """Convert Tensor into Numpy Array.
 
         Args:
-            tensor (Tensor): Input tensor in range 0-1
-            dims (Optional[Tuple[int, ...]], optional): Tuple corresponding to axis permutation from torch tensor to
-             numpy array. Defaults to None.
+            tensor: Tensor to convert
+            dims: Convert dimensions from torch to numpy format.
 
         Returns:
-            np.ndarray: Converted numpy array in range 0-255
+            Converted numpy ndarray.
         """
         # Default support is (C, H, W) or (N, C, H, W)
         if dims is None:
@@ -113,10 +92,6 @@ class ToNumpy:
 
         return array
 
-    def __repr__(self) -> str:
-        """Return `ToNumpy()`.
-
-        Returns:
-            str: Class name
-        """
+    def __repr__(self):
+        """Representational string."""
         return self.__class__.__name__ + "()"
