@@ -24,6 +24,7 @@ extracts the dataset and create PyTorch data objects.
 import logging
 import random
 import tarfile
+from abc import ABC
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
 from urllib.request import urlretrieve
@@ -34,6 +35,7 @@ import numpy as np
 import pandas as pd
 from pandas.core.frame import DataFrame
 from pytorch_lightning.core.datamodule import LightningDataModule
+from pytorch_lightning.utilities.cli import DATAMODULE_REGISTRY
 from torch import Tensor
 from torch.utils.data import DataLoader
 from torch.utils.data.dataset import Dataset
@@ -46,7 +48,7 @@ from anomalib.utils.download_progress_bar import DownloadProgressBar
 logger = logging.getLogger(name="Dataset: MVTec")
 logger.setLevel(logging.DEBUG)
 
-__all__ = ["MVTec", "MVTecDataModule"]
+__all__ = ["Mvtec"]
 
 
 def split_normal_images_in_train_set(samples: DataFrame, split_ratio: float = 0.1, seed: int = 0) -> DataFrame:
@@ -160,7 +162,7 @@ def make_mvtec_dataset(path: Path, split: str = "train", split_ratio: float = 0.
     return samples
 
 
-class MVTec(VisionDataset):
+class _MvtecDataset(VisionDataset):
     """MVTec PyTorch Dataset."""
 
     def __init__(
@@ -183,10 +185,10 @@ class MVTec(VisionDataset):
             download: Boolean to download the MVTec dataset.
 
         Examples:
-            >>> from anomalib.data.mvtec import MVTec
+            >>> from anomalib.data.mvtec import _MvtecDataset
             >>> from anomalib.data.transforms import PreProcessor
             >>> pre_process = PreProcessor(image_size=256)
-            >>> dataset = MVTec(
+            >>> dataset = _MvtecDataset(
             ...     root='./datasets/MVTec',
             ...     category='leather',
             ...     pre_process=pre_process,
@@ -304,7 +306,8 @@ class MVTec(VisionDataset):
         return item
 
 
-class MVTecDataModule(LightningDataModule):
+@DATAMODULE_REGISTRY
+class Mvtec(LightningDataModule):
     """MVTec Lightning Data Module."""
 
     def __init__(
@@ -312,7 +315,7 @@ class MVTecDataModule(LightningDataModule):
         root: str,
         category: str,
         # TODO: Remove default values. IAAALD-211
-        image_size: Optional[Union[int, Tuple[int, int]]] = None,
+        image_size: Optional[Union[int, Tuple[int, int]]],
         train_batch_size: int = 32,
         test_batch_size: int = 32,
         num_workers: int = 8,
@@ -330,8 +333,8 @@ class MVTecDataModule(LightningDataModule):
             transform_config: Config for pre-processing.
 
         Examples
-            >>> from anomalib.data import MVTecDataModule
-            >>> datamodule = MVTecDataModule(
+            >>> from anomalib.data import Mvtec
+            >>> datamodule = Mvtec(
             ...     root="./datasets/MVTec",
             ...     category="leather",
             ...     image_size=256,
@@ -372,7 +375,7 @@ class MVTecDataModule(LightningDataModule):
     def prepare_data(self):
         """Prepare MVTec Dataset."""
         # Train
-        MVTec(
+        _MvtecDataset(
             root=self.root,
             category=self.category,
             pre_process=self.pre_process,
@@ -381,7 +384,7 @@ class MVTecDataModule(LightningDataModule):
         )
 
         # Test
-        MVTec(
+        _MvtecDataset(
             root=self.root,
             category=self.category,
             pre_process=self.pre_process,
@@ -395,14 +398,14 @@ class MVTecDataModule(LightningDataModule):
         Args:
           stage: Optional[str]:  Train/Val/Test stages. (Default value = None)
         """
-        self.val_data = MVTec(
+        self.val_data = _MvtecDataset(
             root=self.root,
             category=self.category,
             pre_process=self.pre_process,
             is_train=False,
         )
         if stage in (None, "fit"):
-            self.train_data = MVTec(
+            self.train_data = _MvtecDataset(
                 root=self.root,
                 category=self.category,
                 pre_process=self.pre_process,

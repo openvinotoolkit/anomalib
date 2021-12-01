@@ -19,7 +19,7 @@ from typing import Union
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning import LightningDataModule
 
-from .mvtec import MVTecDataModule
+from .mvtec import Mvtec
 
 
 def get_datamodule(config: Union[DictConfig, ListConfig]):
@@ -35,7 +35,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]):
     datamodule: LightningDataModule
 
     if config.dataset.format.lower() == "mvtec":
-        datamodule = MVTecDataModule(
+        datamodule = Mvtec(
             # TODO: Remove config values. IAAALD-211
             root=config.dataset.path,
             category=config.dataset.category,

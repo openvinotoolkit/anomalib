@@ -3,14 +3,14 @@
 import numpy as np
 import pytest
 
-from anomalib.data.mvtec import MVTecDataModule
+from anomalib.data.mvtec import Mvtec
 from anomalib.data.transforms import Denormalize, ToNumpy
 from tests.helpers.dataset import get_dataset_path
 
 
 @pytest.fixture(autouse=True)
 def data_module():
-    datamodule = MVTecDataModule(
+    datamodule = Mvtec(
         root=get_dataset_path(),
         category="leather",
         image_size=(256, 256),
