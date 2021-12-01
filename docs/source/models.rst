@@ -28,16 +28,6 @@ Loading Models
 
 .. currentmodule:: anomalib.models
 
-Base
------
-
-.. autosummary::
-    :toctree: models
-    :nosignatures:
-
-    base.lightning_modules
-    base.torch_modules
-
 DFKDE
 -------
 

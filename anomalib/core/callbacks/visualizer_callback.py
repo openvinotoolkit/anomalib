@@ -21,8 +21,8 @@ class VisualizerCallback(Callback):
     The callback generates a figure showing the original image, the ground truth segmentation mask,
     the predicted error heat map, and the predicted segmentation mask.
 
-    To save the images to the filesystem, add the 'local' keyword to the project.log_images_to parameter in the
-    config.yaml file. .
+    To save the images to the filesystem, add the 'local' keyword to the `project.log_images_to` parameter in the
+    config.yaml file.
     """
 
     def __init__(self):
@@ -34,6 +34,16 @@ class VisualizerCallback(Callback):
         module: AnomalyModule,
         filename: Path,
     ):
+        """Save image to logger/local storage.
+
+        Saves the image in `visualizer.figure` to the respective loggers and local storage if specified in
+        `log_images_to` in `config.yaml` of the models.
+
+        Args:
+            visualizer (Visualizer): Visualizer object from which the `figure` is saved/logged.
+            module (AnomalyModule): Anomaly module which holds reference to `hparams` and `logger`.
+            filename (Path): Path of the input image. This name is used as name for the generated image.
+        """
 
         # store current logger type as a string
         logger_type = type(module.logger).__name__.lower()
@@ -63,7 +73,7 @@ class VisualizerCallback(Callback):
         Args:
             _trainer (Trainer): Pytorch lightning trainer object (unused)
             pl_module (LightningModule): Lightning modules derived from BaseAnomalyLightning object as
-            currently only they support logging images.
+                currently only they support logging images.
         """
         if isinstance(pl_module.results, SegmentationResults):
             results = pl_module.results

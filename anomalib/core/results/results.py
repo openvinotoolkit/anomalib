@@ -57,15 +57,29 @@ class ClassificationResults:
     performance: Dict[str, Any] = field(default_factory=dict)
 
     def store_outputs(self, outputs: List[dict]):
-        """Concatenate the outputs from the individual batches and store in the result set."""
+        """Concatenate the outputs from the individual batches and store in the result set.
+
+        Args:
+            outputs (List[dict]): Outputs of the model after `post_process` step.
+        """
         if "image_path" in outputs[0].keys():
             self.filenames = [Path(f) for x in outputs for f in x["image_path"]]
         self.images = torch.vstack([x["image"] for x in outputs])
         self.true_labels = np.hstack([output["label"].cpu() for output in outputs])
         self.pred_scores = np.hstack([output["pred_scores"].cpu() for output in outputs])
 
-    def evaluate(self, threshold: float):
-        """Compute performance metrics."""
+    def evaluate(self, threshold: float) -> None:
+        """Compute performance metrics.
+
+        Calculates the F1 Score, Balanced Accuracy Score and the ROC AUC score. The calculated metrics are stored in
+        `self.Performance`.
+
+        Args:
+            threshold (float): Threshold for classifying the predicted scores as anomalous.
+
+        Returns:
+            None
+        """
         self.pred_labels = self.pred_scores >= threshold
         self.performance["image_f1_score"] = f1_score(self.true_labels, self.pred_labels)
         self.performance["balanced_accuracy_score"] = balanced_accuracy_score(self.true_labels, self.pred_labels)
@@ -80,6 +94,7 @@ class SegmentationResults(ClassificationResults):
     compute anomaly masks to compare against the true segmentation masks.
 
     Args:
+        TODO
         anomaly_maps: List[Union[np.ndarray, Tensor]]
         true_masks: List[Union[np.ndarray, Tensor]]
         pred_masks: List[Union[np.ndarray, Tensor]]
@@ -99,7 +114,11 @@ class SegmentationResults(ClassificationResults):
     pred_masks: Optional[np.ndarray] = None
 
     def store_outputs(self, outputs: List[dict]):
-        """Concatenate the outputs from the individual batches and store in the result set."""
+        """Concatenate the outputs from the individual batches and store in the result set.
+
+        Args:
+            outputs (List[dict]): Outputs of the model after `post_process` step.
+        """
         super().store_outputs(outputs)
         self.true_masks = np.vstack([output["mask"].squeeze(1).cpu() for output in outputs])
         self.anomaly_maps = np.vstack([output["anomaly_maps"].cpu() for output in outputs])

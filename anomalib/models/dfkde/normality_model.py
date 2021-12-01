@@ -52,8 +52,7 @@ class NormalityModel(nn.Module):
         """Fit a kde model to dataset.
 
         Args:
-            dataset: Input dataset to fit the model.
-            dataset: torch.Tensor:
+            dataset (torch.Tensor): Input dataset to fit the model.
 
         Returns:
             Boolean confirming whether the training is successful.

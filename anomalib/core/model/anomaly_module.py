@@ -17,10 +17,9 @@
 from typing import List, Union
 
 import pytorch_lightning as pl
-import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks.base import Callback
-from torch import nn
+from torch import Tensor, nn
 
 from anomalib.core.results import ClassificationResults, SegmentationResults
 from anomalib.utils.metrics import compute_threshold_and_f1_score
@@ -39,10 +38,10 @@ class AnomalyModule(pl.LightningModule):
         # Force the type for hparams so that it works with OmegaConfig style of accessing
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(params)
-        self.loss: torch.Tensor
+        self.loss: Tensor
         self.callbacks: List[Callback]
-        self.register_buffer("threshold", torch.Tensor([params.model.threshold.default]))
-        self.threshold: torch.Tensor
+        self.register_buffer("threshold", Tensor([params.model.threshold.default]))
+        self.threshold: Tensor
 
         self.model: nn.Module
 
@@ -54,14 +53,14 @@ class AnomalyModule(pl.LightningModule):
         else:
             raise NotImplementedError("Only Classification and Segmentation tasks are supported in this version.")
 
-    def forward(self, batch):  # pylint: disable=arguments-differ
+    def forward(self, batch: Tensor):  # pylint: disable=arguments-differ
         """Forward-pass input tensor to the module.
 
         Args:
             batch (Tensor): Input Tensor
 
         Returns:
-            [Tensor]: Output tensor from the model.
+            Tensor: Output tensor from the model.
         """
         return self.model(batch)
 
@@ -95,15 +94,17 @@ class AnomalyModule(pl.LightningModule):
         return self.validation_step(batch, _)
 
     def validation_step_end(self, val_step_outputs):  # pylint: disable=arguments-differ
-        """Called at the end of each validation step."""
+        """Compute and add predicted score and predicted labels to the outputs."""
         return self._post_process(val_step_outputs)
 
     def test_step_end(self, test_step_outputs):  # pylint: disable=arguments-differ
-        """Called at the end of each validation step."""
+        """Compute and add predicted score and predicted labels to the outputs."""
         return self._post_process(test_step_outputs)
 
     def validation_epoch_end(self, outputs):
         """Compute image-level performance metrics.
+
+        If threshold is set to adaptive, then it calculates the optimal threshold based on the F1 score.
 
         Args:
           outputs: Batch of outputs from the validation step
@@ -111,7 +112,7 @@ class AnomalyModule(pl.LightningModule):
         self.results.store_outputs(outputs)
         if self.hparams.model.threshold.adaptive:
             threshold, _ = compute_threshold_and_f1_score(self.results.true_labels, self.results.pred_scores)
-            self.threshold = torch.Tensor([threshold])
+            self.threshold = Tensor([threshold])
         self.results.evaluate(self.threshold.item())
         self._log_metrics()
 
@@ -119,7 +120,7 @@ class AnomalyModule(pl.LightningModule):
         """Compute and save anomaly scores of the test set.
 
         Args:
-            outputs: Batch of outputs from the validation step
+            outputs: Batch of outputs from the validation step.
         """
         self.results.store_outputs(outputs)
         self.results.evaluate(self.threshold.item())

@@ -22,7 +22,11 @@ import numpy as np
 
 
 class Visualizer:
-    """Anomaly Visualization."""
+    """Anomaly Visualization.
+
+    The visualizer object is responsible for collating all the images passed to it into a single image. This can then
+    either be logged by accessing the `figure` attribute or can be saved directly by calling `save()` method.
+    """
 
     def __init__(self, num_rows: int, num_cols: int, figure_size: Tuple[int, int]):
         self.figure_index: int = 0

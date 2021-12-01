@@ -50,6 +50,8 @@ class InitLoader(PTInitializingDataLoader):
     def get_target(self, _):
         """Return structure for ground truth in loss criterion based on dataloader output.
 
+        This implementation does not do anything and is a placeholder for implementation.
+
         Returns:
             None
         """
