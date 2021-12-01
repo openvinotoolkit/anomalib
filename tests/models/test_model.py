@@ -116,12 +116,12 @@ class TestModel:
     def _test_metrics(self, trainer, config, model, datamodule):
         """Tests the model metrics but also acts as a setup."""
 
-        results = trainer.test(model=model, datamodule=datamodule)
+        results = trainer.test(model=model, datamodule=datamodule)[0]
 
-        assert results[0]["image_AUROC"] >= 0.6
+        assert results["image_AUROC"] >= 0.6
 
         if config.dataset.task == "segmentation":
-            assert results[0]["pixel_AUROC"] >= 0.6
+            assert results["pixel_AUROC"] >= 0.6
         return results
 
     def _test_model_load(self, config, datamodule, results):
@@ -138,13 +138,13 @@ class TestModel:
         # create new trainer object with LoadModel callback (assumes it is present)
         trainer = Trainer(callbacks=callbacks, **config.trainer)
         # Assumes the new model has LoadModel callback and the old one had ModelCheckpoint callback
-        new_results = trainer.test(model=loaded_model, datamodule=datamodule)
+        new_results = trainer.test(model=loaded_model, datamodule=datamodule)[0]
         assert np.isclose(
-            results[0]["image_AUROC"], new_results[0]["image_AUROC"]
+            results["image_AUROC"], new_results["image_AUROC"]
         ), "Loaded model does not yield close performance results"
         if config.dataset.task == "segmentation":
             assert np.isclose(
-                results[0]["pixel_AUROC"], new_results[0]["pixel_AUROC"]
+                results["pixel_AUROC"], new_results["pixel_AUROC"]
             ), "Loaded model does not yield close performance results"
 
     @pytest.mark.parametrize(
