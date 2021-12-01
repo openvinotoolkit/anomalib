@@ -75,7 +75,7 @@ class AnomalyMapGenerator:
         score = weights * max(patch_scores[:, 0])
         return score
 
-    def __call__(self, **kwds: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def __call__(self, **kwargs: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """Returns anomaly_map and anomaly_score.
 
         Expects `patch_scores` keyword to be passed explicitly
@@ -91,10 +91,10 @@ class AnomalyMapGenerator:
             Tuple[torch.Tensor, torch.Tensor]: anomaly_map, anomaly_score
         """
 
-        if "patch_scores" not in kwds:
-            raise ValueError(f"Expected key `patch_scores`. Found {kwds.keys()}")
+        if "patch_scores" not in kwargs:
+            raise ValueError(f"Expected key `patch_scores`. Found {kwargs.keys()}")
 
-        patch_scores = kwds["patch_scores"]
+        patch_scores = kwargs["patch_scores"]
         anomaly_map = self.compute_anomaly_map(patch_scores)
         anomaly_score = self.compute_anomaly_score(patch_scores)
         return anomaly_map, anomaly_score
