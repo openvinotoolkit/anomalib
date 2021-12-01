@@ -25,6 +25,7 @@ import torch.nn.functional as F
 import torchvision
 from kornia import gaussian_blur2d
 from omegaconf import ListConfig
+from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor, nn
 
 from anomalib.core.model import AnomalyModule
@@ -32,7 +33,7 @@ from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
 from anomalib.data.tiler import Tiler
 
-__all__ = ["PadimLightning"]
+__all__ = ["Padim"]
 
 
 DIMS = {
@@ -41,7 +42,7 @@ DIMS = {
 }
 
 
-class PadimModel(nn.Module):
+class _PadimModel(nn.Module):
     """Padim Module.
 
     Args:
@@ -276,7 +277,8 @@ class AnomalyMapGenerator:
         return self.compute_anomaly_map(embedding, mean, inv_covariance)
 
 
-class PadimLightning(AnomalyModule):
+@MODEL_REGISTRY
+class Padim(AnomalyModule):
     """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization."""
 
     def __init__(
@@ -286,14 +288,13 @@ class PadimLightning(AnomalyModule):
         default_threshold: float,
         layers: List[str],
         input_size: Tuple[int, int],
-        backbone: str = "resnet18",
+        backbone: str,
         apply_tiling: bool = False,
         tile_size: Optional[Tuple[int, int]] = None,
         tile_stride: Optional[int] = None,
     ):
-
         super().__init__(task, adaptive_threshold, default_threshold)
-        self.model = PadimModel(
+        self.model = _PadimModel(
             layers=layers,
             input_size=input_size,
             tile_size=tile_size,
