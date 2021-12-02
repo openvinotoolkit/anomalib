@@ -49,8 +49,6 @@ class _PadimModel(nn.Module):
         layers (List[str]): Layers used for feature extraction
         input_size (Tuple[int, int]): Input size for the model.
         backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
-        # tile_size (Tuple[int, int]): Tile size
-        # tile_stride (int): Stride for tiling
     """
 
     def __init__(
