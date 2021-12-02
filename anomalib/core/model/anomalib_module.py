@@ -18,7 +18,6 @@ from typing import List, Union
 
 import pytorch_lightning as pl
 import torch
-from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks.base import Callback
 from torch import nn
 
