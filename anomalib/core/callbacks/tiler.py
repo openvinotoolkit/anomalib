@@ -15,20 +15,25 @@
 # and limitations under the License.
 
 
-from typing import Optional, Sequence, SupportsIndex, Union
+from typing import Optional, SupportsIndex, Union, Tuple
 
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import Callback
 
+from anomalib.core.model import AnomalibNNModel, AnomalyModule
+from anomalib.data.tiler import Tiler
 
-class TilerConfigurationCallback(Callback):
+__all__ = ["TilerCallback"]
+
+
+class TilerCallback(Callback):
     """Tiler Configuration Callback."""
 
     def __init__(
         self,
-        enable: bool = False,
-        tile_size: Optional[Union[int, Sequence]] = None,
-        stride: Optional[Union[int, Sequence]] = None,
+        enable: bool,
+        tile_size: Union[int, Tuple],
+        stride: Optional[Union[int, Tuple]] = None,
         remove_border_count: int = 0,
         mode: str = "padding",
         tile_count: SupportsIndex = 4,
@@ -54,14 +59,15 @@ class TilerConfigurationCallback(Callback):
         self.mode = mode
         self.tile_count = tile_count
 
-    def on_train_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
-        pass
-
-    def on_validation_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
-        pass
-
-    def on_test_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
-        pass
-
-    def on_predict_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
-        pass
+    def setup(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", stage: Optional[str] = None) -> None:
+        if self.enable:
+            if isinstance(pl_module, AnomalyModule) and isinstance(pl_module.model, AnomalibNNModel):
+                pl_module.model.tiler = Tiler(
+                    tile_size=self.tile_size,
+                    stride=self.stride,
+                    remove_border_count=self.remove_border_count,
+                    mode=self.mode,
+                    tile_count=self.tile_count,
+                )
+            else:
+                raise ValueError("Model does not support tiling.")

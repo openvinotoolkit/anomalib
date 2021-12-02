@@ -87,3 +87,5 @@ data:
     train_batch_size: 32
     test_batch_size: 32
     num_workers: 0
+tiling:
+  enable: true

@@ -26,12 +26,11 @@ import torchvision
 from kornia import gaussian_blur2d
 from omegaconf import ListConfig
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
-from torch import Tensor, nn
+from torch import Tensor
 
-from anomalib.core.model import AnomalyModule
+from anomalib.core.model import AnomalibNNModel, AnomalyModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
-from anomalib.data.tiler import Tiler
 
 __all__ = ["Padim"]
 
@@ -42,16 +41,17 @@ DIMS = {
 }
 
 
-class _PadimModel(nn.Module):
+class _PadimModel(AnomalibNNModel):
+    # class _PadimModel(nn.Module):
+
     """Padim Module.
 
     Args:
         layers (List[str]): Layers used for feature extraction
         input_size (Tuple[int, int]): Input size for the model.
-        tile_size (Tuple[int, int]): Tile size
-        tile_stride (int): Stride for tiling
-        apply_tiling (bool, optional): Apply tiling. Defaults to False.
         backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
+        # tile_size (Tuple[int, int]): Tile size
+        # tile_stride (int): Stride for tiling
     """
 
     def __init__(
@@ -59,14 +59,12 @@ class _PadimModel(nn.Module):
         layers: List[str],
         input_size: Tuple[int, int],
         backbone: str = "resnet18",
-        apply_tiling: bool = False,
-        tile_size: Optional[Tuple[int, int]] = None,
-        tile_stride: Optional[int] = None,
+        # tile_size: Optional[Tuple[int, int]] = None,
+        # tile_stride: Optional[int] = None,
     ):
         super().__init__()
         self.backbone = getattr(torchvision.models, backbone)
         self.layers = layers
-        self.apply_tiling = apply_tiling
         self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
         self.dims = DIMS[backbone]
         # pylint: disable=not-callable
@@ -84,10 +82,10 @@ class _PadimModel(nn.Module):
         n_patches = patches_dims.prod().int().item()
         self.gaussian = MultiVariateGaussian(n_features, n_patches)
 
-        if apply_tiling:
-            assert tile_size is not None
-            assert tile_stride is not None
-            self.tiler = Tiler(tile_size, tile_stride)
+        # if apply_tiling:
+        #     assert tile_size is not None
+        #     assert tile_stride is not None
+        #     self.tiler = Tiler(tile_size, tile_stride)
 
     def forward(self, input_tensor: Tensor) -> Tensor:
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
@@ -111,12 +109,17 @@ class _PadimModel(nn.Module):
             torch.Size([32, 256, 14, 14])]
         """
 
-        if self.apply_tiling:
+        # on_before_forward()
+        if self.tiler:
             input_tensor = self.tiler.tile(input_tensor)
+
+        # on_forward()
         with torch.no_grad():
             features = self.feature_extractor(input_tensor)
             embeddings = self.generate_embedding(features)
-        if self.apply_tiling:
+
+        # on_after_forward()
+        if self.tiler:
             embeddings = self.tiler.untile(embeddings)
 
         if self.training:
@@ -297,9 +300,9 @@ class Padim(AnomalyModule):
         self.model = _PadimModel(
             layers=layers,
             input_size=input_size,
-            tile_size=tile_size,
-            tile_stride=tile_stride,
-            apply_tiling=apply_tiling,
+            # tile_size=tile_size,
+            # tile_stride=tile_stride,
+            # apply_tiling=apply_tiling,
             backbone=backbone,
         ).eval()
 
