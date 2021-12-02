@@ -68,24 +68,24 @@ model:
     adaptive_threshold: true
     default_threshold: 12.0
     layers:
-    - layer1
-    - layer2
-    - layer3
+      - layer1
+      - layer2
+      - layer3
     input_size:
-    - 256
-    - 256
+      - 256
+      - 256
     backbone: resnet18
-    apply_tiling: false
 data:
   class_path: anomalib.data.Mvtec
   init_args:
     root: ./datasets/MVTec
     category: bottle
     image_size:
-    - 256
-    - 256
+      - 256
+      - 256
     train_batch_size: 32
     test_batch_size: 32
     num_workers: 0
 tiling:
   enable: true
+  tile_size: 256
