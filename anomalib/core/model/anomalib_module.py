@@ -44,7 +44,7 @@ class AnomalibModule(pl.LightningModule, abc.ABC):
         self.loss: torch.Tensor
         self.callbacks: List[Callback]
         self.adaptive_threshold = adaptive_threshold
-        self.register_buffer("threshold", torch.Tensor([default_threshold]))
+        self.register_buffer("threshold", torch.tensor(default_threshold))  # pylint: disable=not-callable
         self.threshold: torch.Tensor
 
         self.model: nn.Module
