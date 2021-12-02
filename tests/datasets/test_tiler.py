@@ -36,6 +36,13 @@ overlapping_data = [
 ]
 
 
+def test_none_stride_size_should_be_assigned_tile_size():
+    """When ``stride`` is None, ``tile_size`` should be assigned to ``stride``."""
+    tiler = Tiler(tile_size=512)
+    assert tiler.tile_size_h == tiler.stride_h
+    assert tiler.tile_size_w == tiler.stride_w
+
+
 @pytest.mark.parametrize(
     "tile_size, stride",
     [(512, 256), ([512, 512], [256, 256]), (ListConfig([512, 512]), 256)],
