@@ -21,7 +21,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import torchvision
-from omegaconf import ListConfig
+from omegaconf import DictConfig, ListConfig
 from scipy.ndimage import gaussian_filter
 from torch import Tensor, nn
 
@@ -236,8 +236,12 @@ class PatchcoreLightning(AnomalyModule):
         apply_tiling (bool, optional): Apply tiling. Defaults to False.
     """
 
-    def __init__(self, hparams):
-        super().__init__(hparams)
+    def __init__(self, hparams: Union[DictConfig, ListConfig]):
+        super().__init__(
+            task=hparams.dataset.task,
+            adaptive_threshold=hparams.model.adaptive_threshold,
+            default_threshold=hparams.model.default_threshold,
+        )
 
         self.model = PatchcoreModel(
             layers=hparams.model.layers,

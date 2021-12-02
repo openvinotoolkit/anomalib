@@ -266,6 +266,8 @@ class StfpmLightning(AnomalyModule):
             backbone=hparams.model.backbone,
             apply_tiling=hparams.dataset.tiling.apply,
         )
+                # Force the type for hparams so that it works with OmegaConfig style of accessing
+        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.loss_val = 0
 
     def configure_callbacks(self):

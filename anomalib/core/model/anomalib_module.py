@@ -18,6 +18,7 @@ from typing import List, Union
 
 import pytorch_lightning as pl
 import torch
+from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks.base import Callback
 from torch import nn
 
@@ -39,6 +40,7 @@ class AnomalyModule(pl.LightningModule, abc.ABC):
         # TODO: Address threshold parameters in the next PR.
 
         super().__init__()
+
         self.save_hyperparameters()
         self.loss: torch.Tensor
         self.callbacks: List[Callback]
