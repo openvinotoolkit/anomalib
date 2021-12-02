@@ -35,7 +35,7 @@ import numpy as np
 import pandas as pd
 from pandas.core.frame import DataFrame
 from pytorch_lightning.core.datamodule import LightningDataModule
-from pytorch_lightning.utilities.cli import DATAMODULE_REGISTRY
+from pytorch_lightning.utilities.cli import DATAMODULE_REGISTRY  # type: ignore
 from torch import Tensor
 from torch.utils.data import DataLoader
 from torch.utils.data.dataset import Dataset
@@ -307,7 +307,7 @@ class _MvtecDataset(VisionDataset):
 
 
 @DATAMODULE_REGISTRY
-class Mvtec(LightningDataModule):
+class Mvtec(LightningDataModule, ABC):
     """MVTec Lightning Data Module."""
 
     def __init__(

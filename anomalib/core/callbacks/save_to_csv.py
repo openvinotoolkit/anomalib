@@ -18,11 +18,11 @@ class SaveToCSVCallback(Callback):
     def __init__(self):
         """Callback to save metrics to CSV."""
 
-    def on_test_epoch_end(self, _trainer: Trainer, pl_module: AnomalyModule) -> None:
+    def on_test_epoch_end(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
         """Save Results at the end of training.
 
         Args:
-            _trainer (Trainer): Pytorch lightning trainer object (unused)
+            trainer (Trainer): Pytorch lightning trainer object (unused)
             pl_module (LightningModule): Lightning modules derived from BaseAnomalyLightning object.
         """
         results = pl_module.results
@@ -34,4 +34,8 @@ class SaveToCSVCallback(Callback):
                 "wrong_prediction": np.logical_xor(results.true_labels, results.pred_labels).astype(int),
             }
         )
-        data_frame.to_csv(Path(pl_module.hparams.project.path) / "results.csv")
+
+        if trainer.log_dir is not None:
+            data_frame.to_csv(Path(trainer.log_dir) / "results.csv")
+        else:
+            raise ValueError("trainer.log_dir does not exist to save the results.")

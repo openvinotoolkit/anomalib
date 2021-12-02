@@ -14,6 +14,6 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .anomalib_module import AnomalibNNModel, AnomalyModule
+from .anomalib_module import AnomalyModule
 
-__all__ = ["AnomalibNNModel", "AnomalyModule"]
+__all__ = ["AnomalyModule"]

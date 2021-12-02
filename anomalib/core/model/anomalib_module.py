@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 import abc
-from typing import List, Union, Optional, Sequence, SupportsIndex, Tuple
+from typing import List, Union
 
 import pytorch_lightning as pl
 import torch
@@ -22,39 +22,7 @@ from pytorch_lightning.callbacks.base import Callback
 from torch import nn
 
 from anomalib.core.results import ClassificationResults, SegmentationResults
-from anomalib.data.tiler import Tiler
 from anomalib.utils.metrics import compute_threshold_and_f1_score
-
-
-class AnomalibNNModel(nn.Module):
-    def __init__(
-        self,
-        # apply_tiling: bool = False,
-        # tile_size: Optional[Tuple[int, int]] = None,
-        # tile_stride: Optional[Union[int, Sequence]] = None,
-        # remove_border_count: int = 0,
-        # mode: str = "padding",
-        # tile_count: SupportsIndex = 4,
-    ):
-        super().__init__()
-
-        self.tiler: Optional[Tiler] = None
-        # self.apply_tiling = apply_tiling
-        # self.tile_size = tile_size
-        # self.tile_stride = tile_stride
-        # self.remove_border_count = remove_border_count
-        # self.mode = mode
-        # self.tile_count = tile_count
-
-
-        # if apply_tiling:
-        #     self.tiler = Tiler(
-        #         tile_size=tile_size,
-        #         stride=tile_stride,
-        #         remove_border_count=remove_border_count,
-        #         mode=mode,
-        #         tile_count=tile_count,
-        #     )
 
 
 class AnomalyModule(pl.LightningModule, abc.ABC):
@@ -78,7 +46,7 @@ class AnomalyModule(pl.LightningModule, abc.ABC):
         self.register_buffer("threshold", torch.Tensor([default_threshold]))
         self.threshold: torch.Tensor
 
-        self.model: AnomalibNNModel
+        self.model: nn.Module
 
         self.results: Union[ClassificationResults, SegmentationResults]
         if task == "classification":

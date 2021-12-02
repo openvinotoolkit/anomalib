@@ -25,12 +25,13 @@ import torch.nn.functional as F
 import torchvision
 from kornia import gaussian_blur2d
 from omegaconf import ListConfig
-from pytorch_lightning.utilities.cli import MODEL_REGISTRY
-from torch import Tensor
+from pytorch_lightning.utilities.cli import MODEL_REGISTRY  # type: ignore
+from torch import Tensor, nn
 
-from anomalib.core.model import AnomalibNNModel, AnomalyModule
+from anomalib.core.model import AnomalyModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
+from anomalib.data.tiler import Tiler
 
 __all__ = ["Padim"]
 
@@ -41,9 +42,7 @@ DIMS = {
 }
 
 
-class _PadimModel(AnomalibNNModel):
-    # class _PadimModel(nn.Module):
-
+class _PadimModel(nn.Module):
     """Padim Module.
 
     Args:
@@ -59,8 +58,6 @@ class _PadimModel(AnomalibNNModel):
         layers: List[str],
         input_size: Tuple[int, int],
         backbone: str = "resnet18",
-        # tile_size: Optional[Tuple[int, int]] = None,
-        # tile_stride: Optional[int] = None,
     ):
         super().__init__()
         self.backbone = getattr(torchvision.models, backbone)
@@ -82,10 +79,7 @@ class _PadimModel(AnomalibNNModel):
         n_patches = patches_dims.prod().int().item()
         self.gaussian = MultiVariateGaussian(n_features, n_patches)
 
-        # if apply_tiling:
-        #     assert tile_size is not None
-        #     assert tile_stride is not None
-        #     self.tiler = Tiler(tile_size, tile_stride)
+        self.tiler: Optional[Tiler] = None
 
     def forward(self, input_tensor: Tensor) -> Tensor:
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
@@ -109,16 +103,13 @@ class _PadimModel(AnomalibNNModel):
             torch.Size([32, 256, 14, 14])]
         """
 
-        # on_before_forward()
         if self.tiler:
             input_tensor = self.tiler.tile(input_tensor)
 
-        # on_forward()
         with torch.no_grad():
             features = self.feature_extractor(input_tensor)
             embeddings = self.generate_embedding(features)
 
-        # on_after_forward()
         if self.tiler:
             embeddings = self.tiler.untile(embeddings)
 
@@ -292,17 +283,11 @@ class Padim(AnomalyModule):
         layers: List[str],
         input_size: Tuple[int, int],
         backbone: str,
-        apply_tiling: bool = False,
-        tile_size: Optional[Tuple[int, int]] = None,
-        tile_stride: Optional[int] = None,
     ):
         super().__init__(task, adaptive_threshold, default_threshold)
         self.model = _PadimModel(
             layers=layers,
             input_size=input_size,
-            # tile_size=tile_size,
-            # tile_stride=tile_stride,
-            # apply_tiling=apply_tiling,
             backbone=backbone,
         ).eval()
 

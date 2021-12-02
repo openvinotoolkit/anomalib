@@ -47,7 +47,7 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
     callbacks.extend([checkpoint, TimerCallback()])
 
     if not config.project.log_images_to == []:
-        callbacks.append(VisualizerCallback())
+        callbacks.append(VisualizerCallback(loggers=config.project.log_images_to))
 
     if "optimization" in config.keys():
         if config.optimization.nncf.apply:
