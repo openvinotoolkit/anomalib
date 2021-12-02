@@ -9,7 +9,7 @@ class TimerCallback(Callback):
 
     def __init__(self):
         self.start: float
-        self.num_images: float = 0
+        self.num_images: int = 0
 
     def on_fit_start(self, trainer: Trainer, pl_module: LightningModule) -> None:  # pylint: disable=W0613
         """Call when fit begins.
@@ -28,7 +28,7 @@ class TimerCallback(Callback):
     def on_fit_end(self, trainer: Trainer, pl_module: LightningModule) -> None:  # pylint: disable=W0613
         """Call when fit ends.
 
-        Prints the time taken for trining.
+        Prints the time taken for training.
 
         Args:
             trainer (Trainer): PyTorch Lightning trainer.
@@ -57,7 +57,7 @@ class TimerCallback(Callback):
 
         if trainer.test_dataloaders is not None:  # Check to placate Mypy.
             for dataloader in trainer.test_dataloaders:
-                self.num_images += len(dataloader)
+                self.num_images += len(dataloader.dataset)
 
     def on_test_end(self, trainer: Trainer, pl_module: LightningModule) -> None:  # pylint: disable=W0613
         """Call when the test ends.
@@ -72,4 +72,4 @@ class TimerCallback(Callback):
             None
         """
         testing_time = time.time() - self.start
-        print(f"Testing took {testing_time} seconds.\nThroughput: {self.num_images/testing_time} FPS")
+        print(f"Testing took {testing_time} seconds\nThroughput: {self.num_images/testing_time} FPS")
