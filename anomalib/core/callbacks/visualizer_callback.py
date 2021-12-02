@@ -1,17 +1,16 @@
 """Visualizer Callback."""
 from pathlib import Path
-from typing import List
+from typing import Any, List, Optional
 from warnings import warn
 
-from pytorch_lightning import Callback, LightningModule, Trainer
+import pytorch_lightning as pl
+from pytorch_lightning import Callback, Trainer
+from pytorch_lightning.utilities.types import STEP_OUTPUT
 from skimage.segmentation import mark_boundaries
-from tqdm import tqdm
 
 from anomalib.core.model import AnomalyModule
-from anomalib.core.results import SegmentationResults
 from anomalib.data.transforms import Denormalize
 from anomalib.loggers import AVAILABLE_LOGGERS
-from anomalib.utils.metrics import compute_threshold_and_f1_score
 from anomalib.utils.post_process import compute_mask, superimpose_anomaly_map
 from anomalib.utils.visualizer import Visualizer
 
@@ -64,33 +63,37 @@ class VisualizerCallback(Callback):
             else:
                 raise ValueError("trainer.log_dir does not exist to save the results.")
 
-    def on_test_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
-        """Log images at the end of training.
+    def on_test_batch_end(
+        self,
+        trainer: pl.Trainer,
+        pl_module: pl.LightningModule,
+        outputs: Optional[STEP_OUTPUT],
+        _batch: Any,
+        _batch_idx: int,
+        _dataloader_idx: int,
+    ) -> None:
+        """Log images at the end of every batch.
 
         Args:
-            trainer (Trainer): Pytorch lightning trainer object (unused)
+            trainer (Trainer): Pytorch lightning trainer object (unused).
             pl_module (LightningModule): Lightning modules derived from BaseAnomalyLightning object as
             currently only they support logging images.
+            outputs (Dict[str, Any]): Outputs of the current test step.
+            _batch (Any): Input batch of the current test step (unused).
+            _batch_idx (int): Index of the current test batch (unused).
+            _dataloader_idx (int): Index of the dataloader that yielded the current batch (unused).
         """
-        if isinstance(pl_module.results, SegmentationResults):
-            results = pl_module.results
-        else:
-            raise ValueError("Visualizer callback only supported for segmentation tasks.")
+        assert outputs is not None
 
-        if results.images is None or results.true_masks is None or results.anomaly_maps is None:
-            raise ValueError("Result set cannot be empty!")
-
-        threshold, _ = compute_threshold_and_f1_score(results.true_masks, results.anomaly_maps)
-
-        for (filename, image, true_mask, anomaly_map) in tqdm(
-            zip(results.filenames, results.images, results.true_masks, results.anomaly_maps),
-            desc="Saving Results",
-            total=len(results.filenames),
+        for (filename, image, true_mask, anomaly_map) in zip(
+            outputs["image_path"], outputs["image"], outputs["mask"], outputs["anomaly_maps"]
         ):
-            image = Denormalize()(image)
+            image = Denormalize()(image.cpu())
+            true_mask = true_mask.cpu().numpy()
+            anomaly_map = anomaly_map.cpu().numpy()
 
             heat_map = superimpose_anomaly_map(anomaly_map, image)
-            pred_mask = compute_mask(anomaly_map, threshold)
+            pred_mask = compute_mask(anomaly_map, pl_module.threshold.item())
             vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
 
             visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
@@ -99,7 +102,5 @@ class VisualizerCallback(Callback):
             visualizer.add_image(image=heat_map, title="Predicted Heat Map")
             visualizer.add_image(image=pred_mask, color_map="gray", title="Predicted Mask")
             visualizer.add_image(image=vis_img, title="Segmentation Result")
-
-            self._add_images(visualizer, trainer, pl_module, filename)
-
+            self._add_images(visualizer, trainer, pl_module, Path(filename))
             visualizer.close()

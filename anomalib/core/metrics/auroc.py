@@ -1,4 +1,4 @@
-"""This module contains Result dataclass objects to store classification and segmentation results."""
+"""Implementation of AUROC metric based on TorchMetrics."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -14,6 +14,19 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .results import ClassificationResults, SegmentationResults
+from torch import Tensor
+from torchmetrics import ROC
+from torchmetrics.functional import auc
 
-__all__ = ["ClassificationResults", "SegmentationResults"]
+
+class AUROC(ROC):
+    """Area under the ROC curve."""
+
+    def compute(self) -> Tensor:
+        """First compute ROC curve, then compute area under the curve.
+
+        Returns:
+            Value of the AUROC metric
+        """
+        fpr, tpr, _thresholds = super().compute()
+        return auc(fpr, tpr)

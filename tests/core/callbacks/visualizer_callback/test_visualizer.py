@@ -37,7 +37,7 @@ def test_add_images(dataset):
         trainer = pl.Trainer(callbacks=model.callbacks, logger=logger, checkpoint_callback=False)
         trainer.test(model=model, datamodule=DummyDataModule())
         # test if images are logged
-        if len(glob.glob(os.path.join(dir_loc, "images", "*.jpg"))) != 2:
+        if len(glob.glob(os.path.join(dir_loc, "images", "*.jpg"))) != 1:
             raise Exception("Failed to save to local path")
 
         # test if tensorboard logs are created

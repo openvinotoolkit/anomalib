@@ -314,7 +314,6 @@ class Mvtec(LightningDataModule, ABC):
         self,
         root: str,
         category: str,
-        # TODO: Remove default values. IAAALD-211
         image_size: Optional[Union[int, Tuple[int, int]]],
         train_batch_size: int = 32,
         test_batch_size: int = 32,
