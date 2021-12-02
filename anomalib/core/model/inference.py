@@ -25,7 +25,7 @@ from omegaconf import DictConfig, ListConfig
 from openvino.inference_engine import IECore  # pylint: disable=no-name-in-module
 from torch import Tensor, nn
 
-from anomalib.core.model import AnomalyModule
+from anomalib.core.model import AnomalibModule
 from anomalib.data.transforms.pre_process import PreProcessor
 from anomalib.data.utils import read_image
 from anomalib.models import get_model
@@ -107,9 +107,9 @@ class TorchInferencer(Inferencer):
         path (Union[str, Path]): Path to the model ckpt file.
     """
 
-    def __init__(self, config: Union[DictConfig, ListConfig], path: Union[str, Path, AnomalyModule]):
+    def __init__(self, config: Union[DictConfig, ListConfig], path: Union[str, Path, AnomalibModule]):
         self.config = config
-        if isinstance(path, AnomalyModule):
+        if isinstance(path, AnomalibModule):
             self.model = path
         else:
             self.model = self.load_model(path)

@@ -23,7 +23,7 @@ from kornia import gaussian_blur2d
 from omegaconf import DictConfig, ListConfig
 from torch import Tensor, nn
 
-from anomalib.core.model import AnomalyModule
+from anomalib.core.model import AnomalibModule
 from anomalib.core.model.dynamic_module import DynamicBufferModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.data.tiler import Tiler
@@ -228,7 +228,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         return coreset
 
 
-class PatchcoreLightning(AnomalyModule):
+class PatchcoreLightning(AnomalibModule):
     """PatchcoreLightning Module to train PatchCore algorithm.
 
     Args:

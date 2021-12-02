@@ -25,11 +25,11 @@ from torchmetrics import F1, MetricCollection
 from anomalib.core.metrics import AUROC, OptimalF1
 
 
-class AnomalyModule(pl.LightningModule, abc.ABC):
-    """AnomalyModule to train, validate, predict and test images."""
+class AnomalibModule(pl.LightningModule, abc.ABC):
+    """AnomalibModule to train, validate, predict and test images."""
 
     def __init__(self, task: str, adaptive_threshold: bool, default_threshold: float):
-        """BaseAnomalyModule.
+        """BaseAnomalibModule.
 
         Args:
             task (str): Task type could be either ``classification`` or ``segmentation``

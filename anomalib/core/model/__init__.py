@@ -14,6 +14,6 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .anomalib_module import AnomalyModule
+from .anomalib_module import AnomalibModule
 
-__all__ = ["AnomalyModule"]
+__all__ = ["AnomalibModule"]

@@ -20,12 +20,12 @@ import torch
 from omegaconf import DictConfig, ListConfig
 from torchvision.models import resnet18
 
-from anomalib.core.model import AnomalyModule
+from anomalib.core.model import AnomalibModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.models.dfm.dfm_model import DFMModel
 
 
-class DfmLightning(AnomalyModule):
+class DfmLightning(AnomalibModule):
     """DFM: Deep Featured Kernel Density Estimation."""
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):

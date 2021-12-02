@@ -11,7 +11,7 @@ from torch import nn
 from torch.utils.data import DataLoader, Dataset
 
 from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
-from anomalib.core.model import AnomalyModule
+from anomalib.core.model import AnomalibModule
 
 
 class DummyDataset(Dataset):
@@ -42,7 +42,7 @@ class DummyModel(nn.Module):
         self.anomaly_map_generator = DummyAnomalyMapGenerator()
 
 
-class DummyModule(AnomalyModule):
+class DummyModule(AnomalibModule):
     """A dummy model which calls visualizer callback on fake images and
     masks."""
 

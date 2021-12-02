@@ -8,7 +8,7 @@ from pytorch_lightning import Callback, Trainer
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from skimage.segmentation import mark_boundaries
 
-from anomalib.core.model import AnomalyModule
+from anomalib.core.model import AnomalibModule
 from anomalib.data.transforms import Denormalize
 from anomalib.loggers import AVAILABLE_LOGGERS
 from anomalib.utils.post_process import compute_mask, superimpose_anomaly_map
@@ -34,7 +34,7 @@ class VisualizerCallback(Callback):
         self,
         visualizer: Visualizer,
         trainer: Trainer,
-        module: AnomalyModule,
+        module: AnomalibModule,
         filename: Path,
     ):
 
