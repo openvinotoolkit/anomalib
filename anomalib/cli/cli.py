@@ -7,7 +7,7 @@ from anomalib.core.callbacks.tiler import TilerCallback
 
 
 class AnomalibCLI(LightningCLI):
-    """Anomalib CLI"""
+    """Anomalib CLI."""
 
     def __init__(self):
         super().__init__(
@@ -21,9 +21,14 @@ class AnomalibCLI(LightningCLI):
         )
 
     def add_arguments_to_parser(self, parser: LightningArgumentParser) -> None:
-        parser.add_lightning_class_args(TilerCallback, "tiling")
-        parser.set_defaults(
-            {
-                "tiling.enable": False,
-            }
-        )
+        """Add default arguments.
+
+        Args:
+            parser (LightningArgumentParser): Lightning Argument Parser.
+        """
+        # NOTE: MyPy gives the following error:
+        # Argument 1 to "add_lightning_class_args" of "LightningArgumentParser"
+        # has incompatible type "Type[TilerCallback]"; expected "Union[Type[Trainer],
+        # Type[LightningModule], Type[LightningDataModule]]"  [arg-type]
+        parser.add_lightning_class_args(TilerCallback, "tiling")  # type: ignore
+        parser.set_defaults({"tiling.enable": False})

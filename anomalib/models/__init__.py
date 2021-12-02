@@ -22,6 +22,7 @@ from omegaconf import DictConfig, ListConfig
 from torch import load
 
 from anomalib.core.model import AnomalyModule
+
 from .padim import Padim
 
 __all__ = ["Padim"]

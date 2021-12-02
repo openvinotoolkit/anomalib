@@ -29,7 +29,11 @@ class DfmLightning(AnomalyModule):
     """DFM: Deep Featured Kernel Density Estimation."""
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
-        super().__init__(hparams)
+        super().__init__(
+            task=hparams.dataset.task,
+            adaptive_threshold=hparams.model.adaptive_threshold,
+            default_threshold=hparams.model.default_threshold,
+        )
 
         self.feature_extractor = FeatureExtractor(backbone=resnet18(pretrained=True), layers=["avgpool"]).eval()
         self.dfm_model = DFMModel(n_comps=hparams.model.pca_level, score_type=hparams.model.score_type)

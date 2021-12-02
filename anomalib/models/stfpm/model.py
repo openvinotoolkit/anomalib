@@ -22,7 +22,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import torch
 import torch.nn.functional as F
 import torchvision
-from omegaconf import ListConfig
+from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
 from torch import Tensor, nn, optim
 
@@ -251,8 +251,12 @@ class STFPMModel(nn.Module):
 class StfpmLightning(AnomalyModule):
     """PL Lightning Module for the STFPM algorithm."""
 
-    def __init__(self, hparams):
-        super().__init__(hparams)
+    def __init__(self, hparams: Union[DictConfig, ListConfig]):
+        super().__init__(
+            task=hparams.dataset.task,
+            adaptive_threshold=hparams.model.adaptive_threshold,
+            default_threshold=hparams.model.default_threshold,
+        )
 
         self.model = STFPMModel(
             layers=hparams.model.layers,

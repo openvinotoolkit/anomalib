@@ -30,7 +30,11 @@ class DfkdeLightning(AnomalyModule):
     """DFKDE: Deep Featured Kernel Density Estimation."""
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
-        super().__init__(hparams)
+        super().__init__(
+            task=hparams.dataset.task,
+            adaptive_threshold=hparams.model.adaptive_threshold,
+            default_threshold=hparams.model.default_threshold,
+        )
         self.threshold_steepness = 0.05
         self.threshold_offset = 12
 
