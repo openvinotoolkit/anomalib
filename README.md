@@ -2,7 +2,7 @@
 
 <img src="docs/anomalib.png" width="400px">
 
-**A library for benchmarking, developing and deploying anomaly detection algorithms in PyTorch**
+**A library for benchmarking, developing and deploying deep learning anomaly detection algorithms**
 ___
 
 [Key Features](#key-features) •
@@ -24,7 +24,7 @@ ___
 Anomalib is a deep learning library that aims to collect state-of-the-art anomaly detection algorithms for benchmarking on both public and private datasets. Anomalib provides several ready-to-use implementations of anomaly detection algorithms described in the recent literature, as well as a set of tools that facilitate the development and implementation of custom models. The library has a strong focus on image-based anomaly detection, where the goal of the algorithm is to identify anomalous images, or anomalous pixel regions within images in a dataset. Anomalib is constantly updated with new algorithms and training/inference extensions, so keep checking!
 
 ##### Key features:
-- The biggest collection of ready-to-use deep learning anomaly detection algorithms and public benchmark datasets.
+- The largest public collection of ready-to-use deep learning anomaly detection algorithms and benchmark datasets.
 - [**PyTorch Lightning**](https://www.pytorchlightning.ai/) based model implementations to reduce boilerplate code and limit the implementation efforts to the bare essentials.
 - All models can be exported to [**OpenVINO**](https://www.intel.com/content/www/us/en/developer/tools/openvino-toolkit/overview.html) Intermediate Representation (IR) for accelerated inference on intel hardware.
 - A set of [inference tools](#inference) for quick and easy deployment of the standard or custom anomaly detection models.
@@ -67,13 +67,21 @@ Alternatively, a model name could also be provided as an argument, where the scr
 python tools/train.py --model stfpm
 ```
 where the currently available models are:
-* [DFKDE](https://github.com/openvinotoolkit/anomalib/tree/development/anomalib/models/dfkde)
-* [DFM](https://github.com/openvinotoolkit/anomalib/tree/development/anomalib/models/dfm)
-* [PADIM](https://github.com/openvinotoolkit/anomalib/tree/development/anomalib/models/padim)
-* [PatchCore](https://github.com/openvinotoolkit/anomalib/tree/development/anomalib/models/patchcore)
-* [STFPM](https://github.com/openvinotoolkit/anomalib/tree/development/anomalib/models/stfpm)
+* [DFKDE](anomalib/models/dfkde)
+* [DFM](anomalib/models/dfm)
+* [PADIM](anomalib/models/padim)
+* [PatchCore](anomalib/models/patchcore)
+* [STFPM](anomalib/models/stfpm)
 
 ## Inference
+
+Anomalib contains several tools that can be used to perform inference with a traiend model. The script in [`tools/inference`](tools/inference.py) contains an example of how the inference tools can be used to generate a prediction for an input image.
+
+The following command can be used to run inference from the command line:
+```
+python tools/inference.py --model_config_path <path/to/model/config.yaml> --weight_path <path/to/weight/file> --image_path <path/to/image>
+```
+If the specified weight path points to a PyTorch Lightning checkpoint file (`.ckpt`), inference will run in PyTorch. If the path points to an ONNX graph (`.onnx`) or OpenVINO IR (`.bin` or `.xml`), inference will run in OpenVINO.
 
 ## Datasets
 
