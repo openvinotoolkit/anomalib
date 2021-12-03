@@ -15,6 +15,8 @@ from torch.utils.data.dataloader import DataLoader
 
 from anomalib.data import get_datamodule
 
+# pylint: disable=signature-differs,arguments-differ
+
 
 def criterion_fn(outputs, criterion):
     """Calls the criterion function on outputs."""
@@ -77,7 +79,7 @@ class NNCFCallback(Callback):
         self.comp_ctrl: Optional[CompressionAlgorithmController] = None
         self.compression_scheduler: CompressionScheduler
 
-    def setup(self, _: pl.Trainer, pl_module: pl.LightningModule, __: Optional[str] = None) -> None:
+    def setup(self, _trainer: pl.Trainer, pl_module: pl.LightningModule, _stage: Optional[str] = None) -> None:
         """Call when fit or test begins."""
         if self.comp_ctrl is None:
             init_loader = InitLoader(self.train_loader)
@@ -89,14 +91,14 @@ class NNCFCallback(Callback):
             self.compression_scheduler = self.comp_ctrl.scheduler
 
     def on_train_batch_start(
-        self, trainer, _pl_module: pl.LightningModule, _batch: Any, _batch_idx: int, _dataloader_idx: int
+        self, trainer: pl.Trainer, _pl_module: pl.LightningModule, _batch: Any, _batch_idx: int, _dataloader_idx: int
     ) -> None:
         """Call when the train batch begins."""
         self.compression_scheduler.step()
         if self.comp_ctrl is not None:
             trainer.model.loss_val = self.comp_ctrl.loss()
 
-    def on_train_end(self, _trainer, _pl_module: pl.LightningModule) -> None:
+    def on_train_end(self, _trainer: pl.Trainer, _pl_module: pl.LightningModule) -> None:
         """Call when the train ends."""
         os.makedirs(self.dirpath, exist_ok=True)
         onnx_path = os.path.join(self.dirpath, self.filename + ".onnx")
@@ -106,7 +108,7 @@ class NNCFCallback(Callback):
         os.system(optimize_command)
 
     def on_train_epoch_end(
-        self, _trainer: pl.Trainer, _pl_module: pl.LightningModule, _unused: Optional[Any] = None
+        self, _trainer: "pl.Trainer", _pl_module: "pl.LightningModule", _unused: Optional[Any] = None
     ) -> None:
         """Call when the train epoch ends."""
         self.compression_scheduler.epoch_step()
