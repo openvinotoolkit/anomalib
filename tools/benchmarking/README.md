@@ -2,10 +2,12 @@
 
 These bash scripts will assist in measuring the training performance of the anomalib library.
 
-## Usage
-Run the train.sh with the same args as the tools/train.py. Refer to [`../README.md`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/README.md) for those details.
+The python script (`benchmark.py`) will assist in computing metrics for all the models in the repository.
 
-Note: To collect memory read/write numbers, run the script with sudo priviledges. Otherwise, those values will be blank.
+## Usage
+Run the train.sh with the same args as the tools/train.py. Refer to [`../README.md`](https://github.com/openvinotoolkit/anomalib/blob/development/README.md) for those details.
+
+Note: To collect memory read/write numbers, run the script with sudo privileges. Otherwise, those values will be blank.
 
 ```
 sudo -E ./train.sh    # Train STFPM on MVTec leather
@@ -22,3 +24,13 @@ For post processing, run the post-process.sh script with the results directory y
 ```
 ./post-process.sh ./output/2021Aug31_2351
 ```
+
+---
+
+To use the python script, run it from the root directory.
+
+```
+python tools/benchmarking/benchmark.py
+```
+
+The output will be generated in results folder and a csv file for each model.
