@@ -165,8 +165,8 @@ def get_single_model_metrics(model_name: str, gpu_count: int, category: str) -> 
 
 def sweep():
     """Go over all models, categories, and devices and collect metrics."""
-    metrics_list = []
     for model_name in MODEL_LIST:
+        metrics_list = []
         for category in CATEGORY_LIST:
             for gpu_count in range(0, 2):
                 model_metrics = get_single_model_metrics(model_name, gpu_count, category)
