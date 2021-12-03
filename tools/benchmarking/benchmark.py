@@ -34,26 +34,26 @@ from anomalib.core.callbacks import get_callbacks
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
 
-MODEL_LIST = ["padim"]
+MODEL_LIST = ["padim", "dfkde", "dfm", "patchcore", "stfpm"]
 SEED = 42
 
 # Modify category list according to dataset
 CATEGORY_LIST = [
     "bottle",
     "cable",
-    # "capsule",
-    # "carpet",
-    # "grid",
-    # "hazelnut",
-    # "leather",
-    # "metal_nut",
-    # "pill",
-    # "screw",
-    # "tile",
-    # "toothbrush",
-    # "transistor",
-    # "wood",
-    # "zipper",
+    "capsule",
+    "carpet",
+    "grid",
+    "hazelnut",
+    "leather",
+    "metal_nut",
+    "pill",
+    "screw",
+    "tile",
+    "toothbrush",
+    "transistor",
+    "wood",
+    "zipper",
 ]
 
 
@@ -141,14 +141,22 @@ def get_single_model_metrics(model_name: str, gpu_count: int, category: str) -> 
         if search_result is not None:
             testing_time = float(search_result.group(1))
 
-        # TODO get throughput after merging
+        pattern = re.compile(r"Throughput\s?:\s?(\d+.\d+)")
+        search_result = pattern.search(captured_output)
+        throughput = float("nan")
+        if search_result is not None:
+            throughput = float(search_result.group(1))
 
         # Get metrics
         pattern = re.compile(r"\s?[\"'](\w+)[\"']:\s?(\d+.\d+)")
         metrics = re.findall(pattern, captured_output)
 
         # arrange the data
-        data = {"Training Time": training_time, "Testing Time": testing_time}
+        data = {
+            "Training Time (s)": training_time,
+            "Testing Time (s)": testing_time,
+            "Inference Throughput (fps)": throughput,
+        }
         for key, val in metrics:
             data[key] = float(val)
 
