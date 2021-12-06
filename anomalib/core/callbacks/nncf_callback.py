@@ -90,7 +90,8 @@ class NNCFCallback(Callback):
             self.comp_ctrl, pl_module.model = create_compressed_model(pl_module.model, nncf_config, dump_graphs=False)
             self.compression_scheduler = self.comp_ctrl.scheduler
 
-    def on_train_batch_start(
+    # NOTE: MyPy - Signature of "on_train_batch_start" incompatible with supertype "Callback"  [override]
+    def on_train_batch_start(  # type: ignore
         self, trainer: pl.Trainer, _pl_module: pl.LightningModule, _batch: Any, _batch_idx: int, _dataloader_idx: int
     ) -> None:
         """Call when the train batch begins."""
