@@ -14,3 +14,4 @@ scikit-image>=0.17.2
 kornia==0.5.6
 lxml
 albumentations
+wandb
