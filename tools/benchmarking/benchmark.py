@@ -28,6 +28,7 @@ from omegaconf import DictConfig, ListConfig
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.callbacks.base import Callback
 from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
+from tqdm import tqdm
 
 from anomalib.config import get_configurable_parameters
 from anomalib.core.callbacks import get_callbacks
@@ -167,7 +168,7 @@ def sweep():
     """Go over all models, categories, and devices and collect metrics."""
     for model_name in MODEL_LIST:
         metrics_list = []
-        for category in CATEGORY_LIST:
+        for category in tqdm(CATEGORY_LIST, desc=f"{model_name}:"):
             for gpu_count in range(0, 2):
                 model_metrics = get_single_model_metrics(model_name, gpu_count, category)
                 model_metrics["Device"] = "CPU" if gpu_count == 0 else "GPU"
