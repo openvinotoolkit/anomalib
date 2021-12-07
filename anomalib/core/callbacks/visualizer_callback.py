@@ -11,6 +11,7 @@ from skimage.segmentation import mark_boundaries
 from anomalib import loggers
 from anomalib.core.model import AnomalyModule
 from anomalib.data.transforms import Denormalize
+from anomalib.loggers.wandb import AnomalibWandbLogger
 from anomalib.utils.post_process import compute_mask, superimpose_anomaly_map
 from anomalib.utils.visualizer import Visualizer
 
@@ -98,3 +99,15 @@ class VisualizerCallback(Callback):
             visualizer.add_image(image=vis_img, title="Segmentation Result")
             self._add_images(visualizer, pl_module, Path(filename))
             visualizer.close()
+
+    def on_test_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
+        """Sync logs.
+
+        Some loggers prefer syncing the batch at the end rather than logging at each timestep.
+
+        Args:
+            trainer (pl.Trainer): Pytorch Lightning trainer
+            pl_module (pl.LightningModule): Anomaly module
+        """
+        if pl_module.logger is not None and isinstance(pl_module.logger, AnomalibWandbLogger):
+            pl_module.logger.save()

@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from typing import Any, Optional, Union
+from typing import Any, List, Optional, Union
 
 import numpy as np
 from matplotlib.figure import Figure
@@ -105,6 +105,7 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
             sync_step=sync_step,
             **kwargs
         )
+        self.image_list: List[wandb.Image] = []  # Cache images
 
     @rank_zero_only
     def add_image(self, image: Union[np.ndarray, Figure], name: Optional[str] = None, **kwargs: Any):
@@ -113,12 +114,17 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
         Args:
             image (Union[np.ndarray, Figure]): Image to log
             name (Optional[str]): The tag of the image
-            kwargs: Accepts only `global_step` (int). The step at which to log the image.
-                If not provided, wandb will assume that each image is added at a different step.
         """
-        step = None
-        if "global_step" in kwargs:
-            step = kwargs.get("global_step")
-
         image = wandb.Image(image, caption=name)
-        wandb.log({"Predictions": image}, step=step)
+        self.image_list.append(image)
+
+    @rank_zero_only
+    def save(self) -> None:
+        """Upload images to wandb server.
+
+        Note:
+            There is a limit on the number of images that can be logged together to the `wandb` server.
+        """
+        super().save()
+        if len(self.image_list) > 1:
+            wandb.log({"Predictions": self.image_list})
