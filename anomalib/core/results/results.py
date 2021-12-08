@@ -56,11 +56,11 @@ class ClassificationResults:
     # TODO: Use MetricCollection: https://jira.devtools.intel.com/browse/IAAALD-170
     performance: Dict[str, Any] = field(default_factory=dict)
 
-    def store_outputs(self, outputs: List[dict]):
+    def store_outputs(self, outputs: List[Dict[str, Tensor]]):
         """Concatenate the outputs from the individual batches and store in the result set.
 
         Args:
-            outputs (List[dict]): Outputs of the model after `post_process` step.
+            outputs (List[Dict[str, Tensor]]): Outputs of the model after `post_process` step.
         """
         if "image_path" in outputs[0].keys():
             self.filenames = [Path(f) for x in outputs for f in x["image_path"]]

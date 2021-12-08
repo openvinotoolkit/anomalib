@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from typing import List, Union
+from typing import Dict, List, Union
 
 import pytorch_lightning as pl
 from omegaconf import DictConfig, ListConfig
@@ -27,6 +27,8 @@ from anomalib.utils.metrics import compute_threshold_and_f1_score
 
 class AnomalyModule(pl.LightningModule):
     """AnomalyModule to train, validate, predict and test images.
+
+    Acts as a base class for all the Anomaly Modules in the library.
 
     Args:
         params (Union[DictConfig, ListConfig]): Configuration
@@ -64,27 +66,29 @@ class AnomalyModule(pl.LightningModule):
         """
         return self.model(batch)
 
-    def predict_step(self, batch, batch_idx, _):  # pylint: disable=arguments-differ, signature-differs
+    def predict_step(
+        self, batch: Tensor, batch_idx: int, dataloader_idx: int
+    ):  # pylint: disable=arguments-differ, signature-differs
         """Step function called during :meth:`~pytorch_lightning.trainer.trainer.Trainer.predict`.
 
         By default, it calls :meth:`~pytorch_lightning.core.lightning.LightningModule.forward`.
         Override to add any processing logic.
 
         Args:
-            batch: Current batch
-            batch_idx: Index of current batch
-            dataloader_idx: Index of the current dataloader
+            batch (Tensor): Current batch
+            batch_idx (int): Index of current batch
+            dataloader_idx (int): Index of the current dataloader
 
         Return:
             Predicted output
         """
         return self._post_process(self.validation_step(batch, batch_idx), predict_labels=True)
 
-    def test_step(self, batch, _):  # pylint: disable=arguments-differ
+    def test_step(self, batch: Tensor, _):  # pylint: disable=arguments-differ
         """Calls validation_step for anomaly map/score calculation.
 
         Args:
-          batch: Input batch
+          batch (Tensor): Input batch
           _: Index of the batch.
 
         Returns:
@@ -93,15 +97,15 @@ class AnomalyModule(pl.LightningModule):
         """
         return self.validation_step(batch, _)
 
-    def validation_step_end(self, val_step_outputs):  # pylint: disable=arguments-differ
+    def validation_step_end(self, val_step_outputs: Dict[str, Tensor]):  # pylint: disable=arguments-differ
         """Compute and add predicted score and predicted labels to the outputs."""
         return self._post_process(val_step_outputs)
 
-    def test_step_end(self, test_step_outputs):  # pylint: disable=arguments-differ
+    def test_step_end(self, test_step_outputs: Dict[str, Tensor]):  # pylint: disable=arguments-differ
         """Compute and add predicted score and predicted labels to the outputs."""
         return self._post_process(test_step_outputs)
 
-    def validation_epoch_end(self, outputs):
+    def validation_epoch_end(self, outputs: List[Dict[str, Tensor]]):
         """Compute image-level performance metrics.
 
         If threshold is set to adaptive, then it calculates the optimal threshold based on the F1 score.
@@ -116,7 +120,7 @@ class AnomalyModule(pl.LightningModule):
         self.results.evaluate(self.threshold.item())
         self._log_metrics()
 
-    def test_epoch_end(self, outputs):
+    def test_epoch_end(self, outputs: List[Dict[str, Tensor]]):
         """Compute and save anomaly scores of the test set.
 
         Args:
@@ -126,11 +130,11 @@ class AnomalyModule(pl.LightningModule):
         self.results.evaluate(self.threshold.item())
         self._log_metrics()
 
-    def _post_process(self, outputs, predict_labels=False):
+    def _post_process(self, outputs: Dict[str, Tensor], predict_labels=False) -> Dict[str, Tensor]:
         """Compute labels based on model predictions."""
         if "pred_scores" not in outputs and "anomaly_maps" in outputs:
             outputs["pred_scores"] = (
-                outputs["anomaly_maps"].reshape(outputs["anomaly_maps"].shape[0], -1).max(axis=1).values
+                outputs["anomaly_maps"].reshape(outputs["anomaly_maps"].shape[0], -1).max(dim=1).values
             )
         if predict_labels:
             outputs["pred_labels"] = outputs["pred_scores"] >= self.threshold.item()
