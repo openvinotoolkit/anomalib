@@ -4,7 +4,6 @@
 [![pytorch](https://img.shields.io/badge/pytorch-1.7.1%2B-orange)]()
 [![openvino](https://img.shields.io/badge/openvino-2021.4-purple)]()
 ![example branch parameter](https://github.com/openvinotoolkit/anomalib/actions/workflows/tox.yml/badge.svg?branch=development)
-[![coverage report](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/badges/development/coverage.svg)](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/-/commits/development)
 
 
 This repository contains state-of-the art anomaly detection algorithms trained and evaluated on both public and private

@@ -12,7 +12,6 @@ from torch.utils.data import DataLoader, Dataset
 
 from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.core.model import AnomalyModule
-from anomalib.core.results import SegmentationResults
 
 
 class DummyDataset(Dataset):
@@ -52,19 +51,18 @@ class DummyModule(AnomalyModule):
         self.model = DummyModel()
         self.task = "segmentation"
         self.callbacks = [VisualizerCallback()]  # test if this is removed
-        self.results.filenames = [Path("test1.jpg"), Path("test2.jpg")]
-
-        if isinstance(self.results, SegmentationResults):
-            self.results.images = [torch.rand((1, 3, 100, 100))] * 2
-            self.results.true_masks = np.zeros((2, 100, 100))
-            self.results.anomaly_maps = np.ones((2, 100, 100))
 
     def test_step(self, batch, _):
         """Only used to trigger on_test_epoch_end."""
         self.log(name="loss", value=0.0, prog_bar=True)
-
-    def test_step_end(self, test_step_outputs):
-        return None
+        outputs = dict(
+            image_path=[Path("test1.jpg")],
+            image=torch.rand((1, 3, 100, 100)),
+            mask=torch.zeros((1, 100, 100)),
+            anomaly_maps=torch.ones((1, 100, 100)),
+            label=torch.Tensor([0]),
+        )
+        return outputs
 
     def validation_epoch_end(self, output):
         return None

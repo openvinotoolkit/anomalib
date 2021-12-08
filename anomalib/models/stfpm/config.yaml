@@ -1,6 +1,6 @@
 dataset:
   name: mvtec
-  format: anomaly_dataset
+  format: mvtec
   path: ./datasets/MVTec
   url: ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/mvtec_anomaly_detection.tar.xz
   category: leather
@@ -31,7 +31,7 @@ model:
   weight_decay: 0.0001
   early_stopping:
     patience: 3
-    metric: pixel_roc_auc
+    metric: pixel_AUROC
     mode: max
   threshold:
     default: 0

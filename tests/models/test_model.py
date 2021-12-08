@@ -26,7 +26,7 @@ from pytorch_lightning import Trainer
 from anomalib.config import get_configurable_parameters, update_nncf_config
 from anomalib.core.callbacks import get_callbacks
 from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
-from anomalib.datasets import get_datamodule
+from anomalib.data import get_datamodule
 from anomalib.models import get_model
 from tests.helpers.dataset import TestDataset, get_dataset_path
 
@@ -116,14 +116,15 @@ class TestModel:
     def _test_metrics(self, trainer, config, model, datamodule):
         """Tests the model metrics but also acts as a setup."""
 
-        trainer.test(model=model, datamodule=datamodule)
+        results = trainer.test(model=model, datamodule=datamodule)[0]
 
-        assert model.results.performance["image_roc_auc"] >= 0.6
+        assert results["image_AUROC"] >= 0.6
 
         if config.dataset.task == "segmentation":
-            assert model.results.performance["pixel_roc_auc"] >= 0.6
+            assert results["pixel_AUROC"] >= 0.6
+        return results
 
-    def _test_model_load(self, config, datamodule, model):
+    def _test_model_load(self, config, datamodule, results):
         loaded_model = get_model(config)  # get new model
 
         callbacks = get_callbacks(config)
@@ -137,19 +138,14 @@ class TestModel:
         # create new trainer object with LoadModel callback (assumes it is present)
         trainer = Trainer(callbacks=callbacks, **config.trainer)
         # Assumes the new model has LoadModel callback and the old one had ModelCheckpoint callback
-        trainer.test(model=loaded_model, datamodule=datamodule)
-
-        # Common for both classification and segmentation
-        is_close = np.isclose(
-            model.results.performance["image_roc_auc"], loaded_model.results.performance["image_roc_auc"]
-        )
-        assert is_close, "Loaded model does not yield close performance results"
-
+        new_results = trainer.test(model=loaded_model, datamodule=datamodule)[0]
+        assert np.isclose(
+            results["image_AUROC"], new_results["image_AUROC"]
+        ), "Loaded model does not yield close performance results"
         if config.dataset.task == "segmentation":
-            is_close = np.isclose(
-                model.results.performance["pixel_roc_auc"], loaded_model.results.performance["pixel_roc_auc"]
-            )
-            assert is_close, "Loaded model does not yield close performance results"
+            assert np.isclose(
+                results["pixel_AUROC"], new_results["pixel_AUROC"]
+            ), "Loaded model does not yield close performance results"
 
     @pytest.mark.parametrize(
         ["model_name", "nncf"],
@@ -179,7 +175,7 @@ class TestModel:
             )
 
             # test model metrics
-            self._test_metrics(trainer=trainer, config=config, model=model, datamodule=datamodule)
+            results = self._test_metrics(trainer=trainer, config=config, model=model, datamodule=datamodule)
 
             # test model load
-            self._test_model_load(config=config, datamodule=datamodule, model=model)
+            self._test_model_load(config=config, datamodule=datamodule, results=results)

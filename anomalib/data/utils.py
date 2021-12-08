@@ -1,4 +1,4 @@
-"""Anomalib Data Transforms."""
+"""Dataset Utils."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -14,6 +14,20 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .pre_process import PreProcessor
+import cv2
+import numpy as np
 
-__all__ = ["PreProcessor"]
+
+def read_image(path: str) -> np.ndarray:
+    """Read image from disk in RGB format.
+
+    Args:
+        path: path to the image file
+
+    Returns:
+        image as numpy array
+    """
+    image = cv2.imread(path)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    return image

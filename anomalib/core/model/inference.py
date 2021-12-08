@@ -26,8 +26,8 @@ from openvino.inference_engine import IECore  # pylint: disable=no-name-in-modul
 from torch import Tensor, nn
 
 from anomalib.core.model import AnomalyModule
-from anomalib.datasets.transforms.pre_process import PreProcessor
-from anomalib.datasets.utils import read_image
+from anomalib.data.transforms.pre_process import PreProcessor
+from anomalib.data.utils import read_image
 from anomalib.models import get_model
 from anomalib.utils.post_process import superimpose_anomaly_map
 

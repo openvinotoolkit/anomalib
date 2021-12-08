@@ -25,7 +25,7 @@ from pytorch_lightning import Trainer, seed_everything
 
 from anomalib.config import get_configurable_parameters
 from anomalib.core.callbacks import get_callbacks
-from anomalib.datasets import get_datamodule
+from anomalib.data import get_datamodule
 from anomalib.loggers import get_logger
 from anomalib.models import get_model
 

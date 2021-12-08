@@ -20,9 +20,9 @@ import pytorch_lightning as pl
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks.base import Callback
 from torch import Tensor, nn
+from torchmetrics import F1, MetricCollection
 
-from anomalib.core.results import ClassificationResults, SegmentationResults
-from anomalib.utils.metrics import compute_threshold_and_f1_score
+from anomalib.core.metrics import AUROC, OptimalF1
 
 
 class AnomalyModule(pl.LightningModule):
@@ -42,18 +42,21 @@ class AnomalyModule(pl.LightningModule):
         self.save_hyperparameters(params)
         self.loss: Tensor
         self.callbacks: List[Callback]
-        self.register_buffer("threshold", Tensor([params.model.threshold.default]))
+        self.register_buffer("threshold", Tensor([params.model.threshold.default]))  # pylint: disable=not-callable
         self.threshold: Tensor
 
         self.model: nn.Module
 
-        self.results: Union[ClassificationResults, SegmentationResults]
-        if params.dataset.task == "classification":
-            self.results = ClassificationResults()
-        elif params.dataset.task == "segmentation":
-            self.results = SegmentationResults()
+        # metrics
+        self.image_metrics = MetricCollection(
+            [AUROC(num_classes=1, pos_label=1, compute_on_step=False)], prefix="image_"
+        )
+        if params.model.threshold.adaptive:
+            self.image_metrics.add_metrics([OptimalF1(num_classes=1)])
         else:
-            raise NotImplementedError("Only Classification and Segmentation tasks are supported in this version.")
+            self.image_metrics.add_metrics([F1(num_classes=1, compute_on_step=False, threshold=self.threshold.item())])
+        if self.hparams.dataset.task == "segmentation":
+            self.pixel_metrics = self.image_metrics.clone(prefix="pixel_")
 
     def forward(self, batch: Tensor):  # pylint: disable=arguments-differ
         """Forward-pass input tensor to the module.
@@ -98,36 +101,34 @@ class AnomalyModule(pl.LightningModule):
         return self.validation_step(batch, _)
 
     def validation_step_end(self, val_step_outputs: Dict[str, Tensor]):  # pylint: disable=arguments-differ
-        """Compute and add predicted score and predicted labels to the outputs."""
-        return self._post_process(val_step_outputs)
+        """Called at the end of each validation step."""
+        val_step_outputs = self._post_process(val_step_outputs)
+        self.image_metrics(val_step_outputs["pred_scores"], val_step_outputs["label"].int())
+        if self.hparams.dataset.task == "segmentation":
+            self.pixel_metrics(val_step_outputs["anomaly_maps"].flatten(), val_step_outputs["mask"].flatten().int())
+        return val_step_outputs
 
     def test_step_end(self, test_step_outputs: Dict[str, Tensor]):  # pylint: disable=arguments-differ
-        """Compute and add predicted score and predicted labels to the outputs."""
-        return self._post_process(test_step_outputs)
+        """Called at the end of each test step."""
+        return self.validation_step_end(test_step_outputs)
 
-    def validation_epoch_end(self, outputs: List[Dict[str, Tensor]]):
-        """Compute image-level performance metrics.
-
-        If threshold is set to adaptive, then it calculates the optimal threshold based on the F1 score.
+    def validation_epoch_end(self, _outputs):
+        """Compute threshold and performance metrics.
 
         Args:
           outputs: Batch of outputs from the validation step
         """
-        self.results.store_outputs(outputs)
         if self.hparams.model.threshold.adaptive:
-            threshold, _ = compute_threshold_and_f1_score(self.results.true_labels, self.results.pred_scores)
-            self.threshold = Tensor([threshold])
-        self.results.evaluate(self.threshold.item())
+            self.image_metrics.compute()
+            self.threshold = self.image_metrics.OptimalF1.threshold
         self._log_metrics()
 
-    def test_epoch_end(self, outputs: List[Dict[str, Tensor]]):
+    def test_epoch_end(self, _outputs):
         """Compute and save anomaly scores of the test set.
 
         Args:
-            outputs: Batch of outputs from the validation step.
+            outputs: Batch of outputs from the validation step
         """
-        self.results.store_outputs(outputs)
-        self.results.evaluate(self.threshold.item())
         self._log_metrics()
 
     def _post_process(self, outputs: Dict[str, Tensor], predict_labels=False) -> Dict[str, Tensor]:
@@ -142,5 +143,6 @@ class AnomalyModule(pl.LightningModule):
 
     def _log_metrics(self):
         """Log computed performance metrics."""
-        for name, value in self.results.performance.items():
-            self.log(name=name, value=value, on_epoch=True, prog_bar=True)
+        self.log_dict(self.image_metrics)
+        if self.hparams.dataset.task == "segmentation":
+            self.log_dict(self.pixel_metrics)

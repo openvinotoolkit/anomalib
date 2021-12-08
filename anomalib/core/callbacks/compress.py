@@ -32,7 +32,12 @@ class CompressModelCallback(Callback):
         onnx_path = os.path.join(self.dirpath, self.filename + ".onnx")
         height, width = self.input_size
         torch.onnx.export(
-            pl_module.model, torch.zeros((1, 3, height, width)).to(pl_module.device), onnx_path, opset_version=11
+            pl_module.model,
+            torch.zeros((1, 3, height, width)).to(pl_module.device),
+            onnx_path,
+            opset_version=11,
+            input_names=["input"],
+            output_names=["output"],
         )
         optimize_command = "mo --input_model " + onnx_path + " --output_dir " + self.dirpath
         os.system(optimize_command)
