@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Union
 import torch
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
+from torch import Tensor
 from torchvision.models import resnet50
 
 from anomalib.core.model import AnomalyModule
@@ -27,7 +28,11 @@ from anomalib.models.dfkde.normality_model import NormalityModel
 
 
 class DfkdeLightning(AnomalyModule):
-    """DFKDE: Deep Featured Kernel Density Estimation."""
+    """DFKDE: Deep Featured Kernel Density Estimation.
+
+    Args:
+        hparams (Union[DictConfig, ListConfig]): Model params
+    """
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         super().__init__(hparams)
@@ -48,11 +53,11 @@ class DfkdeLightning(AnomalyModule):
         """DFKDE doesn't require optimization, therefore returns no optimizers."""
         return None
 
-    def training_step(self, batch, _):  # pylint: disable=arguments-differ
+    def training_step(self, batch: Tensor, _):  # pylint: disable=arguments-differ
         """Training Step of DFKDE. For each batch, features are extracted from the CNN.
 
         Args:
-          batch: Input batch
+          batch (Tensor): Input batch
           _: Index of the batch.
 
         Returns:
@@ -68,8 +73,7 @@ class DfkdeLightning(AnomalyModule):
         """Fit a KDE model on deep CNN features.
 
         Args:
-          outputs: Batch of outputs from the training step
-          outputs: dict:
+          outputs (List[Dict[str, Any]]): Batch of outputs from the training step
 
         Returns:
           None

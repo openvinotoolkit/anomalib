@@ -26,6 +26,11 @@ class Visualizer:
 
     The visualizer object is responsible for collating all the images passed to it into a single image. This can then
     either be logged by accessing the `figure` attribute or can be saved directly by calling `save()` method.
+
+    Args:
+        num_rows (int): Number of rows of images in the figure.
+        num_cols (int): Number of columns/images in each row.
+        figure_size (Tuple[int, int]): Size of output figure
     """
 
     def __init__(self, num_rows: int, num_cols: int, figure_size: Tuple[int, int]):
@@ -62,7 +67,7 @@ class Visualizer:
         """Save image.
 
         Args:
-          filename: Path: Filename to save image
+          filename (Path): Filename to save image
         """
         filename.parent.mkdir(parents=True, exist_ok=True)
         self.figure.savefig(filename, dpi=100)

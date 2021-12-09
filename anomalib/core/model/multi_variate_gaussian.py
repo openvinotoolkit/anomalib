@@ -118,8 +118,7 @@ class MultiVariateGaussian(nn.Module):
         """Calculate multivariate Gaussian distribution.
 
         Args:
-          embedding: CNN features whose dimensionality is reduced via either random sampling or PCA.
-          embedding: Tensor:
+          embedding (Tensor): CNN features whose dimensionality is reduced via either random sampling or PCA.
 
         Returns:
           mean and inverse covariance of the multi-variate gaussian distribution that fits the features.
@@ -143,7 +142,7 @@ class MultiVariateGaussian(nn.Module):
         """Fit multi-variate gaussian distribution to the input embedding.
 
         Args:
-            embedding: Tensor: Embedding vector extracted from CNN.
+            embedding (Tensor): Embedding vector extracted from CNN.
 
         Returns:
             Mean and the covariance of the embedding.

@@ -25,7 +25,16 @@ from anomalib.core.model.pca import PCA
 
 
 class NormalityModel(nn.Module):
-    """Normality Model for the DFKDE algorithm."""
+    """Normality Model for the DFKDE algorithm.
+
+    Args:
+        n_comps (int, optional): Number of PCA components. Defaults to 16.
+        pre_processing (str, optional): Preprocess features before passing to KDE.
+            Options are between `norm` and `scale`. Defaults to "scale".
+        filter_count (int, optional): Number of training points to fit the KDE model. Defaults to 40000.
+        threshold_steepness (float, optional): TODO . Defaults to 0.05.
+        threshold_offset (float, optional): TODO. Defaults to 12.0.
+    """
 
     def __init__(
         self,
@@ -48,7 +57,7 @@ class NormalityModel(nn.Module):
         self.register_buffer("max_length", torch.Tensor(torch.Size([])))
         self.max_length = torch.Tensor(torch.Size([]))
 
-    def fit(self, dataset: torch.Tensor):
+    def fit(self, dataset: torch.Tensor) -> bool:
         """Fit a kde model to dataset.
 
         Args:
@@ -106,13 +115,12 @@ class NormalityModel(nn.Module):
     def evaluate(
         self, features: torch.Tensor, as_density: Optional[bool] = False, as_log_likelihood: Optional[bool] = False
     ) -> torch.Tensor:
-        # TODO
         """Compute the KDE scores.
 
         Args:
-            features (torch.Tensor): Features
-            as_density (Optional[bool], optional): [description]. Defaults to False.
-            as_log_likelihood (Optional[bool], optional): [description]. Defaults to False.
+            features (torch.Tensor): Features to which the PCA model is fit.
+            as_density (Optional[bool], optional): TODO. Defaults to False.
+            as_log_likelihood (Optional[bool], optional): If true, gets log likelihood scores. Defaults to False.
 
         Returns:
             torch.Tensor: Score
@@ -151,8 +159,7 @@ class NormalityModel(nn.Module):
         """Converts density scores to anomaly probabilities (see https://www.desmos.com/calculator/ifju7eesg7).
 
         Args:
-          densities: density of an image
-          densities: torch.Tensor:
+          densities (torch.Tensor): density of an image.
 
         Returns:
           probability that image with {density} is anomalous

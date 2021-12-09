@@ -23,7 +23,11 @@ from anomalib.core.model.dynamic_module import DynamicBufferModule
 
 
 class GaussianKDE(DynamicBufferModule):
-    """Gaussian Kernel Density Estimation."""
+    """Gaussian Kernel Density Estimation.
+
+    Args:
+        dataset (Optional[torch.Tensor], optional): Dataset on which to fit the KDE model. Defaults to None.
+    """
 
     def __init__(self, dataset: Optional[torch.Tensor] = None):
         super().__init__()

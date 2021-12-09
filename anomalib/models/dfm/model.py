@@ -14,10 +14,11 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from typing import Any, Dict, List, Union
+from typing import Dict, List, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
+from torch import Tensor
 from torchvision.models import resnet18
 
 from anomalib.core.model import AnomalyModule
@@ -40,13 +41,13 @@ class DfmLightning(AnomalyModule):
         """DFM doesn't require optimization, therefore returns no optimizers."""
         return None
 
-    def training_step(self, batch, _):  # pylint: disable=arguments-differ
+    def training_step(self, batch: Dict[str, Tensor], _):  # pylint: disable=arguments-differ
         """Training Step of DFM.
 
         For each batch, features are extracted from the CNN.
 
         Args:
-          batch: Input batch
+          batch (Dict[str, Tensor]): Input batch
           _: Index of the batch.
 
         Returns:
@@ -58,12 +59,11 @@ class DfmLightning(AnomalyModule):
         feature_vector = torch.hstack(list(layer_outputs.values())).detach().squeeze()
         return {"feature_vector": feature_vector}
 
-    def training_epoch_end(self, outputs: List[Dict[str, Any]]) -> None:
+    def training_epoch_end(self, outputs: List[Dict[str, Tensor]]) -> None:
         """Fit a KDE model on deep CNN features.
 
         Args:
-          outputs: Batch of outputs from the training step
-          outputs: dict:
+          outputs (List[Dict[str, Tensor]]): Batch of outputs from the training step
 
         Returns:
           None
@@ -72,14 +72,14 @@ class DfmLightning(AnomalyModule):
         feature_stack = torch.vstack([output["feature_vector"] for output in outputs])
         self.dfm_model.fit(feature_stack)
 
-    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
+    def validation_step(self, batch: Dict[str, Tensor], _: int):  # pylint: disable=arguments-differ
         """Validation Step of DFM.
 
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
-          batch: Dict: Input batch
-          batch_idx: int: Index of the batch.
+          batch (List[Dict[str, Any]]): Input batch
+          _ (int): Index of the batch.
 
         Returns:
           Dictionary containing FRE anomaly scores and ground-truth.

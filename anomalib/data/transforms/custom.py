@@ -73,9 +73,9 @@ class ToNumpy:
         """Convert Tensor into Numpy Array.
 
         Args:
-           tensor (Tensor): Input tensor in range 0-1. Tensor to convert
-           dims (Optional[Tuple[int, ...]], optional): Tuple corresponding to axis permutation from torch tensor to
-                numpy array. Defaults to None. Convert dimensions from torch to numpy format.
+           tensor (Tensor): Tensor to convert. Input tensor in range 0-1.
+           dims (Optional[Tuple[int, ...]], optional): Convert dimensions from torch to numpy format.
+                Tuple corresponding to axis permutation from torch tensor to numpy array. Defaults to None.
 
         Returns:
             Converted numpy ndarray.
