@@ -1,9 +1,14 @@
 seed_everything: 0
 trainer:
+  callbacks:
+    - class_path: pytorch_lightning.callbacks.EarlyStopping
+      init_args:
+        patience: 5
+        monitor: pixel_AUROC
+        mode: max
   logger: true
   checkpoint_callback: null
   enable_checkpointing: true
-  callbacks: null
   default_root_dir: null
   gradient_clip_val: null
   gradient_clip_algorithm: null
@@ -23,7 +28,7 @@ trainer:
   check_val_every_n_epoch: 1
   fast_dev_run: false
   accumulate_grad_batches: null
-  max_epochs: null
+  max_epochs: 1
   min_epochs: null
   max_steps: -1
   min_steps: null
@@ -71,18 +76,14 @@ model:
       - layer1
       - layer2
       - layer3
-    input_size:
-      - 256
-      - 256
+    input_size: [256, 256]
     backbone: resnet18
 data:
   class_path: anomalib.data.Mvtec
   init_args:
     root: ./datasets/MVTec
     category: bottle
-    image_size:
-      - 256
-      - 256
+    image_size: [256, 256]
     train_batch_size: 32
     test_batch_size: 32
     num_workers: 0
