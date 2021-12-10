@@ -17,6 +17,7 @@
 from typing import Dict, List, Union
 
 import pytorch_lightning as pl
+import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks.base import Callback
 from torch import Tensor, nn
@@ -42,7 +43,7 @@ class AnomalyModule(pl.LightningModule):
         self.save_hyperparameters(params)
         self.loss: Tensor
         self.callbacks: List[Callback]
-        self.register_buffer("threshold", Tensor([params.model.threshold.default]))  # pylint: disable=not-callable
+        self.register_buffer("threshold", torch.tensor(params.model.threshold.default))  # pylint: disable=not-callable
         self.threshold: Tensor
 
         self.model: nn.Module
