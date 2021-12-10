@@ -18,6 +18,7 @@ import math
 from typing import Optional
 
 import torch
+from torch import Tensor
 
 from anomalib.core.model.dynamic_module import DynamicBufferModule
 
@@ -26,28 +27,28 @@ class GaussianKDE(DynamicBufferModule):
     """Gaussian Kernel Density Estimation.
 
     Args:
-        dataset (Optional[torch.Tensor], optional): Dataset on which to fit the KDE model. Defaults to None.
+        dataset (Optional[Tensor], optional): Dataset on which to fit the KDE model. Defaults to None.
     """
 
-    def __init__(self, dataset: Optional[torch.Tensor] = None):
+    def __init__(self, dataset: Optional[Tensor] = None):
         super().__init__()
 
         if dataset is not None:
             self.fit(dataset)
 
-        self.register_buffer("bw_transform", torch.Tensor())
-        self.register_buffer("dataset", torch.Tensor())
-        self.register_buffer("norm", torch.Tensor())
+        self.register_buffer("bw_transform", Tensor())
+        self.register_buffer("dataset", Tensor())
+        self.register_buffer("norm", Tensor())
 
-        self.bw_transform = torch.Tensor()
-        self.dataset = torch.Tensor()
-        self.norm = torch.Tensor()
+        self.bw_transform = Tensor()
+        self.dataset = Tensor()
+        self.norm = Tensor()
 
-    def forward(self, features: torch.Tensor) -> torch.Tensor:
+    def forward(self, features: Tensor) -> Tensor:
         """Get the KDE estimates from the feature map.
 
         Args:
-          features: torch.Tensor: Feature map extracted from the CNN
+          features (Tensor): Feature map extracted from the CNN
 
         Returns: KDE Estimates
         """
@@ -61,11 +62,11 @@ class GaussianKDE(DynamicBufferModule):
 
         return estimate
 
-    def fit(self, dataset: torch.Tensor) -> None:
+    def fit(self, dataset: Tensor) -> None:
         """Fit a KDE model to the input dataset.
 
         Args:
-          dataset: torch.Tensor: Input dataset.
+          dataset (Tensor): Input dataset.
 
         Returns:
             None
@@ -92,12 +93,12 @@ class GaussianKDE(DynamicBufferModule):
         self.norm = norm
 
     @staticmethod
-    def cov(tensor: torch.Tensor, bias: Optional[bool] = False) -> torch.Tensor:
+    def cov(tensor: Tensor, bias: Optional[bool] = False) -> Tensor:
         """Calculate covariance matrix.
 
         Args:
-            tensor: torch.Tensor: Input tensor from which covariance matrix is computed.
-            bias: Optional[bool]:  (Default value = False)
+            tensor (Tensor): Input tensor from which covariance matrix is computed.
+            bias (Optional[bool]):  (Default value = False)
 
         Returns:
             Output covariance matrix.

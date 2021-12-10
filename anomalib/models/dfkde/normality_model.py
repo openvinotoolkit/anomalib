@@ -18,7 +18,7 @@ import random
 from typing import Optional, Tuple
 
 import torch
-from torch import nn
+from torch import Tensor, nn
 
 from anomalib.core.model.kde import GaussianKDE
 from anomalib.core.model.pca import PCA
@@ -32,8 +32,8 @@ class NormalityModel(nn.Module):
         pre_processing (str, optional): Preprocess features before passing to KDE.
             Options are between `norm` and `scale`. Defaults to "scale".
         filter_count (int, optional): Number of training points to fit the KDE model. Defaults to 40000.
-        threshold_steepness (float, optional): TODO . Defaults to 0.05.
-        threshold_offset (float, optional): TODO. Defaults to 12.0.
+        threshold_steepness (float, optional): Controls how quickly the value saturates around zero. Defaults to 0.05.
+        threshold_offset (float, optional): Offset of the density function from 0. Defaults to 12.0.
     """
 
     def __init__(
@@ -54,14 +54,14 @@ class NormalityModel(nn.Module):
         self.pca_model = PCA(n_components=self.n_components)
         self.kde_model = GaussianKDE()
 
-        self.register_buffer("max_length", torch.Tensor(torch.Size([])))
-        self.max_length = torch.Tensor(torch.Size([]))
+        self.register_buffer("max_length", Tensor(torch.Size([])))
+        self.max_length = Tensor(torch.Size([]))
 
-    def fit(self, dataset: torch.Tensor) -> bool:
+    def fit(self, dataset: Tensor) -> bool:
         """Fit a kde model to dataset.
 
         Args:
-            dataset (torch.Tensor): Input dataset to fit the model.
+            dataset (Tensor): Input dataset to fit the model.
 
         Returns:
             Boolean confirming whether the training is successful.
@@ -74,7 +74,7 @@ class NormalityModel(nn.Module):
         # if max training points is non-zero and smaller than number of staged features, select random subset
         if self.filter_count and dataset.shape[0] > self.filter_count:
             # pylint: disable=not-callable
-            selected_idx = torch.tensor(random.sample(range(dataset.shape[0]), self.filter_count))
+            selected_idx = Tensor(random.sample(range(dataset.shape[0]), self.filter_count))
             selected_features = dataset[selected_idx]
         else:
             selected_features = dataset
@@ -86,15 +86,13 @@ class NormalityModel(nn.Module):
 
         return True
 
-    def preprocess(
-        self, feature_stack: torch.Tensor, max_length: Optional[torch.Tensor] = None
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    def preprocess(self, feature_stack: Tensor, max_length: Optional[Tensor] = None) -> Tuple[Tensor, Tensor]:
         """Pre process the CNN features.
 
         Args:
           feature_stack: Features extracted from CNN
           max_length:
-          feature_stack: torch.Tensor:
+          feature_stack: Tensor:
           max_length: Optional[Tensor]:  (Default value = None)
 
         Returns:
@@ -112,18 +110,18 @@ class NormalityModel(nn.Module):
             raise RuntimeError("Unknown pre-processing mode. Available modes are: Normalized and Scale.")
         return feature_stack, max_length
 
-    def evaluate(
-        self, features: torch.Tensor, as_density: Optional[bool] = False, as_log_likelihood: Optional[bool] = False
-    ) -> torch.Tensor:
+    def evaluate(self, features: Tensor, as_log_likelihood: Optional[bool] = False) -> Tensor:
         """Compute the KDE scores.
 
+        The scores calculated from the KDE model are converted to densities. If `as_log_likelihood` is set to true then
+            the log of the scores are calculated.
+
         Args:
-            features (torch.Tensor): Features to which the PCA model is fit.
-            as_density (Optional[bool], optional): TODO. Defaults to False.
+            features (Tensor): Features to which the PCA model is fit.
             as_log_likelihood (Optional[bool], optional): If true, gets log likelihood scores. Defaults to False.
 
         Returns:
-            torch.Tensor: Score
+            (Tensor): Score
         """
 
         features = self.pca_model.transform(features)
@@ -133,33 +131,33 @@ class NormalityModel(nn.Module):
         # add small constant to avoid zero division in log computation
         kde_scores += 1e-300
 
-        score = kde_scores if as_density else 1.0 / kde_scores
+        score = 1.0 / kde_scores
 
         if as_log_likelihood:
             score = torch.log(score)
 
         return score
 
-    def predict(self, features: torch.Tensor) -> torch.Tensor:
+    def predict(self, features: Tensor) -> Tensor:
         """Predicts the probability that the features belong to the anomalous class.
 
         Args:
-          features (torch.Tensor): Feature from which the output probabilities are detected.
+          features (Tensor): Feature from which the output probabilities are detected.
 
         Returns:
           Detection probabilities
         """
 
-        densities = self.evaluate(features, as_density=True, as_log_likelihood=True)
+        densities = self.evaluate(features, as_log_likelihood=True)
         probabilities = self.to_probability(densities)
 
         return probabilities
 
-    def to_probability(self, densities: torch.Tensor) -> torch.Tensor:
+    def to_probability(self, densities: Tensor) -> Tensor:
         """Converts density scores to anomaly probabilities (see https://www.desmos.com/calculator/ifju7eesg7).
 
         Args:
-          densities (torch.Tensor): density of an image.
+          densities (Tensor): density of an image.
 
         Returns:
           probability that image with {density} is anomalous
@@ -167,6 +165,6 @@ class NormalityModel(nn.Module):
 
         return 1 / (1 + torch.exp(self.threshold_steepness * (densities - self.threshold_offset)))
 
-    def forward(self, features: torch.Tensor) -> torch.Tensor:
+    def forward(self, features: Tensor) -> Tensor:
         """Make module callable."""
         return self.predict(features)

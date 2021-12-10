@@ -27,6 +27,11 @@ class Visualizer:
     The visualizer object is responsible for collating all the images passed to it into a single image. This can then
     either be logged by accessing the `figure` attribute or can be saved directly by calling `save()` method.
 
+    Example:
+        >>> visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
+        >>> visualizer.add_image(image=image, title="Image")
+        >>> visualizer.close()
+
     Args:
         num_rows (int): Number of rows of images in the figure.
         num_cols (int): Number of columns/images in each row.

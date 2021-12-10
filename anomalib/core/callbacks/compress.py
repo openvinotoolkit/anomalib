@@ -9,7 +9,7 @@ from pytorch_lightning import Callback, LightningModule
 class CompressModelCallback(Callback):
     """Callback to compresses a trained model.
 
-    Model is first exported to .onnx format, and then converted to OpenVINO IR.
+    Model is first exported to ``.onnx`` format, and then converted to OpenVINO IR.
 
     Args:
         input_size (Tuple[int, int]): Tuple of image height, width
@@ -25,8 +25,8 @@ class CompressModelCallback(Callback):
     def on_train_end(self, trainer, pl_module: LightningModule) -> None:  # pylint: disable=W0613
         """Call when the train ends.
 
-        Converts the model to `onnx` format and then calls OpenVINO's model optimizer to get the `.xml` and `.bin` IR
-        files.
+        Converts the model to ``onnx`` format and then calls OpenVINO's model optimizer to get the
+        ``.xml`` and ``.bin`` IR files.
         """
         os.makedirs(self.dirpath, exist_ok=True)
         onnx_path = os.path.join(self.dirpath, self.filename + ".onnx")

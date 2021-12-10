@@ -34,7 +34,7 @@ __all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel", "StfpmLightning"]
 
 
 class Loss(nn.Module):
-    """Feature Pyramid Loss This class implmenents the feature pyramid loss function proposed in STFPM [1] paper.
+    """Feature Pyramid Loss This class implmenents the feature pyramid loss function proposed in STFPM paper.
 
     Example:
         >>> from anomalib.core.model.feature_extractor import FeatureExtractor
@@ -61,10 +61,8 @@ class Loss(nn.Module):
         """Compute layer loss based on Equation (1) in Section 3.2 of the paper.
 
         Args:
-          teacher_feats: Teacher features
-          student_feats: Student features
-          teacher_feats: Tensor:
-          student_feats: Tensor:
+          teacher_feats (Tensor): Teacher features
+          student_feats (Tensor): Student features
 
         Returns:
           L2 distance between teacher and student features.
@@ -82,11 +80,8 @@ class Loss(nn.Module):
         """Compute the overall loss via the weighted average of the layer losses computed by the cosine similarity.
 
         Args:
-          teacher_features: Teacher features
-          student_features: Student features
-          teacher_features: Dict[str:
-          Tensor]:
-          student_features: Dict[str:
+          teacher_features (Dict[str, Tensor]): Teacher features
+          student_features (Dict[str, Tensor]): Student features
 
         Returns:
           Total loss, which is the weighted average of the layer losses.
@@ -116,10 +111,8 @@ class AnomalyMapGenerator:
         """Compute the layer map based on cosine similarity.
 
         Args:
-          teacher_features: Teacher features
-          student_features: Student features
-          teacher_features: Tensor:
-          student_features: Tensor:
+          teacher_features (Tensor): Teacher features
+          student_features (Tensor): Student features
 
         Returns:
           Anomaly score based on cosine similarity.
@@ -137,10 +130,8 @@ class AnomalyMapGenerator:
         """Compute the overall anomaly map via element-wise production the interpolated anomaly maps.
 
         Args:
-          teacher_features: Teacher features
-          student_features: Student features
-          teacher_features: Dict[str: Tensor]:
-          student_features: Dict[str: Tensor]:
+          teacher_features (Dict[str, Tensor]): Teacher features
+          student_features (Dict[str, Tensor]): Student features
 
         Returns:
           Final anomaly map
@@ -222,14 +213,14 @@ class STFPMModel(nn.Module):
         else:
             self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(input_size))
 
-    def forward(self, images):
+    def forward(self, images: Tensor):
         """Forward-pass images into the network.
 
         During the training mode the model extracts the features from the teacher and student networks.
         During the evaluation mode, it returns the predicted anomaly map.
 
         Args:
-          images: Batch of images.
+          images (Tensor): Batch of images.
 
         Returns:
           Teacher and student features when in training mode, otherwise the predicted anomaly maps.
@@ -286,13 +277,13 @@ class StfpmLightning(AnomalyModule):
             weight_decay=self.hparams.model.weight_decay,
         )
 
-    def training_step(self, batch, _):  # pylint: disable=arguments-differ
+    def training_step(self, batch: Tensor, _):  # pylint: disable=arguments-differ
         """Training Step of STFPM.
 
         For each batch, teacher and student and teacher features are extracted from the CNN.
 
         Args:
-          batch: Input batch
+          batch (Tensor): Input batch
           _: Index of the batch.
 
         Returns:
@@ -304,14 +295,14 @@ class StfpmLightning(AnomalyModule):
         self.loss_val = 0
         return {"loss": loss}
 
-    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
+    def validation_step(self, batch: Tensor, _):  # pylint: disable=arguments-differ
         """Validation Step of STFPM.
 
         Similar to the training step, student/teacher features are extracted from the CNN for each batch, and
         anomaly map is computed.
 
         Args:
-          batch: Input batch
+          batch (Tensor): Input batch
           _: Index of the batch.
 
         Returns:

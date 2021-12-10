@@ -50,7 +50,7 @@ class InitLoader(PTInitializingDataLoader):
     def get_target(self, _):
         """Return structure for ground truth in loss criterion based on dataloader output.
 
-        This implementation does not do anything and is a placeholder for implementation.
+        This implementation does not do anything and is a placeholder.
 
         Returns:
             None
@@ -87,7 +87,7 @@ class NNCFCallback(Callback):
     def setup(self, _: pl.Trainer, pl_module: pl.LightningModule, __: Optional[str] = None) -> None:
         """Call when fit or test begins.
 
-        Takes the pytorch model and wraps it so that it is ready for nncf fine-tuning.
+        Takes the pytorch model and wraps it using the compression controller so that it is ready for nncf fine-tuning.
         """
         if self.comp_ctrl is None:
             init_loader = InitLoader(self.train_loader)
@@ -112,7 +112,7 @@ class NNCFCallback(Callback):
     def on_train_end(self, _trainer, _pl_module: pl.LightningModule) -> None:
         """Call when the train ends.
 
-        Exports compressed model to onnx and uses the onnx model to generate the OpenVINO IR.
+        Exports onnx model and if compression controller is not None, uses the onnx model to generate the OpenVINO IR.
         """
         os.makedirs(self.dirpath, exist_ok=True)
         onnx_path = os.path.join(self.dirpath, self.filename + ".onnx")
