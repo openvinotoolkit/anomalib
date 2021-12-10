@@ -13,8 +13,6 @@ from omegaconf import OmegaConf
 from pytorch_lightning import Callback
 from torch.utils.data.dataloader import DataLoader
 
-from anomalib.data import get_datamodule
-
 # pylint: disable=signature-differs,arguments-differ
 
 
@@ -66,23 +64,20 @@ class NNCFCallback(Callback):
     """
 
     def __init__(self, config, dirpath, filename):
-        config_dict = yaml.safe_load(OmegaConf.to_yaml(config.optimization.nncf))
+        config_dict = yaml.safe_load(OmegaConf.to_yaml(config))
         self.nncf_config = NNCFConfig.from_dict(config_dict)
         self.dirpath = dirpath
         self.filename = filename
 
-        # we need to create a datamodule here to obtain the init loader
-        datamodule = get_datamodule(config)
-        datamodule.setup()
-        self.train_loader = datamodule.train_dataloader()
-
         self.comp_ctrl: Optional[CompressionAlgorithmController] = None
         self.compression_scheduler: CompressionScheduler
 
-    def setup(self, _trainer: pl.Trainer, pl_module: pl.LightningModule, _stage: Optional[str] = None) -> None:
+    def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, _stage: Optional[str] = None) -> None:
         """Call when fit or test begins."""
         if self.comp_ctrl is None:
-            init_loader = InitLoader(self.train_loader)
+            # NOTE: trainer.datamodule returns the following error
+            #   "Trainer" has no attribute "datamodule"  [attr-defined]
+            init_loader = InitLoader(trainer.datamodule.train_dataloader())  # type: ignore
             nncf_config = register_default_init_args(
                 self.nncf_config, init_loader, pl_module.model.loss, criterion_fn=criterion_fn
             )

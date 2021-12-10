@@ -17,10 +17,10 @@ from .visualizer_callback import VisualizerCallback
 __all__ = [
     "CompressModelCallback",
     "LoadModelCallback",
+    "SaveToCSVCallback",
     "TilerCallback",
     "TimerCallback",
     "VisualizerCallback",
-    "SaveToCSVCallback",
 ]
 
 
