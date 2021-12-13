@@ -78,7 +78,7 @@ class PreProcessor:
     def __init__(
         self,
         config: Optional[Union[str, A.Compose]] = None,
-        image_size: Optional[Union[int, Tuple[int, int]]] = None,
+        image_size: Optional[Union[int, Tuple]] = None,
         to_tensor: bool = True,
     ) -> None:
         self.config = config

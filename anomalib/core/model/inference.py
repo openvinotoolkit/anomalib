@@ -137,7 +137,9 @@ class TorchInferencer(Inferencer):
         Returns:
             Tensor: pre-processed image.
         """
-        pre_processor = PreProcessor(config=self.config.transform, to_tensor=True)
+        config = self.config.transform if "transform" in self.config.keys() else None
+        image_size = tuple(self.config.dataset.image_size)
+        pre_processor = PreProcessor(config, image_size)
         processed_image = pre_processor(image=image)["image"]
 
         if len(processed_image) == 3:
@@ -236,7 +238,9 @@ class OpenVINOInferencer(Inferencer):
         Returns:
             np.ndarray: pre-processed image.
         """
-        pre_processor = PreProcessor(config=self.config.transform, to_tensor=False)
+        config = self.config.transform if "transform" in self.config.keys() else None
+        image_size = tuple(self.config.dataset.image_size)
+        pre_processor = PreProcessor(config, image_size)
         processed_image = pre_processor(image=image)["image"]
 
         if len(processed_image.shape) == 3:
