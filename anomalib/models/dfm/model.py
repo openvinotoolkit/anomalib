@@ -41,7 +41,7 @@ class DfmLightning(AnomalyModule):
         """DFM doesn't require optimization, therefore returns no optimizers."""
         return None
 
-    def training_step(self, batch: Dict[str, Tensor], _):  # pylint: disable=arguments-differ
+    def training_step(self, batch, _):  # pylint: disable=arguments-differ
         """Training Step of DFM.
 
         For each batch, features are extracted from the CNN.
@@ -72,7 +72,7 @@ class DfmLightning(AnomalyModule):
         feature_stack = torch.vstack([output["feature_vector"] for output in outputs])
         self.dfm_model.fit(feature_stack)
 
-    def validation_step(self, batch: Dict[str, Tensor], _: int):  # pylint: disable=arguments-differ
+    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Validation Step of DFM.
 
         Similar to the training step, features are extracted from the CNN for each batch.

@@ -298,7 +298,7 @@ class PadimLightning(AnomalyModule):
         """PADIM doesn't require optimization, therefore returns no optimizers."""
         return None
 
-    def training_step(self, batch: Dict[str, Tensor], _):  # pylint: disable=arguments-differ
+    def training_step(self, batch, _):  # pylint: disable=arguments-differ
         """Training Step of PADIM. For each batch, hierarchical features are extracted from the CNN.
 
         Args:
@@ -326,7 +326,7 @@ class PadimLightning(AnomalyModule):
         embeddings = torch.vstack([x["embeddings"] for x in outputs])
         self.stats = self.model.gaussian.fit(embeddings)
 
-    def validation_step(self, batch: Dict[str, Tensor], _):  # pylint: disable=arguments-differ
+    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Validation Step of PADIM.
 
         Similar to the training step, hierarchical features are extracted from the CNN for each batch.

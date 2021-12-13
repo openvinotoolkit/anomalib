@@ -19,7 +19,6 @@ from typing import Any, Dict, List, Union
 import torch
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
-from torch import Tensor
 from torchvision.models import resnet50
 
 from anomalib.core.model import AnomalyModule
@@ -53,7 +52,7 @@ class DfkdeLightning(AnomalyModule):
         """DFKDE doesn't require optimization, therefore returns no optimizers."""
         return None
 
-    def training_step(self, batch: Tensor, _):  # pylint: disable=arguments-differ
+    def training_step(self, batch, _):  # pylint: disable=arguments-differ
         """Training Step of DFKDE. For each batch, features are extracted from the CNN.
 
         Args:

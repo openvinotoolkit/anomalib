@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from typing import Dict, List, Union
+from typing import List, Union
 
 import pytorch_lightning as pl
 import torch
@@ -59,7 +59,7 @@ class AnomalyModule(pl.LightningModule):
         if self.hparams.dataset.task == "segmentation":
             self.pixel_metrics = self.image_metrics.clone(prefix="pixel_")
 
-    def forward(self, batch: Tensor):  # pylint: disable=arguments-differ
+    def forward(self, batch):  # pylint: disable=arguments-differ
         """Forward-pass input tensor to the module.
 
         Args:
@@ -70,9 +70,7 @@ class AnomalyModule(pl.LightningModule):
         """
         return self.model(batch)
 
-    def predict_step(
-        self, batch: Tensor, batch_idx: int, dataloader_idx: int
-    ):  # pylint: disable=arguments-differ, signature-differs
+    def predict_step(self, batch, batch_idx, dataloader_idx):  # pylint: disable=arguments-differ, signature-differs
         """Step function called during :meth:`~pytorch_lightning.trainer.trainer.Trainer.predict`.
 
         By default, it calls :meth:`~pytorch_lightning.core.lightning.LightningModule.forward`.
@@ -88,7 +86,7 @@ class AnomalyModule(pl.LightningModule):
         """
         return self._post_process(self.validation_step(batch, batch_idx), predict_labels=True)
 
-    def test_step(self, batch: Tensor, _):  # pylint: disable=arguments-differ
+    def test_step(self, batch, _):  # pylint: disable=arguments-differ
         """Calls validation_step for anomaly map/score calculation.
 
         Args:
@@ -101,7 +99,7 @@ class AnomalyModule(pl.LightningModule):
         """
         return self.validation_step(batch, _)
 
-    def validation_step_end(self, val_step_outputs: Dict[str, Tensor]):  # pylint: disable=arguments-differ
+    def validation_step_end(self, val_step_outputs):  # pylint: disable=arguments-differ
         """Called at the end of each validation step."""
         val_step_outputs = self._post_process(val_step_outputs)
         self.image_metrics(val_step_outputs["pred_scores"], val_step_outputs["label"].int())
@@ -109,7 +107,7 @@ class AnomalyModule(pl.LightningModule):
             self.pixel_metrics(val_step_outputs["anomaly_maps"].flatten(), val_step_outputs["mask"].flatten().int())
         return val_step_outputs
 
-    def test_step_end(self, test_step_outputs: Dict[str, Tensor]):  # pylint: disable=arguments-differ
+    def test_step_end(self, test_step_outputs):  # pylint: disable=arguments-differ
         """Called at the end of each test step."""
         return self.validation_step_end(test_step_outputs)
 
@@ -132,7 +130,7 @@ class AnomalyModule(pl.LightningModule):
         """
         self._log_metrics()
 
-    def _post_process(self, outputs: Dict[str, Tensor], predict_labels=False) -> Dict[str, Tensor]:
+    def _post_process(self, outputs, predict_labels=False):
         """Compute labels based on model predictions."""
         if "pred_scores" not in outputs and "anomaly_maps" in outputs:
             outputs["pred_scores"] = (

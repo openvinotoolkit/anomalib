@@ -213,7 +213,7 @@ class STFPMModel(nn.Module):
         else:
             self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(input_size))
 
-    def forward(self, images: Tensor):
+    def forward(self, images):
         """Forward-pass images into the network.
 
         During the training mode the model extracts the features from the teacher and student networks.
@@ -277,7 +277,7 @@ class StfpmLightning(AnomalyModule):
             weight_decay=self.hparams.model.weight_decay,
         )
 
-    def training_step(self, batch: Tensor, _):  # pylint: disable=arguments-differ
+    def training_step(self, batch, _):  # pylint: disable=arguments-differ
         """Training Step of STFPM.
 
         For each batch, teacher and student and teacher features are extracted from the CNN.
@@ -295,7 +295,7 @@ class StfpmLightning(AnomalyModule):
         self.loss_val = 0
         return {"loss": loss}
 
-    def validation_step(self, batch: Tensor, _):  # pylint: disable=arguments-differ
+    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Validation Step of STFPM.
 
         Similar to the training step, student/teacher features are extracted from the CNN for each batch, and
