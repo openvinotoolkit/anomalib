@@ -14,3 +14,4 @@ scikit-image>=0.17.2
 kornia==0.5.6
 lxml
 albumentations
+openmodelzoo-modelapi @ git+https://github.com/openvinotoolkit/open_model_zoo/@releases/2021/SCMVP#egg=openmodelzoo-modelapi&subdirectory=demos/common/python
