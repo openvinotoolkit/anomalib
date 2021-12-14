@@ -18,7 +18,7 @@ jobs:
       - name: Install Tox
         run: pip install tox
       - name: Code quality checks
-        run: tox -e black,isort,flake8,pylint,mypy
+        run: tox -e black,isort,flake8,pylint,mypy,pydocstyle
       - name: Coverage
         run: tox -e coverage
       - name: Upload coverage result
