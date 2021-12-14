@@ -17,8 +17,8 @@
 from typing import Any, Dict, List, Union
 
 import torch
+import torchvision
 from omegaconf import DictConfig, ListConfig
-from torchvision.models import resnet18
 
 from anomalib.core.model import AnomalyModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
@@ -31,7 +31,9 @@ class DfmLightning(AnomalyModule):
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         super().__init__(hparams)
 
-        self.feature_extractor = FeatureExtractor(backbone=resnet18(pretrained=True), layers=["avgpool"]).eval()
+        self.backbone = getattr(torchvision.models, hparams.model.backbone)
+        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=["avgpool"]).eval()
+
         self.dfm_model = DFMModel(n_comps=hparams.model.pca_level, score_type=hparams.model.score_type)
         self.automatic_optimization = False
 
