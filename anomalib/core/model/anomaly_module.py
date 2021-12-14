@@ -14,16 +14,19 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from typing import List, Union
+from typing import List, Optional, Union
 
 import pytorch_lightning as pl
 import torch
+import torch.nn.functional as F
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks.base import Callback
 from torch import nn
+from torch.distributions import LogNormal
 from torchmetrics import F1, MetricCollection
 
 from anomalib.core.metrics import AUROC, OptimalF1
+from anomalib.core.metrics.training_stats import TrainingStats
 
 
 class AnomalyModule(pl.LightningModule):
@@ -41,8 +44,15 @@ class AnomalyModule(pl.LightningModule):
         self.save_hyperparameters(params)
         self.loss: torch.Tensor
         self.callbacks: List[Callback]
-        self.register_buffer("threshold", torch.tensor(params.model.threshold.default))  # pylint: disable=not-callable
-        self.threshold: torch.Tensor
+        self.register_buffer(
+            "image_threshold", torch.tensor(params.model.threshold.image_default)
+        )  # pylint: disable=not-callable
+        self.image_threshold: torch.Tensor
+
+        self.image_dist: Optional[LogNormal] = None
+        self.pixel_dist: Optional[LogNormal] = None
+
+        self.training_stats = TrainingStats()
 
         self.model: nn.Module
 
@@ -54,8 +64,11 @@ class AnomalyModule(pl.LightningModule):
             self.image_metrics.add_metrics([OptimalF1(num_classes=1)])
         else:
             self.image_metrics.add_metrics([F1(num_classes=1, compute_on_step=False, threshold=self.threshold.item())])
+
         if self.hparams.dataset.task == "segmentation":
             self.pixel_metrics = self.image_metrics.clone(prefix="pixel_")
+            self.register_buffer("pixel_threshold", torch.tensor(params.model.threshold.pixel_default))
+            self.pixel_threshold: torch.Tensor
 
     def forward(self, batch):  # pylint: disable=arguments-differ
         """Forward-pass input tensor to the module.
@@ -82,6 +95,14 @@ class AnomalyModule(pl.LightningModule):
         Return:
             Predicted output
         """
+        outputs = self._post_process(self.validation_step(batch, batch_idx), predict_labels=True)
+        if self.hparams.model.standardize_scores:
+            outputs["pred_scores"] = self.image_dist.cdf(
+                F.relu(outputs["pred_scores"].cpu() - self.image_threshold.cpu()) + 1e-7
+            )
+            outputs["anomaly_maps"] = self.pixel_dist.cdf(
+                F.relu(outputs["anomaly_maps"].cpu() - self.pixel_threshold.cpu()) + 1e-7
+            )
         return self._post_process(self.validation_step(batch, batch_idx), predict_labels=True)
 
     def test_step(self, batch, _):  # pylint: disable=arguments-differ
@@ -101,15 +122,29 @@ class AnomalyModule(pl.LightningModule):
         """Called at the end of each validation step."""
         val_step_outputs = self._post_process(val_step_outputs)
         self.image_metrics(val_step_outputs["pred_scores"], val_step_outputs["label"].int())
-        if self.hparams.dataset.task == "segmentation":
+        if "mask" in val_step_outputs.keys() and "anomaly_maps" in val_step_outputs.keys():
             self.pixel_metrics(val_step_outputs["anomaly_maps"].flatten(), val_step_outputs["mask"].flatten().int())
         return val_step_outputs
 
     def test_step_end(self, test_step_outputs):  # pylint: disable=arguments-differ
         """Called at the end of each test step."""
-        return self.validation_step_end(test_step_outputs)
+        test_step_outputs = self.validation_step_end(test_step_outputs)
+        if self.hparams.model.standardize_scores:
+            test_step_outputs["pred_scores"] = self.image_dist.cdf(
+                F.relu(test_step_outputs["pred_scores"].cpu() - self.image_threshold.cpu()) + 1e-7
+            )
+            test_step_outputs["anomaly_maps"] = self.pixel_dist.cdf(
+                F.relu(test_step_outputs["anomaly_maps"].cpu() - self.pixel_threshold.cpu()) + 1e-7
+            )
+        return test_step_outputs
 
-    def validation_epoch_end(self, _outputs):
+    def training_epoch_end(self, _outputs) -> None:
+        """Compute the statistics of the training set."""
+        stats = self.training_stats.compute()
+        self.image_dist = LogNormal(stats["image_mean"], stats["image_std"])
+        self.pixel_dist = LogNormal(stats["pixel_mean"], stats["pixel_std"])
+
+    def validation_epoch_end(self, outputs):
         """Compute threshold and performance metrics.
 
         Args:
@@ -117,7 +152,11 @@ class AnomalyModule(pl.LightningModule):
         """
         if self.hparams.model.threshold.adaptive:
             self.image_metrics.compute()
-            self.threshold = self.image_metrics.OptimalF1.threshold
+            self.image_threshold = self.image_metrics.OptimalF1.threshold
+            if "mask" in outputs[0].keys() and "anomaly_maps" in outputs[0].keys():
+                self.pixel_threshold = self.pixel_metrics.OptimalF1.threshold
+            else:
+                self.pixel_threshold = self.image_threshold
         self._log_metrics()
 
     def test_epoch_end(self, _outputs):

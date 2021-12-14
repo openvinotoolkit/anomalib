@@ -79,6 +79,13 @@ class VisualizerCallback(Callback):
         """
         assert outputs is not None
 
+        if "standardize_scores" in pl_module.hparams.model.keys() and pl_module.hparams.model.standardize_scores:
+            threshold = 0.5
+            normalize = False  # anomaly maps are already normalized
+        else:
+            threshold = pl_module.pixel_threshold.item()
+            normalize = True  # raw anomaly maps. Still need to normalize
+
         for (filename, image, true_mask, anomaly_map) in zip(
             outputs["image_path"], outputs["image"], outputs["mask"], outputs["anomaly_maps"]
         ):
@@ -86,8 +93,8 @@ class VisualizerCallback(Callback):
             true_mask = true_mask.cpu().numpy()
             anomaly_map = anomaly_map.cpu().numpy()
 
-            heat_map = superimpose_anomaly_map(anomaly_map, image)
-            pred_mask = compute_mask(anomaly_map, pl_module.threshold.item())
+            heat_map = superimpose_anomaly_map(anomaly_map, image, normalize=normalize)
+            pred_mask = compute_mask(anomaly_map, threshold)
             vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
 
             visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))

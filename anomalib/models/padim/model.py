@@ -326,6 +326,11 @@ class PadimLightning(AnomalyModule):
 
         embeddings = torch.vstack([x["embeddings"] for x in outputs])
         self.stats = self.model.gaussian.fit(embeddings)
+        # store anomaly maps of training set
+        self.training_stats.update(
+            self.model.anomaly_map_generator(embedding=embeddings, mean=self.stats[0], inv_covariance=self.stats[1])
+        )
+        super().training_epoch_end(outputs)
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Validation Step of PADIM.

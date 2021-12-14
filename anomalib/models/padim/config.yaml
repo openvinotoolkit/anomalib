@@ -26,8 +26,10 @@ model:
     - layer2
     - layer3
   metric: auc
+  standardize_scores: true
   threshold:
-    default: 12
+    image_default: 3
+    pixel_default: 3
     adaptive: true
 
 project:

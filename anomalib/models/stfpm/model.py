@@ -302,6 +302,14 @@ class StfpmLightning(AnomalyModule):
         teacher_features, student_features = self.model.forward(batch["image"])
         loss = self.loss_val + self.model.loss(teacher_features, student_features)
         self.loss_val = 0
+        # store anomaly maps of training set
+
+        self.training_stats.update(
+            self.model.anomaly_map_generator(
+                teacher_features=teacher_features, student_features=student_features
+            ).detach()
+        )
+
         return {"loss": loss}
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
