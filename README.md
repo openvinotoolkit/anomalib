@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/anomalib.png" width="400px">
+<img src="docs/source/images/logos/anomalib-wide.png" width="400px">
 
 **A library for benchmarking, developing and deploying deep learning anomaly detection algorithms**
 ___
@@ -75,7 +75,7 @@ where the currently available models are:
 
 ## Inference
 
-Anomalib contains several tools that can be used to perform inference with a traiend model. The script in [`tools/inference`](tools/inference.py) contains an example of how the inference tools can be used to generate a prediction for an input image.
+Anomalib contains several tools that can be used to perform inference with a trained model. The script in [`tools/inference`](tools/inference.py) contains an example of how the inference tools can be used to generate a prediction for an input image.
 
 The following command can be used to run inference from the command line:
 ```
