@@ -28,6 +28,7 @@ Steps to reproduce the behavior:
 - NVIDIA Driver Version [470.57.02]
 - CUDA Version [e.g. 11.4]
 - CUDNN Version [e.g. v11.4.120]
+- OpenVINO Version [Optional e.g. v2021.4.2]
 
 
 **Additional context**
