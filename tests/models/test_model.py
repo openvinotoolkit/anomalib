@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import os
 import random
 import tempfile
 from functools import wraps
@@ -85,7 +86,7 @@ class TestModel:
         config.project.seed = 1234
         config.dataset.category = category
         config.dataset.path = dataset_path
-        config.model.weight_file = "weights/model.ckpt"  # add model weights to the config
+        config.model.weight_file = os.path.join(project_path, "weights/model.ckpt")  # add model weights
 
         if not use_mvtec:
             config.dataset.category = "shapes"
@@ -136,9 +137,9 @@ class TestModel:
                 break
 
         # create new trainer object with LoadModel callback (assumes it is present)
-        trainer = Trainer(callbacks=callbacks, **config.trainer)
+        trainer = Trainer(resume_from_checkpoint=config.model.weight_file, callbacks=callbacks, **config.trainer)
         # Assumes the new model has LoadModel callback and the old one had ModelCheckpoint callback
-        new_results = trainer.test(model=loaded_model, datamodule=datamodule)[0]
+        new_results = trainer.test(model=loaded_model, datamodule=datamodule, ckpt_path=config.model.weight_file)[0]
         assert np.isclose(
             results["image_AUROC"], new_results["image_AUROC"]
         ), "Loaded model does not yield close performance results"

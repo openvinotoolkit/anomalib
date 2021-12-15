@@ -17,6 +17,7 @@
 # TODO: This would require a new design.
 # TODO: https://jira.devtools.intel.com/browse/IAAALD-149
 
+import os
 from pathlib import Path
 from typing import List, Optional, Union
 from warnings import warn
@@ -184,8 +185,10 @@ def get_configurable_parameters(
     # loggers should write to results/model/dataset/category/ folder
     config.trainer.default_root_dir = str(project_path)
 
+    if "weight_file" in config.model.keys():
+        weight_file = weight_file or config.model.weight_file
     if weight_file:
-        config.weight_file = weight_file
+        config.model.weight_file = os.path.join(config.project.path, weight_file)
 
     config = update_nncf_config(config)
     config = update_device_config(config, openvino)

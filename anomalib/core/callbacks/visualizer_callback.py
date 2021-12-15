@@ -79,7 +79,7 @@ class VisualizerCallback(Callback):
         """
         assert outputs is not None
 
-        if "standardize_scores" in pl_module.hparams.model.keys() and pl_module.hparams.model.standardize_scores:
+        if "normalize_scores" in pl_module.hparams.model.keys() and pl_module.hparams.model.normalize_scores:
             threshold = 0.5
             normalize = False  # anomaly maps are already normalized
         else:

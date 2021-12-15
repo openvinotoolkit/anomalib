@@ -12,3 +12,4 @@ class LoadModelCallback(Callback):
     def on_test_start(self, trainer, pl_module: LightningModule) -> None:  # pylint: disable=W0613
         """Call when the test begins."""
         pl_module.load_state_dict(torch.load(self.weights_path)["state_dict"])
+        trainer.on_load_checkpoint(torch.load(self.weights_path))

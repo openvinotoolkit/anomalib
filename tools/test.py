@@ -54,11 +54,10 @@ def test():
 
     datamodule = get_datamodule(config)
     model = get_model(config)
-
     callbacks = get_callbacks(config)
 
-    trainer = Trainer(callbacks=callbacks, **config.trainer)
-    trainer.test(model=model, datamodule=datamodule)
+    trainer = Trainer(callbacks=callbacks, **config.trainer, resume_from_checkpoint=config.model.weight_file)
+    trainer.test(model=model, datamodule=datamodule, ckpt_path=config.model.weight_file)
 
 
 if __name__ == "__main__":
