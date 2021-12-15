@@ -26,7 +26,7 @@ model:
     - layer2
     - layer3
   metric: auc
-  standardize_scores: true
+  normalize_scores: true
   threshold:
     image_default: 3
     pixel_default: 3
@@ -98,7 +98,6 @@ trainer:
   progress_bar_refresh_rate: null
   reload_dataloaders_every_epoch: false
   replace_sampler_ddp: true
-  resume_from_checkpoint: null
   stochastic_weight_avg: false
   sync_batchnorm: false
   terminate_on_nan: false
