@@ -42,7 +42,7 @@ class AnomalyModule(pl.LightningModule):
         self.loss: torch.Tensor
         self.callbacks: List[Callback]
         self.register_buffer(
-            "image_threshold", torch.tensor(params.model.threshold.image_default)
+            "image_threshold", torch.tensor(params.model.threshold.image_default).float()
         )  # pylint: disable=not-callable
         self.image_threshold: torch.Tensor
 
@@ -61,7 +61,7 @@ class AnomalyModule(pl.LightningModule):
 
         if self.hparams.dataset.task == "segmentation":
             self.pixel_metrics = self.image_metrics.clone(prefix="pixel_")
-            self.register_buffer("pixel_threshold", torch.tensor(params.model.threshold.pixel_default))
+            self.register_buffer("pixel_threshold", torch.tensor(params.model.threshold.pixel_default).float())
             self.pixel_threshold: torch.Tensor
 
     def forward(self, batch):  # pylint: disable=arguments-differ
