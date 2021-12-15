@@ -13,7 +13,7 @@
 
 # Checklist:
 
-- [ ] My code follows the pre-commit style and check guidelines of this project.
+- [ ] My code follows the [pre-commit style and check guidelines](https://openvinotoolkit.github.io/anomalib/guides/using_pre_commit.html#pre-commit-hooks) of this project.
 - [ ] I have performed a self-review of my code
 - [ ] I have commented my code, particularly in hard-to-understand areas
 - [ ] I have made corresponding changes to the documentation
