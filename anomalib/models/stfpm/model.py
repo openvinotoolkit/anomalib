@@ -25,9 +25,9 @@ import torchvision
 from omegaconf import ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
 from torch import Tensor, nn, optim
+from torchvision.models.feature_extraction import create_feature_extractor
 
 from anomalib.core.model import AnomalyModule
-from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.data.tiler import Tiler
 
 __all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel", "StfpmLightning"]
@@ -206,9 +206,8 @@ class STFPMModel(nn.Module):
         super().__init__()
         self.backbone = getattr(torchvision.models, backbone)
         self.apply_tiling = apply_tiling
-        self.teacher_model = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=layers)
-        self.student_model = FeatureExtractor(backbone=self.backbone(pretrained=False), layers=layers)
-
+        self.teacher_model = create_feature_extractor(self.backbone(pretrained=True), return_nodes=list(layers))
+        self.student_model = create_feature_extractor(self.backbone(pretrained=True), return_nodes=list(layers))
         # teacher model is fixed
         for parameters in self.teacher_model.parameters():
             parameters.requires_grad = False
@@ -302,14 +301,6 @@ class StfpmLightning(AnomalyModule):
         teacher_features, student_features = self.model.forward(batch["image"])
         loss = self.loss_val + self.model.loss(teacher_features, student_features)
         self.loss_val = 0
-        # store anomaly maps of training set
-
-        self.training_stats.update(
-            self.model.anomaly_map_generator(
-                teacher_features=teacher_features, student_features=student_features
-            ).detach()
-        )
-
         return {"loss": loss}
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ

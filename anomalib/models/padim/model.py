@@ -26,9 +26,9 @@ import torchvision
 from kornia import gaussian_blur2d
 from omegaconf import ListConfig
 from torch import Tensor, nn
+from torchvision.models.feature_extraction import create_feature_extractor
 
 from anomalib.core.model import AnomalyModule
-from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
 from anomalib.data.tiler import Tiler
 
@@ -66,7 +66,9 @@ class PadimModel(nn.Module):
         self.backbone = getattr(torchvision.models, backbone)
         self.layers = layers
         self.apply_tiling = apply_tiling
-        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
+        self.feature_extractor = create_feature_extractor(
+            self.backbone(pretrained=True), return_nodes=list(self.layers)
+        )
         self.dims = DIMS[backbone]
         # pylint: disable=not-callable
         # Since idx is randomly selected, save it with model to get same results
@@ -326,11 +328,6 @@ class PadimLightning(AnomalyModule):
 
         embeddings = torch.vstack([x["embeddings"] for x in outputs])
         self.stats = self.model.gaussian.fit(embeddings)
-        # store anomaly maps of training set
-        self.training_stats.update(
-            self.model.anomaly_map_generator(embedding=embeddings, mean=self.stats[0], inv_covariance=self.stats[1])
-        )
-        super().training_epoch_end(outputs)
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Validation Step of PADIM.
