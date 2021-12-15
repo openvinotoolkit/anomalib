@@ -5,7 +5,6 @@ from typing import Any, Dict, Optional
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning import Callback, Trainer
-from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch.distributions import LogNormal, Normal
 
 from anomalib.core.metrics.training_stats import TrainingStats
@@ -44,41 +43,47 @@ class NormalizationCallback(Callback):
         self,
         trainer: "pl.Trainer",
         pl_module: "pl.LightningModule",
-        outputs: Optional[STEP_OUTPUT],
+        outputs: Dict,
         batch: Any,
         batch_idx: int,
         dataloader_idx: int,
     ) -> None:
-        """Caled when the validation batch ends, standardizes the predicted scores and anomaly maps."""
+        """Called when the validation batch ends, standardizes the predicted scores and anomaly maps."""
         self._standardize(outputs)
 
     def on_test_batch_end(
         self,
         trainer: pl.Trainer,
         pl_module: pl.LightningModule,
-        outputs: Optional[STEP_OUTPUT],
+        outputs: Dict,
         batch: Any,
         batch_idx: int,
         dataloader_idx: int,
     ) -> None:
-        """Called when the test batch ends."""
+        """Called when the test batch ends, normalizes the predicted scores and anomaly maps."""
         self._standardize(outputs)
         self._normalize(outputs, pl_module)
 
     def on_predict_batch_end(
         self,
-        trainer: "pl.Trainer",
-        pl_module: "pl.LightningModule",
-        outputs: Any,
+        trainer: pl.Trainer,
+        pl_module: pl.LightningModule,
+        outputs: Dict,
         batch: Any,
         batch_idx: int,
         dataloader_idx: int,
     ) -> None:
-        """Called when the predict batch ends."""
+        """Called when the predict batch ends, normalizes the predicted scores and anomaly maps."""
         self._standardize(outputs)
         self._normalize(outputs, pl_module)
 
     def _collect_stats(self, trainer, pl_module):
+        """Collect the statistics of the normal training data.
+
+        Create a trainer and use it to predict the anomaly maps and scores of the normal training data. Then
+         estimate the distribution of anomaly scores for normal data at the image and pixel level by computing
+         the mean and standard deviations. A dictionary containing the computed statistics is stored in self.stats.
+        """
         predictions = Trainer(gpus=trainer.gpus).predict(
             model=copy.deepcopy(pl_module), dataloaders=trainer.datamodule.train_dataloader()
         )
@@ -90,7 +95,8 @@ class NormalizationCallback(Callback):
                 training_stats.update(anomaly_maps=batch["anomaly_maps"])
         self.stats = training_stats()
 
-    def _standardize(self, outputs):
+    def _standardize(self, outputs: Dict) -> None:
+        """Standardize the predicted scores and anomaly maps to the z-domain."""
         device = outputs["pred_scores"].device
         outputs["pred_scores"] = (torch.log(outputs["pred_scores"]) - self.stats["image_mean"]) / self.stats[
             "image_std"
@@ -100,7 +106,8 @@ class NormalizationCallback(Callback):
                 torch.log(outputs["anomaly_maps"]) - self.stats["pixel_mean"].to(device)
             ) / self.stats["pixel_std"].to(device)
 
-    def _normalize(self, outputs, pl_module):
+    def _normalize(self, outputs: Dict, pl_module: pl.LightningModule) -> None:
+        """Normalize the predicted scores and anomaly maps by first standardizing and then computing the CDF."""
         device = outputs["pred_scores"].device
         image_dist = Normal(torch.Tensor([0]), torch.Tensor([1]))
         outputs["pred_scores"] = image_dist.cdf(outputs["pred_scores"].cpu() - pl_module.image_threshold.cpu()).to(
