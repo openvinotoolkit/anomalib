@@ -29,8 +29,9 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
     """Logger for wandb.
 
     Adds interface for `add_image` in the logger rather than calling the experiment object.
-    The rest is same as the WandbLogger provided by PyTorch Lightning and the doc string
-    for which is reproduced below:
+
+    Note:
+        Same as the wandb Logger provided by PyTorch Lightning and the doc string is reproduced below.
 
     Log using `Weights and Biases <https://www.wandb.com/>`_.
 
@@ -60,9 +61,9 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
             If both ``log_model`` and ``offline``is set to ``True``.
 
     Example:
-        >>> from pytorch_lightning.loggers import WandbLogger
+        >>> from anomalib.loggers.wandb import AnomalibWandbLogger
         >>> from pytorch_lightning import Trainer
-        >>> wandb_logger = WandbLogger()
+        >>> wandb_logger = AnomalibWandbLogger()
         >>> trainer = Trainer(logger=wandb_logger)
 
     Note: When logging manually through `wandb.log` or `trainer.logger.experiment.log`,

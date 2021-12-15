@@ -28,16 +28,18 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
     """Logger for tensorboard.
 
     Adds interface for `add_image` in the logger rather than calling the experiment object.
-    The rest is same as the Tensorboard Logger provided by PyTorch Lightning and the doc string
-    for which is reproduced below
+
+    Note:
+        Same as the Tensorboard Logger provided by PyTorch Lightning and the doc string is reproduced below.
+
     Logs are saved to
     ``os.path.join(save_dir, name, version)``. This is the default logger in Lightning, it comes
     preinstalled.
 
     Example:
         >>> from pytorch_lightning import Trainer
-        >>> from pytorch_lightning.loggers import TensorBoardLogger
-        >>> logger = TensorBoardLogger("tb_logs", name="my_model")
+        >>> from anomalib.loggers.tensorboard import AnomalibTensorBoardLogger
+        >>> logger = AnomalibTensorBoardLogger("tb_logs", name="my_model")
         >>> trainer = Trainer(logger=logger)
 
     Args:

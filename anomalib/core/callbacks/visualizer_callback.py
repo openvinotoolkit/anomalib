@@ -103,7 +103,8 @@ class VisualizerCallback(Callback):
     def on_test_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
         """Sync logs.
 
-        Some loggers prefer syncing the batch at the end rather than logging at each timestep.
+        Currently only ``AnomalibWandbLogger`` is called from this method. This is because logging as a single batch
+        ensures that all images appear as part of the same step.
 
         Args:
             trainer (pl.Trainer): Pytorch Lightning trainer
