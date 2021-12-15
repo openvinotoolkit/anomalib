@@ -43,7 +43,7 @@ To perform an installation, run the following:
 ```
 yes | conda create -n anomalib python=3.8
 conda activate anomalib
-pip install -r requirements/requirements.txt
+pip install -r requirements/base.txt
 ```
 
 ## Training
