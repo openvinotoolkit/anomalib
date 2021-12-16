@@ -1,11 +1,12 @@
 [build-system]
-requires = ["flit_core >=2,<4"]
-build-backend = "flit_core.buildapi"
+requires = [
+    "setuptools>=42",
+    "wheel"
+]
+build-backend = "setuptools.build_meta"
 
 [tool.flit.metadata]
 module = "anomalib"
-author = "Intel OpenVINO"
-author-email = "help@openvino.intel.com"
 description-file = "README.md"
 requires-python = ">=3.7"
 

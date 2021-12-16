@@ -50,25 +50,27 @@ def get_required_packages(requirement_files: List[str]) -> List[str]:
     return required_packages
 
 
-if __name__ == "__main__":
-    base_packages = get_required_packages(requirement_files=["base", "openvino"])
-    dev_packages = get_required_packages(requirement_files=["dev", "docs"])
-    openvino_packages = get_required_packages(requirement_files=["openvino"])
+INSTALL_REQUIRES = get_required_packages(requirement_files=["base"])
+EXTRAS_REQUIRE = {
+    "dev": get_required_packages(requirement_files=["dev", "docs"]),
+    "openvino": get_required_packages(requirement_files=["openvino"]),
+    "full": get_required_packages(requirement_files=["dev", "docs", "openvino"]),
+}
 
-    setup(
-        name="anomalib",
-        version=anomalib.__version__,
-        packages=find_packages(include=["anomalib", "anomalib.*"]),
-        url="",
-        license="Copyright (c) Intel - All Rights Reserved. "
-        'Licensed under the Apache License, Version 2.0 (the "License")'
-        "See LICENSE file for more details.",
-        install_requires=base_packages,
-        extras_require={
-            "dev": dev_packages,
-            "openvino": openvino_packages,
-        },
-        author="Intel",
-        description="anomalib - Anomaly Detection Library",
-        package_data={"": ["config.yaml"]},
-    )
+setup(
+    name="anomalib",
+    version=anomalib.__version__,
+    author="Intel OpenVINO",
+    author_email="help@openvino.intel.com",
+    description="anomalib - Anomaly Detection Library",
+    url="",
+    license="Copyright (c) Intel - All Rights Reserved. "
+    'Licensed under the Apache License, Version 2.0 (the "License")'
+    "See LICENSE file for more details.",
+    python_requires=">=3.8",
+    package_dir={"": "anomalib"},
+    packages=find_packages(include=["anomalib", "anomalib.*"]),
+    install_requires=INSTALL_REQUIRES,
+    extras_require=EXTRAS_REQUIRE,
+    package_data={"": ["config.yaml"]},
+)
