@@ -16,10 +16,9 @@ class NormalizationCallback(Callback):
     def __init__(self):
         self.image_dist: Optional[LogNormal] = None
         self.pixel_dist: Optional[LogNormal] = None
-        self.stats: Dict = {}
 
     def on_train_epoch_end(
-        self, trainer: pl.Trainer, pl_module: pl.LightningModule, unused: Optional[Any] = None
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule, _unused: Optional[Any] = None
     ) -> None:
         """Called when the train epoch ends.
 
@@ -29,52 +28,42 @@ class NormalizationCallback(Callback):
         """
         self._collect_stats(trainer, pl_module)
 
-    def on_save_checkpoint(self, trainer: pl.Trainer, pl_module: pl.LightningModule, checkpoint) -> dict:
-        """Called when saving a model checkpoint, used to persist state."""
-        return self.stats
-
-    def on_load_checkpoint(
-        self, trainer: pl.Trainer, pl_module: pl.LightningModule, callback_state: Dict[str, Any]
-    ) -> None:
-        """Called when loading a model checkpoint, use to reload state."""
-        self.stats.update(callback_state)
-
     def on_validation_batch_end(
         self,
-        trainer: "pl.Trainer",
+        _trainer: "pl.Trainer",
         pl_module: "pl.LightningModule",
         outputs: Dict,
-        batch: Any,
-        batch_idx: int,
-        dataloader_idx: int,
+        _batch: Any,
+        _batch_idx: int,
+        _dataloader_idx: int,
     ) -> None:
         """Called when the validation batch ends, standardizes the predicted scores and anomaly maps."""
-        self._standardize(outputs)
+        self._standardize(outputs, pl_module)
 
     def on_test_batch_end(
         self,
-        trainer: pl.Trainer,
+        _trainer: pl.Trainer,
         pl_module: pl.LightningModule,
         outputs: Dict,
-        batch: Any,
-        batch_idx: int,
-        dataloader_idx: int,
+        _batch: Any,
+        _batch_idx: int,
+        _dataloader_idx: int,
     ) -> None:
         """Called when the test batch ends, normalizes the predicted scores and anomaly maps."""
-        self._standardize(outputs)
+        self._standardize(outputs, pl_module)
         self._normalize(outputs, pl_module)
 
     def on_predict_batch_end(
         self,
-        trainer: pl.Trainer,
+        _trainer: pl.Trainer,
         pl_module: pl.LightningModule,
         outputs: Dict,
-        batch: Any,
-        batch_idx: int,
-        dataloader_idx: int,
+        _batch: Any,
+        _batch_idx: int,
+        _dataloader_idx: int,
     ) -> None:
         """Called when the predict batch ends, normalizes the predicted scores and anomaly maps."""
-        self._standardize(outputs)
+        self._standardize(outputs, pl_module)
         self._normalize(outputs, pl_module)
 
     def _collect_stats(self, trainer, pl_module):
@@ -93,18 +82,20 @@ class NormalizationCallback(Callback):
                 training_stats.update(anomaly_scores=batch["pred_scores"])
             if "anomaly_maps" in batch.keys():
                 training_stats.update(anomaly_maps=batch["anomaly_maps"])
-        self.stats = training_stats()
+        stats = training_stats()
+        pl_module.image_mean = stats["image_mean"]
+        pl_module.image_std = stats["image_std"]
+        pl_module.pixel_mean = stats["pixel_mean"]
+        pl_module.pixel_std = stats["pixel_std"]
 
-    def _standardize(self, outputs: Dict) -> None:
+    def _standardize(self, outputs: Dict, pl_module) -> None:
         """Standardize the predicted scores and anomaly maps to the z-domain."""
         device = outputs["pred_scores"].device
-        outputs["pred_scores"] = (torch.log(outputs["pred_scores"]) - self.stats["image_mean"]) / self.stats[
-            "image_std"
-        ]
+        outputs["pred_scores"] = (torch.log(outputs["pred_scores"]) - pl_module.image_mean) / pl_module.image_std
         if "anomaly_maps" in outputs.keys():
             outputs["anomaly_maps"] = (
-                torch.log(outputs["anomaly_maps"]) - self.stats["pixel_mean"].to(device)
-            ) / self.stats["pixel_std"].to(device)
+                torch.log(outputs["anomaly_maps"]) - pl_module.pixel_mean.to(device)
+            ) / pl_module.pixel_std.to(device)
 
     def _normalize(self, outputs: Dict, pl_module: pl.LightningModule) -> None:
         """Normalize the predicted scores and anomaly maps by first standardizing and then computing the CDF."""
