@@ -137,9 +137,9 @@ class TestModel:
                 break
 
         # create new trainer object with LoadModel callback (assumes it is present)
-        trainer = Trainer(resume_from_checkpoint=config.model.weight_file, callbacks=callbacks, **config.trainer)
+        trainer = Trainer(callbacks=callbacks, **config.trainer)
         # Assumes the new model has LoadModel callback and the old one had ModelCheckpoint callback
-        new_results = trainer.test(model=loaded_model, datamodule=datamodule, ckpt_path=config.model.weight_file)[0]
+        new_results = trainer.test(model=loaded_model, datamodule=datamodule)[0]
         assert np.isclose(
             results["image_AUROC"], new_results["image_AUROC"]
         ), "Loaded model does not yield close performance results"
