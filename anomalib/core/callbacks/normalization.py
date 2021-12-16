@@ -7,7 +7,7 @@ import torch
 from pytorch_lightning import Callback, Trainer
 from torch.distributions import LogNormal, Normal
 
-from anomalib.core.metrics.training_stats import TrainingStats
+from anomalib.core.metrics import TrainingStats
 
 
 class NormalizationCallback(Callback):
