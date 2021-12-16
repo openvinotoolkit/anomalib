@@ -65,6 +65,7 @@ class NormalizationCallback(Callback):
         """Called when the predict batch ends, normalizes the predicted scores and anomaly maps."""
         self._standardize(outputs, pl_module)
         self._normalize(outputs, pl_module)
+        outputs["pred_labels"] = outputs["pred_scores"] >= 0.5
 
     def _collect_stats(self, trainer, pl_module):
         """Collect the statistics of the normal training data.
@@ -91,7 +92,8 @@ class NormalizationCallback(Callback):
     def _standardize(self, outputs: Dict, pl_module) -> None:
         """Standardize the predicted scores and anomaly maps to the z-domain."""
         device = outputs["pred_scores"].device
-        outputs["pred_scores"] = (torch.log(outputs["pred_scores"]) - pl_module.image_mean) / pl_module.image_std
+        outputs["pred_scores"] = torch.log(outputs["pred_scores"])
+        outputs["pred_scores"] = (outputs["pred_scores"] - pl_module.image_mean) / pl_module.image_std
         if "anomaly_maps" in outputs.keys():
             outputs["anomaly_maps"] = (
                 torch.log(outputs["anomaly_maps"]) - pl_module.pixel_mean.to(device)

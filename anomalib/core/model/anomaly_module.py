@@ -42,13 +42,14 @@ class AnomalyModule(pl.LightningModule):
         self.loss: torch.Tensor
         self.callbacks: List[Callback]
         self.register_buffer(
-            "image_threshold", torch.tensor(params.model.threshold.image_default).float()
-        )  # pylint: disable=not-callable
+            "image_threshold",
+            torch.tensor(params.model.threshold.image_default).float(),  # pylint: disable=not-callable
+        )
         self.image_threshold: torch.Tensor
 
         input_size = (self.hparams.model.input_size[0], self.hparams.model.input_size[1])
-        self.register_buffer("image_mean", torch.tensor(0.0))
-        self.register_buffer("image_std", torch.tensor(0.0))
+        self.register_buffer("image_mean", torch.tensor(0.0))  # pylint: disable=not-callable
+        self.register_buffer("image_std", torch.tensor(0.0))  # pylint: disable=not-callable
         self.register_buffer("pixel_mean", torch.zeros(input_size))
         self.register_buffer("pixel_std", torch.zeros(input_size))
 
@@ -72,7 +73,10 @@ class AnomalyModule(pl.LightningModule):
 
         if self.hparams.dataset.task == "segmentation":
             self.pixel_metrics = self.image_metrics.clone(prefix="pixel_")
-            self.register_buffer("pixel_threshold", torch.tensor(params.model.threshold.pixel_default).float())
+            self.register_buffer(
+                "pixel_threshold",
+                torch.tensor(params.model.threshold.pixel_default).float(),  # pylint: disable=not-callable
+            )
             self.pixel_threshold: torch.Tensor
 
     def forward(self, batch):  # pylint: disable=arguments-differ
@@ -85,6 +89,10 @@ class AnomalyModule(pl.LightningModule):
             [Tensor]: Output tensor from the model.
         """
         return self.model(batch)
+
+    def validation_step(self, batch, batch_idx) -> dict:  # pylint: disable=arguments-differ
+        """To be implemented in the subclasses."""
+        raise NotImplementedError
 
     def predict_step(self, batch, batch_idx, _):  # pylint: disable=arguments-differ, signature-differs
         """Step function called during :meth:`~pytorch_lightning.trainer.trainer.Trainer.predict`.
@@ -100,7 +108,9 @@ class AnomalyModule(pl.LightningModule):
         Return:
             Predicted output
         """
-        outputs = self._post_process(self.validation_step(batch, batch_idx), predict_labels=True)
+        outputs = self.validation_step(batch, batch_idx)
+        self._post_process(outputs)
+        outputs["pred_labels"] = outputs["pred_scores"] >= self.image_threshold.item()
         return outputs
 
     def test_step(self, batch, _):  # pylint: disable=arguments-differ
@@ -118,11 +128,13 @@ class AnomalyModule(pl.LightningModule):
 
     def validation_step_end(self, val_step_outputs):  # pylint: disable=arguments-differ
         """Called at the end of each validation step."""
-        return self._post_process(val_step_outputs)
+        self._post_process(val_step_outputs)
+        return val_step_outputs
 
     def test_step_end(self, test_step_outputs):  # pylint: disable=arguments-differ
         """Called at the end of each test step."""
-        return self._post_process(test_step_outputs)
+        self._post_process(test_step_outputs)
+        return test_step_outputs
 
     def validation_epoch_end(self, outputs):
         """Compute threshold and performance metrics.
@@ -132,13 +144,7 @@ class AnomalyModule(pl.LightningModule):
         """
         self._collect_outputs(outputs)
         if self.hparams.model.threshold.adaptive:
-            self.image_metrics.compute()
-            self.image_threshold = self.image_metrics.OptimalF1.threshold
-            if "mask" in outputs[0].keys() and "anomaly_maps" in outputs[0].keys():
-                self.pixel_metrics.compute()
-                self.pixel_threshold = self.pixel_metrics.OptimalF1.threshold
-            else:
-                self.pixel_threshold = self.image_threshold
+            self._compute_adaptive_threshold(outputs)
         self._log_metrics()
 
     def test_epoch_end(self, outputs):
@@ -150,21 +156,27 @@ class AnomalyModule(pl.LightningModule):
         self._collect_outputs(outputs)
         self._log_metrics()
 
+    def _compute_adaptive_threshold(self, outputs):
+        self.image_metrics.compute()
+        self.image_threshold = self.image_metrics.OptimalF1.threshold
+        if "mask" in outputs[0].keys() and "anomaly_maps" in outputs[0].keys():
+            self.pixel_metrics.compute()
+            self.pixel_threshold = self.pixel_metrics.OptimalF1.threshold
+        else:
+            self.pixel_threshold = self.image_threshold
+
     def _collect_outputs(self, outputs):
         for output in outputs:
             self.image_metrics(output["pred_scores"], output["label"].int())
             if "mask" in output.keys() and "anomaly_maps" in output.keys():
                 self.pixel_metrics(output["anomaly_maps"].flatten(), output["mask"].flatten().int())
 
-    def _post_process(self, outputs, predict_labels=False):
+    def _post_process(self, outputs):
         """Compute labels based on model predictions."""
         if "pred_scores" not in outputs and "anomaly_maps" in outputs:
             outputs["pred_scores"] = (
                 outputs["anomaly_maps"].reshape(outputs["anomaly_maps"].shape[0], -1).max(axis=1).values
             )
-        if predict_labels:
-            outputs["pred_labels"] = outputs["pred_scores"] >= self.image_threshold.item()
-        return outputs
 
     def _log_metrics(self):
         """Log computed performance metrics."""

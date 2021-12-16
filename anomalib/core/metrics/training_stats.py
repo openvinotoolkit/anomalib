@@ -33,7 +33,8 @@ class TrainingStats(Metric):
         """Compute stats."""
         metrics = {}
 
-        anomaly_scores = torch.log(torch.hstack(self.anomaly_scores))
+        anomaly_scores = torch.hstack(self.anomaly_scores)
+        anomaly_scores = torch.log(anomaly_scores)
 
         metrics["image_mean"] = anomaly_scores.mean()
         metrics["image_std"] = anomaly_scores.std()
