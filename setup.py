@@ -97,7 +97,6 @@ setup(
     "See LICENSE file for more details.",
     python_requires=">=3.8",
     packages=find_packages("."),
-    # packages=find_packages(include=["anomalib", "anomalib.*"]),
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRAS_REQUIRE,
     package_data={"": ["config.yaml"]},
