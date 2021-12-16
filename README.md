@@ -1,15 +1,36 @@
-# Anomalib
+<div align="center">
+
+<img src="docs/source/images/logos/anomalib-wide.png" width="400px">
+
+**A library for benchmarking, developing and deploying deep learning anomaly detection algorithms**
+___
+
+[Key Features](#key-features) •
+[Getting Started](#getting-started) •
+[Docs](https://openvinotoolkit.github.io/anomalib) •
+[License](https://github.com/openvinotoolkit/anomalib/blob/development/LICENSE)
+
 [![black](https://img.shields.io/badge/code%20style-black-000000.svg)]()
 [![python](https://img.shields.io/badge/python-3.6%2B-green)]()
 [![pytorch](https://img.shields.io/badge/pytorch-1.7.1%2B-orange)]()
 [![openvino](https://img.shields.io/badge/openvino-2021.4-purple)]()
 ![example branch parameter](https://github.com/openvinotoolkit/anomalib/actions/workflows/tox.yml/badge.svg?branch=development)
 
+</div>
 
-This repository contains state-of-the art anomaly detection algorithms trained and evaluated on both public and private
-benchmark datasets. The repo is constantly updated with new algorithms, so keep checking.
+___
 
-## Installation
+## Introduction
+Anomalib is a deep learning library that aims to collect state-of-the-art anomaly detection algorithms for benchmarking on both public and private datasets. Anomalib provides several ready-to-use implementations of anomaly detection algorithms described in the recent literature, as well as a set of tools that facilitate the development and implementation of custom models. The library has a strong focus on image-based anomaly detection, where the goal of the algorithm is to identify anomalous images, or anomalous pixel regions within images in a dataset. Anomalib is constantly updated with new algorithms and training/inference extensions, so keep checking!
+
+##### Key features:
+- The largest public collection of ready-to-use deep learning anomaly detection algorithms and benchmark datasets.
+- [**PyTorch Lightning**](https://www.pytorchlightning.ai/) based model implementations to reduce boilerplate code and limit the implementation efforts to the bare essentials.
+- All models can be exported to [**OpenVINO**](https://www.intel.com/content/www/us/en/developer/tools/openvino-toolkit/overview.html) Intermediate Representation (IR) for accelerated inference on intel hardware.
+- A set of [inference tools](#inference) for quick and easy deployment of the standard or custom anomaly detection models.
+
+___
+## Getting Started
 The repo is thoroughly tested based on the following configuration.
 *  Ubuntu 20.04
 *  NVIDIA GeForce RTX 3090
@@ -46,24 +67,24 @@ Alternatively, a model name could also be provided as an argument, where the scr
 python tools/train.py --model stfpm
 ```
 where the currently available models are:
-*  [`stfpm`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/tree/samet/stfpm/anomalib/models/stfpm)
+* [DFKDE](anomalib/models/dfkde)
+* [DFM](anomalib/models/dfm)
+* [PADIM](anomalib/models/padim)
+* [PatchCore](anomalib/models/patchcore)
+* [STFPM](anomalib/models/stfpm)
 
+## Inference
 
+Anomalib contains several tools that can be used to perform inference with a trained model. The script in [`tools/inference`](tools/inference.py) contains an example of how the inference tools can be used to generate a prediction for an input image.
 
-## Benchmark
+The following command can be used to run inference from the command line:
+```
+python tools/inference.py --model_config_path <path/to/model/config.yaml> --weight_path <path/to/weight/file> --image_path <path/to/image>
+```
+If the specified weight path points to a PyTorch Lightning checkpoint file (`.ckpt`), inference will run in PyTorch. If the path points to an ONNX graph (`.onnx`) or OpenVINO IR (`.bin` or `.xml`), inference will run in OpenVINO.
 
-### [MVTec Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
+## Datasets
 
-### Image-Level AUC
-| Model | Backbone    |    Avg    | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
-| ----- | ----------- | :-------: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
-| PADIM | ResNet-18   |   0.909   | 0.988  | 0.923 |  0.985  | 0.940 | 0.984 | 0.994  | 0.871 |  0.874  |  0.796   |   0.974   | 0.872 | 0.779 |   0.939    |   0.954    | 0.761  |
-| PADIM | Wide ResNet | **0.965** | 0.998  | 0.957 |  0.999  | 0.983 | 0.993 | 0.999  | 0.898 |  0.907  |    -     |   0.992   | 0.951 |   -   |   0.981    |   0.973    | 0.909  |
-| DFKDE | ResNet-18   |   0.779   | 0.650  | 0.403 |  0.977  | 0.972 | 0.954 | 0.940  | 0.749 |  0.766  |  0.806   |   0.623   | 0.672 | 0.677 |   0.797    |   0.813    | 0.879  |
+## Add a custom model
 
-### Pixel-Level AUC
-| Model | Backbone    |    Avg    | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
-| ----- | ----------- | :-------: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
-| PADIM | ResNet-18   |   0.964   | 0.986  | 0.919 |  0.992  | 0.916 | 0.937 | 0.980  | 0.957 |  0.980  |  0.972   |   0.957   | 0.951 | 0.973 |   0.986    |   0.968    | 0.980  |
-| PADIM | Wide ResNet | **0.974** | 0.990  | 0.970 |  0.991  | 0.940 | 0.954 | 0.982  | 0.963 |  0.985  |    -     |   0.974   | 0.961 |   -   |   0.988    |   0.973    | 0.986  |
-| STFPM | ResNet-18   |   0.961   | 0.984  | 0.988 |  0.982  | 0.957 | 0.940 | 0.981  | 0.940 |  0.974  |  0.983   |   0.968   | 0.973 | 0.983 |   0.984    |   0.800    | 0.983  |
+## Contributing
