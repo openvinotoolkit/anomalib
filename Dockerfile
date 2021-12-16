@@ -41,8 +41,3 @@ RUN pip install -r /tmp/anomalib/requirements/openvino.txt
 # Install other requirements related to development
 COPY ./requirements/dev.txt /tmp/anomalib/requirements/dev.txt
 RUN pip install -r /tmp/anomalib/requirements/dev.txt
-
-# Install ote_sdk
-COPY ./impt/src/ote_sdk/ /tmp/impt/src/ote_sdk/
-RUN cd /tmp/impt/src/ote_sdk && \
-    pip install -e .
