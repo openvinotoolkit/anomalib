@@ -291,6 +291,7 @@ class OpenVINOInferencer(Inferencer):
         if "pixel_mean" in meta_data.keys() and "pixel_std" in meta_data.keys():
             anomaly_map = np.log(anomaly_map)
             anomaly_map = (anomaly_map - meta_data["pixel_mean"]) / meta_data["pixel_std"]
+            anomaly_map -= (meta_data["image_mean"] - meta_data["pixel_mean"]) / meta_data["pixel_std"]
             if "threshold" in meta_data.keys():
                 anomaly_map = norm.cdf(anomaly_map - meta_data["threshold"])
 

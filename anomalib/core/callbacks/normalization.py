@@ -96,6 +96,9 @@ class NormalizationCallback(Callback):
             outputs["anomaly_maps"] = (
                 torch.log(outputs["anomaly_maps"]) - pl_module.pixel_mean.to(device)
             ) / pl_module.pixel_std.to(device)
+            outputs["anomaly_maps"] -= (
+                pl_module.image_mean.to(device) - pl_module.pixel_mean.to(device)
+            ) / pl_module.pixel_std.to(device)
 
     def _normalize(self, outputs: Dict, pl_module: pl.LightningModule) -> None:
         """Normalize the predicted scores and anomaly maps by first standardizing and then computing the CDF."""
