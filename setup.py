@@ -13,12 +13,37 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions
 # and limitations under the License.
-
+from pathlib import Path
 from typing import List
 
 from setuptools import find_packages, setup
 
-import anomalib
+
+def get_version() -> str:
+    """Get version from `anomalib.__init__`.
+
+    Version is stored in the main __init__ module in `anomalib`.
+    The varible storing the version is `__version__`. This function
+    reads `__init__` file, checks `__version__ variable and return
+    the value assigned to it.
+
+    Example:
+        >>> # Assume that __version__ = "0.2.1"
+        >>> get_version()
+        "0.2.1"
+
+    Returns:
+        str: Version number of `anomalib` package.
+    """
+
+    with open(Path.cwd() / "anomalib" / "__init__.py", "r", encoding="utf8") as file:
+        lines = file.readlines()
+        for line in lines:
+            line = line.strip()
+            if line.startswith("__version__"):
+                version = line.replace("__version__ = ", "")
+
+    return version
 
 
 def get_required_packages(requirement_files: List[str]) -> List[str]:
@@ -50,6 +75,9 @@ def get_required_packages(requirement_files: List[str]) -> List[str]:
     return required_packages
 
 
+
+
+VERSION = get_version()
 INSTALL_REQUIRES = get_required_packages(requirement_files=["base"])
 EXTRAS_REQUIRE = {
     "dev": get_required_packages(requirement_files=["dev", "docs"]),
@@ -59,7 +87,7 @@ EXTRAS_REQUIRE = {
 
 setup(
     name="anomalib",
-    version=anomalib.__version__,
+    version=VERSION,
     author="Intel OpenVINO",
     author_email="help@openvino.intel.com",
     description="anomalib - Anomaly Detection Library",
@@ -68,8 +96,8 @@ setup(
     'Licensed under the Apache License, Version 2.0 (the "License")'
     "See LICENSE file for more details.",
     python_requires=">=3.8",
-    package_dir={"": "anomalib"},
-    packages=find_packages(include=["anomalib", "anomalib.*"]),
+    packages=find_packages("."),
+    # packages=find_packages(include=["anomalib", "anomalib.*"]),
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRAS_REQUIRE,
     package_data={"": ["config.yaml"]},
