@@ -47,10 +47,10 @@ class AnomalyModule(pl.LightningModule):
         self.image_threshold: torch.Tensor
 
         input_size = (self.hparams.model.input_size[0], self.hparams.model.input_size[1])
-        self.register_buffer("image_mean", torch.Tensor([0.0]))
-        self.register_buffer("image_std", torch.Tensor([0.0]))
+        self.register_buffer("image_mean", torch.tensor(0.0))
+        self.register_buffer("image_std", torch.tensor(0.0))
         self.register_buffer("pixel_mean", torch.zeros(input_size))
-        self.register_buffer("image_mean", torch.zeros(input_size))
+        self.register_buffer("pixel_std", torch.zeros(input_size))
 
         self.image_mean: torch.Tensor
         self.image_std: torch.Tensor
