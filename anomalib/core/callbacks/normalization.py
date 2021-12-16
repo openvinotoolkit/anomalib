@@ -17,6 +17,11 @@ class NormalizationCallback(Callback):
         self.image_dist: Optional[LogNormal] = None
         self.pixel_dist: Optional[LogNormal] = None
 
+    def on_test_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
+        """Called when the test begins."""
+        pl_module.image_metrics.F1.threshold = 0.5
+        pl_module.pixel_metrics.F1.threshold = 0.5
+
     def on_train_epoch_end(
         self, trainer: pl.Trainer, pl_module: pl.LightningModule, _unused: Optional[Any] = None
     ) -> None:
@@ -106,11 +111,11 @@ class NormalizationCallback(Callback):
         """Normalize the predicted scores and anomaly maps by first standardizing and then computing the CDF."""
         device = outputs["pred_scores"].device
         image_dist = Normal(torch.Tensor([0]), torch.Tensor([1]))
-        outputs["pred_scores"] = image_dist.cdf(outputs["pred_scores"].cpu() - pl_module.image_threshold.cpu()).to(
-            device
-        )
+        outputs["pred_scores"] = image_dist.cdf(
+            outputs["pred_scores"].cpu() - pl_module.image_threshold.value.cpu()
+        ).to(device)
         if "anomaly_maps" in outputs.keys():
             pixel_dist = Normal(torch.Tensor([0]), torch.Tensor([1]))
             outputs["anomaly_maps"] = pixel_dist.cdf(
-                outputs["anomaly_maps"].cpu() - pl_module.pixel_threshold.cpu()
+                outputs["anomaly_maps"].cpu() - pl_module.pixel_threshold.value.cpu()
             ).to(device)
