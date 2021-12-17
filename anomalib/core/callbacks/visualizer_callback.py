@@ -84,7 +84,7 @@ class VisualizerCallback(Callback):
             threshold = 0.5
             normalize = False  # anomaly maps are already normalized
         else:
-            threshold = pl_module.pixel_threshold.item()
+            threshold = pl_module.pixel_threshold.value.item()
             normalize = True  # raw anomaly maps. Still need to normalize
 
         for (filename, image, true_mask, anomaly_map) in zip(
@@ -107,14 +107,14 @@ class VisualizerCallback(Callback):
             self._add_images(visualizer, pl_module, Path(filename))
             visualizer.close()
 
-    def on_test_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
+    def on_test_end(self, _trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
         """Sync logs.
 
         Currently only ``AnomalibWandbLogger`` is called from this method. This is because logging as a single batch
         ensures that all images appear as part of the same step.
 
         Args:
-            trainer (pl.Trainer): Pytorch Lightning trainer
+            _trainer (pl.Trainer): Pytorch Lightning trainer (unused)
             pl_module (pl.LightningModule): Anomaly module
         """
         if pl_module.logger is not None and isinstance(pl_module.logger, AnomalibWandbLogger):
