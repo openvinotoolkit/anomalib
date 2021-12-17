@@ -157,8 +157,8 @@ class Tiler:
 
     def __init__(
         self,
-        tile_size: Union[int, Tuple],
-        stride: Union[int, Tuple],
+        tile_size: Union[int, Sequence],
+        stride: Union[int, Sequence],
         remove_border_count: int = 0,
         mode: str = "padding",
         tile_count: SupportsIndex = 4,
