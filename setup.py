@@ -75,8 +75,6 @@ def get_required_packages(requirement_files: List[str]) -> List[str]:
     return required_packages
 
 
-
-
 VERSION = get_version()
 INSTALL_REQUIRES = get_required_packages(requirement_files=["base"])
 EXTRAS_REQUIRE = {
@@ -87,7 +85,7 @@ EXTRAS_REQUIRE = {
 
 setup(
     name="anomalib",
-    version=VERSION,
+    version="0.2.1",
     author="Intel OpenVINO",
     author_email="help@openvino.intel.com",
     description="anomalib - Anomaly Detection Library",
