@@ -7,8 +7,6 @@ import torch
 from pytorch_lightning import Callback, Trainer
 from torch.distributions import LogNormal, Normal
 
-from anomalib.core.metrics import TrainingStats
-
 
 class NormalizationCallback(Callback):
     """Callback that standardizes the image-level and pixel-level anomaly scores."""
@@ -35,8 +33,8 @@ class NormalizationCallback(Callback):
 
     def on_validation_batch_end(
         self,
-        _trainer: "pl.Trainer",
-        pl_module: "pl.LightningModule",
+        _trainer: pl.Trainer,
+        pl_module: pl.LightningModule,
         outputs: Dict,
         _batch: Any,
         _batch_idx: int,
@@ -82,40 +80,31 @@ class NormalizationCallback(Callback):
         predictions = Trainer(gpus=trainer.gpus).predict(
             model=copy.deepcopy(pl_module), dataloaders=trainer.datamodule.train_dataloader()
         )
-        training_stats = TrainingStats()
+        pl_module.training_stats.reset()
         for batch in predictions:
             if "pred_scores" in batch.keys():
-                training_stats.update(anomaly_scores=batch["pred_scores"])
+                pl_module.training_stats.update(anomaly_scores=batch["pred_scores"])
             if "anomaly_maps" in batch.keys():
-                training_stats.update(anomaly_maps=batch["anomaly_maps"])
-        stats = training_stats()
-        pl_module.image_mean = stats["image_mean"]
-        pl_module.image_std = stats["image_std"]
-        pl_module.pixel_mean = stats["pixel_mean"]
-        pl_module.pixel_std = stats["pixel_std"]
+                pl_module.training_stats.update(anomaly_maps=batch["anomaly_maps"])
+        pl_module.training_stats.compute()
 
     def _standardize(self, outputs: Dict, pl_module) -> None:
         """Standardize the predicted scores and anomaly maps to the z-domain."""
-        device = outputs["pred_scores"].device
+        stats = pl_module.training_stats.to(outputs["pred_scores"].device)
+
         outputs["pred_scores"] = torch.log(outputs["pred_scores"])
-        outputs["pred_scores"] = (outputs["pred_scores"] - pl_module.image_mean) / pl_module.image_std
+        outputs["pred_scores"] = (outputs["pred_scores"] - stats.image_mean) / stats.image_std
         if "anomaly_maps" in outputs.keys():
-            outputs["anomaly_maps"] = (
-                torch.log(outputs["anomaly_maps"]) - pl_module.pixel_mean.to(device)
-            ) / pl_module.pixel_std.to(device)
-            outputs["anomaly_maps"] -= (
-                pl_module.image_mean.to(device) - pl_module.pixel_mean.to(device)
-            ) / pl_module.pixel_std.to(device)
+            outputs["anomaly_maps"] = (torch.log(outputs["anomaly_maps"]) - stats.pixel_mean) / stats.pixel_std
+            outputs["anomaly_maps"] -= (stats.image_mean - stats.pixel_mean) / stats.pixel_std
 
     def _normalize(self, outputs: Dict, pl_module: pl.LightningModule) -> None:
         """Normalize the predicted scores and anomaly maps by first standardizing and then computing the CDF."""
         device = outputs["pred_scores"].device
-        image_dist = Normal(torch.Tensor([0]), torch.Tensor([1]))
-        outputs["pred_scores"] = image_dist.cdf(
-            outputs["pred_scores"].cpu() - pl_module.image_threshold.value.cpu()
-        ).to(device)
+        image_threshold = pl_module.image_threshold.value.cpu()
+        pixel_threshold = pl_module.pixel_threshold.value.cpu()
+
+        norm = Normal(torch.Tensor([0]), torch.Tensor([1]))
+        outputs["pred_scores"] = norm.cdf(outputs["pred_scores"].cpu() - image_threshold).to(device)
         if "anomaly_maps" in outputs.keys():
-            pixel_dist = Normal(torch.Tensor([0]), torch.Tensor([1]))
-            outputs["anomaly_maps"] = pixel_dist.cdf(
-                outputs["anomaly_maps"].cpu() - pl_module.pixel_threshold.value.cpu()
-            ).to(device)
+            outputs["anomaly_maps"] = norm.cdf(outputs["anomaly_maps"].cpu() - pixel_threshold).to(device)

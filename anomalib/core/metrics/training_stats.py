@@ -1,5 +1,5 @@
 """Module that computes the parameters of the normal data distribution of the training set."""
-from typing import Dict, Optional
+from typing import Optional, Tuple
 
 import torch
 from torch import Tensor
@@ -13,6 +13,11 @@ class TrainingStats(Metric):
         super().__init__(**kwargs)
         self.anomaly_maps = []
         self.anomaly_scores = []
+
+        self.add_state("image_mean", torch.empty(0), persistent=True)
+        self.add_state("image_std", torch.empty(0), persistent=True)
+        self.add_state("pixel_mean", torch.empty(0), persistent=True)
+        self.add_state("pixel_std", torch.empty(0), persistent=True)
 
         self.image_mean = torch.empty(0)
         self.image_std = torch.empty(0)
@@ -29,21 +34,19 @@ class TrainingStats(Metric):
         if anomaly_scores is not None:
             self.anomaly_scores.append(anomaly_scores)
 
-    def compute(self) -> Dict[str, Tensor]:
+    def compute(self) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         """Compute stats."""
-        metrics = {}
-
         anomaly_scores = torch.hstack(self.anomaly_scores)
         anomaly_scores = torch.log(anomaly_scores)
 
-        metrics["image_mean"] = anomaly_scores.mean()
-        metrics["image_std"] = anomaly_scores.std()
+        self.image_mean = anomaly_scores.mean()
+        self.image_std = anomaly_scores.std()
 
         if self.anomaly_maps:
             anomaly_maps = torch.vstack(self.anomaly_maps)
             anomaly_maps = torch.log(anomaly_maps).cpu()
 
-            metrics["pixel_mean"] = anomaly_maps.mean(dim=0).squeeze()
-            metrics["pixel_std"] = anomaly_maps.std(dim=0).squeeze()
+            self.pixel_mean = anomaly_maps.mean(dim=0).squeeze()
+            self.pixel_std = anomaly_maps.std(dim=0).squeeze()
 
-        return metrics
+        return self.image_mean, self.image_std, self.pixel_mean, self.pixel_std
