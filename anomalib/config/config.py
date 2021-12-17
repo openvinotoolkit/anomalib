@@ -193,4 +193,8 @@ def get_configurable_parameters(
     config = update_nncf_config(config)
     config = update_device_config(config, openvino)
 
+    # thresholding
+    if "pixel_default" not in config.model.threshold.keys():
+        config.model.threshold.pixel_default = config.model.threshold.image_default
+
     return config

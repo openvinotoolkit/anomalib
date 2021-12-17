@@ -196,11 +196,11 @@ class Tiler:
         self.num_patches_w: int
 
     @staticmethod
-    def __validate_size_type(parameter) -> Tuple:
+    def __validate_size_type(parameter: Union[int, Sequence]) -> Tuple[int, ...]:
         if isinstance(parameter, int):
             output = (parameter,) * 2
         elif isinstance(parameter, Sequence):
-            output = tuple(parameter)
+            output = (parameter[0], parameter[1])
         else:
             raise ValueError(f"Unknown type {type(parameter)} for tile or stride size. Could be int or Sequence type.")
 

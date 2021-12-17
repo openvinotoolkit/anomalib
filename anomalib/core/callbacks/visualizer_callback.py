@@ -26,8 +26,9 @@ class VisualizerCallback(Callback):
     config.yaml file.
     """
 
-    def __init__(self):
+    def __init__(self, inputs_are_normalized: bool):
         """Visualizer callback."""
+        self.inputs_are_normalized = inputs_are_normalized
 
     def _add_images(
         self,
@@ -80,7 +81,7 @@ class VisualizerCallback(Callback):
         """
         assert outputs is not None
 
-        if "normalize_scores" in pl_module.hparams.model.keys() and pl_module.hparams.model.normalize_scores:
+        if self.inputs_are_normalized:
             threshold = 0.5
             normalize = False  # anomaly maps are already normalized
         else:

@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning import Callback, Trainer
+from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch.distributions import LogNormal, Normal
 
 
@@ -15,7 +16,7 @@ class NormalizationCallback(Callback):
         self.image_dist: Optional[LogNormal] = None
         self.pixel_dist: Optional[LogNormal] = None
 
-    def on_test_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
+    def on_test_start(self, _trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
         """Called when the test begins."""
         pl_module.image_metrics.F1.threshold = 0.5
         pl_module.pixel_metrics.F1.threshold = 0.5
@@ -35,7 +36,7 @@ class NormalizationCallback(Callback):
         self,
         _trainer: pl.Trainer,
         pl_module: pl.LightningModule,
-        outputs: Dict,
+        outputs: Optional[STEP_OUTPUT],
         _batch: Any,
         _batch_idx: int,
         _dataloader_idx: int,
@@ -47,7 +48,7 @@ class NormalizationCallback(Callback):
         self,
         _trainer: pl.Trainer,
         pl_module: pl.LightningModule,
-        outputs: Dict,
+        outputs: Optional[STEP_OUTPUT],
         _batch: Any,
         _batch_idx: int,
         _dataloader_idx: int,
@@ -88,7 +89,7 @@ class NormalizationCallback(Callback):
                 pl_module.training_stats.update(anomaly_maps=batch["anomaly_maps"])
         pl_module.training_stats.compute()
 
-    def _standardize(self, outputs: Dict, pl_module) -> None:
+    def _standardize(self, outputs: STEP_OUTPUT, pl_module) -> None:
         """Standardize the predicted scores and anomaly maps to the z-domain."""
         stats = pl_module.training_stats.to(outputs["pred_scores"].device)
 
@@ -98,7 +99,7 @@ class NormalizationCallback(Callback):
             outputs["anomaly_maps"] = (torch.log(outputs["anomaly_maps"]) - stats.pixel_mean) / stats.pixel_std
             outputs["anomaly_maps"] -= (stats.image_mean - stats.pixel_mean) / stats.pixel_std
 
-    def _normalize(self, outputs: Dict, pl_module: pl.LightningModule) -> None:
+    def _normalize(self, outputs: STEP_OUTPUT, pl_module: pl.LightningModule) -> None:
         """Normalize the predicted scores and anomaly maps by first standardizing and then computing the CDF."""
         device = outputs["pred_scores"].device
         image_threshold = pl_module.image_threshold.value.cpu()

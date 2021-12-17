@@ -25,9 +25,9 @@ class TrainingStats(Metric):
         self.pixel_std = torch.empty(0)
 
     # pylint: disable=arguments-differ
-    def update(
+    def update(  # type: ignore
         self, anomaly_scores: Optional[Tensor] = None, anomaly_maps: Optional[Tensor] = None
-    ) -> None:  # type: ignore
+    ) -> None:
         """Update the precision-recall curve metric."""
         if anomaly_maps is not None:
             self.anomaly_maps.append(anomaly_maps)

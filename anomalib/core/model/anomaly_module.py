@@ -66,7 +66,7 @@ class AnomalyModule(pl.LightningModule):
         """
         return self.model(batch)
 
-    def validation_step(self, batch, batch_idx) -> dict:  # pylint: disable=arguments-differ
+    def validation_step(self, batch, batch_idx) -> dict:  # type: ignore  # pylint: disable=arguments-differ
         """To be implemented in the subclasses."""
         raise NotImplementedError
 
