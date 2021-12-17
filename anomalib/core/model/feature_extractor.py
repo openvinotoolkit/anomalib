@@ -17,6 +17,7 @@ This script extracts features from a CNN network
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import warnings
 from typing import Callable, Dict, Iterable
 
 import torch
@@ -43,6 +44,11 @@ class FeatureExtractor(nn.Module):
 
     def __init__(self, backbone: nn.Module, layers: Iterable[str]):
         super().__init__()
+        warnings.warn(
+            "This module has been deprecated and will be removed in the near future. Please use torchvision feature"
+            " extractor instead (see https://pytorch.org/blog/FX-feature-extraction-torchvision/)",
+            DeprecationWarning,
+        )
         self.backbone = backbone
         self.layers = layers
         self._features = {layer: torch.empty(0) for layer in self.layers}
