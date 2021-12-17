@@ -23,7 +23,7 @@ from pytorch_lightning.callbacks.base import Callback
 from torch import nn
 from torchmetrics import F1, MetricCollection
 
-from anomalib.core.metrics import AUROC, AdaptiveThreshold, TrainingStats
+from anomalib.core.metrics import AUROC, AdaptiveThreshold, AnomalyScoreDistribution
 
 
 class AnomalyModule(pl.LightningModule):
@@ -45,7 +45,7 @@ class AnomalyModule(pl.LightningModule):
         self.image_threshold = AdaptiveThreshold(self.hparams.model.threshold.image_default)
         self.pixel_threshold = AdaptiveThreshold(self.hparams.model.threshold.pixel_default)
 
-        self.training_stats = TrainingStats()
+        self.training_stats = AnomalyScoreDistribution()
 
         self.model: nn.Module
 

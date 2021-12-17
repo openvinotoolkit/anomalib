@@ -6,7 +6,7 @@ from torch import Tensor
 from torchmetrics import Metric
 
 
-class TrainingStats(Metric):
+class AnomalyScoreDistribution(Metric):
     """Mean and standard deviation of the anomaly scores of normal training data."""
 
     def __init__(self, **kwargs):
