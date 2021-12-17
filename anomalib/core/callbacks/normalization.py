@@ -9,7 +9,7 @@ from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch.distributions import LogNormal, Normal
 
 
-class NormalizationCallback(Callback):
+class OutputNormalizationCallback(Callback):
     """Callback that standardizes the image-level and pixel-level anomaly scores."""
 
     def __init__(self):

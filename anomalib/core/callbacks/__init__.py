@@ -9,7 +9,7 @@ from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 
 from .compress import CompressModelCallback
 from .model_loader import LoadModelCallback
-from .normalization import NormalizationCallback
+from .normalization import OutputNormalizationCallback
 from .save_to_csv import SaveToCSVCallback
 from .timer import TimerCallback
 from .visualizer_callback import VisualizerCallback
@@ -52,7 +52,7 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
         callbacks.append(load_model)
 
     if "normalize_scores" in config.model.keys() and config.model.normalize_scores:
-        callbacks.append(NormalizationCallback())
+        callbacks.append(OutputNormalizationCallback())
 
     if not config.project.log_images_to == []:
         callbacks.append(VisualizerCallback(inputs_are_normalized=config.model.normalize_scores))
