@@ -1,14 +1,6 @@
 [build-system]
-requires = [
-    "setuptools>=42",
-    "wheel"
-]
+requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
-
-[tool.flit.metadata]
-module = "anomalib"
-description-file = "README.md"
-requires-python = ">=3.7"
 
 [tool.isort]
 profile = "black"
