@@ -14,11 +14,9 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import os
 import random
 import tempfile
 from functools import wraps
-from typing import Generator
 
 import numpy as np
 import pytest
@@ -86,7 +84,7 @@ class TestModel:
         config.project.seed = 1234
         config.dataset.category = category
         config.dataset.path = dataset_path
-        config.model.weight_file = os.path.join(project_path, "weights/model.ckpt")  # add model weights
+        config.model.weight_file = "weights/model.ckpt"  # add model weights to the config
 
         if not use_mvtec:
             config.dataset.category = "shapes"

@@ -54,6 +54,7 @@ def test():
 
     datamodule = get_datamodule(config)
     model = get_model(config)
+
     callbacks = get_callbacks(config)
 
     trainer = Trainer(callbacks=callbacks, **config.trainer)

@@ -48,7 +48,7 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
     callbacks.extend([checkpoint, TimerCallback()])
 
     if "weight_file" in config.model.keys():
-        load_model = LoadModelCallback(config.model.weight_file)
+        load_model = LoadModelCallback(os.path.join(config.project.path, config.model.weight_file))
         callbacks.append(load_model)
 
     if "normalize_scores" in config.model.keys() and config.model.normalize_scores:
