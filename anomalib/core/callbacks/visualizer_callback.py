@@ -26,7 +26,7 @@ class VisualizerCallback(Callback):
     config.yaml file.
     """
 
-    def __init__(self, inputs_are_normalized: bool):
+    def __init__(self, inputs_are_normalized: bool = True):
         """Visualizer callback."""
         self.inputs_are_normalized = inputs_are_normalized
 
