@@ -16,7 +16,7 @@
 
 from itertools import product
 from math import ceil
-from typing import Optional, Sequence, SupportsIndex, Tuple, Union
+from typing import Optional, SupportsIndex, Tuple, Union
 
 import torch
 import torchvision.transforms as T
@@ -157,8 +157,8 @@ class Tiler:
 
     def __init__(
         self,
-        tile_size: Union[int, Sequence],
-        stride: Union[int, Sequence],
+        tile_size: Union[int, Tuple],
+        stride: Union[int, Tuple],
         remove_border_count: int = 0,
         mode: str = "padding",
         tile_count: SupportsIndex = 4,
@@ -196,13 +196,12 @@ class Tiler:
         self.num_patches_w: int
 
     @staticmethod
-    def __validate_size_type(parameter) -> Tuple:
+    def __validate_size_type(parameter) -> Tuple[int, int]:
         if isinstance(parameter, int):
-            output = (parameter,) * 2
-        elif isinstance(parameter, Sequence):
-            output = tuple(parameter)
-        else:
-            raise ValueError(f"Unknown type {type(parameter)} for tile or stride size. Could be int or Sequence type.")
+            output = (parameter, parameter)
+
+        if not isinstance(parameter, tuple):
+            raise ValueError(f"Unknown type {type(parameter)} for tile or stride size. Could be int or Tuple type.")
 
         if len(output) != 2:
             raise ValueError(f"Length of the size type must be 2 for height and width. Got {len(output)} instead.")
