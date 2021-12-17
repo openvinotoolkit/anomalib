@@ -45,7 +45,7 @@ class AnomalyModule(pl.LightningModule):
         self.image_threshold = AdaptiveThreshold(self.hparams.model.threshold.image_default)
         self.pixel_threshold = AdaptiveThreshold(self.hparams.model.threshold.pixel_default)
 
-        self.training_stats = AnomalyScoreDistribution()
+        self.training_distribution = AnomalyScoreDistribution()
 
         self.model: nn.Module
 

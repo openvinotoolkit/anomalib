@@ -81,17 +81,17 @@ class OutputNormalizationCallback(Callback):
         predictions = Trainer(gpus=trainer.gpus).predict(
             model=copy.deepcopy(pl_module), dataloaders=trainer.datamodule.train_dataloader()
         )
-        pl_module.training_stats.reset()
+        pl_module.training_distribution.reset()
         for batch in predictions:
             if "pred_scores" in batch.keys():
-                pl_module.training_stats.update(anomaly_scores=batch["pred_scores"])
+                pl_module.training_distribution.update(anomaly_scores=batch["pred_scores"])
             if "anomaly_maps" in batch.keys():
-                pl_module.training_stats.update(anomaly_maps=batch["anomaly_maps"])
-        pl_module.training_stats.compute()
+                pl_module.training_distribution.update(anomaly_maps=batch["anomaly_maps"])
+        pl_module.training_distribution.compute()
 
     def _standardize(self, outputs: STEP_OUTPUT, pl_module) -> None:
         """Standardize the predicted scores and anomaly maps to the z-domain."""
-        stats = pl_module.training_stats.to(outputs["pred_scores"].device)
+        stats = pl_module.training_distribution.to(outputs["pred_scores"].device)
 
         outputs["pred_scores"] = torch.log(outputs["pred_scores"])
         outputs["pred_scores"] = (outputs["pred_scores"] - stats.image_mean) / stats.image_std
