@@ -198,7 +198,7 @@ class Tiler:
     @staticmethod
     def __validate_size_type(parameter: Union[int, Sequence]) -> Tuple[int, ...]:
         if isinstance(parameter, int):
-            output = (parameter,) * 2
+            output = (parameter, parameter)
         elif isinstance(parameter, Sequence):
             output = (parameter[0], parameter[1])
         else:

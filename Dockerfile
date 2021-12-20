@@ -32,17 +32,12 @@ RUN wget ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/mvtec_
     tar -xf mvtec_anomaly_detection.tar.xz -C /tmp/anomalib/datasets/MVTec
 
 # Install all anomalib requirements
-COPY ./requirements/requirements.txt /tmp/anomalib/requirements/requirements.txt
-RUN pip install -r /tmp/anomalib/requirements/requirements.txt
+COPY ./requirements/base.txt /tmp/anomalib/requirements/base.txt
+RUN pip install -r /tmp/anomalib/requirements/base.txt
 
-COPY ./requirements/requirements_openvino_mo.txt /tmp/anomalib/requirements/requirements_openvino_mo.txt
-RUN pip install -r /tmp/anomalib/requirements/requirements_openvino_mo.txt
+COPY ./requirements/openvino.txt /tmp/anomalib/requirements/openvino.txt
+RUN pip install -r /tmp/anomalib/requirements/openvino.txt
 
 # Install other requirements related to development
-COPY ./requirements/requirements_dev.txt /tmp/anomalib/requirements/requirements_dev.txt
-RUN pip install -r /tmp/anomalib/requirements/requirements_dev.txt
-
-# Install ote_sdk
-COPY ./impt/src/ote_sdk/ /tmp/impt/src/ote_sdk/
-RUN cd /tmp/impt/src/ote_sdk && \
-    pip install -e .
+COPY ./requirements/dev.txt /tmp/anomalib/requirements/dev.txt
+RUN pip install -r /tmp/anomalib/requirements/dev.txt
