@@ -8,6 +8,8 @@ on:
 jobs:
   Tox:
     runs-on: [self-hosted, linux, x64]
+    strategy:
+      max-parallel: 1
     steps:
       - name: Print GPU status
         run: nvidia-smi
