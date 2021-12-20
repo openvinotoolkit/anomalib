@@ -22,10 +22,10 @@ import torchvision
 from kornia import gaussian_blur2d
 from omegaconf import ListConfig
 from torch import Tensor, nn
-from torchvision.models.feature_extraction import create_feature_extractor
 
 from anomalib.core.model import AnomalyModule
 from anomalib.core.model.dynamic_module import DynamicBufferModule
+from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.data.tiler import Tiler
 from anomalib.models.patchcore.utils.sampling import (
     KCenterGreedy,
@@ -119,9 +119,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         self.input_size = input_size
         self.apply_tiling = apply_tiling
 
-        self.feature_extractor = create_feature_extractor(
-            self.backbone(pretrained=True), return_nodes=list(self.layers)
-        )
+        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
         self.feature_pooler = torch.nn.AvgPool2d(3, 1, 1)
         self.nn_search = NearestNeighbors(n_neighbors=9)
         self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)

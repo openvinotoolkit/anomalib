@@ -25,9 +25,9 @@ import torchvision
 from omegaconf import ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
 from torch import Tensor, nn, optim
-from torchvision.models.feature_extraction import create_feature_extractor
 
 from anomalib.core.model import AnomalyModule
+from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.data.tiler import Tiler
 
 __all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel", "StfpmLightning"]
@@ -206,8 +206,9 @@ class STFPMModel(nn.Module):
         super().__init__()
         self.backbone = getattr(torchvision.models, backbone)
         self.apply_tiling = apply_tiling
-        self.teacher_model = create_feature_extractor(self.backbone(pretrained=True), return_nodes=list(layers))
-        self.student_model = create_feature_extractor(self.backbone(pretrained=True), return_nodes=list(layers))
+        self.teacher_model = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=layers)
+        self.student_model = FeatureExtractor(backbone=self.backbone(pretrained=False), layers=layers)
+
         # teacher model is fixed
         for parameters in self.teacher_model.parameters():
             parameters.requires_grad = False
