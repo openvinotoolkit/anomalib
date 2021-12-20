@@ -10,7 +10,7 @@ from torch.distributions import LogNormal, Normal
 from anomalib.models import get_model
 
 
-class OutputNormalizationCallback(Callback):
+class AnomalyScoreNormalizationCallback(Callback):
     """Callback that standardizes the image-level and pixel-level anomaly scores."""
 
     def __init__(self):
