@@ -1,5 +1,4 @@
 """Anomaly Score Normalization Callback."""
-import copy
 from typing import Any, Dict, Optional
 
 import pytorch_lightning as pl
@@ -7,6 +6,8 @@ import torch
 from pytorch_lightning import Callback, Trainer
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch.distributions import LogNormal, Normal
+
+from anomalib.models import get_model
 
 
 class OutputNormalizationCallback(Callback):
@@ -79,7 +80,7 @@ class OutputNormalizationCallback(Callback):
          the mean and standard deviations. A dictionary containing the computed statistics is stored in self.stats.
         """
         predictions = Trainer(gpus=trainer.gpus).predict(
-            model=copy.deepcopy(pl_module), dataloaders=trainer.datamodule.train_dataloader()
+            model=self._create_inference_model(pl_module), dataloaders=trainer.datamodule.train_dataloader()
         )
         pl_module.training_distribution.reset()
         for batch in predictions:
@@ -88,6 +89,13 @@ class OutputNormalizationCallback(Callback):
             if "anomaly_maps" in batch.keys():
                 pl_module.training_distribution.update(anomaly_maps=batch["anomaly_maps"])
         pl_module.training_distribution.compute()
+
+    @staticmethod
+    def _create_inference_model(pl_module):
+        """Create a duplicate of the PL module that can be used to perform inference on the training set."""
+        new_model = get_model(pl_module.hparams)
+        new_model.load_state_dict(pl_module.state_dict())
+        return new_model
 
     def _standardize(self, outputs: STEP_OUTPUT, pl_module) -> None:
         """Standardize the predicted scores and anomaly maps to the z-domain."""
