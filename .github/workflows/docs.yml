@@ -47,6 +47,8 @@ jobs:
           fi
       - name: Push docs to gh-pages branch
         run: |
+          cd ..
+          git fetch
           git checkout gh-pages
           cp -r docs/build/html/* ./
           git config --local user.email "action@github.com"

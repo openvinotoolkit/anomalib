@@ -14,7 +14,8 @@ ___
 [![python](https://img.shields.io/badge/python-3.6%2B-green)]()
 [![pytorch](https://img.shields.io/badge/pytorch-1.7.1%2B-orange)]()
 [![openvino](https://img.shields.io/badge/openvino-2021.4-purple)]()
-![example branch parameter](https://github.com/openvinotoolkit/anomalib/actions/workflows/tox.yml/badge.svg?branch=development)
+[![Code Quality and Coverage](https://github.com/openvinotoolkit/anomalib/actions/workflows/tox.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/tox.yml)
+[![Build Docs](https://github.com/openvinotoolkit/anomalib/actions/workflows/docs.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/docs.yml)
 
 </div>
 
