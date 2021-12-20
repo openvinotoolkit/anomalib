@@ -8,11 +8,11 @@ on:
 jobs:
   Tox:
     runs-on: [self-hosted, linux, x64]
+    strategy:
+      max-parallel: 1
     steps:
       - name: Print GPU status
         run: nvidia-smi
-      - name: Print PATH
-        run: echo $PATH
       - name: CHECKOUT REPOSITORY
         uses: actions/checkout@v2
       - name: Install Tox
@@ -20,7 +20,9 @@ jobs:
       - name: Code quality checks
         run: tox -e black,isort,flake8,pylint,mypy,pydocstyle
       - name: Coverage
-        run: tox -e coverage
+        run: |
+          export CUDA_VISIBLE_DEVICES=3
+          tox -e coverage
       - name: Upload coverage result
         uses: actions/upload-artifact@v2
         with:
