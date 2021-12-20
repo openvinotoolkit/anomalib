@@ -11,6 +11,8 @@ jobs:
     strategy:
       max-parallel: 1
     steps:
+      - name: Select GPU
+        run: export CUDA_VISIBLE_DEVICES=3
       - name: Print GPU status
         run: nvidia-smi
       - name: Print PATH
