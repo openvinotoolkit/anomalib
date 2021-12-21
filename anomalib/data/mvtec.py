@@ -460,9 +460,7 @@ class MVTecDataModule(LightningDataModule):
 
     def train_dataloader(self) -> DataLoader:
         """Get train dataloader."""
-        return DataLoader(
-            self.train_data, shuffle=False, batch_size=self.train_batch_size, num_workers=self.num_workers
-        )
+        return DataLoader(self.train_data, shuffle=True, batch_size=self.train_batch_size, num_workers=self.num_workers)
 
     def val_dataloader(self) -> DataLoader:
         """Get validation dataloader."""
