@@ -4,6 +4,7 @@ from anomalib.config import get_configurable_parameters
 from anomalib.core.callbacks import get_callbacks
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
+from tests.helpers.dataset import get_dataset_path
 
 
 def run_train_test(config):
@@ -18,6 +19,7 @@ def run_train_test(config):
 
 def test_normalizer():
     config = get_configurable_parameters(model_config_path="anomalib/models/padim/config.yaml")
+    config.dataset.path = get_dataset_path(config.dataset.path)
     config.model.threshold.adaptive = True
 
     # run with normalization
