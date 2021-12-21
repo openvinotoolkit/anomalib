@@ -52,7 +52,10 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
         callbacks.append(load_model)
 
     if "normalize_scores" in config.model.keys() and config.model.normalize_scores:
-        callbacks.append(AnomalyScoreNormalizationCallback())
+        if config.model.name in ["padim", "stfpm"]:
+            callbacks.append(AnomalyScoreNormalizationCallback())
+        else:
+            raise NotImplementedError("Score Normalization is currently supported for PADIM and STFPM only.")
 
     if not config.project.log_images_to == []:
         callbacks.append(VisualizerCallback(inputs_are_normalized=config.model.normalize_scores))
