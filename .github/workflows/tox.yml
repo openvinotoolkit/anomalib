@@ -4,6 +4,7 @@ on:
   push:
     branches: [development, master]
   pull_request:
+  workflow_dispatch: # run on request (no need for PR)
 
 jobs:
   Tox:
