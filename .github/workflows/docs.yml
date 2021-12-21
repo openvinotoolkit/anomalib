@@ -5,6 +5,7 @@ on:
     branches: [development]
     paths-ignore:
       - ".github/**" # Ignore changes towards the .github directory
+  workflow_dispatch: # run on request (no need for PR)
 
 jobs:
   Build-and-Publish-Documentation:
@@ -47,10 +48,13 @@ jobs:
           fi
       - name: Push docs to gh-pages branch
         run: |
-          cd ..
           git fetch
           git checkout gh-pages
-          cp -r docs/build/html/* ./
+          mkdir -p /tmp/docs_build
+          cp -r docs/build/html/* /tmp/docs_build/
+          rm -rf ./*
+          cp -r /tmp/docs_build/* ./
+          rm -rf /tmp/docs_build
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add .
