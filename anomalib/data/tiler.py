@@ -196,7 +196,7 @@ class Tiler:
         self.num_patches_w: int
 
     @staticmethod
-    def __validate_size_type(parameter) -> Tuple[int, int]:
+    def __validate_size_type(parameter: Union[int, Sequence]) -> Tuple[int, ...]:
         if isinstance(parameter, int):
             output = (parameter, parameter)
         elif isinstance(parameter, Sequence):

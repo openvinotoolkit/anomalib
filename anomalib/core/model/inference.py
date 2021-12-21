@@ -23,6 +23,7 @@ import numpy as np
 import torch
 from omegaconf import DictConfig, ListConfig
 from openvino.inference_engine import IECore  # pylint: disable=no-name-in-module
+from scipy.stats import norm
 from torch import Tensor, nn
 
 from anomalib.core.model import AnomalyModule
@@ -58,7 +59,9 @@ class Inferencer(ABC):
         """Post-Process."""
         raise NotImplementedError
 
-    def predict(self, image: Union[str, np.ndarray], superimpose: bool = True) -> np.ndarray:
+    def predict(
+        self, image: Union[str, np.ndarray], superimpose: bool = True, meta_data: Optional[dict] = None
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """Perform a prediction for a given input image.
 
         The main workflow is (i) pre-processing, (ii) forward-pass, (iii) post-process.
@@ -74,17 +77,20 @@ class Inferencer(ABC):
         Returns:
             np.ndarray: Output predictions to be visualized.
         """
+        if meta_data is None:
+            meta_data = {}
         if isinstance(image, str):
             image = read_image(image)
+        meta_data["image_shape"] = image.shape[:2]
 
         processed_image = self.pre_process(image)
         predictions = self.forward(processed_image)
-        output = self.post_process(predictions, meta_data={"image_shape": image.shape[:2]})
+        anomaly_map, pred_score = self.post_process(predictions, meta_data=meta_data)
 
         if superimpose is True:
-            output = superimpose_anomaly_map(output, image)
+            anomaly_map = superimpose_anomaly_map(anomaly_map, image)
 
-        return output
+        return anomaly_map, pred_score
 
     def __call__(self, image: np.ndarray) -> np.ndarray:
         """Call predict on the Image.
@@ -262,7 +268,7 @@ class OpenVINOInferencer(Inferencer):
         """
         return self.network.infer(inputs={self.input_blob: image})
 
-    def post_process(self, predictions: np.ndarray, meta_data: Optional[Dict] = None) -> np.ndarray:
+    def post_process(self, predictions: np.ndarray, meta_data: Optional[Dict] = None) -> Tuple[np.ndarray, np.ndarray]:
         """Post process the output predictions.
 
         Args:
@@ -278,9 +284,25 @@ class OpenVINOInferencer(Inferencer):
             meta_data = {}
 
         predictions = predictions[self.output_blob]
-        predictions = predictions.squeeze()
+        anomaly_map = predictions.squeeze()
+        pred_score = anomaly_map.reshape(-1).max()
 
-        if "image_shape" in meta_data and predictions.shape != meta_data["image_shape"]:
-            predictions = cv2.resize(predictions, meta_data["image_shape"])
+        # standardize pixel scores
+        if "pixel_mean" in meta_data.keys() and "pixel_std" in meta_data.keys():
+            anomaly_map = np.log(anomaly_map)
+            anomaly_map = (anomaly_map - meta_data["pixel_mean"]) / meta_data["pixel_std"]
+            anomaly_map -= (meta_data["image_mean"] - meta_data["pixel_mean"]) / meta_data["pixel_std"]
+            if "threshold" in meta_data.keys():
+                anomaly_map = norm.cdf(anomaly_map - meta_data["threshold"])
 
-        return predictions
+        # standardize image scores
+        if "image_mean" in meta_data.keys() and "image_std" in meta_data.keys():
+            pred_score = np.log(pred_score)
+            pred_score = (pred_score - meta_data["image_mean"]) / meta_data["image_std"]
+            if "threshold" in meta_data.keys():
+                pred_score = norm.cdf(pred_score - meta_data["threshold"])
+
+        if "image_shape" in meta_data and anomaly_map.shape != meta_data["image_shape"]:
+            anomaly_map = cv2.resize(anomaly_map, meta_data["image_shape"])
+
+        return anomaly_map, pred_score

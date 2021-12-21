@@ -26,8 +26,9 @@ class VisualizerCallback(Callback):
     config.yaml file.
     """
 
-    def __init__(self):
+    def __init__(self, inputs_are_normalized: bool = True):
         """Visualizer callback."""
+        self.inputs_are_normalized = inputs_are_normalized
 
     def _add_images(
         self,
@@ -80,6 +81,13 @@ class VisualizerCallback(Callback):
         """
         assert outputs is not None
 
+        if self.inputs_are_normalized:
+            threshold = 0.5
+            normalize = False  # anomaly maps are already normalized
+        else:
+            threshold = pl_module.pixel_threshold.value.item()
+            normalize = True  # raw anomaly maps. Still need to normalize
+
         for (filename, image, true_mask, anomaly_map) in zip(
             outputs["image_path"], outputs["image"], outputs["mask"], outputs["anomaly_maps"]
         ):
@@ -87,8 +95,8 @@ class VisualizerCallback(Callback):
             true_mask = true_mask.cpu().numpy()
             anomaly_map = anomaly_map.cpu().numpy()
 
-            heat_map = superimpose_anomaly_map(anomaly_map, image)
-            pred_mask = compute_mask(anomaly_map, pl_module.threshold.item())
+            heat_map = superimpose_anomaly_map(anomaly_map, image, normalize=normalize)
+            pred_mask = compute_mask(anomaly_map, threshold)
             vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
 
             visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
@@ -107,7 +115,7 @@ class VisualizerCallback(Callback):
         ensures that all images appear as part of the same step.
 
         Args:
-            _trainer (pl.Trainer): Pytorch Lightning trainer
+            _trainer (pl.Trainer): Pytorch Lightning trainer (unused)
             pl_module (pl.LightningModule): Anomaly module
         """
         if pl_module.logger is not None and isinstance(pl_module.logger, AnomalibWandbLogger):
