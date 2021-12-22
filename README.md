@@ -10,10 +10,10 @@ ___
 [Docs](https://openvinotoolkit.github.io/anomalib) •
 [License](https://github.com/openvinotoolkit/anomalib/blob/development/LICENSE)
 
+[![python](https://img.shields.io/badge/python-3.8%2B-green)]()
+[![pytorch](https://img.shields.io/badge/pytorch-1.8.1%2B-orange)]()
+[![openvino](https://img.shields.io/badge/openvino-2021.4.2-purple)]()
 [![black](https://img.shields.io/badge/code%20style-black-000000.svg)]()
-[![python](https://img.shields.io/badge/python-3.6%2B-green)]()
-[![pytorch](https://img.shields.io/badge/pytorch-1.7.1%2B-orange)]()
-[![openvino](https://img.shields.io/badge/openvino-2021.4-purple)]()
 [![Code Quality and Coverage](https://github.com/openvinotoolkit/anomalib/actions/workflows/tox.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/tox.yml)
 [![Build Docs](https://github.com/openvinotoolkit/anomalib/actions/workflows/docs.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/docs.yml)
 
@@ -24,6 +24,8 @@ ___
 ## Introduction
 
 Anomalib is a deep learning library that aims to collect state-of-the-art anomaly detection algorithms for benchmarking on both public and private datasets. Anomalib provides several ready-to-use implementations of anomaly detection algorithms described in the recent literature, as well as a set of tools that facilitate the development and implementation of custom models. The library has a strong focus on image-based anomaly detection, where the goal of the algorithm is to identify anomalous images, or anomalous pixel regions within images in a dataset. Anomalib is constantly updated with new algorithms and training/inference extensions, so keep checking!
+
+![Sample Image](./docs/source/images/readme.png "Sample Image")
 
 **Key features:**
 
