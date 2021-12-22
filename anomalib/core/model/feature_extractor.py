@@ -50,10 +50,17 @@ class FeatureExtractor(nn.Module):
         self.backbone = backbone
         self.layers = layers
         self._features = {layer: torch.empty(0) for layer in self.layers}
+        self.out_dims = []
 
         for layer_id in layers:
             layer = dict([*self.backbone.named_modules()])[layer_id]
             layer.register_forward_hook(self.get_features(layer_id))
+            # get output dimension of features if available
+            layer_modules = [*layer.modules()]
+            for idx in reversed(range(len(layer_modules))):
+                if hasattr(layer_modules[idx], "out_channels"):
+                    self.out_dims.append(layer_modules[idx].out_channels)
+                    break
 
     def get_features(self, layer_id: str) -> Callable:
         """Get layer features.
