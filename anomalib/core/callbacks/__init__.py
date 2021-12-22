@@ -9,6 +9,7 @@ from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 
 from .compress import CompressModelCallback
 from .model_loader import LoadModelCallback
+from .normalization import AnomalyScoreNormalizationCallback
 from .save_to_csv import SaveToCSVCallback
 from .timer import TimerCallback
 from .visualizer_callback import VisualizerCallback
@@ -46,8 +47,21 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
 
     callbacks.extend([checkpoint, TimerCallback()])
 
+    if "weight_file" in config.model.keys():
+        load_model = LoadModelCallback(os.path.join(config.project.path, config.model.weight_file))
+        callbacks.append(load_model)
+
+    if "normalize_scores" in config.model.keys() and config.model.normalize_scores:
+        if config.model.name in ["padim", "stfpm"]:
+            if not config.optimization.nncf.apply:
+                callbacks.append(AnomalyScoreNormalizationCallback())
+            else:
+                raise NotImplementedError("Score Normalization is currently not compatible with NNCF.")
+        else:
+            raise NotImplementedError("Score Normalization is currently supported for PADIM and STFPM only.")
+
     if not config.project.log_images_to == []:
-        callbacks.append(VisualizerCallback())
+        callbacks.append(VisualizerCallback(inputs_are_normalized=config.model.normalize_scores))
 
     if "optimization" in config.keys():
         if config.optimization.nncf.apply:
@@ -70,9 +84,6 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
                     filename="compressed_model",
                 )
             )
-    if "weight_file" in config.model.keys():
-        load_model = LoadModelCallback(os.path.join(config.project.path, config.model.weight_file))
-        callbacks.append(load_model)
 
     if "save_to_csv" in config.project.keys():
         if config.project.save_to_csv:

@@ -17,7 +17,6 @@
 import random
 import tempfile
 from functools import wraps
-from typing import Generator
 
 import numpy as np
 import pytest
