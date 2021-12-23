@@ -202,7 +202,7 @@ def make_mvtec_dataset(
         samples = create_validation_set_from_test_set(samples, seed=seed)
 
     # Get the data frame for the split.
-    if split is not None and split in ["train", "test", "val"]:
+    if split is not None and split in ["train", "val", "test"]:
         samples = samples[samples.split == split]
         samples = samples.reset_index(drop=True)
 
@@ -471,11 +471,8 @@ class MVTecDataModule(LightningDataModule):
 
     def val_dataloader(self) -> DataLoader:
         """Get validation dataloader."""
-        if self.create_validation_set:
-            return DataLoader(
-                self.val_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers
-            )
-        return DataLoader(self.test_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
+        dataset = self.val_data if self.create_validation_set else self.test_data
+        return DataLoader(dataset=dataset, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
 
     def test_dataloader(self) -> DataLoader:
         """Get test dataloader."""
