@@ -38,13 +38,6 @@ All results gathered with seed `42`.
 | ResNet-18      | 0.951 | 0.986  | 0.988 |  0.991  | 0.946 | 0.949 | 0.971  | 0.898 |  0.962  |  0.981   |   0.942   | 0.878 | 0.983 |   0.983    |   0.838    | 0.972  |
 | Wide ResNet-50 | 0.903 | 0.987  | 0.989 |  0.980  | 0.966 | 0.956 | 0.966  | 0.913 |  0.956  |  0.974   |   0.961   | 0.946 | 0.988 |   0.178    |   0.807    | 0.980  |
 
-### Balanced Accuracy Score
-
-|                |  Avg  | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
-| -------------- | :---: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
-| ResNet-18      | 0.829 | 0.899  | 0.982 |  0.969  | 0.855 | 0.878 | 0.984  | 0.740 |  0.621  |  0.988   |   0.956   | 0.519 | 0.642 |   0.958    |   0.825    | 0.625  |
-| Wide ResNet-50 | 0.803 | 0.911  | 0.959 |  0.922  | 0.918 | 0.781 | 0.959  | 0.775 |  0.587  |  0.955   |   0.904   | 0.538 | 0.710 |    0.5     |   0.846    | 0.780  |
-
 ### Image F1 Score
 
 |                |  Avg  | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |

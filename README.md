@@ -36,22 +36,24 @@ ___
 
 ## Getting Started
 
-The repo is thoroughly tested based on the following configuration.
+### PyPI Install
 
-- Ubuntu 20.04
+You can get started with `anomalib` by just using pip.
 
-- NVIDIA GeForce RTX 3090
+```bash
+pip install anomalib
+```
+
+### Local Install
 
 You will need [Anaconda](https://www.anaconda.com/products/individual) installed on your system before proceeding with the Anomaly Library install.
 
-After downloading the Anomaly Library, extract the files and navigate to the extracted location.
-
-To perform an installation, run the following:
-
 ```bash
-yes | conda create -n anomalib python=3.8
-conda activate anomalib
-pip install -r requirements/base.txt
+yes | conda create -n anomalib_env python=3.8
+conda activate anomalib_env
+git clone https://github.com/openvinotoolkit/anomalib.git
+cd anomalib
+pip install -e .
 ```
 
 ## Training
@@ -71,6 +73,11 @@ category, the config file is to be provided:
 ```bash
 python tools/train.py --model_config_path <path/to/model/config.yaml>
 ```
+
+For example, to train [STFPM](anomalib/models/stfpm) you can use
+
+```bash
+python tools/train.py --model
 
 Alternatively, a model name could also be provided as an argument, where the scripts automatically finds the corresponding config file.
 
