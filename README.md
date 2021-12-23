@@ -38,6 +38,8 @@ ___
 
 ## Getting Started
 
+To get an overview of all the devices where `anomalib` as been tested thoroughly, look at the [Supported Hardware](https://openvinotoolkit.github.io/anomalib/#supported-hardware) section in the documentation.
+
 ### PyPI Install
 
 You can get started with `anomalib` by just using pip.
@@ -79,7 +81,7 @@ python tools/train.py --model_config_path <path/to/model/config.yaml>
 For example, to train [STFPM](anomalib/models/stfpm) you can use
 
 ```bash
-python tools/train.py --model
+python tools/train.py --model_config_path anomalib/models/stfpm/config.yaml
 
 Alternatively, a model name could also be provided as an argument, where the scripts automatically finds the corresponding config file.
 
@@ -102,7 +104,19 @@ Anomalib contains several tools that can be used to perform inference with a tra
 The following command can be used to run inference from the command line:
 
 ```bash
-python tools/inference.py --model_config_path <path/to/model/config.yaml> --weight_path <path/to/weight/file> --image_path <path/to/image>
+python tools/inference.py \
+ --model_config_path <path/to/model/config.yaml> \
+ --weight_path <path/to/weight/file> \
+ --image_path <path/to/image>
+```
+
+As a quick example:
+
+```bash
+python tools/inference.py \
+--model_config_path anomalib/models/padim/config.yaml \
+--weight_path results/padim/mvtec/bottle/weights/model.ckpt \
+--image_path datasets/MVTec/bottle/test/broken_large/000.png
 ```
 
 If the specified weight path points to a PyTorch Lightning checkpoint file (`.ckpt`), inference will run in PyTorch. If the path points to an ONNX graph (`.onnx`) or OpenVINO IR (`.bin` or `.xml`), inference will run in OpenVINO.
