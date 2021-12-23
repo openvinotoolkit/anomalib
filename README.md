@@ -49,8 +49,7 @@ pip install anomalib
 ```
 
 ### Local Install
-
-You will need [Anaconda](https://www.anaconda.com/products/individual) installed on your system before proceeding with the Anomaly Library install.
+It is highly recommended to use virtual environment when installing anomalib. For instance, with [anaconda](https://www.anaconda.com/products/individual), `anomalib` could be installed as,
 
 ```bash
 yes | conda create -n anomalib_env python=3.8
@@ -82,6 +81,7 @@ For example, to train [STFPM](anomalib/models/stfpm) you can use
 
 ```bash
 python tools/train.py --model_config_path anomalib/models/stfpm/config.yaml
+```
 
 Alternatively, a model name could also be provided as an argument, where the scripts automatically finds the corresponding config file.
 
@@ -105,18 +105,18 @@ The following command can be used to run inference from the command line:
 
 ```bash
 python tools/inference.py \
- --model_config_path <path/to/model/config.yaml> \
- --weight_path <path/to/weight/file> \
- --image_path <path/to/image>
+    --model_config_path <path/to/model/config.yaml> \
+    --weight_path <path/to/weight/file> \
+    --image_path <path/to/image>
 ```
 
 As a quick example:
 
 ```bash
 python tools/inference.py \
---model_config_path anomalib/models/padim/config.yaml \
---weight_path results/padim/mvtec/bottle/weights/model.ckpt \
---image_path datasets/MVTec/bottle/test/broken_large/000.png
+    --model_config_path anomalib/models/padim/config.yaml \
+    --weight_path results/padim/mvtec/bottle/weights/model.ckpt \
+    --image_path datasets/MVTec/bottle/test/broken_large/000.png
 ```
 
 If the specified weight path points to a PyTorch Lightning checkpoint file (`.ckpt`), inference will run in PyTorch. If the path points to an ONNX graph (`.onnx`) or OpenVINO IR (`.bin` or `.xml`), inference will run in OpenVINO.
@@ -153,21 +153,6 @@ ___
 | PaDiM     | ResNet-18          |   0.968   |   0.984   |   0.918   | **0.994** |   0.934   |   0.947   |   0.983   |   0.965   |   0.984   |   0.978   |   0.970   |   0.957   |   0.978   |   0.988    |   0.968    |   0.979   |
 | **PaDiM** | **Wide ResNet-50** | **0.979** | **0.991** |   0.970   |   0.993   |   0.955   | **0.957** | **0.985** | **0.970** | **0.988** | **0.985** | **0.982** | **0.966** | **0.988** | **0.991**  | **0.976**  | **0.986** |
 
-### Balanced Accuracy Score
-
-| Model     |                    |    Avg    |  Carpet   |   Grid    | Leather |   Tile    |   Wood    |  Bottle   |   Cable   |  Capsule  | Hazelnut  | Metal Nut |   Pill    |   Screw   | Toothbrush | Transistor |  Zipper   |
-| --------- | ------------------ | :-------: | :-------: | :-------: | :-----: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :--------: | :--------: | :-------: |
-| STFPM     | ResNet-18          |   0.829   |   0.899   | **0.982** |  0.969  |   0.855   |   0.878   |   0.984   |   0.740   |   0.621   | **0.988** |   0.956   |   0.519   |   0.642   | **0.958**  |   0.825    |   0.625   |
-| STFPM     | Wide ResNet-50     |   0.803   |   0.911   |   0.959   |  0.922  |   0.918   |   0.781   |   0.959   |   0.775   |   0.587   |   0.955   |   0.904   |   0.538   | **0.710** |    0.5     |   0.846    |   0.780   |
-| PatchCore | ResNet-18          |   0.741   |   0.859   |   0.548   |  0.995  |   0.937   | **0.983** |   0.960   | **0.796** |   0.539   |   0.959   |   0.545   |    0.5    |    0.5    |    0.65    |   0.688    |   0.650   |
-| PatchCore | Wide ResNet-50     |   0.813   |   0.912   |   0.787   | **1.0** | **0.979** |   0.939   |   0.967   |   0.732   |   0.522   |   0.955   |   0.907   |   0.538   |    0.5    |   0.675    |   0.867    |   0.920   |
-| PaDiM     | ResNet-18          |   0.798   |   0.896   |   0.736   |  0.963  |   0.889   |   0.860   |   0.942   |   0.763   |   0.804   |   0.668   |   0.883   |   0.662   |   0.634   |   0.792    |   0.829    |   0.656   |
-| **PaDiM** | **Wide ResNet-50** | **0.897** |   0.977   |   0.870   | **1.0** |   0.903   |   0.965   | **0.975** |   0.787   | **0.913** |   0.904   | **0.961** | **0.868** |   0.703   |   0.875    | **0.929**  |   0.831   |
-| DFM       | ResNet-18          |   0.793   |   0.692   |    0.5    |  0.822  |   0.933   |   0.932   |   0.925   |   0.840   |   0.691   |   0.946   |   0.853   |   0.554   |   0.638   |   0.883    |   0.863    |   0.827   |
-| DFM       | Wide ResNet-50     |   0.788   | **0.924** |    0.5    |  0.979  |   0.961   |   0.886   |   0.942   |   0.734   |   0.717   |   0.888   |   0.591   |   0.519   |   0.524   |   0.875    |   0.846    | **0.939** |
-| DFKDE     | ResNet-18          |   0.640   |    0.5    |    0.5    |  0.526  |   0.903   |   0.810   |   0.927   |   0.601   |   0.522   |   0.666   |    0.5    |    0.5    |   0.524   |   0.608    |   0.796    |   0.718   |
-| DFKDE     | Wide ResNet-50     |   0.678   |   0.691   |    0.5    |  0.780  |   0.928   |   0.863   |   0.859   |   0.679   |   0.617   |   0.641   |    0.5    |   0.538   |   0.520   |   0.542    |   0.775    |   0.736   |
-
 ### Image F1 Score
 
 | Model     |                    |    Avg    |  Carpet   |   Grid    | Leather |   Tile    |   Wood    |  Bottle   |   Cable   |  Capsule  | Hazelnut  | Metal Nut |   Pill    |   Screw   | Toothbrush | Transistor |  Zipper   |
@@ -182,7 +167,3 @@ ___
 | DFM       | Wide ResNet-50     |   0.918   |   0.960   |   0.844   |  0.990  |   0.970   |   0.959   |   0.976   |   0.848   |   0.944   |   0.913   |   0.912   |   0.919   |   0.859   |   0.893    |   0.815    | **0.961** |
 | DFKDE     | ResNet-18          |   0.872   |   0.864   |   0.844   |  0.854  |   0.960   |   0.898   |   0.942   |   0.793   |   0.908   |   0.827   |   0.894   |   0.916   |   0.859   |   0.853    |   0.756    |   0.916   |
 | DFKDE     | Wide ResNet-50     |   0.875   |   0.907   |   0.844   |  0.905  |   0.945   |   0.914   |   0.946   |   0.790   |   0.914   |   0.817   |   0.894   |   0.922   |   0.855   |   0.845    |   0.722    |   0.910   |
-
-## Add a custom model
-
-## Contributing
