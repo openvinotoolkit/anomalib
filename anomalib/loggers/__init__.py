@@ -23,9 +23,10 @@ from omegaconf.listconfig import ListConfig
 from pytorch_lightning.loggers.base import LightningLoggerBase
 
 from .tensorboard import AnomalibTensorBoardLogger
+from .wandb import AnomalibWandbLogger
 
-__all__ = ["AnomalibTensorBoardLogger", "get_logger"]
-AVAILABLE_LOGGERS = ["tensorboard"]
+__all__ = ["AnomalibTensorBoardLogger", "get_logger", "AnomalibWandbLogger"]
+AVAILABLE_LOGGERS = ["tensorboard", "wandb"]
 
 
 class UnknownLogger(Exception):
@@ -53,6 +54,15 @@ def get_logger(config: Union[DictConfig, ListConfig]) -> Union[LightningLoggerBa
         logger = AnomalibTensorBoardLogger(
             name="Tensorboard Logs",
             save_dir=os.path.join(config.project.path, "logs"),
+        )
+
+    elif config.project.logger == "wandb":
+        wandb_logdir = os.path.join(config.project.path, "logs")
+        os.makedirs(wandb_logdir, exist_ok=True)
+        logger = AnomalibWandbLogger(
+            project=config.dataset.name,
+            name=f"{config.dataset.category} {config.model.name}",
+            save_dir=wandb_logdir,
         )
 
     else:

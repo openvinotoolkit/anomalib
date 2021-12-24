@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="86.944977mm"
+   height="23.511642mm"
+   viewBox="0 0 86.944977 23.511642"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.2-dev (9ee32be, 2021-06-19)"
+   sodipodi:docname="anomalib-white.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:pageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="0.55080012"
+     inkscape:cx="-29.95642"
+     inkscape:cy="213.32602"
+     inkscape:window-width="1344"
+     inkscape:window-height="787"
+     inkscape:window-x="0"
+     inkscape:window-y="25"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="layer1"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0" />
+  <defs
+     id="defs2" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-63.336205,-10.693964)">
+    <g
+       id="g12722">
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-weight:normal;font-size:20.0608px;line-height:1.25;font-family:sans-serif;letter-spacing:1.32292px;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.50152"
+         x="90.166733"
+         y="29.370758"
+         id="text1179"
+         inkscape:transform-center-x="18.261623"
+         inkscape:transform-center-y="6.4162448"><tspan
+           sodipodi:role="line"
+           id="tspan1177"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Intel Clear Pro';-inkscape-font-specification:'Intel Clear Pro';fill:#ffffff;fill-opacity:1;stroke-width:0.50152"
+           x="90.166733"
+           y="29.370758">ANOMALIB</tspan></text>
+      <rect
+         style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.526207;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         id="rect5941"
+         width="23.511646"
+         height="23.511642"
+         x="63.336205"
+         y="10.693964"
+         ry="2.5398324" />
+      <g
+         id="g1203"
+         transform="translate(-53.2728,-5.9188271)">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#8d60c6;stroke-width:0.269475;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+           id="circle1181"
+           cx="134.36227"
+           cy="23.762495"
+           r="1.1374676" />
+        <g
+           id="g1201">
+          <circle
+             style="fill:#8d60c6;fill-opacity:1;stroke-width:0.0135453"
+             id="circle1183"
+             cx="122.23263"
+             cy="24.119253"
+             r="1.1374676" />
+          <circle
+             style="fill:#8d60c6;fill-opacity:1;stroke-width:0.0135453"
+             id="circle1185"
+             cx="124.65855"
+             cy="26.045727"
+             r="1.1374676" />
+          <circle
+             style="fill:#8d60c6;fill-opacity:1;stroke-width:0.0135453"
+             id="circle1187"
+             cx="124.65855"
+             cy="29.042465"
+             r="1.1374676" />
+          <circle
+             style="fill:#8d60c6;fill-opacity:1;stroke-width:0.0135453"
+             id="circle1189"
+             cx="127.54827"
+             cy="24.76141"
+             r="1.1374676" />
+          <circle
+             style="fill:#8d60c6;fill-opacity:1;stroke-width:0.0135453"
+             id="circle1191"
+             cx="127.54827"
+             cy="27.972202"
+             r="1.1374676" />
+          <circle
+             style="fill:#8d60c6;fill-opacity:1;stroke-width:0.0135453"
+             id="circle1193"
+             cx="127.54827"
+             cy="31.182989"
+             r="1.1374676" />
+          <circle
+             style="fill:#8d60c6;fill-opacity:1;stroke-width:0.0135453"
+             id="circle1195"
+             cx="130.18825"
+             cy="29.970024"
+             r="1.1374676" />
+          <circle
+             style="fill:#8d60c6;fill-opacity:1;stroke-width:0.0135453"
+             id="circle1197"
+             cx="130.18825"
+             cy="33.109467"
+             r="1.1374676" />
+          <circle
+             style="fill:#8d60c6;fill-opacity:1;stroke-width:0.0135453"
+             id="circle1199"
+             cx="127.54827"
+             cy="31.182989"
+             r="1.1374676" />
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

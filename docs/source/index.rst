@@ -11,6 +11,14 @@ Anomalib is a deep learning library that aims to collect state-of-the-art anomal
 .. image:: ./images/readme.png
    :alt: Sample Image
 
+Supported Hardware
+------------------
+This repository as been tested on
+
+- Ubuntu 20.04
+
+- NVIDIA GeForce RTX 3090
+
 .. toctree::
    :maxdepth: 1
    :name: start

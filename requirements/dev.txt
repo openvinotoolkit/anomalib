@@ -1,0 +1,13 @@
+black
+coverage
+flake8
+flaky
+isort
+mypy
+pytest
+pylint
+pre-commit>=2.15.0
+setuptools
+tox>=3.24.3
+types-PyYAML
+types-setuptools

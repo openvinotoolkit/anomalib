@@ -17,13 +17,12 @@
 from typing import List, Union
 
 import pytorch_lightning as pl
-import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks.base import Callback
 from torch import Tensor, nn
 from torchmetrics import F1, MetricCollection
 
-from anomalib.core.metrics import AUROC, OptimalF1
+from anomalib.core.metrics import AUROC, AdaptiveThreshold, AnomalyScoreDistribution
 
 
 class AnomalyModule(pl.LightningModule):
@@ -43,21 +42,19 @@ class AnomalyModule(pl.LightningModule):
         self.save_hyperparameters(params)
         self.loss: Tensor
         self.callbacks: List[Callback]
-        self.register_buffer("threshold", torch.tensor(params.model.threshold.default))  # pylint: disable=not-callable
-        self.threshold: Tensor
+
+        self.image_threshold = AdaptiveThreshold(self.hparams.model.threshold.image_default)
+        self.pixel_threshold = AdaptiveThreshold(self.hparams.model.threshold.pixel_default)
+
+        self.training_distribution = AnomalyScoreDistribution()
 
         self.model: nn.Module
 
         # metrics
-        self.image_metrics = MetricCollection(
-            [AUROC(num_classes=1, pos_label=1, compute_on_step=False)], prefix="image_"
-        )
-        if params.model.threshold.adaptive:
-            self.image_metrics.add_metrics([OptimalF1(num_classes=1)])
-        else:
-            self.image_metrics.add_metrics([F1(num_classes=1, compute_on_step=False, threshold=self.threshold.item())])
-        if self.hparams.dataset.task == "segmentation":
-            self.pixel_metrics = self.image_metrics.clone(prefix="pixel_")
+        auroc = AUROC(num_classes=1, pos_label=1, compute_on_step=False)
+        f1_score = F1(num_classes=1, compute_on_step=False)
+        self.image_metrics = MetricCollection([auroc, f1_score], prefix="image_")
+        self.pixel_metrics = self.image_metrics.clone(prefix="pixel_")
 
     def forward(self, batch):  # pylint: disable=arguments-differ
         """Forward-pass input tensor to the module.
@@ -70,7 +67,11 @@ class AnomalyModule(pl.LightningModule):
         """
         return self.model(batch)
 
-    def predict_step(self, batch, batch_idx, dataloader_idx):  # pylint: disable=arguments-differ, signature-differs
+    def validation_step(self, batch, batch_idx) -> dict:  # type: ignore  # pylint: disable=arguments-differ
+        """To be implemented in the subclasses."""
+        raise NotImplementedError
+
+    def predict_step(self, batch, batch_idx, _):  # pylint: disable=arguments-differ, signature-differs
         """Step function called during :meth:`~pytorch_lightning.trainer.trainer.Trainer.predict`.
 
         By default, it calls :meth:`~pytorch_lightning.core.lightning.LightningModule.forward`.
@@ -84,7 +85,10 @@ class AnomalyModule(pl.LightningModule):
         Return:
             Predicted output
         """
-        return self._post_process(self.validation_step(batch, batch_idx), predict_labels=True)
+        outputs = self.validation_step(batch, batch_idx)
+        self._post_process(outputs)
+        outputs["pred_labels"] = outputs["pred_scores"] >= self.image_threshold.value
+        return outputs
 
     def test_step(self, batch, _):  # pylint: disable=arguments-differ
         """Calls validation_step for anomaly map/score calculation.
@@ -101,44 +105,57 @@ class AnomalyModule(pl.LightningModule):
 
     def validation_step_end(self, val_step_outputs):  # pylint: disable=arguments-differ
         """Called at the end of each validation step."""
-        val_step_outputs = self._post_process(val_step_outputs)
-        self.image_metrics(val_step_outputs["pred_scores"], val_step_outputs["label"].int())
-        if self.hparams.dataset.task == "segmentation":
-            self.pixel_metrics(val_step_outputs["anomaly_maps"].flatten(), val_step_outputs["mask"].flatten().int())
+        self._post_process(val_step_outputs)
         return val_step_outputs
 
     def test_step_end(self, test_step_outputs):  # pylint: disable=arguments-differ
         """Called at the end of each test step."""
-        return self.validation_step_end(test_step_outputs)
+        self._post_process(test_step_outputs)
+        return test_step_outputs
 
-    def validation_epoch_end(self, _outputs):
+    def validation_epoch_end(self, outputs):
         """Compute threshold and performance metrics.
 
         Args:
           outputs: Batch of outputs from the validation step
         """
         if self.hparams.model.threshold.adaptive:
-            self.image_metrics.compute()
-            self.threshold = self.image_metrics.OptimalF1.threshold
+            self._compute_adaptive_threshold(outputs)
+        self._collect_outputs(self.image_metrics, self.pixel_metrics, outputs)
         self._log_metrics()
 
-    def test_epoch_end(self, _outputs):
+    def test_epoch_end(self, outputs):
         """Compute and save anomaly scores of the test set.
 
         Args:
             outputs: Batch of outputs from the validation step
         """
+        self._collect_outputs(self.image_metrics, self.pixel_metrics, outputs)
         self._log_metrics()
 
-    def _post_process(self, outputs, predict_labels=False):
+    def _compute_adaptive_threshold(self, outputs):
+        self._collect_outputs(self.image_threshold, self.pixel_threshold, outputs)
+        self.image_threshold.compute()
+        if "mask" in outputs[0].keys() and "anomaly_maps" in outputs[0].keys():
+            self.pixel_threshold.compute()
+        else:
+            self.pixel_threshold.value = self.image_threshold.value
+
+        self.image_metrics.F1.threshold = self.image_threshold.value
+        self.pixel_metrics.F1.threshold = self.pixel_threshold.value
+
+    def _collect_outputs(self, image_metric, pixel_metric, outputs):
+        for output in outputs:
+            image_metric.update(output["pred_scores"], output["label"].int())
+            if "mask" in output.keys() and "anomaly_maps" in output.keys():
+                pixel_metric.update(output["anomaly_maps"].flatten(), output["mask"].flatten().int())
+
+    def _post_process(self, outputs):
         """Compute labels based on model predictions."""
         if "pred_scores" not in outputs and "anomaly_maps" in outputs:
             outputs["pred_scores"] = (
                 outputs["anomaly_maps"].reshape(outputs["anomaly_maps"].shape[0], -1).max(dim=1).values
             )
-        if predict_labels:
-            outputs["pred_labels"] = outputs["pred_scores"] >= self.threshold.item()
-        return outputs
 
     def _log_metrics(self):
         """Log computed performance metrics."""

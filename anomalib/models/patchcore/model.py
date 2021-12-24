@@ -56,7 +56,10 @@ class AnomalyMapGenerator:
         Returns:
             torch.Tensor: Map of the pixel-level anomaly scores
         """
-        anomaly_map = patch_scores[:, 0].reshape((1, 1, 28, 28))
+        # TODO: https://github.com/openvinotoolkit/anomalib/issues/40
+        batch_size = len(patch_scores) // (28 * 28)
+
+        anomaly_map = patch_scores[:, 0].reshape((batch_size, 1, 28, 28))
         anomaly_map = F.interpolate(anomaly_map, size=(self.input_size[0], self.input_size[1]))
 
         kernel_size = 2 * int(4.0 * self.sigma + 0.5) + 1

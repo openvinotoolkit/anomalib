@@ -17,9 +17,9 @@
 from typing import Any, Dict, List, Union
 
 import torch
+import torchvision
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
-from torchvision.models import resnet50
 
 from anomalib.core.model import AnomalyModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
@@ -38,7 +38,8 @@ class DfkdeLightning(AnomalyModule):
         self.threshold_steepness = 0.05
         self.threshold_offset = 12
 
-        self.feature_extractor = FeatureExtractor(backbone=resnet50(pretrained=True), layers=["avgpool"]).eval()
+        self.backbone = getattr(torchvision.models, hparams.model.backbone)
+        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=["avgpool"]).eval()
 
         self.normality_model = NormalityModel(
             filter_count=hparams.model.max_training_points,
