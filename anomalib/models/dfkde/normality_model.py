@@ -125,17 +125,16 @@ class NormalityModel(nn.Module):
 
         features = self.pca_model.transform(features)
         features, _ = self.preprocess(features, self.max_length)
+        # Scores are always assumed to be passed as a density
         kde_scores = self.kde_model(features)
 
         # add small constant to avoid zero division in log computation
         kde_scores += 1e-300
 
-        score = 1.0 / kde_scores
-
         if as_log_likelihood:
-            score = torch.log(score)
+            kde_scores = torch.log(kde_scores)
 
-        return score
+        return kde_scores
 
     def predict(self, features: Tensor) -> Tensor:
         """Predicts the probability that the features belong to the anomalous class.
