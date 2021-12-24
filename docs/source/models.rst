@@ -155,6 +155,7 @@ Usage
 *****
 
 .. code-block:: bash
+
     $ python tools/train.py --model patchcore
 
 
