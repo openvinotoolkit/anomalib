@@ -74,7 +74,7 @@ class NormalityModel(nn.Module):
         # if max training points is non-zero and smaller than number of staged features, select random subset
         if self.filter_count and dataset.shape[0] > self.filter_count:
             # pylint: disable=not-callable
-            selected_idx = Tensor(random.sample(range(dataset.shape[0]), self.filter_count))
+            selected_idx = torch.tensor(random.sample(range(dataset.shape[0]), self.filter_count))
             selected_features = dataset[selected_idx]
         else:
             selected_features = dataset
