@@ -40,11 +40,11 @@ class SingleClassGaussian(DynamicBufferModule):
         """Fit a Gaussian model to dataset X.
 
         Covariance matrix is not calculated directly using:
-            C = X.X^T
+        ``C = X.X^T``
         Instead, it is represented in terms of the Singular Value Decomposition of X:
-            X = U.S.V^T
+        ``X = U.S.V^T``
         Hence,
-            C = U.S^2.U^T
+        ``C = U.S^2.U^T``
         This simplifies the calculation of the log-likelihood without requiring full matrix inversion.
 
         Args:

@@ -76,7 +76,7 @@ class GaussianKDE(DynamicBufferModule):
         # compute scott's bandwidth factor
         factor = num_samples ** (-1 / (dimension + 4))
 
-        cov_mat = self.cov(dataset.T, bias=False)
+        cov_mat = self.cov(dataset.T)
         inv_cov_mat = torch.linalg.inv(cov_mat)
         inv_cov = inv_cov_mat / factor ** 2
 
@@ -93,17 +93,16 @@ class GaussianKDE(DynamicBufferModule):
         self.norm = norm
 
     @staticmethod
-    def cov(tensor: Tensor, bias: Optional[bool] = False) -> Tensor:
-        """Calculate covariance matrix.
+    def cov(tensor: Tensor) -> Tensor:
+        """Calculate the unbiased covariance matrix.
 
         Args:
             tensor (Tensor): Input tensor from which covariance matrix is computed.
-            bias (Optional[bool]):  (Default value = False)
 
         Returns:
             Output covariance matrix.
         """
         mean = torch.mean(tensor, dim=1)
         tensor -= mean[:, None]
-        cov = torch.matmul(tensor, tensor.T) / (tensor.size(1) - int(not bias))
+        cov = torch.matmul(tensor, tensor.T) / (tensor.size(1) - 1)
         return cov

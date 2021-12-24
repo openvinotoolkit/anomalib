@@ -57,7 +57,6 @@ class DfkdeLightning(AnomalyModule):
 
         Args:
           batch (Tensor): Input batch
-          _: Index of the batch.
 
         Returns:
           Deep CNN features.
@@ -88,7 +87,6 @@ class DfkdeLightning(AnomalyModule):
 
         Args:
           batch: Input batch
-          _: Index of the batch.
 
         Returns:
           Dictionary containing probability, prediction and ground truth values.

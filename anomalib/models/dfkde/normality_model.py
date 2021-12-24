@@ -87,23 +87,22 @@ class NormalityModel(nn.Module):
         return True
 
     def preprocess(self, feature_stack: Tensor, max_length: Optional[Tensor] = None) -> Tuple[Tensor, Tensor]:
-        """Pre process the CNN features.
+        """Pre-process the CNN features.
 
         Args:
-          feature_stack: Features extracted from CNN
-          max_length:
-          feature_stack: Tensor:
-          max_length: Optional[Tensor]:  (Default value = None)
+          feature_stack (Tensor): Features extracted from CNN
+          max_length (Optional[Tensor]): Used to unit normalize the feature_stack vector. If ``max_len`` is not
+            provided, the length is calculated from the ``feature_stack``. Defaults to None.
 
         Returns:
             (Tuple): Stacked features and length
         """
 
         if max_length is None:
-            max_length = torch.max(torch.norm(feature_stack, 2, 1))
+            max_length = torch.max(torch.linalg.norm(feature_stack, ord=2, dim=1))
 
         if self.pre_processing == "norm":
-            feature_stack /= torch.norm(feature_stack, 2, 1)[:, None]
+            feature_stack /= torch.linalg.norm(feature_stack, ord=2, dim=1)[:, None]
         elif self.pre_processing == "scale":
             feature_stack /= max_length
         else:

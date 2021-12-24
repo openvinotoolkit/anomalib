@@ -79,7 +79,6 @@ class DfmLightning(AnomalyModule):
 
         Args:
           batch (List[Dict[str, Any]]): Input batch
-          _ (int): Index of the batch.
 
         Returns:
           Dictionary containing FRE anomaly scores and ground-truth.
