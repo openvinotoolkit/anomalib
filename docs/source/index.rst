@@ -10,6 +10,14 @@ This repository contains state-of-the art anomaly detection algorithms
 trained and evaluated on both public and private benchmark datasets. The
 repo is constantly updated with new algorithms, so keep checking.
 
+Supported Hardware
+------------------
+This repository as been tested on
+
+- Ubuntu 20.04
+
+- NVIDIA GeForce RTX 3090
+
 .. toctree::
    :maxdepth: 1
    :name: start
