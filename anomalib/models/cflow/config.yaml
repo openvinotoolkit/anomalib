@@ -6,7 +6,7 @@ dataset:
   category: leather
   task: segmentation
   label_format: None
-  image_size: 256
+  image_size: 512
   train_batch_size: 32
   test_batch_size: 32
   inference_batch_size: 32
