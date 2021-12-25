@@ -16,7 +16,6 @@
 
 import math
 
-# FrEIA (https://github.com/VLL-HD/FrEIA/)
 import FrEIA.framework as Ff
 import FrEIA.modules as Fm
 import torch
