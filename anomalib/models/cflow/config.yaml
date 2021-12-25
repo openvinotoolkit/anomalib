@@ -6,7 +6,7 @@ dataset:
   category: leather
   task: segmentation
   label_format: None
-  image_size: 512
+  image_size: 256
   train_batch_size: 32
   test_batch_size: 32
   inference_batch_size: 32
@@ -85,7 +85,6 @@ trainer:
   progress_bar_refresh_rate: null
   reload_dataloaders_every_epoch: false
   replace_sampler_ddp: true
-  resume_from_checkpoint: null
   stochastic_weight_avg: false
   sync_batchnorm: false
   terminate_on_nan: false
