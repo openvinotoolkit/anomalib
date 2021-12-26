@@ -7,9 +7,9 @@ dataset:
   task: segmentation
   label_format: None
   image_size: 256
-  train_batch_size: 32
-  test_batch_size: 32
-  inference_batch_size: 32
+  train_batch_size: 16
+  test_batch_size: 16
+  inference_batch_size: 16
   fiber_batch_size: 256
   num_workers: 36
 
