@@ -72,12 +72,9 @@ def compute_mask(anomaly_map: np.ndarray, threshold: float, kernel_size: int = 4
     """Compute anomaly mask via thresholding the predicted anomaly map.
 
     Args:
-        anomaly_map: Anomaly map predicted via the model
-        threshold: Value to threshold anomaly scores into 0-1 range.
-        kernel_size: Value to apply morphological operations to the predicted mask
-        anomaly_map: np.ndarray:
-        threshold: float:
-        kernel_size: int:  (Default value = 4)
+        anomaly_map (np.ndarray): Anomaly map predicted via the model
+        threshold (float): Value to threshold anomaly scores into 0-1 range.
+        kernel_size (int): Value to apply morphological operations to the predicted mask. Defaults to 4.
 
     Returns:
         Predicted anomaly mask

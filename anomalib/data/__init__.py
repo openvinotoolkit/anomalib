@@ -22,12 +22,11 @@ from pytorch_lightning import LightningDataModule
 from .mvtec import MVTecDataModule
 
 
-def get_datamodule(config: Union[DictConfig, ListConfig]):
+def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule:
     """Get Anomaly Datamodule.
 
     Args:
-        config: Configuration of the anomaly model
-        config: Union[DictConfig, ListConfig]:
+        config (Union[DictConfig, ListConfig]): Configuration of the anomaly model.
 
     Returns:
         PyTorch Lightning DataModule

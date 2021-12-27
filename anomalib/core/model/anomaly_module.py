@@ -17,10 +17,9 @@
 from typing import List, Union
 
 import pytorch_lightning as pl
-import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks.base import Callback
-from torch import nn
+from torch import Tensor, nn
 from torchmetrics import F1, MetricCollection
 
 from anomalib.core.metrics import AUROC, AdaptiveThreshold, AnomalyScoreDistribution
@@ -28,6 +27,8 @@ from anomalib.core.metrics import AUROC, AdaptiveThreshold, AnomalyScoreDistribu
 
 class AnomalyModule(pl.LightningModule):
     """AnomalyModule to train, validate, predict and test images.
+
+    Acts as a base class for all the Anomaly Modules in the library.
 
     Args:
         params (Union[DictConfig, ListConfig]): Configuration
@@ -39,7 +40,7 @@ class AnomalyModule(pl.LightningModule):
         # Force the type for hparams so that it works with OmegaConfig style of accessing
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(params)
-        self.loss: torch.Tensor
+        self.loss: Tensor
         self.callbacks: List[Callback]
 
         self.image_threshold = AdaptiveThreshold(self.hparams.model.threshold.image_default)
@@ -62,7 +63,7 @@ class AnomalyModule(pl.LightningModule):
             batch (Tensor): Input Tensor
 
         Returns:
-            [Tensor]: Output tensor from the model.
+            Tensor: Output tensor from the model.
         """
         return self.model(batch)
 
@@ -77,9 +78,9 @@ class AnomalyModule(pl.LightningModule):
         Override to add any processing logic.
 
         Args:
-            batch: Current batch
-            batch_idx: Index of current batch
-            dataloader_idx: Index of the current dataloader
+            batch (Tensor): Current batch
+            batch_idx (int): Index of current batch
+            dataloader_idx (int): Index of the current dataloader
 
         Return:
             Predicted output
@@ -93,7 +94,7 @@ class AnomalyModule(pl.LightningModule):
         """Calls validation_step for anomaly map/score calculation.
 
         Args:
-          batch: Input batch
+          batch (Tensor): Input batch
           _: Index of the batch.
 
         Returns:
@@ -153,7 +154,7 @@ class AnomalyModule(pl.LightningModule):
         """Compute labels based on model predictions."""
         if "pred_scores" not in outputs and "anomaly_maps" in outputs:
             outputs["pred_scores"] = (
-                outputs["anomaly_maps"].reshape(outputs["anomaly_maps"].shape[0], -1).max(axis=1).values
+                outputs["anomaly_maps"].reshape(outputs["anomaly_maps"].shape[0], -1).max(dim=1).values
             )
 
     def _log_metrics(self):
