@@ -292,15 +292,13 @@ class OpenVINOInferencer(Inferencer):
             anomaly_map = np.log(anomaly_map)
             anomaly_map = (anomaly_map - meta_data["pixel_mean"]) / meta_data["pixel_std"]
             anomaly_map -= (meta_data["image_mean"] - meta_data["pixel_mean"]) / meta_data["pixel_std"]
-            if "threshold" in meta_data.keys():
-                anomaly_map = norm.cdf(anomaly_map - meta_data["threshold"])
+            anomaly_map = norm.cdf(anomaly_map - meta_data["pixel_threshold"])
 
         # standardize image scores
         if "image_mean" in meta_data.keys() and "image_std" in meta_data.keys():
             pred_score = np.log(pred_score)
             pred_score = (pred_score - meta_data["image_mean"]) / meta_data["image_std"]
-            if "threshold" in meta_data.keys():
-                pred_score = norm.cdf(pred_score - meta_data["threshold"])
+            pred_score = norm.cdf(pred_score - meta_data["image_threshold"])
 
         if "image_shape" in meta_data and anomaly_map.shape != meta_data["image_shape"]:
             anomaly_map = cv2.resize(anomaly_map, meta_data["image_shape"])
