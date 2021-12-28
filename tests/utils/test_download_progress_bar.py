@@ -27,7 +27,7 @@ def test_output_on_download(capfd):
     with tempfile.TemporaryDirectory() as dir_loc:
         destination = os.path.join(dir_loc, "jelly.jpg")
         with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc=url.split("/")[-1]) as p_bar:
-            urlretrieve(url, filename=destination, reporthook=p_bar.update_to)
+            urlretrieve(url, filename=destination, reporthook=p_bar.update_to)  # nosec  # noqa
 
         assert os.path.exists(destination), "Failed retrieving the file"
         _, err = capfd.readouterr()
