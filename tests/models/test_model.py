@@ -56,7 +56,7 @@ def category() -> str:
         "zipper",
     ]
 
-    category = random.choice(categories)
+    category = random.choice(categories)  # nosec
     return category
 
 
