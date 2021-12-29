@@ -165,7 +165,6 @@ class AnomalyModule(pl.LightningModule):
 
     def _log_metrics(self):
         """Log computed performance metrics."""
-        print(self.image_metrics.compute())
         self.log_dict(self.image_metrics)
         if self.hparams.dataset.task == "segmentation":
             self.log_dict(self.pixel_metrics)
