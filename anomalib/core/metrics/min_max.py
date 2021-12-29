@@ -11,11 +11,11 @@ class MinMax(Metric):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add_state("min", torch.tensor(float("inf")), persistent=True)
-        self.add_state("max", torch.tensor(float("-inf")), persistent=True)
+        self.add_state("min", torch.tensor(float("inf")), persistent=True)  # pylint: disable=not-callable
+        self.add_state("max", torch.tensor(float("-inf")), persistent=True)  # pylint: disable=not-callable
 
-        self.min = torch.tensor(float("inf"))
-        self.max = torch.tensor(float("-inf"))
+        self.min = torch.tensor(float("inf"))  # pylint: disable=not-callable
+        self.max = torch.tensor(float("-inf"))  # pylint: disable=not-callable
 
     # pylint: disable=arguments-differ
     def update(self, predictions: Tensor) -> None:  # type: ignore
