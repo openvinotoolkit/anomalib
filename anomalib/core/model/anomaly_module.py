@@ -22,7 +22,12 @@ from pytorch_lightning.callbacks.base import Callback
 from torch import Tensor, nn
 from torchmetrics import F1, MetricCollection
 
-from anomalib.core.metrics import AUROC, AdaptiveThreshold, AnomalyScoreDistribution
+from anomalib.core.metrics import (
+    AUROC,
+    AdaptiveThreshold,
+    AnomalyScoreDistribution,
+    MinMax,
+)
 
 
 class AnomalyModule(pl.LightningModule):
@@ -47,6 +52,7 @@ class AnomalyModule(pl.LightningModule):
         self.pixel_threshold = AdaptiveThreshold(self.hparams.model.threshold.pixel_default)
 
         self.training_distribution = AnomalyScoreDistribution()
+        self.min_max = MinMax()
 
         self.model: nn.Module
 
@@ -159,6 +165,7 @@ class AnomalyModule(pl.LightningModule):
 
     def _log_metrics(self):
         """Log computed performance metrics."""
+        print(self.image_metrics.compute())
         self.log_dict(self.image_metrics)
         if self.hparams.dataset.task == "segmentation":
             self.log_dict(self.pixel_metrics)
