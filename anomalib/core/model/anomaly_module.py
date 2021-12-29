@@ -141,8 +141,8 @@ class AnomalyModule(pl.LightningModule):
         else:
             self.pixel_threshold.value = self.image_threshold.value
 
-        self.image_metrics.F1.threshold = self.image_threshold.value
-        self.pixel_metrics.F1.threshold = self.pixel_threshold.value
+        self.image_metrics.F1.threshold = self.image_threshold.value.item()
+        self.pixel_metrics.F1.threshold = self.pixel_threshold.value.item()
 
     def _collect_outputs(self, image_metric, pixel_metric, outputs):
         for output in outputs:

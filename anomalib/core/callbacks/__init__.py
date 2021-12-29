@@ -8,6 +8,7 @@ from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 
 from .compress import CompressModelCallback
+from .min_max_normalization import MinMaxNormalizationCallback
 from .model_loader import LoadModelCallback
 from .normalization import AnomalyScoreNormalizationCallback
 from .save_to_csv import SaveToCSVCallback
@@ -51,17 +52,22 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
         load_model = LoadModelCallback(os.path.join(config.project.path, config.model.weight_file))
         callbacks.append(load_model)
 
-    if "normalize_scores" in config.model.keys() and config.model.normalize_scores:
-        if config.model.name in ["padim", "stfpm"]:
-            if not config.optimization.nncf.apply:
-                callbacks.append(AnomalyScoreNormalizationCallback())
+    if "normalization_method" in config.model.keys() and not config.model.normalization_method == "none":
+        if config.model.normalization_method == "cdf":
+            if config.model.name in ["padim", "stfpm"]:
+                if not config.optimization.nncf.apply:
+                    callbacks.append(AnomalyScoreNormalizationCallback())
+                else:
+                    raise NotImplementedError("CDF Score Normalization is currently not compatible with NNCF.")
             else:
-                raise NotImplementedError("Score Normalization is currently not compatible with NNCF.")
+                raise NotImplementedError("Score Normalization is currently supported for PADIM and STFPM only.")
+        elif config.model.normalization_method == "min_max":
+            callbacks.append(MinMaxNormalizationCallback())
         else:
-            raise NotImplementedError("Score Normalization is currently supported for PADIM and STFPM only.")
+            raise ValueError(f"Normalization method not recognized: {config.model.normalization_method}")
 
     if not config.project.log_images_to == []:
-        callbacks.append(VisualizerCallback(inputs_are_normalized=config.model.normalize_scores))
+        callbacks.append(VisualizerCallback(inputs_are_normalized=config.model.normalization_method == "cdf"))
 
     if "optimization" in config.keys():
         if config.optimization.nncf.apply:

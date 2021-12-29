@@ -3,7 +3,7 @@ dataset:
   format: mvtec
   path: ./datasets/MVTec
   url: ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/mvtec_anomaly_detection.tar.xz
-  category: leather
+  category: bottle
   task: segmentation
   label_format: None
   tiling:
@@ -26,7 +26,7 @@ model:
     - layer2
     - layer3
   metric: auc
-  normalize_scores: true
+  normalization_method: none # options: [none, min_max, cdf]
   threshold:
     image_default: 3
     pixel_default: 3
@@ -35,7 +35,7 @@ model:
 project:
   seed: 42
   path: ./results
-  log_images_to: []
+  log_images_to: [local]
   logger: false
   save_to_csv: false
 
