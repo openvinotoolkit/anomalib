@@ -17,7 +17,7 @@ model:
   pca_level: 0.97
   score_type: fre # nll: for Gaussian modeling, fre: pca feature reconstruction error
   project_path: ./results
-  normalization_method: min_max # options: [null, min_max, cdf]
+  normalization_method: none # not supported for dfm
   threshold:
     image_default: 0
     adaptive: true
@@ -25,7 +25,7 @@ model:
 project:
   seed: 42
   path: ./results
-  log_images_to: [local]
+  log_images_to: []
   logger: false
   save_to_csv: false
 
