@@ -26,14 +26,8 @@ class MinMaxNormalizationCallback(Callback):
 
     def on_test_start(self, _trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
         """Called when the test begins."""
-        normalized_image_threshold = (pl_module.image_threshold.value.item() - pl_module.min_max.min) / (
-            pl_module.min_max.max - pl_module.min_max.min
-        )
-        normalized_pixel_threshold = (pl_module.pixel_threshold.value.item() - pl_module.min_max.min) / (
-            pl_module.min_max.max - pl_module.min_max.min
-        )
-        pl_module.image_metrics.F1.threshold = normalized_image_threshold.item()
-        pl_module.pixel_metrics.F1.threshold = normalized_pixel_threshold.item()
+        pl_module.image_metrics.F1.threshold = 0.5
+        pl_module.pixel_metrics.F1.threshold = 0.5
 
     def on_validation_batch_end(
         self,
@@ -60,7 +54,7 @@ class MinMaxNormalizationCallback(Callback):
         _dataloader_idx: int,
     ) -> None:
         """Called when the test batch ends, normalizes the predicted scores and anomaly maps."""
-        self._normalize(outputs, pl_module.min_max)
+        self._normalize(outputs, pl_module)
 
     def on_predict_batch_end(
         self,
@@ -72,9 +66,14 @@ class MinMaxNormalizationCallback(Callback):
         _dataloader_idx: int,
     ) -> None:
         """Called when the predict batch ends, normalizes the predicted scores and anomaly maps."""
-        self._normalize(outputs, pl_module.min_max)
+        self._normalize(outputs, pl_module)
 
-    def _normalize(self, outputs, stats):
-        outputs["pred_scores"] = (outputs["pred_scores"] - stats.min) / (stats.max - stats.min)
+    def _normalize(self, outputs, pl_module):
+        stats = pl_module.min_max
+        outputs["pred_scores"] = (
+            (outputs["pred_scores"] - pl_module.image_threshold.value) / (stats.max - stats.min)
+        ) + 0.5
         if "anomaly_maps" in outputs.keys():
-            outputs["anomaly_maps"] = (outputs["anomaly_maps"] - stats.min) / (stats.max - stats.min)
+            outputs["anomaly_maps"] = (
+                (outputs["anomaly_maps"] - pl_module.pixel_threshold.value) / (stats.max - stats.min)
+            ) + 0.5

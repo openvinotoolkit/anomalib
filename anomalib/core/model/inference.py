@@ -287,6 +287,11 @@ class OpenVINOInferencer(Inferencer):
         anomaly_map = predictions.squeeze()
         pred_score = anomaly_map.reshape(-1).max()
 
+        # min max normalization
+        if "min" in meta_data and "max" in meta_data:
+            anomaly_map = ((anomaly_map - meta_data["pixel_threshold"]) / (meta_data["max"] - meta_data["min"])) + 0.5
+            pred_score = ((pred_score - meta_data["image_threshold"]) / (meta_data["max"] - meta_data["min"])) + 0.5
+
         # standardize pixel scores
         if "pixel_mean" in meta_data.keys() and "pixel_std" in meta_data.keys():
             anomaly_map = np.log(anomaly_map)
