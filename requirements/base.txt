@@ -9,7 +9,7 @@ nncf==2.0.0
 numpy~=1.19.5
 omegaconf==2.1.1
 pillow==8.3.2
-pytorch-lightning==1.3.6
+pytorch-lightning @ git+https://github.com/PyTorchLightning/pytorch-lightning.git
 torch==1.8.1
 torchvision==0.9.1
 scikit-image>=0.17.2
