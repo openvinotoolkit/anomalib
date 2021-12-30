@@ -26,6 +26,10 @@ from torch import Tensor, nn
 class FeatureExtractor(nn.Module):
     """Extract features from a CNN.
 
+    Args:
+        backbone (nn.Module): The backbone to which the feature extraction hooks are attached.
+        layers (Iterable[str]): List of layer names of the backbone to which the hooks are attached.
+
     Example:
         >>> import torch
         >>> import torchvision
@@ -55,7 +59,7 @@ class FeatureExtractor(nn.Module):
         """Get layer features.
 
         Args:
-            layer_id: str: Layer ID
+            layer_id (str): Layer ID
 
         Returns:
             Layer features

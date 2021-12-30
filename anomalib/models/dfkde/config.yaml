@@ -13,18 +13,20 @@ dataset:
 
 model:
   name: dfkde
+  backbone: resnet18
   max_training_points: 40000
   confidence_threshold: 0.5
   pre_processing: scale
   n_components: 16
+  normalize_scores: false # currently not supported for this model
   threshold:
-    default: 0
+    image_default: 0
     adaptive: true
 
 project:
   seed: 42
   path: ./results
-  log_images_to: [local]
+  log_images_to: []
   logger: false
   save_to_csv: false
 
@@ -71,7 +73,6 @@ trainer:
   progress_bar_refresh_rate: null
   reload_dataloaders_every_epoch: false
   replace_sampler_ddp: true
-  resume_from_checkpoint: null
   stochastic_weight_avg: false
   sync_batchnorm: false
   terminate_on_nan: false

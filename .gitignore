@@ -162,6 +162,12 @@ cython_debug/
 docs/source/generated
 docs/source/api
 docs/source/models
+docs/build/
+docs/source/_build/
 
 # Misc
 .DS_Store
+
+# logs
+wandb/
+lightning_logs/

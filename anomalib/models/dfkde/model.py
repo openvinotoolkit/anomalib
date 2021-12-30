@@ -17,9 +17,9 @@
 from typing import Any, Dict, List, Union
 
 import torch
+import torchvision
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
-from torchvision.models import resnet50
 
 from anomalib.core.model import AnomalyModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
@@ -27,14 +27,19 @@ from anomalib.models.dfkde.normality_model import NormalityModel
 
 
 class DfkdeLightning(AnomalyModule):
-    """DFKDE: Deep Featured Kernel Density Estimation."""
+    """DFKDE: Deep Featured Kernel Density Estimation.
+
+    Args:
+        hparams (Union[DictConfig, ListConfig]): Model params
+    """
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         super().__init__(hparams)
         self.threshold_steepness = 0.05
         self.threshold_offset = 12
 
-        self.feature_extractor = FeatureExtractor(backbone=resnet50(pretrained=True), layers=["avgpool"]).eval()
+        self.backbone = getattr(torchvision.models, hparams.model.backbone)
+        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=["avgpool"]).eval()
 
         self.normality_model = NormalityModel(
             filter_count=hparams.model.max_training_points,
@@ -52,8 +57,7 @@ class DfkdeLightning(AnomalyModule):
         """Training Step of DFKDE. For each batch, features are extracted from the CNN.
 
         Args:
-          batch: Input batch
-          _: Index of the batch.
+          batch (Tensor): Input batch
 
         Returns:
           Deep CNN features.
@@ -68,8 +72,7 @@ class DfkdeLightning(AnomalyModule):
         """Fit a KDE model on deep CNN features.
 
         Args:
-          outputs: Batch of outputs from the training step
-          outputs: dict:
+          outputs (List[Dict[str, Any]]): Batch of outputs from the training step
 
         Returns:
           None
@@ -85,7 +88,6 @@ class DfkdeLightning(AnomalyModule):
 
         Args:
           batch: Input batch
-          _: Index of the batch.
 
         Returns:
           Dictionary containing probability, prediction and ground truth values.

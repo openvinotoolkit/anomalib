@@ -33,15 +33,16 @@ def anomaly_map_to_color_map(anomaly_map: np.ndarray, normalize: bool = True) ->
     """
     if normalize:
         anomaly_map = (anomaly_map - anomaly_map.min()) / np.ptp(anomaly_map)
-        anomaly_map = anomaly_map * 255
-        anomaly_map = anomaly_map.astype(np.uint8)
+    anomaly_map = anomaly_map * 255
+    anomaly_map = anomaly_map.astype(np.uint8)
 
     anomaly_map = cv2.applyColorMap(anomaly_map, cv2.COLORMAP_JET)
+    anomaly_map = cv2.cvtColor(anomaly_map, cv2.COLOR_BGR2RGB)
     return anomaly_map
 
 
 def superimpose_anomaly_map(
-    anomaly_map: np.ndarray, image: np.ndarray, alpha: float = 0.4, gamma: int = 0
+    anomaly_map: np.ndarray, image: np.ndarray, alpha: float = 0.4, gamma: int = 0, normalize: bool = False
 ) -> np.ndarray:
     """Superimpose anomaly map on top of in the input image.
 
@@ -54,14 +55,16 @@ def superimpose_anomaly_map(
             to smooth the processing. Defaults to 0. Overall,
             the formula to compute the blended image is
             I' = (alpha*I1 + (1-alpha)*I2) + gamma
+        normalize: whether or not the anomaly maps should
+            be normalized to image min-max
+
 
     Returns:
         np.ndarray: Image with anomaly map superimposed on top of it.
     """
 
-    anomaly_map = anomaly_map_to_color_map(anomaly_map.squeeze())
+    anomaly_map = anomaly_map_to_color_map(anomaly_map.squeeze(), normalize=normalize)
     superimposed_map = cv2.addWeighted(anomaly_map, alpha, image, (1 - alpha), gamma)
-    superimposed_map = cv2.cvtColor(superimposed_map, cv2.COLOR_BGR2RGB)
     return superimposed_map
 
 
@@ -69,12 +72,9 @@ def compute_mask(anomaly_map: np.ndarray, threshold: float, kernel_size: int = 4
     """Compute anomaly mask via thresholding the predicted anomaly map.
 
     Args:
-        anomaly_map: Anomaly map predicted via the model
-        threshold: Value to threshold anomaly scores into 0-1 range.
-        kernel_size: Value to apply morphological operations to the predicted mask
-        anomaly_map: np.ndarray:
-        threshold: float:
-        kernel_size: int:  (Default value = 4)
+        anomaly_map (np.ndarray): Anomaly map predicted via the model
+        threshold (float): Value to threshold anomaly scores into 0-1 range.
+        kernel_size (int): Value to apply morphological operations to the predicted mask. Defaults to 4.
 
     Returns:
         Predicted anomaly mask

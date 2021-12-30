@@ -16,6 +16,7 @@
 
 import pytest
 from omegaconf import OmegaConf
+from pytorch_lightning.loggers.wandb import WandbLogger
 
 from anomalib.loggers import AnomalibTensorBoardLogger, UnknownLogger, get_logger
 
@@ -42,6 +43,11 @@ def test_get_logger():
     config.project.logger = "tensorboard"
     logger = get_logger(config=config)
     assert isinstance(logger, AnomalibTensorBoardLogger)
+
+    # get wandb logger
+    config.project.logger = "wandb"
+    logger = get_logger(config=config)
+    assert isinstance(logger, WandbLogger)
 
     # raise unknown
     with pytest.raises(UnknownLogger):
