@@ -14,11 +14,12 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from typing import Any, Dict, List, Union
+from typing import Dict, List, Union
 
 import torch
 import torchvision
 from omegaconf import DictConfig, ListConfig
+from torch import Tensor
 
 from anomalib.core.model import AnomalyModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
@@ -48,7 +49,7 @@ class DfmLightning(AnomalyModule):
         For each batch, features are extracted from the CNN.
 
         Args:
-          batch: Input batch
+          batch (Dict[str, Tensor]): Input batch
           _: Index of the batch.
 
         Returns:
@@ -60,12 +61,11 @@ class DfmLightning(AnomalyModule):
         feature_vector = torch.hstack(list(layer_outputs.values())).detach().squeeze()
         return {"feature_vector": feature_vector}
 
-    def training_epoch_end(self, outputs: List[Dict[str, Any]]) -> None:
+    def training_epoch_end(self, outputs: List[Dict[str, Tensor]]) -> None:
         """Fit a KDE model on deep CNN features.
 
         Args:
-          outputs: Batch of outputs from the training step
-          outputs: dict:
+          outputs (List[Dict[str, Tensor]]): Batch of outputs from the training step
 
         Returns:
           None
@@ -80,8 +80,7 @@ class DfmLightning(AnomalyModule):
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
-          batch: Dict: Input batch
-          batch_idx: int: Index of the batch.
+          batch (List[Dict[str, Any]]): Input batch
 
         Returns:
           Dictionary containing FRE anomaly scores and ground-truth.

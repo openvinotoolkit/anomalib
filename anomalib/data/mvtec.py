@@ -291,11 +291,11 @@ class MVTec(VisionDataset):
 
             logger.info("Downloading MVTec Dataset")
             with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc=dataset_name) as progress_bar:
-                urlretrieve(
+                urlretrieve(  # nosec
                     url=f"ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/{dataset_name}",
                     filename=self.filename,
                     reporthook=progress_bar.update_to,
-                )
+                )  # nosec
 
             self._extract()
             self._clean()

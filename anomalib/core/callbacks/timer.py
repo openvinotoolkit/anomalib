@@ -7,6 +7,7 @@ from pytorch_lightning import Callback, LightningModule, Trainer
 class TimerCallback(Callback):
     """Callback that measures the training and testing time of a PyTorch Lightning module."""
 
+    # pylint: disable=unused-argument
     def __init__(self):
         self.start: float
         self.num_images: int = 0

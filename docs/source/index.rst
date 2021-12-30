@@ -6,9 +6,10 @@
 Welcome to Anomalib's documentation!
 ====================================
 
-This repository contains state-of-the art anomaly detection algorithms
-trained and evaluated on both public and private benchmark datasets. The
-repo is constantly updated with new algorithms, so keep checking.
+Anomalib is a deep learning library that aims to collect state-of-the-art anomaly detection algorithms for benchmarking on both public and private datasets. Anomalib provides several ready-to-use implementations of anomaly detection algorithms described in the recent literature, as well as a set of tools that facilitate the development and implementation of custom models. The library has a strong focus on image-based anomaly detection, where the goal of the algorithm is to identify anomalous images, or anomalous pixel regions within images in a dataset. Anomalib is constantly updated with new algorithms and training/inference extensions, so keep checking!
+
+.. image:: ./images/readme.png
+   :alt: Sample Image
 
 Supported Hardware
 ------------------
