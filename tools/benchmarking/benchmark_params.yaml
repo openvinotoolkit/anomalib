@@ -1,0 +1,26 @@
+seed: 42
+grid_search:
+  dataset:
+    category:
+      - bottle
+      - cable
+      - capsule
+      - carpet
+      - grid
+      - hazelnut
+      - leather
+      - metal_nut
+      - pill
+      - screw
+      - tile
+      - toothbrush
+      - transistor
+      - wood
+      - zipper
+    image_size: [128, 224]
+  model_name:
+    - padim
+    - dfkde
+    - dfm
+    - patchcore
+    - stfpm

@@ -23,13 +23,13 @@ import numpy as np
 import torch
 from omegaconf import DictConfig, ListConfig
 from openvino.inference_engine import IECore  # pylint: disable=no-name-in-module
-from scipy.stats import norm
 from torch import Tensor, nn
 
 from anomalib.core.model import AnomalyModule
 from anomalib.data.transforms.pre_process import PreProcessor
 from anomalib.data.utils import read_image
 from anomalib.models import get_model
+from anomalib.utils.normalization.numpy_normalization import CDFNormalization
 from anomalib.utils.post_process import superimpose_anomaly_map
 
 
@@ -164,11 +164,14 @@ class TorchInferencer(Inferencer):
         """
         return self.model(image)
 
-    def post_process(self, predictions: Tensor, meta_data: Optional[Dict] = None) -> np.ndarray:
+    def post_process(
+        self, predictions: Union[Tensor, Tuple[Tensor, Tensor]], meta_data: Optional[Dict] = None
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """Post process the output predictions.
 
         Args:
-            predictions (Tensor): Raw output predicted by the model.
+            predictions (Tensor, Tuple[Tensor, Tensor]): Raw output predicted by the model.
+                                                        Some models such as PatchCore return the score as well.
             meta_data (Dict, optional): Meta data. Post-processing step sometimes requires
                 additional meta data such as image shape. This variable comprises such info.
                 Defaults to {}.
@@ -179,12 +182,26 @@ class TorchInferencer(Inferencer):
         if meta_data is None:
             meta_data = {}
 
-        predictions = predictions.squeeze().detach().numpy()
+        if isinstance(predictions, Tensor):
+            anomaly_maps = predictions
+            pred_scores = anomaly_maps.reshape(-1).max()
+        else:
+            anomaly_maps, pred_scores = predictions
+            pred_scores = pred_scores.detach().cpu().numpy()
 
-        if "image_shape" in meta_data and predictions.shape != meta_data["image_shape"]:
-            predictions = cv2.resize(predictions, meta_data["image_shape"])
+        anomaly_maps = anomaly_maps.squeeze().detach().numpy()
 
-        return predictions
+        anomaly_maps, pred_scores = CDFNormalization.standardize(
+            pred_scores=pred_scores, stats=meta_data["stats"], anomaly_map=anomaly_maps
+        )
+        anomaly_maps, pred_scores = CDFNormalization.normalize(
+            pred_scores, meta_data["image_threshold"], meta_data["pixel_threshold"], anomaly_maps
+        )
+
+        if "image_shape" in meta_data and anomaly_maps.shape != meta_data["image_shape"]:
+            anomaly_maps = cv2.resize(anomaly_maps, meta_data["image_shape"])
+
+        return anomaly_maps, pred_scores
 
 
 class OpenVINOInferencer(Inferencer):
@@ -283,24 +300,18 @@ class OpenVINOInferencer(Inferencer):
         if meta_data is None:
             meta_data = {}
 
-        predictions = predictions[self.output_blob]
-        anomaly_map = predictions.squeeze()
-        pred_score = anomaly_map.reshape(-1).max()
+        anomaly_map = predictions[self.output_blob]
+        anomaly_map = anomaly_map.squeeze()
+        pred_scores = anomaly_map.reshape(-1).max()
 
-        # standardize pixel scores
-        if "pixel_mean" in meta_data.keys() and "pixel_std" in meta_data.keys():
-            anomaly_map = np.log(anomaly_map)
-            anomaly_map = (anomaly_map - meta_data["pixel_mean"]) / meta_data["pixel_std"]
-            anomaly_map -= (meta_data["image_mean"] - meta_data["pixel_mean"]) / meta_data["pixel_std"]
-            anomaly_map = norm.cdf(anomaly_map - meta_data["pixel_threshold"])
-
-        # standardize image scores
-        if "image_mean" in meta_data.keys() and "image_std" in meta_data.keys():
-            pred_score = np.log(pred_score)
-            pred_score = (pred_score - meta_data["image_mean"]) / meta_data["image_std"]
-            pred_score = norm.cdf(pred_score - meta_data["image_threshold"])
+        anomaly_maps, pred_scores = CDFNormalization.standardize(
+            pred_scores=pred_scores, stats=meta_data["stats"], anomaly_map=anomaly_map
+        )
+        anomaly_maps, pred_scores = CDFNormalization.normalize(
+            pred_scores, meta_data["image_threshold"], meta_data["pixel_threshold"], anomaly_maps
+        )
 
         if "image_shape" in meta_data and anomaly_map.shape != meta_data["image_shape"]:
             anomaly_map = cv2.resize(anomaly_map, meta_data["image_shape"])
 
-        return anomaly_map, pred_score
+        return anomaly_map, pred_scores

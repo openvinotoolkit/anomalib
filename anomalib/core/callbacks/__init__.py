@@ -67,9 +67,8 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
 
     if "normalize_scores" in config.model.keys() and config.model.normalize_scores:
         if config.model.name in ["padim", "stfpm"]:
-            if not config.optimization.nncf.apply:
-                callbacks.append(AnomalyScoreNormalizationCallback())
-            else:
+            callbacks.append(AnomalyScoreNormalizationCallback())
+            if "optimization" in config.keys() and config.optimization.nncf.apply:
                 raise NotImplementedError("Score Normalization is currently not compatible with NNCF.")
         else:
             raise NotImplementedError("Score Normalization is currently supported for PADIM and STFPM only.")

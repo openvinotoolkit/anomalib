@@ -1,13 +1,28 @@
 """Anomaly Score Normalization Callback."""
+
+# Copyright (C) 2020 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions
+# and limitations under the License.
+
 from typing import Any, Dict, Optional
 
 import pytorch_lightning as pl
-import torch
 from pytorch_lightning import Callback, Trainer
 from pytorch_lightning.utilities.types import STEP_OUTPUT
-from torch.distributions import LogNormal, Normal
+from torch.distributions import LogNormal
 
 from anomalib.models import get_model
+from anomalib.utils.normalization.torch_normalization import CDFNormalization
 
 
 class AnomalyScoreNormalizationCallback(Callback):
@@ -101,19 +116,31 @@ class AnomalyScoreNormalizationCallback(Callback):
         """Standardize the predicted scores and anomaly maps to the z-domain."""
         stats = pl_module.training_distribution.to(outputs["pred_scores"].device)
 
-        outputs["pred_scores"] = torch.log(outputs["pred_scores"])
-        outputs["pred_scores"] = (outputs["pred_scores"] - stats.image_mean) / stats.image_std
+        anomaly_maps = None
         if "anomaly_maps" in outputs.keys():
-            outputs["anomaly_maps"] = (torch.log(outputs["anomaly_maps"]) - stats.pixel_mean) / stats.pixel_std
-            outputs["anomaly_maps"] -= (stats.image_mean - stats.pixel_mean) / stats.pixel_std
+            anomaly_maps = outputs["anomaly_maps"]
+
+        anomaly_maps, pred_scores = CDFNormalization.standardize(
+            pred_scores=outputs["pred_scores"], stats=stats, anomaly_maps=anomaly_maps
+        )
+
+        outputs["pred_scores"] = pred_scores
+        if "anomaly_maps" in outputs.keys():
+            outputs["anomaly_maps"] = anomaly_maps
 
     def _normalize(self, outputs: STEP_OUTPUT, pl_module: pl.LightningModule) -> None:
         """Normalize the predicted scores and anomaly maps by first standardizing and then computing the CDF."""
-        device = outputs["pred_scores"].device
         image_threshold = pl_module.image_threshold.value.cpu()
         pixel_threshold = pl_module.pixel_threshold.value.cpu()
 
-        norm = Normal(torch.Tensor([0]), torch.Tensor([1]))
-        outputs["pred_scores"] = norm.cdf(outputs["pred_scores"].cpu() - image_threshold).to(device)
+        anomaly_maps = None
         if "anomaly_maps" in outputs.keys():
-            outputs["anomaly_maps"] = norm.cdf(outputs["anomaly_maps"].cpu() - pixel_threshold).to(device)
+            anomaly_maps = outputs["anomaly_maps"]
+
+        anomaly_maps, pred_scores = CDFNormalization.normalize(
+            outputs["pred_scores"], image_threshold, pixel_threshold, anomaly_maps
+        )
+
+        outputs["pred_scores"] = pred_scores
+        if "anomaly_maps" in outputs.keys():
+            outputs["anomaly_maps"] = anomaly_maps

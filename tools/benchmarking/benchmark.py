@@ -17,111 +17,26 @@
 
 import os
 import time
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Dict, Iterable, List, Union
+from typing import Dict, List, Tuple, Union, cast
 
-import albumentations as A
-import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
 import torch
-from omegaconf import DictConfig, ListConfig
+from helpers.inference import get_openvino_throughput, get_torch_throughput
+from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.callbacks.base import Callback
 from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
-from torch.utils.data import DataLoader
-from tqdm import tqdm
 
-from anomalib.config import get_configurable_parameters
+from anomalib.config import get_configurable_parameters, update_input_size_config
 from anomalib.core.callbacks import get_callbacks
-from anomalib.core.model.inference import OpenVINOInferencer
+from anomalib.core.model.anomaly_module import AnomalyModule
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
-
-MODEL_LIST = ["padim", "dfkde", "dfm", "patchcore", "stfpm"]
-SEED = 42
-
-# Modify category list according to dataset
-CATEGORY_LIST = [
-    "bottle",
-    "cable",
-    "capsule",
-    "carpet",
-    "grid",
-    "hazelnut",
-    "leather",
-    "metal_nut",
-    "pill",
-    "screw",
-    "tile",
-    "toothbrush",
-    "transistor",
-    "wood",
-    "zipper",
-]
-
-IMAGE_SIZE_LIST = ["128", "256", "512"]
-
-
-class OpenVINOMockDataLoader:
-    """Create mock images for inference on CPU based on the specifics of the original torch test dataset.
-
-    Uses yield so as to avoid storing everything in the memory.
-
-    Args:
-        image_size (List[int]): Size of input image
-        total_count (int): Total images in the test dataset
-    """
-
-    def __init__(self, image_size: List[int], total_count: int):
-        self.total_count = total_count
-        self.image_size = image_size
-        self.image = np.ones((*self.image_size, 3)).astype(np.uint8)
-
-    def __len__(self):
-        """Get total count of images."""
-        return self.total_count
-
-    def __call__(self) -> Iterable[np.ndarray]:
-        """Yield batch of generated images.
-
-        Args:
-            idx (int): Unused
-        """
-        for _ in range(self.total_count):
-            yield self.image
-
-
-def get_openvino_throughput(config: Union[DictConfig, ListConfig], model_path: Path, test_dataset: DataLoader) -> float:
-    """Runs the generated OpenVINO model on a dummy dataset to get throughput.
-
-    Args:
-        config (Union[DictConfig, ListConfig]): Model config.
-        model_path (Path): Path to folder containint the OpenVINO models. It then searches `model.xml` in the folder.
-        test_dataset (DataLoader): The test dataset used as a reference for the mock dataset.
-
-    Returns:
-        float: Inference throughput
-    """
-    # transform might not always be in config
-    if "transform" not in config.keys():
-        # save transforms in temporary location
-        A.save(A.Compose([A.Resize(*config.dataset.image_size)]), "/tmp/transforms.yaml", data_format="yaml")
-        config.transform = "/tmp/transforms.yaml"
-    inferencer = OpenVINOInferencer(config, model_path / "model.xml")
-    openvino_dataloader = OpenVINOMockDataLoader(config.dataset.image_size, total_count=len(test_dataset))
-    start_time = time.time()
-    # Create test images on CPU. Since we don't care about performance metrics and just the throughput, use mock data.
-    for image in openvino_dataloader():
-        inferencer(image)
-
-    # get throughput
-    inference_time = time.time() - start_time
-    throughput = len(test_dataset) / inference_time
-
-    os.unlink("/tmp/transforms.yaml")
-    return throughput
+from anomalib.utils.sweep import get_run_config, set_in_nested_config
 
 
 def convert_to_openvino(model: pl.LightningModule, export_path: Union[Path, str], input_size: List[int]):
@@ -139,6 +54,41 @@ def convert_to_openvino(model: pl.LightningModule, export_path: Union[Path, str]
     )
     optimize_command = "mo --input_model " + str(onnx_path) + " --output_dir " + str(export_path)
     os.system(optimize_command)
+
+
+def get_meta_data(model: AnomalyModule, input_size: Tuple[int, int]) -> Dict:
+    """Get meta data for inference.
+
+    Args:
+        model (AnomalyModule): Trained model from which the metadata is extracted.
+        input_size (Tuple[int, int]): Input size used to resize the pixel level mean and std.
+
+    Returns:
+        (Dict): Metadata as dictionary.
+    """
+    meta_data = {
+        "image_threshold": model.image_threshold.value.cpu().numpy(),
+        "pixel_threshold": model.pixel_threshold.value.cpu().numpy(),
+        "stats": {},
+    }
+
+    image_mean = model.training_distribution.image_mean.cpu().numpy()
+    if image_mean.size > 0:
+        meta_data["stats"]["image_mean"] = image_mean
+
+    image_std = model.training_distribution.image_std.cpu().numpy()
+    if image_std.size > 0:
+        meta_data["stats"]["image_std"] = image_std
+
+    pixel_mean = model.training_distribution.pixel_mean.cpu().numpy()
+    if pixel_mean.size > 0:
+        meta_data["stats"]["pixel_mean"] = pixel_mean.reshape(input_size)
+
+    pixel_std = model.training_distribution.pixel_std.cpu().numpy()
+    if pixel_std.size > 0:
+        meta_data["stats"]["pixel_std"] = pixel_std.reshape(input_size)
+
+    return meta_data
 
 
 def update_callbacks(config: Union[DictConfig, ListConfig]) -> List[Callback]:
@@ -172,35 +122,25 @@ def update_callbacks(config: Union[DictConfig, ListConfig]) -> List[Callback]:
     return callbacks
 
 
-def get_single_model_metrics(model_name: str, gpu_count: int, category: str, image_size: int) -> Dict:
+def get_single_model_metrics(model_config: Union[DictConfig, ListConfig], openvino_metrics: bool = False) -> Dict:
     """Collects metrics for `model_name` and returns a dict of results.
 
     Args:
-        model_name (str): Name of the model
-        gpu_count (int): Number of gpus. Use `gpu_count=0` for cpu
-        category (str): Category of the dataset
+        model_config (DictConfig, ListConfig): Configuration for run
+        openvino_metrics (bool): If True, converts the model to OpenVINO format and gathers inference metrics.
 
     Returns:
         Dict: Collection of all the metrics such as time taken, throughput and performance scores.
     """
-    config = get_configurable_parameters(model_name=model_name)
-    # Seed for reproducibility
-    seed_everything(42)
-
-    # TODO run gpu and cpu training in parallel as they don't share resources. issue #18
-    config.trainer.gpus = gpu_count
-    config.dataset.category = category
-    config.dataset.image_size = [image_size, image_size]
-    config.model.input_size = config.dataset.image_size
 
     with TemporaryDirectory() as project_path:
-        config.project.path = project_path
-        datamodule = get_datamodule(config)
-        model = get_model(config)
+        model_config.project.path = project_path
+        datamodule = get_datamodule(model_config)
+        model = get_model(model_config)
 
-        callbacks = update_callbacks(config)
+        callbacks = update_callbacks(model_config)
 
-        trainer = Trainer(**config.trainer, logger=None, callbacks=callbacks)
+        trainer = Trainer(**model_config.trainer, logger=None, callbacks=callbacks)
 
         start_time = time.time()
         trainer.fit(model=model, datamodule=datamodule)
@@ -216,17 +156,19 @@ def get_single_model_metrics(model_name: str, gpu_count: int, category: str, ima
         # get testing time
         testing_time = time.time() - start_time
 
-        throughput = len(datamodule.test_dataloader().dataset) / testing_time
+        meta_data = get_meta_data(model, model_config.model.input_size)
+
+        throughput = get_torch_throughput(model_config, model, datamodule.test_dataloader().dataset, meta_data)
 
         # Get OpenVINO metrics
         openvino_throughput = float("nan")
-        if gpu_count > 0:  # Train only once if both CPU and GPU training are called
+        if openvino_metrics:
             # Create dirs for openvino model export
-            openvino_export_path = Path("./exported_models") / model_name / category / str(image_size)
+            openvino_export_path = project_path / Path("exported_models")
             openvino_export_path.mkdir(parents=True, exist_ok=True)
-            convert_to_openvino(model, openvino_export_path, config.model.input_size)
+            convert_to_openvino(model, openvino_export_path, model_config.model.input_size)
             openvino_throughput = get_openvino_throughput(
-                config, openvino_export_path, datamodule.test_dataloader().dataset
+                model_config, openvino_export_path, datamodule.test_dataloader().dataset, meta_data
             )
 
         # arrange the data
@@ -235,7 +177,6 @@ def get_single_model_metrics(model_name: str, gpu_count: int, category: str, ima
             "Testing Time (s)": testing_time,
             "Inference Throughput (fps)": throughput,
             "OpenVINO Inference Throughput (fps)": openvino_throughput,
-            "Image Size": image_size,
         }
         for key, val in test_results[0].items():
             data[key] = float(val)
@@ -243,23 +184,68 @@ def get_single_model_metrics(model_name: str, gpu_count: int, category: str, ima
     return data
 
 
-def sweep():
-    """Go over all models, categories, and devices and collect metrics."""
-    # TODO add image resolution; maybe a recursive grid search. issue #18
-    for model_name in MODEL_LIST:
-        metrics_list = []
-        for image_size in IMAGE_SIZE_LIST:
-            for category in tqdm(CATEGORY_LIST, desc=f"{model_name}|{image_size}"):
-                for gpu_count in range(1, 2):
-                    model_metrics = get_single_model_metrics(model_name, gpu_count, category, int(image_size))
-                    model_metrics["Device"] = "CPU" if gpu_count == 0 else "GPU"
-                    model_metrics["Category"] = category
-                    metrics_list.append(model_metrics)
-        metrics_df = pd.DataFrame(metrics_list)
-        result_path = Path(f"results/{model_name}.csv")
+def sweep(device: str = "gpu"):
+    """Go over all the values mentioned in ```grid_search``` parameter of the benchmarking config.
+
+    Args:
+        device (str, optional): Name of the device on which the model is trained. Defaults to "gpu".
+    """
+    sweep_config = OmegaConf.load("tools/benchmarking/benchmark_params.yaml")
+    seed_everything(sweep_config.seed)
+
+    for run_config in get_run_config(sweep_config.grid_search):
+        # This assumes that ```model_name``` is always present in the sweep config.
+        model_config = get_configurable_parameters(model_name=run_config.model_name)
+
+        model_config = cast(DictConfig, model_config)  # placate mypy
+        for param in run_config.keys():
+            # grid search keys are always assumed to be strings
+            param = cast(str, param)  # placate mypy
+            set_in_nested_config(model_config, param.split("."), run_config[param])
+
+        # convert image size to tuple in case it was updated by run config
+        model_config = update_input_size_config(model_config)
+
+        # Set device in config
+        model_config.trainer.gpus = 1 if device == "gpu" else 0
+        convert_openvino = bool(model_config.trainer.gpus)
+
+        if run_config.model_name == "patchcore":
+            convert_openvino = False  # ```torch.cdist```` is not supported by onnx version 11
+            # TODO Remove this line when issue #40 is fixed https://github.com/openvinotoolkit/anomalib/issues/40
+            if model_config.model.input_size != (224, 224):
+                continue  # go to next run
+
+        # Run benchmarking for current config
+        model_metrics = get_single_model_metrics(model_config=model_config, openvino_metrics=convert_openvino)
+
+        # Append configuration of current run to the collected metrics
+        for key, value in run_config.items():
+            # Skip adding model name to the dataframe
+            if key != "model_name":
+                model_metrics[key] = value
+
+        # Add device name to list
+        model_metrics["device"] = device
+
+        # Write to file as each run is computed
+        metrics_df = pd.DataFrame(model_metrics, index=[0])
+        result_path = Path(f"results/{run_config.model_name}_{device}.csv")
         os.makedirs(result_path.parent, exist_ok=True)
-        metrics_df.to_csv(result_path)
+        if not os.path.isfile(result_path):
+            metrics_df.to_csv(result_path)
+        else:
+            metrics_df.to_csv(result_path, mode="a", header=False)
 
 
 if __name__ == "__main__":
-    sweep()
+    print("Benchmarking started 🏃‍♂️. This will take a while ⏲ depending on your configuration.")
+    # Spawn two processes one for cpu and one for gpu
+    with ProcessPoolExecutor(max_workers=2) as executor:
+        job = {executor.submit(sweep, device): device for device in ["gpu", "cpu"]}
+        for hardware in as_completed(job):
+            try:
+                hardware.result()
+            except Exception as exc:
+                raise Exception(f"Error occurred while computing benchmark on device {job[hardware]}") from exc
+    print("Finished gathering results ⚡")
