@@ -10,12 +10,12 @@ dataset:
   train_batch_size: 16
   test_batch_size: 16
   inference_batch_size: 16
-  fiber_batch_size: 128
+  fiber_batch_size: 64
   num_workers: 36
 
 model:
   name: cflow
-  backbone: resnet18
+  backbone: wide_resnet50_2
   layers:
     - layer2
     - layer3
@@ -27,7 +27,7 @@ model:
   lr: 0.0001
   early_stopping:
     patience: 2
-    metric: image_AUROC
+    metric: pixel_AUROC
     mode: max
   normalize_scores: false
   threshold:
@@ -52,7 +52,7 @@ trainer:
   auto_scale_batch_size: false
   auto_select_gpus: false
   benchmark: false
-  check_val_every_n_epoch: 2
+  check_val_every_n_epoch: 1
   checkpoint_callback: true
   default_root_dir: null
   deterministic: true
