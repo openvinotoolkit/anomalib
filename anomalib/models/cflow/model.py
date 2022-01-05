@@ -24,7 +24,6 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import torchvision
-from FrEIA.framework.sequence_inn import SequenceINN
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
 from torch import Tensor, nn, optim
@@ -141,10 +140,12 @@ class CflowModel(nn.Module):
 
         self.encoder = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.pool_layers)
         self.pool_dims = self.encoder.out_dims
-        self.decoders: List[SequenceINN] = [
-            cflow_head(self.condition_vector, hparams.model.coupling_blocks, hparams.model.clamp_alpha, pool_dim)
-            for pool_dim in self.pool_dims
-        ]
+        self.decoders = nn.ModuleList(
+            [
+                cflow_head(self.condition_vector, hparams.model.coupling_blocks, hparams.model.clamp_alpha, pool_dim)
+                for pool_dim in self.pool_dims
+            ]
+        )
 
         # encoder model is fixed
         for parameters in self.encoder.parameters():

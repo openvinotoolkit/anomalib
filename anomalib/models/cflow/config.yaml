@@ -29,7 +29,7 @@ model:
     patience: 2
     metric: pixel_AUROC
     mode: max
-  normalize_scores: false
+  normalization_method: min_max # options: [null, min_max, cdf]
   threshold:
     image_default: 0
     pixel_default: 0
