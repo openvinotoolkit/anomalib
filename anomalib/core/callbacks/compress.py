@@ -1,9 +1,25 @@
 """Callback that compresses a trained model by first exporting to .onnx format, and then converting to OpenVINO IR."""
+
+# Copyright (C) 2020 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions
+# and limitations under the License.
+
 import os
 from typing import Tuple
 
-import torch
 from pytorch_lightning import Callback, LightningModule
+
+from anomalib.utils.optimize import export_convert
 
 
 class CompressModelCallback(Callback):
@@ -30,14 +46,4 @@ class CompressModelCallback(Callback):
         """
         os.makedirs(self.dirpath, exist_ok=True)
         onnx_path = os.path.join(self.dirpath, self.filename + ".onnx")
-        height, width = self.input_size
-        torch.onnx.export(
-            pl_module.model,
-            torch.zeros((1, 3, height, width)).to(pl_module.device),
-            onnx_path,
-            opset_version=11,
-            input_names=["input"],
-            output_names=["output"],
-        )
-        optimize_command = "mo --input_model " + onnx_path + " --output_dir " + self.dirpath
-        os.system(optimize_command)
+        export_convert(model=pl_module.model, input_size=self.input_size, onnx_path=onnx_path, export_path=self.dirpath)

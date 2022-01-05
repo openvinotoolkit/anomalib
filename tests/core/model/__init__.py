@@ -1,4 +1,4 @@
-"""Helpers for benchmarking."""
+"""Tests for models and functions in core/model."""
 
 # Copyright (C) 2020 Intel Corporation
 #

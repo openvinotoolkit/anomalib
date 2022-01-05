@@ -20,7 +20,5 @@ grid_search:
     image_size: [128, 224]
   model_name:
     - padim
-    - dfkde
-    - dfm
     - patchcore
     - stfpm

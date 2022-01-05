@@ -20,12 +20,9 @@ import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Dict, List, Tuple, Union, cast
+from typing import Dict, List, Union, cast
 
 import pandas as pd
-import pytorch_lightning as pl
-import torch
-from helpers.inference import get_openvino_throughput, get_torch_throughput
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.callbacks.base import Callback
@@ -36,59 +33,20 @@ from anomalib.core.callbacks import get_callbacks
 from anomalib.core.model.anomaly_module import AnomalyModule
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
+from anomalib.utils.optimize import export_convert
 from anomalib.utils.sweep import get_run_config, set_in_nested_config
+from anomalib.utils.sweep.helpers.inference import (
+    get_meta_data,
+    get_openvino_throughput,
+    get_torch_throughput,
+)
 
 
-def convert_to_openvino(model: pl.LightningModule, export_path: Union[Path, str], input_size: List[int]):
+def convert_to_openvino(model: AnomalyModule, export_path: Union[Path, str], input_size: List[int]):
     """Convert the trained model to OpenVINO."""
     export_path = export_path if isinstance(export_path, Path) else Path(export_path)
     onnx_path = export_path / "model.onnx"
-    height, width = input_size
-    torch.onnx.export(
-        model,
-        torch.zeros((1, 3, height, width)).to(model.device),
-        onnx_path,
-        opset_version=11,
-        input_names=["input"],
-        output_names=["output"],
-    )
-    optimize_command = "mo --input_model " + str(onnx_path) + " --output_dir " + str(export_path)
-    os.system(optimize_command)
-
-
-def get_meta_data(model: AnomalyModule, input_size: Tuple[int, int]) -> Dict:
-    """Get meta data for inference.
-
-    Args:
-        model (AnomalyModule): Trained model from which the metadata is extracted.
-        input_size (Tuple[int, int]): Input size used to resize the pixel level mean and std.
-
-    Returns:
-        (Dict): Metadata as dictionary.
-    """
-    meta_data = {
-        "image_threshold": model.image_threshold.value.cpu().numpy(),
-        "pixel_threshold": model.pixel_threshold.value.cpu().numpy(),
-        "stats": {},
-    }
-
-    image_mean = model.training_distribution.image_mean.cpu().numpy()
-    if image_mean.size > 0:
-        meta_data["stats"]["image_mean"] = image_mean
-
-    image_std = model.training_distribution.image_std.cpu().numpy()
-    if image_std.size > 0:
-        meta_data["stats"]["image_std"] = image_std
-
-    pixel_mean = model.training_distribution.pixel_mean.cpu().numpy()
-    if pixel_mean.size > 0:
-        meta_data["stats"]["pixel_mean"] = pixel_mean.reshape(input_size)
-
-    pixel_std = model.training_distribution.pixel_std.cpu().numpy()
-    if pixel_std.size > 0:
-        meta_data["stats"]["pixel_std"] = pixel_std.reshape(input_size)
-
-    return meta_data
+    export_convert(model, input_size, onnx_path, export_path)
 
 
 def update_callbacks(config: Union[DictConfig, ListConfig]) -> List[Callback]:
