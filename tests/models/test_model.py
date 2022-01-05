@@ -151,7 +151,7 @@ class TestModel:
         [
             ("padim", False),
             ("dfkde", False),
-            ("dfm", False),
+            # ("dfm", False),  # skip dfm test
             ("stfpm", False),
             ("stfpm", True),
             ("patchcore", False),
