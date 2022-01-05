@@ -29,11 +29,9 @@ from anomalib.core.model import AnomalyModule
 from anomalib.data.transforms.pre_process import PreProcessor
 from anomalib.data.utils import read_image
 from anomalib.models import get_model
-from anomalib.utils.normalization.cdf_normalization import normalize as normalize_cdf
-from anomalib.utils.normalization.cdf_normalization import standardize
-from anomalib.utils.normalization.min_max_normalization import (
-    normalize as normalize_min_max,
-)
+from anomalib.utils.normalization.cdf import normalize as normalize_cdf
+from anomalib.utils.normalization.cdf import standardize
+from anomalib.utils.normalization.min_max import normalize as normalize_min_max
 from anomalib.utils.post_process import superimpose_anomaly_map
 
 

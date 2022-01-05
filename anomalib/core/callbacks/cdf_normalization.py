@@ -7,7 +7,7 @@ from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch.distributions import LogNormal
 
 from anomalib.models import get_model
-from anomalib.utils.normalization.cdf_normalization import normalize, standardize
+from anomalib.utils.normalization.cdf import normalize, standardize
 
 
 class CdfNormalizationCallback(Callback):

@@ -20,7 +20,7 @@ import pytorch_lightning as pl
 from pytorch_lightning import Callback
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 
-from anomalib.utils.normalization.min_max_normalization import normalize
+from anomalib.utils.normalization.min_max import normalize
 
 
 class MinMaxNormalizationCallback(Callback):
