@@ -17,9 +17,10 @@
 from typing import Any, Dict
 
 import pytorch_lightning as pl
-import torch
 from pytorch_lightning import Callback
 from pytorch_lightning.utilities.types import STEP_OUTPUT
+
+from anomalib.utils.normalization.min_max_normalization import normalize
 
 
 class MinMaxNormalizationCallback(Callback):
@@ -69,20 +70,14 @@ class MinMaxNormalizationCallback(Callback):
         """Called when the predict batch ends, normalizes the predicted scores and anomaly maps."""
         self._normalize_batch(outputs, pl_module)
 
-    def _normalize_batch(self, outputs, pl_module):
+    @staticmethod
+    def _normalize_batch(outputs, pl_module):
         """Normalize a batch of predictions."""
         stats = pl_module.min_max
-        outputs["pred_scores"] = self._normalize(
+        outputs["pred_scores"] = normalize(
             outputs["pred_scores"], pl_module.image_threshold.value, stats.min, stats.max
         )
         if "anomaly_maps" in outputs.keys():
-            outputs["anomaly_maps"] = self._normalize(
+            outputs["anomaly_maps"] = normalize(
                 outputs["anomaly_maps"], pl_module.pixel_threshold.value, stats.min, stats.max
             )
-
-    def _normalize(self, predictions, threshold, min_val, max_val):
-        """Normalize the predictions using mean normalization centered at the threshold."""
-        normalized_predictions = ((predictions - threshold) / (max_val - min_val)) + 0.5
-        normalized_predictions = torch.minimum(normalized_predictions, torch.tensor(1))  # pylint: disable=not-callable
-        normalized_predictions = torch.maximum(normalized_predictions, torch.tensor(0))  # pylint: disable=not-callable
-        return normalized_predictions

@@ -2,12 +2,12 @@
 from typing import Any, Dict, Optional
 
 import pytorch_lightning as pl
-import torch
 from pytorch_lightning import Callback, Trainer
 from pytorch_lightning.utilities.types import STEP_OUTPUT
-from torch.distributions import LogNormal, Normal
+from torch.distributions import LogNormal
 
 from anomalib.models import get_model
+from anomalib.utils.normalization.cdf_normalization import normalize, standardize
 
 
 class AnomalyScoreNormalizationCallback(Callback):
@@ -43,7 +43,7 @@ class AnomalyScoreNormalizationCallback(Callback):
         _dataloader_idx: int,
     ) -> None:
         """Called when the validation batch ends, standardizes the predicted scores and anomaly maps."""
-        self._standardize(outputs, pl_module)
+        self._standardize_batch(outputs, pl_module)
 
     def on_test_batch_end(
         self,
@@ -55,8 +55,8 @@ class AnomalyScoreNormalizationCallback(Callback):
         _dataloader_idx: int,
     ) -> None:
         """Called when the test batch ends, normalizes the predicted scores and anomaly maps."""
-        self._standardize(outputs, pl_module)
-        self._normalize(outputs, pl_module)
+        self._standardize_batch(outputs, pl_module)
+        self._normalize_batch(outputs, pl_module)
 
     def on_predict_batch_end(
         self,
@@ -68,8 +68,8 @@ class AnomalyScoreNormalizationCallback(Callback):
         _dataloader_idx: int,
     ) -> None:
         """Called when the predict batch ends, normalizes the predicted scores and anomaly maps."""
-        self._standardize(outputs, pl_module)
-        self._normalize(outputs, pl_module)
+        self._standardize_batch(outputs, pl_module)
+        self._normalize_batch(outputs, pl_module)
         outputs["pred_labels"] = outputs["pred_scores"] >= 0.5
 
     def _collect_stats(self, trainer, pl_module):
@@ -97,23 +97,17 @@ class AnomalyScoreNormalizationCallback(Callback):
         new_model.load_state_dict(pl_module.state_dict())
         return new_model
 
-    def _standardize(self, outputs: STEP_OUTPUT, pl_module) -> None:
-        """Standardize the predicted scores and anomaly maps to the z-domain."""
+    @staticmethod
+    def _standardize_batch(outputs: STEP_OUTPUT, pl_module) -> None:
         stats = pl_module.training_distribution.to(outputs["pred_scores"].device)
-
-        outputs["pred_scores"] = torch.log(outputs["pred_scores"])
-        outputs["pred_scores"] = (outputs["pred_scores"] - stats.image_mean) / stats.image_std
+        outputs["pred_scores"] = standardize(outputs["pred_scores"], stats.image_mean, stats.image_std)
         if "anomaly_maps" in outputs.keys():
-            outputs["anomaly_maps"] = (torch.log(outputs["anomaly_maps"]) - stats.pixel_mean) / stats.pixel_std
-            outputs["anomaly_maps"] -= (stats.image_mean - stats.pixel_mean) / stats.pixel_std
+            outputs["anomaly_maps"] = standardize(
+                outputs["anomaly_maps"], stats.pixel_mean, stats.pixel_std, center_at=stats.image_mean
+            )
 
-    def _normalize(self, outputs: STEP_OUTPUT, pl_module: pl.LightningModule) -> None:
-        """Normalize the predicted scores and anomaly maps by first standardizing and then computing the CDF."""
-        device = outputs["pred_scores"].device
-        image_threshold = pl_module.image_threshold.value.cpu()
-        pixel_threshold = pl_module.pixel_threshold.value.cpu()
-
-        norm = Normal(torch.Tensor([0]), torch.Tensor([1]))
-        outputs["pred_scores"] = norm.cdf(outputs["pred_scores"].cpu() - image_threshold).to(device)
+    @staticmethod
+    def _normalize_batch(outputs: STEP_OUTPUT, pl_module: pl.LightningModule) -> None:
+        outputs["pred_scores"] = normalize(outputs["pred_scores"], pl_module.image_threshold.value)
         if "anomaly_maps" in outputs.keys():
-            outputs["anomaly_maps"] = norm.cdf(outputs["anomaly_maps"].cpu() - pixel_threshold).to(device)
+            outputs["anomaly_maps"] = normalize(outputs["anomaly_maps"], pl_module.pixel_threshold.value)

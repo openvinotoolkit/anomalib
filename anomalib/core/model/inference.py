@@ -23,13 +23,17 @@ import numpy as np
 import torch
 from omegaconf import DictConfig, ListConfig
 from openvino.inference_engine import IECore  # pylint: disable=no-name-in-module
-from scipy.stats import norm
 from torch import Tensor, nn
 
 from anomalib.core.model import AnomalyModule
 from anomalib.data.transforms.pre_process import PreProcessor
 from anomalib.data.utils import read_image
 from anomalib.models import get_model
+from anomalib.utils.normalization.cdf_normalization import normalize as normalize_cdf
+from anomalib.utils.normalization.cdf_normalization import standardize
+from anomalib.utils.normalization.min_max_normalization import (
+    normalize as normalize_min_max,
+)
 from anomalib.utils.post_process import superimpose_anomaly_map
 
 
@@ -289,25 +293,22 @@ class OpenVINOInferencer(Inferencer):
 
         # min max normalization
         if "min" in meta_data and "max" in meta_data:
-            anomaly_map = ((anomaly_map - meta_data["pixel_threshold"]) / (meta_data["max"] - meta_data["min"])) + 0.5
-            anomaly_map = np.minimum(anomaly_map, 1)
-            anomaly_map = np.maximum(anomaly_map, 0)
-            pred_score = ((pred_score - meta_data["image_threshold"]) / (meta_data["max"] - meta_data["min"])) + 0.5
-            pred_score = np.minimum(pred_score, 1)
-            pred_score = np.maximum(pred_score, 0)
+            anomaly_map = normalize_min_max(
+                anomaly_map, meta_data["pixel_threshold"], meta_data["min"], meta_data["max"]
+            )
+            pred_score = normalize_min_max(pred_score, meta_data["image_threshold"], meta_data["min"], meta_data["max"])
 
         # standardize pixel scores
         if "pixel_mean" in meta_data.keys() and "pixel_std" in meta_data.keys():
-            anomaly_map = np.log(anomaly_map)
-            anomaly_map = (anomaly_map - meta_data["pixel_mean"]) / meta_data["pixel_std"]
-            anomaly_map -= (meta_data["image_mean"] - meta_data["pixel_mean"]) / meta_data["pixel_std"]
-            anomaly_map = norm.cdf(anomaly_map - meta_data["pixel_threshold"])
+            anomaly_map = standardize(
+                anomaly_map, meta_data["pixel_mean"], meta_data["pixel_std"], center_at=meta_data["image_mean"]
+            )
+            anomaly_map = normalize_cdf(anomaly_map, meta_data["pixel_threshold"])
 
         # standardize image scores
         if "image_mean" in meta_data.keys() and "image_std" in meta_data.keys():
-            pred_score = np.log(pred_score)
-            pred_score = (pred_score - meta_data["image_mean"]) / meta_data["image_std"]
-            pred_score = norm.cdf(pred_score - meta_data["image_threshold"])
+            pred_score = standardize(pred_score, meta_data["image_mean"], meta_data["image_std"])
+            pred_score = normalize_cdf(pred_score, meta_data["image_threshold"])
 
         if "image_shape" in meta_data and anomaly_map.shape != meta_data["image_shape"]:
             anomaly_map = cv2.resize(anomaly_map, meta_data["image_shape"])
