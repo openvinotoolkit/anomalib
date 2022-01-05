@@ -7,10 +7,10 @@ from typing import List, Union
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 
+from .cdf_normalization import CdfNormalizationCallback
 from .compress import CompressModelCallback
 from .min_max_normalization import MinMaxNormalizationCallback
 from .model_loader import LoadModelCallback
-from .normalization import AnomalyScoreNormalizationCallback
 from .save_to_csv import SaveToCSVCallback
 from .timer import TimerCallback
 from .visualizer_callback import VisualizerCallback
@@ -56,7 +56,7 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
         if config.model.normalization_method == "cdf":
             if config.model.name in ["padim", "stfpm"]:
                 if not config.optimization.nncf.apply:
-                    callbacks.append(AnomalyScoreNormalizationCallback())
+                    callbacks.append(CdfNormalizationCallback())
                 else:
                     raise NotImplementedError("CDF Score Normalization is currently not compatible with NNCF.")
             else:

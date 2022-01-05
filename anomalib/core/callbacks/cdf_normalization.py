@@ -10,7 +10,7 @@ from anomalib.models import get_model
 from anomalib.utils.normalization.cdf_normalization import normalize, standardize
 
 
-class AnomalyScoreNormalizationCallback(Callback):
+class CdfNormalizationCallback(Callback):
     """Callback that standardizes the image-level and pixel-level anomaly scores."""
 
     def __init__(self):
