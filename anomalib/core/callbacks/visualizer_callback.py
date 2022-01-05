@@ -92,11 +92,10 @@ class VisualizerCallback(Callback):
         assert outputs is not None
 
         if self.inputs_are_normalized:
-            threshold = 0.5
             normalize = False  # anomaly maps are already normalized
         else:
-            threshold = pl_module.pixel_threshold.value.item()
             normalize = True  # raw anomaly maps. Still need to normalize
+        threshold = pl_module.pixel_metrics.F1.threshold
 
         for (filename, image, true_mask, anomaly_map) in zip(
             outputs["image_path"], outputs["image"], outputs["mask"], outputs["anomaly_maps"]
