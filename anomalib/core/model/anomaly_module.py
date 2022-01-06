@@ -22,7 +22,12 @@ from pytorch_lightning.callbacks.base import Callback
 from torch import Tensor, nn
 from torchmetrics import F1, MetricCollection
 
-from anomalib.core.metrics import AUROC, AdaptiveThreshold, AnomalyScoreDistribution
+from anomalib.core.metrics import (
+    AUROC,
+    AdaptiveThreshold,
+    AnomalyScoreDistribution,
+    MinMax,
+)
 
 
 class AnomalyModule(pl.LightningModule):
@@ -47,6 +52,7 @@ class AnomalyModule(pl.LightningModule):
         self.pixel_threshold = AdaptiveThreshold(self.hparams.model.threshold.pixel_default)
 
         self.training_distribution = AnomalyScoreDistribution()
+        self.min_max = MinMax()
 
         self.model: nn.Module
 
@@ -141,8 +147,8 @@ class AnomalyModule(pl.LightningModule):
         else:
             self.pixel_threshold.value = self.image_threshold.value
 
-        self.image_metrics.F1.threshold = self.image_threshold.value
-        self.pixel_metrics.F1.threshold = self.pixel_threshold.value
+        self.image_metrics.F1.threshold = self.image_threshold.value.item()
+        self.pixel_metrics.F1.threshold = self.pixel_threshold.value.item()
 
     def _collect_outputs(self, image_metric, pixel_metric, outputs):
         for output in outputs:
