@@ -272,12 +272,13 @@ class Padim(AnomalibModule):
         self,
         task: str,
         adaptive_threshold: bool,
-        default_threshold: float,
+        default_image_threshold: float,
+        default_pixel_threshold: float,
         layers: List[str],
         input_size: Tuple[int, int],
         backbone: str,
     ):
-        super().__init__(task, adaptive_threshold, default_threshold)
+        super().__init__(task, adaptive_threshold, default_image_threshold, default_pixel_threshold)
         self.model = _PadimModel(
             layers=layers,
             input_size=input_size,
