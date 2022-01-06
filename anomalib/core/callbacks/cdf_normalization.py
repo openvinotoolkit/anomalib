@@ -22,9 +22,7 @@ class CdfNormalizationCallback(Callback):
         pl_module.image_metrics.F1.threshold = 0.5
         pl_module.pixel_metrics.F1.threshold = 0.5
 
-    def on_train_epoch_end(
-        self, trainer: pl.Trainer, pl_module: pl.LightningModule, _unused: Optional[Any] = None
-    ) -> None:
+    def on_train_epoch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
         """Called when the train epoch ends.
 
         Use the current model to compute the anomaly score distributions

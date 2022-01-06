@@ -84,7 +84,7 @@ class NNCFCallback(Callback):
         self.comp_ctrl: Optional[CompressionAlgorithmController] = None
         self.compression_scheduler: CompressionScheduler
 
-    def setup(self, _: pl.Trainer, pl_module: pl.LightningModule, __: Optional[str] = None) -> None:
+    def setup(self, _trainer: pl.Trainer, pl_module: pl.LightningModule, _stage: Optional[str] = None) -> None:
         """Call when fit or test begins.
 
         Takes the pytorch model and wraps it using the compression controller so that it is ready for nncf fine-tuning.
@@ -99,7 +99,12 @@ class NNCFCallback(Callback):
             self.compression_scheduler = self.comp_ctrl.scheduler
 
     def on_train_batch_start(
-        self, trainer, _pl_module: pl.LightningModule, _batch: Any, _batch_idx: int, _dataloader_idx: int
+        self,
+        trainer: pl.Trainer,
+        _pl_module: pl.LightningModule,
+        _batch: Any,
+        _batch_idx: int,
+        _unused: Optional[int] = 0,
     ) -> None:
         """Call when the train batch begins.
 

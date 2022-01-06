@@ -21,6 +21,7 @@ extracts the dataset and create PyTorch data objects.
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import abc
 import logging
 import random
 import tarfile
@@ -34,6 +35,7 @@ import numpy as np
 import pandas as pd
 from pandas.core.frame import DataFrame
 from pytorch_lightning.core.datamodule import LightningDataModule
+from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch import Tensor
 from torch.utils.data import DataLoader
 from torch.utils.data.dataset import Dataset
@@ -45,6 +47,7 @@ from anomalib.utils.download_progress_bar import DownloadProgressBar
 
 logger = logging.getLogger(name="Dataset: MVTec")
 logger.setLevel(logging.DEBUG)
+
 
 __all__ = ["MVTec", "MVTecDataModule"]
 
@@ -358,7 +361,7 @@ class MVTec(VisionDataset):
         return item
 
 
-class MVTecDataModule(LightningDataModule):
+class MVTecDataModule(LightningDataModule, abc.ABC):
     """MVTec Lightning Data Module."""
 
     def __init__(
@@ -465,15 +468,21 @@ class MVTecDataModule(LightningDataModule):
                 create_validation_set=self.create_validation_set,
             )
 
-    def train_dataloader(self) -> DataLoader:
+    def train_dataloader(self) -> TRAIN_DATALOADERS:
         """Get train dataloader."""
         return DataLoader(self.train_data, shuffle=True, batch_size=self.train_batch_size, num_workers=self.num_workers)
 
-    def val_dataloader(self) -> DataLoader:
+    def val_dataloader(self) -> EVAL_DATALOADERS:
         """Get validation dataloader."""
         dataset = self.val_data if self.create_validation_set else self.test_data
         return DataLoader(dataset=dataset, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
 
-    def test_dataloader(self) -> DataLoader:
+    def test_dataloader(self) -> EVAL_DATALOADERS:
         """Get test dataloader."""
         return DataLoader(self.test_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
+
+    def predict_dataloader(self) -> EVAL_DATALOADERS:
+        """Get predict dataloader."""
+        # TODO: Implement predict-dataloader.
+        # https://github.com/openvinotoolkit/anomalib/issues/59
+        raise NotImplementedError
