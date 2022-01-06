@@ -11,15 +11,14 @@ from anomalib.core.model import AnomalibModule
 class SaveToCSVCallback(Callback):
     """Callback that saves the inference results of a model.
 
-    The callback generates a csv file that saves different performance
-    metrics and results.
+    The callback generates a csv file that saves the predicted label, the true label and the image name.
     """
 
     def __init__(self):
         """Callback to save metrics to CSV."""
 
     def on_test_epoch_end(self, trainer: Trainer, pl_module: AnomalibModule) -> None:
-        """Save Results at the end of training.
+        """Save Results at the end of testing.
 
         Args:
             trainer (Trainer): Pytorch lightning trainer object (unused)

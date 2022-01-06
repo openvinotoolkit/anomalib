@@ -11,6 +11,7 @@ from skimage.segmentation import mark_boundaries
 from anomalib.core.model import AnomalibModule
 from anomalib.data.transforms import Denormalize
 from anomalib.loggers import AVAILABLE_LOGGERS
+from anomalib.loggers.wandb import AnomalibWandbLogger
 from anomalib.utils.post_process import compute_mask, superimpose_anomaly_map
 from anomalib.utils.visualizer import Visualizer
 
@@ -22,13 +23,14 @@ class VisualizerCallback(Callback):
     the ground truth segmentation mask, the predicted error heat map,
     and the predicted segmentation mask.
 
-    To save the images to the filesystem, add the 'local' keyword to
-    the ``self.loggers`` parameter in the config.yaml file.
+    To save the images to the filesystem, add the 'local' keyword to the `project.log_images_to` parameter in the
+    config.yaml file.
     """
 
-    def __init__(self, loggers: List[str]):
+    def __init__(self, loggers: List[str], inputs_are_normalized: bool = True):
         """Visualizer callback."""
         self.loggers = loggers
+        self.inputs_are_normalized = inputs_are_normalized
 
     def _add_images(
         self,
@@ -37,6 +39,17 @@ class VisualizerCallback(Callback):
         module: AnomalibModule,
         filename: Path,
     ):
+        """Save image to logger/local storage.
+
+        Saves the image in `visualizer.figure` to the respective loggers and local storage if specified in
+        `log_images_to` in `config.yaml` of the models.
+
+        Args:
+            visualizer (Visualizer): Visualizer object from which the `figure` is saved/logged.
+            trainer (Trainer): PL Trainer object.
+            module (AnomalyModule): Anomaly module which holds reference to `hparams` and `logger`.
+            filename (Path): Path of the input image. This name is used as name for the generated image.
+        """
 
         # store current logger type as a string
         logger_type = type(module.logger).__name__.lower()
@@ -85,6 +98,12 @@ class VisualizerCallback(Callback):
         """
         assert outputs is not None
 
+        if self.inputs_are_normalized:
+            normalize = False  # anomaly maps are already normalized
+        else:
+            normalize = True  # raw anomaly maps. Still need to normalize
+        threshold = pl_module.pixel_metrics.F1.threshold
+
         for (filename, image, true_mask, anomaly_map) in zip(
             outputs["image_path"], outputs["image"], outputs["mask"], outputs["anomaly_maps"]
         ):
@@ -92,8 +111,8 @@ class VisualizerCallback(Callback):
             true_mask = true_mask.cpu().numpy()
             anomaly_map = anomaly_map.cpu().numpy()
 
-            heat_map = superimpose_anomaly_map(anomaly_map, image)
-            pred_mask = compute_mask(anomaly_map, pl_module.threshold.item())
+            heat_map = superimpose_anomaly_map(anomaly_map, image, normalize=normalize)
+            pred_mask = compute_mask(anomaly_map, threshold)
             vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
 
             visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
@@ -104,3 +123,16 @@ class VisualizerCallback(Callback):
             visualizer.add_image(image=vis_img, title="Segmentation Result")
             self._add_images(visualizer, trainer, pl_module, Path(filename))
             visualizer.close()
+
+    def on_test_end(self, _trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
+        """Sync logs.
+
+        Currently only ``AnomalibWandbLogger`` is called from this method. This is because logging as a single batch
+        ensures that all images appear as part of the same step.
+
+        Args:
+            _trainer (pl.Trainer): Pytorch Lightning trainer (unused)
+            pl_module (pl.LightningModule): Anomaly module
+        """
+        if pl_module.logger is not None and isinstance(pl_module.logger, AnomalibWandbLogger):
+            pl_module.logger.save()

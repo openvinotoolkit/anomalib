@@ -28,7 +28,7 @@ def test_add_images(dataset):
         config = OmegaConf.create(
             {
                 "dataset": {"task": dataset},
-                "model": {"threshold": {"default": 0.5, "adaptive": True}},
+                "model": {"threshold": {"image_default": 0.5, "pixel_default": 0.5, "adaptive": True}},
                 "project": {"path": dir_loc, "log_images_to": ["tensorboard", "local"]},
             }
         )

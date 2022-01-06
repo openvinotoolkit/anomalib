@@ -34,35 +34,36 @@ class MultiVariateGaussian(nn.Module):
 
     @staticmethod
     def _cov(
-        observations: Tensor, rowvar: bool = False, bias: bool = False, ddof: Optional[int] = None, aweights=None
+        observations: Tensor,
+        rowvar: bool = False,
+        bias: bool = False,
+        ddof: Optional[int] = None,
+        aweights: Tensor = None,
     ) -> Tensor:
         """Estimates covariance matrix like numpy.cov.
 
         Args:
-            observations: A 1-D or 2-D array containing multiple variables and observations.
+            observations (Tensor): A 1-D or 2-D array containing multiple variables and observations.
                  Each row of `m` represents a variable, and each column a single
                  observation of all those variables. Also see `rowvar` below.
-            rowvar: If `rowvar` is True (default), then each row represents a
+            rowvar (bool): If `rowvar` is True (default), then each row represents a
                 variable, with observations in the columns. Otherwise, the relationship
                 is transposed: each column represents a variable, while the rows
-                contain observations.
-            bias: Default normalization (False) is by ``(N - 1)``, where ``N`` is the
+                contain observations. Defaults to False.
+            bias (bool): Default normalization (False) is by ``(N - 1)``, where ``N`` is the
                 number of observations given (unbiased estimate). If `bias` is True,
                 then normalization is by ``N``. These values can be overridden by using
-                the keyword ``ddof`` in numpy versions >= 1.5.
-            ddof: If not ``None`` the default value implied by `bias` is overridden.
+                the keyword ``ddof`` in numpy versions >= 1.5. Defaults to False
+            ddof (Optional, int): If not ``None`` the default value implied by `bias` is overridden.
                 Note that ``ddof=1`` will return the unbiased estimate, even if both
                 `fweights` and `aweights` are specified, and ``ddof=0`` will return
                 the simple average. See the notes for the details. The default value
                 is ``None``.
-            aweights: 1-D array of observation vector weights. These relative weights are
+            aweights (Tensor): 1-D array of observation vector weights. These relative weights are
                 typically large for observations considered "important" and smaller for
                 observations considered less "important". If ``ddof=0`` the array of
                 weights can be used to assign probabilities to observation vectors. (Default value = None)
-            x: Tensor:
-            rowvar: bool:  (Default value = False)
-            bias: bool:  (Default value = False)
-            ddof: Optional[int]:  (Default value = None)
+
 
         Returns:
           The covariance matrix of the variables.
@@ -118,8 +119,7 @@ class MultiVariateGaussian(nn.Module):
         """Calculate multivariate Gaussian distribution.
 
         Args:
-          embedding: CNN features whose dimensionality is reduced via either random sampling or PCA.
-          embedding: Tensor:
+          embedding (Tensor): CNN features whose dimensionality is reduced via either random sampling or PCA.
 
         Returns:
           mean and inverse covariance of the multi-variate gaussian distribution that fits the features.
@@ -143,7 +143,7 @@ class MultiVariateGaussian(nn.Module):
         """Fit multi-variate gaussian distribution to the input embedding.
 
         Args:
-            embedding: Tensor: Embedding vector extracted from CNN.
+            embedding (Tensor): Embedding vector extracted from CNN.
 
         Returns:
             Mean and the covariance of the embedding.

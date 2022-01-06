@@ -22,7 +22,10 @@ def read_image(path: str) -> np.ndarray:
     """Read image from disk in RGB format.
 
     Args:
-        path: path to the image file
+        path (str): path to the image file
+
+    Example:
+        >>> image = read_image("test_image.jpg")
 
     Returns:
         image as numpy array

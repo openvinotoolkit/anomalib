@@ -13,11 +13,13 @@ dataset:
 
 model:
   name: dfm
+  backbone: resnet18
   pca_level: 0.97
   score_type: fre # nll: for Gaussian modeling, fre: pca feature reconstruction error
   project_path: ./results
+  normalization_method: min_max # options: [null, min_max, cdf]
   threshold:
-    default: 0
+    image_default: 0
     adaptive: true
 
 project:
@@ -67,7 +69,6 @@ trainer:
   progress_bar_refresh_rate: null
   reload_dataloaders_every_epoch: false
   replace_sampler_ddp: true
-  resume_from_checkpoint: null
   stochastic_weight_avg: false
   sync_batchnorm: false
   terminate_on_nan: false

@@ -1,7 +1,7 @@
 """NNCF Callback."""
 
 import os
-from typing import Any, Dict, Iterator, Optional, Tuple
+from typing import Any, Dict, Iterator, Optional, Tuple, Union
 
 import pytorch_lightning as pl
 import yaml
@@ -9,7 +9,7 @@ from nncf import NNCFConfig
 from nncf.api.compression import CompressionAlgorithmController, CompressionScheduler
 from nncf.torch import create_compressed_model, register_default_init_args
 from nncf.torch.initialization import PTInitializingDataLoader
-from omegaconf import OmegaConf
+from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning import Callback
 from torch.utils.data.dataloader import DataLoader
 
@@ -50,6 +50,8 @@ class InitLoader(PTInitializingDataLoader):
     def get_target(self, _):
         """Return structure for ground truth in loss criterion based on dataloader output.
 
+        This implementation does not do anything and is a placeholder.
+
         Returns:
             None
         """
@@ -61,9 +63,14 @@ class NNCFCallback(Callback):
 
     Assumes that the pl module contains a 'model' attribute, which is
     the PyTorch module that must be compressed.
+
+    Args:
+        config (Union[ListConfig, DictConfig]): NNCF Configuration
+        dirpath (str): Path where the export `onnx` and the OpenVINO `xml` and `bin` IR are saved.
+        filename (str): Name of the generated model files.
     """
 
-    def __init__(self, config, dirpath, filename):
+    def __init__(self, config: Union[ListConfig, DictConfig], dirpath: str, filename: str) -> None:
         config_dict = yaml.safe_load(OmegaConf.to_yaml(config))
         self.nncf_config = NNCFConfig.from_dict(config_dict)
         self.dirpath = dirpath
@@ -73,7 +80,10 @@ class NNCFCallback(Callback):
         self.compression_scheduler: CompressionScheduler
 
     def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, _stage: Optional[str] = None) -> None:
-        """Call when fit or test begins."""
+        """Call when fit or test begins.
+
+        Takes the pytorch model and wraps it using the compression controller so that it is ready for nncf fine-tuning.
+        """
         if self.comp_ctrl is None:
             # NOTE: trainer.datamodule returns the following error
             #   "Trainer" has no attribute "datamodule"  [attr-defined]
@@ -89,13 +99,19 @@ class NNCFCallback(Callback):
     def on_train_batch_start(  # type: ignore
         self, trainer: pl.Trainer, _pl_module: pl.LightningModule, _batch: Any, _batch_idx: int, _dataloader_idx: int
     ) -> None:
-        """Call when the train batch begins."""
+        """Call when the train batch begins.
+
+        Prepare compression method to continue training the model in the next step.
+        """
         self.compression_scheduler.step()
         if self.comp_ctrl is not None:
             trainer.model.loss_val = self.comp_ctrl.loss()
 
     def on_train_end(self, _trainer: pl.Trainer, _pl_module: pl.LightningModule) -> None:
-        """Call when the train ends."""
+        """Call when the train ends.
+
+        Exports onnx model and if compression controller is not None, uses the onnx model to generate the OpenVINO IR.
+        """
         os.makedirs(self.dirpath, exist_ok=True)
         onnx_path = os.path.join(self.dirpath, self.filename + ".onnx")
         if self.comp_ctrl is not None:
@@ -104,7 +120,10 @@ class NNCFCallback(Callback):
         os.system(optimize_command)
 
     def on_train_epoch_end(
-        self, _trainer: "pl.Trainer", _pl_module: "pl.LightningModule", _unused: Optional[Any] = None
+        self, _trainer: pl.Trainer, _pl_module: pl.LightningModule, _unused: Optional[Any] = None
     ) -> None:
-        """Call when the train epoch ends."""
+        """Call when the train epoch ends.
+
+        Prepare compression method to continue training the model in the next epoch.
+        """
         self.compression_scheduler.epoch_step()

@@ -35,7 +35,7 @@ def update_input_size_config(config: Union[DictConfig, ListConfig]) -> Union[Dic
         config (Union[DictConfig, ListConfig]): Configurable parameters object
 
     Returns:
-        Configurable parameters with updated values
+        Union[DictConfig, ListConfig]: Configurable parameters with updated values
     """
     # handle image size
     if isinstance(config.dataset.image_size, int):
@@ -56,10 +56,10 @@ def update_nncf_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfi
     """Set the NNCF input size based on the value of the crop_size parameter in the configurable parameters object.
 
     Args:
-        config: Dictconfig: Configurable parameters of the current run.
+        config (Union[DictConfig, ListConfig]): Configurable parameters of the current run.
 
     Returns:
-        Updated configurable parameters in DictConfig object.
+        Union[DictConfig, ListConfig]: Updated configurable parameters in DictConfig object.
     """
     crop_size = config.dataset.image_size
     sample_size = (crop_size, crop_size) if isinstance(crop_size, int) else crop_size
@@ -157,7 +157,7 @@ def get_configurable_parameters(
         config_file_extension: Optional[str]:  (Default value = "yaml")
 
     Returns:
-        Configurable parameters in DictConfig object.
+        Union[DictConfig, ListConfig]: Configurable parameters in DictConfig object.
     """
     if model_name is None and model_config_path is None:
         raise ValueError(
@@ -189,5 +189,9 @@ def get_configurable_parameters(
 
     config = update_nncf_config(config)
     config = update_device_config(config, openvino)
+
+    # thresholding
+    if "pixel_default" not in config.model.threshold.keys():
+        config.model.threshold.pixel_default = config.model.threshold.image_default
 
     return config

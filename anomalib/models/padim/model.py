@@ -124,9 +124,7 @@ class _PadimModel(nn.Module):
         """Generate embedding from hierarchical feature map.
 
         Args:
-            features: Hierarchical feature map from a CNN (ResNet18 or WideResnet)
-            features: Dict[str:
-            Tensor]:
+            features (Dict[str, Tensor]): Hierarchical feature map from a CNN (ResNet18 or WideResnet)
 
         Returns:
             Embedding vector
@@ -145,7 +143,12 @@ class _PadimModel(nn.Module):
 
 
 class AnomalyMapGenerator:
-    """Generate Anomaly Heatmap."""
+    """Generate Anomaly Heatmap.
+
+    Args:
+        image_size (Union[ListConfig, Tuple]): Size of the input image. The anomaly map is upsampled to this dimension.
+        sigma (int, optional): Standard deviation for Gaussian Kernel. Defaults to 4.
+    """
 
     def __init__(self, image_size: Union[ListConfig, Tuple], sigma: int = 4):
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
@@ -158,11 +161,8 @@ class AnomalyMapGenerator:
         Ref: Equation (2), Section III-C of the paper.
 
         Args:
-            embedding: Embedding Vector
-            stats: Mean and Covariance Matrix of the multivariate
-        Gaussian distribution
-            embedding: Tensor:
-            stats: List[Tensor]:
+            embedding (Tensor): Embedding Vector
+            stats (List[Tensor]): Mean and Covariance Matrix of the multivariate Gaussian distribution
 
         Returns:
             Anomaly score of a test image via mahalanobis distance.
@@ -185,8 +185,7 @@ class AnomalyMapGenerator:
         """Up sample anomaly score to match the input image size.
 
         Args:
-            distance: Anomaly score computed via the mahalanobis distance.
-            distance: Tensor:
+            distance (Tensor): Anomaly score computed via the mahalanobis distance.
 
         Returns:
             Resized distance matrix matching the input image size
@@ -204,8 +203,7 @@ class AnomalyMapGenerator:
         """Apply gaussian smoothing to the anomaly map.
 
         Args:
-            anomaly_map: Anomaly score for the test image(s)
-            anomaly_map: Tensor:
+            anomaly_map (Tensor): Anomaly score for the test image(s).
 
         Returns:
             Filtered anomaly scores
@@ -223,12 +221,9 @@ class AnomalyMapGenerator:
         distribution.
 
         Args:
-            embedding: Embedding vector extracted from the test set.
-            mean: Mean of the multivariate gaussian distribution
-            inv_covariance: Inverse Covariance matrix of the multivariate gaussian distribution.
-            embedding: Tensor:
-            mean: Tensor:
-            inv_covariance: Tensor:
+            embedding (Tensor): Embedding vector extracted from the test set.
+            mean (Tensor): Mean of the multivariate gaussian distribution
+            inv_covariance (Tensor): Inverse Covariance matrix of the multivariate gaussian distribution.
 
         Returns:
             Output anomaly score.
@@ -301,22 +296,22 @@ class Padim(AnomalibModule):
         """Training Step of PADIM. For each batch, hierarchical features are extracted from the CNN.
 
         Args:
-            batch: Input batch
+            batch (Dict[str,Tensor]): Input batch
             _: Index of the batch.
 
         Returns:
-                Hierarchical feature map
+            Hierarchical feature map
         """
 
         self.model.feature_extractor.eval()
         embeddings = self.model(batch["image"])
         return {"embeddings": embeddings.cpu()}
 
-    def training_epoch_end(self, outputs) -> None:
+    def training_epoch_end(self, outputs: List[Dict[str, Tensor]]) -> None:
         """Fit a multivariate gaussian model on an embedding extracted from deep hierarchical CNN features.
 
         Args:
-            outputs: Batch of outputs from the training step
+            outputs (List[Dict[str, Tensor]]): Batch of outputs from the training step
 
         Returns:
             None

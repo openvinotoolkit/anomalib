@@ -29,6 +29,9 @@ from anomalib.core.model import AnomalibModule
 from anomalib.data.transforms.pre_process import PreProcessor
 from anomalib.data.utils import read_image
 from anomalib.models import get_model
+from anomalib.utils.normalization.cdf import normalize as normalize_cdf
+from anomalib.utils.normalization.cdf import standardize
+from anomalib.utils.normalization.min_max import normalize as normalize_min_max
 from anomalib.utils.post_process import superimpose_anomaly_map
 
 
@@ -58,7 +61,9 @@ class Inferencer(ABC):
         """Post-Process."""
         raise NotImplementedError
 
-    def predict(self, image: Union[str, np.ndarray], superimpose: bool = True) -> np.ndarray:
+    def predict(
+        self, image: Union[str, np.ndarray], superimpose: bool = True, meta_data: Optional[dict] = None
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """Perform a prediction for a given input image.
 
         The main workflow is (i) pre-processing, (ii) forward-pass, (iii) post-process.
@@ -74,17 +79,20 @@ class Inferencer(ABC):
         Returns:
             np.ndarray: Output predictions to be visualized.
         """
+        if meta_data is None:
+            meta_data = {}
         if isinstance(image, str):
             image = read_image(image)
+        meta_data["image_shape"] = image.shape[:2]
 
         processed_image = self.pre_process(image)
         predictions = self.forward(processed_image)
-        output = self.post_process(predictions, meta_data={"image_shape": image.shape[:2]})
+        anomaly_map, pred_score = self.post_process(predictions, meta_data=meta_data)
 
         if superimpose is True:
-            output = superimpose_anomaly_map(output, image)
+            anomaly_map = superimpose_anomaly_map(anomaly_map, image)
 
-        return output
+        return anomaly_map, pred_score
 
     def __call__(self, image: np.ndarray) -> np.ndarray:
         """Call predict on the Image.
@@ -137,7 +145,9 @@ class TorchInferencer(Inferencer):
         Returns:
             Tensor: pre-processed image.
         """
-        pre_processor = PreProcessor(config=self.config.transform, to_tensor=True)
+        config = self.config.transform if "transform" in self.config.keys() else None
+        image_size = tuple(self.config.dataset.image_size)
+        pre_processor = PreProcessor(config, image_size)
         processed_image = pre_processor(image=image)["image"]
 
         if len(processed_image) == 3:
@@ -236,7 +246,9 @@ class OpenVINOInferencer(Inferencer):
         Returns:
             np.ndarray: pre-processed image.
         """
-        pre_processor = PreProcessor(config=self.config.transform, to_tensor=False)
+        config = self.config.transform if "transform" in self.config.keys() else None
+        image_size = tuple(self.config.dataset.image_size)
+        pre_processor = PreProcessor(config, image_size)
         processed_image = pre_processor(image=image)["image"]
 
         if len(processed_image.shape) == 3:
@@ -258,7 +270,7 @@ class OpenVINOInferencer(Inferencer):
         """
         return self.network.infer(inputs={self.input_blob: image})
 
-    def post_process(self, predictions: np.ndarray, meta_data: Optional[Dict] = None) -> np.ndarray:
+    def post_process(self, predictions: np.ndarray, meta_data: Optional[Dict] = None) -> Tuple[np.ndarray, np.ndarray]:
         """Post process the output predictions.
 
         Args:
@@ -274,9 +286,29 @@ class OpenVINOInferencer(Inferencer):
             meta_data = {}
 
         predictions = predictions[self.output_blob]
-        predictions = predictions.squeeze()
+        anomaly_map = predictions.squeeze()
+        pred_score = anomaly_map.reshape(-1).max()
 
-        if "image_shape" in meta_data and predictions.shape != meta_data["image_shape"]:
-            predictions = cv2.resize(predictions, meta_data["image_shape"])
+        # min max normalization
+        if "min" in meta_data and "max" in meta_data:
+            anomaly_map = normalize_min_max(
+                anomaly_map, meta_data["pixel_threshold"], meta_data["min"], meta_data["max"]
+            )
+            pred_score = normalize_min_max(pred_score, meta_data["image_threshold"], meta_data["min"], meta_data["max"])
 
-        return predictions
+        # standardize pixel scores
+        if "pixel_mean" in meta_data.keys() and "pixel_std" in meta_data.keys():
+            anomaly_map = standardize(
+                anomaly_map, meta_data["pixel_mean"], meta_data["pixel_std"], center_at=meta_data["image_mean"]
+            )
+            anomaly_map = normalize_cdf(anomaly_map, meta_data["pixel_threshold"])
+
+        # standardize image scores
+        if "image_mean" in meta_data.keys() and "image_std" in meta_data.keys():
+            pred_score = standardize(pred_score, meta_data["image_mean"], meta_data["image_std"])
+            pred_score = normalize_cdf(pred_score, meta_data["image_threshold"])
+
+        if "image_shape" in meta_data and anomaly_map.shape != meta_data["image_shape"]:
+            anomaly_map = cv2.resize(anomaly_map, meta_data["image_shape"])
+
+        return anomaly_map, pred_score

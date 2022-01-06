@@ -17,7 +17,6 @@
 import random
 import tempfile
 from functools import wraps
-from typing import Generator
 
 import numpy as np
 import pytest
@@ -56,7 +55,7 @@ def category() -> str:
         "zipper",
     ]
 
-    category = random.choice(categories)
+    category = random.choice(categories)  # nosec
     return category
 
 
@@ -152,7 +151,7 @@ class TestModel:
         [
             ("padim", False),
             ("dfkde", False),
-            ("dfm", False),
+            # ("dfm", False),  # skip dfm test
             ("stfpm", False),
             ("stfpm", True),
             ("patchcore", False),

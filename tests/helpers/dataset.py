@@ -23,8 +23,7 @@ def get_dataset_path(path: Union[str, Path] = "./datasets/MVTec"):
     # when running locally
     path = str(path)
     if not os.path.isdir(path):
-        # when using docker image
-        path = "/tmp/anomalib/datasets/MVTec"
+        path = os.environ["ANOMALIB_DATASET_PATH"]
     return path
 
 

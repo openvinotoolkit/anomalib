@@ -7,7 +7,9 @@ from typing import List, Union
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 
+from .cdf_normalization import CdfNormalizationCallback
 from .compress import CompressModelCallback
+from .min_max_normalization import MinMaxNormalizationCallback
 from .model_loader import LoadModelCallback
 from .save_to_csv import SaveToCSVCallback
 from .tiler import TilerCallback
@@ -48,8 +50,26 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
 
     callbacks.extend([checkpoint, TimerCallback()])
 
+    if "weight_file" in config.model.keys():
+        load_model = LoadModelCallback(os.path.join(config.project.path, config.model.weight_file))
+        callbacks.append(load_model)
+
+    if "normalization_method" in config.model.keys() and not config.model.normalization_method == "none":
+        if config.model.normalization_method == "cdf":
+            if config.model.name in ["padim", "stfpm"]:
+                if not config.optimization.nncf.apply:
+                    callbacks.append(CdfNormalizationCallback())
+                else:
+                    raise NotImplementedError("CDF Score Normalization is currently not compatible with NNCF.")
+            else:
+                raise NotImplementedError("Score Normalization is currently supported for PADIM and STFPM only.")
+        elif config.model.normalization_method == "min_max":
+            callbacks.append(MinMaxNormalizationCallback())
+        else:
+            raise ValueError(f"Normalization method not recognized: {config.model.normalization_method}")
+
     if not config.project.log_images_to == []:
-        callbacks.append(VisualizerCallback(loggers=config.project.log_images_to))
+        callbacks.append(VisualizerCallback(inputs_are_normalized=not config.model.normalization_method == "none"))
 
     if "optimization" in config.keys():
         if config.optimization.nncf.apply:
@@ -72,9 +92,6 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
                     filename="compressed_model",
                 )
             )
-    if "weight_file" in config.model.keys():
-        load_model = LoadModelCallback(os.path.join(config.project.path, config.model.weight_file))
-        callbacks.append(load_model)
 
     if "save_to_csv" in config.project.keys():
         if config.project.save_to_csv:

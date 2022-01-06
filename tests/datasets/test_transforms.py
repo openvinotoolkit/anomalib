@@ -7,6 +7,9 @@ This test contains the following test:
         deserializes the transformations.
 """
 
+import tempfile
+from pathlib import Path
+
 import albumentations as A
 import numpy as np
 import pytest
@@ -39,6 +42,8 @@ def test_load_transforms_from_string():
     should work with either string or A.Compose and return a ValueError
     otherwise."""
 
+    config_path = tempfile.NamedTemporaryFile(suffix=".yaml").name
+
     # Create a dummy transformation.
     transforms = A.Compose(
         [
@@ -47,10 +52,10 @@ def test_load_transforms_from_string():
             A.Resize(224, 224, always_apply=True),
         ]
     )
-    A.save(transform=transforms, filepath="/tmp/transforms.yaml", data_format="yaml")
+    A.save(transform=transforms, filepath=config_path, data_format="yaml")
 
     # Pass a path to config
-    pre_processor = PreProcessor(config="/tmp/transforms.yaml")
+    pre_processor = PreProcessor(config=config_path)
     assert isinstance(pre_processor.transforms, A.Compose)
 
     # Pass a config of type A.Compose

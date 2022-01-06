@@ -28,8 +28,10 @@ model:
   num_neighbors: 9
   metric: auc
   weight_file: weights/model.ckpt
+  normalization_method: min_max # options: [null, min_max, cdf]
   threshold:
-    default: 0
+    image_default: 0
+    pixel_default: 0
     adaptive: true
 
 project:
@@ -79,7 +81,6 @@ trainer:
   progress_bar_refresh_rate: null
   reload_dataloaders_every_epoch: false
   replace_sampler_ddp: true
-  resume_from_checkpoint: null
   stochastic_weight_avg: false
   sync_batchnorm: false
   terminate_on_nan: false
