@@ -434,23 +434,17 @@ class Mvtec(LightningDataModule, ABC):
         self.test_dataset: _MvtecDataset
 
     def prepare_data(self):
-        """Prepare MVTec Dataset."""
-        # Train
-        _MvtecDataset(
-            root=self.root,
-            category=self.category,
-            pre_process=self.pre_process,
-            is_train=True,
-            download=True,
-        )
+        """Prepare MVTec Dataset.
 
-        # Test
+        This method checks the data root to ensure whether the dataset is located.
+        If not, it downloads the MVTec dataset.
+        """
+
         _MvtecDataset(
-            root=self.root,
-            category=self.category,
-            pre_process=self.pre_process,
-            is_train=False,
-            download=True,
+            root=self.root, category=self.category, pre_process=self.pre_process, split="train", download=True
+        )
+        _MvtecDataset(
+            root=self.root, category=self.category, pre_process=self.pre_process, split="test", download=True
         )
 
     def setup(self, stage: Optional[str] = None) -> None:
@@ -459,23 +453,6 @@ class Mvtec(LightningDataModule, ABC):
         Args:
           stage: Optional[str]:  Train/Val/Test stages. (Default value = None)
         """
-        if self.create_validation_set:
-            self.val_data = _MvtecDataset(
-                root=self.root,
-                category=self.category,
-                pre_process=self.pre_process,
-                split="val",
-                seed=self.seed,
-                create_validation_set=self.create_validation_set,
-            )
-        self.test_data = _MvtecDataset(
-            root=self.root,
-            category=self.category,
-            pre_process=self.pre_process,
-            split="test",
-            seed=self.seed,
-            create_validation_set=self.create_validation_set,
-        )
         if stage in (None, "fit"):
             self.train_data = _MvtecDataset(
                 root=self.root,
@@ -485,6 +462,25 @@ class Mvtec(LightningDataModule, ABC):
                 seed=self.seed,
                 create_validation_set=self.create_validation_set,
             )
+
+        if self.create_validation_set:
+            self.val_data = _MvtecDataset(
+                root=self.root,
+                category=self.category,
+                pre_process=self.pre_process,
+                split="val",
+                seed=self.seed,
+                create_validation_set=self.create_validation_set,
+            )
+
+        self.test_data = _MvtecDataset(
+            root=self.root,
+            category=self.category,
+            pre_process=self.pre_process,
+            split="test",
+            seed=self.seed,
+            create_validation_set=self.create_validation_set,
+        )
 
     def train_dataloader(self) -> DataLoader:
         """Get train dataloader."""
