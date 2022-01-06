@@ -26,15 +26,15 @@ from kornia import gaussian_blur2d
 from omegaconf import ListConfig
 from torch import Tensor, nn
 
-from anomalib.core.model import AnomalyModule
-from anomalib.core.model.dynamic_module import DynamicBufferModule
-from anomalib.core.model.feature_extractor import FeatureExtractor
-from anomalib.data.tiler import Tiler
+from anomalib.components.anomaly_models import AnomalyModule
+from anomalib.components.anomaly_models.dynamic_module import DynamicBufferModule
+from anomalib.components.feature_extractors.feature_extractor import FeatureExtractor
 from anomalib.models.patchcore.utils.sampling import (
     KCenterGreedy,
     NearestNeighbors,
     SparseRandomProjection,
 )
+from anomalib.pre_processing.tiler import Tiler
 
 
 class AnomalyMapGenerator:

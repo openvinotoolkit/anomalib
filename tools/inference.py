@@ -23,12 +23,8 @@ from argparse import ArgumentParser, Namespace
 
 import cv2
 
-from anomalib.config import get_configurable_parameters
-from anomalib.core.model.inference import (
-    Inferencer,
-    OpenVINOInferencer,
-    TorchInferencer,
-)
+from anomalib.deploy.inference import Inferencer, OpenVINOInferencer, TorchInferencer
+from anomalib.utils.config import get_configurable_parameters
 
 
 def get_args() -> Namespace:

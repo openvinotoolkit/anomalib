@@ -21,8 +21,8 @@ import torchvision
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
 
-from anomalib.core.model import AnomalyModule
-from anomalib.core.model.feature_extractor import FeatureExtractor
+from anomalib.components.anomaly_models import AnomalyModule
+from anomalib.components.feature_extractors.feature_extractor import FeatureExtractor
 from anomalib.models.dfkde.normality_model import NormalityModel
 
 
