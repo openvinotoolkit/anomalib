@@ -18,7 +18,8 @@ model:
   init_args:
     task: segmentation
     adaptive_threshold: true
-    default_threshold: 12.0
+    default_image_threshold: 3.0
+    default_pixel_threshold: 3.0
     layers:
       - layer1
       - layer2
@@ -27,12 +28,7 @@ model:
     backbone: resnet18
 
 trainer:
-  callbacks:
-    - class_path: pytorch_lightning.callbacks.EarlyStopping
-      init_args:
-        patience: 5
-        monitor: pixel_AUROC
-        mode: max
+  callbacks: null
   logger: true
   checkpoint_callback: null
   enable_checkpointing: true
