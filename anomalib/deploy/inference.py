@@ -21,7 +21,7 @@ from typing import Dict, Optional, Tuple, Union
 import cv2
 import numpy as np
 import torch
-from omegaconf import DictConfig, ListConfig
+from omegaconf import DictConfig, ListConfig, OmegaConf
 from openvino.inference_engine import IECore  # pylint: disable=no-name-in-module
 from torch import Tensor, nn
 
@@ -63,7 +63,7 @@ class Inferencer(ABC):
 
     def predict(
         self, image: Union[str, np.ndarray], superimpose: bool = True, meta_data: Optional[dict] = None
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> np.ndarray:
         """Perform a prediction for a given input image.
 
         The main workflow is (i) pre-processing, (ii) forward-pass, (iii) post-process.
@@ -80,19 +80,22 @@ class Inferencer(ABC):
             np.ndarray: Output predictions to be visualized.
         """
         if meta_data is None:
-            meta_data = {}
+            if hasattr(self, "meta_data"):
+                meta_data = getattr(self, "meta_data")
+            else:
+                meta_data = {}
         if isinstance(image, str):
             image = read_image(image)
         meta_data["image_shape"] = image.shape[:2]
 
         processed_image = self.pre_process(image)
         predictions = self.forward(processed_image)
-        anomaly_map, pred_score = self.post_process(predictions, meta_data=meta_data)
+        anomaly_map, _ = self.post_process(predictions, meta_data=meta_data)
 
         if superimpose is True:
             anomaly_map = superimpose_anomaly_map(anomaly_map, image)
 
-        return anomaly_map, pred_score
+        return anomaly_map
 
     def __call__(self, image: np.ndarray) -> np.ndarray:
         """Call predict on the Image.
@@ -105,6 +108,63 @@ class Inferencer(ABC):
         """
         return self.predict(image)
 
+    def _normalize(
+        self,
+        anomaly_maps: Union[Tensor, np.ndarray],
+        pred_scores: Union[Tensor, np.float32],
+        meta_data: Union[Dict, DictConfig],
+    ) -> Tuple[Union[np.ndarray, Tensor], float]:
+        """Applies normalization and resizes the image.
+
+        Args:
+            anomaly_maps (Union[Tensor, np.ndarray]): Predicted raw anomaly map.
+            pred_scores (Union[Tensor, np.float32]): Predicted anomaly score
+            meta_data (Dict): Meta data. Post-processing step sometimes requires
+                additional meta data such as image shape. This variable comprises such info.
+                Defaults to {}.
+
+        Returns:
+            Tuple[Union[np.ndarray, Tensor], float]: Post processed predictions that are ready to be visualized and
+                predicted scores.
+
+
+        """
+
+        # min max normalization
+        if "min" in meta_data and "max" in meta_data:
+            anomaly_maps = normalize_min_max(
+                anomaly_maps, meta_data["pixel_threshold"], meta_data["min"], meta_data["max"]
+            )
+            pred_scores = normalize_min_max(
+                pred_scores, meta_data["image_threshold"], meta_data["min"], meta_data["max"]
+            )
+
+        # standardize pixel scores
+        if "pixel_mean" in meta_data.keys() and "pixel_std" in meta_data.keys():
+            anomaly_maps = standardize(
+                anomaly_maps, meta_data["pixel_mean"], meta_data["pixel_std"], center_at=meta_data["image_mean"]
+            )
+            anomaly_maps = normalize_cdf(anomaly_maps, meta_data["pixel_threshold"])
+
+        # standardize image scores
+        if "image_mean" in meta_data.keys() and "image_std" in meta_data.keys():
+            pred_scores = standardize(pred_scores, meta_data["image_mean"], meta_data["image_std"])
+            pred_scores = normalize_cdf(pred_scores, meta_data["image_threshold"])
+
+        if isinstance(anomaly_maps, Tensor):
+            anomaly_maps = anomaly_maps.numpy()
+
+        if "image_shape" in meta_data and anomaly_maps.shape != meta_data["image_shape"]:
+            anomaly_maps = cv2.resize(anomaly_maps, meta_data["image_shape"])
+
+        return anomaly_maps, float(pred_scores)
+
+    def _load_meta_data(self, path: Optional[Union[str, Path]] = None) -> Union[DictConfig, Dict]:
+        meta_data = {}
+        if path is not None:
+            meta_data = OmegaConf.load(path)
+        return meta_data
+
 
 class TorchInferencer(Inferencer):
     """PyTorch implementation for the inference.
@@ -113,14 +173,56 @@ class TorchInferencer(Inferencer):
         config (DictConfig): Configurable parameters that are used
             during the training stage.
         path (Union[str, Path]): Path to the model ckpt file.
+        meta_data_path (Union[str, Path], optional): Path to metadata file. If none, it tries to load the params
+                from the model state_dict. Defaults to None.
     """
 
-    def __init__(self, config: Union[DictConfig, ListConfig], path: Union[str, Path, AnomalyModule]):
+    def __init__(
+        self,
+        config: Union[DictConfig, ListConfig],
+        path: Union[str, Path, AnomalyModule],
+        meta_data_path: Union[str, Path] = None,
+    ):
         self.config = config
         if isinstance(path, AnomalyModule):
             self.model = path
         else:
             self.model = self.load_model(path)
+
+        self.meta_data = self._load_meta_data(meta_data_path)
+
+    def _load_meta_data(self, path: Optional[Union[str, Path]] = None) -> Union[Dict, DictConfig]:
+        """Load metadata from file or from model state dict.
+
+        Args:
+            path (Optional[Union[str, Path]], optional): Path to metadata file. If none, it tries to load the params
+                from the model state_dict. Defaults to None.
+
+        Returns:
+            Dict: Dictionary containing the meta_data.
+        """
+        meta_data = {}
+        model_params = self.model.state_dict()
+        meta_data_params = {
+            "image_threshold.value": "image_threshold",
+            "pixel_threshold.value": "pixel_threshold",
+            "training_distribution.pixel_mean": "pixel_mean",
+            "training_distribution.image_mean": "image_mean",
+            "training_distribution.pixel_std": "pixel_std",
+            "training_distribution.image_std": "image_std",
+            "min_max.min": "min",
+            "min_max.max": "max",
+        }
+        if path is None:
+            for param, key in meta_data_params.items():
+                if param in model_params.keys():
+                    val = model_params[param].to(self.model.device)
+                    # Skip adding the value to metadata if value if undefined.
+                    if not np.isinf(val.numpy()).all():
+                        meta_data[key] = val
+        else:
+            meta_data = super()._load_meta_data(path)
+        return meta_data
 
     def load_model(self, path: Union[str, Path]) -> nn.Module:
         """Load the PyTorch model.
@@ -166,7 +268,9 @@ class TorchInferencer(Inferencer):
         """
         return self.model(image)
 
-    def post_process(self, predictions: Tensor, meta_data: Optional[Dict] = None) -> np.ndarray:
+    def post_process(
+        self, predictions: Tensor, meta_data: Optional[Union[Dict, DictConfig]] = None
+    ) -> Tuple[np.ndarray, float]:
         """Post process the output predictions.
 
         Args:
@@ -179,14 +283,20 @@ class TorchInferencer(Inferencer):
             np.ndarray: Post processed predictions that are ready to be visualized.
         """
         if meta_data is None:
-            meta_data = {}
+            meta_data = self.meta_data
 
-        predictions = predictions.squeeze().detach().numpy()
+        if isinstance(predictions, Tensor):
+            anomaly_map = predictions
+            pred_score = anomaly_map.reshape(-1).max()
+        else:
+            anomaly_map, pred_score = predictions
+            pred_score = pred_score.detach().cpu().numpy()
 
-        if "image_shape" in meta_data and predictions.shape != meta_data["image_shape"]:
-            predictions = cv2.resize(predictions, meta_data["image_shape"])
+        anomaly_map = anomaly_map.squeeze()
 
-        return predictions
+        anomaly_map, pred_score = self._normalize(anomaly_map, pred_score, meta_data)
+
+        return anomaly_map, float(pred_score)
 
 
 class OpenVINOInferencer(Inferencer):
@@ -195,12 +305,19 @@ class OpenVINOInferencer(Inferencer):
     Args:
         config (DictConfig): Configurable parameters that are used
             during the training stage.
-        path (Union[str, Path]): Path to the openvino onnx, xml or bin file
+        path (Union[str, Path]): Path to the openvino onnx, xml or bin file.
+        meta_data_path (Union[str, Path], optional): Path to metadata file. Defaults to None.
     """
 
-    def __init__(self, config: Union[DictConfig, ListConfig], path: Union[str, Path, Tuple[bytes, bytes]]):
+    def __init__(
+        self,
+        config: Union[DictConfig, ListConfig],
+        path: Union[str, Path, Tuple[bytes, bytes]],
+        meta_data_path: Union[str, Path] = None,
+    ):
         self.config = config
         self.input_blob, self.output_blob, self.network = self.load_model(path)
+        self.meta_data = super()._load_meta_data(meta_data_path)
 
     def load_model(self, path: Union[str, Path, Tuple[bytes, bytes]]):
         """Load the OpenVINO model.
@@ -270,7 +387,9 @@ class OpenVINOInferencer(Inferencer):
         """
         return self.network.infer(inputs={self.input_blob: image})
 
-    def post_process(self, predictions: np.ndarray, meta_data: Optional[Dict] = None) -> Tuple[np.ndarray, np.ndarray]:
+    def post_process(
+        self, predictions: np.ndarray, meta_data: Optional[Union[Dict, DictConfig]] = None
+    ) -> Tuple[np.ndarray, float]:
         """Post process the output predictions.
 
         Args:
@@ -283,32 +402,12 @@ class OpenVINOInferencer(Inferencer):
             np.ndarray: Post processed predictions that are ready to be visualized.
         """
         if meta_data is None:
-            meta_data = {}
+            meta_data = self.meta_data
 
         predictions = predictions[self.output_blob]
         anomaly_map = predictions.squeeze()
         pred_score = anomaly_map.reshape(-1).max()
 
-        # min max normalization
-        if "min" in meta_data and "max" in meta_data:
-            anomaly_map = normalize_min_max(
-                anomaly_map, meta_data["pixel_threshold"], meta_data["min"], meta_data["max"]
-            )
-            pred_score = normalize_min_max(pred_score, meta_data["image_threshold"], meta_data["min"], meta_data["max"])
-
-        # standardize pixel scores
-        if "pixel_mean" in meta_data.keys() and "pixel_std" in meta_data.keys():
-            anomaly_map = standardize(
-                anomaly_map, meta_data["pixel_mean"], meta_data["pixel_std"], center_at=meta_data["image_mean"]
-            )
-            anomaly_map = normalize_cdf(anomaly_map, meta_data["pixel_threshold"])
-
-        # standardize image scores
-        if "image_mean" in meta_data.keys() and "image_std" in meta_data.keys():
-            pred_score = standardize(pred_score, meta_data["image_mean"], meta_data["image_std"])
-            pred_score = normalize_cdf(pred_score, meta_data["image_threshold"])
-
-        if "image_shape" in meta_data and anomaly_map.shape != meta_data["image_shape"]:
-            anomaly_map = cv2.resize(anomaly_map, meta_data["image_shape"])
+        anomaly_map, pred_score = self._normalize(anomaly_map, pred_score, meta_data)
 
         return anomaly_map, pred_score

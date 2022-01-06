@@ -24,11 +24,7 @@ from argparse import ArgumentParser, Namespace
 import cv2
 
 from anomalib.config import get_configurable_parameters
-from anomalib.core.model.inference import (
-    Inferencer,
-    OpenVINOInferencer,
-    TorchInferencer,
-)
+from anomalib.deploy.inference import Inferencer, OpenVINOInferencer, TorchInferencer
 
 
 def get_args() -> Namespace:
@@ -42,6 +38,7 @@ def get_args() -> Namespace:
     parser.add_argument("--weight_path", type=str, required=True, help="Path to a model weights")
     parser.add_argument("--image_path", type=str, required=True, help="Path to an image to infer.")
     parser.add_argument("--save_path", type=str, required=False, help="Path to save the output image.")
+    parser.add_argument("--meta_data", type=str, required=False, help="Path to JSON file containing the metadata.")
 
     return parser.parse_args()
 
@@ -60,10 +57,10 @@ def infer() -> None:
     extension = os.path.splitext(args.weight_path)[-1]
     inference: Inferencer
     if extension in (".ckpt"):
-        inference = TorchInferencer(config=config, path=args.weight_path)
+        inference = TorchInferencer(config=config, path=args.weight_path, meta_data_path=args.meta_data)
 
     elif extension in (".onnx", ".bin", ".xml"):
-        inference = OpenVINOInferencer(config=config, path=args.weight_path)
+        inference = OpenVINOInferencer(config=config, path=args.weight_path, meta_data_path=args.meta_data)
 
     else:
         raise ValueError(
