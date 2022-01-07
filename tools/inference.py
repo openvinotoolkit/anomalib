@@ -20,11 +20,13 @@ command line, and show the visualization results.
 
 import os
 from argparse import ArgumentParser, Namespace
+from importlib import import_module
+from pathlib import Path
 
 import cv2
 
 from anomalib.config import get_configurable_parameters
-from anomalib.deploy.inference import Inferencer, OpenVINOInferencer, TorchInferencer
+from anomalib.deploy.inferencers.base import Inferencer
 
 
 def get_args() -> Namespace:
@@ -34,11 +36,11 @@ def get_args() -> Namespace:
         Namespace: List of arguments.
     """
     parser = ArgumentParser()
-    parser.add_argument("--model_config_path", type=str, required=True, help="Path to a model config file")
-    parser.add_argument("--weight_path", type=str, required=True, help="Path to a model weights")
-    parser.add_argument("--image_path", type=str, required=True, help="Path to an image to infer.")
-    parser.add_argument("--save_path", type=str, required=False, help="Path to save the output image.")
-    parser.add_argument("--meta_data", type=str, required=False, help="Path to JSON file containing the metadata.")
+    parser.add_argument("--model_config_path", type=Path, required=True, help="Path to a model config file")
+    parser.add_argument("--weight_path", type=Path, required=True, help="Path to a model weights")
+    parser.add_argument("--image_path", type=Path, required=True, help="Path to an image to infer.")
+    parser.add_argument("--save_path", type=Path, required=False, help="Path to save the output image.")
+    parser.add_argument("--meta_data", type=Path, required=False, help="Path to JSON file containing the metadata.")
 
     return parser.parse_args()
 
@@ -57,9 +59,13 @@ def infer() -> None:
     extension = os.path.splitext(args.weight_path)[-1]
     inference: Inferencer
     if extension in (".ckpt"):
-        inference = TorchInferencer(config=config, path=args.weight_path, meta_data_path=args.meta_data)
+        module = import_module("anomalib.deploy.inferencers.torch")
+        TorchInferencer = getattr(module, "TorchInferencer")  # pylint: disable=invalid-name
+        inference = TorchInferencer(config=config, model_source=args.weight_path, meta_data_path=args.meta_data)
 
     elif extension in (".onnx", ".bin", ".xml"):
+        module = import_module("anomalib.deploy.inferencers.openvino")
+        OpenVINOInferencer = getattr(module, "OpenVINOInferencer")  # pylint: disable=invalid-name
         inference = OpenVINOInferencer(config=config, path=args.weight_path, meta_data_path=args.meta_data)
 
     else:
@@ -80,7 +86,7 @@ def infer() -> None:
     if args.save_path is None:
         cv2.imshow("Anomaly Map", output)
     else:
-        cv2.imwrite(filename=args.save_path, img=output)
+        cv2.imwrite(filename=str(args.save_path), img=output)
 
 
 if __name__ == "__main__":

@@ -25,7 +25,7 @@ from pytorch_lightning import Trainer
 
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
-from anomalib.deploy.inference import OpenVINOInferencer, TorchInferencer
+from anomalib.deploy.inferencers import OpenVINOInferencer, TorchInferencer
 from anomalib.deploy.optimize import export_convert
 from anomalib.models import get_model
 from tests.helpers.dataset import TestDataset, get_dataset_path
