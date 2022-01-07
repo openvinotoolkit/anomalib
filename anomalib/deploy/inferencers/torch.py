@@ -66,6 +66,7 @@ class TorchInferencer(Inferencer):
         Returns:
             Dict: Dictionary containing the meta_data.
         """
+        meta_data: Union[DictConfig, Dict[str, Union[float, Tensor, np.ndarray]]]
         if path is None:
             meta_data = get_model_metadata(self.model)
         else:
