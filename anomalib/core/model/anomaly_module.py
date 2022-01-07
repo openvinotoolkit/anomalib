@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+from abc import ABC
 from typing import List, Union
 
 import pytorch_lightning as pl
@@ -30,7 +31,7 @@ from anomalib.core.metrics import (
 )
 
 
-class AnomalyModule(pl.LightningModule):
+class AnomalyModule(pl.LightningModule, ABC):
     """AnomalyModule to train, validate, predict and test images.
 
     Acts as a base class for all the Anomaly Modules in the library.
