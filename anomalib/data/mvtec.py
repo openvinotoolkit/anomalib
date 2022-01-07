@@ -41,6 +41,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data.dataset import Dataset
 from torchvision.datasets.folder import VisionDataset
 
+from anomalib.data.inference import InferenceDataset
 from anomalib.data.transforms import PreProcessor
 from anomalib.data.utils import read_image
 from anomalib.utils.download_progress_bar import DownloadProgressBar
@@ -419,8 +420,10 @@ class MVTecDataModule(LightningDataModule, ABC):
         self.root = root if isinstance(root, Path) else Path(root)
         self.category = category
         self.dataset_path = self.root / self.category
+        self.transform_config = transform_config
+        self.image_size = image_size
 
-        self.pre_process = PreProcessor(config=transform_config, image_size=image_size)
+        self.pre_process = PreProcessor(config=self.transform_config, image_size=self.image_size)
 
         self.train_batch_size = train_batch_size
         self.test_batch_size = test_batch_size
@@ -433,13 +436,25 @@ class MVTecDataModule(LightningDataModule, ABC):
         self.test_data: Dataset
         if create_validation_set:
             self.val_data: Dataset
+        self.inference_data: Dataset
 
     def setup(self, stage: Optional[str] = None) -> None:
         """Setup train, validation and test data.
 
         Args:
           stage: Optional[str]:  Train/Val/Test stages. (Default value = None)
+
         """
+        if stage in (None, "fit"):
+            self.train_data = MVTec(
+                root=self.root,
+                category=self.category,
+                pre_process=self.pre_process,
+                split="train",
+                seed=self.seed,
+                create_validation_set=self.create_validation_set,
+            )
+
         if self.create_validation_set:
             self.val_data = MVTec(
                 root=self.root,
@@ -449,6 +464,7 @@ class MVTecDataModule(LightningDataModule, ABC):
                 seed=self.seed,
                 create_validation_set=self.create_validation_set,
             )
+
         self.test_data = MVTec(
             root=self.root,
             category=self.category,
@@ -457,14 +473,10 @@ class MVTecDataModule(LightningDataModule, ABC):
             seed=self.seed,
             create_validation_set=self.create_validation_set,
         )
-        if stage in (None, "fit"):
-            self.train_data = MVTec(
-                root=self.root,
-                category=self.category,
-                pre_process=self.pre_process,
-                split="train",
-                seed=self.seed,
-                create_validation_set=self.create_validation_set,
+
+        if stage == "predict":
+            self.inference_data = InferenceDataset(
+                path=self.root, image_size=self.image_size, transform_config=self.transform_config
             )
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:
@@ -482,4 +494,6 @@ class MVTecDataModule(LightningDataModule, ABC):
 
     def predict_dataloader(self) -> EVAL_DATALOADERS:
         """Get predict dataloader."""
-        raise NotImplementedError
+        return DataLoader(
+            self.inference_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers
+        )
