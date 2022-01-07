@@ -24,6 +24,7 @@ jobs:
         run: |
           export ANOMALIB_DATASET_PATH=/media/data1/datasets/MVTec
           export CUDA_VISIBLE_DEVICES=3
+          export CUBLAS_WORKSPACE_CONFIG=:16:8
           tox -e coverage
       - name: Upload coverage result
         uses: actions/upload-artifact@v2

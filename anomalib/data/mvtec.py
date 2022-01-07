@@ -21,10 +21,10 @@ extracts the dataset and create PyTorch data objects.
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+from abc import ABC
 import logging
 import random
 import tarfile
-from abc import ABC
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
 from urllib.request import urlretrieve
@@ -361,7 +361,7 @@ class MVTec(VisionDataset):
         return item
 
 
-class MVTecDataModule(LightningDataModule):
+class MVTecDataModule(LightningDataModule, ABC):
     """MVTec Lightning Data Module."""
 
     def __init__(
