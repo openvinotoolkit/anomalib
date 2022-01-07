@@ -17,6 +17,7 @@
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
 
+import cv2
 import numpy as np
 from omegaconf import DictConfig, ListConfig
 from openvino.inference_engine import IECore  # pylint: disable=no-name-in-module
@@ -137,4 +138,7 @@ class OpenVINOInferencer(Inferencer):
 
         anomaly_map, pred_score = self._normalize(anomaly_map, pred_score, meta_data)
 
-        return anomaly_map, pred_score
+        if "image_shape" in meta_data and anomaly_map.shape != meta_data["image_shape"]:
+            anomaly_map = cv2.resize(anomaly_map, meta_data["image_shape"])
+
+        return anomaly_map, float(pred_score)

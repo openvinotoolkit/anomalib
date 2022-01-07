@@ -17,13 +17,15 @@
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
 
+import cv2
 import numpy as np
 import torch
 from omegaconf import DictConfig, ListConfig
-from torch import Tensor, nn
+from torch import Tensor
 
 from anomalib.core.model import AnomalyModule
 from anomalib.data.transforms.pre_process import PreProcessor
+from anomalib.deploy.optimize import get_model_metadata
 from anomalib.models import get_model
 
 from .base import Inferencer
@@ -64,37 +66,20 @@ class TorchInferencer(Inferencer):
         Returns:
             Dict: Dictionary containing the meta_data.
         """
-        meta_data: Union[DictConfig, Dict[str, Union[float, np.ndarray, Tensor]]] = {}
-        model_params = self.model.state_dict()
-        meta_data_params = {
-            "image_threshold.value": "image_threshold",
-            "pixel_threshold.value": "pixel_threshold",
-            "training_distribution.pixel_mean": "pixel_mean",
-            "training_distribution.image_mean": "image_mean",
-            "training_distribution.pixel_std": "pixel_std",
-            "training_distribution.image_std": "image_std",
-            "min_max.min": "min",
-            "min_max.max": "max",
-        }
         if path is None:
-            for param, key in meta_data_params.items():
-                if param in model_params.keys():
-                    val = model_params[param].to(self.model.device)
-                    # Skip adding the value to metadata if value if undefined.
-                    if not np.isinf(val.numpy()).all():
-                        meta_data[key] = val
+            meta_data = get_model_metadata(self.model)
         else:
             meta_data = super()._load_meta_data(path)
         return meta_data
 
-    def load_model(self, path: Union[str, Path]) -> nn.Module:
+    def load_model(self, path: Union[str, Path]) -> AnomalyModule:
         """Load the PyTorch model.
 
         Args:
             path (Union[str, Path]): Path to model ckpt file.
 
         Returns:
-            (nn.Module): PyTorch Lightning model.
+            (AnomalyModule): PyTorch Lightning model.
         """
         model = get_model(self.config)
         model.load_state_dict(torch.load(path)["state_dict"])
@@ -158,5 +143,11 @@ class TorchInferencer(Inferencer):
         anomaly_map = anomaly_map.squeeze()
 
         anomaly_map, pred_score = self._normalize(anomaly_map, pred_score, meta_data)
+
+        if isinstance(anomaly_map, Tensor):
+            anomaly_map = anomaly_map.cpu().numpy()
+
+        if "image_shape" in meta_data and anomaly_map.shape != meta_data["image_shape"]:
+            anomaly_map = cv2.resize(anomaly_map, meta_data["image_shape"])
 
         return anomaly_map, float(pred_score)

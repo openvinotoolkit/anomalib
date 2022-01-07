@@ -18,12 +18,12 @@ command line, and show the visualization results.
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import os
 from argparse import ArgumentParser, Namespace
 from importlib import import_module
 from pathlib import Path
 
 import cv2
+import numpy as np
 
 from anomalib.config import get_configurable_parameters
 from anomalib.deploy.inferencers.base import Inferencer
@@ -45,6 +45,26 @@ def get_args() -> Namespace:
     return parser.parse_args()
 
 
+def add_label(prediction: np.ndarray, scores: float, font: int = cv2.FONT_HERSHEY_PLAIN) -> np.ndarray:
+    """If the model outputs score, it adds the score to the output image.
+
+    Args:
+        prediction (np.ndarray): Resized anomaly map.
+        scores (float): Confidence score.
+
+    Returns:
+        np.ndarray: Image with score text.
+    """
+    text = f"Confidence Score {scores:.0%}"
+    font_size = prediction.shape[1] // 1024 + 1  # Text scale is calculated based on the reference size of 1024
+    (width, height), baseline = cv2.getTextSize(text, font, font_size, thickness=font_size // 2)
+    label_patch = np.zeros((height + baseline, width + baseline, 3), dtype=np.uint8)
+    label_patch[:, :] = (225, 252, 134)
+    cv2.putText(label_patch, text, (0, baseline // 2 + height), font, font_size, 0)
+    prediction[: baseline + height, : baseline + width] = label_patch
+    return prediction
+
+
 def infer() -> None:
     """Perform inference on an input image."""
 
@@ -56,7 +76,7 @@ def infer() -> None:
 
     # Get the inferencer. We use .ckpt extension for Torch models and (onnx, bin)
     # for the openvino models.
-    extension = os.path.splitext(args.weight_path)[-1]
+    extension = args.weight_path.suffix
     inference: Inferencer
     if extension in (".ckpt"):
         module = import_module("anomalib.deploy.inferencers.torch")
@@ -79,6 +99,11 @@ def infer() -> None:
     # file for convenience. We set the superimpose flag to True
     # to overlay the predicted anomaly map on top of the input image.
     output = inference.predict(image=args.image_path, superimpose=True)
+
+    # Incase both anomaly map and scores are returned add scores to the image.
+    if isinstance(output, tuple):
+        anomaly_map, score = output
+        output = add_label(anomaly_map, score)
 
     # Show or save the output image, depending on what's provided as
     # the command line argument.

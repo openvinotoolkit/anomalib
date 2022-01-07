@@ -101,6 +101,8 @@ where the currently available models are:
 
 Anomalib contains several tools that can be used to perform inference with a trained model. The script in [`tools/inference`](tools/inference.py) contains an example of how the inference tools can be used to generate a prediction for an input image.
 
+If the specified weight path points to a PyTorch Lightning checkpoint file (`.ckpt`), inference will run in PyTorch. If the path points to an ONNX graph (`.onnx`) or OpenVINO IR (`.bin` or `.xml`), inference will run in OpenVINO.
+
 The following command can be used to run inference from the command line:
 
 ```bash
@@ -119,7 +121,29 @@ python tools/inference.py \
     --image_path datasets/MVTec/bottle/test/broken_large/000.png
 ```
 
-If the specified weight path points to a PyTorch Lightning checkpoint file (`.ckpt`), inference will run in PyTorch. If the path points to an ONNX graph (`.onnx`) or OpenVINO IR (`.bin` or `.xml`), inference will run in OpenVINO.
+If you want to run OpenVINO model, ensure that `compression` `apply` is set to `True` in the respective model `config.yaml`.
+
+```yaml
+optimization:
+  compression:
+    apply: true
+```
+
+Example OpenVINO Inference:
+
+```bash
+python tools/inference.py \
+    --model_config_path  \
+    anomalib/models/padim/config.yaml  \
+    --weight_path  \
+    results/padim/mvtec/bottle/compressed/compressed_model.xml  \
+    --image_path  \
+    datasets/MVTec/bottle/test/broken_large/000.png  \
+    --meta_data  \
+    results/padim/mvtec/bottle/compressed/meta_data.json
+```
+
+> Ensure that you provide path to `meta_data.json` if you want the normalization to be applied correctly.
 
 ___
 

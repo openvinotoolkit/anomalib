@@ -18,7 +18,6 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Union, cast
 
-import cv2
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
 from torch import Tensor
@@ -52,13 +51,15 @@ class Inferencer(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def post_process(self, predictions: Union[np.ndarray, Tensor], meta_data: Optional[Dict]) -> np.ndarray:
+    def post_process(
+        self, predictions: Union[np.ndarray, Tensor], meta_data: Optional[Dict]
+    ) -> Tuple[np.ndarray, float]:
         """Post-Process."""
         raise NotImplementedError
 
     def predict(
         self, image: Union[str, np.ndarray, Path], superimpose: bool = True, meta_data: Optional[dict] = None
-    ) -> np.ndarray:
+    ) -> Tuple[np.ndarray, float]:
         """Perform a prediction for a given input image.
 
         The main workflow is (i) pre-processing, (ii) forward-pass, (iii) post-process.
@@ -85,14 +86,14 @@ class Inferencer(ABC):
 
         processed_image = self.pre_process(image)
         predictions = self.forward(processed_image)
-        anomaly_map, _ = self.post_process(predictions, meta_data=meta_data)
+        anomaly_map, pred_scores = self.post_process(predictions, meta_data=meta_data)
 
         if superimpose is True:
             anomaly_map = superimpose_anomaly_map(anomaly_map, image)
 
-        return anomaly_map
+        return anomaly_map, pred_scores
 
-    def __call__(self, image: np.ndarray) -> np.ndarray:
+    def __call__(self, image: np.ndarray) -> Tuple[np.ndarray, float]:
         """Call predict on the Image.
 
         Args:
@@ -144,12 +145,6 @@ class Inferencer(ABC):
         if "image_mean" in meta_data.keys() and "image_std" in meta_data.keys():
             pred_scores = standardize(pred_scores, meta_data["image_mean"], meta_data["image_std"])
             pred_scores = normalize_cdf(pred_scores, meta_data["image_threshold"])
-
-        if isinstance(anomaly_maps, Tensor):
-            anomaly_maps = anomaly_maps.cpu().numpy()
-
-        if "image_shape" in meta_data and anomaly_maps.shape != meta_data["image_shape"]:
-            anomaly_maps = cv2.resize(anomaly_maps, meta_data["image_shape"])
 
         return anomaly_maps, float(pred_scores)
 
