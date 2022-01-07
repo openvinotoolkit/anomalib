@@ -361,7 +361,7 @@ class MVTec(VisionDataset):
         return item
 
 
-class MVTecDataModule(LightningDataModule, ABC):
+class MVTecDataModule(LightningDataModule):
     """MVTec Lightning Data Module."""
 
     def __init__(

@@ -14,8 +14,39 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+from pathlib import Path
+from typing import List, Union
+
 import cv2
 import numpy as np
+from torchvision.datasets.folder import IMG_EXTENSIONS
+
+
+def get_image_filenames(path: Union[str, Path]) -> List[str]:
+    """Get image filenames.
+
+    Args:
+        path (Union[str, Path]): Path to image or image-folder.
+
+    Returns:
+        List[str]: List of image filenames
+
+    """
+    image_filenames: List[str]
+
+    if isinstance(path, str):
+        path = Path(path)
+
+    if path.is_file() and path.suffix in IMG_EXTENSIONS:
+        image_filenames = [str(path)]
+
+    if path.is_dir():
+        image_filenames = [str(p) for p in path.glob("**/*") if p.suffix in IMG_EXTENSIONS]
+
+    if len(image_filenames) == 0:
+        raise ValueError(f"Found 0 images in {path}")
+
+    return image_filenames
 
 
 def read_image(path: str) -> np.ndarray:
