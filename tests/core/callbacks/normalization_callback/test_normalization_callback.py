@@ -39,5 +39,7 @@ def test_normalizer():
 
     # performance should be the same
     for metric in ["image_AUROC", "image_F1"]:
-        assert results_without_normalization[0][metric] == results_with_cdf_normalization[0][metric]
-        assert results_without_normalization[0][metric] == results_with_minmax_normalization[0][metric]
+        assert round(results_without_normalization[0][metric], 3) == round(results_with_cdf_normalization[0][metric], 3)
+        assert round(results_without_normalization[0][metric], 3) == round(
+            results_with_minmax_normalization[0][metric], 3
+        )
