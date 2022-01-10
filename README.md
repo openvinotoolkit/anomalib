@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/source/images/logos/anomalib-wide-blue.png" width="400px">
+<img src="docs/source/images/logos/anomalib-wide-blue.png" width="700px">
 
 **A library for benchmarking, developing and deploying deep learning anomaly detection algorithms**
 ___

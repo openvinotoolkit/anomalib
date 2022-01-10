@@ -2,9 +2,9 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="161.11024mm"
-   height="30.4mm"
-   viewBox="0 0 161.11024 30.399999"
+   width="8.4328775in"
+   height="1.5912052in"
+   viewBox="0 0 214.19508 40.416613"
    version="1.1"
    id="svg5"
    inkscape:version="1.2-dev (9ee32be, 2021-06-19)"
@@ -28,19 +28,20 @@
      inkscape:document-units="mm"
      showgrid="false"
      inkscape:zoom="0.75163356"
-     inkscape:cx="441.7046"
-     inkscape:cy="-56.54351"
-     inkscape:window-width="1344"
-     inkscape:window-height="787"
+     inkscape:cx="602.6873"
+     inkscape:cy="349.90455"
+     inkscape:window-width="1920"
+     inkscape:window-height="1080"
      inkscape:window-x="0"
-     inkscape:window-y="25"
+     inkscape:window-y="0"
      inkscape:window-maximized="0"
      inkscape:current-layer="layer1"
      fit-margin-top="0"
      fit-margin-left="0"
      fit-margin-right="0"
      fit-margin-bottom="0"
-     inkscape:snap-global="false" />
+     inkscape:snap-global="false"
+     units="in" />
   <defs
      id="defs2">
     <linearGradient
@@ -70,7 +71,7 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(-19.807919,-9.8085206)">
+     transform="translate(-20.863949,-10.903724)">
     <rect
        style="fill:none;fill-opacity:1;stroke:none;stroke-width:0.523549"
        id="rect4947"
@@ -81,19 +82,9 @@
        inkscape:export-filename="/Users/sakcay/Desktop/logos.png"
        inkscape:export-xdpi="96"
        inkscape:export-ydpi="96" />
-    <rect
-       style="fill:none;fill-opacity:1;stroke:none;stroke-width:0.523549"
-       id="rect5921"
-       width="174.80579"
-       height="52.952122"
-       x="11.640607"
-       y="5.3455563"
-       inkscape:export-filename="/Users/sakcay/Desktop/logos.png"
-       inkscape:export-xdpi="96"
-       inkscape:export-ydpi="96" />
     <g
        id="g17550"
-       transform="translate(0,-6.4249389)"
+       transform="matrix(1.3294938,0,0,1.3294938,-5.4705557,-10.67856)"
        inkscape:export-filename="/Users/sakcay/Desktop/logos.png"
        inkscape:export-xdpi="96"
        inkscape:export-ydpi="96">
