@@ -1,4 +1,4 @@
-"""Dataset Utils."""
+"""Inferencers for Torch and OpenVINO."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -14,27 +14,8 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from pathlib import Path
-from typing import Union
+from .base import Inferencer
+from .openvino import OpenVINOInferencer
+from .torch import TorchInferencer
 
-import cv2
-import numpy as np
-
-
-def read_image(path: Union[str, Path]) -> np.ndarray:
-    """Read image from disk in RGB format.
-
-    Args:
-        path (str, Path): path to the image file
-
-    Example:
-        >>> image = read_image("test_image.jpg")
-
-    Returns:
-        image as numpy array
-    """
-    path = path if isinstance(path, str) else str(path)
-    image = cv2.imread(path)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-    return image
+__all__ = ["Inferencer", "TorchInferencer", "OpenVINOInferencer"]
