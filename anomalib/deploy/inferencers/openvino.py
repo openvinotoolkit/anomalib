@@ -124,7 +124,7 @@ class OpenVINOInferencer(Inferencer):
             predictions (np.ndarray): Raw output predicted by the model.
             meta_data (Dict, optional): Meta data. Post-processing step sometimes requires
                 additional meta data such as image shape. This variable comprises such info.
-                Defaults to {}.
+                Defaults to None.
 
         Returns:
             np.ndarray: Post processed predictions that are ready to be visualized.
