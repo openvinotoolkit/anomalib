@@ -11,7 +11,7 @@
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] This change requires a documentation update
 
-# Checklist:
+## Checklist
 
 - [ ] My code follows the [pre-commit style and check guidelines](https://openvinotoolkit.github.io/anomalib/guides/using_pre_commit.html#pre-commit-hooks) of this project.
 - [ ] I have performed a self-review of my code

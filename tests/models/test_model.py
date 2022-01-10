@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import os
 import random
 import tempfile
 from functools import wraps
@@ -28,6 +29,14 @@ from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
 from tests.helpers.dataset import TestDataset, get_dataset_path
+
+
+@pytest.fixture(autouse=True)
+def nightly_build() -> bool:
+    """If NIGHTLY_BUILD env variable is set to TRUE, the tests will use mvtec and check performance."""
+    if os.environ["NIGHTLY_BUILD"] == "TRUE":
+        return True
+    return False
 
 
 @pytest.fixture(autouse=True)
@@ -117,10 +126,11 @@ class TestModel:
 
         results = trainer.test(model=model, datamodule=datamodule)[0]
 
-        assert results["image_AUROC"] >= 0.6
+        if nightly_build:
+            assert results["image_AUROC"] >= 0.6
 
-        if config.dataset.task == "segmentation":
-            assert results["pixel_AUROC"] >= 0.6
+            if config.dataset.task == "segmentation":
+                assert results["pixel_AUROC"] >= 0.6
         return results
 
     def _test_model_load(self, config, datamodule, results):
@@ -159,9 +169,9 @@ class TestModel:
         ],
     )
     @pytest.mark.flaky(max_runs=3)
-    @TestDataset(num_train=200, num_test=10, path=get_dataset_path(), use_mvtec=True)
+    @TestDataset(num_train=200, num_test=10, path=get_dataset_path(), use_mvtec=nightly_build)
     @AddDFMScores()
-    def test_model(self, category, model_name, nncf, use_mvtec=True, path="./datasets/MVTec", score_type=None):
+    def test_model(self, category, model_name, nncf, use_mvtec=nightly_build, path="./datasets/MVTec", score_type=None):
         """Driver for all the tests in the class."""
         with tempfile.TemporaryDirectory() as project_path:
             model, config, datamodule, trainer = self._setup(

@@ -1,16 +1,16 @@
-name: Pre-merge Checks
+name: Nightly-regression Test
 
 on:
-  push:
-    branches: [development, master]
-  pull_request:
   workflow_dispatch: # run on request (no need for PR)
+  schedule:
+    - cron '0 0 * * *'
 
 jobs:
   Tox:
     runs-on: [self-hosted, linux, x64]
     strategy:
       max-parallel: 1
+    if: github.ref == 'refs/heads/development'
     steps:
       - name: Print GPU status
         run: nvidia-smi
@@ -18,13 +18,11 @@ jobs:
         uses: actions/checkout@v2
       - name: Install Tox
         run: pip install tox
-      - name: Code quality checks
-        run: tox -e black,isort,flake8,pylint,mypy,pydocstyle
       - name: Coverage
         run: |
           export ANOMALIB_DATASET_PATH=/media/data1/datasets/MVTec
-          export CUDA_VISIBLE_DEVICES=3
-          export NIGHTLY_BUILD=FALSE
+          export CUDA_VISIBLE_DEVICES=2
+          export NIGHTLY_BUILD=TRUE
           tox -e coverage
       - name: Upload coverage result
         uses: actions/upload-artifact@v2
