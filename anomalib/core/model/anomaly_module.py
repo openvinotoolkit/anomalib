@@ -49,19 +49,19 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.loss: Tensor
         self.callbacks: List[Callback]
 
-        self.image_threshold = AdaptiveThreshold(self.hparams.model.threshold.image_default)
+        self.image_threshold = AdaptiveThreshold(self.hparams.model.threshold.image_default).cpu()
         self.pixel_threshold = AdaptiveThreshold(self.hparams.model.threshold.pixel_default)
 
-        self.training_distribution = AnomalyScoreDistribution()
-        self.min_max = MinMax()
+        self.training_distribution = AnomalyScoreDistribution().cpu()
+        self.min_max = MinMax().cpu()
 
         self.model: nn.Module
 
         # metrics
         auroc = AUROC(num_classes=1, pos_label=1, compute_on_step=False)
         f1_score = F1(num_classes=1, compute_on_step=False)
-        self.image_metrics = MetricCollection([auroc, f1_score], prefix="image_")
-        self.pixel_metrics = self.image_metrics.clone(prefix="pixel_")
+        self.image_metrics = MetricCollection([auroc, f1_score], prefix="image_").cpu()
+        self.pixel_metrics = self.image_metrics.clone(prefix="pixel_").cpu()
 
     def forward(self, batch):  # pylint: disable=arguments-differ
         """Forward-pass input tensor to the module.
@@ -112,11 +112,13 @@ class AnomalyModule(pl.LightningModule, ABC):
 
     def validation_step_end(self, val_step_outputs):  # pylint: disable=arguments-differ
         """Called at the end of each validation step."""
+        self._outputs_to_cpu(val_step_outputs)
         self._post_process(val_step_outputs)
         return val_step_outputs
 
     def test_step_end(self, test_step_outputs):  # pylint: disable=arguments-differ
         """Called at the end of each test step."""
+        self._outputs_to_cpu(test_step_outputs)
         self._post_process(test_step_outputs)
         return test_step_outputs
 
@@ -153,8 +155,10 @@ class AnomalyModule(pl.LightningModule, ABC):
 
     def _collect_outputs(self, image_metric, pixel_metric, outputs):
         for output in outputs:
+            image_metric.cpu()
             image_metric.update(output["pred_scores"], output["label"].int())
             if "mask" in output.keys() and "anomaly_maps" in output.keys():
+                pixel_metric.cpu()
                 pixel_metric.update(output["anomaly_maps"].flatten(), output["mask"].flatten().int())
 
     def _post_process(self, outputs):
@@ -163,6 +167,12 @@ class AnomalyModule(pl.LightningModule, ABC):
             outputs["pred_scores"] = (
                 outputs["anomaly_maps"].reshape(outputs["anomaly_maps"].shape[0], -1).max(dim=1).values
             )
+
+    def _outputs_to_cpu(self, output):
+        # for output in outputs:
+        for key, value in output.items():
+            if isinstance(value, Tensor):
+                output[key] = value.cpu()
 
     def _log_metrics(self):
         """Log computed performance metrics."""
