@@ -93,6 +93,7 @@ where the currently available models are:
 
 - [DFKDE](anomalib/models/dfkde)
 - [DFM](anomalib/models/dfm)
+- [GANomaly](anomalib/models/ganomaly)
 - [PADIM](anomalib/models/padim)
 - [PatchCore](anomalib/models/patchcore)
 - [STFPM](anomalib/models/stfpm)
