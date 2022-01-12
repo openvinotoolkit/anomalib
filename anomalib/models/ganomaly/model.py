@@ -168,7 +168,7 @@ class GanomalyLightning(AnomalyModule):
         self._reset_min_max()
         return super().on_validation_start()
 
-    def validation_step(self, batch, _) -> Dict[str, Tensor]:  # pylint: disable=arguments-differ
+    def validation_step(self, batch, _) -> Dict[str, Tensor]:  # type: ignore # pylint: disable=arguments-differ
         """Update min and max scores from the current step.
 
         Args:
