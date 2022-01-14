@@ -92,7 +92,6 @@ python tools/train.py --model padim
 where the currently available models are:
 
 - [CFlow](anomalib/models/cflow)
-- [PADIM](anomalib/models/padim)
 - [PatchCore](anomalib/models/patchcore)
 - [PADIM](anomalib/models/padim)
 - [STFPM](anomalib/models/stfpm)
