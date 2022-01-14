@@ -9,6 +9,7 @@ from torchvision import transforms
 from torchvision.datasets import FakeData
 
 from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
+from anomalib.core.metrics import AdaptiveThreshold, AnomalyScoreDistribution, MinMax
 
 
 class FakeDataModule(pl.LightningDataModule):
@@ -71,10 +72,16 @@ class DummyLightningModule(pl.LightningModule):
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         super().__init__()
+        self.save_hyperparameters(hparams)
         self.loss_fn = nn.NLLLoss()
         self.callbacks = [VisualizerCallback()]  # test if this is removed
+
+        self.image_threshold = AdaptiveThreshold(hparams.model.threshold.image_default).cpu()
+        self.pixel_threshold = AdaptiveThreshold(hparams.model.threshold.pixel_default).cpu()
+
+        self.training_distribution = AnomalyScoreDistribution().cpu()
+        self.min_max = MinMax().cpu()
         self.model = DummyModel(hparams)
-        self.save_hyperparameters(hparams)
 
     def training_step(self, batch, _):
         x, y = batch

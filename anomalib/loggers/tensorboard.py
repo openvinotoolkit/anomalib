@@ -43,19 +43,19 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
         >>> trainer = Trainer(logger=logger)
 
     Args:
-        save_dir: Save directory
-        name: Experiment name. Defaults to ``'default'``. If it is the empty string then no per-experiment
-            subdirectory is used.
-        version: Experiment version. If version is not specified the logger inspects the save
+        save_dir (str): Save directory
+        name (Optional, str): Experiment name. Defaults to ``'default'``. If it is the empty string then no
+            per-experiment subdirectory is used.
+        version (Optional, int, str): Experiment version. If version is not specified the logger inspects the save
             directory for existing versions, then automatically assigns the next available version.
             If it is a string then it is used as the run-specific subdirectory name,
             otherwise ``'version_${version}'`` is used.
-        log_graph: Adds the computational graph to tensorboard. This requires that
+        log_graph (bool): Adds the computational graph to tensorboard. This requires that
             the user has defined the `self.example_input_array` attribute in their
             model.
-        default_hp_metric: Enables a placeholder metric with key `hp_metric` when `log_hyperparams` is
+        default_hp_metric (bool): Enables a placeholder metric with key `hp_metric` when `log_hyperparams` is
             called without a metric (otherwise calls to log_hyperparams without a metric are ignored).
-        prefix: A string to put at the beginning of metric keys.
+        prefix (str): A string to put at the beginning of metric keys.
         **kwargs: Additional arguments like `comment`, `filename_suffix`, etc. used by
             :class:`SummaryWriter` can be passed as keyword arguments in this logger.
     """

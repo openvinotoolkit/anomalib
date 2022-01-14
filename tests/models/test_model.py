@@ -55,7 +55,7 @@ def category() -> str:
         "zipper",
     ]
 
-    category = random.choice(categories)
+    category = random.choice(categories)  # nosec
     return category
 
 
@@ -151,10 +151,11 @@ class TestModel:
         [
             ("padim", False),
             ("dfkde", False),
-            ("dfm", False),
+            # ("dfm", False),  # skip dfm test
             ("stfpm", False),
             ("stfpm", True),
             ("patchcore", False),
+            ("cflow", False),
         ],
     )
     @pytest.mark.flaky(max_runs=3)

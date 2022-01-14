@@ -18,7 +18,7 @@ model:
   confidence_threshold: 0.5
   pre_processing: scale
   n_components: 16
-  normalize_scores: false # currently not supported for this model
+  normalization_method: min_max # options: [null, min_max, cdf]
   threshold:
     image_default: 0
     adaptive: true
@@ -26,7 +26,7 @@ model:
 project:
   seed: 42
   path: ./results
-  log_images_to: [local]
+  log_images_to: []
   logger: false
   save_to_csv: false
 

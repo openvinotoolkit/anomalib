@@ -30,7 +30,7 @@ AVAILABLE_LOGGERS = ["tensorboard", "wandb"]
 
 
 class UnknownLogger(Exception):
-    """This is raised when the logger option in config.yaml file is set incorrectly."""
+    """This is raised when the logger option in `config.yaml` file is set incorrectly."""
 
 
 def get_logger(config: Union[DictConfig, ListConfig]) -> Union[LightningLoggerBase, bool]:

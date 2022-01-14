@@ -22,16 +22,24 @@ def test_normalizer():
     config.dataset.path = get_dataset_path(config.dataset.path)
     config.model.threshold.adaptive = True
 
-    # run with normalization
-    config.model.normalize_scores = True
-    seed_everything(42)
-    results_with_normalization = run_train_test(config)
-
     # run without normalization
-    config.model.normalize_scores = False
+    config.model.normalization_method = "none"
     seed_everything(42)
     results_without_normalization = run_train_test(config)
 
+    # run with cdf normalization
+    config.model.normalization_method = "cdf"
+    seed_everything(42)
+    results_with_cdf_normalization = run_train_test(config)
+
+    # run without normalization
+    config.model.normalization_method = "min_max"
+    seed_everything(42)
+    results_with_minmax_normalization = run_train_test(config)
+
     # performance should be the same
     for metric in ["image_AUROC", "image_F1"]:
-        assert results_without_normalization[0][metric] == results_with_normalization[0][metric]
+        assert round(results_without_normalization[0][metric], 3) == round(results_with_cdf_normalization[0][metric], 3)
+        assert round(results_without_normalization[0][metric], 3) == round(
+            results_with_minmax_normalization[0][metric], 3
+        )
