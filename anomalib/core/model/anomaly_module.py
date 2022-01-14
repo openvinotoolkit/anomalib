@@ -15,7 +15,7 @@
 # and limitations under the License.
 
 from abc import ABC
-from typing import List, Union
+from typing import Any, List, Optional, Union
 
 import pytorch_lightning as pl
 from omegaconf import DictConfig, ListConfig
@@ -78,7 +78,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         """To be implemented in the subclasses."""
         raise NotImplementedError
 
-    def predict_step(self, batch, batch_idx, _):  # pylint: disable=arguments-differ, signature-differs
+    def predict_step(self, batch: Any, batch_idx: int, _dataloader_idx: Optional[int] = None) -> Any:
         """Step function called during :meth:`~pytorch_lightning.trainer.trainer.Trainer.predict`.
 
         By default, it calls :meth:`~pytorch_lightning.core.lightning.LightningModule.forward`.
@@ -87,7 +87,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         Args:
             batch (Tensor): Current batch
             batch_idx (int): Index of current batch
-            dataloader_idx (int): Index of the current dataloader
+            _dataloader_idx (int): Index of the current dataloader
 
         Return:
             Predicted output

@@ -89,7 +89,7 @@ trainer:
   log_every_n_steps: 50
   log_gpu_memory: null
   max_epochs: 100
-  max_steps: null
+  max_steps: -1
   min_epochs: null
   min_steps: null
   move_metrics_to_cpu: false

@@ -41,7 +41,7 @@ trainer:
   check_val_every_n_epoch: 2 # Don't validate before extracting features.
   checkpoint_callback: true
   default_root_dir: null
-  deterministic: false
+  deterministic: true
   fast_dev_run: false
   gpus: 1
   gradient_clip_val: 0
@@ -52,7 +52,7 @@ trainer:
   log_every_n_steps: 50
   log_gpu_memory: null
   max_epochs: 1
-  max_steps: null
+  max_steps: -1
   min_epochs: null
   min_steps: null
   move_metrics_to_cpu: false
