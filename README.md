@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/source/images/logos/anomalib-wide.png" width="400px">
+<img src="docs/source/images/logos/anomalib-wide-blue.png" width="600px">
 
 **A library for benchmarking, developing and deploying deep learning anomaly detection algorithms**
 ___
@@ -69,7 +69,7 @@ python tools/train.py    # Train PADIM on MVTec leather
 ```
 
 Training a model on a specific dataset and category requires further configuration. Each model has its own configuration
-file, [`config.yaml`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/-/blob/development/stfpm/anomalib/models/stfpm/config.yaml)
+file, [`config.yaml`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/-/blob/development/padim/anomalib/models/padim/config.yaml)
 , which contains data, model and training configurable parameters. To train a specific model on a specific dataset and
 category, the config file is to be provided:
 
@@ -77,23 +77,23 @@ category, the config file is to be provided:
 python tools/train.py --model_config_path <path/to/model/config.yaml>
 ```
 
-For example, to train [STFPM](anomalib/models/stfpm) you can use
+For example, to train [PADIM](anomalib/models/padim) you can use
 
 ```bash
-python tools/train.py --model_config_path anomalib/models/stfpm/config.yaml
+python tools/train.py --model_config_path anomalib/models/padim/config.yaml
 ```
 
 Alternatively, a model name could also be provided as an argument, where the scripts automatically finds the corresponding config file.
 
 ```bash
-python tools/train.py --model stfpm
+python tools/train.py --model padim
 ```
 
 where the currently available models are:
 
 - [CFlow](anomalib/models/cflow)
-- [PADIM](anomalib/models/padim)
 - [PatchCore](anomalib/models/patchcore)
+- [PADIM](anomalib/models/padim)
 - [STFPM](anomalib/models/stfpm)
 - [DFM](anomalib/models/dfm)
 - [DFKDE](anomalib/models/dfkde)
