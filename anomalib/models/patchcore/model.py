@@ -24,8 +24,8 @@ import torch.nn.functional as F
 import torchvision
 from kornia import gaussian_blur2d
 from omegaconf import ListConfig
-from torch import Tensor, nn
 from sklearn import random_projection
+from torch import Tensor, nn
 
 from anomalib.core.model import AnomalyModule
 from anomalib.core.model.dynamic_module import DynamicBufferModule
@@ -269,10 +269,11 @@ class PatchcoreLightning(AnomalyModule):
         """
         embedding = torch.vstack([output["embedding"] for output in outputs])
 
-
         sampling_ratio = self.hparams.model.coreset_sampling_ratio
 
-        embedding_idx = self.get_coreset_idx(sample_set=embedding.cpu(), n=int(sampling_ratio * embedding.shape[0]), eps=.9)
+        embedding_idx = self.get_coreset_idx(
+            sample_set=embedding.cpu(), sample_count=int(sampling_ratio * embedding.shape[0]), eps=0.9
+        )
         embedding = embedding[embedding_idx]
         self.model.memory_bank = embedding
 
@@ -295,17 +296,17 @@ class PatchcoreLightning(AnomalyModule):
         return batch
 
     def get_coreset_idx(
-            self,
-            sample_set: Tensor,
-            n: int = 500,
-            eps: float = 0.90,
-            force_cpu: bool = False,
+        self,
+        sample_set: Tensor,
+        sample_count: int = 500,
+        eps: float = 0.90,
+        force_cpu: bool = False,
     ) -> Tensor:
         """Returns n subsampled coreset idx for given sample_set.
 
         Args:
-            embedding:      (n, d) tensor of patches.
-            n:          Number of patches to select.
+            embedding:      (sample_count, d) tensor of patches.
+            sample_count:          Number of patches to select.
             eps:        Parameter for spare projection aggresion.
             force_cpu:  Force cpu, useful in case of GPU OOM.
 
@@ -313,16 +314,16 @@ class PatchcoreLightning(AnomalyModule):
             coreset indices
         """
 
-        print(f"   Fitting random projections...")
+        print("Fitting random projections...")
         try:
             transformer = random_projection.SparseRandomProjection(eps=eps)
-            sample_set = torch.tensor(transformer.fit_transform(sample_set))
+            sample_set = torch.tensor(transformer.fit_transform(sample_set))  # pylint: disable=not-callable
         except ValueError:
             print("   Error: could not project vectors. Please increase `eps` value.")
 
         select_idx = 0
-        last_item = sample_set[select_idx:select_idx + 1]
-        coreset_idx = [torch.tensor(select_idx)]
+        last_item = sample_set[select_idx : select_idx + 1]
+        coreset_idx = [torch.tensor(select_idx)]  # pylint: disable=not-callable
         min_distances = torch.linalg.norm(sample_set - last_item, dim=1, keepdims=True)
 
         if torch.cuda.is_available() and not force_cpu:
@@ -330,14 +331,13 @@ class PatchcoreLightning(AnomalyModule):
             sample_set = sample_set.to("cuda")
             min_distances = min_distances.to("cuda")
 
-        for _ in range(n - 1):
+        for _ in range(sample_count - 1):
             distances = torch.linalg.norm(sample_set - last_item, dim=1, keepdims=True)  # broadcast
             min_distances = torch.minimum(distances, min_distances)  # iterate
             select_idx = torch.argmax(min_distances)  # select
 
-            last_item = sample_set[select_idx:select_idx + 1]
+            last_item = sample_set[select_idx : select_idx + 1]
             min_distances[select_idx] = 0
-            coreset_idx.append(select_idx.to("cpu"))
+            coreset_idx.append(select_idx.to("cpu"))  # type: ignore[attr-defined]
 
         return torch.stack(coreset_idx)
-
