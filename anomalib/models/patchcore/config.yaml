@@ -14,7 +14,7 @@ dataset:
     use_random_tiling: False
     random_tile_count: 16
   image_size: 224
-  train_batch_size: 1
+  train_batch_size: 32
   test_batch_size: 1
   num_workers: 36
 

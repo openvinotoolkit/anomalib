@@ -272,7 +272,7 @@ class PatchcoreLightning(AnomalyModule):
         sampling_ratio = self.hparams.model.coreset_sampling_ratio
 
         embedding_idx = self.get_coreset_idx(
-            sample_set=embedding.cpu(), sample_count=int(sampling_ratio * embedding.shape[0]), eps=0.9
+            sample_set=embedding, sample_count=int(sampling_ratio * embedding.shape[0]), eps=0.9
         )
         embedding = embedding[embedding_idx]
         self.model.memory_bank = embedding
@@ -300,36 +300,34 @@ class PatchcoreLightning(AnomalyModule):
         sample_set: Tensor,
         sample_count: int = 500,
         eps: float = 0.90,
-        force_cpu: bool = False,
     ) -> Tensor:
         """Returns n subsampled coreset idx for given sample_set.
 
         Args:
-            embedding:      (sample_count, d) tensor of patches.
-            sample_count:          Number of patches to select.
-            eps:        Parameter for spare projection aggresion.
-            force_cpu:  Force cpu, useful in case of GPU OOM.
+            embedding (Tensor): (sample_count, d) tensor of patches.
+            sample_count (int): Number of patches to select.
+            eps (float): Parameter for spare projection aggresion.
 
         Returns:
-            coreset indices
+            Tensor: coreset indices
         """
-
+        # TODO: https://github.com/openvinotoolkit/anomalib/issues/54
+        #     Replace print statement with logger.
         print("Fitting random projections...")
         try:
             transformer = random_projection.SparseRandomProjection(eps=eps)
-            sample_set = torch.tensor(transformer.fit_transform(sample_set))  # pylint: disable=not-callable
+            sample_set = torch.tensor(transformer.fit_transform(sample_set.cpu())).to(  # pylint: disable=not-callable
+                sample_set.device
+            )
         except ValueError:
+            # TODO: https://github.com/openvinotoolkit/anomalib/issues/54
+            #     Replace print statement with logger.
             print("   Error: could not project vectors. Please increase `eps` value.")
 
         select_idx = 0
         last_item = sample_set[select_idx : select_idx + 1]
-        coreset_idx = [torch.tensor(select_idx)]  # pylint: disable=not-callable
+        coreset_idx = [torch.tensor(select_idx).to(sample_set.device)]  # pylint: disable=not-callable
         min_distances = torch.linalg.norm(sample_set - last_item, dim=1, keepdims=True)
-
-        if torch.cuda.is_available() and not force_cpu:
-            last_item = last_item.to("cuda")
-            sample_set = sample_set.to("cuda")
-            min_distances = min_distances.to("cuda")
 
         for _ in range(sample_count - 1):
             distances = torch.linalg.norm(sample_set - last_item, dim=1, keepdims=True)  # broadcast
@@ -338,6 +336,6 @@ class PatchcoreLightning(AnomalyModule):
 
             last_item = sample_set[select_idx : select_idx + 1]
             min_distances[select_idx] = 0
-            coreset_idx.append(select_idx.to("cpu"))  # type: ignore[attr-defined]
+            coreset_idx.append(select_idx)
 
         return torch.stack(coreset_idx)
