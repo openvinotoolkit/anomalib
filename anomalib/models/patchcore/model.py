@@ -209,6 +209,49 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         embedding = embedding.permute(0, 2, 3, 1).reshape(-1, embedding_size)
         return embedding
 
+    def create_coreset(
+        self,
+        embedding: Tensor,
+        sample_count: int = 500,
+        eps: float = 0.90,
+    ):
+        """Creates n subsampled coreset for given sample_set.
+
+        Args:
+            embedding (Tensor): (sample_count, d) tensor of patches.
+            sample_count (int): Number of patches to select.
+            eps (float): Parameter for spare projection aggression.
+        """
+        # TODO: https://github.com/openvinotoolkit/anomalib/issues/54
+        #     Replace print statement with logger.
+        print("Fitting random projections...")
+        try:
+            transformer = random_projection.SparseRandomProjection(eps=eps)
+            sample_set = torch.tensor(transformer.fit_transform(embedding.cpu())).to(  # pylint: disable=not-callable
+                embedding.device
+            )
+        except ValueError:
+            # TODO: https://github.com/openvinotoolkit/anomalib/issues/54
+            #     Replace print statement with logger.
+            print("   Error: could not project vectors. Please increase `eps` value.")
+
+        select_idx = 0
+        last_item = sample_set[select_idx : select_idx + 1]
+        coreset_idx = [torch.tensor(select_idx).to(embedding.device)]  # pylint: disable=not-callable
+        min_distances = torch.linalg.norm(sample_set - last_item, dim=1, keepdims=True)
+
+        for _ in range(sample_count - 1):
+            distances = torch.linalg.norm(sample_set - last_item, dim=1, keepdims=True)  # broadcast
+            min_distances = torch.minimum(distances, min_distances)  # iterate
+            select_idx = torch.argmax(min_distances)  # select
+
+            last_item = sample_set[select_idx : select_idx + 1]
+            min_distances[select_idx] = 0
+            coreset_idx.append(select_idx)
+
+        coreset_idx = torch.stack(coreset_idx)
+        self.memory_bank = embedding[coreset_idx]
+
 
 class PatchcoreLightning(AnomalyModule):
     """PatchcoreLightning Module to train PatchCore algorithm.
@@ -271,11 +314,7 @@ class PatchcoreLightning(AnomalyModule):
 
         sampling_ratio = self.hparams.model.coreset_sampling_ratio
 
-        embedding_idx = self.get_coreset_idx(
-            sample_set=embedding, sample_count=int(sampling_ratio * embedding.shape[0]), eps=0.9
-        )
-        embedding = embedding[embedding_idx]
-        self.model.memory_bank = embedding
+        self.model.create_coreset(embedding=embedding, sample_count=int(sampling_ratio * embedding.shape[0]), eps=0.9)
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Get batch of anomaly maps from input image batch.
@@ -294,48 +333,3 @@ class PatchcoreLightning(AnomalyModule):
         batch["pred_scores"] = anomaly_score.unsqueeze(0)
 
         return batch
-
-    def get_coreset_idx(
-        self,
-        sample_set: Tensor,
-        sample_count: int = 500,
-        eps: float = 0.90,
-    ) -> Tensor:
-        """Returns n subsampled coreset idx for given sample_set.
-
-        Args:
-            embedding (Tensor): (sample_count, d) tensor of patches.
-            sample_count (int): Number of patches to select.
-            eps (float): Parameter for spare projection aggresion.
-
-        Returns:
-            Tensor: coreset indices
-        """
-        # TODO: https://github.com/openvinotoolkit/anomalib/issues/54
-        #     Replace print statement with logger.
-        print("Fitting random projections...")
-        try:
-            transformer = random_projection.SparseRandomProjection(eps=eps)
-            sample_set = torch.tensor(transformer.fit_transform(sample_set.cpu())).to(  # pylint: disable=not-callable
-                sample_set.device
-            )
-        except ValueError:
-            # TODO: https://github.com/openvinotoolkit/anomalib/issues/54
-            #     Replace print statement with logger.
-            print("   Error: could not project vectors. Please increase `eps` value.")
-
-        select_idx = 0
-        last_item = sample_set[select_idx : select_idx + 1]
-        coreset_idx = [torch.tensor(select_idx).to(sample_set.device)]  # pylint: disable=not-callable
-        min_distances = torch.linalg.norm(sample_set - last_item, dim=1, keepdims=True)
-
-        for _ in range(sample_count - 1):
-            distances = torch.linalg.norm(sample_set - last_item, dim=1, keepdims=True)  # broadcast
-            min_distances = torch.minimum(distances, min_distances)  # iterate
-            select_idx = torch.argmax(min_distances)  # select
-
-            last_item = sample_set[select_idx : select_idx + 1]
-            min_distances[select_idx] = 0
-            coreset_idx.append(select_idx)
-
-        return torch.stack(coreset_idx)
