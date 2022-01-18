@@ -138,8 +138,12 @@ class TorchInferencer(Inferencer):
             anomaly_map = predictions
             pred_score = anomaly_map.reshape(-1).max()
         else:
-            anomaly_map, pred_score = predictions
-            pred_score = pred_score.detach().cpu().numpy()
+            if isinstance(predictions[1],( Tensor)):
+                anomaly_map, pred_score = predictions
+                pred_score = pred_score.detach()
+            else:
+                anomaly_map, pred_score = predictions
+                pred_score = pred_score.detach().numpy()
 
         anomaly_map = anomaly_map.squeeze()
 
