@@ -29,12 +29,8 @@ from torch import Tensor, nn
 from anomalib.core.model import AnomalyModule
 from anomalib.core.model.dynamic_module import DynamicBufferModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
+from anomalib.core.model.k_center_greedy import KCenterGreedy
 from anomalib.data.tiler import Tiler
-from anomalib.models.patchcore.utils.sampling import (
-    KCenterGreedy,
-    NearestNeighbors,
-    SparseRandomProjection,
-)
 
 
 class AnomalyMapGenerator:
@@ -127,7 +123,6 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
 
         self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
         self.feature_pooler = torch.nn.AvgPool2d(3, 1, 1)
-        self.nn_search = NearestNeighbors(n_neighbors=9)
         self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
 
         if apply_tiling:
@@ -170,7 +165,8 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         if self.training:
             output = embedding
         else:
-            patch_scores, _ = self.nn_search.kneighbors(embedding)
+            distances = torch.cdist(embedding, self.memory_bank, p=2.0)  # euclidean norm
+            patch_scores, _ = distances.topk(k=9, largest=False, dim=1)
 
             anomaly_map, anomaly_score = self.anomaly_map_generator(patch_scores=patch_scores)
             output = (anomaly_map, anomaly_score)
@@ -213,25 +209,18 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         embedding = embedding.permute(0, 2, 3, 1).reshape(-1, embedding_size)
         return embedding
 
-    @staticmethod
-    def subsample_embedding(embedding: torch.Tensor, sampling_ratio: float) -> torch.Tensor:
-        """Subsample embedding based on coreset sampling.
+    def subsample_embedding(self, embedding: torch.Tensor, sampling_ratio: float):
+        """Subsample embedding based on coreset sampling and store to memory.
 
         Args:
             embedding (np.ndarray): Embedding tensor from the CNN
             sampling_ratio (float): Coreset sampling ratio
-
-        Returns:
-            np.ndarray: Subsampled embedding whose dimensionality is reduced.
         """
-        # Random projection
-        random_projector = SparseRandomProjection(eps=0.9)
-        random_projector.fit(embedding)
 
         # Coreset Subsampling
-        sampler = KCenterGreedy(model=random_projector, embedding=embedding, sampling_ratio=sampling_ratio)
+        sampler = KCenterGreedy(embedding=embedding, sampling_ratio=sampling_ratio)
         coreset = sampler.sample_coreset()
-        return coreset
+        self.memory_bank = coreset
 
 
 class PatchcoreLightning(AnomalyModule):
@@ -294,10 +283,7 @@ class PatchcoreLightning(AnomalyModule):
         embedding = torch.vstack([output["embedding"] for output in outputs])
         sampling_ratio = self.hparams.model.coreset_sampling_ratio
 
-        embedding = self.model.subsample_embedding(embedding, sampling_ratio)
-
-        self.model.nn_search.fit(embedding)
-        self.model.memory_bank = embedding
+        self.model.subsample_embedding(embedding, sampling_ratio)
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Get batch of anomaly maps from input image batch.
@@ -311,7 +297,8 @@ class PatchcoreLightning(AnomalyModule):
             Dict[str, Any]: Image filenames, test images, GT and predicted label/masks
         """
 
-        anomaly_maps, _ = self.model(batch["image"])
+        anomaly_maps, anomaly_score = self.model(batch["image"])
         batch["anomaly_maps"] = anomaly_maps
+        batch["pred_scores"] = anomaly_score.unsqueeze(0)
 
         return batch
