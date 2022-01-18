@@ -16,7 +16,7 @@
 
 from itertools import product
 from math import ceil
-from typing import Optional, Sequence, SupportsIndex, Tuple, Union
+from typing import Optional, Sequence, Tuple, Union
 
 import torch
 import torchvision.transforms as T
@@ -161,7 +161,7 @@ class Tiler:
         stride: Union[int, Sequence],
         remove_border_count: int = 0,
         mode: str = "padding",
-        tile_count: SupportsIndex = 4,
+        tile_count: int = 4,
     ) -> None:
 
         self.tile_size_h, self.tile_size_w = self.__validate_size_type(tile_size)
