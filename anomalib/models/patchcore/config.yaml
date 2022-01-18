@@ -24,7 +24,7 @@ model:
   layers:
     - layer2
     - layer3
-  coreset_sampling_ratio: 0.1
+  coreset_sampling_ratio: 0.001
   num_neighbors: 9
   metric: auc
   weight_file: weights/model.ckpt

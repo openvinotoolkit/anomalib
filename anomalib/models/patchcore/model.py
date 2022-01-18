@@ -24,13 +24,17 @@ import torch.nn.functional as F
 import torchvision
 from kornia import gaussian_blur2d
 from omegaconf import ListConfig
-from sklearn import random_projection
 from torch import Tensor, nn
 
 from anomalib.core.model import AnomalyModule
 from anomalib.core.model.dynamic_module import DynamicBufferModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.data.tiler import Tiler
+from anomalib.models.patchcore.utils.sampling import (
+    KCenterGreedy,
+    NearestNeighbors,
+    SparseRandomProjection,
+)
 
 
 class AnomalyMapGenerator:
@@ -123,6 +127,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
 
         self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
         self.feature_pooler = torch.nn.AvgPool2d(3, 1, 1)
+        self.nn_search = NearestNeighbors(n_neighbors=9)
         self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
 
         if apply_tiling:
@@ -165,8 +170,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         if self.training:
             output = embedding
         else:
-            distances = torch.cdist(embedding, self.memory_bank, p=2.0)  # euclidean norm
-            patch_scores, _ = distances.topk(k=9, largest=False, dim=1)
+            patch_scores, _ = self.nn_search.kneighbors(embedding)
 
             anomaly_map, anomaly_score = self.anomaly_map_generator(patch_scores=patch_scores)
             output = (anomaly_map, anomaly_score)
@@ -209,48 +213,25 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         embedding = embedding.permute(0, 2, 3, 1).reshape(-1, embedding_size)
         return embedding
 
-    def create_coreset(
-        self,
-        embedding: Tensor,
-        sample_count: int = 500,
-        eps: float = 0.90,
-    ):
-        """Creates n subsampled coreset for given sample_set.
+    @staticmethod
+    def subsample_embedding(embedding: torch.Tensor, sampling_ratio: float) -> torch.Tensor:
+        """Subsample embedding based on coreset sampling.
 
         Args:
-            embedding (Tensor): (sample_count, d) tensor of patches.
-            sample_count (int): Number of patches to select.
-            eps (float): Parameter for spare projection aggression.
+            embedding (np.ndarray): Embedding tensor from the CNN
+            sampling_ratio (float): Coreset sampling ratio
+
+        Returns:
+            np.ndarray: Subsampled embedding whose dimensionality is reduced.
         """
-        # TODO: https://github.com/openvinotoolkit/anomalib/issues/54
-        #     Replace print statement with logger.
-        print("Fitting random projections...")
-        try:
-            transformer = random_projection.SparseRandomProjection(eps=eps)
-            sample_set = torch.tensor(transformer.fit_transform(embedding.cpu())).to(  # pylint: disable=not-callable
-                embedding.device
-            )
-        except ValueError:
-            # TODO: https://github.com/openvinotoolkit/anomalib/issues/54
-            #     Replace print statement with logger.
-            print("   Error: could not project vectors. Please increase `eps` value.")
+        # Random projection
+        random_projector = SparseRandomProjection(eps=0.9)
+        random_projector.fit(embedding)
 
-        select_idx = 0
-        last_item = sample_set[select_idx : select_idx + 1]
-        coreset_idx = [torch.tensor(select_idx).to(embedding.device)]  # pylint: disable=not-callable
-        min_distances = torch.linalg.norm(sample_set - last_item, dim=1, keepdims=True)
-
-        for _ in range(sample_count - 1):
-            distances = torch.linalg.norm(sample_set - last_item, dim=1, keepdims=True)  # broadcast
-            min_distances = torch.minimum(distances, min_distances)  # iterate
-            select_idx = torch.argmax(min_distances)  # select
-
-            last_item = sample_set[select_idx : select_idx + 1]
-            min_distances[select_idx] = 0
-            coreset_idx.append(select_idx)
-
-        coreset_idx = torch.stack(coreset_idx)
-        self.memory_bank = embedding[coreset_idx]
+        # Coreset Subsampling
+        sampler = KCenterGreedy(model=random_projector, embedding=embedding, sampling_ratio=sampling_ratio)
+        coreset = sampler.sample_coreset()
+        return coreset
 
 
 class PatchcoreLightning(AnomalyModule):
@@ -311,10 +292,12 @@ class PatchcoreLightning(AnomalyModule):
             outputs (List[Dict[str, np.ndarray]]): List of embedding vectors
         """
         embedding = torch.vstack([output["embedding"] for output in outputs])
-
         sampling_ratio = self.hparams.model.coreset_sampling_ratio
 
-        self.model.create_coreset(embedding=embedding, sample_count=int(sampling_ratio * embedding.shape[0]), eps=0.9)
+        embedding = self.model.subsample_embedding(embedding, sampling_ratio)
+
+        self.model.nn_search.fit(embedding)
+        self.model.memory_bank = embedding
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Get batch of anomaly maps from input image batch.
@@ -328,8 +311,7 @@ class PatchcoreLightning(AnomalyModule):
             Dict[str, Any]: Image filenames, test images, GT and predicted label/masks
         """
 
-        anomaly_maps, anomaly_score = self.model(batch["image"])
+        anomaly_maps, _ = self.model(batch["image"])
         batch["anomaly_maps"] = anomaly_maps
-        batch["pred_scores"] = anomaly_score.unsqueeze(0)
 
         return batch
