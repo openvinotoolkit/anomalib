@@ -28,7 +28,7 @@ model:
   num_neighbors: 9
   metric: auc
   weight_file: weights/model.ckpt
-  normalize_scores: false # currently not supported for this model
+  normalization_method: min_max # options: [null, min_max, cdf]
   threshold:
     image_default: 0
     pixel_default: 0

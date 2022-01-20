@@ -18,7 +18,7 @@ model:
   confidence_threshold: 0.5
   pre_processing: scale
   n_components: 16
-  normalize_scores: false # currently not supported for this model
+  normalization_method: min_max # options: [null, min_max, cdf]
   threshold:
     image_default: 0
     adaptive: true
