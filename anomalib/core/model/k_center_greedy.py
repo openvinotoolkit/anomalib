@@ -9,8 +9,9 @@ from typing import List, Optional
 
 import torch
 import torch.nn.functional as F
-from sklearn import random_projection
 from torch import Tensor
+
+from anomalib.core.model.random_projection import SparseRandomProjection
 
 
 class KCenterGreedy:
@@ -33,7 +34,7 @@ class KCenterGreedy:
     def __init__(self, embedding: Tensor, sampling_ratio: float) -> None:
         self.embedding = embedding
         self.coreset_size = int(embedding.shape[0] * sampling_ratio)
-        self.model = random_projection.SparseRandomProjection(eps=0.9)
+        self.model = SparseRandomProjection(eps=0.9)
 
         self.features: Tensor
         self.min_distances: Tensor = None
@@ -90,9 +91,8 @@ class KCenterGreedy:
             selected_idxs = []
 
         if self.embedding.ndim == 2:
-            self.features = torch.tensor(  # pylint: disable=not-callable
-                self.model.fit_transform(self.embedding.cpu())
-            ).to(self.embedding.device)
+            self.model.fit(self.embedding)
+            self.features = self.model.transform(self.embedding)
             self.reset_distances()
         else:
             self.features = self.embedding.reshape(self.embedding.shape[0], -1)
