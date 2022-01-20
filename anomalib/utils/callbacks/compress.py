@@ -15,11 +15,12 @@
 # and limitations under the License.
 
 import os
-from typing import Tuple
+from typing import Tuple, cast
 
 from pytorch_lightning import Callback, LightningModule
 
-from anomalib.utils.optimize import export_convert
+from anomalib.components.anomaly_models.anomaly_module import AnomalyModule
+from anomalib.deploy.optimize import export_convert
 
 
 class CompressModelCallback(Callback):
@@ -46,4 +47,10 @@ class CompressModelCallback(Callback):
         """
         os.makedirs(self.dirpath, exist_ok=True)
         onnx_path = os.path.join(self.dirpath, self.filename + ".onnx")
-        export_convert(model=pl_module.model, input_size=self.input_size, onnx_path=onnx_path, export_path=self.dirpath)
+        pl_module = cast(AnomalyModule, pl_module)
+        export_convert(
+            model=pl_module,
+            input_size=self.input_size,
+            onnx_path=onnx_path,
+            export_path=self.dirpath,
+        )
