@@ -40,7 +40,7 @@ class AnomalyMapGenerator:
         self,
         input_size: Union[ListConfig, Tuple],
         sigma: int = 4,
-    ):
+    ) -> None:
         self.input_size = input_size
         self.sigma = sigma
 
@@ -113,7 +113,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         apply_tiling: bool = False,
         tile_size: Optional[Tuple[int, int]] = None,
         tile_stride: Optional[int] = None,
-    ):
+    ) -> None:
         super().__init__()
 
         self.backbone = getattr(torchvision.models, backbone)
@@ -209,7 +209,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         embedding = embedding.permute(0, 2, 3, 1).reshape(-1, embedding_size)
         return embedding
 
-    def subsample_embedding(self, embedding: torch.Tensor, sampling_ratio: float):
+    def subsample_embedding(self, embedding: torch.Tensor, sampling_ratio: float) -> None:
         """Subsample embedding based on coreset sampling and store to memory.
 
         Args:
@@ -235,7 +235,7 @@ class PatchcoreLightning(AnomalyModule):
         apply_tiling (bool, optional): Apply tiling. Defaults to False.
     """
 
-    def __init__(self, hparams):
+    def __init__(self, hparams) -> None:
         super().__init__(hparams)
 
         self.model = PatchcoreModel(
@@ -248,7 +248,7 @@ class PatchcoreLightning(AnomalyModule):
         )
         self.automatic_optimization = False
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> None:
         """Configure optimizers.
 
         Returns:
