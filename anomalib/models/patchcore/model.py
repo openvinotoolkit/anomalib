@@ -165,9 +165,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         if self.training:
             output = embedding
         else:
-            distances = torch.cdist(embedding, self.memory_bank, p=2.0)  # euclidean norm
-            patch_scores, _ = distances.topk(k=9, largest=False, dim=1)
-
+            patch_scores = self.nearest_neighbors(embedding=embedding, n_neighbors=9)
             anomaly_map, anomaly_score = self.anomaly_map_generator(patch_scores=patch_scores)
             output = (anomaly_map, anomaly_score)
 
@@ -221,6 +219,20 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         sampler = KCenterGreedy(embedding=embedding, sampling_ratio=sampling_ratio)
         coreset = sampler.sample_coreset()
         self.memory_bank = coreset
+
+    def nearest_neighbors(self, embedding: Tensor, n_neighbors: int = 9) -> Tensor:
+        """Nearest Neighbours using brute force method and euclidean norm.
+
+        Args:
+            embedding (Tensor): Features to compare the distance with the memory bank.
+            n_neighbors (int): Number of neighbors to look at
+
+        Returns:
+            Tensor: Patch scores.
+        """
+        distances = torch.cdist(embedding, self.memory_bank, p=2.0)  # euclidean norm
+        patch_scores, _ = distances.topk(k=n_neighbors, largest=False, dim=1)
+        return patch_scores
 
 
 class PatchcoreLightning(AnomalyModule):
