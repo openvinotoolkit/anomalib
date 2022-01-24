@@ -1,4 +1,4 @@
-"""Test models."""
+"""Test dataset, tiler and transforms."""
 
 # Copyright (C) 2020 Intel Corporation
 #

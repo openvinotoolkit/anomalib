@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Union
@@ -43,6 +44,9 @@ def get_model_config(
     return model_config
 
 
+@pytest.mark.skipif(
+    os.environ["NIGHTLY_BUILD"] == "FALSE", reason="Skipping the test as it is not running nightly build."
+)
 class TestInferencers:
     @pytest.mark.parametrize(
         "model_name",
