@@ -7,7 +7,7 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 from anomalib.config import get_configurable_parameters
 from anomalib.core.callbacks.compress import CompressModelCallback
-from tests.pre_merge.core.callbacks.compress_callback.dummy_lightning_model import (
+from tests.nightly.core.callbacks.compress_callback.dummy_lightning_model import (
     DummyLightningModule,
     FakeDataModule,
 )
