@@ -60,7 +60,12 @@ def setup(
     config.project.seed = 1234
     config.dataset.category = category
     config.dataset.path = dataset_path
-    config.model.weight_file = weight_file if weight_file != "" else None  # add model weights to the config
+
+    # If weight file is empty, remove the key from config
+    if "weight_file" in config.model.keys() and weight_file == "":
+        config.model.pop("weight_file")
+    else:
+        config.model.weight_file = weight_file
 
     if nncf:
         config.optimization.nncf.apply = True

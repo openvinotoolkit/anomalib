@@ -1,6 +1,7 @@
 import os
 import tempfile
 
+import pytest
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
@@ -12,6 +13,9 @@ from tests.pre_merge.core.callbacks.compress_callback.dummy_lightning_model impo
 )
 
 
+@pytest.mark.skipif(
+    os.environ["NIGHTLY_BUILD"] == "FALSE", reason="Skipping the test as it is not running nightly build."
+)
 def test_compress_model_callback():
     """Tests if an optimized model is created."""
 

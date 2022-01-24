@@ -21,6 +21,9 @@ def get_dummy_logger(config, tempdir):
     return logger
 
 
+@pytest.mark.skipif(
+    os.environ["NIGHTLY_BUILD"] == "FALSE", reason="Skipping the test as it is not running nightly build."
+)
 @pytest.mark.parametrize("dataset", ["segmentation"])
 def test_add_images(dataset):
     """Tests if tensorboard logs are generated."""
