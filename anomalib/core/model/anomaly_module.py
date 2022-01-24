@@ -25,6 +25,7 @@ from torchmetrics import F1, MetricCollection
 
 from anomalib.core.metrics import (
     AUROC,
+    AUPRO,
     AdaptiveThreshold,
     AnomalyScoreDistribution,
     MinMax,
@@ -59,8 +60,10 @@ class AnomalyModule(pl.LightningModule, ABC):
 
         # metrics
         auroc = AUROC(num_classes=1, pos_label=1, compute_on_step=False)
+        aupro = AUPRO(compute_on_step=False)
         f1_score = F1(num_classes=1, compute_on_step=False)
         self.image_metrics = MetricCollection([auroc, f1_score], prefix="image_").cpu()
+        self.pixel_pro_metrics = MetricCollection([aupro], prefix="pixel_pro_").cpu()
         self.pixel_metrics = self.image_metrics.clone(prefix="pixel_").cpu()
 
     def forward(self, batch):  # pylint: disable=arguments-differ
@@ -130,7 +133,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         """
         if self.hparams.model.threshold.adaptive:
             self._compute_adaptive_threshold(outputs)
-        self._collect_outputs(self.image_metrics, self.pixel_metrics, outputs)
+        self._collect_outputs(self.image_metrics, self.pixel_metrics, self.pixel_pro_metrics, outputs)
         self._log_metrics()
 
     def test_epoch_end(self, outputs):
@@ -139,11 +142,11 @@ class AnomalyModule(pl.LightningModule, ABC):
         Args:
             outputs: Batch of outputs from the validation step
         """
-        self._collect_outputs(self.image_metrics, self.pixel_metrics, outputs)
+        self._collect_outputs(self.image_metrics, self.pixel_metrics, self.pixel_pro_metrics, outputs)
         self._log_metrics()
 
     def _compute_adaptive_threshold(self, outputs):
-        self._collect_outputs(self.image_threshold, self.pixel_threshold, outputs)
+        self._collect_outputs(self.image_threshold, self.pixel_threshold, self.pixel_pro_metrics, outputs)
         self.image_threshold.compute()
         if "mask" in outputs[0].keys() and "anomaly_maps" in outputs[0].keys():
             self.pixel_threshold.compute()
@@ -153,13 +156,15 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.image_metrics.F1.threshold = self.image_threshold.value.item()
         self.pixel_metrics.F1.threshold = self.pixel_threshold.value.item()
 
-    def _collect_outputs(self, image_metric, pixel_metric, outputs):
+    def _collect_outputs(self, image_metric, pixel_metric, pixel_pro_metric, outputs):
         for output in outputs:
             image_metric.cpu()
             image_metric.update(output["pred_scores"], output["label"].int())
             if "mask" in output.keys() and "anomaly_maps" in output.keys():
                 pixel_metric.cpu()
                 pixel_metric.update(output["anomaly_maps"].flatten(), output["mask"].flatten().int())
+                pixel_pro_metric.cpu()
+                pixel_pro_metric.update(output["anomaly_maps"].squeeze(0), output["mask"])
 
     def _post_process(self, outputs):
         """Compute labels based on model predictions."""
@@ -179,3 +184,4 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.log_dict(self.image_metrics)
         if self.hparams.dataset.task == "segmentation":
             self.log_dict(self.pixel_metrics)
+            self.log_dict(self.pixel_pro_metrics)
