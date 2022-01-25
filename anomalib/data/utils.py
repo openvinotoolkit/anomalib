@@ -49,11 +49,11 @@ def get_image_filenames(path: Union[str, Path]) -> List[str]:
     return image_filenames
 
 
-def read_image(path: str) -> np.ndarray:
+def read_image(path: Union[str, Path]) -> np.ndarray:
     """Read image from disk in RGB format.
 
     Args:
-        path (str): path to the image file
+        path (str, Path): path to the image file
 
     Example:
         >>> image = read_image("test_image.jpg")
@@ -61,6 +61,7 @@ def read_image(path: str) -> np.ndarray:
     Returns:
         image as numpy array
     """
+    path = path if isinstance(path, str) else str(path)
     image = cv2.imread(path)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 

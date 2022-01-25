@@ -50,7 +50,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.callbacks: List[Callback]
 
         self.image_threshold = AdaptiveThreshold(self.hparams.model.threshold.image_default).cpu()
-        self.pixel_threshold = AdaptiveThreshold(self.hparams.model.threshold.pixel_default)
+        self.pixel_threshold = AdaptiveThreshold(self.hparams.model.threshold.pixel_default).cpu()
 
         self.training_distribution = AnomalyScoreDistribution().cpu()
         self.min_max = MinMax().cpu()
