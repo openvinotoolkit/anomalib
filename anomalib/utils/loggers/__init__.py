@@ -23,7 +23,7 @@ from omegaconf.listconfig import ListConfig
 from pytorch_lightning.loggers.base import LightningLoggerBase
 
 from .tensorboard import AnomalibTensorBoardLogger
-from .wandb_logger import AnomalibWandbLogger
+from .wandb import AnomalibWandbLogger
 
 __all__ = ["AnomalibTensorBoardLogger", "get_logger", "AnomalibWandbLogger"]
 AVAILABLE_LOGGERS = ["tensorboard", "wandb"]

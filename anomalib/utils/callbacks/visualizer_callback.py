@@ -28,7 +28,7 @@ from anomalib.post_processing.post_process import compute_mask, superimpose_anom
 from anomalib.post_processing.visualizer import Visualizer
 from anomalib.pre_processing.transforms import Denormalize
 from anomalib.utils import loggers
-from anomalib.utils.loggers.wandb_logger import AnomalibWandbLogger
+from anomalib.utils.loggers.wandb import AnomalibWandbLogger
 
 
 class VisualizerCallback(Callback):
