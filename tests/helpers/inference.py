@@ -19,7 +19,7 @@ from typing import Dict, Iterable, List, Tuple
 
 import numpy as np
 
-from anomalib.core.model import AnomalyModule
+from anomalib.components.anomaly_models import AnomalyModule
 
 
 class MockImageLoader:
