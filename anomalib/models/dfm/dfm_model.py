@@ -19,8 +19,8 @@ import math
 import torch
 from torch import Tensor, nn
 
-from anomalib.components.anomaly_models.dynamic_module import DynamicBufferModule
-from anomalib.components.dimensionality_reduction.pca import PCA
+from anomalib.models.components.anomaly_models.dynamic_module import DynamicBufferModule
+from anomalib.models.components.dimensionality_reduction.pca import PCA
 
 
 class SingleClassGaussian(DynamicBufferModule):

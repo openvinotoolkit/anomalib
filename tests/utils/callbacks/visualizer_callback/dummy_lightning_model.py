@@ -8,7 +8,7 @@ from omegaconf.listconfig import ListConfig
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
 
-from anomalib.components.anomaly_models import AnomalyModule
+from anomalib.models.components.anomaly_models import AnomalyModule
 from anomalib.utils.callbacks.visualizer_callback import VisualizerCallback
 
 

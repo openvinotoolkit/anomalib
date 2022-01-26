@@ -20,7 +20,7 @@ from typing import Optional
 import torch
 from torch import Tensor
 
-from anomalib.components.anomaly_models.dynamic_module import DynamicBufferModule
+from anomalib.models.components.anomaly_models.dynamic_module import DynamicBufferModule
 
 
 class GaussianKDE(DynamicBufferModule):

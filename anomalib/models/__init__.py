@@ -21,7 +21,7 @@ from typing import List, Union
 from omegaconf import DictConfig, ListConfig
 from torch import load
 
-from anomalib.components.anomaly_models import AnomalyModule
+from anomalib.models.components.anomaly_models import AnomalyModule
 
 
 def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:

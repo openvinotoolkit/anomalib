@@ -26,10 +26,10 @@ from kornia import gaussian_blur2d
 from omegaconf import ListConfig
 from torch import Tensor, nn
 
-from anomalib.components.anomaly_models import AnomalyModule
-from anomalib.components.anomaly_models.dynamic_module import DynamicBufferModule
-from anomalib.components.feature_extractors import FeatureExtractor
-from anomalib.components.sampling import KCenterGreedy
+from anomalib.models.components.anomaly_models import AnomalyModule
+from anomalib.models.components.anomaly_models.dynamic_module import DynamicBufferModule
+from anomalib.models.components.feature_extractors import FeatureExtractor
+from anomalib.models.components.sampling import KCenterGreedy
 from anomalib.pre_processing.tiler import Tiler
 
 

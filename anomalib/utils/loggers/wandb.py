@@ -17,10 +17,11 @@
 from typing import Any, List, Optional, Union
 
 import numpy as np
-import wandb
 from matplotlib.figure import Figure
 from pytorch_lightning.loggers.wandb import WandbLogger
 from pytorch_lightning.utilities import rank_zero_only
+
+import wandb
 
 from .base import ImageLoggerBase
 

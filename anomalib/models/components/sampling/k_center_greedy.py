@@ -11,7 +11,7 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor
 
-from anomalib.components.dimensionality_reduction.random_projection import (
+from anomalib.models.components.dimensionality_reduction.random_projection import (
     SparseRandomProjection,
 )
 

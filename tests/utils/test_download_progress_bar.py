@@ -18,7 +18,7 @@ import os
 import tempfile
 from urllib.request import urlretrieve
 
-from anomalib.utils.download_progress_bar import DownloadProgressBar
+from anomalib.data.utils.download_progress_bar import DownloadProgressBar
 
 
 def test_output_on_download(capfd):

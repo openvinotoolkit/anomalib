@@ -26,8 +26,10 @@ from omegaconf import ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
 from torch import Tensor, nn, optim
 
-from anomalib.components.anomaly_models import AnomalyModule
-from anomalib.components.feature_extractors.feature_extractor import FeatureExtractor
+from anomalib.models.components.anomaly_models import AnomalyModule
+from anomalib.models.components.feature_extractors.feature_extractor import (
+    FeatureExtractor,
+)
 from anomalib.pre_processing.tiler import Tiler
 
 __all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel", "StfpmLightning"]

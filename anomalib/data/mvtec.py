@@ -39,8 +39,8 @@ from torch.utils.data import DataLoader
 from torch.utils.data.dataset import Dataset
 from torchvision.datasets.folder import VisionDataset
 
+from anomalib.data.utils.download_progress_bar import DownloadProgressBar
 from anomalib.pre_processing import PreProcessor
-from anomalib.utils.download_progress_bar import DownloadProgressBar
 from anomalib.utils.image import read_image
 
 logger = logging.getLogger(name="Dataset: MVTec")

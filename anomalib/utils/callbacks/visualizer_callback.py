@@ -23,7 +23,7 @@ from pytorch_lightning import Callback
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from skimage.segmentation import mark_boundaries
 
-from anomalib.components.anomaly_models import AnomalyModule
+from anomalib.models.components.anomaly_models import AnomalyModule
 from anomalib.post_processing.post_process import compute_mask, superimpose_anomaly_map
 from anomalib.post_processing.visualizer import Visualizer
 from anomalib.pre_processing.transforms import Denormalize
