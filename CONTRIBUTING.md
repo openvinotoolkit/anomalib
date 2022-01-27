@@ -30,7 +30,8 @@ We actively welcome your pull requests:
   3. If you've changed APIs, update the documentation.
   4. Ensure the test suite passes.
   5. Make sure your code lints.
-  6. Issue that pull request!
+  6. Make sure you own the code you're submitting or that you obtain it from a source with an appropriate license.
+  7. Issue that pull request!
 
 To setup the development environment, you will need to install development requirements.
 ```
