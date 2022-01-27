@@ -8,9 +8,9 @@ lxml==4.6.5
 matplotlib==3.4.3
 networkx~=2.5
 nncf==2.0.0
-numpy~=1.19.5
+numpy==1.21.5
 omegaconf==2.1.1
-pillow==8.3.2
+pillow==9.0.0
 pytorch-lightning==1.5.9
 torch==1.8.1
 torchvision==0.9.1
