@@ -138,8 +138,16 @@ class TorchInferencer(Inferencer):
             anomaly_map = predictions
             pred_score = anomaly_map.reshape(-1).max()
         else:
-            anomaly_map, pred_score = predictions
-            pred_score = pred_score.detach().cpu().numpy()
+            # NOTE: Patchcore `forward`` returns heatmap and score.
+            #   We need to add the following check to ensure the variables
+            #   are properly assigned. Without this check, the code
+            #   throws an error regarding type mismatch torch vs np.
+            if isinstance(predictions[1], (Tensor)):
+                anomaly_map, pred_score = predictions
+                pred_score = pred_score.detach()
+            else:
+                anomaly_map, pred_score = predictions
+                pred_score = pred_score.detach().numpy()
 
         anomaly_map = anomaly_map.squeeze()
 
