@@ -21,6 +21,7 @@ def test_normalizer():
     config = get_configurable_parameters(model_config_path="anomalib/models/padim/config.yaml")
     config.dataset.path = get_dataset_path(config.dataset.path)
     config.model.threshold.adaptive = True
+    config.project.log_images_to = []
 
     # run without normalization
     config.model.normalization_method = "none"
