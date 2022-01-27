@@ -11,8 +11,10 @@ def run_train_test(config):
     model = get_model(config)
     datamodule = get_datamodule(config)
     callbacks = get_callbacks(config)
+
     trainer = Trainer(**config.trainer, callbacks=callbacks)
     trainer.fit(model=model, datamodule=datamodule)
+    trainer.validate(model=model, datamodule=datamodule)
     results = trainer.test(model=model, datamodule=datamodule)
     return results
 
