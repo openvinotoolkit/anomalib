@@ -41,7 +41,7 @@ trainer:
   check_val_every_n_epoch: 2 # Don't validate before extracting features.
   checkpoint_callback: true
   default_root_dir: null
-  deterministic: true
+  deterministic: false
   fast_dev_run: false
   gpus: 1
   gradient_clip_val: 0
