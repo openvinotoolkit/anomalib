@@ -60,7 +60,7 @@ def train():
     trainer = Trainer(**config.trainer, logger=logger, callbacks=callbacks)
     trainer.fit(model=model, datamodule=datamodule)
     # TODO: https://github.com/openvinotoolkit/anomalib/issues/62
-    trainer.validate(model=model, datamodule=datamodule)
+    # trainer.validate(model=model, datamodule=datamodule)
     trainer.test(model=model, datamodule=datamodule)
 
 
