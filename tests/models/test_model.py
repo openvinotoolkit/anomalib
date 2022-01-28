@@ -85,6 +85,7 @@ class TestModel:
         config.dataset.category = category
         config.dataset.path = dataset_path
         config.model.weight_file = "weights/model.ckpt"  # add model weights to the config
+        config.project.log_images_to = []
 
         if not use_mvtec:
             config.dataset.category = "shapes"
@@ -150,12 +151,12 @@ class TestModel:
         ["model_name", "nncf"],
         [
             ("padim", False),
-            # ("dfkde", False),
-            # # ("dfm", False),  # skip dfm test
-            # ("stfpm", False),
-            # ("stfpm", True),
-            # ("patchcore", False),
-            # ("cflow", False),
+            ("dfkde", False),
+            # ("dfm", False),  # skip dfm test
+            ("stfpm", False),
+            ("stfpm", True),
+            ("patchcore", False),
+            ("cflow", False),
         ],
     )
     @pytest.mark.flaky(max_runs=3)

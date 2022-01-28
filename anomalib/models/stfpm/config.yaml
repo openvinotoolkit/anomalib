@@ -75,7 +75,7 @@ trainer:
   auto_scale_batch_size: false
   auto_select_gpus: false
   benchmark: false
-  check_val_every_n_epoch: 2
+  check_val_every_n_epoch: 1
   checkpoint_callback: true
   default_root_dir: null
   deterministic: false
