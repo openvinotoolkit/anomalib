@@ -4,7 +4,7 @@ dataset:
   path: ./datasets/MVTec
   url: ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/mvtec_anomaly_detection.tar.xz
   task: segmentation
-  category: carpet
+  category: bottle
   label_format: None
   tiling:
     apply: false
