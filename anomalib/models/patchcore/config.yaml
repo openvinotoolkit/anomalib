@@ -50,7 +50,7 @@ trainer:
   auto_scale_batch_size: false
   auto_select_gpus: false
   benchmark: false
-  check_val_every_n_epoch: 2 # Don't validate before extracting features.
+  check_val_every_n_epoch: 1 # Don't validate before extracting features.
   checkpoint_callback: true
   default_root_dir: null
   deterministic: false
@@ -85,6 +85,6 @@ trainer:
   terminate_on_nan: false
   tpu_cores: null
   track_grad_norm: -1
-  val_check_interval: 2.0 # Don't validate before extracting features.
+  val_check_interval: 1.0 # Don't validate before extracting features.
   weights_save_path: null
   weights_summary: top

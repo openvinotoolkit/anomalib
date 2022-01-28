@@ -303,20 +303,20 @@ class PadimLightning(AnomalyModule):
         """Training Step of PADIM. For each batch, hierarchical features are extracted from the CNN.
 
         Args:
-            batch (Dict[str,Tensor]): Input batch
+            batch (Dict[str, Any]): Batch containing image filename, image, label and mask
             _batch_idx: Index of the batch.
 
         Returns:
             Hierarchical feature map
         """
         self.model.feature_extractor.eval()
-        embeddings = self.model(batch["image"])
+        embedding = self.model(batch["image"])
 
         # NOTE: `self.embedding` appends each batch embedding to
         #   store the training set embedding. We manually append these
         #   values mainly due to the new order of hooks introduced after PL v1.4.0
         #   https://github.com/PyTorchLightning/pytorch-lightning/pull/7357
-        self.embeddings.append(embeddings.cpu())
+        self.embeddings.append(embedding.cpu())
 
     def on_validation_start(self) -> None:
         """Fit a Gaussian to the embedding collected from the training set."""
