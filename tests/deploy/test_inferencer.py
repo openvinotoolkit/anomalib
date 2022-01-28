@@ -52,7 +52,7 @@ class TestInferencers:
             "patchcore",
         ],
     )
-    @TestDataset(num_train=200, num_test=1, path=get_dataset_path(), use_mvtec=False)
+    @TestDataset(num_train=20, num_test=1, path=get_dataset_path(), use_mvtec=False)
     def test_torch_inference(self, model_name: str, category: str = "shapes", path: str = "./datasets/MVTec"):
         """Tests Torch inference.
         Model is not trained as this checks that the inferencers are working.
