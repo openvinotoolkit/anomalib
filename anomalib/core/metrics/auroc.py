@@ -1,4 +1,5 @@
 """Implementation of AUROC metric based on TorchMetrics."""
+import torch
 from torch import Tensor
 from torchmetrics import ROC
 from torchmetrics.functional import auc
@@ -14,4 +15,6 @@ class AUROC(ROC):
             Value of the AUROC metric
         """
         fpr, tpr, _thresholds = super().compute()
+        if not (torch.all(fpr.diff() <= 0) or torch.all(fpr.diff() >= 0)):
+            return auc(fpr, tpr, reorder=True)  # only reorder if fpr is not increasing or decreasing
         return auc(fpr, tpr)
