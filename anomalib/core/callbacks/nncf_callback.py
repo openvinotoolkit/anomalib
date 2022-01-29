@@ -77,7 +77,7 @@ class NNCFCallback(Callback):
         self.comp_ctrl: Optional[CompressionAlgorithmController] = None
         self.compression_scheduler: CompressionScheduler
 
-    def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, _stage: Optional[str] = None) -> None:
+    def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: Optional[str] = None) -> None:
         """Call when fit or test begins.
 
         Takes the pytorch model and wraps it using the compression controller so that it is ready for nncf fine-tuning.
