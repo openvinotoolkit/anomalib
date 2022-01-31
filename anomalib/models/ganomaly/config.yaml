@@ -7,8 +7,8 @@ dataset:
   task: classification
   label_format: None
   tiling:
-    apply: false
-    tile_size: null
+    apply: true
+    tile_size: 64
     stride: null
     remove_border_count: 0
     use_random_tiling: False

@@ -1,4 +1,7 @@
-"""Torch models defining encoder, decoder, Generator and Discriminator."""
+"""Torch models defining encoder, decoder, Generator and Discriminator.
+
+Code adapted from https://github.com/samet-akcay/ganomaly.
+"""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -45,47 +48,57 @@ class Encoder(nn.Module):
 
         assert input_size % 16 == 0, "Input size should be a multiple of 16"  # Why?
 
-        self.model = nn.Sequential()
+        self.input_layers = nn.Sequential()
 
-        self.model.add_module(
+        self.input_layers.add_module(
             f"initial-conv-{num_input_channels}-{n_features}",
             nn.Conv2d(num_input_channels, n_features, kernel_size=4, stride=2, padding=1, bias=False),
         )
-        self.model.add_module(f"initial-relu-{n_features}", nn.LeakyReLU(0.2, inplace=True))
+        self.input_layers.add_module(f"initial-relu-{n_features}", nn.LeakyReLU(0.2, inplace=True))
 
         # Extra Layers
+        self.extra_layers = nn.Sequential()
+
         for layer in range(extra_layers):
-            self.model.add_module(
+            self.extra_layers.add_module(
                 f"extra-layers-{layer}-{n_features}-conv",
                 nn.Conv2d(n_features, n_features, kernel_size=3, stride=1, padding=1, bias=False),
             )
-            self.model.add_module(f"extra-layers-{layer}-{n_features}-batchnorm", nn.BatchNorm2d(n_features))
-            self.model.add_module(f"extra-layers-{layer}-{n_features}-relu", nn.LeakyReLU(0.2, inplace=True))
+            self.extra_layers.add_module(f"extra-layers-{layer}-{n_features}-batchnorm", nn.BatchNorm2d(n_features))
+            self.extra_layers.add_module(f"extra-layers-{layer}-{n_features}-relu", nn.LeakyReLU(0.2, inplace=True))
 
         # Create pyramid features to reach latent vector
+        self.pyramid_features = nn.Sequential()
         input_size = input_size // 2
         while input_size > 4:
             in_features = n_features
             out_features = n_features * 2
-            self.model.add_module(
+            self.pyramid_features.add_module(
                 f"pyramid-{in_features}-{out_features}-conv",
                 nn.Conv2d(in_features, out_features, kernel_size=4, stride=2, padding=1, bias=False),
             )
-            self.model.add_module(f"pyramid-{out_features}-batchnorm", nn.BatchNorm2d(out_features))
-            self.model.add_module(f"pyramid-{out_features}-relu", nn.LeakyReLU(0.2, inplace=True))
+            self.pyramid_features.add_module(f"pyramid-{out_features}-batchnorm", nn.BatchNorm2d(out_features))
+            self.pyramid_features.add_module(f"pyramid-{out_features}-relu", nn.LeakyReLU(0.2, inplace=True))
             n_features = out_features
             input_size = input_size // 2
 
         # Final conv
         if add_final_conv_layer:
-            self.model.add_module(
-                f"final-{n_features}-{1}-conv",
-                nn.Conv2d(n_features, latent_vec_size, kernel_size=4, stride=1, padding=0, bias=False),
+            self.final_conv_layer = nn.Conv2d(
+                n_features, latent_vec_size, kernel_size=4, stride=1, padding=0, bias=False
             )
 
     def forward(self, input_tensor: Tensor):
         """Return latent vectors."""
-        return self.model(input_tensor)
+
+        output = self.input_layers(input_tensor)
+        if len(self.extra_layers) > 0:
+            output = self.extra_layers(output)
+        output = self.pyramid_features(output)
+        if self.final_conv_layer is not None:
+            output = self.final_conv_layer(output)
+
+        return output
 
 
 class Decoder(nn.Module):
@@ -106,55 +119,64 @@ class Decoder(nn.Module):
         super().__init__()
         assert input_size % 16 == 0, "Input size should be a multiple of 16"  # Why again?
 
-        self.model = nn.Sequential()
+        self.latent_input = nn.Sequential()
 
         # Calculate input channel size to recreate inverse pyramid
         exp_factor = int(math.log(input_size // 4, 2)) - 1
         n_input_features = n_features * (2 ** exp_factor)
 
         # CNN layer for latent vector input
-        self.model.add_module(
+        self.latent_input.add_module(
             f"initial-{latent_vec_size}-{n_input_features}-convt",
             nn.ConvTranspose2d(latent_vec_size, n_input_features, kernel_size=4, stride=1, padding=0, bias=False),
         )
-        self.model.add_module(f"initial-{n_input_features}-batchnorm", nn.BatchNorm2d(n_input_features))
-        self.model.add_module(f"initial-{n_input_features}-relu", nn.ReLU(True))
+        self.latent_input.add_module(f"initial-{n_input_features}-batchnorm", nn.BatchNorm2d(n_input_features))
+        self.latent_input.add_module(f"initial-{n_input_features}-relu", nn.ReLU(True))
 
         # Create inverse pyramid
+        self.inverse_pyramid = nn.Sequential()
         input_size = input_size // 2
         while input_size > 4:
             in_features = n_input_features
             out_features = n_input_features // 2
-            self.model.add_module(
+            self.inverse_pyramid.add_module(
                 f"pyramid-{in_features}-{out_features}-convt",
                 nn.ConvTranspose2d(in_features, out_features, kernel_size=4, stride=2, padding=1, bias=False),
             )
-            self.model.add_module(f"pyramid-{out_features}-batchnorm", nn.BatchNorm2d(out_features))
-            self.model.add_module(f"pyramid-{out_features}-relu", nn.ReLU(True))
+            self.inverse_pyramid.add_module(f"pyramid-{out_features}-batchnorm", nn.BatchNorm2d(out_features))
+            self.inverse_pyramid.add_module(f"pyramid-{out_features}-relu", nn.ReLU(True))
             n_input_features = out_features
             input_size = input_size // 2
 
         # Extra Layers
+        self.extra_layers = nn.Sequential()
         for layer in range(extra_layers):
-            self.model.add_module(
+            self.extra_layers.add_module(
                 f"extra-layers-{layer}-{n_input_features}-conv",
                 nn.Conv2d(n_input_features, n_input_features, kernel_size=3, stride=1, padding=1, bias=False),
             )
-            self.model.add_module(
+            self.extra_layers.add_module(
                 f"extra-layers-{layer}-{n_input_features}-batchnorm", nn.BatchNorm2d(n_input_features)
             )
-            self.model.add_module(f"extra-layers-{layer}-{n_input_features}-relu", nn.LeakyReLU(0.2, inplace=True))
+            self.extra_layers.add_module(
+                f"extra-layers-{layer}-{n_input_features}-relu", nn.LeakyReLU(0.2, inplace=True)
+            )
 
         # Final layers
-        self.model.add_module(
+        self.final_layers = nn.Sequential()
+        self.final_layers.add_module(
             f"final-{n_input_features}-{num_input_channels}-convt",
             nn.ConvTranspose2d(n_input_features, num_input_channels, kernel_size=4, stride=2, padding=1, bias=False),
         )
-        self.model.add_module(f"final-{num_input_channels}-tanh", nn.Tanh())
+        self.final_layers.add_module(f"final-{num_input_channels}-tanh", nn.Tanh())
 
     def forward(self, input_tensor):
         """Return generated image."""
-        output = self.model(input_tensor)
+        output = self.latent_input(input_tensor)
+        output = self.inverse_pyramid(output)
+        if len(self.extra_layers) > 0:
+            output = self.extra_layers(output)
+        output = self.final_layers(output)
         return output
 
 
@@ -173,7 +195,12 @@ class Discriminator(nn.Module):
     def __init__(self, input_size: int, num_input_channels: int, n_features: int, extra_layers: int = 0):
         super().__init__()
         encoder = Encoder(input_size, 1, num_input_channels, n_features, extra_layers)
-        layers = list(encoder.model.children())
+        layers = []
+        for block in encoder.children():
+            if isinstance(block, nn.Sequential):
+                layers.extend(list(block.children()))
+            else:
+                layers.append(block)
 
         self.features = nn.Sequential(*layers[:-1])
         self.classifier = nn.Sequential(layers[-1])
