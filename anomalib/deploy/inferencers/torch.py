@@ -24,7 +24,7 @@ from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
 from anomalib import AnomalyModule
-from anomalib.deploy import get_model_metadata
+from anomalib.deploy.optimize import get_model_metadata
 from anomalib.models import get_model
 from anomalib.pre_processing import PreProcessor
 
