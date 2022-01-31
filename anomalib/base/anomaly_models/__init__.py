@@ -1,4 +1,4 @@
-"""Functions for Inference and model deployment."""
+"""Base anomaly modules."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .inferencers import OpenVINOInferencer, TorchInferencer
-from .optimize import export_convert, get_model_metadata
+from .anomaly_module import AnomalyModule
+from .dynamic_module import DynamicBufferModule
 
-__all__ = ["OpenVINOInferencer", "TorchInferencer", "export_convert", "get_model_metadata"]
+__all__ = ["AnomalyModule", "DynamicBufferModule"]

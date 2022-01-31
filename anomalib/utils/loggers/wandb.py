@@ -62,7 +62,7 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
             If both ``log_model`` and ``offline``is set to ``True``.
 
     Example:
-        >>> from anomalib.loggers.wandb_logger import AnomalibWandbLogger
+        >>> from anomalib.utils.loggers import AnomalibWandbLogger
         >>> from pytorch_lightning import Trainer
         >>> wandb_logger = AnomalibWandbLogger()
         >>> trainer = Trainer(logger=wandb_logger)

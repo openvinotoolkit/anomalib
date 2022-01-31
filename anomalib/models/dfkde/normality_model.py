@@ -20,8 +20,7 @@ from typing import Optional, Tuple
 import torch
 from torch import Tensor, nn
 
-from anomalib.models.components.dimensionality_reduction.pca import PCA
-from anomalib.models.components.stats.kde import GaussianKDE
+from anomalib.models.components import PCA, GaussianKDE
 
 
 class NormalityModel(nn.Module):

@@ -21,11 +21,10 @@ import torchvision
 from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
-from anomalib.models.components.anomaly_models import AnomalyModule
-from anomalib.models.components.feature_extractors.feature_extractor import (
-    FeatureExtractor,
-)
-from anomalib.models.dfm.dfm_model import DFMModel
+from anomalib import AnomalyModule
+from anomalib.models.components import FeatureExtractor
+
+from .dfm_model import DFMModel
 
 
 class DfmLightning(AnomalyModule):

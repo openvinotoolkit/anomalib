@@ -1,4 +1,4 @@
-"""Functions for Inference and model deployment."""
+"""Utilities for parsing model configuration."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .inferencers import OpenVINOInferencer, TorchInferencer
-from .optimize import export_convert, get_model_metadata
+from .config import get_configurable_parameters, update_nncf_config
 
-__all__ = ["OpenVINOInferencer", "TorchInferencer", "export_convert", "get_model_metadata"]
+__all__ = ["get_configurable_parameters", "update_nncf_config"]

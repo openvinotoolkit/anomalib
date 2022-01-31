@@ -21,11 +21,10 @@ import torchvision
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
 
-from anomalib.models.components.anomaly_models import AnomalyModule
-from anomalib.models.components.feature_extractors.feature_extractor import (
-    FeatureExtractor,
-)
-from anomalib.models.dfkde.normality_model import NormalityModel
+from anomalib import AnomalyModule
+from anomalib.models.components import FeatureExtractor
+
+from .normality_model import NormalityModel
 
 
 class DfkdeLightning(AnomalyModule):

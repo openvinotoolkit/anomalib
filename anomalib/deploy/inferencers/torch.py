@@ -23,10 +23,10 @@ import torch
 from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
-from anomalib.deploy.optimize import get_model_metadata
+from anomalib import AnomalyModule
+from anomalib.deploy import get_model_metadata
 from anomalib.models import get_model
-from anomalib.models.components.anomaly_models import AnomalyModule
-from anomalib.pre_processing.pre_process import PreProcessor
+from anomalib.pre_processing import PreProcessor
 
 from .base import Inferencer
 

@@ -4,8 +4,8 @@ import tempfile
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
-from anomalib.utils.callbacks.compress import CompressModelCallback
-from anomalib.utils.config import get_configurable_parameters
+from anomalib.config import get_configurable_parameters
+from anomalib.utils.callbacks import CompressModelCallback
 from tests.utils.callbacks.compress_callback.dummy_lightning_model import (
     DummyLightningModule,
     FakeDataModule,

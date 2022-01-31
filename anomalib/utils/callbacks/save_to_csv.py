@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from pytorch_lightning import Callback, Trainer
 
-from anomalib.models.components.anomaly_models import AnomalyModule
+from anomalib import AnomalyModule
 
 
 class SaveToCSVCallback(Callback):
