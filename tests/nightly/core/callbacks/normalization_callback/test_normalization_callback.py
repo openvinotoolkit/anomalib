@@ -1,6 +1,3 @@
-import os
-
-import pytest
 from pytorch_lightning import Trainer, seed_everything
 
 from anomalib.config import get_configurable_parameters
@@ -20,9 +17,6 @@ def run_train_test(config):
     return results
 
 
-@pytest.mark.skipif(
-    os.environ["NIGHTLY_BUILD"] == "FALSE", reason="Skipping the test as it is not running nightly build."
-)
 def test_normalizer():
     config = get_configurable_parameters(model_config_path="anomalib/models/padim/config.yaml")
     config.dataset.path = get_dataset_path(config.dataset.path)

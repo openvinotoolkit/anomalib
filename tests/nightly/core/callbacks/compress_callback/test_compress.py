@@ -13,14 +13,11 @@ from tests.nightly.core.callbacks.compress_callback.dummy_lightning_model import
 )
 
 
-@pytest.mark.skipif(
-    os.environ["NIGHTLY_BUILD"] == "FALSE", reason="Skipping the test as it is not running nightly build."
-)
 def test_compress_model_callback():
     """Tests if an optimized model is created."""
 
     config = get_configurable_parameters(
-        model_config_path="tests/pre_merge/core/callbacks/compress_callback/dummy_config.yml"
+        model_config_path="tests/nightly/core/callbacks/compress_callback/dummy_config.yml"
     )
 
     with tempfile.TemporaryDirectory() as tmp_dir:

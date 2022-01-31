@@ -15,21 +15,16 @@
 # and limitations under the License.
 
 import itertools
-import os
 import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Union
 
-import numpy as np
 import pandas as pd
 import pytest
-from omegaconf import DictConfig, ListConfig
-from pytorch_lightning import Trainer
+from omegaconf import DictConfig, ListConfig, OmegaConf
+from pytorch_lightning import seed_everything
 
-from anomalib.core.callbacks import get_callbacks
-from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
-from anomalib.models import get_model
 from anomalib.utils.hpo.config import flatten_sweep_params
 from tests.helpers.dataset import get_dataset_path
 from tests.helpers.model import model_load_test, setup
@@ -68,9 +63,6 @@ def get_model_nncf_cat() -> List:
     ]
 
 
-@pytest.mark.skipif(
-    os.environ["NIGHTLY_BUILD"] == "FALSE", reason="Skipping the test as it is not running nightly build."
-)
 class TestModel:
     """Run Model on all categories."""
 
@@ -79,10 +71,15 @@ class TestModel:
 
         results = trainer.test(model=model, datamodule=datamodule)[0]
 
-        assert results["image_AUROC"] >= 0.6
+        thresholds = OmegaConf.load("tests/nightly/models/performance_thresholds.yaml")
+
+        threshold = thresholds[config.model.name][config.dataset.category]
+        if "optimization" in config.keys() and config.optimization.nncf.apply:
+            threshold = threshold.nncf
+        assert results["image_AUROC"] >= threshold["image_AUROC"]
 
         if config.dataset.task == "segmentation":
-            assert results["pixel_AUROC"] >= 0.6
+            assert results["pixel_AUROC"] >= threshold["pixel_AUROC"]
         return results
 
     def _save_to_csv(self, config: Union[DictConfig, ListConfig], results: Dict):
@@ -111,8 +108,11 @@ class TestModel:
 
     @pytest.mark.parametrize(["model_name", "nncf", "category"], get_model_nncf_cat())
     def test_model(self, model_name, nncf, category, path=get_dataset_path(), score_type=None):
+        # Fix seed
+        seed_everything(42)
+
         with tempfile.TemporaryDirectory() as project_path:
-            model, config, datamodule, trainer = setup(
+            config, datamodule, model, trainer = setup(
                 model_name=model_name,
                 dataset_path=path,
                 nncf=nncf,

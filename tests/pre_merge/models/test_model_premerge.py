@@ -23,7 +23,6 @@ from tests.helpers.dataset import TestDataset
 from tests.helpers.model import model_load_test, setup
 
 
-@pytest.mark.skipif(os.environ["NIGHTLY_BUILD"] == "TRUE", reason="Skipping the test as it is running nightly build.")
 class TestModel:
     """Do a sanity check on the models."""
 
@@ -44,17 +43,15 @@ class TestModel:
         """Test the models on only 1 epoch as a sanity check before merge."""
         with tempfile.TemporaryDirectory() as project_path:
             # Train test
-            model, config, datamodule, trainer = setup(
+            config, datamodule, model, trainer = setup(
                 model_name,
                 dataset_path=path,
                 project_path=project_path,
                 nncf=nncf,
                 category=category,
-                weight_file="",
                 fast_run=True,
             )
             results = trainer.test(model=model, datamodule=datamodule)[0]
 
             # Test model load
-            config.model.weight_file = "weights/model.ckpt"  # add model weights to the config
             model_load_test(config, datamodule, results)

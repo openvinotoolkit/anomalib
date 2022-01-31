@@ -14,11 +14,13 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import os
 from typing import Dict, Tuple, Union
 
 import numpy as np
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning import LightningDataModule, Trainer
+from pytorch_lightning.callbacks import ModelCheckpoint
 
 from anomalib.config import get_configurable_parameters, update_nncf_config
 from anomalib.core.callbacks import get_callbacks
@@ -37,7 +39,7 @@ def setup(
     score_type: str = None,
     weight_file: str = "weights/model.ckpt",
     fast_run: bool = False,
-) -> Tuple[AnomalyModule, Union[DictConfig, ListConfig], LightningDataModule, Trainer]:
+) -> Tuple[Union[DictConfig, ListConfig], LightningDataModule, AnomalyModule, Trainer]:
     """Train the model based on the parameters passed.
 
     Args:
@@ -52,7 +54,7 @@ def setup(
             this ensures that both anomalous and non-anomalous images are present in the validation step.
 
     Returns:
-        Tuple[AnomalyModule, DictConfig, LightningDataModule, Trainer]: trained model, updated config, datamodule, trainer object
+        Tuple[DictConfig, LightningDataModule, AnomalyModule, Trainer]: config, datamodule, trained model, trainer
     """
     config = get_configurable_parameters(model_name=model_name)
     if score_type is not None:
@@ -80,10 +82,20 @@ def setup(
 
     callbacks = get_callbacks(config)
 
-    # Force saving the weights after 1 epoch of training. This is used for testing model loading on pre-merge.
-    if "early_stopping" in config.model.keys() and fast_run == True:
-        config.model.early_stopping.metric = None
-    callbacks = get_callbacks(config)
+    # Force model checkpoint to create checkpoint after first epoch
+    if fast_run == True:
+        for index, callback in enumerate(callbacks):
+            if isinstance(callback, ModelCheckpoint):
+                callbacks.pop(index)
+                model_checkpoint = ModelCheckpoint(
+                    dirpath=os.path.join(config.project.path, "weights"),
+                    filename="model",
+                    monitor=None,
+                    mode="max",
+                    auto_insert_metric_name=False,
+                )
+                callbacks.append(model_checkpoint)
+                break
 
     for index, callback in enumerate(callbacks):
         if isinstance(callback, VisualizerCallback):
@@ -96,7 +108,7 @@ def setup(
 
     trainer = Trainer(callbacks=callbacks, **config.trainer)
     trainer.fit(model=model, datamodule=datamodule)
-    return model, config, datamodule, trainer
+    return config, datamodule, model, trainer
 
 
 def model_load_test(config: Union[DictConfig, ListConfig], datamodule: LightningDataModule, results: Dict):

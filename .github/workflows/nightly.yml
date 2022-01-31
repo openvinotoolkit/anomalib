@@ -22,8 +22,7 @@ jobs:
         run: |
           export ANOMALIB_DATASET_PATH=/media/data1/datasets/MVTec
           export CUDA_VISIBLE_DEVICES=2
-          export NIGHTLY_BUILD=TRUE
-          tox -e coverage
+          tox -e nightly
       - name: Upload coverage result
         uses: actions/upload-artifact@v2
         with:
