@@ -253,14 +253,14 @@ cflow:
     image_AUROC: 1.0
     pixel_AUROC: 0.980
   cable:
-    image_AUROC: 0.975
-    pixel_AUROC: 0.974
+    image_AUROC: 0.960
+    pixel_AUROC: 0.969
   capsule:
     image_AUROC: 0.977
     pixel_AUROC: 0.989
   carpet:
-    image_AUROC: 0.982
-    pixel_AUROC: 0.988
+    image_AUROC: 0.979
+    pixel_AUROC: 0.987
   grid:
     image_AUROC: 0.959
     pixel_AUROC: 0.965
@@ -272,9 +272,9 @@ cflow:
     pixel_AUROC: 0.994
   metal_nut:
     image_AUROC: 0.984
-    pixel_AUROC: 0.982
+    pixel_AUROC: 0.981
   pill:
-    image_AUROC: 0.967
+    image_AUROC: 0.933
     pixel_AUROC: 0.986
   screw:
     image_AUROC: 0.910
@@ -283,14 +283,14 @@ cflow:
     image_AUROC: 0.998
     pixel_AUROC: 0.965
   toothbrush:
-    image_AUROC: 0.9
-    pixel_AUROC: 0.985
+    image_AUROC: 0.894
+    pixel_AUROC: 0.984
   transistor:
     image_AUROC: 0.9733
     pixel_AUROC: 0.942
   wood:
-    image_AUROC: 0.991
+    image_AUROC: 0.942
     pixel_AUROC: 0.937
   zipper:
-    image_AUROC: 0.991
-    pixel_AUROC: 0.982
+    image_AUROC: 0.979
+    pixel_AUROC: 0.981
