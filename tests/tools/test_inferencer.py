@@ -24,10 +24,9 @@ from omegaconf import DictConfig, ListConfig
 from pytorch_lightning import Trainer
 
 from anomalib.config import get_configurable_parameters
-from anomalib.core.model.inference import OpenVINOInferencer, TorchInferencer
 from anomalib.data import get_datamodule
+from anomalib.deploy import OpenVINOInferencer, TorchInferencer, export_convert
 from anomalib.models import get_model
-from anomalib.utils.optimize import export_convert
 from anomalib.utils.sweep.helpers.inference import MockImageLoader, get_meta_data
 from tests.helpers.dataset import TestDataset, get_dataset_path
 

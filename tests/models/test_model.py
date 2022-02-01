@@ -80,7 +80,6 @@ class TestModel:
         config = get_configurable_parameters(model_name=model_name)
         if score_type is not None:
             config.model.score_type = score_type
-        config.project.seed = 1234
         config.dataset.category = category
         config.dataset.path = dataset_path
         config.model.weight_file = "weights/model.ckpt"  # add model weights to the config
