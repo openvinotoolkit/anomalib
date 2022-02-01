@@ -11,14 +11,13 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor
 
-from .random_projection import SparseRandomProjection
+from anomalib.models.components.dimensionality_reduction import SparseRandomProjection
 
 
 class KCenterGreedy:
     """Implements k-center-greedy method.
 
     Args:
-        model: model with scikit-like API with decision_function. Defaults to SparseRandomProjection.
         embedding (Tensor): Embedding vector extracted from a CNN
         sampling_ratio (float): Ratio to choose coreset size from the embedding size.
 
@@ -32,30 +31,18 @@ class KCenterGreedy:
         torch.Size([219, 1536])
     """
 
-    def __init__(self, model: SparseRandomProjection, embedding: Tensor, sampling_ratio: float) -> None:
-        self.model = model
+    def __init__(self, embedding: Tensor, sampling_ratio: float) -> None:
         self.embedding = embedding
         self.coreset_size = int(embedding.shape[0] * sampling_ratio)
+        self.model = SparseRandomProjection(eps=0.9)
 
         self.features: Tensor
-        self.min_distances: Optional[Tensor] = None
+        self.min_distances: Tensor = None
         self.n_observations = self.embedding.shape[0]
-        self.already_selected_idxs: List[int] = []
 
     def reset_distances(self) -> None:
         """Reset minimum distances."""
         self.min_distances = None
-
-    def get_new_cluster_centers(self, cluster_centers: List[int]) -> List[int]:
-        """Get new cluster center indexes from the list of cluster indexes.
-
-        Args:
-            cluster_centers (List[int]): List of cluster center indexes.
-
-        Returns:
-            List[int]: List of new cluster center indexes.
-        """
-        return [d for d in cluster_centers if d not in self.already_selected_idxs]
 
     def update_distances(self, cluster_centers: List[int]) -> None:
         """Update min distances given cluster centers.
@@ -65,33 +52,28 @@ class KCenterGreedy:
         """
 
         if cluster_centers:
-            cluster_centers = self.get_new_cluster_centers(cluster_centers)
             centers = self.features[cluster_centers]
 
             distance = F.pairwise_distance(self.features, centers, p=2).reshape(-1, 1)
 
             if self.min_distances is None:
-                self.min_distances = torch.min(distance, dim=1).values.reshape(-1, 1)
+                self.min_distances = distance
             else:
                 self.min_distances = torch.minimum(self.min_distances, distance)
 
     def get_new_idx(self) -> int:
         """Get index value of a sample.
 
-        Based on (i) either minimum distance of the cluster or (ii) random subsampling from the embedding.
+        Based on minimum distance of the cluster
 
         Returns:
             int: Sample index
         """
 
-        if self.already_selected_idxs is None or len(self.already_selected_idxs) == 0:
-            # Initialize centers with a randomly selected datapoint
-            idx = int(torch.randint(high=self.n_observations, size=(1,)).item())
+        if isinstance(self.min_distances, Tensor):
+            idx = int(torch.argmax(self.min_distances).item())
         else:
-            if isinstance(self.min_distances, Tensor):
-                idx = int(torch.argmax(self.min_distances).item())
-            else:
-                raise ValueError(f"self.min_distances must be of type Tensor. Got {type(self.min_distances)}")
+            raise ValueError(f"self.min_distances must be of type Tensor. Got {type(self.min_distances)}")
 
         return idx
 
@@ -109,6 +91,7 @@ class KCenterGreedy:
             selected_idxs = []
 
         if self.embedding.ndim == 2:
+            self.model.fit(self.embedding)
             self.features = self.model.transform(self.embedding)
             self.reset_distances()
         else:
@@ -116,15 +99,14 @@ class KCenterGreedy:
             self.update_distances(cluster_centers=selected_idxs)
 
         selected_coreset_idxs: List[int] = []
+        idx = int(torch.randint(high=self.n_observations, size=(1,)).item())
         for _ in range(self.coreset_size):
+            self.update_distances(cluster_centers=[idx])
             idx = self.get_new_idx()
             if idx in selected_idxs:
                 raise ValueError("New indices should not be in selected indices.")
-
-            self.update_distances(cluster_centers=[idx])
+            self.min_distances[idx] = 0
             selected_coreset_idxs.append(idx)
-
-        self.already_selected_idxs = selected_idxs
 
         return selected_coreset_idxs
 

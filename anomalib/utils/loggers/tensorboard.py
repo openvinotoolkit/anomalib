@@ -38,7 +38,7 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
 
     Example:
         >>> from pytorch_lightning import Trainer
-        >>> from anomalib.loggers.tensorboard import AnomalibTensorBoardLogger
+        >>> from anomalib.utils.loggers import AnomalibTensorBoardLogger
         >>> logger = AnomalibTensorBoardLogger("tb_logs", name="my_model")
         >>> trainer = Trainer(logger=logger)
 

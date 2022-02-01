@@ -16,7 +16,7 @@
 
 import pytest
 
-from anomalib.utils.config import get_configurable_parameters
+from anomalib.config import get_configurable_parameters
 
 
 class TestConfig:

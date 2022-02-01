@@ -25,8 +25,8 @@ from pathlib import Path
 import cv2
 import numpy as np
 
+from anomalib.config import get_configurable_parameters
 from anomalib.deploy.inferencers.base import Inferencer
-from anomalib.utils.config import get_configurable_parameters
 
 
 def get_args() -> Namespace:

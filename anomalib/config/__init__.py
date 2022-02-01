@@ -1,4 +1,4 @@
-"""Feature extractors."""
+"""Utilities for parsing model configuration."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -13,3 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions
 # and limitations under the License.
+
+from .config import get_configurable_parameters, update_nncf_config
+
+__all__ = ["get_configurable_parameters", "update_nncf_config"]
