@@ -4,6 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.isort]
 profile = "black"
+known_first_party = "wandb"
 sections = ['FUTURE', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'LOCALFOLDER']
 
 [tool.black]

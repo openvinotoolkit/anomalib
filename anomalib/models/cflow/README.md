@@ -47,4 +47,3 @@ All results gathered with seed `42`.
 ![Sample Result 2](../../../docs/source/images/cflow/results/1.png "Sample Result 2")
 
 ![Sample Result 3](../../../docs/source/images/cflow/results/2.png "Sample Result 3")
-
