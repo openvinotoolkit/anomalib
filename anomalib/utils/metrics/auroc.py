@@ -14,4 +14,4 @@ class AUROC(ROC):
             Value of the AUROC metric
         """
         fpr, tpr, _thresholds = super().compute()
-        return auc(fpr, tpr, reorder=True)
+        return auc(fpr, tpr)

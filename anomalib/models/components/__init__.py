@@ -1,4 +1,4 @@
-"""Utilities for inference and deployment."""
+"""Components used within the models."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -14,7 +14,17 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .inferencers import OpenVINOInferencer, TorchInferencer
-from .optimize import export_convert, get_model_metadata
 
-__all__ = ["OpenVINOInferencer", "TorchInferencer", "export_convert", "get_model_metadata"]
+from .dimensionality_reduction import PCA, SparseRandomProjection
+from .feature_extractors import FeatureExtractor
+from .sampling import KCenterGreedy
+from .stats import GaussianKDE, MultiVariateGaussian
+
+__all__ = [
+    "PCA",
+    "SparseRandomProjection",
+    "FeatureExtractor",
+    "KCenterGreedy",
+    "GaussianKDE",
+    "MultiVariateGaussian",
+]

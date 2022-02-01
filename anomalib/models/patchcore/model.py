@@ -26,15 +26,10 @@ from kornia import gaussian_blur2d
 from omegaconf import ListConfig
 from torch import Tensor, nn
 
-from anomalib.components.anomaly_models import AnomalyModule
-from anomalib.components.anomaly_models.dynamic_module import DynamicBufferModule
-from anomalib.components.feature_extractors.feature_extractor import FeatureExtractor
-from anomalib.models.patchcore.utils.sampling import (
-    KCenterGreedy,
-    NearestNeighbors,
-    SparseRandomProjection,
-)
-from anomalib.pre_processing.tiler import Tiler
+from anomalib import AnomalyModule
+from anomalib.base import DynamicBufferModule
+from anomalib.models.components import FeatureExtractor, KCenterGreedy
+from anomalib.pre_processing import Tiler
 
 
 class AnomalyMapGenerator:
@@ -44,7 +39,7 @@ class AnomalyMapGenerator:
         self,
         input_size: Union[ListConfig, Tuple],
         sigma: int = 4,
-    ):
+    ) -> None:
         self.input_size = input_size
         self.sigma = sigma
 
@@ -117,7 +112,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         apply_tiling: bool = False,
         tile_size: Optional[Tuple[int, int]] = None,
         tile_stride: Optional[int] = None,
-    ):
+    ) -> None:
         super().__init__()
 
         self.backbone = getattr(torchvision.models, backbone)
@@ -127,7 +122,6 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
 
         self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
         self.feature_pooler = torch.nn.AvgPool2d(3, 1, 1)
-        self.nn_search = NearestNeighbors(n_neighbors=9)
         self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
 
         if apply_tiling:
@@ -170,8 +164,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         if self.training:
             output = embedding
         else:
-            patch_scores, _ = self.nn_search.kneighbors(embedding)
-
+            patch_scores = self.nearest_neighbors(embedding=embedding, n_neighbors=9)
             anomaly_map, anomaly_score = self.anomaly_map_generator(patch_scores=patch_scores)
             output = (anomaly_map, anomaly_score)
 
@@ -213,25 +206,32 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         embedding = embedding.permute(0, 2, 3, 1).reshape(-1, embedding_size)
         return embedding
 
-    @staticmethod
-    def subsample_embedding(embedding: torch.Tensor, sampling_ratio: float) -> torch.Tensor:
-        """Subsample embedding based on coreset sampling.
+    def subsample_embedding(self, embedding: torch.Tensor, sampling_ratio: float) -> None:
+        """Subsample embedding based on coreset sampling and store to memory.
 
         Args:
             embedding (np.ndarray): Embedding tensor from the CNN
             sampling_ratio (float): Coreset sampling ratio
-
-        Returns:
-            np.ndarray: Subsampled embedding whose dimensionality is reduced.
         """
-        # Random projection
-        random_projector = SparseRandomProjection(eps=0.9)
-        random_projector.fit(embedding)
 
         # Coreset Subsampling
-        sampler = KCenterGreedy(model=random_projector, embedding=embedding, sampling_ratio=sampling_ratio)
+        sampler = KCenterGreedy(embedding=embedding, sampling_ratio=sampling_ratio)
         coreset = sampler.sample_coreset()
-        return coreset
+        self.memory_bank = coreset
+
+    def nearest_neighbors(self, embedding: Tensor, n_neighbors: int = 9) -> Tensor:
+        """Nearest Neighbours using brute force method and euclidean norm.
+
+        Args:
+            embedding (Tensor): Features to compare the distance with the memory bank.
+            n_neighbors (int): Number of neighbors to look at
+
+        Returns:
+            Tensor: Patch scores.
+        """
+        distances = torch.cdist(embedding, self.memory_bank, p=2.0)  # euclidean norm
+        patch_scores, _ = distances.topk(k=n_neighbors, largest=False, dim=1)
+        return patch_scores
 
 
 class PatchcoreLightning(AnomalyModule):
@@ -246,7 +246,7 @@ class PatchcoreLightning(AnomalyModule):
         apply_tiling (bool, optional): Apply tiling. Defaults to False.
     """
 
-    def __init__(self, hparams):
+    def __init__(self, hparams) -> None:
         super().__init__(hparams)
 
         self.model = PatchcoreModel(
@@ -259,7 +259,7 @@ class PatchcoreLightning(AnomalyModule):
         )
         self.automatic_optimization = False
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> None:
         """Configure optimizers.
 
         Returns:
@@ -294,10 +294,7 @@ class PatchcoreLightning(AnomalyModule):
         embedding = torch.vstack([output["embedding"] for output in outputs])
         sampling_ratio = self.hparams.model.coreset_sampling_ratio
 
-        embedding = self.model.subsample_embedding(embedding, sampling_ratio)
-
-        self.model.nn_search.fit(embedding)
-        self.model.memory_bank = embedding
+        self.model.subsample_embedding(embedding, sampling_ratio)
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Get batch of anomaly maps from input image batch.
@@ -311,7 +308,8 @@ class PatchcoreLightning(AnomalyModule):
             Dict[str, Any]: Image filenames, test images, GT and predicted label/masks
         """
 
-        anomaly_maps, _ = self.model(batch["image"])
+        anomaly_maps, anomaly_score = self.model(batch["image"])
         batch["anomaly_maps"] = anomaly_maps
+        batch["pred_scores"] = anomaly_score.unsqueeze(0)
 
         return batch

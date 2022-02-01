@@ -1,4 +1,4 @@
-"""Utilities for inference and deployment."""
+"""Algorithms for decomposition and dimensionality reduction."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .inferencers import OpenVINOInferencer, TorchInferencer
-from .optimize import export_convert, get_model_metadata
+from .pca import PCA
+from .random_projection import SparseRandomProjection
 
-__all__ = ["OpenVINOInferencer", "TorchInferencer", "export_convert", "get_model_metadata"]
+__all__ = ["PCA", "SparseRandomProjection"]

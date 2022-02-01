@@ -1,4 +1,4 @@
-"""Anomalib library for research and benchmarking."""
+"""Sampling methods."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -14,6 +14,6 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .anomaly_module import AnomalyModule
+from .k_center_greedy import KCenterGreedy
 
-__all__ = ["AnomalyModule"]
+__all__ = ["KCenterGreedy"]

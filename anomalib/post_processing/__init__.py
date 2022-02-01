@@ -1,4 +1,4 @@
-"""Functions for calculating nearest neighbors."""
+"""Methods to help post-process raw model outputs."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -13,3 +13,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions
 # and limitations under the License.
+
+from .post_process import (
+    anomaly_map_to_color_map,
+    compute_mask,
+    superimpose_anomaly_map,
+)
+from .visualizer import Visualizer
+
+__all__ = ["anomaly_map_to_color_map", "superimpose_anomaly_map", "compute_mask", "Visualizer"]
