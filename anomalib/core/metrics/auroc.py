@@ -14,6 +14,9 @@ class AUROC(ROC):
         Returns:
             Value of the AUROC metric
         """
+        tpr: Tensor
+        fpr: Tensor
+
         fpr, tpr, _thresholds = super().compute()
         # TODO: use stable sort after upgrading to pytorch 1.9.x (https://github.com/openvinotoolkit/anomalib/issues/92)
         if not (torch.all(fpr.diff() <= 0) or torch.all(fpr.diff() >= 0)):
