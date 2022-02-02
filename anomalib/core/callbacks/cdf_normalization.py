@@ -22,7 +22,7 @@ class CdfNormalizationCallback(Callback):
         pl_module.image_metrics.F1.threshold = 0.5
         pl_module.pixel_metrics.F1.threshold = 0.5
 
-    def on_validation_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+    def on_validation_epoch_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         """Called when the validation starts after training.
 
         Use the current model to compute the anomaly score distributions
