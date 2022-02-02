@@ -44,6 +44,7 @@ def get_model_nncf_cat() -> List:
         ("stfpm", True),
         ("patchcore", False),
         ("cflow", False),
+        ("ganomaly", False),
     ]
     categories = [
         "bottle",

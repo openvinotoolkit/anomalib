@@ -36,6 +36,7 @@ class TestModel:
             ("stfpm", True),
             ("patchcore", False),
             ("cflow", False),
+            ("ganomaly", False),
         ],
     )
     @TestDataset(num_train=20, num_test=10)

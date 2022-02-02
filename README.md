@@ -97,6 +97,7 @@ where the currently available models are:
 - [STFPM](anomalib/models/stfpm)
 - [DFM](anomalib/models/dfm)
 - [DFKDE](anomalib/models/dfkde)
+- [GANomaly](anomalib/models/ganomaly)
 
 ## Inference
 
