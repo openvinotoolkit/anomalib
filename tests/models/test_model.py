@@ -157,6 +157,7 @@ class TestModel:
             ("stfpm", True),
             ("patchcore", False),
             ("cflow", False),
+            ("ganomaly", False),
         ],
     )
     @pytest.mark.flaky(max_runs=3)

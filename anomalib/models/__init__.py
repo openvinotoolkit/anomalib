@@ -47,7 +47,7 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
         AnomalyModule: Anomaly Model
     """
     openvino_model_list: List[str] = ["stfpm"]
-    torch_model_list: List[str] = ["padim", "stfpm", "dfkde", "dfm", "patchcore", "cflow"]
+    torch_model_list: List[str] = ["padim", "stfpm", "dfkde", "dfm", "patchcore", "cflow", "ganomaly"]
     model: AnomalyModule
 
     if config.openvino:
