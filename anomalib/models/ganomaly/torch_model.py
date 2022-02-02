@@ -46,7 +46,7 @@ class Encoder(nn.Module):
     ):
         super().__init__()
 
-        assert input_size % 16 == 0, "Input size should be a multiple of 16"  # Why?
+        assert input_size % 16 == 0, "Input size should be a multiple of 16"
 
         self.input_layers = nn.Sequential()
 
@@ -92,8 +92,7 @@ class Encoder(nn.Module):
         """Return latent vectors."""
 
         output = self.input_layers(input_tensor)
-        if len(self.extra_layers) > 0:
-            output = self.extra_layers(output)
+        output = self.extra_layers(output)
         output = self.pyramid_features(output)
         if self.final_conv_layer is not None:
             output = self.final_conv_layer(output)
@@ -117,7 +116,7 @@ class Decoder(nn.Module):
         self, input_size: int, latent_vec_size: int, num_input_channels: int, n_features: int, extra_layers: int = 0
     ):
         super().__init__()
-        assert input_size % 16 == 0, "Input size should be a multiple of 16"  # Why again?
+        assert input_size % 16 == 0, "Input size should be a multiple of 16"
 
         self.latent_input = nn.Sequential()
 
@@ -174,8 +173,7 @@ class Decoder(nn.Module):
         """Return generated image."""
         output = self.latent_input(input_tensor)
         output = self.inverse_pyramid(output)
-        if len(self.extra_layers) > 0:
-            output = self.extra_layers(output)
+        output = self.extra_layers(output)
         output = self.final_layers(output)
         return output
 
