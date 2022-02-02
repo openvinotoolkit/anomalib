@@ -1,6 +1,6 @@
 """Implementation of PRO metric based on TorchMetrics."""
 import warnings
-from typing import Any, Callable, Optional, Tuple
+from typing import Tuple
 
 import torch
 import torch.nn.functional as F
@@ -12,24 +12,16 @@ from torchmetrics.functional import recall
 class PRO(Metric):
     """Per-Region Overlap (PRO) Score."""
 
-    def __init__(
-        self,
-        compute_on_step: bool = True,
-        dist_sync_on_step: bool = False,
-        process_group: Optional[Any] = None,
-        dist_sync_fn: Callable = None,
-    ) -> None:
-        super().__init__(
-            compute_on_step=compute_on_step,
-            dist_sync_on_step=dist_sync_on_step,
-            process_group=process_group,
-            dist_sync_fn=dist_sync_fn,
-        )
+    def __init__(self, threshold: float = 0.5, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.threshold = threshold
         self.scores: list = []  # average pro score per batch
         self.n_regions: list = []  # number of regions found in each batch
 
     def update(self, predictions: Tensor, targets: Tensor) -> None:  # type: ignore  # pylint: disable=arguments-differ
         """Compute the PRO score for the current batch."""
+        if predictions.dtype == torch.float:
+            predictions = predictions > self.threshold
         comps, n_comps = connected_components(targets.unsqueeze(1))
         preds = comps.clone()
         preds[~predictions] = 0
