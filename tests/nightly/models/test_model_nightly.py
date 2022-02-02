@@ -31,6 +31,11 @@ from tests.helpers.model import model_load_test, setup
 
 
 def get_model_nncf_cat() -> List:
+    """Test helper for getting cartesian product of models and categories.
+
+    Returns:
+        List: Returns a combination of models with their nncf support for each category.
+    """
     model_support = [
         ("padim", False),
         ("dfkde", False),
