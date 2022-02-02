@@ -20,7 +20,7 @@ class CdfNormalizationCallback(Callback):
     def on_test_start(self, _trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
         """Called when the test begins."""
         pl_module.image_metrics.F1.threshold = 0.5
-        pl_module.pixel_metrics.F1.threshold = 0.5
+        pl_module.pixel_metrics.PRO.threshold = 0.5
 
     def on_validation_epoch_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         """Called when the validation starts after training.
