@@ -10,8 +10,9 @@ class AdaptiveThreshold(Metric):
     predicted anomaly scores.
     """
 
-    def __init__(self, default_value: float, **kwargs):
+    def __init__(self, default_value: float, force_cpu: bool = False, **kwargs):
         super().__init__(**kwargs)
+        self.force_cpu = force_cpu
 
         self.precision_recall_curve = PrecisionRecallCurve(num_classes=1, compute_on_step=False)
         self.add_state("value", default=torch.tensor(default_value), persistent=True)  # pylint: disable=not-callable
@@ -20,6 +21,8 @@ class AdaptiveThreshold(Metric):
     # pylint: disable=arguments-differ
     def update(self, preds: torch.Tensor, target: torch.Tensor) -> None:  # type: ignore
         """Update the precision-recall curve metric."""
+        if self.force_cpu:
+            self.cpu()
         self.precision_recall_curve.update(preds, target)
 
     def compute(self) -> torch.Tensor:
