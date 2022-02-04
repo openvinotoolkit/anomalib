@@ -95,7 +95,7 @@ class VisualizerCallback(Callback):
             normalize = False  # anomaly maps are already normalized
         else:
             normalize = True  # raw anomaly maps. Still need to normalize
-        threshold = pl_module.pixel_metrics.F1.threshold
+        threshold = pl_module.pixel_metrics.PRO.threshold
 
         for (filename, image, true_mask, anomaly_map) in zip(
             outputs["image_path"], outputs["image"], outputs["mask"], outputs["anomaly_maps"]
