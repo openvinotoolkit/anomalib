@@ -14,6 +14,10 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .config import get_configurable_parameters, update_nncf_config
+from .config import (
+    get_configurable_parameters,
+    update_input_size_config,
+    update_nncf_config,
+)
 
-__all__ = ["get_configurable_parameters", "update_nncf_config"]
+__all__ = ["get_configurable_parameters", "update_nncf_config", "update_input_size_config"]

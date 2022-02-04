@@ -1,4 +1,4 @@
-"""Helpers for benchmarking and hyperparameter optimization."""
+"""Utils specific to running benchmarking scripts."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .callbacks import get_sweep_callbacks
-from .inference import get_meta_data, get_openvino_throughput, get_torch_throughput
+from .convert import convert_to_openvino
+from .metrics import get_single_model_metrics, write_metrics
 
-__all__ = ["get_meta_data", "get_openvino_throughput", "get_torch_throughput", "get_sweep_callbacks"]
+__all__ = ["convert_to_openvino", "get_single_model_metrics", "write_metrics"]

@@ -68,6 +68,8 @@ def get_meta_data(model: AnomalyModule, input_size: Tuple[int, int]) -> Dict:
     meta_data = {
         "image_threshold": model.image_threshold.value.cpu().numpy(),
         "pixel_threshold": model.pixel_threshold.value.cpu().numpy(),
+        "min": model.min_max.min.cpu().numpy(),
+        "max": model.min_max.max.cpu().numpy(),
         "stats": {},
     }
 

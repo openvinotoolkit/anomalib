@@ -1,4 +1,7 @@
 seed: 42
+writer:
+  - csv
+  - tensorboard
 grid_search:
   dataset:
     category:
@@ -17,8 +20,11 @@ grid_search:
       - transistor
       - wood
       - zipper
-    image_size: [128, 224]
+    image_size: [224]
   model_name:
     - padim
     - patchcore
-    - stfpm
+  model:
+    normalization_method:
+      - cdf
+      - min_max

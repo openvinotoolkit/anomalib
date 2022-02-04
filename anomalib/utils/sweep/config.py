@@ -25,6 +25,12 @@ from omegaconf import DictConfig
 def flatten_sweep_params(params_dict: DictConfig) -> DictConfig:
     """Flatten the nested parameters section of the config object.
 
+    We need to flatten the params so that all the nested keys are concatenated into a single string.
+    This is useful when
+    - We need to do a cartesian product of all the combinations of the configuration for grid search.
+    - Save keys as headers for csv
+    - Add the config to `wandb` sweep.
+
     Args:
         params_dict: DictConfig: The dictionary containing the hpo parameters in the original, nested, structure.
 
@@ -32,7 +38,7 @@ def flatten_sweep_params(params_dict: DictConfig) -> DictConfig:
         flattened version of the parameter dictionary.
     """
 
-    def process_params(nested_params: DictConfig, keys: List[str], flattened_params: DictConfig):
+    def flatten_nested_dict(nested_params: DictConfig, keys: List[str], flattened_params: DictConfig):
         """Flatten nested dictionary.
 
         Recursive helper function that traverses the nested config object and stores the leaf nodes in a flattened
@@ -45,13 +51,13 @@ def flatten_sweep_params(params_dict: DictConfig) -> DictConfig:
         """
         for name, cfg in nested_params.items():
             if isinstance(cfg, DictConfig):
-                process_params(cfg, keys + [str(name)], flattened_params)
+                flatten_nested_dict(cfg, keys + [str(name)], flattened_params)
             else:
                 key = ".".join(keys + [str(name)])
                 flattened_params[key] = cfg
 
     flattened_params_dict = DictConfig({})
-    process_params(params_dict, [], flattened_params_dict)
+    flatten_nested_dict(params_dict, [], flattened_params_dict)
 
     return flattened_params_dict
 
