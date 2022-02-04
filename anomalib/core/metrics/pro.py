@@ -1,6 +1,6 @@
 """Implementation of PRO metric based on TorchMetrics."""
 import warnings
-from typing import Tuple
+from typing import Optional, Tuple
 
 import torch
 import torch.nn.functional as F
@@ -12,27 +12,56 @@ from torchmetrics.functional import recall
 class PRO(Metric):
     """Per-Region Overlap (PRO) Score."""
 
-    def __init__(self, threshold: float = 0.5, **kwargs) -> None:
+    def __init__(self, threshold: float = 0.5, force_device: Optional[str] = None, **kwargs) -> None:
         super().__init__(**kwargs)
         self.threshold = threshold
-        self.scores: list = []  # average pro score per batch
-        self.n_regions: list = []  # number of regions found in each batch
+
+        self.add_state("pro", default=torch.tensor(0.0), dist_reduce_fx="sum")  # pylint: disable=not-callable
+        self.add_state("n_regions", default=torch.tensor(0), dist_reduce_fx="sum")  # pylint: disable=not-callable
+        self.pro: Tensor
+        self.n_regions: Tensor
+
+        self.force_device = force_device
 
     def update(self, predictions: Tensor, targets: Tensor) -> None:  # type: ignore  # pylint: disable=arguments-differ
         """Compute the PRO score for the current batch."""
-        if predictions.dtype == torch.float:
-            predictions = predictions > self.threshold
+        if self.force_device is not None:
+            predictions = predictions.to(self.force_device)
+            targets = targets.to(self.force_device)
+
         comps, n_comps = connected_components(targets.unsqueeze(1))
-        preds = comps.clone()
-        preds[~predictions] = 0
-        pro = recall(preds.flatten(), comps.flatten(), num_classes=n_comps, average="macro", ignore_index=0)
-        self.scores.append(pro)
-        self.n_regions.append(n_comps)
+        pro = pro_score(predictions, comps, threshold=self.threshold)
+
+        self.pro += pro * (n_comps - 1)
+        self.n_regions += n_comps - 1
 
     def compute(self) -> Tensor:
         """Compute the macro average of the PRO score across all regions in all batches."""
-        pro = torch.dot(Tensor(self.scores), Tensor(self.n_regions)) / sum(self.n_regions)
-        return pro
+        return self.pro / self.n_regions
+
+
+def pro_score(predictions: Tensor, comps: Tensor, threshold: float = 0.5) -> Tensor:
+    """Calculate the PRO score for a batch of predictions.
+
+    Args:
+        predictions (Tensor): Predicted anomaly masks (Bx1xHxW)
+        comps: (Tensor): Labeled connected components (BxHxW)
+        threshold (float): When predictions are passed as float, the threshold is used to binarize the predictions.
+
+    Returns:
+        Tensor: Scalar value representing the average PRO score for the input batch.
+    """
+    if predictions.dtype == torch.float:
+        predictions = predictions > threshold
+
+    n_comps = len(comps.unique())
+
+    preds = comps.clone()
+    preds[~predictions] = 0
+    if n_comps == 1:  # only background
+        return torch.Tensor([1.0])
+    pro = recall(preds.flatten(), comps.flatten(), num_classes=n_comps, average="macro", ignore_index=0)
+    return pro
 
 
 def connected_components(binary_input: torch.Tensor, max_iterations: int = 500) -> Tuple[torch.Tensor, int]:
