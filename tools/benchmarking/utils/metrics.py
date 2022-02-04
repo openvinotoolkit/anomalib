@@ -133,9 +133,9 @@ def write_metrics(model_metrics: Dict[str, Union[str, float]], writers: List[str
 
     if "csv" in writers:
         metrics_df = pd.DataFrame(model_metrics, index=[0])
-        result_path = Path(f"results/{model_metrics['model_name']}_{model_metrics['device']}.csv")
+        result_path = Path(f"runs/{model_metrics['model_name']}_{model_metrics['device']}.csv")
         Path.mkdir(result_path.parent, parents=True, exist_ok=True)
-        if not result_path.is_file:
+        if not result_path.is_file():
             metrics_df.to_csv(result_path)
         else:
             metrics_df.to_csv(result_path, mode="a", header=False)
