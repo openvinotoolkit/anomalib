@@ -23,6 +23,7 @@ from torch import Tensor, nn
 from torchmetrics import F1, MetricCollection
 
 from anomalib.core.metrics import (
+    AUPRO,
     AUROC,
     PRO,
     AdaptiveThreshold,
@@ -49,8 +50,8 @@ class AnomalyModule(pl.LightningModule):
         self.loss: Tensor
         self.callbacks: List[Callback]
 
-        self.image_threshold = AdaptiveThreshold(self.hparams.model.threshold.image_default, force_cpu=True)
-        self.pixel_threshold = AdaptiveThreshold(self.hparams.model.threshold.pixel_default, force_cpu=True)
+        self.image_threshold = AdaptiveThreshold(self.hparams.model.threshold.image_default)
+        self.pixel_threshold = AdaptiveThreshold(self.hparams.model.threshold.pixel_default)
 
         self.training_distribution = AnomalyScoreDistribution().cpu()
         self.min_max = MinMax().cpu()
@@ -62,12 +63,13 @@ class AnomalyModule(pl.LightningModule):
         self._configure_metrics()
 
     def _configure_metrics(self):
-        image_auroc = AUROC(num_classes=1, pos_label=1, compute_on_step=False, force_cpu=True)
+        image_auroc = AUROC(num_classes=1, pos_label=1, compute_on_step=False)
         f1_score = F1(num_classes=1, compute_on_step=False)
         self.image_metrics = MetricCollection([image_auroc, f1_score], prefix="image_")
-        pixel_auroc = AUROC(num_classes=1, pos_label=1, compute_on_step=False, force_cpu=True)
-        pro = PRO(compute_on_step=False)
-        self.pixel_metrics = MetricCollection([pixel_auroc, pro], prefix="pixel_")
+        pixel_auroc = AUROC(num_classes=1, pos_label=1, compute_on_step=False)
+        aupro = AUPRO(compute_on_step=False)
+        pro = PRO(force_device="cuda")
+        self.pixel_metrics = MetricCollection([pixel_auroc, pro, aupro], prefix="pixel_")
 
     def forward(self, batch):  # pylint: disable=arguments-differ
         """Forward-pass input tensor to the module.
@@ -161,11 +163,9 @@ class AnomalyModule(pl.LightningModule):
 
     def _collect_outputs(self, image_metric, pixel_metric, outputs):
         for output in outputs:
-            # image_metric.cpu()
             image_metric.update(output["pred_scores"], output["label"].int())
             if "mask" in output.keys() and "anomaly_maps" in output.keys():
-                # pixel_metric.cpu()
-                pixel_metric.update(output["anomaly_maps"], output["mask"].int())
+                pixel_metric(output["anomaly_maps"], output["mask"].int())
 
     def _post_process(self, outputs):
         """Compute labels based on model predictions."""
