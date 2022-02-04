@@ -72,6 +72,13 @@ def connected_components(binary_input: torch.Tensor, max_iterations: int = 500) 
 
     Adapted from https://gist.github.com/efirdc/5d8bd66859e574c683a504a4690ae8bc
 
+    Args:
+        binary_input (Tensor): Binary input data from which we want to extract connected components (Bx1xHxW)
+        max_iterations (int): Maximum number of iterations used in the connected component computaion.
+
+    Returns:
+        Tensor: Components labeled from 0 to N.
+        int: number of connected components that were identified.
     """
     mask = binary_input.bool()
 
