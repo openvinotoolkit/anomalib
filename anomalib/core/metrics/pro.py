@@ -1,6 +1,6 @@
 """Implementation of PRO metric based on TorchMetrics."""
 import warnings
-from typing import Optional, Tuple
+from typing import Tuple
 
 import torch
 import torch.nn.functional as F
@@ -12,8 +12,13 @@ from torchmetrics.functional import recall
 class PRO(Metric):
     """Per-Region Overlap (PRO) Score."""
 
-    def __init__(self, threshold: float = 0.5, force_device: Optional[str] = None, **kwargs) -> None:
+    def __init__(self, threshold: float = 0.5, **kwargs) -> None:
         super().__init__(**kwargs)
+        if not torch.cuda.is_available():
+            warnings.warn(
+                "Computation of the PRO metric is optimized for the GPU, but cuda is not available on your device. "
+                "Because of this, the PRO computation will significantly slow down code execution."
+            )
         self.threshold = threshold
 
         self.add_state("pro", default=torch.tensor(0.0), dist_reduce_fx="sum")  # pylint: disable=not-callable
@@ -21,13 +26,11 @@ class PRO(Metric):
         self.pro: Tensor
         self.n_regions: Tensor
 
-        self.force_device = force_device
-
     def update(self, predictions: Tensor, targets: Tensor) -> None:  # type: ignore  # pylint: disable=arguments-differ
         """Compute the PRO score for the current batch."""
-        if self.force_device is not None:
-            predictions = predictions.to(self.force_device)
-            targets = targets.to(self.force_device)
+        if torch.cuda.is_available():
+            predictions = predictions.cuda()
+            targets = targets.cuda()
 
         comps, n_comps = connected_components(targets.unsqueeze(1))
         pro = pro_score(predictions, comps, threshold=self.threshold)

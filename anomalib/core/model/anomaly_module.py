@@ -69,7 +69,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.image_metrics = MetricCollection([image_auroc, f1_score], prefix="image_")
         pixel_auroc = AUROC(num_classes=1, pos_label=1, compute_on_step=False)
         aupro = AUPRO(compute_on_step=False)
-        pro = PRO(force_device="cuda")
+        pro = PRO()
         self.pixel_metrics = MetricCollection([pixel_auroc, pro, aupro], prefix="pixel_")
 
     def forward(self, batch):  # pylint: disable=arguments-differ
