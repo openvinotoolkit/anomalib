@@ -33,7 +33,6 @@ class AUPRO(Metric):
             targets = targets.cuda()
         comps, n_comps = connected_components(targets.unsqueeze(1))
         self.comps.append(comps.to(predictions.device))
-        self.comps.append(comps)
         self.n_regions.append(n_comps - 1)
 
     def compute(self) -> Tensor:
