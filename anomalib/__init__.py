@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .base import AnomalyModule
+from anomalib.models.components import AnomalyModule
 
 __version__ = "0.2.4"
 
