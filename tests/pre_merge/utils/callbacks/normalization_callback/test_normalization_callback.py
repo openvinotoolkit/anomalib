@@ -18,7 +18,7 @@ def run_train_test(config):
     return results
 
 
-@TestDataset(num_train=100, num_test=20, path=get_dataset_path(), seed=2)
+@TestDataset(num_train=100, num_test=20, path=get_dataset_path(), seed=42)
 def test_normalizer(path=get_dataset_path(), category="shapes"):
     config = get_configurable_parameters(model_config_path="anomalib/models/padim/config.yaml")
     config.dataset.path = path

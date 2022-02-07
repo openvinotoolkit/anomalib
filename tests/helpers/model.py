@@ -30,7 +30,7 @@ from anomalib.data import get_datamodule
 from anomalib.models import get_model
 
 
-def setup(
+def setup_model_train(
     model_name: str,
     dataset_path: str,
     project_path: str,
@@ -88,15 +88,15 @@ def setup(
         for index, callback in enumerate(callbacks):
             if isinstance(callback, ModelCheckpoint):
                 callbacks.pop(index)
-                model_checkpoint = ModelCheckpoint(
-                    dirpath=os.path.join(config.project.path, "weights"),
-                    filename="model",
-                    monitor=None,
-                    mode="max",
-                    auto_insert_metric_name=False,
-                )
-                callbacks.append(model_checkpoint)
                 break
+        model_checkpoint = ModelCheckpoint(
+            dirpath=os.path.join(config.project.path, "weights"),
+            filename="model",
+            monitor=None,
+            mode="max",
+            auto_insert_metric_name=False,
+        )
+        callbacks.append(model_checkpoint)
 
     for index, callback in enumerate(callbacks):
         if isinstance(callback, VisualizerCallback):

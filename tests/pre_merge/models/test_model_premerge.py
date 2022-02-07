@@ -20,7 +20,7 @@ import tempfile
 import pytest
 
 from tests.helpers.dataset import TestDataset
-from tests.helpers.model import model_load_test, setup
+from tests.helpers.model import model_load_test, setup_model_train
 
 
 class TestModel:
@@ -44,7 +44,7 @@ class TestModel:
         """Test the models on only 1 epoch as a sanity check before merge."""
         with tempfile.TemporaryDirectory() as project_path:
             # Train test
-            config, datamodule, model, trainer = setup(
+            config, datamodule, model, trainer = setup_model_train(
                 model_name,
                 dataset_path=path,
                 project_path=project_path,

@@ -27,7 +27,7 @@ from pytorch_lightning import seed_everything
 
 from anomalib.utils.hpo.config import flatten_sweep_params
 from tests.helpers.dataset import get_dataset_path
-from tests.helpers.model import model_load_test, setup
+from tests.helpers.model import model_load_test, setup_model_train
 
 
 def get_model_nncf_cat() -> List:
@@ -118,7 +118,7 @@ class TestModel:
         seed_everything(42)
 
         with tempfile.TemporaryDirectory() as project_path:
-            config, datamodule, model, trainer = setup(
+            config, datamodule, model, trainer = setup_model_train(
                 model_name=model_name,
                 dataset_path=path,
                 nncf=nncf,
