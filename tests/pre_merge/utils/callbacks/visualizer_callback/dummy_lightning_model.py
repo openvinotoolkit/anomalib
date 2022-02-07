@@ -1,8 +1,6 @@
 from pathlib import Path
-from typing import Tuple, Union
-from unittest import mock
+from typing import Union
 
-import numpy as np
 import pytorch_lightning as pl
 import torch
 from omegaconf.dictconfig import DictConfig
