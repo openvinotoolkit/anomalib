@@ -34,11 +34,13 @@ import numpy as np
 import pandas as pd
 from pandas.core.frame import DataFrame
 from pytorch_lightning.core.datamodule import LightningDataModule
+from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch import Tensor
 from torch.utils.data import DataLoader
 from torch.utils.data.dataset import Dataset
 from torchvision.datasets.folder import VisionDataset
 
+from anomalib.data.inference import InferenceDataset
 from anomalib.data.transforms import PreProcessor
 from anomalib.data.utils import read_image
 from anomalib.utils.download_progress_bar import DownloadProgressBar
@@ -417,8 +419,10 @@ class MVTecDataModule(LightningDataModule):
         self.root = root if isinstance(root, Path) else Path(root)
         self.category = category
         self.dataset_path = self.root / self.category
+        self.transform_config = transform_config
+        self.image_size = image_size
 
-        self.pre_process = PreProcessor(config=transform_config, image_size=image_size)
+        self.pre_process = PreProcessor(config=self.transform_config, image_size=self.image_size)
 
         self.train_batch_size = train_batch_size
         self.test_batch_size = test_batch_size
@@ -431,30 +435,15 @@ class MVTecDataModule(LightningDataModule):
         self.test_data: Dataset
         if create_validation_set:
             self.val_data: Dataset
+        self.inference_data: Dataset
 
     def setup(self, stage: Optional[str] = None) -> None:
         """Setup train, validation and test data.
 
         Args:
           stage: Optional[str]:  Train/Val/Test stages. (Default value = None)
+
         """
-        if self.create_validation_set:
-            self.val_data = MVTec(
-                root=self.root,
-                category=self.category,
-                pre_process=self.pre_process,
-                split="val",
-                seed=self.seed,
-                create_validation_set=self.create_validation_set,
-            )
-        self.test_data = MVTec(
-            root=self.root,
-            category=self.category,
-            pre_process=self.pre_process,
-            split="test",
-            seed=self.seed,
-            create_validation_set=self.create_validation_set,
-        )
         if stage in (None, "fit"):
             self.train_data = MVTec(
                 root=self.root,
@@ -465,15 +454,45 @@ class MVTecDataModule(LightningDataModule):
                 create_validation_set=self.create_validation_set,
             )
 
-    def train_dataloader(self) -> DataLoader:
+        if self.create_validation_set:
+            self.val_data = MVTec(
+                root=self.root,
+                category=self.category,
+                pre_process=self.pre_process,
+                split="val",
+                seed=self.seed,
+                create_validation_set=self.create_validation_set,
+            )
+
+        self.test_data = MVTec(
+            root=self.root,
+            category=self.category,
+            pre_process=self.pre_process,
+            split="test",
+            seed=self.seed,
+            create_validation_set=self.create_validation_set,
+        )
+
+        if stage == "predict":
+            self.inference_data = InferenceDataset(
+                path=self.root, image_size=self.image_size, transform_config=self.transform_config
+            )
+
+    def train_dataloader(self) -> TRAIN_DATALOADERS:
         """Get train dataloader."""
         return DataLoader(self.train_data, shuffle=True, batch_size=self.train_batch_size, num_workers=self.num_workers)
 
-    def val_dataloader(self) -> DataLoader:
+    def val_dataloader(self) -> EVAL_DATALOADERS:
         """Get validation dataloader."""
         dataset = self.val_data if self.create_validation_set else self.test_data
         return DataLoader(dataset=dataset, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
 
-    def test_dataloader(self) -> DataLoader:
+    def test_dataloader(self) -> EVAL_DATALOADERS:
         """Get test dataloader."""
         return DataLoader(self.test_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
+
+    def predict_dataloader(self) -> EVAL_DATALOADERS:
+        """Get predict dataloader."""
+        return DataLoader(
+            self.inference_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers
+        )
