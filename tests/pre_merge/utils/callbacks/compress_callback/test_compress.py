@@ -6,7 +6,7 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 from anomalib.config import get_configurable_parameters
 from anomalib.core.callbacks.compress import CompressModelCallback
-from tests.nightly.utils.callbacks.compress_callback.dummy_lightning_model import (
+from tests.pre_merge.utils.callbacks.compress_callback.dummy_lightning_model import (
     DummyLightningModule,
     FakeDataModule,
 )
@@ -16,7 +16,7 @@ def test_compress_model_callback():
     """Tests if an optimized model is created."""
 
     config = get_configurable_parameters(
-        model_config_path="tests/nightly/utils/callbacks/compress_callback/dummy_config.yml"
+        model_config_path="tests/pre_merge/utils/callbacks/compress_callback/dummy_config.yml"
     )
 
     with tempfile.TemporaryDirectory() as tmp_dir:
