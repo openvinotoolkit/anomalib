@@ -27,8 +27,11 @@ from omegaconf import ListConfig
 from torch import Tensor, nn
 
 from anomalib import AnomalyModule
-from anomalib.base import DynamicBufferModule
-from anomalib.models.components import FeatureExtractor, KCenterGreedy
+from anomalib.models.components import (
+    DynamicBufferModule,
+    FeatureExtractor,
+    KCenterGreedy,
+)
 from anomalib.pre_processing import Tiler
 
 
