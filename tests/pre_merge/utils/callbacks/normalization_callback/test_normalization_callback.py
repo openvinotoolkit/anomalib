@@ -11,6 +11,7 @@ def run_train_test(config):
     model = get_model(config)
     datamodule = get_datamodule(config)
     callbacks = get_callbacks(config)
+
     trainer = Trainer(**config.trainer, callbacks=callbacks)
     trainer.fit(model=model, datamodule=datamodule)
     results = trainer.test(model=model, datamodule=datamodule)
@@ -23,6 +24,7 @@ def test_normalizer(path=get_dataset_path(), category="shapes"):
     config.dataset.path = path
     config.dataset.category = category
     config.model.threshold.adaptive = True
+    config.project.log_images_to = []
 
     # run without normalization
     config.model.normalization_method = "none"

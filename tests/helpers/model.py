@@ -62,6 +62,7 @@ def setup(
     config.project.seed = 1234
     config.dataset.category = category
     config.dataset.path = dataset_path
+    config.project.log_images_to = []
 
     # If weight file is empty, remove the key from config
     if "weight_file" in config.model.keys() and weight_file == "":
