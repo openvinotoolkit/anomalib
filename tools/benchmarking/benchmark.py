@@ -53,7 +53,9 @@ def compute_over_gpu(run_configs: Union[DictConfig, ListConfig], device: int, se
 def distribute_over_gpus():
     """Distribute metric collection over all available GPUs. This is done by splitting the list of configurations."""
     sweep_config = OmegaConf.load("tools/benchmarking/benchmark_params.yaml")
-    with ProcessPoolExecutor(max_workers=torch.cuda.device_count()) as executor:
+    with ProcessPoolExecutor(
+        max_workers=torch.cuda.device_count(), mp_context=multiprocessing.get_context("spawn")
+    ) as executor:
         run_configs = list(get_run_config(sweep_config.grid_search))
         jobs = []
         for device_id, run_split in enumerate(
@@ -85,9 +87,8 @@ def distribute():
     if not torch.cuda.is_available():
         compute_over_cpu()
     else:
-        multiprocessing.set_start_method("spawn")
         # Create process for gpu and cpu
-        with ProcessPoolExecutor(max_workers=2) as executor:
+        with ProcessPoolExecutor(max_workers=2, mp_context=multiprocessing.get_context("spawn")) as executor:
             jobs = [executor.submit(compute_over_cpu), executor.submit(distribute_over_gpus)]
             for job in as_completed(jobs):
                 try:
