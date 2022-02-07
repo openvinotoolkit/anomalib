@@ -14,12 +14,13 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from typing import Any, Dict, List, Union
+from typing import List, Union
 
 import torch
 import torchvision
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
+from torch import Tensor
 
 from anomalib import AnomalyModule
 from anomalib.models.components import FeatureExtractor
@@ -48,17 +49,19 @@ class DfkdeLightning(AnomalyModule):
             threshold_offset=self.threshold_offset,
         )
         self.automatic_optimization = False
+        self.embeddings: List[Tensor] = []
 
     @staticmethod
     def configure_optimizers():
         """DFKDE doesn't require optimization, therefore returns no optimizers."""
         return None
 
-    def training_step(self, batch, _):  # pylint: disable=arguments-differ
+    def training_step(self, batch, _batch_idx):  # pylint: disable=arguments-differ
         """Training Step of DFKDE. For each batch, features are extracted from the CNN.
 
         Args:
-          batch (Tensor): Input batch
+            batch (Dict[str, Any]): Batch containing image filename, image, label and mask
+            _batch_idx: Index of the batch.
 
         Returns:
           Deep CNN features.
@@ -66,21 +69,21 @@ class DfkdeLightning(AnomalyModule):
 
         self.feature_extractor.eval()
         layer_outputs = self.feature_extractor(batch["image"])
-        feature_vector = torch.hstack(list(layer_outputs.values())).detach().squeeze()
-        return {"feature_vector": feature_vector}
+        embedding = torch.hstack(list(layer_outputs.values())).detach().squeeze()
 
-    def training_epoch_end(self, outputs: List[Dict[str, Any]]) -> None:
-        """Fit a KDE model on deep CNN features.
+        # NOTE: `self.embedding` appends each batch embedding to
+        #   store the training set embedding. We manually append these
+        #   values mainly due to the new order of hooks introduced after PL v1.4.0
+        #   https://github.com/PyTorchLightning/pytorch-lightning/pull/7357
+        self.embeddings.append(embedding)
 
-        Args:
-          outputs (List[Dict[str, Any]]): Batch of outputs from the training step
-
-        Returns:
-          None
-        """
-
-        feature_stack = torch.vstack([output["feature_vector"] for output in outputs])
-        self.normality_model.fit(feature_stack)
+    def on_validation_start(self) -> None:
+        """Fit a KDE Model to the embedding collected from the training set."""
+        # NOTE: Previous anomalib versions fit Gaussian at the end of the epoch.
+        #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
+        #   is run within train epoch.
+        embeddings = torch.vstack(self.embeddings)
+        self.normality_model.fit(embeddings)
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Validation Step of DFKDE.

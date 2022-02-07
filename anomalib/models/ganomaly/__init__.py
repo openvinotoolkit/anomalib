@@ -1,4 +1,4 @@
-"""Helper utilities for data."""
+"""GANomaly Model."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .download_progress_bar import DownloadProgressBar
-from .image import get_image_filenames, read_image
+from .model import GanomalyLightning
 
-__all__ = ["get_image_filenames", "read_image", "DownloadProgressBar"]
+__all__ = ["GanomalyLightning"]

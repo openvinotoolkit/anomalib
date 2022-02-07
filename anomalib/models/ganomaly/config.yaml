@@ -4,11 +4,11 @@ dataset:
   path: ./datasets/MVTec
   url: ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/mvtec_anomaly_detection.tar.xz
   category: bottle
-  task: segmentation
+  task: classification
   label_format: None
   tiling:
-    apply: false
-    tile_size: null
+    apply: true
+    tile_size: 64
     stride: null
     remove_border_count: 0
     use_random_tiling: False
@@ -17,32 +17,32 @@ dataset:
   train_batch_size: 32
   test_batch_size: 32
   inference_batch_size: 32
-  num_workers: 36
+  num_workers: 32
 
 model:
-  name: stfpm
-  backbone: resnet18
-  layers:
-    - layer1
-    - layer2
-    - layer3
-  lr: 0.4
-  momentum: 0.9
-  weight_decay: 0.0001
+  name: ganomaly
+  latent_vec_size: 100
+  n_features: 64
+  extra_layers: 0
+  add_final_conv: true
   early_stopping:
     patience: 3
-    metric: pixel_AUROC
+    metric: image_AUROC
     mode: max
-  normalization_method: min_max # options: [null, min_max, cdf]
+  lr: 0.0002
+  beta1: 0.5
+  beta2: 0.999
+  wadv: 1
+  wcon: 50
+  wenc: 1
   threshold:
     image_default: 0
-    pixel_default: 0
     adaptive: true
 
 project:
   seed: 0
   path: ./results
-  log_images_to: [local]
+  log_images_to: []
   logger: false
   save_to_csv: false
 
@@ -75,7 +75,7 @@ trainer:
   auto_scale_batch_size: false
   auto_select_gpus: false
   benchmark: false
-  check_val_every_n_epoch: 1
+  check_val_every_n_epoch: 2
   checkpoint_callback: true
   default_root_dir: null
   deterministic: false
@@ -89,7 +89,7 @@ trainer:
   log_every_n_steps: 50
   log_gpu_memory: null
   max_epochs: 100
-  max_steps: -1
+  max_steps: null
   min_epochs: null
   min_steps: null
   move_metrics_to_cpu: false
