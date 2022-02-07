@@ -20,8 +20,8 @@ from typing import Any, Optional, Tuple, Union
 import albumentations as A
 from torch.utils.data.dataset import Dataset
 
-from anomalib.data.transforms import PreProcessor
 from anomalib.data.utils import get_image_filenames, read_image
+from anomalib.pre_processing import PreProcessor
 
 
 class InferenceDataset(Dataset):
