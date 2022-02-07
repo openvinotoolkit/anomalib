@@ -37,7 +37,7 @@ def setup_model_train(
     nncf: bool,
     category: str,
     score_type: str = None,
-    weight_file: str = "weights/model.ckpt",
+    weight_file: str = "weights/last.ckpt",
     fast_run: bool = False,
 ) -> Tuple[Union[DictConfig, ListConfig], LightningDataModule, AnomalyModule, Trainer]:
     """Train the model based on the parameters passed.
@@ -59,7 +59,7 @@ def setup_model_train(
     config = get_configurable_parameters(model_name=model_name)
     if score_type is not None:
         config.model.score_type = score_type
-    config.project.seed = 1234
+    config.project.seed = 42
     config.dataset.category = category
     config.dataset.path = dataset_path
     config.project.log_images_to = []
@@ -91,9 +91,10 @@ def setup_model_train(
                 break
         model_checkpoint = ModelCheckpoint(
             dirpath=os.path.join(config.project.path, "weights"),
-            filename="model",
+            filename="last",
             monitor=None,
             mode="max",
+            save_last=True,
             auto_insert_metric_name=False,
         )
         callbacks.append(model_checkpoint)
