@@ -17,8 +17,8 @@
 from pathlib import Path
 from typing import List, Union
 
-from anomalib import AnomalyModule
 from anomalib.deploy import export_convert
+from anomalib.models import AnomalyModule
 
 
 def convert_to_openvino(model: AnomalyModule, export_path: Union[Path, str], input_size: List[int]):
