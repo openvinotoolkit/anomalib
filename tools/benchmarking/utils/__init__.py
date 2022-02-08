@@ -15,6 +15,6 @@
 # and limitations under the License.
 
 from .convert import convert_to_openvino
-from .metrics import get_single_model_metrics, write_metrics
+from .metrics import get_single_model_metrics, upload_to_wandb, write_metrics
 
-__all__ = ["convert_to_openvino", "get_single_model_metrics", "write_metrics"]
+__all__ = ["convert_to_openvino", "get_single_model_metrics", "write_metrics", "upload_to_wandb"]

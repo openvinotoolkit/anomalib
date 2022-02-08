@@ -15,6 +15,7 @@
 # and limitations under the License.
 
 
+import logging
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import Dict, List, Union, cast
@@ -22,10 +23,12 @@ from typing import Dict, List, Union, cast
 import torch
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning import seed_everything
-from utils import get_single_model_metrics, write_metrics
+from utils import get_single_model_metrics, upload_to_wandb, write_metrics
 
 from anomalib.config import get_configurable_parameters, update_input_size_config
 from anomalib.utils.sweep import get_run_config, set_in_nested_config
+
+logger = logging.getLogger(__file__)
 
 
 def compute_over_cpu():
@@ -84,9 +87,11 @@ def distribute():
         device_count (int, optional): If device count is 0, uses only cpu else spawn processes according
         to number of gpus available on the machine. Defaults to 0.
     """
-    if not torch.cuda.is_available():
-        compute_over_cpu()
-    else:
+    sweep_config = OmegaConf.load("tools/benchmarking/benchmark_params.yaml")
+    devices = sweep_config.hardware
+    if not torch.cuda.is_available() and "gpu" in devices:
+        logger.warning("Config requested GPU benchmarking but torch could not detect any cuda enabled devices")
+    elif {"cpu", "gpu"}.issubset(devices):
         # Create process for gpu and cpu
         with ProcessPoolExecutor(max_workers=2, mp_context=multiprocessing.get_context("spawn")) as executor:
             jobs = [executor.submit(compute_over_cpu), executor.submit(distribute_over_gpus)]
@@ -95,6 +100,12 @@ def distribute():
                     job.result()
                 except Exception as exception:
                     raise Exception(f"Error occurred while computing benchmark on device {job}") from exception
+    elif "cpu" in devices:
+        compute_over_cpu()
+    elif "gpu" in devices:
+        distribute_over_gpus()
+    if "wandb" in sweep_config.writer:
+        upload_to_wandb(team="anomalib")
 
 
 def sweep(run_config: Union[DictConfig, ListConfig], device: int = 0, seed: int = 42) -> Dict[str, Union[float, str]]:

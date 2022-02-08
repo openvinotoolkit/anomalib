@@ -1,6 +1,9 @@
 seed: 42
+hardware:
+  - cpu
+  - gpu
 writer:
-  - csv
+  - wandb
   - tensorboard
 grid_search:
   dataset:
@@ -24,7 +27,3 @@ grid_search:
   model_name:
     - padim
     - patchcore
-  model:
-    normalization_method:
-      - cdf
-      - min_max
