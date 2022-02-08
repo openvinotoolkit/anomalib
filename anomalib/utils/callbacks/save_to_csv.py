@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 from pytorch_lightning import Callback, Trainer
 
-from anomalib import AnomalyModule
+from anomalib.models.components import AnomalyModule
 
 
 class SaveToCSVCallback(Callback):

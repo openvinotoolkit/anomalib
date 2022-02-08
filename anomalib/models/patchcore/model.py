@@ -26,9 +26,12 @@ from kornia import gaussian_blur2d
 from omegaconf import ListConfig
 from torch import Tensor, nn
 
-from anomalib import AnomalyModule
-from anomalib.base import DynamicBufferModule
-from anomalib.models.components import FeatureExtractor, KCenterGreedy
+from anomalib.models.components import (
+    AnomalyModule,
+    DynamicBufferModule,
+    FeatureExtractor,
+    KCenterGreedy,
+)
 from anomalib.pre_processing import Tiler
 
 
@@ -215,8 +218,11 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         """
 
         # Coreset Subsampling
+        print("Creating CoreSet Sampler via k-Center Greedy")
         sampler = KCenterGreedy(embedding=embedding, sampling_ratio=sampling_ratio)
+        print("Getting the coreset from the main embedding.")
         coreset = sampler.sample_coreset()
+        print("Assigning the coreset as the memory bank.")
         self.memory_bank = coreset
 
     def nearest_neighbors(self, embedding: Tensor, n_neighbors: int = 9) -> Tensor:
@@ -249,7 +255,7 @@ class PatchcoreLightning(AnomalyModule):
     def __init__(self, hparams) -> None:
         super().__init__(hparams)
 
-        self.model = PatchcoreModel(
+        self.model: PatchcoreModel = PatchcoreModel(
             layers=hparams.model.layers,
             input_size=hparams.model.input_size,
             tile_size=hparams.dataset.tiling.tile_size,
@@ -258,6 +264,7 @@ class PatchcoreLightning(AnomalyModule):
             apply_tiling=hparams.dataset.tiling.apply,
         )
         self.automatic_optimization = False
+        self.embeddings: List[Tensor] = []
 
     def configure_optimizers(self) -> None:
         """Configure optimizers.
@@ -267,13 +274,12 @@ class PatchcoreLightning(AnomalyModule):
         """
         return None
 
-    def training_step(self, batch, _):  # pylint: disable=arguments-differ
+    def training_step(self, batch, _batch_idx):  # pylint: disable=arguments-differ
         """Generate feature embedding of the batch.
 
         Args:
-            batch (Dict[str, Any]): Batch containing image filename,
-                                    image, label and mask
-            _ (int): Batch Index
+            batch (Dict[str, Any]): Batch containing image filename, image, label and mask
+            _batch_idx (int): Batch Index
 
         Returns:
             Dict[str, np.ndarray]: Embedding Vector
@@ -281,20 +287,22 @@ class PatchcoreLightning(AnomalyModule):
         self.model.feature_extractor.eval()
         embedding = self.model(batch["image"])
 
-        return {"embedding": embedding}
+        # NOTE: `self.embedding` appends each batch embedding to
+        #   store the training set embedding. We manually append these
+        #   values mainly due to the new order of hooks introduced after PL v1.4.0
+        #   https://github.com/PyTorchLightning/pytorch-lightning/pull/7357
+        self.embeddings.append(embedding)
 
-    def training_epoch_end(self, outputs):
-        """Concatenate batch embeddings to generate normal embedding.
+    def on_validation_start(self) -> None:
+        """Apply subsampling to the embedding collected from the training set."""
+        # NOTE: Previous anomalib versions fit subsampling at the end of the epoch.
+        #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
+        #   is run within train epoch.
+        print("Aggregating the embedding extracted from the training set.")
+        embeddings = torch.vstack(self.embeddings)
 
-        Apply coreset subsampling to the embedding set for dimensionality reduction.
-
-        Args:
-            outputs (List[Dict[str, np.ndarray]]): List of embedding vectors
-        """
-        embedding = torch.vstack([output["embedding"] for output in outputs])
         sampling_ratio = self.hparams.model.coreset_sampling_ratio
-
-        self.model.subsample_embedding(embedding, sampling_ratio)
+        self.model.subsample_embedding(embeddings, sampling_ratio)
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Get batch of anomaly maps from input image batch.

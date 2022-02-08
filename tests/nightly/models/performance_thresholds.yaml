@@ -1,0 +1,296 @@
+padim:
+  bottle:
+    image_AUROC: 0.993
+    pixel_AUROC: 0.983
+  cable:
+    image_AUROC: 0.830
+    pixel_AUROC: 0.947
+  capsule:
+    image_AUROC: 0.860
+    pixel_AUROC: 0.984
+  carpet:
+    image_AUROC: 0.945
+    pixel_AUROC: 0.984
+  grid:
+    image_AUROC: 0.857
+    pixel_AUROC: 0.941
+  hazelnut:
+    image_AUROC: 0.750
+    pixel_AUROC: 0.981
+  leather:
+    image_AUROC: 0.982
+    pixel_AUROC: 0.991
+  metal_nut:
+    image_AUROC: 0.968
+    pixel_AUROC: 0.971
+  pill:
+    image_AUROC: 0.851
+    pixel_AUROC: 0.956
+  screw:
+    image_AUROC: 0.759
+    pixel_AUROC: 0.975
+  tile:
+    image_AUROC: 0.943
+    pixel_AUROC: 0.933
+  toothbrush:
+    image_AUROC: 0.844
+    pixel_AUROC: 0.988
+  transistor:
+    image_AUROC: 0.919
+    pixel_AUROC: 0.970
+  wood:
+    image_AUROC: 0.976
+    pixel_AUROC: 0.940
+  zipper:
+    image_AUROC: 0.738
+    pixel_AUROC: 0.970
+
+dfkde:
+  bottle:
+    image_AUROC: 0.969
+  cable:
+    image_AUROC: 0.671
+  capsule:
+    image_AUROC: 0.782
+  carpet:
+    image_AUROC: 0.621
+  grid:
+    image_AUROC: 0.494
+  hazelnut:
+    image_AUROC: 0.786
+  leather:
+    image_AUROC: 0.757
+  metal_nut:
+    image_AUROC: 0.759
+  pill:
+    image_AUROC: 0.642
+  screw:
+    image_AUROC: 0.681
+  tile:
+    image_AUROC: 0.965
+  toothbrush:
+    image_AUROC: 0.830
+  transistor:
+    image_AUROC: 0.799
+  wood:
+    image_AUROC: 0.851
+  zipper:
+    image_AUROC: 0.858
+
+dfm:
+  bottle:
+    image_AUROC: 0.996
+  cable:
+    image_AUROC: 0.926
+  capsule:
+    image_AUROC: 0.876
+  carpet:
+    image_AUROC: 0.846
+  grid:
+    image_AUROC: 0.496
+  hazelnut:
+    image_AUROC: 0.984
+  leather:
+    image_AUROC: 0.931
+  metal_nut:
+    image_AUROC: 0.946
+  pill:
+    image_AUROC: 0.816
+  screw:
+    image_AUROC: 0.760
+  tile:
+    image_AUROC: 0.980
+  toothbrush:
+    image_AUROC: 0.963
+  transistor:
+    image_AUROC: 0.935
+  wood:
+    image_AUROC: 0.957
+  zipper:
+    image_AUROC: 0.945
+
+stfpm:
+  bottle:
+    image_AUROC: 0.998
+    pixel_AUROC: 0.978
+    nncf:
+      image_AUROC: 0.998
+      pixel_AUROC: 0.964
+  cable:
+    image_AUROC: 0.939
+    pixel_AUROC: 0.947
+    nncf:
+      image_AUROC: 0.937
+      pixel_AUROC: 0.936
+  capsule:
+    image_AUROC: 0.668
+    pixel_AUROC: 0.961
+    nncf:
+      image_AUROC: 0.657
+      pixel_AUROC: 0.967
+  carpet:
+    image_AUROC: 0.986
+    pixel_AUROC: 0.987
+    nncf:
+      image_AUROC: 0.991
+      pixel_AUROC: 0.987
+  grid:
+    image_AUROC: 0.986
+    pixel_AUROC: 0.989
+    nncf:
+      image_AUROC: 0.989
+      pixel_AUROC: 0.988
+  hazelnut:
+    image_AUROC: 0.998
+    pixel_AUROC: 0.986
+    nncf:
+      image_AUROC: 0.991
+      pixel_AUROC: 0.976
+  leather:
+    image_AUROC: 0.995
+    pixel_AUROC: 0.983
+    nncf:
+      image_AUROC: 0.988
+      pixel_AUROC: 0.974
+  metal_nut:
+    image_AUROC: 0.985
+    pixel_AUROC: 0.976
+    nncf:
+      image_AUROC: 0.982
+      pixel_AUROC: 0.962
+  pill:
+    image_AUROC: 0.584
+    pixel_AUROC: 0.932
+    nncf:
+      image_AUROC: 0.613
+      pixel_AUROC: 0.882
+  screw:
+    image_AUROC: 0.766
+    pixel_AUROC: 0.973
+    nncf:
+      image_AUROC: 0.452
+      pixel_AUROC: 0.952
+  tile:
+    image_AUROC: 0.955
+    pixel_AUROC: 0.967
+    nncf:
+      image_AUROC: 0.944
+      pixel_AUROC: 0.945
+  toothbrush:
+    image_AUROC: 0.883
+    pixel_AUROC: 0.986
+    nncf:
+      image_AUROC: 0.791
+      pixel_AUROC: 0.956
+  transistor:
+    image_AUROC: 0.806
+    pixel_AUROC: 0.806
+    nncf:
+      image_AUROC: 0.798
+      pixel_AUROC: 0.793
+  wood:
+    image_AUROC: 0.989
+    pixel_AUROC: 0.948
+    nncf:
+      image_AUROC: 0.992
+      pixel_AUROC: 0.951
+  zipper:
+    image_AUROC: 0.837
+    pixel_AUROC: 0.982
+    nncf:
+      image_AUROC: 0.843
+      pixel_AUROC: 0.980
+
+patchcore:
+  bottle:
+    image_AUROC: 1.0
+    pixel_AUROC: 0.984
+  cable:
+    image_AUROC: 0.994
+    pixel_AUROC: 0.987
+  capsule:
+    image_AUROC: 0.980
+    pixel_AUROC: 0.987
+  carpet:
+    image_AUROC: 0.980
+    pixel_AUROC: 0.988
+  grid:
+    image_AUROC: 0.961
+    pixel_AUROC: 0.868
+  hazelnut:
+    image_AUROC: 1.0
+    pixel_AUROC: 0.987
+  leather:
+    image_AUROC: 1.0
+    pixel_AUROC: 0.990
+  metal_nut:
+    image_AUROC: 0.994
+    pixel_AUROC: 0.989
+  pill:
+    image_AUROC: 0.927
+    pixel_AUROC: 0.980
+  screw:
+    image_AUROC: 0.928
+    pixel_AUROC: 0.989
+  tile:
+    image_AUROC: 1.0
+    pixel_AUROC: 0.960
+  toothbrush:
+    image_AUROC: 0.955
+    pixel_AUROC: 0.988
+  transistor:
+    image_AUROC: 0.999
+    pixel_AUROC: 0.981
+  wood:
+    image_AUROC: 0.989
+    pixel_AUROC: 0.934
+  zipper:
+    image_AUROC: 0.981
+    pixel_AUROC: 0.983
+
+cflow:
+  bottle:
+    image_AUROC: 1.0
+    pixel_AUROC: 0.980
+  cable:
+    image_AUROC: 0.960
+    pixel_AUROC: 0.969
+  capsule:
+    image_AUROC: 0.977
+    pixel_AUROC: 0.989
+  carpet:
+    image_AUROC: 0.979
+    pixel_AUROC: 0.987
+  grid:
+    image_AUROC: 0.959
+    pixel_AUROC: 0.965
+  hazelnut:
+    image_AUROC: 0.999
+    pixel_AUROC: 0.986
+  leather:
+    image_AUROC: 1.0
+    pixel_AUROC: 0.994
+  metal_nut:
+    image_AUROC: 0.984
+    pixel_AUROC: 0.981
+  pill:
+    image_AUROC: 0.933
+    pixel_AUROC: 0.986
+  screw:
+    image_AUROC: 0.910
+    pixel_AUROC: 0.984
+  tile:
+    image_AUROC: 0.998
+    pixel_AUROC: 0.965
+  toothbrush:
+    image_AUROC: 0.894
+    pixel_AUROC: 0.984
+  transistor:
+    image_AUROC: 0.9733
+    pixel_AUROC: 0.942
+  wood:
+    image_AUROC: 0.942
+    pixel_AUROC: 0.937
+  zipper:
+    image_AUROC: 0.979
+    pixel_AUROC: 0.981

@@ -28,9 +28,8 @@ from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
 from torch import Tensor, nn, optim
 
-from anomalib import AnomalyModule
 from anomalib.models.cflow.backbone import cflow_head, positional_encoding_2d
-from anomalib.models.components import FeatureExtractor
+from anomalib.models.components import AnomalyModule, FeatureExtractor
 
 __all__ = ["AnomalyMapGenerator", "CflowModel", "CflowLightning"]
 

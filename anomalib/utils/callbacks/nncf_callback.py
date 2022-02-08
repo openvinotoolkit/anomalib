@@ -27,8 +27,6 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning import Callback
 from torch.utils.data.dataloader import DataLoader
 
-from anomalib.data import get_datamodule
-
 
 def criterion_fn(outputs, criterion):
     """Calls the criterion function on outputs."""
@@ -90,21 +88,18 @@ class NNCFCallback(Callback):
         self.dirpath = dirpath
         self.filename = filename
 
-        # we need to create a datamodule here to obtain the init loader
-        datamodule = get_datamodule(config)
-        datamodule.setup()
-        self.train_loader = datamodule.train_dataloader()
-
         self.comp_ctrl: Optional[CompressionAlgorithmController] = None
         self.compression_scheduler: CompressionScheduler
 
-    def setup(self, _: pl.Trainer, pl_module: pl.LightningModule, __: Optional[str] = None) -> None:
+    def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: Optional[str] = None) -> None:
         """Call when fit or test begins.
 
         Takes the pytorch model and wraps it using the compression controller so that it is ready for nncf fine-tuning.
         """
         if self.comp_ctrl is None:
-            init_loader = InitLoader(self.train_loader)
+            # NOTE: trainer.datamodule returns the following error
+            #   "Trainer" has no attribute "datamodule"  [attr-defined]
+            init_loader = InitLoader(trainer.datamodule.train_dataloader())  # type: ignore
             nncf_config = register_default_init_args(
                 self.nncf_config, init_loader, pl_module.model.loss, criterion_fn=criterion_fn
             )
@@ -113,7 +108,12 @@ class NNCFCallback(Callback):
             self.compression_scheduler = self.comp_ctrl.scheduler
 
     def on_train_batch_start(
-        self, trainer, _pl_module: pl.LightningModule, _batch: Any, _batch_idx: int, _dataloader_idx: int
+        self,
+        trainer: pl.Trainer,
+        _pl_module: pl.LightningModule,
+        _batch: Any,
+        _batch_idx: int,
+        _unused: Optional[int] = 0,
     ) -> None:
         """Call when the train batch begins.
 
@@ -123,7 +123,7 @@ class NNCFCallback(Callback):
         if self.comp_ctrl is not None:
             trainer.model.loss_val = self.comp_ctrl.loss()
 
-    def on_train_end(self, _trainer, _pl_module: pl.LightningModule) -> None:
+    def on_train_end(self, _trainer: pl.Trainer, _pl_module: pl.LightningModule) -> None:
         """Call when the train ends.
 
         Exports onnx model and if compression controller is not None, uses the onnx model to generate the OpenVINO IR.

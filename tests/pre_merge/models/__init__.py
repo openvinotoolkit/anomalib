@@ -1,4 +1,4 @@
-"""Base anomaly modules."""
+"""Pre-merge model tests."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -13,8 +13,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions
 # and limitations under the License.
-
-from .anomaly_module import AnomalyModule
-from .dynamic_module import DynamicBufferModule
-
-__all__ = ["AnomalyModule", "DynamicBufferModule"]

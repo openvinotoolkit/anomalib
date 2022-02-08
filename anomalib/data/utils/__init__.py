@@ -15,6 +15,6 @@
 # and limitations under the License.
 
 from .download_progress_bar import DownloadProgressBar
-from .image import read_image
+from .image import get_image_filenames, read_image
 
-__all__ = ["read_image", "DownloadProgressBar"]
+__all__ = ["get_image_filenames", "read_image", "DownloadProgressBar"]
