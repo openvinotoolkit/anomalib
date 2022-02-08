@@ -37,7 +37,7 @@ def setup_model_train(
     nncf: bool,
     category: str,
     score_type: str = None,
-    weight_file: str = "weights/last.ckpt",
+    weight_file: str = "weights/model.ckpt",
     fast_run: bool = False,
 ) -> Tuple[Union[DictConfig, ListConfig], LightningDataModule, AnomalyModule, Trainer]:
     """Train the model based on the parameters passed.
@@ -68,7 +68,7 @@ def setup_model_train(
     if "weight_file" in config.model.keys() and weight_file == "":
         config.model.pop("weight_file")
     else:
-        config.model.weight_file = weight_file
+        config.model.weight_file = weight_file if not fast_run else "weights/last.ckpt"
 
     if nncf:
         config.optimization.nncf.apply = True
