@@ -17,21 +17,95 @@
 
 import logging
 import multiprocessing
+import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Dict, List, Union, cast
 
 import torch
 from omegaconf import DictConfig, ListConfig, OmegaConf
-from pytorch_lightning import seed_everything
-from utils import get_single_model_metrics, upload_to_wandb, write_metrics
+from pytorch_lightning import Trainer, seed_everything
+from utils import convert_to_openvino, upload_to_wandb, write_metrics
 
 from anomalib.config import get_configurable_parameters, update_input_size_config
-from anomalib.utils.sweep import get_run_config, set_in_nested_config
+from anomalib.data import get_datamodule
+from anomalib.models import get_model
+from anomalib.utils.sweep import (
+    get_meta_data,
+    get_openvino_throughput,
+    get_run_config,
+    get_sweep_callbacks,
+    get_torch_throughput,
+    set_in_nested_config,
+)
 
 logger = logging.getLogger(__file__)
 
 
-def compute_over_cpu():
+def get_single_model_metrics(model_config: Union[DictConfig, ListConfig], openvino_metrics: bool = False) -> Dict:
+    """Collects metrics for `model_name` and returns a dict of results.
+
+    Args:
+        model_config (DictConfig, ListConfig): Configuration for run
+        openvino_metrics (bool): If True, converts the model to OpenVINO format and gathers inference metrics.
+
+    Returns:
+        Dict: Collection of all the metrics such as time taken, throughput and performance scores.
+    """
+
+    with TemporaryDirectory() as project_path:
+        model_config.project.path = project_path
+        datamodule = get_datamodule(model_config)
+        model = get_model(model_config)
+
+        callbacks = get_sweep_callbacks()
+
+        trainer = Trainer(**model_config.trainer, logger=None, callbacks=callbacks)
+
+        start_time = time.time()
+        trainer.fit(model=model, datamodule=datamodule)
+
+        # get start time
+        training_time = time.time() - start_time
+
+        # Creating new variable is faster according to https://stackoverflow.com/a/4330829
+        start_time = time.time()
+        # get test results
+        test_results = trainer.test(model=model, datamodule=datamodule)
+
+        # get testing time
+        testing_time = time.time() - start_time
+
+        meta_data = get_meta_data(model, model_config.model.input_size)
+
+        throughput = get_torch_throughput(model_config, model, datamodule.test_dataloader().dataset, meta_data)
+
+        # Get OpenVINO metrics
+        openvino_throughput = float("nan")
+        if openvino_metrics:
+            # Create dirs for openvino model export
+            openvino_export_path = project_path / Path("exported_models")
+            openvino_export_path.mkdir(parents=True, exist_ok=True)
+            convert_to_openvino(model, openvino_export_path, model_config.model.input_size)
+            openvino_throughput = get_openvino_throughput(
+                model_config, openvino_export_path, datamodule.test_dataloader().dataset, meta_data
+            )
+
+        # arrange the data
+        data = {
+            "Training Time (s)": training_time,
+            "Testing Time (s)": testing_time,
+            "Inference Throughput (fps)": throughput,
+            "OpenVINO Inference Throughput (fps)": openvino_throughput,
+        }
+        for key, val in test_results[0].items():
+            data[key] = float(val)
+
+    return data
+
+
+def compute_on_cpu():
     """Compute all run configurations over a sigle CPU."""
     sweep_config = OmegaConf.load("tools/benchmarking/benchmark_params.yaml")
     for run_config in get_run_config(sweep_config.grid_search):
@@ -39,7 +113,7 @@ def compute_over_cpu():
         write_metrics(model_metrics, sweep_config.writer)
 
 
-def compute_over_gpu(run_configs: Union[DictConfig, ListConfig], device: int, seed: int, writers: List[str]):
+def compute_on_gpu(run_configs: Union[DictConfig, ListConfig], device: int, seed: int, writers: List[str]):
     """Go over each run config and collect the result.
 
     Args:
@@ -66,7 +140,7 @@ def distribute_over_gpus():
         ):
             jobs.append(
                 executor.submit(
-                    compute_over_gpu,
+                    compute_on_gpu,
                     run_configs[run_split : run_split + len(run_configs) // torch.cuda.device_count()],
                     device_id + 1,
                     sweep_config.seed,
@@ -94,14 +168,14 @@ def distribute():
     elif {"cpu", "gpu"}.issubset(devices):
         # Create process for gpu and cpu
         with ProcessPoolExecutor(max_workers=2, mp_context=multiprocessing.get_context("spawn")) as executor:
-            jobs = [executor.submit(compute_over_cpu), executor.submit(distribute_over_gpus)]
+            jobs = [executor.submit(compute_on_cpu), executor.submit(distribute_over_gpus)]
             for job in as_completed(jobs):
                 try:
                     job.result()
                 except Exception as exception:
                     raise Exception(f"Error occurred while computing benchmark on device {job}") from exception
     elif "cpu" in devices:
-        compute_over_cpu()
+        compute_on_cpu()
     elif "gpu" in devices:
         distribute_over_gpus()
     if "wandb" in sweep_config.writer:
