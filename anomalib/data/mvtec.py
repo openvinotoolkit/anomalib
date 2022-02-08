@@ -40,7 +40,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data.dataset import Dataset
 from torchvision.datasets.folder import VisionDataset
 
-from anomalib.data import InferenceDataset
+from anomalib.data.inference import InferenceDataset
 from anomalib.data.utils import DownloadProgressBar, read_image
 from anomalib.pre_processing import PreProcessor
 

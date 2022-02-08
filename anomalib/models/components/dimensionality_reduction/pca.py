@@ -19,7 +19,7 @@ from typing import Union
 import torch
 from torch import Tensor
 
-from anomalib.models.components import DynamicBufferModule
+from anomalib.models.components.base import DynamicBufferModule
 
 
 class PCA(DynamicBufferModule):
