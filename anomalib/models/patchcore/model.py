@@ -26,8 +26,8 @@ from kornia import gaussian_blur2d
 from omegaconf import ListConfig
 from torch import Tensor, nn
 
-from anomalib import AnomalyModule
 from anomalib.models.components import (
+    AnomalyModule,
     DynamicBufferModule,
     FeatureExtractor,
     KCenterGreedy,

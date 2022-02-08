@@ -21,8 +21,7 @@ import torchvision
 from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
-from anomalib import AnomalyModule
-from anomalib.models.components import FeatureExtractor
+from anomalib.models.components import AnomalyModule, FeatureExtractor
 
 from .dfm_model import DFMModel
 

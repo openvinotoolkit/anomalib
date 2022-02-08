@@ -19,8 +19,8 @@ from typing import Tuple, cast
 
 from pytorch_lightning import Callback, LightningModule
 
-from anomalib import AnomalyModule
 from anomalib.deploy import export_convert
+from anomalib.models.components import AnomalyModule
 
 
 class CompressModelCallback(Callback):

@@ -22,8 +22,7 @@ from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
 from torch import Tensor
 
-from anomalib import AnomalyModule
-from anomalib.models.components import FeatureExtractor
+from anomalib.models.components import AnomalyModule, FeatureExtractor
 
 from .normality_model import NormalityModel
 
