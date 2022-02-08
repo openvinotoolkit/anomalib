@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from anomalib.data.mvtec import MVTecDataModule
-from anomalib.data.transforms import Denormalize, ToNumpy
+from anomalib.pre_processing.transforms import Denormalize, ToNumpy
 from tests.helpers.dataset import get_dataset_path
 
 

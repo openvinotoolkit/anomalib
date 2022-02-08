@@ -24,7 +24,7 @@ from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
 from torch import Tensor, nn, optim
 
-from anomalib.core.model import AnomalyModule
+from anomalib.models.components import AnomalyModule
 
 from .torch_model import Discriminator, Generator
 

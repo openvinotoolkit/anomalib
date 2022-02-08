@@ -27,10 +27,12 @@ from kornia import gaussian_blur2d
 from omegaconf import DictConfig, ListConfig
 from torch import Tensor, nn
 
-from anomalib.core.model import AnomalyModule
-from anomalib.core.model.feature_extractor import FeatureExtractor
-from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
-from anomalib.data.tiler import Tiler
+from anomalib.models.components import (
+    AnomalyModule,
+    FeatureExtractor,
+    MultiVariateGaussian,
+)
+from anomalib.pre_processing import Tiler
 
 __all__ = ["PadimLightning"]
 
