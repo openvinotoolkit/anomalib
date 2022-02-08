@@ -1,4 +1,4 @@
-"""Functions for Inference and model deployment."""
+"""Test supported loggers."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -13,8 +13,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions
 # and limitations under the License.
-
-from .inferencers import OpenVINOInferencer, TorchInferencer
-from .optimize import export_convert, get_model_metadata
-
-__all__ = ["OpenVINOInferencer", "TorchInferencer", "export_convert", "get_model_metadata"]

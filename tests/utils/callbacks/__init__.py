@@ -1,4 +1,4 @@
-"""Functions for Inference and model deployment."""
+"""Sampling methods."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .inferencers import OpenVINOInferencer, TorchInferencer
-from .optimize import export_convert, get_model_metadata
+from .k_center_greedy import KCenterGreedy
 
-__all__ = ["OpenVINOInferencer", "TorchInferencer", "export_convert", "get_model_metadata"]
+__all__ = ["KCenterGreedy"]
