@@ -19,9 +19,9 @@ from argparse import ArgumentParser, Namespace
 from pytorch_lightning import Trainer
 
 from anomalib.config import get_configurable_parameters
-from anomalib.core.callbacks import get_callbacks
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
+from anomalib.utils.callbacks import get_callbacks
 
 
 def get_args() -> Namespace:

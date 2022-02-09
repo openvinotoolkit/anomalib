@@ -22,9 +22,9 @@ from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
 from torch import Tensor
 
-from anomalib.core.model import AnomalyModule
-from anomalib.core.model.feature_extractor import FeatureExtractor
-from anomalib.models.dfkde.normality_model import NormalityModel
+from anomalib.models.components import AnomalyModule, FeatureExtractor
+
+from .normality_model import NormalityModel
 
 
 class DfkdeLightning(AnomalyModule):
