@@ -14,6 +14,6 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from config import flatten_hpo_params
+from .config import flatten_hpo_params
 
 __all__ = ["flatten_hpo_params"]

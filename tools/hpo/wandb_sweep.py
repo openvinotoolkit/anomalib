@@ -77,7 +77,7 @@ class WandbSweep:
 def get_args():
     """Gets parameters from commandline."""
     parser = ArgumentParser()
-    parser.add_argument("--model", type=str, default="stfpm", help="Name of the algorithm to train/test")
+    parser.add_argument("--model", type=str, default="padim", help="Name of the algorithm to train/test")
     parser.add_argument("--model_config_path", type=Path, required=False, help="Path to a model config file")
     parser.add_argument("--sweep_config_path", type=Path, required=True, help="Path to sweep configuration")
 
