@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .config import get_run_config, set_in_nested_config
+from .config import flatten_sweep_params, get_run_config, set_in_nested_config
 from .helpers import (
     get_meta_data,
     get_openvino_throughput,
@@ -29,4 +29,5 @@ __all__ = [
     "get_meta_data",
     "get_openvino_throughput",
     "get_torch_throughput",
+    "flatten_sweep_params",
 ]
