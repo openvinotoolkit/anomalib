@@ -1,4 +1,4 @@
-"""Utils to help in HPO search."""
+"""Helpers for benchmarking and hyperparameter optimization."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -13,3 +13,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions
 # and limitations under the License.
+
+from .callbacks import get_sweep_callbacks
+from .inference import get_meta_data, get_openvino_throughput, get_torch_throughput
+
+__all__ = ["get_meta_data", "get_openvino_throughput", "get_torch_throughput", "get_sweep_callbacks"]

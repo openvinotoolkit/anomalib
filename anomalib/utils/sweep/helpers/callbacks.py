@@ -1,4 +1,4 @@
-"""Sampling methods."""
+"""Get callbacks related to sweep."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -14,6 +14,23 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .k_center_greedy import KCenterGreedy
 
-__all__ = ["KCenterGreedy"]
+from typing import List
+
+from pytorch_lightning import Callback
+
+from anomalib.utils.callbacks.timer import TimerCallback
+
+
+def get_sweep_callbacks() -> List[Callback]:
+    """Gets callbacks relevant to sweep.
+
+    Args:
+        config (Union[DictConfig, ListConfig]): Model config loaded from anomalib
+
+    Returns:
+        List[Callback]: List of callbacks
+    """
+    callbacks: List[Callback] = [TimerCallback()]
+
+    return callbacks

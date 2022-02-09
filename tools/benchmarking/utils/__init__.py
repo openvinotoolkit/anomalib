@@ -1,4 +1,4 @@
-"""Tests for utils."""
+"""Utils specific to running benchmarking scripts."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -13,3 +13,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions
 # and limitations under the License.
+
+from .convert import convert_to_openvino
+from .metrics import upload_to_wandb, write_metrics
+
+__all__ = ["convert_to_openvino", "write_metrics", "upload_to_wandb"]

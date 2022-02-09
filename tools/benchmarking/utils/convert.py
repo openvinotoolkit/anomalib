@@ -1,4 +1,4 @@
-"""Sampling methods."""
+"""Model converters."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -14,6 +14,15 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .k_center_greedy import KCenterGreedy
+from pathlib import Path
+from typing import List, Union
 
-__all__ = ["KCenterGreedy"]
+from anomalib.deploy import export_convert
+from anomalib.models import AnomalyModule
+
+
+def convert_to_openvino(model: AnomalyModule, export_path: Union[Path, str], input_size: List[int]):
+    """Convert the trained model to OpenVINO."""
+    export_path = export_path if isinstance(export_path, Path) else Path(export_path)
+    onnx_path = export_path / "model.onnx"
+    export_convert(model, input_size, onnx_path, export_path)
