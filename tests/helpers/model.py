@@ -15,7 +15,7 @@
 # and limitations under the License.
 
 import os
-from typing import Dict, Tuple, Union
+from typing import Dict, Tuple, Union, List
 
 import numpy as np
 from omegaconf import DictConfig, ListConfig
@@ -38,6 +38,7 @@ def setup_model_train(
     score_type: str = None,
     weight_file: str = "weights/model.ckpt",
     fast_run: bool = False,
+    device: Union[List[int],int] = [0]
 ) -> Tuple[Union[DictConfig, ListConfig], LightningDataModule, AnomalyModule, Trainer]:
     """Train the model based on the parameters passed.
 
@@ -51,6 +52,7 @@ def setup_model_train(
         weight_file (str, optional): Path to weight file.
         fast_run (bool, optional): If set to true, the model trains for only 1 epoch. We train for one epoch as
             this ensures that both anomalous and non-anomalous images are present in the validation step.
+        device (List[int], int, optional): Select which device you want to train the model on. Defaults to first GPU.
 
     Returns:
         Tuple[DictConfig, LightningDataModule, AnomalyModule, Trainer]: config, datamodule, trained model, trainer
@@ -62,6 +64,7 @@ def setup_model_train(
     config.dataset.category = category
     config.dataset.path = dataset_path
     config.project.log_images_to = []
+    config.trainer.gpus = device
 
     # If weight file is empty, remove the key from config
     if "weight_file" in config.model.keys() and weight_file == "":

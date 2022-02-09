@@ -10,7 +10,7 @@ padim:
     pixel_AUROC: 0.984
   carpet:
     image_AUROC: 0.945
-    pixel_AUROC: 0.984
+    pixel_AUROC: 0.983
   grid:
     image_AUROC: 0.857
     pixel_AUROC: 0.941
