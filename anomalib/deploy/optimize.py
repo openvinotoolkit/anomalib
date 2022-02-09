@@ -24,7 +24,7 @@ import numpy as np
 import torch
 from torch import Tensor
 
-from anomalib.core.model.anomaly_module import AnomalyModule
+from anomalib.models.components import AnomalyModule
 
 
 def get_model_metadata(model: AnomalyModule) -> Dict[str, Tensor]:

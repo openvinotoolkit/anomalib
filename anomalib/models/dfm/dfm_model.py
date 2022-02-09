@@ -19,8 +19,7 @@ import math
 import torch
 from torch import Tensor, nn
 
-from anomalib.core.model.dynamic_module import DynamicBufferModule
-from anomalib.core.model.pca import PCA
+from anomalib.models.components import PCA, DynamicBufferModule
 
 
 class SingleClassGaussian(DynamicBufferModule):
