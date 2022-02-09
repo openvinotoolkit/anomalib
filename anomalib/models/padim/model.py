@@ -27,10 +27,12 @@ from kornia import gaussian_blur2d
 from omegaconf import DictConfig, ListConfig
 from torch import Tensor, nn
 
-from anomalib.core.model import AnomalyModule
-from anomalib.core.model.feature_extractor import FeatureExtractor
-from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
-from anomalib.data.tiler import Tiler
+from anomalib.models.components import (
+    AnomalyModule,
+    FeatureExtractor,
+    MultiVariateGaussian,
+)
+from anomalib.pre_processing import Tiler
 
 __all__ = ["PadimLightning"]
 
@@ -281,7 +283,7 @@ class PadimLightning(AnomalyModule):
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         super().__init__(hparams)
         self.layers = hparams.model.layers
-        self.model = PadimModel(
+        self.model: PadimModel = PadimModel(
             layers=hparams.model.layers,
             input_size=hparams.model.input_size,
             tile_size=hparams.dataset.tiling.tile_size,
@@ -292,38 +294,38 @@ class PadimLightning(AnomalyModule):
 
         self.stats: List[Tensor] = []
         self.automatic_optimization = False
+        self.embeddings: List[Tensor] = []
 
     @staticmethod
     def configure_optimizers():
         """PADIM doesn't require optimization, therefore returns no optimizers."""
         return None
 
-    def training_step(self, batch, _):  # pylint: disable=arguments-differ
+    def training_step(self, batch, _batch_idx):  # pylint: disable=arguments-differ
         """Training Step of PADIM. For each batch, hierarchical features are extracted from the CNN.
 
         Args:
-            batch (Dict[str,Tensor]): Input batch
-            _: Index of the batch.
+            batch (Dict[str, Any]): Batch containing image filename, image, label and mask
+            _batch_idx: Index of the batch.
 
         Returns:
             Hierarchical feature map
         """
-
         self.model.feature_extractor.eval()
-        embeddings = self.model(batch["image"])
-        return {"embeddings": embeddings.cpu()}
+        embedding = self.model(batch["image"])
 
-    def training_epoch_end(self, outputs: List[Dict[str, Tensor]]) -> None:
-        """Fit a multivariate gaussian model on an embedding extracted from deep hierarchical CNN features.
+        # NOTE: `self.embedding` appends each batch embedding to
+        #   store the training set embedding. We manually append these
+        #   values mainly due to the new order of hooks introduced after PL v1.4.0
+        #   https://github.com/PyTorchLightning/pytorch-lightning/pull/7357
+        self.embeddings.append(embedding.cpu())
 
-        Args:
-            outputs (List[Dict[str, Tensor]]): Batch of outputs from the training step
-
-        Returns:
-            None
-        """
-
-        embeddings = torch.vstack([x["embeddings"] for x in outputs])
+    def on_validation_start(self) -> None:
+        """Fit a Gaussian to the embedding collected from the training set."""
+        # NOTE: Previous anomalib versions fit Gaussian at the end of the epoch.
+        #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
+        #   is run within train epoch.
+        embeddings = torch.vstack(self.embeddings)
         self.stats = self.model.gaussian.fit(embeddings)
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
@@ -341,5 +343,4 @@ class PadimLightning(AnomalyModule):
         """
 
         batch["anomaly_maps"] = self.model(batch["image"])
-
         return batch

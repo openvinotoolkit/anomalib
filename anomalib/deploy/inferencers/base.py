@@ -23,10 +23,12 @@ from omegaconf import DictConfig, OmegaConf
 from torch import Tensor
 
 from anomalib.data.utils import read_image
-from anomalib.utils.normalization.cdf import normalize as normalize_cdf
-from anomalib.utils.normalization.cdf import standardize
-from anomalib.utils.normalization.min_max import normalize as normalize_min_max
-from anomalib.utils.post_process import superimpose_anomaly_map
+from anomalib.post_processing import superimpose_anomaly_map
+from anomalib.post_processing.normalization.cdf import normalize as normalize_cdf
+from anomalib.post_processing.normalization.cdf import standardize
+from anomalib.post_processing.normalization.min_max import (
+    normalize as normalize_min_max,
+)
 
 
 class Inferencer(ABC):

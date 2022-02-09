@@ -1,6 +1,6 @@
 # Real-Time  Unsupervised Anomaly Detection via Conditional Normalizing Flows
 
-This is the implementation of the [CFLOW-AD](https://arxiv.org/pdf/2107.12571v1.pdf) paper.
+This is the implementation of the [CFLOW-AD](https://arxiv.org/pdf/2107.12571v1.pdf) paper. This code is modified form of the [official repository](https://github.com/gudovskiy/cflow-ad).
 
 Model Type: Segmentation
 
@@ -47,4 +47,3 @@ All results gathered with seed `42`.
 ![Sample Result 2](../../../docs/source/images/cflow/results/1.png "Sample Result 2")
 
 ![Sample Result 3](../../../docs/source/images/cflow/results/2.png "Sample Result 3")
-

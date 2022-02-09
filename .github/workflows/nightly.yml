@@ -1,0 +1,30 @@
+name: Nightly-regression Test
+
+on:
+  workflow_dispatch: # run on request (no need for PR)
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  Tox:
+    runs-on: [self-hosted, linux, x64]
+    strategy:
+      max-parallel: 1
+    if: github.ref == 'refs/heads/development'
+    steps:
+      - name: Print GPU status
+        run: nvidia-smi
+      - name: CHECKOUT REPOSITORY
+        uses: actions/checkout@v2
+      - name: Install Tox
+        run: pip install tox
+      - name: Coverage
+        run: |
+          export ANOMALIB_DATASET_PATH=/media/data1/datasets/MVTec
+          export CUDA_VISIBLE_DEVICES=2
+          tox -e nightly
+      - name: Upload coverage result
+        uses: actions/upload-artifact@v2
+        with:
+          name: coverage
+          path: .tox/coverage.xml

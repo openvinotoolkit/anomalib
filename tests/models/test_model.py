@@ -23,10 +23,9 @@ import pytest
 from pytorch_lightning import Trainer
 
 from anomalib.config import get_configurable_parameters, update_nncf_config
-from anomalib.core.callbacks import get_callbacks
-from anomalib.core.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
+from anomalib.utils.callbacks import VisualizerCallback, get_callbacks
 from tests.helpers.dataset import TestDataset, get_dataset_path
 
 
@@ -85,6 +84,7 @@ class TestModel:
         config.dataset.category = category
         config.dataset.path = dataset_path
         config.model.weight_file = "weights/model.ckpt"  # add model weights to the config
+        config.project.log_images_to = []
 
         if not use_mvtec:
             config.dataset.category = "shapes"
@@ -156,6 +156,7 @@ class TestModel:
             ("stfpm", True),
             ("patchcore", False),
             ("cflow", False),
+            ("ganomaly", False),
         ],
     )
     @pytest.mark.flaky(max_runs=3)

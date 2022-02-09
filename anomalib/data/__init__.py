@@ -19,6 +19,7 @@ from typing import Union
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning import LightningDataModule
 
+from .inference import InferenceDataset
 from .mvtec import MVTecDataModule
 
 
@@ -48,3 +49,6 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
         raise ValueError("Unknown dataset!")
 
     return datamodule
+
+
+__all__ = ["get_datamodule", "InferenceDataset"]
