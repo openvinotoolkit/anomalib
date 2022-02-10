@@ -13,21 +13,21 @@ padim:
     pixel_AUROC: 0.983
   grid:
     image_AUROC: 0.857
-    pixel_AUROC: 0.941
+    pixel_AUROC: 0.917
   hazelnut:
     image_AUROC: 0.750
-    pixel_AUROC: 0.981
+    pixel_AUROC: 0.977
   leather:
     image_AUROC: 0.982
     pixel_AUROC: 0.991
   metal_nut:
-    image_AUROC: 0.968
-    pixel_AUROC: 0.971
+    image_AUROC: 0.961
+    pixel_AUROC: 0.969
   pill:
     image_AUROC: 0.851
     pixel_AUROC: 0.956
   screw:
-    image_AUROC: 0.759
+    image_AUROC: 0.758
     pixel_AUROC: 0.975
   tile:
     image_AUROC: 0.943
@@ -37,7 +37,7 @@ padim:
     pixel_AUROC: 0.988
   transistor:
     image_AUROC: 0.919
-    pixel_AUROC: 0.970
+    pixel_AUROC: 0.967
   wood:
     image_AUROC: 0.976
     pixel_AUROC: 0.940
@@ -51,7 +51,7 @@ dfkde:
   cable:
     image_AUROC: 0.671
   capsule:
-    image_AUROC: 0.782
+    image_AUROC: 0.781
   carpet:
     image_AUROC: 0.621
   grid:
@@ -73,9 +73,9 @@ dfkde:
   transistor:
     image_AUROC: 0.799
   wood:
-    image_AUROC: 0.851
+    image_AUROC: 0.850
   zipper:
-    image_AUROC: 0.858
+    image_AUROC: 0.857
 
 dfm:
   bottle:
@@ -111,8 +111,8 @@ dfm:
 
 stfpm:
   bottle:
-    image_AUROC: 0.998
-    pixel_AUROC: 0.978
+    image_AUROC: 0.857
+    pixel_AUROC: 0.962
     nncf:
       image_AUROC: 0.998
       pixel_AUROC: 0.964
@@ -123,7 +123,7 @@ stfpm:
       image_AUROC: 0.937
       pixel_AUROC: 0.936
   capsule:
-    image_AUROC: 0.668
+    image_AUROC: 0.631
     pixel_AUROC: 0.961
     nncf:
       image_AUROC: 0.657
@@ -206,13 +206,13 @@ patchcore:
     image_AUROC: 1.0
     pixel_AUROC: 0.984
   cable:
-    image_AUROC: 0.994
+    image_AUROC: 0.992
     pixel_AUROC: 0.987
   capsule:
-    image_AUROC: 0.980
+    image_AUROC: 0.976
     pixel_AUROC: 0.987
   carpet:
-    image_AUROC: 0.980
+    image_AUROC: 0.978
     pixel_AUROC: 0.988
   grid:
     image_AUROC: 0.961
@@ -236,7 +236,7 @@ patchcore:
     image_AUROC: 1.0
     pixel_AUROC: 0.960
   toothbrush:
-    image_AUROC: 0.955
+    image_AUROC: 0.947
     pixel_AUROC: 0.988
   transistor:
     image_AUROC: 0.999
