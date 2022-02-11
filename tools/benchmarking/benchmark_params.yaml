@@ -1,10 +1,11 @@
 seed: 42
 hardware:
-  - cpu
+  # - cpu
   - gpu
 writer:
-  - wandb
-  - tensorboard
+  -
+  # - wandb
+  # - tensorboard
 grid_search:
   dataset:
     category:
@@ -23,7 +24,7 @@ grid_search:
       - transistor
       - wood
       - zipper
-    image_size: [224]
+    image_size: [256]
   model_name:
-    - padim
-    - patchcore
+    - stfpm
+    - cflow

@@ -123,8 +123,8 @@ stfpm:
       image_AUROC: 0.937
       pixel_AUROC: 0.936
   capsule:
-    image_AUROC: 0.631
-    pixel_AUROC: 0.961
+    image_AUROC: 0.624
+    pixel_AUROC: 0.959
     nncf:
       image_AUROC: 0.657
       pixel_AUROC: 0.967
@@ -135,14 +135,14 @@ stfpm:
       image_AUROC: 0.991
       pixel_AUROC: 0.987
   grid:
-    image_AUROC: 0.986
-    pixel_AUROC: 0.989
+    image_AUROC: 0.979
+    pixel_AUROC: 0.987
     nncf:
       image_AUROC: 0.989
       pixel_AUROC: 0.988
   hazelnut:
-    image_AUROC: 0.998
-    pixel_AUROC: 0.986
+    image_AUROC: 0.978
+    pixel_AUROC: 0.979
     nncf:
       image_AUROC: 0.991
       pixel_AUROC: 0.976
@@ -153,14 +153,14 @@ stfpm:
       image_AUROC: 0.988
       pixel_AUROC: 0.974
   metal_nut:
-    image_AUROC: 0.985
-    pixel_AUROC: 0.976
+    image_AUROC: 0.978
+    pixel_AUROC: 0.970
     nncf:
       image_AUROC: 0.982
       pixel_AUROC: 0.962
   pill:
     image_AUROC: 0.584
-    pixel_AUROC: 0.932
+    pixel_AUROC: 0.919
     nncf:
       image_AUROC: 0.613
       pixel_AUROC: 0.882
@@ -294,3 +294,34 @@ cflow:
   zipper:
     image_AUROC: 0.979
     pixel_AUROC: 0.981
+
+ganomaly:
+  bottle:
+    image_AUROC: 0.996
+  cable:
+    image_AUROC: 0.926
+  capsule:
+    image_AUROC: 0.876
+  carpet:
+    image_AUROC: 0.846
+  grid:
+    image_AUROC: 0.496
+  hazelnut:
+    image_AUROC: 0.984
+  leather:
+    image_AUROC: 0.931
+  metal_nut:
+    image_AUROC: 0.946
+  pill:
+    image_AUROC: 0.816
+  screw:
+    image_AUROC: 0.760
+  tile:
+    image_AUROC: 0.980
+  toothbrush:
+    image_AUROC: 0.963
+  transistor:
+    image_AUROC: 0.935
+  wood:
+    image_AUROC: 0.957
+  zipper:

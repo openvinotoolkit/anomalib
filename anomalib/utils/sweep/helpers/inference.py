@@ -17,7 +17,7 @@
 import time
 from pathlib import Path
 from typing import Dict, Iterable, List, Tuple, Union
-
+import torch
 import numpy as np
 from omegaconf import DictConfig, ListConfig
 from torch.utils.data import DataLoader
@@ -106,6 +106,7 @@ def get_torch_throughput(
     Returns:
         float: Inference throughput
     """
+    torch.set_grad_enabled(False)
     model.eval()
     inferencer = TorchInferencer(config, model)
     torch_dataloader = MockImageLoader(config.dataset.image_size, len(test_dataset))
@@ -118,6 +119,7 @@ def get_torch_throughput(
     inference_time = time.time() - start_time
     throughput = len(test_dataset) / inference_time
 
+    torch.set_grad_enabled(True)
     return throughput
 
 
