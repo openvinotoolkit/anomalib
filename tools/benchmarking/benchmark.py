@@ -16,6 +16,7 @@
 
 
 import logging
+import math
 import multiprocessing
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -136,12 +137,12 @@ def distribute_over_gpus():
         run_configs = list(get_run_config(sweep_config.grid_search))
         jobs = []
         for device_id, run_split in enumerate(
-            range(0, len(run_configs), len(run_configs) // torch.cuda.device_count())
+            range(0, len(run_configs), math.ceil(len(run_configs) / torch.cuda.device_count()))
         ):
             jobs.append(
                 executor.submit(
                     compute_on_gpu,
-                    run_configs[run_split : run_split + len(run_configs) // torch.cuda.device_count()],
+                    run_configs[run_split : run_split + math.ceil(len(run_configs) / torch.cuda.device_count())],
                     device_id + 1,
                     sweep_config.seed,
                     sweep_config.writer,
