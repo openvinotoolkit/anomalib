@@ -114,8 +114,8 @@ stfpm:
     image_AUROC: 0.857
     pixel_AUROC: 0.962
     nncf:
-      image_AUROC: 0.998
-      pixel_AUROC: 0.964
+      image_AUROC: 0.990
+      pixel_AUROC: 0.512
   cable:
     image_AUROC: 0.939
     pixel_AUROC: 0.947
@@ -126,56 +126,56 @@ stfpm:
     image_AUROC: 0.624
     pixel_AUROC: 0.959
     nncf:
-      image_AUROC: 0.657
-      pixel_AUROC: 0.967
+      image_AUROC: 0.644
+      pixel_AUROC: 0.950
   carpet:
     image_AUROC: 0.986
     pixel_AUROC: 0.987
     nncf:
-      image_AUROC: 0.991
-      pixel_AUROC: 0.987
+      image_AUROC: 0.980
+      pixel_AUROC: 0.985
   grid:
     image_AUROC: 0.979
     pixel_AUROC: 0.987
     nncf:
-      image_AUROC: 0.989
-      pixel_AUROC: 0.988
+      image_AUROC: 0.984
+      pixel_AUROC: 0.987
   hazelnut:
     image_AUROC: 0.978
     pixel_AUROC: 0.979
     nncf:
-      image_AUROC: 0.991
-      pixel_AUROC: 0.976
+      image_AUROC: 0.929
+      pixel_AUROC: 0.966
   leather:
     image_AUROC: 0.995
     pixel_AUROC: 0.983
     nncf:
-      image_AUROC: 0.988
-      pixel_AUROC: 0.974
+      image_AUROC: 0.889
+      pixel_AUROC: 0.970
   metal_nut:
     image_AUROC: 0.978
     pixel_AUROC: 0.970
     nncf:
-      image_AUROC: 0.982
-      pixel_AUROC: 0.962
+      image_AUROC: 0.894
+      pixel_AUROC: 0.924
   pill:
     image_AUROC: 0.584
     pixel_AUROC: 0.919
     nncf:
-      image_AUROC: 0.613
-      pixel_AUROC: 0.882
+      image_AUROC: 0.505
+      pixel_AUROC: 0.877
   screw:
     image_AUROC: 0.766
     pixel_AUROC: 0.973
     nncf:
-      image_AUROC: 0.452
-      pixel_AUROC: 0.952
+      image_AUROC: 0.409
+      pixel_AUROC: 0.936
   tile:
     image_AUROC: 0.955
     pixel_AUROC: 0.960
     nncf:
       image_AUROC: 0.944
-      pixel_AUROC: 0.945
+      pixel_AUROC: 0.941
   toothbrush:
     image_AUROC: 0.883
     pixel_AUROC: 0.986
@@ -187,18 +187,18 @@ stfpm:
     pixel_AUROC: 0.806
     nncf:
       image_AUROC: 0.798
-      pixel_AUROC: 0.793
+      pixel_AUROC: 0.759
   wood:
     image_AUROC: 0.989
     pixel_AUROC: 0.948
     nncf:
-      image_AUROC: 0.992
+      image_AUROC: 0.978
       pixel_AUROC: 0.951
   zipper:
     image_AUROC: 0.837
     pixel_AUROC: 0.982
     nncf:
-      image_AUROC: 0.843
+      image_AUROC: 0.835
       pixel_AUROC: 0.980
 
 patchcore:
@@ -256,7 +256,7 @@ cflow:
     image_AUROC: 0.960
     pixel_AUROC: 0.965
   capsule:
-    image_AUROC: 0.959
+    image_AUROC: 0.948
     pixel_AUROC: 0.987
   carpet:
     image_AUROC: 0.979
@@ -283,7 +283,7 @@ cflow:
     image_AUROC: 0.996
     pixel_AUROC: 0.965
   toothbrush:
-    image_AUROC: 0.894
+    image_AUROC: 0.880
     pixel_AUROC: 0.984
   transistor:
     image_AUROC: 0.949

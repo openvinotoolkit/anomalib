@@ -15,7 +15,7 @@
 # and limitations under the License.
 
 import os
-from typing import Dict, Tuple, Union, List
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 from omegaconf import DictConfig, ListConfig
@@ -38,7 +38,7 @@ def setup_model_train(
     score_type: str = None,
     weight_file: str = "weights/model.ckpt",
     fast_run: bool = False,
-    device: Union[List[int],int] = [0]
+    device: Union[List[int], int] = [0],
 ) -> Tuple[Union[DictConfig, ListConfig], LightningDataModule, AnomalyModule, Trainer]:
     """Train the model based on the parameters passed.
 
