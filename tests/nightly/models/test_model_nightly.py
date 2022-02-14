@@ -68,7 +68,7 @@ def get_model_nncf_cat() -> List:
             "wood",
             "zipper",
         ],
-        k=1,
+        k=3,
     )
 
     return [
