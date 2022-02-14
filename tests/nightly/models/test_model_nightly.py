@@ -15,6 +15,7 @@
 # and limitations under the License.
 
 import itertools
+import math
 import multiprocessing
 import random
 import tempfile
@@ -24,7 +25,6 @@ from pathlib import Path
 from typing import Dict, List, Union
 
 import pandas as pd
-import math
 import torch
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning import seed_everything
@@ -41,32 +41,35 @@ def get_model_nncf_cat() -> List:
         List: Returns a combination of models with their nncf support for each category.
     """
     model_support = [
-        # ("padim", False),
-        # ("dfkde", False),
-        # ("dfm", False),
+        ("padim", False),
+        ("dfkde", False),
+        ("dfm", False),
         ("stfpm", False),
-        # ("stfpm", True),
-        # ("patchcore", False),
-        # ("cflow", False),
-        # ("ganomaly", False),
+        ("stfpm", True),
+        ("patchcore", False),
+        ("cflow", False),
+        ("ganomaly", False),
     ]
-    categories = random.sample([
-        # "bottle",
-        # "cable",
-        # "capsule",
-        # "carpet",
-        # "grid",
-        # "hazelnut",
-        "leather",
-        "metal_nut",
-        "pill",
-        # "screw",
-        # "tile",
-        # "toothbrush",
-        # "transistor",
-        # "wood",
-        # "zipper",
-    ], k=3)
+    categories = random.sample(
+        [
+            "bottle",
+            "cable",
+            "capsule",
+            "carpet",
+            "grid",
+            "hazelnut",
+            "leather",
+            "metal_nut",
+            "pill",
+            "screw",
+            "tile",
+            "toothbrush",
+            "transistor",
+            "wood",
+            "zipper",
+        ],
+        k=1,
+    )
 
     return [
         (model, nncf, category) for ((model, nncf), category) in list(itertools.product(*[model_support, categories]))
@@ -87,11 +90,15 @@ class TestModel:
         if "optimization" in config.keys() and config.optimization.nncf.apply:
             threshold = threshold.nncf
         if not (results["image_AUROC"] >= threshold["image_AUROC"]):
-            raise AssertionError(f"results['image_AUROC']:{results['image_AUROC']} >= threshold['image_AUROC']:{threshold['image_AUROC']}")
+            raise AssertionError(
+                f"results['image_AUROC']:{results['image_AUROC']} >= threshold['image_AUROC']:{threshold['image_AUROC']}"
+            )
 
         if config.dataset.task == "segmentation":
             if not (results["pixel_AUROC"] >= threshold["pixel_AUROC"]):
-                    raise AssertionError(f"results['pixel_AUROC']:{results['pixel_AUROC']} >= threshold['pixel_AUROC']:{threshold['pixel_AUROC']}")
+                raise AssertionError(
+                    f"results['pixel_AUROC']:{results['pixel_AUROC']} >= threshold['pixel_AUROC']:{threshold['pixel_AUROC']}"
+                )
         return results
 
     def _save_to_csv(self, config: Union[DictConfig, ListConfig], results: Dict):
@@ -118,12 +125,11 @@ class TestModel:
         else:
             model_metrics_df.to_csv(result_path, mode="a", header=False)
 
-
-    def runner(self, run_configs,path, score_type, device_id):
-        # Fix seed
+    def runner(self, run_configs, path, score_type, device_id):
         for model_name, nncf, category in run_configs:
             try:
                 with tempfile.TemporaryDirectory() as project_path:
+                    # Fix seed
                     seed_everything(42)
                     config, datamodule, model, trainer = setup_model_train(
                         model_name=model_name,
@@ -132,7 +138,7 @@ class TestModel:
                         project_path=project_path,
                         category=category,
                         score_type=score_type,
-                        device=[device_id]
+                        device=[device_id],
                     )
 
                     # test model metrics
@@ -145,26 +151,27 @@ class TestModel:
             except AssertionError as assertion_error:
                 raise Exception(f"Model: {model_name} NNCF:{nncf} Category:{category}") from assertion_error
 
-
     def test_model(self, path=get_dataset_path(), score_type=None):
-        run_configs =get_model_nncf_cat()
+        run_configs = get_model_nncf_cat()
         with ProcessPoolExecutor(
-        max_workers=torch.cuda.device_count(), mp_context=multiprocessing.get_context("spawn")
+            max_workers=torch.cuda.device_count(), mp_context=multiprocessing.get_context("spawn")
         ) as executor:
             jobs = []
             for device_id, run_split in enumerate(
                 range(0, len(run_configs), math.ceil(len(run_configs) / torch.cuda.device_count()))
             ):
                 jobs.append(
-                executor.submit(
-                    self.runner,
-                    run_configs[run_split : run_split + math.ceil(len(run_configs) / torch.cuda.device_count())],
-                    path,
-                    score_type,
-                    device_id,
+                    executor.submit(
+                        self.runner,
+                        run_configs[run_split : run_split + math.ceil(len(run_configs) / torch.cuda.device_count())],
+                        path,
+                        score_type,
+                        device_id,
+                    )
                 )
-            )
             for job in jobs:
-                job.result()
-
+                try:
+                    job.result()
+                except Exception as e:
+                    raise e
             
