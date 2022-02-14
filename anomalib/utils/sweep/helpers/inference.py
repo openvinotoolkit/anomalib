@@ -17,8 +17,9 @@
 import time
 from pathlib import Path
 from typing import Dict, Iterable, List, Tuple, Union
-import torch
+
 import numpy as np
+import torch
 from omegaconf import DictConfig, ListConfig
 from torch.utils.data import DataLoader
 

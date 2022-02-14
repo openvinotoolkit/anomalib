@@ -172,7 +172,7 @@ stfpm:
       pixel_AUROC: 0.952
   tile:
     image_AUROC: 0.955
-    pixel_AUROC: 0.967
+    pixel_AUROC: 0.960
     nncf:
       image_AUROC: 0.944
       pixel_AUROC: 0.945
@@ -254,13 +254,13 @@ cflow:
     pixel_AUROC: 0.980
   cable:
     image_AUROC: 0.960
-    pixel_AUROC: 0.969
+    pixel_AUROC: 0.965
   capsule:
-    image_AUROC: 0.977
-    pixel_AUROC: 0.989
+    image_AUROC: 0.959
+    pixel_AUROC: 0.987
   carpet:
     image_AUROC: 0.979
-    pixel_AUROC: 0.987
+    pixel_AUROC: 0.985
   grid:
     image_AUROC: 0.959
     pixel_AUROC: 0.965
@@ -277,51 +277,52 @@ cflow:
     image_AUROC: 0.933
     pixel_AUROC: 0.986
   screw:
-    image_AUROC: 0.910
-    pixel_AUROC: 0.984
+    image_AUROC: 0.766
+    pixel_AUROC: 0.981
   tile:
-    image_AUROC: 0.998
+    image_AUROC: 0.996
     pixel_AUROC: 0.965
   toothbrush:
     image_AUROC: 0.894
     pixel_AUROC: 0.984
   transistor:
-    image_AUROC: 0.9733
-    pixel_AUROC: 0.942
+    image_AUROC: 0.949
+    pixel_AUROC: 0.930
   wood:
     image_AUROC: 0.942
-    pixel_AUROC: 0.937
+    pixel_AUROC: 0.926
   zipper:
     image_AUROC: 0.979
-    pixel_AUROC: 0.981
+    pixel_AUROC: 0.979
 
 ganomaly:
   bottle:
-    image_AUROC: 0.996
+    image_AUROC: 0.270
   cable:
-    image_AUROC: 0.926
+    image_AUROC: 0.488
   capsule:
-    image_AUROC: 0.876
+    image_AUROC: 0.311
   carpet:
-    image_AUROC: 0.846
+    image_AUROC: 0.211
   grid:
-    image_AUROC: 0.496
+    image_AUROC: 0.446
   hazelnut:
-    image_AUROC: 0.984
+    image_AUROC: 0.497
   leather:
-    image_AUROC: 0.931
+    image_AUROC: 0.409
   metal_nut:
-    image_AUROC: 0.946
+    image_AUROC: 0.277
   pill:
-    image_AUROC: 0.816
+    image_AUROC: 0.390
   screw:
-    image_AUROC: 0.760
+    image_AUROC: 0.409
   tile:
-    image_AUROC: 0.980
+    image_AUROC: 0.555
   toothbrush:
-    image_AUROC: 0.963
+    image_AUROC: 0.349
   transistor:
-    image_AUROC: 0.935
+    image_AUROC: 0.348
   wood:
-    image_AUROC: 0.957
+    image_AUROC: 0.617
   zipper:
+    image_AUROC: 0.389
