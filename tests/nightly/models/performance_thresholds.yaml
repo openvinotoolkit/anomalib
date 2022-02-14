@@ -160,7 +160,7 @@ stfpm:
       pixel_AUROC: 0.924
   pill:
     image_AUROC: 0.584
-    pixel_AUROC: 0.919
+    pixel_AUROC: 0.918
     nncf:
       image_AUROC: 0.505
       pixel_AUROC: 0.877
