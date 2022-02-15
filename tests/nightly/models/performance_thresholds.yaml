@@ -154,7 +154,7 @@ stfpm:
       pixel_AUROC: 0.970
   metal_nut:
     image_AUROC: 0.978
-    pixel_AUROC: 0.970
+    pixel_AUROC: 0.969
     nncf:
       image_AUROC: 0.894
       pixel_AUROC: 0.924
