@@ -40,9 +40,9 @@ class VisualizerCallback(Callback):
     config.yaml file.
     """
 
-    def __init__(self, loggers: List[str], inputs_are_normalized: bool = True):
+    def __init__(self, loggers: Optional[List[str]] = None, inputs_are_normalized: bool = True):
         """Visualizer callback."""
-        self.loggers = loggers
+        self.loggers = loggers if loggers else []
         self.inputs_are_normalized = inputs_are_normalized
 
     def _add_images(
