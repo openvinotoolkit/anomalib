@@ -15,38 +15,40 @@
 # and limitations under the License.
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, List, Optional
 from warnings import warn
 
 import pytorch_lightning as pl
-from pytorch_lightning import Callback
+from pytorch_lightning import Callback, Trainer
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from skimage.segmentation import mark_boundaries
 
 from anomalib.models.components import AnomalyModule
 from anomalib.post_processing import Visualizer, compute_mask, superimpose_anomaly_map
 from anomalib.pre_processing.transforms import Denormalize
-from anomalib.utils import loggers
-from anomalib.utils.loggers import AnomalibWandbLogger
+from anomalib.utils.loggers import AVAILABLE_LOGGERS, AnomalibWandbLogger
 
 
 class VisualizerCallback(Callback):
     """Callback that visualizes the inference results of a model.
 
-    The callback generates a figure showing the original image, the ground truth segmentation mask,
-    the predicted error heat map, and the predicted segmentation mask.
+    The callback generates a figure showing the original image,
+    the ground truth segmentation mask, the predicted error heat map,
+    and the predicted segmentation mask.
 
     To save the images to the filesystem, add the 'local' keyword to the `project.log_images_to` parameter in the
     config.yaml file.
     """
 
-    def __init__(self, inputs_are_normalized: bool = True):
+    def __init__(self, loggers: List[str], inputs_are_normalized: bool = True):
         """Visualizer callback."""
+        self.loggers = loggers
         self.inputs_are_normalized = inputs_are_normalized
 
     def _add_images(
         self,
         visualizer: Visualizer,
+        trainer: Trainer,
         module: AnomalyModule,
         filename: Path,
     ):
@@ -57,6 +59,7 @@ class VisualizerCallback(Callback):
 
         Args:
             visualizer (Visualizer): Visualizer object from which the `figure` is saved/logged.
+            trainer (Trainer): PL Trainer object.
             module (AnomalyModule): Anomaly module which holds reference to `hparams` and `logger`.
             filename (Path): Path of the input image. This name is used as name for the generated image.
         """
@@ -65,10 +68,10 @@ class VisualizerCallback(Callback):
         logger_type = type(module.logger).__name__.lower()
 
         # save image to respective logger
-        for log_to in module.hparams.project.log_images_to:
-            if log_to in loggers.AVAILABLE_LOGGERS:
+        for logger in self.loggers:
+            if logger in AVAILABLE_LOGGERS:
                 # check if logger object is same as the requested object
-                if log_to in logger_type and module.logger is not None:
+                if logger in logger_type and module.logger is not None:
                     module.logger.add_image(
                         image=visualizer.figure,
                         name=filename.parent.name + "_" + filename.name,
@@ -76,16 +79,19 @@ class VisualizerCallback(Callback):
                     )
                 else:
                     warn(
-                        f"Requested {log_to} logging but logger object is of type: {type(module.logger)}."
-                        f" Skipping logging to {log_to}"
+                        f"Requested {logger} logging but logger object is of type: {type(module.logger)}."
+                        f" Skipping logging to {logger}"
                     )
 
-        if "local" in module.hparams.project.log_images_to:
-            visualizer.save(Path(module.hparams.project.path) / "images" / filename.parent.name / filename.name)
+        if "local" in self.loggers:
+            if trainer.default_root_dir:
+                visualizer.save(Path(trainer.default_root_dir) / "images" / filename.parent.name / filename.name)
+            else:
+                raise ValueError("trainer.log_dir does not exist to save the results.")
 
     def on_test_batch_end(
         self,
-        _trainer: pl.Trainer,
+        trainer: pl.Trainer,
         pl_module: pl.LightningModule,
         outputs: Optional[STEP_OUTPUT],
         _batch: Any,
@@ -95,7 +101,7 @@ class VisualizerCallback(Callback):
         """Log images at the end of every batch.
 
         Args:
-            _trainer (Trainer): Pytorch lightning trainer object (unused).
+            trainer (Trainer): Pytorch lightning trainer object (unused).
             pl_module (LightningModule): Lightning modules derived from BaseAnomalyLightning object as
             currently only they support logging images.
             outputs (Dict[str, Any]): Outputs of the current test step.
@@ -128,7 +134,7 @@ class VisualizerCallback(Callback):
             visualizer.add_image(image=heat_map, title="Predicted Heat Map")
             visualizer.add_image(image=pred_mask, color_map="gray", title="Predicted Mask")
             visualizer.add_image(image=vis_img, title="Segmentation Result")
-            self._add_images(visualizer, pl_module, Path(filename))
+            self._add_images(visualizer, trainer, pl_module, Path(filename))
             visualizer.close()
 
     def on_test_end(self, _trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
