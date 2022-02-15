@@ -192,7 +192,7 @@ def sweep(run_config: Union[DictConfig, ListConfig], device: int = 0, seed: int 
     Returns:
         Dict[str, Union[float, str]]: Dictionary containing the metrics gathered from the sweep.
     """
-    seed_everything(seed)
+    seed_everything(seed, workers=True)
     # This assumes that `model_name` is always present in the sweep config.
     model_config = get_configurable_parameters(model_name=run_config.model_name)
     model_config.project.seed = seed
@@ -236,7 +236,7 @@ if __name__ == "__main__":
     # Benchmarking entry point.
     # Spawn multiple processes one for cpu and rest for the number of gpus available in the system.
     # The idea is to distribute metrics collection over all the available devices.
-
+    
     print("Benchmarking started 🏃‍♂️. This will take a while ⏲ depending on your configuration.")
     distribute()
     print("Finished gathering results ⚡")

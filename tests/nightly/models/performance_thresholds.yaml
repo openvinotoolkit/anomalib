@@ -124,25 +124,25 @@ stfpm:
       pixel_AUROC: 0.936
   capsule:
     image_AUROC: 0.624
-    pixel_AUROC: 0.959
+    pixel_AUROC: 0.955
     nncf:
       image_AUROC: 0.644
       pixel_AUROC: 0.950
   carpet:
     image_AUROC: 0.986
-    pixel_AUROC: 0.987
+    pixel_AUROC: 0.986
     nncf:
       image_AUROC: 0.980
       pixel_AUROC: 0.985
   grid:
-    image_AUROC: 0.979
-    pixel_AUROC: 0.987
+    image_AUROC: 0.974
+    pixel_AUROC: 0.985
     nncf:
       image_AUROC: 0.984
       pixel_AUROC: 0.987
   hazelnut:
     image_AUROC: 0.978
-    pixel_AUROC: 0.979
+    pixel_AUROC: 0.976
     nncf:
       image_AUROC: 0.929
       pixel_AUROC: 0.966
@@ -160,19 +160,19 @@ stfpm:
       pixel_AUROC: 0.924
   pill:
     image_AUROC: 0.584
-    pixel_AUROC: 0.918
+    pixel_AUROC: 0.902
     nncf:
       image_AUROC: 0.505
       pixel_AUROC: 0.877
   screw:
-    image_AUROC: 0.766
-    pixel_AUROC: 0.973
+    image_AUROC: 0.375
+    pixel_AUROC: 0.949
     nncf:
       image_AUROC: 0.409
       pixel_AUROC: 0.936
   tile:
     image_AUROC: 0.955
-    pixel_AUROC: 0.960
+    pixel_AUROC: 0.959
     nncf:
       image_AUROC: 0.944
       pixel_AUROC: 0.940

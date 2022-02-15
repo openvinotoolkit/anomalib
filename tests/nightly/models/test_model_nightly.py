@@ -23,7 +23,7 @@ from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Union
-
+import numpy as np
 import pandas as pd
 import torch
 from omegaconf import DictConfig, ListConfig, OmegaConf
@@ -89,13 +89,13 @@ class TestModel:
         threshold = thresholds[config.model.name][config.dataset.category]
         if "optimization" in config.keys() and config.optimization.nncf.apply:
             threshold = threshold.nncf
-        if not (results["image_AUROC"] >= threshold["image_AUROC"]):
+        if not  (np.isclose(results["image_AUROC"], threshold["image_AUROC"]) or (results["image_AUROC"] >= threshold["image_AUROC"])):
             raise AssertionError(
                 f"results['image_AUROC']:{results['image_AUROC']} >= threshold['image_AUROC']:{threshold['image_AUROC']}"
             )
 
         if config.dataset.task == "segmentation":
-            if not (results["pixel_AUROC"] >= threshold["pixel_AUROC"]):
+            if not (np.isclose(results["pixel_AUROC"] ,threshold["pixel_AUROC"]) or (results["pixel_AUROC"] >= threshold["pixel_AUROC"])):
                 raise AssertionError(
                     f"results['pixel_AUROC']:{results['pixel_AUROC']} >= threshold['pixel_AUROC']:{threshold['pixel_AUROC']}"
                 )
@@ -130,7 +130,7 @@ class TestModel:
             try:
                 with tempfile.TemporaryDirectory() as project_path:
                     # Fix seed
-                    seed_everything(42)
+                    seed_everything(42, workers=True)
                     config, datamodule, model, trainer = setup_model_train(
                         model_name=model_name,
                         dataset_path=path,
