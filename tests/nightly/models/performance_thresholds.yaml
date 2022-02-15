@@ -227,7 +227,7 @@ patchcore:
     image_AUROC: 0.994
     pixel_AUROC: 0.989
   pill:
-    image_AUROC: 0.927
+    image_AUROC: 0.925
     pixel_AUROC: 0.980
   screw:
     image_AUROC: 0.928
