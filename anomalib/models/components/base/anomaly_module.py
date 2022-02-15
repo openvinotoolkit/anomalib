@@ -95,6 +95,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         outputs = self.validation_step(batch, batch_idx)
         self._post_process(outputs)
         outputs["pred_labels"] = outputs["pred_scores"] >= self.image_threshold.value
+        if "anomaly_maps" in outputs.keys():
+            outputs["pred_masks"] = outputs["anomaly_maps"] >= self.pixel_threshold.value
         return outputs
 
     def test_step(self, batch, _):  # pylint: disable=arguments-differ
