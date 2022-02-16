@@ -89,13 +89,13 @@ class TestModel:
         threshold = thresholds[config.model.name][config.dataset.category]
         if "optimization" in config.keys() and config.optimization.nncf.apply:
             threshold = threshold.nncf
-        if not  (np.isclose(results["image_AUROC"], threshold["image_AUROC"]) or (results["image_AUROC"] >= threshold["image_AUROC"])):
+        if not  (np.isclose(results["image_AUROC"], threshold["image_AUROC"], rtol=0.01) or (results["image_AUROC"] >= threshold["image_AUROC"])):
             raise AssertionError(
                 f"results['image_AUROC']:{results['image_AUROC']} >= threshold['image_AUROC']:{threshold['image_AUROC']}"
             )
 
         if config.dataset.task == "segmentation":
-            if not (np.isclose(results["pixel_AUROC"] ,threshold["pixel_AUROC"]) or (results["pixel_AUROC"] >= threshold["pixel_AUROC"])):
+            if not (np.isclose(results["pixel_AUROC"] ,threshold["pixel_AUROC"], rtol=0.01) or (results["pixel_AUROC"] >= threshold["pixel_AUROC"])):
                 raise AssertionError(
                     f"results['pixel_AUROC']:{results['pixel_AUROC']} >= threshold['pixel_AUROC']:{threshold['pixel_AUROC']}"
                 )
