@@ -184,7 +184,7 @@ stfpm:
       pixel_AUROC: 0.956
   transistor:
     image_AUROC: 0.776
-    pixel_AUROC: 0.806
+    pixel_AUROC: 0.772
     nncf:
       image_AUROC: 0.798
       pixel_AUROC: 0.759
