@@ -34,8 +34,9 @@ def test_add_images(dataset):
         )
         logger = get_dummy_logger(config, dir_loc)
         model = get_dummy_module(config)
-        callbacks = [VisualizerCallback(loggers=["local", "tensorboard"])]
-        trainer = pl.Trainer(callbacks=callbacks, logger=logger, checkpoint_callback=False, default_root_dir=dir_loc)
+        trainer = pl.Trainer(
+            callbacks=model.callbacks, logger=logger, checkpoint_callback=False, default_root_dir=dir_loc
+        )
         trainer.test(model=model, datamodule=DummyDataModule())
 
         # test if images are logged
