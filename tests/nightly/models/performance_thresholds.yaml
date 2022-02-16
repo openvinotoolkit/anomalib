@@ -120,7 +120,7 @@ stfpm:
     image_AUROC: 0.939
     pixel_AUROC: 0.943
     nncf:
-      image_AUROC: 0.937
+      image_AUROC: 0.873
       pixel_AUROC: 0.936
   capsule:
     image_AUROC: 0.624
