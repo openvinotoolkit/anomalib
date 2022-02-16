@@ -158,11 +158,14 @@ class Tiler:
     def __init__(
         self,
         tile_size: Union[int, Sequence],
-        stride: Union[int, Sequence],
+        stride: Optional[Union[int, Sequence]] = None,
         remove_border_count: int = 0,
         mode: str = "padding",
         tile_count: int = 4,
     ) -> None:
+
+        if stride is None:
+            stride = tile_size
 
         self.tile_size_h, self.tile_size_w = self.__validate_size_type(tile_size)
         self.tile_count = tile_count

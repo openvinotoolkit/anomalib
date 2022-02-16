@@ -26,15 +26,17 @@ from .compress import CompressModelCallback
 from .min_max_normalization import MinMaxNormalizationCallback
 from .model_loader import LoadModelCallback
 from .save_to_csv import SaveToCSVCallback
+from .tiler import TilerCallback
 from .timer import TimerCallback
 from .visualizer_callback import VisualizerCallback
 
 __all__ = [
     "CompressModelCallback",
     "LoadModelCallback",
+    "SaveToCSVCallback",
+    "TilerCallback",
     "TimerCallback",
     "VisualizerCallback",
-    "SaveToCSVCallback",
 ]
 
 
@@ -81,7 +83,12 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
             raise ValueError(f"Normalization method not recognized: {config.model.normalization_method}")
 
     if not config.project.log_images_to == []:
-        callbacks.append(VisualizerCallback(inputs_are_normalized=not config.model.normalization_method == "none"))
+        callbacks.append(
+            VisualizerCallback(
+                loggers=config.project.log_images_to,
+                inputs_are_normalized=not config.model.normalization_method == "none",
+            )
+        )
 
     if "optimization" in config.keys():
         if config.optimization.nncf.apply:
