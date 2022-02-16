@@ -3,7 +3,6 @@ hardware:
   - cpu
   - gpu
 writer:
-  -
   - wandb
   - tensorboard
 grid_search:
