@@ -114,7 +114,7 @@ stfpm:
     image_AUROC: 0.857
     pixel_AUROC: 0.962
     nncf:
-      image_AUROC: 0.990
+      image_AUROC: 0.979
       pixel_AUROC: 0.512
   cable:
     image_AUROC: 0.939
