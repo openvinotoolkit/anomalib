@@ -35,7 +35,12 @@ class DfkdeLightning(AnomalyModule):
     """
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
-        super().__init__(hparams)
+        super().__init__(
+            task=hparams.dataset.task,
+            adaptive_threshold=hparams.model.threshold.adaptive,
+            default_image_threshold=hparams.model.threshold.image_default,
+            default_pixel_threshold=0,
+        )
         self.threshold_steepness = 0.05
         self.threshold_offset = 12
 
