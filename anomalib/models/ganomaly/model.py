@@ -36,22 +36,29 @@ class GanomalyLightning(AnomalyModule):
         hparams (Union[DictConfig, ListConfig]): Model parameters
     """
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]):
-        super().__init__(hparams)
+    def __init__(self, params: Union[DictConfig, ListConfig]):
+        super().__init__(
+            task=params.dataset.task,
+            adaptive_threshold=params.model.threshold.adaptive,
+            default_image_threshold=params.model.threshold.image_default,
+            default_pixel_threshold=0,
+        )
+
+        self.params = params
 
         self.generator = Generator(
-            input_size=hparams.model.input_size[0],
-            latent_vec_size=hparams.model.latent_vec_size,
+            input_size=params.model.input_size[0],
+            latent_vec_size=params.model.latent_vec_size,
             num_input_channels=3,
-            n_features=hparams.model.n_features,
-            extra_layers=hparams.model.extra_layers,
-            add_final_conv_layer=hparams.model.add_final_conv,
+            n_features=params.model.n_features,
+            extra_layers=params.model.extra_layers,
+            add_final_conv_layer=params.model.add_final_conv,
         )
         self.discriminator = Discriminator(
-            input_size=hparams.model.input_size[0],
+            input_size=params.model.input_size[0],
             num_input_channels=3,
-            n_features=hparams.model.n_features,
-            extra_layers=hparams.model.extra_layers,
+            n_features=params.model.n_features,
+            extra_layers=params.model.extra_layers,
         )
         self.weights_init(self.generator)
         self.weights_init(self.discriminator)
@@ -60,8 +67,8 @@ class GanomalyLightning(AnomalyModule):
         self.loss_con = nn.L1Loss()
         self.loss_bce = nn.BCELoss()
 
-        self.real_label = torch.ones(size=(self.hparams.dataset.train_batch_size,), dtype=torch.float32)
-        self.fake_label = torch.zeros(size=(self.hparams.dataset.train_batch_size,), dtype=torch.float32)
+        self.real_label = torch.ones(size=(params.dataset.train_batch_size,), dtype=torch.float32)
+        self.fake_label = torch.zeros(size=(params.dataset.train_batch_size,), dtype=torch.float32)
 
         self.min_scores: Tensor
         self.max_scores: Tensor
@@ -89,9 +96,9 @@ class GanomalyLightning(AnomalyModule):
     def configure_callbacks(self):
         """Configure model-specific callbacks."""
         early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
+            monitor=self.params.model.early_stopping.metric,
+            patience=self.params.model.early_stopping.patience,
+            mode=self.params.model.early_stopping.mode,
         )
         return [early_stopping]
 
@@ -103,13 +110,13 @@ class GanomalyLightning(AnomalyModule):
         """
         optimizer_d = optim.Adam(
             self.discriminator.parameters(),
-            lr=self.hparams.model.lr,
-            betas=(self.hparams.model.beta1, self.hparams.model.beta2),
+            lr=self.params.model.lr,
+            betas=(self.params.model.beta1, self.params.model.beta2),
         )
         optimizer_g = optim.Adam(
             self.generator.parameters(),
-            lr=self.hparams.model.lr,
-            betas=(self.hparams.model.beta1, self.hparams.model.beta2),
+            lr=self.params.model.lr,
+            betas=(self.params.model.beta1, self.params.model.beta2),
         )
         return [optimizer_d, optimizer_g]
 
@@ -154,9 +161,9 @@ class GanomalyLightning(AnomalyModule):
             error_adv = self.loss_adv(pred_real, pred_fake)
 
             loss_generator = (
-                error_adv * self.hparams.model.wadv
-                + error_con * self.hparams.model.wcon
-                + error_enc * self.hparams.model.wenc
+                error_adv * self.params.model.wadv
+                + error_con * self.params.model.wcon
+                + error_enc * self.params.model.wenc
             )
 
             loss = {"loss": loss_generator}
