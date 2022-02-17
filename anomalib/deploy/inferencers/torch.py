@@ -115,7 +115,8 @@ class TorchInferencer(Inferencer):
         Returns:
             Tensor: Output predictions.
         """
-        return self.model(image)
+        with torch.no_grad():
+            return self.model(image)
 
     def post_process(
         self, predictions: Tensor, meta_data: Optional[Union[Dict, DictConfig]] = None

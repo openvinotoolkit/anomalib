@@ -75,6 +75,20 @@ class DfmLightning(AnomalyModule):
         embeddings = torch.vstack(self.embeddings)
         self.dfm_model.fit(embeddings)
 
+    def forward(self, batch):
+        """Forward method.
+
+        Args:
+            batch (Tensor): Input tensor
+
+        Returns:
+            Tensor: Output tensor
+        """
+        self.feature_extractor.eval()
+        layer_outputs = self.feature_extractor(batch)
+        feature_vector = torch.hstack(list(layer_outputs.values())).detach()
+        return self.dfm_model.score(feature_vector.view(feature_vector.shape[:2]))
+
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Validation Step of DFM.
 
@@ -87,9 +101,6 @@ class DfmLightning(AnomalyModule):
           Dictionary containing FRE anomaly scores and ground-truth.
         """
 
-        self.feature_extractor.eval()
-        layer_outputs = self.feature_extractor(batch["image"])
-        feature_vector = torch.hstack(list(layer_outputs.values())).detach()
-        batch["pred_scores"] = self.dfm_model.score(feature_vector.view(feature_vector.shape[:2]))
+        batch["pred_scores"] = self.forward(batch["image"])
 
         return batch

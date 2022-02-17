@@ -177,9 +177,7 @@ class GanomalyLightning(AnomalyModule):
         Returns:
             Dict[str, Tensor]: batch
         """
-        self.generator.eval()
-        _, latent_i, latent_o = self.generator(batch["image"])
-        batch["pred_scores"] = torch.mean(torch.pow((latent_i - latent_o), 2), dim=1).view(-1)  # convert nx1x1 to n
+        batch["pred_scores"] = self.forward(batch["image"])
         self.max_scores = max(self.max_scores, torch.max(batch["pred_scores"]))
         self.min_scores = min(self.min_scores, torch.min(batch["pred_scores"]))
         return batch
@@ -196,12 +194,19 @@ class GanomalyLightning(AnomalyModule):
         self._reset_min_max()
         return super().on_test_start()
 
-    def test_step(self, batch, _):
-        """Update min and max scores from the current step."""
-        super().test_step(batch, _)
-        self.max_scores = max(self.max_scores, torch.max(batch["pred_scores"]))
-        self.min_scores = min(self.min_scores, torch.min(batch["pred_scores"]))
-        return batch
+    def forward(self, batch):
+        """Forward method.
+
+        Args:
+            batch (Tensor): Input tensor
+
+        Returns:
+            Tensor: Output tensor
+        """
+        self.generator.eval()
+        _, latent_i, latent_o = self.generator(batch)
+        pred_scores = torch.mean(torch.pow((latent_i - latent_o), 2), dim=1).view(-1)  # convert nx1x1 to n
+        return pred_scores
 
     def test_epoch_end(self, outputs):
         """Normalize outputs based on min/max values."""
