@@ -126,7 +126,7 @@ stfpm:
     image_AUROC: 0.624
     pixel_AUROC: 0.955
     nncf:
-      image_AUROC: 0.644
+      image_AUROC: 0.623
       pixel_AUROC: 0.950
   carpet:
     image_AUROC: 0.985
