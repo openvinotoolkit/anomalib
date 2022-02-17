@@ -178,7 +178,7 @@ stfpm:
       pixel_AUROC: 0.940
   toothbrush:
     image_AUROC: 0.536
-    pixel_AUROC: 0.986
+    pixel_AUROC: 0.170
     nncf:
       image_AUROC: 0.791
       pixel_AUROC: 0.956
