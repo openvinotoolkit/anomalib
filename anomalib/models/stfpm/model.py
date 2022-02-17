@@ -17,19 +17,20 @@ https://arxiv.org/abs/2103.04257
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import warnings
 from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 import torch.nn.functional as F
 import torchvision
-from omegaconf import ListConfig
+from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
 from torch import Tensor, nn, optim
 
 from anomalib.models.components import AnomalyModule, FeatureExtractor
 from anomalib.pre_processing import Tiler
 
-__all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel", "StfpmLightning"]
+__all__ = ["Loss", "AnomalyMapGenerator", "StfpmModel", "StfpmLightning"]
 
 
 class Loss(nn.Module):
@@ -172,30 +173,25 @@ class AnomalyMapGenerator:
         return self.compute_anomaly_map(teacher_features, student_features)
 
 
-class STFPMModel(nn.Module):
+class StfpmModel(nn.Module):
     """STFPM: Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection.
 
     Args:
-        layers (List[str]): Layers used for feature extraction
         input_size (Tuple[int, int]): Input size for the model.
-        tile_size (Tuple[int, int]): Tile size
-        tile_stride (int): Stride for tiling
+        layers (List[str]): Layers used for feature extraction
         backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
-        apply_tiling (bool, optional): Apply tiling. Defaults to False.
     """
 
     def __init__(
         self,
-        layers: List[str],
         input_size: Tuple[int, int],
+        layers: List[str],
         backbone: str = "resnet18",
-        apply_tiling: bool = False,
-        tile_size: Optional[Tuple[int, int]] = None,
-        tile_stride: Optional[int] = None,
     ):
         super().__init__()
+        self.tiler: Optional[Tiler] = None
+
         self.backbone = getattr(torchvision.models, backbone)
-        self.apply_tiling = apply_tiling
         self.teacher_model = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=layers)
         self.student_model = FeatureExtractor(backbone=self.backbone(pretrained=False), layers=layers)
 
@@ -204,13 +200,7 @@ class STFPMModel(nn.Module):
             parameters.requires_grad = False
 
         self.loss = Loss()
-        if self.apply_tiling:
-            assert tile_size is not None
-            assert tile_stride is not None
-            self.tiler = Tiler(tile_size, tile_stride)
-            self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(tile_size))
-        else:
-            self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(input_size))
+        self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(input_size))
 
     def forward(self, images):
         """Forward-pass images into the network.
@@ -224,15 +214,16 @@ class STFPMModel(nn.Module):
         Returns:
           Teacher and student features when in training mode, otherwise the predicted anomaly maps.
         """
-        if self.apply_tiling:
+        if self.tiler:
             images = self.tiler.tile(images)
+
         teacher_features: Dict[str, Tensor] = self.teacher_model(images)
         student_features: Dict[str, Tensor] = self.student_model(images)
         if self.training:
             output = teacher_features, student_features
         else:
             output = self.anomaly_map_generator(teacher_features=teacher_features, student_features=student_features)
-            if self.apply_tiling:
+            if self.tiler:
                 output = self.tiler.untile(output)
 
         return output
@@ -242,15 +233,102 @@ class StfpmLightning(AnomalyModule):
     """PL Lightning Module for the STFPM algorithm."""
 
     def __init__(self, hparams):
-        super().__init__(hparams)
+        warnings.warn("StfpmLightning is deprecated, use Stfpm instead", DeprecationWarning)
 
-        self.model = STFPMModel(
+        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
+        self.save_hyperparameters(hparams)
+
+        super().__init__(
+            task=hparams.dataset.task,
+            adaptive_threshold=hparams.model.threshold.adaptive,
+            default_image_threshold=hparams.model.threshold.image_default,
+            default_pixel_threshold=hparams.model.threshold.pixel_default,
+        )
+        self.model = StfpmModel(
             layers=hparams.model.layers,
             input_size=hparams.model.input_size,
-            tile_size=hparams.dataset.tiling.tile_size,
-            tile_stride=hparams.dataset.tiling.stride,
             backbone=hparams.model.backbone,
-            apply_tiling=hparams.dataset.tiling.apply,
+        )
+        self.loss_val = 0
+
+    def configure_callbacks(self):
+        """Configure model-specific callbacks."""
+        early_stopping = EarlyStopping(
+            monitor=self.hparams.hparams.model.early_stopping.metric,
+            patience=self.hparams.hparams.model.early_stopping.patience,
+            mode=self.hparams.hparams.model.early_stopping.mode,
+        )
+        return [early_stopping]
+
+    def configure_optimizers(self) -> torch.optim.Optimizer:
+        """Configure optimizers by creating an SGD optimizer.
+
+        Returns:
+            (Optimizer): SGD optimizer
+        """
+        return optim.SGD(
+            params=self.model.student_model.parameters(),
+            lr=self.hparams.hparams.model.lr,
+            momentum=self.hparams.hparams.model.momentum,
+            weight_decay=self.hparams.hparams.model.weight_decay,
+        )
+
+    def training_step(self, batch, _):  # pylint: disable=arguments-differ
+        """Training Step of STFPM.
+
+        For each batch, teacher and student and teacher features are extracted from the CNN.
+
+        Args:
+          batch (Tensor): Input batch
+          _: Index of the batch.
+
+        Returns:
+          Hierarchical feature map
+        """
+        self.model.teacher_model.eval()
+        teacher_features, student_features = self.model.forward(batch["image"])
+        loss = self.loss_val + self.model.loss(teacher_features, student_features)
+        self.loss_val = 0
+        return {"loss": loss}
+
+    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
+        """Validation Step of STFPM.
+
+        Similar to the training step, student/teacher features are extracted from the CNN for each batch, and
+        anomaly map is computed.
+
+        Args:
+          batch (Tensor): Input batch
+          _: Index of the batch.
+
+        Returns:
+          Dictionary containing images, anomaly maps, true labels and masks.
+          These are required in `validation_epoch_end` for feature concatenation.
+        """
+        batch["anomaly_maps"] = self.model(batch["image"])
+
+        return batch
+
+
+class Stfpm(AnomalyModule):
+    """PL Lightning Module for the STFPM algorithm."""
+
+    def __init__(
+        self,
+        task: str,
+        adaptive_threshold: bool,
+        default_image_threshold: float,
+        default_pixel_threshold: float,
+        layers: List[str],
+        input_size: Tuple[int, int],
+        backbone: str,
+    ):
+        super().__init__(task, adaptive_threshold, default_image_threshold, default_pixel_threshold)
+
+        self.model = StfpmModel(
+            input_size=input_size,
+            layers=layers,
+            backbone=backbone,
         )
         self.loss_val = 0
 
