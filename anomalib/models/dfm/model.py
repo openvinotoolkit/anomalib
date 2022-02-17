@@ -30,7 +30,12 @@ class DfmLightning(AnomalyModule):
     """DFM: Deep Featured Kernel Density Estimation."""
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
-        super().__init__(hparams)
+        super().__init__(
+            task=hparams.dataset.task,
+            adaptive_threshold=hparams.model.threshold.adaptive,
+            default_image_threshold=hparams.model.threshold.image_default,
+            default_pixel_threshold=0,
+        )
 
         self.backbone = getattr(torchvision.models, hparams.model.backbone)
         self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=["avgpool"]).eval()
