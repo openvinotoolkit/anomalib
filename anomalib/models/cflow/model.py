@@ -17,6 +17,7 @@ https://arxiv.org/pdf/2107.12571v1.pdf
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import warnings
 from typing import List, Tuple, Union, cast
 
 import einops
@@ -24,7 +25,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import torchvision
-from omegaconf import DictConfig, ListConfig
+from omegaconf import ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
 from torch import Tensor, nn, optim
 
@@ -56,11 +57,11 @@ class AnomalyMapGenerator:
     def __init__(
         self,
         image_size: Union[ListConfig, Tuple],
-        pool_layers: List[str],
+        layers: List[str],
     ):
         self.distance = torch.nn.PairwiseDistance(p=2, keepdim=True)
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
-        self.pool_layers: List[str] = pool_layers
+        self.layers: List[str] = layers
 
     def compute_anomaly_map(
         self, distribution: Union[List[Tensor], List[List]], height: List[int], width: List[int]
@@ -78,7 +79,7 @@ class AnomalyMapGenerator:
         """
 
         test_map: List[Tensor] = []
-        for layer_idx in range(len(self.pool_layers)):
+        for layer_idx in range(len(self.layers)):
             test_norm = torch.tensor(distribution[layer_idx], dtype=torch.double)  # pylint: disable=not-callable
             test_norm -= torch.max(test_norm)  # normalize likelihoods to (-Inf:0] by subtracting a constant
             test_prob = torch.exp(test_norm)  # convert to probs in range [0:1]
@@ -91,7 +92,7 @@ class AnomalyMapGenerator:
             )
         # score aggregation
         score_map = torch.zeros_like(test_map[0])
-        for layer_idx in range(len(self.pool_layers)):
+        for layer_idx in range(len(self.layers)):
             score_map += test_map[layer_idx]
         score_mask = score_map
         # invert probs to anomaly scores
@@ -105,8 +106,7 @@ class AnomalyMapGenerator:
         Expects `distribution`, `height` and 'width' keywords to be passed explicitly
 
         Example
-        >>> anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(hparams.model.input_size),
-        >>>        pool_layers=pool_layers)
+        >>> anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(input_size), layers=layers)
         >>> output = self.anomaly_map_generator(distribution=dist, height=height, width=width)
 
         Raises:
@@ -128,31 +128,34 @@ class AnomalyMapGenerator:
 class CflowModel(nn.Module):
     """CFLOW: Conditional Normalizing Flows."""
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]):
+    def __init__(
+        self,
+        input_size: Tuple[int, int],
+        backbone: str,
+        layers: List[str],
+        fiber_batch_size: int,
+        condition_vector: int,
+        coupling_blocks: int,
+        clamp_alpha: float,
+    ):
         super().__init__()
 
-        self.backbone = getattr(torchvision.models, hparams.model.backbone)
-        self.fiber_batch_size = hparams.dataset.fiber_batch_size
-        self.condition_vector: int = hparams.model.condition_vector
-        self.dec_arch = hparams.model.decoder
-        self.pool_layers = hparams.model.layers
+        self.backbone = getattr(torchvision.models, backbone)
+        self.layers = layers
+        self.fiber_batch_size = fiber_batch_size
+        self.encoder = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
+        self.condition_vector = condition_vector
 
-        self.encoder = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.pool_layers)
         self.pool_dims = self.encoder.out_dims
         self.decoders = nn.ModuleList(
-            [
-                cflow_head(self.condition_vector, hparams.model.coupling_blocks, hparams.model.clamp_alpha, pool_dim)
-                for pool_dim in self.pool_dims
-            ]
+            [cflow_head(self.condition_vector, coupling_blocks, clamp_alpha, pool_dim) for pool_dim in self.pool_dims]
         )
 
         # encoder model is fixed
         for parameters in self.encoder.parameters():
             parameters.requires_grad = False
 
-        self.anomaly_map_generator = AnomalyMapGenerator(
-            image_size=tuple(hparams.model.input_size), pool_layers=self.pool_layers
-        )
+        self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(input_size), layers=self.layers)
 
     def forward(self, images):
         """Forward-pass images into the network to extract encoder features and compute probability.
@@ -167,11 +170,11 @@ class CflowModel(nn.Module):
 
         activation = self.encoder(images)
 
-        distribution = [[] for _ in self.pool_layers]
+        distribution = [[] for _ in self.layers]
 
         height: List[int] = []
         width: List[int] = []
-        for layer_idx, layer in enumerate(self.pool_layers):
+        for layer_idx, layer in enumerate(self.layers):
             encoder_activations = activation[layer].detach()  # BxCxHxW
 
             batch_size, dim_feature_vector, im_height, im_width = encoder_activations.size()
@@ -220,19 +223,36 @@ class CflowModel(nn.Module):
 class CflowLightning(AnomalyModule):
     """PL Lightning Module for the CFLOW algorithm."""
 
-    def __init__(self, hparams):
-        super().__init__(hparams)
+    def __init__(self, params):
+        warnings.warn("CflowLightning will be deprecated, use Cflow instead", DeprecationWarning)
 
-        self.model: CflowModel = CflowModel(hparams)
+        self.hparams = params
+
+        super().__init__(
+            task=params.dataset.task,
+            adaptive_threshold=params.model.threshold.adaptive,
+            default_image_threshold=params.model.threshold.image_default,
+            default_pixel_threshold=params.model.threshold.pixel_default,
+        )
+
+        self.model: CflowModel = CflowModel(
+            input_size=params.model.input_size,
+            backbone=params.model.backbone,
+            layers=params.model.layers,
+            fiber_batch_size=params.dataset.fiber_batch_size,
+            condition_vector=params.model.condition_vector,
+            coupling_blocks=params.model.condition_vector,
+            clamp_alpha=params.model.clamp_alpha,
+        )
         self.loss_val = 0
         self.automatic_optimization = False
 
     def configure_callbacks(self):
         """Configure model-specific callbacks."""
         early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
+            monitor=self.params.model.early_stopping.metric,
+            patience=self.params.model.early_stopping.patience,
+            mode=self.params.model.early_stopping.mode,
         )
         return [early_stopping]
 
@@ -243,12 +263,12 @@ class CflowLightning(AnomalyModule):
             Optimizer: Adam optimizer for each decoder
         """
         decoders_parameters = []
-        for decoder_idx in range(len(self.model.pool_layers)):
+        for decoder_idx in range(len(self.model.layers)):
             decoders_parameters.extend(list(self.model.decoders[decoder_idx].parameters()))
 
         optimizer = optim.Adam(
             params=decoders_parameters,
-            lr=self.hparams.model.lr,
+            lr=self.params.model.lr,
         )
         return optimizer
 
@@ -276,7 +296,7 @@ class CflowLightning(AnomalyModule):
 
         height = []
         width = []
-        for layer_idx, layer in enumerate(self.model.pool_layers):
+        for layer_idx, layer in enumerate(self.model.layers):
             encoder_activations = activation[layer].detach()  # BxCxHxW
 
             batch_size, dim_feature_vector, im_height, im_width = encoder_activations.size()
