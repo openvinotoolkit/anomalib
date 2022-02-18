@@ -17,13 +17,14 @@ Paper https://arxiv.org/abs/2106.08265.
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import warnings
 from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 import torch.nn.functional as F
 import torchvision
 from kornia import gaussian_blur2d
-from omegaconf import ListConfig
+from omegaconf import DictConfig, ListConfig
 from torch import Tensor, nn
 
 from anomalib.models.components import (
@@ -245,22 +246,22 @@ class PatchcoreLightning(AnomalyModule):
         apply_tiling (bool, optional): Apply tiling. Defaults to False.
     """
 
-    def __init__(
-        self,
-        task: str,
-        input_size: Tuple[int, int],
-        layers: List[str],
-        backbone: str,
-        adaptive_threshold: bool,
-        default_image_threshold: float,
-        default_pixel_threshold: float,
-    ) -> None:
-        super().__init__(task, adaptive_threshold, default_image_threshold, default_pixel_threshold)
+    def __init__(self, params: Union[DictConfig, ListConfig]):
+        warnings.warn("PadimLightning is deprecated, use Padim instead", DeprecationWarning)
+
+        super().__init__(
+            task=params.dataset.task,
+            adaptive_threshold=params.model.threshold.adaptive,
+            default_image_threshold=params.model.threshold.image_default,
+            default_pixel_threshold=params.model.threshold.pixel_default,
+        )
+
+        self.params = params
 
         self.model: PatchcoreModel = PatchcoreModel(
-            input_size=input_size,
-            layers=layers,
-            backbone=backbone,
+            input_size=params.model.input_size,
+            layers=params.model.layers,
+            backbone=params.model.backbone,
         )
         self.automatic_optimization = False
         self.embeddings: List[Tensor] = []
@@ -300,7 +301,7 @@ class PatchcoreLightning(AnomalyModule):
         print("Aggregating the embedding extracted from the training set.")
         embeddings = torch.vstack(self.embeddings)
 
-        sampling_ratio = self.hparams.model.coreset_sampling_ratio
+        sampling_ratio = self.params.model.coreset_sampling_ratio
         self.model.subsample_embedding(embeddings, sampling_ratio)
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
