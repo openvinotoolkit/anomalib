@@ -2,10 +2,8 @@
 # Visit https://bit.ly/cffinit to generate yours today!
 
 cff-version: 1.2.0
-title: >-
-  Anomalib: A Deep Learning Library for Anomaly
-  Detection
-message: "If you use this library and love it, use this to cite it \U0001F917"
+title: Anomalib
+message: "If you use this library and love it, cite the software and the paper \U0001F917"
 authors:
   - given-names: Samet
     family-names: Akcay
