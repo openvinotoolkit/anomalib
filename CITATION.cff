@@ -6,9 +6,8 @@ title: >-
   Anomalib: A Deep Learning Library for Anomaly
   Detection
 message: "If you use this library and love it, use this to cite it \U0001F917"
-# type: software
 authors:
-  - given-names: Samet Akcay
+  - given-names: Samet
     family-names: Akcay
     email: samet.akcay@intel.com
     affiliation: Intel
