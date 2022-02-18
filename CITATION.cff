@@ -6,7 +6,7 @@ title: >-
   Anomalib: A Deep Learning Library for Anomaly
   Detection
 message: "If you use this library and love it, use this to cite it \U0001F917"
-type: software
+# type: software
 authors:
   - given-names: Samet Akcay
     family-names: Akcay
@@ -31,12 +31,43 @@ authors:
   - given-names: Utku
     family-names: Genc
     email: utku.genc@intel.com
-identifiers:
-  - type: url
-    value: "https://arxiv.org/abs/2202.08341"
-    description: ArXiv
-repository-code: "https://github.com/openvinotoolkit/anomalib"
-repository: "https://github.com/openvinotoolkit/anomalib"
+    affiliation: Intel
+version: 0.0.4
+doi: https://doi.org/10.48550/arXiv.2202.08341
+date-released: 2022-02-18
+references:
+  - type: article
+    authors:
+      - given-names: Samet
+        family-names: Akcay
+        email: samet.akcay@intel.com
+        affiliation: Intel
+      - given-names: Dick
+        family-names: Ameln
+        email: dick.ameln@intel.com
+        affiliation: Intel
+      - given-names: Ashwin
+        family-names: Vaidya
+        email: ashwin.vaidya@intel.com
+        affiliation: Intel
+      - given-names: Barath
+        family-names: Lakshmanan
+        email: barath.lakshmanan@intel.com
+        affiliation: Intel
+      - given-names: Nilesh
+        family-names: Ahuja
+        email: nilesh.ahuja@intel.com
+        affiliation: Intel
+      - given-names: Utku
+        family-names: Genc
+        email: utku.genc@intel.com
+        affiliation: Intel
+    title: "Anomalib: A Deep Learning Library for Anomaly Detection"
+    year: 2022
+    journal: ArXiv
+    doi: https://doi.org/10.48550/arXiv.2202.08341
+    url: https://arxiv.org/abs/2202.08341
+
 abstract: >-
   This paper introduces anomalib, a novel library for
   unsupervised anomaly detection and localization.
