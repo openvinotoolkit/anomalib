@@ -226,7 +226,7 @@ class CflowLightning(AnomalyModule):
     def __init__(self, params):
         warnings.warn("CflowLightning will be deprecated, use Cflow instead", DeprecationWarning)
 
-        self.hparams = params
+        self.params = params
 
         super().__init__(
             task=params.dataset.task,
