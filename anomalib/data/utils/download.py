@@ -18,7 +18,11 @@ Based on https://stackoverflow.com/a/53877507
 # and limitations under the License.
 
 import io
+import tarfile
+import zipfile
+from pathlib import Path
 from typing import Dict, Iterable, Optional, Union
+from urllib.request import urlretrieve
 
 from tqdm import tqdm
 
@@ -193,3 +197,48 @@ class DownloadProgressBar(tqdm):
         if total_size is not None:
             self.total = total_size
         self.update(chunk_number * max_chunk_size - self.n)
+
+
+def download(url: str, filename: Union[str, Path], description: Optional[str] = None) -> None:
+    """Download the dataset from the given url.
+
+    This function downloads the dataset from url to the given filename.
+
+    Args:
+        url (str): Dataset URL
+        filename (str): Filename to save the file locally.
+        description (Optional[str], optional): _description_. Defaults to None.
+    """
+
+    with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc=description) as progress_bar:
+        urlretrieve(url=url, filename=filename, reporthook=progress_bar.update_to)  # nosec
+
+
+def extract(filename: Path, path: Optional[Path] = None) -> None:
+    """Extract file from tar file.
+
+    Args:
+        filename (Path): Name of the tar/zip file
+        path (Optional[Path], optional): Path to which tar/zip file is extracted. Defaults to None.
+
+    Raises:
+        ValueError: When the file extension is not ".tar", ".gzip", ".bz2", ".lzma" or ".zip"
+
+    """
+    if path is None:
+        path = Path(".")
+
+    if filename.suffix == ".zip":
+        with zipfile.ZipFile(filename, "r") as zip_file:
+            zip_file.extractall(path)
+    else:
+        try:
+            with tarfile.open(filename) as tar_file:
+                tar_file.extractall(path)
+        except ValueError:
+            print("Unknown file extension to extract")
+
+
+def clean(filename: Path) -> None:
+    """Cleanup Dataset tar file."""
+    filename.unlink()
