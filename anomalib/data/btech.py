@@ -87,11 +87,9 @@ def make_btech_dataset(
         >>> samples = make_btech_dataset(path, split='train', split_ratio=0.1, seed=0)
         >>> samples.head()
            path     split label image_path                  mask_path                     label_index
-        0  BTech/01 train 01    BTech/01/train/good/105.bmp BTech/01/ground_truth/good/105.png      0
-        1  BTech/01 train 01    BTech/01/train/good/017.bmp BTech/01/ground_truth/good/017.png      0
-        2  BTech/01 train 01    BTech/01/train/good/137.bmp BTech/01/ground_truth/good/137.png      0
-        3  BTech/01 train 01    BTech/01/train/good/152.bmp BTech/01/ground_truth/good/152.png      0
-        4  BTech/01 train 01    BTech/01/train/good/109.bmp BTech/01/ground_truth/good/109.png      0
+        0  BTech/01 train 01    BTech/01/train/ok/105.bmp BTech/01/ground_truth/ok/105.png      0
+        1  BTech/01 train 01    BTech/01/train/ok/017.bmp BTech/01/ground_truth/ok/017.png      0
+        ...
 
     Returns:
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
