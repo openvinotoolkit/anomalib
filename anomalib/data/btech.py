@@ -353,7 +353,7 @@ class BTechDataModule(LightningDataModule):
                 zip_file.extractall(self.root)
 
             logging.info("Renaming the dataset directory")
-            shutil.move(src=self.root / "BTech_Dataset_transformed", dst=self.root / "BTech")
+            shutil.move(src=str(self.root / "BTech_Dataset_transformed"), dst=str(self.root / "BTech"))
 
             logging.info("Cleaning the tar file")
             zip_filename.unlink()

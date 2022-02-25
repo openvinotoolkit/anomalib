@@ -36,9 +36,27 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
     datamodule: LightningDataModule
 
     if config.dataset.name.lower() == "mvtec":
-        datamodule = MVTecDataModule
+        datamodule = MVTecDataModule(
+            # TODO: Remove config values. IAAALD-211
+            root=config.dataset.path,
+            category=config.dataset.category,
+            image_size=(config.dataset.image_size[0], config.dataset.image_size[0]),
+            train_batch_size=config.dataset.train_batch_size,
+            test_batch_size=config.dataset.test_batch_size,
+            num_workers=config.dataset.num_workers,
+            seed=config.project.seed,
+        )
     elif config.dataset.name.lower() == "btech":
-        datamodule = BTechDataModule
+        datamodule = BTechDataModule(
+            # TODO: Remove config values. IAAALD-211
+            root=config.dataset.path,
+            category=config.dataset.category,
+            image_size=(config.dataset.image_size[0], config.dataset.image_size[0]),
+            train_batch_size=config.dataset.train_batch_size,
+            test_batch_size=config.dataset.test_batch_size,
+            num_workers=config.dataset.num_workers,
+            seed=config.project.seed,
+        )
     else:
         raise ValueError(
             "Unknown dataset! \n"
@@ -46,16 +64,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
             "`get_datamodule` in `anomalib.data.__init__.py"
         )
 
-    return datamodule(
-        # TODO: Remove config values. IAAALD-211
-        root=config.dataset.path,
-        category=config.dataset.category,
-        image_size=(config.dataset.image_size[0], config.dataset.image_size[0]),
-        train_batch_size=config.dataset.train_batch_size,
-        test_batch_size=config.dataset.test_batch_size,
-        num_workers=config.dataset.num_workers,
-        seed=config.project.seed,
-    )
+    return datamodule
 
 
 __all__ = ["get_datamodule", "InferenceDataset"]
