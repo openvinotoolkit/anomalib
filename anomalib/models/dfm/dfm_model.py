@@ -19,7 +19,7 @@ import math
 import torch
 from torch import Tensor, nn
 
-from anomalib.models.components import PCA, DynamicBufferModule
+from anomalib.models.components import PCA, DynamicBufferModule, FeatureExtractor
 
 
 class SingleClassGaussian(DynamicBufferModule):
@@ -87,12 +87,13 @@ class DFMModel(nn.Module):
         score_type (str, optional): Scoring type. Options are `fre` and `nll`. Defaults to "fre".
     """
 
-    def __init__(self, n_comps: float = 0.97, score_type: str = "fre"):
+    def __init__(self, backbone: nn.Module, n_comps: float = 0.97, score_type: str = "fre"):
         super().__init__()
         self.n_components = n_comps
         self.pca_model = PCA(n_components=self.n_components)
         self.gaussian_model = SingleClassGaussian()
         self.score_type = score_type
+        self.feature_extractor = FeatureExtractor(backbone=backbone(pretrained=True), layers=["avgpool"]).eval()
 
     def fit(self, dataset: Tensor) -> None:
         """Fit a pca transformation and a Gaussian model to dataset.
@@ -128,12 +129,28 @@ class DFMModel(nn.Module):
 
         return score
 
-    def forward(self, dataset: Tensor) -> None:
-        """Provides the same functionality as `fit`.
-
-        Transforms the input dataset based on singular values calculated earlier.
+    def get_features(self, batch: Tensor) -> Tensor:
+        """Extract features from the pretrained network.
 
         Args:
-            dataset (Tensor): Input dataset
+            batch (Tensor): Image batch.
+
+        Returns:
+            Tensor: Tensor containing extracted features.
         """
-        self.fit(dataset)
+        self.feature_extractor.eval()
+        layer_outputs = self.feature_extractor(batch)
+        layer_outputs = torch.cat(list(layer_outputs.values())).detach()
+        return layer_outputs
+
+    def forward(self, batch: Tensor) -> Tensor:
+        """Computer score from input images.
+
+        Args:
+            batch (Tensor): Input images
+
+        Returns:
+            Tensor: Scores
+        """
+        feature_vector = self.get_features(batch)
+        return self.score(feature_vector.view(feature_vector.shape[:2]))
