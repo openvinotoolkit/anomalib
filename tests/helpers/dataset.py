@@ -12,18 +12,29 @@ from skimage.io import imsave
 from .shapes import random_shapes
 
 
-def get_dataset_path(path: Union[str, Path] = "./datasets/MVTec"):
+def get_dataset_path(dataset: str = "MVTec") -> str:
     """Selects path based on tests in local system or docker image.
 
-    Local install assumes dataset is downloaded to
-    anomaly/datasets/MVTec. In either case, if the location is empty,
-    the dataset is downloaded again. This speeds up tests in docker
-    images where dataset is already stored in /tmp/anomalib
+    Local install assumes datasets are located in anomaly/datasets/.
+    In either case, if the location is empty, the dataset is downloaded again.
+    This speeds up tests in docker images where dataset is already stored in /tmp/anomalib
+
+    Example:
+    Assume that `datasets directory exists in ~/anomalib/,
+
+    >>> get_dataset_path(dataset="MVTec")
+    './datasets/MVTec'
+
     """
-    # when running locally
-    path = str(path)
+    # Initially check if `datasets` directory exists locally and look
+    # for the `dataset`. This is useful for local testing.
+    path = os.path.join("./datasets", dataset)
+
+    # For docker deployment or a CI that runs on server, dataset directory
+    # may not necessarily be located in the repo. Therefore, check anomalib
+    # dataset path environment variable.
     if not os.path.isdir(path):
-        path = os.environ["ANOMALIB_DATASET_PATH"]
+        path = os.path.join(os.environ["ANOMALIB_DATASET_PATH"], dataset)
     return path
 
 

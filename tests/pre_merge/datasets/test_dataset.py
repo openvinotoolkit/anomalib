@@ -11,7 +11,7 @@ from tests.helpers.dataset import get_dataset_path
 @pytest.fixture(autouse=True)
 def mvtec_data_module():
     datamodule = MVTecDataModule(
-        root=get_dataset_path(),
+        root=get_dataset_path(dataset="MVTec"),
         category="leather",
         image_size=(256, 256),
         train_batch_size=1,
@@ -28,7 +28,7 @@ def mvtec_data_module():
 def btech_data_module():
     """Create BTech Data Module."""
     datamodule = BTechDataModule(
-        root=get_dataset_path(path="./datasets/BTech"),
+        root=get_dataset_path(dataset="BTech"),
         category="01",
         image_size=(256, 256),
         train_batch_size=1,
