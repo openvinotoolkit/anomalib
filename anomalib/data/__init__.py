@@ -42,8 +42,8 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
     else:
         raise ValueError(
             "Unknown dataset! \n"
-            "If you use a custom dataset make sure you initialize it "
-            "in `get_datamodule` in `anomalib.data.__init__.py"
+            "If you use a custom dataset make sure you initialize it in"
+            "`get_datamodule` in `anomalib.data.__init__.py"
         )
 
     return datamodule(
