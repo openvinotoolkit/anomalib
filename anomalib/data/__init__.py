@@ -19,6 +19,7 @@ from typing import Union
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning import LightningDataModule
 
+from .btech import BTechDataModule
 from .inference import InferenceDataset
 from .mvtec import MVTecDataModule
 
@@ -34,21 +35,27 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
     """
     datamodule: LightningDataModule
 
-    if config.dataset.format.lower() == "mvtec":
-        datamodule = MVTecDataModule(
-            # TODO: Remove config values. IAAALD-211
-            root=config.dataset.path,
-            category=config.dataset.category,
-            image_size=(config.dataset.image_size[0], config.dataset.image_size[0]),
-            train_batch_size=config.dataset.train_batch_size,
-            test_batch_size=config.dataset.test_batch_size,
-            num_workers=config.dataset.num_workers,
-            seed=config.project.seed,
-        )
+    if config.dataset.name.lower() == "mvtec":
+        datamodule = MVTecDataModule
+    elif config.dataset.name.lower() == "btech":
+        datamodule = BTechDataModule
     else:
-        raise ValueError("Unknown dataset!")
+        raise ValueError(
+            "Unknown dataset! \n"
+            "If you use a custom dataset make sure you initialize it "
+            "in `get_datamodule` in `anomalib.data.__init__.py"
+        )
 
-    return datamodule
+    return datamodule(
+        # TODO: Remove config values. IAAALD-211
+        root=config.dataset.path,
+        category=config.dataset.category,
+        image_size=(config.dataset.image_size[0], config.dataset.image_size[0]),
+        train_batch_size=config.dataset.train_batch_size,
+        test_batch_size=config.dataset.test_batch_size,
+        num_workers=config.dataset.num_workers,
+        seed=config.project.seed,
+    )
 
 
 __all__ = ["get_datamodule", "InferenceDataset"]
