@@ -17,6 +17,7 @@ Paper https://arxiv.org/abs/2106.08265.
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import warnings
 from typing import Dict, List, Optional, Tuple, Union
 
 import torch
@@ -244,6 +245,7 @@ class PatchcoreLightning(AnomalyModule):
     """PatchcoreLightning Module to train PatchCore algorithm.
 
     Args:
+        hparams (Union[DictConfig, ListConfig]): Model params
         layers (List[str]): Layers used for feature extraction
         input_size (Tuple[int, int]): Input size for the model.
         tile_size (Tuple[int, int]): Tile size
@@ -253,7 +255,15 @@ class PatchcoreLightning(AnomalyModule):
     """
 
     def __init__(self, hparams) -> None:
-        super().__init__(hparams)
+        warnings.warn("PadimLightning is deprecated, use Padim via Anomalib CLI instead", DeprecationWarning)
+
+        super().__init__(
+            params=hparams,  # TODO: to be deprecated in v0.2.6
+            task=hparams.dataset.task,
+            adaptive_threshold=hparams.model.threshold.adaptive,
+            default_image_threshold=hparams.model.threshold.image_default,
+            default_pixel_threshold=hparams.model.threshold.pixel_default,
+        )
 
         self.model: PatchcoreModel = PatchcoreModel(
             layers=hparams.model.layers,

@@ -15,9 +15,10 @@
 # and limitations under the License.
 
 from abc import ABC
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 
 import pytorch_lightning as pl
+from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks.base import Callback
 from torch import Tensor, nn
 from torchmetrics import F1, MetricCollection
@@ -36,6 +37,7 @@ class AnomalyModule(pl.LightningModule, ABC):
     Acts as a base class for all the Anomaly Modules in the library.
 
     Args:
+        params (Union[DictConfig, ListConfig]): Configs from yaml file.
         task (str): Task type could be either ``classification`` or ``segmentation``
         adaptive_threshold (bool): Boolean to check if threshold is adaptively computed.
         default_image_threshold (float): Default image threshold value.
@@ -43,12 +45,18 @@ class AnomalyModule(pl.LightningModule, ABC):
     """
 
     def __init__(
-        self, task: str, adaptive_threshold: bool, default_image_threshold: float, default_pixel_threshold: float
+        self,
+        params: Union[DictConfig, ListConfig],  # TODO: to be deprecated in v0.2.6
+        task: str,
+        adaptive_threshold: bool,
+        default_image_threshold: float,
+        default_pixel_threshold: float,
     ) -> None:
 
         super().__init__()
         # Force the type for hparams so that it works with OmegaConfig style of accessing
-        self.save_hyperparameters()
+        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
+        self.save_hyperparameters(params)  # TODO: to be deprecated in v0.2.6
         self.loss: Tensor
         self.callbacks: List[Callback]
 

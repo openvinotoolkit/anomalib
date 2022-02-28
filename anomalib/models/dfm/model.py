@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import warnings
 from typing import List, Union
 
 import torch
@@ -30,7 +31,15 @@ class DfmLightning(AnomalyModule):
     """DFM: Deep Featured Kernel Density Estimation."""
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
-        super().__init__(hparams)
+        warnings.warn("DfmLightning is deprecated, use Dfm via Anomalib CLI instead", DeprecationWarning)
+
+        super().__init__(
+            params=hparams,  # TODO: to be deprecated in v0.2.6
+            task=hparams.dataset.task,
+            adaptive_threshold=hparams.model.threshold.adaptive,
+            default_image_threshold=hparams.model.threshold.image_default,
+            default_pixel_threshold=hparams.model.threshold.pixel_default,
+        )
 
         self.backbone = getattr(torchvision.models, hparams.model.backbone)
         self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=["avgpool"]).eval()
