@@ -47,7 +47,8 @@ You can get started with `anomalib` by just using pip.
 ```bash
 pip install anomalib
 ```
-Due to ongoing face pace of development, we encourage you to use editable install until we release v0.2.5. 
+
+> **_NOTE:_** Due to ongoing face pace of development, we encourage you to use editable install until we release v0.2.5. 
 
 ### Local Install
 It is highly recommended to use virtual environment when installing anomalib. For instance, with [anaconda](https://www.anaconda.com/products/individual), `anomalib` could be installed as,
