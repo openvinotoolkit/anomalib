@@ -17,6 +17,7 @@ https://arxiv.org/abs/2103.04257
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import warnings
 from typing import Dict, List, Optional, Tuple, Union
 
 import torch
@@ -242,7 +243,15 @@ class StfpmLightning(AnomalyModule):
     """PL Lightning Module for the STFPM algorithm."""
 
     def __init__(self, hparams):
-        super().__init__(hparams)
+        warnings.warn("StfpmLightning is deprecated, use Stfpm via Anomalib CLI instead", DeprecationWarning)
+
+        super().__init__(
+            params=hparams,  # TODO: to be deprecated in v0.2.6
+            task=hparams.dataset.task,
+            adaptive_threshold=hparams.model.threshold.adaptive,
+            default_image_threshold=hparams.model.threshold.image_default,
+            default_pixel_threshold=hparams.model.threshold.pixel_default,
+        )
 
         self.model = STFPMModel(
             layers=hparams.model.layers,
