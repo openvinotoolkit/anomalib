@@ -106,7 +106,7 @@ class AnomalyMapGenerator:
         Expects `distribution`, `height` and 'width' keywords to be passed explicitly
 
         Example
-        >>> anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(self.input_size),
+        >>> anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(input_size),
         >>>        pool_layers=pool_layers)
         >>> output = self.anomaly_map_generator(distribution=dist, height=height, width=width)
 
