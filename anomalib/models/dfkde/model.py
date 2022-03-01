@@ -63,7 +63,7 @@ class DfkdeModel(nn.Module):
         layer_outputs = torch.cat(list(layer_outputs.values())).detach()
         return layer_outputs
 
-    def fit_normality_model(self, embeddings: List[Tensor]):
+    def fit(self, embeddings: List[Tensor]):
         """Fit normality model.
 
         Args:
@@ -134,7 +134,7 @@ class DfkdeLightning(AnomalyModule):
         # NOTE: Previous anomalib versions fit Gaussian at the end of the epoch.
         #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
         #   is run within train epoch.
-        self.model.fit_normality_model(self.embeddings)
+        self.model.fit(self.embeddings)
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Validation Step of DFKDE.
