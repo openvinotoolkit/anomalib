@@ -39,14 +39,7 @@ class GanomalyLightning(AnomalyModule):
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         warnings.warn("GanomalyLightning is deprecated, use Ganomaly via Anomalib CLI instead", DeprecationWarning)
-
-        super().__init__(
-            params=hparams,  # TODO: to be deprecated in v0.2.6
-            task=hparams.dataset.task,
-            adaptive_threshold=hparams.model.threshold.adaptive,
-            default_image_threshold=hparams.model.threshold.image_default,
-            default_pixel_threshold=hparams.model.threshold.pixel_default,
-        )
+        super().__init__(hparams)
 
         self.generator = Generator(
             input_size=hparams.model.input_size[0],

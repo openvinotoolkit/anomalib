@@ -37,14 +37,8 @@ class DfkdeLightning(AnomalyModule):
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         warnings.warn("DfkdeLightning is deprecated, use Dfkde via Anomalib CLIs instead", DeprecationWarning)
+        super().__init__(hparams)
 
-        super().__init__(
-            params=hparams,  # TODO: to be deprecated in v0.2.6
-            task=hparams.dataset.task,
-            adaptive_threshold=hparams.model.threshold.adaptive,
-            default_image_threshold=hparams.model.threshold.image_default,
-            default_pixel_threshold=hparams.model.threshold.pixel_default,
-        )
         self.threshold_steepness = 0.05
         self.threshold_offset = 12
 

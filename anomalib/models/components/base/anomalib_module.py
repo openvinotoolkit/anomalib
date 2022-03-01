@@ -1,4 +1,4 @@
-"""Base Anomaly Module for Training Task."""
+"""Base Anomalib Module for Train/Test/Inference Tasks."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -15,10 +15,9 @@
 # and limitations under the License.
 
 from abc import ABC
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional
 
 import pytorch_lightning as pl
-from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks.base import Callback
 from torch import Tensor, nn
 from torchmetrics import F1, MetricCollection
@@ -31,26 +30,36 @@ from anomalib.utils.metrics import (
 )
 
 
-class AnomalyModule(pl.LightningModule, ABC):
+class AnomalibModule(pl.LightningModule, ABC):
     """AnomalyModule to train, validate, predict and test images.
 
     Acts as a base class for all the Anomaly Modules in the library.
 
     Args:
-        params (Union[DictConfig, ListConfig]): Configuration
+        task (str): Task type could be either ``classification`` or ``segmentation``
+        adaptive_threshold (bool): Boolean to check if threshold is adaptively computed.
+        default_image_threshold (float): Default image threshold value.
+        default_pixel_threshold (float): Default pixel threshold value.
     """
 
-    def __init__(self, params: Union[DictConfig, ListConfig]):
+    def __init__(
+        self,
+        task: str,
+        adaptive_threshold: bool,
+        default_image_threshold: float,
+        default_pixel_threshold: float,
+    ) -> None:
 
         super().__init__()
-        # Force the type for hparams so that it works with OmegaConfig style of accessing
-        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
-        self.save_hyperparameters(params)
+
+        self.save_hyperparameters()
         self.loss: Tensor
         self.callbacks: List[Callback]
 
-        self.image_threshold = AdaptiveThreshold(self.hparams.model.threshold.image_default).cpu()
-        self.pixel_threshold = AdaptiveThreshold(self.hparams.model.threshold.pixel_default).cpu()
+        self.task = task
+        self.adaptive_threshold = adaptive_threshold
+        self.image_threshold = AdaptiveThreshold(default_image_threshold).cpu()
+        self.pixel_threshold = AdaptiveThreshold(default_pixel_threshold).cpu()
 
         self.training_distribution = AnomalyScoreDistribution().cpu()
         self.min_max = MinMax().cpu()
@@ -95,8 +104,6 @@ class AnomalyModule(pl.LightningModule, ABC):
         outputs = self.validation_step(batch, batch_idx)
         self._post_process(outputs)
         outputs["pred_labels"] = outputs["pred_scores"] >= self.image_threshold.value
-        if "anomaly_maps" in outputs.keys():
-            outputs["pred_masks"] = outputs["anomaly_maps"] >= self.pixel_threshold.value
         return outputs
 
     def test_step(self, batch, _):  # pylint: disable=arguments-differ
@@ -130,7 +137,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         Args:
           outputs: Batch of outputs from the validation step
         """
-        if self.hparams.model.threshold.adaptive:
+        if self.adaptive_threshold:
             self._compute_adaptive_threshold(outputs)
         self._collect_outputs(self.image_metrics, self.pixel_metrics, outputs)
         self._log_metrics()
@@ -179,5 +186,5 @@ class AnomalyModule(pl.LightningModule, ABC):
     def _log_metrics(self):
         """Log computed performance metrics."""
         self.log_dict(self.image_metrics)
-        if self.hparams.dataset.task == "segmentation":
+        if self.task == "segmentation":
             self.log_dict(self.pixel_metrics)
