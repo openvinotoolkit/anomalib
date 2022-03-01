@@ -45,9 +45,7 @@ class DummyModule(AnomalyModule):
     masks."""
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
-        super().__init__(
-            hparams, task="segmentation", adaptive_threshold=True, default_image_threshold=3, default_pixel_threshold=3
-        )
+        super().__init__(hparams)
         self.model = DummyModel()
         self.task = "segmentation"
         self.callbacks = [VisualizerCallback()]  # test if this is removed
