@@ -138,7 +138,8 @@ class CflowModel(nn.Module):
         fiber_batch_size: int,
         condition_vector: int,
         coupling_blocks: int,
-        clamp_alpha: float,
+        affine_clamping: float,
+        permute_soft: bool,
     ):
         super().__init__()
         self.input_size = input_size
@@ -152,7 +153,10 @@ class CflowModel(nn.Module):
         self.encoder = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.pool_layers)
         self.pool_dims = self.encoder.out_dims
         self.decoders = nn.ModuleList(
-            [cflow_head(self.condition_vector, coupling_blocks, clamp_alpha, pool_dim) for pool_dim in self.pool_dims]
+            [
+                cflow_head(pool_dim, coupling_blocks, self.condition_vector, affine_clamping, permute_soft)
+                for pool_dim in self.pool_dims
+            ]
         )
 
         # encoder model is fixed
@@ -248,7 +252,8 @@ class CflowLightning(AnomalyModule):
             fiber_batch_size=hparams.dataset.fiber_batch_size,
             condition_vector=hparams.model.condition_vector,
             coupling_blocks=hparams.model.coupling_blocks,
-            clamp_alpha=hparams.model.clamp_alpha,
+            affine_clamping=hparams.model.clamp_alpha,
+            permute_soft=hparams.model.permute_soft,
         )
 
         self.loss_val = 0
