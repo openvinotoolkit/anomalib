@@ -82,8 +82,11 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
         else:
             raise ValueError(f"Normalization method not recognized: {config.model.normalization_method}")
 
-    if not config.project.log_images_to == []:
-        callbacks.append(VisualizerCallback(inputs_are_normalized=not config.model.normalization_method == "none"))
+    callbacks.append(
+        VisualizerCallback(
+            loggers=config.project.log_images_to, inputs_are_normalized=not config.model.normalization_method == "none"
+        )
+    )
 
     if "optimization" in config.keys():
         if config.optimization.nncf.apply:
