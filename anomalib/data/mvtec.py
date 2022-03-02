@@ -34,6 +34,7 @@ import numpy as np
 import pandas as pd
 from pandas.core.frame import DataFrame
 from pytorch_lightning.core.datamodule import LightningDataModule
+from pytorch_lightning.utilities.cli import DATAMODULE_REGISTRY  # type: ignore
 from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch import Tensor
 from torch.utils.data import DataLoader
@@ -47,7 +48,7 @@ from anomalib.pre_processing import PreProcessor
 logger = logging.getLogger(name="Dataset: MVTec")
 logger.setLevel(logging.DEBUG)
 
-__all__ = ["MVTec", "MVTecDataModule"]
+__all__ = ["MVTecDataset", "MVTec"]
 
 
 def split_normal_images_in_train_set(samples: DataFrame, split_ratio: float = 0.1, seed: int = 0) -> DataFrame:
@@ -210,7 +211,7 @@ def make_mvtec_dataset(
     return samples
 
 
-class MVTec(VisionDataset):
+class MVTecDataset(VisionDataset):
     """MVTec PyTorch Dataset."""
 
     def __init__(
@@ -237,10 +238,10 @@ class MVTec(VisionDataset):
             create_validation_set: Create a validation subset in addition to the train and test subsets
 
         Examples:
-            >>> from anomalib.data.mvtec import MVTec
+            >>> from anomalib.data.mvtec import MVTecDataset
             >>> from anomalib.data.transforms import PreProcessor
             >>> pre_process = PreProcessor(image_size=256)
-            >>> dataset = MVTec(
+            >>> dataset = MVTecDataset(
             ...     root='./datasets/MVTec',
             ...     category='leather',
             ...     pre_process=pre_process,
@@ -359,15 +360,15 @@ class MVTec(VisionDataset):
         return item
 
 
-class MVTecDataModule(LightningDataModule):
+@DATAMODULE_REGISTRY
+class MVTec(LightningDataModule):
     """MVTec Lightning Data Module."""
 
     def __init__(
         self,
         root: str,
         category: str,
-        # TODO: Remove default values. IAAALD-211
-        image_size: Optional[Union[int, Tuple[int, int]]] = None,
+        image_size: Union[int, Tuple[int, int]],
         train_batch_size: int = 32,
         test_batch_size: int = 32,
         num_workers: int = 8,
@@ -389,8 +390,8 @@ class MVTecDataModule(LightningDataModule):
             create_validation_set: Create a validation subset in addition to the train and test subsets
 
         Examples
-            >>> from anomalib.data import MVTecDataModule
-            >>> datamodule = MVTecDataModule(
+            >>> from anomalib.data import MVTec
+            >>> datamodule = MVTec(
             ...     root="./datasets/MVTec",
             ...     category="leather",
             ...     image_size=256,
@@ -444,7 +445,7 @@ class MVTecDataModule(LightningDataModule):
 
         """
         if stage in (None, "fit"):
-            self.train_data = MVTec(
+            self.train_data = MVTecDataset(
                 root=self.root,
                 category=self.category,
                 pre_process=self.pre_process,
@@ -454,7 +455,7 @@ class MVTecDataModule(LightningDataModule):
             )
 
         if self.create_validation_set:
-            self.val_data = MVTec(
+            self.val_data = MVTecDataset(
                 root=self.root,
                 category=self.category,
                 pre_process=self.pre_process,
@@ -463,7 +464,7 @@ class MVTecDataModule(LightningDataModule):
                 create_validation_set=self.create_validation_set,
             )
 
-        self.test_data = MVTec(
+        self.test_data = MVTecDataset(
             root=self.root,
             category=self.category,
             pre_process=self.pre_process,

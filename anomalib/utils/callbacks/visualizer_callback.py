@@ -82,7 +82,7 @@ class VisualizerCallback(Callback):
                     )
 
         if "local" in self.loggers:
-            if trainer.log_dir:
+            if trainer.default_root_dir:
                 visualizer.save(Path(trainer.default_root_dir) / "images" / filename.parent.name / filename.name)
             else:
                 raise ValueError("trainer.log_dir does not exist to save the results.")

@@ -20,7 +20,7 @@ from typing import Optional, Sequence, Union
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import Callback
 
-from anomalib.models.components import AnomalibModule
+from anomalib.models.components import AnomalibModule, AnomalyModule
 from anomalib.pre_processing.tiler import Tiler
 
 __all__ = ["TilerCallback"]
@@ -41,10 +41,9 @@ class TilerCallback(Callback):
         """Sets tiling configuration from the command line.
 
         Args:
-            enable (bool, optional): Boolean to enable tiling operation. Defaults to False.
-            tile_size (Optional[Union[int, Sequence]], optional): Tile size. Defaults to None.
-            stride (Optional[Union[int, Sequence]], optional): Stride to move tiles on the image.
-                Defaults to None.
+            enable (bool): Boolean to enable tiling operation.
+            tile_size ([Union[int, Sequence]]): Tile size.
+            stride ([Union[int, Sequence]]): Stride to move tiles on the image.
             remove_border_count (int, optional): Number of pixels to remove from the image before
                 tiling. Defaults to 0.
             mode (str, optional): Up-scaling mode when untiling overlapping tiles.
@@ -72,7 +71,7 @@ class TilerCallback(Callback):
                 doesn not support tiling operation.
         """
         if self.enable:
-            if isinstance(pl_module, AnomalibModule) and hasattr(pl_module.model, "tiler"):
+            if isinstance(pl_module, (AnomalibModule, AnomalyModule)) and hasattr(pl_module.model, "tiler"):
                 pl_module.model.tiler = Tiler(
                     tile_size=self.tile_size,
                     stride=self.stride,
