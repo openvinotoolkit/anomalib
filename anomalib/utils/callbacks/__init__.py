@@ -26,15 +26,17 @@ from .compress import CompressModelCallback
 from .min_max_normalization import MinMaxNormalizationCallback
 from .model_loader import LoadModelCallback
 from .save_to_csv import SaveToCSVCallback
+from .tiler import TilerCallback
 from .timer import TimerCallback
 from .visualizer_callback import VisualizerCallback
 
 __all__ = [
     "CompressModelCallback",
     "LoadModelCallback",
+    "SaveToCSVCallback",
+    "TilerCallback",
     "TimerCallback",
     "VisualizerCallback",
-    "SaveToCSVCallback",
 ]
 
 
