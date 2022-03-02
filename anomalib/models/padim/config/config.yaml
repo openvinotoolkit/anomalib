@@ -1,6 +1,6 @@
 seed_everything: 0
 data:
-  class_path: anomalib.data.Mvtec
+  class_path: anomalib.data.MVTtec
   init_args:
     root: ./datasets/MVTec
     category: bottle
