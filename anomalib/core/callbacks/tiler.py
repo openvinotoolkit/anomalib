@@ -20,7 +20,7 @@ from typing import Optional, SupportsIndex, Tuple, Union
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import Callback
 
-from anomalib.core.model import AnomalibModule
+from anomalib.core.model import AnomalyModule
 from anomalib.data.tiler import Tiler
 
 __all__ = ["TilerCallback"]
@@ -72,7 +72,7 @@ class TilerCallback(Callback):
                 doesn not support tiling operation.
         """
         if self.enable:
-            if isinstance(pl_module, AnomalibModule) and hasattr(pl_module.model, "tiler"):
+            if isinstance(pl_module, AnomalyModule) and hasattr(pl_module.model, "tiler"):
                 pl_module.model.tiler = Tiler(
                     tile_size=self.tile_size,
                     stride=self.stride,

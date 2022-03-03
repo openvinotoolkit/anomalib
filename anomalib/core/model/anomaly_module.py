@@ -30,8 +30,8 @@ from anomalib.core.metrics import (
 )
 
 
-class AnomalibModule(pl.LightningModule, abc.ABC):
-    """AnomalibModule to train, validate, predict and test images."""
+class AnomalyModule(pl.LightningModule, abc.ABC):
+    """AnomalyModule to train, validate, predict and test images."""
 
     def __init__(
         self, task: str, adaptive_threshold: bool, default_image_threshold: float, default_pixel_threshold: float

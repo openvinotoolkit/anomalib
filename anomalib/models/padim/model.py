@@ -28,7 +28,7 @@ from omegaconf import ListConfig
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY  # type: ignore
 from torch import Tensor, nn
 
-from anomalib.core.model import AnomalibModule
+from anomalib.core.model import AnomalyModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.core.model.multi_variate_gaussian import MultiVariateGaussian
 from anomalib.data.tiler import Tiler
@@ -265,7 +265,7 @@ class AnomalyMapGenerator:
 
 
 @MODEL_REGISTRY
-class Padim(AnomalibModule):
+class Padim(AnomalyModule):
     """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization."""
 
     def __init__(

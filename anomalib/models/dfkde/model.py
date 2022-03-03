@@ -21,12 +21,12 @@ import torchvision
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
 
-from anomalib.core.model import AnomalibModule
+from anomalib.core.model import AnomalyModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.models.dfkde.normality_model import NormalityModel
 
 
-class DfkdeLightning(AnomalibModule):
+class DfkdeLightning(AnomalyModule):
     """DFKDE: Deep Featured Kernel Density Estimation."""
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):

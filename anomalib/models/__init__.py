@@ -21,14 +21,14 @@ from typing import List, Union
 from omegaconf import DictConfig, ListConfig
 from torch import load
 
-from anomalib.core.model import AnomalibModule
+from anomalib.core.model import AnomalyModule
 
 from .padim import Padim
 
 __all__ = ["Padim"]
 
 
-def get_model(config: Union[DictConfig, ListConfig]) -> AnomalibModule:
+def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     """Load model from the configuration file.
 
     Works only when the convention for model naming is followed.
@@ -48,11 +48,11 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalibModule:
         ValueError: If unsupported model is passed
 
     Returns:
-        AnomalibModule: Anomaly Model
+        AnomalyModule: Anomaly Model
     """
     openvino_model_list: List[str] = ["stfpm"]
     torch_model_list: List[str] = ["padim", "stfpm", "dfkde", "dfm", "patchcore"]
-    model: AnomalibModule
+    model: AnomalyModule
 
     if config.openvino:
         if config.model.name in openvino_model_list:

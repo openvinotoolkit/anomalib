@@ -8,7 +8,7 @@ from pytorch_lightning import Callback, Trainer
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from skimage.segmentation import mark_boundaries
 
-from anomalib.core.model import AnomalibModule
+from anomalib.core.model import AnomalyModule
 from anomalib.data.transforms import Denormalize
 from anomalib.loggers import AVAILABLE_LOGGERS
 from anomalib.loggers.wandb import AnomalibWandbLogger
@@ -36,7 +36,7 @@ class VisualizerCallback(Callback):
         self,
         visualizer: Visualizer,
         trainer: Trainer,
-        module: AnomalibModule,
+        module: AnomalyModule,
         filename: Path,
     ):
         """Save image to logger/local storage.

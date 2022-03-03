@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from pytorch_lightning import Callback, Trainer
 
-from anomalib.core.model import AnomalibModule
+from anomalib.core.model import AnomalyModule
 
 
 class SaveToCSVCallback(Callback):
@@ -17,7 +17,7 @@ class SaveToCSVCallback(Callback):
     def __init__(self):
         """Callback to save metrics to CSV."""
 
-    def on_test_epoch_end(self, trainer: Trainer, pl_module: AnomalibModule) -> None:
+    def on_test_epoch_end(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
         """Save Results at the end of testing.
 
         Args:

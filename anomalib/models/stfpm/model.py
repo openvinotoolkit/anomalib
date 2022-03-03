@@ -26,7 +26,7 @@ from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
 from torch import Tensor, nn, optim
 
-from anomalib.core.model import AnomalibModule
+from anomalib.core.model import AnomalyModule
 from anomalib.core.model.feature_extractor import FeatureExtractor
 from anomalib.data.tiler import Tiler
 
@@ -239,7 +239,7 @@ class STFPMModel(nn.Module):
         return output
 
 
-class StfpmLightning(AnomalibModule):
+class StfpmLightning(AnomalyModule):
     """PL Lightning Module for the STFPM algorithm."""
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
