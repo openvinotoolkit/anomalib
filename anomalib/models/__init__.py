@@ -23,8 +23,9 @@ from torch import load
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.padim import Padim
+from anomalib.models.stfpm import Stfpm
 
-__all__ = ["Padim"]
+__all__ = ["Padim", "Stfpm"]
 
 
 def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
