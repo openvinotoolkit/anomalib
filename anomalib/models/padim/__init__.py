@@ -15,6 +15,6 @@
 # and limitations under the License.
 
 
-from .model import PadimModel
+from .model import Padim, PadimModel
 
-__all__ = ["PadimModel"]
+__all__ = ["PadimModel", "Padim"]

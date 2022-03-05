@@ -22,6 +22,9 @@ from omegaconf import DictConfig, ListConfig
 from torch import load
 
 from anomalib.models.components import AnomalyModule
+from anomalib.models.padim import Padim
+
+__all__ = ["Padim"]
 
 
 def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:

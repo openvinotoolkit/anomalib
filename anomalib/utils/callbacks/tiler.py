@@ -58,13 +58,13 @@ class TilerCallback(Callback):
         self.mode = mode
         self.tile_count = tile_count
 
-    def setup(self, _trainer: pl.Trainer, pl_module: pl.LightningModule, _stage: Optional[str] = None) -> None:
+    def setup(self, _trainer: pl.Trainer, pl_module: pl.LightningModule, stage: Optional[str] = None) -> None:
         """Setup Tiler object within Anomalib Model.
 
         Args:
             _trainer (pl.Trainer): PyTorch Lightning Trainer
             pl_module (pl.LightningModule): Anomalib Model that inherits pl LightningModule.
-            _stage (Optional[str], optional): fit, validate, test or predict. Defaults to None.
+            stage (Optional[str], optional): fit, validate, test or predict. Defaults to None.
 
         Raises:
             ValueError: When Anomalib Model doesn't contain ``Tiler`` object, it means the model

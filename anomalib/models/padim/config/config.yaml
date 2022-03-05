@@ -1,6 +1,6 @@
 seed_everything: 0
 data:
-  class_path: anomalib.data.MVTtec
+  class_path: anomalib.data.MVTec
   init_args:
     root: ./datasets/MVTec
     category: bottle
@@ -26,6 +26,7 @@ model:
       - layer3
     input_size: [256, 256]
     backbone: resnet18
+    normalization: null
 
 trainer:
   callbacks: null
@@ -70,7 +71,7 @@ trainer:
   enable_model_summary: true
   weights_summary: top
   weights_save_path: null
-  num_sanity_val_steps: 2
+  num_sanity_val_steps: 0
   resume_from_checkpoint: null
   profiler: null
   benchmark: false
