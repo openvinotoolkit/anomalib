@@ -26,7 +26,7 @@ model:
       - layer3
     input_size: [256, 256]
     backbone: resnet18
-    normalization: null
+    normalization: min_max # null | min_max | cdf
 
 trainer:
   callbacks: null

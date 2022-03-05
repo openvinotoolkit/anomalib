@@ -24,8 +24,10 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.utilities.cli import LightningArgumentParser, LightningCLI
 
 from anomalib.utils.callbacks import (
+    CdfNormalizationCallback,
     CompressModelCallback,
     LoadModelCallback,
+    MinMaxNormalizationCallback,
     SaveToCSVCallback,
     TilerCallback,
     TimerCallback,
@@ -124,6 +126,17 @@ class AnomalibCLI(LightningCLI):
             callbacks.append(SaveToCSVCallback())
 
         # 5. Visualization.
+        normalization = self.config["model"]["init_args"]["normalization"]
+        if normalization:
+            if normalization == "min_max":
+                callbacks.append(MinMaxNormalizationCallback())
+            elif normalization == "cdf":
+                callbacks.append(CdfNormalizationCallback())
+            else:
+                raise ValueError(
+                    f"Unknown normalization type {normalization}. \n" "Available types are either min_max or cdf"
+                )
+
         if self.config["save_images"]:
             # NOTE: When ready, add wandb logger here.
             callbacks.append(VisualizerCallback(loggers=["local"]))

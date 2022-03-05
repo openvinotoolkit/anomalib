@@ -364,7 +364,7 @@ class Padim(AnomalibModule):
         backbone: str,
         normalization: Optional[str] = None,
     ):
-        super().__init__(task, adaptive_threshold, default_image_threshold, default_pixel_threshold)
+        super().__init__(task, adaptive_threshold, default_image_threshold, default_pixel_threshold, normalization)
         self.layers = layers
         self.model: PadimModel = PadimModel(
             layers=layers,
@@ -375,9 +375,6 @@ class Padim(AnomalibModule):
         self.stats: List[Tensor] = []
         self.automatic_optimization = False
         self.embeddings: List[Tensor] = []
-
-        # TODO: remove this normalization variable from here.
-        self.normalization = normalization
 
     @staticmethod
     def configure_optimizers():
