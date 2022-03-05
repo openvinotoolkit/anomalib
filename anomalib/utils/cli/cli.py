@@ -125,7 +125,7 @@ class AnomalibCLI(LightningCLI):
         if self.config["save_to_csv"]:
             callbacks.append(SaveToCSVCallback())
 
-        # 5. Visualization.
+        # 5. Normalization.
         normalization = self.config["model"]["init_args"]["normalization"]
         if normalization:
             if normalization == "min_max":
@@ -137,15 +137,18 @@ class AnomalibCLI(LightningCLI):
                     f"Unknown normalization type {normalization}. \n" "Available types are either min_max or cdf"
                 )
 
+        # 6. Visualization
         if self.config["save_images"]:
-            # NOTE: When ready, add wandb logger here.
-            callbacks.append(VisualizerCallback(loggers=["local"]))
+            if self.config["model"]["init_args"]["task"] == "segmentation":
+                # NOTE: Currently only segmentation tasks are supported for visualizaition.
+                # NOTE: When ready, add wandb logger here.
+                callbacks.append(VisualizerCallback(loggers=["local"]))
 
         # TODO: https://github.com/openvinotoolkit/anomalib/issues/19
         if self.config["openvino"] and self.config["nncf"]:
             raise ValueError("OpenVINO and NNCF cannot be set simultaneously.")
 
-        # 6. Export to OpenVINO
+        # 7. Export to OpenVINO
         if self.config["openvino"]:
             callbacks.append(
                 CompressModelCallback(
