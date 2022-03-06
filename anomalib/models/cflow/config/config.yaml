@@ -1,4 +1,5 @@
 seed_everything: 42
+
 data:
   class_path: anomalib.data.MVTec
   init_args:
@@ -14,22 +15,35 @@ tiling:
   tile_size: 256
 
 model:
-  class_path: anomalib.models.Padim
+  class_path: anomalib.models.Cflow
   init_args:
     task: segmentation
     adaptive_threshold: true
-    default_image_threshold: 3.0
-    default_pixel_threshold: 3.0
+    default_image_threshold: 0
+    default_pixel_threshold: 0
+    input_size: [256, 256]
+    backbone: resnet18
     layers:
       - layer1
       - layer2
       - layer3
-    input_size: [256, 256]
-    backbone: resnet18
+    fiber_batch_size: 64
+    decoder: freia-cflow
+    condition_vector: 128
+    coupling_blocks: 8
+    clamp_alpha: 1.9
+    permute_soft: false
     normalization: min_max # null | min_max | cdf
+    # TODO: Learning rate should be placed under optimizer. Not in model.
+    lr: 0.0001
 
 trainer:
-  callbacks: null
+  callbacks:
+    - class_path: pytorch_lightning.callbacks.EarlyStopping
+      init_args:
+        patience: 5
+        monitor: pixel_AUROC
+        mode: max
   logger: true
   checkpoint_callback: null
   enable_checkpointing: true
@@ -49,10 +63,10 @@ trainer:
   enable_progress_bar: true
   overfit_batches: 0.0
   track_grad_norm: -1
-  check_val_every_n_epoch: 1
+  check_val_every_n_epoch: 5
   fast_dev_run: false
   accumulate_grad_batches: null
-  max_epochs: 1
+  max_epochs: 100
   min_epochs: null
   max_steps: -1
   min_steps: null

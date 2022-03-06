@@ -1,4 +1,4 @@
-seed_everything: 0
+seed_everything: 42
 
 data:
   class_path: anomalib.data.MVTec
@@ -27,6 +27,8 @@ model:
       - layer3
     input_size: [256, 256]
     backbone: resnet18
+    lr: 0.4
+    normalization: min_max # null | min_max | cdf
 
 optimizer:
   class_path: torch.optim.SGD
