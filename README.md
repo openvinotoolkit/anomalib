@@ -14,7 +14,8 @@ ___
 [![pytorch](https://img.shields.io/badge/pytorch-1.8.1%2B-orange)]()
 [![openvino](https://img.shields.io/badge/openvino-2021.4.2-purple)]()
 [![black](https://img.shields.io/badge/code%20style-black-000000.svg)]()
-[![Code Quality and Coverage](https://github.com/openvinotoolkit/anomalib/actions/workflows/tox.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/tox.yml)
+[![Nightly-regression Test](https://github.com/openvinotoolkit/anomalib/actions/workflows/nightly.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/nightly.yml)
+[![Pre-merge Checks](https://github.com/openvinotoolkit/anomalib/actions/workflows/pre_merge.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/pre_merge.yml)
 [![Build Docs](https://github.com/openvinotoolkit/anomalib/actions/workflows/docs.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/docs.yml)
 
 </div>
@@ -47,6 +48,8 @@ You can get started with `anomalib` by just using pip.
 ```bash
 pip install anomalib
 ```
+
+> **_NOTE:_** Due to ongoing fast pace of development, we encourage you to use editable install until we release v0.2.5.
 
 ### Local Install
 It is highly recommended to use virtual environment when installing anomalib. For instance, with [anaconda](https://www.anaconda.com/products/individual), `anomalib` could be installed as,

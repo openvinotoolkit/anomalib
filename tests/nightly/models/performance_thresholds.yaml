@@ -114,7 +114,7 @@ stfpm:
     image_AUROC: 0.857
     pixel_AUROC: 0.962
     nncf:
-      image_AUROC: 0.979
+      image_AUROC: 0.902
       pixel_AUROC: 0.512
   cable:
     image_AUROC: 0.939
@@ -126,7 +126,7 @@ stfpm:
     image_AUROC: 0.624
     pixel_AUROC: 0.955
     nncf:
-      image_AUROC: 0.623
+      image_AUROC: 0.576
       pixel_AUROC: 0.950
   carpet:
     image_AUROC: 0.985
@@ -156,7 +156,7 @@ stfpm:
     image_AUROC: 0.978
     pixel_AUROC: 0.969
     nncf:
-      image_AUROC: 0.894
+      image_AUROC: 0.729
       pixel_AUROC: 0.924
   pill:
     image_AUROC: 0.584
@@ -177,14 +177,14 @@ stfpm:
       image_AUROC: 0.944
       pixel_AUROC: 0.940
   toothbrush:
-    image_AUROC: 0.536
+    image_AUROC: 0.491
     pixel_AUROC: 0.170
     nncf:
       image_AUROC: 0.791
       pixel_AUROC: 0.956
   transistor:
-    image_AUROC: 0.776
-    pixel_AUROC: 0.772
+    image_AUROC: 0.746
+    pixel_AUROC: 0.759
     nncf:
       image_AUROC: 0.798
       pixel_AUROC: 0.759
@@ -199,7 +199,7 @@ stfpm:
     pixel_AUROC: 0.982
     nncf:
       image_AUROC: 0.835
-      pixel_AUROC: 0.980
+      pixel_AUROC: 0.963
 
 patchcore:
   bottle:
@@ -315,7 +315,7 @@ ganomaly:
   pill:
     image_AUROC: 0.390
   screw:
-    image_AUROC: 0.409
+    image_AUROC: 0.336
   tile:
     image_AUROC: 0.555
   toothbrush:

@@ -236,7 +236,7 @@ if __name__ == "__main__":
     # Benchmarking entry point.
     # Spawn multiple processes one for cpu and rest for the number of gpus available in the system.
     # The idea is to distribute metrics collection over all the available devices.
-    
+
     print("Benchmarking started 🏃‍♂️. This will take a while ⏲ depending on your configuration.")
     distribute()
     print("Finished gathering results ⚡")
