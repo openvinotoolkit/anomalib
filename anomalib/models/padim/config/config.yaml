@@ -7,7 +7,7 @@ data:
     image_size: [256, 256]
     train_batch_size: 32
     test_batch_size: 32
-    num_workers: 0
+    num_workers: 8
 
 tiling:
   enable: false
