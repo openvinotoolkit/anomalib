@@ -21,13 +21,14 @@ from typing import List, Union
 from omegaconf import DictConfig, ListConfig
 from torch import load
 
+from anomalib.models.cflow import Cflow
 from anomalib.models.components import AnomalyModule
 from anomalib.models.dfkde import Dfkde
 from anomalib.models.dfm import Dfm
 from anomalib.models.padim import Padim
 from anomalib.models.stfpm import Stfpm
 
-__all__ = ["Dfkde", "Dfm", "Padim", "Stfpm"]
+__all__ = ["Cflow", "Dfkde", "Dfm", "Padim", "Stfpm"]
 
 
 def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
