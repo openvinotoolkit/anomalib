@@ -134,7 +134,6 @@ class Dfkde(AnomalibModule):
         max_training_points: int = 40000,
         normalization: Optional[str] = None,
     ):
-        warnings.warn("DfkdeLightning is deprecated, use Dfkde via Anomalib CLIs instead", DeprecationWarning)
         super().__init__(task, adaptive_threshold, default_image_threshold, default_pixel_threshold, normalization)
 
         self.threshold_steepness = 0.05

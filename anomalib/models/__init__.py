@@ -23,10 +23,11 @@ from torch import load
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.dfkde import Dfkde
+from anomalib.models.dfm import Dfm
 from anomalib.models.padim import Padim
 from anomalib.models.stfpm import Stfpm
 
-__all__ = ["Dfkde", "Padim", "Stfpm"]
+__all__ = ["Dfkde", "Dfm", "Padim", "Stfpm"]
 
 
 def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
