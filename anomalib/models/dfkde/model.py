@@ -94,13 +94,14 @@ class DfkdeLightning(AnomalyModule):
     """
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
-        warnings.warn("DfkdeLightning is deprecated, use Dfkde via Anomalib CLI instead", DeprecationWarning)
+        warnings.warn("DfkdeLightning is deprecated, use Dfkde via Anomalib CLIs instead", DeprecationWarning)
         super().__init__(hparams)
-        threshold_steepness = 0.05
-        threshold_offset = 12
 
         self.model: DfkdeModel = DfkdeModel(
-            hparams.model.backbone, hparams.model.max_training_points, threshold_steepness, threshold_offset
+            hparams.model.backbone,
+            hparams.model.max_training_points,
+            hparams.model.threshold_steepness,
+            hparams.model.threshold_offset,
         )
 
         self.automatic_optimization = False

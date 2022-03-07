@@ -14,6 +14,8 @@ dataset:
 model:
   name: dfkde
   backbone: resnet18
+  threshold_steepness: 0.05
+  threshold_offset: 12
   max_training_points: 40000
   confidence_threshold: 0.5
   pre_processing: scale
