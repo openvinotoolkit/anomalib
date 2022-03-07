@@ -18,14 +18,15 @@ https://arxiv.org/abs/1805.06725
 # and limitations under the License.
 
 import warnings
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
+from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor, nn, optim
 
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule, AnomalyModule
 
 from .torch_model import Discriminator, Generator
 
@@ -160,6 +161,220 @@ class GanomalyLightning(AnomalyModule):
                 + error_con * self.hparams.model.wcon
                 + error_enc * self.hparams.model.wenc
             )
+
+            loss = {"loss": loss_generator}
+
+        return loss
+
+    def on_validation_start(self) -> None:
+        """Reset min and max values for current validation epoch."""
+        self._reset_min_max()
+        return super().on_validation_start()
+
+    def validation_step(self, batch, _) -> Dict[str, Tensor]:  # type: ignore # pylint: disable=arguments-differ
+        """Update min and max scores from the current step.
+
+        Args:
+            batch (Dict[str, Tensor]): Predicted difference between z and z_hat.
+
+        Returns:
+            Dict[str, Tensor]: batch
+        """
+        self.generator.eval()
+        _, latent_i, latent_o = self.generator(batch["image"])
+        batch["pred_scores"] = torch.mean(torch.pow((latent_i - latent_o), 2), dim=1).view(-1)  # convert nx1x1 to n
+        self.max_scores = max(self.max_scores, torch.max(batch["pred_scores"]))
+        self.min_scores = min(self.min_scores, torch.min(batch["pred_scores"]))
+        return batch
+
+    def validation_epoch_end(self, outputs):
+        """Normalize outputs based on min/max values."""
+        for prediction in outputs:
+            prediction["pred_scores"] = self._normalize(prediction["pred_scores"])
+        super().validation_epoch_end(outputs)
+        return outputs
+
+    def on_test_start(self) -> None:
+        """Reset min max values before test batch starts."""
+        self._reset_min_max()
+        return super().on_test_start()
+
+    def test_step(self, batch, _):
+        """Update min and max scores from the current step."""
+        super().test_step(batch, _)
+        self.max_scores = max(self.max_scores, torch.max(batch["pred_scores"]))
+        self.min_scores = min(self.min_scores, torch.min(batch["pred_scores"]))
+        return batch
+
+    def test_epoch_end(self, outputs):
+        """Normalize outputs based on min/max values."""
+        for prediction in outputs:
+            prediction["pred_scores"] = self._normalize(prediction["pred_scores"])
+        super().test_epoch_end(outputs)
+        return outputs
+
+    def _normalize(self, scores: Tensor) -> Tensor:
+        """Normalize the scores based on min/max of entire dataset.
+
+        Args:
+            scores (Tensor): Un-normalized scores.
+
+        Returns:
+            Tensor: Normalized scores.
+        """
+        scores = (scores - self.min_scores.to(scores.device)) / (
+            self.max_scores.to(scores.device) - self.min_scores.to(scores.device)
+        )
+        return scores
+
+
+@MODEL_REGISTRY
+class Ganomaly(AnomalibModule):
+    """PL Lightning Module for the GANomaly Algorithm.
+
+    Args:
+        hparams (Union[DictConfig, ListConfig]): Model parameters
+    """
+
+    def __init__(
+        self,
+        task: str,
+        adaptive_threshold: bool,
+        default_image_threshold: float,
+        default_pixel_threshold: float,
+        input_size: Tuple[int, int],
+        # TODO Link batch_size with data.train_batch_size to avoid duplicate params.
+        batch_size: int,
+        latent_vec_size: int = 100,
+        n_features: int = 64,
+        extra_layers: int = 0,
+        add_final_conv_layer: bool = True,
+        # TODO: Move optimizer parameters into optimizer section in config.yaml.
+        lr: float = 0.0002,
+        beta1: float = 0.5,
+        beta2: float = 0.999,
+        wadv: int = 1,
+        wcon: int = 50,
+        wenc: int = 1,
+        normalization: Optional[str] = None,
+    ):
+        super().__init__(task, adaptive_threshold, default_image_threshold, default_pixel_threshold)
+
+        self.generator = Generator(
+            input_size=input_size[0],
+            latent_vec_size=latent_vec_size,
+            num_input_channels=3,
+            n_features=n_features,
+            extra_layers=extra_layers,
+            add_final_conv_layer=add_final_conv_layer,
+        )
+        self.discriminator = Discriminator(
+            input_size=input_size[0],
+            num_input_channels=3,
+            n_features=n_features,
+            extra_layers=extra_layers,
+        )
+        self.weights_init(self.generator)
+        self.weights_init(self.discriminator)
+
+        # TODO: These parameters are to be defined in config.yaml, and parsed by CLI.
+        self.learning_rate = lr
+        self.beta1 = beta1
+        self.beta2 = beta2
+        self.wadv = wadv
+        self.wcon = wcon
+        self.wenc = wenc
+
+        self.loss_enc = nn.SmoothL1Loss()  # try l1 and smoothl1
+        self.loss_adv = nn.MSELoss()
+        self.loss_con = nn.L1Loss()
+        self.loss_bce = nn.BCELoss()
+
+        self.real_label = torch.ones(size=(batch_size,), dtype=torch.float32)
+        self.fake_label = torch.zeros(size=(batch_size,), dtype=torch.float32)
+
+        self.min_scores: Tensor
+        self.max_scores: Tensor
+        self._reset_min_max()
+
+    def _reset_min_max(self):
+        """Resets min_max scores."""
+        self.min_scores = torch.tensor(float("inf"), dtype=torch.float32)  # pylint: disable=not-callable
+        self.max_scores = torch.tensor(float("-inf"), dtype=torch.float32)  # pylint: disable=not-callable
+
+    @staticmethod
+    def weights_init(module: nn.Module):
+        """Initialize DCGAN weights.
+
+        Args:
+            module (nn.Module): [description]
+        """
+        classname = module.__class__.__name__
+        if classname.find("Conv") != -1:
+            nn.init.normal_(module.weight.data, 0.0, 0.02)
+        elif classname.find("BatchNorm") != -1:
+            nn.init.normal_(module.weight.data, 1.0, 0.02)
+            nn.init.constant_(module.bias.data, 0)
+
+    def configure_optimizers(self) -> List[optim.Optimizer]:
+        """Configure optimizers for generator and discriminator.
+
+        Returns:
+            List[optim.Optimizer]: Adam optimizers for discriminator and generator.
+        """
+        optimizer_d = optim.Adam(
+            self.discriminator.parameters(),
+            lr=self.learning_rate,
+            betas=(self.beta1, self.beta2),
+        )
+        optimizer_g = optim.Adam(
+            self.generator.parameters(),
+            lr=self.learning_rate,
+            betas=(self.beta1, self.beta2),
+        )
+        return [optimizer_d, optimizer_g]
+
+    def training_step(self, batch, _, optimizer_idx):  # pylint: disable=arguments-differ
+        """Training step.
+
+        Args:
+            batch (Dict): Input batch containing images.
+            optimizer_idx (int): Optimizer which is being called for current training step.
+
+        Returns:
+            Dict[str, Tensor]: Loss
+        """
+        images = batch["image"]
+        loss: Dict[str, Tensor]
+
+        # Discriminator
+        if optimizer_idx == 0:
+            # forward pass
+            fake, _, _ = self.generator(images)
+            pred_real, _ = self.discriminator(images)
+            pred_fake, _ = self.discriminator(fake.detach())
+
+            error_discriminator_real = self.loss_bce(
+                pred_real, torch.ones(size=pred_real.shape, dtype=torch.float32, device=pred_real.device)
+            )
+            error_discriminator_fake = self.loss_bce(
+                pred_fake, torch.zeros(size=pred_fake.shape, dtype=torch.float32, device=pred_fake.device)
+            )
+            loss_discriminator = (error_discriminator_fake + error_discriminator_real) * 0.5
+            loss = {"loss": loss_discriminator}
+
+        # Generator
+        else:
+            # forward pass
+            fake, latent_i, latent_o = self.generator(images)
+            pred_real, _ = self.discriminator(images)
+            pred_fake, _ = self.discriminator(fake)
+
+            error_enc = self.loss_enc(latent_i, latent_o)
+            error_con = self.loss_con(images, fake)
+            error_adv = self.loss_adv(pred_real, pred_fake)
+
+            loss_generator = error_adv * self.wadv + error_con * self.wcon + error_enc * self.wenc
 
             loss = {"loss": loss_generator}
 
