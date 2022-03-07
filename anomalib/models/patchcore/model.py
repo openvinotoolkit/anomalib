@@ -241,7 +241,7 @@ class PatchcoreLightning(AnomalyModule):
     """
 
     def __init__(self, hparams) -> None:
-        warnings.warn("PadimLightning is deprecated, use Padim via Anomalib CLI instead", DeprecationWarning)
+        warnings.warn("PatchCoreLightning is deprecated, use PatchCore via Anomalib CLI instead", DeprecationWarning)
         super().__init__(hparams)
 
         self.model: PatchcoreModel = PatchcoreModel(
