@@ -362,28 +362,6 @@ class Stfpm(AnomalibModule):
         )
         self.loss_val = 0
 
-    # def configure_callbacks(self):
-    #     """Configure model-specific callbacks."""
-    #     early_stopping = EarlyStopping(
-    #         monitor=self.hparams.model.early_stopping.metric,
-    #         patience=self.hparams.model.early_stopping.patience,
-    #         mode=self.hparams.model.early_stopping.mode,
-    #     )
-    #     return [early_stopping]
-
-    # def configure_optimizers(self) -> torch.optim.Optimizer:
-    #     """Configure optimizers by creating an SGD optimizer.
-
-    #     Returns:
-    #         (Optimizer): SGD optimizer
-    #     """
-    #     return optim.SGD(
-    #         params=self.model.student_model.parameters(),
-    #         lr=self.hparams.model.lr,
-    #         momentum=self.hparams.model.momentum,
-    #         weight_decay=self.hparams.model.weight_decay,
-    #     )
-
     def training_step(self, batch, _):  # pylint: disable=arguments-differ
         """Training Step of STFPM.
 

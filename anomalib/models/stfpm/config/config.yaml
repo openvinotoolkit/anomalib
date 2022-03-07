@@ -27,7 +27,6 @@ model:
       - layer3
     input_size: [256, 256]
     backbone: resnet18
-    lr: 0.4
     normalization: min_max # null | min_max | cdf
 
 optimizer:

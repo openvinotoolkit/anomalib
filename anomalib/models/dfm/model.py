@@ -18,12 +18,11 @@ import warnings
 from typing import List, Optional, Union
 
 import torch
-import torchvision
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor
 
-from anomalib.models.components import AnomalibModule, AnomalyModule, FeatureExtractor
+from anomalib.models.components import AnomalibModule, AnomalyModule
 
 from .dfm_model import DFMModel
 
@@ -35,10 +34,9 @@ class DfmLightning(AnomalyModule):
         warnings.warn("DfmLightning is deprecated, use Dfm via Anomalib CLI instead", DeprecationWarning)
         super().__init__(hparams)
 
-        self.backbone = getattr(torchvision.models, hparams.model.backbone)
-        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=["avgpool"]).eval()
-
-        self.dfm_model = DFMModel(n_comps=hparams.model.pca_level, score_type=hparams.model.score_type)
+        self.model: DFMModel = DFMModel(
+            backbone=hparams.model.backbone, n_comps=hparams.model.pca_level, score_type=hparams.model.score_type
+        )
         self.automatic_optimization = False
         self.embeddings: List[Tensor] = []
 
@@ -59,10 +57,7 @@ class DfmLightning(AnomalyModule):
         Returns:
           Deep CNN features.
         """
-
-        self.feature_extractor.eval()
-        layer_outputs = self.feature_extractor(batch["image"])
-        embedding = torch.hstack(list(layer_outputs.values())).detach().squeeze()
+        embedding = self.model.get_features(batch["image"]).squeeze()
 
         # NOTE: `self.embedding` appends each batch embedding to
         #   store the training set embedding. We manually append these
@@ -76,7 +71,7 @@ class DfmLightning(AnomalyModule):
         #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
         #   is run within train epoch.
         embeddings = torch.vstack(self.embeddings)
-        self.dfm_model.fit(embeddings)
+        self.model.fit(embeddings)
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Validation Step of DFM.
@@ -89,11 +84,7 @@ class DfmLightning(AnomalyModule):
         Returns:
           Dictionary containing FRE anomaly scores and ground-truth.
         """
-
-        self.feature_extractor.eval()
-        layer_outputs = self.feature_extractor(batch["image"])
-        feature_vector = torch.hstack(list(layer_outputs.values())).detach()
-        batch["pred_scores"] = self.dfm_model.score(feature_vector.view(feature_vector.shape[:2]))
+        batch["pred_scores"] = self.model(batch["image"])
 
         return batch
 
@@ -128,10 +119,7 @@ class Dfm(AnomalibModule):
     ) -> None:
         super().__init__(task, adaptive_threshold, default_image_threshold, default_pixel_threshold, normalization)
 
-        self.backbone = getattr(torchvision.models, backbone)
-        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=["avgpool"]).eval()
-
-        self.dfm_model = DFMModel(n_comps=num_pca_components, score_type=score_type)
+        self.model: DFMModel = DFMModel(backbone=backbone, n_comps=num_pca_components, score_type=score_type)
         self.automatic_optimization = False
         self.embeddings: List[Tensor] = []
 
@@ -152,10 +140,7 @@ class Dfm(AnomalibModule):
         Returns:
           Deep CNN features.
         """
-
-        self.feature_extractor.eval()
-        layer_outputs = self.feature_extractor(batch["image"])
-        embedding = torch.hstack(list(layer_outputs.values())).detach().squeeze()
+        embedding = self.model.get_features(batch["image"]).squeeze()
 
         # NOTE: `self.embedding` appends each batch embedding to
         #   store the training set embedding. We manually append these
@@ -169,7 +154,7 @@ class Dfm(AnomalibModule):
         #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
         #   is run within train epoch.
         embeddings = torch.vstack(self.embeddings)
-        self.dfm_model.fit(embeddings)
+        self.model.fit(embeddings)
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Validation Step of DFM.
@@ -182,10 +167,6 @@ class Dfm(AnomalibModule):
         Returns:
           Dictionary containing FRE anomaly scores and ground-truth.
         """
-
-        self.feature_extractor.eval()
-        layer_outputs = self.feature_extractor(batch["image"])
-        feature_vector = torch.hstack(list(layer_outputs.values())).detach()
-        batch["pred_scores"] = self.dfm_model.score(feature_vector.view(feature_vector.shape[:2]))
+        batch["pred_scores"] = self.model(batch["image"])
 
         return batch

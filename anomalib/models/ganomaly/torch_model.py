@@ -20,6 +20,7 @@ Code adapted from https://github.com/samet-akcay/ganomaly.
 
 import math
 
+import torch
 from torch import Tensor, nn
 
 
@@ -250,3 +251,125 @@ class Generator(nn.Module):
         gen_image = self.decoder(latent_i)
         latent_o = self.encoder2(gen_image)
         return gen_image, latent_i, latent_o
+
+
+class GanomalyModel(nn.Module):
+    """Ganomaly Model.
+
+    Args:
+        input_size (int): Input dimension of a square tensor.
+        num_input_channels (int): Number of input channels.
+        n_features (int): Number of features layers in the CNNs.
+        latent_vec_size (int): Size of autoencoder latent vector.
+        extra_layers (int, optional): Number of extra layers for encoder/decoder. Defaults to 0.
+        add_final_conv_layer (bool, optional): Add convolution layer at the end. Defaults to True.
+        wadv (int, optional): Weight for adversarial loss. Defaults to 1.
+        wcon (int, optional): Image regeneration weight. Defaults to 50.
+        wenc (int, optional): Latent vector encoder weight. Defaults to 1.
+    """
+
+    def __init__(
+        self,
+        input_size: int,
+        num_input_channels: int,
+        n_features: int,
+        latent_vec_size: int,
+        extra_layers: int = 0,
+        add_final_conv_layer: bool = True,
+        wadv: int = 1,
+        wcon: int = 50,
+        wenc: int = 1,
+    ) -> None:
+        super().__init__()
+        self.generator: Generator = Generator(
+            input_size=input_size,
+            latent_vec_size=latent_vec_size,
+            num_input_channels=num_input_channels,
+            n_features=n_features,
+            extra_layers=extra_layers,
+            add_final_conv_layer=add_final_conv_layer,
+        )
+        self.discriminator: Discriminator = Discriminator(
+            input_size=input_size,
+            num_input_channels=num_input_channels,
+            n_features=n_features,
+            extra_layers=extra_layers,
+        )
+        self.weights_init(self.generator)
+        self.weights_init(self.discriminator)
+        self.loss_enc = nn.SmoothL1Loss()
+        self.loss_adv = nn.MSELoss()
+        self.loss_con = nn.L1Loss()
+        self.loss_bce = nn.BCELoss()
+        self.wadv = wadv
+        self.wcon = wcon
+        self.wenc = wenc
+
+    @staticmethod
+    def weights_init(module: nn.Module):
+        """Initialize DCGAN weights.
+
+        Args:
+            module (nn.Module): [description]
+        """
+        classname = module.__class__.__name__
+        if classname.find("Conv") != -1:
+            nn.init.normal_(module.weight.data, 0.0, 0.02)
+        elif classname.find("BatchNorm") != -1:
+            nn.init.normal_(module.weight.data, 1.0, 0.02)
+            nn.init.constant_(module.bias.data, 0)
+
+    def get_discriminator_loss(self, images: Tensor) -> Tensor:
+        """Calculates loss for discriminator.
+
+        Args:
+            images (Tensor): Input images.
+
+        Returns:
+            Tensor: Discriminator loss.
+        """
+        fake, _, _ = self.generator(images)
+        pred_real, _ = self.discriminator(images)
+        pred_fake, _ = self.discriminator(fake.detach())
+
+        error_discriminator_real = self.loss_bce(
+            pred_real, torch.ones(size=pred_real.shape, dtype=torch.float32, device=pred_real.device)
+        )
+        error_discriminator_fake = self.loss_bce(
+            pred_fake, torch.zeros(size=pred_fake.shape, dtype=torch.float32, device=pred_fake.device)
+        )
+        loss_discriminator = (error_discriminator_fake + error_discriminator_real) * 0.5
+        return loss_discriminator
+
+    def get_generator_loss(self, images: Tensor) -> Tensor:
+        """Calculates loss for generator.
+
+        Args:
+            images (Tensor): Input images.
+
+        Returns:
+            Tensor: Generator loss.
+        """
+        fake, latent_i, latent_o = self.generator(images)
+        pred_real, _ = self.discriminator(images)
+        pred_fake, _ = self.discriminator(fake)
+
+        error_enc = self.loss_enc(latent_i, latent_o)
+        error_con = self.loss_con(images, fake)
+        error_adv = self.loss_adv(pred_real, pred_fake)
+
+        loss_generator = error_adv * self.wadv + error_con * self.wcon + error_enc * self.wenc
+        return loss_generator
+
+    def forward(self, batch: Tensor) -> Tensor:
+        """Get scores for batch.
+
+        Args:
+            batch (Tensor): Images
+
+        Returns:
+            Tensor: Regeneration scores.
+        """
+        self.generator.eval()
+        _, latent_i, latent_o = self.generator(batch)
+        return torch.mean(torch.pow((latent_i - latent_o), 2), dim=1).view(-1)  # convert nx1x1 to n

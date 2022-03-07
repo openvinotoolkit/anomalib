@@ -11,7 +11,7 @@ data:
 
 tiling:
   # TODO: Tiling is to be enabled for GANomaly to work properly.
-  enable: true
+  enable: false
   tile_size: 32
 
 model:
@@ -38,7 +38,12 @@ model:
     normalization: null # null | min_max | cdf
 
 trainer:
-  callbacks: null
+  callbacks:
+    - class_path: pytorch_lightning.callbacks.EarlyStopping
+      init_args:
+        patience: 3
+        monitor: image_AUROC
+        mode: max
   accelerator: null
   accumulate_grad_batches: 1
   amp_backend: native
