@@ -1,0 +1,14 @@
+input_info:
+  sample_size: null
+compression:
+  algorithm: quantization
+  initializer:
+    range:
+      num_init_samples: 256
+update_config:
+  init_weights: snapshot.ckpt
+  hyperparameter_search:
+    parameters:
+      lr:
+        min: 1e-4
+        max: 1e-2
