@@ -17,6 +17,7 @@
 import math
 
 import torch
+import torchvision
 from torch import Tensor, nn
 
 from anomalib.models.components import PCA, DynamicBufferModule, FeatureExtractor
@@ -83,17 +84,19 @@ class DFMModel(nn.Module):
     """Model for the DFM algorithm.
 
     Args:
+        backbone (str): Pre-trained model backbone.
         n_comps (float, optional): Ratio from which number of components for PCA are calculated. Defaults to 0.97.
         score_type (str, optional): Scoring type. Options are `fre` and `nll`. Defaults to "fre".
     """
 
-    def __init__(self, backbone: nn.Module, n_comps: float = 0.97, score_type: str = "fre"):
+    def __init__(self, backbone: str, n_comps: float = 0.97, score_type: str = "fre"):
         super().__init__()
+        self.backbone = getattr(torchvision.models, backbone)
         self.n_components = n_comps
         self.pca_model = PCA(n_components=self.n_components)
         self.gaussian_model = SingleClassGaussian()
         self.score_type = score_type
-        self.feature_extractor = FeatureExtractor(backbone=backbone(pretrained=True), layers=["avgpool"]).eval()
+        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=["avgpool"]).eval()
 
     def fit(self, dataset: Tensor) -> None:
         """Fit a pca transformation and a Gaussian model to dataset.

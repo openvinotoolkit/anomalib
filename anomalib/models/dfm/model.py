@@ -17,7 +17,6 @@
 from typing import List, Union
 
 import torch
-import torchvision
 from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
@@ -32,9 +31,8 @@ class DfmLightning(AnomalyModule):
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         super().__init__(hparams)
 
-        backbone = getattr(torchvision.models, hparams.model.backbone)
         self.model: DFMModel = DFMModel(
-            backbone=backbone, n_comps=hparams.model.pca_level, score_type=hparams.model.score_type
+            backbone=hparams.model.backbone, n_comps=hparams.model.pca_level, score_type=hparams.model.score_type
         )
         self.automatic_optimization = False
         self.embeddings: List[Tensor] = []
