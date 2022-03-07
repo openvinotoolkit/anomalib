@@ -403,8 +403,12 @@ class Patchcore(AnomalibModule):
             Dict[str, Any]: Image filenames, test images, GT and predicted label/masks
         """
 
-        anomaly_maps, anomaly_score = self.model(batch["image"])
+        # TODO: Use patchcore pred_score computation. This implementation ignores
+        #   the anomaly scoes computed by the algorthm. To do so, the following lines
+        #   would be uncommented.
+        #   anomaly_maps, anomaly_score = self.model(batch["image"])
+        #   batch["pred_scores"] = anomaly_score.unsqueeze(0)
+        anomaly_maps, _ = self.model(batch["image"])
         batch["anomaly_maps"] = anomaly_maps
-        batch["pred_scores"] = anomaly_score.unsqueeze(0)
 
         return batch
