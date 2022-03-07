@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import warnings
 from typing import List, Union
 
 import torch
@@ -30,6 +31,7 @@ class DfmLightning(AnomalyModule):
     """DFM: Deep Featured Kernel Density Estimation."""
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
+        warnings.warn("DfmLightning is deprecated, use Dfm via Anomalib CLI instead", DeprecationWarning)
         super().__init__(hparams)
 
         self.backbone = getattr(torchvision.models, hparams.model.backbone)

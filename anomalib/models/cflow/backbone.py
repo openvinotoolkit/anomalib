@@ -60,7 +60,7 @@ def positional_encoding_2d(condition_vector: int, height: int, width: int) -> to
     return pos_encoding
 
 
-def subnet_fc(dims_in: int, dims_out: int):
+def subnet_constructor(dims_in: int, dims_out: int):
     """Subnetwork which predicts the affine coefficients.
 
     Args:
@@ -73,14 +73,20 @@ def subnet_fc(dims_in: int, dims_out: int):
     return nn.Sequential(nn.Linear(dims_in, 2 * dims_in), nn.ReLU(), nn.Linear(2 * dims_in, dims_out))
 
 
-def cflow_head(condition_vector: int, coupling_blocks: int, clamp_alpha: float, n_features: int) -> SequenceINN:
+def cflow_head(
+    n_features: int, coupling_blocks: int, condition_vector: int, affine_clamping: float, permute_soft: bool = False
+) -> SequenceINN:
     """Create invertible decoder network.
 
     Args:
-        condition_vector (int): length of the condition vector
-        coupling_blocks (int): number of coupling blocks to build the decoder
-        clamp_alpha (float): clamping value to avoid exploding values
         n_features (int): number of decoder features
+        coupling_blocks (int): number of coupling blocks to build the decoder
+        condition_vector (int): length of the condition vector
+        affine_clamping (float): clamping value to avoid exploding values
+        permute_soft:
+            bool, whether to sample the permutation matrix :math:`R` from :math:`SO(N)`,
+            or to use hard permutations instead. Note, ``permute_soft=True`` is very slow
+            when working with >512 dimensions.
 
     Returns:
         SequenceINN: decoder network block
@@ -92,9 +98,9 @@ def cflow_head(condition_vector: int, coupling_blocks: int, clamp_alpha: float, 
             Fm.AllInOneBlock,
             cond=0,
             cond_shape=(condition_vector,),
-            subnet_constructor=subnet_fc,
-            affine_clamping=clamp_alpha,
+            subnet_constructor=subnet_constructor,
+            affine_clamping=affine_clamping,
             global_affine_type="SOFTPLUS",
-            permute_soft=True,
+            permute_soft=permute_soft,
         )
     return coder

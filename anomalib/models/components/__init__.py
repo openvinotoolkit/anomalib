@@ -14,13 +14,14 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .base import AnomalyModule, DynamicBufferModule
+from .base import AnomalibModule, AnomalyModule, DynamicBufferModule
 from .dimensionality_reduction import PCA, SparseRandomProjection
 from .feature_extractors import FeatureExtractor
 from .sampling import KCenterGreedy
 from .stats import GaussianKDE, MultiVariateGaussian
 
 __all__ = [
+    "AnomalibModule",
     "AnomalyModule",
     "DynamicBufferModule",
     "PCA",

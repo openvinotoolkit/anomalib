@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import warnings
 from typing import List, Union
 
 import torch
@@ -35,7 +36,9 @@ class DfkdeLightning(AnomalyModule):
     """
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
+        warnings.warn("DfkdeLightning is deprecated, use Dfkde via Anomalib CLIs instead", DeprecationWarning)
         super().__init__(hparams)
+
         self.threshold_steepness = 0.05
         self.threshold_offset = 12
 

@@ -17,6 +17,7 @@ Paper https://arxiv.org/abs/2011.08785
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import warnings
 from random import sample
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -34,9 +35,6 @@ from anomalib.models.components import (
 )
 from anomalib.pre_processing import Tiler
 
-__all__ = ["PadimLightning"]
-
-
 DIMS = {
     "resnet18": {"orig_dims": 448, "reduced_dims": 100, "emb_scale": 4},
     "wide_resnet50_2": {"orig_dims": 1792, "reduced_dims": 550, "emb_scale": 4},
@@ -49,9 +47,6 @@ class PadimModel(nn.Module):
     Args:
         layers (List[str]): Layers used for feature extraction
         input_size (Tuple[int, int]): Input size for the model.
-        tile_size (Tuple[int, int]): Tile size
-        tile_stride (int): Stride for tiling
-        apply_tiling (bool, optional): Apply tiling. Defaults to False.
         backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
     """
 
@@ -60,14 +55,12 @@ class PadimModel(nn.Module):
         layers: List[str],
         input_size: Tuple[int, int],
         backbone: str = "resnet18",
-        apply_tiling: bool = False,
-        tile_size: Optional[Tuple[int, int]] = None,
-        tile_stride: Optional[int] = None,
     ):
         super().__init__()
+        self.tiler: Optional[Tiler] = None
+
         self.backbone = getattr(torchvision.models, backbone)
         self.layers = layers
-        self.apply_tiling = apply_tiling
         self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
         self.dims = DIMS[backbone]
         # pylint: disable=not-callable
@@ -84,11 +77,6 @@ class PadimModel(nn.Module):
         patches_dims = torch.tensor(input_size) / DIMS[backbone]["emb_scale"]
         n_patches = patches_dims.prod().int().item()
         self.gaussian = MultiVariateGaussian(n_features, n_patches)
-
-        if apply_tiling:
-            assert tile_size is not None
-            assert tile_stride is not None
-            self.tiler = Tiler(tile_size, tile_stride)
 
     def forward(self, input_tensor: Tensor) -> Tensor:
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
@@ -112,12 +100,14 @@ class PadimModel(nn.Module):
             torch.Size([32, 256, 14, 14])]
         """
 
-        if self.apply_tiling:
+        if self.tiler:
             input_tensor = self.tiler.tile(input_tensor)
+
         with torch.no_grad():
             features = self.feature_extractor(input_tensor)
             embeddings = self.generate_embedding(features)
-        if self.apply_tiling:
+
+        if self.tiler:
             embeddings = self.tiler.untile(embeddings)
 
         if self.training:
@@ -281,14 +271,13 @@ class PadimLightning(AnomalyModule):
     """
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
+        warnings.warn("PadimLightning is deprecated, use Padim via Anomalib CLI instead", DeprecationWarning)
         super().__init__(hparams)
+
         self.layers = hparams.model.layers
         self.model: PadimModel = PadimModel(
             layers=hparams.model.layers,
             input_size=hparams.model.input_size,
-            tile_size=hparams.dataset.tiling.tile_size,
-            tile_stride=hparams.dataset.tiling.stride,
-            apply_tiling=hparams.dataset.tiling.apply,
             backbone=hparams.model.backbone,
         ).eval()
 

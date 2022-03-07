@@ -14,7 +14,8 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+from .anomalib_module import AnomalibModule
 from .anomaly_module import AnomalyModule
 from .dynamic_module import DynamicBufferModule
 
-__all__ = ["AnomalyModule", "DynamicBufferModule"]
+__all__ = ["AnomalibModule", "AnomalyModule", "DynamicBufferModule"]

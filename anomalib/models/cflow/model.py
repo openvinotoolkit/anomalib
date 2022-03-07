@@ -17,6 +17,7 @@ https://arxiv.org/pdf/2107.12571v1.pdf
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import warnings
 from typing import List, Tuple, Union, cast
 
 import einops
@@ -24,7 +25,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import torchvision
-from omegaconf import DictConfig, ListConfig
+from omegaconf import ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
 from torch import Tensor, nn, optim
 
@@ -105,7 +106,7 @@ class AnomalyMapGenerator:
         Expects `distribution`, `height` and 'width' keywords to be passed explicitly
 
         Example
-        >>> anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(hparams.model.input_size),
+        >>> anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(input_size),
         >>>        pool_layers=pool_layers)
         >>> output = self.anomaly_map_generator(distribution=dist, height=height, width=width)
 
@@ -128,20 +129,32 @@ class AnomalyMapGenerator:
 class CflowModel(nn.Module):
     """CFLOW: Conditional Normalizing Flows."""
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]):
+    def __init__(
+        self,
+        input_size: Tuple[int, int],
+        backbone: str,
+        layers: List[str],
+        decoder: str,
+        fiber_batch_size: int,
+        condition_vector: int,
+        coupling_blocks: int,
+        affine_clamping: float,
+        permute_soft: bool,
+    ):
         super().__init__()
+        self.input_size = input_size
+        self.backbone = getattr(torchvision.models, backbone)
 
-        self.backbone = getattr(torchvision.models, hparams.model.backbone)
-        self.fiber_batch_size = hparams.dataset.fiber_batch_size
-        self.condition_vector: int = hparams.model.condition_vector
-        self.dec_arch = hparams.model.decoder
-        self.pool_layers = hparams.model.layers
+        self.fiber_batch_size = fiber_batch_size
+        self.condition_vector: int = condition_vector
+        self.dec_arch = decoder
+        self.pool_layers = layers
 
         self.encoder = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.pool_layers)
         self.pool_dims = self.encoder.out_dims
         self.decoders = nn.ModuleList(
             [
-                cflow_head(self.condition_vector, hparams.model.coupling_blocks, hparams.model.clamp_alpha, pool_dim)
+                cflow_head(pool_dim, coupling_blocks, self.condition_vector, affine_clamping, permute_soft)
                 for pool_dim in self.pool_dims
             ]
         )
@@ -151,7 +164,7 @@ class CflowModel(nn.Module):
             parameters.requires_grad = False
 
         self.anomaly_map_generator = AnomalyMapGenerator(
-            image_size=tuple(hparams.model.input_size), pool_layers=self.pool_layers
+            image_size=tuple(self.input_size), pool_layers=self.pool_layers
         )
 
     def forward(self, images):
@@ -221,9 +234,21 @@ class CflowLightning(AnomalyModule):
     """PL Lightning Module for the CFLOW algorithm."""
 
     def __init__(self, hparams):
+        warnings.warn("CflowLightning is deprecated, use Cflow via Anomalib CLI instead", DeprecationWarning)
         super().__init__(hparams)
 
-        self.model: CflowModel = CflowModel(hparams)
+        self.model: CflowModel = CflowModel(
+            input_size=hparams.model.input_size,
+            backbone=hparams.model.backbone,
+            layers=hparams.model.layers,
+            decoder=hparams.model.decoder,
+            fiber_batch_size=hparams.dataset.fiber_batch_size,
+            condition_vector=hparams.model.condition_vector,
+            coupling_blocks=hparams.model.coupling_blocks,
+            affine_clamping=hparams.model.clamp_alpha,
+            permute_soft=hparams.model.permute_soft,
+        )
+
         self.loss_val = 0
         self.automatic_optimization = False
 
