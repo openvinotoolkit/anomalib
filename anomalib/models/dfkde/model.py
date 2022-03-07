@@ -28,20 +28,19 @@ from .normality_model import NormalityModel
 
 
 class DfkdeModel(nn.Module):
-    """DFKDR model.
+    """DFKDE model.
 
     Args:
-        backbone (nn.Module): Feature extraction backbone.
+        backbone (str): Pre-trained model backbone.
         filter_count (int): Number of filters.
         threshold_steepness (float): Threshold steepness for normality model.
         threshold_offset (float): Threshold offset for normality model.
     """
 
-    def __init__(
-        self, backbone: nn.Module, filter_count: int, threshold_steepness: float, threshold_offset: float
-    ) -> None:
+    def __init__(self, backbone: str, filter_count: int, threshold_steepness: float, threshold_offset: float) -> None:
         super().__init__()
-        self.feature_extractor = FeatureExtractor(backbone=backbone(pretrained=True), layers=["avgpool"]).eval()
+        self.backbone = getattr(torchvision.models, backbone)
+        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=["avgpool"]).eval()
 
         self.normality_model = NormalityModel(
             filter_count=filter_count,
@@ -86,7 +85,7 @@ class DfkdeModel(nn.Module):
 
 
 class DfkdeLightning(AnomalyModule):
-    """DFKDE: Deep Featured Kernel Density Estimation.
+    """DFKDE: Deep Feature Kernel Density Estimation.
 
     Args:
         hparams (Union[DictConfig, ListConfig]): Model params
@@ -97,9 +96,8 @@ class DfkdeLightning(AnomalyModule):
         threshold_steepness = 0.05
         threshold_offset = 12
 
-        backbone = getattr(torchvision.models, hparams.model.backbone)
         self.model: DfkdeModel = DfkdeModel(
-            backbone, hparams.model.max_training_points, threshold_steepness, threshold_offset
+            hparams.model.backbone, hparams.model.max_training_points, threshold_steepness, threshold_offset
         )
 
         self.automatic_optimization = False
