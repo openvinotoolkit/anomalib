@@ -27,9 +27,10 @@ from anomalib.models.dfkde import Dfkde
 from anomalib.models.dfm import Dfm
 from anomalib.models.ganomaly import Ganomaly
 from anomalib.models.padim import Padim
+from anomalib.models.patchcore import Patchcore
 from anomalib.models.stfpm import Stfpm
 
-__all__ = ["Cflow", "Dfkde", "Dfm", "Ganomaly", "Padim", "Stfpm"]
+__all__ = ["Cflow", "Dfkde", "Dfm", "Ganomaly", "Padim", "Patchcore", "Stfpm"]
 
 
 def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
