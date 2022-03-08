@@ -3,6 +3,8 @@
 import numpy as np
 import pytest
 
+from anomalib.config import get_configurable_parameters, update_input_size_config
+from anomalib.data import get_datamodule
 from anomalib.data.mvtec import MVTecDataModule
 from anomalib.pre_processing.transforms import Denormalize, ToNumpy
 from tests.helpers.dataset import get_dataset_path
@@ -100,3 +102,24 @@ class TestToNumpy:
     def test_representation(self):
         """Test ToNumpy() representation should return string `ToNumpy()`"""
         assert str(ToNumpy()) == "ToNumpy()"
+
+
+class TestConfigToDataModule:
+    @pytest.mark.parametrize(
+        ["input_size", "effective_image_size"],
+        [
+            (512, (512, 512)),
+            ((245, 276), (245, 276)),
+            ((263, 134), (263, 134)),
+            ((267, 267), (267, 267)),
+        ],
+    )
+    def test_image_size(self, input_size, effective_image_size):
+        model_name = "stfpm"
+        configurable_parameters = get_configurable_parameters(model_name)
+        configurable_parameters.dataset.image_size = input_size
+        configurable_parameters = update_input_size_config(configurable_parameters)
+
+        data_module = get_datamodule(configurable_parameters)
+        data_module.setup()
+        assert iter(data_module.train_dataloader()).__next__()["image"].shape[-2:] == effective_image_size
