@@ -1,4 +1,8 @@
-"""DFM: Deep Feature Kernel Density Estimation."""
+"""DFM.
+
+Probabilistic Modeling of Deep Features for
+Out-of-Distribution and Adversarial Detection
+"""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -28,7 +32,7 @@ from .dfm_model import DFMModel
 
 
 class DfmLightning(AnomalyModule):
-    """DFM: Deep Featured Kernel Density Estimation."""
+    """DFM Lightning Module."""
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         warnings.warn("DfmLightning is deprecated, use Dfm via Anomalib CLI instead", DeprecationWarning)
@@ -91,7 +95,7 @@ class DfmLightning(AnomalyModule):
 
 @MODEL_REGISTRY
 class Dfm(AnomalibModule):
-    """DFM: Deep Featured Kernel Density Estimation.
+    """DFM Lightning Module.
 
     Args:
         task (str): Task type (classification | segmentation)

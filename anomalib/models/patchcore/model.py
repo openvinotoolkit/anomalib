@@ -403,7 +403,8 @@ class Patchcore(AnomalibModule):
             Dict[str, Any]: Image filenames, test images, GT and predicted label/masks
         """
 
-        # TODO: Use patchcore pred_score computation. This implementation ignores
+        # TODO: https://jira.devtools.intel.com/browse/IAAALD-244
+        # Use patchcore pred_score computation. This implementation ignores
         #   the anomaly scoes computed by the algorthm. To do so, the following lines
         #   would be uncommented.
         #   anomaly_maps, anomaly_score = self.model(batch["image"])

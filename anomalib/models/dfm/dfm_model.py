@@ -1,4 +1,4 @@
-"""Normality model of DFKDE."""
+"""Normality model of DFM."""
 
 # Copyright (C) 2020 Intel Corporation
 #
