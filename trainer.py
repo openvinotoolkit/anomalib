@@ -1,7 +1,4 @@
-"""Real-Time  Unsupervised Anomaly Detection via Conditional Normalizing Flows.
-
-[CW-AD](https://arxiv.org/pdf/2107.12571v1.pdf)
-"""
+"""Trainer."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -17,6 +14,10 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .model import Cflow
+from anomalib.utils.cli import AnomalibCLI
 
-__all__ = ["Cflow"]
+cli = AnomalibCLI()
+
+
+cli.trainer.fit(datamodule=cli.datamodule, model=cli.model)
+cli.trainer.test(datamodule=cli.datamodule, model=cli.model)

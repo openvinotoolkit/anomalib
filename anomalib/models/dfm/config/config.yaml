@@ -1,38 +1,30 @@
-dataset:
-  name: mvtec
-  format: mvtec
-  path: ./datasets/MVTec
-  url: ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/mvtec_anomaly_detection.tar.xz
-  category: bottle
-  task: classification
-  label_format: None
-  image_size: 256
-  train_batch_size: 32
-  test_batch_size: 32
-  num_workers: 36
+seed_everything: 42
+data:
+  class_path: anomalib.data.MVTec
+  init_args:
+    root: ./datasets/MVTec
+    category: bottle
+    image_size: [256, 256]
+    train_batch_size: 32
+    test_batch_size: 32
+    num_workers: 8
+
+tiling:
+  enable: false
+  tile_size: 256
 
 model:
-  name: dfkde
-  backbone: resnet18
-  threshold_steepness: 0.05
-  threshold_offset: 12
-  max_training_points: 40000
-  confidence_threshold: 0.5
-  pre_processing: scale
-  n_components: 16
-  normalization_method: min_max # options: [null, min_max, cdf]
-  threshold:
-    image_default: 0
-    adaptive: true
+  class_path: anomalib.models.Dfm
+  init_args:
+    task: classification
+    adaptive_threshold: true
+    default_image_threshold: 0
+    default_pixel_threshold: 0
+    backbone: resnet18
+    normalization: null # null | min_max | cdf
+    num_pca_components: 0.97
+    score_type: "fre" # nll: for Gaussian modeling, fre: pca feature reconstruction error
 
-project:
-  seed: 42
-  path: ./results
-  log_images_to: []
-  logger: false
-  save_to_csv: false
-
-# PL Trainer Args. Don't add extra parameter here.
 trainer:
   accelerator: null
   accumulate_grad_batches: 1

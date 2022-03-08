@@ -40,6 +40,8 @@ class AnomalibModule(pl.LightningModule, ABC):
         adaptive_threshold (bool): Boolean to check if threshold is adaptively computed.
         default_image_threshold (float): Default image threshold value.
         default_pixel_threshold (float): Default pixel threshold value.
+        normalization (Optional[str], optional): Type of the normalization to apply to the heatmap.
+            Available types are null, min_max or cdf. Defaults to None.
     """
 
     def __init__(
@@ -48,6 +50,7 @@ class AnomalibModule(pl.LightningModule, ABC):
         adaptive_threshold: bool,
         default_image_threshold: float,
         default_pixel_threshold: float,
+        normalization: Optional[str] = None,
     ) -> None:
 
         super().__init__()
@@ -61,8 +64,10 @@ class AnomalibModule(pl.LightningModule, ABC):
         self.image_threshold = AdaptiveThreshold(default_image_threshold).cpu()
         self.pixel_threshold = AdaptiveThreshold(default_pixel_threshold).cpu()
 
-        self.training_distribution = AnomalyScoreDistribution().cpu()
-        self.min_max = MinMax().cpu()
+        if normalization == "min_max":
+            self.min_max = MinMax().cpu()
+        if normalization == "cdf":
+            self.training_distribution = AnomalyScoreDistribution().cpu()
 
         self.model: nn.Module
 

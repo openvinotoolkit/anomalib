@@ -25,9 +25,11 @@ import torch.nn.functional as F
 import torchvision
 from kornia import gaussian_blur2d
 from omegaconf import ListConfig
+from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor, nn
 
 from anomalib.models.components import (
+    AnomalibModule,
     AnomalyModule,
     DynamicBufferModule,
     FeatureExtractor,
@@ -305,5 +307,109 @@ class PatchcoreLightning(AnomalyModule):
         anomaly_maps, anomaly_score = self.model(batch["image"])
         batch["anomaly_maps"] = anomaly_maps
         batch["pred_scores"] = anomaly_score.unsqueeze(0)
+
+        return batch
+
+
+@MODEL_REGISTRY
+class Patchcore(AnomalibModule):
+    """PatchcoreLightning Module to train PatchCore algorithm.
+
+    Args:
+        task (str): Task type (classification | segmentation)
+        adaptive_threshold (bool): Boolean to automatically choose adaptive threshold
+        default_image_threshold (float): Manual default image threshold
+        default_pixel_threshold (float): Manaul default pixel threshold
+        input_size (Tuple[int, int]): Size of the model input.
+        backbone (str): Backbone CNN network
+        layers (List[str]): Layers to extract features from the backbone CNN
+        coreset_sampling_ratio (float, optional) Coreset sampling ratio to subsample embedding.
+        normalization (Optional[str], optional): Type of the normalization to apply to the heatmap.
+            Defaults to None.
+    """
+
+    def __init__(
+        self,
+        task: str,
+        adaptive_threshold: bool,
+        default_image_threshold: float,
+        default_pixel_threshold: float,
+        input_size: Tuple[int, int],
+        backbone: str,
+        layers: List[str],
+        coreset_sampling_ratio: float = 0.1,
+        normalization: Optional[str] = None,
+    ):
+        super().__init__(task, adaptive_threshold, default_image_threshold, default_pixel_threshold, normalization)
+        self.save_hyperparameters()
+
+        self.model: PatchcoreModel = PatchcoreModel(
+            layers=layers,
+            input_size=input_size,
+            backbone=backbone,
+        )
+        self.automatic_optimization = False
+
+        self.embeddings: List[Tensor] = []
+        self.coreset_sampling_ratio = coreset_sampling_ratio
+
+    def configure_optimizers(self) -> None:
+        """Configure optimizers.
+
+        Returns:
+            None: Do not set optimizers by returning None.
+        """
+        return None
+
+    def training_step(self, batch, _batch_idx):  # pylint: disable=arguments-differ
+        """Generate feature embedding of the batch.
+
+        Args:
+            batch (Dict[str, Any]): Batch containing image filename, image, label and mask
+            _batch_idx (int): Batch Index
+
+        Returns:
+            Dict[str, np.ndarray]: Embedding Vector
+        """
+        self.model.feature_extractor.eval()
+        embedding = self.model(batch["image"])
+
+        # NOTE: `self.embedding` appends each batch embedding to
+        #   store the training set embedding. We manually append these
+        #   values mainly due to the new order of hooks introduced after PL v1.4.0
+        #   https://github.com/PyTorchLightning/pytorch-lightning/pull/7357
+        self.embeddings.append(embedding)
+
+    def on_validation_start(self) -> None:
+        """Apply subsampling to the embedding collected from the training set."""
+        # NOTE: Previous anomalib versions fit subsampling at the end of the epoch.
+        #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
+        #   is run within train epoch.
+        print("Aggregating the embedding extracted from the training set.")
+        embeddings = torch.vstack(self.embeddings)
+
+        sampling_ratio = self.coreset_sampling_ratio
+        self.model.subsample_embedding(embeddings, sampling_ratio)
+
+    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
+        """Get batch of anomaly maps from input image batch.
+
+        Args:
+            batch (Dict[str, Any]): Batch containing image filename,
+                                    image, label and mask
+            _ (int): Batch Index
+
+        Returns:
+            Dict[str, Any]: Image filenames, test images, GT and predicted label/masks
+        """
+
+        # TODO: https://jira.devtools.intel.com/browse/IAAALD-244
+        # Use patchcore pred_score computation. This implementation ignores
+        #   the anomaly scoes computed by the algorthm. To do so, the following lines
+        #   would be uncommented.
+        #   anomaly_maps, anomaly_score = self.model(batch["image"])
+        #   batch["pred_scores"] = anomaly_score.unsqueeze(0)
+        anomaly_maps, _ = self.model(batch["image"])
+        batch["anomaly_maps"] = anomaly_maps
 
         return batch

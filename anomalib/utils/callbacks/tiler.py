@@ -20,7 +20,7 @@ from typing import Optional, Sequence, Union
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import Callback
 
-from anomalib.models.components import AnomalyModule
+from anomalib.models.components import AnomalibModule, AnomalyModule
 from anomalib.pre_processing.tiler import Tiler
 
 __all__ = ["TilerCallback"]
@@ -58,11 +58,11 @@ class TilerCallback(Callback):
         self.mode = mode
         self.tile_count = tile_count
 
-    def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: Optional[str] = None) -> None:
+    def setup(self, _trainer: pl.Trainer, pl_module: pl.LightningModule, stage: Optional[str] = None) -> None:
         """Setup Tiler object within Anomalib Model.
 
         Args:
-            trainer (pl.Trainer): PyTorch Lightning Trainer
+            _trainer (pl.Trainer): PyTorch Lightning Trainer
             pl_module (pl.LightningModule): Anomalib Model that inherits pl LightningModule.
             stage (Optional[str], optional): fit, validate, test or predict. Defaults to None.
 
@@ -71,7 +71,7 @@ class TilerCallback(Callback):
                 doesn not support tiling operation.
         """
         if self.enable:
-            if isinstance(pl_module, AnomalyModule) and hasattr(pl_module.model, "tiler"):
+            if isinstance(pl_module, (AnomalibModule, AnomalyModule)) and hasattr(pl_module.model, "tiler"):
                 pl_module.model.tiler = Tiler(
                     tile_size=self.tile_size,
                     stride=self.stride,

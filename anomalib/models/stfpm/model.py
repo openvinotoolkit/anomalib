@@ -25,12 +25,13 @@ import torch.nn.functional as F
 import torchvision
 from omegaconf import ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
+from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor, nn, optim
 
-from anomalib.models.components import AnomalyModule, FeatureExtractor
+from anomalib.models.components import AnomalibModule, AnomalyModule, FeatureExtractor
 from anomalib.pre_processing import Tiler
 
-__all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel", "StfpmLightning"]
+__all__ = ["Loss", "AnomalyMapGenerator", "STFPMModel", "StfpmLightning", "Stfpm"]
 
 
 class Loss(nn.Module):
@@ -277,6 +278,89 @@ class StfpmLightning(AnomalyModule):
             momentum=self.hparams.model.momentum,
             weight_decay=self.hparams.model.weight_decay,
         )
+
+    def training_step(self, batch, _):  # pylint: disable=arguments-differ
+        """Training Step of STFPM.
+
+        For each batch, teacher and student and teacher features are extracted from the CNN.
+
+        Args:
+          batch (Tensor): Input batch
+          _: Index of the batch.
+
+        Returns:
+          Hierarchical feature map
+        """
+        self.model.teacher_model.eval()
+        teacher_features, student_features = self.model.forward(batch["image"])
+        loss = self.loss_val + self.model.loss(teacher_features, student_features)
+        self.loss_val = 0
+        return {"loss": loss}
+
+    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
+        """Validation Step of STFPM.
+
+        Similar to the training step, student/teacher features are extracted from the CNN for each batch, and
+        anomaly map is computed.
+
+        Args:
+          batch (Tensor): Input batch
+          _: Index of the batch.
+
+        Returns:
+          Dictionary containing images, anomaly maps, true labels and masks.
+          These are required in `validation_epoch_end` for feature concatenation.
+        """
+        batch["anomaly_maps"] = self.model(batch["image"])
+
+        return batch
+
+
+@MODEL_REGISTRY
+class Stfpm(AnomalibModule):
+    """PL Lightning Module for the STFPM algorithm.
+
+    Args:
+        task (str): Task type (classification | segmentation)
+        adaptive_threshold (bool): Boolean to automatically choose adaptive threshold
+        default_image_threshold (float): Manual default image threshold
+        default_pixel_threshold (float): Manaul default pixel threshold
+        input_size (Tuple[int, int]): Size of the model input.
+        backbone (str): Backbone CNN network
+        layers (List[str]): Layers to extract features from the backbone CNN
+        normalization (Optional[str], optional): Type of the normalization to apply to the heatmap.
+            Defaults to None.
+        apply_tiling (bool, optional): Apply tiling to the input before forward-pass. Defaults to False.
+        tile_size (Optional[Tuple[int, int]], optional): Tile size. Defaults to None.
+        tile_stride (Optional[int], optional): Tile size. Defaults to None.
+    """
+
+    def __init__(
+        self,
+        task: str,
+        adaptive_threshold: bool,
+        default_image_threshold: float,
+        default_pixel_threshold: float,
+        input_size: Tuple[int, int],
+        backbone: str,
+        layers: List[str],
+        normalization: Optional[str] = None,
+        # TODO: Remove tiling parameters.
+        apply_tiling: bool = False,
+        tile_size: Optional[Tuple[int, int]] = None,
+        tile_stride: Optional[int] = None,
+    ):
+        super().__init__(task, adaptive_threshold, default_image_threshold, default_pixel_threshold, normalization)
+
+        self.model = STFPMModel(
+            layers=layers,
+            input_size=input_size,
+            tile_size=tile_size,
+            tile_stride=tile_stride,
+            backbone=backbone,
+            apply_tiling=apply_tiling,
+        )
+        self.loss_val = 0
 
     def training_step(self, batch, _):  # pylint: disable=arguments-differ
         """Training Step of STFPM.

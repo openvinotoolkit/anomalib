@@ -19,11 +19,10 @@ from typing import Any, List, Optional
 from warnings import warn
 
 import pytorch_lightning as pl
-from pytorch_lightning import Callback, Trainer
+from pytorch_lightning import Callback
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from skimage.segmentation import mark_boundaries
 
-from anomalib.models.components import AnomalyModule
 from anomalib.post_processing import Visualizer, compute_mask, superimpose_anomaly_map
 from anomalib.pre_processing.transforms import Denormalize
 from anomalib.utils.loggers import AVAILABLE_LOGGERS, AnomalibWandbLogger
@@ -35,7 +34,6 @@ class VisualizerCallback(Callback):
     The callback generates a figure showing the original image,
     the ground truth segmentation mask, the predicted error heat map,
     and the predicted segmentation mask.
-
     To save the images to the filesystem, add the 'local' keyword to the `project.log_images_to` parameter in the
     config.yaml file.
     """
@@ -48,8 +46,8 @@ class VisualizerCallback(Callback):
     def _add_images(
         self,
         visualizer: Visualizer,
-        trainer: Trainer,
-        module: AnomalyModule,
+        trainer: pl.Trainer,
+        module: pl.LightningModule,
         filename: Path,
     ):
         """Save image to logger/local storage.
@@ -59,8 +57,8 @@ class VisualizerCallback(Callback):
 
         Args:
             visualizer (Visualizer): Visualizer object from which the `figure` is saved/logged.
-            trainer (Trainer): PL Trainer object.
-            module (AnomalyModule): Anomaly module which holds reference to `hparams` and `logger`.
+            trainer (pl.Trainer): PL Trainer object.
+            module (pl.LightningModule): Anomaly module which holds reference to `hparams` and `logger`.
             filename (Path): Path of the input image. This name is used as name for the generated image.
         """
 

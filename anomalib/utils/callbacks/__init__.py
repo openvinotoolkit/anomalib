@@ -31,8 +31,10 @@ from .timer import TimerCallback
 from .visualizer_callback import VisualizerCallback
 
 __all__ = [
+    "CdfNormalizationCallback",
     "CompressModelCallback",
     "LoadModelCallback",
+    "MinMaxNormalizationCallback",
     "SaveToCSVCallback",
     "TilerCallback",
     "TimerCallback",
