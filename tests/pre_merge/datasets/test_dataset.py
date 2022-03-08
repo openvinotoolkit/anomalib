@@ -105,6 +105,8 @@ class TestToNumpy:
 
 
 class TestConfigToDataModule:
+    """Tests that check if the dataset parameters in the config achieve the desired effect."""
+
     @pytest.mark.parametrize(
         ["input_size", "effective_image_size"],
         [
@@ -115,6 +117,7 @@ class TestConfigToDataModule:
         ],
     )
     def test_image_size(self, input_size, effective_image_size):
+        """Test if the image size parameter works as expected."""
         model_name = "stfpm"
         configurable_parameters = get_configurable_parameters(model_name)
         configurable_parameters.dataset.image_size = input_size
