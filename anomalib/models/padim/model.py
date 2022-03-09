@@ -82,7 +82,7 @@ class PadimModel(nn.Module):
 
         n_features = DIMS[backbone]["reduced_dims"]
         patches_dims = torch.tensor(input_size) / DIMS[backbone]["emb_scale"]
-        n_patches = patches_dims.prod().int().item()
+        n_patches = patches_dims.ceil().prod().int().item()
         self.gaussian = MultiVariateGaussian(n_features, n_patches)
 
         if apply_tiling:

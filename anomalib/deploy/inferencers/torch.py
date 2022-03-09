@@ -154,7 +154,7 @@ class TorchInferencer(Inferencer):
         anomaly_map, pred_score = self._normalize(anomaly_map, pred_score, meta_data)
 
         if isinstance(anomaly_map, Tensor):
-            anomaly_map = anomaly_map.cpu().numpy()
+            anomaly_map = anomaly_map.detach().cpu().numpy()
 
         if "image_shape" in meta_data and anomaly_map.shape != meta_data["image_shape"]:
             anomaly_map = cv2.resize(anomaly_map, meta_data["image_shape"])
