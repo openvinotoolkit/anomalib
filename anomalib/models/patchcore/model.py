@@ -16,7 +16,7 @@ Paper https://arxiv.org/abs/2106.08265.
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions
 # and limitations under the License.
-
+import warnings
 from typing import Dict, List, Optional, Tuple, Union
 
 import torch
@@ -41,9 +41,11 @@ class AnomalyMapGenerator:
     def __init__(
         self,
         input_size: Union[ListConfig, Tuple],
+        feature_map_size: Tuple,
         sigma: int = 4,
     ) -> None:
         self.input_size = input_size
+        self.feature_map_size = feature_map_size
         self.sigma = sigma
 
     def compute_anomaly_map(self, patch_scores: torch.Tensor) -> torch.Tensor:
@@ -54,10 +56,9 @@ class AnomalyMapGenerator:
         Returns:
             torch.Tensor: Map of the pixel-level anomaly scores
         """
-        # TODO: https://github.com/openvinotoolkit/anomalib/issues/40
-        batch_size = len(patch_scores) // (28 * 28)
+        batch_size = len(patch_scores) // (self.feature_map_size[0] * self.feature_map_size[1])
 
-        anomaly_map = patch_scores[:, 0].reshape((batch_size, 1, 28, 28))
+        anomaly_map = patch_scores[:, 0].reshape((batch_size, 1, *self.feature_map_size))
         anomaly_map = F.interpolate(anomaly_map, size=(self.input_size[0], self.input_size[1]))
 
         kernel_size = 2 * int(4.0 * self.sigma + 0.5) + 1
@@ -126,7 +127,9 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
 
         self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
         self.feature_pooler = torch.nn.AvgPool2d(3, 1, 1)
-        self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
+        self.anomaly_map_generator = AnomalyMapGenerator(
+            input_size=self.input_size, feature_map_size=self._infer_feature_map_size()
+        )
 
         if apply_tiling:
             assert tile_size is not None
@@ -135,6 +138,35 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
 
         self.register_buffer("memory_bank", torch.Tensor())
         self.memory_bank: torch.Tensor
+
+    def _infer_feature_map_size(self) -> Tuple[int, int]:
+        """Infers the largest feature map size.
+
+        The size is required to recover the anomaly map from the embedding vectors.
+
+        NOTE: currently only supports ResNet models.
+            If you want to use PatchCore with other backbones, you have to extend this function
+            with an additional case returning the feature map sizes of your backbone.
+
+        Returns:
+            Union[int, int]: the size of the largest feature map extracted by
+                the backbone of this model.
+        """
+        backbone = self.backbone.__name__
+        if "resnet" in backbone:
+            # Assumes layer naming and pooling architecture is equal to resnet
+            # Convert "layerX" to X as integer
+            layer_nums = [int(layer[len("layer") :]) for layer in self.layers]
+            # Only the smallest layer size is required, since other layers will be upsampled.
+            min_layer_num = min(layer_nums)
+            # Calculate sub-sampling factor
+            sub_sampling = 2 ** (1 + min_layer_num)
+            feature_map_size = (self.input_size[0] // sub_sampling, self.input_size[1] // sub_sampling)
+        else:
+            warnings.warn(f"Feature map size could not be inferred for backbone: {backbone}.")
+            # In other cases, return (28, 28) to maintain backwards compatibility
+            feature_map_size = (28, 28)
+        return feature_map_size
 
     def forward(self, input_tensor: Tensor) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
         """Return Embedding during training, or a tuple of anomaly map and anomaly score during testing.
