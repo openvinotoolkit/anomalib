@@ -46,7 +46,6 @@ class AnomalibCLI(LightningCLI):
             subclass_mode_data=True,
             seed_everything_default=0,
             save_config_callback=None,
-            # save_config_overwrite=False,
             run=False,
         )
 
