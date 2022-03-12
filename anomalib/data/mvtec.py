@@ -97,6 +97,8 @@ def create_validation_set_from_test_set(samples: DataFrame, seed: int = 0) -> Da
     if seed > 0:
         random.seed(seed)
 
+    samples = samples.copy()
+
     # Split normal images.
     normal_test_image_indices = samples.index[(samples.split == "test") & (samples.label == "good")].to_list()
     num_normal_valid_images = len(normal_test_image_indices) // 2
@@ -120,6 +122,7 @@ def make_mvtec_dataset(
     split_ratio: float = 0.1,
     seed: int = 0,
     create_validation_set: bool = False,
+    subsample: bool = False,
 ) -> DataFrame:
     """Create MVTec samples by parsing the MVTec data file structure.
 
@@ -144,6 +147,9 @@ def make_mvtec_dataset(
         create_validation_set (bool, optional): Boolean to create a validation set from the test set.
             MVTec dataset does not contain a validation set. Those wanting to create a validation set
             could set this flag to ``True``.
+        subsample (bool, optional): Boolean to subsample the MVTec dataset rather than creating a full dataset.
+            If set to True, this function subsamples the dataset and returns 10 normal training images, 10
+            normal and abnormal test samples.
 
     Example:
         The following example shows how to get training samples from MVTec bottle category:
@@ -162,6 +168,20 @@ def make_mvtec_dataset(
         2  MVTec/bottle train good MVTec/bottle/train/good/137.png MVTec/bottle/ground_truth/good/137_mask.png 0
         3  MVTec/bottle train good MVTec/bottle/train/good/152.png MVTec/bottle/ground_truth/good/152_mask.png 0
         4  MVTec/bottle train good MVTec/bottle/train/good/109.png MVTec/bottle/ground_truth/good/109_mask.png 0
+
+        To subsample a data from MVTec dataset for a quick experimentation, set the `subsample` flag to True.
+        This would sample 10 normal-training, normal-test and abnormal test images, each.
+        >>> samples = make_mvtec_dataset(path, subsample=True)
+        >>> len(samples)
+        30
+
+        It's also possible to create a validation set from the test, where the test images are split to half to
+        create the validation set.
+        >>> samples = make_mvtec_dataset(path, create_validation_set=True, subsample=True)
+        >>> sum(samples.split == "test")
+        10
+        >>> sum(samples.split == "val")
+        10
 
     Returns:
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
@@ -199,6 +219,15 @@ def make_mvtec_dataset(
     samples.loc[(samples.label == "good"), "label_index"] = 0
     samples.loc[(samples.label != "good"), "label_index"] = 1
     samples.label_index = samples.label_index.astype(int)
+
+    if subsample:
+        # Subsample 10 normal-train, normal-test and abnormal test images.
+        # This is useful for certain cases such as pre-merge tests, where we only need only a sample dataset
+        # to check the basic functionality of the pipeline.
+        normal_train_samples = samples[(samples.label == "good") & (samples.split == "train")].sample(10)
+        normal_test_samples = samples[(samples.label == "good") & (samples.split == "test")].sample(10)
+        abnormal_test_samples = samples[(samples.label != "good") & (samples.split == "test")].sample(10)
+        samples = pd.concat([normal_train_samples, normal_test_samples, abnormal_test_samples])
 
     if create_validation_set:
         samples = create_validation_set_from_test_set(samples, seed=seed)
