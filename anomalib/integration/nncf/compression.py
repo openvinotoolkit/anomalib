@@ -14,18 +14,19 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 from typing import Any, Dict, Iterator, Tuple
 
-import torch.nn as nn
 from nncf import NNCFConfig
 from nncf.torch import create_compressed_model, load_state, register_default_init_args
 from nncf.torch.compression_method_api import PTCompressionAlgorithmController
 from nncf.torch.initialization import PTInitializingDataLoader
 from nncf.torch.nncf_network import NNCFNetwork
-from ote_anomalib.logging import get_logger
+from torch import nn
 from torch.utils.data.dataloader import DataLoader
 
-logger = get_logger(__name__)
+logger = logging.getLogger(name="NNCF compression")
+logger.setLevel(logging.DEBUG)
 
 
 class InitLoader(PTInitializingDataLoader):
@@ -68,8 +69,7 @@ class InitLoader(PTInitializingDataLoader):
 def wrap_nncf_model(
     model: nn.Module, config: Dict, dataloader: DataLoader = None, init_state_dict: Dict = None
 ) -> Tuple[NNCFNetwork, PTCompressionAlgorithmController]:
-    """
-    Wrap model by NNCF.
+    """Wrap model by NNCF.
 
     :param model: Anomalib model.
     :param config: NNCF config.
@@ -107,7 +107,5 @@ def wrap_nncf_model(
 
 
 def is_state_nncf(state: Dict) -> bool:
-    """
-    The function to check if sate was the result of training of NNCF-compressed model.
-    """
+    """The function to check if sate is the result of NNCF-compressed model."""
     return bool(state.get("meta", {}).get("nncf_enable_compression", False))

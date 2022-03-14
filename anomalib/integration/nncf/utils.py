@@ -112,6 +112,7 @@ def merge_dicts_and_lists_b_into_a(a, b):
 
 def _merge_dicts_and_lists_b_into_a(a, b, cur_key=None):
     """The function is inspired by mmcf.Config._merge_a_into_b.
+
     * works with usual dicts and lists and derived types
     * supports merging of lists (by concatenating the lists)
     * makes recursive merging for dict + dict case

@@ -48,12 +48,12 @@ class NNCFCallback(Callback):
         """
         if self.nncf_ctrl:
             return
-        # pylint: disable=attr-defined
+
         init_loader = InitLoader(trainer.datamodule.train_dataloader())  # type: ignore
         nncf_config = register_default_init_args(self.nncf_config, init_loader)
 
         self.nncf_ctrl, pl_module.model = wrap_nncf_model(
-            model=pl_module.model, config=nncf_config, dataloader=trainer.datamodule.train_dataloader()
+            model=pl_module.model, config=nncf_config, dataloader=trainer.datamodule.train_dataloader()  # type: ignore
         )
 
     def on_train_batch_start(
