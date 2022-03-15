@@ -41,7 +41,7 @@ class AnomalyMapGenerator:
     def __init__(
         self,
         input_size: Union[ListConfig, Tuple],
-        feature_map_size: Tuple,
+        feature_map_size: Tuple[int, int],
         sigma: int = 4,
     ) -> None:
         self.input_size = input_size
