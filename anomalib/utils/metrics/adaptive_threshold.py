@@ -37,5 +37,10 @@ class AdaptiveThreshold(Metric):
 
         precision, recall, thresholds = self.precision_recall_curve.compute()
         f1_score = (2 * precision * recall) / (precision + recall + 1e-10)
-        self.value = thresholds[torch.argmax(f1_score)]
+        if thresholds.dim() == 0:
+            # special case where recall is 1.0 even for the highest threshold.
+            # In this case 'thresholds' will be scalar.
+            self.value = thresholds
+        else:
+            self.value = thresholds[torch.argmax(f1_score)]
         return self.value

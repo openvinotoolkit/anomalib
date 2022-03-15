@@ -165,14 +165,17 @@ class CflowModel(nn.Module):
 
         """
 
-        activation = self.encoder(images)
+        self.encoder.eval()
+        self.decoders.eval()
+        with torch.no_grad():
+            activation = self.encoder(images)
 
-        distribution = [[] for _ in self.pool_layers]
+        distribution = [torch.Tensor(0).to(images.device) for _ in self.pool_layers]
 
         height: List[int] = []
         width: List[int] = []
         for layer_idx, layer in enumerate(self.pool_layers):
-            encoder_activations = activation[layer].detach()  # BxCxHxW
+            encoder_activations = activation[layer]  # BxCxHxW
 
             batch_size, dim_feature_vector, im_height, im_width = encoder_activations.size()
             image_size = im_height * im_width
@@ -206,13 +209,15 @@ class CflowModel(nn.Module):
                 c_p = c_r[idx]  # NxP
                 e_p = e_r[idx]  # NxC
                 # decoder returns the transformed variable z and the log Jacobian determinant
-                p_u, log_jac_det = decoder(e_p, [c_p])
+                with torch.no_grad():
+                    p_u, log_jac_det = decoder(e_p, [c_p])
                 #
                 decoder_log_prob = get_logp(dim_feature_vector, p_u, log_jac_det)
                 log_prob = decoder_log_prob / dim_feature_vector  # likelihood per dim
-                distribution[layer_idx] = distribution[layer_idx] + log_prob.detach().tolist()
+                distribution[layer_idx] = torch.cat((distribution[layer_idx], log_prob))
 
         output = self.anomaly_map_generator(distribution=distribution, height=height, width=width)
+        self.decoders.train()
 
         return output.to(images.device)
 
