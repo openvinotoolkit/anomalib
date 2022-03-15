@@ -153,6 +153,7 @@ python tools/inference.py \
 ___
 
 ## Datasets
+The `development` branch supports MVTec and BeanTech datasets.
 
 ### [MVTec Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 
