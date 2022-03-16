@@ -1,7 +1,7 @@
 # Project related
 datasets
 !anomalib/datasets
-!tests/datasets
+!tests/pre_merge/datasets
 results
 !anomalib/core/results
 
