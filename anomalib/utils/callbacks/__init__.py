@@ -22,15 +22,15 @@ from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 
 from .cdf_normalization import CdfNormalizationCallback
-from .compress import CompressModelCallback
 from .min_max_normalization import MinMaxNormalizationCallback
 from .model_loader import LoadModelCallback
+from .openvino import OpenVINOCallback
 from .save_to_csv import SaveToCSVCallback
 from .timer import TimerCallback
 from .visualizer_callback import VisualizerCallback
 
 __all__ = [
-    "CompressModelCallback",
+    "OpenVINOCallback",
     "LoadModelCallback",
     "TimerCallback",
     "VisualizerCallback",
@@ -98,10 +98,10 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
             )
         if config.optimization.compression.apply:
             callbacks.append(
-                CompressModelCallback(
+                OpenVINOCallback(
                     input_size=config.model.input_size,
-                    dirpath=os.path.join(config.project.path, "compressed"),
-                    filename="compressed_model",
+                    dirpath=os.path.join(config.project.path, "openvino"),
+                    filename="openvino_model",
                 )
             )
 
