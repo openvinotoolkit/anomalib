@@ -46,7 +46,7 @@ class AnomalyMapGenerator:
         self.input_size = input_size
         self.sigma = sigma
 
-    def compute_anomaly_map(self, patch_scores: torch.Tensor) -> torch.Tensor:
+    def compute_anomaly_map(self, patch_scores: torch.Tensor, feature_map_shape: tuple) -> torch.Tensor:
         """Pixel Level Anomaly Heatmap.
 
         Args:
@@ -66,7 +66,7 @@ class AnomalyMapGenerator:
         return anomaly_map
 
     @staticmethod
-    def compute_anomaly_score(patch_scores: torch.Tensor, feature_map_shape: tuple) -> torch.Tensor:
+    def compute_anomaly_score(patch_scores: torch.Tensor) -> torch.Tensor:
         """Compute Image-Level Anomaly Score.
 
         Args:
