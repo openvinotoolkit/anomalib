@@ -54,10 +54,10 @@ class AnomalyMapGenerator:
         Returns:
             torch.Tensor: Map of the pixel-level anomaly scores
         """
-        # TODO: https://github.com/openvinotoolkit/anomalib/issues/40
-        batch_size = len(patch_scores) // (28 * 28)
+        w, h = feature_map_shape
+        batch_size = len(patch_scores) // (w * h)
 
-        anomaly_map = patch_scores[:, 0].reshape((batch_size, 1, 28, 28))
+        anomaly_map = patch_scores[:, 0].reshape((batch_size, 1, w, h))
         anomaly_map = F.interpolate(anomaly_map, size=(self.input_size[0], self.input_size[1]))
 
         kernel_size = 2 * int(4.0 * self.sigma + 0.5) + 1
@@ -66,7 +66,7 @@ class AnomalyMapGenerator:
         return anomaly_map
 
     @staticmethod
-    def compute_anomaly_score(patch_scores: torch.Tensor) -> torch.Tensor:
+    def compute_anomaly_score(patch_scores: torch.Tensor, feature_map_shape: tuple) -> torch.Tensor:
         """Compute Image-Level Anomaly Score.
 
         Args:
@@ -99,7 +99,9 @@ class AnomalyMapGenerator:
             raise ValueError(f"Expected key `patch_scores`. Found {kwargs.keys()}")
 
         patch_scores = kwargs["patch_scores"]
-        anomaly_map = self.compute_anomaly_map(patch_scores)
+        feature_map_shape = kwargs["feature_map_shape"]
+
+        anomaly_map = self.compute_anomaly_map(patch_scores, feature_map_shape)
         anomaly_score = self.compute_anomaly_score(patch_scores)
         return anomaly_map, anomaly_score
 
@@ -163,12 +165,13 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             embedding = self.tiler.untile(embedding)
 
         embedding = self.reshape_embedding(embedding)
+        feature_map_shape = tuple(embedding.shape[-2:])
 
         if self.training:
             output = embedding
         else:
             patch_scores = self.nearest_neighbors(embedding=embedding, n_neighbors=9)
-            anomaly_map, anomaly_score = self.anomaly_map_generator(patch_scores=patch_scores)
+            anomaly_map, anomaly_score = self.anomaly_map_generator(patch_scores=patch_scores, feature_map_shape=feature_map_shape)
             output = (anomaly_map, anomaly_score)
 
         return output
