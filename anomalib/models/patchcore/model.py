@@ -163,9 +163,10 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
 
         if self.apply_tiling:
             embedding = self.tiler.untile(embedding)
-
-        embedding = self.reshape_embedding(embedding)
+            
         feature_map_shape = embedding.shape[-2:]
+        embedding = self.reshape_embedding(embedding)
+        
 
         if self.training:
             output = embedding
