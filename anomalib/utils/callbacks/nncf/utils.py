@@ -14,11 +14,19 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 from copy import copy
 from typing import Any, Dict, Iterator, List, Tuple
 
+from nncf import NNCFConfig
+from nncf.api.compression import CompressionAlgorithmController
+from nncf.torch import create_compressed_model, load_state, register_default_init_args
 from nncf.torch.initialization import PTInitializingDataLoader
+from nncf.torch.nncf_network import NNCFNetwork
+from torch import nn
 from torch.utils.data.dataloader import DataLoader
+
+logger = logging.getLogger(name="NNCF compression")
 
 
 class InitLoader(PTInitializingDataLoader):
@@ -58,6 +66,51 @@ class InitLoader(PTInitializingDataLoader):
         return None
 
 
+def wrap_nncf_model(
+    model: nn.Module, config: Dict, dataloader: DataLoader = None, init_state_dict: Dict = None
+) -> Tuple[CompressionAlgorithmController, NNCFNetwork]:
+    """Wrap model by NNCF.
+
+    :param model: Anomalib model.
+    :param config: NNCF config.
+    :param dataloader: Dataloader for initialization of NNCF model.
+    :param init_state_dict: Opti
+    :return: compression controller, compressed model
+    """
+    nncf_config = NNCFConfig.from_dict(config)
+
+    if not dataloader and not init_state_dict:
+        logger.warning(
+            "Either dataloader or NNCF pre-trained "
+            "model checkpoint should be set. Without this, "
+            "quantizers will not be initialized"
+        )
+
+    compression_state = None
+    resuming_state_dict = None
+    if init_state_dict:
+        resuming_state_dict = init_state_dict.get("model")
+        compression_state = init_state_dict.get("compression_state")
+
+    if dataloader:
+        init_loader = InitLoader(dataloader)  # type: ignore
+        nncf_config = register_default_init_args(nncf_config, init_loader)
+
+    nncf_ctrl, nncf_model = create_compressed_model(
+        model=model, config=nncf_config, dump_graphs=False, compression_state=compression_state
+    )
+
+    if resuming_state_dict:
+        load_state(nncf_model, resuming_state_dict, is_resume=True)
+
+    return nncf_ctrl, nncf_model
+
+
+def is_state_nncf(state: Dict) -> bool:
+    """The function to check if sate is the result of NNCF-compressed model."""
+    return bool(state.get("meta", {}).get("nncf_enable_compression", False))
+
+
 def compose_nncf_config(nncf_config: Dict, enabled_options: List[str]) -> Dict:
     """Compose NNCf config by selected options.
 
@@ -66,7 +119,7 @@ def compose_nncf_config(nncf_config: Dict, enabled_options: List[str]) -> Dict:
     :return: config
     """
     optimisation_parts = nncf_config
-
+    optimisation_parts_to_choose = []
     if "order_of_parts" in optimisation_parts:
         # The result of applying the changes from optimisation parts
         # may depend on the order of applying the changes
@@ -104,9 +157,9 @@ def compose_nncf_config(nncf_config: Dict, enabled_options: List[str]) -> Dict:
     return nncf_config_part
 
 
-# pylint: disable=invalid-name,missing-function-docstring
+# pylint: disable=invalid-name
 def merge_dicts_and_lists_b_into_a(a, b):
-    """The fucntion to merge dict configs."""
+    """The function to merge dict configs."""
     return _merge_dicts_and_lists_b_into_a(a, b, "")
 
 

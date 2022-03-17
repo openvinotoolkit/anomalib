@@ -14,15 +14,16 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import os
 from typing import Any, Dict, Optional
 
 import pytorch_lightning as pl
 from nncf import NNCFConfig
+from nncf.api.compression import CompressionAlgorithmController
 from nncf.torch import register_default_init_args
 from pytorch_lightning import Callback
 
-from anomalib.integration.nncf.compression import wrap_nncf_model
-from anomalib.integration.nncf.utils import InitLoader
+from anomalib.utils.callbacks.nncf.utils import InitLoader, wrap_nncf_model
 
 
 class NNCFCallback(Callback):
@@ -33,11 +34,14 @@ class NNCFCallback(Callback):
 
     Args:
         config (Dict): NNCF Configuration
+        export_dir (Str): Path where the export `onnx` and the OpenVINO `xml` and `bin` IR are saved.
+                          If None model will not be exported.
     """
 
-    def __init__(self, nncf_config: Dict):
+    def __init__(self, nncf_config: Dict, export_dir: str = None):
+        self.export_dir = export_dir
         self.nncf_config = NNCFConfig(nncf_config)
-        self.nncf_ctrl = None
+        self.nncf_ctrl: Optional[CompressionAlgorithmController] = None
 
     # pylint: disable=unused-argument
     def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: Optional[str] = None) -> None:
@@ -46,7 +50,7 @@ class NNCFCallback(Callback):
         Takes the pytorch model and wraps it using the compression controller
         so that it is ready for nncf fine-tuning.
         """
-        if self.nncf_ctrl:
+        if self.nncf_ctrl is not None:
             return
 
         init_loader = InitLoader(trainer.datamodule.train_dataloader())  # type: ignore
@@ -78,3 +82,17 @@ class NNCFCallback(Callback):
         """
         if self.nncf_ctrl:
             self.nncf_ctrl.scheduler.epoch_step()
+
+    def on_train_end(self, _trainer: pl.Trainer, _pl_module: pl.LightningModule) -> None:
+        """Call when the train ends.
+
+        Exports onnx model and if compression controller is not None, uses the onnx model to generate the OpenVINO IR.
+        """
+        if self.export_dir is None or self.nncf_ctrl is None:
+            return
+
+        os.makedirs(self.export_dir, exist_ok=True)
+        onnx_path = os.path.join(self.export_dir, "model_nncf.onnx")
+        self.nncf_ctrl.export_model(onnx_path)
+        optimize_command = "mo --input_model " + onnx_path + " --output_dir " + self.export_dir
+        os.system(optimize_command)

@@ -18,7 +18,8 @@ import os
 from importlib import import_module
 from typing import List, Union
 
-from omegaconf import DictConfig, ListConfig
+import yaml
+from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 
 from .cdf_normalization import CdfNormalizationCallback
@@ -84,19 +85,19 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
         callbacks.append(VisualizerCallback(inputs_are_normalized=not config.model.normalization_method == "none"))
 
     if "optimization" in config.keys():
-        if config.optimization.nncf.apply:
+        if "nncf" in config.optimization and config.optimization.nncf.apply:
             # NNCF wraps torch's jit which conflicts with kornia's jit calls.
             # Hence, nncf is imported only when required
-            nncf_module = import_module("anomalib.utils.callbacks.nncf_callback")
+            nncf_module = import_module("anomalib.utils.callbacks.nncf.callback")
             nncf_callback = getattr(nncf_module, "NNCFCallback")
+            nncf_config = yaml.safe_load(OmegaConf.to_yaml(config.optimization.nncf))
             callbacks.append(
                 nncf_callback(
-                    config=config,
-                    dirpath=os.path.join(config.project.path, "compressed"),
-                    filename="compressed_model",
+                    config=nncf_config,
+                    export_dir=os.path.join(config.project.path, "compressed"),
                 )
             )
-        if config.optimization.compression.apply:
+        if "compression" in config.optimization and config.optimization.compression.apply:
             callbacks.append(
                 OpenVINOCallback(
                     input_size=config.model.input_size,
