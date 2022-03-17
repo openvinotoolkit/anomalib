@@ -46,7 +46,7 @@ class AnomalyMapGenerator:
         self.input_size = input_size
         self.sigma = sigma
 
-    def compute_anomaly_map(self, patch_scores: torch.Tensor, feature_map_shape: tuple) -> torch.Tensor:
+    def compute_anomaly_map(self, patch_scores: torch.Tensor, feature_map_shape: torch.Tensor) -> torch.Tensor:
         """Pixel Level Anomaly Heatmap.
 
         Args:
@@ -165,7 +165,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             embedding = self.tiler.untile(embedding)
 
         embedding = self.reshape_embedding(embedding)
-        feature_map_shape = tuple(embedding.shape[-2:])
+        feature_map_shape = embedding.shape[-2:]
 
         if self.training:
             output = embedding
