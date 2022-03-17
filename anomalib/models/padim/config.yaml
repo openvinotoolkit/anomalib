@@ -39,7 +39,7 @@ project:
   save_to_csv: false
 
 optimization:
-  compression:
+  openvino:
     apply: false
 
 # PL Trainer Args. Don't add extra parameter here.

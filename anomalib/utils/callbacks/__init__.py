@@ -70,10 +70,9 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
     if "normalization_method" in config.model.keys() and not config.model.normalization_method == "none":
         if config.model.normalization_method == "cdf":
             if config.model.name in ["padim", "stfpm"]:
-                if not config.optimization.nncf.apply:
-                    callbacks.append(CdfNormalizationCallback())
-                else:
+                if "nncf" in config.optimization and config.optimization.nncf.apply:
                     raise NotImplementedError("CDF Score Normalization is currently not compatible with NNCF.")
+                callbacks.append(CdfNormalizationCallback())
             else:
                 raise NotImplementedError("Score Normalization is currently supported for PADIM and STFPM only.")
         elif config.model.normalization_method == "min_max":
@@ -97,7 +96,7 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
                     export_dir=os.path.join(config.project.path, "compressed"),
                 )
             )
-        if "compression" in config.optimization and config.optimization.compression.apply:
+        if "openvino" in config.optimization and config.optimization.openvino.apply:
             callbacks.append(
                 OpenVINOCallback(
                     input_size=config.model.input_size,
