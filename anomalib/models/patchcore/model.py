@@ -56,10 +56,10 @@ class AnomalyMapGenerator:
         Returns:
             torch.Tensor: Map of the pixel-level anomaly scores
         """
-        w, h = feature_map_shape
-        batch_size = len(patch_scores) // (w * h)
+        width, height = feature_map_shape
+        batch_size = len(patch_scores) // (width * height)
 
-        anomaly_map = patch_scores[:, 0].reshape((batch_size, 1, w, h))
+        anomaly_map = patch_scores[:, 0].reshape((batch_size, 1, width, height))
         anomaly_map = F.interpolate(anomaly_map, size=(self.input_size[0], self.input_size[1]))
 
         kernel_size = 2 * int(4.0 * self.sigma + 0.5) + 1
