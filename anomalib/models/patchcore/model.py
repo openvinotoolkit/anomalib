@@ -46,12 +46,12 @@ class AnomalyMapGenerator:
         self.input_size = input_size
         self.sigma = sigma
 
-    def compute_anomaly_map(self, patch_scores: torch.Tensor, feature_map_shape: torch.Tensor) -> torch.Tensor:
+    def compute_anomaly_map(self, patch_scores: torch.Tensor, feature_map_shape: torch.Size) -> torch.Tensor:
         """Pixel Level Anomaly Heatmap.
 
         Args:
             patch_scores (torch.Tensor): Patch-level anomaly scores
-            feature_map_shape (torch.Tensor): 2-D feature map shape (width, height)
+            feature_map_shape (torch.Size): 2-D feature map shape (width, height)
 
         Returns:
             torch.Tensor: Map of the pixel-level anomaly scores
