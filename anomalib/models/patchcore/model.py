@@ -51,6 +51,8 @@ class AnomalyMapGenerator:
 
         Args:
             patch_scores (torch.Tensor): Patch-level anomaly scores
+            feature_map_shape (torch.Tensor): 2-D feature map shape (width, height)
+
         Returns:
             torch.Tensor: Map of the pixel-level anomaly scores
         """
@@ -83,10 +85,11 @@ class AnomalyMapGenerator:
         """Returns anomaly_map and anomaly_score.
 
         Expects `patch_scores` keyword to be passed explicitly
+        Expects `feature_map_shape` keyword to be passed explicitly
 
         Example
         >>> anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
-        >>> map, score = anomaly_map_generator(patch_scores=numpy_array)
+        >>> map, score = anomaly_map_generator(patch_scores=numpy_array, feature_map_shape=feature_map_shape)
 
         Raises:
             ValueError: If `patch_scores` key is not found
@@ -97,6 +100,9 @@ class AnomalyMapGenerator:
 
         if "patch_scores" not in kwargs:
             raise ValueError(f"Expected key `patch_scores`. Found {kwargs.keys()}")
+
+        if "feature_map_shape" not in kwargs:
+            raise ValueError(f"Expected key `feature_map_shape`. Found {kwargs.keys()}")
 
         patch_scores = kwargs["patch_scores"]
         feature_map_shape = kwargs["feature_map_shape"]
