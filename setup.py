@@ -18,6 +18,8 @@ from typing import List
 
 from setuptools import find_packages, setup
 
+from anomalib import __version__
+
 
 def get_version() -> str:
     """Get version from `anomalib.__init__`.
@@ -86,7 +88,7 @@ EXTRAS_REQUIRE = {
 setup(
     name="anomalib",
     # TODO: https://github.com/openvinotoolkit/anomalib/issues/36
-    version="0.2.4",
+    version=__version__,
     author="Intel OpenVINO",
     author_email="help@openvino.intel.com",
     description="anomalib - Anomaly Detection Library",
