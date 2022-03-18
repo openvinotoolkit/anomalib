@@ -178,7 +178,9 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             output = embedding
         else:
             patch_scores = self.nearest_neighbors(embedding=embedding, n_neighbors=9)
-            anomaly_map, anomaly_score = self.anomaly_map_generator(patch_scores=patch_scores, feature_map_shape=feature_map_shape)
+            anomaly_map, anomaly_score = self.anomaly_map_generator(
+                patch_scores=patch_scores, feature_map_shape=feature_map_shape
+            )
             output = (anomaly_map, anomaly_score)
 
         return output
