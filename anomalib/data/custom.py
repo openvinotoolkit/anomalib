@@ -272,6 +272,7 @@ class CustomDataModule(LightningDataModule):
         root: Union[str, Path],
         normal: str = "normal",
         abnormal: str = "abnormal",
+        task: str = "classification",
         mask_dir: Optional[Union[Path, str]] = None,
         extensions: Optional[Tuple[str, ...]] = None,
         split_ratio: float = 0.2,
@@ -291,6 +292,8 @@ class CustomDataModule(LightningDataModule):
                 Defaults to "normal".
             abnormal (str, optional): Name of the directory containing abnormal images.
                 Defaults to "abnormal".
+            task (str, optional): Task type. Could be either classification or segmentation.
+                Defaults to "classification".
             mask_dir (Optional[Union[str, Path]], optional): Path to the directory containing
                 the mask annotations. Defaults to None.
             extensions (Optional[Tuple[str, ...]], optional): Type of the image extensions to read from the
@@ -388,7 +391,14 @@ class CustomDataModule(LightningDataModule):
         self.mask_dir = mask_dir
         self.extensions = extensions
         self.split_ratio = split_ratio
-        self.task = "classification" if mask_dir is None else "segmentation"
+
+        if task == "classification" and mask_dir is not None:
+            raise ValueError(
+                "Classification type is set but mask_dir provided. "
+                "If mask_dir is provided task type must be segmentation. "
+                "Check your configuration."
+            )
+        self.task = task
         self.transform_config = transform_config
         self.image_size = image_size
 
