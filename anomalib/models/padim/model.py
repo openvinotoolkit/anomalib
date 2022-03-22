@@ -219,7 +219,8 @@ class AnomalyMapGenerator:
         """
 
         kernel_size = 2 * int(4.0 * self.sigma + 0.5) + 1
-        anomaly_map = gaussian_blur2d(anomaly_map, (kernel_size, kernel_size), sigma=(self.sigma, self.sigma))
+        sigma = torch.as_tensor(self.sigma).to(anomaly_map.device)
+        anomaly_map = gaussian_blur2d(anomaly_map, (kernel_size, kernel_size), sigma=(sigma, sigma))
 
         return anomaly_map
 
