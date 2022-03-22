@@ -4,7 +4,12 @@ dataset:
   path: ./datasets/MVTec
   category: bottle
   task: segmentation
-  label_format: None
+  image_size: 256
+  train_batch_size: 32
+  test_batch_size: 32
+  num_workers: 36
+  transform_config: null
+  create_validation_set: false
   tiling:
     apply: false
     tile_size: null
@@ -12,10 +17,6 @@ dataset:
     remove_border_count: 0
     use_random_tiling: False
     random_tile_count: 16
-  image_size: 256
-  train_batch_size: 32
-  test_batch_size: 32
-  num_workers: 36
 
 model:
   name: padim
