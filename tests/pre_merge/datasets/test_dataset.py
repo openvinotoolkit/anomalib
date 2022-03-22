@@ -1,10 +1,17 @@
 """Test Dataset."""
 
+import os
+
 import numpy as np
 import pytest
 
 from anomalib.config import get_configurable_parameters, update_input_size_config
-from anomalib.data import BTechDataModule, MVTecDataModule, get_datamodule
+from anomalib.data import (
+    BTechDataModule,
+    CustomDataModule,
+    MVTecDataModule,
+    get_datamodule,
+)
 from anomalib.pre_processing.transforms import Denormalize, ToNumpy
 from tests.helpers.dataset import TestDataset, get_dataset_path
 
@@ -43,12 +50,35 @@ def btech_data_module():
 
 
 @pytest.fixture(autouse=True)
+def custom_data_module():
+    """Create Custom Data Module."""
+    datamodule = CustomDataModule(
+        root="./datasets/bottle/test",
+        normal="good",
+        abnormal="broken_large",
+        mask_dir="./datasets/bottle/ground_truth/broken_large",
+        split_ratio=0.2,
+        seed=0,
+        image_size=(256, 256),
+        train_batch_size=32,
+        test_batch_size=32,
+        num_workers=8,
+        create_validation_set=True,
+    )
+    datamodule.setup()
+
+    return datamodule
+
+
+@pytest.fixture(autouse=True)
 def data_sample(mvtec_data_module):
     _, data = next(enumerate(mvtec_data_module.train_dataloader()))
     return data
 
 
 class TestMVTecDataModule:
+    """Test MVTec Data Module."""
+
     def test_batch_size(self, mvtec_data_module):
         """test_mvtec_datamodule [summary]"""
         _, train_data_sample = next(enumerate(mvtec_data_module.train_dataloader()))
@@ -69,7 +99,7 @@ class TestBTechDataModule:
     """Test BTech Data Module."""
 
     def test_batch_size(self, btech_data_module):
-        """test_btech_datamodule [summary]"""
+        """Test batch size."""
         _, train_data_sample = next(enumerate(btech_data_module.train_dataloader()))
         _, val_data_sample = next(enumerate(btech_data_module.val_dataloader()))
         assert train_data_sample["image"].shape[0] == 1
@@ -79,6 +109,25 @@ class TestBTechDataModule:
         """Test Validation and Test dataloaders should return filenames, image, mask and label."""
         _, val_data = next(enumerate(btech_data_module.val_dataloader()))
         _, test_data = next(enumerate(btech_data_module.test_dataloader()))
+
+        assert sorted(["image_path", "mask_path", "image", "label", "mask"]) == sorted(val_data.keys())
+        assert sorted(["image_path", "mask_path", "image", "label", "mask"]) == sorted(test_data.keys())
+
+
+class TestCustomDataModule:
+    """Test Custom Data Module."""
+
+    def test_batch_size(self, custom_data_module):
+        """Test batch size."""
+        _, train_data_sample = next(enumerate(custom_data_module.train_dataloader()))
+        _, val_data_sample = next(enumerate(custom_data_module.val_dataloader()))
+        assert train_data_sample["image"].shape[0] == 16
+        assert val_data_sample["image"].shape[0] == 12
+
+    def test_val_and_test_dataloaders_has_mask_and_gt(self, custom_data_module):
+        """Test Validation and Test dataloaders should return filenames, image, mask and label."""
+        _, val_data = next(enumerate(custom_data_module.val_dataloader()))
+        _, test_data = next(enumerate(custom_data_module.test_dataloader()))
 
         assert sorted(["image_path", "mask_path", "image", "label", "mask"]) == sorted(val_data.keys())
         assert sorted(["image_path", "mask_path", "image", "label", "mask"]) == sorted(test_data.keys())

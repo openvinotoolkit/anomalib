@@ -99,6 +99,12 @@ def make_dataset(
     abnormal_filenames = [f for f in abnormal_dir.glob(r"**/*") if f.suffix in extensions]
     filenames = normal_filenames + abnormal_filenames
 
+    if len(normal_filenames) == 0:
+        raise RuntimeError(f"Found 0 normal images in {normal_dir}")
+
+    if len(abnormal_filenames) == 0:
+        raise RuntimeError(f"Found 0 annormal images in {abnormal_dir}")
+
     # Add normal and abnormal labels to the samples as `label` column.
     normal_labels = ["normal"] * len(normal_filenames)
     abnormal_labels = ["abnormal"] * len(abnormal_filenames)
