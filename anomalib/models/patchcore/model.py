@@ -46,18 +46,20 @@ class AnomalyMapGenerator:
         self.input_size = input_size
         self.sigma = sigma
 
-    def compute_anomaly_map(self, patch_scores: torch.Tensor) -> torch.Tensor:
+    def compute_anomaly_map(self, patch_scores: torch.Tensor, feature_map_shape: torch.Size) -> torch.Tensor:
         """Pixel Level Anomaly Heatmap.
 
         Args:
             patch_scores (torch.Tensor): Patch-level anomaly scores
+            feature_map_shape (torch.Size): 2-D feature map shape (width, height)
+
         Returns:
             torch.Tensor: Map of the pixel-level anomaly scores
         """
-        # TODO: https://github.com/openvinotoolkit/anomalib/issues/40
-        batch_size = len(patch_scores) // (28 * 28)
+        width, height = feature_map_shape
+        batch_size = len(patch_scores) // (width * height)
 
-        anomaly_map = patch_scores[:, 0].reshape((batch_size, 1, 28, 28))
+        anomaly_map = patch_scores[:, 0].reshape((batch_size, 1, width, height))
         anomaly_map = F.interpolate(anomaly_map, size=(self.input_size[0], self.input_size[1]))
 
         kernel_size = 2 * int(4.0 * self.sigma + 0.5) + 1
@@ -84,10 +86,11 @@ class AnomalyMapGenerator:
         """Returns anomaly_map and anomaly_score.
 
         Expects `patch_scores` keyword to be passed explicitly
+        Expects `feature_map_shape` keyword to be passed explicitly
 
         Example
         >>> anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
-        >>> map, score = anomaly_map_generator(patch_scores=numpy_array)
+        >>> map, score = anomaly_map_generator(patch_scores=numpy_array, feature_map_shape=feature_map_shape)
 
         Raises:
             ValueError: If `patch_scores` key is not found
@@ -99,8 +102,13 @@ class AnomalyMapGenerator:
         if "patch_scores" not in kwargs:
             raise ValueError(f"Expected key `patch_scores`. Found {kwargs.keys()}")
 
+        if "feature_map_shape" not in kwargs:
+            raise ValueError(f"Expected key `feature_map_shape`. Found {kwargs.keys()}")
+
         patch_scores = kwargs["patch_scores"]
-        anomaly_map = self.compute_anomaly_map(patch_scores)
+        feature_map_shape = kwargs["feature_map_shape"]
+
+        anomaly_map = self.compute_anomaly_map(patch_scores, feature_map_shape)
         anomaly_score = self.compute_anomaly_score(patch_scores)
         return anomaly_map, anomaly_score
 
@@ -163,13 +171,16 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         if self.apply_tiling:
             embedding = self.tiler.untile(embedding)
 
+        feature_map_shape = embedding.shape[-2:]
         embedding = self.reshape_embedding(embedding)
 
         if self.training:
             output = embedding
         else:
             patch_scores = self.nearest_neighbors(embedding=embedding, n_neighbors=9)
-            anomaly_map, anomaly_score = self.anomaly_map_generator(patch_scores=patch_scores)
+            anomaly_map, anomaly_score = self.anomaly_map_generator(
+                patch_scores=patch_scores, feature_map_shape=feature_map_shape
+            )
             output = (anomaly_map, anomaly_score)
 
         return output
