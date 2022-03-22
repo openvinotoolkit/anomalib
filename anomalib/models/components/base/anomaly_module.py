@@ -58,10 +58,12 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.model: nn.Module
 
         # metrics
-        auroc = AUROC(num_classes=1, pos_label=1, compute_on_step=False)
-        f1_score = F1(num_classes=1, compute_on_step=False)
-        self.image_metrics = MetricCollection([auroc, f1_score], prefix="image_").cpu()
-        self.pixel_metrics = self.image_metrics.clone(prefix="pixel_").cpu()
+        image_auroc = AUROC(num_classes=1, pos_label=1, compute_on_step=False)
+        image_f1 = F1(num_classes=1, compute_on_step=False, threshold=self.hparams.model.threshold.image_default)
+        pixel_auroc = AUROC(num_classes=1, pos_label=1, compute_on_step=False)
+        pixel_f1 = F1(num_classes=1, compute_on_step=False, threshold=self.hparams.model.threshold.pixel_default)
+        self.image_metrics = MetricCollection([image_auroc, image_f1], prefix="image_").cpu()
+        self.pixel_metrics = MetricCollection([pixel_auroc, pixel_f1], prefix="pixel_").cpu()
 
     def forward(self, batch):  # pylint: disable=arguments-differ
         """Forward-pass input tensor to the module.

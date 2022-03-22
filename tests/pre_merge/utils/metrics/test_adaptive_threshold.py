@@ -13,10 +13,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions
 # and limitations under the License.
+import random
 
 import pytest
 import torch
+from pytorch_lightning import Trainer
 
+from anomalib.config import get_configurable_parameters
+from anomalib.data import get_datamodule
+from anomalib.models import get_model
+from anomalib.utils.callbacks import get_callbacks
 from anomalib.utils.metrics import AdaptiveThreshold
 
 
@@ -35,3 +41,29 @@ def test_adaptive_threshold(labels, preds, target_threshold):
     threshold_value = adaptive_threshold.compute()
 
     assert threshold_value == target_threshold
+
+
+def test_non_adaptive_threshold():
+    """
+    Test if the non-adaptive threshold gets used in the F1 score computation when
+    adaptive thresholding is disabled and no normalization is used.
+    """
+    config = get_configurable_parameters(model_config_path="anomalib/models/padim/config.yaml")
+
+    config.model.normalization_method = "none"
+    config.model.threshold.adaptive = False
+    config.trainer.fast_dev_run = True
+
+    image_threshold = random.random()
+    pixel_threshold = random.random()
+    config.model.threshold.image_default = image_threshold
+    config.model.threshold.pixel_default = pixel_threshold
+
+    model = get_model(config)
+    datamodule = get_datamodule(config)
+    callbacks = get_callbacks(config)
+
+    trainer = Trainer(**config.trainer, callbacks=callbacks)
+    trainer.fit(model=model, datamodule=datamodule)
+    assert trainer.model.image_metrics.F1.threshold == image_threshold
+    assert trainer.model.pixel_metrics.F1.threshold == pixel_threshold
