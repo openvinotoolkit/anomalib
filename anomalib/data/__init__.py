@@ -20,7 +20,7 @@ from omegaconf import DictConfig, ListConfig
 from pytorch_lightning import LightningDataModule
 
 from .btech import BTechDataModule
-from .custom import CustomDataModule
+from .folder import FolderDataModule
 from .inference import InferenceDataset
 from .mvtec import MVTecDataModule
 
@@ -36,7 +36,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
     """
     datamodule: LightningDataModule
 
-    if config.dataset.name.lower() == "mvtec":
+    if config.dataset.format.lower() == "mvtec":
         datamodule = MVTecDataModule(
             # TODO: Remove config values. IAAALD-211
             root=config.dataset.path,
@@ -47,7 +47,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
             num_workers=config.dataset.num_workers,
             seed=config.project.seed,
         )
-    elif config.dataset.name.lower() == "btech":
+    elif config.dataset.format.lower() == "btech":
         datamodule = BTechDataModule(
             # TODO: Remove config values. IAAALD-211
             root=config.dataset.path,
@@ -58,8 +58,8 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
             num_workers=config.dataset.num_workers,
             seed=config.project.seed,
         )
-    elif config.dataset.name.lower() == "custom":
-        datamodule = CustomDataModule(
+    elif config.dataset.format.lower() == "folder":
+        datamodule = FolderDataModule(
             root=config.dataset.path,
             normal=config.dataset.normal,
             abnormal=config.dataset.abnormal,
@@ -85,4 +85,10 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
     return datamodule
 
 
-__all__ = ["get_datamodule", "InferenceDataset"]
+__all__ = [
+    "get_datamodule",
+    "BTechDataModule",
+    "FolderDataModule",
+    "InferenceDataset",
+    "MVTecDataModule",
+]

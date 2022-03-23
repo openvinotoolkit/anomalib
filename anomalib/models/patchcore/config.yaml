@@ -1,5 +1,5 @@
 dataset:
-  name: mvtec #options: [mvtec, btech, custom]
+  name: mvtec #options: [mvtec, btech, folder]
   format: mvtec
   path: ./datasets/MVTec
   task: segmentation

@@ -177,8 +177,10 @@ def get_configurable_parameters(
     config = update_input_size_config(config)
 
     # Project Configs
-    category = config.dataset.category if "category" in config.dataset.keys() else ""
-    project_path = Path(config.project.path) / config.model.name / config.dataset.name / category
+    project_path = Path(config.project.path) / config.model.name / config.dataset.name
+    if config.dataset.format.lower() in ("btech", "mvtec"):
+        project_path = project_path / config.dataset.category
+
     (project_path / "weights").mkdir(parents=True, exist_ok=True)
     (project_path / "images").mkdir(parents=True, exist_ok=True)
     config.project.path = str(project_path)

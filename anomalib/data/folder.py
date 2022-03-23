@@ -39,7 +39,7 @@ from anomalib.data.utils.split import (
 )
 from anomalib.pre_processing import PreProcessor
 
-logger = logging.getLogger(name="Dataset: Custom Dataset")
+logger = logging.getLogger(name="Dataset: Folder Dataset")
 logger.setLevel(logging.DEBUG)
 
 
@@ -67,7 +67,7 @@ def make_dataset(
     create_validation_set: bool = True,
     extensions: Optional[Tuple[str, ...]] = None,
 ):
-    """Make Custom Dataset.
+    """Make Folder Dataset.
 
     Args:
         normal_dir (Union[str, Path]): Path to the directory containing normal images.
@@ -151,8 +151,8 @@ def make_dataset(
     return samples
 
 
-class CustomDataset(Dataset):
-    """Custom Dataset."""
+class FolderDataset(Dataset):
+    """Folder Dataset."""
 
     def __init__(
         self,
@@ -167,7 +167,7 @@ class CustomDataset(Dataset):
         seed: int = 0,
         create_validation_set: bool = False,
     ) -> None:
-        """Create Custom Folder Dataset.
+        """Create Folder Folder Dataset.
 
         Args:
             normal_dir (Union[str, Path]): Path to the directory containing normal images.
@@ -264,8 +264,8 @@ class CustomDataset(Dataset):
         return item
 
 
-class CustomDataModule(LightningDataModule):
-    """Custom Lightning Data Module."""
+class FolderDataModule(LightningDataModule):
+    """Folder Lightning Data Module."""
 
     def __init__(
         self,
@@ -284,7 +284,7 @@ class CustomDataModule(LightningDataModule):
         transform_config: Optional[Union[str, A.Compose]] = None,
         create_validation_set: bool = False,
     ) -> None:
-        """Custom Dataset PL Datamodule.
+        """Folder Dataset PL Datamodule.
 
         Args:
             root (Union[str, Path]): Path to the root folder containing normal and abnormal dirs.
@@ -314,9 +314,9 @@ class CustomDataModule(LightningDataModule):
                 could set this flag to ``True``.
 
         Examples:
-            Assume that we use Custom Dataset for the MVTec/bottle/broken_large category. We would do:
-            >>> from anomalib.data import CustomDataModule
-            >>> datamodule = CustomDataModule(
+            Assume that we use Folder Dataset for the MVTec/bottle/broken_large category. We would do:
+            >>> from anomalib.data import FolderDataModule
+            >>> datamodule = FolderDataModule(
             ...     root="./datasets/MVTec/bottle/test",
             ...     normal="good",
             ...     abnormal="broken_large",
@@ -331,17 +331,11 @@ class CustomDataModule(LightningDataModule):
             >>> test_data.keys()
             dict_keys(['image'])
 
-            We could also create a Custom DataModule for datasets containing mask annotations.
+            We could also create a Folder DataModule for datasets containing mask annotations.
             The dataset expects that mask annotation filenames must be same as the original filename.
-            To show an example, we therefore need to modify the mask filenames in MVTec dataset.
-
-            >>> # Rename MVTec mask annotations so that they are the same as image filanames
-            >>> folder = Path("./datasets/bottle/ground_truth/")
-            >>> for f in folder.glob(r"**/*.png"):
-            ...     f.rename(f.parent / (f.stem.split("_")[0] + f.suffix))
-
-            Now we could try custom data module using the mvtec bottle broken large category
-            >>> datamodule = CustomDataModule(
+            To this end, we modified mask filenames in MVTec bottle category.
+            Now we could try folder data module using the mvtec bottle broken large category
+            >>> datamodule = FolderDataModule(
             ...     root="./datasets/bottle/test",
             ...     normal="good",
             ...     abnormal="broken_large",
@@ -360,10 +354,10 @@ class CustomDataModule(LightningDataModule):
             >>> print(test_data["image"].shape, test_data["mask"].shape)
             torch.Size([24, 3, 256, 256]) torch.Size([24, 256, 256])
 
-            By default, Custom Data Module does not create a validation set. If a validation set
+            By default, Folder Data Module does not create a validation set. If a validation set
             is needed it could be set as follows:
 
-            >>> datamodule = CustomDataModule(
+            >>> datamodule = FolderDataModule(
             ...     root="./datasets/bottle/test",
             ...     normal="good",
             ...     abnormal="broken_large",
@@ -425,7 +419,7 @@ class CustomDataModule(LightningDataModule):
 
         """
         if stage in (None, "fit"):
-            self.train_data = CustomDataset(
+            self.train_data = FolderDataset(
                 normal_dir=self.normal_dir,
                 abnormal_dir=self.abnormal_dir,
                 split="train",
@@ -439,7 +433,7 @@ class CustomDataModule(LightningDataModule):
             )
 
         if self.create_validation_set:
-            self.val_data = CustomDataset(
+            self.val_data = FolderDataset(
                 normal_dir=self.normal_dir,
                 abnormal_dir=self.abnormal_dir,
                 split="val",
@@ -452,7 +446,7 @@ class CustomDataModule(LightningDataModule):
                 create_validation_set=self.create_validation_set,
             )
 
-        self.test_data = CustomDataset(
+        self.test_data = FolderDataset(
             normal_dir=self.normal_dir,
             abnormal_dir=self.abnormal_dir,
             split="test",
