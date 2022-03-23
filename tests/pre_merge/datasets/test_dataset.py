@@ -53,7 +53,7 @@ def btech_data_module():
 def folder_data_module():
     """Create Folder Data Module."""
     datamodule = FolderDataModule(
-        root="./datasets/bottle/test",
+        root=get_dataset_path(dataset="bottle/test"),
         normal="good",
         abnormal="broken_large",
         mask_dir="./datasets/bottle/ground_truth/broken_large",
