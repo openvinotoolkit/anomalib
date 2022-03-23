@@ -23,7 +23,7 @@ from anomalib.deploy import export_convert
 from anomalib.models.components import AnomalyModule
 
 
-class CompressModelCallback(Callback):
+class OpenVINOCallback(Callback):
     """Callback to compresses a trained model.
 
     Model is first exported to ``.onnx`` format, and then converted to OpenVINO IR.

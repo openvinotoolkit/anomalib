@@ -40,20 +40,8 @@ project:
   save_to_csv: false
 
 optimization:
-  compression:
+  openvino:
     apply: false
-  nncf:
-    apply: false
-    input_info:
-      sample_size: [1, 3, 256, 256]
-    compression:
-      algorithm: quantization
-      initializer:
-        range:
-          num_init_samples: 256
-      ignored_scopes: []
-    update_config:
-      init_weights: snapshot.ckpt
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:

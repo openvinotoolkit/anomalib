@@ -126,11 +126,11 @@ python tools/inference.py \
     --image_path datasets/MVTec/bottle/test/broken_large/000.png
 ```
 
-If you want to run OpenVINO model, ensure that `compression` `apply` is set to `True` in the respective model `config.yaml`.
+If you want to run OpenVINO model, ensure that `openvino` `apply` is set to `True` in the respective model `config.yaml`.
 
 ```yaml
 optimization:
-  compression:
+  openvino:
     apply: true
 ```
 
