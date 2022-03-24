@@ -77,8 +77,14 @@ class VisualizerCallback(Callback):
                     )
 
         if "local" in module.hparams.project.log_images_to:
+            extension = (
+                filename.suffix
+                if filename.suffix
+                in ("eps", "jpeg", "jpg", "pdf", "pgf", "png", "ps", "raw", "rgba", "svg", "svgz", "tif", "tiff")
+                else ".png"
+            )
             visualizer.save(
-                Path(module.hparams.project.path) / "images" / filename.parent.name / (filename.stem + extension)
+                Path(module.hparams.project.path) / "images" / filename.parent.name / (filename.suffix + extension)
             )
 
     def on_test_batch_end(
