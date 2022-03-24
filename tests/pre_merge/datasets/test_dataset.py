@@ -52,11 +52,12 @@ def btech_data_module():
 @pytest.fixture(autouse=True)
 def folder_data_module():
     """Create Folder Data Module."""
+    root = get_dataset_path(dataset="bottle")
     datamodule = FolderDataModule(
-        root=get_dataset_path(dataset="bottle/test"),
+        root=root,
         normal="good",
         abnormal="broken_large",
-        mask_dir="./datasets/bottle/ground_truth/broken_large",
+        mask_dir=os.path.join(root, "ground_truth/broken_large"),
         task="segmentation",
         split_ratio=0.2,
         seed=0,
