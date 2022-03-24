@@ -102,6 +102,34 @@ where the currently available models are:
 - [DFKDE](anomalib/models/dfkde)
 - [GANomaly](anomalib/models/ganomaly)
 
+### Custom Dataset
+It is also possible to train on a custom folder dataset. To do so, `data` section in `config.yaml` is to be modified as follows:
+```yaml
+dataset:
+  name: <name-of-the-dataset>
+  format: folder
+  path: <path/to/folder/dataset>
+  normal: normal # name of the folder containing normal images.
+  abnormal: abnormal # name of the folder containing abnormal images.
+  task: segmentation # classification or segmentation
+  mask: <path/to/mask/annotations> #optional
+  extensions: null
+  split_ratio: 0.2  # ratio of the normal images that will be used to create a test split
+  seed: 0
+  image_size: 256
+  train_batch_size: 32
+  test_batch_size: 32
+  num_workers: 8
+  transform_config: null
+  create_validation_set: true
+  tiling:
+    apply: false
+    tile_size: null
+    stride: null
+    remove_border_count: 0
+    use_random_tiling: False
+    random_tile_count: 16
+```
 ## Inference
 
 Anomalib contains several tools that can be used to perform inference with a trained model. The script in [`tools/inference`](tools/inference.py) contains an example of how the inference tools can be used to generate a prediction for an input image.
