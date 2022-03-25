@@ -38,6 +38,7 @@ from torch import Tensor
 from torch.utils.data import DataLoader
 from torch.utils.data.dataset import Dataset
 from torchvision.datasets.folder import VisionDataset
+from tqdm import tqdm
 
 from anomalib.data.inference import InferenceDataset
 from anomalib.data.utils import DownloadProgressBar, read_image
@@ -94,7 +95,9 @@ def make_btech_dataset(
     Returns:
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
-    samples_list = [(str(path),) + filename.parts[-3:] for filename in path.glob("**/*.bmp")]
+    samples_list = [
+        (str(path),) + filename.parts[-3:] for filename in path.glob("**/*") if filename.suffix in (".bmp", ".png")
+    ]
     if len(samples_list) == 0:
         raise RuntimeError(f"Found 0 images in {path}")
 
@@ -107,7 +110,7 @@ def make_btech_dataset(
         + "/ground_truth/"
         + samples.label
         + "/"
-        + samples.image_path.str.rstrip("bmp").str.rstrip(".")
+        + samples.image_path.str.rstrip("png").str.rstrip(".")
         + ".png"
     )
 
@@ -337,10 +340,9 @@ class BTechDataModule(LightningDataModule):
         if (self.root / self.category).is_dir():
             logging.info("Found the dataset.")
         else:
-            self.root.mkdir(parents=True, exist_ok=True)
-            zip_filename = self.root / "btad.zip"
+            zip_filename = self.root.parent / "btad.zip"
 
-            logging.info("Downloading the dataset.")
+            logging.info("Downloading the BTech dataset.")
             with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc="BTech") as progress_bar:
                 urlretrieve(
                     url="https://avires.dimi.uniud.it/papers/btad/btad.zip",
@@ -350,10 +352,25 @@ class BTechDataModule(LightningDataModule):
 
             logging.info("Extracting the dataset.")
             with zipfile.ZipFile(zip_filename, "r") as zip_file:
-                zip_file.extractall(self.root)
+                zip_file.extractall(self.root.parent)
 
             logging.info("Renaming the dataset directory")
-            shutil.move(src=str(self.root / "BTech_Dataset_transformed"), dst=str(self.root / "BTech"))
+            shutil.move(src=str(self.root.parent / "BTech_Dataset_transformed"), dst=str(self.root))
+
+            # NOTE: Each BTech category has different image extension as follows
+            #       | Category | Image | Mask |
+            #       |----------|-------|------|
+            #       | 01       | bmp   | png  |
+            #       | 02       | png   | png  |
+            #       | 03       | bmp   | bmp  |
+            # To avoid any conflict, the following script converts all the extensions to png.
+            # This solution works fine, but it's also possible to properly ready the bmp and
+            # png filenames from categories in `make_btech_dataset` function.
+            logging.info("Convert the bmp formats to png to have consistent image extensions")
+            for filename in tqdm(self.root.glob("**/*.bmp"), desc="Converting bmp to png"):
+                image = cv2.imread(str(filename))
+                cv2.imwrite(str(filename.with_suffix(".png")), image)
+                filename.unlink()
 
             logging.info("Cleaning the tar file")
             zip_filename.unlink()
