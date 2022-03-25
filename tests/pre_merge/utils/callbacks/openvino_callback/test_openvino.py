@@ -5,7 +5,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 from anomalib.config import get_configurable_parameters
-from anomalib.utils.callbacks import OpenVINOCallback
+from anomalib.utils.callbacks.openvino import OpenVINOCallback
 from tests.pre_merge.utils.callbacks.openvino_callback.dummy_lightning_model import (
     DummyLightningModule,
     FakeDataModule,
