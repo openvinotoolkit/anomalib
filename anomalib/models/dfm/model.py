@@ -38,7 +38,7 @@ class DfmLightning(AnomalyModule):
         self.embeddings: List[Tensor] = []
 
     @staticmethod
-    def configure_optimizers() -> None:
+    def configure_optimizers() -> None:  # pylint: disable=arguments-differ
         """DFM doesn't require optimization, therefore returns no optimizers."""
         return None
 
