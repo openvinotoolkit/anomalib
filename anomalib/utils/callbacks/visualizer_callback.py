@@ -44,7 +44,12 @@ class VisualizerCallback(Callback):
         """Visualizer callback."""
         self.inputs_are_normalized = inputs_are_normalized
 
-    def _add_images(self, visualizer: Visualizer, module: AnomalyModule, filename: Path, extension: str = ".png"):
+    def _add_images(
+        self,
+        visualizer: Visualizer,
+        module: AnomalyModule,
+        filename: Path,
+    ):
         """Save image to logger/local storage.
 
         Saves the image in `visualizer.figure` to the respective loggers and local storage if specified in
@@ -54,7 +59,6 @@ class VisualizerCallback(Callback):
             visualizer (Visualizer): Visualizer object from which the `figure` is saved/logged.
             module (AnomalyModule): Anomaly module which holds reference to `hparams` and `logger`.
             filename (Path): Path of the input image. This name is used as name for the generated image.
-            extension (str, optional): File extension to save the image. Defaults to `.png`.
         """
 
         # store current logger type as a string
@@ -77,15 +81,7 @@ class VisualizerCallback(Callback):
                     )
 
         if "local" in module.hparams.project.log_images_to:
-            extension = (
-                filename.suffix
-                if filename.suffix
-                in ("eps", "jpeg", "jpg", "pdf", "pgf", "png", "ps", "raw", "rgba", "svg", "svgz", "tif", "tiff")
-                else ".png"
-            )
-            visualizer.save(
-                Path(module.hparams.project.path) / "images" / filename.parent.name / (filename.suffix + extension)
-            )
+            visualizer.save(Path(module.hparams.project.path) / "images" / filename.parent.name / filename.name)
 
     def on_test_batch_end(
         self,
