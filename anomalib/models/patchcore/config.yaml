@@ -1,14 +1,16 @@
 dataset:
   name: mvtec #options: [mvtec, btech, folder]
   format: mvtec
-  path: ./datasets/MVTec
+  path: C:\Dokumente\Freiberuf\Roland Deeg\metalsheets\mvtec
   task: segmentation
   category: bottle
   image_size: 224
   train_batch_size: 32
   test_batch_size: 1
-  num_workers: 36
-  transform_config: null
+  num_workers: 0
+  transform_config:
+    train: null
+    val: null
   create_validation_set: false
   tiling:
     apply: true
