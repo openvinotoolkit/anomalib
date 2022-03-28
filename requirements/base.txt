@@ -16,6 +16,7 @@ pillow==9.0.0
 pytorch-lightning==1.5.9
 torch==1.8.1
 torchvision==0.9.1
+torchtext==0.9.1
 scikit-image>=0.17.2
 scikit-learn==0.24.2
 wandb==0.12.9
