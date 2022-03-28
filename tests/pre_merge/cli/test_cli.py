@@ -42,7 +42,6 @@ def test_train_model(model):
         ]
         # Run the trainer to perform train and test subcommands.
         result = subprocess.run(args, capture_output=True, check=True)
-        print(result)
 
         # After running the trainer, a model weight file, called "model.ckpt", is expected
         # to be located in `default_root_dir`. The weight file is created within a directory
