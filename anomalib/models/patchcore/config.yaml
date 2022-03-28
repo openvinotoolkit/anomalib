@@ -1,7 +1,7 @@
 dataset:
   name: mvtec #options: [mvtec, btech, folder]
   format: mvtec
-  path: C:\Dokumente\Freiberuf\Roland Deeg\metalsheets\mvtec
+  path: ./datasets/MVTec
   task: segmentation
   category: bottle
   image_size: 224
