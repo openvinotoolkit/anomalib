@@ -4,12 +4,12 @@
 # SPDX-License-Identifier: MIT
 #
 
+# pylint: disable=invalid-name
 
 from typing import Iterable, List, Tuple
 
 import torch
-import torch.nn as nn
-from torch import Tensor
+from torch import Tensor, nn
 
 from anomalib.models.components.freia.modules.base import InvertibleModule
 
