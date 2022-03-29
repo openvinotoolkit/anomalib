@@ -16,11 +16,11 @@
 
 import math
 
-import FrEIA.framework as Ff
-import FrEIA.modules as Fm
 import torch
-from FrEIA.framework.sequence_inn import SequenceINN
 from torch import nn
+
+from anomalib.models.components.freia.framework import SequenceINN
+from anomalib.models.components.freia.modules import AllInOneBlock
 
 
 def positional_encoding_2d(condition_vector: int, height: int, width: int) -> torch.Tensor:
@@ -73,7 +73,9 @@ def subnet_fc(dims_in: int, dims_out: int):
     return nn.Sequential(nn.Linear(dims_in, 2 * dims_in), nn.ReLU(), nn.Linear(2 * dims_in, dims_out))
 
 
-def cflow_head(condition_vector: int, coupling_blocks: int, clamp_alpha: float, n_features: int) -> SequenceINN:
+def cflow_head(
+    condition_vector: int, coupling_blocks: int, clamp_alpha: float, n_features: int, permute_soft: bool = False
+) -> SequenceINN:
     """Create invertible decoder network.
 
     Args:
@@ -85,16 +87,16 @@ def cflow_head(condition_vector: int, coupling_blocks: int, clamp_alpha: float, 
     Returns:
         SequenceINN: decoder network block
     """
-    coder = Ff.SequenceINN(n_features)
+    coder = SequenceINN(n_features)
     print("CNF coder:", n_features)
     for _ in range(coupling_blocks):
         coder.append(
-            Fm.AllInOneBlock,
+            AllInOneBlock,
             cond=0,
             cond_shape=(condition_vector,),
             subnet_constructor=subnet_fc,
             affine_clamping=clamp_alpha,
             global_affine_type="SOFTPLUS",
-            permute_soft=True,
+            permute_soft=permute_soft,
         )
     return coder
