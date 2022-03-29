@@ -4,11 +4,6 @@
 # SPDX-License-Identifier: MIT
 #
 
-# flake8: noqa
-# pylint: skip-file
-# type: ignore
-# pydocstyle: noqa
-
 
 from typing import Iterable, List, Tuple
 
@@ -20,17 +15,14 @@ from anomalib.models.components.freia.modules.base import InvertibleModule
 
 
 class SequenceINN(InvertibleModule):
-    """Simpler than FrEIA.framework.GraphINN.
-
+    """
+    Simpler than FrEIA.framework.GraphINN:
     Only supports a sequential series of modules (no splitting, merging,
     branching off).
     Has an append() method, to add new blocks in a more simple way than the
     computation-graph based approach of GraphINN. For example:
-
     .. code-block:: python
-
        inn = SequenceINN(channels, dims_H, dims_W)
-
        for i in range(n_blocks):
            inn.append(FrEIA.modules.AllInOneBlock, clamp=2.0, permute_soft=True)
        inn.append(FrEIA.modules.HaarDownsampling)
@@ -47,14 +39,14 @@ class SequenceINN(InvertibleModule):
         self.force_tuple_output = force_tuple_output
 
     def append(self, module_class, cond=None, cond_shape=None, **kwargs):
-        """Append a reversible block from FrEIA.modules to the network.
-
+        """
+        Append a reversible block from FrEIA.modules to the network.
         Args:
-            module_class: Class from FrEIA.modules.
-            cond (int): index of which condition to use (conditions will be passed as list to forward()).
+          module_class: Class from FrEIA.modules.
+          cond (int): index of which condition to use (conditions will be passed as list to forward()).
             Conditioning nodes are not needed for SequenceINN.
-            cond_shape (tuple[int]): the shape of the condition tensor.
-            **kwargs: Further keyword arguments that are passed to the constructor of module_class (see example).
+          cond_shape (tuple[int]): the shape of the condition tensor.
+          **kwargs: Further keyword arguments that are passed to the constructor of module_class (see example).
         """
 
         dims_in = [self.shapes[-1]]
@@ -70,19 +62,15 @@ class SequenceINN(InvertibleModule):
         self.shapes.append(ouput_dims[0])
 
     def __getitem__(self, item):
-        """Get item."""
         return self.module_list.__getitem__(item)
 
     def __len__(self):
-        """Get length."""
         return self.module_list.__len__()
 
     def __iter__(self):
-        """Iter."""
         return self.module_list.__iter__()
 
     def output_dims(self, input_dims: List[Tuple[int]]) -> List[Tuple[int]]:
-        """Output Dims."""
         if not self.force_tuple_output:
             raise ValueError(
                 "You can only call output_dims on a SequentialINN " "when setting force_tuple_output=True."
@@ -92,8 +80,8 @@ class SequenceINN(InvertibleModule):
     def forward(
         self, x_or_z: Tensor, c: Iterable[Tensor] = None, rev: bool = False, jac: bool = True
     ) -> Tuple[Tensor, Tensor]:
-        """Execute the sequential INN in forward or inverse (rev=True) direction.
-
+        """
+        Executes the sequential INN in forward or inverse (rev=True) direction.
         Args:
             x_or_z: input tensor (in contrast to GraphINN, a list of
                     tensors is not supported, as SequenceINN only has
@@ -101,7 +89,6 @@ class SequenceINN(InvertibleModule):
             c: list of conditions.
             rev: whether to compute the network forward or reversed.
             jac: whether to compute the log jacobian
-
         Returns:
             z_or_x (Tensor): network output.
             jac (Tensor): log-jacobian-determinant.
