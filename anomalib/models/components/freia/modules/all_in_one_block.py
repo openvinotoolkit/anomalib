@@ -22,7 +22,8 @@ from anomalib.models.components.freia.modules.base import InvertibleModule
 
 
 class AllInOneBlock(InvertibleModule):
-    """Module combining the most common operations in a normalizing flow or similar model.
+    r"""Module combining the most common operations in a normalizing flow or similar model.
+
     It combines affine coupling, permutation, and global affine transformation
     ('ActNorm'). It can also be used as GIN coupling block, perform learned
     householder permutations, and use an inverted pre-permutation. The affine
@@ -58,33 +59,33 @@ class AllInOneBlock(InvertibleModule):
         learned_householder_permutation: int = 0,
         reverse_permutation: bool = False,
     ):
-        """
+        r"""Initialize.
+
         Args:
-          subnet_constructor:
-            class or callable ``f``, called as ``f(channels_in, channels_out)`` and
-            should return a torch.nn.Module. Predicts coupling coefficients :math:`s, t`.
-          affine_clamping:
-            clamp the output of the multiplicative coefficients before
-            exponentiation to +/- ``affine_clamping`` (see :math:`\\alpha` above).
-          gin_block:
-            Turn the block into a GIN block from Sorrenson et al, 2019.
-            Makes it so that the coupling operations as a whole is volume preserving.
-          global_affine_init:
-            Initial value for the global affine scaling :math:`s_\mathrm{global}`.
-          global_affine_init:
-            ``'SIGMOID'``, ``'SOFTPLUS'``, or ``'EXP'``. Defines the activation to be used
-            on the beta for the global affine scaling (:math:`\\Psi` above).
-          permute_soft:
-            bool, whether to sample the permutation matrix :math:`R` from :math:`SO(N)`,
-            or to use hard permutations instead. Note, ``permute_soft=True`` is very slow
-            when working with >512 dimensions.
-          learned_householder_permutation:
-            Int, if >0, turn on the matrix :math:`V` above, that represents
-            multiple learned householder reflections. Slow if large number.
-            Dubious whether it actually helps network performance.
-          reverse_permutation:
-            Reverse the permutation before the block, as introduced by Putzky
-            et al, 2019. Turns on the :math:`R^{-1} V^{-1}` pre-multiplication above.
+            dims_in (_type_): dims_in
+            dims_c (list, optional): dims_c. Defaults to [].
+            subnet_constructor (Callable, optional): class or callable ``f``, called as ``f(channels_in, channels_out)`` and
+                should return a torch.nn.Module. Predicts coupling coefficients :math:`s, t`. Defaults to None.
+            affine_clamping (float, optional): clamp the output of the multiplicative coefficients before
+                exponentiation to +/- ``affine_clamping`` (see :math:`\\alpha` above). Defaults to 2.0.
+            gin_block (bool, optional): Turn the block into a GIN block from Sorrenson et al, 2019.
+                Makes it so that the coupling operations as a whole is volume preserving. Defaults to False.
+            global_affine_init (float, optional): Initial value for the global affine scaling :math:`s_\mathrm{global}`.. Defaults to 1.0.
+            global_affine_type (str, optional): ``'SIGMOID'``, ``'SOFTPLUS'``, or ``'EXP'``. Defines the activation to be used
+                on the beta for the global affine scaling (:math:`\\Psi` above).. Defaults to "SOFTPLUS".
+            permute_soft (bool, optional): bool, whether to sample the permutation matrix :math:`R` from :math:`SO(N)`,
+                or to use hard permutations instead. Note, ``permute_soft=True`` is very slow
+                when working with >512 dimensions. Defaults to False.
+            learned_householder_permutation (int, optional): Int, if >0, turn on the matrix :math:`V` above, that represents
+                multiple learned householder reflections. Slow if large number.
+                Dubious whether it actually helps network performance. Defaults to 0.
+            reverse_permutation (bool, optional): Reverse the permutation before the block, as introduced by Putzky
+                et al, 2019. Turns on the :math:`R^{-1} V^{-1}` pre-multiplication above. Defaults to False.
+
+        Raises:
+            ValueError: _description_
+            ValueError: _description_
+            ValueError: _description_
         """
 
         super().__init__(dims_in, dims_c)
@@ -180,8 +181,11 @@ class AllInOneBlock(InvertibleModule):
         self.last_jac = None
 
     def _construct_householder_permutation(self):
-        """Computes a permutation matrix from the reflection vectors that are
-        learned internally as nn.Parameters."""
+        """Compute a permutation matrix.
+
+        Compute a permutation matrix from the reflection vectors that are
+        learned internally as nn.Parameters.
+        """
         w = self.w_0
         for vk in self.vk_householder:
             w = torch.mm(w, torch.eye(self.in_channels).to(w.device) - 2 * torch.ger(vk, vk) / torch.dot(vk, vk))
@@ -191,8 +195,11 @@ class AllInOneBlock(InvertibleModule):
         return w
 
     def _permute(self, x, rev=False):
-        """Performs the permutation and scaling after the coupling operation.
-        Returns transformed outputs and the LogJacDet of the scaling operation."""
+        """Perform permutation.
+
+        Performs the permutation and scaling after the coupling operation.
+        Returns transformed outputs and the LogJacDet of the scaling operation.
+        """
         if self.GIN:
             scale = 1.0
             perm_log_jac = 0.0
@@ -206,17 +213,19 @@ class AllInOneBlock(InvertibleModule):
             return (self.permute_function(x * scale + self.global_offset, self.w_perm), perm_log_jac)
 
     def _pre_permute(self, x, rev=False):
-        """Permutes before the coupling block, only used if
-        reverse_permutation is set"""
+        """Permute before the coupling block, only used if reverse_permutation is set."""
         if rev:
             return self.permute_function(x, self.w_perm)
         else:
             return self.permute_function(x, self.w_perm_inv)
 
     def _affine(self, x, a, rev=False):
-        """Given the passive half, and the pre-activation outputs of the
+        """Perform affine coupling operation.
+
+        Given the passive half, and the pre-activation outputs of the
         coupling subnetwork, perform the affine coupling operation.
-        Returns both the transformed inputs and the LogJacDet."""
+        Returns both the transformed inputs and the LogJacDet.
+        """
 
         # the entire coupling coefficient tensor is scaled down by a
         # factor of ten for stability and easier initialization.
@@ -233,7 +242,7 @@ class AllInOneBlock(InvertibleModule):
             return ((x - a[:, ch:]) * torch.exp(-sub_jac), -torch.sum(sub_jac, dim=self.sum_dims))
 
     def forward(self, x, c=[], rev=False, jac=True):
-        """See base class docstring"""
+        """See base class docstring."""
         if self.householder:
             self.w_perm = self._construct_householder_permutation()
             if rev or self.reverse_pre_permute:
@@ -276,4 +285,5 @@ class AllInOneBlock(InvertibleModule):
         return (x_out,), log_jac_det
 
     def output_dims(self, input_dims):
+        """Output Dims."""
         return input_dims

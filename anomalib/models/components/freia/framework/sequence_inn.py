@@ -15,8 +15,8 @@ from anomalib.models.components.freia.modules.base import InvertibleModule
 
 
 class SequenceINN(InvertibleModule):
-    """
-    Simpler than FrEIA.framework.GraphINN:
+    """Simpler than FrEIA.framework.GraphINN.
+
     Only supports a sequential series of modules (no splitting, merging,
     branching off).
     Has an append() method, to add new blocks in a more simple way than the
@@ -39,8 +39,8 @@ class SequenceINN(InvertibleModule):
         self.force_tuple_output = force_tuple_output
 
     def append(self, module_class, cond=None, cond_shape=None, **kwargs):
-        """
-        Append a reversible block from FrEIA.modules to the network.
+        """Append a reversible block from FrEIA.modules to the network.
+
         Args:
           module_class: Class from FrEIA.modules.
           cond (int): index of which condition to use (conditions will be passed as list to forward()).
@@ -62,15 +62,19 @@ class SequenceINN(InvertibleModule):
         self.shapes.append(ouput_dims[0])
 
     def __getitem__(self, item):
+        """Get item."""
         return self.module_list.__getitem__(item)
 
     def __len__(self):
+        """Get length."""
         return self.module_list.__len__()
 
     def __iter__(self):
+        """Iter."""
         return self.module_list.__iter__()
 
     def output_dims(self, input_dims: List[Tuple[int]]) -> List[Tuple[int]]:
+        """Output Dims."""
         if not self.force_tuple_output:
             raise ValueError(
                 "You can only call output_dims on a SequentialINN " "when setting force_tuple_output=True."
@@ -80,8 +84,8 @@ class SequenceINN(InvertibleModule):
     def forward(
         self, x_or_z: Tensor, c: Iterable[Tensor] = None, rev: bool = False, jac: bool = True
     ) -> Tuple[Tensor, Tensor]:
-        """
-        Executes the sequential INN in forward or inverse (rev=True) direction.
+        """Execute the sequential INN in forward or inverse (rev=True) direction.
+
         Args:
             x_or_z: input tensor (in contrast to GraphINN, a list of
                     tensors is not supported, as SequenceINN only has

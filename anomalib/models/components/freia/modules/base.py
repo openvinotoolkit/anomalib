@@ -17,8 +17,8 @@ from torch import Tensor
 
 
 class InvertibleModule(nn.Module):
-    """
-    Base class for all invertible modules in FrEIA.
+    r"""Base class for all invertible modules in FrEIA.
+
     Given ``module``, an instance of some InvertibleModule.
     This ``module`` shall be invertible in its input dimensions,
     so that the input can be recovered by applying the module
@@ -38,7 +38,8 @@ class InvertibleModule(nn.Module):
     """
 
     def __init__(self, dims_in: Iterable[Tuple[int]], dims_c: Iterable[Tuple[int]] = None):
-        """
+        """Initialize.
+
         Args:
             dims_in: list of tuples specifying the shape of the inputs to this
                      operator: ``dims_in = [shape_x_0, shape_x_1, ...]``
@@ -54,9 +55,10 @@ class InvertibleModule(nn.Module):
     def forward(
         self, x_or_z: Iterable[Tensor], c: Iterable[Tensor] = None, rev: bool = False, jac: bool = True
     ) -> Tuple[Tuple[Tensor], Tensor]:
-        """
-        Perform a forward (default, ``rev=False``) or backward pass (``rev=True``)
-        through this module/operator.
+        r"""Forward/Backward Pass.
+
+        Perform a forward (default, ``rev=False``) or backward pass (``rev=True``) through this module/operator.
+
         **Note to implementers:**
         - Subclasses MUST return a Jacobian when ``jac=True``, but CAN return a
           valid Jacobian when ``jac=False`` (not punished). The latter is only recommended
@@ -69,6 +71,7 @@ class InvertibleModule(nn.Module):
               -J &= \\log \\det \\frac{\\partial f^{-1}}{\\partial z}.
           Any subclass MUST return :math:`J` for forward evaluation (``rev=False``),
           and :math:`-J` for backward evaluation (``rev=True``).
+
         Args:
             x_or_z: input data (array-like of one or more tensors)
             c:      conditioning data (array-like of none or more tensors)
@@ -86,9 +89,10 @@ class InvertibleModule(nn.Module):
         )
 
     def output_dims(self, input_dims: List[Tuple[int]]) -> List[Tuple[int]]:
-        """
-        Used for shape inference during construction of the graph. MUST be
-        implemented for each subclass of ``InvertibleModule``.
+        """Use for shape inference during construction of the graph.
+
+        MUST be implemented for each subclass of ``InvertibleModule``.
+
         Args:
           input_dims: A list with one entry for each input to the module.
             Even if the module only has one input, must be a list with one
@@ -96,6 +100,7 @@ class InvertibleModule(nn.Module):
             excluding the batch dimension. For example for a module with one
             input, which receives a 32x32 pixel RGB image, ``input_dims`` would
             be ``[(3, 32, 32)]``
+
         Returns:
             A list structured in the same way as ``input_dims``. Each entry
             represents one output of the module, and the entry is a tuple giving
