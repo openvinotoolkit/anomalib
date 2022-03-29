@@ -139,9 +139,16 @@ class CflowModel(nn.Module):
 
         self.encoder = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.pool_layers)
         self.pool_dims = self.encoder.out_dims
+        permute_soft = hparams.model.soft_permutation
         self.decoders = nn.ModuleList(
             [
-                cflow_head(self.condition_vector, hparams.model.coupling_blocks, hparams.model.clamp_alpha, pool_dim)
+                cflow_head(  # type: ignore # pylint:disable=too-many-function-args
+                    self.condition_vector,
+                    hparams.model.coupling_blocks,
+                    hparams.model.clamp_alpha,
+                    pool_dim,
+                    permute_soft,
+                )
                 for pool_dim in self.pool_dims
             ]
         )
