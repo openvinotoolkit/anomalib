@@ -99,7 +99,7 @@ class SparseRandomProjection:
             eps (float, optional): Minimum distortion rate. Defaults to 0.1.
         """
 
-        denominator = (eps ** 2 / 2) - (eps ** 3 / 3)
+        denominator = (eps**2 / 2) - (eps**3 / 3)
         return (4 * np.log(n_samples) / denominator).astype(np.int64)
 
     def fit(self, embedding: Tensor) -> "SparseRandomProjection":
