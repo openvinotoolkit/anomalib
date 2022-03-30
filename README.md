@@ -65,10 +65,10 @@ pip install -e .
 ## Training
 
 By default [`python tools/train.py`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/-/blob/development/train.py)
-runs [PADIM](https://arxiv.org/abs/2011.08785) model on `leather` category from the [MVTec](https://www.mvtec.com/company/research/datasets/mvtec-ad) [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/)  dataset.
+runs [PADIM](https://arxiv.org/abs/2011.08785) model on `leather` category from the [MVTec AD](https://www.mvtec.com/company/research/datasets/mvtec-ad) [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/)  dataset.
 
 ```bash
-python tools/train.py    # Train PADIM on MVTec leather
+python tools/train.py    # Train PADIM on MVTec AD leather
 ```
 
 Training a model on a specific dataset and category requires further configuration. Each model has its own configuration
@@ -181,10 +181,10 @@ python tools/inference.py \
 ___
 
 ## Datasets
-`anomalib` supports MVTec [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/) and BeanTech [(CC-BY-SA)](https://creativecommons.org/licenses/by-sa/4.0/legalcode) for benchmarking and `folder` for custom dataset training/inference.
+`anomalib` supports MVTec AD [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/) and BeanTech [(CC-BY-SA)](https://creativecommons.org/licenses/by-sa/4.0/legalcode) for benchmarking and `folder` for custom dataset training/inference.
 
-### [MVTec Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
-MVTec dataset is one of the main benchmarks for anomaly detection, and is released under the
+### [MVTec AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
+MVTec AD dataset is one of the main benchmarks for anomaly detection, and is released under the
 Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 
 ### Image-Level AUC

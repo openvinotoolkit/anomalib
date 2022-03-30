@@ -1,4 +1,4 @@
-"""Test Models on all MVTec Categories."""
+"""Test Models on all MVTec AD Categories."""
 
 # Copyright (C) 2020 Intel Corporation
 #

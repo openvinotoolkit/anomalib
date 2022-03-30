@@ -79,7 +79,7 @@ def data_sample(mvtec_data_module):
 
 
 class TestMVTecDataModule:
-    """Test MVTec Data Module."""
+    """Test MVTec AD Data Module."""
 
     def test_batch_size(self, mvtec_data_module):
         """test_mvtec_datamodule [summary]"""
