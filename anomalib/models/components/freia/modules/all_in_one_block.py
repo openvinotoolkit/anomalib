@@ -4,6 +4,10 @@
 # SPDX-License-Identifier: MIT
 #
 
+# flake8: noqa
+# pylint: skip-file
+# type: ignore
+# pydocstyle: noqa
 
 import warnings
 from typing import Callable
