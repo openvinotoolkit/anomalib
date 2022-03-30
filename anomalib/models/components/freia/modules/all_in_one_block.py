@@ -1,7 +1,3 @@
-# flake8: noqa
-# pylint: skip-file
-# type: ignore
-
 """All in One Block Module."""
 
 # Copyright (c) 2018-2022 Lynton Ardizzone, Visual Learning Lab Heidelberg.

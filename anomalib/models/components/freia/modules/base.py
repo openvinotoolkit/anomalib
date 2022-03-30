@@ -4,12 +4,6 @@
 # SPDX-License-Identifier: MIT
 #
 
-# flake8: noqa
-# pylint: skip-file
-# type: ignore
-# pydocstyle: noqa
-
-
 from typing import Iterable, List, Tuple
 
 import torch.nn as nn
