@@ -64,6 +64,24 @@ class Visualizer:
         self.axis[index].imshow(image, color_map)
         self.axis[index].title.set_text(title)
 
+    def add_text(self, image: np.ndarray, text: str, font: int = cv2.FONT_HERSHEY_PLAIN):
+        """Puts text on an image.
+
+        Args:
+            image (np.ndarray): Input image.
+            text (str): Text to add.
+            font (Optional[int]): cv2 font type. Defaults to 0.
+
+        Returns:
+            np.ndarray: Image with text.
+        """
+        image = image.copy()
+        font_size = image.shape[1] // 1024 + 1  # Text scale is calculated based on the reference size of 1024
+        (text_w, text_h), baseline = cv2.getTextSize(text, font, font_size, thickness=font_size // 2)
+        cv2.rectangle(image, (0, 0), (0 + text_w, 0 + text_h), (255, 255, 255), -1)
+        cv2.putText(image, text, (0, baseline // 2 + text_h), font, font_size, 0)
+        return image
+        
     def show(self):
         """Show image on a matplotlib figure."""
         self.figure.show()
