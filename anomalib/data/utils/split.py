@@ -43,7 +43,7 @@ def split_normal_images_in_train_set(
         samples (DataFrame): Dataframe containing dataset info such as filenames, splits etc.
         split_ratio (float, optional): Train-Test normal image split ratio. Defaults to 0.1.
         seed (int, optional): Random seed to ensure reproducibility. Defaults to 0.
-        normal_label (str): Name of the normal label. For MVTec, for instance, this is normal_label.
+        normal_label (str): Name of the normal label. For MVTec AD, for instance, this is normal_label.
 
     Returns:
         DataFrame: Output dataframe where the part of the training set is assigned to test set.
@@ -71,7 +71,7 @@ def create_validation_set_from_test_set(samples: DataFrame, seed: int = 0, norma
     Args:
         samples (DataFrame): Dataframe containing dataset info such as filenames, splits etc.
         seed (int, optional): Random seed to ensure reproducibility. Defaults to 0.
-        normal_label (str): Name of the normal label. For MVTec, for instance, this is normal_label.
+        normal_label (str): Name of the normal label. For MVTec AD, for instance, this is normal_label.
     """
 
     if seed > 0:
