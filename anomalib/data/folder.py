@@ -162,7 +162,6 @@ class FolderDataset(Dataset):
         split_ratio: float = 0.2,
         mask_dir: Optional[Union[Path, str]] = None,
         extensions: Optional[Tuple[str, ...]] = None,
-        task: Optional[str] = None,
         seed: int = 0,
         create_validation_set: bool = False,
     ) -> None:
@@ -192,16 +191,7 @@ class FolderDataset(Dataset):
 
         """
         self.split = split
-
-        if task == "classification" and mask_dir:
-            raise ValueError(
-                "Classification task is requested, but mask directory is provided. "
-                "Segmentation task is to be chosen if mask directory is provided."
-            )
-        if task is None or mask_dir is None:
-            self.task = "classification"
-        else:
-            self.task = task
+        self.task = "classification" if mask_dir is None else "segmentation"
 
         self.pre_process = pre_process
         self.samples = make_dataset(
@@ -424,7 +414,6 @@ class FolderDataModule(LightningDataModule):
                 mask_dir=self.mask_dir,
                 pre_process=self.pre_process,
                 extensions=self.extensions,
-                task=self.task,
                 seed=self.seed,
                 create_validation_set=self.create_validation_set,
             )
@@ -438,7 +427,6 @@ class FolderDataModule(LightningDataModule):
                 mask_dir=self.mask_dir,
                 pre_process=self.pre_process,
                 extensions=self.extensions,
-                task=self.task,
                 seed=self.seed,
                 create_validation_set=self.create_validation_set,
             )
@@ -451,7 +439,6 @@ class FolderDataModule(LightningDataModule):
             mask_dir=self.mask_dir,
             pre_process=self.pre_process,
             extensions=self.extensions,
-            task=self.task,
             seed=self.seed,
             create_validation_set=self.create_validation_set,
         )

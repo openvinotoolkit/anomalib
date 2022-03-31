@@ -39,6 +39,7 @@ Reference:
 # and limitations under the License.
 
 import logging
+import os.path
 import tarfile
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
@@ -127,15 +128,18 @@ def make_mvtec_dataset(
     samples = pd.DataFrame(samples_list, columns=["path", "split", "label", "image_path"])
     samples = samples[samples.split != "ground_truth"]
 
-    # Create mask_path column
-    samples["mask_path"] = (
-        samples.path
-        + "/ground_truth/"
-        + samples.label
-        + "/"
-        + samples.image_path.str.rstrip("png").str.rstrip(".")
-        + "_mask.png"
-    )
+    if os.path.exists(Path(path, "ground_truth")):
+        # Create mask_path column
+        samples["mask_path"] = (
+            samples.path
+            + "/ground_truth/"
+            + samples.label
+            + "/"
+            + samples.image_path.str.rstrip("png").str.rstrip(".")
+            + "_mask.png"
+        )
+        # Good images don't have mask
+        samples.loc[(samples.split == "test") & (samples.label == "good"), "mask_path"] = ""
 
     # Modify image_path column by converting to absolute path
     samples["image_path"] = samples.path + "/" + samples.split + "/" + samples.label + "/" + samples.image_path
@@ -145,9 +149,6 @@ def make_mvtec_dataset(
     # cannot be computed based on 1-class
     if sum((samples.split == "test") & (samples.label == "good")) == 0:
         samples = split_normal_images_in_train_set(samples, split_ratio, seed)
-
-    # Good images don't have mask
-    samples.loc[(samples.split == "test") & (samples.label == "good"), "mask_path"] = ""
 
     # Create label index for normal (0) and anomalous (1) images.
     samples.loc[(samples.label == "good"), "label_index"] = 0
@@ -174,7 +175,6 @@ class MVTec(VisionDataset):
         category: str,
         pre_process: PreProcessor,
         split: str,
-        task: str = "segmentation",
         seed: int = 0,
         create_validation_set: bool = False,
     ) -> None:
@@ -185,7 +185,6 @@ class MVTec(VisionDataset):
             category: Name of the MVTec AD category.
             pre_process: List of pre_processing object containing albumentation compose.
             split: 'train', 'val' or 'test'
-            task: ``classification`` or ``segmentation``
             seed: seed used for the random subset splitting
             create_validation_set: Create a validation subset in addition to the train and test subsets
 
@@ -197,7 +196,6 @@ class MVTec(VisionDataset):
             ...     root='./datasets/MVTec',
             ...     category='leather',
             ...     pre_process=pre_process,
-            ...     task="classification",
             ...     is_train=True,
             ... )
             >>> dataset[0].keys()
@@ -207,7 +205,6 @@ class MVTec(VisionDataset):
             >>> dataset[0].keys()
             dict_keys(['image', 'image_path', 'label'])
 
-            >>> dataset.task = "segmentation"
             >>> dataset.split = "train"
             >>> dataset[0].keys()
             dict_keys(['image'])
@@ -223,7 +220,6 @@ class MVTec(VisionDataset):
         self.root = Path(root) if isinstance(root, str) else root
         self.category: str = category
         self.split = split
-        self.task = task
 
         self.pre_process = pre_process
 
@@ -233,6 +229,7 @@ class MVTec(VisionDataset):
             seed=seed,
             create_validation_set=create_validation_set,
         )
+        self.task = "segmentation" if "mask_path" in self.samples.keys() else "classification"
 
     def __len__(self) -> int:
         """Get length of the dataset."""
