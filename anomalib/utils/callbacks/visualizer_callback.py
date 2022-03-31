@@ -129,7 +129,7 @@ class VisualizerCallback(Callback):
 
             if self.task == "classification":
                 image_classified = visualizer.add_text(
-                    image=image, text=f'Pred: {outputs["pred_scores"][i]:.3f} GT: {int(outputs["label"])}'
+                    image=image, text=f'Pred: {outputs["pred_scores"][i]:.3f} GT: {int(outputs["label"][i])}'
                 )
                 visualizer.add_image(image=image_classified, title="Classified Image")
 
