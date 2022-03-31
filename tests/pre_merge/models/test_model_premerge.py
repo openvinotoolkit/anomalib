@@ -32,7 +32,6 @@ class TestModel:
             ("dfkde", False),
             ("dfm", False),
             ("stfpm", False),
-            ("stfpm", True),
             ("patchcore", False),
             ("cflow", False),
             ("ganomaly", False),

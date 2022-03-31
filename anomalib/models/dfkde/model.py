@@ -104,7 +104,7 @@ class DfkdeLightning(AnomalyModule):
         self.embeddings: List[Tensor] = []
 
     @staticmethod
-    def configure_optimizers():
+    def configure_optimizers():  # pylint: disable=arguments-differ
         """DFKDE doesn't require optimization, therefore returns no optimizers."""
         return None
 

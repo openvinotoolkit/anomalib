@@ -22,7 +22,7 @@ During inference this memory bank is coreset subsampled. Coreset subsampling gen
 
 All results gathered with seed `42`.
 
-## [MVTec Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
+## [MVTec AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 
 ### Image-Level AUC
 

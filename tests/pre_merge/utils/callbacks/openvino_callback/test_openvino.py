@@ -5,26 +5,26 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 from anomalib.config import get_configurable_parameters
-from anomalib.utils.callbacks import CompressModelCallback
-from tests.pre_merge.utils.callbacks.compress_callback.dummy_lightning_model import (
+from anomalib.utils.callbacks.openvino import OpenVINOCallback
+from tests.pre_merge.utils.callbacks.openvino_callback.dummy_lightning_model import (
     DummyLightningModule,
     FakeDataModule,
 )
 
 
-def test_compress_model_callback():
+def test_openvino_model_callback():
     """Tests if an optimized model is created."""
 
     config = get_configurable_parameters(
-        model_config_path="tests/pre_merge/utils/callbacks/compress_callback/dummy_config.yml"
+        model_config_path="tests/pre_merge/utils/callbacks/openvino_callback/dummy_config.yml"
     )
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         config.project.path = tmp_dir
         model = DummyLightningModule(hparams=config)
         model.callbacks = [
-            CompressModelCallback(
-                input_size=config.model.input_size, dirpath=os.path.join(tmp_dir), filename="compressed_model"
+            OpenVINOCallback(
+                input_size=config.model.input_size, dirpath=os.path.join(tmp_dir), filename="openvino_model"
             ),
             EarlyStopping(monitor=config.model.metric),
         ]
@@ -39,4 +39,4 @@ def test_compress_model_callback():
         )
         trainer.fit(model, datamodule=datamodule)
 
-        assert os.path.exists(os.path.join(tmp_dir, "compressed_model.bin")), "Failed to generate OpenVINO model"
+        assert os.path.exists(os.path.join(tmp_dir, "openvino_model.bin")), "Failed to generate OpenVINO model"

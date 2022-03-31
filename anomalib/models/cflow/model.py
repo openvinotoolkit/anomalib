@@ -46,7 +46,7 @@ def get_logp(dim_feature_vector: int, p_u: torch.Tensor, logdet_j: torch.Tensor)
         torch.Tensor: Log probability
     """
     ln_sqrt_2pi = -np.log(np.sqrt(2 * np.pi))  # ln(sqrt(2*pi))
-    logp = dim_feature_vector * ln_sqrt_2pi - 0.5 * torch.sum(p_u ** 2, 1) + logdet_j
+    logp = dim_feature_vector * ln_sqrt_2pi - 0.5 * torch.sum(p_u**2, 1) + logdet_j
     return logp
 
 

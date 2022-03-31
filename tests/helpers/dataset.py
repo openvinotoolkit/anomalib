@@ -96,7 +96,7 @@ class TestDataset:
         seed: int = 0,
     ) -> None:
         """Creates a context for Generating Dummy Dataset. Useful for wrapping test functions.
-        NOTE: for MVTec dataset it does not return a category.
+        NOTE: for MVTec AD dataset it does not return a category.
         It is adviced to use a default parameter in the function
 
         Args:
@@ -107,8 +107,8 @@ class TestDataset:
             max_size (Optional[int], optional): Maximum size of the test shapes. Defaults to 10.
             train_shapes (List[str], optional): List of good shapes. Defaults to ["circle", "rectangle"].
             test_shapes (List[str], optional): List of anomalous shapes. Defaults to ["triangle", "ellipse"].
-            path (Union[str, Path], optional): Path to MVTec dataset. Defaults to "./datasets/MVTec".
-            use_mvtec (bool, optional): Use MVTec dataset or dummy dataset. Defaults to False.
+            path (Union[str, Path], optional): Path to MVTec AD dataset. Defaults to "./datasets/MVTec".
+            use_mvtec (bool, optional): Use MVTec AD dataset or dummy dataset. Defaults to False.
             seed (int, optional): Fixes seed if any number greater than 0 is provided. 0 means no seed. Defaults to 0.
 
         Example:
@@ -130,7 +130,7 @@ class TestDataset:
     def __call__(self, func):
         @wraps(func)
         def inner(*args, **kwds):
-            # If true, will use MVTech dataset for testing.
+            # If true, will use MVTech AD dataset for testing.
             # Useful for nightly builds
             if self.use_mvtec:
                 return func(*args, path=self.path, **kwds)
@@ -191,7 +191,7 @@ class GeneratedDummyDataset(ContextDecorator):
 
     def _generate_dataset(self):
         """Generates dummy dataset in a temporary directory using the same
-        convention as MVTec."""
+        convention as MVTec AD."""
         # create train images
         train_path = os.path.join(self.root_dir, "shapes", "train", "good")
         os.makedirs(train_path, exist_ok=True)
