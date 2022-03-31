@@ -22,3 +22,8 @@ class AUROC(ROC):
         if not (torch.all(fpr.diff() <= 0) or torch.all(fpr.diff() >= 0)):
             return auc(fpr, tpr, reorder=True)  # only reorder if fpr is not increasing or decreasing
         return auc(fpr, tpr)
+
+    @property
+    def update_called(self) -> bool:
+        """Returns a boolean indicating if the update method has been called at least once."""
+        return self._update_called

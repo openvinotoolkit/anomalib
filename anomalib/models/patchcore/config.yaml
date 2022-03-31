@@ -2,7 +2,6 @@ dataset:
   name: mvtec #options: [mvtec, btech, folder]
   format: mvtec
   path: ./datasets/MVTec
-  task: segmentation
   category: bottle
   image_size: 224
   train_batch_size: 32
