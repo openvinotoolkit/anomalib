@@ -11,6 +11,8 @@ networkx~=2.5
 numpy>=1.22.3
 omegaconf==2.1.1
 pandas==1.4.1
+opencv-python>=4.5.3.56
+opencv-contrib-python==4.5.5.62
 pillow==9.0.0
 pytorch-lightning==1.5.9
 torch==1.11.0

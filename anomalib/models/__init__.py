@@ -23,6 +23,10 @@ from torch import load
 
 from anomalib.models.components import AnomalyModule
 
+# TODO(AlexanderDokuchaev): Workaround of wrapping by NNCF.
+#                           Can't not wrap `spatial_softmax2d` if use import_module.
+from anomalib.models.padim.model import PadimLightning  # noqa: F401
+
 
 def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     """Load model from the configuration file.
