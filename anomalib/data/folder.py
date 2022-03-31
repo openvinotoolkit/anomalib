@@ -162,7 +162,6 @@ class FolderDataset(Dataset):
         split_ratio: float = 0.2,
         mask_dir: Optional[Union[Path, str]] = None,
         extensions: Optional[Tuple[str, ...]] = None,
-        task: str = "segmentation",
         seed: int = 0,
         create_validation_set: bool = False,
     ) -> None:
@@ -181,7 +180,6 @@ class FolderDataset(Dataset):
                 the mask annotations. Defaults to None.
             extensions (Optional[Tuple[str, ...]], optional): Type of the image extensions to read from the
                 directory.
-            task (Optional[str], optional): Task type. (classification or segmentation) Defaults to None.
             seed (int, optional): Random seed to ensure reproducibility when splitting. Defaults to 0.
             create_validation_set (bool, optional):Boolean to create a validation set from the test set.
                 Those wanting to create a validation set could set this flag to ``True``.
@@ -192,7 +190,7 @@ class FolderDataset(Dataset):
 
         """
         self.split = split
-        self.task = task
+        self.task = "classification" if mask_dir is None else "segmentation"
 
         self.pre_process = pre_process
         self.samples = make_dataset(
@@ -280,8 +278,6 @@ class FolderDataModule(LightningDataModule):
                 Defaults to "normal".
             abnormal (str, optional): Name of the directory containing abnormal images.
                 Defaults to "abnormal".
-            task (str, optional): Task type. Could be either classification or segmentation.
-                Defaults to "classification".
             mask_dir (Optional[Union[str, Path]], optional): Path to the directory containing
                 the mask annotations. Defaults to None.
             extensions (Optional[Tuple[str, ...]], optional): Type of the image extensions to read from the
@@ -373,7 +369,6 @@ class FolderDataModule(LightningDataModule):
         self.extensions = extensions
         self.split_ratio = split_ratio
 
-        self.task = "classification" if mask_dir is None else "segmentation"
         self.transform_config = transform_config
         self.image_size = image_size
 
@@ -408,7 +403,6 @@ class FolderDataModule(LightningDataModule):
                 mask_dir=self.mask_dir,
                 pre_process=self.pre_process,
                 extensions=self.extensions,
-                task=self.task,
                 seed=self.seed,
                 create_validation_set=self.create_validation_set,
             )
@@ -422,7 +416,6 @@ class FolderDataModule(LightningDataModule):
                 mask_dir=self.mask_dir,
                 pre_process=self.pre_process,
                 extensions=self.extensions,
-                task=self.task,
                 seed=self.seed,
                 create_validation_set=self.create_validation_set,
             )
@@ -435,7 +428,6 @@ class FolderDataModule(LightningDataModule):
             mask_dir=self.mask_dir,
             pre_process=self.pre_process,
             extensions=self.extensions,
-            task=self.task,
             seed=self.seed,
             create_validation_set=self.create_validation_set,
         )
