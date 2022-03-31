@@ -141,7 +141,7 @@ def model_load_test(config: Union[DictConfig, ListConfig], datamodule: Lightning
     assert np.isclose(
         results["image_AUROC"], new_results["image_AUROC"]
     ), "Loaded model does not yield close performance results"
-    if config.dataset.task == "segmentation":
+    if "pixel_AUROC" in results.keys():
         assert np.isclose(
             results["pixel_AUROC"], new_results["pixel_AUROC"]
         ), "Loaded model does not yield close performance results"

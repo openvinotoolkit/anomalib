@@ -162,6 +162,7 @@ class FolderDataset(Dataset):
         split_ratio: float = 0.2,
         mask_dir: Optional[Union[Path, str]] = None,
         extensions: Optional[Tuple[str, ...]] = None,
+        task: str = "segmentation",
         seed: int = 0,
         create_validation_set: bool = False,
     ) -> None:
@@ -191,7 +192,7 @@ class FolderDataset(Dataset):
 
         """
         self.split = split
-        self.task = "classification" if mask_dir is None else "segmentation"
+        self.task = task
 
         self.pre_process = pre_process
         self.samples = make_dataset(
@@ -260,7 +261,6 @@ class FolderDataModule(LightningDataModule):
         root: Union[str, Path],
         normal: str = "normal",
         abnormal: str = "abnormal",
-        task: str = "classification",
         mask_dir: Optional[Union[Path, str]] = None,
         extensions: Optional[Tuple[str, ...]] = None,
         split_ratio: float = 0.2,
@@ -373,13 +373,7 @@ class FolderDataModule(LightningDataModule):
         self.extensions = extensions
         self.split_ratio = split_ratio
 
-        if task == "classification" and mask_dir is not None:
-            raise ValueError(
-                "Classification type is set but mask_dir provided. "
-                "If mask_dir is provided task type must be segmentation. "
-                "Check your configuration."
-            )
-        self.task = task
+        self.task = "classification" if mask_dir is None else "segmentation"
         self.transform_config = transform_config
         self.image_size = image_size
 
@@ -414,6 +408,7 @@ class FolderDataModule(LightningDataModule):
                 mask_dir=self.mask_dir,
                 pre_process=self.pre_process,
                 extensions=self.extensions,
+                task=self.task,
                 seed=self.seed,
                 create_validation_set=self.create_validation_set,
             )
@@ -427,6 +422,7 @@ class FolderDataModule(LightningDataModule):
                 mask_dir=self.mask_dir,
                 pre_process=self.pre_process,
                 extensions=self.extensions,
+                task=self.task,
                 seed=self.seed,
                 create_validation_set=self.create_validation_set,
             )
@@ -439,6 +435,7 @@ class FolderDataModule(LightningDataModule):
             mask_dir=self.mask_dir,
             pre_process=self.pre_process,
             extensions=self.extensions,
+            task=self.task,
             seed=self.seed,
             create_validation_set=self.create_validation_set,
         )

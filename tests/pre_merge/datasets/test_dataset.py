@@ -58,7 +58,6 @@ def folder_data_module():
         normal="good",
         abnormal="broken_large",
         mask_dir=os.path.join(root, "ground_truth/broken_large"),
-        task="segmentation",
         split_ratio=0.2,
         seed=0,
         image_size=(256, 256),
