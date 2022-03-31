@@ -22,7 +22,7 @@ The key idea here is that, during inference, when an anomalous image is passed t
 
 All results gathered with seed `42`.
 
-## [MVTec Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
+## [MVTec AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 
 ### Image-Level AUC
 

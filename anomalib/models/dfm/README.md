@@ -24,7 +24,7 @@ In the anomaly classification stage, class-conditional PCA transformations and G
 
 All results gathered with seed `42`.
 
-## [MVTec Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
+## [MVTec AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 
 ### Image-Level AUC
 

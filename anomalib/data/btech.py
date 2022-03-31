@@ -155,7 +155,7 @@ class BTech(VisionDataset):
         seed: int = 0,
         create_validation_set: bool = False,
     ) -> None:
-        """Mvtec Dataset class.
+        """Btech Dataset class.
 
         Args:
             root: Path to the BTech dataset

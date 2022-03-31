@@ -1,10 +1,27 @@
-"""MVTec Dataset.
+"""MVTec AD Dataset (CC BY-NC-SA 4.0).
 
-MVTec This script contains PyTorch Dataset, Dataloader and PyTorch
-Lightning DataModule for the MVTec dataset.
+Description:
+    This script contains PyTorch Dataset, Dataloader and PyTorch
+        Lightning DataModule for the MVTec AD dataset.
 
-If the dataset is not on the file system, the script downloads and
-extracts the dataset and create PyTorch data objects.
+    If the dataset is not on the file system, the script downloads and
+        extracts the dataset and create PyTorch data objects.
+
+License:
+    MVTec AD dataset is released under the Creative Commons
+    Attribution-NonCommercial-ShareAlike 4.0 International License
+    (CC BY-NC-SA 4.0)(https://creativecommons.org/licenses/by-nc-sa/4.0/).
+
+Reference:
+    - Paul Bergmann, Kilian Batzner, Michael Fauser, David Sattlegger, Carsten Steger:
+      The MVTec Anomaly Detection Dataset: A Comprehensive Real-World Dataset for
+      Unsupervised Anomaly Detection; in: International Journal of Computer Vision
+      129(4):1038-1059, 2021, DOI: 10.1007/s11263-020-01400-4.
+
+    - Paul Bergmann, Michael Fauser, David Sattlegger, Carsten Steger: MVTec AD —
+      A Comprehensive Real-World Dataset for Unsupervised Anomaly Detection;
+      in: IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR),
+      9584-9592, 2019, DOI: 10.1109/CVPR.2019.00982.
 """
 
 # Copyright (C) 2020 Intel Corporation
@@ -47,7 +64,7 @@ from anomalib.data.utils.split import (
 )
 from anomalib.pre_processing import PreProcessor
 
-logger = logging.getLogger(name="Dataset: MVTec")
+logger = logging.getLogger(name="Dataset: MVTec AD")
 logger.setLevel(logging.DEBUG)
 
 
@@ -58,7 +75,7 @@ def make_mvtec_dataset(
     seed: int = 0,
     create_validation_set: bool = False,
 ) -> DataFrame:
-    """Create MVTec samples by parsing the MVTec data file structure.
+    """Create MVTec AD samples by parsing the MVTec AD data file structure.
 
     The files are expected to follow the structure:
         path/to/dataset/split/category/image_filename.png
@@ -79,11 +96,11 @@ def make_mvtec_dataset(
             Defaults to 0.1.
         seed (int, optional): Random seed to ensure reproducibility when splitting. Defaults to 0.
         create_validation_set (bool, optional): Boolean to create a validation set from the test set.
-            MVTec dataset does not contain a validation set. Those wanting to create a validation set
+            MVTec AD dataset does not contain a validation set. Those wanting to create a validation set
             could set this flag to ``True``.
 
     Example:
-        The following example shows how to get training samples from MVTec bottle category:
+        The following example shows how to get training samples from MVTec AD bottle category:
 
         >>> root = Path('./MVTec')
         >>> category = 'bottle'
@@ -149,7 +166,7 @@ def make_mvtec_dataset(
 
 
 class MVTec(VisionDataset):
-    """MVTec PyTorch Dataset."""
+    """MVTec AD PyTorch Dataset."""
 
     def __init__(
         self,
@@ -161,11 +178,11 @@ class MVTec(VisionDataset):
         seed: int = 0,
         create_validation_set: bool = False,
     ) -> None:
-        """Mvtec Dataset class.
+        """Mvtec AD Dataset class.
 
         Args:
-            root: Path to the MVTec dataset
-            category: Name of the MVTec category.
+            root: Path to the MVTec AD dataset
+            category: Name of the MVTec AD category.
             pre_process: List of pre_processing object containing albumentation compose.
             split: 'train', 'val' or 'test'
             task: ``classification`` or ``segmentation``
@@ -248,7 +265,7 @@ class MVTec(VisionDataset):
             if self.task == "segmentation":
                 mask_path = self.samples.mask_path[index]
 
-                # Only Anomalous (1) images has masks in MVTec dataset.
+                # Only Anomalous (1) images has masks in MVTec AD dataset.
                 # Therefore, create empty mask for Normal (0) images.
                 if label_index == 0:
                     mask = np.zeros(shape=image.shape[:2])
@@ -265,7 +282,7 @@ class MVTec(VisionDataset):
 
 
 class MVTecDataModule(LightningDataModule):
-    """MVTec Lightning Data Module."""
+    """MVTec AD Lightning Data Module."""
 
     def __init__(
         self,
@@ -281,11 +298,11 @@ class MVTecDataModule(LightningDataModule):
         seed: int = 0,
         create_validation_set: bool = False,
     ) -> None:
-        """Mvtec Lightning Data Module.
+        """Mvtec AD Lightning Data Module.
 
         Args:
-            root: Path to the MVTec dataset
-            category: Name of the MVTec category.
+            root: Path to the MVTec AD dataset
+            category: Name of the MVTec AD category.
             image_size: Variable to which image is resized.
             train_batch_size: Training batch size.
             test_batch_size: Testing batch size.
@@ -358,7 +375,7 @@ class MVTecDataModule(LightningDataModule):
             dataset_name = "mvtec_anomaly_detection.tar.xz"
 
             logging.info("Downloading the dataset.")
-            with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc="MVTec") as progress_bar:
+            with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc="MVTec AD") as progress_bar:
                 urlretrieve(
                     url=f"ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/{dataset_name}",
                     filename=self.root / dataset_name,
