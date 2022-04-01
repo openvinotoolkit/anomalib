@@ -1,11 +1,16 @@
 dataset:
-  name: mvtec
+  name: mvtec #options: [mvtec, btech, folder]
   format: mvtec
   path: ./datasets/MVTec
-  url: ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/mvtec_anomaly_detection.tar.xz
   category: bottle
   task: classification
-  label_format: None
+  image_size: 256
+  train_batch_size: 32
+  test_batch_size: 32
+  inference_batch_size: 32
+  num_workers: 32
+  transform_config: null
+  create_validation_set: false
   tiling:
     apply: true
     tile_size: 64
@@ -13,11 +18,6 @@ dataset:
     remove_border_count: 0
     use_random_tiling: False
     random_tile_count: 16
-  image_size: 256
-  train_batch_size: 32
-  test_batch_size: 32
-  inference_batch_size: 32
-  num_workers: 32
 
 model:
   name: ganomaly
@@ -47,24 +47,8 @@ project:
   save_to_csv: false
 
 optimization:
-  compression:
+  openvino:
     apply: false
-  nncf:
-    apply: false
-    input_info:
-      sample_size: null
-    compression:
-      algorithm: quantization
-      initializer:
-        range:
-          num_init_samples: 256
-    update_config:
-      init_weights: snapshot.ckpt
-      hyperparameter_search:
-        parameters:
-          lr:
-            min: 1e-4
-            max: 1e-2
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:

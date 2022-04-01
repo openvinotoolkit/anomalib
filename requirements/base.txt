@@ -7,13 +7,16 @@ kornia==0.5.6
 lxml==4.6.5
 matplotlib==3.4.3
 networkx~=2.5
-nncf==2.1.0
 numpy~=1.19.5
 omegaconf==2.1.1
+opencv-python>=4.5.3.56
+opencv-contrib-python==4.5.5.62
+pandas~=1.1.5
 pillow==9.0.0
 pytorch-lightning==1.5.9
 torch==1.8.1
 torchvision==0.9.1
+torchtext==0.9.1
 scikit-image>=0.17.2
 scikit-learn==0.24.2
 wandb==0.12.9

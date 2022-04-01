@@ -1,17 +1,17 @@
 dataset:
-  name: mvtec
+  name: mvtec #options: [mvtec, btech, folder]
   format: mvtec
   path: ./datasets/MVTec
-  url: ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/mvtec_anomaly_detection.tar.xz
   category: bottle
   task: segmentation
-  label_format: None
   image_size: 256
   train_batch_size: 16
   test_batch_size: 16
   inference_batch_size: 16
   fiber_batch_size: 64
-  num_workers: 36
+  num_workers: 8
+  transform_config: null
+  create_validation_set: false
 
 model:
   name: cflow

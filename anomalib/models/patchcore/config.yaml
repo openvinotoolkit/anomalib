@@ -1,22 +1,22 @@
 dataset:
-  name: mvtec
+  name: mvtec #options: [mvtec, btech, folder]
   format: mvtec
   path: ./datasets/MVTec
-  url: ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/mvtec_anomaly_detection.tar.xz
   task: segmentation
   category: bottle
-  label_format: None
-  tiling:
-    apply: false
-    tile_size: null
-    stride: null
-    remove_border_count: 0
-    use_random_tiling: False
-    random_tile_count: 16
   image_size: 224
   train_batch_size: 32
   test_batch_size: 1
   num_workers: 36
+  transform_config: null
+  create_validation_set: false
+  tiling:
+    apply: true
+    tile_size: 64
+    stride: null
+    remove_border_count: 0
+    use_random_tiling: False
+    random_tile_count: 16
 
 model:
   name: patchcore

@@ -22,7 +22,7 @@ jobs:
         run: tox -e black,isort,flake8,pylint,mypy,pydocstyle
       - name: Coverage
         run: |
-          export ANOMALIB_DATASET_PATH=/media/data1/datasets/MVTec
+          export ANOMALIB_DATASET_PATH=/media/data1/datasets/
           export CUDA_VISIBLE_DEVICES=3
           tox -e pre_merge
       - name: Upload coverage result

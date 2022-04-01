@@ -1,15 +1,15 @@
 dataset:
-  name: mvtec
+  name: mvtec #options: [mvtec, btech, folder]
   format: mvtec
   path: ./datasets/MVTec
-  url: ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/mvtec_anomaly_detection.tar.xz
   category: bottle
   task: classification
-  label_format: None
   image_size: 256
   train_batch_size: 32
   test_batch_size: 32
   num_workers: 36
+  transform_config: null
+  create_validation_set: false
 
 model:
   name: dfm

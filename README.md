@@ -65,10 +65,10 @@ pip install -e .
 ## Training
 
 By default [`python tools/train.py`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/-/blob/development/train.py)
-runs [PADIM](https://arxiv.org/abs/2011.08785) model [MVTec](https://www.mvtec.com/company/research/datasets/mvtec-ad) `leather` dataset.
+runs [PADIM](https://arxiv.org/abs/2011.08785) model on `leather` category from the [MVTec AD](https://www.mvtec.com/company/research/datasets/mvtec-ad) [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/)  dataset.
 
 ```bash
-python tools/train.py    # Train PADIM on MVTec leather
+python tools/train.py    # Train PADIM on MVTec AD leather
 ```
 
 Training a model on a specific dataset and category requires further configuration. Each model has its own configuration
@@ -102,6 +102,34 @@ where the currently available models are:
 - [DFKDE](anomalib/models/dfkde)
 - [GANomaly](anomalib/models/ganomaly)
 
+### Custom Dataset
+It is also possible to train on a custom folder dataset. To do so, `data` section in `config.yaml` is to be modified as follows:
+```yaml
+dataset:
+  name: <name-of-the-dataset>
+  format: folder
+  path: <path/to/folder/dataset>
+  normal: normal # name of the folder containing normal images.
+  abnormal: abnormal # name of the folder containing abnormal images.
+  task: segmentation # classification or segmentation
+  mask: <path/to/mask/annotations> #optional
+  extensions: null
+  split_ratio: 0.2  # ratio of the normal images that will be used to create a test split
+  seed: 0
+  image_size: 256
+  train_batch_size: 32
+  test_batch_size: 32
+  num_workers: 8
+  transform_config: null
+  create_validation_set: true
+  tiling:
+    apply: false
+    tile_size: null
+    stride: null
+    remove_border_count: 0
+    use_random_tiling: False
+    random_tile_count: 16
+```
 ## Inference
 
 Anomalib contains several tools that can be used to perform inference with a trained model. The script in [`tools/inference`](tools/inference.py) contains an example of how the inference tools can be used to generate a prediction for an input image.
@@ -126,11 +154,11 @@ python tools/inference.py \
     --image_path datasets/MVTec/bottle/test/broken_large/000.png
 ```
 
-If you want to run OpenVINO model, ensure that `compression` `apply` is set to `True` in the respective model `config.yaml`.
+If you want to run OpenVINO model, ensure that `openvino` `apply` is set to `True` in the respective model `config.yaml`.
 
 ```yaml
 optimization:
-  compression:
+  openvino:
     apply: true
 ```
 
@@ -153,8 +181,11 @@ python tools/inference.py \
 ___
 
 ## Datasets
+`anomalib` supports MVTec AD [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/) and BeanTech [(CC-BY-SA)](https://creativecommons.org/licenses/by-sa/4.0/legalcode) for benchmarking and `folder` for custom dataset training/inference.
 
-### [MVTec Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
+### [MVTec AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
+MVTec AD dataset is one of the main benchmarks for anomaly detection, and is released under the
+Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 
 ### Image-Level AUC
 

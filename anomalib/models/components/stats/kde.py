@@ -78,7 +78,7 @@ class GaussianKDE(DynamicBufferModule):
 
         cov_mat = self.cov(dataset.T)
         inv_cov_mat = torch.linalg.inv(cov_mat)
-        inv_cov = inv_cov_mat / factor ** 2
+        inv_cov = inv_cov_mat / factor**2
 
         # transform data to account for bandwidth
         bw_transform = torch.linalg.cholesky(inv_cov)
