@@ -14,7 +14,7 @@ pandas==1.4.1
 opencv-python>=4.5.3.56
 opencv-contrib-python==4.5.5.62
 pillow==9.0.0
-pytorch-lightning==1.5.9
+pytorch-lightning==1.6.0
 torch==1.11.0
 torchvision==0.12.0
 torchtext==0.12.0
