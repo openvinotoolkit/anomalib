@@ -203,10 +203,9 @@ class TestConfigToDataModule:
         ],
     )
     @TestDataset(num_train=20, num_test=10)
-    def test_image_size(self, input_size, effective_image_size, category="shapes", path=""):
+    def test_image_size(self, input_size, effective_image_size, category="shapes", path=None):
         """Test if the image size parameter works as expected."""
-        dataset_path = f"{path}/{category}" if path != "" else path
-        configurable_parameters = get_test_configurable_parameters(dataset_path=dataset_path, model_name="stfpm")
+        configurable_parameters = get_test_configurable_parameters(dataset_path=path, model_name="stfpm")
         configurable_parameters.dataset.category = category
         configurable_parameters.dataset.image_size = input_size
         configurable_parameters = update_input_size_config(configurable_parameters)
