@@ -25,7 +25,6 @@ from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 from .cdf_normalization import CdfNormalizationCallback
 from .min_max_normalization import MinMaxNormalizationCallback
 from .model_loader import LoadModelCallback
-from .save_to_csv import SaveToCSVCallback
 from .timer import TimerCallback
 from .visualizer_callback import VisualizerCallback
 
@@ -33,7 +32,6 @@ __all__ = [
     "LoadModelCallback",
     "TimerCallback",
     "VisualizerCallback",
-    "SaveToCSVCallback",
 ]
 
 
