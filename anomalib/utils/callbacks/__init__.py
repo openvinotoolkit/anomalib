@@ -107,8 +107,4 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
                 )
             )
 
-    if "save_to_csv" in config.project.keys():
-        if config.project.save_to_csv:
-            callbacks.append(SaveToCSVCallback())
-
     return callbacks
