@@ -271,7 +271,7 @@ class BTechDataModule(LightningDataModule):
         test_batch_size: int = 32,
         num_workers: int = 8,
         transform_config: Optional[Union[str, A.Compose]] = None,
-        task: str = "classification",
+        task: str = "segmentation",
         seed: int = 0,
         create_validation_set: bool = False,
     ) -> None:
