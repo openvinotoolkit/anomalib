@@ -80,8 +80,7 @@ def make_dataset(
             Defaults to 0.2.
         seed (int, optional): Random seed to ensure reproducibility when splitting. Defaults to 0.
         create_validation_set (bool, optional):Boolean to create a validation set from the test set.
-            MVTec dataset does not contain a validation set. Those wanting to create a validation set
-            could set this flag to ``True``.
+            Those wanting to create a validation set could set this flag to ``True``.
         extensions (Optional[Tuple[str, ...]], optional): Type of the image extensions to read from the
             directory.
 
@@ -185,8 +184,7 @@ class FolderDataset(Dataset):
             task (Optional[str], optional): Task type. (classification or segmentation) Defaults to None.
             seed (int, optional): Random seed to ensure reproducibility when splitting. Defaults to 0.
             create_validation_set (bool, optional):Boolean to create a validation set from the test set.
-                MVTec dataset does not contain a validation set. Those wanting to create a validation set
-                could set this flag to ``True``.
+                Those wanting to create a validation set could set this flag to ``True``.
 
         Raises:
             ValueError: When task is set to classification and `mask_dir` is provided. When `mask_dir` is
@@ -236,10 +234,10 @@ class FolderDataset(Dataset):
         image_path = self.samples.image_path[index]
         image = read_image(image_path)
 
-        if self.split == "train" or self.task == "classification":
-            pre_processed = self.pre_process(image=image)
-            item = {"image": pre_processed["image"]}
-        elif self.split in ["val", "test"]:
+        pre_processed = self.pre_process(image=image)
+        item = {"image": pre_processed["image"]}
+
+        if self.split in ["val", "test"]:
             label_index = self.samples.label_index[index]
 
             item["image_path"] = image_path
@@ -248,7 +246,7 @@ class FolderDataset(Dataset):
             if self.task == "segmentation":
                 mask_path = self.samples.mask_path[index]
 
-                # Only Anomalous (1) images has masks in MVTec dataset.
+                # Only Anomalous (1) images has masks in MVTec AD dataset.
                 # Therefore, create empty mask for Normal (0) images.
                 if label_index == 0:
                     mask = np.zeros(shape=image.shape[:2])
@@ -310,8 +308,7 @@ class FolderDataModule(LightningDataModule):
             transform_config (Optional[Union[str, A.Compose]], optional): Config for pre-processing.
                 Defaults to None.
             create_validation_set (bool, optional):Boolean to create a validation set from the test set.
-                MVTec dataset does not contain a validation set. Those wanting to create a validation set
-                could set this flag to ``True``.
+                Those wanting to create a validation set could set this flag to ``True``.
 
         Examples:
             Assume that we use Folder Dataset for the MVTec/bottle/broken_large category. We would do:
@@ -333,7 +330,7 @@ class FolderDataModule(LightningDataModule):
 
             We could also create a Folder DataModule for datasets containing mask annotations.
             The dataset expects that mask annotation filenames must be same as the original filename.
-            To this end, we modified mask filenames in MVTec bottle category.
+            To this end, we modified mask filenames in MVTec AD bottle category.
             Now we could try folder data module using the mvtec bottle broken large category
             >>> datamodule = FolderDataModule(
             ...     root="./datasets/bottle/test",

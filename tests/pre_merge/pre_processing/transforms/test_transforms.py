@@ -8,7 +8,6 @@ This test contains the following test:
 """
 
 import tempfile
-from pathlib import Path
 
 import albumentations as A
 import numpy as np
