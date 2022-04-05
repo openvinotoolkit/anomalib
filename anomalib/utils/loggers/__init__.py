@@ -62,7 +62,6 @@ def get_logger(
                     save_dir=os.path.join(config.project.path, "logs"),
                 )
             )
-
         elif logger == "wandb":
             wandb_logdir = os.path.join(config.project.path, "logs")
             os.makedirs(wandb_logdir, exist_ok=True)
@@ -75,7 +74,6 @@ def get_logger(
             )
         elif logger == "csv":
             logger_list.append(CSVLogger(save_dir=os.path.join(config.project.path, "logs")))
-
         else:
             raise UnknownLogger(
                 f"Unknown logger type: {config.project.logger}. "
