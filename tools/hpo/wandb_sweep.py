@@ -86,7 +86,7 @@ def get_args():
 
 if __name__ == "__main__":
     args = get_args()
-    model_config = get_configurable_parameters(model_name=args.model, model_config=args.model_config)
+    model_config = get_configurable_parameters(model_name=args.model, model_config_path=args.model_config)
     hpo_config = OmegaConf.load(args.sweep_config)
 
     if model_config.project.seed != 0:
