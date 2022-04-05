@@ -37,6 +37,6 @@ def get_test_configurable_parameters(
     )
 
     # Update path to match the dataset path in the test image/runner
-    config.dataset.path = get_dataset_path(config.dataset.path) if dataset_path is None else dataset_path
+    config.dataset.path = get_dataset_path() if dataset_path is None else dataset_path
 
     return config
