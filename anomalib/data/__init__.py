@@ -47,6 +47,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
             num_workers=config.dataset.num_workers,
             seed=config.project.seed,
             transform_config=config.dataset.transform_config,
+            task=config.dataset.task,
             create_validation_set=config.dataset.create_validation_set,
         )
     elif config.dataset.format.lower() == "btech":
@@ -60,6 +61,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
             num_workers=config.dataset.num_workers,
             seed=config.project.seed,
             transform_config=config.dataset.transform_config,
+            task=config.dataset.task,
             create_validation_set=config.dataset.create_validation_set,
         )
     elif config.dataset.format.lower() == "folder":
