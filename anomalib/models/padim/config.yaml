@@ -36,7 +36,7 @@ project:
   seed: 42
   path: ./results
   log_images_to: ["local"]
-  logger: false
+  logger: false # options: [tensorboard, wandb, csv] or combinations.
 
 optimization:
   openvino:
