@@ -78,16 +78,16 @@ def get_args():
     """Gets parameters from commandline."""
     parser = ArgumentParser()
     parser.add_argument("--model", type=str, default="padim", help="Name of the algorithm to train/test")
-    parser.add_argument("--model_config_path", type=Path, required=False, help="Path to a model config file")
-    parser.add_argument("--sweep_config_path", type=Path, required=True, help="Path to sweep configuration")
+    parser.add_argument("--model_config", type=Path, required=False, help="Path to a model config file")
+    parser.add_argument("--sweep_config", type=Path, required=True, help="Path to sweep configuration")
 
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = get_args()
-    model_config = get_configurable_parameters(model_name=args.model, model_config_path=args.model_config_path)
-    hpo_config = OmegaConf.load(args.sweep_config_path)
+    model_config = get_configurable_parameters(model_name=args.model, model_config=args.model_config)
+    hpo_config = OmegaConf.load(args.sweep_config)
 
     if model_config.project.seed != 0:
         seed_everything(model_config.project.seed)

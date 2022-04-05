@@ -140,7 +140,7 @@ def update_device_config(config: Union[DictConfig, ListConfig], openvino: bool) 
 
 def get_configurable_parameters(
     model_name: Optional[str] = None,
-    model_config_path: Optional[Union[Path, str]] = None,
+    model_config: Optional[Union[Path, str]] = None,
     weight_file: Optional[str] = None,
     openvino: bool = False,
     config_filename: Optional[str] = "config",
@@ -150,7 +150,7 @@ def get_configurable_parameters(
 
     Args:
         model_name: Optional[str]:  (Default value = None)
-        model_config_path: Optional[Union[Path, str]]:  (Default value = None)
+        model_config: Optional[Union[Path, str]]:  (Default value = None)
         weight_file: Path to the weight file
         openvino: Use OpenVINO
         config_filename: Optional[str]:  (Default value = "config")
@@ -159,16 +159,16 @@ def get_configurable_parameters(
     Returns:
         Union[DictConfig, ListConfig]: Configurable parameters in DictConfig object.
     """
-    if model_name is None and model_config_path is None:
+    if model_name is None and model_config is None:
         raise ValueError(
             "Both model_name and model config path cannot be None! "
             "Please provide a model name or path to a config file!"
         )
 
-    if model_config_path is None:
-        model_config_path = Path(f"anomalib/models/{model_name}/{config_filename}.{config_file_extension}")
+    if model_config is None:
+        model_config = Path(f"anomalib/models/{model_name}/{config_filename}.{config_file_extension}")
 
-    config = OmegaConf.load(model_config_path)
+    config = OmegaConf.load(model_config)
 
     # Dataset Configs
     if "format" not in config.dataset.keys():
