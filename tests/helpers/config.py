@@ -9,7 +9,7 @@ from .dataset import get_dataset_path
 
 
 def get_test_configurable_parameters(
-    dataset_path: Optional[Path] = None,
+    dataset_path: Optional[str] = None,
     model_name: Optional[str] = None,
     model_config_path: Optional[Union[Path, str]] = None,
     weight_file: Optional[str] = None,

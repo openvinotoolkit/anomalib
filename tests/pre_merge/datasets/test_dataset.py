@@ -1,7 +1,6 @@
 """Test Dataset."""
 
 import os
-from pathlib import Path
 
 import numpy as np
 import pytest
@@ -207,7 +206,7 @@ class TestConfigToDataModule:
     def test_image_size(self, input_size, effective_image_size, category="shapes", path=""):
         """Test if the image size parameter works as expected."""
         configurable_parameters = get_test_configurable_parameters(
-            dataset_path=Path(path) / category, model_name="stfpm"
+            dataset_path=f"{path}/{category}", model_name="stfpm"
         )
         configurable_parameters.dataset.category = category
         configurable_parameters.dataset.image_size = input_size
