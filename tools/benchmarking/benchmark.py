@@ -16,6 +16,7 @@
 
 
 import logging
+import math
 import multiprocessing
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -136,12 +137,12 @@ def distribute_over_gpus():
         run_configs = list(get_run_config(sweep_config.grid_search))
         jobs = []
         for device_id, run_split in enumerate(
-            range(0, len(run_configs), len(run_configs) // torch.cuda.device_count())
+            range(0, len(run_configs), math.ceil(len(run_configs) / torch.cuda.device_count()))
         ):
             jobs.append(
                 executor.submit(
                     compute_on_gpu,
-                    run_configs[run_split : run_split + len(run_configs) // torch.cuda.device_count()],
+                    run_configs[run_split : run_split + math.ceil(len(run_configs) / torch.cuda.device_count())],
                     device_id + 1,
                     sweep_config.seed,
                     sweep_config.writer,
@@ -191,9 +192,10 @@ def sweep(run_config: Union[DictConfig, ListConfig], device: int = 0, seed: int 
     Returns:
         Dict[str, Union[float, str]]: Dictionary containing the metrics gathered from the sweep.
     """
-    seed_everything(seed)
+    seed_everything(seed, workers=True)
     # This assumes that `model_name` is always present in the sweep config.
     model_config = get_configurable_parameters(model_name=run_config.model_name)
+    model_config.project.seed = seed
 
     model_config = cast(DictConfig, model_config)  # placate mypy
     for param in run_config.keys():
@@ -208,7 +210,7 @@ def sweep(run_config: Union[DictConfig, ListConfig], device: int = 0, seed: int 
     model_config.trainer.gpus = 0 if device == 0 else [device - 1]
     convert_openvino = bool(model_config.trainer.gpus)
 
-    if run_config.model_name == "patchcore":
+    if run_config.model_name in ["patchcore", "cflow"]:
         convert_openvino = False  # `torch.cdist` is not supported by onnx version 11
         # TODO Remove this line when issue #40 is fixed https://github.com/openvinotoolkit/anomalib/issues/40
         if model_config.model.input_size != (224, 224):

@@ -22,7 +22,7 @@ During inference, the feature pyramids of teacher and student networks are compa
 
 All results gathered with seed `42`.
 
-## [MVTec Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
+## [MVTec AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 
 ### Image-Level AUC
 

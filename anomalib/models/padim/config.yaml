@@ -1,11 +1,15 @@
 dataset:
-  name: mvtec
+  name: mvtec #options: [mvtec, btech, folder]
   format: mvtec
   path: ./datasets/MVTec
-  url: ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/mvtec_anomaly_detection.tar.xz
   category: bottle
   task: segmentation
-  label_format: None
+  image_size: 256
+  train_batch_size: 32
+  test_batch_size: 32
+  num_workers: 36
+  transform_config: null
+  create_validation_set: false
   tiling:
     apply: false
     tile_size: null
@@ -13,10 +17,6 @@ dataset:
     remove_border_count: 0
     use_random_tiling: False
     random_tile_count: 16
-  image_size: 256
-  train_batch_size: 32
-  test_batch_size: 32
-  num_workers: 36
 
 model:
   name: padim
@@ -40,20 +40,8 @@ project:
   save_to_csv: false
 
 optimization:
-  compression:
+  openvino:
     apply: false
-  nncf:
-    apply: false
-    input_info:
-      sample_size: [1, 3, 256, 256]
-    compression:
-      algorithm: quantization
-      initializer:
-        range:
-          num_init_samples: 256
-      ignored_scopes: []
-    update_config:
-      init_weights: snapshot.ckpt
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:

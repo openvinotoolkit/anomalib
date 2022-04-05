@@ -14,7 +14,8 @@ ___
 [![pytorch](https://img.shields.io/badge/pytorch-1.8.1%2B-orange)]()
 [![openvino](https://img.shields.io/badge/openvino-2021.4.2-purple)]()
 [![black](https://img.shields.io/badge/code%20style-black-000000.svg)]()
-[![Code Quality and Coverage](https://github.com/openvinotoolkit/anomalib/actions/workflows/tox.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/tox.yml)
+[![Nightly-regression Test](https://github.com/openvinotoolkit/anomalib/actions/workflows/nightly.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/nightly.yml)
+[![Pre-merge Checks](https://github.com/openvinotoolkit/anomalib/actions/workflows/pre_merge.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/pre_merge.yml)
 [![Build Docs](https://github.com/openvinotoolkit/anomalib/actions/workflows/docs.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/docs.yml)
 
 </div>
@@ -48,6 +49,8 @@ You can get started with `anomalib` by just using pip.
 pip install anomalib
 ```
 
+> **_NOTE:_** Due to ongoing fast pace of development, we encourage you to use editable install until we release v0.2.5.
+
 ### Local Install
 It is highly recommended to use virtual environment when installing anomalib. For instance, with [anaconda](https://www.anaconda.com/products/individual), `anomalib` could be installed as,
 
@@ -62,10 +65,10 @@ pip install -e .
 ## Training
 
 By default [`python tools/train.py`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/-/blob/development/train.py)
-runs [PADIM](https://arxiv.org/abs/2011.08785) model [MVTec](https://www.mvtec.com/company/research/datasets/mvtec-ad) `leather` dataset.
+runs [PADIM](https://arxiv.org/abs/2011.08785) model on `leather` category from the [MVTec AD](https://www.mvtec.com/company/research/datasets/mvtec-ad) [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/)  dataset.
 
 ```bash
-python tools/train.py    # Train PADIM on MVTec leather
+python tools/train.py    # Train PADIM on MVTec AD leather
 ```
 
 Training a model on a specific dataset and category requires further configuration. Each model has its own configuration
@@ -99,6 +102,34 @@ where the currently available models are:
 - [DFKDE](anomalib/models/dfkde)
 - [GANomaly](anomalib/models/ganomaly)
 
+### Custom Dataset
+It is also possible to train on a custom folder dataset. To do so, `data` section in `config.yaml` is to be modified as follows:
+```yaml
+dataset:
+  name: <name-of-the-dataset>
+  format: folder
+  path: <path/to/folder/dataset>
+  normal: normal # name of the folder containing normal images.
+  abnormal: abnormal # name of the folder containing abnormal images.
+  task: segmentation # classification or segmentation
+  mask: <path/to/mask/annotations> #optional
+  extensions: null
+  split_ratio: 0.2  # ratio of the normal images that will be used to create a test split
+  seed: 0
+  image_size: 256
+  train_batch_size: 32
+  test_batch_size: 32
+  num_workers: 8
+  transform_config: null
+  create_validation_set: true
+  tiling:
+    apply: false
+    tile_size: null
+    stride: null
+    remove_border_count: 0
+    use_random_tiling: False
+    random_tile_count: 16
+```
 ## Inference
 
 Anomalib contains several tools that can be used to perform inference with a trained model. The script in [`tools/inference`](tools/inference.py) contains an example of how the inference tools can be used to generate a prediction for an input image.
@@ -123,11 +154,11 @@ python tools/inference.py \
     --image_path datasets/MVTec/bottle/test/broken_large/000.png
 ```
 
-If you want to run OpenVINO model, ensure that `compression` `apply` is set to `True` in the respective model `config.yaml`.
+If you want to run OpenVINO model, ensure that `openvino` `apply` is set to `True` in the respective model `config.yaml`.
 
 ```yaml
 optimization:
-  compression:
+  openvino:
     apply: true
 ```
 
@@ -150,15 +181,18 @@ python tools/inference.py \
 ___
 
 ## Datasets
+`anomalib` supports MVTec AD [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/) and BeanTech [(CC-BY-SA)](https://creativecommons.org/licenses/by-sa/4.0/legalcode) for benchmarking and `folder` for custom dataset training/inference.
 
-### [MVTec Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
+### [MVTec AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
+MVTec AD dataset is one of the main benchmarks for anomaly detection, and is released under the
+Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 
 ### Image-Level AUC
 
 | Model         |                    |    Avg    |  Carpet   |   Grid    | Leather |   Tile    |   Wood    | Bottle  |   Cable   |  Capsule  | Hazelnut | Metal Nut |   Pill    |   Screw   | Toothbrush | Transistor |  Zipper   |
 | ------------- | ------------------ | :-------: | :-------: | :-------: | :-----: | :-------: | :-------: | :-----: | :-------: | :-------: | :------: | :-------: | :-------: | :-------: | :--------: | :--------: | :-------: |
-| **PatchCore** | **Wide ResNet-50** | **0.980** |   0.984   |   0.959   |  1.000  | **1.000** |   0.989   | 1.000   | **0.990** | **0.982** |  1.000   |   0.994   |   0.924   |   0.960   |   0.933    |  **1.000** |   0.982   |
-| PatchCore     | ResNet-18          |   0.973   |   0.970   |   0.947   |  1.000  |   0.997   |   0.997   | 1.000   |   0.986   |  0.965    |  1.000   |   0.991   |   0.916   | **0.943** |   0.931    |   0.996    |   0.953   |
+| **PatchCore** | **Wide ResNet-50** | **0.980** |   0.984   |   0.959   |  1.000  | **1.000** |   0.989   |  1.000  | **0.990** | **0.982** |  1.000   |   0.994   |   0.924   |   0.960   |   0.933    | **1.000**  |   0.982   |
+| PatchCore     | ResNet-18          |   0.973   |   0.970   |   0.947   |  1.000  |   0.997   |   0.997   |  1.000  |   0.986   |   0.965   |  1.000   |   0.991   |   0.916   | **0.943** |   0.931    |   0.996    |   0.953   |
 | CFlow         | Wide ResNet-50     |   0.962   |   0.986   |   0.962   | **1.0** |   0.999   | **0.993** | **1.0** |   0.893   |   0.945   | **1.0**  | **0.995** |   0.924   |   0.908   |   0.897    |   0.943    | **0.984** |
 | PaDiM         | Wide ResNet-50     |   0.950   | **0.995** |   0.942   |   1.0   |   0.974   | **0.993** |  0.999  |   0.878   |   0.927   |  0.964   |   0.989   | **0.939** |   0.845   |   0.942    |   0.976    |   0.882   |
 | PaDiM         | ResNet-18          |   0.891   |   0.945   |   0.857   |  0.982  |   0.950   |   0.976   |  0.994  |   0.844   |   0.901   |  0.750   |   0.961   |   0.863   |   0.759   |   0.889    |   0.920    |   0.780   |
@@ -174,7 +208,7 @@ ___
 | Model         |                    |    Avg    |  Carpet   |   Grid    |  Leather  |   Tile    |   Wood    |  Bottle   |   Cable   |  Capsule  | Hazelnut  | Metal Nut |   Pill    |   Screw   | Toothbrush | Transistor |  Zipper   |
 | ------------- | ------------------ | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :--------: | :--------: | :-------: |
 | **PatchCore** | **Wide ResNet-50** | **0.980** |   0.988   |   0.968   |   0.991   |   0.961   |   0.934   |   0.984   | **0.988** | **0.988** |   0.987   | **0.989** |   0.980   | **0.989** |   0.988    | **0.981**  |   0.983   |
-| PatchCore     | ResNet-18          |   0.976   |   0.986   |   0.955   |   0.990   |   0.943   |   0.933   |   0.981   |   0.984   |  0.986    |   0.986   |   0.986   |   0.974   |   0.991   |   0.988    |   0.974    |   0.983   |
+| PatchCore     | ResNet-18          |   0.976   |   0.986   |   0.955   |   0.990   |   0.943   |   0.933   |   0.981   |   0.984   |   0.986   |   0.986   |   0.986   |   0.974   |   0.991   |   0.988    |   0.974    |   0.983   |
 | CFlow         | Wide ResNet-50     |   0.971   |   0.986   |   0.968   |   0.993   | **0.968** |   0.924   |   0.981   |   0.955   | **0.988** | **0.990** |   0.982   | **0.983** |   0.979   |   0.985    |   0.897    |   0.980   |
 | PaDiM         | Wide ResNet-50     |   0.979   | **0.991** |   0.970   |   0.993   |   0.955   | **0.957** | **0.985** |   0.970   | **0.988** |   0.985   |   0.982   |   0.966   |   0.988   | **0.991**  |   0.976    | **0.986** |
 | PaDiM         | ResNet-18          |   0.968   |   0.984   |   0.918   | **0.994** |   0.934   |   0.947   |   0.983   |   0.965   |   0.984   |   0.978   |   0.970   |   0.957   |   0.978   |   0.988    |   0.968    |   0.979   |
@@ -183,16 +217,34 @@ ___
 
 ### Image F1 Score
 
-| Model         |                    |    Avg    |  Carpet   |   Grid    | Leather |   Tile    |   Wood    | Bottle  |   Cable   |  Capsule  | Hazelnut | Metal Nut |   Pill    |   Screw    | Toothbrush | Transistor |  Zipper   |
-| ------------- | ------------------ | :-------: | :-------: | :-------: | :-----: | :-------: | :-------: | :-----: | :-------: | :-------: | :------: | :-------: | :-------: | :--------: | :--------: | :--------: | :-------: |
-| **PatchCore** | **Wide ResNet-50** | **0.976** |   0.971   |   0.974   |**1.000**| **1.000** |   0.967   |**1.000**|   0.968   | **0.982** |**1.000** |   0.984   |   0.940   |   0.943    |   0.938    | **1.000**  | **0.979** |
-| PatchCore     | ResNet-18          |   0.970   |   0.949   |   0.946   |**1.000**|   0.98    | **0.992** |**1.000**| **0.978** |   0.969   |**1.000** | **0.989** |   0.940   |   0.932    |   0.935    |   0.974    |   0.967   |
-| CFlow         | Wide ResNet-50     |   0.944   |   0.972   |   0.932   | **1.0** |   0.988   |   0.967   | **1.0** |   0.832   |   0.939   | **1.0**  |   0.979   |   0.924   | **0.971**  |   0.870    |   0.818    |   0.967   |
-| PaDiM         | Wide ResNet-50     |   0.951   | **0.989** |   0.930   | **1.0** |   0.960   |   0.983   |  0.992  |   0.856   | **0.982** |  0.937   |   0.978   | **0.946** |   0.895    |   0.952    |   0.914    |   0.947   |
-| PaDiM         | ResNet-18          |   0.916   |   0.930   |   0.893   |  0.984  |   0.934   |   0.952   |  0.976  |   0.858   |   0.960   |  0.836   |   0.974   |   0.932   |   0.879    |   0.923    |   0.796    |   0.915   |
-| STFPM         | Wide ResNet-50     |   0.926   |   0.973   |   0.973   |  0.974  |   0.965   |   0.929   |  0.976  |   0.853   |   0.920   |  0.972   |   0.974   |   0.922   |   0.884    |   0.833    |   0.815    |   0.931   |
-| STFPM         | ResNet-18          |   0.932   |   0.961   | **0.982** |  0.989  |   0.930   |   0.951   |  0.984  |   0.819   |   0.918   |  0.993   |   0.973   |   0.918   |   0.887    | **0.984**  |   0.790    |   0.908   |
-| DFM           | Wide ResNet-50     |   0.918   |   0.960   |   0.844   |  0.990  |   0.970   |   0.959   |  0.976  |   0.848   |   0.944   |  0.913   |   0.912   |   0.919   |   0.859    |   0.893    |   0.815    |   0.961   |
-| DFM           | ResNet-18          |   0.919   |   0.895   |   0.844   |  0.926  |   0.971   |   0.948   |  0.977  |   0.874   |   0.935   |  0.957   |   0.958   |   0.921   |   0.874    |   0.933    |   0.833    |   0.943   |
-| DFKDE         | Wide ResNet-50     |   0.875   |   0.907   |   0.844   |  0.905  |   0.945   |   0.914   |  0.946  |   0.790   |   0.914   |  0.817   |   0.894   |   0.922   |   0.855    |   0.845    |   0.722    |   0.910   |
-| DFKDE         | ResNet-18          |   0.872   |   0.864   |   0.844   |  0.854  |   0.960   |   0.898   |  0.942  |   0.793   |   0.908   |  0.827   |   0.894   |   0.916   |   0.859    |   0.853    |   0.756    |   0.916   |
+| Model         |                    |    Avg    |  Carpet   |   Grid    |  Leather  |   Tile    |   Wood    |  Bottle   |   Cable   |  Capsule  | Hazelnut  | Metal Nut |   Pill    |   Screw   | Toothbrush | Transistor |  Zipper   |
+| ------------- | ------------------ | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :--------: | :--------: | :-------: |
+| **PatchCore** | **Wide ResNet-50** | **0.976** |   0.971   |   0.974   | **1.000** | **1.000** |   0.967   | **1.000** |   0.968   | **0.982** | **1.000** |   0.984   |   0.940   |   0.943   |   0.938    | **1.000**  | **0.979** |
+| PatchCore     | ResNet-18          |   0.970   |   0.949   |   0.946   | **1.000** |   0.98    | **0.992** | **1.000** | **0.978** |   0.969   | **1.000** | **0.989** |   0.940   |   0.932   |   0.935    |   0.974    |   0.967   |
+| CFlow         | Wide ResNet-50     |   0.944   |   0.972   |   0.932   |  **1.0**  |   0.988   |   0.967   |  **1.0**  |   0.832   |   0.939   |  **1.0**  |   0.979   |   0.924   | **0.971** |   0.870    |   0.818    |   0.967   |
+| PaDiM         | Wide ResNet-50     |   0.951   | **0.989** |   0.930   |  **1.0**  |   0.960   |   0.983   |   0.992   |   0.856   | **0.982** |   0.937   |   0.978   | **0.946** |   0.895   |   0.952    |   0.914    |   0.947   |
+| PaDiM         | ResNet-18          |   0.916   |   0.930   |   0.893   |   0.984   |   0.934   |   0.952   |   0.976   |   0.858   |   0.960   |   0.836   |   0.974   |   0.932   |   0.879   |   0.923    |   0.796    |   0.915   |
+| STFPM         | Wide ResNet-50     |   0.926   |   0.973   |   0.973   |   0.974   |   0.965   |   0.929   |   0.976   |   0.853   |   0.920   |   0.972   |   0.974   |   0.922   |   0.884   |   0.833    |   0.815    |   0.931   |
+| STFPM         | ResNet-18          |   0.932   |   0.961   | **0.982** |   0.989   |   0.930   |   0.951   |   0.984   |   0.819   |   0.918   |   0.993   |   0.973   |   0.918   |   0.887   | **0.984**  |   0.790    |   0.908   |
+| DFM           | Wide ResNet-50     |   0.918   |   0.960   |   0.844   |   0.990   |   0.970   |   0.959   |   0.976   |   0.848   |   0.944   |   0.913   |   0.912   |   0.919   |   0.859   |   0.893    |   0.815    |   0.961   |
+| DFM           | ResNet-18          |   0.919   |   0.895   |   0.844   |   0.926   |   0.971   |   0.948   |   0.977   |   0.874   |   0.935   |   0.957   |   0.958   |   0.921   |   0.874   |   0.933    |   0.833    |   0.943   |
+| DFKDE         | Wide ResNet-50     |   0.875   |   0.907   |   0.844   |   0.905   |   0.945   |   0.914   |   0.946   |   0.790   |   0.914   |   0.817   |   0.894   |   0.922   |   0.855   |   0.845    |   0.722    |   0.910   |
+| DFKDE         | ResNet-18          |   0.872   |   0.864   |   0.844   |   0.854   |   0.960   |   0.898   |   0.942   |   0.793   |   0.908   |   0.827   |   0.894   |   0.916   |   0.859   |   0.853    |   0.756    |   0.916   |
+
+## Reference
+If you use this library and love it, use this to cite it 🤗
+```
+@misc{anomalib,
+      title={Anomalib: A Deep Learning Library for Anomaly Detection},
+      author={Samet Akcay and
+              Dick Ameln and
+              Ashwin Vaidya and
+              Barath Lakshmanan and
+              Nilesh Ahuja and
+              Utku Genc},
+      year={2022},
+      eprint={2202.08341},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
+}
+```

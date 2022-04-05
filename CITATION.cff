@@ -1,0 +1,92 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: "Anomalib: A Deep Learning Library for Anomaly Detection"
+message: "If you use this library and love it, cite the software and the paper \U0001F917"
+authors:
+  - given-names: Samet
+    family-names: Akcay
+    email: samet.akcay@intel.com
+    affiliation: Intel
+  - given-names: Dick
+    family-names: Ameln
+    email: dick.ameln@intel.com
+    affiliation: Intel
+  - given-names: Ashwin
+    family-names: Vaidya
+    email: ashwin.vaidya@intel.com
+    affiliation: Intel
+  - given-names: Barath
+    family-names: Lakshmanan
+    email: barath.lakshmanan@intel.com
+    affiliation: Intel
+  - given-names: Nilesh
+    family-names: Ahuja
+    email: nilesh.ahuja@intel.com
+    affiliation: Intel
+  - given-names: Utku
+    family-names: Genc
+    email: utku.genc@intel.com
+    affiliation: Intel
+version: 0.2.5
+doi: https://doi.org/10.48550/arXiv.2202.08341
+date-released: 2022-02-18
+references:
+  - type: article
+    authors:
+      - given-names: Samet
+        family-names: Akcay
+        email: samet.akcay@intel.com
+        affiliation: Intel
+      - given-names: Dick
+        family-names: Ameln
+        email: dick.ameln@intel.com
+        affiliation: Intel
+      - given-names: Ashwin
+        family-names: Vaidya
+        email: ashwin.vaidya@intel.com
+        affiliation: Intel
+      - given-names: Barath
+        family-names: Lakshmanan
+        email: barath.lakshmanan@intel.com
+        affiliation: Intel
+      - given-names: Nilesh
+        family-names: Ahuja
+        email: nilesh.ahuja@intel.com
+        affiliation: Intel
+      - given-names: Utku
+        family-names: Genc
+        email: utku.genc@intel.com
+        affiliation: Intel
+    title: "Anomalib: A Deep Learning Library for Anomaly Detection"
+    year: 2022
+    journal: ArXiv
+    doi: https://doi.org/10.48550/arXiv.2202.08341
+    url: https://arxiv.org/abs/2202.08341
+
+abstract: >-
+  This paper introduces anomalib, a novel library for
+  unsupervised anomaly detection and localization.
+  With reproducibility and modularity in mind, this
+  open-source library provides algorithms from the
+  literature and a set of tools to design custom
+  anomaly detection algorithms via a plug-and-play
+  approach. Anomalib comprises state-of-the-art
+  anomaly detection algorithms that achieve top
+  performance on the benchmarks and that can be used
+  off-the-shelf. In addition, the library provides
+  components to design custom algorithms that could
+  be tailored towards specific needs. Additional
+  tools, including experiment trackers, visualizers,
+  and hyper-parameter optimizers, make it simple to
+  design and implement anomaly detection models. The
+  library also supports OpenVINO model optimization
+  and quantization for real-time deployment. Overall,
+  anomalib is an extensive library for the design,
+  implementation, and deployment of unsupervised
+  anomaly detection models from data to the edge.
+keywords:
+  - Unsupervised Anomaly detection
+  - Unsupervised Anomaly localization
+license: Apache-2.0
