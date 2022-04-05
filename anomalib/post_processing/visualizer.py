@@ -17,6 +17,7 @@
 from pathlib import Path
 from typing import Optional, Tuple
 
+import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -81,7 +82,7 @@ class Visualizer:
         cv2.rectangle(image, (0, 0), (0 + text_w, 0 + text_h), (255, 255, 255), -1)
         cv2.putText(image, text, (0, baseline // 2 + text_h), font, font_size, 0)
         return image
-        
+
     def show(self):
         """Show image on a matplotlib figure."""
         self.figure.show()
