@@ -28,6 +28,7 @@ from anomalib.post_processing import Visualizer, compute_mask, superimpose_anoma
 from anomalib.pre_processing.transforms import Denormalize
 from anomalib.utils import loggers
 from anomalib.utils.loggers import AnomalibWandbLogger
+from anomalib.utils.loggers.base import ImageLoggerBase
 
 
 class VisualizerCallback(Callback):
@@ -68,7 +69,7 @@ class VisualizerCallback(Callback):
         for log_to in module.hparams.project.log_images_to:
             if log_to in loggers.AVAILABLE_LOGGERS:
                 # check if logger object is same as the requested object
-                if log_to in logger_type and module.logger is not None:
+                if log_to in logger_type and module.logger is not None and isinstance(module.logger, ImageLoggerBase):
                     module.logger.add_image(
                         image=visualizer.figure,
                         name=filename.parent.name + "_" + filename.name,
