@@ -41,8 +41,7 @@ project:
   seed: 0
   path: ./results
   log_images_to: [local]
-  logger: false
-  save_to_csv: false
+  logger: false # options: [tensorboard, wandb, csv] or combinations.
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
