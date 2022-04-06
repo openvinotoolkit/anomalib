@@ -1,4 +1,4 @@
-"""Test Models on all MVTec Categories."""
+"""Test Models on all MVTec AD Categories."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -23,6 +23,7 @@ from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Union
+
 import numpy as np
 import pandas as pd
 import torch
@@ -174,4 +175,3 @@ class TestModel:
                     job.result()
                 except Exception as e:
                     raise e
-            

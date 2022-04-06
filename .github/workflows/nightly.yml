@@ -20,7 +20,7 @@ jobs:
         run: pip install tox
       - name: Coverage
         run: |
-          export ANOMALIB_DATASET_PATH=/media/data1/datasets/MVTec
+          export ANOMALIB_DATASET_PATH=/media/data1/datasets/
           tox -e nightly
       - name: Upload coverage result
         uses: actions/upload-artifact@v2

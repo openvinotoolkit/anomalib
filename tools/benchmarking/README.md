@@ -10,7 +10,7 @@ Run the train.sh with the same args as the tools/train.py. Refer to [`../README.
 Note: To collect memory read/write numbers, run the script with sudo privileges. Otherwise, those values will be blank.
 
 ```
-sudo -E ./train.sh    # Train STFPM on MVTec leather
+sudo -E ./train.sh    # Train STFPM on MVTec AD leather
 
 sudo -E ./train.sh --model_config_path <path/to/model/config.yaml>
 

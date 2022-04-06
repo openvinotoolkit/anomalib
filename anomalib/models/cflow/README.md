@@ -20,7 +20,7 @@ CFLOW model is based on a conditional normalizing flow framework adopted for ano
 
 All results gathered with seed `42`.
 
-## [MVTec Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
+## [MVTec AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 
 ### Image-Level AUC
 

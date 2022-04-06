@@ -86,7 +86,7 @@ EXTRAS_REQUIRE = {
 setup(
     name="anomalib",
     # TODO: https://github.com/openvinotoolkit/anomalib/issues/36
-    version="0.2.4",
+    version="0.2.5",
     author="Intel OpenVINO",
     author_email="help@openvino.intel.com",
     description="anomalib - Anomaly Detection Library",
@@ -94,7 +94,7 @@ setup(
     license="Copyright (c) Intel - All Rights Reserved. "
     'Licensed under the Apache License, Version 2.0 (the "License")'
     "See LICENSE file for more details.",
-    python_requires=">=3.8",
+    python_requires=">=3.7",
     packages=find_packages("."),
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRAS_REQUIRE,

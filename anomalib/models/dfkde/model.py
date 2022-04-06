@@ -20,15 +20,72 @@ import torch
 import torchvision
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
-from torch import Tensor
+from torch import Tensor, nn
 
 from anomalib.models.components import AnomalyModule, FeatureExtractor
 
 from .normality_model import NormalityModel
 
 
+class DfkdeModel(nn.Module):
+    """DFKDE model.
+
+    Args:
+        backbone (str): Pre-trained model backbone.
+        filter_count (int): Number of filters.
+        threshold_steepness (float): Threshold steepness for normality model.
+        threshold_offset (float): Threshold offset for normality model.
+    """
+
+    def __init__(self, backbone: str, filter_count: int, threshold_steepness: float, threshold_offset: float) -> None:
+        super().__init__()
+        self.backbone = getattr(torchvision.models, backbone)
+        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=["avgpool"]).eval()
+
+        self.normality_model = NormalityModel(
+            filter_count=filter_count,
+            threshold_steepness=threshold_steepness,
+            threshold_offset=threshold_offset,
+        )
+
+    def get_features(self, batch: Tensor) -> Tensor:
+        """Extract features from the pretrained network.
+
+        Args:
+            batch (Tensor): Image batch.
+
+        Returns:
+            Tensor: Tensor containing extracted features.
+        """
+        self.feature_extractor.eval()
+        layer_outputs = self.feature_extractor(batch)
+        layer_outputs = torch.cat(list(layer_outputs.values())).detach()
+        return layer_outputs
+
+    def fit(self, embeddings: List[Tensor]):
+        """Fit normality model.
+
+        Args:
+            embeddings (List[Tensor]): Embeddings to fit.
+        """
+        _embeddings = torch.vstack(embeddings)
+        self.normality_model.fit(_embeddings)
+
+    def forward(self, batch: Tensor) -> Tensor:
+        """Prediction by normality model.
+
+        Args:
+            batch (Tensor): Input images.
+
+        Returns:
+            Tensor: Predictions
+        """
+        feature_vector = self.get_features(batch)
+        return self.normality_model.predict(feature_vector.view(feature_vector.shape[:2]))
+
+
 class DfkdeLightning(AnomalyModule):
-    """DFKDE: Deep Featured Kernel Density Estimation.
+    """DFKDE: Deep Feature Kernel Density Estimation.
 
     Args:
         hparams (Union[DictConfig, ListConfig]): Model params
@@ -36,22 +93,18 @@ class DfkdeLightning(AnomalyModule):
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         super().__init__(hparams)
-        self.threshold_steepness = 0.05
-        self.threshold_offset = 12
+        threshold_steepness = 0.05
+        threshold_offset = 12
 
-        self.backbone = getattr(torchvision.models, hparams.model.backbone)
-        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=["avgpool"]).eval()
-
-        self.normality_model = NormalityModel(
-            filter_count=hparams.model.max_training_points,
-            threshold_steepness=self.threshold_steepness,
-            threshold_offset=self.threshold_offset,
+        self.model: DfkdeModel = DfkdeModel(
+            hparams.model.backbone, hparams.model.max_training_points, threshold_steepness, threshold_offset
         )
+
         self.automatic_optimization = False
         self.embeddings: List[Tensor] = []
 
     @staticmethod
-    def configure_optimizers():
+    def configure_optimizers():  # pylint: disable=arguments-differ
         """DFKDE doesn't require optimization, therefore returns no optimizers."""
         return None
 
@@ -66,9 +119,7 @@ class DfkdeLightning(AnomalyModule):
           Deep CNN features.
         """
 
-        self.feature_extractor.eval()
-        layer_outputs = self.feature_extractor(batch["image"])
-        embedding = torch.hstack(list(layer_outputs.values())).detach().squeeze()
+        embedding = self.model.get_features(batch["image"]).squeeze()
 
         # NOTE: `self.embedding` appends each batch embedding to
         #   store the training set embedding. We manually append these
@@ -81,8 +132,7 @@ class DfkdeLightning(AnomalyModule):
         # NOTE: Previous anomalib versions fit Gaussian at the end of the epoch.
         #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
         #   is run within train epoch.
-        embeddings = torch.vstack(self.embeddings)
-        self.normality_model.fit(embeddings)
+        self.model.fit(self.embeddings)
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Validation Step of DFKDE.
@@ -95,10 +145,6 @@ class DfkdeLightning(AnomalyModule):
         Returns:
           Dictionary containing probability, prediction and ground truth values.
         """
-
-        self.feature_extractor.eval()
-        layer_outputs = self.feature_extractor(batch["image"])
-        feature_vector = torch.hstack(list(layer_outputs.values())).detach()
-        batch["pred_scores"] = self.normality_model.predict(feature_vector.view(feature_vector.shape[:2]))
+        batch["pred_scores"] = self.model(batch["image"])
 
         return batch

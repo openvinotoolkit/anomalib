@@ -16,6 +16,7 @@
 
 import pytest
 from omegaconf import OmegaConf
+from pytorch_lightning.loggers import CSVLogger
 
 from anomalib.utils.loggers import (
     AnomalibTensorBoardLogger,
@@ -46,12 +47,24 @@ def test_get_logger():
     # get tensorboard
     config.project.logger = "tensorboard"
     logger = get_logger(config=config)
-    assert isinstance(logger, AnomalibTensorBoardLogger)
+    assert isinstance(logger[0], AnomalibTensorBoardLogger)
 
     # get wandb logger
     config.project.logger = "wandb"
     logger = get_logger(config=config)
-    assert isinstance(logger, AnomalibWandbLogger)
+    assert isinstance(logger[0], AnomalibWandbLogger)
+
+    # get csv logger.
+    config.project.logger = "csv"
+    logger = get_logger(config=config)
+    assert isinstance(logger[0], CSVLogger)
+
+    # get multiple loggers
+    config.project.logger = ["tensorboard", "wandb", "csv"]
+    logger = get_logger(config=config)
+    assert isinstance(logger[0], AnomalibTensorBoardLogger)
+    assert isinstance(logger[1], AnomalibWandbLogger)
+    assert isinstance(logger[2], CSVLogger)
 
     # raise unknown
     with pytest.raises(UnknownLogger):
