@@ -293,8 +293,9 @@ class MVTecDataModule(LightningDataModule):
         train_batch_size: int = 32,
         test_batch_size: int = 32,
         num_workers: int = 8,
-        transform_config: Optional[Union[str, A.Compose]] = None,
         task: str = "segmentation",
+        transform_config_train: Optional[Union[str, A.Compose]] = None,
+        transform_config_val: Optional[Union[str, A.Compose]] = None,
         seed: int = 0,
         create_validation_set: bool = False,
     ) -> None:
@@ -307,8 +308,9 @@ class MVTecDataModule(LightningDataModule):
             train_batch_size: Training batch size.
             test_batch_size: Testing batch size.
             num_workers: Number of workers.
-            transform_config: Config for pre-processing.
             task: ``classification`` or ``segmentation``
+            transform_config_train: Config for pre-processing during training.
+            transform_config_val: Config for pre-processing during validation.
             seed: seed used for the random subset splitting
             create_validation_set: Create a validation subset in addition to the train and test subsets
 
@@ -321,7 +323,8 @@ class MVTecDataModule(LightningDataModule):
             ...     train_batch_size=32,
             ...     test_batch_size=32,
             ...     num_workers=8,
-            ...     transform_config=None,
+            ...     transform_config_train=None,
+            ...     transform_config_val=None,
             ... )
             >>> datamodule.setup()
 
@@ -342,10 +345,15 @@ class MVTecDataModule(LightningDataModule):
         self.root = root if isinstance(root, Path) else Path(root)
         self.category = category
         self.dataset_path = self.root / self.category
-        self.transform_config = transform_config
+        self.transform_config_train = transform_config_train
+        self.transform_config_val = transform_config_val
         self.image_size = image_size
 
-        self.pre_process = PreProcessor(config=self.transform_config, image_size=self.image_size)
+        if self.transform_config_train is not None and self.transform_config_val is None:
+            self.transform_config_val = self.transform_config_train
+
+        self.pre_process_train = PreProcessor(config=self.transform_config_train, image_size=self.image_size)
+        self.pre_process_val = PreProcessor(config=self.transform_config_val, image_size=self.image_size)
 
         self.train_batch_size = train_batch_size
         self.test_batch_size = test_batch_size
@@ -395,7 +403,7 @@ class MVTecDataModule(LightningDataModule):
             self.train_data = MVTec(
                 root=self.root,
                 category=self.category,
-                pre_process=self.pre_process,
+                pre_process=self.pre_process_train,
                 split="train",
                 task=self.task,
                 seed=self.seed,
@@ -406,7 +414,7 @@ class MVTecDataModule(LightningDataModule):
             self.val_data = MVTec(
                 root=self.root,
                 category=self.category,
-                pre_process=self.pre_process,
+                pre_process=self.pre_process_val,
                 split="val",
                 task=self.task,
                 seed=self.seed,
@@ -416,7 +424,7 @@ class MVTecDataModule(LightningDataModule):
         self.test_data = MVTec(
             root=self.root,
             category=self.category,
-            pre_process=self.pre_process,
+            pre_process=self.pre_process_val,
             split="test",
             task=self.task,
             seed=self.seed,
@@ -425,7 +433,7 @@ class MVTecDataModule(LightningDataModule):
 
         if stage == "predict":
             self.inference_data = InferenceDataset(
-                path=self.root, image_size=self.image_size, transform_config=self.transform_config
+                path=self.root, image_size=self.image_size, transform_config=self.transform_config_val
             )
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:

@@ -73,7 +73,9 @@ def subnet_fc(dims_in: int, dims_out: int):
     return nn.Sequential(nn.Linear(dims_in, 2 * dims_in), nn.ReLU(), nn.Linear(2 * dims_in, dims_out))
 
 
-def cflow_head(condition_vector: int, coupling_blocks: int, clamp_alpha: float, n_features: int) -> SequenceINN:
+def cflow_head(
+    condition_vector: int, coupling_blocks: int, clamp_alpha: float, n_features: int, permute_soft: bool = False
+) -> SequenceINN:
     """Create invertible decoder network.
 
     Args:
@@ -81,6 +83,9 @@ def cflow_head(condition_vector: int, coupling_blocks: int, clamp_alpha: float, 
         coupling_blocks (int): number of coupling blocks to build the decoder
         clamp_alpha (float): clamping value to avoid exploding values
         n_features (int): number of decoder features
+        permute_soft (bool): Whether to sample the permutation matrix :math:`R` from :math:`SO(N)`,
+            or to use hard permutations instead. Note, ``permute_soft=True`` is very slow
+            when working with >512 dimensions.
 
     Returns:
         SequenceINN: decoder network block
@@ -95,6 +100,6 @@ def cflow_head(condition_vector: int, coupling_blocks: int, clamp_alpha: float, 
             subnet_constructor=subnet_fc,
             affine_clamping=clamp_alpha,
             global_affine_type="SOFTPLUS",
-            permute_soft=True,
+            permute_soft=permute_soft,
         )
     return coder

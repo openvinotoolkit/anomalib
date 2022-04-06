@@ -46,7 +46,7 @@ jobs:
           else
             echo "Branch gh-pages already exists"
           fi
-      - name: Push docs to gh-pages branch
+      - name: Commit docs to gh-pages branch
         run: |
           git fetch
           git checkout gh-pages
@@ -59,4 +59,8 @@ jobs:
           git config --local user.name "GitHub Action"
           git add .
           git commit -m "Update documentation" -a || true
-          git push origin gh-pages
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: gh-pages
