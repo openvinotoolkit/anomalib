@@ -46,7 +46,8 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
             test_batch_size=config.dataset.test_batch_size,
             num_workers=config.dataset.num_workers,
             seed=config.project.seed,
-            transform_config=config.dataset.transform_config,
+            transform_config_train=config.dataset.transform_config.train,
+            transform_config_val=config.dataset.transform_config.val,
             create_validation_set=config.dataset.create_validation_set,
         )
     elif config.dataset.format.lower() == "btech":
@@ -59,7 +60,8 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
             test_batch_size=config.dataset.test_batch_size,
             num_workers=config.dataset.num_workers,
             seed=config.project.seed,
-            transform_config=config.dataset.transform_config,
+            transform_config_train=config.dataset.transform_config.train,
+            transform_config_val=config.dataset.transform_config.val,
             create_validation_set=config.dataset.create_validation_set,
         )
     elif config.dataset.format.lower() == "folder":
@@ -76,7 +78,8 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
             train_batch_size=config.dataset.train_batch_size,
             test_batch_size=config.dataset.test_batch_size,
             num_workers=config.dataset.num_workers,
-            transform_config=config.dataset.transform_config,
+            transform_config_train=config.dataset.transform_config.train,
+            transform_config_val=config.dataset.transform_config.val,
             create_validation_set=config.dataset.create_validation_set,
         )
     else:

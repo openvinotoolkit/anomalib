@@ -10,7 +10,9 @@ dataset:
   inference_batch_size: 16
   fiber_batch_size: 64
   num_workers: 8
-  transform_config: null
+  transform_config:
+    train: null
+    val: null
   create_validation_set: false
 
 model:
