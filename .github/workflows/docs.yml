@@ -10,8 +10,6 @@ on:
 jobs:
   Build-and-Publish-Documentation:
     runs-on: [self-hosted, linux, x64]
-    with:
-      repo-token: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: CHECKOUT REPOSITORY
         uses: actions/checkout@v2
@@ -49,6 +47,8 @@ jobs:
             echo "Branch gh-pages already exists"
           fi
       - name: Push docs to gh-pages branch
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git fetch
           git checkout gh-pages
