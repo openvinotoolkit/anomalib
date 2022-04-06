@@ -19,11 +19,11 @@ import pytest
 import torch
 from pytorch_lightning import Trainer
 
-from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
 from anomalib.utils.callbacks import get_callbacks
 from anomalib.utils.metrics import AdaptiveThreshold
+from tests.helpers.config import get_test_configurable_parameters
 
 
 @pytest.mark.parametrize(
@@ -48,7 +48,7 @@ def test_non_adaptive_threshold():
     Test if the non-adaptive threshold gets used in the F1 score computation when
     adaptive thresholding is disabled and no normalization is used.
     """
-    config = get_configurable_parameters(model_config_path="anomalib/models/padim/config.yaml")
+    config = get_test_configurable_parameters(model_config_path="anomalib/models/padim/config.yaml")
 
     config.model.normalization_method = "none"
     config.model.threshold.adaptive = False

@@ -83,6 +83,9 @@ def cflow_head(
         coupling_blocks (int): number of coupling blocks to build the decoder
         clamp_alpha (float): clamping value to avoid exploding values
         n_features (int): number of decoder features
+        permute_soft (bool): Whether to sample the permutation matrix :math:`R` from :math:`SO(N)`,
+            or to use hard permutations instead. Note, ``permute_soft=True`` is very slow
+            when working with >512 dimensions.
 
     Returns:
         SequenceINN: decoder network block

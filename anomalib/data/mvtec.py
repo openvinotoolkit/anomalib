@@ -1,10 +1,27 @@
-"""MVTec Dataset.
+"""MVTec AD Dataset (CC BY-NC-SA 4.0).
 
-MVTec This script contains PyTorch Dataset, Dataloader and PyTorch
-Lightning DataModule for the MVTec dataset.
+Description:
+    This script contains PyTorch Dataset, Dataloader and PyTorch
+        Lightning DataModule for the MVTec AD dataset.
 
-If the dataset is not on the file system, the script downloads and
-extracts the dataset and create PyTorch data objects.
+    If the dataset is not on the file system, the script downloads and
+        extracts the dataset and create PyTorch data objects.
+
+License:
+    MVTec AD dataset is released under the Creative Commons
+    Attribution-NonCommercial-ShareAlike 4.0 International License
+    (CC BY-NC-SA 4.0)(https://creativecommons.org/licenses/by-nc-sa/4.0/).
+
+Reference:
+    - Paul Bergmann, Kilian Batzner, Michael Fauser, David Sattlegger, Carsten Steger:
+      The MVTec Anomaly Detection Dataset: A Comprehensive Real-World Dataset for
+      Unsupervised Anomaly Detection; in: International Journal of Computer Vision
+      129(4):1038-1059, 2021, DOI: 10.1007/s11263-020-01400-4.
+
+    - Paul Bergmann, Michael Fauser, David Sattlegger, Carsten Steger: MVTec AD —
+      A Comprehensive Real-World Dataset for Unsupervised Anomaly Detection;
+      in: IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR),
+      9584-9592, 2019, DOI: 10.1109/CVPR.2019.00982.
 """
 
 # Copyright (C) 2020 Intel Corporation
@@ -47,7 +64,7 @@ from anomalib.data.utils.split import (
 )
 from anomalib.pre_processing import PreProcessor
 
-logger = logging.getLogger(name="Dataset: MVTec")
+logger = logging.getLogger(name="Dataset: MVTec AD")
 logger.setLevel(logging.DEBUG)
 
 
@@ -58,7 +75,7 @@ def make_mvtec_dataset(
     seed: int = 0,
     create_validation_set: bool = False,
 ) -> DataFrame:
-    """Create MVTec samples by parsing the MVTec data file structure.
+    """Create MVTec AD samples by parsing the MVTec AD data file structure.
 
     The files are expected to follow the structure:
         path/to/dataset/split/category/image_filename.png
@@ -79,11 +96,11 @@ def make_mvtec_dataset(
             Defaults to 0.1.
         seed (int, optional): Random seed to ensure reproducibility when splitting. Defaults to 0.
         create_validation_set (bool, optional): Boolean to create a validation set from the test set.
-            MVTec dataset does not contain a validation set. Those wanting to create a validation set
+            MVTec AD dataset does not contain a validation set. Those wanting to create a validation set
             could set this flag to ``True``.
 
     Example:
-        The following example shows how to get training samples from MVTec bottle category:
+        The following example shows how to get training samples from MVTec AD bottle category:
 
         >>> root = Path('./MVTec')
         >>> category = 'bottle'
@@ -149,7 +166,7 @@ def make_mvtec_dataset(
 
 
 class MVTec(VisionDataset):
-    """MVTec PyTorch Dataset."""
+    """MVTec AD PyTorch Dataset."""
 
     def __init__(
         self,
@@ -161,11 +178,11 @@ class MVTec(VisionDataset):
         seed: int = 0,
         create_validation_set: bool = False,
     ) -> None:
-        """Mvtec Dataset class.
+        """Mvtec AD Dataset class.
 
         Args:
-            root: Path to the MVTec dataset
-            category: Name of the MVTec category.
+            root: Path to the MVTec AD dataset
+            category: Name of the MVTec AD category.
             pre_process: List of pre_processing object containing albumentation compose.
             split: 'train', 'val' or 'test'
             task: ``classification`` or ``segmentation``
@@ -248,7 +265,7 @@ class MVTec(VisionDataset):
             if self.task == "segmentation":
                 mask_path = self.samples.mask_path[index]
 
-                # Only Anomalous (1) images has masks in MVTec dataset.
+                # Only Anomalous (1) images has masks in MVTec AD dataset.
                 # Therefore, create empty mask for Normal (0) images.
                 if label_index == 0:
                     mask = np.zeros(shape=image.shape[:2])
@@ -265,7 +282,7 @@ class MVTec(VisionDataset):
 
 
 class MVTecDataModule(LightningDataModule):
-    """MVTec Lightning Data Module."""
+    """MVTec AD Lightning Data Module."""
 
     def __init__(
         self,
@@ -276,20 +293,22 @@ class MVTecDataModule(LightningDataModule):
         train_batch_size: int = 32,
         test_batch_size: int = 32,
         num_workers: int = 8,
-        transform_config: Optional[Union[str, A.Compose]] = None,
+        transform_config_train: Optional[Union[str, A.Compose]] = None,
+        transform_config_val: Optional[Union[str, A.Compose]] = None,
         seed: int = 0,
         create_validation_set: bool = False,
     ) -> None:
-        """Mvtec Lightning Data Module.
+        """Mvtec AD Lightning Data Module.
 
         Args:
-            root: Path to the MVTec dataset
-            category: Name of the MVTec category.
+            root: Path to the MVTec AD dataset
+            category: Name of the MVTec AD category.
             image_size: Variable to which image is resized.
             train_batch_size: Training batch size.
             test_batch_size: Testing batch size.
             num_workers: Number of workers.
-            transform_config: Config for pre-processing.
+            transform_config_train: Config for pre-processing during training.
+            transform_config_val: Config for pre-processing during validation.
             seed: seed used for the random subset splitting
             create_validation_set: Create a validation subset in addition to the train and test subsets
 
@@ -302,7 +321,8 @@ class MVTecDataModule(LightningDataModule):
             ...     train_batch_size=32,
             ...     test_batch_size=32,
             ...     num_workers=8,
-            ...     transform_config=None,
+            ...     transform_config_train=None,
+            ...     transform_config_val=None,
             ... )
             >>> datamodule.setup()
 
@@ -323,10 +343,15 @@ class MVTecDataModule(LightningDataModule):
         self.root = root if isinstance(root, Path) else Path(root)
         self.category = category
         self.dataset_path = self.root / self.category
-        self.transform_config = transform_config
+        self.transform_config_train = transform_config_train
+        self.transform_config_val = transform_config_val
         self.image_size = image_size
 
-        self.pre_process = PreProcessor(config=self.transform_config, image_size=self.image_size)
+        if self.transform_config_train is not None and self.transform_config_val is None:
+            self.transform_config_val = self.transform_config_train
+
+        self.pre_process_train = PreProcessor(config=self.transform_config_train, image_size=self.image_size)
+        self.pre_process_val = PreProcessor(config=self.transform_config_val, image_size=self.image_size)
 
         self.train_batch_size = train_batch_size
         self.test_batch_size = test_batch_size
@@ -350,7 +375,7 @@ class MVTecDataModule(LightningDataModule):
             dataset_name = "mvtec_anomaly_detection.tar.xz"
 
             logging.info("Downloading the dataset.")
-            with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc="MVTec") as progress_bar:
+            with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc="MVTec AD") as progress_bar:
                 urlretrieve(
                     url=f"ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/{dataset_name}",
                     filename=self.root / dataset_name,
@@ -375,7 +400,7 @@ class MVTecDataModule(LightningDataModule):
             self.train_data = MVTec(
                 root=self.root,
                 category=self.category,
-                pre_process=self.pre_process,
+                pre_process=self.pre_process_train,
                 split="train",
                 seed=self.seed,
                 create_validation_set=self.create_validation_set,
@@ -385,7 +410,7 @@ class MVTecDataModule(LightningDataModule):
             self.val_data = MVTec(
                 root=self.root,
                 category=self.category,
-                pre_process=self.pre_process,
+                pre_process=self.pre_process_val,
                 split="val",
                 seed=self.seed,
                 create_validation_set=self.create_validation_set,
@@ -394,7 +419,7 @@ class MVTecDataModule(LightningDataModule):
         self.test_data = MVTec(
             root=self.root,
             category=self.category,
-            pre_process=self.pre_process,
+            pre_process=self.pre_process_val,
             split="test",
             seed=self.seed,
             create_validation_set=self.create_validation_set,
@@ -402,7 +427,7 @@ class MVTecDataModule(LightningDataModule):
 
         if stage == "predict":
             self.inference_data = InferenceDataset(
-                path=self.root, image_size=self.image_size, transform_config=self.transform_config
+                path=self.root, image_size=self.image_size, transform_config=self.transform_config_val
             )
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:

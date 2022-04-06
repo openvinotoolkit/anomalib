@@ -80,8 +80,7 @@ def make_dataset(
             Defaults to 0.2.
         seed (int, optional): Random seed to ensure reproducibility when splitting. Defaults to 0.
         create_validation_set (bool, optional):Boolean to create a validation set from the test set.
-            MVTec dataset does not contain a validation set. Those wanting to create a validation set
-            could set this flag to ``True``.
+            Those wanting to create a validation set could set this flag to ``True``.
         extensions (Optional[Tuple[str, ...]], optional): Type of the image extensions to read from the
             directory.
 
@@ -185,8 +184,7 @@ class FolderDataset(Dataset):
             task (Optional[str], optional): Task type. (classification or segmentation) Defaults to None.
             seed (int, optional): Random seed to ensure reproducibility when splitting. Defaults to 0.
             create_validation_set (bool, optional):Boolean to create a validation set from the test set.
-                MVTec dataset does not contain a validation set. Those wanting to create a validation set
-                could set this flag to ``True``.
+                Those wanting to create a validation set could set this flag to ``True``.
 
         Raises:
             ValueError: When task is set to classification and `mask_dir` is provided. When `mask_dir` is
@@ -248,7 +246,7 @@ class FolderDataset(Dataset):
             if self.task == "segmentation":
                 mask_path = self.samples.mask_path[index]
 
-                # Only Anomalous (1) images has masks in MVTec dataset.
+                # Only Anomalous (1) images has masks in MVTec AD dataset.
                 # Therefore, create empty mask for Normal (0) images.
                 if label_index == 0:
                     mask = np.zeros(shape=image.shape[:2])
@@ -281,7 +279,8 @@ class FolderDataModule(LightningDataModule):
         train_batch_size: int = 32,
         test_batch_size: int = 32,
         num_workers: int = 8,
-        transform_config: Optional[Union[str, A.Compose]] = None,
+        transform_config_train: Optional[Union[str, A.Compose]] = None,
+        transform_config_val: Optional[Union[str, A.Compose]] = None,
         create_validation_set: bool = False,
     ) -> None:
         """Folder Dataset PL Datamodule.
@@ -307,11 +306,14 @@ class FolderDataModule(LightningDataModule):
             train_batch_size (int, optional): Training batch size. Defaults to 32.
             test_batch_size (int, optional): Test batch size. Defaults to 32.
             num_workers (int, optional): Number of workers. Defaults to 8.
-            transform_config (Optional[Union[str, A.Compose]], optional): Config for pre-processing.
+            transform_config_train (Optional[Union[str, A.Compose]], optional): Config for pre-processing
+                during training.
+                Defaults to None.
+            transform_config_val (Optional[Union[str, A.Compose]], optional): Config for pre-processing
+                during validation.
                 Defaults to None.
             create_validation_set (bool, optional):Boolean to create a validation set from the test set.
-                MVTec dataset does not contain a validation set. Those wanting to create a validation set
-                could set this flag to ``True``.
+                Those wanting to create a validation set could set this flag to ``True``.
 
         Examples:
             Assume that we use Folder Dataset for the MVTec/bottle/broken_large category. We would do:
@@ -333,7 +335,7 @@ class FolderDataModule(LightningDataModule):
 
             We could also create a Folder DataModule for datasets containing mask annotations.
             The dataset expects that mask annotation filenames must be same as the original filename.
-            To this end, we modified mask filenames in MVTec bottle category.
+            To this end, we modified mask filenames in MVTec AD bottle category.
             Now we could try folder data module using the mvtec bottle broken large category
             >>> datamodule = FolderDataModule(
             ...     root="./datasets/bottle/test",
@@ -393,10 +395,15 @@ class FolderDataModule(LightningDataModule):
                 "Check your configuration."
             )
         self.task = task
-        self.transform_config = transform_config
+        self.transform_config_train = transform_config_train
+        self.transform_config_val = transform_config_val
         self.image_size = image_size
 
-        self.pre_process = PreProcessor(config=self.transform_config, image_size=self.image_size)
+        if self.transform_config_train is not None and self.transform_config_val is None:
+            self.transform_config_val = self.transform_config_train
+
+        self.pre_process_train = PreProcessor(config=self.transform_config_train, image_size=self.image_size)
+        self.pre_process_val = PreProcessor(config=self.transform_config_val, image_size=self.image_size)
 
         self.train_batch_size = train_batch_size
         self.test_batch_size = test_batch_size
@@ -425,7 +432,7 @@ class FolderDataModule(LightningDataModule):
                 split="train",
                 split_ratio=self.split_ratio,
                 mask_dir=self.mask_dir,
-                pre_process=self.pre_process,
+                pre_process=self.pre_process_train,
                 extensions=self.extensions,
                 task=self.task,
                 seed=self.seed,
@@ -439,7 +446,7 @@ class FolderDataModule(LightningDataModule):
                 split="val",
                 split_ratio=self.split_ratio,
                 mask_dir=self.mask_dir,
-                pre_process=self.pre_process,
+                pre_process=self.pre_process_val,
                 extensions=self.extensions,
                 task=self.task,
                 seed=self.seed,
@@ -452,7 +459,7 @@ class FolderDataModule(LightningDataModule):
             split="test",
             split_ratio=self.split_ratio,
             mask_dir=self.mask_dir,
-            pre_process=self.pre_process,
+            pre_process=self.pre_process_val,
             extensions=self.extensions,
             task=self.task,
             seed=self.seed,
@@ -461,7 +468,7 @@ class FolderDataModule(LightningDataModule):
 
         if stage == "predict":
             self.inference_data = InferenceDataset(
-                path=self.root, image_size=self.image_size, transform_config=self.transform_config
+                path=self.root, image_size=self.image_size, transform_config=self.transform_config_val
             )
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:

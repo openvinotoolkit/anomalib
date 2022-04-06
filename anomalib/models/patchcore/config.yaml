@@ -7,8 +7,10 @@ dataset:
   image_size: 224
   train_batch_size: 32
   test_batch_size: 1
-  num_workers: 36
-  transform_config: null
+  num_workers: 0
+  transform_config:
+    train: null
+    val: null
   create_validation_set: false
   tiling:
     apply: true
@@ -38,8 +40,7 @@ project:
   seed: 0
   path: ./results
   log_images_to: [local]
-  logger: false
-  save_to_csv: false
+  logger: false # options: [tensorboard, wandb, csv] or combinations.
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:

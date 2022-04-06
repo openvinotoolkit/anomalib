@@ -8,7 +8,9 @@ dataset:
   train_batch_size: 32
   test_batch_size: 32
   num_workers: 36
-  transform_config: null
+  transform_config:
+    train: null
+    val: null
   create_validation_set: false
   tiling:
     apply: false
@@ -36,8 +38,7 @@ project:
   seed: 42
   path: ./results
   log_images_to: ["local"]
-  logger: false
-  save_to_csv: false
+  logger: false # options: [tensorboard, wandb, csv] or combinations.
 
 optimization:
   openvino:
