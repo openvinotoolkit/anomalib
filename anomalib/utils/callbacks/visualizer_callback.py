@@ -116,7 +116,7 @@ class VisualizerCallback(Callback):
                 outputs["image_path"], outputs["image"], outputs["mask"], outputs["anomaly_maps"]
             ):
                 image = Denormalize()(image.cpu())
-                true_mask = true_mask.cpu().numpy()
+                true_mask = true_mask.cpu().numpy() * 255
                 anomaly_map = anomaly_map.cpu().numpy()
 
                 heat_map = superimpose_anomaly_map(anomaly_map, image, normalize=normalize)
