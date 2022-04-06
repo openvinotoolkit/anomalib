@@ -1,4 +1,4 @@
-"""Utils for Benchmarking and Sweep."""
+"""Post-processing tests."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -13,21 +13,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions
 # and limitations under the License.
-
-from .config import flatten_sweep_params, get_run_config, set_in_nested_config
-from .helpers import (
-    get_meta_data,
-    get_openvino_throughput,
-    get_sweep_callbacks,
-    get_torch_throughput,
-)
-
-__all__ = [
-    "get_run_config",
-    "set_in_nested_config",
-    "get_sweep_callbacks",
-    "get_meta_data",
-    "get_openvino_throughput",
-    "get_torch_throughput",
-    "flatten_sweep_params",
-]

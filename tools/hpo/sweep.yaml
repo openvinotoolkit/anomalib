@@ -1,0 +1,13 @@
+observation_budget: 10
+method: bayes
+metric:
+  name: pixel_AUROC
+  goal: minimize
+parameters:
+  dataset:
+    category: capsule
+    image_size:
+      values: [128, 256]
+  model:
+    backbone:
+      values: [resnet18, wide_resnet50_2]
