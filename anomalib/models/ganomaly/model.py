@@ -38,8 +38,9 @@ class GanomalyLightning(AnomalyModule):
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         super().__init__(hparams)
+
         self.model: GanomalyModel = GanomalyModel(
-            input_size=hparams.model.input_size[0],
+            input_size=hparams.model.input_size,
             num_input_channels=3,
             n_features=hparams.model.n_features,
             latent_vec_size=hparams.model.latent_vec_size,
