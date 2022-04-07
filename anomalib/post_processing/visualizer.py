@@ -62,7 +62,7 @@ class Visualizer:
             index = self.figure_index
             self.figure_index += 1
 
-        self.axis[index].imshow(image, color_map)
+        self.axis[index].imshow(image, color_map, vmin=0, vmax=255)
         self.axis[index].title.set_text(title)
 
     def add_text(self, image: np.ndarray, text: str, font: int = cv2.FONT_HERSHEY_PLAIN):
