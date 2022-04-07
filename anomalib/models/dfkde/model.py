@@ -16,72 +16,13 @@
 
 from typing import List, Union
 
-import torch
-import torchvision
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
-from torch import Tensor, nn
+from torch import Tensor
 
-from anomalib.models.components import AnomalyModule, FeatureExtractor
+from anomalib.models.components import AnomalyModule
 
 from .normality_model import NormalityModel
-
-
-class DfkdeModel(nn.Module):
-    """DFKDE model.
-
-    Args:
-        backbone (str): Pre-trained model backbone.
-        filter_count (int): Number of filters.
-        threshold_steepness (float): Threshold steepness for normality model.
-        threshold_offset (float): Threshold offset for normality model.
-    """
-
-    def __init__(self, backbone: str, filter_count: int, threshold_steepness: float, threshold_offset: float) -> None:
-        super().__init__()
-        self.backbone = getattr(torchvision.models, backbone)
-        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=["avgpool"]).eval()
-
-        self.normality_model = NormalityModel(
-            filter_count=filter_count,
-            threshold_steepness=threshold_steepness,
-            threshold_offset=threshold_offset,
-        )
-
-    def get_features(self, batch: Tensor) -> Tensor:
-        """Extract features from the pretrained network.
-
-        Args:
-            batch (Tensor): Image batch.
-
-        Returns:
-            Tensor: Tensor containing extracted features.
-        """
-        self.feature_extractor.eval()
-        layer_outputs = self.feature_extractor(batch)
-        layer_outputs = torch.cat(list(layer_outputs.values())).detach()
-        return layer_outputs
-
-    def fit(self, embeddings: List[Tensor]):
-        """Fit normality model.
-
-        Args:
-            embeddings (List[Tensor]): Embeddings to fit.
-        """
-        _embeddings = torch.vstack(embeddings)
-        self.normality_model.fit(_embeddings)
-
-    def forward(self, batch: Tensor) -> Tensor:
-        """Prediction by normality model.
-
-        Args:
-            batch (Tensor): Input images.
-
-        Returns:
-            Tensor: Predictions
-        """
-        feature_vector = self.get_features(batch)
-        return self.normality_model.predict(feature_vector.view(feature_vector.shape[:2]))
 
 
 class DfkdeLightning(AnomalyModule):
@@ -96,8 +37,11 @@ class DfkdeLightning(AnomalyModule):
         threshold_steepness = 0.05
         threshold_offset = 12
 
-        self.model: DfkdeModel = DfkdeModel(
-            hparams.model.backbone, hparams.model.max_training_points, threshold_steepness, threshold_offset
+        self.model = NormalityModel(
+            backbone=hparams.model.backbone,
+            filter_count=hparams.model.max_training_points,
+            threshold_steepness=threshold_steepness,
+            threshold_offset=threshold_offset,
         )
 
         self.automatic_optimization = False
