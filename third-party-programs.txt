@@ -18,3 +18,7 @@ terms are listed below.
 1. Encoder, Decoder, Discriminator, Generator
    Copyright (c) 2018-2022 Samet Akcay, Durham University, UK
    SPDX-License-Identifier: MIT
+
+2. SequenceINN, InvertibleModule, AllInOneBlock
+   Copyright (c) 2018-2022 Lynton Ardizzone, Visual Learning Lab Heidelberg.
+   SPDX-License-Identifier: MIT
