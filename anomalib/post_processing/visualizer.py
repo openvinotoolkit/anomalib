@@ -77,10 +77,13 @@ class Visualizer:
             np.ndarray: Image with text.
         """
         image = image.copy()
-        font_size = image.shape[1] // 1024 + 1  # Text scale is calculated based on the reference size of 1024
-        (text_w, text_h), baseline = cv2.getTextSize(text, font, font_size, thickness=font_size // 2)
-        cv2.rectangle(image, (0, 0), (0 + text_w, 0 + text_h), (255, 255, 255), -1)
-        cv2.putText(image, text, (0, baseline // 2 + text_h), font, font_size, 0)
+        font_size = image.shape[1] // 256 + 1  # Text scale is calculated based on the reference size of 256
+        
+        for i, line in enumerate(text.split('\n')):
+            (text_w, text_h), baseline = cv2.getTextSize(line, font, font_size, thickness=1)
+            y = int(1.5*i*text_h)
+            cv2.rectangle(image, (0, y + baseline // 2), (0 + text_w, 0 + text_h + y), (255, 255, 255), -1)
+            cv2.putText(image, line, (0, (baseline // 2 + text_h) + y ), font, font_size, (0, 0, 255), 1, cv2.LINE_AA, False)
         return image
 
     def show(self):

@@ -112,8 +112,8 @@ class VisualizerCallback(Callback):
             normalize = True  # raw anomaly maps. Still need to normalize
         threshold = pl_module.pixel_metrics.F1.threshold
 
-        for i, (filename, image, anomaly_map) in enumerate(
-            zip(outputs["image_path"], outputs["image"], outputs["anomaly_maps"])
+        for i, (filename, image, anomaly_map, pred_score, gt_label) in enumerate(
+            zip(outputs["image_path"], outputs["image"], outputs["anomaly_maps"], outputs["pred_scores"], outputs["label"])
         ):
             image = Denormalize()(image.cpu())
             anomaly_map = anomaly_map.cpu().numpy()
@@ -121,21 +121,22 @@ class VisualizerCallback(Callback):
             pred_mask = compute_mask(anomaly_map, threshold)
             vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
 
-            visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
+            num_cols = 6 if self.task == "segmentation" else 5
+            visualizer = Visualizer(num_rows=1, num_cols=num_cols, figure_size=(12, 3))
             visualizer.add_image(image=image, title="Image")
+
+            if self.task == "segmentation":
+                true_mask = outputs["mask"][i].cpu().numpy() * 255
+                visualizer.add_image(image=true_mask, color_map="gray", title="Ground Truth")
+
             visualizer.add_image(image=heat_map, title="Predicted Heat Map")
             visualizer.add_image(image=pred_mask, color_map="gray", title="Predicted Mask")
             visualizer.add_image(image=vis_img, title="Segmentation Result")
 
-            if self.task == "classification":
-                image_classified = visualizer.add_text(
-                    image=image, text=f'Pred: {outputs["pred_scores"][i]:.3f} GT: {int(outputs["label"][i])}'
-                )
-                visualizer.add_image(image=image_classified, title="Classified Image")
-
-            if self.task == "segmentation":
-                true_mask = outputs["mask"][i].cpu().numpy()
-                visualizer.add_image(image=true_mask, color_map="gray", title="Ground Truth")
+            image_classified = visualizer.add_text(
+                image=image, text=f'Pred: { "anomalous" if pred_score > threshold else "normal"}({pred_score:.3f}) \nGT: {"anomalous" if bool(gt_label) else "normal"}'
+            )
+            visualizer.add_image(image=image_classified, title="Classified Image")
 
             self._add_images(visualizer, pl_module, Path(filename))
             visualizer.close()
