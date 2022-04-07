@@ -113,7 +113,13 @@ class VisualizerCallback(Callback):
         threshold = pl_module.pixel_metrics.F1.threshold
 
         for i, (filename, image, anomaly_map, pred_score, gt_label) in enumerate(
-            zip(outputs["image_path"], outputs["image"], outputs["anomaly_maps"], outputs["pred_scores"], outputs["label"])
+            zip(
+                outputs["image_path"],
+                outputs["image"],
+                outputs["anomaly_maps"],
+                outputs["pred_scores"],
+                outputs["label"],
+            )
         ):
             image = Denormalize()(image.cpu())
             anomaly_map = anomaly_map.cpu().numpy()
@@ -134,7 +140,9 @@ class VisualizerCallback(Callback):
             visualizer.add_image(image=vis_img, title="Segmentation Result")
 
             image_classified = visualizer.add_text(
-                image=image, text=f'Pred: { "anomalous" if pred_score > threshold else "normal"}({pred_score:.3f}) \nGT: {"anomalous" if bool(gt_label) else "normal"}'
+                image=image,
+                text=f"""Pred: { "anomalous" if pred_score > threshold else "normal"}({pred_score:.3f}) \n
+                GT: {"anomalous" if bool(gt_label) else "normal"}""",
             )
             visualizer.add_image(image=image_classified, title="Classified Image")
 
