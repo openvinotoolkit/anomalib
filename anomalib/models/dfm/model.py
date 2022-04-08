@@ -34,7 +34,6 @@ class DfmLightning(AnomalyModule):
         self.model: DFMModel = DFMModel(
             backbone=hparams.model.backbone, n_comps=hparams.model.pca_level, score_type=hparams.model.score_type
         )
-        self.automatic_optimization = False
         self.embeddings: List[Tensor] = []
 
     @staticmethod
