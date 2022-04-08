@@ -61,9 +61,9 @@ trainer:
   auto_select_gpus: false
   benchmark: false
   check_val_every_n_epoch: 1
-  checkpoint_callback: true
   default_root_dir: null
   deterministic: false
+  enable_checkpointing: true
   fast_dev_run: false
   gpus: 1
   gradient_clip_val: 0

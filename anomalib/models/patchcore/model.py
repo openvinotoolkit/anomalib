@@ -275,7 +275,6 @@ class PatchcoreLightning(AnomalyModule):
             backbone=hparams.model.backbone,
             apply_tiling=hparams.dataset.tiling.apply,
         )
-        self.automatic_optimization = False
         self.embeddings: List[Tensor] = []
 
     def configure_optimizers(self) -> None:
