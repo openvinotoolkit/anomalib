@@ -100,7 +100,6 @@ class DfkdeLightning(AnomalyModule):
             hparams.model.backbone, hparams.model.max_training_points, threshold_steepness, threshold_offset
         )
 
-        self.automatic_optimization = False
         self.embeddings: List[Tensor] = []
 
     @staticmethod

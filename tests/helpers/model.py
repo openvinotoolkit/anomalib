@@ -109,6 +109,7 @@ def setup_model_train(
     # Train the model.
     if fast_run:
         config.trainer.max_epochs = 1
+        config.trainer.check_val_every_n_epoch = 1
 
     trainer = Trainer(callbacks=callbacks, **config.trainer)
     trainer.fit(model=model, datamodule=datamodule)
