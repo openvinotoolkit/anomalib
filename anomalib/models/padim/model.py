@@ -294,7 +294,6 @@ class PadimLightning(AnomalyModule):
         ).eval()
 
         self.stats: List[Tensor] = []
-        self.automatic_optimization = False
         self.embeddings: List[Tensor] = []
 
     @staticmethod
