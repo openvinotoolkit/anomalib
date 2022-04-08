@@ -9,7 +9,9 @@ dataset:
   test_batch_size: 32
   inference_batch_size: 32
   num_workers: 32
-  transform_config: null
+  transform_config:
+    train: null
+    val: null
   create_validation_set: false
   tiling:
     apply: true

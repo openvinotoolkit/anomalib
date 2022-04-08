@@ -48,7 +48,7 @@ class DummyModule(AnomalyModule):
         super().__init__(hparams)
         self.model = DummyModel()
         self.task = "segmentation"
-        self.callbacks = [VisualizerCallback()]  # test if this is removed
+        self.callbacks = [VisualizerCallback(task=self.task)]  # test if this is removed
 
     def test_step(self, batch, _):
         """Only used to trigger on_test_epoch_end."""

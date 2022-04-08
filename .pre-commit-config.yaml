@@ -37,7 +37,7 @@ repos:
     hooks:
       - id: flake8
         args: [--config=tox.ini]
-        exclude: "tests/"
+        exclude: "tests|anomalib/models/components/freia"
 
   # python linting
   - repo: local
@@ -47,7 +47,7 @@ repos:
         entry: pylint --score=no --rcfile=tox.ini
         language: system
         types: [python]
-        exclude: "tests|docs"
+        exclude: "tests|docs|anomalib/models/components/freia"
 
   # python static type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
@@ -56,7 +56,7 @@ repos:
       - id: mypy
         args: [--config-file=tox.ini]
         additional_dependencies: [types-PyYAML]
-        exclude: "tests/"
+        exclude: "tests|anomalib/models/components/freia"
 
   - repo: https://github.com/PyCQA/pydocstyle
     rev: 6.1.1
@@ -67,4 +67,4 @@ repos:
         language: python
         types: [python]
         args: [--config=tox.ini]
-        exclude: "tests|docs"
+        exclude: "tests|docs|anomalib/models/components/freia"
