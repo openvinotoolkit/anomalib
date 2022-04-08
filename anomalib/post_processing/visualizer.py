@@ -17,6 +17,7 @@
 from pathlib import Path
 from typing import Optional, Tuple
 
+import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -63,6 +64,27 @@ class Visualizer:
 
         self.axis[index].imshow(image, color_map, vmin=0, vmax=255)
         self.axis[index].title.set_text(title)
+
+    def add_text(self, image: np.ndarray, text: str, font: int = cv2.FONT_HERSHEY_PLAIN):
+        """Puts text on an image.
+
+        Args:
+            image (np.ndarray): Input image.
+            text (str): Text to add.
+            font (Optional[int]): cv2 font type. Defaults to 0.
+
+        Returns:
+            np.ndarray: Image with text.
+        """
+        image = image.copy()
+        font_size = image.shape[1] // 256 + 1  # Text scale is calculated based on the reference size of 256
+
+        for i, line in enumerate(text.split("\n")):
+            (text_w, text_h), baseline = cv2.getTextSize(line.strip(), font, font_size, thickness=1)
+            offset = i * text_h
+            cv2.rectangle(image, (0, offset + baseline // 2), (0 + text_w, 0 + text_h + offset), (255, 255, 255), -1)
+            cv2.putText(image, line.strip(), (0, (baseline // 2 + text_h) + offset), font, font_size, (0, 0, 255))
+        return image
 
     def show(self):
         """Show image on a matplotlib figure."""

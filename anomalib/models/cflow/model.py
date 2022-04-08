@@ -141,7 +141,13 @@ class CflowModel(nn.Module):
         self.pool_dims = self.encoder.out_dims
         self.decoders = nn.ModuleList(
             [
-                cflow_head(self.condition_vector, hparams.model.coupling_blocks, hparams.model.clamp_alpha, pool_dim)
+                cflow_head(
+                    condition_vector=self.condition_vector,
+                    coupling_blocks=hparams.model.coupling_blocks,
+                    clamp_alpha=hparams.model.clamp_alpha,
+                    n_features=pool_dim,
+                    permute_soft=hparams.model.soft_permutation,
+                )
                 for pool_dim in self.pool_dims
             ]
         )
