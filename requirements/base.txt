@@ -2,7 +2,6 @@ albumentations==1.1.0
 attrdict==2.0.1
 defusedxml==0.7.1
 einops==0.3.2
-FrEIA @ git+https://github.com/VLL-HD/FrEIA.git
 kornia==0.5.6
 lxml==4.6.5
 matplotlib==3.4.3

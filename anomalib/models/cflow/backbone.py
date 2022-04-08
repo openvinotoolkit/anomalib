@@ -16,11 +16,11 @@
 
 import math
 
-import FrEIA.framework as Ff
-import FrEIA.modules as Fm
 import torch
-from FrEIA.framework.sequence_inn import SequenceINN
 from torch import nn
+
+from anomalib.models.components.freia.framework import SequenceINN
+from anomalib.models.components.freia.modules import AllInOneBlock
 
 
 def positional_encoding_2d(condition_vector: int, height: int, width: int) -> torch.Tensor:
@@ -90,11 +90,11 @@ def cflow_head(
     Returns:
         SequenceINN: decoder network block
     """
-    coder = Ff.SequenceINN(n_features)
+    coder = SequenceINN(n_features)
     print("CNF coder:", n_features)
     for _ in range(coupling_blocks):
         coder.append(
-            Fm.AllInOneBlock,
+            AllInOneBlock,
             cond=0,
             cond_shape=(condition_vector,),
             subnet_constructor=subnet_fc,
