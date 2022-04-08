@@ -20,13 +20,14 @@ import pytorch_lightning as pl
 from pytorch_lightning import Callback
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 
+from anomalib.models.components import AnomalyModule
 from anomalib.post_processing.normalization.min_max import normalize
 
 
 class MinMaxNormalizationCallback(Callback):
     """Callback that normalizes the image-level and pixel-level anomaly scores using min-max normalization."""
 
-    def on_test_start(self, _trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
+    def on_test_start(self, _trainer: pl.Trainer, pl_module: AnomalyModule) -> None:
         """Called when the test begins."""
         pl_module.image_metrics.F1.threshold = 0.5
         pl_module.pixel_metrics.F1.threshold = 0.5
@@ -34,7 +35,7 @@ class MinMaxNormalizationCallback(Callback):
     def on_validation_batch_end(
         self,
         _trainer: pl.Trainer,
-        pl_module: pl.LightningModule,
+        pl_module: AnomalyModule,
         outputs: STEP_OUTPUT,
         _batch: Any,
         _batch_idx: int,
@@ -49,7 +50,7 @@ class MinMaxNormalizationCallback(Callback):
     def on_test_batch_end(
         self,
         _trainer: pl.Trainer,
-        pl_module: pl.LightningModule,
+        pl_module: AnomalyModule,
         outputs: STEP_OUTPUT,
         _batch: Any,
         _batch_idx: int,
@@ -61,7 +62,7 @@ class MinMaxNormalizationCallback(Callback):
     def on_predict_batch_end(
         self,
         _trainer: pl.Trainer,
-        pl_module: pl.LightningModule,
+        pl_module: AnomalyModule,
         outputs: Dict,
         _batch: Any,
         _batch_idx: int,

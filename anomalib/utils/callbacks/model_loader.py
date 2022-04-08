@@ -15,7 +15,9 @@
 # and limitations under the License.
 
 import torch
-from pytorch_lightning import Callback, LightningModule
+from pytorch_lightning import Callback
+
+from anomalib.models.components import AnomalyModule
 
 
 class LoadModelCallback(Callback):
@@ -24,7 +26,7 @@ class LoadModelCallback(Callback):
     def __init__(self, weights_path):
         self.weights_path = weights_path
 
-    def on_test_start(self, trainer, pl_module: LightningModule) -> None:  # pylint: disable=W0613
+    def on_test_start(self, trainer, pl_module: AnomalyModule) -> None:  # pylint: disable=W0613
         """Call when the test begins.
 
         Loads the model weights from ``weights_path`` into the PyTorch module.
