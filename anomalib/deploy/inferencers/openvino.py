@@ -21,7 +21,7 @@ import cv2
 import numpy as np
 from omegaconf import DictConfig, ListConfig
 
-# from openvino.inference_engine import IECore  # pylint: disable=no-name-in-module
+from openvino.inference_engine import IECore  # pylint: disable=no-name-in-module
 
 from anomalib.pre_processing import PreProcessor
 
