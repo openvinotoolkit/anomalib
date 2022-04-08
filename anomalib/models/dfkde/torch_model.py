@@ -24,7 +24,7 @@ from torch import Tensor, nn
 from anomalib.models.components import PCA, FeatureExtractor, GaussianKDE
 
 
-class NormalityModel(nn.Module):
+class DfkdeModel(nn.Module):
     """Normality Model for the DFKDE algorithm.
 
     Args:

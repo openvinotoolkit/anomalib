@@ -22,7 +22,7 @@ from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
 
-from .normality_model import NormalityModel
+from .torch_model import DfkdeModel
 
 
 class DfkdeLightning(AnomalyModule):
@@ -37,7 +37,7 @@ class DfkdeLightning(AnomalyModule):
         threshold_steepness = 0.05
         threshold_offset = 12
 
-        self.model = NormalityModel(
+        self.model = DfkdeModel(
             backbone=hparams.model.backbone,
             filter_count=hparams.model.max_training_points,
             threshold_steepness=threshold_steepness,
