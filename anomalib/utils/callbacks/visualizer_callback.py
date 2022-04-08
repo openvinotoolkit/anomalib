@@ -87,7 +87,7 @@ class VisualizerCallback(Callback):
     def on_test_batch_end(
         self,
         _trainer: pl.Trainer,
-        pl_module: pl.LightningModule,
+        pl_module: AnomalyModule,
         outputs: Optional[STEP_OUTPUT],
         _batch: Any,
         _batch_idx: int,
@@ -149,7 +149,7 @@ class VisualizerCallback(Callback):
             self._add_images(visualizer, pl_module, Path(filename))
             visualizer.close()
 
-    def on_test_end(self, _trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
+    def on_test_end(self, _trainer: pl.Trainer, pl_module: AnomalyModule) -> None:
         """Sync logs.
 
         Currently only ``AnomalibWandbLogger`` is called from this method. This is because logging as a single batch
@@ -157,7 +157,7 @@ class VisualizerCallback(Callback):
 
         Args:
             _trainer (pl.Trainer): Pytorch Lightning trainer (unused)
-            pl_module (pl.LightningModule): Anomaly module
+            pl_module (AnomalyModule): Anomaly module
         """
         if pl_module.logger is not None and isinstance(pl_module.logger, AnomalibWandbLogger):
             pl_module.logger.save()
