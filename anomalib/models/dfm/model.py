@@ -32,7 +32,8 @@ class DfmLightning(AnomalyModule):
         super().__init__(hparams)
 
         self.model: DFMModel = DFMModel(
-            backbone=hparams.model.backbone, n_comps=hparams.model.pca_level, score_type=hparams.model.score_type
+            backbone=hparams.model.backbone, layer=hparams.model.layer, pool=hparams.model.pool, 
+            n_comps=hparams.model.pca_level, score_type=hparams.model.score_type
         )
         self.automatic_optimization = False
         self.embeddings: List[Tensor] = []

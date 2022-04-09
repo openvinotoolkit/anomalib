@@ -19,6 +19,7 @@ import math
 import torch
 import torchvision
 from torch import Tensor, nn
+import torch.nn.functional as F
 
 from anomalib.models.components import PCA, DynamicBufferModule, FeatureExtractor
 
@@ -89,14 +90,15 @@ class DFMModel(nn.Module):
         score_type (str, optional): Scoring type. Options are `fre` and `nll`. Defaults to "fre".
     """
 
-    def __init__(self, backbone: str, n_comps: float = 0.97, score_type: str = "fre"):
+    def __init__(self, backbone: str, layer: str, pool: int, n_comps: float = 0.97, score_type: str = "fre"):
         super().__init__()
         self.backbone = getattr(torchvision.models, backbone)
+        self.pool = pool
         self.n_components = n_comps
         self.pca_model = PCA(n_components=self.n_components)
         self.gaussian_model = SingleClassGaussian()
         self.score_type = score_type
-        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=["avgpool"]).eval()
+        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=[layer]).eval()
 
     def fit(self, dataset: Tensor) -> None:
         """Fit a pca transformation and a Gaussian model to dataset.
@@ -143,6 +145,12 @@ class DFMModel(nn.Module):
         """
         self.feature_extractor.eval()
         layer_outputs = self.feature_extractor(batch)
+        for k in layer_outputs:
+            s0 = len(layer_outputs[k])
+            if self.pool > 1:
+                layer_outputs[k] = F.avg_pool2d(layer_outputs[k], self.pool)
+            layer_outputs[k] = layer_outputs[k].view(s0, -1)
+
         layer_outputs = torch.cat(list(layer_outputs.values())).detach()
         return layer_outputs
 
