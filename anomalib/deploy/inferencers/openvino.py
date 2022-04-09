@@ -14,13 +14,15 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import importlib
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
 
 import cv2
 import numpy as np
 from omegaconf import DictConfig, ListConfig
-from openvino.inference_engine import IECore  # pylint: disable=no-name-in-module
+if importlib.util.find_spec('openvino') is not None:
+    from openvino.inference_engine import IECore  # pylint: disable=no-name-in-module
 
 from anomalib.pre_processing import PreProcessor
 
