@@ -7,5 +7,5 @@ pandas>=1.1.0
 pytorch-lightning>=1.6.0
 torchvision>=0.9.1
 torchtext>=0.9.1
-wandb>=0.12.9
+wandb==0.12.9
 matplotlib>=3.4.3
