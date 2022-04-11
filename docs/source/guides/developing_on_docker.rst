@@ -13,27 +13,30 @@ Build the Docker Image
 ======================
 
 To use anomalib with Docker, you can build a Docker image containing anomalib all its dependencies from the provided Dockerfile. To this end, navigate to the anomalib root directory (the one containing the Dockerfile) and build the Docker image with
-```
-docker build . --tag=anomalib
-```
+
+.. code-block:: console
+
+	docker build . --tag=anomalib
 
 
 Run the Docker Image
 ====================
 
 After building the image, you can run it as follows
-```
-docker run \
-	-it --rm \
-	--ipc=host \
-	--env="DISPLAY" \
-	--gpus=all \
-	-w /anomalib \
-	-v /tmp/.X11-unix:/tmp/.X11-unix:rw \
-	-v "$(pwd)":/anomalib \
-	anomalib \
-	/bin/bash
-```
+
+.. code-block:: console
+
+	docker run \
+		-it --rm \
+		--ipc=host \
+		--env="DISPLAY" \
+		--gpus=all \
+		-w /anomalib \
+		-v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+		-v "$(pwd)":/anomalib \
+		anomalib \
+		/bin/bash
+
 This creates an interactive bash session inside the Docker container, in which you can run all anomalib commands as described in the `readme <https://github.com/openvinotoolkit/anomalib/blob/development/README.md>`_.
 
 The source code is mapped into the running container by means of the `-v "$(pwd)":/anomalib` parameter. This facilitates changes to the source code without having to rebuild the Docker image.
