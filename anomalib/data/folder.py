@@ -319,7 +319,7 @@ class FolderDataModule(LightningDataModule):
                 Defaults to "abnormal".
             task (str, optional): Task type. Could be either classification or segmentation.
                 Defaults to "classification".
-            normal_test_dir (Optional[Union[str, Path]], optional): Path to the directory containing
+            normal_test (Optional[Union[str, Path]], optional): Path to the directory containing
                 normal images for the test dataset. Defaults to None.
             mask_dir (Optional[Union[str, Path]], optional): Path to the directory containing
                 the mask annotations. Defaults to None.
@@ -412,6 +412,7 @@ class FolderDataModule(LightningDataModule):
         self.root = _check_and_convert_path(root)
         self.normal_dir = self.root / normal
         self.abnormal_dir = self.root / abnormal
+        self.normal_test = normal_test
         if normal_test:
             self.normal_test = self.root / normal_test
         self.mask_dir = mask_dir
