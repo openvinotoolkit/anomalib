@@ -26,7 +26,7 @@ from anomalib.pre_processing import PreProcessor
 
 from .base import Inferencer
 
-if importlib.util.find_spec('openvino') is not None:
+if importlib.util.find_spec("openvino") is not None:
     from openvino.inference_engine import IECore  # pylint: disable=no-name-in-module
 
 
