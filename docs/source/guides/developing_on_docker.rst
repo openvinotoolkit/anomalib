@@ -44,3 +44,19 @@ The source code is mapped into the running container by means of the `-v "$(pwd)
 
 .. note:: 
 	To forward graphical output of the Docker container to the host operating system, you have to disable access control of the host's X11 server. To this end, execute the shell command `xhost +` on the host.
+	
+	
+Using VSCode
+============
+
+You may also use the Remote-Containers extension for VSCode for deployment with Docker, which can be set up as follows:
+
+1. Install and run `VSCode <https://code.visualstudio.com/download>`_
+2. Install the Remote-Containers extension by Microsoft in VSCode.
+3. Open command panel by pressing ``CTRL + SHIFT + P``.
+4. Type ``Remote-Containers: Open Folder in Container`` and press Enter.
+5. Navigate to the root of anomalib folder. (The one with Dockerfile).
+6. Give it time to build the image and install the extensions. Grab a |:coffee:| as this will take a while for the first time as the container needs to be built.
+7. And voilà |:confetti_ball:| you should now see your folder mounted in the docker container and begin developing. Your changes should automatically be reflected in your host directory.
+
+.. note:: If VSCode throws an error regarding not having sufficient privileges, try restarting the system.
