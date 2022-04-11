@@ -4,7 +4,7 @@
 First of all, you will need to install development requirements. This will also install the pre-commit pip package
 in your python environment
 
-```pip install -r requirements_dev.txt```
+```pip install -r requirements/dev.txt```
 
 Then, install pre-commit hooks using the following command:
 
@@ -17,3 +17,7 @@ In some cases it might be desired to commit your changes even though some of the
 ```git commit -m 'WIP commit' --no-verify```
 
 When doing so, please make sure to revisit the issues at a later time. A good way to check if all issues have been addressed before making an MR is to run tox.
+
+Apart from tox, you can also run `pre-commit` on all the files to check formatting and style issues. To do this you can use
+
+```pre-commit run --all```
