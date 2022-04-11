@@ -72,6 +72,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
             normal=config.dataset.normal,
             abnormal=config.dataset.abnormal,
             task=config.dataset.task,
+            normal_test=config.dataset.normal_test,
             mask_dir=config.dataset.mask,
             extensions=config.dataset.extensions,
             split_ratio=config.dataset.split_ratio,
