@@ -22,7 +22,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import torch
 import torch.nn.functional as F
 import torchvision
-from kornia import gaussian_blur2d
+from kornia.filters import gaussian_blur2d
 from omegaconf import ListConfig
 from torch import Tensor, nn
 
