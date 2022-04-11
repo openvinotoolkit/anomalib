@@ -28,7 +28,7 @@ from anomalib.utils.loggers import (
 )
 
 
-@patch("anomalib.utils.loggers.wandb")
+@patch("anomalib.utils.loggers.wandb.WandbLogger")
 def test_get_logger(wandb):
     """Test whether the right logger is returned."""
 
