@@ -15,18 +15,20 @@
 # and limitations under the License.
 
 import random
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import torch
+import torchvision
 from torch import Tensor, nn
 
-from anomalib.models.components import PCA, GaussianKDE
+from anomalib.models.components import PCA, FeatureExtractor, GaussianKDE
 
 
-class NormalityModel(nn.Module):
+class DfkdeModel(nn.Module):
     """Normality Model for the DFKDE algorithm.
 
     Args:
+        backbone (str): Pre-trained model backbone.
         n_comps (int, optional): Number of PCA components. Defaults to 16.
         pre_processing (str, optional): Preprocess features before passing to KDE.
             Options are between `norm` and `scale`. Defaults to "scale".
@@ -37,6 +39,7 @@ class NormalityModel(nn.Module):
 
     def __init__(
         self,
+        backbone: str,
         n_comps: int = 16,
         pre_processing: str = "scale",
         filter_count: int = 40000,
@@ -50,33 +53,51 @@ class NormalityModel(nn.Module):
         self.threshold_steepness = threshold_steepness
         self.threshold_offset = threshold_offset
 
+        _backbone = getattr(torchvision.models, backbone)
+        self.feature_extractor = FeatureExtractor(backbone=_backbone(pretrained=True), layers=["avgpool"]).eval()
+
         self.pca_model = PCA(n_components=self.n_components)
         self.kde_model = GaussianKDE()
 
         self.register_buffer("max_length", Tensor(torch.Size([])))
         self.max_length = Tensor(torch.Size([]))
 
-    def fit(self, dataset: Tensor) -> bool:
-        """Fit a kde model to dataset.
+    def get_features(self, batch: Tensor) -> Tensor:
+        """Extract features from the pretrained network.
 
         Args:
-            dataset (Tensor): Input dataset to fit the model.
+            batch (Tensor): Image batch.
+
+        Returns:
+            Tensor: Tensor containing extracted features.
+        """
+        self.feature_extractor.eval()
+        layer_outputs = self.feature_extractor(batch)
+        layer_outputs = torch.cat(list(layer_outputs.values())).detach()
+        return layer_outputs
+
+    def fit(self, embeddings: List[Tensor]) -> bool:
+        """Fit a kde model to embeddings.
+
+        Args:
+            embeddings (Tensor): Input embeddings to fit the model.
 
         Returns:
             Boolean confirming whether the training is successful.
         """
+        _embeddings = torch.vstack(embeddings)
 
-        if dataset.shape[0] < self.n_components:
+        if _embeddings.shape[0] < self.n_components:
             print("Not enough features to commit. Not making a model.")
             return False
 
         # if max training points is non-zero and smaller than number of staged features, select random subset
-        if self.filter_count and dataset.shape[0] > self.filter_count:
+        if self.filter_count and _embeddings.shape[0] > self.filter_count:
             # pylint: disable=not-callable
-            selected_idx = torch.tensor(random.sample(range(dataset.shape[0]), self.filter_count))
-            selected_features = dataset[selected_idx]
+            selected_idx = torch.tensor(random.sample(range(_embeddings.shape[0]), self.filter_count))
+            selected_features = _embeddings[selected_idx]
         else:
-            selected_features = dataset
+            selected_features = _embeddings
 
         feature_stack = self.pca_model.fit_transform(selected_features)
         feature_stack, max_length = self.preprocess(feature_stack)
@@ -162,6 +183,15 @@ class NormalityModel(nn.Module):
 
         return 1 / (1 + torch.exp(self.threshold_steepness * (densities - self.threshold_offset)))
 
-    def forward(self, features: Tensor) -> Tensor:
-        """Make module callable."""
-        return self.predict(features)
+    def forward(self, batch: Tensor) -> Tensor:
+        """Prediction by normality model.
+
+        Args:
+            batch (Tensor): Input images.
+
+        Returns:
+            Tensor: Predictions
+        """
+
+        feature_vector = self.get_features(batch)
+        return self.predict(feature_vector.view(feature_vector.shape[:2]))
