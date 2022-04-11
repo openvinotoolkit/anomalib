@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+from unittest.mock import patch
+
 import pytest
 from omegaconf import OmegaConf
 from pytorch_lightning.loggers import CSVLogger
@@ -26,7 +28,8 @@ from anomalib.utils.loggers import (
 )
 
 
-def test_get_logger():
+@patch("anomalib.utils.loggers.wandb")
+def test_get_logger(wandb):
     """Test whether the right logger is returned."""
 
     config = OmegaConf.create(
