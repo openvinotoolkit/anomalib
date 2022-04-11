@@ -42,14 +42,10 @@ class Encoder(nn.Module):
     ):
         super().__init__()
 
-        assert input_size[0] % 16 == 0 and input_size[1] % 16 == 0, "Input size should be a multiple of 16"
-
         self.input_layers = nn.Sequential()
-
-        self.padding = self._compute_padding(input_size)
         self.input_layers.add_module(
             f"initial-conv-{num_input_channels}-{n_features}",
-            nn.Conv2d(num_input_channels, n_features, kernel_size=4, stride=2, padding=self.padding, bias=False),
+            nn.Conv2d(num_input_channels, n_features, kernel_size=4, stride=2, padding=4, bias=False),
         )
         self.input_layers.add_module(f"initial-relu-{n_features}", nn.LeakyReLU(0.2, inplace=True))
 
@@ -90,20 +86,6 @@ class Encoder(nn.Module):
                 bias=False,
             )
 
-    def _compute_padding(self, input_size: Tuple[int, int]) -> Tuple[int, int]:
-        """Compute required padding from input size.
-
-        Args:
-            input_size (Tuple[int, int]): Input size
-
-        Returns:
-            Tuple[int, int]: Padding for each dimension
-        """
-        # find the largest dimension
-        l_dim = 2 ** math.ceil(math.log(max(*input_size), 2))
-        padding = math.ceil((l_dim - input_size[0]) // 2 + 1), math.ceil((l_dim - input_size[1]) // 2 + 1)
-        return padding
-
     def forward(self, input_tensor: Tensor):
         """Return latent vectors."""
 
@@ -137,7 +119,6 @@ class Decoder(nn.Module):
         extra_layers: int = 0,
     ):
         super().__init__()
-        assert input_size[0] % 16 == 0 and input_size[1] % 16 == 0, "Input size should be a multiple of 16"
 
         self.latent_input = nn.Sequential()
 
@@ -397,10 +378,7 @@ class GanomalyModel(nn.Module):
 
         error_enc = self.loss_enc(latent_i, latent_o)
 
-        # Pad input image to match generated image dimension
-        padding = self.generator.encoder1.padding[::-1]
-        padded_images = F.pad(images, pad=[padding[0] - 1, padding[0] - 1, padding[1] - 1, padding[1] - 1])
-        error_con = self.loss_con(padded_images, fake)
+        error_con = self.loss_con(images, fake)
 
         error_adv = self.loss_adv(pred_real, pred_fake)
 
@@ -416,6 +394,26 @@ class GanomalyModel(nn.Module):
         Returns:
             Tensor: Regeneration scores.
         """
+        padded_batch = self.get_padded_tensor(batch)
         self.generator.eval()
-        _, latent_i, latent_o = self.generator(batch)
+        _, latent_i, latent_o = self.generator(padded_batch)
         return torch.mean(torch.pow((latent_i - latent_o), 2), dim=1).view(-1)  # convert nx1x1 to n
+
+    def get_padded_tensor(self, batch: Tensor) -> Tensor:
+        """Compute required padding from input size and return padded images.
+
+        Finds the largest dimension and computes a square image to pass into the model. In case the image dimension
+        is odd, it returns the image with an extra padding on one side.
+
+        Args:
+            batch (Tensor): Input images
+
+        Returns:
+            batch: Padded batch
+        """
+        # find the largest dimension
+        l_dim = 2 ** math.ceil(math.log(max(*batch.shape[-2:]), 2))
+        padding_w = [math.ceil((l_dim - batch.shape[-2]) / 2), math.floor((l_dim - batch.shape[-2]) / 2)]
+        padding_h = [math.ceil((l_dim - batch.shape[-1]) / 2), math.floor((l_dim - batch.shape[-1]) / 2)]
+        padded_batch = F.pad(batch, pad=[*padding_h, *padding_w])
+        return padded_batch

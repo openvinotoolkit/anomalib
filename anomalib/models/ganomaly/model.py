@@ -100,18 +100,19 @@ class GanomalyLightning(AnomalyModule):
             Dict[str, Tensor]: Loss
         """
         images = batch["image"]
+        padded_images = self.model.get_padded_tensor(images)
         loss: Dict[str, Tensor]
 
         # Discriminator
         if optimizer_idx == 0:
             # forward pass
-            loss_discriminator = self.model.get_discriminator_loss(images)
+            loss_discriminator = self.model.get_discriminator_loss(padded_images)
             loss = {"loss": loss_discriminator}
 
         # Generator
         else:
             # forward pass
-            loss_generator = self.model.get_generator_loss(images)
+            loss_generator = self.model.get_generator_loss(padded_images)
 
             loss = {"loss": loss_generator}
 
