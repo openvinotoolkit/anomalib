@@ -15,8 +15,9 @@ import math
 from typing import Tuple
 
 import torch
-import torch.nn.functional as F
 from torch import Tensor, nn
+
+from anomalib.data.utils.image import pad_nextpow2
 
 
 class Encoder(nn.Module):
@@ -394,26 +395,7 @@ class GanomalyModel(nn.Module):
         Returns:
             Tensor: Regeneration scores.
         """
-        padded_batch = self.get_padded_tensor(batch)
+        padded_batch = pad_nextpow2(batch)
         self.generator.eval()
         _, latent_i, latent_o = self.generator(padded_batch)
         return torch.mean(torch.pow((latent_i - latent_o), 2), dim=1).view(-1)  # convert nx1x1 to n
-
-    def get_padded_tensor(self, batch: Tensor) -> Tensor:
-        """Compute required padding from input size and return padded images.
-
-        Finds the largest dimension and computes a square image to pass into the model. In case the image dimension
-        is odd, it returns the image with an extra padding on one side.
-
-        Args:
-            batch (Tensor): Input images
-
-        Returns:
-            batch: Padded batch
-        """
-        # find the largest dimension
-        l_dim = 2 ** math.ceil(math.log(max(*batch.shape[-2:]), 2))
-        padding_w = [math.ceil((l_dim - batch.shape[-2]) / 2), math.floor((l_dim - batch.shape[-2]) / 2)]
-        padding_h = [math.ceil((l_dim - batch.shape[-1]) / 2), math.floor((l_dim - batch.shape[-1]) / 2)]
-        padded_batch = F.pad(batch, pad=[*padding_h, *padding_w])
-        return padded_batch

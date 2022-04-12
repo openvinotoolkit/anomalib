@@ -24,6 +24,7 @@ from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
 from torch import Tensor, optim
 
+from anomalib.data.utils.image import pad_nextpow2
 from anomalib.models.components import AnomalyModule
 
 from .torch_model import GanomalyModel
@@ -100,7 +101,7 @@ class GanomalyLightning(AnomalyModule):
             Dict[str, Tensor]: Loss
         """
         images = batch["image"]
-        padded_images = self.model.get_padded_tensor(images)
+        padded_images = pad_nextpow2(images)
         loss: Dict[str, Tensor]
 
         # Discriminator
