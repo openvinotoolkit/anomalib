@@ -22,7 +22,7 @@ from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
 
-from .dfm_model import DFMModel
+from .torch_model import DFMModel
 
 
 class DfmLightning(AnomalyModule):

@@ -1,4 +1,4 @@
-"""Normality model of DFKDE."""
+"""PyTorch model for DFM model implementation."""
 
 # Copyright (C) 2020 Intel Corporation
 #
