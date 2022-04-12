@@ -14,9 +14,6 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .model import (  # noqa # pylint: disable=unused-import
-    AnomalyMapGenerator,
-    Loss,
-    StfpmLightning,
-    STFPMModel,
-)
+from .lightning_model import StfpmLightning
+
+__all__ = ["StfpmLightning"]
