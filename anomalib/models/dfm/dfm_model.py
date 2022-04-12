@@ -17,9 +17,9 @@
 import math
 
 import torch
+import torch.nn.functional as F
 import torchvision
 from torch import Tensor, nn
-import torch.nn.functional as F
 
 from anomalib.models.components import PCA, DynamicBufferModule, FeatureExtractor
 
@@ -86,14 +86,18 @@ class DFMModel(nn.Module):
 
     Args:
         backbone (str): Pre-trained model backbone.
+        layer (str): Layer from which to extract features.
+        pool (int): _description_
         n_comps (float, optional): Ratio from which number of components for PCA are calculated. Defaults to 0.97.
         score_type (str, optional): Scoring type. Options are `fre` and `nll`. Defaults to "fre".
     """
 
-    def __init__(self, backbone: str, layer: str, pool: int, n_comps: float = 0.97, score_type: str = "fre"):
+    def __init__(
+        self, backbone: str, layer: str, pooling_kernel_size: int, n_comps: float = 0.97, score_type: str = "fre"
+    ):
         super().__init__()
         self.backbone = getattr(torchvision.models, backbone)
-        self.pool = pool
+        self.pooling_kernel_size = pooling_kernel_size
         self.n_components = n_comps
         self.pca_model = PCA(n_components=self.n_components)
         self.gaussian_model = SingleClassGaussian()
@@ -144,15 +148,15 @@ class DFMModel(nn.Module):
             Tensor: Tensor containing extracted features.
         """
         self.feature_extractor.eval()
-        layer_outputs = self.feature_extractor(batch)
-        for k in layer_outputs:
-            s0 = len(layer_outputs[k])
-            if self.pool > 1:
-                layer_outputs[k] = F.avg_pool2d(layer_outputs[k], self.pool)
-            layer_outputs[k] = layer_outputs[k].view(s0, -1)
+        features = self.feature_extractor(batch)
+        for layer in features:
+            batch_size = len(features[layer])
+            if self.pooling_kernel_size > 1:
+                features[layer] = F.avg_pool2d(input=features[layer], kernel_size=self.pooling_kernel_size)
+            features[layer] = features[layer].view(batch_size, -1)
 
-        layer_outputs = torch.cat(list(layer_outputs.values())).detach()
-        return layer_outputs
+        features = torch.cat(list(features.values())).detach()
+        return features
 
     def forward(self, batch: Tensor) -> Tensor:
         """Computer score from input images.
