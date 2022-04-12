@@ -16,6 +16,8 @@ dataset:
 model:
   name: dfm
   backbone: resnet18
+  layer: layer3
+  pooling_kernel_size: 4
   pca_level: 0.97
   score_type: fre # nll: for Gaussian modeling, fre: pca feature reconstruction error
   project_path: ./results
