@@ -48,9 +48,8 @@ from anomalib.utils.sweep import (
 warnings.filterwarnings("ignore")
 
 logger = logging.getLogger(__file__)
-logging.getLogger("pytorch_lightning").setLevel(logging.ERROR)
-logging.getLogger("torchmetrics").setLevel(logging.ERROR)
-logging.getLogger("os").setLevel(logging.ERROR)
+for logger_name in ["pytorch_lightning", "torchmetrics", "os"]:
+    logging.getLogger(logger_name).setLevel(logging.ERROR)
 
 
 def hide_output(func):
@@ -256,8 +255,10 @@ def sweep(run_config: Union[DictConfig, ListConfig], device: int = 0, seed: int 
 
     # Run benchmarking for current config
     model_metrics = get_single_model_metrics(model_config=model_config, openvino_metrics=convert_openvino)
-    print(model_config.model.name, model_config.dataset.category)
-    print(model_metrics)
+    output = f"One sweep run complete for model {model_config.model.name}"
+    output += f" On category {model_config.dataset.category}" if model_config.dataset.category is not None else ""
+    output += str(model_metrics)
+    print(output)
 
     # Append configuration of current run to the collected metrics
     for key, value in run_config.items():
