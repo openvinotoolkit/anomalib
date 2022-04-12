@@ -74,8 +74,8 @@ def read_image(path: Union[str, Path]) -> np.ndarray:
 def pad_nextpow2(batch: Tensor) -> Tensor:
     """Compute required padding from input size and return padded images.
 
-    Finds the largest dimension and computes a square image to pass into the model. In case the image dimension
-    is odd, it returns the image with an extra padding on one side.
+    Finds the largest dimension and computes a square image of dimensions that are of the power of 2.
+    In case the image dimension is odd, it returns the image with an extra padding on one side.
 
     Args:
         batch (Tensor): Input images
