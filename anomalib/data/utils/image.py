@@ -14,11 +14,14 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import math
 from pathlib import Path
 from typing import List, Union
 
 import cv2
 import numpy as np
+import torch.nn.functional as F
+from torch import Tensor
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
 
@@ -66,3 +69,23 @@ def read_image(path: Union[str, Path]) -> np.ndarray:
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
     return image
+
+
+def pad_nextpow2(batch: Tensor) -> Tensor:
+    """Compute required padding from input size and return padded images.
+
+    Finds the largest dimension and computes a square image of dimensions that are of the power of 2.
+    In case the image dimension is odd, it returns the image with an extra padding on one side.
+
+    Args:
+        batch (Tensor): Input images
+
+    Returns:
+        batch: Padded batch
+    """
+    # find the largest dimension
+    l_dim = 2 ** math.ceil(math.log(max(*batch.shape[-2:]), 2))
+    padding_w = [math.ceil((l_dim - batch.shape[-2]) / 2), math.floor((l_dim - batch.shape[-2]) / 2)]
+    padding_h = [math.ceil((l_dim - batch.shape[-1]) / 2), math.floor((l_dim - batch.shape[-1]) / 2)]
+    padded_batch = F.pad(batch, pad=[*padding_h, *padding_w])
+    return padded_batch
