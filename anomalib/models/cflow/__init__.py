@@ -14,6 +14,6 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .model import CflowModel
+from .lightning_model import CflowLightning
 
-__all__ = ["CflowModel"]
+__all__ = ["CflowLightning"]

@@ -14,6 +14,6 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .model import PadimLightning
+from .lightning_model import PadimLightning
 
 __all__ = ["PadimLightning"]

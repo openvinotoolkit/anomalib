@@ -14,6 +14,6 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .model import GanomalyLightning
+from .lightning_model import GanomalyLightning
 
 __all__ = ["GanomalyLightning"]
