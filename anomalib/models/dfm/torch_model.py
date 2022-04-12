@@ -17,6 +17,7 @@
 import math
 
 import torch
+import torch.nn.functional as F
 import torchvision
 from torch import Tensor, nn
 
@@ -85,18 +86,23 @@ class DFMModel(nn.Module):
 
     Args:
         backbone (str): Pre-trained model backbone.
+        layer (str): Layer from which to extract features.
+        pool (int): _description_
         n_comps (float, optional): Ratio from which number of components for PCA are calculated. Defaults to 0.97.
         score_type (str, optional): Scoring type. Options are `fre` and `nll`. Defaults to "fre".
     """
 
-    def __init__(self, backbone: str, n_comps: float = 0.97, score_type: str = "fre"):
+    def __init__(
+        self, backbone: str, layer: str, pooling_kernel_size: int, n_comps: float = 0.97, score_type: str = "fre"
+    ):
         super().__init__()
         self.backbone = getattr(torchvision.models, backbone)
+        self.pooling_kernel_size = pooling_kernel_size
         self.n_components = n_comps
         self.pca_model = PCA(n_components=self.n_components)
         self.gaussian_model = SingleClassGaussian()
         self.score_type = score_type
-        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=["avgpool"]).eval()
+        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=[layer]).eval()
 
     def fit(self, dataset: Tensor) -> None:
         """Fit a pca transformation and a Gaussian model to dataset.
@@ -142,9 +148,15 @@ class DFMModel(nn.Module):
             Tensor: Tensor containing extracted features.
         """
         self.feature_extractor.eval()
-        layer_outputs = self.feature_extractor(batch)
-        layer_outputs = torch.cat(list(layer_outputs.values())).detach()
-        return layer_outputs
+        features = self.feature_extractor(batch)
+        for layer in features:
+            batch_size = len(features[layer])
+            if self.pooling_kernel_size > 1:
+                features[layer] = F.avg_pool2d(input=features[layer], kernel_size=self.pooling_kernel_size)
+            features[layer] = features[layer].view(batch_size, -1)
+
+        features = torch.cat(list(features.values())).detach()
+        return features
 
     def forward(self, batch: Tensor) -> Tensor:
         """Computer score from input images.

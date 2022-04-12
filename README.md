@@ -49,8 +49,6 @@ You can get started with `anomalib` by just using pip.
 pip install anomalib
 ```
 
-> **_NOTE:_** Due to ongoing fast pace of development, we encourage you to use editable install until we release v0.2.5.
-
 ### Local Install
 It is highly recommended to use virtual environment when installing anomalib. For instance, with [anaconda](https://www.anaconda.com/products/individual), `anomalib` could be installed as,
 
@@ -202,6 +200,7 @@ Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License 
 | DFM           | ResNet-18          |   0.894   |   0.864   |   0.558   |  0.945  |   0.984   |   0.946   |  0.994  |   0.913   |   0.871   |  0.979   |   0.941   |   0.838   |   0.761   |    0.95    |   0.911    |   0.949   |
 | DFKDE         | Wide ResNet-50     |   0.774   |   0.708   |   0.422   |  0.905  |   0.959   |   0.903   |  0.936  |   0.746   |   0.853   |  0.736   |   0.687   |   0.749   |   0.574   |   0.697    |   0.843    |   0.892   |
 | DFKDE         | ResNet-18          |   0.762   |   0.646   |   0.577   |  0.669  |   0.965   |   0.863   |  0.951  |   0.751   |   0.698   |  0.806   |   0.729   |   0.607   |   0.694   |   0.767    |   0.839    |   0.866   |
+| GANomaly   |                | 0.421 | 0.203  | 0.404 | 0.413   | 0.408 | 0.744 | 0.251  | 0.457 |  0.682  | 0.537    |  0.270    | 0.472 | 0.231 | 0.372      |  0.440     | 0.434  |
 
 ### Pixel-Level AUC
 
@@ -230,6 +229,7 @@ Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License 
 | DFM           | ResNet-18          |   0.919   |   0.895   |   0.844   |   0.926   |   0.971   |   0.948   |   0.977   |   0.874   |   0.935   |   0.957   |   0.958   |   0.921   |   0.874   |   0.933    |   0.833    |   0.943   |
 | DFKDE         | Wide ResNet-50     |   0.875   |   0.907   |   0.844   |   0.905   |   0.945   |   0.914   |   0.946   |   0.790   |   0.914   |   0.817   |   0.894   |   0.922   |   0.855   |   0.845    |   0.722    |   0.910   |
 | DFKDE         | ResNet-18          |   0.872   |   0.864   |   0.844   |   0.854   |   0.960   |   0.898   |   0.942   |   0.793   |   0.908   |   0.827   |   0.894   |   0.916   |   0.859   |   0.853    |   0.756    |   0.916   |
+| GANomaly |                | 0.834 | 0.864  | 0.844 | 0.852   | 0.836 | 0.863 | 0.863  | 0.760 | 0.905   | 0.777    |  0.894    | 0.916 | 0.853 |  0.833     |  0.571     |  0.881 |
 
 ## Reference
 If you use this library and love it, use this to cite it 🤗

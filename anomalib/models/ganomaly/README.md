@@ -26,5 +26,12 @@ All results gathered with seed `42`.
 
 ### Image-Level AUC
 
+|                |  Avg  | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
+| -------------- | :---: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
+|                | 0.421 | 0.203  | 0.404 | 0.413   | 0.408 | 0.744 | 0.251  | 0.457 |  0.682  | 0.537    |  0.270    | 0.472 | 0.231 | 0.372      |  0.440     | 0.434  |
 
 ### Image F1 Score
+
+|                |  Avg  | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
+| -------------- | :---: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
+|                | 0.834 | 0.864  | 0.844 | 0.852   | 0.836 | 0.863 | 0.863  | 0.760 | 0.905   | 0.777    |  0.894    | 0.916 | 0.853 |  0.833     |  0.571     |  0.881 |
