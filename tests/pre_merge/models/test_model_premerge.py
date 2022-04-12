@@ -28,13 +28,13 @@ class TestModel:
     @pytest.mark.parametrize(
         ["model_name", "nncf"],
         [
-            # ("padim", False),
-            # ("dfkde", False),
-            # ("dfm", False),
-            # ("stfpm", False),
-            # ("patchcore", False),
+            ("padim", False),
+            ("dfkde", False),
+            ("dfm", False),
+            ("stfpm", False),
+            ("patchcore", False),
             ("cflow", False),
-            # ("ganomaly", False),
+            ("ganomaly", False),
         ],
     )
     @TestDataset(num_train=20, num_test=10)
