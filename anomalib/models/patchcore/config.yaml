@@ -13,8 +13,8 @@ dataset:
     val: null
   create_validation_set: false
   tiling:
-    apply: true
-    tile_size: 64
+    apply: false
+    tile_size: null
     stride: null
     remove_border_count: 0
     use_random_tiling: False
