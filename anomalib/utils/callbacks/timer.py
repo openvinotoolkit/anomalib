@@ -73,4 +73,7 @@ class TimerCallback(Callback):
             None
         """
         testing_time = time.time() - self.start
-        print(f"Testing took {testing_time} seconds\nThroughput: {self.num_images/testing_time} FPS")
+        print(
+            f"Testing took {testing_time} seconds\nThroughput (batch_size={trainer.test_dataloaders[0].batch_size}):"
+            f" {self.num_images/testing_time} FPS"
+        )
