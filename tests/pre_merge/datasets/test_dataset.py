@@ -56,8 +56,8 @@ def folder_data_module():
     root = get_dataset_path(dataset="bottle")
     datamodule = FolderDataModule(
         root=root,
-        normal="good",
-        abnormal="broken_large",
+        normal_dir="good",
+        abnormal_dir="broken_large",
         mask_dir=os.path.join(root, "ground_truth/broken_large"),
         task="segmentation",
         split_ratio=0.2,
