@@ -57,7 +57,9 @@ def _check_and_convert_path(path: Union[str, Path]) -> Path:
     return path
 
 
-def _prepare_files_labels(path: Union[str, Path], path_type: str, extensions: Optional[Tuple[str, ...]] = None):
+def _prepare_files_labels(
+    path: Union[str, Path], path_type: str, extensions: Optional[Tuple[str, ...]] = None
+) -> Tuple[list, list]:
     """Return a list of filenames and list corresponding labels.
 
     Args:
@@ -99,7 +101,8 @@ def make_dataset(
         normal_dir (Union[str, Path]): Path to the directory containing normal images.
         abnormal_dir (Union[str, Path]): Path to the directory containing abnormal images.
         normal_test_dir (Optional[Union[str, Path]], optional): Path to the directory containing
-            normal images for the test dataset. Defaults to None.
+            normal images for the test dataset. Normal test images will be a split of `normal_dir`
+            if `None`. Defaults to None.
         mask_dir (Optional[Union[str, Path]], optional): Path to the directory containing
             the mask annotations. Defaults to None.
         split (Optional[str], optional): Dataset split (ie., either train or test). Defaults to None.
@@ -180,7 +183,7 @@ class FolderDataset(Dataset):
         abnormal_dir: Union[Path, str],
         split: str,
         pre_process: PreProcessor,
-        normal_test: Optional[Union[Path, str]] = None,
+        normal_test_dir: Optional[Union[Path, str]] = None,
         split_ratio: float = 0.2,
         mask_dir: Optional[Union[Path, str]] = None,
         extensions: Optional[Tuple[str, ...]] = None,
@@ -231,7 +234,7 @@ class FolderDataset(Dataset):
         self.samples = make_dataset(
             normal_dir=normal_dir,
             abnormal_dir=abnormal_dir,
-            normal_test_dir=normal_test,
+            normal_test_dir=normal_test_dir,
             mask_dir=mask_dir,
             split=split,
             split_ratio=split_ratio,
@@ -293,10 +296,10 @@ class FolderDataModule(LightningDataModule):
     def __init__(
         self,
         root: Union[str, Path],
-        normal: str = "normal",
-        abnormal: str = "abnormal",
+        normal_dir: str = "normal",
+        abnormal_dir: str = "abnormal",
         task: str = "classification",
-        normal_test: Optional[Union[Path, str]] = None,
+        normal_test_dir: Optional[Union[Path, str]] = None,
         mask_dir: Optional[Union[Path, str]] = None,
         extensions: Optional[Tuple[str, ...]] = None,
         split_ratio: float = 0.2,
@@ -313,13 +316,13 @@ class FolderDataModule(LightningDataModule):
 
         Args:
             root (Union[str, Path]): Path to the root folder containing normal and abnormal dirs.
-            normal (str, optional): Name of the directory containing normal images.
+            normal_dir (str, optional): Name of the directory containing normal images.
                 Defaults to "normal".
-            abnormal (str, optional): Name of the directory containing abnormal images.
+            abnormal_dir (str, optional): Name of the directory containing abnormal images.
                 Defaults to "abnormal".
             task (str, optional): Task type. Could be either classification or segmentation.
                 Defaults to "classification".
-            normal_test (Optional[Union[str, Path]], optional): Path to the directory containing
+            normal_test_dir (Optional[Union[str, Path]], optional): Path to the directory containing
                 normal images for the test dataset. Defaults to None.
             mask_dir (Optional[Union[str, Path]], optional): Path to the directory containing
                 the mask annotations. Defaults to None.
@@ -410,11 +413,11 @@ class FolderDataModule(LightningDataModule):
         super().__init__()
 
         self.root = _check_and_convert_path(root)
-        self.normal_dir = self.root / normal
-        self.abnormal_dir = self.root / abnormal
-        self.normal_test = normal_test
-        if normal_test:
-            self.normal_test = self.root / normal_test
+        self.normal_dir = self.root / normal_dir
+        self.abnormal_dir = self.root / abnormal_dir
+        self.normal_test = normal_test_dir
+        if normal_test_dir:
+            self.normal_test = self.root / normal_test_dir
         self.mask_dir = mask_dir
         self.extensions = extensions
         self.split_ratio = split_ratio
@@ -488,7 +491,7 @@ class FolderDataModule(LightningDataModule):
             normal_dir=self.normal_dir,
             abnormal_dir=self.abnormal_dir,
             split="test",
-            normal_test=self.normal_test,
+            normal_test_dir=self.normal_test,
             split_ratio=self.split_ratio,
             mask_dir=self.mask_dir,
             pre_process=self.pre_process_val,

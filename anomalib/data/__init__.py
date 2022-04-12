@@ -69,10 +69,10 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
     elif config.dataset.format.lower() == "folder":
         datamodule = FolderDataModule(
             root=config.dataset.path,
-            normal=config.dataset.normal,
-            abnormal=config.dataset.abnormal,
+            normal_dir=config.dataset.normal_dir,
+            abnormal_dir=config.dataset.abnormal_dir,
             task=config.dataset.task,
-            normal_test=config.dataset.normal_test,
+            normal_test_dir=config.dataset.normal_test_dir,
             mask_dir=config.dataset.mask,
             extensions=config.dataset.extensions,
             split_ratio=config.dataset.split_ratio,
