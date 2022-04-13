@@ -27,12 +27,19 @@ model:
     - layer1
     - layer2
     - layer3
-  metric: auc
   normalization_method: min_max # options: [none, min_max, cdf]
   threshold:
     image_default: 3
     pixel_default: 3
     adaptive: true
+
+metrics:
+  image:
+    - F1
+    - AUROC
+  pixel:
+    - F1
+    - AUROC
 
 project:
   seed: 42
