@@ -3,6 +3,7 @@ import importlib
 import warnings
 from typing import List, Optional, Tuple, Union
 
+import torchmetrics
 from omegaconf import DictConfig, ListConfig
 
 from .adaptive_threshold import AdaptiveThreshold
@@ -44,15 +45,14 @@ def metric_collection_from_names(metric_names: List[str], prefix: Optional[str])
         AnomalibMetricCollection: Collection of metrics.
     """
     metrics_module = importlib.import_module("anomalib.utils.metrics")
-    torchmetrics_module = importlib.import_module("torchmetrics")
     metrics = AnomalibMetricCollection([], prefix=prefix)
     for metric_name in metric_names:
         if hasattr(metrics_module, metric_name):
             metric_cls = getattr(metrics_module, metric_name)
             metrics.add_metrics(metric_cls(compute_on_step=False))
-        elif hasattr(torchmetrics_module, metric_name):
+        elif hasattr(torchmetrics, metric_name):
             try:
-                metric_cls = getattr(torchmetrics_module, metric_name)
+                metric_cls = getattr(torchmetrics, metric_name)
                 metrics.add_metrics(metric_cls(compute_on_step=False))
             except TypeError:
                 warnings.warn(f"Incorrect constructor arguments for {metric_name} metric from TorchMetrics package.")
