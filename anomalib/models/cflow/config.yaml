@@ -85,7 +85,6 @@ trainer:
   replace_sampler_ddp: true
   stochastic_weight_avg: false
   sync_batchnorm: false
-  terminate_on_nan: false
   tpu_cores: null
   track_grad_norm: -1
   val_check_interval: 1.0
