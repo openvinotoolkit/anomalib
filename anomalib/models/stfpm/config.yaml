@@ -64,9 +64,8 @@ trainer:
   default_root_dir: null
   detect_anomaly: false
   deterministic: false
-  device: null # Set automatically
   enable_checkpointing: true
-  enable_progress_bar: false
+  enable_progress_bar: true
   fast_dev_run: false
   gpus: null # Set automatically
   gradient_clip_val: 0
