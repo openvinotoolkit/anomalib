@@ -21,7 +21,6 @@ from pathlib import Path
 from typing import List, Optional, Union
 from warnings import warn
 
-import torch
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
 
@@ -112,37 +111,10 @@ def update_multi_gpu_training_config(config: Union[DictConfig, ListConfig]) -> U
     return config
 
 
-def update_device_config(config: Union[DictConfig, ListConfig], openvino: bool) -> Union[DictConfig, ListConfig]:
-    """Update XPU Device Config This function ensures devices are configured correctly by the user.
-
-    Args:
-        config (Union[DictConfig, ListConfig]): Input config
-        openvino (bool): Boolean to check if OpenVINO Inference is enabled.
-
-    Returns:
-        Union[DictConfig, ListConfig]: Updated config
-    """
-
-    config.openvino = openvino
-    if openvino:
-        config.trainer.gpus = 0
-
-    if not torch.cuda.is_available():
-        config.trainer.gpus = 0
-
-    if config.trainer.gpus == 0 and torch.cuda.is_available():
-        config.trainer.gpus = 1
-
-    config = update_multi_gpu_training_config(config)
-
-    return config
-
-
 def get_configurable_parameters(
     model_name: Optional[str] = None,
     model_config_path: Optional[Union[Path, str]] = None,
     weight_file: Optional[str] = None,
-    openvino: bool = False,
     config_filename: Optional[str] = "config",
     config_file_extension: Optional[str] = "yaml",
 ) -> Union[DictConfig, ListConfig]:
@@ -152,7 +124,6 @@ def get_configurable_parameters(
         model_name: Optional[str]:  (Default value = None)
         model_config_path: Optional[Union[Path, str]]:  (Default value = None)
         weight_file: Path to the weight file
-        openvino: Use OpenVINO
         config_filename: Optional[str]:  (Default value = "config")
         config_file_extension: Optional[str]:  (Default value = "yaml")
 
@@ -191,7 +162,6 @@ def get_configurable_parameters(
         config.model.weight_file = weight_file
 
     config = update_nncf_config(config)
-    config = update_device_config(config, openvino)
 
     # thresholding
     if "pixel_default" not in config.model.threshold.keys():
