@@ -23,4 +23,4 @@ optimization:
 
 trainer:
   accelerator: auto # <"cpu", "gpu", "tpu", "ipu", "hpu", "auto">
-  device: 1
+  device: null # Set automatically
