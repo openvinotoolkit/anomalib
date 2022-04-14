@@ -15,7 +15,7 @@
 # and limitations under the License.
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, cast
 from warnings import warn
 
 import pytorch_lightning as pl
@@ -73,7 +73,8 @@ class VisualizerCallback(Callback):
             if log_to in loggers.AVAILABLE_LOGGERS:
                 # check if logger object is same as the requested object
                 if log_to in available_loggers and isinstance(available_loggers[log_to], ImageLoggerBase):
-                    available_loggers[log_to].add_image(
+                    logger: ImageLoggerBase = cast(ImageLoggerBase, available_loggers[log_to])  # placate mypy
+                    logger.add_image(
                         image=visualizer.figure,
                         name=filename.parent.name + "_" + filename.name,
                         global_step=module.global_step,
