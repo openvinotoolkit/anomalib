@@ -54,7 +54,7 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     torch_model_list: List[str] = ["padim", "stfpm", "dfkde", "dfm", "patchcore", "cflow", "ganomaly"]
     model: AnomalyModule
 
-    if config.openvino:
+    if "openvino" in config.keys() and config.openvino:
         if config.model.name in openvino_model_list:
             module = import_module(f"anomalib.models.{config.model.name}.model")
             model = getattr(module, f"{config.model.name.capitalize()}OpenVINO")
