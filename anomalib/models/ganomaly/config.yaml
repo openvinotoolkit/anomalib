@@ -60,7 +60,6 @@ trainer:
   auto_scale_batch_size: false
   auto_select_gpus: false
   benchmark: false
-  callbacks: null
   check_val_every_n_epoch: 2
   default_root_dir: null
   detect_anomaly: false
