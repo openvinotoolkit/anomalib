@@ -34,7 +34,7 @@ project:
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
-  accelerator: null
+  accelerator: auto # <"cpu", "gpu", "tpu", "ipu", "hpu", "auto">
   accumulate_grad_batches: 1
   amp_backend: native
   auto_lr_find: false
@@ -44,9 +44,9 @@ trainer:
   check_val_every_n_epoch: 1 # Don't validate before extracting features.
   default_root_dir: null
   deterministic: false
+  device: 1
   enable_checkpointing: true
   fast_dev_run: false
-  gpus: 1
   gradient_clip_val: 0
   limit_predict_batches: 1.0
   limit_test_batches: 1.0
