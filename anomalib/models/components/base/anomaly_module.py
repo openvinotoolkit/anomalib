@@ -62,8 +62,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         image_f1 = F1Score(num_classes=1, compute_on_step=False, threshold=self.hparams.model.threshold.image_default)
         pixel_auroc = AUROC(num_classes=1, pos_label=1, compute_on_step=False)
         pixel_f1 = F1Score(num_classes=1, compute_on_step=False, threshold=self.hparams.model.threshold.pixel_default)
-        self.image_metrics = MetricCollection([image_auroc, image_f1], prefix="image_").cpu()
-        self.pixel_metrics = MetricCollection([pixel_auroc, pixel_f1], prefix="pixel_").cpu()
+        self.image_metrics = MetricCollection([image_auroc, image_f1], prefix="image_", compute_groups=False).cpu()
+        self.pixel_metrics = MetricCollection([pixel_auroc, pixel_f1], prefix="pixel_", compute_groups=False).cpu()
 
     def forward(self, batch):  # pylint: disable=arguments-differ
         """Forward-pass input tensor to the module.
@@ -154,8 +154,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         else:
             self.pixel_threshold.value = self.image_threshold.value
 
-        self.image_metrics.F1.threshold = self.image_threshold.value.item()
-        self.pixel_metrics.F1.threshold = self.pixel_threshold.value.item()
+        self.image_metrics.F1Score.threshold = self.image_threshold.value.item()
+        self.pixel_metrics.F1Score.threshold = self.pixel_threshold.value.item()
 
     def _collect_outputs(self, image_metric, pixel_metric, outputs):
         for output in outputs:

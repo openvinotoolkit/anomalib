@@ -29,8 +29,8 @@ class MinMaxNormalizationCallback(Callback):
 
     def on_test_start(self, _trainer: pl.Trainer, pl_module: AnomalyModule) -> None:
         """Called when the test begins."""
-        pl_module.image_metrics.F1.threshold = 0.5
-        pl_module.pixel_metrics.F1.threshold = 0.5
+        pl_module.image_metrics.F1Score.threshold = 0.5
+        pl_module.pixel_metrics.F1Score.threshold = 0.5
 
     def on_validation_batch_end(
         self,
