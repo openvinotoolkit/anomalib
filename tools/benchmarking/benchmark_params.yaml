@@ -1,4 +1,5 @@
 seed: 42
+compute_openvino: false
 hardware:
   - cpu
   - gpu
