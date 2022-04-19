@@ -26,8 +26,10 @@ def get_metrics(config: Union[ListConfig, DictConfig]) -> Tuple[AnomalibMetricCo
         AnomalibMetricCollection: Image-level metric collection
         AnomalibMetricCollection: Pixel-level metric collection
     """
-    image_metrics = metric_collection_from_names(config.metrics.image, "image_")
-    pixel_metrics = metric_collection_from_names(config.metrics.pixel, "pixel_")
+    image_metric_names = config.metrics.image if "image" in config.metrics.keys() else []
+    pixel_metric_names = config.metrics.pixel if "pixel" in config.metrics.keys() else []
+    image_metrics = metric_collection_from_names(image_metric_names, "image_")
+    pixel_metrics = metric_collection_from_names(pixel_metric_names, "pixel_")
     return image_metrics, pixel_metrics
 
 
