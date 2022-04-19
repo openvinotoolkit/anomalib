@@ -59,7 +59,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         # metrics
         self.image_metrics, self.pixel_metrics = get_metrics(self.hparams)
         self.image_metrics.set_threshold(self.hparams.model.threshold.image_default)
-        self.image_metrics.set_threshold(self.hparams.model.threshold.pixel_default)
+        self.pixel_metrics.set_threshold(self.hparams.model.threshold.pixel_default)
 
     def forward(self, batch):  # pylint: disable=arguments-differ
         """Forward-pass input tensor to the module.
