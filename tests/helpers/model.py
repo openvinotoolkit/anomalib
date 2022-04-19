@@ -73,7 +73,7 @@ def setup_model_train(
         config.model.weight_file = weight_file if not fast_run else "weights/last.ckpt"
 
     if nncf:
-        config.optimization.nncf.apply = True
+        config.optimization["nncf"] = {"apply": True, "input_info": {"sample_size": None}}
         config = update_nncf_config(config)
         config.init_weights = None
 

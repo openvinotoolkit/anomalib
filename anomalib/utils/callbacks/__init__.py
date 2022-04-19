@@ -92,7 +92,7 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
             nncf_config = yaml.safe_load(OmegaConf.to_yaml(config.optimization.nncf))
             callbacks.append(
                 nncf_callback(
-                    config=nncf_config,
+                    nncf_config=nncf_config,
                     export_dir=os.path.join(config.project.path, "compressed"),
                 )
             )
