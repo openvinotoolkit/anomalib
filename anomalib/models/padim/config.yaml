@@ -35,10 +35,10 @@ model:
 
 metrics:
   image:
-    - F1
+    - F1Score
     - AUROC
   pixel:
-    - F1
+    - F1Score
     - AUROC
 
 project:
