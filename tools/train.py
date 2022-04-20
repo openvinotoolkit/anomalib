@@ -19,6 +19,7 @@ results.
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import warnings
 from argparse import ArgumentParser, Namespace
 
 from pytorch_lightning import Trainer, seed_everything
@@ -27,7 +28,7 @@ from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
 from anomalib.utils.callbacks import LoadModelCallback, get_callbacks
-from anomalib.utils.loggers import get_logger
+from anomalib.utils.loggers import get_experiment_logger
 
 
 def get_args() -> Namespace:
@@ -39,6 +40,7 @@ def get_args() -> Namespace:
     parser = ArgumentParser()
     parser.add_argument("--model", type=str, default="padim", help="Name of the algorithm to train/test")
     parser.add_argument("--model_config_path", type=str, required=False, help="Path to a model config file")
+    parser.add_argument("--no-warnings", action="store_true", help="Flag to suppress warning messages.")
 
     return parser.parse_args()
 
@@ -51,10 +53,12 @@ def train():
     if config.project.seed != 0:
         seed_everything(config.project.seed)
 
+    if args.no_warnings:
+        warnings.filterwarnings("ignore")
+
     datamodule = get_datamodule(config)
     model = get_model(config)
-    logger = get_logger(config)
-
+    logger = get_experiment_logger(config)
     callbacks = get_callbacks(config)
 
     trainer = Trainer(**config.trainer, logger=logger, callbacks=callbacks)
