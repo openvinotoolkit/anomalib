@@ -40,7 +40,7 @@ def get_args() -> Namespace:
     parser = ArgumentParser()
     parser.add_argument("--model", type=str, default="padim", help="Name of the algorithm to train/test")
     parser.add_argument("--model_config_path", type=str, required=False, help="Path to a model config file")
-    parser.add_argument("--no-warnings", action="store_true", help="Flag to suppress warning messages.")
+    parser.add_argument("--log-level", type=str, help="<DEBUG, INFO, WARNING, ERROR>")
 
     return parser.parse_args()
 
@@ -53,7 +53,7 @@ def train():
     if config.project.seed != 0:
         seed_everything(config.project.seed)
 
-    if args.no_warnings:
+    if args.log_level == "ERROR":
         warnings.filterwarnings("ignore")
 
     datamodule = get_datamodule(config)
@@ -64,7 +64,6 @@ def train():
     trainer = Trainer(**config.trainer, logger=logger, callbacks=callbacks)
     trainer.fit(model=model, datamodule=datamodule)
 
-    # load best model from checkpoint before evaluating
     load_model_callback = LoadModelCallback(weights_path=trainer.checkpoint_callback.best_model_path)
     trainer.callbacks.insert(0, load_model_callback)
 
