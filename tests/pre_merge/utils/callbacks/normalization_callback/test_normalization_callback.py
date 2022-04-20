@@ -25,6 +25,7 @@ def test_normalizer(path=get_dataset_path(), category="shapes"):
     config.dataset.category = category
     config.model.threshold.adaptive = True
     config.project.log_images_to = []
+    config.metrics.image = ["F1Score", "AUROC"]
 
     # run without normalization
     config.model.normalization_method = "none"
@@ -42,7 +43,7 @@ def test_normalizer(path=get_dataset_path(), category="shapes"):
     results_with_minmax_normalization = run_train_test(config)
 
     # performance should be the same
-    for metric in ["image_AUROC", "image_F1"]:
+    for metric in ["image_AUROC", "image_F1Score"]:
         assert round(results_without_normalization[0][metric], 3) == round(results_with_cdf_normalization[0][metric], 3)
         assert round(results_without_normalization[0][metric], 3) == round(
             results_with_minmax_normalization[0][metric], 3
