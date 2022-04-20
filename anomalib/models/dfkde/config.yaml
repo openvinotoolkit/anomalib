@@ -25,6 +25,11 @@ model:
     image_default: 0
     adaptive: true
 
+metrics:
+  image:
+    - F1Score
+    - AUROC
+
 project:
   seed: 42
   path: ./results

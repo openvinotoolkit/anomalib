@@ -116,7 +116,7 @@ class VisualizerCallback(Callback):
             normalize = False  # anomaly maps are already normalized
         else:
             normalize = True  # raw anomaly maps. Still need to normalize
-        threshold = pl_module.pixel_metrics.F1.threshold
+        threshold = pl_module.pixel_metrics.threshold
 
         for i, (filename, image, anomaly_map, pred_score, gt_label) in enumerate(
             zip(
