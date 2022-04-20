@@ -13,10 +13,28 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions
 # and limitations under the License.
-from pathlib import Path
+import os
+from importlib.util import module_from_spec, spec_from_file_location
 from typing import List
 
 from setuptools import find_packages, setup
+
+
+def load_module(name: str = "anomalib/__init__.py"):
+    """Load Python Module.
+
+    Args:
+        name (str, optional): Name of the module to load.
+            Defaults to "anomalib/__init__.py".
+
+    Returns:
+        _type_: _description_
+    """
+    location = os.path.join(os.path.dirname(__file__), name)
+    spec = spec_from_file_location(name=name, location=location)
+    module = module_from_spec(spec)  # type: ignore
+    spec.loader.exec_module(module)  # type: ignore
+    return module
 
 
 def get_version() -> str:
@@ -28,21 +46,15 @@ def get_version() -> str:
     the value assigned to it.
 
     Example:
-        >>> # Assume that __version__ = "0.2.1"
+        >>> # Assume that __version__ = "0.2.6"
         >>> get_version()
-        "0.2.1"
+        "0.2.6"
 
     Returns:
-        str: Version number of `anomalib` package.
+        str: `anomalib` version.
     """
-
-    with open(Path.cwd() / "anomalib" / "__init__.py", "r", encoding="utf8") as file:
-        lines = file.readlines()
-        for line in lines:
-            line = line.strip()
-            if line.startswith("__version__"):
-                version = line.replace("__version__ = ", "")
-
+    anomalib = load_module(name="anomalib/__init__.py")
+    version = anomalib.__version__
     return version
 
 
@@ -85,8 +97,7 @@ EXTRAS_REQUIRE = {
 
 setup(
     name="anomalib",
-    # TODO: https://github.com/openvinotoolkit/anomalib/issues/36
-    version="0.2.6",
+    version=get_version(),
     author="Intel OpenVINO",
     author_email="help@openvino.intel.com",
     description="anomalib - Anomaly Detection Library",

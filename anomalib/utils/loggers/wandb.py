@@ -89,7 +89,6 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
         log_model: Union[str, bool] = False,
         experiment=None,
         prefix: Optional[str] = "",
-        sync_step: Optional[bool] = None,
         **kwargs
     ) -> None:
         super().__init__(
@@ -103,7 +102,6 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
             log_model=log_model,
             experiment=experiment,
             prefix=prefix,
-            sync_step=sync_step,
             **kwargs
         )
         self.image_list: List[wandb.Image] = []  # Cache images
