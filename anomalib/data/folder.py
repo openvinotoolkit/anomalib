@@ -17,7 +17,6 @@ This script creates a custom dataset from a folder.
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import logging
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
 
@@ -38,9 +37,9 @@ from anomalib.data.utils.split import (
     split_normal_images_in_train_set,
 )
 from anomalib.pre_processing import PreProcessor
+from anomalib.utils.loggers import get_console_logger
 
-logger = logging.getLogger(name="Dataset: Folder Dataset")
-logger.setLevel(logging.DEBUG)
+logger = get_console_logger(__name__)
 
 
 def _check_and_convert_path(path: Union[str, Path]) -> Path:
@@ -459,6 +458,7 @@ class FolderDataModule(LightningDataModule):
           stage: Optional[str]:  Train/Val/Test stages. (Default value = None)
 
         """
+        logger.info("Setting up train, validationm test and prediction datasets.")
         if stage in (None, "fit"):
             self.train_data = FolderDataset(
                 normal_dir=self.normal_dir,
