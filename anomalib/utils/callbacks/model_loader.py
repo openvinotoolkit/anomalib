@@ -34,5 +34,5 @@ class LoadModelCallback(Callback):
 
         Loads the model weights from ``weights_path`` into the PyTorch module.
         """
-        logger.info("Loading the model from {self.weights_path}")
+        logger.info("Loading the model from %s", self.weights_path)
         pl_module.load_state_dict(torch.load(self.weights_path)["state_dict"])
