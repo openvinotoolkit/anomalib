@@ -22,10 +22,16 @@ from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
 from pytorch_lightning.loggers import CSVLogger, LightningLoggerBase
 
+from .console import get_console_logger
 from .tensorboard import AnomalibTensorBoardLogger
 from .wandb import AnomalibWandbLogger
 
-__all__ = ["AnomalibTensorBoardLogger", "get_logger", "AnomalibWandbLogger"]
+__all__ = [
+    "AnomalibTensorBoardLogger",
+    "AnomalibWandbLogger",
+    "get_console_logger",
+    "get_experiment_logger",
+]
 AVAILABLE_LOGGERS = ["tensorboard", "wandb", "csv"]
 
 
@@ -33,7 +39,7 @@ class UnknownLogger(Exception):
     """This is raised when the logger option in `config.yaml` file is set incorrectly."""
 
 
-def get_logger(
+def get_experiment_logger(
     config: Union[DictConfig, ListConfig]
 ) -> Union[LightningLoggerBase, Iterable[LightningLoggerBase], bool]:
     """Return a logger based on the choice of logger in the config file.
