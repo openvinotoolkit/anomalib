@@ -17,7 +17,7 @@
 
 import logging
 from logging import Handler, Logger, StreamHandler
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 import torch.distributed as dist
 
@@ -25,15 +25,15 @@ INITIALIZED_LOGGERS: Dict[str, bool] = {}
 
 
 def get_console_logger(
-    name: str, log_level: int = logging.INFO, filename: Optional[str] = None, mode: str = "w"
+    name: str, log_level: Union[int, str] = logging.INFO, filename: Optional[str] = None, mode: str = "w"
 ) -> Logger:
     """Initialize and get a logger by name.
 
     Args:
         name (str): Logger name.
-        log_level (int, optional): The logger level. Note that only the process of
+        log_level (Union[int, str]): The logger level. Note that only the process of
             rank 0 is affected, and other processes will set the level to
-            "Error" thus be silent most of the time.. Defaults to logging.INFO.
+            "Error" thus be silent most of the time. Defaults to logging.INFO.
         filename (Optional[str]): The log filename. If specified, a FileHandler
             will be added to the logger. Defaults to None.
         mode (str, optional): The file mode used in opening log file.
@@ -42,6 +42,11 @@ def get_console_logger(
     Returns:
         Logger: The expected logger.
     """
+    if log_level is None:
+        log_level = logging.INFO
+
+    if isinstance(log_level, str):
+        log_level = logging.getLevelName(log_level)
 
     logger = logging.getLogger(name)
     if name in INITIALIZED_LOGGERS:
