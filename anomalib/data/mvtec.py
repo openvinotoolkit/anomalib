@@ -38,7 +38,6 @@ Reference:
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import logging
 import tarfile
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
@@ -63,9 +62,9 @@ from anomalib.data.utils.split import (
     split_normal_images_in_train_set,
 )
 from anomalib.pre_processing import PreProcessor
+from anomalib.utils.loggers import get_console_logger
 
-logger = logging.getLogger(name="Dataset: MVTec AD")
-logger.setLevel(logging.DEBUG)
+logger = get_console_logger(name="Dataset: MVTec AD")
 
 
 def make_mvtec_dataset(
@@ -372,12 +371,12 @@ class MVTecDataModule(LightningDataModule):
     def prepare_data(self) -> None:
         """Download the dataset if not available."""
         if (self.root / self.category).is_dir():
-            logging.info("Found the dataset.")
+            logger.info("Found the dataset.")
         else:
             self.root.mkdir(parents=True, exist_ok=True)
             dataset_name = "mvtec_anomaly_detection.tar.xz"
 
-            logging.info("Downloading the dataset.")
+            logger.info("Downloading the Mvtec AD dataset.")
             with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc="MVTec AD") as progress_bar:
                 urlretrieve(
                     url=f"ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/{dataset_name}",
@@ -385,11 +384,11 @@ class MVTecDataModule(LightningDataModule):
                     reporthook=progress_bar.update_to,
                 )
 
-            logging.info("Extracting the dataset.")
+            logger.info("Extracting the dataset.")
             with tarfile.open(self.root / dataset_name) as tar_file:
                 tar_file.extractall(self.root)
 
-            logging.info("Cleaning the tar file")
+            logger.info("Cleaning the tar file")
             (self.root / dataset_name).unlink()
 
     def setup(self, stage: Optional[str] = None) -> None:
@@ -399,6 +398,7 @@ class MVTecDataModule(LightningDataModule):
           stage: Optional[str]:  Train/Val/Test stages. (Default value = None)
 
         """
+        logger.info("Setting up train, validationm test and prediction datasets.")
         if stage in (None, "fit"):
             self.train_data = MVTec(
                 root=self.root,
