@@ -147,11 +147,17 @@ def compute_on_cpu():
     """Compute all run configurations over a sigle CPU."""
     sweep_config = OmegaConf.load("tools/benchmarking/benchmark_params.yaml")
     for run_config in get_run_config(sweep_config.grid_search):
-        model_metrics = sweep(run_config, 0, sweep_config.seed)
+        model_metrics = sweep(run_config, 0, sweep_config.seed, False)
         write_metrics(model_metrics, sweep_config.writer)
 
 
-def compute_on_gpu(run_configs: Union[DictConfig, ListConfig], device: int, seed: int, writers: List[str]):
+def compute_on_gpu(
+    run_configs: Union[DictConfig, ListConfig],
+    device: int,
+    seed: int,
+    writers: List[str],
+    compute_openvino: bool = False,
+):
     """Go over each run config and collect the result.
 
     Args:
@@ -159,9 +165,10 @@ def compute_on_gpu(run_configs: Union[DictConfig, ListConfig], device: int, seed
         device (int): The GPU id used for running the sweep.
         seed (int): Fix a seed.
         writers (List[str]): Destinations to write to.
+        compute_openvino (bool, optional): Compute OpenVINO throughput. Defaults to False.
     """
     for run_config in run_configs:
-        model_metrics = sweep(run_config, device, seed)
+        model_metrics = sweep(run_config, device, seed, compute_openvino)
         write_metrics(model_metrics, writers)
 
 
@@ -183,6 +190,7 @@ def distribute_over_gpus():
                     device_id + 1,
                     sweep_config.seed,
                     sweep_config.writer,
+                    sweep_config.compute_openvino,
                 )
             )
         for job in jobs:
@@ -220,11 +228,15 @@ def distribute():
         upload_to_wandb(team="anomalib")
 
 
-def sweep(run_config: Union[DictConfig, ListConfig], device: int = 0, seed: int = 42) -> Dict[str, Union[float, str]]:
+def sweep(
+    run_config: Union[DictConfig, ListConfig], device: int = 0, seed: int = 42, convert_openvino: bool = False
+) -> Dict[str, Union[float, str]]:
     """Go over all the values mentioned in `grid_search` parameter of the benchmarking config.
 
     Args:
+        run_config: (Union[DictConfig, ListConfig], optional): Configuration for current run.
         device (int, optional): Name of the device on which the model is trained. Defaults to 0 "cpu".
+        convert_openvino (bool, optional): Whether to convert the model to openvino format. Defaults to False.
 
     Returns:
         Dict[str, Union[float, str]]: Dictionary containing the metrics gathered from the sweep.
@@ -245,7 +257,6 @@ def sweep(run_config: Union[DictConfig, ListConfig], device: int = 0, seed: int 
 
     # Set device in config. 0 - cpu, [0], [1].. - gpu id
     model_config.trainer.gpus = 0 if device == 0 else [device - 1]
-    convert_openvino = bool(model_config.trainer.gpus)
 
     if run_config.model_name in ["patchcore", "cflow"]:
         convert_openvino = False  # `torch.cdist` is not supported by onnx version 11
