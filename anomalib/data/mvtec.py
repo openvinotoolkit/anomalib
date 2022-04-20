@@ -64,7 +64,7 @@ from anomalib.data.utils.split import (
 from anomalib.pre_processing import PreProcessor
 from anomalib.utils.loggers import get_console_logger
 
-logger = get_console_logger(name="Dataset: MVTec AD")
+logger = get_console_logger(__name__)
 
 
 def make_mvtec_dataset(
