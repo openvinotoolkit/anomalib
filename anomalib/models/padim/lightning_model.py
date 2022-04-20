@@ -25,6 +25,9 @@ from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.padim.torch_model import PadimModel
+from anomalib.utils.loggers import get_console_logger
+
+logger = get_console_logger(__name__)
 
 __all__ = ["PadimLightning"]
 
@@ -38,6 +41,8 @@ class PadimLightning(AnomalyModule):
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         super().__init__(hparams)
+        logger.info("Initializing Padim Lightning model.")
+
         self.layers = hparams.model.layers
         self.model: PadimModel = PadimModel(
             layers=hparams.model.layers,
@@ -80,7 +85,10 @@ class PadimLightning(AnomalyModule):
         # NOTE: Previous anomalib versions fit Gaussian at the end of the epoch.
         #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
         #   is run within train epoch.
+        logger.info("Aggregating the embedding extracted from the training set.")
         embeddings = torch.vstack(self.embeddings)
+
+        logger.info("Fitting a Gaussian to the embedding collected from the training set.")
         self.stats = self.model.gaussian.fit(embeddings)
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
