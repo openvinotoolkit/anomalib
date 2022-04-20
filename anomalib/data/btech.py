@@ -395,7 +395,7 @@ class BTechDataModule(LightningDataModule):
           stage: Optional[str]:  Train/Val/Test stages. (Default value = None)
 
         """
-        logger.info("Setting up train, validationm test and prediction datasets.")
+        logger.info("Setting up train, validation, test and prediction datasets.")
         if stage in (None, "fit"):
             self.train_data = BTech(
                 root=self.root,
