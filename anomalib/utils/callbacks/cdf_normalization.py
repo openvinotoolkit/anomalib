@@ -24,6 +24,9 @@ from torch.distributions import LogNormal
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
 from anomalib.post_processing.normalization.cdf import normalize, standardize
+from anomalib.utils.loggers import get_console_logger
+
+logger = get_console_logger(__name__)
 
 
 class CdfNormalizationCallback(Callback):
@@ -45,6 +48,7 @@ class CdfNormalizationCallback(Callback):
         of the normal training data. This is needed after every epoch, because the statistics must be
         stored in the state dict of the checkpoint file.
         """
+        logger.info("Collecting the statistics of the normal training data to normalize the scores.")
         self._collect_stats(trainer, pl_module)
 
     def on_validation_batch_end(
