@@ -22,5 +22,4 @@ optimization:
     apply: true
 
 trainer:
-  accelerator: null
-  gpus: 1
+  accelerator: auto # <"cpu", "gpu", "tpu", "ipu", "hpu", "auto">
