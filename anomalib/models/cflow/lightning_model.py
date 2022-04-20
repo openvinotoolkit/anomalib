@@ -26,6 +26,9 @@ from torch import optim
 from anomalib.models.cflow.torch_model import CflowModel
 from anomalib.models.cflow.utils import get_logp, positional_encoding_2d
 from anomalib.models.components import AnomalyModule
+from anomalib.utils.loggers import get_console_logger
+
+logger = get_console_logger(__name__)
 
 __all__ = ["CflowLightning"]
 
@@ -35,6 +38,7 @@ class CflowLightning(AnomalyModule):
 
     def __init__(self, hparams):
         super().__init__(hparams)
+        logger.info("Initializing Cflow Lightning model.")
 
         self.model: CflowModel = CflowModel(hparams)
         self.loss_val = 0

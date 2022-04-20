@@ -23,6 +23,9 @@ from torch import optim
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.stfpm.torch_model import STFPMModel
+from anomalib.utils.loggers import get_console_logger
+
+logger = get_console_logger(__name__)
 
 __all__ = ["StfpmLightning"]
 
@@ -32,6 +35,7 @@ class StfpmLightning(AnomalyModule):
 
     def __init__(self, hparams):
         super().__init__(hparams)
+        logger.info("Initializing Stfpm Lightning model.")
 
         self.model = STFPMModel(
             layers=hparams.model.layers,

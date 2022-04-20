@@ -26,8 +26,11 @@ from torch import Tensor, optim
 
 from anomalib.data.utils.image import pad_nextpow2
 from anomalib.models.components import AnomalyModule
+from anomalib.utils.loggers import get_console_logger
 
 from .torch_model import GanomalyModel
+
+logger = get_console_logger(__name__)
 
 
 class GanomalyLightning(AnomalyModule):
@@ -39,6 +42,7 @@ class GanomalyLightning(AnomalyModule):
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         super().__init__(hparams)
+        logger.info("Initializing Ganomaly Lightning model.")
 
         self.model: GanomalyModel = GanomalyModel(
             input_size=hparams.model.input_size,
@@ -140,6 +144,7 @@ class GanomalyLightning(AnomalyModule):
 
     def validation_epoch_end(self, outputs):
         """Normalize outputs based on min/max values."""
+        logger.info("Normalizing validation outputs based on min/max values.")
         for prediction in outputs:
             prediction["pred_scores"] = self._normalize(prediction["pred_scores"])
         super().validation_epoch_end(outputs)
@@ -159,6 +164,7 @@ class GanomalyLightning(AnomalyModule):
 
     def test_epoch_end(self, outputs):
         """Normalize outputs based on min/max values."""
+        logger.info("Normalizing test outputs based on min/max values.")
         for prediction in outputs:
             prediction["pred_scores"] = self._normalize(prediction["pred_scores"])
         super().test_epoch_end(outputs)
