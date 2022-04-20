@@ -21,13 +21,12 @@ import pytorch_lightning as pl
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks.base import Callback
 from torch import Tensor, nn
-from torchmetrics import F1, MetricCollection
 
 from anomalib.utils.metrics import (
-    AUROC,
     AdaptiveThreshold,
     AnomalyScoreDistribution,
     MinMax,
+    get_metrics,
 )
 
 
@@ -58,12 +57,9 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.model: nn.Module
 
         # metrics
-        image_auroc = AUROC(num_classes=1, pos_label=1, compute_on_step=False)
-        image_f1 = F1(num_classes=1, compute_on_step=False, threshold=self.hparams.model.threshold.image_default)
-        pixel_auroc = AUROC(num_classes=1, pos_label=1, compute_on_step=False)
-        pixel_f1 = F1(num_classes=1, compute_on_step=False, threshold=self.hparams.model.threshold.pixel_default)
-        self.image_metrics = MetricCollection([image_auroc, image_f1], prefix="image_").cpu()
-        self.pixel_metrics = MetricCollection([pixel_auroc, pixel_f1], prefix="pixel_").cpu()
+        self.image_metrics, self.pixel_metrics = get_metrics(self.hparams)
+        self.image_metrics.set_threshold(self.hparams.model.threshold.image_default)
+        self.pixel_metrics.set_threshold(self.hparams.model.threshold.pixel_default)
 
     def forward(self, batch):  # pylint: disable=arguments-differ
         """Forward-pass input tensor to the module.
@@ -154,8 +150,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         else:
             self.pixel_threshold.value = self.image_threshold.value
 
-        self.image_metrics.F1.threshold = self.image_threshold.value.item()
-        self.pixel_metrics.F1.threshold = self.pixel_threshold.value.item()
+        self.image_metrics.set_threshold(self.image_threshold.value.item())
+        self.pixel_metrics.set_threshold(self.pixel_threshold.value.item())
 
     def _collect_outputs(self, image_metric, pixel_metric, outputs):
         for output in outputs:
@@ -181,5 +177,5 @@ class AnomalyModule(pl.LightningModule, ABC):
     def _log_metrics(self):
         """Log computed performance metrics."""
         self.log_dict(self.image_metrics)
-        if self.hparams.dataset.task == "segmentation":
+        if self.pixel_metrics.update_called:
             self.log_dict(self.pixel_metrics)
