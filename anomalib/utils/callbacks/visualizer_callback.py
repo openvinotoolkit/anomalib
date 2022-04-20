@@ -15,7 +15,7 @@
 # and limitations under the License.
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, cast
 from warnings import warn
 
 import pytorch_lightning as pl
@@ -50,6 +50,7 @@ class VisualizerCallback(Callback):
         self,
         visualizer: Visualizer,
         module: AnomalyModule,
+        trainer: pl.Trainer,
         filename: Path,
     ):
         """Save image to logger/local storage.
@@ -59,19 +60,21 @@ class VisualizerCallback(Callback):
 
         Args:
             visualizer (Visualizer): Visualizer object from which the `figure` is saved/logged.
-            module (AnomalyModule): Anomaly module which holds reference to `hparams` and `logger`.
+            module (AnomalyModule): Anomaly module which holds reference to `hparams`.
+            trainer (Trainer): Pytorch Lightning trainer which holds reference to `logger`
             filename (Path): Path of the input image. This name is used as name for the generated image.
         """
-
-        # store current logger type as a string
-        logger_type = type(module.logger).__name__.lower()
-
+        # Store names of logger and the logger in a dict
+        available_loggers = {
+            type(logger).__name__.lower().rstrip("logger").lstrip("anomalib"): logger for logger in trainer.loggers
+        }
         # save image to respective logger
         for log_to in module.hparams.project.log_images_to:
             if log_to in loggers.AVAILABLE_LOGGERS:
                 # check if logger object is same as the requested object
-                if log_to in logger_type and module.logger is not None and isinstance(module.logger, ImageLoggerBase):
-                    module.logger.add_image(
+                if log_to in available_loggers and isinstance(available_loggers[log_to], ImageLoggerBase):
+                    logger: ImageLoggerBase = cast(ImageLoggerBase, available_loggers[log_to])  # placate mypy
+                    logger.add_image(
                         image=visualizer.figure,
                         name=filename.parent.name + "_" + filename.name,
                         global_step=module.global_step,
@@ -81,13 +84,15 @@ class VisualizerCallback(Callback):
                         f"Requested {log_to} logging but logger object is of type: {type(module.logger)}."
                         f" Skipping logging to {log_to}"
                     )
+            else:
+                warn(f"{log_to} not in the list of supported image loggers.")
 
         if "local" in module.hparams.project.log_images_to:
             visualizer.save(Path(module.hparams.project.path) / "images" / filename.parent.name / filename.name)
 
     def on_test_batch_end(
         self,
-        _trainer: pl.Trainer,
+        trainer: pl.Trainer,
         pl_module: AnomalyModule,
         outputs: Optional[STEP_OUTPUT],
         _batch: Any,
@@ -97,7 +102,7 @@ class VisualizerCallback(Callback):
         """Log images at the end of every batch.
 
         Args:
-            _trainer (Trainer): Pytorch lightning trainer object (unused).
+            trainer (Trainer): Pytorch lightning trainer object (unused).
             pl_module (LightningModule): Lightning modules derived from BaseAnomalyLightning object as
             currently only they support logging images.
             outputs (Dict[str, Any]): Outputs of the current test step.
@@ -147,7 +152,7 @@ class VisualizerCallback(Callback):
             )
             visualizer.add_image(image=image_classified, title="Classified Image")
 
-            self._add_images(visualizer, pl_module, Path(filename))
+            self._add_images(visualizer, pl_module, trainer, Path(filename))
             visualizer.close()
 
     def on_test_end(self, _trainer: pl.Trainer, pl_module: AnomalyModule) -> None:
