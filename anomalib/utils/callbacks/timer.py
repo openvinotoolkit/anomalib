@@ -3,6 +3,10 @@ import time
 
 from pytorch_lightning import Callback, LightningModule, Trainer
 
+from anomalib.utils.loggers import get_console_logger
+
+logger = get_console_logger(__name__)
+
 
 class TimerCallback(Callback):
     """Callback that measures the training and testing time of a PyTorch Lightning module."""
@@ -38,7 +42,7 @@ class TimerCallback(Callback):
         Returns:
             None
         """
-        print(f"Training took {time.time() - self.start} seconds")
+        logger.info("Training took %5.2f seconds", (time.time() - self.start))
 
     def on_test_start(self, trainer: Trainer, pl_module: LightningModule) -> None:  # pylint: disable=W0613
         """Call when the test begins.
@@ -77,4 +81,4 @@ class TimerCallback(Callback):
         if trainer.test_dataloaders is not None:
             output += f"(batch_size={trainer.test_dataloaders[0].batch_size})"
         output += f" : {self.num_images/testing_time} FPS"
-        print(output)
+        logger.info(output)

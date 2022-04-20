@@ -22,6 +22,9 @@ import torchvision
 from torch import Tensor, nn
 
 from anomalib.models.components import PCA, FeatureExtractor, GaussianKDE
+from anomalib.utils.loggers import get_console_logger
+
+logger = get_console_logger(__name__)
 
 
 class DfkdeModel(nn.Module):
@@ -88,7 +91,7 @@ class DfkdeModel(nn.Module):
         _embeddings = torch.vstack(embeddings)
 
         if _embeddings.shape[0] < self.n_components:
-            print("Not enough features to commit. Not making a model.")
+            logger.info("Not enough features to commit. Not making a model.")
             return False
 
         # if max training points is non-zero and smaller than number of staged features, select random subset
