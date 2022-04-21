@@ -47,7 +47,10 @@ file is to be provided:
 
 ::
 
-    python tools/train.py --model_config_path <path/to/model/config.yaml>
+    python tools/train.py --config <path/to/model/config.yaml>
+
+Note that `--model_config_path` will be deprecated in `v0.2.8` and removed
+in `v0.2.9`.
 
 Alternatively, a model name could also be provided as an argument, where
 the scripts automatically finds the corresponding config file.
