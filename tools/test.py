@@ -32,9 +32,8 @@ def get_args() -> Namespace:
     """
     parser = ArgumentParser()
     parser.add_argument("--model", type=str, default="stfpm", help="Name of the algorithm to train/test")
-    parser.add_argument("--model_config_path", type=str, required=False, help="Path to a model config file")
+    parser.add_argument("--config", type=str, required=False, help="Path to a model config file")
     parser.add_argument("--weight_file", type=str, default="weights/model.ckpt")
-    parser.add_argument("--openvino", type=bool, default=False)
 
     return parser.parse_args()
 
@@ -47,9 +46,8 @@ def test():
     args = get_args()
     config = get_configurable_parameters(
         model_name=args.model,
-        model_config_path=args.model_config_path,
+        config_path=args.config,
         weight_file=args.weight_file,
-        openvino=args.openvino,
     )
 
     datamodule = get_datamodule(config)
