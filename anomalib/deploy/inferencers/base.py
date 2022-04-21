@@ -21,7 +21,8 @@ from typing import Dict, Optional, Tuple, Union, cast
 import cv2
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
-from skimage.segmentation import mark_boundaries
+from skimage.morphology import dilation
+from skimage.segmentation import find_boundaries
 from torch import Tensor
 
 from anomalib.data.utils import read_image
@@ -124,8 +125,10 @@ class Inferencer(ABC):
         image_height = meta_data["image_shape"][0]
         image_width = meta_data["image_shape"][1]
         pred_mask = cv2.resize(pred_mask, (image_width, image_height))
-        image = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
-        return (image * 255).astype(np.uint8)
+        boundaries = find_boundaries(pred_mask)
+        outlines = dilation(boundaries, selem=np.ones((7, 7)))
+        image[outlines] = [255, 0, 0]
+        return image
 
     def __call__(self, image: np.ndarray) -> Tuple[np.ndarray, float]:
         """Call predict on the Image.
