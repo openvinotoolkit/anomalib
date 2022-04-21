@@ -18,6 +18,7 @@ command line, and show the visualization results.
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import warnings
 from argparse import ArgumentParser, Namespace
 from importlib import import_module
 from pathlib import Path
@@ -37,13 +38,24 @@ def get_args() -> Namespace:
         Namespace: List of arguments.
     """
     parser = ArgumentParser()
+    # --model_config_path will be deprecated in 0.2.8 and removed in 0.2.9
+    parser.add_argument("--model_config_path", type=str, required=False, help="Path to a model config file")
     parser.add_argument("--config", type=Path, required=True, help="Path to a model config file")
     parser.add_argument("--weight_path", type=Path, required=True, help="Path to a model weights")
     parser.add_argument("--image_path", type=Path, required=True, help="Path to an image to infer.")
     parser.add_argument("--save_path", type=Path, required=False, help="Path to save the output image.")
     parser.add_argument("--meta_data", type=Path, required=False, help="Path to JSON file containing the metadata.")
 
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.model_config_path is not None:
+        warnings.warn(
+            message="--model_config_path will be deprecated in v0.2.8 and removed in v0.2.9. Use --config instead.",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+        args.config = args.model_config_path
+
+    return args
 
 
 def add_label(prediction: np.ndarray, scores: float, font: int = cv2.FONT_HERSHEY_PLAIN) -> np.ndarray:
