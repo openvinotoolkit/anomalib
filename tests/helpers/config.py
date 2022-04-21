@@ -13,7 +13,6 @@ def get_test_configurable_parameters(
     model_name: Optional[str] = None,
     model_config_path: Optional[Union[Path, str]] = None,
     weight_file: Optional[str] = None,
-    openvino: bool = False,
     config_filename: Optional[str] = "config",
     config_file_extension: Optional[str] = "yaml",
 ) -> Union[DictConfig, ListConfig]:
@@ -24,7 +23,6 @@ def get_test_configurable_parameters(
         model_name: Optional[str]:  (Default value = None)
         model_config_path: Optional[Union[Path, str]]:  (Default value = None)
         weight_file: Path to the weight file
-        openvino: Use OpenVINO
         config_filename: Optional[str]:  (Default value = "config")
         config_file_extension: Optional[str]:  (Default value = "yaml")
 
@@ -33,7 +31,7 @@ def get_test_configurable_parameters(
     """
 
     config = get_configurable_parameters(
-        model_name, model_config_path, weight_file, openvino, config_filename, config_file_extension
+        model_name, model_config_path, weight_file, config_filename, config_file_extension
     )
 
     # Update path to match the dataset path in the test image/runner
