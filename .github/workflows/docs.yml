@@ -9,7 +9,7 @@ on:
 
 jobs:
   Build-and-Publish-Documentation:
-    runs-on: [self-hosted, linux, x64]
+    runs-on: [docs]
     steps:
       - name: CHECKOUT REPOSITORY
         uses: actions/checkout@v2
