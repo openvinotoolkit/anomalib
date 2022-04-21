@@ -14,13 +14,14 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
+
 import torch
 from pytorch_lightning import Callback
 
 from anomalib.models.components import AnomalyModule
-from anomalib.utils.loggers import get_console_logger
 
-logger = get_console_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class LoadModelCallback(Callback):

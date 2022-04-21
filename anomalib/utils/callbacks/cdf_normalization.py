@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 from typing import Any, Dict, Optional
 
 import pytorch_lightning as pl
@@ -24,9 +25,8 @@ from torch.distributions import LogNormal
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
 from anomalib.post_processing.normalization.cdf import normalize, standardize
-from anomalib.utils.loggers import get_console_logger
 
-logger = get_console_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class CdfNormalizationCallback(Callback):
