@@ -46,7 +46,7 @@ def get_model_nncf_cat() -> List:
         ("dfkde", False),
         ("dfm", False),
         ("stfpm", False),
-        ("stfpm", True),
+        # ("stfpm", True),
         ("patchcore", False),
         ("cflow", False),
         ("ganomaly", False),
@@ -88,7 +88,7 @@ class TestModel:
         thresholds = OmegaConf.load("tests/nightly/models/performance_thresholds.yaml")
 
         threshold = thresholds[config.model.name][config.dataset.category]
-        if "optimization" in config.keys() and config.optimization.nncf.apply:
+        if "optimization" in config.keys() and "nncf" in config.optimization.keys() and config.optimization.nncf.apply:
             threshold = threshold.nncf
         if not (
             np.isclose(results["image_AUROC"], threshold["image_AUROC"], rtol=0.02)
