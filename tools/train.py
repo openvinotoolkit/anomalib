@@ -28,7 +28,7 @@ from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
 from anomalib.utils.callbacks import LoadModelCallback, get_callbacks
-from anomalib.utils.loggers import get_experiment_logger
+from anomalib.utils.loggers import get_console_logger, get_experiment_logger
 
 
 def get_args() -> Namespace:
@@ -48,25 +48,36 @@ def get_args() -> Namespace:
 def train():
     """Train an anomaly classification or segmentation model based on a provided configuration file."""
     args = get_args()
-    config = get_configurable_parameters(model_name=args.model, model_config_path=args.model_config_path)
+    console = get_console_logger(name="anomalib", log_level=args.log_level)
 
+    config = get_configurable_parameters(model_name=args.model, model_config_path=args.model_config_path)
     if config.project.seed != 0:
         seed_everything(config.project.seed)
 
     if args.log_level == "ERROR":
         warnings.filterwarnings("ignore")
 
+    console.info("Loading the datamodule")
     datamodule = get_datamodule(config)
+
+    console.info("Loading the model.")
     model = get_model(config)
+
+    console.info("Loading the experiment logger(s)")
     logger = get_experiment_logger(config)
+
+    console.info("Loading the callbacks")
     callbacks = get_callbacks(config)
 
     trainer = Trainer(**config.trainer, logger=logger, callbacks=callbacks)
+    console.info("Training the model.")
     trainer.fit(model=model, datamodule=datamodule)
 
+    console.info("Loading the best model weights.")
     load_model_callback = LoadModelCallback(weights_path=trainer.checkpoint_callback.best_model_path)
     trainer.callbacks.insert(0, load_model_callback)
 
+    console.info("Testing the model.")
     trainer.test(model=model, datamodule=datamodule)
 
 
