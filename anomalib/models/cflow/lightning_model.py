@@ -17,6 +17,8 @@ https://arxiv.org/pdf/2107.12571v1.pdf
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
+
 import einops
 import torch
 import torch.nn.functional as F
@@ -26,9 +28,8 @@ from torch import optim
 from anomalib.models.cflow.torch_model import CflowModel
 from anomalib.models.cflow.utils import get_logp, positional_encoding_2d
 from anomalib.models.components import AnomalyModule
-from anomalib.utils.loggers import get_console_logger
 
-logger = get_console_logger(__name__)
+logger = logging.getLogger(__name__)
 
 __all__ = ["CflowLightning"]
 

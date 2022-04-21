@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 from typing import List, Union
 
 from omegaconf.dictconfig import DictConfig
@@ -21,11 +22,10 @@ from omegaconf.listconfig import ListConfig
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
-from anomalib.utils.loggers import get_console_logger
 
 from .torch_model import DfkdeModel
 
-logger = get_console_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class DfkdeLightning(AnomalyModule):

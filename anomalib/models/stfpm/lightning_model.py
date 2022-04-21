@@ -17,15 +17,16 @@ https://arxiv.org/abs/2103.04257
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
+
 import torch
 from pytorch_lightning.callbacks import EarlyStopping
 from torch import optim
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.stfpm.torch_model import STFPMModel
-from anomalib.utils.loggers import get_console_logger
 
-logger = get_console_logger(__name__)
+logger = logging.getLogger(__name__)
 
 __all__ = ["StfpmLightning"]
 

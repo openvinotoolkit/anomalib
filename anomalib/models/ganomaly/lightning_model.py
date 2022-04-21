@@ -17,6 +17,7 @@ https://arxiv.org/abs/1805.06725
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 from typing import Dict, List, Union
 
 import torch
@@ -26,11 +27,10 @@ from torch import Tensor, optim
 
 from anomalib.data.utils.image import pad_nextpow2
 from anomalib.models.components import AnomalyModule
-from anomalib.utils.loggers import get_console_logger
 
 from .torch_model import GanomalyModel
 
-logger = get_console_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class GanomalyLightning(AnomalyModule):

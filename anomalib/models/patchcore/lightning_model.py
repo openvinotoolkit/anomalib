@@ -17,6 +17,7 @@ Paper https://arxiv.org/abs/2106.08265.
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 from typing import List
 
 import torch
@@ -24,9 +25,8 @@ from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.patchcore.torch_model import PatchcoreModel
-from anomalib.utils.loggers import get_console_logger
 
-logger = get_console_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class PatchcoreLightning(AnomalyModule):
