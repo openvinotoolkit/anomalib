@@ -37,7 +37,7 @@ def get_args() -> Namespace:
         Namespace: List of arguments.
     """
     parser = ArgumentParser()
-    parser.add_argument("--config", type=Path, required=True, help="Path to a model config file")
+    parser.add_argument("--model_config_path", type=Path, required=True, help="Path to a model config file")
     parser.add_argument("--weight_path", type=Path, required=True, help="Path to a model weights")
     parser.add_argument("--image_path", type=Path, required=True, help="Path to an image to infer.")
     parser.add_argument("--save_path", type=Path, required=False, help="Path to save the output image.")
@@ -75,7 +75,7 @@ def stream() -> None:
     # This config file is also used for training and contains all the relevant
     # information regarding the data, model, train and inference details.
     args = get_args()
-    config = get_configurable_parameters(config_path=args.config)
+    config = get_configurable_parameters(model_config_path=args.model_config_path)
 
     # Get the inferencer. We use .ckpt extension for Torch models and (onnx, bin)
     # for the openvino models.

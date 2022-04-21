@@ -48,7 +48,7 @@ def test_non_adaptive_threshold():
     Test if the non-adaptive threshold gets used in the F1 score computation when
     adaptive thresholding is disabled and no normalization is used.
     """
-    config = get_test_configurable_parameters(config_path="anomalib/models/padim/config.yaml")
+    config = get_test_configurable_parameters(model_config_path="anomalib/models/padim/config.yaml")
 
     config.model.normalization_method = "none"
     config.model.threshold.adaptive = False
