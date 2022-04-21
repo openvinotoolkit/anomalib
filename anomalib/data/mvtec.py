@@ -38,6 +38,7 @@ Reference:
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 import tarfile
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
@@ -62,9 +63,8 @@ from anomalib.data.utils.split import (
     split_normal_images_in_train_set,
 )
 from anomalib.pre_processing import PreProcessor
-from anomalib.utils.loggers import get_console_logger
 
-logger = get_console_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def make_mvtec_dataset(
