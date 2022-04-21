@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import warnings
 from argparse import ArgumentParser, Namespace
 
 from pytorch_lightning import Trainer
@@ -32,11 +33,21 @@ def get_args() -> Namespace:
     """
     parser = ArgumentParser()
     parser.add_argument("--model", type=str, default="stfpm", help="Name of the algorithm to train/test")
+    # --model_config_path will be deprecated in 0.2.8 and removed in 0.2.9
     parser.add_argument("--model_config_path", type=str, required=False, help="Path to a model config file")
+    parser.add_argument("--config", type=str, required=False, help="Path to a model config file")
     parser.add_argument("--weight_file", type=str, default="weights/model.ckpt")
-    parser.add_argument("--openvino", type=bool, default=False)
 
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.model_config_path is not None:
+        warnings.warn(
+            message="--model_config_path will be deprecated in v0.2.8 and removed in v0.2.9. Use --config instead.",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+        args.config = args.model_config_path
+
+    return args
 
 
 def test():
@@ -47,9 +58,8 @@ def test():
     args = get_args()
     config = get_configurable_parameters(
         model_name=args.model,
-        model_config_path=args.model_config_path,
+        config_path=args.config,
         weight_file=args.weight_file,
-        openvino=args.openvino,
     )
 
     datamodule = get_datamodule(config)

@@ -16,9 +16,10 @@
 
 from argparse import ArgumentParser
 from pathlib import Path
+from typing import Union
 
 import pytorch_lightning as pl
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning import seed_everything
 from pytorch_lightning.loggers import WandbLogger
 from utils import flatten_hpo_params
@@ -38,12 +39,14 @@ class WandbSweep:
         sweep_config (DictConfig): Sweep configuration.
     """
 
-    def __init__(self, config: DictConfig, sweep_config: DictConfig) -> None:
+    def __init__(self, config: Union[DictConfig, ListConfig], sweep_config: Union[DictConfig, ListConfig]) -> None:
         self.config = config
         self.sweep_config = sweep_config
         self.observation_budget = sweep_config.observation_budget
         if "observation_budget" in self.sweep_config.keys():
-            self.sweep_config.pop("observation_budget")
+            # this instance check is to silence mypy.
+            if isinstance(self.sweep_config, DictConfig):
+                self.sweep_config.pop("observation_budget")
 
     def run(self):
         """Run the sweep."""
@@ -86,7 +89,7 @@ def get_args():
 
 if __name__ == "__main__":
     args = get_args()
-    model_config = get_configurable_parameters(model_name=args.model, model_config_path=args.model_config)
+    model_config = get_configurable_parameters(model_name=args.model, config_path=args.model_config)
     hpo_config = OmegaConf.load(args.sweep_config)
 
     if model_config.project.seed != 0:
