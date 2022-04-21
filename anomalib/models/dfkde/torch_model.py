@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 import random
 from typing import List, Optional, Tuple
 
@@ -22,9 +23,8 @@ import torchvision
 from torch import Tensor, nn
 
 from anomalib.models.components import PCA, FeatureExtractor, GaussianKDE
-from anomalib.utils.loggers import get_console_logger
 
-logger = get_console_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class DfkdeModel(nn.Module):

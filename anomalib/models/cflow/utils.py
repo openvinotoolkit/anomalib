@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 import math
 
 import numpy as np
@@ -22,9 +23,8 @@ from torch import nn
 
 from anomalib.models.components.freia.framework import SequenceINN
 from anomalib.models.components.freia.modules import AllInOneBlock
-from anomalib.utils.loggers import get_console_logger
 
-logger = get_console_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def get_logp(dim_feature_vector: int, p_u: torch.Tensor, logdet_j: torch.Tensor) -> torch.Tensor:
