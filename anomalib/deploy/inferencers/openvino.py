@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import importlib
+from importlib.util import find_spec
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
 
@@ -26,8 +26,10 @@ from anomalib.pre_processing import PreProcessor
 
 from .base import Inferencer
 
-if importlib.util.find_spec("openvino") is not None:
-    from openvino.inference_engine import IECore  # pylint: disable=no-name-in-module
+if find_spec("openvino") is not None:
+    from openvino.inference_engine import (  # type: ignore  # pylint: disable=no-name-in-module
+        IECore,
+    )
 
 
 class OpenVINOInferencer(Inferencer):
