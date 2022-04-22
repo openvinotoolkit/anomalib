@@ -380,7 +380,7 @@ class MVTecDataModule(LightningDataModule):
             logging.info("Downloading the dataset.")
             with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc="MVTec AD") as progress_bar:
                 urlretrieve(
-                    url=f"ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/{dataset_name}",
+                    url=f"https://www.mydrive.ch/shares/38536/3830184030e49fe74747669442f0f282/download/420938113-1629952094/{dataset_name}",
                     filename=self.root / dataset_name,
                     reporthook=progress_bar.update_to,
                 )
