@@ -64,7 +64,7 @@ def setup_model_train(
     config.dataset.category = category
     config.dataset.path = dataset_path
     config.project.log_images_to = []
-    config.trainer.gpus = device
+    config.trainer.devices = device
 
     # If weight file is empty, remove the key from config
     if "weight_file" in config.model.keys() and weight_file == "":

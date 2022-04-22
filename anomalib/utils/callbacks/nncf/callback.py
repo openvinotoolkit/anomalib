@@ -38,9 +38,9 @@ class NNCFCallback(Callback):
                           If None model will not be exported.
     """
 
-    def __init__(self, nncf_config: Dict, export_dir: str = None):
+    def __init__(self, config: Dict, export_dir: str = None):
         self.export_dir = export_dir
-        self.nncf_config = NNCFConfig(nncf_config)
+        self.config = NNCFConfig(config)
         self.nncf_ctrl: Optional[CompressionAlgorithmController] = None
 
     # pylint: disable=unused-argument
@@ -54,10 +54,10 @@ class NNCFCallback(Callback):
             return
 
         init_loader = InitLoader(trainer.datamodule.train_dataloader())  # type: ignore
-        nncf_config = register_default_init_args(self.nncf_config, init_loader)
+        config = register_default_init_args(self.config, init_loader)
 
         self.nncf_ctrl, pl_module.model = wrap_nncf_model(
-            model=pl_module.model, config=nncf_config, dataloader=trainer.datamodule.train_dataloader()  # type: ignore
+            model=pl_module.model, config=config, dataloader=trainer.datamodule.train_dataloader()  # type: ignore
         )
 
     def on_train_batch_start(
