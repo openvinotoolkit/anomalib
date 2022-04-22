@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-
+import logging
 import os
 from typing import Iterable, List, Union
 
@@ -25,7 +25,12 @@ from pytorch_lightning.loggers import CSVLogger, LightningLoggerBase
 from .tensorboard import AnomalibTensorBoardLogger
 from .wandb import AnomalibWandbLogger
 
-__all__ = ["AnomalibTensorBoardLogger", "get_logger", "AnomalibWandbLogger"]
+__all__ = [
+    "AnomalibTensorBoardLogger",
+    "AnomalibWandbLogger",
+    "configure_logger",
+    "get_experiment_logger",
+]
 AVAILABLE_LOGGERS = ["tensorboard", "wandb", "csv"]
 
 
@@ -33,7 +38,29 @@ class UnknownLogger(Exception):
     """This is raised when the logger option in `config.yaml` file is set incorrectly."""
 
 
-def get_logger(
+def configure_logger(level: Union[int, str] = logging.INFO):
+    """Get console logger by name.
+
+    Args:
+        level (Union[int, str], optional): Logger Level. Defaults to logging.INFO.
+
+    Returns:
+        Logger: The expected logger.
+    """
+
+    if isinstance(level, str):
+        level = logging.getLevelName(level)
+
+    format_string = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    logging.basicConfig(format=format_string, level=level)
+
+    # Set Pytorch Lightning logs to have a the consistent formatting with anomalib.
+    for handler in logging.getLogger("pytorch_lightning").handlers:
+        handler.setFormatter(logging.Formatter(format_string))
+        handler.setLevel(level)
+
+
+def get_experiment_logger(
     config: Union[DictConfig, ListConfig]
 ) -> Union[LightningLoggerBase, Iterable[LightningLoggerBase], bool]:
     """Return a logger based on the choice of logger in the config file.

@@ -17,6 +17,7 @@ Paper https://arxiv.org/abs/2011.08785
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 from typing import List, Union
 
 import torch
@@ -25,6 +26,8 @@ from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.padim.torch_model import PadimModel
+
+logger = logging.getLogger(__name__)
 
 __all__ = ["PadimLightning"]
 
@@ -38,6 +41,8 @@ class PadimLightning(AnomalyModule):
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         super().__init__(hparams)
+        logger.info("Initializing Padim Lightning model.")
+
         self.layers = hparams.model.layers
         self.model: PadimModel = PadimModel(
             layers=hparams.model.layers,
@@ -80,7 +85,10 @@ class PadimLightning(AnomalyModule):
         # NOTE: Previous anomalib versions fit Gaussian at the end of the epoch.
         #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
         #   is run within train epoch.
+        logger.info("Aggregating the embedding extracted from the training set.")
         embeddings = torch.vstack(self.embeddings)
+
+        logger.info("Fitting a Gaussian to the embedding collected from the training set.")
         self.stats = self.model.gaussian.fit(embeddings)
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ

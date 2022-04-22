@@ -39,8 +39,7 @@ from anomalib.data.utils.split import (
 )
 from anomalib.pre_processing import PreProcessor
 
-logger = logging.getLogger(name="Dataset: Folder Dataset")
-logger.setLevel(logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 def _check_and_convert_path(path: Union[str, Path]) -> Path:
@@ -459,6 +458,7 @@ class FolderDataModule(LightningDataModule):
           stage: Optional[str]:  Train/Val/Test stages. (Default value = None)
 
         """
+        logger.info("Setting up train, validation, test and prediction datasets.")
         if stage in (None, "fit"):
             self.train_data = FolderDataset(
                 normal_dir=self.normal_dir,

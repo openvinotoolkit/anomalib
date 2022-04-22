@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 from typing import List, Union
 
 from omegaconf.dictconfig import DictConfig
@@ -23,6 +24,8 @@ from torch import Tensor
 from anomalib.models.components import AnomalyModule
 
 from .torch_model import DfkdeModel
+
+logger = logging.getLogger(__name__)
 
 
 class DfkdeLightning(AnomalyModule):
@@ -34,6 +37,7 @@ class DfkdeLightning(AnomalyModule):
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         super().__init__(hparams)
+        logger.info("Initializing DFKDE Lightning model.")
         threshold_steepness = 0.05
         threshold_offset = 12
 
@@ -75,6 +79,7 @@ class DfkdeLightning(AnomalyModule):
         # NOTE: Previous anomalib versions fit Gaussian at the end of the epoch.
         #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
         #   is run within train epoch.
+        logger.info("Fitting a KDE model to the embedding collected from the training set.")
         self.model.fit(self.embeddings)
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ

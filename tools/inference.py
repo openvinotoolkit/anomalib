@@ -45,6 +45,13 @@ def get_args() -> Namespace:
     parser.add_argument("--image_path", type=Path, required=True, help="Path to an image to infer.")
     parser.add_argument("--save_path", type=Path, required=False, help="Path to save the output image.")
     parser.add_argument("--meta_data", type=Path, required=False, help="Path to JSON file containing the metadata.")
+    parser.add_argument(
+        "--overlay_mask",
+        type=bool,
+        required=False,
+        default=False,
+        help="Overlay the segmentation mask on the image. It assumes that the task is segmentation.",
+    )
 
     args = parser.parse_args()
     if args.model_config_path is not None:
@@ -114,9 +121,9 @@ def stream() -> None:
             if image.is_file() and image.suffix in (".jpg", ".png", ".jpeg"):
                 # Here save_path is assumed to be a directory. Image subdirectories are appended to the save_path.
                 save_path = Path(args.save_path / image.relative_to(args.image_path).parent) if args.save_path else None
-                infer(image, inferencer, save_path)
+                infer(image, inferencer, save_path, args.overlay_mask)
     elif args.image_path.suffix in (".jpg", ".png", ".jpeg"):
-        infer(args.image_path, inferencer, args.save_path)
+        infer(args.image_path, inferencer, args.save_path, args.overlay_mask)
     else:
         raise ValueError(
             f"Image extension is not supported. Supported extensions are .jpg, .png, .jpeg."
@@ -124,19 +131,20 @@ def stream() -> None:
         )
 
 
-def infer(image_path: Path, inferencer: Inferencer, save_path: Optional[Path] = None) -> None:
+def infer(image_path: Path, inferencer: Inferencer, save_path: Optional[Path] = None, overlay: bool = False) -> None:
     """Perform inference on a single image.
 
     Args:
         image_path (Path): Path to image/directory containing images.
         inferencer (Inferencer): Inferencer to use.
         save_path (Path, optional): Path to save the output image. If this is None, the output is visualized.
+        overlay (bool, optional): Overlay the segmentation mask on the image. It assumes that the task is segmentation.
     """
     # Perform inference for the given image or image path. if image
     # path is provided, `predict` method will read the image from
     # file for convenience. We set the superimpose flag to True
     # to overlay the predicted anomaly map on top of the input image.
-    output = inferencer.predict(image=image_path, superimpose=True)
+    output = inferencer.predict(image=image_path, superimpose=True, overlay_mask=overlay)
 
     # Incase both anomaly map and scores are returned add scores to the image.
     if isinstance(output, tuple):

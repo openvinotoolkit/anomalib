@@ -64,8 +64,7 @@ from anomalib.data.utils.split import (
 )
 from anomalib.pre_processing import PreProcessor
 
-logger = logging.getLogger(name="Dataset: MVTec AD")
-logger.setLevel(logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 def make_mvtec_dataset(
@@ -372,11 +371,11 @@ class MVTecDataModule(LightningDataModule):
     def prepare_data(self) -> None:
         """Download the dataset if not available."""
         if (self.root / self.category).is_dir():
-            logging.info("Found the dataset.")
+            logger.info("Found the dataset.")
         else:
             self.root.mkdir(parents=True, exist_ok=True)
 
-            logging.info("Downloading the dataset.")
+            logger.info("Downloading the Mvtec AD dataset.")
             url = "https://www.mydrive.ch/shares/38536/3830184030e49fe74747669442f0f282/download/420938113-1629952094"
             dataset_name = "mvtec_anomaly_detection.tar.xz"
             with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc="MVTec AD") as progress_bar:
@@ -386,11 +385,11 @@ class MVTecDataModule(LightningDataModule):
                     reporthook=progress_bar.update_to,
                 )
 
-            logging.info("Extracting the dataset.")
+            logger.info("Extracting the dataset.")
             with tarfile.open(self.root / dataset_name) as tar_file:
                 tar_file.extractall(self.root)
 
-            logging.info("Cleaning the tar file")
+            logger.info("Cleaning the tar file")
             (self.root / dataset_name).unlink()
 
     def setup(self, stage: Optional[str] = None) -> None:
@@ -400,6 +399,7 @@ class MVTecDataModule(LightningDataModule):
           stage: Optional[str]:  Train/Val/Test stages. (Default value = None)
 
         """
+        logger.info("Setting up train, validation, test and prediction datasets.")
         if stage in (None, "fit"):
             self.train_data = MVTec(
                 root=self.root,

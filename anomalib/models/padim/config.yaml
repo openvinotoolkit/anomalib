@@ -92,7 +92,6 @@ trainer:
   profiler: null
   reload_dataloaders_every_n_epochs: 0
   replace_sampler_ddp: true
-
   sync_batchnorm: false
   tpu_cores: null
   track_grad_norm: -1

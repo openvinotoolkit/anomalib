@@ -48,8 +48,7 @@ from anomalib.data.utils.split import (
 )
 from anomalib.pre_processing import PreProcessor
 
-logger = logging.getLogger(name="Dataset: BTech")
-logger.setLevel(logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 def make_btech_dataset(
@@ -349,11 +348,11 @@ class BTechDataModule(LightningDataModule):
     def prepare_data(self) -> None:
         """Download the dataset if not available."""
         if (self.root / self.category).is_dir():
-            logging.info("Found the dataset.")
+            logger.info("Found the dataset.")
         else:
             zip_filename = self.root.parent / "btad.zip"
 
-            logging.info("Downloading the BTech dataset.")
+            logger.info("Downloading the BTech dataset.")
             with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc="BTech") as progress_bar:
                 urlretrieve(
                     url="https://avires.dimi.uniud.it/papers/btad/btad.zip",
@@ -361,11 +360,11 @@ class BTechDataModule(LightningDataModule):
                     reporthook=progress_bar.update_to,
                 )  # nosec
 
-            logging.info("Extracting the dataset.")
+            logger.info("Extracting the dataset.")
             with zipfile.ZipFile(zip_filename, "r") as zip_file:
                 zip_file.extractall(self.root.parent)
 
-            logging.info("Renaming the dataset directory")
+            logger.info("Renaming the dataset directory")
             shutil.move(src=str(self.root.parent / "BTech_Dataset_transformed"), dst=str(self.root))
 
             # NOTE: Each BTech category has different image extension as follows
@@ -377,13 +376,13 @@ class BTechDataModule(LightningDataModule):
             # To avoid any conflict, the following script converts all the extensions to png.
             # This solution works fine, but it's also possible to properly ready the bmp and
             # png filenames from categories in `make_btech_dataset` function.
-            logging.info("Convert the bmp formats to png to have consistent image extensions")
+            logger.info("Convert the bmp formats to png to have consistent image extensions")
             for filename in tqdm(self.root.glob("**/*.bmp"), desc="Converting bmp to png"):
                 image = cv2.imread(str(filename))
                 cv2.imwrite(str(filename.with_suffix(".png")), image)
                 filename.unlink()
 
-            logging.info("Cleaning the tar file")
+            logger.info("Cleaning the tar file")
             zip_filename.unlink()
 
     def setup(self, stage: Optional[str] = None) -> None:
@@ -396,6 +395,7 @@ class BTechDataModule(LightningDataModule):
           stage: Optional[str]:  Train/Val/Test stages. (Default value = None)
 
         """
+        logger.info("Setting up train, validation, test and prediction datasets.")
         if stage in (None, "fit"):
             self.train_data = BTech(
                 root=self.root,

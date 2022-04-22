@@ -17,6 +17,8 @@ https://arxiv.org/pdf/2107.12571v1.pdf
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
+
 import einops
 import torch
 import torch.nn.functional as F
@@ -27,6 +29,8 @@ from anomalib.models.cflow.torch_model import CflowModel
 from anomalib.models.cflow.utils import get_logp, positional_encoding_2d
 from anomalib.models.components import AnomalyModule
 
+logger = logging.getLogger(__name__)
+
 __all__ = ["CflowLightning"]
 
 
@@ -35,6 +39,7 @@ class CflowLightning(AnomalyModule):
 
     def __init__(self, hparams):
         super().__init__(hparams)
+        logger.info("Initializing Cflow Lightning model.")
 
         self.model: CflowModel = CflowModel(hparams)
         self.loss_val = 0
