@@ -19,6 +19,7 @@ results.
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 import warnings
 from argparse import ArgumentParser, Namespace
 
@@ -28,7 +29,9 @@ from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
 from anomalib.utils.callbacks import LoadModelCallback, get_callbacks
-from anomalib.utils.loggers import get_console_logger, get_experiment_logger
+from anomalib.utils.loggers import configure_logger, get_experiment_logger
+
+logger = logging.getLogger("anomalib")
 
 
 def get_args() -> Namespace:
@@ -48,7 +51,7 @@ def get_args() -> Namespace:
 def train():
     """Train an anomaly classification or segmentation model based on a provided configuration file."""
     args = get_args()
-    console = get_console_logger(name="anomalib", level=args.log_level)
+    configure_logger(level=args.log_level)
 
     config = get_configurable_parameters(model_name=args.model, model_config_path=args.model_config_path)
     if config.project.seed != 0:
@@ -57,27 +60,27 @@ def train():
     if args.log_level == "ERROR":
         warnings.filterwarnings("ignore")
 
-    console.info("Loading the datamodule")
+    logger.info("Loading the datamodule")
     datamodule = get_datamodule(config)
 
-    console.info("Loading the model.")
+    logger.info("Loading the model.")
     model = get_model(config)
 
-    console.info("Loading the experiment logger(s)")
-    logger = get_experiment_logger(config)
+    logger.info("Loading the experiment logger(s)")
+    experiment_logger = get_experiment_logger(config)
 
-    console.info("Loading the callbacks")
+    logger.info("Loading the callbacks")
     callbacks = get_callbacks(config)
 
-    trainer = Trainer(**config.trainer, logger=logger, callbacks=callbacks)
-    console.info("Training the model.")
+    trainer = Trainer(**config.trainer, logger=experiment_logger, callbacks=callbacks)
+    logger.info("Training the model.")
     trainer.fit(model=model, datamodule=datamodule)
 
-    console.info("Loading the best model weights.")
+    logger.info("Loading the best model weights.")
     load_model_callback = LoadModelCallback(weights_path=trainer.checkpoint_callback.best_model_path)
     trainer.callbacks.insert(0, load_model_callback)
 
-    console.info("Testing the model.")
+    logger.info("Testing the model.")
     trainer.test(model=model, datamodule=datamodule)
 
 

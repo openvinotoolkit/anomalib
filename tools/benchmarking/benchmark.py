@@ -36,7 +36,7 @@ from utils import convert_to_openvino, upload_to_wandb, write_metrics
 from anomalib.config import get_configurable_parameters, update_input_size_config
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
-from anomalib.utils.loggers import get_console_logger
+from anomalib.utils.loggers import configure_logger
 from anomalib.utils.sweep import (
     get_meta_data,
     get_openvino_throughput,
@@ -48,7 +48,8 @@ from anomalib.utils.sweep import (
 
 warnings.filterwarnings("ignore")
 
-logger = get_console_logger(__name__)
+logger = logging.getLogger(__name__)
+configure_logger()
 pl_logger = logging.getLogger(__file__)
 for logger_name in ["pytorch_lightning", "torchmetrics", "os"]:
     logging.getLogger(logger_name).setLevel(logging.ERROR)
