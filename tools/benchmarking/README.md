@@ -12,7 +12,7 @@ Note: To collect memory read/write numbers, run the script with sudo privileges.
 ```
 sudo -E ./train.sh    # Train STFPM on MVTec AD leather
 
-sudo -E ./train.sh --model_config_path <path/to/model/config.yaml>
+sudo -E ./train.sh --config <path/to/model/config.yaml>
 
 sudo -E ./train.sh --model stfpm
 ```

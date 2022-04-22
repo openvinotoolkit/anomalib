@@ -42,10 +42,21 @@ def get_args() -> Namespace:
     """
     parser = ArgumentParser()
     parser.add_argument("--model", type=str, default="padim", help="Name of the algorithm to train/test")
+    # --model_config_path will be deprecated in 0.2.8 and removed in 0.2.9
     parser.add_argument("--model_config_path", type=str, required=False, help="Path to a model config file")
+    parser.add_argument("--config", type=str, required=False, help="Path to a model config file")
     parser.add_argument("--log-level", type=str, default="INFO", help="<DEBUG, INFO, WARNING, ERROR>")
 
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.model_config_path is not None:
+        warnings.warn(
+            message="--model_config_path will be deprecated in v0.2.8 and removed in v0.2.9. Use --config instead.",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+        args.config = args.model_config_path
+
+    return args
 
 
 def train():
@@ -53,7 +64,7 @@ def train():
     args = get_args()
     configure_logger(level=args.log_level)
 
-    config = get_configurable_parameters(model_name=args.model, model_config_path=args.model_config_path)
+    config = get_configurable_parameters(model_name=args.model, config_path=args.config)
     if config.project.seed != 0:
         seed_everything(config.project.seed)
 
