@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 import math
 
 import numpy as np
@@ -22,6 +23,8 @@ from torch import nn
 
 from anomalib.models.components.freia.framework import SequenceINN
 from anomalib.models.components.freia.modules import AllInOneBlock
+
+logger = logging.getLogger(__name__)
 
 
 def get_logp(dim_feature_vector: int, p_u: torch.Tensor, logdet_j: torch.Tensor) -> torch.Tensor:
@@ -108,7 +111,7 @@ def cflow_head(
         SequenceINN: decoder network block
     """
     coder = SequenceINN(n_features)
-    print("CNF coder:", n_features)
+    logger.info("CNF coder: %d", n_features)
     for _ in range(coupling_blocks):
         coder.append(
             AllInOneBlock,

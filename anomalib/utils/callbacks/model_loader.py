@@ -14,10 +14,14 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
+
 import torch
 from pytorch_lightning import Callback
 
 from anomalib.models.components import AnomalyModule
+
+logger = logging.getLogger(__name__)
 
 
 class LoadModelCallback(Callback):
@@ -31,4 +35,5 @@ class LoadModelCallback(Callback):
 
         Loads the model weights from ``weights_path`` into the PyTorch module.
         """
+        logger.info("Loading the model from %s", self.weights_path)
         pl_module.load_state_dict(torch.load(self.weights_path)["state_dict"])

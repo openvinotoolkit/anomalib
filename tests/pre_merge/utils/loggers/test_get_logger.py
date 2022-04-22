@@ -22,11 +22,11 @@ from anomalib.utils.loggers import (
     AnomalibTensorBoardLogger,
     AnomalibWandbLogger,
     UnknownLogger,
-    get_logger,
+    get_experiment_logger,
 )
 
 
-def test_get_logger():
+def test_get_experiment_logger():
     """Test whether the right logger is returned."""
 
     config = OmegaConf.create(
@@ -38,30 +38,30 @@ def test_get_logger():
     )
 
     # get no logger
-    logger = get_logger(config=config)
+    logger = get_experiment_logger(config=config)
     assert isinstance(logger, bool)
     config.project.logger = False
-    logger = get_logger(config=config)
+    logger = get_experiment_logger(config=config)
     assert isinstance(logger, bool)
 
     # get tensorboard
     config.project.logger = "tensorboard"
-    logger = get_logger(config=config)
+    logger = get_experiment_logger(config=config)
     assert isinstance(logger[0], AnomalibTensorBoardLogger)
 
     # get wandb logger
     config.project.logger = "wandb"
-    logger = get_logger(config=config)
+    logger = get_experiment_logger(config=config)
     assert isinstance(logger[0], AnomalibWandbLogger)
 
     # get csv logger.
     config.project.logger = "csv"
-    logger = get_logger(config=config)
+    logger = get_experiment_logger(config=config)
     assert isinstance(logger[0], CSVLogger)
 
     # get multiple loggers
     config.project.logger = ["tensorboard", "wandb", "csv"]
-    logger = get_logger(config=config)
+    logger = get_experiment_logger(config=config)
     assert isinstance(logger[0], AnomalibTensorBoardLogger)
     assert isinstance(logger[1], AnomalibWandbLogger)
     assert isinstance(logger[2], CSVLogger)
@@ -69,4 +69,4 @@ def test_get_logger():
     # raise unknown
     with pytest.raises(UnknownLogger):
         config.project.logger = "randomlogger"
-        logger = get_logger(config=config)
+        logger = get_experiment_logger(config=config)

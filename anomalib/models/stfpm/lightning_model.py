@@ -17,12 +17,16 @@ https://arxiv.org/abs/2103.04257
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
+
 import torch
 from pytorch_lightning.callbacks import EarlyStopping
 from torch import optim
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.stfpm.torch_model import STFPMModel
+
+logger = logging.getLogger(__name__)
 
 __all__ = ["StfpmLightning"]
 
@@ -32,6 +36,7 @@ class StfpmLightning(AnomalyModule):
 
     def __init__(self, hparams):
         super().__init__(hparams)
+        logger.info("Initializing Stfpm Lightning model.")
 
         self.model = STFPMModel(
             layers=hparams.model.layers,
