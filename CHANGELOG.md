@@ -59,7 +59,6 @@
 **Full Changelog**: https://github.com/openvinotoolkit/anomalib/compare/v.0.2.5...v0.2.6
 ## v.0.2.5
 ### What's Changed
-## What's Changed
 * Bugfix: fix random val/test split issue by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/48
 * Fix Readmes by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/46
 * Updated changelog by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/49
