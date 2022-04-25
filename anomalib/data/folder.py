@@ -227,12 +227,14 @@ class FolderDataset(Dataset):
                 "Segmentation task is requested, but mask directory is not provided. "
                 "Classification is to be chosen if mask directory is not provided."
             )
+            self.task = "classification"
 
         if task == "classification" and mask_dir:
             warnings.warn(
                 "Classification task is requested, but mask directory is provided. "
                 "Segmentation task is to be chosen if mask directory is provided."
             )
+            self.task = "segmentation"
 
         if task is None or mask_dir is None:
             self.task = "classification"
