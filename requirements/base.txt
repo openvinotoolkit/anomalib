@@ -10,3 +10,4 @@ torchvision>=0.9.1
 torchtext>=0.9.1
 wandb==0.12.9
 matplotlib>=3.4.3
+gradio>=2.9.4
