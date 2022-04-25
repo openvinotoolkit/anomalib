@@ -146,7 +146,7 @@ def make_dataset(
         samples["mask_path"] = ""
         for index, row in samples.iterrows():
             if row.label_index == 1:
-                samples["mask_path"][index] = str(mask_dir / row.image_path.name)
+                samples.loc[index, "mask_path"] = str(mask_dir / row.image_path.name)
 
     # Ensure the pathlib objects are converted to str.
     # This is because torch dataloader doesn't like pathlib.
