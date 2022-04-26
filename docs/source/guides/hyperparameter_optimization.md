@@ -44,4 +44,5 @@ python tools/hpo/wandb_sweep.py --sweep_config tools/hpo/sweep.yaml
 
 ## Sample Output
 
-[TODO]
+![Sample configuration of a wandb sweep](../images/logging/wandb_sweep.png)
+<figcaption>Sample wandb sweep on Padim</figcaption>
