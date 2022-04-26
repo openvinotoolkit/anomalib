@@ -36,7 +36,6 @@ def infer(
     """
     # Perform inference for the given image.
     threshold = threshold / 100
-    print(threshold)
     anomaly_map, anomaly_score = inferencer.predict(image=image, superimpose=False)
     heat_map = superimpose_anomaly_map(anomaly_map, image)
     pred_mask = compute_mask(anomaly_map, threshold)
@@ -56,7 +55,11 @@ def get_args() -> Namespace:
     parser.add_argument("--meta_data", type=Path, required=False, help="Path to JSON file containing the metadata.")
 
     parser.add_argument(
-        "--threshold", type=float, required=False, default=75.0, help="Value to threshold anomaly scores into 0-1 range"
+        "--threshold",
+        type=float,
+        required=False,
+        default=75.0,
+        help="Value to threshold anomaly scores into 0-100 range",
     )
 
     parser.add_argument("--share", type=bool, required=False, default=False, help="Share Gradio `share_url`")
@@ -118,7 +121,6 @@ if __name__ == "__main__":
         ],
         title="Anomalib",
         description="Anomalib Gradio",
-        allow_screenshot=True,
     )
 
-    iface.launch()
+    iface.launch(share=session_args.share)
