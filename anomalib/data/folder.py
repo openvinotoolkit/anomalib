@@ -18,6 +18,7 @@ This script creates a custom dataset from a folder.
 # and limitations under the License.
 
 import logging
+import warnings
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
 
@@ -146,7 +147,7 @@ def make_dataset(
         samples["mask_path"] = ""
         for index, row in samples.iterrows():
             if row.label_index == 1:
-                samples["mask_path"][index] = str(mask_dir / row.image_path.name)
+                samples.loc[index, "mask_path"] = str(mask_dir / row.image_path.name)
 
     # Ensure the pathlib objects are converted to str.
     # This is because torch dataloader doesn't like pathlib.
@@ -221,11 +222,20 @@ class FolderDataset(Dataset):
         """
         self.split = split
 
+        if task == "segmentation" and mask_dir is None:
+            warnings.warn(
+                "Segmentation task is requested, but mask directory is not provided. "
+                "Classification is to be chosen if mask directory is not provided."
+            )
+            self.task = "classification"
+
         if task == "classification" and mask_dir:
-            raise ValueError(
+            warnings.warn(
                 "Classification task is requested, but mask directory is provided. "
                 "Segmentation task is to be chosen if mask directory is provided."
             )
+            self.task = "segmentation"
+
         if task is None or mask_dir is None:
             self.task = "classification"
         else:
