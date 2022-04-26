@@ -36,6 +36,7 @@ def infer(
     """
     # Perform inference for the given image.
     threshold = threshold / 100
+    print(threshold)
     anomaly_map, anomaly_score = inferencer.predict(image=image, superimpose=False)
     heat_map = superimpose_anomaly_map(anomaly_map, image)
     pred_mask = compute_mask(anomaly_map, threshold)
@@ -55,7 +56,7 @@ def get_args() -> Namespace:
     parser.add_argument("--meta_data", type=Path, required=False, help="Path to JSON file containing the metadata.")
 
     parser.add_argument(
-        "--threshold", type=float, required=False, default=0.75, help="Value to threshold anomaly scores into 0-1 range"
+        "--threshold", type=float, required=False, default=75.0, help="Value to threshold anomaly scores into 0-1 range"
     )
 
     parser.add_argument("--share", type=bool, required=False, default=False, help="Share Gradio `share_url`")
@@ -65,22 +66,26 @@ def get_args() -> Namespace:
     return args
 
 
-def get_inferencer(args: Union[DictConfig, ListConfig]) -> Inferencer:
+def get_inferencer(gladio_args: Union[DictConfig, ListConfig]) -> Inferencer:
     """Parse args and open inferencer."""
-    config = get_configurable_parameters(config_path=args.config)
+    config = get_configurable_parameters(config_path=gladio_args.config)
     # Get the inferencer. We use .ckpt extension for Torch models and (onnx, bin)
     # for the openvino models.
-    extension = args.weight_path.suffix
+    extension = gladio_args.weight_path.suffix
     inferencer: Inferencer
     if extension in (".ckpt"):
         module = import_module("anomalib.deploy.inferencers.torch")
         TorchInferencer = getattr(module, "TorchInferencer")  # pylint: disable=invalid-name
-        inferencer = TorchInferencer(config=config, model_source=args.weight_path, meta_data_path=args.meta_data)
+        inferencer = TorchInferencer(
+            config=config, model_source=gladio_args.weight_path, meta_data_path=gladio_args.meta_data
+        )
 
     elif extension in (".onnx", ".bin", ".xml"):
         module = import_module("anomalib.deploy.inferencers.openvino")
         OpenVINOInferencer = getattr(module, "OpenVINOInferencer")  # pylint: disable=invalid-name
-        inferencer = OpenVINOInferencer(config=config, path=args.weight_path, meta_data_path=args.meta_data)
+        inferencer = OpenVINOInferencer(
+            config=config, path=gladio_args.weight_path, meta_data_path=gladio_args.meta_data
+        )
 
     else:
         raise ValueError(
@@ -92,9 +97,9 @@ def get_inferencer(args: Union[DictConfig, ListConfig]) -> Inferencer:
 
 
 if __name__ == "__main__":
-    args = get_args()
+    session_args = get_args()
 
-    gladio_inferencer = get_inferencer(args)
+    gladio_inferencer = get_inferencer(session_args)
 
     iface = gr.Interface(
         fn=lambda image, threshold: infer(image, gladio_inferencer, threshold),
@@ -102,7 +107,7 @@ if __name__ == "__main__":
             gradio.inputs.Image(
                 shape=None, image_mode="RGB", source="upload", tool="editor", type="numpy", label="Image"
             ),
-            gradio.inputs.Slider(default=50.0, label="threshold", optional=False),
+            gradio.inputs.Slider(default=session_args.threshold, label="threshold", optional=False),
         ],
         outputs=[
             gradio.outputs.Image(type="numpy", label="Anomaly Map"),
