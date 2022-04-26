@@ -3,33 +3,39 @@
 This script provide a gradio web interface
 """
 
+from argparse import ArgumentParser, Namespace
+from importlib import import_module
+from pathlib import Path
 from typing import Tuple, Union
+
 import gradio as gr
 import gradio.inputs
 import gradio.outputs
 import numpy as np
-
-import warnings
-from argparse import ArgumentParser, Namespace
-from importlib import import_module
-from pathlib import Path
-
 from omegaconf import DictConfig, ListConfig
+from skimage.segmentation import mark_boundaries
 
 from anomalib.config import get_configurable_parameters
 from anomalib.deploy.inferencers.base import Inferencer
-
-from anomalib.post_processing import Visualizer, compute_mask, superimpose_anomaly_map
-from skimage.segmentation import mark_boundaries
+from anomalib.post_processing import compute_mask, superimpose_anomaly_map
 
 
-def infer(image: np.ndarray, inferencer: Inferencer, threshold: int = 50.) -> Tuple[np.ndarray, 
-                                                                                    float,
-                                                                                    np.ndarray,
-                                                                                    np.ndarray,
-                                                                                    np.ndarray]:
+def infer(
+    image: np.ndarray, inferencer: Inferencer, threshold: float = 50.0
+) -> Tuple[np.ndarray, float, np.ndarray, np.ndarray, np.ndarray]:
+    """Inference fonction, return anomaly map, score, heat map, prediction mask ans visualisation.
+
+    :param image: image
+    :type image: np.ndarray
+    :param inferencer: model inferencer
+    :type inferencer: Inferencer
+    :param threshold: threshold between 0 and 100, defaults to 50.0
+    :type threshold: float, optional
+    :return: anomaly_map, anomaly_score, heat_map, pred_mask, vis_img
+    :rtype: Tuple[np.ndarray, float, np.ndarray, np.ndarray, np.ndarray]
+    """
     # Perform inference for the given image.
-    threshold = threshold/100
+    threshold = threshold / 100
     anomaly_map, anomaly_score = inferencer.predict(image=image, superimpose=False)
     heat_map = superimpose_anomaly_map(anomaly_map, image)
     pred_mask = compute_mask(anomaly_map, threshold)
@@ -47,17 +53,20 @@ def get_args() -> Namespace:
     parser.add_argument("--config", type=Path, required=True, help="Path to a model config file")
     parser.add_argument("--weight_path", type=Path, required=True, help="Path to a model weights")
     parser.add_argument("--meta_data", type=Path, required=False, help="Path to JSON file containing the metadata.")
-    
-    parser.add_argument("--threshold", type=float, required=False, default=0.75, help="Value to threshold anomaly scores into 0-1 range")
-    
+
+    parser.add_argument(
+        "--threshold", type=float, required=False, default=0.75, help="Value to threshold anomaly scores into 0-1 range"
+    )
+
     parser.add_argument("--share", type=bool, required=False, default=False, help="Share Gradio `share_url`")
-    
+
     args = parser.parse_args()
-    
+
     return args
 
 
 def get_inferencer(args: Union[DictConfig, ListConfig]) -> Inferencer:
+    """Parse args and open inferencer."""
     config = get_configurable_parameters(config_path=args.config)
     # Get the inferencer. We use .ckpt extension for Torch models and (onnx, bin)
     # for the openvino models.
@@ -78,47 +87,33 @@ def get_inferencer(args: Union[DictConfig, ListConfig]) -> Inferencer:
             f"Model extension is not supported. Torch Inferencer exptects a .ckpt file,"
             f"OpenVINO Inferencer expects either .onnx, .bin or .xml file. Got {extension}"
         )
-    
+
     return inferencer
+
 
 if __name__ == "__main__":
     args = get_args()
-    
-    inferencer = get_inferencer(args)    
-    
-    iface = gr.Interface(fn=lambda image, threshold: infer(image, inferencer, threshold), 
-                         inputs=
-                            [
-                                gradio.inputs.Image(shape=None,
-                                                    image_mode="RGB",
-                                                    source="upload",
-                                                    tool="editor",
-                                                    type="numpy",
-                                                    label="Image"),
-                                gradio.inputs.Slider(default=50.,
-                                                     label="threshold",
-                                                     optional=False)
-                            ], 
-                         outputs=
-                            [
-                                gradio.outputs.Image(
-                                                    type="numpy",
-                                                    label="Anomaly Map"),
-                                gradio.outputs.Textbox(type="number",
-                                                       label="Anomaly Score"),
-                                gradio.outputs.Image(
-                                                    type="numpy",
-                                                    label="Predicted Heat Map"),
-                                gradio.outputs.Image(
-                                                    type="numpy",
-                                                    label="Predicted Mask"),
-                                gradio.outputs.Image(
-                                                    type="numpy",
-                                                    label="Segmentation Result"),
-                            ],
-                         title=f"Anomalib",
-                         description=f"",
-                         allow_screenshot=True
-                         )
-    
+
+    gladio_inferencer = get_inferencer(args)
+
+    iface = gr.Interface(
+        fn=lambda image, threshold: infer(image, gladio_inferencer, threshold),
+        inputs=[
+            gradio.inputs.Image(
+                shape=None, image_mode="RGB", source="upload", tool="editor", type="numpy", label="Image"
+            ),
+            gradio.inputs.Slider(default=50.0, label="threshold", optional=False),
+        ],
+        outputs=[
+            gradio.outputs.Image(type="numpy", label="Anomaly Map"),
+            gradio.outputs.Textbox(type="number", label="Anomaly Score"),
+            gradio.outputs.Image(type="numpy", label="Predicted Heat Map"),
+            gradio.outputs.Image(type="numpy", label="Predicted Mask"),
+            gradio.outputs.Image(type="numpy", label="Segmentation Result"),
+        ],
+        title="Anomalib",
+        description="Anomalib Gradio",
+        allow_screenshot=True,
+    )
+
     iface.launch()
