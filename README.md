@@ -179,6 +179,26 @@ python tools/inference.py \
 
 > Ensure that you provide path to `meta_data.json` if you want the normalization to be applied correctly.
 
+## Hyperparameter Optimization
+
+To run hyperparameter optimization, use the following command:
+
+```bash
+python tools/hpo/wandb_sweep.py --model padim --model_config ./path_to_config.yaml --sweep_config tools/hpo/sweep.yaml"
+```
+
+For more details refer the [HPO Documentation](https://openvinotoolkit.github.io/anomalib/guides/hyperparameter_optimization.html)
+
+## Benchmarking
+
+To gather benchmarking data such as throughput across categories, use the following command:
+
+```bash
+python tools/benchmarking/benchmark.py --config <relative/absolute path>/<paramfile>.yaml
+```
+
+Refer to the [Benchmarking Documentation](https://openvinotoolkit.github.io/anomalib/guides/benchmarking.html) for more details.
+
 ___
 
 ## Datasets

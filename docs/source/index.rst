@@ -50,6 +50,9 @@ This repository as been tested on
    guides/structure_of_documentation
    guides/using_tox
    guides/using_pre_commit
+   guides/benchmarking
+   guides/hyperparameter_optimization
+   guides/logging
 
 .. toctree::
    :maxdepth: 1
