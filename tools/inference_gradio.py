@@ -23,16 +23,16 @@ from anomalib.post_processing import compute_mask, superimpose_anomaly_map
 def infer(
     image: np.ndarray, inferencer: Inferencer, threshold: float = 50.0
 ) -> Tuple[np.ndarray, float, np.ndarray, np.ndarray, np.ndarray]:
-    """Inference fonction, return anomaly map, score, heat map, prediction mask ans visualisation.
+    """Inference function, return anomaly map, score, heat map, prediction mask ans visualisation.
 
-    :param image: image
-    :type image: np.ndarray
-    :param inferencer: model inferencer
-    :type inferencer: Inferencer
-    :param threshold: threshold between 0 and 100, defaults to 50.0
-    :type threshold: float, optional
-    :return: anomaly_map, anomaly_score, heat_map, pred_mask, vis_img
-    :rtype: Tuple[np.ndarray, float, np.ndarray, np.ndarray, np.ndarray]
+    Args:
+        image (np.ndarray): image to compute
+        inferencer (Inferencer): model inferencer
+        threshold (float, optional): threshold between 0 and 100. Defaults to 50.0.
+
+    Returns:
+        Tuple[np.ndarray, float, np.ndarray, np.ndarray, np.ndarray]:
+        anomaly_map, anomaly_score, heat_map, pred_mask, vis_img
     """
     # Perform inference for the given image.
     threshold = threshold / 100
