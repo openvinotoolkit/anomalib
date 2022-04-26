@@ -57,7 +57,7 @@ from torch.utils.data.dataset import Dataset
 from torchvision.datasets.folder import VisionDataset
 
 from anomalib.data.inference import InferenceDataset
-from anomalib.data.utils import DownloadProgressBar, read_image
+from anomalib.data.utils import DownloadProgressBar, hash_check, read_image
 from anomalib.data.utils.split import (
     create_validation_set_from_test_set,
     split_normal_images_in_train_set,
@@ -384,6 +384,8 @@ class MVTecDataModule(LightningDataModule):
                     filename=self.root / dataset_name,
                     reporthook=progress_bar.update_to,
                 )
+            logger.info("Checking hash")
+            hash_check(self.root / dataset_name, "eefca59f2cede9c3fc5b6befbfec275e")
 
             logger.info("Extracting the dataset.")
             with tarfile.open(self.root / dataset_name) as tar_file:
