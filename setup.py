@@ -13,8 +13,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions
 # and limitations under the License.
-import os
 from importlib.util import module_from_spec, spec_from_file_location
+from pathlib import Path
 from typing import List
 
 from setuptools import find_packages, setup
@@ -30,7 +30,7 @@ def load_module(name: str = "anomalib/__init__.py"):
     Returns:
         _type_: _description_
     """
-    location = os.path.join(os.path.dirname(__file__), name)
+    location = str(Path(__file__).parent / name)
     spec = spec_from_file_location(name=name, location=location)
     module = module_from_spec(spec)  # type: ignore
     spec.loader.exec_module(module)  # type: ignore
@@ -88,6 +88,7 @@ def get_required_packages(requirement_files: List[str]) -> List[str]:
 
 
 VERSION = get_version()
+LONG_DESCRIPTION = (Path(__file__).parent / "README.md").read_text()
 INSTALL_REQUIRES = get_required_packages(requirement_files=["base"])
 EXTRAS_REQUIRE = {
     "dev": get_required_packages(requirement_files=["dev", "docs"]),
@@ -95,12 +96,15 @@ EXTRAS_REQUIRE = {
     "full": get_required_packages(requirement_files=["dev", "docs", "openvino"]),
 }
 
+
 setup(
     name="anomalib",
     version=get_version(),
     author="Intel OpenVINO",
     author_email="help@openvino.intel.com",
     description="anomalib - Anomaly Detection Library",
+    long_description=LONG_DESCRIPTION,
+    long_description_content_type="text/markdown",
     url="",
     license="Copyright (c) Intel - All Rights Reserved. "
     'Licensed under the Apache License, Version 2.0 (the "License")'
