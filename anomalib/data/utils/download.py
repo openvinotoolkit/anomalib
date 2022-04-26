@@ -205,4 +205,4 @@ def hash_check(file_path: Path, expected_hash: str):
     with open(file_path, "rb") as hash_file:
         assert (
             hashlib.md5(hash_file.read()).hexdigest() == expected_hash
-        ), f"Downloaded file {file_path} does match the required hash."
+        ), f"Downloaded file {file_path} does not match the required hash."
