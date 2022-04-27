@@ -69,25 +69,25 @@ def get_args() -> Namespace:
     return args
 
 
-def get_inferencer(gladio_args: Union[DictConfig, ListConfig]) -> Inferencer:
+def get_inferencer(config_path: Path, weight_path: Path, meta_data_path: Path) -> Inferencer:
     """Parse args and open inferencer."""
-    config = get_configurable_parameters(config_path=gladio_args.config)
+    config = get_configurable_parameters(config_path)
     # Get the inferencer. We use .ckpt extension for Torch models and (onnx, bin)
     # for the openvino models.
-    extension = gladio_args.weight_path.suffix
+    extension = weight_path.suffix
     inferencer: Inferencer
     if extension in (".ckpt"):
         module = import_module("anomalib.deploy.inferencers.torch")
         TorchInferencer = getattr(module, "TorchInferencer")  # pylint: disable=invalid-name
         inferencer = TorchInferencer(
-            config=config, model_source=gladio_args.weight_path, meta_data_path=gladio_args.meta_data
+            config=config, model_source=weight_path, meta_data_path=meta_data
         )
 
     elif extension in (".onnx", ".bin", ".xml"):
         module = import_module("anomalib.deploy.inferencers.openvino")
         OpenVINOInferencer = getattr(module, "OpenVINOInferencer")  # pylint: disable=invalid-name
         inferencer = OpenVINOInferencer(
-            config=config, path=gladio_args.weight_path, meta_data_path=gladio_args.meta_data
+            config=config, path=weight_path, meta_data_path=meta_data
         )
 
     else:
@@ -102,10 +102,10 @@ def get_inferencer(gladio_args: Union[DictConfig, ListConfig]) -> Inferencer:
 if __name__ == "__main__":
     session_args = get_args()
 
-    gladio_inferencer = get_inferencer(session_args)
+    gradio_inferencer = get_inferencer(session_args.config, session_args.weight_path, session_args.meta_data)
 
-    iface = gr.Interface(
-        fn=lambda image, threshold: infer(image, gladio_inferencer, threshold),
+    interface = gr.Interface(
+        fn=lambda image, threshold: infer(image, gradio_inferencer, threshold),
         inputs=[
             gradio.inputs.Image(
                 shape=None, image_mode="RGB", source="upload", tool="editor", type="numpy", label="Image"
@@ -123,4 +123,4 @@ if __name__ == "__main__":
         description="Anomalib Gradio",
     )
 
-    iface.launch(share=session_args.share)
+    interface.launch(share=session_args.share)
