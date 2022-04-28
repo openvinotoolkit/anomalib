@@ -13,6 +13,16 @@ for businesses?
 - How can one use Anomalib?
 - Summary
 
+## Background
+
+Anomaly detection is the process of identifying anomalous items in a stream of input data. An example of a real-world anomaly detection problem is industrial defect detection, where the aim is to identify anomalous products in the output of a production line. Anomaly detection problems are characterized by two main challenges:
+
+First of all, the anomalous items in the dataset can be extremely scarce. Take for example an industrial process which manufactures an LED part at a 98% yield rate. That means for every 2 anomaly datapoints, there are 98 images where no defects occur. Generating a balanced dataset given the high manufacturing yields of today is an arduous task that could require up to tens of thousands of images to be collected just to have a hundred images of defects.
+
+Second, there is usually no clear definition of the anomalous class. Instead, anything that deviates from the normal class should be considered anomalous. Two given defect types might be very different visually, but in the context of the anomaly detection problem, both fall within the anomalous category. This heteregeneous nature of the anomalous class makes it challenging for machine learning model to learn an implicit representation of abnormality. To make things even worse, not all defect types may be known beforehand. During the deployment of our model we might encounter a new defect type that we have never seen before. How do we teach the model to identify this defect type that we have no examples of and might not even know exists?
+
+AI Researchers over the years have created a subset of Machine Learning Algorithms to address these inherent challenges related to Anomaly Detection datasets. The gist of these algorithms is that they require only good images for the training dataset. Meanwhile, the bad images are used in the validation dataset, aiding in quantifying the accuracy of the model. By learning the normality, Anomalib can detect abnormalities in domains where defects are unknown. Anomalib implements the most recent anomaly detection techniques and is continuously updated with the latest State-of-the-Art algorithms
+
 ## Draft
 
 Anomaly detection stands in contrast to a normal classification task which depends on both normal and abnormal images to get a good performance. In addition, classification task requires that both the classes be present in equal proportion. This requirement does not always hold true and is also not preferred in certain scenarios. A good manufacturing unit would produce defect only rarely, datapoints for certain illnesses are rare when compared to those of the healthy, and it is preferable to not have examples of certain security threats when training a model to detect such threats.
