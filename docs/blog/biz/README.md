@@ -34,9 +34,9 @@ There are a few approaches used to detect anomalies.
 ## TODO
 
 
-Anomalib provides a comprehensive solution to address these needs. It ships with 8 state-of-the-art algorithms and provides utilities such as hyperparameter optimization to tune them any businesses' needs. It is modular and can be easily extended to include more algorithms. It supports OpenVINO export and inference so that the trained models can be deployed on Intel hardware.
+Anomalib provides a comprehensive solution to address these needs. It ships with 7 state-of-the-art algorithms and provides utilities such as hyperparameter optimization to tune them to any businesses' needs. It is modular and can be easily extended to include more algorithms. It supports OpenVINO export and inference so that the trained models can be deployed on Intel hardware.
 
-With the ensuring the presence of top algorithms in the library, businesses can be assured that their applications are being solved by the best models. Due to Anomalib's open source nature, and public contributions, customers can expect new features with higher velocity, and be assured that bugs and issues are resolved quickly. It's open source nature also ensures transparency and thus will increase the trust of our customers.
+By ensuring the presence of top algorithms in the library, businesses can be assured that their applications are being solved by the best models. Due to Anomalib's open source nature, and public contributions, customers can expect new features with higher velocity, and be assured that bugs and issues are resolved quickly. It's open source nature also ensures transparency and thus will increase the trust of our customers.
 
 To get started with Anomalib, all one needs to do is clone the GitHub repository or install it directly via pip.
 
