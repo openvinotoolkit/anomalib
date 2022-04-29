@@ -113,6 +113,12 @@ example_dataset
 └── ground_truth
 ```
 
+Here is an example of the generated results for a toy dataset containing Hazelnut with colour defects.
+
+<div align="center">
+<img src="docs/blog/../../images/hazelnut_results.gif">
+</div>
+
 ## Logging and Experiment Management
 While it is delightful to know how good your model performed on your preferred metric, it is even more exciting to see the predicted outputs. Anomalib provides a couple of ways to log and track experiments. These can be used individually or in a combination. As of the current release, you can save images to a local folder, or upload to weights and biases, or TensorBoard.
 
