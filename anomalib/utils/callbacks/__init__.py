@@ -23,6 +23,7 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 
 from .cdf_normalization import CdfNormalizationCallback
+from .graph import GraphLogger
 from .min_max_normalization import MinMaxNormalizationCallback
 from .model_loader import LoadModelCallback
 from .timer import TimerCallback
@@ -108,5 +109,9 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
                     filename="openvino_model",
                 )
             )
+
+    # Add callback to log graph to loggers
+    if config.logging.log_graph not in [None, False]:
+        callbacks.append(GraphLogger())
 
     return callbacks

@@ -37,8 +37,11 @@ metrics:
 project:
   seed: 42
   path: ./results
-  log_images_to: []
-  logger: false # options: [tensorboard, wandb, csv] or combinations.
+
+logging:
+  log_images_to: ["local"] # options: [wandb, tensorboard, local]. Make sure you also set logger with using wandb or tensorboard.
+  logger: [] # options: [tensorboard, wandb, csv] or combinations.
+  log_graph: false # Logs the model graph to respective logger.
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
