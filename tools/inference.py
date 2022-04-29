@@ -76,13 +76,23 @@ def add_label(prediction: np.ndarray, scores: float, font: int = cv2.FONT_HERSHE
         np.ndarray: Image with score text.
     """
     text = f"Confidence Score {scores:.0%}"
-    font_size = prediction.shape[1] // 1024 + 1  # Text scale is calculated based on the reference size of 1024
-    (width, height), baseline = cv2.getTextSize(text, font, font_size, thickness=font_size // 2)
-    label_patch = np.zeros((height + baseline, width + baseline, 3), dtype=np.uint8)
+    prediction_height = prediction.shape[0]
+    prediction_width = prediction.shape[1]
+    font_size = prediction_width // 1024 + 1  # Text scale is calculated based on the reference size of 1024
+    (text_width, text_height), baseline = cv2.getTextSize(text, font, font_size, thickness=font_size)
+    # Overlay prediction image on the label image
+    height = text_height + prediction_height
+    width = text_width if text_width > prediction_width else prediction_width
+    label_patch = np.zeros((height + baseline, width, 3), dtype=np.uint8)
     label_patch[:, :] = (225, 252, 134)
-    cv2.putText(label_patch, text, (0, baseline // 2 + height), font, font_size, 0)
-    prediction[: baseline + height, : baseline + width] = label_patch
-    return prediction
+    cv2.putText(label_patch, text, (0, baseline // 2 + text_height), font, font_size, 0)
+    top = text_height + baseline
+    bottom = top + prediction_height
+    left = max(width // 2 - prediction_width // 2, 0)  # make prediction image in the center of label image
+    right = left + prediction_width
+    label_patch[top:bottom, left:right] = prediction
+
+    return label_patch
 
 
 def stream() -> None:
