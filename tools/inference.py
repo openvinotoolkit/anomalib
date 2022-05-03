@@ -80,7 +80,7 @@ def add_label(prediction: np.ndarray, scores: float, font: int = cv2.FONT_HERSHE
     (width, height), baseline = cv2.getTextSize(text, font, font_size, thickness=font_size // 2)
     label_patch = np.zeros((height + baseline, width + baseline, 3), dtype=np.uint8)
     label_patch[:, :] = (225, 252, 134)
-    cv2.putText(label_patch, text, (0, baseline // 2 + height), font, font_size, 0)
+    cv2.putText(label_patch, text, (0, baseline // 2 + height), font, font_size, 0, lineType=cv2.LINE_AA)
     prediction[: baseline + height, : baseline + width] = label_patch
     return prediction
 

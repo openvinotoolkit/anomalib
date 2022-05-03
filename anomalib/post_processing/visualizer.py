@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 import cv2
+import matplotlib.figure
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -30,41 +31,28 @@ class Visualizer:
     either be logged by accessing the `figure` attribute or can be saved directly by calling `save()` method.
 
     Example:
-        >>> visualizer = Visualizer(num_rows=1, num_cols=5, figure_size=(12, 3))
+        >>> visualizer = Visualizer()
         >>> visualizer.add_image(image=image, title="Image")
         >>> visualizer.close()
-
-    Args:
-        num_rows (int): Number of rows of images in the figure.
-        num_cols (int): Number of columns/images in each row.
-        figure_size (Tuple[int, int]): Size of output figure
     """
 
-    def __init__(self, num_rows: int, num_cols: int, figure_size: Tuple[int, int]):
-        self.figure_index: int = 0
+    def __init__(self):
 
-        self.figure, self.axis = plt.subplots(num_rows, num_cols, figsize=figure_size)
-        self.figure.subplots_adjust(right=0.9)
+        self.images = []
 
-        for axis in self.axis:
-            axis.axes.xaxis.set_visible(False)
-            axis.axes.yaxis.set_visible(False)
+        self.figure: matplotlib.figure.Figure
+        self.axis: np.ndarray
 
-    def add_image(self, image: np.ndarray, title: str, color_map: Optional[str] = None, index: Optional[int] = None):
+    def add_image(self, image: np.ndarray, title: str, color_map: Optional[str] = None):
         """Add image to figure.
 
         Args:
           image (np.ndarray): Image which should be added to the figure.
           title (str): Image title shown on the plot.
           color_map (Optional[str]): Name of matplotlib color map used to map scalar data to colours. Defaults to None.
-          index (Optional[int]): Figure index. Defaults to None.
         """
-        if index is None:
-            index = self.figure_index
-            self.figure_index += 1
-
-        self.axis[index].imshow(image, color_map, vmin=0, vmax=255)
-        self.axis[index].title.set_text(title)
+        image_data = dict(image=image, title=title, color_map=color_map)
+        self.images.append(image_data)
 
     def add_text(self, image: np.ndarray, text: str, font: int = cv2.FONT_HERSHEY_PLAIN):
         """Puts text on an image.
@@ -142,12 +130,26 @@ class Visualizer:
         """Adds the normal label to the image."""
         return self.add_label(image, "normal", (225, 252, 134), confidence)
 
-    def add_anomalous_label(self, image: np.ndarray, confidence):
+    def add_anomalous_label(self, image: np.ndarray, confidence: Optional[float] = None):
         """Adds the anomalous label to the image."""
         return self.add_label(image, "anomalous", (255, 100, 100), confidence)
 
+    def generate(self):
+        """Generate the image."""
+        num_cols = len(self.images)
+        figure_size = (num_cols * 3, 3)
+        self.figure, self.axis = plt.subplots(1, num_cols, figsize=figure_size)
+        self.figure.subplots_adjust(right=0.9)
+
+        for axis, image_dict in zip(self.axis, self.images):
+            axis.axes.xaxis.set_visible(False)
+            axis.axes.yaxis.set_visible(False)
+            axis.imshow(image_dict["image"], image_dict["color_map"], vmin=0, vmax=255)
+            axis.title.set_text(image_dict["title"])
+
     def show(self):
         """Show image on a matplotlib figure."""
+        self.generate()
         self.figure.show()
 
     def save(self, filename: Path):
@@ -156,6 +158,7 @@ class Visualizer:
         Args:
           filename (Path): Filename to save image
         """
+        self.generate()
         filename.parent.mkdir(parents=True, exist_ok=True)
         self.figure.savefig(filename, dpi=100)
 
