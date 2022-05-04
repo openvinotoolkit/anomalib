@@ -24,7 +24,7 @@ def test_visualize_fully_defected_masks():
     """Test if a fully defected anomaly mask results in a completely white image."""
 
     # create visualizer and add fully defected mask
-    visualizer = Visualizer(num_rows=1, num_cols=2, figure_size=(3, 3))
+    visualizer = Visualizer()
     mask = np.ones((256, 256)) * 255
     visualizer.add_image(image=mask, color_map="gray", title="fully defected mask")
 
