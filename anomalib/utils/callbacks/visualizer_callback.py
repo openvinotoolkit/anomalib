@@ -158,6 +158,7 @@ class VisualizerCallback(Callback):
                     image_classified = add_normal_label(heat_map, 1 - pred_score)
                 visualizer.add_image(image=image_classified, title="Prediction")
 
+            visualizer.generate()
             self._add_images(visualizer, pl_module, trainer, Path(filename))
             visualizer.close()
 
