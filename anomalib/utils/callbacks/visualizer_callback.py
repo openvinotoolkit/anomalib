@@ -137,7 +137,7 @@ class VisualizerCallback(Callback):
             visualizer = Visualizer(num_rows=1, num_cols=num_cols, figure_size=(12, 3))
             visualizer.add_image(image=image, title="Image")
 
-            if self.task == "segmentation":
+            if "mask" in outputs:
                 true_mask = outputs["mask"][i].cpu().numpy() * 255
                 visualizer.add_image(image=true_mask, color_map="gray", title="Ground Truth")
 

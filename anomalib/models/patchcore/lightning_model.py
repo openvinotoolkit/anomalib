@@ -17,6 +17,7 @@ Paper https://arxiv.org/abs/2106.08265.
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 from typing import List
 
 import torch
@@ -24,6 +25,8 @@ from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.patchcore.torch_model import PatchcoreModel
+
+logger = logging.getLogger(__name__)
 
 
 class PatchcoreLightning(AnomalyModule):
@@ -40,6 +43,7 @@ class PatchcoreLightning(AnomalyModule):
 
     def __init__(self, hparams) -> None:
         super().__init__(hparams)
+        logger.info("Initializing Patchcore Lightning model.")
 
         self.model: PatchcoreModel = PatchcoreModel(
             layers=hparams.model.layers,
@@ -83,9 +87,10 @@ class PatchcoreLightning(AnomalyModule):
         # NOTE: Previous anomalib versions fit subsampling at the end of the epoch.
         #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
         #   is run within train epoch.
-        print("Aggregating the embedding extracted from the training set.")
+        logger.info("Aggregating the embedding extracted from the training set.")
         embeddings = torch.vstack(self.embeddings)
 
+        logger.info("Applying core-set subsampling to get the embedding.")
         sampling_ratio = self.hparams.model.coreset_sampling_ratio
         self.model.subsample_embedding(embeddings, sampling_ratio)
 

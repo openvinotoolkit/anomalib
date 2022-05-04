@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 from typing import List, Union
 
 import torch
@@ -24,12 +25,15 @@ from anomalib.models.components import AnomalyModule
 
 from .torch_model import DFMModel
 
+logger = logging.getLogger(__name__)
+
 
 class DfmLightning(AnomalyModule):
     """DFM: Deep Featured Kernel Density Estimation."""
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         super().__init__(hparams)
+        logger.info("Initializing DFKDE Lightning model.")
 
         self.model: DFMModel = DFMModel(
             backbone=hparams.model.backbone,
@@ -66,11 +70,14 @@ class DfmLightning(AnomalyModule):
         self.embeddings.append(embedding)
 
     def on_validation_start(self) -> None:
-        """Fit a KDE Model to the embedding collected from the training set."""
+        """Fit a PCA transformation and a Gaussian model to dataset."""
         # NOTE: Previous anomalib versions fit Gaussian at the end of the epoch.
         #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
         #   is run within train epoch.
+        logger.info("Aggregating the embedding extracted from the training set.")
         embeddings = torch.vstack(self.embeddings)
+
+        logger.info("Fitting a PCA and a Gaussian model to dataset.")
         self.model.fit(embeddings)
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ

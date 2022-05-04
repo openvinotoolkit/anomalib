@@ -97,7 +97,6 @@ trainer:
   overfit_batches: 0.0
   plugins: null
   precision: 32
-
   profiler: null
   reload_dataloaders_every_n_epochs: 0
   replace_sampler_ddp: true

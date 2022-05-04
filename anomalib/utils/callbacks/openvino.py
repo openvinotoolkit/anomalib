@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 import os
 from typing import Tuple
 
@@ -21,6 +22,8 @@ from pytorch_lightning import Callback
 
 from anomalib.deploy import export_convert
 from anomalib.models.components import AnomalyModule
+
+logger = logging.getLogger(__name__)
 
 
 class OpenVINOCallback(Callback):
@@ -45,6 +48,7 @@ class OpenVINOCallback(Callback):
         Converts the model to ``onnx`` format and then calls OpenVINO's model optimizer to get the
         ``.xml`` and ``.bin`` IR files.
         """
+        logger.info("Exporting the model to OpenVINO")
         os.makedirs(self.dirpath, exist_ok=True)
         onnx_path = os.path.join(self.dirpath, self.filename + ".onnx")
         export_convert(

@@ -147,11 +147,8 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         """
 
         # Coreset Subsampling
-        print("Creating CoreSet Sampler via k-Center Greedy")
         sampler = KCenterGreedy(embedding=embedding, sampling_ratio=sampling_ratio)
-        print("Getting the coreset from the main embedding.")
         coreset = sampler.sample_coreset()
-        print("Assigning the coreset as the memory bank.")
         self.memory_bank = coreset
 
     def nearest_neighbors(self, embedding: Tensor, n_neighbors: int = 9) -> Tensor:

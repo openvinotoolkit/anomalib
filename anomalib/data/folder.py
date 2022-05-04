@@ -18,6 +18,7 @@ This script creates a custom dataset from a folder.
 # and limitations under the License.
 
 import logging
+import warnings
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
 
@@ -39,8 +40,7 @@ from anomalib.data.utils.split import (
 )
 from anomalib.pre_processing import PreProcessor
 
-logger = logging.getLogger(name="Dataset: Folder Dataset")
-logger.setLevel(logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 def _check_and_convert_path(path: Union[str, Path]) -> Path:
@@ -75,7 +75,10 @@ def _prepare_files_labels(
     if extensions is None:
         extensions = IMG_EXTENSIONS
 
-    filenames = [f for f in path.glob(r"**/*") if f.suffix in extensions]
+    if isinstance(extensions, str):
+        extensions = (extensions,)
+
+    filenames = [f for f in path.glob(r"**/*") if f.suffix in extensions and not f.is_dir()]
     if len(filenames) == 0:
         raise RuntimeError(f"Found 0 {path_type} images in {path}")
 
@@ -141,11 +144,10 @@ def make_dataset(
     # If a path to mask is provided, add it to the sample dataframe.
     if mask_dir is not None:
         mask_dir = _check_and_convert_path(mask_dir)
-        normal_gt = ["" for f in samples.loc[samples.label_index == 0]["image_path"]]
-        abnormal_gt = [str(mask_dir / f.name) for f in samples.loc[samples.label_index == 1]["image_path"]]
-        gt_filenames = normal_gt + abnormal_gt
-
-        samples["mask_path"] = gt_filenames
+        samples["mask_path"] = ""
+        for index, row in samples.iterrows():
+            if row.label_index == 1:
+                samples.loc[index, "mask_path"] = str(mask_dir / row.image_path.name)
 
     # Ensure the pathlib objects are converted to str.
     # This is because torch dataloader doesn't like pathlib.
@@ -220,11 +222,20 @@ class FolderDataset(Dataset):
         """
         self.split = split
 
+        if task == "segmentation" and mask_dir is None:
+            warnings.warn(
+                "Segmentation task is requested, but mask directory is not provided. "
+                "Classification is to be chosen if mask directory is not provided."
+            )
+            self.task = "classification"
+
         if task == "classification" and mask_dir:
-            raise ValueError(
+            warnings.warn(
                 "Classification task is requested, but mask directory is provided. "
                 "Segmentation task is to be chosen if mask directory is provided."
             )
+            self.task = "segmentation"
+
         if task is None or mask_dir is None:
             self.task = "classification"
         else:
@@ -459,10 +470,12 @@ class FolderDataModule(LightningDataModule):
           stage: Optional[str]:  Train/Val/Test stages. (Default value = None)
 
         """
+        logger.info("Setting up train, validation, test and prediction datasets.")
         if stage in (None, "fit"):
             self.train_data = FolderDataset(
                 normal_dir=self.normal_dir,
                 abnormal_dir=self.abnormal_dir,
+                normal_test_dir=self.normal_test,
                 split="train",
                 split_ratio=self.split_ratio,
                 mask_dir=self.mask_dir,
@@ -477,6 +490,7 @@ class FolderDataModule(LightningDataModule):
             self.val_data = FolderDataset(
                 normal_dir=self.normal_dir,
                 abnormal_dir=self.abnormal_dir,
+                normal_test_dir=self.normal_test,
                 split="val",
                 split_ratio=self.split_ratio,
                 mask_dir=self.mask_dir,

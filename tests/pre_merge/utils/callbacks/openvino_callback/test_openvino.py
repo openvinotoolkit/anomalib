@@ -16,7 +16,7 @@ def test_openvino_model_callback():
     """Tests if an optimized model is created."""
 
     config = get_test_configurable_parameters(
-        model_config_path="tests/pre_merge/utils/callbacks/openvino_callback/dummy_config.yml"
+        config_path="tests/pre_merge/utils/callbacks/openvino_callback/dummy_config.yml"
     )
 
     with tempfile.TemporaryDirectory() as tmp_dir:
