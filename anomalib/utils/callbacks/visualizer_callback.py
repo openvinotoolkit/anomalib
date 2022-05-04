@@ -24,7 +24,13 @@ from pytorch_lightning.utilities.types import STEP_OUTPUT
 from skimage.segmentation import mark_boundaries
 
 from anomalib.models.components import AnomalyModule
-from anomalib.post_processing import Visualizer, compute_mask, superimpose_anomaly_map
+from anomalib.post_processing import (
+    Visualizer,
+    add_anomalous_label,
+    add_normal_label,
+    compute_mask,
+    superimpose_anomaly_map,
+)
 from anomalib.pre_processing.transforms import Denormalize
 from anomalib.utils import loggers
 from anomalib.utils.loggers import AnomalibWandbLogger
@@ -144,12 +150,12 @@ class VisualizerCallback(Callback):
                 visualizer.add_image(image=pred_mask, color_map="gray", title="Predicted Mask")
                 visualizer.add_image(image=vis_img, title="Segmentation Result")
             elif self.task == "classification":
-                gt_im = visualizer.add_anomalous_label(image) if gt_label else visualizer.add_normal_label(image)
+                gt_im = add_anomalous_label(image) if gt_label else add_normal_label(image)
                 visualizer.add_image(gt_im, title="Image/True label")
                 if pred_score >= threshold:
-                    image_classified = visualizer.add_anomalous_label(heat_map, pred_score)
+                    image_classified = add_anomalous_label(heat_map, pred_score)
                 else:
-                    image_classified = visualizer.add_normal_label(heat_map, 1 - pred_score)
+                    image_classified = add_normal_label(heat_map, 1 - pred_score)
                 visualizer.add_image(image=image_classified, title="Prediction")
 
             self._add_images(visualizer, pl_module, trainer, Path(filename))
