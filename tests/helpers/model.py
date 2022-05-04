@@ -65,6 +65,12 @@ def setup_model_train(
     config.dataset.path = dataset_path
     config.project.log_images_to = []
     config.trainer.devices = device
+    config.trainer.accelerator = "gpu" if device != 0 else "cpu"
+
+    # Remove legacy flags
+    for legacy_device in ["num_processes", "gpus", "ipus", "tpu_cores"]:
+        if legacy_device in config.trainer:
+            config.trainer[legacy_device] = None
 
     # If weight file is empty, remove the key from config
     if "weight_file" in config.model.keys() and weight_file == "":
