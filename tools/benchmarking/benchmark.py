@@ -23,6 +23,7 @@ import multiprocessing
 import sys
 import time
 import warnings
+from argparse import ArgumentParser
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -143,9 +144,9 @@ def get_single_model_metrics(model_config: Union[DictConfig, ListConfig], openvi
     return data
 
 
-def compute_on_cpu():
+def compute_on_cpu(config: Path):
     """Compute all run configurations over a sigle CPU."""
-    sweep_config = OmegaConf.load("tools/benchmarking/benchmark_params.yaml")
+    sweep_config = OmegaConf.load(config)
     for run_config in get_run_config(sweep_config.grid_search):
         model_metrics = sweep(run_config, 0, sweep_config.seed, False)
         write_metrics(model_metrics, sweep_config.writer)
@@ -172,9 +173,9 @@ def compute_on_gpu(
         write_metrics(model_metrics, writers)
 
 
-def distribute_over_gpus():
+def distribute_over_gpus(config: Path):
     """Distribute metric collection over all available GPUs. This is done by splitting the list of configurations."""
-    sweep_config = OmegaConf.load("tools/benchmarking/benchmark_params.yaml")
+    sweep_config = OmegaConf.load(config)
     with ProcessPoolExecutor(
         max_workers=torch.cuda.device_count(), mp_context=multiprocessing.get_context("spawn")
     ) as executor:
@@ -200,30 +201,29 @@ def distribute_over_gpus():
                 raise Exception(f"Error occurred while computing benchmark on device {job}") from exc
 
 
-def distribute():
+def distribute(config: Path):
     """Run all cpu experiments on a single process. Distribute gpu experiments over all available gpus.
 
     Args:
-        device_count (int, optional): If device count is 0, uses only cpu else spawn processes according
-        to number of gpus available on the machine. Defaults to 0.
+        config: (Path): Path to sweep configuration.
     """
-    sweep_config = OmegaConf.load("tools/benchmarking/benchmark_params.yaml")
+    sweep_config = OmegaConf.load(config)
     devices = sweep_config.hardware
     if not torch.cuda.is_available() and "gpu" in devices:
         logger.warning("Config requested GPU benchmarking but torch could not detect any cuda enabled devices")
     elif {"cpu", "gpu"}.issubset(devices):
         # Create process for gpu and cpu
         with ProcessPoolExecutor(max_workers=2, mp_context=multiprocessing.get_context("spawn")) as executor:
-            jobs = [executor.submit(compute_on_cpu), executor.submit(distribute_over_gpus)]
+            jobs = [executor.submit(compute_on_cpu, config), executor.submit(distribute_over_gpus, config)]
             for job in as_completed(jobs):
                 try:
                     job.result()
                 except Exception as exception:
                     raise Exception(f"Error occurred while computing benchmark on device {job}") from exception
     elif "cpu" in devices:
-        compute_on_cpu()
+        compute_on_cpu(config)
     elif "gpu" in devices:
-        distribute_over_gpus()
+        distribute_over_gpus(config)
     if "wandb" in sweep_config.writer:
         upload_to_wandb(team="anomalib")
 
@@ -256,7 +256,13 @@ def sweep(
     model_config = update_input_size_config(model_config)
 
     # Set device in config. 0 - cpu, [0], [1].. - gpu id
-    model_config.trainer.gpus = 0 if device == 0 else [device - 1]
+    model_config.trainer.devices = 0 if device == 0 else [device - 1]
+    model_config.trainer.accelerator = "gpu" if device != 0 else "cpu"
+
+    # Remove legacy flags
+    for legacy_device in ["num_processes", "gpus", "ipus", "tpu_cores"]:
+        if legacy_device in model_config.trainer:
+            model_config.trainer[legacy_device] = None
 
     if run_config.model_name in ["patchcore", "cflow"]:
         convert_openvino = False  # `torch.cdist` is not supported by onnx version 11
@@ -289,6 +295,12 @@ if __name__ == "__main__":
     # Spawn multiple processes one for cpu and rest for the number of gpus available in the system.
     # The idea is to distribute metrics collection over all the available devices.
 
+    parser = ArgumentParser()
+    parser.add_argument(
+        "--config", type=Path, default="tools/benchmarking/benchmark_params.yaml", help="Path to sweep configuration"
+    )
+    _args = parser.parse_args()
+
     print("Benchmarking started 🏃‍♂️. This will take a while ⏲ depending on your configuration.")
-    distribute()
+    distribute(_args.config)
     print("Finished gathering results ⚡")
