@@ -15,7 +15,7 @@
 # and limitations under the License.
 
 from pathlib import Path
-from typing import Optional
+from typing import Dict, List, Optional
 
 import matplotlib.figure
 import matplotlib.pyplot as plt
@@ -36,7 +36,7 @@ class Visualizer:
 
     def __init__(self):
 
-        self.images = []
+        self.images: List[Dict] = []
 
         self.figure: matplotlib.figure.Figure
         self.axis: np.ndarray
