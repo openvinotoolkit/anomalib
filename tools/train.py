@@ -19,6 +19,7 @@ results.
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 import warnings
 from argparse import ArgumentParser, Namespace
 
@@ -28,7 +29,9 @@ from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
 from anomalib.utils.callbacks import LoadModelCallback, get_callbacks
-from anomalib.utils.loggers import get_logger
+from anomalib.utils.loggers import configure_logger, get_experiment_logger
+
+logger = logging.getLogger("anomalib")
 
 
 def get_args() -> Namespace:
@@ -42,6 +45,7 @@ def get_args() -> Namespace:
     # --model_config_path will be deprecated in 0.2.8 and removed in 0.2.9
     parser.add_argument("--model_config_path", type=str, required=False, help="Path to a model config file")
     parser.add_argument("--config", type=str, required=False, help="Path to a model config file")
+    parser.add_argument("--log-level", type=str, default="INFO", help="<DEBUG, INFO, WARNING, ERROR>")
 
     args = parser.parse_args()
     if args.model_config_path is not None:
@@ -58,24 +62,36 @@ def get_args() -> Namespace:
 def train():
     """Train an anomaly classification or segmentation model based on a provided configuration file."""
     args = get_args()
-    config = get_configurable_parameters(model_name=args.model, config_path=args.config)
+    configure_logger(level=args.log_level)
 
+    config = get_configurable_parameters(model_name=args.model, config_path=args.config)
     if config.project.seed != 0:
         seed_everything(config.project.seed)
 
-    datamodule = get_datamodule(config)
-    model = get_model(config)
-    logger = get_logger(config)
+    if args.log_level == "ERROR":
+        warnings.filterwarnings("ignore")
 
+    logger.info("Loading the datamodule")
+    datamodule = get_datamodule(config)
+
+    logger.info("Loading the model.")
+    model = get_model(config)
+
+    logger.info("Loading the experiment logger(s)")
+    experiment_logger = get_experiment_logger(config)
+
+    logger.info("Loading the callbacks")
     callbacks = get_callbacks(config)
 
-    trainer = Trainer(**config.trainer, logger=logger, callbacks=callbacks)
+    trainer = Trainer(**config.trainer, logger=experiment_logger, callbacks=callbacks)
+    logger.info("Training the model.")
     trainer.fit(model=model, datamodule=datamodule)
 
-    # load best model from checkpoint before evaluating
+    logger.info("Loading the best model weights.")
     load_model_callback = LoadModelCallback(weights_path=trainer.checkpoint_callback.best_model_path)
     trainer.callbacks.insert(0, load_model_callback)
 
+    logger.info("Testing the model.")
     trainer.test(model=model, datamodule=datamodule)
 
 

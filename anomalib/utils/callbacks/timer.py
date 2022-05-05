@@ -1,7 +1,25 @@
 """Callback to measure training and testing time of a PyTorch Lightning module."""
+
+# Copyright (C) 2020 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions
+# and limitations under the License.
+
+import logging
 import time
 
 from pytorch_lightning import Callback, LightningModule, Trainer
+
+logger = logging.getLogger(__name__)
 
 
 class TimerCallback(Callback):
@@ -38,7 +56,7 @@ class TimerCallback(Callback):
         Returns:
             None
         """
-        print(f"Training took {time.time() - self.start} seconds")
+        logger.info("Training took %5.2f seconds", (time.time() - self.start))
 
     def on_test_start(self, trainer: Trainer, pl_module: LightningModule) -> None:  # pylint: disable=W0613
         """Call when the test begins.
@@ -77,4 +95,4 @@ class TimerCallback(Callback):
         if trainer.test_dataloaders is not None:
             output += f"(batch_size={trainer.test_dataloaders[0].batch_size})"
         output += f" : {self.num_images/testing_time} FPS"
-        print(output)
+        logger.info(output)

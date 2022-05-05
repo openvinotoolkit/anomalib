@@ -37,6 +37,7 @@ from utils import convert_to_openvino, upload_to_wandb, write_metrics
 from anomalib.config import get_configurable_parameters, update_input_size_config
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
+from anomalib.utils.loggers import configure_logger
 from anomalib.utils.sweep import (
     get_meta_data,
     get_openvino_throughput,
@@ -48,7 +49,9 @@ from anomalib.utils.sweep import (
 
 warnings.filterwarnings("ignore")
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
+configure_logger()
+pl_logger = logging.getLogger(__file__)
 for logger_name in ["pytorch_lightning", "torchmetrics", "os"]:
     logging.getLogger(logger_name).setLevel(logging.ERROR)
 
@@ -169,8 +172,13 @@ def compute_on_gpu(
         compute_openvino (bool, optional): Compute OpenVINO throughput. Defaults to False.
     """
     for run_config in run_configs:
-        model_metrics = sweep(run_config, device, seed, compute_openvino)
-        write_metrics(model_metrics, writers)
+        if isinstance(run_config, (DictConfig, ListConfig)):
+            model_metrics = sweep(run_config, device, seed, compute_openvino)
+            write_metrics(model_metrics, writers)
+        else:
+            raise ValueError(
+                f"Expecting `run_config` of type DictConfig or ListConfig. Got {type(run_config)} instead."
+            )
 
 
 def distribute_over_gpus(config: Path):
@@ -210,7 +218,7 @@ def distribute(config: Path):
     sweep_config = OmegaConf.load(config)
     devices = sweep_config.hardware
     if not torch.cuda.is_available() and "gpu" in devices:
-        logger.warning("Config requested GPU benchmarking but torch could not detect any cuda enabled devices")
+        pl_logger.warning("Config requested GPU benchmarking but torch could not detect any cuda enabled devices")
     elif {"cpu", "gpu"}.issubset(devices):
         # Create process for gpu and cpu
         with ProcessPoolExecutor(max_workers=2, mp_context=multiprocessing.get_context("spawn")) as executor:
@@ -250,7 +258,7 @@ def sweep(
     for param in run_config.keys():
         # grid search keys are always assumed to be strings
         param = cast(str, param)  # placate mypy
-        set_in_nested_config(model_config, param.split("."), run_config[param])
+        set_in_nested_config(model_config, param.split("."), run_config[param])  # type: ignore
 
     # convert image size to tuple in case it was updated by run config
     model_config = update_input_size_config(model_config)
@@ -278,7 +286,7 @@ def sweep(
     output = f"One sweep run complete for model {model_config.model.name}"
     output += f" On category {model_config.dataset.category}" if model_config.dataset.category is not None else ""
     output += str(model_metrics)
-    print(output)
+    logger.info(output)
 
     # Append configuration of current run to the collected metrics
     for key, value in run_config.items():

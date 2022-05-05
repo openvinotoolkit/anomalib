@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 import random
 from typing import List, Optional, Tuple
 
@@ -22,6 +23,8 @@ import torchvision
 from torch import Tensor, nn
 
 from anomalib.models.components import PCA, FeatureExtractor, GaussianKDE
+
+logger = logging.getLogger(__name__)
 
 
 class DfkdeModel(nn.Module):
@@ -88,7 +91,7 @@ class DfkdeModel(nn.Module):
         _embeddings = torch.vstack(embeddings)
 
         if _embeddings.shape[0] < self.n_components:
-            print("Not enough features to commit. Not making a model.")
+            logger.info("Not enough features to commit. Not making a model.")
             return False
 
         # if max training points is non-zero and smaller than number of staged features, select random subset
