@@ -147,9 +147,8 @@ def get_single_model_metrics(model_config: Union[DictConfig, ListConfig], openvi
     return data
 
 
-def compute_on_cpu(config: Path):
+def compute_on_cpu(sweep_config: Union[DictConfig, ListConfig]):
     """Compute all run configurations over a sigle CPU."""
-    sweep_config = OmegaConf.load(config)
     for run_config in get_run_config(sweep_config.grid_search):
         model_metrics = sweep(run_config, 0, sweep_config.seed, False)
         write_metrics(model_metrics, sweep_config.writer)
@@ -181,9 +180,8 @@ def compute_on_gpu(
             )
 
 
-def distribute_over_gpus(config: Path):
+def distribute_over_gpus(sweep_config: Union[DictConfig, ListConfig]):
     """Distribute metric collection over all available GPUs. This is done by splitting the list of configurations."""
-    sweep_config = OmegaConf.load(config)
     with ProcessPoolExecutor(
         max_workers=torch.cuda.device_count(), mp_context=multiprocessing.get_context("spawn")
     ) as executor:
@@ -209,14 +207,14 @@ def distribute_over_gpus(config: Path):
                 raise Exception(f"Error occurred while computing benchmark on GPU {job}") from exc
 
 
-def distribute(config: Path):
+def distribute(config: Union[DictConfig, ListConfig]):
     """Run all cpu experiments on a single process. Distribute gpu experiments over all available gpus.
 
     Args:
-        config: (Path): Path to sweep configuration.
+        config: (Union[DictConfig, ListConfig]): Sweep configuration.
     """
-    sweep_config = OmegaConf.load(config)
-    devices = sweep_config.hardware
+
+    devices = config.hardware
     if not torch.cuda.is_available() and "gpu" in devices:
         pl_logger.warning("Config requested GPU benchmarking but torch could not detect any cuda enabled devices")
     elif {"cpu", "gpu"}.issubset(devices):
@@ -232,7 +230,7 @@ def distribute(config: Path):
         compute_on_cpu(config)
     elif "gpu" in devices:
         distribute_over_gpus(config)
-    if "wandb" in sweep_config.writer:
+    if "wandb" in config.writer:
         upload_to_wandb(team="anomalib")
 
 
@@ -311,5 +309,6 @@ if __name__ == "__main__":
     _args = parser.parse_args()
 
     print("Benchmarking started 🏃‍♂️. This will take a while ⏲ depending on your configuration.")
-    distribute(_args.config)
+    _sweep_config = OmegaConf.load(_args.config)
+    distribute(_sweep_config)
     print("Finished gathering results ⚡")

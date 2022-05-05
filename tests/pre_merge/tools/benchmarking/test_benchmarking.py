@@ -14,8 +14,23 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import subprocess
+import sys
+
+# Since tools is not part of the anomalib package, accessing benchmarking requires importlib
+sys.path.append("tools/benchmarking")
+from importlib.util import find_spec
+
+if find_spec("benchmark") is not None:
+    from benchmark import distribute
+else:
+    raise Exception("Unable to import benchmarking script for testing")
+
+
 from pathlib import Path
+
+from omegaconf import OmegaConf
+
+from tests.helpers.dataset import get_dataset_path
 
 
 def check_tf_logs(model: str):
@@ -37,8 +52,9 @@ def check_csv(model: str):
 def test_benchmarking():
     """Test if benchmarking script produces the required artifacts."""
     config_path = "tests/pre_merge/tools/benchmarking/benchmark_params.yaml"
+    test_config = OmegaConf.load(config_path)
+    test_config.grid_search.dataset["path"] = [get_dataset_path()]
 
-    command = f"python tools/benchmarking/benchmark.py --config {config_path}"
-    subprocess.call(command, shell=True)
+    distribute(test_config)
     check_tf_logs("padim")
     check_csv("padim")
