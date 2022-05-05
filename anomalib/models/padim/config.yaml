@@ -3,7 +3,7 @@ dataset:
   format: mvtec
   path: ./datasets/MVTec
   category: bottle
-  task: classification
+  task: segmentation
   image_size: 256
   train_batch_size: 32
   test_batch_size: 32
