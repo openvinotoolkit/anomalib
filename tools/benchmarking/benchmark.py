@@ -153,7 +153,7 @@ def compute_on_cpu(config: Path):
 
 
 def compute_on_gpu(
-    run_configs: Union[DictConfig, ListConfig],
+    run_configs: List[DictConfig],
     device: int,
     seed: int,
     writers: List[str],
@@ -198,7 +198,7 @@ def distribute_over_gpus(config: Path):
             try:
                 job.result()
             except Exception as exc:
-                raise Exception(f"Error occurred while computing benchmark on device {job}") from exc
+                raise Exception(f"Error occurred while computing benchmark on GPU {job}") from exc
 
 
 def distribute(config: Path):
@@ -256,8 +256,11 @@ def sweep(
     model_config = update_input_size_config(model_config)
 
     # Set device in config. 0 - cpu, [0], [1].. - gpu id
-    model_config.trainer.devices = 0 if device == 0 else [device - 1]
-    model_config.trainer.accelerator = "gpu" if device != 0 else "cpu"
+    if device != 0:
+        model_config.trainer.devices = [device - 1]
+        model_config.trainer.accelerator = "gpu"
+    else:
+        model_config.trainer.accelerator = "cpu"
 
     # Remove legacy flags
     for legacy_device in ["num_processes", "gpus", "ipus", "tpu_cores"]:
@@ -296,9 +299,7 @@ if __name__ == "__main__":
     # The idea is to distribute metrics collection over all the available devices.
 
     parser = ArgumentParser()
-    parser.add_argument(
-        "--config", type=Path, default="tools/benchmarking/benchmark_params.yaml", help="Path to sweep configuration"
-    )
+    parser.add_argument("--config", type=Path, help="Path to sweep configuration")
     _args = parser.parse_args()
 
     print("Benchmarking started 🏃‍♂️. This will take a while ⏲ depending on your configuration.")

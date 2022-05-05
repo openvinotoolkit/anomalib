@@ -10,7 +10,5 @@ grid_search:
     category:
       - bottle
       - cable
-    image_size: [224]
   model_name:
     - padim
-    - patchcore

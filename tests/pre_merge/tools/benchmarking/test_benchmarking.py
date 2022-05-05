@@ -14,12 +14,31 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import os
+import subprocess
 from pathlib import Path
 
 
+def check_tf_logs(model: str):
+    """check if TensorBoard logs are generated."""
+    for device in ["gpu", "cpu"]:
+        assert (
+            len(list(Path("runs", f"{model}_{device}").glob("events.out.tfevents.*"))) > 0
+        ), f"Benchmarking script didn't generate tensorboard logs for {model}"
+
+
+def check_csv(model: str):
+    """Check if csv files are generated"""
+    for device in ["gpu", "cpu"]:
+        assert Path(
+            "runs", f"{model}_{device}.csv"
+        ).exists(), f"Benchmarking script didn't generate csv logs for {model}"
+
+
 def test_benchmarking():
+    """Test if benchmarking script produces the required artifacts."""
     config_path = "tests/pre_merge/tools/benchmarking/benchmark_params.yaml"
 
     command = f"python tools/benchmarking/benchmark.py --config {config_path}"
-    os.system(command)
+    subprocess.call(command, shell=True)
+    check_tf_logs("padim")
+    check_csv("padim")
