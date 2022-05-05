@@ -33,7 +33,7 @@ from omegaconf import OmegaConf
 from tests.helpers.dataset import get_dataset_path
 
 
-def check_tf_logs(model: str):
+def check_tb_logs(model: str):
     """check if TensorBoard logs are generated."""
     for device in ["gpu", "cpu"]:
         assert (
@@ -56,5 +56,5 @@ def test_benchmarking():
     test_config.grid_search.dataset["path"] = [get_dataset_path()]
 
     distribute(test_config)
-    check_tf_logs("padim")
+    check_tb_logs("padim")
     check_csv("padim")
