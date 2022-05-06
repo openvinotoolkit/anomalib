@@ -16,6 +16,5 @@
 
 from .base import Inferencer
 from .openvino import OpenVINOInferencer
-from .torch import TorchInferencer
 
-__all__ = ["Inferencer", "TorchInferencer", "OpenVINOInferencer"]
+__all__ = ["Inferencer", "OpenVINOInferencer"]

@@ -30,8 +30,16 @@ class LoadModelCallback(Callback):
     def __init__(self, weights_path):
         self.weights_path = weights_path
 
-    def on_test_start(self, trainer, pl_module: AnomalyModule) -> None:  # pylint: disable=W0613
+    def on_test_start(self, _trainer, pl_module: AnomalyModule) -> None:  # pylint: disable=W0613
         """Call when the test begins.
+
+        Loads the model weights from ``weights_path`` into the PyTorch module.
+        """
+        logger.info("Loading the model from %s", self.weights_path)
+        pl_module.load_state_dict(torch.load(self.weights_path)["state_dict"])
+
+    def on_predict_start(self, _trainer, pl_module: AnomalyModule) -> None:
+        """Call when inferebce begins.
 
         Loads the model weights from ``weights_path`` into the PyTorch module.
         """

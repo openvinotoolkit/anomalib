@@ -28,7 +28,6 @@ from anomalib.post_processing import (
     Visualizer,
     add_anomalous_label,
     add_normal_label,
-    compute_mask,
     superimpose_anomaly_map,
 )
 from anomalib.pre_processing.transforms import Denormalize
@@ -96,6 +95,60 @@ class VisualizerCallback(Callback):
         if "local" in module.hparams.project.log_images_to:
             visualizer.save(Path(module.hparams.project.path) / "images" / filename.parent.name / filename.name)
 
+    def generate_visualizer(self, outputs):
+        """Yields a visualizer object for each of the images in the output."""
+        for i in range(outputs["image"].size(0)):
+            visualizer = Visualizer()
+
+            image = Denormalize()(outputs["image"][i].cpu())
+            anomaly_map = outputs["anomaly_maps"][i].cpu().numpy()
+            heat_map = superimpose_anomaly_map(anomaly_map, image, normalize=not self.inputs_are_normalized)
+            pred_score = outputs["pred_scores"][i].cpu().numpy()
+            pred_label = outputs["pred_labels"][i].cpu().numpy()
+
+            if self.task == "segmentation":
+                pred_mask = outputs["pred_masks"][i].squeeze().int().cpu().numpy() * 255
+                vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
+                visualizer.add_image(image=image, title="Image")
+                if "mask" in outputs:
+                    true_mask = outputs["mask"][i].cpu().numpy() * 255
+                    visualizer.add_image(image=true_mask, color_map="gray", title="Ground Truth")
+                visualizer.add_image(image=heat_map, title="Predicted Heat Map")
+                visualizer.add_image(image=pred_mask, color_map="gray", title="Predicted Mask")
+                visualizer.add_image(image=vis_img, title="Segmentation Result")
+            elif self.task == "classification":
+                visualizer.add_image(image, title="Image")
+                if pred_label:
+                    image_classified = add_anomalous_label(heat_map, pred_score)
+                else:
+                    image_classified = add_normal_label(heat_map, 1 - pred_score)
+                visualizer.add_image(image=image_classified, title="Prediction")
+
+            yield visualizer
+
+    def on_predict_batch_end(
+        self,
+        _trainer: pl.Trainer,
+        _pl_module: AnomalyModule,
+        outputs: Optional[STEP_OUTPUT],
+        _batch: Any,
+        _batch_idx: int,
+        _dataloader_idx: int,
+    ) -> None:
+        """Show images at the end of every batch.
+
+        Args:
+            _trainer (Trainer): Pytorch lightning trainer object (unused).
+            _pl_module (LightningModule): Lightning modules derived from BaseAnomalyLightning object as
+            currently only they support logging images.
+            outputs (Dict[str, Any]): Outputs of the current test step.
+            _batch (Any): Input batch of the current test step (unused).
+            _batch_idx (int): Index of the current test batch (unused).
+            _dataloader_idx (int): Index of the dataloader that yielded the current batch (unused).
+        """
+        for visualizer in self.generate_visualizer(outputs):
+            visualizer.show()
+
     def on_test_batch_end(
         self,
         trainer: pl.Trainer,
@@ -117,49 +170,9 @@ class VisualizerCallback(Callback):
             _dataloader_idx (int): Index of the dataloader that yielded the current batch (unused).
         """
         assert outputs is not None
-
-        if self.inputs_are_normalized:
-            normalize = False  # anomaly maps are already normalized
-        else:
-            normalize = True  # raw anomaly maps. Still need to normalize
-        threshold = pl_module.pixel_metrics.threshold
-
-        for i, (filename, image, anomaly_map, pred_score, gt_label) in enumerate(
-            zip(
-                outputs["image_path"],
-                outputs["image"],
-                outputs["anomaly_maps"],
-                outputs["pred_scores"],
-                outputs["label"],
-            )
-        ):
-            image = Denormalize()(image.cpu())
-            anomaly_map = anomaly_map.cpu().numpy()
-            heat_map = superimpose_anomaly_map(anomaly_map, image, normalize=normalize)
-            pred_mask = compute_mask(anomaly_map, threshold)
-            vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
-
-            visualizer = Visualizer()
-
-            if self.task == "segmentation":
-                visualizer.add_image(image=image, title="Image")
-                if "mask" in outputs:
-                    true_mask = outputs["mask"][i].cpu().numpy() * 255
-                    visualizer.add_image(image=true_mask, color_map="gray", title="Ground Truth")
-                visualizer.add_image(image=heat_map, title="Predicted Heat Map")
-                visualizer.add_image(image=pred_mask, color_map="gray", title="Predicted Mask")
-                visualizer.add_image(image=vis_img, title="Segmentation Result")
-            elif self.task == "classification":
-                gt_im = add_anomalous_label(image) if gt_label else add_normal_label(image)
-                visualizer.add_image(gt_im, title="Image/True label")
-                if pred_score >= threshold:
-                    image_classified = add_anomalous_label(heat_map, pred_score)
-                else:
-                    image_classified = add_normal_label(heat_map, 1 - pred_score)
-                visualizer.add_image(image=image_classified, title="Prediction")
-
+        for i, visualizer in enumerate(self.generate_visualizer(outputs)):
             visualizer.generate()
-            self._add_images(visualizer, pl_module, trainer, Path(filename))
+            self._add_images(visualizer, pl_module, trainer, Path(outputs["image_path"][i]))
             visualizer.close()
 
     def on_test_end(self, _trainer: pl.Trainer, pl_module: AnomalyModule) -> None:

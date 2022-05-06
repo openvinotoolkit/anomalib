@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .inferencers import OpenVINOInferencer, TorchInferencer
+from .inferencers import OpenVINOInferencer
 from .optimize import export_convert, get_model_metadata
 
-__all__ = ["OpenVINOInferencer", "TorchInferencer", "export_convert", "get_model_metadata"]
+__all__ = ["OpenVINOInferencer", "export_convert", "get_model_metadata"]

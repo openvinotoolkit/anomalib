@@ -59,6 +59,8 @@ class DummyModule(AnomalyModule):
             mask=torch.zeros((1, 100, 100)),
             anomaly_maps=torch.ones((1, 100, 100)),
             label=torch.Tensor([0]),
+            pred_labels=torch.Tensor([0]),
+            pred_masks=torch.zeros((1, 100, 100)),
         )
         return outputs
 

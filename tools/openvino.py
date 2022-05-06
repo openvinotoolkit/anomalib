@@ -96,25 +96,11 @@ def stream() -> None:
     args = get_args()
     config = get_configurable_parameters(config_path=args.config)
 
-    # Get the inferencer. We use .ckpt extension for Torch models and (onnx, bin)
-    # for the openvino models.
-    extension = args.weight_path.suffix
-    inferencer: Inferencer
-    if extension in (".ckpt"):
-        module = import_module("anomalib.deploy.inferencers.torch")
-        TorchInferencer = getattr(module, "TorchInferencer")  # pylint: disable=invalid-name
-        inferencer = TorchInferencer(config=config, model_source=args.weight_path, meta_data_path=args.meta_data)
+    # Get the inferencer.
+    module = import_module("anomalib.deploy.inferencers.openvino")
+    OpenVINOInferencer = getattr(module, "OpenVINOInferencer")  # pylint: disable=invalid-name
+    inferencer = OpenVINOInferencer(config=config, path=args.weight_path, meta_data_path=args.meta_data)
 
-    elif extension in (".onnx", ".bin", ".xml"):
-        module = import_module("anomalib.deploy.inferencers.openvino")
-        OpenVINOInferencer = getattr(module, "OpenVINOInferencer")  # pylint: disable=invalid-name
-        inferencer = OpenVINOInferencer(config=config, path=args.weight_path, meta_data_path=args.meta_data)
-
-    else:
-        raise ValueError(
-            f"Model extension is not supported. Torch Inferencer exptects a .ckpt file,"
-            f"OpenVINO Inferencer expects either .onnx, .bin or .xml file. Got {extension}"
-        )
     if args.image_path.is_dir():
         # Write the output to save_path in the same structure as the input directory.
         for image in args.image_path.glob("**/*"):
