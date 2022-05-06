@@ -85,7 +85,7 @@ dfm:
   capsule:
     image_AUROC: 0.876
   carpet:
-    image_AUROC: 0.846
+    image_AUROC: 0.704
   grid:
     image_AUROC: 0.496
   hazelnut:
