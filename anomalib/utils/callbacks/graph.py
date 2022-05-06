@@ -39,7 +39,7 @@ class GraphLogger(Callback):
                 break
 
     def on_train_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
-        """Unwatch model if configured for wandb.
+        """Unwatch model if configured for wandb and log it model graph in Tensorboard if specified.
 
         Args:
             trainer: Trainer object which contans reference to loggers.
@@ -49,4 +49,5 @@ class GraphLogger(Callback):
         for logger in trainer.loggers:
             if isinstance(logger, AnomalibTensorBoardLogger):
                 logger.log_graph(pl_module, input_array=torch.ones((1, 3, 256, 256)))
-                break
+            elif isinstance(logger, AnomalibWandbLogger):
+                logger.unwatch(pl_module)
