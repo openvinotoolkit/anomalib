@@ -4,32 +4,39 @@ Anomalib offers various mechanisms for logging metrics and predicted masks.
 
 ## Enabling Logging
 
-These can be enabled using the `logger` parameter in `project` section of each model configuration file. The available options are `tensorboard`, `wandb` and `csv`.
+These can be enabled using the `logger` parameter in `logging` section of each model configuration file. The available options are `tensorboard`, `wandb` and `csv`.
 For example, to log to TensorBoard:
+
 ```yaml
-logger: "tensorboard"
+logging:
+    logger: "tensorboard"
 ```
 
  You can also pass a list of loggers to enable multiple loggers. For example:
+
 ```yaml
-project:
-  logger:
-    - tensorboard
-    - wandb
-    - csv
+logging:
+  logger: [tensorboard, wandb]
+  log_graph: false
 ```
 
 ## Logging Images
 
-Anomalib allows you to save predictions to the disc by setting `log_images_to: local`. As of the current version, Anomalib also supports TensorBoard and WandB loggers for logging images. These loggers extend upon the base loggers by providing a common interface for logging images. You can access the required logger from `trainer.loggers`. Then you can use `logger.add_image` method to log images. For a complete overview of this method. Refer to our [API documentation](https://openvinotoolkit.github.io/anomalib/api/anomalib/utils/loggers/index.html).
+Anomalib allows you to save predictions to the file system by setting `log_images_to: local`. As of the current version, Anomalib also supports TensorBoard and Weights and Biases loggers for logging images. These loggers extend upon the base loggers by providing a common interface for logging images. You can access the required logger from `trainer.loggers`. Then you can use `logger.add_image` method to log images. For a complete overview of this method refer to our [API documentation](https://openvinotoolkit.github.io/anomalib/api/anomalib/utils/loggers/index.html).
+
+```yaml
+logging:
+  log_images_to: ["local", "tensorboard", "wandb"]
+  logger: [tensorboard, wandb]
+  log_graph: false
+```
 
 :::{Note}
-Logging images to tensorboard and wandb won't work if you don't have `logger: [tensorboard, wandb]` set as well. This ensures that the respective logger is passed to the trainer object.
+Logging images to TensorBoard and wandb won't work if you don't have `logger: [tensorboard, wandb]` set as well. This ensures that the respective logger is passed to the trainer object.
 :::
 
 ![tensorboard dashboard showing logged images](../images/logging/tensorboard_media.jpg)
 <figcaption>Logged Images in TensorBoard Dashboard</figcaption>
-
 
 ![wandb dashboard showing logged images](../images/logging/wandb_media.jpg)
 <figcaption>Logged Images in wandb Dashboard</figcaption>
@@ -43,6 +50,7 @@ When accessing the base logger/`logger.experiment` object, refer to the document
 :::
 
 For example, to log the current model to the TensorBoard and wandb you can update `train.py` as follows:
+
 ```python
 loggers = get_logger(config)
 

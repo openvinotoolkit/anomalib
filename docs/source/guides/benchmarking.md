@@ -14,20 +14,38 @@ writer:
 grid_search:
   dataset:
     category:
-      - bottle
-      - cable
-      - capsule
-      - carpet
-    image_size: [224]
+      - colour
+      - crack
+    image_size: [128, 256]
   model_name:
     - padim
-    - patchcore
+    - stfpm
 ```
 
-This configuration computes the throughput and performance metrics on CPU and GPU for four categories of the MVTec dataset for Padim and PatchCore models. The dataset can be configured in the respective model configuration files. By default, `compute_openvino` is set to `False` to support instances where OpenVINO requirements are not installed in the environment. Once installed, this flag can be set to True to get throughput on OpenVINO optimized models. The `writer` parameter is optional and can be set to `writer: []` in case the user only requires a csv file without logging to each respective logger. It is a good practice to set a value of seed to ensure reproducibility across runs and thus, is set to a non-zero value by default.
+This configuration computes the throughput and performance metrics on CPU and GPU for two categories of a custom folder dataset for Padim and STFPM models. To configure a custom dataset, use the respective model configuration file. An example for dataset configuration used in this guide is shown below. Refer [README](https://github.com/openvinotoolkit/anomalib#readme) For more details.
+
+```yaml
+dataset:
+  name: hazelnut
+  format: folder
+  path: path/Hazelnut_toy
+  normal_dir: good # name of the folder containing normal images.
+  abnormal_dir: colour # name of the folder containing abnormal images.
+  normal_test_dir: null
+  task: segmentation # classification or segmentation
+  mask: path/Hazelnut_toy/mask/colour
+  extensions: .jpg
+  split_ratio: 0.2
+  seed: 0
+  image_size: 256
+```
+
+By default, `compute_openvino` is set to `False` to support instances where OpenVINO requirements are not installed in the environment. Once installed, this flag can be set to `True` to get the throughput on OpenVINO optimized models. The `writer` parameter is optional and can be set to `writer: []` in case the user only requires a csv file without logging to each respective logger. It is a good practice to set a value of seed to ensure reproducibility across runs and thus, is set to a non-zero value by default.
 
 Once a configuration is decided, benchmarking can easily be performed by calling
+
 ```bash
 python tools/benchmarking/benchmark.py --config <relative/absolute path>/<paramfile>.yaml
 ```
+
 A nice feature about the provided benchmarking script is that if the host system has multiple GPUs, the runs are parallelized over all the available GPUs for faster collection of result.
