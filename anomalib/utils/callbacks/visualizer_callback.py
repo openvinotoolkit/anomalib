@@ -24,7 +24,13 @@ from pytorch_lightning.utilities.types import STEP_OUTPUT
 from skimage.segmentation import mark_boundaries
 
 from anomalib.models.components import AnomalyModule
-from anomalib.post_processing import Visualizer, compute_mask, superimpose_anomaly_map
+from anomalib.post_processing import (
+    Visualizer,
+    add_anomalous_label,
+    add_normal_label,
+    compute_mask,
+    superimpose_anomaly_map,
+)
 from anomalib.pre_processing.transforms import Denormalize
 from anomalib.utils import loggers
 from anomalib.utils.loggers import AnomalibWandbLogger
@@ -133,25 +139,26 @@ class VisualizerCallback(Callback):
             pred_mask = compute_mask(anomaly_map, threshold)
             vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
 
-            num_cols = 6 if self.task == "segmentation" else 5
-            visualizer = Visualizer(num_rows=1, num_cols=num_cols, figure_size=(12, 3))
-            visualizer.add_image(image=image, title="Image")
+            visualizer = Visualizer()
 
-            if "mask" in outputs:
-                true_mask = outputs["mask"][i].cpu().numpy() * 255
-                visualizer.add_image(image=true_mask, color_map="gray", title="Ground Truth")
+            if self.task == "segmentation":
+                visualizer.add_image(image=image, title="Image")
+                if "mask" in outputs:
+                    true_mask = outputs["mask"][i].cpu().numpy() * 255
+                    visualizer.add_image(image=true_mask, color_map="gray", title="Ground Truth")
+                visualizer.add_image(image=heat_map, title="Predicted Heat Map")
+                visualizer.add_image(image=pred_mask, color_map="gray", title="Predicted Mask")
+                visualizer.add_image(image=vis_img, title="Segmentation Result")
+            elif self.task == "classification":
+                gt_im = add_anomalous_label(image) if gt_label else add_normal_label(image)
+                visualizer.add_image(gt_im, title="Image/True label")
+                if pred_score >= threshold:
+                    image_classified = add_anomalous_label(heat_map, pred_score)
+                else:
+                    image_classified = add_normal_label(heat_map, 1 - pred_score)
+                visualizer.add_image(image=image_classified, title="Prediction")
 
-            visualizer.add_image(image=heat_map, title="Predicted Heat Map")
-            visualizer.add_image(image=pred_mask, color_map="gray", title="Predicted Mask")
-            visualizer.add_image(image=vis_img, title="Segmentation Result")
-
-            image_classified = visualizer.add_text(
-                image=image,
-                text=f"""Pred: { "anomalous" if pred_score > threshold else "normal"}({pred_score:.3f}) \n
-                GT: {"anomalous" if bool(gt_label) else "normal"}""",
-            )
-            visualizer.add_image(image=image_classified, title="Classified Image")
-
+            visualizer.generate()
             self._add_images(visualizer, pl_module, trainer, Path(filename))
             visualizer.close()
 
