@@ -94,7 +94,7 @@ class VisualizerCallback(Callback):
                 warn(f"{log_to} not in the list of supported image loggers.")
 
         if "local" in module.hparams.logging.log_images_to:
-            visualizer.save(Path(module.hparams.logging.path) / "images" / filename.parent.name / filename.name)
+            visualizer.save(Path(module.hparams.project.path) / "images" / filename.parent.name / filename.name)
 
     def on_test_batch_end(
         self,
