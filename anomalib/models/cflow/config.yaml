@@ -65,6 +65,7 @@ trainer:
   default_root_dir: null
   detect_anomaly: false
   deterministic: false
+  devices: 1
   enable_checkpointing: true
   enable_model_summary: true
   enable_progress_bar: true
