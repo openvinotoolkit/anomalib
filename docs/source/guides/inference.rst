@@ -2,7 +2,7 @@
 
 Inference
 ---------
-Anomalib provides entrypoint scripts for using a trained model to generate predictions from a source of image data. This guide explains how to
+Anomalib provides entrypoint scripts for using a trained model to generate predictions from a source of image data. This guide explains how to run inference with the standard PyTorch model and the exported OpenVINO model.
 
 
 Torch Inference
