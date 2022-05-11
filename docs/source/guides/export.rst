@@ -1,6 +1,6 @@
 Export & Optimization
 --------------
-This page will explain how to export your trained models to OpenVINO format, and how the performance of the exported OpenVINO models can be optimized. For an explanation how the exported models can be deployed, please look visit the inference guide: :ref:`_inference_documentation`.
+This page will explain how to export your trained models to OpenVINO format, and how the performance of the exported OpenVINO models can be optimized. For an explanation how the exported models can be deployed, please refer to the inference guide: :ref:`_inference_documentation`.
 
 Export
 =======
