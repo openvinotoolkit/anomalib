@@ -64,6 +64,8 @@ def update_nncf_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfi
     sample_size = (crop_size, crop_size) if isinstance(crop_size, int) else crop_size
     if "optimization" in config.keys():
         if "nncf" in config.optimization.keys():
+            if "input_info" not in config.optimization.nncf.keys():
+                config.optimization.nncf["input_info"] = {"sample_size": None}
             config.optimization.nncf.input_info.sample_size = [1, 3, *sample_size]
             if config.optimization.nncf.apply:
                 if "update_config" in config.optimization.nncf:
