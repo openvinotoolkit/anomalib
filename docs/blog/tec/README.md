@@ -15,7 +15,7 @@ Anomalib aims to collect the most recent deep-learning based anomaly detection a
 
 ## How to train a Custom dataset with Anomalib
 
-Anomalib supports a number of datasets in various formats, including the state-of-the-art anomaly detection benchmarks such as MVTec AD and BeanTech. For those who would like to use the library on their custom datasets, anomalib also provides a "FolderDatasetModule" that can load datasets from a folder on a file system. The scope of this post will be to train anomalib models on custom datasets using the FolderDatasetModule.
+Anomalib supports a number of datasets in various formats, including the state-of-the-art anomaly detection benchmarks such as MVTec AD and BeanTech. For those who would like to use the library on their custom datasets, anomalib also provides a `FolderDatasetModule` that can load datasets from a folder on a file system. The scope of this post will be to train anomalib models on custom datasets using the `FolderDatasetModule`.
 
 ### Step 1: Install Anomalib
 #### Option - 1 : PyPI
@@ -34,42 +34,47 @@ pip install -e .
 ```
 
 ### Step 2: Collect Your Custom Dataset
-anomalib supports multiple image extensions such as `".jpg", ".jpeg", ".png", ".ppm", ".bmp", ".pgm", ".tif", ".tiff", and ".webp"`. A dataset could be collected from images that have any of these extensions.
+Anomalib supports multiple image extensions such as `".jpg", ".jpeg", ".png", ".ppm", ".bmp", ".pgm", ".tif", ".tiff", and ".webp"`. A dataset can be collected from images that have any of these extensions.
 
 ### Step 3: Format your dataset
-Depending on the use-case and collection, custom datasets could be of different formats, some of which are listed below:
+Depending on the use-case and collection, custom datasets can have different formats, some of which are listed below:
 -   A dataset with good and bad images.
 -   A dataset with good and bad images as well as mask ground-truths for pixel-wise evaluation.
 -   A dataset with good and bad images that is already split into training and testing sets.
 
-Each of these use-cases is addressed by anomalib's  `FolderDataModule`. Let's focus on the first use-case as an example of end-to-end model training and inference.
+Each of these use-cases is addressed by anomalib's  `FolderDataModule`. Let's focus on the first use-case as an example of end-to-end model training and inference. In this post, we will use a toy dataset which you can download from [here](). TODO. The dataset consists of several folders, each containing a set of images. The _colour_ and the _crack_ folders represent two kinds of defects. We can ignore the _masks_ folder for now.
 
-Load your data to the following directory structure. Anomalib will use all images in the bad folder as part of the validation dataset and then randomly split the good images for training and validation.
+Load your data to the following directory structure. Anomalib will use all images in the _colour_ folder as part of the validation dataset and then randomly split the good images for training and validation.
 ```
-example_dataset
-├── bad
+Hazelnut_toy
+├── colour
 └── good
 ```
 
 ### Step 4: Modify Config File
-A YAML configuration file is necessary to run training for Anomalib. The training configuration parameters are categorized into 4 sections: `dataset`, `model`, `project`, `trainer`.
+A YAML configuration file is necessary to run training for Anomalib. The training configuration parameters are categorized into 5 sections: `dataset`, `model`, `project`, `logging`, `trainer`.
 
-To get Anomalib functionally working with a custom dataset, one only needs to change the `dataset` section of the configuration file. Below is an example of what the dataset parameters would look like for our `example_dataset` folder specified in [Step 2](#step-2-collect-your-data).
+To get Anomalib functionally working with a custom dataset, one only needs to change the `dataset` section of the configuration file.
 
-Let's choose [DFM algorithm](https://arxiv.org/abs/1909.11786), copy the sample config and modify the dataset section.
+Below is an example of what the dataset parameters would look like for our `hazelnut_toy` folder specified in [Step 2](#step-2-collect-your-data).
+
+Let's choose [PaDim algorithm](https://arxiv.org/pdf/2011.08785.pdf), copy the sample config and modify the dataset section.
+
 ```bash
-cp anomalib/models/dfm/config.yaml custom_dfm.yaml
+cp anomalib/models/padim/config.yaml custom_padim.yaml
 ```
+
 ```yaml
 # Replace the dataset configs with the following.
 dataset:
-  name: example_dataset
+  name: hazelnut
   format: folder
-  path: ./datasets/example_dataset
-  normal: good # name of the folder containing normal images.
-  abnormal: bad # name of the folder containing abnormal images.
+  path: ./datasets/Hazelnut_toy
+  normal_dir: good # name of the folder containing normal images.
+  abnormal_dir: colour # name of the folder containing abnormal images.
   task: classification # classification or segmentation
   mask: null #optional
+  normal_test_dir: null # optional
   extensions: null
   split_ratio: 0.2  # normal images ratio to create a test split
   seed: 0
@@ -88,16 +93,18 @@ dataset:
     random_tile_count: 16
 
 model:
-    name: dfm
+    name: padim
     backbone: resnet18
-    layer: layer3
+    layer:
+      - layer1
     ...
 ```
 
 ### Step 5: Run training
-As per the config file, move example_dataset to the datasets section in the main root directory of anomalib, and then run
+As per the config file, move `Hazelnut_toy` to the datasets section in the main root directory of anomalib, and then run
+
 ```bash
-python tools/train.py --config custom_dfm.yml
+python tools/train.py --config custom_padim.yml
 ```
 
 ###  Step 6: Interpret Results
@@ -105,12 +112,20 @@ Anomalib will print out results of the trained model on the validation dataset. 
 
 **Additional Info**
 
-Not only does Anomalib classify whether a part is defected or not, it can also be used to segment the defects as well. To do this, simply add a folder called “ground_truth” at the same directory level as the “good” and “bad” folders. This folder should contain masked images of the images in the “bad” folder, where white pixels denote where the defects are occurring. Populate the mask field in the config file with “ground_truth” and change the task to segmentation to see Anomalib segment defects.
+Not only does Anomalib classify whether a part is defected or not, it can also be used to segment the defects as well. To do this, simply add a folder called _mask_ at the same directory level as the _good_ and _colour_ folders. This folder should contain binary images for the defects in the _colour_ folder. Here, the white pixels represent the location of the defect. Populate the mask field in the config file with `mask` and change the task to segmentation to see Anomalib segment defects.
 ```
-example_dataset
-├── bad
+Hazelnut_toy
+├── colour
+│  ├── 00.jpg
+│  ├── 01.jpg
+│  ...
 ├── good
-└── ground_truth
+│  ├── 00.jpg
+│  ├── 01.jpg
+└── mask
+   ├── 00.jpg
+   ├── 01.jpg
+   ...
 ```
 
 Here is an example of the generated results for a toy dataset containing Hazelnut with colour defects.
@@ -127,29 +142,27 @@ To select where you would like to save the images, change the `log_images_to` pa
 For example, setting the following `log_images_to: ["local"]` will result in saving the images in the results folder as shown in the tree structure below:
 ```
 results
-└── dfm
-    └── example_dataset
+└── padim
+    └── Hazelnut_toy
         ├── images
-        │   ├── bad
-        │   │   ├── 000.jpg
-        │   │   ├── 001.jpg
+        │   ├── colour
+        │   │   ├── 00.jpg
+        │   │   ├── 01.jpg
         │   │   └── ...
         │   └── good
-        │       ├── 000.jpg
-        │       ├── 001.jpg
+        │       ├── 00.jpg
+        │       ├── 01.jpg
         │       └── ...
         └── weights
             └── model.ckpt
 ```
 
 ### Logging to Tensorboard and/or W&B
-To use TensorBoard and/or  W&B logger, ensure that the logger parameter is set to `tensorboard`, `wandb` or `[tensorboard, wandb]` in the config file.
+To use TensorBoard and/or  W&B logger, ensure that the logger parameter is set to `tensorboard`, `wandb` or `[tensorboard, wandb]` in the `logging` section of the config file.
 
 An example configuration for saving to TensorBoard  is shown in the figure below.
 ```yaml
-project:
-    seed: 42
-    path: ./results
+logging:
     log_images_to: [tensorboard]
     logger: tensorboard # options: [tensorboard, wandb, csv] or combinations.
 ```
@@ -175,7 +188,7 @@ metric:
   goal: maximize
 parameters:
   dataset:
-    category: capsule
+    category: hazelnut
     image_size:
       values: [128, 256]
   model:
@@ -183,7 +196,7 @@ parameters:
       values: [resnet18, wide_resnet50_2]
 ```
 
-The observation_budget informs wandb about the number of experiments to run. The method section defines the kind of method to use for HPO search. For other available methods, have a look at [wandb documentation]. The parameters section contains dataset and model parameters. Any parameter defined here overrides the parameter in the original model configuration.
+The observation_budget informs wandb about the number of experiments to run. The method section defines the kind of method to use for HPO search. For other available methods, have a look at [Weights and Biases](https://docs.wandb.ai/guides/sweeps/quickstart) documentation. The parameters section contains dataset and model parameters. Any parameter defined here overrides the parameter in the original model configuration.
 
 To run a sweep, you can just call,
 
@@ -191,7 +204,7 @@ To run a sweep, you can just call,
 python tools/hpo/wandb_sweep.py --model padim --config ./path_to_config.yaml --sweep_config tools/hpo/sweep.yaml"
 ```
 
-In case model_config is not provided, the script looks at the default config location for that model. Note, you will need to have logged into a wandb account to use HPO search and view the results.
+In case `model_config` is not provided, the script looks at the default config location for that model. Note, you will need to have logged into a wandb account to use HPO search and view the results.
 
 A sample run is visible in the screenshot below.
 <div align="center">
@@ -213,19 +226,21 @@ writer:
 grid_search:
   dataset:
     category:
-      - bottle
-      ...
-    image_size: [224]
+      - colour
+      - crack
+    image_size: [128, 256]
   model_name:
     - padim
-    - patchcore
+    - stfpm
 ```
 
-This configuration computes the throughput and performance metrics for cpu and gpu for four categories of the MVTec dataset for Padim and PatchCore models. The dataset can be configured in the respective model configuration files. By default, compute_openvino is set to False to support instances where OpenVINO requirements are not installed in the environment. Once installed, this flag can be set to True to get throughput on OpenVINO optimized models. The writer parameter is optional and can be set to writer: [] in case the user only requires a csv file without logging to each respective logger. It is a good practice to set a value of seed to ensure reproducibility across runs and thus, is set to a non-zero value by default.
+This configuration computes the throughput and performance metrics for CPU and GPU for two categories of the toy dataset for Padim and STFPM models. The dataset can be configured in the respective model configuration files. By default, `compute_openvino` is set to False to support instances where OpenVINO requirements are not installed in the environment. Once installed, this flag can be set to True to get throughput on OpenVINO optimized models. The writer parameter is optional and can be set to `writer: []` in case the user only requires a csv file without logging to TensorBoard or Weights and Biases. It is also a good practice to set a value of seed to ensure reproducibility across runs and thus, is set to a non-zero value by default.
 
 Once a configuration is decided, benchmarking can easily be performed by calling
 
-python tools/benchmarking/benchmark.py --config <relative/absolute path>/<paramfile>.yaml
+```bash
+python tools/benchmarking/benchmark.py --config tools/benchmarking/benchmark_params.yaml
+```
 
 A nice feature about the provided benchmarking script is that if the host system has multiple GPUs, the runs are parallelized over all the available GPUs for faster collection of result.
 
