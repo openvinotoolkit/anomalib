@@ -15,7 +15,7 @@
 # and limitations under the License.
 
 from pathlib import Path
-from typing import Any, Optional, cast
+from typing import Any, List, Optional, cast
 from warnings import warn
 
 import pytorch_lightning as pl
@@ -47,9 +47,10 @@ class VisualizerCallback(Callback):
     config.yaml file.
     """
 
-    def __init__(self, task: str, inputs_are_normalized: bool = True):
+    def __init__(self, task: str, log_images_to: Optional[List[str]] = None, inputs_are_normalized: bool = True):
         """Visualizer callback."""
         self.task = task
+        self.log_images_to = [] if log_images_to is None else log_images_to
         self.inputs_are_normalized = inputs_are_normalized
 
     def _add_images(
@@ -75,7 +76,7 @@ class VisualizerCallback(Callback):
             type(logger).__name__.lower().rstrip("logger").lstrip("anomalib"): logger for logger in trainer.loggers
         }
         # save image to respective logger
-        for log_to in module.hparams.project.log_images_to:
+        for log_to in self.log_images_to:
             if log_to in loggers.AVAILABLE_LOGGERS:
                 # check if logger object is same as the requested object
                 if log_to in available_loggers and isinstance(available_loggers[log_to], ImageLoggerBase):
@@ -93,8 +94,8 @@ class VisualizerCallback(Callback):
             else:
                 warn(f"{log_to} not in the list of supported image loggers.")
 
-        if "local" in module.hparams.project.log_images_to:
-            visualizer.save(Path(module.hparams.project.path) / "images" / filename.parent.name / filename.name)
+        if "local" in self.log_images_to:
+            visualizer.save(Path(trainer.default_root_dir) / "images" / filename.parent.name / filename.name)
 
     def on_test_batch_end(
         self,
