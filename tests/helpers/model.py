@@ -64,7 +64,13 @@ def setup_model_train(
     config.dataset.category = category
     config.dataset.path = dataset_path
     config.project.log_images_to = []
-    config.trainer.gpus = device
+    config.trainer.devices = device
+    config.trainer.accelerator = "gpu" if device != 0 else "cpu"
+
+    # Remove legacy flags
+    for legacy_device in ["num_processes", "gpus", "ipus", "tpu_cores"]:
+        if legacy_device in config.trainer:
+            config.trainer[legacy_device] = None
 
     # If weight file is empty, remove the key from config
     if "weight_file" in config.model.keys() and weight_file == "":
@@ -73,7 +79,7 @@ def setup_model_train(
         config.model.weight_file = weight_file if not fast_run else "weights/last.ckpt"
 
     if nncf:
-        config.optimization.nncf.apply = True
+        config.optimization["nncf"] = {"apply": True, "input_info": {"sample_size": None}}
         config = update_nncf_config(config)
         config.init_weights = None
 
@@ -141,7 +147,7 @@ def model_load_test(config: Union[DictConfig, ListConfig], datamodule: Lightning
     new_results = trainer.test(model=loaded_model, datamodule=datamodule)[0]
     assert np.isclose(
         results["image_AUROC"], new_results["image_AUROC"]
-    ), "Loaded model does not yield close performance results"
+    ), f"Loaded model does not yield close performance results. {results['image_AUROC']} : {new_results['image_AUROC']}"
     if config.dataset.task == "segmentation":
         assert np.isclose(
             results["pixel_AUROC"], new_results["pixel_AUROC"]

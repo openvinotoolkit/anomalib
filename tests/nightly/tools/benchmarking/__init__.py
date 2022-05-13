@@ -1,6 +1,6 @@
-"""Methods to help post-process raw model outputs."""
+"""Test benchmarking script."""
 
-# Copyright (C) 2020 Intel Corporation
+# Copyright (C) 2022 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,21 +13,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions
 # and limitations under the License.
-
-from .post_process import (
-    add_anomalous_label,
-    add_normal_label,
-    anomaly_map_to_color_map,
-    compute_mask,
-    superimpose_anomaly_map,
-)
-from .visualizer import Visualizer
-
-__all__ = [
-    "add_anomalous_label",
-    "add_normal_label",
-    "anomaly_map_to_color_map",
-    "superimpose_anomaly_map",
-    "compute_mask",
-    "Visualizer",
-]

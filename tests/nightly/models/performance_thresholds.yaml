@@ -85,7 +85,7 @@ dfm:
   capsule:
     image_AUROC: 0.876
   carpet:
-    image_AUROC: 0.846
+    image_AUROC: 0.704
   grid:
     image_AUROC: 0.496
   hazelnut:
@@ -178,7 +178,7 @@ stfpm:
       pixel_AUROC: 0.940
   toothbrush:
     image_AUROC: 0.491
-    pixel_AUROC: 0.170
+    pixel_AUROC: 0.157
     nncf:
       image_AUROC: 0.791
       pixel_AUROC: 0.956
@@ -262,7 +262,7 @@ cflow:
     image_AUROC: 0.979
     pixel_AUROC: 0.985
   grid:
-    image_AUROC: 0.959
+    image_AUROC: 0.918
     pixel_AUROC: 0.965
   hazelnut:
     image_AUROC: 0.999
@@ -271,7 +271,7 @@ cflow:
     image_AUROC: 1.0
     pixel_AUROC: 0.994
   metal_nut:
-    image_AUROC: 0.984
+    image_AUROC: 0.923
     pixel_AUROC: 0.981
   pill:
     image_AUROC: 0.933

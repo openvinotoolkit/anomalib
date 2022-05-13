@@ -49,6 +49,7 @@ trainer:
   default_root_dir: null
   detect_anomaly: false
   deterministic: false
+  devices: 1
   enable_checkpointing: true
   enable_model_summary: true
   enable_progress_bar: true
@@ -70,7 +71,7 @@ trainer:
   move_metrics_to_cpu: false
   multiple_trainloader_mode: max_size_cycle
   num_nodes: 1
-  num_processes: 1
+  num_processes: null
   num_sanity_val_steps: 0
   overfit_batches: 0.0
   plugins: null

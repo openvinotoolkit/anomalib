@@ -40,6 +40,8 @@ def get_model_config(
     model_config.dataset.path = dataset_path
     model_config.dataset.category = category
     model_config.trainer.max_epochs = 1
+    model_config.trainer.devices = 1
+    model_config.trainer.accelerator = "gpu"
     return model_config
 
 
