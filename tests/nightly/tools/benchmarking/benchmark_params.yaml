@@ -1,0 +1,14 @@
+seed: 42
+compute_openvino: false
+hardware:
+  - cpu
+  - gpu
+writer:
+  - tensorboard
+grid_search:
+  dataset:
+    category:
+      - bottle
+      - cable
+  model_name:
+    - padim
