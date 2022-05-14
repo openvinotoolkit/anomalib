@@ -15,18 +15,17 @@
 # and limitations under the License.
 
 from abc import ABC
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional
 
 import pytorch_lightning as pl
-from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks.base import Callback
 from torch import Tensor, nn
 
 from anomalib.utils.metrics import (
     AdaptiveThreshold,
+    AnomalibMetricCollection,
     AnomalyScoreDistribution,
     MinMax,
-    get_metrics,
 )
 
 
@@ -39,27 +38,38 @@ class AnomalyModule(pl.LightningModule, ABC):
         params (Union[DictConfig, ListConfig]): Configuration
     """
 
-    def __init__(self, params: Union[DictConfig, ListConfig]):
-
+    def __init__(
+        self,
+        adaptive_threshold: bool,
+        default_image_threshold: float,
+        default_pixel_threshold: float,
+        normalization: Optional[str] = None,
+    ):
         super().__init__()
-        # Force the type for hparams so that it works with OmegaConfig style of accessing
-        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
-        self.save_hyperparameters(params)
+        self.save_hyperparameters()
+        self.model: nn.Module
         self.loss: Tensor
         self.callbacks: List[Callback]
 
-        self.image_threshold = AdaptiveThreshold(self.hparams.model.threshold.image_default).cpu()
-        self.pixel_threshold = AdaptiveThreshold(self.hparams.model.threshold.pixel_default).cpu()
+        self.adaptive_threshold = adaptive_threshold
+        self.default_image_threshold = default_image_threshold
+        self.default_pixel_threshold = default_pixel_threshold
 
-        self.training_distribution = AnomalyScoreDistribution().cpu()
-        self.min_max = MinMax().cpu()
+        self.image_threshold = AdaptiveThreshold(default_image_threshold).cpu()
+        self.pixel_threshold = AdaptiveThreshold(default_pixel_threshold).cpu()
 
-        self.model: nn.Module
+        if normalization in [None, "min_max"]:
+            self.min_max = MinMax().cpu()
+        elif normalization == "cdf":
+            self.training_distribution = AnomalyScoreDistribution().cpu()
+        else:
+            raise ValueError(f"Unknown normalization type {normalization}. Supported types are min_max and cdf")
 
-        # metrics
-        self.image_metrics, self.pixel_metrics = get_metrics(self.hparams)
-        self.image_metrics.set_threshold(self.hparams.model.threshold.image_default)
-        self.pixel_metrics.set_threshold(self.hparams.model.threshold.pixel_default)
+        # Create placeholders for image and pixel metrics.
+        # If set from the config file, MetricsCallback will
+        #   create the metric collections upon setup.
+        self.image_metrics: Optional[AnomalibMetricCollection] = None
+        self.pixel_metrics: Optional[AnomalibMetricCollection] = None
 
     def forward(self, batch):  # pylint: disable=arguments-differ
         """Forward-pass input tensor to the module.
@@ -128,7 +138,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         Args:
           outputs: Batch of outputs from the validation step
         """
-        if self.hparams.model.threshold.adaptive:
+        if self.adaptive_threshold:
             self._compute_adaptive_threshold(outputs)
         self._collect_outputs(self.image_metrics, self.pixel_metrics, outputs)
         self._log_metrics()

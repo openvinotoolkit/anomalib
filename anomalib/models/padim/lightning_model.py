@@ -18,10 +18,9 @@ Paper https://arxiv.org/abs/2011.08785
 # and limitations under the License.
 
 import logging
-from typing import List, Union
+from typing import List, Optional, Tuple
 
 import torch
-from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -36,21 +35,39 @@ class PadimLightning(AnomalyModule):
     """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
 
     Args:
-        hparams (Union[DictConfig, ListConfig]): Model params
+        adaptive_threshold (bool): Boolean to automatically choose adaptive threshold
+        default_image_threshold (float): Manual default image threshold
+        default_pixel_threshold (float): Manaul default pixel threshold
+        layers (List[str]): Layers to extract features from the backbone CNN
+        input_size (Tuple[int, int]): Size of the model input.
+        backbone (str): Backbone CNN network
+        normalization (Optional[str], optional): Type of the normalization to apply to the heatmap.
+            Defaults to None.
     """
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]):
-        super().__init__(hparams)
+    def __init__(
+        self,
+        adaptive_threshold: bool,
+        default_image_threshold: float,
+        default_pixel_threshold: float,
+        layers: List[str],
+        input_size: Tuple[int, int],
+        backbone: str,
+        normalization: Optional[str] = None,
+    ):
+        super().__init__(
+            adaptive_threshold=adaptive_threshold,
+            default_image_threshold=default_image_threshold,
+            default_pixel_threshold=default_pixel_threshold,
+            normalization=normalization,
+        )
         logger.info("Initializing Padim Lightning model.")
 
-        self.layers = hparams.model.layers
+        self.layers = layers
         self.model: PadimModel = PadimModel(
-            layers=hparams.model.layers,
-            input_size=hparams.model.input_size,
-            tile_size=hparams.dataset.tiling.tile_size,
-            tile_stride=hparams.dataset.tiling.stride,
-            apply_tiling=hparams.dataset.tiling.apply,
-            backbone=hparams.model.backbone,
+            input_size=input_size,
+            backbone=backbone,
+            layers=layers,
         ).eval()
 
         self.stats: List[Tensor] = []

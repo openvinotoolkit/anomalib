@@ -22,10 +22,7 @@ from omegaconf import DictConfig, ListConfig
 from torch import load
 
 from anomalib.models.components import AnomalyModule
-
-# TODO(AlexanderDokuchaev): Workaround of wrapping by NNCF.
-#                           Can't not wrap `spatial_softmax2d` if use import_module.
-from anomalib.models.padim.lightning_model import PadimLightning  # noqa: F401
+from anomalib.models.padim import PadimLightning
 
 
 def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
@@ -50,24 +47,26 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     Returns:
         AnomalyModule: Anomaly Model
     """
-    openvino_model_list: List[str] = ["stfpm"]
-    torch_model_list: List[str] = ["padim", "stfpm", "dfkde", "dfm", "patchcore", "cflow", "ganomaly"]
+    torch_model_list: List[str] = ["stfpm", "dfkde", "dfm", "patchcore", "cflow", "ganomaly"]
     model: AnomalyModule
 
-    if "openvino" in config.keys() and config.openvino:
-        if config.model.name in openvino_model_list:
-            module = import_module(f"anomalib.models.{config.model.name}.model")
-            model = getattr(module, f"{config.model.name.capitalize()}OpenVINO")
-        else:
-            raise ValueError(f"Unknown model {config.model.name} for OpenVINO model!")
-    else:
-        if config.model.name in torch_model_list:
-            module = import_module(f"anomalib.models.{config.model.name}")
-            model = getattr(module, f"{config.model.name.capitalize()}Lightning")
-        else:
-            raise ValueError(f"Unknown model {config.model.name}!")
+    if config.model.name == "padim":
+        model = PadimLightning(
+            adaptive_threshold=config.model.threshold.adaptive,
+            default_image_threshold=config.model.threshold.image_default,
+            default_pixel_threshold=config.model.threshold.pixel_default,
+            input_size=config.model.input_size,
+            layers=config.model.layers,
+            backbone=config.model.backbone,
+            normalization=config.model.normalization_method,
+        )
 
-    model = model(config)
+    elif config.model.name in torch_model_list:
+        module = import_module(f"anomalib.models.{config.model.name}")
+        model = getattr(module, f"{config.model.name.capitalize()}Lightning")
+        model = model(config)
+    else:
+        raise ValueError(f"Unknown model {config.model.name}!")
 
     if "init_weights" in config.keys() and config.init_weights:
         model.load_state_dict(load(os.path.join(config.project.path, config.init_weights))["state_dict"], strict=False)
