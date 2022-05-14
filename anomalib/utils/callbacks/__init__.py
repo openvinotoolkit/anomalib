@@ -86,7 +86,9 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
     if not config.project.log_images_to == []:
         callbacks.append(
             VisualizerCallback(
-                task=config.dataset.task, inputs_are_normalized=not config.model.normalization_method == "none"
+                task=config.dataset.task,
+                log_images_to=config.project.log_images_to,
+                inputs_are_normalized=not config.model.normalization_method == "none",
             )
         )
 
