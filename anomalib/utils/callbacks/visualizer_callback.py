@@ -67,7 +67,7 @@ class VisualizerCallback(Callback):
 
         Args:
             visualizer (Visualizer): Visualizer object from which the `figure` is saved/logged.
-            module (AnomalyModule): Anomaly module which holds reference to `hparams`.
+            module (AnomalyModule): Anomaly module.
             trainer (Trainer): Pytorch Lightning trainer which holds reference to `logger`
             filename (Path): Path of the input image. This name is used as name for the generated image.
         """
@@ -123,7 +123,9 @@ class VisualizerCallback(Callback):
             normalize = False  # anomaly maps are already normalized
         else:
             normalize = True  # raw anomaly maps. Still need to normalize
-        threshold = pl_module.pixel_metrics.threshold
+
+        if pl_module.pixel_metrics is not None:
+            threshold = pl_module.pixel_metrics.threshold
 
         for i, (filename, image, anomaly_map, pred_score, gt_label) in enumerate(
             zip(
