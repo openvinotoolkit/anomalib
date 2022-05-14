@@ -58,7 +58,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.image_threshold = AdaptiveThreshold(default_image_threshold).cpu()
         self.pixel_threshold = AdaptiveThreshold(default_pixel_threshold).cpu()
 
-        if normalization in [None, "min_max"]:
+        if normalization in [None, "none", "min_max"]:
             self.min_max = MinMax().cpu()
         elif normalization == "cdf":
             self.training_distribution = AnomalyScoreDistribution().cpu()
