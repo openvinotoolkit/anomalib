@@ -26,6 +26,7 @@ from anomalib.models.dfkde import DfkdeLightning
 from anomalib.models.dfm import DfmLightning
 from anomalib.models.padim import PadimLightning
 from anomalib.models.patchcore import PatchcoreLightning
+from anomalib.models.stfpm import StfpmLightning
 
 
 def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
@@ -50,7 +51,7 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     Returns:
         AnomalyModule: Anomaly Model
     """
-    torch_model_list: List[str] = ["stfpm", "cflow", "ganomaly"]
+    torch_model_list: List[str] = ["cflow", "ganomaly"]
     model: AnomalyModule
 
     if config.model.name == "dfkde":
@@ -99,6 +100,23 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
             layers=config.model.layers,
             coreset_sampling_ratio=config.model.coreset_sampling_ratio,
             num_neighbors=config.model.num_neighbors,
+            normalization=config.model.normalization_method,
+        )
+
+    elif config.model.name == "stfpm":
+        model = StfpmLightning(
+            adaptive_threshold=config.model.threshold.adaptive,
+            default_image_threshold=config.model.threshold.image_default,
+            default_pixel_threshold=config.model.threshold.pixel_default,
+            input_size=config.model.input_size,
+            backbone=config.model.backbone,
+            layers=config.model.layers,
+            learning_rate=config.model.lr,
+            momentum=config.model.momentum,
+            weight_decay=config.model.weight_decay,
+            early_stopping_metric=config.model.early_stopping.metric,
+            early_stopping_patience=config.model.early_stopping.patience,
+            early_stopping_mode=config.model.early_stopping.mode,
             normalization=config.model.normalization_method,
         )
 

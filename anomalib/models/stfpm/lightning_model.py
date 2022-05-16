@@ -18,6 +18,7 @@ https://arxiv.org/abs/2103.04257
 # and limitations under the License.
 
 import logging
+from typing import List, Optional, Tuple
 
 import torch
 from pytorch_lightning.callbacks import EarlyStopping
@@ -32,28 +33,69 @@ __all__ = ["StfpmLightning"]
 
 
 class StfpmLightning(AnomalyModule):
-    """PL Lightning Module for the STFPM algorithm."""
+    """PL Lightning Module for the STFPM algorithm.
 
-    def __init__(self, hparams):
-        super().__init__(hparams)
+    Args:
+        adaptive_threshold (bool): Boolean to automatically choose adaptive threshold
+        default_image_threshold (float): Manual default image threshold
+        default_pixel_threshold (float): Manaul default pixel threshold
+        input_size (Tuple[int, int]): Size of the model input.
+        backbone (str): Backbone CNN network
+        layers (List[str]): Layers to extract features from the backbone CNN
+        learning_rate (float, optional): Learning rate. Defaults to 0.4.
+        momentum (float, optional): Momentum. Defaults to 0.9.
+        weight_decay (float, optional): Weight decay. Defaults to 0.0001.
+        early_stopping_metric (str, optional): Early stopping metric. Defaults to "pixel_AUROC".
+        early_stopping_patience (int, optional): Early stopping patience. Defaults to 3.
+        early_stopping_mode (str, optional): Early stopping mode. Defaults to "max".
+        normalization (Optional[str], optional): Type of the normalization to apply to the heatmap.
+            Defaults to None.
+    """
+
+    def __init__(
+        self,
+        adaptive_threshold: bool,
+        default_image_threshold: float,
+        default_pixel_threshold: float,
+        input_size: Tuple[int, int],
+        backbone: str,
+        layers: List[str],
+        learning_rate: float = 0.4,
+        momentum: float = 0.9,
+        weight_decay: float = 0.0001,
+        early_stopping_metric: str = "pixel_AUROC",
+        early_stopping_patience: int = 3,
+        early_stopping_mode: str = "max",
+        normalization: Optional[str] = None,
+    ):
+
+        super().__init__(
+            adaptive_threshold=adaptive_threshold,
+            default_image_threshold=default_image_threshold,
+            default_pixel_threshold=default_pixel_threshold,
+            normalization=normalization,
+        )
         logger.info("Initializing Stfpm Lightning model.")
 
         self.model = STFPMModel(
-            layers=hparams.model.layers,
-            input_size=hparams.model.input_size,
-            tile_size=hparams.dataset.tiling.tile_size,
-            tile_stride=hparams.dataset.tiling.stride,
-            backbone=hparams.model.backbone,
-            apply_tiling=hparams.dataset.tiling.apply,
+            input_size=input_size,
+            backbone=backbone,
+            layers=layers,
         )
+        self.learning_rate = learning_rate
+        self.momentum = momentum
+        self.weight_decay = weight_decay
+        self.early_stopping_metric = early_stopping_metric
+        self.early_stopping_patience = early_stopping_patience
+        self.early_stopping_mode = early_stopping_mode
         self.loss_val = 0
 
     def configure_callbacks(self):
         """Configure model-specific callbacks."""
         early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
+            monitor=self.early_stopping_metric,
+            patience=self.early_stopping_patience,
+            mode=self.early_stopping_mode,
         )
         return [early_stopping]
 
@@ -65,9 +107,9 @@ class StfpmLightning(AnomalyModule):
         """
         return optim.SGD(
             params=self.model.student_model.parameters(),
-            lr=self.hparams.model.lr,
-            momentum=self.hparams.model.momentum,
-            weight_decay=self.hparams.model.weight_decay,
+            lr=self.learning_rate,
+            momentum=self.momentum,
+            weight_decay=self.weight_decay,
         )
 
     def training_step(self, batch, _):  # pylint: disable=arguments-differ
