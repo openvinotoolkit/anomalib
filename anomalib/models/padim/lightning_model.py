@@ -18,7 +18,7 @@ Paper https://arxiv.org/abs/2011.08785
 # and limitations under the License.
 
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 import torch
 from torch import Tensor
@@ -41,8 +41,6 @@ class PadimLightning(AnomalyModule):
         layers (List[str]): Layers to extract features from the backbone CNN
         input_size (Tuple[int, int]): Size of the model input.
         backbone (str): Backbone CNN network
-        normalization (Optional[str], optional): Type of the normalization to apply to the heatmap.
-            Defaults to None.
     """
 
     def __init__(
@@ -53,13 +51,11 @@ class PadimLightning(AnomalyModule):
         layers: List[str],
         input_size: Tuple[int, int],
         backbone: str,
-        normalization: Optional[str] = None,
     ):
         super().__init__(
             adaptive_threshold=adaptive_threshold,
             default_image_threshold=default_image_threshold,
             default_pixel_threshold=default_pixel_threshold,
-            normalization=normalization,
         )
         logger.info("Initializing Padim Lightning model.")
 

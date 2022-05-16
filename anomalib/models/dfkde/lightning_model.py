@@ -15,7 +15,7 @@
 # and limitations under the License.
 
 import logging
-from typing import List, Optional
+from typing import List
 
 from torch import Tensor
 
@@ -41,7 +41,6 @@ class DfkdeLightning(AnomalyModule):
         threshold_steepness (float, optional): Controls how quickly the value saturates around zero.
             Defaults to 0.05.
         threshold_offset (float, optional): Offset of the density function from 0. Defaults to 12.0.
-        normalization (Optional[str], optional): _description_. Defaults to None.
     """
 
     def __init__(
@@ -54,13 +53,11 @@ class DfkdeLightning(AnomalyModule):
         n_components: int = 16,
         threshold_steepness: float = 0.05,
         threshold_offset: int = 12,
-        normalization: Optional[str] = None,
     ):
 
         super().__init__(
             adaptive_threshold=adaptive_threshold,
             default_image_threshold=default_image_threshold,
-            normalization=normalization,
         )
         logger.info("Initializing DFKDE Lightning model.")
 

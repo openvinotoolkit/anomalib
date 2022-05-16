@@ -35,7 +35,12 @@ class AnomalyModule(pl.LightningModule, ABC):
     Acts as a base class for all the Anomaly Modules in the library.
 
     Args:
-        params (Union[DictConfig, ListConfig]): Configuration
+        adaptive_threshold (Optional[bool], optional): Boolean to automatically choose adaptive threshold.
+            Defaults to None.
+        default_image_threshold (Optional[float], optional): Manual default image threshold.
+            Defaults to None.
+        default_pixel_threshold (Optional[float], optional): Manaul default pixel threshold.
+            Defaults to None.
     """
 
     def __init__(
@@ -43,7 +48,6 @@ class AnomalyModule(pl.LightningModule, ABC):
         adaptive_threshold: Optional[bool] = None,
         default_image_threshold: Optional[float] = None,
         default_pixel_threshold: Optional[float] = None,
-        normalization: Optional[str] = None,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -58,12 +62,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.image_threshold = AdaptiveThreshold(self.default_image_threshold).cpu()
         self.pixel_threshold = AdaptiveThreshold(self.default_pixel_threshold).cpu()
 
-        if normalization in [None, "none", "min_max"]:
-            self.min_max = MinMax().cpu()
-        elif normalization == "cdf":
-            self.training_distribution = AnomalyScoreDistribution().cpu()
-        else:
-            raise ValueError(f"Unknown normalization type {normalization}. Supported types are min_max and cdf")
+        self.training_distribution = AnomalyScoreDistribution().cpu()
+        self.min_max = MinMax().cpu()
 
         # Create placeholders for image and pixel metrics.
         # If set from the config file, MetricsCallback will

@@ -28,6 +28,7 @@ from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
 from anomalib.deploy import OpenVINOInferencer, TorchInferencer, export_convert
 from anomalib.models import get_model
+from anomalib.utils.callbacks import get_callbacks
 from tests.helpers.dataset import TestDataset, get_dataset_path
 from tests.helpers.inference import MockImageLoader, get_meta_data
 
@@ -63,8 +64,9 @@ class TestInferencers:
             )
 
             model = get_model(model_config)
-            trainer = Trainer(logger=False, **model_config.trainer)
             datamodule = get_datamodule(model_config)
+            callbacks = get_callbacks(model_config)
+            trainer = Trainer(**model_config.trainer, logger=False, callbacks=callbacks)
 
             trainer.fit(model=model, datamodule=datamodule)
 
@@ -101,8 +103,10 @@ class TestInferencers:
             export_path = Path(project_path)
 
             model = get_model(model_config)
-            trainer = Trainer(logger=False, **model_config.trainer)
             datamodule = get_datamodule(model_config)
+            callbacks = get_callbacks(model_config)
+            trainer = Trainer(**model_config.trainer, logger=False, callbacks=callbacks)
+
             trainer.fit(model=model, datamodule=datamodule)
 
             export_convert(

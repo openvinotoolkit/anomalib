@@ -72,7 +72,6 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
             early_stopping_metric=config.model.early_stopping.metric,
             early_stopping_patience=config.model.early_stopping.patience,
             early_stopping_mode=config.model.early_stopping.mode,
-            normalization=config.model.normalization_method,
         )
 
     elif config.model.name == "dfkde":
@@ -85,7 +84,6 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
             n_components=config.model.n_components,
             threshold_steepness=config.model.threshold_steepness,
             threshold_offset=config.model.threshold_offset,
-            normalization=config.model.normalization_method,
         )
 
     elif config.model.name == "dfm":
@@ -97,7 +95,6 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
             pooling_kernel_size=config.model.pooling_kernel_size,
             pca_level=config.model.pca_level,
             score_type=config.model.score_type,
-            normalization=config.model.normalization_method,
         )
 
     elif config.model.name == "ganomaly":
@@ -129,7 +126,6 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
             input_size=config.model.input_size,
             layers=config.model.layers,
             backbone=config.model.backbone,
-            normalization=config.model.normalization_method,
         )
 
     elif config.model.name == "patchcore":
@@ -142,7 +138,6 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
             layers=config.model.layers,
             coreset_sampling_ratio=config.model.coreset_sampling_ratio,
             num_neighbors=config.model.num_neighbors,
-            normalization=config.model.normalization_method,
         )
 
     elif config.model.name == "stfpm":
@@ -159,7 +154,6 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
             early_stopping_metric=config.model.early_stopping.metric,
             early_stopping_patience=config.model.early_stopping.patience,
             early_stopping_mode=config.model.early_stopping.mode,
-            normalization=config.model.normalization_method,
         )
 
     else:

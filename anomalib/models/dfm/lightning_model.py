@@ -15,7 +15,7 @@
 # and limitations under the License.
 
 import logging
-from typing import List, Optional
+from typing import List
 
 import torch
 from torch import Tensor
@@ -41,8 +41,6 @@ class DfmLightning(AnomalyModule):
             Defaults to 0.97.
         score_type (str, optional): Scoring type. Options are `fre` and `nll`. Defaults to "fre".
         nll: for Gaussian modeling, fre: pca feature reconstruction error
-        normalization (Optional[str], optional): Type of the normalization to apply to the heatmap.
-            Defaults to None.
     """
 
     def __init__(
@@ -54,12 +52,10 @@ class DfmLightning(AnomalyModule):
         pooling_kernel_size: int = 4,
         pca_level: float = 0.97,
         score_type: str = "fre",
-        normalization: Optional[str] = None,
     ):
         super().__init__(
             adaptive_threshold=adaptive_threshold,
             default_image_threshold=default_image_threshold,
-            normalization=normalization,
         )
         logger.info("Initializing DFKDE Lightning model.")
 

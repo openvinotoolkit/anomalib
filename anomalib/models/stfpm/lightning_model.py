@@ -18,7 +18,7 @@ https://arxiv.org/abs/2103.04257
 # and limitations under the License.
 
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 import torch
 from pytorch_lightning.callbacks import EarlyStopping
@@ -48,8 +48,6 @@ class StfpmLightning(AnomalyModule):
         early_stopping_metric (str, optional): Early stopping metric. Defaults to "pixel_AUROC".
         early_stopping_patience (int, optional): Early stopping patience. Defaults to 3.
         early_stopping_mode (str, optional): Early stopping mode. Defaults to "max".
-        normalization (Optional[str], optional): Type of the normalization to apply to the heatmap.
-            Defaults to None.
     """
 
     def __init__(
@@ -66,14 +64,12 @@ class StfpmLightning(AnomalyModule):
         early_stopping_metric: str = "pixel_AUROC",
         early_stopping_patience: int = 3,
         early_stopping_mode: str = "max",
-        normalization: Optional[str] = None,
     ):
 
         super().__init__(
             adaptive_threshold=adaptive_threshold,
             default_image_threshold=default_image_threshold,
             default_pixel_threshold=default_pixel_threshold,
-            normalization=normalization,
         )
         logger.info("Initializing Stfpm Lightning model.")
 

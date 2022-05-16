@@ -18,7 +18,7 @@ https://arxiv.org/pdf/2107.12571v1.pdf
 # and limitations under the License.
 
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 import einops
 import torch
@@ -56,13 +56,11 @@ class CflowLightning(AnomalyModule):
         early_stopping_metric: str = "pixel_AUROC",
         early_stopping_patience: int = 3,
         early_stopping_mode: str = "max",
-        normalization: Optional[str] = None,
     ):
         super().__init__(
             adaptive_threshold=adaptive_threshold,
             default_image_threshold=default_image_threshold,
             default_pixel_threshold=default_pixel_threshold,
-            normalization=normalization,
         )
         logger.info("Initializing Cflow Lightning model.")
 

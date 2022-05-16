@@ -18,7 +18,7 @@ Paper https://arxiv.org/abs/2106.08265.
 # and limitations under the License.
 
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 import torch
 from torch import Tensor
@@ -42,8 +42,6 @@ class PatchcoreLightning(AnomalyModule):
         coreset_sampling_ratio (float, optional): Coreset sampling ratio to subsample embedding.
             Defaults to 0.1.
         num_neighbors (int, optional): Number of nearest neighbors. Defaults to 9.
-        normalization (Optional[str], optional): Type of the normalization to apply to the heatmap.
-            Defaults to None.
     """
 
     def __init__(
@@ -56,14 +54,12 @@ class PatchcoreLightning(AnomalyModule):
         layers: List[str],
         coreset_sampling_ratio: float = 0.1,
         num_neighbors: int = 9,
-        normalization: Optional[str] = None,
     ) -> None:
 
         super().__init__(
             adaptive_threshold=adaptive_threshold,
             default_image_threshold=default_image_threshold,
             default_pixel_threshold=default_pixel_threshold,
-            normalization=normalization,
         )
         logger.info("Initializing Patchcore Lightning model.")
 
