@@ -15,10 +15,9 @@
 # and limitations under the License.
 
 import logging
-from typing import List, Union
+from typing import List, Optional
 
 import torch
-from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -29,18 +28,50 @@ logger = logging.getLogger(__name__)
 
 
 class DfmLightning(AnomalyModule):
-    """DFM: Deep Featured Kernel Density Estimation."""
+    """DFM: Deep Featured Kernel Density Estimation.
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]):
-        super().__init__(hparams)
+    Args:
+    adaptive_threshold (bool): Boolean to automatically choose adaptive threshold
+    default_image_threshold (float): Manual default image threshold
+    default_pixel_threshold (float): Manaul default pixel threshold
+    backbone (str): Backbone CNN network
+    layer (str): Layer to extract features from the backbone CNN
+            pooling_kernel_size (int, optional): Kernel size to pool features extracted from the CNN.
+                    Defaults to 4.
+            pca_level (float, optional): Ratio from which number of components for PCA are calculated.
+                    Defaults to 0.97.
+            score_type (str, optional): Scoring type. Options are `fre` and `nll`. Defaults to "fre".
+                    nll: for Gaussian modeling, fre: pca feature reconstruction error
+    normalization (Optional[str], optional): Type of the normalization to apply to the heatmap.
+        Defaults to None.
+    """
+
+    def __init__(
+        self,
+        adaptive_threshold: bool,
+        default_image_threshold: float,
+        default_pixel_threshold: float,
+        backbone: str,
+        layer: str,
+        pooling_kernel_size: int = 4,
+        pca_level: float = 0.97,
+        score_type: str = "fre",
+        normalization: Optional[str] = None,
+    ):
+        super().__init__(
+            adaptive_threshold=adaptive_threshold,
+            default_image_threshold=default_image_threshold,
+            default_pixel_threshold=default_pixel_threshold,
+            normalization=normalization,
+        )
         logger.info("Initializing DFKDE Lightning model.")
 
         self.model: DFMModel = DFMModel(
-            backbone=hparams.model.backbone,
-            layer=hparams.model.layer,
-            pooling_kernel_size=hparams.model.pooling_kernel_size,
-            n_comps=hparams.model.pca_level,
-            score_type=hparams.model.score_type,
+            backbone=backbone,
+            layer=layer,
+            pooling_kernel_size=pooling_kernel_size,
+            n_comps=pca_level,
+            score_type=score_type,
         )
         self.embeddings: List[Tensor] = []
 

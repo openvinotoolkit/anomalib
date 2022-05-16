@@ -22,6 +22,7 @@ from omegaconf import DictConfig, ListConfig
 from torch import load
 
 from anomalib.models.components import AnomalyModule
+from anomalib.models.dfm import DfmLightning
 from anomalib.models.padim import PadimLightning
 
 
@@ -47,10 +48,23 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     Returns:
         AnomalyModule: Anomaly Model
     """
-    torch_model_list: List[str] = ["stfpm", "dfkde", "dfm", "patchcore", "cflow", "ganomaly"]
+    torch_model_list: List[str] = ["stfpm", "dfkde", "patchcore", "cflow", "ganomaly"]
     model: AnomalyModule
 
-    if config.model.name == "padim":
+    if config.model.name == "dfm":
+        model = DfmLightning(
+            adaptive_threshold=config.model.threshold.adaptive,
+            default_image_threshold=config.model.threshold.image_default,
+            default_pixel_threshold=config.model.threshold.pixel_default,
+            backbone=config.model.backbone,
+            layer=config.model.layer,
+            pooling_kernel_size=config.model.pooling_kernel_size,
+            pca_level=config.model.pca_level,
+            score_type=config.model.score_type,
+            normalization=config.model.normalization_method,
+        )
+
+    elif config.model.name == "padim":
         model = PadimLightning(
             adaptive_threshold=config.model.threshold.adaptive,
             default_image_threshold=config.model.threshold.image_default,
@@ -60,7 +74,6 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
             backbone=config.model.backbone,
             normalization=config.model.normalization_method,
         )
-
     elif config.model.name in torch_model_list:
         module = import_module(f"anomalib.models.{config.model.name}")
         model = getattr(module, f"{config.model.name.capitalize()}Lightning")
