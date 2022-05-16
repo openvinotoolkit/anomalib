@@ -18,7 +18,7 @@ Paper https://arxiv.org/abs/2106.08265.
 # and limitations under the License.
 
 import logging
-from typing import List
+from typing import List, Optional, Tuple
 
 import torch
 from torch import Tensor
@@ -33,26 +33,47 @@ class PatchcoreLightning(AnomalyModule):
     """PatchcoreLightning Module to train PatchCore algorithm.
 
     Args:
-        layers (List[str]): Layers used for feature extraction
-        input_size (Tuple[int, int]): Input size for the model.
-        tile_size (Tuple[int, int]): Tile size
-        tile_stride (int): Stride for tiling
-        backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
-        apply_tiling (bool, optional): Apply tiling. Defaults to False.
+        adaptive_threshold (bool): Boolean to automatically choose adaptive threshold
+        default_image_threshold (float): Manual default image threshold
+        default_pixel_threshold (float): Manaul default pixel threshold
+        input_size (Tuple[int, int]): Size of the model input.
+        backbone (str): Backbone CNN network
+        layers (List[str]): Layers to extract features from the backbone CNN
+        coreset_sampling_ratio (float, optional): Coreset sampling ratio to subsample embedding.
+            Defaults to 0.1.
+        num_neighbors (int, optional): Number of nearest neighbors. Defaults to 9.
+        normalization (Optional[str], optional): Type of the normalization to apply to the heatmap.
+            Defaults to None.
     """
 
-    def __init__(self, hparams) -> None:
-        super().__init__(hparams)
+    def __init__(
+        self,
+        adaptive_threshold: bool,
+        default_image_threshold: float,
+        default_pixel_threshold: float,
+        input_size: Tuple[int, int],
+        backbone: str,
+        layers: List[str],
+        coreset_sampling_ratio: float = 0.1,
+        num_neighbors: int = 9,
+        normalization: Optional[str] = None,
+    ) -> None:
+
+        super().__init__(
+            adaptive_threshold=adaptive_threshold,
+            default_image_threshold=default_image_threshold,
+            default_pixel_threshold=default_pixel_threshold,
+            normalization=normalization,
+        )
         logger.info("Initializing Patchcore Lightning model.")
 
         self.model: PatchcoreModel = PatchcoreModel(
-            layers=hparams.model.layers,
-            input_size=hparams.model.input_size,
-            tile_size=hparams.dataset.tiling.tile_size,
-            tile_stride=hparams.dataset.tiling.stride,
-            backbone=hparams.model.backbone,
-            apply_tiling=hparams.dataset.tiling.apply,
+            input_size=input_size,
+            backbone=backbone,
+            layers=layers,
+            num_neighbors=num_neighbors,
         )
+        self.coreset_sampling_ratio = coreset_sampling_ratio
         self.embeddings: List[Tensor] = []
 
     def configure_optimizers(self) -> None:
@@ -91,8 +112,7 @@ class PatchcoreLightning(AnomalyModule):
         embeddings = torch.vstack(self.embeddings)
 
         logger.info("Applying core-set subsampling to get the embedding.")
-        sampling_ratio = self.hparams.model.coreset_sampling_ratio
-        self.model.subsample_embedding(embeddings, sampling_ratio)
+        self.model.subsample_embedding(embeddings, self.coreset_sampling_ratio)
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Get batch of anomaly maps from input image batch.

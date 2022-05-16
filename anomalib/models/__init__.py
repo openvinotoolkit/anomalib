@@ -25,6 +25,7 @@ from anomalib.models.components import AnomalyModule
 from anomalib.models.dfkde import DfkdeLightning
 from anomalib.models.dfm import DfmLightning
 from anomalib.models.padim import PadimLightning
+from anomalib.models.patchcore import PatchcoreLightning
 
 
 def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
@@ -49,7 +50,7 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     Returns:
         AnomalyModule: Anomaly Model
     """
-    torch_model_list: List[str] = ["stfpm", "patchcore", "cflow", "ganomaly"]
+    torch_model_list: List[str] = ["stfpm", "cflow", "ganomaly"]
     model: AnomalyModule
 
     if config.model.name == "dfkde":
@@ -87,6 +88,20 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
             backbone=config.model.backbone,
             normalization=config.model.normalization_method,
         )
+
+    elif config.model.name == "patchcore":
+        model = PatchcoreLightning(
+            adaptive_threshold=config.model.threshold.adaptive,
+            default_image_threshold=config.model.threshold.image_default,
+            default_pixel_threshold=config.model.threshold.pixel_default,
+            input_size=config.model.input_size,
+            backbone=config.model.backbone,
+            layers=config.model.layers,
+            coreset_sampling_ratio=config.model.coreset_sampling_ratio,
+            num_neighbors=config.model.num_neighbors,
+            normalization=config.model.normalization_method,
+        )
+
     elif config.model.name in torch_model_list:
         module = import_module(f"anomalib.models.{config.model.name}")
         model = getattr(module, f"{config.model.name.capitalize()}Lightning")
