@@ -15,10 +15,8 @@
 # and limitations under the License.
 
 import logging
-from typing import List, Union
+from typing import List, Optional
 
-from omegaconf.dictconfig import DictConfig
-from omegaconf.listconfig import ListConfig
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -32,18 +30,45 @@ class DfkdeLightning(AnomalyModule):
     """DFKDE: Deep Feature Kernel Density Estimation.
 
     Args:
-        hparams (Union[DictConfig, ListConfig]): Model params
+        adaptive_threshold (bool): Boolean to automatically choose adaptive threshold
+        default_image_threshold (float): Manual default image threshold
+        backbone (str): Pre-trained model backbone.
+        max_training_points (int, optional): Number of training points to fit the KDE model.
+            Defaults to 40000.
+        pre_processing (str, optional): Preprocess features before passing to KDE.
+            Options are between `norm` and `scale`. Defaults to "scale".
+        n_components (int, optional): Number of PCA components. Defaults to 16.
+        threshold_steepness (float, optional): Controls how quickly the value saturates around zero.
+            Defaults to 0.05.
+        threshold_offset (float, optional): Offset of the density function from 0. Defaults to 12.0.
+        normalization (Optional[str], optional): _description_. Defaults to None.
     """
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]):
-        super().__init__(hparams)
+    def __init__(
+        self,
+        adaptive_threshold: bool,
+        default_image_threshold: float,
+        backbone: str,
+        max_training_points: int = 40000,
+        pre_processing: str = "scale",
+        n_components: int = 16,
+        threshold_steepness: float = 0.05,
+        threshold_offset: int = 12,
+        normalization: Optional[str] = None,
+    ):
+
+        super().__init__(
+            adaptive_threshold=adaptive_threshold,
+            default_image_threshold=default_image_threshold,
+            normalization=normalization,
+        )
         logger.info("Initializing DFKDE Lightning model.")
-        threshold_steepness = 0.05
-        threshold_offset = 12
 
         self.model = DfkdeModel(
-            backbone=hparams.model.backbone,
-            filter_count=hparams.model.max_training_points,
+            backbone=backbone,
+            n_comps=n_components,
+            pre_processing=pre_processing,
+            filter_count=max_training_points,
             threshold_steepness=threshold_steepness,
             threshold_offset=threshold_offset,
         )
