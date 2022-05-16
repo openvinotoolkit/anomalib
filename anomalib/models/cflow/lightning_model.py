@@ -18,6 +18,7 @@ https://arxiv.org/pdf/2107.12571v1.pdf
 # and limitations under the License.
 
 import logging
+from typing import List, Optional, Tuple
 
 import einops
 import torch
@@ -37,20 +38,58 @@ __all__ = ["CflowLightning"]
 class CflowLightning(AnomalyModule):
     """PL Lightning Module for the CFLOW algorithm."""
 
-    def __init__(self, hparams):
-        super().__init__(hparams)
+    def __init__(
+        self,
+        adaptive_threshold: bool,
+        default_image_threshold: float,
+        default_pixel_threshold: float,
+        input_size: Tuple[int, int],
+        backbone: str,
+        layers: List[str],
+        fiber_batch_size: int = 64,
+        decoder: str = "freia-cflow",
+        condition_vector: int = 128,
+        coupling_blocks: int = 8,
+        clamp_alpha: float = 1.9,
+        permute_soft: bool = False,
+        learning_rate: float = 0.0001,
+        early_stopping_metric: str = "pixel_AUROC",
+        early_stopping_patience: int = 3,
+        early_stopping_mode: str = "max",
+        normalization: Optional[str] = None,
+    ):
+        super().__init__(
+            adaptive_threshold=adaptive_threshold,
+            default_image_threshold=default_image_threshold,
+            default_pixel_threshold=default_pixel_threshold,
+            normalization=normalization,
+        )
         logger.info("Initializing Cflow Lightning model.")
 
-        self.model: CflowModel = CflowModel(hparams)
+        self.model: CflowModel = CflowModel(
+            input_size=input_size,
+            backbone=backbone,
+            layers=layers,
+            fiber_batch_size=fiber_batch_size,
+            decoder=decoder,
+            condition_vector=condition_vector,
+            coupling_blocks=coupling_blocks,
+            clamp_alpha=clamp_alpha,
+            permute_soft=permute_soft,
+        )
+        self.learning_rate = learning_rate
+        self.early_stopping_metric = early_stopping_metric
+        self.early_stopping_patience = early_stopping_patience
+        self.early_stopping_mode = early_stopping_mode
         self.loss_val = 0
         self.automatic_optimization = False
 
     def configure_callbacks(self):
         """Configure model-specific callbacks."""
         early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
+            monitor=self.early_stopping_metric,
+            patience=self.early_stopping_patience,
+            mode=self.early_stopping_mode,
         )
         return [early_stopping]
 
@@ -66,7 +105,7 @@ class CflowLightning(AnomalyModule):
 
         optimizer = optim.Adam(
             params=decoders_parameters,
-            lr=self.hparams.model.lr,
+            lr=self.learning_rate,
         )
         return optimizer
 
