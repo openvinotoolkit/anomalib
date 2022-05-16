@@ -52,11 +52,11 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.callbacks: List[Callback]
 
         self.adaptive_threshold = False if adaptive_threshold is None else adaptive_threshold
-        default_image_threshold = 0.0 if default_image_threshold is None else default_image_threshold
-        default_pixel_threshold = 0.0 if default_pixel_threshold is None else default_pixel_threshold
+        self.default_image_threshold = 0.0 if default_image_threshold is None else default_image_threshold
+        self.default_pixel_threshold = 0.0 if default_pixel_threshold is None else default_pixel_threshold
 
-        self.image_threshold = AdaptiveThreshold(default_image_threshold).cpu()
-        self.pixel_threshold = AdaptiveThreshold(default_pixel_threshold).cpu()
+        self.image_threshold = AdaptiveThreshold(self.default_image_threshold).cpu()
+        self.pixel_threshold = AdaptiveThreshold(self.default_pixel_threshold).cpu()
 
         if normalization in [None, "none", "min_max"]:
             self.min_max = MinMax().cpu()
