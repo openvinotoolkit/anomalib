@@ -24,6 +24,7 @@ from torch import load
 from anomalib.models.components import AnomalyModule
 from anomalib.models.dfkde import DfkdeLightning
 from anomalib.models.dfm import DfmLightning
+from anomalib.models.ganomaly import GanomalyLightning
 from anomalib.models.padim import PadimLightning
 from anomalib.models.patchcore import PatchcoreLightning
 from anomalib.models.stfpm import StfpmLightning
@@ -77,6 +78,27 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
             pca_level=config.model.pca_level,
             score_type=config.model.score_type,
             normalization=config.model.normalization_method,
+        )
+
+    elif config.model.name == "ganomaly":
+        model = GanomalyLightning(
+            adaptive_threshold=config.model.threshold.adaptive,
+            default_image_threshold=config.model.threshold.image_default,
+            batch_size=config.dataset.train_batch_size,
+            input_size=config.model.input_size,
+            n_features=config.model.n_features,
+            latent_vec_size=config.model.latent_vec_size,
+            extra_layers=config.model.extra_layers,
+            add_final_conv_layer=config.model.add_final_conv,
+            wadv=config.model.wadv,
+            wcon=config.model.wcon,
+            wenc=config.model.wenc,
+            learning_rate=config.model.lr,
+            beta1=config.model.beta1,
+            beta2=config.model.beta2,
+            early_stopping_metric=config.model.early_stopping.metric,
+            early_stopping_patience=config.model.early_stopping.patience,
+            early_stopping_mode=config.model.early_stopping.mode,
         )
 
     elif config.model.name == "padim":

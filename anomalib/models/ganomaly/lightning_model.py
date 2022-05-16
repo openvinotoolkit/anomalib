@@ -18,10 +18,9 @@ https://arxiv.org/abs/1805.06725
 # and limitations under the License.
 
 import logging
-from typing import Dict, List, Union
+from typing import Dict, List, Tuple
 
 import torch
-from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
 from torch import Tensor, optim
 
@@ -37,27 +36,73 @@ class GanomalyLightning(AnomalyModule):
     """PL Lightning Module for the GANomaly Algorithm.
 
     Args:
-        hparams (Union[DictConfig, ListConfig]): Model parameters
+        adaptive_threshold (bool): Boolean to automatically choose adaptive threshold
+        default_image_threshold (float): Manual default image threshold
+        batch_size (int): Batch size.
+        input_size (Tuple[int,int]): Input dimension.
+        n_features (int): Number of features layers in the CNNs.
+        latent_vec_size (int): Size of autoencoder latent vector.
+        extra_layers (int, optional): Number of extra layers for encoder/decoder. Defaults to 0.
+        add_final_conv_layer (bool, optional): Add convolution layer at the end. Defaults to True.
+        wadv (int, optional): Weight for adversarial loss. Defaults to 1.
+        wcon (int, optional): Image regeneration weight. Defaults to 50.
+        wenc (int, optional): Latent vector encoder weight. Defaults to 1.
+        learning_rate (float, optional): Learning rate. Defaults to 0.0002.
+        beta1 (float, optional): Beta1 value for ADAM optimizer. Defaults to 0.5.
+        beta2 (float, optional): Beta2 value for ADAM optimizer. Defaults to 0.999.
+        early_stopping_metric (str, optional): Early stopping metric. Defaults to "image_AUROC".
+        early_stopping_patience (int, optional): Early stopping patience. Defaults to 3.
+        early_stopping_mode (str, optional): Early stopping mode. Defaults to "max".
     """
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]):
-        super().__init__(hparams)
+    def __init__(
+        self,
+        adaptive_threshold: bool,
+        default_image_threshold: float,
+        batch_size: int,
+        input_size: Tuple[int, int],
+        n_features: int,
+        latent_vec_size: int,
+        extra_layers: int = 0,
+        add_final_conv_layer: bool = True,
+        wadv: int = 1,
+        wcon: int = 50,
+        wenc: int = 1,
+        learning_rate: float = 0.0002,
+        beta1: float = 0.5,
+        beta2: float = 0.999,
+        early_stopping_metric: str = "image_AUROC",
+        early_stopping_patience: int = 3,
+        early_stopping_mode: str = "max",
+    ):
+
+        super().__init__(
+            adaptive_threshold=adaptive_threshold,
+            default_image_threshold=default_image_threshold,
+        )
         logger.info("Initializing Ganomaly Lightning model.")
 
         self.model: GanomalyModel = GanomalyModel(
-            input_size=hparams.model.input_size,
+            input_size=input_size,
             num_input_channels=3,
-            n_features=hparams.model.n_features,
-            latent_vec_size=hparams.model.latent_vec_size,
-            extra_layers=hparams.model.extra_layers,
-            add_final_conv_layer=hparams.model.add_final_conv,
-            wadv=self.hparams.model.wadv,
-            wcon=self.hparams.model.wcon,
-            wenc=self.hparams.model.wenc,
+            n_features=n_features,
+            latent_vec_size=latent_vec_size,
+            extra_layers=extra_layers,
+            add_final_conv_layer=add_final_conv_layer,
+            wadv=wadv,
+            wcon=wcon,
+            wenc=wenc,
         )
 
-        self.real_label = torch.ones(size=(self.hparams.dataset.train_batch_size,), dtype=torch.float32)
-        self.fake_label = torch.zeros(size=(self.hparams.dataset.train_batch_size,), dtype=torch.float32)
+        self.real_label = torch.ones(size=(batch_size,), dtype=torch.float32)
+        self.fake_label = torch.zeros(size=(batch_size,), dtype=torch.float32)
+
+        self.learning_rate = learning_rate
+        self.beta1 = beta1
+        self.beta2 = beta2
+        self.early_stopping_metric = early_stopping_metric
+        self.early_stopping_patience = early_stopping_patience
+        self.early_stopping_mode = early_stopping_mode
 
         self.min_scores: Tensor = torch.tensor(float("inf"), dtype=torch.float32)  # pylint: disable=not-callable
         self.max_scores: Tensor = torch.tensor(float("-inf"), dtype=torch.float32)  # pylint: disable=not-callable
@@ -70,9 +115,9 @@ class GanomalyLightning(AnomalyModule):
     def configure_callbacks(self):
         """Configure model-specific callbacks."""
         early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
+            monitor=self.early_stopping_metric,
+            patience=self.early_stopping_patience,
+            mode=self.early_stopping_mode,
         )
         return [early_stopping]
 
@@ -84,13 +129,13 @@ class GanomalyLightning(AnomalyModule):
         """
         optimizer_d = optim.Adam(
             self.model.discriminator.parameters(),
-            lr=self.hparams.model.lr,
-            betas=(self.hparams.model.beta1, self.hparams.model.beta2),
+            lr=self.learning_rate,
+            betas=(self.beta1, self.beta2),
         )
         optimizer_g = optim.Adam(
             self.model.generator.parameters(),
-            lr=self.hparams.model.lr,
-            betas=(self.hparams.model.beta1, self.hparams.model.beta2),
+            lr=self.learning_rate,
+            betas=(self.beta1, self.beta2),
         )
         return [optimizer_d, optimizer_g]
 
