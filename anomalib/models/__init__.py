@@ -55,7 +55,6 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
         model = DfmLightning(
             adaptive_threshold=config.model.threshold.adaptive,
             default_image_threshold=config.model.threshold.image_default,
-            default_pixel_threshold=config.model.threshold.pixel_default,
             backbone=config.model.backbone,
             layer=config.model.layer,
             pooling_kernel_size=config.model.pooling_kernel_size,
