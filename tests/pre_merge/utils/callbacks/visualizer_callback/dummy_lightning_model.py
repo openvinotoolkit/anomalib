@@ -1,8 +1,10 @@
 from pathlib import Path
-from typing import Optional
+from typing import Union
 
 import pytorch_lightning as pl
 import torch
+from omegaconf.dictconfig import DictConfig
+from omegaconf.listconfig import ListConfig
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
 
@@ -39,21 +41,11 @@ class DummyModel(nn.Module):
 
 
 class DummyModule(AnomalyModule):
-    """A dummy module which calls visualizer callback on fake images and masks."""
+    """A dummy model which calls visualizer callback on fake images and
+    masks."""
 
-    def __init__(
-        self,
-        adaptive_threshold: bool,
-        default_image_threshold: float,
-        default_pixel_threshold: float,
-        normalization: Optional[str] = None,
-    ):
-        super().__init__(
-            adaptive_threshold=adaptive_threshold,
-            default_image_threshold=default_image_threshold,
-            default_pixel_threshold=default_pixel_threshold,
-            normalization=normalization,
-        )
+    def __init__(self, hparams: Union[DictConfig, ListConfig]):
+        super().__init__(hparams)
         self.model = DummyModel()
         self.task = "segmentation"
         self.callbacks = [VisualizerCallback(task=self.task)]  # test if this is removed

@@ -13,11 +13,7 @@ from .dummy_lightning_model import DummyDataModule, DummyModule
 
 
 def get_dummy_module(config):
-    return DummyModule(
-        adaptive_threshold=config.model.threshold.adaptive,
-        default_image_threshold=config.model.threshold.image_default,
-        default_pixel_threshold=config.model.threshold.pixel_default,
-    )
+    return DummyModule(config)
 
 
 def get_dummy_logger(config, tempdir):
