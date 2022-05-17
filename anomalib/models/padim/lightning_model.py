@@ -18,9 +18,11 @@ Paper https://arxiv.org/abs/2011.08785
 # and limitations under the License.
 
 import logging
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import torch
+from omegaconf import DictConfig, ListConfig
+from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -28,10 +30,11 @@ from anomalib.models.padim.torch_model import PadimModel
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["PadimLightning"]
+__all__ = ["Padim", "PadimLightning"]
 
 
-class PadimLightning(AnomalyModule):
+@MODEL_REGISTRY
+class Padim(AnomalyModule):
     """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
 
     Args:
@@ -120,3 +123,21 @@ class PadimLightning(AnomalyModule):
 
         batch["anomaly_maps"] = self.model(batch["image"])
         return batch
+
+
+class PadimLightning(Padim):
+    """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
+
+    Args:
+        hparams (Union[DictConfig, ListConfig]): Model params
+    """
+
+    def __init__(self, hparams: Union[DictConfig, ListConfig]):
+        super().__init__(
+            adaptive_threshold=hparams.model.threshold.adaptive,
+            default_image_threshold=hparams.model.threshold.image_default,
+            default_pixel_threshold=hparams.model.threshold.pixel_default,
+            input_size=hparams.model.input_size,
+            layers=hparams.model.layers,
+            backbone=hparams.model.backbone,
+        )
