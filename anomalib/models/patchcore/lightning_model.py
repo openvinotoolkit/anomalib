@@ -21,6 +21,7 @@ import logging
 from typing import List, Tuple
 
 import torch
+from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -29,7 +30,8 @@ from anomalib.models.patchcore.torch_model import PatchcoreModel
 logger = logging.getLogger(__name__)
 
 
-class PatchcoreLightning(AnomalyModule):
+@MODEL_REGISTRY
+class Patchcore(AnomalyModule):
     """PatchcoreLightning Module to train PatchCore algorithm.
 
     Args:
@@ -127,3 +129,23 @@ class PatchcoreLightning(AnomalyModule):
         batch["pred_scores"] = anomaly_score.unsqueeze(0)
 
         return batch
+
+
+class PatchcoreLightning(Patchcore):
+    """PatchcoreLightning Module to train PatchCore algorithm.
+
+    Args:
+        hparams (Union[DictConfig, ListConfig]): Model params
+    """
+
+    def __init__(self, hparams) -> None:
+        super().__init__(
+            adaptive_threshold=hparams.model.threshold.adaptive,
+            default_image_threshold=hparams.model.threshold.image_default,
+            default_pixel_threshold=hparams.model.threshold.pixel_default,
+            input_size=hparams.model.input_size,
+            backbone=hparams.model.backbone,
+            layers=hparams.model.layers,
+            coreset_sampling_ratio=hparams.model.coreset_sampling_ratio,
+            num_neighbors=hparams.model.num_neighbors,
+        )
