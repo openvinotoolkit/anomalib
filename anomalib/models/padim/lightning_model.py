@@ -141,3 +141,5 @@ class PadimLightning(Padim):
             layers=hparams.model.layers,
             backbone=hparams.model.backbone,
         )
+        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
+        self.save_hyperparameters(hparams)
