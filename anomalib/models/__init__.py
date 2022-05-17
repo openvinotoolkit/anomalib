@@ -26,7 +26,6 @@ from anomalib.models.components import AnomalyModule
 from anomalib.models.dfkde import DfkdeLightning
 from anomalib.models.dfm import DfmLightning
 from anomalib.models.ganomaly import GanomalyLightning
-from anomalib.models.stfpm import StfpmLightning
 
 
 def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
@@ -38,10 +37,6 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     `anomalib.models.<model_name>.model.<Model_name>Lightning`
     `anomalib.models.stfpm.model.StfpmLightning`
 
-    and for OpenVINO
-    `anomalib.models.<model-name>.model.<Model_name>OpenVINO`
-    `anomalib.models.stfpm.model.StfpmOpenVINO`
-
     Args:
         config (Union[DictConfig, ListConfig]): Config.yaml loaded using OmegaConf
 
@@ -51,7 +46,7 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     Returns:
         AnomalyModule: Anomaly Model
     """
-    model_list: List[str] = ["padim", "patchcore"]
+    model_list: List[str] = ["padim", "patchcore", "stfpm"]
     model: AnomalyModule
 
     if config.model.name in model_list:
@@ -117,22 +112,6 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
             learning_rate=config.model.lr,
             beta1=config.model.beta1,
             beta2=config.model.beta2,
-            early_stopping_metric=config.model.early_stopping.metric,
-            early_stopping_patience=config.model.early_stopping.patience,
-            early_stopping_mode=config.model.early_stopping.mode,
-        )
-
-    elif config.model.name == "stfpm":
-        model = StfpmLightning(
-            adaptive_threshold=config.model.threshold.adaptive,
-            default_image_threshold=config.model.threshold.image_default,
-            default_pixel_threshold=config.model.threshold.pixel_default,
-            input_size=config.model.input_size,
-            backbone=config.model.backbone,
-            layers=config.model.layers,
-            learning_rate=config.model.lr,
-            momentum=config.model.momentum,
-            weight_decay=config.model.weight_decay,
             early_stopping_metric=config.model.early_stopping.metric,
             early_stopping_patience=config.model.early_stopping.patience,
             early_stopping_mode=config.model.early_stopping.mode,

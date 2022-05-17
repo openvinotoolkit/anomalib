@@ -18,10 +18,12 @@ https://arxiv.org/abs/2103.04257
 # and limitations under the License.
 
 import logging
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import torch
+from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
+from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import optim
 
 from anomalib.models.components import AnomalyModule
@@ -32,7 +34,8 @@ logger = logging.getLogger(__name__)
 __all__ = ["StfpmLightning"]
 
 
-class StfpmLightning(AnomalyModule):
+@MODEL_REGISTRY
+class Stfpm(AnomalyModule):
     """PL Lightning Module for the STFPM algorithm.
 
     Args:
@@ -42,12 +45,6 @@ class StfpmLightning(AnomalyModule):
         input_size (Tuple[int, int]): Size of the model input.
         backbone (str): Backbone CNN network
         layers (List[str]): Layers to extract features from the backbone CNN
-        learning_rate (float, optional): Learning rate. Defaults to 0.4.
-        momentum (float, optional): Momentum. Defaults to 0.9.
-        weight_decay (float, optional): Weight decay. Defaults to 0.0001.
-        early_stopping_metric (str, optional): Early stopping metric. Defaults to "pixel_AUROC".
-        early_stopping_patience (int, optional): Early stopping patience. Defaults to 3.
-        early_stopping_mode (str, optional): Early stopping mode. Defaults to "max".
     """
 
     def __init__(
@@ -58,12 +55,6 @@ class StfpmLightning(AnomalyModule):
         input_size: Tuple[int, int],
         backbone: str,
         layers: List[str],
-        learning_rate: float = 0.4,
-        momentum: float = 0.9,
-        weight_decay: float = 0.0001,
-        early_stopping_metric: str = "pixel_AUROC",
-        early_stopping_patience: int = 3,
-        early_stopping_mode: str = "max",
     ):
 
         super().__init__(
@@ -78,35 +69,7 @@ class StfpmLightning(AnomalyModule):
             backbone=backbone,
             layers=layers,
         )
-        self.learning_rate = learning_rate
-        self.momentum = momentum
-        self.weight_decay = weight_decay
-        self.early_stopping_metric = early_stopping_metric
-        self.early_stopping_patience = early_stopping_patience
-        self.early_stopping_mode = early_stopping_mode
         self.loss_val = 0
-
-    def configure_callbacks(self):
-        """Configure model-specific callbacks."""
-        early_stopping = EarlyStopping(
-            monitor=self.early_stopping_metric,
-            patience=self.early_stopping_patience,
-            mode=self.early_stopping_mode,
-        )
-        return [early_stopping]
-
-    def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configure optimizers by creating an SGD optimizer.
-
-        Returns:
-            (Optimizer): SGD optimizer
-        """
-        return optim.SGD(
-            params=self.model.student_model.parameters(),
-            lr=self.learning_rate,
-            momentum=self.momentum,
-            weight_decay=self.weight_decay,
-        )
 
     def training_step(self, batch, _):  # pylint: disable=arguments-differ
         """Training Step of STFPM.
@@ -143,3 +106,45 @@ class StfpmLightning(AnomalyModule):
         batch["anomaly_maps"] = self.model(batch["image"])
 
         return batch
+
+
+class StfpmLightning(Stfpm):
+    """PL Lightning Module for the STFPM algorithm.
+
+    Args:
+        hparams (Union[DictConfig, ListConfig]): Model params
+    """
+
+    def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
+        super().__init__(
+            adaptive_threshold=hparams.model.threshold.adaptive,
+            default_image_threshold=hparams.model.threshold.image_default,
+            default_pixel_threshold=hparams.model.threshold.pixel_default,
+            input_size=hparams.model.input_size,
+            backbone=hparams.model.backbone,
+            layers=hparams.model.layers,
+        )
+        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
+        self.save_hyperparameters(hparams)
+
+    def configure_callbacks(self):
+        """Configure model-specific callbacks."""
+        early_stopping = EarlyStopping(
+            monitor=self.hparams.model.early_stopping.metric,
+            patience=self.hparams.model.early_stopping.patience,
+            mode=self.hparams.model.early_stopping.mode,
+        )
+        return [early_stopping]
+
+    def configure_optimizers(self) -> torch.optim.Optimizer:
+        """Configure optimizers by creating an SGD optimizer.
+
+        Returns:
+            (Optimizer): SGD optimizer
+        """
+        return optim.SGD(
+            params=self.model.student_model.parameters(),
+            lr=self.hparams.model.lr,
+            momentum=self.hparams.model.momentum,
+            weight_decay=self.hparams.model.weight_decay,
+        )
