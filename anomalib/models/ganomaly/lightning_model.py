@@ -18,10 +18,12 @@ https://arxiv.org/abs/1805.06725
 # and limitations under the License.
 
 import logging
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 import torch
+from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
+from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor, optim
 
 from anomalib.data.utils.image import pad_nextpow2
@@ -32,7 +34,8 @@ from .torch_model import GanomalyModel
 logger = logging.getLogger(__name__)
 
 
-class GanomalyLightning(AnomalyModule):
+@MODEL_REGISTRY
+class Ganomaly(AnomalyModule):
     """PL Lightning Module for the GANomaly Algorithm.
 
     Args:
@@ -47,12 +50,6 @@ class GanomalyLightning(AnomalyModule):
         wadv (int, optional): Weight for adversarial loss. Defaults to 1.
         wcon (int, optional): Image regeneration weight. Defaults to 50.
         wenc (int, optional): Latent vector encoder weight. Defaults to 1.
-        learning_rate (float, optional): Learning rate. Defaults to 0.0002.
-        beta1 (float, optional): Beta1 value for ADAM optimizer. Defaults to 0.5.
-        beta2 (float, optional): Beta2 value for ADAM optimizer. Defaults to 0.999.
-        early_stopping_metric (str, optional): Early stopping metric. Defaults to "image_AUROC".
-        early_stopping_patience (int, optional): Early stopping patience. Defaults to 3.
-        early_stopping_mode (str, optional): Early stopping mode. Defaults to "max".
     """
 
     def __init__(
@@ -68,12 +65,6 @@ class GanomalyLightning(AnomalyModule):
         wadv: int = 1,
         wcon: int = 50,
         wenc: int = 1,
-        learning_rate: float = 0.0002,
-        beta1: float = 0.5,
-        beta2: float = 0.999,
-        early_stopping_metric: str = "image_AUROC",
-        early_stopping_patience: int = 3,
-        early_stopping_mode: str = "max",
     ):
 
         super().__init__(
@@ -97,13 +88,6 @@ class GanomalyLightning(AnomalyModule):
         self.real_label = torch.ones(size=(batch_size,), dtype=torch.float32)
         self.fake_label = torch.zeros(size=(batch_size,), dtype=torch.float32)
 
-        self.learning_rate = learning_rate
-        self.beta1 = beta1
-        self.beta2 = beta2
-        self.early_stopping_metric = early_stopping_metric
-        self.early_stopping_patience = early_stopping_patience
-        self.early_stopping_mode = early_stopping_mode
-
         self.min_scores: Tensor = torch.tensor(float("inf"), dtype=torch.float32)  # pylint: disable=not-callable
         self.max_scores: Tensor = torch.tensor(float("-inf"), dtype=torch.float32)  # pylint: disable=not-callable
 
@@ -111,33 +95,6 @@ class GanomalyLightning(AnomalyModule):
         """Resets min_max scores."""
         self.min_scores = torch.tensor(float("inf"), dtype=torch.float32)  # pylint: disable=not-callable
         self.max_scores = torch.tensor(float("-inf"), dtype=torch.float32)  # pylint: disable=not-callable
-
-    def configure_callbacks(self):
-        """Configure model-specific callbacks."""
-        early_stopping = EarlyStopping(
-            monitor=self.early_stopping_metric,
-            patience=self.early_stopping_patience,
-            mode=self.early_stopping_mode,
-        )
-        return [early_stopping]
-
-    def configure_optimizers(self) -> List[optim.Optimizer]:
-        """Configure optimizers for generator and discriminator.
-
-        Returns:
-            List[optim.Optimizer]: Adam optimizers for discriminator and generator.
-        """
-        optimizer_d = optim.Adam(
-            self.model.discriminator.parameters(),
-            lr=self.learning_rate,
-            betas=(self.beta1, self.beta2),
-        )
-        optimizer_g = optim.Adam(
-            self.model.generator.parameters(),
-            lr=self.learning_rate,
-            betas=(self.beta1, self.beta2),
-        )
-        return [optimizer_d, optimizer_g]
 
     def training_step(self, batch, _, optimizer_idx):  # pylint: disable=arguments-differ
         """Training step.
@@ -228,3 +185,56 @@ class GanomalyLightning(AnomalyModule):
             self.max_scores.to(scores.device) - self.min_scores.to(scores.device)
         )
         return scores
+
+
+class GanomalyLightning(Ganomaly):
+    """PL Lightning Module for the GANomaly Algorithm.
+
+    Args:
+        hparams (Union[DictConfig, ListConfig]): Model params
+    """
+
+    def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
+
+        super().__init__(
+            adaptive_threshold=hparams.model.threshold.adaptive,
+            default_image_threshold=hparams.model.threshold.image_default,
+            batch_size=hparams.dataset.train_batch_size,
+            input_size=hparams.model.input_size,
+            n_features=hparams.model.n_features,
+            latent_vec_size=hparams.model.latent_vec_size,
+            extra_layers=hparams.model.extra_layers,
+            add_final_conv_layer=hparams.model.add_final_conv,
+            wadv=hparams.model.wadv,
+            wcon=hparams.model.wcon,
+            wenc=hparams.model.wenc,
+        )
+        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
+        self.save_hyperparameters(hparams)
+
+    def configure_callbacks(self):
+        """Configure model-specific callbacks."""
+        early_stopping = EarlyStopping(
+            monitor=self.hparams.model.early_stopping.metric,
+            patience=self.hparams.model.early_stopping.patience,
+            mode=self.hparams.model.early_stopping.mode,
+        )
+        return [early_stopping]
+
+    def configure_optimizers(self) -> List[optim.Optimizer]:
+        """Configure optimizers for generator and discriminator.
+
+        Returns:
+            List[optim.Optimizer]: Adam optimizers for discriminator and generator.
+        """
+        optimizer_d = optim.Adam(
+            self.model.discriminator.parameters(),
+            lr=self.hparams.model.lr,
+            betas=(self.hparams.model.beta1, self.hparams.model.beta2),
+        )
+        optimizer_g = optim.Adam(
+            self.model.generator.parameters(),
+            lr=self.hparams.model.lr,
+            betas=(self.hparams.model.beta1, self.hparams.model.beta2),
+        )
+        return [optimizer_d, optimizer_g]

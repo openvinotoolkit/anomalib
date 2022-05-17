@@ -15,9 +15,11 @@
 # and limitations under the License.
 
 import logging
-from typing import List
+from typing import List, Union
 
 import torch
+from omegaconf import DictConfig, ListConfig
+from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -27,7 +29,8 @@ from .torch_model import DFMModel
 logger = logging.getLogger(__name__)
 
 
-class DfmLightning(AnomalyModule):
+@MODEL_REGISTRY
+class Dfm(AnomalyModule):
     """DFM: Deep Featured Kernel Density Estimation.
 
     Args:
@@ -118,3 +121,22 @@ class DfmLightning(AnomalyModule):
         batch["pred_scores"] = self.model(batch["image"])
 
         return batch
+
+
+class DfmLightning(Dfm):
+    """DFM: Deep Featured Kernel Density Estimation.
+
+    Args:
+        hparams (Union[DictConfig, ListConfig]): Model params
+    """
+
+    def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
+        super().__init__(
+            adaptive_threshold=hparams.model.threshold.adaptive,
+            default_image_threshold=hparams.model.threshold.image_default,
+            backbone=hparams.model.backbone,
+            layer=hparams.model.layer,
+            pooling_kernel_size=hparams.model.pooling_kernel_size,
+            pca_level=hparams.model.pca_level,
+            score_type=hparams.model.score_type,
+        )

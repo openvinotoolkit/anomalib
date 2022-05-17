@@ -22,8 +22,6 @@ from omegaconf import DictConfig, ListConfig
 from torch import load
 
 from anomalib.models.components import AnomalyModule
-from anomalib.models.dfm import DfmLightning
-from anomalib.models.ganomaly import GanomalyLightning
 
 
 def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
@@ -44,44 +42,12 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     Returns:
         AnomalyModule: Anomaly Model
     """
-    model_list: List[str] = ["cflow", "dfkde", "padim", "patchcore", "stfpm"]
+    model_list: List[str] = ["cflow", "dfkde", "dfm", "ganomaly", "padim", "patchcore", "stfpm"]
     model: AnomalyModule
 
     if config.model.name in model_list:
         module = import_module(f"anomalib.models.{config.model.name}")
         model = getattr(module, f"{config.model.name.capitalize()}Lightning")(config)
-
-    elif config.model.name == "dfm":
-        model = DfmLightning(
-            adaptive_threshold=config.model.threshold.adaptive,
-            default_image_threshold=config.model.threshold.image_default,
-            backbone=config.model.backbone,
-            layer=config.model.layer,
-            pooling_kernel_size=config.model.pooling_kernel_size,
-            pca_level=config.model.pca_level,
-            score_type=config.model.score_type,
-        )
-
-    elif config.model.name == "ganomaly":
-        model = GanomalyLightning(
-            adaptive_threshold=config.model.threshold.adaptive,
-            default_image_threshold=config.model.threshold.image_default,
-            batch_size=config.dataset.train_batch_size,
-            input_size=config.model.input_size,
-            n_features=config.model.n_features,
-            latent_vec_size=config.model.latent_vec_size,
-            extra_layers=config.model.extra_layers,
-            add_final_conv_layer=config.model.add_final_conv,
-            wadv=config.model.wadv,
-            wcon=config.model.wcon,
-            wenc=config.model.wenc,
-            learning_rate=config.model.lr,
-            beta1=config.model.beta1,
-            beta2=config.model.beta2,
-            early_stopping_metric=config.model.early_stopping.metric,
-            early_stopping_patience=config.model.early_stopping.patience,
-            early_stopping_mode=config.model.early_stopping.mode,
-        )
 
     else:
         raise ValueError(f"Unknown model {config.model.name}!")
