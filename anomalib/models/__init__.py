@@ -21,7 +21,6 @@ from typing import List, Union
 from omegaconf import DictConfig, ListConfig
 from torch import load
 
-from anomalib.models.cflow import CflowLightning
 from anomalib.models.components import AnomalyModule
 from anomalib.models.dfkde import DfkdeLightning
 from anomalib.models.dfm import DfmLightning
@@ -46,32 +45,12 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     Returns:
         AnomalyModule: Anomaly Model
     """
-    model_list: List[str] = ["padim", "patchcore", "stfpm"]
+    model_list: List[str] = ["cflow", "padim", "patchcore", "stfpm"]
     model: AnomalyModule
 
     if config.model.name in model_list:
         module = import_module(f"anomalib.models.{config.model.name}")
         model = getattr(module, f"{config.model.name.capitalize()}Lightning")(config)
-
-    elif config.model.name == "cflow":
-        model = CflowLightning(
-            adaptive_threshold=config.model.threshold.adaptive,
-            default_image_threshold=config.model.threshold.image_default,
-            default_pixel_threshold=config.model.threshold.pixel_default,
-            input_size=config.model.input_size,
-            backbone=config.model.backbone,
-            layers=config.model.layers,
-            fiber_batch_size=config.dataset.fiber_batch_size,
-            decoder=config.model.decoder,
-            condition_vector=config.model.condition_vector,
-            coupling_blocks=config.model.coupling_blocks,
-            clamp_alpha=config.model.clamp_alpha,
-            permute_soft=config.model.soft_permutation,
-            learning_rate=config.model.lr,
-            early_stopping_metric=config.model.early_stopping.metric,
-            early_stopping_patience=config.model.early_stopping.patience,
-            early_stopping_mode=config.model.early_stopping.mode,
-        )
 
     elif config.model.name == "dfkde":
         model = DfkdeLightning(
