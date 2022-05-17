@@ -22,7 +22,6 @@ from omegaconf import DictConfig, ListConfig
 from torch import load
 
 from anomalib.models.components import AnomalyModule
-from anomalib.models.dfkde import DfkdeLightning
 from anomalib.models.dfm import DfmLightning
 from anomalib.models.ganomaly import GanomalyLightning
 
@@ -45,24 +44,12 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     Returns:
         AnomalyModule: Anomaly Model
     """
-    model_list: List[str] = ["cflow", "padim", "patchcore", "stfpm"]
+    model_list: List[str] = ["cflow", "dfkde", "padim", "patchcore", "stfpm"]
     model: AnomalyModule
 
     if config.model.name in model_list:
         module = import_module(f"anomalib.models.{config.model.name}")
         model = getattr(module, f"{config.model.name.capitalize()}Lightning")(config)
-
-    elif config.model.name == "dfkde":
-        model = DfkdeLightning(
-            adaptive_threshold=config.model.threshold.adaptive,
-            default_image_threshold=config.model.threshold.image_default,
-            backbone=config.model.backbone,
-            max_training_points=config.model.max_training_points,
-            pre_processing=config.model.pre_processing,
-            n_components=config.model.n_components,
-            threshold_steepness=config.model.threshold_steepness,
-            threshold_offset=config.model.threshold_offset,
-        )
 
     elif config.model.name == "dfm":
         model = DfmLightning(
