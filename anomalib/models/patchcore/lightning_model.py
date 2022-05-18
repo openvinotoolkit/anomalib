@@ -27,7 +27,6 @@ from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.patchcore.torch_model import PatchcoreModel
-from anomalib.utils.metrics import get_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -153,8 +152,3 @@ class PatchcoreLightning(Patchcore):
         )
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(hparams)
-
-        # TODO: Create Metrics callback to which the following will be moved
-        self.image_metrics, self.pixel_metrics = get_metrics(hparams)
-        self.image_metrics.set_threshold(hparams.model.threshold.image_default)
-        self.pixel_metrics.set_threshold(hparams.model.threshold.pixel_default)
