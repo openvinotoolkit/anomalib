@@ -45,8 +45,8 @@ class MetricsCallback(Callback):
             image_metric_names (Optional[List[str]]): List of image-level metrics.
             pixel_metric_names (Optional[List[str]]): List of pixel-level metrics.
         """
-        self.image_metric_names = image_metric_names
-        self.pixel_metric_names = pixel_metric_names
+        self.image_metric_names = image_metric_names if image_metric_names else []
+        self.pixel_metric_names = pixel_metric_names if pixel_metric_names else []
 
     def setup(self, _trainer: pl.Trainer, pl_module: pl.LightningModule, stage: Optional[str] = None) -> None:
         """Setup image and pixel-level AnomalibMetricsCollection within Anomalib Model.
@@ -60,12 +60,9 @@ class MetricsCallback(Callback):
             ValueError: When Anomalib Model doesn't contain ``Tiler`` object, it means the model
                 doesn not support tiling operation.
         """
-        image_metric_names = [] if self.image_metric_names is None else self.image_metric_names
-        pixel_metric_names = [] if self.pixel_metric_names is None else self.pixel_metric_names
-
         if isinstance(pl_module, AnomalyModule):
-            pl_module.image_metrics = metric_collection_from_names(image_metric_names, "image_")
-            pl_module.pixel_metrics = metric_collection_from_names(pixel_metric_names, "pixel_")
+            pl_module.image_metrics = metric_collection_from_names(self.image_metric_names, "image_")
+            pl_module.pixel_metrics = metric_collection_from_names(self.pixel_metric_names, "pixel_")
 
             pl_module.image_metrics.set_threshold(pl_module.default_image_threshold)
             pl_module.pixel_metrics.set_threshold(pl_module.default_pixel_threshold)
