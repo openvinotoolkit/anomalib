@@ -68,8 +68,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         # Create placeholders for image and pixel metrics.
         # If set from the config file, MetricsCallback will
         #   create the metric collections upon setup.
-        self.image_metrics: Optional[AnomalibMetricCollection] = None
-        self.pixel_metrics: Optional[AnomalibMetricCollection] = None
+        self.image_metrics: AnomalibMetricCollection
+        self.pixel_metrics: AnomalibMetricCollection
 
     def forward(self, batch):  # pylint: disable=arguments-differ
         """Forward-pass input tensor to the module.
