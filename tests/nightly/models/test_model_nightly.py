@@ -91,7 +91,7 @@ class TestModel:
         if "optimization" in config.keys() and "nncf" in config.optimization.keys() and config.optimization.nncf.apply:
             threshold = threshold.nncf
         if not (
-            np.isclose(results["image_AUROC"], threshold["image_AUROC"], rtol=0.02)
+            np.isclose(results["image_AUROC"], threshold["image_AUROC"], rtol=0.05)
             or (results["image_AUROC"] >= threshold["image_AUROC"])
         ):
             raise AssertionError(
@@ -100,7 +100,7 @@ class TestModel:
 
         if config.dataset.task == "segmentation":
             if not (
-                np.isclose(results["pixel_AUROC"], threshold["pixel_AUROC"], rtol=0.02)
+                np.isclose(results["pixel_AUROC"], threshold["pixel_AUROC"], rtol=0.05)
                 or (results["pixel_AUROC"] >= threshold["pixel_AUROC"])
             ):
                 raise AssertionError(

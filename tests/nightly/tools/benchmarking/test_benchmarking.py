@@ -51,7 +51,7 @@ def check_csv(model: str):
 
 def test_benchmarking():
     """Test if benchmarking script produces the required artifacts."""
-    config_path = "tests/pre_merge/tools/benchmarking/benchmark_params.yaml"
+    config_path = "tests/nightly/tools/benchmarking/benchmark_params.yaml"
     test_config = OmegaConf.load(config_path)
     test_config.grid_search.dataset["path"] = [get_dataset_path()]
 
