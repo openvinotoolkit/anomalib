@@ -23,7 +23,6 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 
 from .cdf_normalization import CdfNormalizationCallback
-from .metrics import MetricsCallback
 from .min_max_normalization import MinMaxNormalizationCallback
 from .model_loader import LoadModelCallback
 from .timer import TimerCallback
@@ -59,12 +58,6 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
     )
 
     callbacks.extend([checkpoint, TimerCallback()])
-
-    # Add metric configuration to the model via MetricsCallback
-    image_metric_names = config.metrics.image if "image" in config.metrics.keys() else None
-    pixel_metric_names = config.metrics.pixel if "pixel" in config.metrics.keys() else None
-    metrics_callback = MetricsCallback(image_metric_names, pixel_metric_names)
-    callbacks.append(metrics_callback)
 
     if "weight_file" in config.model.keys():
         load_model = LoadModelCallback(os.path.join(config.project.path, config.model.weight_file))

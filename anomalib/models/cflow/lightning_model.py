@@ -31,6 +31,7 @@ from torch import optim
 from anomalib.models.cflow.torch_model import CflowModel
 from anomalib.models.cflow.utils import get_logp, positional_encoding_2d
 from anomalib.models.components import AnomalyModule
+from anomalib.utils.metrics import get_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -192,6 +193,11 @@ class CflowLightning(Cflow):
         )
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(hparams)
+
+        # TODO: Create Metrics callback to which the following will be moved
+        self.image_metrics, self.pixel_metrics = get_metrics(self.hparams)
+        self.image_metrics.set_threshold(self.hparams.model.threshold.image_default)
+        self.pixel_metrics.set_threshold(self.hparams.model.threshold.pixel_default)
 
     def configure_callbacks(self):
         """Configure model-specific callbacks."""

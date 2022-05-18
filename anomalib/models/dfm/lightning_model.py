@@ -23,6 +23,7 @@ from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
+from anomalib.utils.metrics import get_metrics
 
 from .torch_model import DFMModel
 
@@ -140,3 +141,10 @@ class DfmLightning(Dfm):
             pca_level=hparams.model.pca_level,
             score_type=hparams.model.score_type,
         )
+        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
+        self.save_hyperparameters(hparams)
+
+        # TODO: Create Metrics callback to which the following will be moved
+        self.image_metrics, self.pixel_metrics = get_metrics(hparams)
+        self.image_metrics.set_threshold(hparams.model.threshold.image_default)
+        self.pixel_metrics.set_threshold(hparams.model.threshold.pixel_default)

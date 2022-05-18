@@ -23,22 +23,15 @@ from typing import List, Tuple, Union
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
-from torch import Tensor, adaptive_avg_pool1d
+from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.padim.torch_model import PadimModel
-from anomalib.utils.metrics import (
-    AdaptiveThreshold,
-    AnomalyScoreDistribution,
-    MinMax,
-    adaptive_threshold,
-    get_metrics,
-)
+from anomalib.utils.metrics import get_metrics
 
 logger = logging.getLogger(__name__)
 
 __all__ = ["Padim", "PadimLightning"]
-
 
 
 @MODEL_REGISTRY
@@ -152,8 +145,7 @@ class PadimLightning(Padim):
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(hparams)
 
-        # NOTE: When the following is added here, null normalization gives the same performance.
-        # metrics
-        self.image_metrics, self.pixel_metrics = get_metrics(self.hparams)
-        self.image_metrics.set_threshold(self.hparams.model.threshold.image_default)
-        self.pixel_metrics.set_threshold(self.hparams.model.threshold.pixel_default)
+        # TODO: Create Metrics callback to which the following will be moved
+        self.image_metrics, self.pixel_metrics = get_metrics(hparams)
+        self.image_metrics.set_threshold(hparams.model.threshold.image_default)
+        self.pixel_metrics.set_threshold(hparams.model.threshold.pixel_default)
