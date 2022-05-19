@@ -48,17 +48,13 @@ class MetricsCallback(Callback):
         self.image_metric_names = image_metric_names
         self.pixel_metric_names = pixel_metric_names
 
-    def on_fit_start(self, _trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
+    def setup(self, _trainer: pl.Trainer, pl_module: pl.LightningModule, stage: Optional[str] = None) -> None:
         """Setup image and pixel-level AnomalibMetricsCollection within Anomalib Model.
 
         Args:
             _trainer (pl.Trainer): PyTorch Lightning Trainer
             pl_module (pl.LightningModule): Anomalib Model that inherits pl LightningModule.
             stage (Optional[str], optional): fit, validate, test or predict. Defaults to None.
-
-        Raises:
-            ValueError: When Anomalib Model doesn't contain ``Tiler`` object, it means the model
-                doesn not support tiling operation.
         """
         image_metric_names = [] if self.image_metric_names is None else self.image_metric_names
         pixel_metric_names = [] if self.pixel_metric_names is None else self.pixel_metric_names
@@ -67,5 +63,5 @@ class MetricsCallback(Callback):
             pl_module.image_metrics = metric_collection_from_names(image_metric_names, "image_")
             pl_module.pixel_metrics = metric_collection_from_names(pixel_metric_names, "pixel_")
 
-            pl_module.image_metrics.set_threshold(pl_module.default_image_threshold)
-            pl_module.pixel_metrics.set_threshold(pl_module.default_pixel_threshold)
+            pl_module.image_metrics.set_threshold(pl_module.image_threshold.value)
+            pl_module.pixel_metrics.set_threshold(pl_module.pixel_threshold.value)
