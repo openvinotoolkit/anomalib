@@ -128,7 +128,14 @@ class StfpmLightning(Stfpm):
         self.save_hyperparameters(hparams)
 
     def configure_callbacks(self):
-        """Configure model-specific callbacks."""
+        """Configure model-specific callbacks.
+
+        Note:
+            This method is used for the existing CLI.
+            When PL CLI is introduced, configure callback method will be
+                deprecated, and callbacks will be configured from either
+                config.yaml file or from CLI.
+        """
         early_stopping = EarlyStopping(
             monitor=self.hparams.model.early_stopping.metric,
             patience=self.hparams.model.early_stopping.patience,
@@ -137,10 +144,16 @@ class StfpmLightning(Stfpm):
         return [early_stopping]
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configure optimizers by creating an SGD optimizer.
+        """Configures optimizers for each decoder.
+
+        Note:
+            This method is used for the existing CLI.
+            When PL CLI is introduced, configure optimizers method will be
+                deprecated, and optimizers will be configured from either
+                config.yaml file or from CLI.
 
         Returns:
-            (Optimizer): SGD optimizer
+            Optimizer: Adam optimizer for each decoder
         """
         return optim.SGD(
             params=self.model.student_model.parameters(),

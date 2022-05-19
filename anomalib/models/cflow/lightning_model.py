@@ -194,7 +194,14 @@ class CflowLightning(Cflow):
         self.save_hyperparameters(hparams)
 
     def configure_callbacks(self):
-        """Configure model-specific callbacks."""
+        """Configure model-specific callbacks.
+
+        Note:
+            This method is used for the existing CLI.
+            When PL CLI is introduced, configure callback method will be
+                deprecated, and callbacks will be configured from either
+                config.yaml file or from CLI.
+        """
         early_stopping = EarlyStopping(
             monitor=self.hparams.model.early_stopping.metric,
             patience=self.hparams.model.early_stopping.patience,
@@ -204,6 +211,12 @@ class CflowLightning(Cflow):
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """Configures optimizers for each decoder.
+
+        Note:
+            This method is used for the existing CLI.
+            When PL CLI is introduced, configure optimizers method will be
+                deprecated, and optimizers will be configured from either
+                config.yaml file or from CLI.
 
         Returns:
             Optimizer: Adam optimizer for each decoder
