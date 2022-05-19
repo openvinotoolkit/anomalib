@@ -23,7 +23,7 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 
 from .cdf_normalization import CdfNormalizationCallback
-from .metrics import MetricsConfigurationCallback
+from .metrics_configuration import MetricsConfigurationCallback
 from .min_max_normalization import MinMaxNormalizationCallback
 from .model_loader import LoadModelCallback
 from .timer import TimerCallback
