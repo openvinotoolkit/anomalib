@@ -66,7 +66,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.min_max = MinMax().cpu()
 
         # Create placeholders for image and pixel metrics.
-        # If set from the config file, MetricsCallback will
+        # If set from the config file, MetricsConfigurationCallback will
         #   create the metric collections upon setup.
         self.image_metrics: AnomalibMetricCollection
         self.pixel_metrics: AnomalibMetricCollection

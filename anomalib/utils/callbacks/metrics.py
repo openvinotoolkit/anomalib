@@ -1,6 +1,6 @@
 """Metrics Configuration Callback."""
 
-# Copyright (C) 2020 Intel Corporation
+# Copyright (C) 2022 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,10 +23,10 @@ from pytorch_lightning.callbacks import Callback
 from anomalib.models.components.base.anomaly_module import AnomalyModule
 from anomalib.utils.metrics import metric_collection_from_names
 
-__all__ = ["MetricsCallback"]
+__all__ = ["MetricsConfigurationCallback"]
 
 
-class MetricsCallback(Callback):
+class MetricsConfigurationCallback(Callback):
     """Metrics Configuration Callback."""
 
     def __init__(
