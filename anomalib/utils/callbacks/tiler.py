@@ -23,16 +23,16 @@ from pytorch_lightning.callbacks import Callback
 from anomalib.models.components import AnomalyModule
 from anomalib.pre_processing.tiler import Tiler
 
-__all__ = ["TilerCallback"]
+__all__ = ["TilerConfigurationCallback"]
 
 
-class TilerCallback(Callback):
+class TilerConfigurationCallback(Callback):
     """Tiler Configuration Callback."""
 
     def __init__(
         self,
-        enable: bool,
-        tile_size: Union[int, Sequence],
+        enable: bool = False,
+        tile_size: Union[int, Sequence] = 256,
         stride: Optional[Union[int, Sequence]] = None,
         remove_border_count: int = 0,
         mode: str = "padding",
@@ -42,7 +42,9 @@ class TilerCallback(Callback):
 
         Args:
             enable (bool): Boolean to enable tiling operation.
+                Defaults to False.
             tile_size ([Union[int, Sequence]]): Tile size.
+                Defaults to 256.
             stride ([Union[int, Sequence]]): Stride to move tiles on the image.
             remove_border_count (int, optional): Number of pixels to remove from the image before
                 tiling. Defaults to 0.
