@@ -34,8 +34,6 @@ class Dfm(AnomalyModule):
     """DFM: Deep Featured Kernel Density Estimation.
 
     Args:
-        adaptive_threshold (bool): Boolean to automatically choose adaptive threshold
-        default_image_threshold (float): Manual default image threshold
         backbone (str): Backbone CNN network
         layer (str): Layer to extract features from the backbone CNN
         pooling_kernel_size (int, optional): Kernel size to pool features extracted from the CNN.
@@ -48,18 +46,13 @@ class Dfm(AnomalyModule):
 
     def __init__(
         self,
-        adaptive_threshold: bool,
-        default_image_threshold: float,
         backbone: str,
         layer: str,
         pooling_kernel_size: int = 4,
         pca_level: float = 0.97,
         score_type: str = "fre",
     ):
-        super().__init__(
-            adaptive_threshold=adaptive_threshold,
-            default_image_threshold=default_image_threshold,
-        )
+        super().__init__()
         logger.info("Initializing DFKDE Lightning model.")
 
         self.model: DFMModel = DFMModel(
@@ -132,8 +125,6 @@ class DfmLightning(Dfm):
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
         super().__init__(
-            adaptive_threshold=hparams.model.threshold.adaptive,
-            default_image_threshold=hparams.model.threshold.image_default,
             backbone=hparams.model.backbone,
             layer=hparams.model.layer,
             pooling_kernel_size=hparams.model.pooling_kernel_size,

@@ -18,6 +18,7 @@
 from typing import List, Optional
 
 import pytorch_lightning as pl
+import torch
 from pytorch_lightning.callbacks import Callback
 
 from anomalib.models.components.base.anomaly_module import AnomalyModule
@@ -31,6 +32,9 @@ class MetricsConfigurationCallback(Callback):
 
     def __init__(
         self,
+        adaptive_threshold: bool,
+        default_image_threshold: Optional[float] = None,
+        default_pixel_threshold: Optional[float] = None,
         image_metric_names: Optional[List[str]] = None,
         pixel_metric_names: Optional[List[str]] = None,
     ):
@@ -42,13 +46,29 @@ class MetricsConfigurationCallback(Callback):
         these to the lightning module.
 
         Args:
+            adaptive_threshold (bool): Flag indicating whether threshold should be adaptive.
+            default_image_threshold (Optional[float]): Default image threshold value.
+            default_pixel_threshold (Optional[float]): Default pixel threshold value.
             image_metric_names (Optional[List[str]]): List of image-level metrics.
             pixel_metric_names (Optional[List[str]]): List of pixel-level metrics.
         """
+
         self.image_metric_names = image_metric_names
         self.pixel_metric_names = pixel_metric_names
 
-    def setup(self, _trainer: pl.Trainer, pl_module: pl.LightningModule, stage: Optional[str] = None) -> None:
+        assert (
+            adaptive_threshold or default_image_threshold and default_pixel_threshold
+        ), "Default thresholds must be specified when adaptive threshold is disabled."
+        self.adaptive_threshold = adaptive_threshold
+        self.default_image_threshold = default_image_threshold
+        self.default_pixel_threshold = default_pixel_threshold
+
+    def setup(
+        self,
+        _trainer: pl.Trainer,
+        pl_module: pl.LightningModule,
+        stage: Optional[str] = None,  # pylint: disable=unused-argument
+    ) -> None:
         """Setup image and pixel-level AnomalibMetricsCollection within Anomalib Model.
 
         Args:
@@ -60,6 +80,12 @@ class MetricsConfigurationCallback(Callback):
         pixel_metric_names = [] if self.pixel_metric_names is None else self.pixel_metric_names
 
         if isinstance(pl_module, AnomalyModule):
+            pl_module.adaptive_threshold = self.adaptive_threshold
+            if not self.adaptive_threshold:
+                # pylint: disable=not-callable
+                pl_module.image_threshold.value = torch.tensor(self.default_image_threshold).cpu()
+                pl_module.pixel_threshold.value = torch.tensor(self.default_pixel_threshold).cpu()
+
             pl_module.image_metrics = metric_collection_from_names(image_metric_names, "image_")
             pl_module.pixel_metrics = metric_collection_from_names(pixel_metric_names, "pixel_")
 

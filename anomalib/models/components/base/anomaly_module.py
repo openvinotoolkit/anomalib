@@ -33,34 +33,19 @@ class AnomalyModule(pl.LightningModule, ABC):
     """AnomalyModule to train, validate, predict and test images.
 
     Acts as a base class for all the Anomaly Modules in the library.
-
-    Args:
-        adaptive_threshold (Optional[bool], optional): Boolean to automatically choose adaptive threshold.
-            Defaults to None.
-        default_image_threshold (Optional[float], optional): Manual default image threshold.
-            Defaults to None.
-        default_pixel_threshold (Optional[float], optional): Manaul default pixel threshold.
-            Defaults to None.
     """
 
-    def __init__(
-        self,
-        adaptive_threshold: Optional[bool] = None,
-        default_image_threshold: Optional[float] = None,
-        default_pixel_threshold: Optional[float] = None,
-    ):
+    def __init__(self):
         super().__init__()
         self.save_hyperparameters()
         self.model: nn.Module
         self.loss: Tensor
         self.callbacks: List[Callback]
 
-        self.adaptive_threshold = False if adaptive_threshold is None else adaptive_threshold
-        self.default_image_threshold = 0.0 if default_image_threshold is None else default_image_threshold
-        self.default_pixel_threshold = 0.0 if default_pixel_threshold is None else default_pixel_threshold
+        self.adaptive_threshold: bool
 
-        self.image_threshold = AdaptiveThreshold(self.default_image_threshold).cpu()
-        self.pixel_threshold = AdaptiveThreshold(self.default_pixel_threshold).cpu()
+        self.image_threshold = AdaptiveThreshold().cpu()
+        self.pixel_threshold = AdaptiveThreshold().cpu()
 
         self.training_distribution = AnomalyScoreDistribution().cpu()
         self.min_max = MinMax().cpu()

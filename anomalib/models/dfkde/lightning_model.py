@@ -33,8 +33,6 @@ class Dfkde(AnomalyModule):
     """DFKDE: Deep Feature Kernel Density Estimation.
 
     Args:
-        adaptive_threshold (bool): Boolean to automatically choose adaptive threshold
-        default_image_threshold (float): Manual default image threshold
         backbone (str): Pre-trained model backbone.
         max_training_points (int, optional): Number of training points to fit the KDE model.
             Defaults to 40000.
@@ -48,8 +46,6 @@ class Dfkde(AnomalyModule):
 
     def __init__(
         self,
-        adaptive_threshold: bool,
-        default_image_threshold: float,
         backbone: str,
         max_training_points: int = 40000,
         pre_processing: str = "scale",
@@ -58,10 +54,7 @@ class Dfkde(AnomalyModule):
         threshold_offset: int = 12,
     ):
 
-        super().__init__(
-            adaptive_threshold=adaptive_threshold,
-            default_image_threshold=default_image_threshold,
-        )
+        super().__init__()
         logger.info("Initializing DFKDE Lightning model.")
 
         self.model = DfkdeModel(
@@ -132,8 +125,6 @@ class DfkdeLightning(Dfkde):
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
         super().__init__(
-            adaptive_threshold=hparams.model.threshold.adaptive,
-            default_image_threshold=hparams.model.threshold.image_default,
             backbone=hparams.model.backbone,
             max_training_points=hparams.model.max_training_points,
             pre_processing=hparams.model.pre_processing,

@@ -39,8 +39,6 @@ class Ganomaly(AnomalyModule):
     """PL Lightning Module for the GANomaly Algorithm.
 
     Args:
-        adaptive_threshold (bool): Boolean to automatically choose adaptive threshold
-        default_image_threshold (float): Manual default image threshold
         batch_size (int): Batch size.
         input_size (Tuple[int,int]): Input dimension.
         n_features (int): Number of features layers in the CNNs.
@@ -54,8 +52,6 @@ class Ganomaly(AnomalyModule):
 
     def __init__(
         self,
-        adaptive_threshold: bool,
-        default_image_threshold: float,
         batch_size: int,
         input_size: Tuple[int, int],
         n_features: int,
@@ -67,10 +63,7 @@ class Ganomaly(AnomalyModule):
         wenc: int = 1,
     ):
 
-        super().__init__(
-            adaptive_threshold=adaptive_threshold,
-            default_image_threshold=default_image_threshold,
-        )
+        super().__init__()
         logger.info("Initializing Ganomaly Lightning model.")
 
         self.model: GanomalyModel = GanomalyModel(
@@ -197,8 +190,6 @@ class GanomalyLightning(Ganomaly):
     def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
 
         super().__init__(
-            adaptive_threshold=hparams.model.threshold.adaptive,
-            default_image_threshold=hparams.model.threshold.image_default,
             batch_size=hparams.dataset.train_batch_size,
             input_size=hparams.model.input_size,
             n_features=hparams.model.n_features,

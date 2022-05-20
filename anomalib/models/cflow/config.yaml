@@ -33,10 +33,6 @@ model:
     metric: pixel_AUROC
     mode: max
   normalization_method: min_max # options: [null, min_max, cdf]
-  threshold:
-    image_default: 0
-    pixel_default: 0
-    adaptive: true
 
 metrics:
   image:
@@ -45,6 +41,10 @@ metrics:
   pixel:
     - F1Score
     - AUROC
+  threshold:
+    image_default: 0
+    pixel_default: 0
+    adaptive: true
 
 project:
   seed: 0

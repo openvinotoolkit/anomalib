@@ -47,11 +47,7 @@ class DummyModule(AnomalyModule):
     """A dummy model which calls visualizer callback on fake images and masks."""
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
-        super().__init__(
-            adaptive_threshold=hparams.model.threshold.adaptive,
-            default_image_threshold=hparams.model.threshold.image_default,
-            default_pixel_threshold=hparams.model.threshold.pixel_default,
-        )
+        super().__init__()
         self.model = DummyModel()
         self.task = "segmentation"
         self.callbacks = [
