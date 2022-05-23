@@ -15,7 +15,7 @@
 # and limitations under the License.
 
 from pathlib import Path
-from typing import Any, Optional, cast
+from typing import Any, Iterator, Optional, cast
 from warnings import warn
 
 import pytorch_lightning as pl
@@ -95,7 +95,7 @@ class VisualizerCallback(Callback):
         if "local" in module.hparams.project.log_images_to:
             visualizer.save(Path(module.hparams.project.path) / "images" / filename.parent.name / filename.name)
 
-    def generate_visualizer(self, outputs):
+    def generate_visualizer(self, outputs) -> Iterator[Visualizer]:
         """Yields a visualizer object for each of the images in the output."""
         for i in range(outputs["image"].size(0)):
             visualizer = Visualizer()
