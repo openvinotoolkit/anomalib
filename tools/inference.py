@@ -25,7 +25,6 @@ def get_args() -> Namespace:
     parser.add_argument("--config", type=Path, required=True, help="Path to a model config file")
     parser.add_argument("--weight_path", type=Path, required=True, help="Path to a model weights")
     parser.add_argument("--image_path", type=Path, required=True, help="Path to an image to infer.")
-    parser.add_argument("--save_path", type=Path, required=False, help="Path to save the output image.")
 
     args = parser.parse_args()
     if args.model_config_path is not None:
