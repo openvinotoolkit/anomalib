@@ -23,14 +23,14 @@ model:
   threshold_steepness: 0.05
   threshold_offset: 12
   normalization_method: min_max # options: [null, min_max, cdf]
-  threshold:
-    image_default: 0
-    adaptive: true
 
 metrics:
   image:
     - F1Score
     - AUROC
+  threshold:
+    image_default: 0
+    adaptive: true
 
 project:
   seed: 42

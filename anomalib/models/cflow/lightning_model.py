@@ -43,9 +43,6 @@ class Cflow(AnomalyModule):
 
     def __init__(
         self,
-        adaptive_threshold: bool,
-        default_image_threshold: float,
-        default_pixel_threshold: float,
         input_size: Tuple[int, int],
         backbone: str,
         layers: List[str],
@@ -56,11 +53,7 @@ class Cflow(AnomalyModule):
         clamp_alpha: float = 1.9,
         permute_soft: bool = False,
     ):
-        super().__init__(
-            adaptive_threshold=adaptive_threshold,
-            default_image_threshold=default_image_threshold,
-            default_pixel_threshold=default_pixel_threshold,
-        )
+        super().__init__()
         logger.info("Initializing Cflow Lightning model.")
 
         self.model: CflowModel = CflowModel(
@@ -177,9 +170,6 @@ class CflowLightning(Cflow):
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
         super().__init__(
-            adaptive_threshold=hparams.model.threshold.adaptive,
-            default_image_threshold=hparams.model.threshold.image_default,
-            default_pixel_threshold=hparams.model.threshold.pixel_default,
             input_size=hparams.model.input_size,
             backbone=hparams.model.backbone,
             layers=hparams.model.layers,

@@ -36,9 +36,6 @@ class Patchcore(AnomalyModule):
     """PatchcoreLightning Module to train PatchCore algorithm.
 
     Args:
-        adaptive_threshold (bool): Boolean to automatically choose adaptive threshold
-        default_image_threshold (float): Manual default image threshold
-        default_pixel_threshold (float): Manaul default pixel threshold
         input_size (Tuple[int, int]): Size of the model input.
         backbone (str): Backbone CNN network
         layers (List[str]): Layers to extract features from the backbone CNN
@@ -49,9 +46,6 @@ class Patchcore(AnomalyModule):
 
     def __init__(
         self,
-        adaptive_threshold: bool,
-        default_image_threshold: float,
-        default_pixel_threshold: float,
         input_size: Tuple[int, int],
         backbone: str,
         layers: List[str],
@@ -59,11 +53,7 @@ class Patchcore(AnomalyModule):
         num_neighbors: int = 9,
     ) -> None:
 
-        super().__init__(
-            adaptive_threshold=adaptive_threshold,
-            default_image_threshold=default_image_threshold,
-            default_pixel_threshold=default_pixel_threshold,
-        )
+        super().__init__()
         logger.info("Initializing Patchcore Lightning model.")
 
         self.model: PatchcoreModel = PatchcoreModel(
@@ -141,9 +131,6 @@ class PatchcoreLightning(Patchcore):
 
     def __init__(self, hparams) -> None:
         super().__init__(
-            adaptive_threshold=hparams.model.threshold.adaptive,
-            default_image_threshold=hparams.model.threshold.image_default,
-            default_pixel_threshold=hparams.model.threshold.pixel_default,
             input_size=hparams.model.input_size,
             backbone=hparams.model.backbone,
             layers=hparams.model.layers,

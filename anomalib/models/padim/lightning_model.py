@@ -38,9 +38,6 @@ class Padim(AnomalyModule):
     """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
 
     Args:
-        adaptive_threshold (bool): Boolean to automatically choose adaptive threshold
-        default_image_threshold (float): Manual default image threshold
-        default_pixel_threshold (float): Manaul default pixel threshold
         layers (List[str]): Layers to extract features from the backbone CNN
         input_size (Tuple[int, int]): Size of the model input.
         backbone (str): Backbone CNN network
@@ -48,18 +45,11 @@ class Padim(AnomalyModule):
 
     def __init__(
         self,
-        adaptive_threshold: bool,
-        default_image_threshold: float,
-        default_pixel_threshold: float,
         layers: List[str],
         input_size: Tuple[int, int],
         backbone: str,
     ):
-        super().__init__(
-            adaptive_threshold=adaptive_threshold,
-            default_image_threshold=default_image_threshold,
-            default_pixel_threshold=default_pixel_threshold,
-        )
+        super().__init__()
         logger.info("Initializing Padim Lightning model.")
 
         self.layers = layers
@@ -134,9 +124,6 @@ class PadimLightning(Padim):
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         super().__init__(
-            adaptive_threshold=hparams.model.threshold.adaptive,
-            default_image_threshold=hparams.model.threshold.image_default,
-            default_pixel_threshold=hparams.model.threshold.pixel_default,
             input_size=hparams.model.input_size,
             layers=hparams.model.layers,
             backbone=hparams.model.backbone,
