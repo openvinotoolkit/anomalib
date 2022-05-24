@@ -10,7 +10,7 @@ class AdaptiveThreshold(Metric):
     predicted anomaly scores.
     """
 
-    def __init__(self, default_value: float, **kwargs):
+    def __init__(self, default_value: float = 0.5, **kwargs):
         super().__init__(**kwargs)
 
         self.precision_recall_curve = PrecisionRecallCurve(num_classes=1, compute_on_step=False)

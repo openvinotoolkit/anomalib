@@ -22,9 +22,6 @@ model:
   score_type: fre # nll: for Gaussian modeling, fre: pca feature reconstruction error
   project_path: ./results
   normalization_method: min_max # options: [null, min_max, cdf]
-  threshold:
-    image_default: 0
-    adaptive: true
 
 metrics:
   image:
@@ -33,6 +30,9 @@ metrics:
   pixel:
     - F1Score
     - AUROC
+  threshold:
+    image_default: 0
+    adaptive: true
 
 project:
   seed: 42

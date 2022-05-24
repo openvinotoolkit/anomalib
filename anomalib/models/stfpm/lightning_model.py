@@ -18,9 +18,12 @@ https://arxiv.org/abs/2103.04257
 # and limitations under the License.
 
 import logging
+from typing import List, Tuple, Union
 
 import torch
+from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
+from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import optim
 
 from anomalib.models.components import AnomalyModule
@@ -31,44 +34,32 @@ logger = logging.getLogger(__name__)
 __all__ = ["StfpmLightning"]
 
 
-class StfpmLightning(AnomalyModule):
-    """PL Lightning Module for the STFPM algorithm."""
+@MODEL_REGISTRY
+class Stfpm(AnomalyModule):
+    """PL Lightning Module for the STFPM algorithm.
 
-    def __init__(self, hparams):
-        super().__init__(hparams)
+    Args:
+        input_size (Tuple[int, int]): Size of the model input.
+        backbone (str): Backbone CNN network
+        layers (List[str]): Layers to extract features from the backbone CNN
+    """
+
+    def __init__(
+        self,
+        input_size: Tuple[int, int],
+        backbone: str,
+        layers: List[str],
+    ):
+
+        super().__init__()
         logger.info("Initializing Stfpm Lightning model.")
 
         self.model = STFPMModel(
-            layers=hparams.model.layers,
-            input_size=hparams.model.input_size,
-            tile_size=hparams.dataset.tiling.tile_size,
-            tile_stride=hparams.dataset.tiling.stride,
-            backbone=hparams.model.backbone,
-            apply_tiling=hparams.dataset.tiling.apply,
+            input_size=input_size,
+            backbone=backbone,
+            layers=layers,
         )
         self.loss_val = 0
-
-    def configure_callbacks(self):
-        """Configure model-specific callbacks."""
-        early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
-        )
-        return [early_stopping]
-
-    def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configure optimizers by creating an SGD optimizer.
-
-        Returns:
-            (Optimizer): SGD optimizer
-        """
-        return optim.SGD(
-            params=self.model.student_model.parameters(),
-            lr=self.hparams.model.lr,
-            momentum=self.hparams.model.momentum,
-            weight_decay=self.hparams.model.weight_decay,
-        )
 
     def training_step(self, batch, _):  # pylint: disable=arguments-differ
         """Training Step of STFPM.
@@ -105,3 +96,55 @@ class StfpmLightning(AnomalyModule):
         batch["anomaly_maps"] = self.model(batch["image"])
 
         return batch
+
+
+class StfpmLightning(Stfpm):
+    """PL Lightning Module for the STFPM algorithm.
+
+    Args:
+        hparams (Union[DictConfig, ListConfig]): Model params
+    """
+
+    def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
+        super().__init__(
+            input_size=hparams.model.input_size,
+            backbone=hparams.model.backbone,
+            layers=hparams.model.layers,
+        )
+        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
+        self.save_hyperparameters(hparams)
+
+    def configure_callbacks(self):
+        """Configure model-specific callbacks.
+
+        Note:
+            This method is used for the existing CLI.
+            When PL CLI is introduced, configure callback method will be
+                deprecated, and callbacks will be configured from either
+                config.yaml file or from CLI.
+        """
+        early_stopping = EarlyStopping(
+            monitor=self.hparams.model.early_stopping.metric,
+            patience=self.hparams.model.early_stopping.patience,
+            mode=self.hparams.model.early_stopping.mode,
+        )
+        return [early_stopping]
+
+    def configure_optimizers(self) -> torch.optim.Optimizer:
+        """Configures optimizers for each decoder.
+
+        Note:
+            This method is used for the existing CLI.
+            When PL CLI is introduced, configure optimizers method will be
+                deprecated, and optimizers will be configured from either
+                config.yaml file or from CLI.
+
+        Returns:
+            Optimizer: Adam optimizer for each decoder
+        """
+        return optim.SGD(
+            params=self.model.student_model.parameters(),
+            lr=self.hparams.model.lr,
+            momentum=self.hparams.model.momentum,
+            weight_decay=self.hparams.model.weight_decay,
+        )

@@ -87,7 +87,7 @@ class DFMModel(nn.Module):
     Args:
         backbone (str): Pre-trained model backbone.
         layer (str): Layer from which to extract features.
-        pool (int): _description_
+        pooling_kernel_size (int): Kernel size to pool features extracted from the CNN.
         n_comps (float, optional): Ratio from which number of components for PCA are calculated. Defaults to 0.97.
         score_type (str, optional): Scoring type. Options are `fre` and `nll`. Defaults to "fre".
     """
