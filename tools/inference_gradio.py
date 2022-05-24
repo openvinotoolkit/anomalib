@@ -6,13 +6,12 @@ This script provide a gradio web interface
 from argparse import ArgumentParser, Namespace
 from importlib import import_module
 from pathlib import Path
-from typing import Tuple, Union
+from typing import Optional, Tuple, Union
 
 import gradio as gr
 import gradio.inputs
 import gradio.outputs
 import numpy as np
-from omegaconf import DictConfig, ListConfig
 from skimage.segmentation import mark_boundaries
 
 from anomalib.config import get_configurable_parameters
@@ -46,11 +45,18 @@ def infer(
 def get_args() -> Namespace:
     """Get command line arguments.
 
+    Example:
+
+        >>> python tools/inference_gradio.py --model ./anomalib/models/padim/config.yaml --weight_path ./results/padim/mvtec/bottle/weights/model.ckpt
+        >>> python tools/inference_gradio.py --model padim --weight_path ./results/padim/mvtec/bottle/weights/model.ckpt
+
     Returns:
         Namespace: List of arguments.
     """
     parser = ArgumentParser()
-    parser.add_argument("--config", type=Path, required=True, help="Path to a model config file")
+    parser.add_argument(
+        "--model", type=str, required=True, help="Can be either the model name or the path to a model config file"
+    )
     parser.add_argument("--weight_path", type=Path, required=True, help="Path to a model weights")
     parser.add_argument("--meta_data", type=Path, required=False, help="Path to JSON file containing the metadata.")
 
@@ -66,12 +72,31 @@ def get_args() -> Namespace:
 
     args = parser.parse_args()
 
+    # Model config is passed as the input argument else assume that model name is passed to model
+    if args.model.endswith(".yaml"):
+        args.model = Path(args.model)
+
     return args
 
 
-def get_inferencer(config_path: Path, weight_path: Path, meta_data_path: Path) -> Inferencer:
-    """Parse args and open inferencer."""
-    config = get_configurable_parameters(config_path)
+def get_inferencer(model: Union[Path, str], weight_path: Path, meta_data_path: Optional[Path] = None) -> Inferencer:
+    """Parse args and open inferencer.
+
+    Args:
+        config_path (Path): Path to model configuration file or the name of the model.
+        weight_path (Path): Path to model weights.
+        meta_data_path (Optional[Path], optional): Metadata is required for OpenVINO models. Defaults to None.
+
+    Raises:
+        ValueError: If unsupported model weight is passed.
+
+    Returns:
+        Inferencer: Torch or OpenVINO inferencer.
+    """
+    if isinstance(model, Path):
+        config = get_configurable_parameters(config_path=model)
+    else:
+        config = get_configurable_parameters(model_name=model)
     # Get the inferencer. We use .ckpt extension for Torch models and (onnx, bin)
     # for the openvino models.
     extension = weight_path.suffix
@@ -79,16 +104,12 @@ def get_inferencer(config_path: Path, weight_path: Path, meta_data_path: Path) -
     if extension in (".ckpt"):
         module = import_module("anomalib.deploy.inferencers.torch")
         TorchInferencer = getattr(module, "TorchInferencer")  # pylint: disable=invalid-name
-        inferencer = TorchInferencer(
-            config=config, model_source=weight_path, meta_data_path=meta_data
-        )
+        inferencer = TorchInferencer(config=config, model_source=weight_path, meta_data_path=meta_data_path)
 
     elif extension in (".onnx", ".bin", ".xml"):
         module = import_module("anomalib.deploy.inferencers.openvino")
         OpenVINOInferencer = getattr(module, "OpenVINOInferencer")  # pylint: disable=invalid-name
-        inferencer = OpenVINOInferencer(
-            config=config, path=weight_path, meta_data_path=meta_data
-        )
+        inferencer = OpenVINOInferencer(config=config, path=weight_path, meta_data_path=meta_data_path)
 
     else:
         raise ValueError(
@@ -102,7 +123,7 @@ def get_inferencer(config_path: Path, weight_path: Path, meta_data_path: Path) -
 if __name__ == "__main__":
     session_args = get_args()
 
-    gradio_inferencer = get_inferencer(session_args.config, session_args.weight_path, session_args.meta_data)
+    gradio_inferencer = get_inferencer(session_args.model, session_args.weight_path, session_args.meta_data)
 
     interface = gr.Interface(
         fn=lambda image, threshold: infer(image, gradio_inferencer, threshold),
