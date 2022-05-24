@@ -30,10 +30,6 @@ model:
   num_neighbors: 9
   weight_file: weights/model.ckpt
   normalization_method: min_max # options: [null, min_max, cdf]
-  threshold:
-    image_default: 0
-    pixel_default: 0
-    adaptive: true
 
 metrics:
   image:
@@ -42,6 +38,10 @@ metrics:
   pixel:
     - F1Score
     - AUROC
+  threshold:
+    image_default: 0
+    pixel_default: 0
+    adaptive: true
 
 project:
   seed: 0
@@ -62,6 +62,7 @@ trainer:
   default_root_dir: null
   detect_anomaly: false
   deterministic: false
+  devices: 1
   enable_checkpointing: true
   enable_model_summary: true
   enable_progress_bar: true

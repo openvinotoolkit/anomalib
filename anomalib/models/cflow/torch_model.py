@@ -14,12 +14,11 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from typing import List, Union
+from typing import List, Tuple
 
 import einops
 import torch
 import torchvision
-from omegaconf import DictConfig, ListConfig
 from torch import nn
 
 from anomalib.models.cflow.anomaly_map import AnomalyMapGenerator
@@ -30,14 +29,25 @@ from anomalib.models.components import FeatureExtractor
 class CflowModel(nn.Module):
     """CFLOW: Conditional Normalizing Flows."""
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]):
+    def __init__(
+        self,
+        input_size: Tuple[int, int],
+        backbone: str,
+        layers: List[str],
+        fiber_batch_size: int = 64,
+        decoder: str = "freia-cflow",
+        condition_vector: int = 128,
+        coupling_blocks: int = 8,
+        clamp_alpha: float = 1.9,
+        permute_soft: bool = False,
+    ):
         super().__init__()
 
-        self.backbone = getattr(torchvision.models, hparams.model.backbone)
-        self.fiber_batch_size = hparams.dataset.fiber_batch_size
-        self.condition_vector: int = hparams.model.condition_vector
-        self.dec_arch = hparams.model.decoder
-        self.pool_layers = hparams.model.layers
+        self.backbone = getattr(torchvision.models, backbone)
+        self.fiber_batch_size = fiber_batch_size
+        self.condition_vector: int = condition_vector
+        self.dec_arch = decoder
+        self.pool_layers = layers
 
         self.encoder = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.pool_layers)
         self.pool_dims = self.encoder.out_dims
@@ -45,10 +55,10 @@ class CflowModel(nn.Module):
             [
                 cflow_head(
                     condition_vector=self.condition_vector,
-                    coupling_blocks=hparams.model.coupling_blocks,
-                    clamp_alpha=hparams.model.clamp_alpha,
+                    coupling_blocks=coupling_blocks,
+                    clamp_alpha=clamp_alpha,
                     n_features=pool_dim,
-                    permute_soft=hparams.model.soft_permutation,
+                    permute_soft=permute_soft,
                 )
                 for pool_dim in self.pool_dims
             ]
@@ -58,9 +68,7 @@ class CflowModel(nn.Module):
         for parameters in self.encoder.parameters():
             parameters.requires_grad = False
 
-        self.anomaly_map_generator = AnomalyMapGenerator(
-            image_size=tuple(hparams.model.input_size), pool_layers=self.pool_layers
-        )
+        self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(input_size), pool_layers=self.pool_layers)
 
     def forward(self, images):
         """Forward-pass images into the network to extract encoder features and compute probability.

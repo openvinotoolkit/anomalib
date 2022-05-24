@@ -18,11 +18,14 @@ https://arxiv.org/pdf/2107.12571v1.pdf
 # and limitations under the License.
 
 import logging
+from typing import List, Tuple, Union
 
 import einops
 import torch
 import torch.nn.functional as F
+from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
+from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import optim
 
 from anomalib.models.cflow.torch_model import CflowModel
@@ -31,44 +34,41 @@ from anomalib.models.components import AnomalyModule
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["CflowLightning"]
+__all__ = ["Cflow", "CflowLightning"]
 
 
-class CflowLightning(AnomalyModule):
+@MODEL_REGISTRY
+class Cflow(AnomalyModule):
     """PL Lightning Module for the CFLOW algorithm."""
 
-    def __init__(self, hparams):
-        super().__init__(hparams)
+    def __init__(
+        self,
+        input_size: Tuple[int, int],
+        backbone: str,
+        layers: List[str],
+        fiber_batch_size: int = 64,
+        decoder: str = "freia-cflow",
+        condition_vector: int = 128,
+        coupling_blocks: int = 8,
+        clamp_alpha: float = 1.9,
+        permute_soft: bool = False,
+    ):
+        super().__init__()
         logger.info("Initializing Cflow Lightning model.")
 
-        self.model: CflowModel = CflowModel(hparams)
+        self.model: CflowModel = CflowModel(
+            input_size=input_size,
+            backbone=backbone,
+            layers=layers,
+            fiber_batch_size=fiber_batch_size,
+            decoder=decoder,
+            condition_vector=condition_vector,
+            coupling_blocks=coupling_blocks,
+            clamp_alpha=clamp_alpha,
+            permute_soft=permute_soft,
+        )
         self.loss_val = 0
         self.automatic_optimization = False
-
-    def configure_callbacks(self):
-        """Configure model-specific callbacks."""
-        early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
-        )
-        return [early_stopping]
-
-    def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configures optimizers for each decoder.
-
-        Returns:
-            Optimizer: Adam optimizer for each decoder
-        """
-        decoders_parameters = []
-        for decoder_idx in range(len(self.model.pool_layers)):
-            decoders_parameters.extend(list(self.model.decoders[decoder_idx].parameters()))
-
-        optimizer = optim.Adam(
-            params=decoders_parameters,
-            lr=self.hparams.model.lr,
-        )
-        return optimizer
 
     def training_step(self, batch, _):  # pylint: disable=arguments-differ
         """Training Step of CFLOW.
@@ -159,3 +159,64 @@ class CflowLightning(AnomalyModule):
         batch["anomaly_maps"] = self.model(batch["image"])
 
         return batch
+
+
+class CflowLightning(Cflow):
+    """PL Lightning Module for the CFLOW algorithm.
+
+    Args:
+        hparams (Union[DictConfig, ListConfig]): Model params
+    """
+
+    def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
+        super().__init__(
+            input_size=hparams.model.input_size,
+            backbone=hparams.model.backbone,
+            layers=hparams.model.layers,
+            fiber_batch_size=hparams.dataset.fiber_batch_size,
+            decoder=hparams.model.decoder,
+            condition_vector=hparams.model.condition_vector,
+            coupling_blocks=hparams.model.coupling_blocks,
+            clamp_alpha=hparams.model.clamp_alpha,
+            permute_soft=hparams.model.soft_permutation,
+        )
+        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
+        self.save_hyperparameters(hparams)
+
+    def configure_callbacks(self):
+        """Configure model-specific callbacks.
+
+        Note:
+            This method is used for the existing CLI.
+            When PL CLI is introduced, configure callback method will be
+                deprecated, and callbacks will be configured from either
+                config.yaml file or from CLI.
+        """
+        early_stopping = EarlyStopping(
+            monitor=self.hparams.model.early_stopping.metric,
+            patience=self.hparams.model.early_stopping.patience,
+            mode=self.hparams.model.early_stopping.mode,
+        )
+        return [early_stopping]
+
+    def configure_optimizers(self) -> torch.optim.Optimizer:
+        """Configures optimizers for each decoder.
+
+        Note:
+            This method is used for the existing CLI.
+            When PL CLI is introduced, configure optimizers method will be
+                deprecated, and optimizers will be configured from either
+                config.yaml file or from CLI.
+
+        Returns:
+            Optimizer: Adam optimizer for each decoder
+        """
+        decoders_parameters = []
+        for decoder_idx in range(len(self.model.pool_layers)):
+            decoders_parameters.extend(list(self.model.decoders[decoder_idx].parameters()))
+
+        optimizer = optim.Adam(
+            params=decoders_parameters,
+            lr=self.hparams.model.lr,
+        )
+        return optimizer
