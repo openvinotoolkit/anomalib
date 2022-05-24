@@ -48,16 +48,18 @@ def get_args() -> Namespace:
     Example:
 
         >>> python tools/inference_gradio.py \
-             --config ./anomalib/models/padim/config.yaml \
+             --config_path ./anomalib/models/padim/config.yaml \
              --weight_path ./results/padim/mvtec/bottle/weights/model.ckpt
 
     Returns:
         Namespace: List of arguments.
     """
     parser = ArgumentParser()
-    parser.add_argument("--config", type=Path, required=True, help="Path to a model config file")
+    parser.add_argument("--config_path", type=Path, required=True, help="Path to a model config file")
     parser.add_argument("--weight_path", type=Path, required=True, help="Path to a model weights")
-    parser.add_argument("--meta_data", type=Path, required=False, help="Path to JSON file containing the metadata.")
+    parser.add_argument(
+        "--meta_data_path", type=Path, required=False, help="Path to JSON file containing the metadata."
+    )
 
     parser.add_argument(
         "--threshold",
@@ -116,7 +118,7 @@ def get_inferencer(config_path: Path, weight_path: Path, meta_data_path: Optiona
 if __name__ == "__main__":
     session_args = get_args()
 
-    gradio_inferencer = get_inferencer(session_args.config, session_args.weight_path, session_args.meta_data)
+    gradio_inferencer = get_inferencer(session_args.config_path, session_args.weight_path, session_args.meta_data_path)
 
     interface = gr.Interface(
         fn=lambda image, threshold: infer(image, gradio_inferencer, threshold),
