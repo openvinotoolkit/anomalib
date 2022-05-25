@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import warnings
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
 
@@ -49,10 +48,6 @@ class TorchInferencer(Inferencer):
         model_source: Union[str, Path, AnomalyModule],
         meta_data_path: Union[str, Path] = None,
     ):
-        warnings.warn(
-            "Torch Inferencer is deprecated and will be removed in a future version. To run Inference with a PyTorch "
-            "model, please follow the example in `tools/inference.py`"
-        )
         self.config = config
         if isinstance(model_source, AnomalyModule):
             self.model = model_source
