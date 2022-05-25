@@ -70,6 +70,7 @@ class Visualizer:
         """Show image on a matplotlib figure."""
         self.generate()
         self.figure.show()
+        plt.waitforbuttonpress()
 
     def save(self, filename: Path):
         """Save image.

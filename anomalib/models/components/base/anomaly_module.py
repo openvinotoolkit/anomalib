@@ -103,7 +103,7 @@ class AnomalyModule(pl.LightningModule, ABC):
           Dictionary containing images, features, true labels and masks.
           These are required in `validation_epoch_end` for feature concatenation.
         """
-        return self.validation_step(batch, _)
+        return self.predict_step(batch, _)
 
     def validation_step_end(self, val_step_outputs):  # pylint: disable=arguments-differ
         """Called at the end of each validation step."""
