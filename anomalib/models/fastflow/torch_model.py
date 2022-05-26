@@ -65,13 +65,11 @@ class FastFlowModel(nn.Module):
         backbone,
         flow_steps,
         input_size,
-        conv3x3_only: bool =False,
-        hidden_ratio: float =1.0,
+        conv3x3_only: bool = False,
+        hidden_ratio: float = 1.0,
     ):
         super(FastFlowModel, self).__init__()
-        assert (
-            backbone in SUPPORTED_BACKBONES
-        ), f"backbone must be one of {SUPPORTED_BACKBONES}"
+        assert backbone in SUPPORTED_BACKBONES, f"backbone must be one of {SUPPORTED_BACKBONES}"
 
         if backbone in [BACKBONE_CAIT, BACKBONE_DEIT]:
             self.feature_extractor = timm.create_model(backbone, pretrained=True)
@@ -115,9 +113,7 @@ class FastFlowModel(nn.Module):
 
     def forward(self, x):
         self.feature_extractor.eval()
-        if isinstance(
-            self.feature_extractor, timm.models.vision_transformer.VisionTransformer
-        ):
+        if isinstance(self.feature_extractor, timm.models.vision_transformer.VisionTransformer):
             x = self.feature_extractor.patch_embed(x)
             cls_token = self.feature_extractor.cls_token.expand(x.shape[0], -1, -1)
             if self.feature_extractor.dist_token is None:
@@ -159,9 +155,7 @@ class FastFlowModel(nn.Module):
         outputs = []
         for i, feature in enumerate(features):
             output, log_jac_dets = self.nf_flows[i](feature)
-            loss += torch.mean(
-                0.5 * torch.sum(output**2, dim=(1, 2, 3)) - log_jac_dets
-            )
+            loss += torch.mean(0.5 * torch.sum(output**2, dim=(1, 2, 3)) - log_jac_dets)
             outputs.append(output)
         ret = {"loss": loss}
 
