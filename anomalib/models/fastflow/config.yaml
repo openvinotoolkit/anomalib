@@ -22,11 +22,16 @@ dataset:
 
 model:
   name: fastflow
-  input_size: 256
   backbone: resnet18 # options: [resnet18, wide_resnet50_2, cait_m48_448, deit_base_distilled_patch16_384]
-  flow_step: 8
+  flow_steps: 8
   hidden_ratio: 1.0
   conv3x3_only: True
+  lr: 0.001
+  weight_decay: 0.00001
+  early_stopping:
+    patience: 3
+    metric: pixel_AUROC
+    mode: max
   normalization_method: min_max # options: [null, min_max, cdf]
 
 metrics:
@@ -74,7 +79,7 @@ trainer:
   limit_val_batches: 1.0
   log_every_n_steps: 50
   log_gpu_memory: null
-  max_epochs: 1
+  max_epochs: 500
   max_steps: -1
   max_time: null
   min_epochs: null
