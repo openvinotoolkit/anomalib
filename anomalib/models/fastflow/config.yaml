@@ -4,7 +4,7 @@ dataset:
   path: ./datasets/MVTec
   task: segmentation
   category: wood
-  image_size: 256
+  image_size: 256 # options: [256, 256, 448, 384] - for each supported backbone
   train_batch_size: 32
   test_batch_size: 32
   num_workers: 0
@@ -23,9 +23,9 @@ dataset:
 model:
   name: fastflow
   backbone: resnet18 # options: [resnet18, wide_resnet50_2, cait_m48_448, deit_base_distilled_patch16_384]
-  flow_steps: 8
-  hidden_ratio: 1.0
-  conv3x3_only: True
+  flow_steps: 8 # options: [8, 8, 20, 20] - for each supported backbone
+  hidden_ratio: 1.0 # options: [1.0, 1.0, 0.16, 0.16] - for each supported backbone
+  conv3x3_only: True # options: [True, False, False, False] - for each supported backbone
   lr: 0.001
   weight_decay: 0.00001
   early_stopping:
