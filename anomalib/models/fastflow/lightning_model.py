@@ -41,7 +41,7 @@ class Fastflow(AnomalyModule):
         hidden_ratio: float = 1.0,
     ):
         super().__init__()
-        logger.info("Initializing Stfpm Lightning model.")
+        logger.info("Initializing Fastflow Lightning model.")
 
         self.model = FastflowModel(
             input_size=input_size,
