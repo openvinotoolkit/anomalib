@@ -68,7 +68,6 @@ class Visualizer:
 
     def show(self):
         """Show image on a matplotlib figure."""
-        self.generate()
         self.figure.show()
 
     def save(self, filename: Path):
@@ -77,7 +76,6 @@ class Visualizer:
         Args:
           filename (Path): Filename to save image
         """
-        self.generate()
         filename.parent.mkdir(parents=True, exist_ok=True)
         self.figure.savefig(filename, dpi=100)
 
