@@ -16,10 +16,6 @@
 
 from unittest.mock import patch
 
-patch("pytorch_lightning.utilities.imports._package_available", False)
-patch("pytorch_lightning.loggers.wandb.WandbLogger")
-
-
 import pytest
 from omegaconf import OmegaConf
 from pytorch_lightning.loggers import CSVLogger
@@ -43,36 +39,38 @@ def test_get_experiment_logger():
         }
     )
 
-    # get no logger
-    logger = get_experiment_logger(config=config)
-    assert isinstance(logger, bool)
-    config.project.logger = False
-    logger = get_experiment_logger(config=config)
-    assert isinstance(logger, bool)
+    with patch("pytorch_lightning.loggers.wandb.wandb"):
 
-    # get tensorboard
-    config.project.logger = "tensorboard"
-    logger = get_experiment_logger(config=config)
-    assert isinstance(logger[0], AnomalibTensorBoardLogger)
-
-    # get wandb logger
-    config.project.logger = "wandb"
-    logger = get_experiment_logger(config=config)
-    assert isinstance(logger[0], AnomalibWandbLogger)
-
-    # get csv logger.
-    config.project.logger = "csv"
-    logger = get_experiment_logger(config=config)
-    assert isinstance(logger[0], CSVLogger)
-
-    # get multiple loggers
-    config.project.logger = ["tensorboard", "wandb", "csv"]
-    logger = get_experiment_logger(config=config)
-    assert isinstance(logger[0], AnomalibTensorBoardLogger)
-    assert isinstance(logger[1], AnomalibWandbLogger)
-    assert isinstance(logger[2], CSVLogger)
-
-    # raise unknown
-    with pytest.raises(UnknownLogger):
-        config.project.logger = "randomlogger"
+        # get no logger
         logger = get_experiment_logger(config=config)
+        assert isinstance(logger, bool)
+        config.project.logger = False
+        logger = get_experiment_logger(config=config)
+        assert isinstance(logger, bool)
+
+        # get tensorboard
+        config.project.logger = "tensorboard"
+        logger = get_experiment_logger(config=config)
+        assert isinstance(logger[0], AnomalibTensorBoardLogger)
+
+        # get wandb logger
+        config.project.logger = "wandb"
+        logger = get_experiment_logger(config=config)
+        assert isinstance(logger[0], AnomalibWandbLogger)
+
+        # get csv logger.
+        config.project.logger = "csv"
+        logger = get_experiment_logger(config=config)
+        assert isinstance(logger[0], CSVLogger)
+
+        # get multiple loggers
+        config.project.logger = ["tensorboard", "wandb", "csv"]
+        logger = get_experiment_logger(config=config)
+        assert isinstance(logger[0], AnomalibTensorBoardLogger)
+        assert isinstance(logger[1], AnomalibWandbLogger)
+        assert isinstance(logger[2], CSVLogger)
+
+        # raise unknown
+        with pytest.raises(UnknownLogger):
+            config.project.logger = "randomlogger"
+            logger = get_experiment_logger(config=config)
