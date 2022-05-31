@@ -14,7 +14,13 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import sys
+from unittest import mock
+
 import pytest
+
+sys.modules["wandb"] = mock.Mock()
+
 from omegaconf import OmegaConf
 from pytorch_lightning.loggers import CSVLogger
 
