@@ -11,7 +11,6 @@ import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
-from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import optim
 
 from anomalib.models.components import AnomalyModule
@@ -52,7 +51,7 @@ class Fastflow(AnomalyModule):
         )
         self.loss_func = FastflowLoss()
 
-    def training_step(self, batch, _batch_idx) -> STEP_OUTPUT:
+    def training_step(self, batch, _):  # pylint: disable=arguments-differ
         """Forward-pass input and return the loss.
 
         Args:
@@ -66,7 +65,7 @@ class Fastflow(AnomalyModule):
         loss = self.loss_func(hidden_variables, jacobians)
         return {"loss": loss}
 
-    def validation_step(self, batch, _batch_idx) -> dict:
+    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Forward-pass the input and return the anomaly map.
 
         Args:
