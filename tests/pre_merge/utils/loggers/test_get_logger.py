@@ -16,6 +16,9 @@
 
 from unittest.mock import patch
 
+patch("pytorch_lightning.utilities.imports._package_available", False)
+patch("pytorch_lightning.loggers.wandb.WandbLogger")
+
 import pytest
 from omegaconf import OmegaConf
 from pytorch_lightning.loggers import CSVLogger
