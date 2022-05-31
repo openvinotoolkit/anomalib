@@ -41,6 +41,13 @@ ___
 
 To get an overview of all the devices where `anomalib` as been tested thoroughly, look at the [Supported Hardware](https://openvinotoolkit.github.io/anomalib/#supported-hardware) section in the documentation.
 
+### Jupyter Notebooks
+
+For getting started with a Jupyter Notebook, please refer to the [Notebooks](./notebooks) folder of this repository. Additionally, you can refer to a few created by the community:
+
+- [Google Colab](https://colab.research.google.com/drive/1K4a4z2iZGBNhWdmt9Aqdld7kTAxBfAmi?usp=sharing) by @bth5
+- [Kaggle](https://www.kaggle.com/code/ipythonx/mvtec-ad-anomaly-detection-with-anomalib-library) by @innat
+
 ### PyPI Install
 
 You can get started with `anomalib` by just using pip.
@@ -110,13 +117,13 @@ dataset:
   name: <name-of-the-dataset>
   format: folder
   path: <path/to/folder/dataset>
-  normal: normal # name of the folder containing normal images.
-  abnormal: abnormal # name of the folder containing abnormal images.
+  normal_dir: normal # name of the folder containing normal images.
+  abnormal_dir: abnormal # name of the folder containing abnormal images.
+  normal_test_dir: null # name of the folder containing normal test images.
   task: segmentation # classification or segmentation
   mask: <path/to/mask/annotations> #optional
   extensions: null
   split_ratio: 0.2  # ratio of the normal images that will be used to create a test split
-  seed: 0
   image_size: 256
   train_batch_size: 32
   test_batch_size: 32
