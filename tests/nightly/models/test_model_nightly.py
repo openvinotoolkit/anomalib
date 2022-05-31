@@ -42,14 +42,15 @@ def get_model_nncf_cat() -> List:
         List: Returns a combination of models with their nncf support for each category.
     """
     model_support = [
-        ("padim", False),
+        ("cflow", False),
         ("dfkde", False),
         ("dfm", False),
-        ("stfpm", False),
-        # ("stfpm", True),
-        ("patchcore", False),
-        ("cflow", False),
+        ("fastflow", False),
         ("ganomaly", False),
+        # ("stfpm", True),
+        ("padim", False),
+        ("patchcore", False),
+        ("stfpm", False),
     ]
     categories = random.sample(
         [
