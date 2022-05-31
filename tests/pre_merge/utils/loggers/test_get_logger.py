@@ -27,6 +27,8 @@ from anomalib.utils.loggers import (
     get_experiment_logger,
 )
 
+patch("pytorch_lightning.utilities.imports._package_available", False)
+
 
 @patch("pytorch_lightning.loggers.wandb.WandbLogger")
 def test_get_experiment_logger(WandbLogger):
