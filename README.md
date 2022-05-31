@@ -128,7 +128,9 @@ dataset:
   train_batch_size: 32
   test_batch_size: 32
   num_workers: 8
-  transform_config: null
+  transform_config:
+    train: null
+    val: null
   create_validation_set: true
   tiling:
     apply: false
