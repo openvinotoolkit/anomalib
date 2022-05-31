@@ -14,13 +14,9 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import sys
-from unittest import mock
+from unittest.mock import patch
 
 import pytest
-
-sys.modules["wandb"] = mock.Mock()
-
 from omegaconf import OmegaConf
 from pytorch_lightning.loggers import CSVLogger
 
@@ -32,7 +28,8 @@ from anomalib.utils.loggers import (
 )
 
 
-def test_get_experiment_logger():
+@patch("pytorch_lightning.loggers.wandb.WandbLogger")
+def test_get_experiment_logger(WandbLogger):
     """Test whether the right logger is returned."""
 
     config = OmegaConf.create(
