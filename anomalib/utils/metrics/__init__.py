@@ -47,15 +47,15 @@ def metric_collection_from_names(metric_names: List[str], prefix: Optional[str])
         AnomalibMetricCollection: Collection of metrics.
     """
     metrics_module = importlib.import_module("anomalib.utils.metrics")
-    metrics = AnomalibMetricCollection([], prefix=prefix, compute_groups=False)
+    metrics = AnomalibMetricCollection([], prefix=prefix)
     for metric_name in metric_names:
         if hasattr(metrics_module, metric_name):
             metric_cls = getattr(metrics_module, metric_name)
-            metrics.add_metrics(metric_cls(compute_on_step=False))
+            metrics.add_metrics(metric_cls())
         elif hasattr(torchmetrics, metric_name):
             try:
                 metric_cls = getattr(torchmetrics, metric_name)
-                metrics.add_metrics(metric_cls(compute_on_step=False))
+                metrics.add_metrics(metric_cls())
             except TypeError:
                 warnings.warn(f"Incorrect constructor arguments for {metric_name} metric from TorchMetrics package.")
         else:
