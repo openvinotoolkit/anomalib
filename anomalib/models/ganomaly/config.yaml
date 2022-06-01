@@ -37,6 +37,7 @@ model:
   wadv: 1
   wcon: 50
   wenc: 1
+  normalization_method: none
 
 metrics:
   image:

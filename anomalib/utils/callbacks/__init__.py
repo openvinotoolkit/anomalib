@@ -113,7 +113,7 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
         callbacks.append(
             VisualizerCallback(
                 task=config.dataset.task,
-                log_images_to=config.project.log_images_to,
+                log_images_to=config.logging.log_images_to,
                 inputs_are_normalized=not config.model.normalization_method == "none",
             )
         )
