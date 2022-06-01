@@ -178,59 +178,27 @@ class FastflowModel(nn.Module):
             )
         self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
 
-    def forward(self, x: Tensor) -> Union[Tuple[List[Tensor], List[Tensor]], Tensor]:
+    def forward(self, input_tensor: Tensor) -> Union[Tuple[List[Tensor], List[Tensor]], Tensor]:
         """Forward-Pass the input to the FastFlow Model.
 
         Args:
-            x (Tensor): Input tensor.
+            input_tensor (Tensor): Input tensor.
 
         Returns:
             Union[Tuple[Tensor, Tensor], Tensor]: During training, return
                 (hidden_variables, log-of-the-jacobian-determinants).
                 During the validation/test, return the anomaly map.
         """
-        # pylint: disable=invalid-name
 
         return_val: Union[Tuple[List[Tensor], List[Tensor]], Tensor]
 
         self.feature_extractor.eval()
         if isinstance(self.feature_extractor, VisionTransformer):
-            x = self.feature_extractor.patch_embed(x)
-            cls_token = self.feature_extractor.cls_token.expand(x.shape[0], -1, -1)
-            if self.feature_extractor.dist_token is None:
-                x = torch.cat((cls_token, x), dim=1)
-            else:
-                x = torch.cat(
-                    (
-                        cls_token,
-                        self.feature_extractor.dist_token.expand(x.shape[0], -1, -1),
-                        x,
-                    ),
-                    dim=1,
-                )
-            x = self.feature_extractor.pos_drop(x + self.feature_extractor.pos_embed)
-            for i in range(8):  # paper Table 6. Block Index = 7
-                x = self.feature_extractor.blocks[i](x)
-            x = self.feature_extractor.norm(x)
-            x = x[:, 2:, :]
-            N, _, C = x.shape
-            x = x.permute(0, 2, 1)
-            x = x.reshape(N, C, self.input_size[0] // 16, self.input_size[1] // 16)
-            features = [x]
+            features = self._get_vit_features(input_tensor)
         elif isinstance(self.feature_extractor, Cait):
-            x = self.feature_extractor.patch_embed(x)
-            x = x + self.feature_extractor.pos_embed
-            x = self.feature_extractor.pos_drop(x)
-            for i in range(41):  # paper Table 6. Block Index = 40
-                x = self.feature_extractor.blocks[i](x)
-            N, _, C = x.shape
-            x = self.feature_extractor.norm(x)
-            x = x.permute(0, 2, 1)
-            x = x.reshape(N, C, self.input_size[0] // 16, self.input_size[1] // 16)
-            features = [x]
+            features = self._get_cait_features(input_tensor)
         else:
-            features = self.feature_extractor(x)
-            features = [self.norms[i](feature) for i, feature in enumerate(features)]
+            features = self._get_cnn_features(input_tensor)
 
         # Compute the hidden variable f: X -> Z and log-likelihood of the jacobian
         # (See Section 3.3 in the paper.)
@@ -248,3 +216,70 @@ class FastflowModel(nn.Module):
             return_val = self.anomaly_map_generator(hidden_variables)
 
         return return_val
+
+    def _get_cnn_features(self, input_tensor: Tensor) -> List[Tensor]:
+        """Get CNN-based features.
+
+        Args:
+            input_tensor (Tensor): Input Tensor.
+
+        Returns:
+            List[Tensor]: List of features.
+        """
+        features = self.feature_extractor(input_tensor)
+        features = [self.norms[i](feature) for i, feature in enumerate(features)]
+        return features
+
+    def _get_cait_features(self, input_tensor: Tensor) -> List[Tensor]:
+        """Get Class-Attention-Image-Transformers (CaiT) features.
+
+        Args:
+            input_tensor (Tensor): Input Tensor.
+
+        Returns:
+            List[Tensor]: List of features.
+        """
+        feature = self.feature_extractor.patch_embed(input_tensor)
+        feature = feature + self.feature_extractor.pos_embed
+        feature = self.feature_extractor.pos_drop(feature)
+        for i in range(41):  # paper Table 6. Block Index = 40
+            feature = self.feature_extractor.blocks[i](feature)
+        batch_size, _, num_channels = feature.shape
+        feature = self.feature_extractor.norm(feature)
+        feature = feature.permute(0, 2, 1)
+        feature = feature.reshape(batch_size, num_channels, self.input_size[0] // 16, self.input_size[1] // 16)
+        features = [feature]
+        return features
+
+    def _get_vit_features(self, input_tensor: Tensor) -> List[Tensor]:
+        """Get Vision Transformers (ViT) features.
+
+        Args:
+            input_tensor (Tensor): Input Tensor.
+
+        Returns:
+            List[Tensor]: List of features.
+        """
+        feature = self.feature_extractor.patch_embed(input_tensor)
+        cls_token = self.feature_extractor.cls_token.expand(feature.shape[0], -1, -1)
+        if self.feature_extractor.dist_token is None:
+            feature = torch.cat((cls_token, feature), dim=1)
+        else:
+            feature = torch.cat(
+                (
+                    cls_token,
+                    self.feature_extractor.dist_token.expand(feature.shape[0], -1, -1),
+                    feature,
+                ),
+                dim=1,
+            )
+        feature = self.feature_extractor.pos_drop(feature + self.feature_extractor.pos_embed)
+        for i in range(8):  # paper Table 6. Block Index = 7
+            feature = self.feature_extractor.blocks[i](feature)
+        feature = self.feature_extractor.norm(feature)
+        feature = feature[:, 2:, :]
+        batch_size, _, num_channels = feature.shape
+        feature = feature.permute(0, 2, 1)
+        feature = feature.reshape(batch_size, num_channels, self.input_size[0] // 16, self.input_size[1] // 16)
+        features = [feature]
+        return features
