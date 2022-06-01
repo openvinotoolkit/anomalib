@@ -3,7 +3,7 @@
 Developing on Docker
 ======================
 
-.. note:: 
+.. note::
 	You need a CUDA-capable GPU with suitable drivers installed
 
 1. Install `Docker <https://docs.docker.com/engine/install/>`_
@@ -42,10 +42,10 @@ This creates an interactive bash session inside the Docker container, in which y
 
 The source code is mapped into the running container by means of the `-v "$(pwd)":/anomalib` parameter. This facilitates changes to the source code without having to rebuild the Docker image.
 
-.. note:: 
+.. note::
 	To forward graphical output of the Docker container to the host operating system, you have to disable access control of the host's X11 server. To this end, execute the shell command `xhost +` on the host.
-	
-	
+
+
 Using VSCode
 ============
 

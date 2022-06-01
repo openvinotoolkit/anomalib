@@ -20,15 +20,17 @@ model:
   confidence_threshold: 0.5
   pre_processing: scale
   n_components: 16
+  threshold_steepness: 0.05
+  threshold_offset: 12
   normalization_method: min_max # options: [null, min_max, cdf]
-  threshold:
-    image_default: 0
-    adaptive: true
 
 metrics:
   image:
     - F1Score
     - AUROC
+  threshold:
+    image_default: 0
+    adaptive: true
 
 project:
   seed: 42
@@ -52,6 +54,7 @@ trainer:
   default_root_dir: null
   detect_anomaly: false
   deterministic: false
+  devices: 1
   enable_checkpointing: true
   enable_model_summary: true
   enable_progress_bar: true

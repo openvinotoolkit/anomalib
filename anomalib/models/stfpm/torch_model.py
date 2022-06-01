@@ -96,10 +96,7 @@ class STFPMModel(nn.Module):
     Args:
         layers (List[str]): Layers used for feature extraction
         input_size (Tuple[int, int]): Input size for the model.
-        tile_size (Tuple[int, int]): Tile size
-        tile_stride (int): Stride for tiling
         backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
-        apply_tiling (bool, optional): Apply tiling. Defaults to False.
     """
 
     def __init__(
@@ -107,13 +104,11 @@ class STFPMModel(nn.Module):
         layers: List[str],
         input_size: Tuple[int, int],
         backbone: str = "resnet18",
-        apply_tiling: bool = False,
-        tile_size: Optional[Tuple[int, int]] = None,
-        tile_stride: Optional[int] = None,
     ):
         super().__init__()
+        self.tiler: Optional[Tiler] = None
+
         self.backbone = getattr(torchvision.models, backbone)
-        self.apply_tiling = apply_tiling
         self.teacher_model = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=layers)
         self.student_model = FeatureExtractor(backbone=self.backbone(pretrained=False), layers=layers)
 
@@ -122,13 +117,14 @@ class STFPMModel(nn.Module):
             parameters.requires_grad = False
 
         self.loss = Loss()
-        if self.apply_tiling:
-            assert tile_size is not None
-            assert tile_stride is not None
-            self.tiler = Tiler(tile_size, tile_stride)
-            self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(tile_size))
+
+        # Create the anomaly heatmap generator whether tiling is set.
+        # TODO: Check whether Tiler is properly initialized here.
+        if self.tiler:
+            image_size = (self.tiler.tile_size_h, self.tiler.tile_size_w)
         else:
-            self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(input_size))
+            image_size = input_size
+        self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(image_size))
 
     def forward(self, images):
         """Forward-pass images into the network.
@@ -142,7 +138,7 @@ class STFPMModel(nn.Module):
         Returns:
           Teacher and student features when in training mode, otherwise the predicted anomaly maps.
         """
-        if self.apply_tiling:
+        if self.tiler:
             images = self.tiler.tile(images)
         teacher_features: Dict[str, Tensor] = self.teacher_model(images)
         student_features: Dict[str, Tensor] = self.student_model(images)
@@ -150,7 +146,7 @@ class STFPMModel(nn.Module):
             output = teacher_features, student_features
         else:
             output = self.anomaly_map_generator(teacher_features=teacher_features, student_features=student_features)
-            if self.apply_tiling:
+            if self.tiler:
                 output = self.tiler.untile(output)
 
         return output

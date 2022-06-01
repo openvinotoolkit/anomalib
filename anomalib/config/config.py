@@ -64,6 +64,8 @@ def update_nncf_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfi
     sample_size = (crop_size, crop_size) if isinstance(crop_size, int) else crop_size
     if "optimization" in config.keys():
         if "nncf" in config.optimization.keys():
+            if "input_info" not in config.optimization.nncf.keys():
+                config.optimization.nncf["input_info"] = {"sample_size": None}
             config.optimization.nncf.input_info.sample_size = [1, 3, *sample_size]
             if config.optimization.nncf.apply:
                 if "update_config" in config.optimization.nncf:
@@ -164,7 +166,8 @@ def get_configurable_parameters(
     config = update_nncf_config(config)
 
     # thresholding
-    if "pixel_default" not in config.model.threshold.keys():
-        config.model.threshold.pixel_default = config.model.threshold.image_default
+    if "metrics" in config.keys():
+        if "pixel_default" not in config.metrics.threshold.keys():
+            config.metrics.threshold.pixel_default = config.metrics.threshold.image_default
 
     return config
