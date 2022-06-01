@@ -89,7 +89,6 @@ class FastflowLightning(Fastflow):
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
         super().__init__(
-            # TODO: Input size.
             input_size=hparams.model.input_size,
             backbone=hparams.model.backbone,
             flow_steps=hparams.model.flow_steps,
