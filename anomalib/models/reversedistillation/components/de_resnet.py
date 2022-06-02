@@ -203,6 +203,7 @@ class ResNet(nn.Module):
         width_per_group (int, optional): Number of layers in each intermediate convolution layer.. Defaults to 64.
         norm_layer (Optional[Callable[..., nn.Module]], optional): Batch norm layer to use. Defaults to None.
     """
+
     def __init__(
         self,
         block: Type[Union[DecoderBasicBlock, DecoderBottleneck]],
