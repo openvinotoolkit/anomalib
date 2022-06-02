@@ -7,7 +7,7 @@ dataset:
   image_size: 256
   train_batch_size: 8
   test_batch_size: 32
-  num_workers: 36
+  num_workers: 8
   transform_config:
     train: ./anomalib/models/draem/transform_config.yaml
     val: ./anomalib/models/draem/transform_config.yaml
@@ -22,8 +22,7 @@ dataset:
 
 model:
   name: draem
-  #  anomaly_source_path: ./datasets/dtd
-  anomaly_source_path: null
+  anomaly_source_path: null # optional, e.g. ./datasets/dtd
   lr: 0.0001
   early_stopping:
     patience: 50
