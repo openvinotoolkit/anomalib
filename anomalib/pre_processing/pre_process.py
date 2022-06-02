@@ -103,14 +103,14 @@ class PreProcessor:
 
         transforms: A.Compose
 
-        if self.config is None and self.image_size is not None:
-            if isinstance(self.image_size, int):
-                height, width = self.image_size, self.image_size
-            elif isinstance(self.image_size, tuple):
-                height, width = self.image_size
-            else:
-                raise ValueError("``image_size`` could be either int or Tuple[int, int]")
+        if isinstance(self.image_size, int):
+            height, width = self.image_size, self.image_size
+        elif isinstance(self.image_size, tuple):
+            height, width = self.image_size
+        else:
+            raise ValueError("``image_size`` could be either int or Tuple[int, int]")
 
+        if self.config is None and self.image_size is not None:
             transforms = A.Compose(
                 [
                     A.Resize(height=height, width=width, always_apply=True),
@@ -130,6 +130,10 @@ class PreProcessor:
         if not self.to_tensor:
             if isinstance(transforms[-1], ToTensorV2):
                 transforms = A.Compose(transforms[:-1])
+
+        # always resize to specified image size
+        if not any(isinstance(transform, A.Resize) for transform in transforms):
+            transforms = A.Compose([A.Resize(height=height, width=width, always_apply=True), transforms])
 
         return transforms
 

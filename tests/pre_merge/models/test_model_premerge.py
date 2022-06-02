@@ -31,6 +31,7 @@ class TestModel:
             ("padim", False),
             ("dfkde", False),
             ("dfm", False),
+            ("draem", False),
             ("stfpm", False),
             ("patchcore", False),
             ("cflow", False),
