@@ -17,12 +17,11 @@
 # Code adapted from https://github.com/hq-deng/RD4AD
 
 
-from typing import Callable, List, Optional, Type
+from typing import Callable, List, Optional, Type, Union
 
 import torch
-import torch.nn as nn
-from torch import Tensor
-from torchvision.models.resnet import Bottleneck
+from torch import Tensor, nn
+from torchvision.models.resnet import BasicBlock, Bottleneck
 
 
 def conv3x3(in_planes: int, out_planes: int, stride: int = 1, groups: int = 1, dilation: int = 1) -> nn.Conv2d:
@@ -58,7 +57,7 @@ class OCBE(nn.Module):
 
     def __init__(
         self,
-        block: Type[Bottleneck],
+        block: Type[Union[Bottleneck, BasicBlock]],
         layers: int,
         groups: int = 1,
         width_per_group: int = 64,
@@ -82,19 +81,19 @@ class OCBE(nn.Module):
         self.conv3 = conv3x3(128 * block.expansion, 256 * block.expansion, 2)
         self.bn3 = norm_layer(256 * block.expansion)
 
-        self.conv4 = conv1x1(1024 * block.expansion, 512 * block.expansion, 1)
-        self.bn4 = norm_layer(512 * block.expansion)
+        self.conv4 = conv1x1(256 * block.expansion * 3, 256 * block.expansion * 3, 1)  # x3 as we concatenate 3 layers
+        self.bn4 = norm_layer(256 * block.expansion * 3)
 
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
-            elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
+        for module in self.modules():
+            if isinstance(module, nn.Conv2d):
+                nn.init.kaiming_normal_(module.weight, mode="fan_out", nonlinearity="relu")
+            elif isinstance(module, (nn.BatchNorm2d, nn.GroupNorm)):
+                nn.init.constant_(module.weight, 1)
+                nn.init.constant_(module.bias, 0)
 
     def _make_layer(
         self,
-        block: Type[Bottleneck],
+        block: Type[Union[Bottleneck, BasicBlock]],
         planes: int,
         blocks: int,
         stride: int = 1,
@@ -150,10 +149,10 @@ class OCBE(nn.Module):
             Tensor: Output of the bottleneck layer
         """
         # Always assumes that features has length of 3
-        l1 = self.relu(self.bn2(self.conv2(self.relu(self.bn1(self.conv1(features[0]))))))
-        l2 = self.relu(self.bn3(self.conv3(features[1])))
-        feature = torch.cat([l1, l2, features[2]], 1)
-        output = self.bn_layer(feature)
+        feature0 = self.relu(self.bn2(self.conv2(self.relu(self.bn1(self.conv1(features[0]))))))
+        feature1 = self.relu(self.bn3(self.conv3(features[1])))
+        feature_cat = torch.cat([feature0, feature1, features[2]], 1)
+        output = self.bn_layer(self.bn4(self.conv4(feature_cat)))
 
         return output.contiguous()
 
@@ -167,7 +166,9 @@ def get_bottleneck_layer(backbone: str, **kwargs) -> OCBE:
     Returns:
         Bottleneck_layer: One-Class Bottleneck Embedding module.
     """
-    if backbone == "resnet18":
-        return OCBE(Bottleneck, 2, **kwargs)
+    if backbone in ("resnet18", "resnet34"):
+        ocbe = OCBE(BasicBlock, 2, **kwargs)
     else:
-        return OCBE(Bottleneck, 3, **kwargs)
+        ocbe = OCBE(Bottleneck, 3, **kwargs)
+
+    return ocbe
