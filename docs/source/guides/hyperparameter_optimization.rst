@@ -39,7 +39,7 @@ To run the hyperparameter optimization, use the following command:
 
 .. code-block:: bash
 
-  python tools/hpo/wandb_sweep.py --model padim \
+  python tools/hpo/sweep.py --model padim \
     --model_config ./path_to_config.yaml \
     --sweep_config tools/hpo/sweep.yaml
 
@@ -48,7 +48,7 @@ In case ``model_config`` is not provided, the script looks at the default config
 
 .. code-block:: bash
 
-  python tools/hpo/wandb_sweep.py --sweep_config tools/hpo/sweep.yaml
+  python tools/hpo/sweep.py --sweep_config tools/hpo/sweep.yaml
 
 Sample Output
 **************

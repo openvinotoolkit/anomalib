@@ -193,7 +193,7 @@ python tools/inference.py \
 To run hyperparameter optimization, use the following command:
 
 ```bash
-python tools/hpo/wandb_sweep.py \
+python tools/hpo/sweep.py \
     --model padim --model_config ./path_to_config.yaml \
     --sweep_config tools/hpo/sweep.yaml
 ```
