@@ -66,13 +66,14 @@ class Draem(AnomalyModule):
         Returns:
             Loss dictionary
         """
+        input_image = batch["image"]
         # Apply corruption to input image
-        augmented_image, anomaly_mask = self.augmenter.augment_batch(batch["image"])
+        augmented_image, anomaly_mask = self.augmenter.augment_batch(input_image)
         # Generate model prediction
         reconstruction, prediction = self.model(augmented_image)
         # Compute loss
-        l2_loss = self.l2_loss(reconstruction, augmented_image)
-        ssim_loss = self.ssim_loss(reconstruction, augmented_image)
+        l2_loss = self.l2_loss(reconstruction, input_image)
+        ssim_loss = self.ssim_loss(reconstruction, input_image)
         focal_loss = self.focal_loss(prediction, anomaly_mask)
         loss = l2_loss + ssim_loss + focal_loss
         return {"loss": loss}
