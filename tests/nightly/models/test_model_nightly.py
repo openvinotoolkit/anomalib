@@ -45,7 +45,6 @@ def get_model_nncf_cat() -> List:
         ("cflow", False),
         ("dfkde", False),
         ("dfm", False),
-        ("fastflow", False),
         ("ganomaly", False),
         # ("stfpm", True),
         ("padim", False),
