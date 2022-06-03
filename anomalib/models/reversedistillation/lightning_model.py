@@ -49,7 +49,7 @@ class Reversedistillation(AnomalyModule):
         logger.info("Initializing Reverse Distillation Lightning model.")
         self.model = ReverseDistillationModel(backbone=backbone, layers=layers, input_size=input_size)
 
-    def training_step(self, batch, _) -> Dict[str, Tensor]:
+    def training_step(self, batch, _) -> Dict[str, Tensor]:  # pylint: disable=arguments-differ
         """Training Step of Reverse Distillation Model.
 
         Features are extracted from three layers of the Encoder model. These are passed to the bottleneck layer
@@ -66,7 +66,7 @@ class Reversedistillation(AnomalyModule):
         loss = self.model.get_loss(batch["image"])
         return {"loss": loss}
 
-    def validation_step(self, batch, _):
+    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Validation Step of Reverse Distillation Model.
 
         Similar to the training step, encoder/decoder features are extracted from the CNN for each batch, and
