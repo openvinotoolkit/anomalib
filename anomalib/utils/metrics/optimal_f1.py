@@ -13,7 +13,7 @@ class OptimalF1(Metric):
     def __init__(self, num_classes: int, **kwargs):
         super().__init__(**kwargs)
 
-        self.precision_recall_curve = PrecisionRecallCurve(num_classes=num_classes, compute_on_step=False)
+        self.precision_recall_curve = PrecisionRecallCurve(num_classes=num_classes)
 
         self.threshold: torch.Tensor
 
