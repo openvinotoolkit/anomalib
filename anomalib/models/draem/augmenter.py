@@ -19,6 +19,7 @@ import imgaug.augmenters as iaa
 import numpy as np
 import torch
 from torch import Tensor
+from torchvision.datasets.folder import IMG_EXTENSIONS
 
 from anomalib.models.draem.perlin import rand_perlin_2d_np
 
@@ -33,10 +34,10 @@ class Augmenter:
 
     def __init__(self, anomaly_source_path: Optional[str] = None):
 
+        self.anomaly_source_paths = []
         if anomaly_source_path is not None:
-            self.anomaly_source_paths = sorted(glob.glob(anomaly_source_path + "/**/*.jpg", recursive=True))
-        else:
-            self.anomaly_source_paths = []
+            for img_ext in IMG_EXTENSIONS:
+                self.anomaly_source_paths.extend(glob.glob(anomaly_source_path + "/**/*" + img_ext, recursive=True))
 
         self.augmenters = [
             iaa.GammaContrast((0.5, 2.0), per_channel=True),
