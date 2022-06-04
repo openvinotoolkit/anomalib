@@ -143,8 +143,4 @@ class Augmenter:
 
         augmented_batch = batch * (1 - masks) + (1 - beta) * perturbations + beta * batch * (masks)
 
-        # for i in range(batch_size):
-        #     cv2.imshow("aug", augmented_batch[i].permute(1, 2, 0).cpu().numpy())
-        #     cv2.waitKey(0)
-
         return augmented_batch, masks
