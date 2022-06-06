@@ -106,7 +106,7 @@ model:
 As per the config file, move `Hazelnut_toy` to the datasets section in the main root directory of anomalib, and then run
 
 ```bash
-python tools/train.py --config custom_padim.yml
+python tools/train.py --config custom_padim.yaml
 ```
 
 ###  Step 6: Interpret Results
