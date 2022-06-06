@@ -16,7 +16,7 @@ from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.draem.augmenter import Augmenter
-from anomalib.models.draem.loss import SSIM, FocalLoss
+from anomalib.models.draem.loss import DraemLoss
 from anomalib.models.draem.torch_model import DraemModel
 
 logger = logging.getLogger(__name__)
@@ -38,10 +38,7 @@ class Draem(AnomalyModule):
 
         self.augmenter = Augmenter(anomaly_source_path)
         self.model = DraemModel()
-
-        self.l2_loss = torch.nn.modules.loss.MSELoss()
-        self.ssim_loss = SSIM()
-        self.focal_loss = FocalLoss()
+        self.loss = DraemLoss()
 
     def training_step(self, batch, _):  # pylint: disable=arguments-differ
         """Training Step of DRAEM.
@@ -61,10 +58,7 @@ class Draem(AnomalyModule):
         # Generate model prediction
         reconstruction, prediction = self.model(augmented_image)
         # Compute loss
-        l2_loss = self.l2_loss(reconstruction, input_image)
-        ssim_loss = self.ssim_loss(reconstruction, input_image)
-        focal_loss = self.focal_loss(prediction, anomaly_mask)
-        loss = l2_loss + ssim_loss + focal_loss
+        loss = self.loss(input_image, reconstruction, anomaly_mask, prediction)
         return {"loss": loss}
 
     def validation_step(self, batch, _):
