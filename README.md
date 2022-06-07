@@ -103,11 +103,12 @@ python tools/train.py --model padim
 where the currently available models are:
 
 - [CFlow](anomalib/models/cflow)
+- [DFM](anomalib/models/dfm)
+- [DFKDE](anomalib/models/dfkde)
+- [FastFlow](anomalib/models/fastflow)
 - [PatchCore](anomalib/models/patchcore)
 - [PADIM](anomalib/models/padim)
 - [STFPM](anomalib/models/stfpm)
-- [DFM](anomalib/models/dfm)
-- [DFKDE](anomalib/models/dfkde)
 - [GANomaly](anomalib/models/ganomaly)
 
 ### Custom Dataset

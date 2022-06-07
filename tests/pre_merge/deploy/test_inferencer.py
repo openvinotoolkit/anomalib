@@ -49,7 +49,7 @@ def get_model_config(
 class TestInferencers:
     @pytest.mark.parametrize(
         "model_name",
-        ["padim", "stfpm", "patchcore", "dfm", "dfkde", "ganomaly", "cflow"],
+        ["cflow", "dfm", "dfkde", "fastflow", "ganomaly", "padim", "patchcore", "stfpm"],
     )
     @TestDataset(num_train=20, num_test=1, path=get_dataset_path(), use_mvtec=False)
     def test_torch_inference(self, model_name: str, category: str = "shapes", path: str = "./datasets/MVTec"):
