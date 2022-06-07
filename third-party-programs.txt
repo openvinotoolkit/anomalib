@@ -22,3 +22,7 @@ terms are listed below.
 2. SequenceINN, InvertibleModule, AllInOneBlock
    Copyright (c) 2018-2022 Lynton Ardizzone, Visual Learning Lab Heidelberg.
    SPDX-License-Identifier: MIT
+
+3. FastFlowModel
+   Copyright (c) 2022 @gathierry, https://github.com/gathierry/FastFlow
+   SPDX-License-Identifier: Apache-2.0

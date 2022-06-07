@@ -42,7 +42,7 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     Returns:
         AnomalyModule: Anomaly Model
     """
-    model_list: List[str] = ["cflow", "dfkde", "dfm", "draem", "ganomaly", "padim", "patchcore", "stfpm"]
+    model_list: List[str] = ["cflow", "dfkde", "dfm", "draem", "draem", "ganomaly", "padim", "patchcore", "stfpm"]
     model: AnomalyModule
 
     if config.model.name in model_list:

@@ -2,9 +2,9 @@ dataset:
   name: mvtec #options: [mvtec, btech, folder]
   format: mvtec
   path: ./datasets/MVTec
-  category: bottle
   task: segmentation
-  image_size: 256
+  category: bottle
+  image_size: 256 # options: [256, 256, 448, 384] - for each supported backbone
   train_batch_size: 32
   test_batch_size: 32
   num_workers: 8
@@ -21,13 +21,18 @@ dataset:
     random_tile_count: 16
 
 model:
-  name: padim
-  backbone: resnet18
-  layers:
-    - layer1
-    - layer2
-    - layer3
-  normalization_method: min_max # options: [none, min_max, cdf]
+  name: fastflow
+  backbone: resnet18 # options: [resnet18, wide_resnet50_2, cait_m48_448, deit_base_distilled_patch16_384]
+  flow_steps: 8 # options: [8, 8, 20, 20] - for each supported backbone
+  hidden_ratio: 1.0 # options: [1.0, 1.0, 0.16, 0.16] - for each supported backbone
+  conv3x3_only: True # options: [True, False, False, False] - for each supported backbone
+  lr: 0.001
+  weight_decay: 0.00001
+  early_stopping:
+    patience: 3
+    metric: pixel_AUROC
+    mode: max
+  normalization_method: min_max # options: [null, min_max, cdf]
 
 metrics:
   image:
@@ -37,19 +42,15 @@ metrics:
     - F1Score
     - AUROC
   threshold:
-    image_default: 3
-    pixel_default: 3
+    image_default: 0
+    pixel_default: 0
     adaptive: true
 
 project:
-  seed: 42
+  seed: 0
   path: ./results
-  log_images_to: ["local"]
+  log_images_to: [local]
   logger: false # options: [tensorboard, wandb, csv] or combinations.
-
-optimization:
-  openvino:
-    apply: false
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
@@ -77,7 +78,8 @@ trainer:
   limit_train_batches: 1.0
   limit_val_batches: 1.0
   log_every_n_steps: 50
-  max_epochs: 1
+  log_gpu_memory: null
+  max_epochs: 500
   max_steps: -1
   max_time: null
   min_epochs: null
@@ -93,6 +95,7 @@ trainer:
   profiler: null
   reload_dataloaders_every_n_epochs: 0
   replace_sampler_ddp: true
+  strategy: null
   sync_batchnorm: false
   tpu_cores: null
   track_grad_norm: -1
