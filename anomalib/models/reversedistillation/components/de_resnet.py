@@ -1,20 +1,13 @@
 """Torch model defining the decoder."""
 
+# Original Code
+# Copyright (c) 2022 hq-deng
+# https://github.com/hq-deng/RD4AD
+# SPDX-License-Identifier: MIT
+#
+# Modified
 # Copyright (C) 2022 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions
-# and limitations under the License.
-#
-# Code adapted from https://github.com/hq-deng/RD4AD
+# SPDX-License-Identifier: Apache-2.0
 
 from typing import Any, Callable, List, Optional, Type, Union
 
@@ -100,11 +93,11 @@ class DecoderBasicBlock(nn.Module):
         self.upsample = upsample
         self.stride = stride
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, batch: Tensor) -> Tensor:
         """Forward-pass of de-resnet block."""
-        identity = x
+        identity = batch
 
-        out = self.conv1(x)
+        out = self.conv1(batch)
         out = self.bn1(out)
         out = self.relu(out)
 
@@ -112,7 +105,7 @@ class DecoderBasicBlock(nn.Module):
         out = self.bn2(out)
 
         if self.upsample is not None:
-            identity = self.upsample(x)
+            identity = self.upsample(batch)
 
         out += identity
         out = self.relu(out)
@@ -166,11 +159,11 @@ class DecoderBottleneck(nn.Module):
         self.upsample = upsample
         self.stride = stride
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, batch: Tensor) -> Tensor:
         """Forward-pass of de-resnet bottleneck block."""
-        identity = x
+        identity = batch
 
-        out = self.conv1(x)
+        out = self.conv1(batch)
         out = self.bn1(out)
         out = self.relu(out)
 
@@ -182,7 +175,7 @@ class DecoderBottleneck(nn.Module):
         out = self.bn3(out)
 
         if self.upsample is not None:
-            identity = self.upsample(x)
+            identity = self.upsample(batch)
 
         out += identity
         out = self.relu(out)
@@ -213,7 +206,7 @@ class ResNet(nn.Module):
         width_per_group: int = 64,
         norm_layer: Optional[Callable[..., nn.Module]] = None,
     ) -> None:
-        super(ResNet, self).__init__()
+        super().__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
         self._norm_layer = norm_layer
@@ -226,22 +219,22 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 64, layers[2], stride=2)
 
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
-            elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
+        for module in self.modules():
+            if isinstance(module, nn.Conv2d):
+                nn.init.kaiming_normal_(module.weight, mode="fan_out", nonlinearity="relu")
+            elif isinstance(module, (nn.BatchNorm2d, nn.GroupNorm)):
+                nn.init.constant_(module.weight, 1)
+                nn.init.constant_(module.bias, 0)
 
         # Zero-initialize the last BN in each residual branch,
         # so that the residual branch starts with zeros, and each residual block behaves like an identity.
         # This improves the model by 0.2~0.3% according to https://arxiv.org/abs/1706.02677
         if zero_init_residual:
-            for m in self.modules():
-                if isinstance(m, DecoderBottleneck):
-                    nn.init.constant_(m.bn3.weight, 0)  # type: ignore[arg-type]
-                elif isinstance(m, DecoderBasicBlock):
-                    nn.init.constant_(m.bn2.weight, 0)  # type: ignore[arg-type]
+            for module in self.modules():
+                if isinstance(module, DecoderBottleneck):
+                    nn.init.constant_(module.bn3.weight, 0)  # type: ignore[arg-type]
+                elif isinstance(module, DecoderBasicBlock):
+                    nn.init.constant_(module.bn2.weight, 0)  # type: ignore[arg-type]
 
     def _make_layer(
         self,
@@ -278,9 +271,9 @@ class ResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def forward(self, x: Tensor) -> List[Tensor]:
+    def forward(self, batch: Tensor) -> List[Tensor]:
         """Forward pass for Decoder ResNet. Returns list of features."""
-        feature_a = self.layer1(x)  # 512*8*8->256*16*16
+        feature_a = self.layer1(batch)  # 512*8*8->256*16*16
         feature_b = self.layer2(feature_a)  # 256*16*16->128*32*32
         feature_c = self.layer3(feature_b)  # 128*32*32->64*64*64
 

@@ -6,7 +6,7 @@ Model Type: Segmentation
 
 ## Description
 
-Reverse Distillation model consists of three networks. The first is a pre-trained feature extractor. The next two are the one-class embedding and the decoder networks.
+Reverse Distillation model consists of three networks. The first is a pre-trained feature extractor. The next two are the one-class embedding and the decoder networks. TODO
 
 
 ## Architecture
@@ -25,8 +25,29 @@ All results gathered with seed `42`.
 
 ### Image-Level AUC
 
+|                |    Avg    | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
+| -------------- | :-------: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
+| ResNet-18      | **0.933** | 0.946  |  1.0  |  0.992  | 0.783 | 0.945 |  1.0   | 0.965 |  0.930  |  0.920   |    1.0    | 0.946 | 0.833 |   0.886    |   0.965    | 0.887  |
+| Wide ResNet-50 |   0.881   | 0.984  | 0.990 |   1.0   | 0.984 | 0.770 | 0.994  | 0.892 |  0.718  |  0.996   |   0.991   | 0.709 | 0.948 |   0.925    |   0.861    | 0.457  |
+
 ### Pixel-Level AUC
+
+|                |    Avg    | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
+| -------------- | :-------: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
+| ResNet-18      |   0.945   | 0.916  | 0.986 |  0.976  | 0.791 | 0.807 | 0.982  | 0.978 |  0.971  |  0.981   |   0.973   | 0.982 | 0.986 |   0.978    |   0.922    | 0.947  |
+| Wide ResNet-50 | **0.964** | 0.980  | 0.990 |  0.971  | 0.966 | 0.928 | 0.984  | 0.969 |  0.962  |  0.986   |   0.989   | 0.983 | 0.990 |   0.989    |   0.905    | 0.859  |
 
 ### Image F1 Score
 
+|                |    Avg    | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
+| -------------- | :-------: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
+| ResNet-18      |   0.908   | 0.875  | 0.973 |  0.943  | 0.844 | 0.909 | 0.992  | 0.920 |  0.933  |  0.891   |   0.989   | 0.943 | 0.840 |   0.875    |   0.770    | 0.918  |
+| Wide ResNet-50 | **0.922** | 0.953  | 0.982 |   1.0   | 0.957 | 0.945 | 0.942  | 0.859 |  0.919  |  0.972   |   0.972   | 0.916 | 0.933 |   0.897    |   0.694    | 0.887  |
+
 ### Sample Results
+
+![Sample Result 1](../../../docs/source/images/reversedistillation/results/0.png "Sample Result 1")
+
+![Sample Result 2](../../../docs/source/images/reversedistillation/results/1.png "Sample Result 2")
+
+![Sample Result 3](../../../docs/source/images/reversedistillation/results/2.png "Sample Result 3")
