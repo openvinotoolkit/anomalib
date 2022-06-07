@@ -1,7 +1,7 @@
 """Augmenter module to generates out-of-distribution samples for the DRAEM implementation."""
 
 # Original Code
-# Copyright (c) 2022 VitjanZ
+# Copyright (c) 2021 VitjanZ
 # https://github.com/VitjanZ/DRAEM.
 # SPDX-License-Identifier: MIT
 #
