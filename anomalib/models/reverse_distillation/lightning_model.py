@@ -27,6 +27,7 @@ from torch import Tensor, optim
 
 from anomalib.models.components import AnomalyModule
 
+from .components import ReverseDistillationLoss
 from .torch_model import ReverseDistillationModel
 
 logger = logging.getLogger(__name__)
@@ -46,6 +47,7 @@ class ReverseDistillation(AnomalyModule):
         super().__init__()
         logger.info("Initializing Reverse Distillation Lightning model.")
         self.model = ReverseDistillationModel(backbone=backbone, layers=layers, input_size=input_size)
+        self.loss = ReverseDistillationLoss()
 
     def training_step(self, batch, _) -> Dict[str, Tensor]:  # pylint: disable=arguments-differ
         """Training Step of Reverse Distillation Model.
@@ -61,7 +63,7 @@ class ReverseDistillation(AnomalyModule):
         Returns:
           Feature Map
         """
-        loss = self.model.get_loss(batch["image"])
+        loss = self.loss(*self.model(batch["image"]))
         return {"loss": loss}
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
