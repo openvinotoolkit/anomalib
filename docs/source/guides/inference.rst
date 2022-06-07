@@ -44,7 +44,7 @@ To run OpenVINO inference, first make sure that your model has been exported to 
 +-------------+----------+-------------------------------------------------------------------------------------+
 | save_data   | False    | Path to which the output images should be saved. Leave empty for live visualization.|
 +-------------+----------+-------------------------------------------------------------------------------------+
-| meta_data   | False    | Path to the JSON file containing the model's meta data (e.g. normalization          |
+| meta_data   | True     | Path to the JSON file containing the model's meta data (e.g. normalization          |
 |             |          | parameters and anomaly score threshold).                                            |
 +-------------+----------+-------------------------------------------------------------------------------------+
 
