@@ -7,7 +7,7 @@ dataset:
   image_size: 256
   train_batch_size: 32
   test_batch_size: 32
-  num_workers: 36
+  num_workers: 8
   transform_config:
     train: null
     val: null
