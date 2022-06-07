@@ -1,8 +1,3 @@
-.. Anomalib documentation master file, created by
-   sphinx-quickstart on Sat Jul 31 09:38:12 2021.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 Welcome to Anomalib's documentation!
 ====================================
 
@@ -50,6 +45,12 @@ This repository as been tested on
    guides/structure_of_documentation
    guides/using_tox
    guides/using_pre_commit
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Datasets
+
+   data/hazelnut_toy
 
 .. toctree::
    :maxdepth: 1
