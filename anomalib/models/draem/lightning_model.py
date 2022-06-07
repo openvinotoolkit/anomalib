@@ -15,9 +15,9 @@ from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 
 from anomalib.models.components import AnomalyModule
-from anomalib.models.draem.augmenter import Augmenter
 from anomalib.models.draem.loss import DraemLoss
 from anomalib.models.draem.torch_model import DraemModel
+from anomalib.models.draem.utils import Augmenter
 
 logger = logging.getLogger(__name__)
 
