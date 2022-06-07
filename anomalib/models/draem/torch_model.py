@@ -84,7 +84,6 @@ class DiscriminativeSubNetwork(nn.Module):
         super().__init__()
         self.encoder_segment = EncoderDiscriminative(in_channels, base_width)
         self.decoder_segment = DecoderDiscriminative(base_width, out_channels=out_channels)
-        # self.segment_act = torch.nn.Sigmoid()
         self.out_features = out_features
 
     def forward(self, x: Tensor) -> Tensor:
@@ -468,7 +467,6 @@ class DecoderReconstructive(nn.Module):
         )
 
         self.fin_out = nn.Sequential(nn.Conv2d(base_width, out_channels, kernel_size=3, padding=1))
-        # self.fin_out = nn.Conv2d(base_width, out_channels, kernel_size=3, padding=1)
 
     def forward(self, b5: Tensor) -> Tensor:
         """Reconstruct the image from the activations of the bottleneck layer.
