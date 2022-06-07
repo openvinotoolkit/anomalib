@@ -33,15 +33,13 @@ logger = logging.getLogger(__name__)
 
 
 @MODEL_REGISTRY
-class Reversedistillation(AnomalyModule):
+class ReverseDistillation(AnomalyModule):
     """PL Lightning Module for Reverse Distillation Algorithm.
 
     Args:
         input_size (Tuple[int, int]): Size of model input
         backbone (str): Backbone of CNN network
         layers (List[str]): Layers to extract features from the backbone CNN
-        beta1 (float): Beta1 of the Adam optimizer
-        beta2 (float): Beta2 of the Adam Optimizer
     """
 
     def __init__(self, input_size: Tuple[int, int], backbone: str, layers: List[str]):
@@ -84,7 +82,7 @@ class Reversedistillation(AnomalyModule):
         return batch
 
 
-class ReversedistillationLightning(Reversedistillation):
+class ReverseDistillationLightning(ReverseDistillation):
     """PL Lightning Module for Reverse Distillation Algorithm.
 
     Args:

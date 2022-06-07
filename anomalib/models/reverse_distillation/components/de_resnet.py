@@ -12,34 +12,7 @@
 from typing import Any, Callable, List, Optional, Type, Union
 
 from torch import Tensor, nn
-
-
-def deconv2x2(
-    in_planes: int, out_planes: int, stride: int = 1, groups: int = 1, dilation: int = 1
-) -> nn.ConvTranspose2d:
-    """1x1 convolution."""
-    return nn.ConvTranspose2d(
-        in_planes, out_planes, kernel_size=2, stride=stride, groups=groups, bias=False, dilation=dilation
-    )
-
-
-def conv3x3(in_planes: int, out_planes: int, stride: int = 1, groups: int = 1, dilation: int = 1) -> nn.Conv2d:
-    """3x3 convolution with padding."""
-    return nn.Conv2d(
-        in_planes,
-        out_planes,
-        kernel_size=3,
-        stride=stride,
-        padding=dilation,
-        groups=groups,
-        bias=False,
-        dilation=dilation,
-    )
-
-
-def conv1x1(in_planes: int, out_planes: int, stride: int = 1) -> nn.Conv2d:
-    """1x1 convolution."""
-    return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
+from torchvision.models.resnet import conv1x1, conv3x3
 
 
 class DecoderBasicBlock(nn.Module):
@@ -83,7 +56,9 @@ class DecoderBasicBlock(nn.Module):
             raise NotImplementedError("Dilation > 1 not supported in BasicBlock")
         # Both self.conv1 and self.downsample layers downsample the input when stride != 2
         if stride == 2:
-            self.conv1 = deconv2x2(inplanes, planes, stride)
+            self.conv1 = nn.ConvTranspose2d(
+                inplanes, planes, kernel_size=2, stride=stride, groups=groups, bias=False, dilation=dilation
+            )
         else:
             self.conv1 = conv3x3(inplanes, planes, stride)
         self.bn1 = norm_layer(planes)
@@ -149,7 +124,9 @@ class DecoderBottleneck(nn.Module):
         self.conv1 = conv1x1(inplanes, width)
         self.bn1 = norm_layer(width)
         if stride == 2:
-            self.conv2 = deconv2x2(width, width, stride, groups, dilation)
+            self.conv2 = nn.ConvTranspose2d(
+                width, width, kernel_size=2, stride=stride, groups=groups, bias=False, dilation=dilation
+            )
         else:
             self.conv2 = conv3x3(width, width, stride, groups, dilation)
         self.bn2 = norm_layer(width)
@@ -248,7 +225,15 @@ class ResNet(nn.Module):
         previous_dilation = self.dilation
         if stride != 1 or self.inplanes != planes * block.expansion:
             upsample = nn.Sequential(
-                deconv2x2(self.inplanes, planes * block.expansion, stride),
+                nn.ConvTranspose2d(
+                    self.inplanes,
+                    planes * block.expansion,
+                    kernel_size=2,
+                    stride=stride,
+                    groups=self.groups,
+                    bias=False,
+                    dilation=self.dilation,
+                ),
                 norm_layer(planes * block.expansion),
             )
 

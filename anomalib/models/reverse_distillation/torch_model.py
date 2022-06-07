@@ -21,8 +21,8 @@ import torchvision
 from torch import Tensor, nn
 
 from anomalib.models.components import FeatureExtractor
-from anomalib.models.reversedistillation.anomaly_map import AnomalyMapGenerator
-from anomalib.models.reversedistillation.components import (
+from anomalib.models.reverse_distillation.anomaly_map import AnomalyMapGenerator
+from anomalib.models.reverse_distillation.components import (
     get_bottleneck_layer,
     get_decoder,
 )
@@ -78,7 +78,7 @@ class ReverseDistillationModel(nn.Module):
         if self.training:
             output = encoder_features, decoder_features
         else:
-            output = self.anomaly_map_generator(encoder_features, decoder_features, amap_mode="add")
+            output = self.anomaly_map_generator(encoder_features, decoder_features, mode="add")
             if self.tiler:
                 output = self.tiler.untile(output)
 

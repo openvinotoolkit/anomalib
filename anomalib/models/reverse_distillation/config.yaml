@@ -14,7 +14,7 @@ dataset:
     val: null
   create_validation_set: false
   tiling:
-    apply: true
+    apply: false
     tile_size: 64
     stride: null
     remove_border_count: 0
@@ -22,7 +22,7 @@ dataset:
     random_tile_count: 16
 
 model:
-  name: reversedistillation
+  name: reverse_distillation
   lr: 0.005
   backbone: wide_resnet50_2
   layers:

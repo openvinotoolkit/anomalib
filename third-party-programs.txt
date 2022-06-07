@@ -22,3 +22,7 @@ terms are listed below.
 2. SequenceINN, InvertibleModule, AllInOneBlock
    Copyright (c) 2018-2022 Lynton Ardizzone, Visual Learning Lab Heidelberg.
    SPDX-License-Identifier: MIT
+
+3. Reverse Distillation AnomalyMapGenerator, De-Convolution
+   Copyright (c) 2022 @hq-deng, https://github.com/hq-deng/RD4AD
+    SPDX-License-Identifier: MIT
