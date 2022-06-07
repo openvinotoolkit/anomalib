@@ -19,11 +19,11 @@ class DraemLoss(nn.Module):
 
         self.l2_loss = nn.modules.loss.MSELoss()
         self.focal_loss = FocalLoss(alpha=1, reduction="mean")
-        self.ssim_kornia_loss = SSIMLoss(window_size=11)
+        self.ssim_loss = SSIMLoss(window_size=11)
 
     def forward(self, input_image, reconstruction, anomaly_mask, prediction):
         """Compute the loss over a batch for the DRAEM model."""
         l2_loss_val = self.l2_loss(reconstruction, input_image)
         focal_loss_val = self.focal_loss(prediction, anomaly_mask.squeeze(1).long())
-        ssim_loss_val = self.ssim_kornia_loss(reconstruction, input_image) * 2
+        ssim_loss_val = self.ssim_loss(reconstruction, input_image) * 2
         return l2_loss_val + ssim_loss_val + focal_loss_val
