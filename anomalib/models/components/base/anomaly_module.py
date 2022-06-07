@@ -171,6 +171,8 @@ class AnomalyModule(pl.LightningModule, ABC):
 
     def _log_metrics(self):
         """Log computed performance metrics."""
-        self.log_dict(self.image_metrics)
         if self.pixel_metrics.update_called:
-            self.log_dict(self.pixel_metrics)
+            self.log_dict(self.pixel_metrics, prog_bar=True)
+            self.log_dict(self.image_metrics, prog_bar=False)
+        else:
+            self.log_dict(self.image_metrics, prog_bar=True)
