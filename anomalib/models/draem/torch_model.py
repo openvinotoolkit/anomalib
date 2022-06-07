@@ -9,8 +9,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-# pylint: disable=invalid-name
-
 from typing import Tuple, Union
 
 import torch
@@ -25,7 +23,7 @@ class DraemModel(nn.Module):
         self.reconstructive_subnetwork = ReconstructiveSubNetwork()
         self.discriminative_subnetwork = DiscriminativeSubNetwork(in_channels=6, out_channels=2)
 
-    def forward(self, x: Tensor) -> Union[Tensor, Tuple[Tensor, Tensor]]:
+    def forward(self, batch: Tensor) -> Union[Tensor, Tuple[Tensor, Tensor]]:
         """Compute the reconstruction and anomaly mask from an input image.
 
         Args:
@@ -35,8 +33,8 @@ class DraemModel(nn.Module):
             Predicted confidence values of the anomaly mask. During training the reconstructed input images are
             returned as well.
         """
-        reconstruction = self.reconstructive_subnetwork(x)
-        concatenated_inputs = torch.cat([x, reconstruction], axis=1)
+        reconstruction = self.reconstructive_subnetwork(batch)
+        concatenated_inputs = torch.cat([batch, reconstruction], axis=1)
         prediction = self.discriminative_subnetwork(concatenated_inputs)
         if self.training:
             return reconstruction, prediction
@@ -57,18 +55,18 @@ class ReconstructiveSubNetwork(nn.Module):
         self.encoder = EncoderReconstructive(in_channels, base_width)
         self.decoder = DecoderReconstructive(base_width, out_channels=out_channels)
 
-    def forward(self, x: Tensor):
+    def forward(self, batch: Tensor) -> Tensor:
         """Encode and reconstruct the input images.
 
         Args:
-            x (Tensor): Batch of input images
+            batch (Tensor): Batch of input images
 
         Returns:
             Batch of reconstructed images.
         """
-        b5 = self.encoder(x)
-        output = self.decoder(b5)
-        return output
+        encoded = self.encoder(batch)
+        decoded = self.decoder(encoded)
+        return decoded
 
 
 class DiscriminativeSubNetwork(nn.Module):
@@ -80,27 +78,24 @@ class DiscriminativeSubNetwork(nn.Module):
         base_width (int): Base dimensionality of the layers of the autoencoder.
     """
 
-    def __init__(self, in_channels: int = 3, out_channels: int = 3, base_width: int = 64, out_features: bool = False):
+    def __init__(self, in_channels: int = 3, out_channels: int = 3, base_width: int = 64):
         super().__init__()
         self.encoder_segment = EncoderDiscriminative(in_channels, base_width)
         self.decoder_segment = DecoderDiscriminative(base_width, out_channels=out_channels)
-        self.out_features = out_features
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, batch: Tensor) -> Tensor:
         """Generate the predicted anomaly masks for a batch of input images.
 
         Args:
-            x (Tensor): Batch of inputs consisting of the concatenation of the original images
+            batch (Tensor): Batch of inputs consisting of the concatenation of the original images
              and their reconstructions.
 
         Returns:
             Activations of the output layer corresponding to the normal and anomalous class scores on the pixel level.
         """
-        b1, b2, b3, b4, b5, b6 = self.encoder_segment(x)
-        output_segment = self.decoder_segment(b1, b2, b3, b4, b5, b6)
-        if self.out_features:
-            return output_segment, b2, b3, b4, b5, b6
-        return output_segment
+        act1, act2, act3, act4, act5, act6 = self.encoder_segment(batch)
+        segmentation = self.decoder_segment(act1, act2, act3, act4, act5, act6)
+        return segmentation
 
 
 class EncoderDiscriminative(nn.Module):
@@ -168,28 +163,28 @@ class EncoderDiscriminative(nn.Module):
             nn.ReLU(inplace=True),
         )
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, batch: Tensor) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
         """Convert the inputs to the salient space by running them through the encoder network.
 
         Args:
-            x (Tensor): Batch of inputs consisting of the concatenation of the original images
+            batch (Tensor): Batch of inputs consisting of the concatenation of the original images
              and their reconstructions.
 
         Returns:
             Computed feature maps for each of the layers in the encoder sub network.
         """
-        b1 = self.block1(x)
-        mp1 = self.mp1(b1)
-        b2 = self.block2(mp1)
-        mp2 = self.mp3(b2)
-        b3 = self.block3(mp2)
-        mp3 = self.mp3(b3)
-        b4 = self.block4(mp3)
-        mp4 = self.mp4(b4)
-        b5 = self.block5(mp4)
-        mp5 = self.mp5(b5)
-        b6 = self.block6(mp5)
-        return b1, b2, b3, b4, b5, b6
+        act1 = self.block1(batch)
+        mp1 = self.mp1(act1)
+        act2 = self.block2(mp1)
+        mp2 = self.mp3(act2)
+        act3 = self.block3(mp2)
+        mp3 = self.mp3(act3)
+        act4 = self.block4(mp3)
+        mp4 = self.mp4(act4)
+        act5 = self.block5(mp4)
+        mp5 = self.mp5(act5)
+        act6 = self.block6(mp5)
+        return act1, act2, act3, act4, act5, act6
 
 
 class DecoderDiscriminative(nn.Module):
@@ -280,38 +275,38 @@ class DecoderDiscriminative(nn.Module):
 
         self.fin_out = nn.Sequential(nn.Conv2d(base_width, out_channels, kernel_size=3, padding=1))
 
-    def forward(self, b1: Tensor, b2: Tensor, b3: Tensor, b4: Tensor, b5: Tensor, b6: Tensor) -> Tensor:
+    def forward(self, act1: Tensor, act2: Tensor, act3: Tensor, act4: Tensor, act5: Tensor, act6: Tensor) -> Tensor:
         """Computes predicted anomaly class scores from the intermediate outputs of the encoder sub network.
 
         Args:
-            b1 (Tensor): Feature maps extracted from the first block of convolutional layers.
-            b2 (Tensor): Feature maps extracted from the second block of convolutional layers.
-            b3 (Tensor): Feature maps extracted from the third block of convolutional layers.
-            b4 (Tensor): Feature maps extracted from the fourth block of convolutional layers.
-            b5 (Tensor): Feature maps extracted from the fifth block of convolutional layers.
-            b6 (Tensor): Feature maps extracted from the sixth block of convolutional layers.
+            act1 (Tensor): Encoder activations of the first block of convolutional layers.
+            act2 (Tensor): Encoder activations of the second block of convolutional layers.
+            act3 (Tensor): Encoder activations of the third block of convolutional layers.
+            act4 (Tensor): Encoder activations of the fourth block of convolutional layers.
+            act5 (Tensor): Encoder activations of the fifth block of convolutional layers.
+            act6 (Tensor): Encoder activations of the sixth block of convolutional layers.
 
         Returns:
             Predicted anomaly class scores per pixel.
         """
-        up_b = self.up_b(b6)
-        cat_b = torch.cat((up_b, b5), dim=1)
+        up_b = self.up_b(act6)
+        cat_b = torch.cat((up_b, act5), dim=1)
         db_b = self.db_b(cat_b)
 
         up1 = self.up1(db_b)
-        cat1 = torch.cat((up1, b4), dim=1)
+        cat1 = torch.cat((up1, act4), dim=1)
         db1 = self.db1(cat1)
 
         up2 = self.up2(db1)
-        cat2 = torch.cat((up2, b3), dim=1)
+        cat2 = torch.cat((up2, act3), dim=1)
         db2 = self.db2(cat2)
 
         up3 = self.up3(db2)
-        cat3 = torch.cat((up3, b2), dim=1)
+        cat3 = torch.cat((up3, act2), dim=1)
         db3 = self.db3(cat3)
 
         up4 = self.up4(db3)
-        cat4 = torch.cat((up4, b1), dim=1)
+        cat4 = torch.cat((up4, act1), dim=1)
         db4 = self.db4(cat4)
 
         out = self.fin_out(db4)
@@ -373,25 +368,25 @@ class EncoderReconstructive(nn.Module):
             nn.ReLU(inplace=True),
         )
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, batch: Tensor) -> Tensor:
         """Encode a batch of input images to the salient space.
 
         Args:
-            x (Tensor): Batch of input images.
+            batch (Tensor): Batch of input images.
 
         Returns:
             Feature maps extracted from the bottleneck layer.
         """
-        b1 = self.block1(x)
-        mp1 = self.mp1(b1)
-        b2 = self.block2(mp1)
-        mp2 = self.mp3(b2)
-        b3 = self.block3(mp2)
-        mp3 = self.mp3(b3)
-        b4 = self.block4(mp3)
-        mp4 = self.mp4(b4)
-        b5 = self.block5(mp4)
-        return b5
+        act1 = self.block1(batch)
+        mp1 = self.mp1(act1)
+        act2 = self.block2(mp1)
+        mp2 = self.mp3(act2)
+        act3 = self.block3(mp2)
+        mp3 = self.mp3(act3)
+        act4 = self.block4(mp3)
+        mp4 = self.mp4(act4)
+        act5 = self.block5(mp4)
+        return act5
 
 
 class DecoderReconstructive(nn.Module):
@@ -468,16 +463,16 @@ class DecoderReconstructive(nn.Module):
 
         self.fin_out = nn.Sequential(nn.Conv2d(base_width, out_channels, kernel_size=3, padding=1))
 
-    def forward(self, b5: Tensor) -> Tensor:
+    def forward(self, act5: Tensor) -> Tensor:
         """Reconstruct the image from the activations of the bottleneck layer.
 
         Args:
-            b5 (Tensor): Activations of the bottleneck layer.
+            act5 (Tensor): Activations of the bottleneck layer.
 
         Returns:
             Batch of reconstructed images.
         """
-        up1 = self.up1(b5)
+        up1 = self.up1(act5)
         db1 = self.db1(up1)
 
         up2 = self.up2(db1)
