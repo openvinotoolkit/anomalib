@@ -27,7 +27,7 @@ from anomalib.models.components import AnomalyModule
 
 
 def _snake_to_camel_case(model_name: str) -> str:
-    """Convert model name in snake case to camel case.
+    """Convert model name from snake case to camel case.
 
     Args:
         model_name (str): Model name in snake case.

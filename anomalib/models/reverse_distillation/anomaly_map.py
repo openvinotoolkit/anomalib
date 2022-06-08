@@ -1,4 +1,4 @@
-"""compute Anomaly map."""
+"""Compute Anomaly map."""
 
 # Original Code
 # Copyright (c) 2022 hq-deng
@@ -43,10 +43,10 @@ class AnomalyMapGenerator:
                 Defaults to "multiply".
 
         Raises:
-            ValueError: _description_
+            ValueError: In case modes other than multiply and add are passed.
 
         Returns:
-            Tensor: _description_
+            Tensor: Anomaly maps of length batch.
         """
         if mode == "multiply":
             anomaly_map = torch.ones(
