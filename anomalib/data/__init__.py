@@ -19,7 +19,7 @@ from typing import Union
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning import LightningDataModule
 
-from .btech import BTechDataModule
+from .btech import BTech
 from .folder import FolderDataModule
 from .inference import InferenceDataset
 from .mvtec import MVTec
@@ -52,7 +52,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
             create_validation_set=config.dataset.create_validation_set,
         )
     elif config.dataset.format.lower() == "btech":
-        datamodule = BTechDataModule(
+        datamodule = BTech(
             # TODO: Remove config values. IAAALD-211
             root=config.dataset.path,
             category=config.dataset.category,
@@ -97,7 +97,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
 
 __all__ = [
     "get_datamodule",
-    "BTechDataModule",
+    "BTech",
     "FolderDataModule",
     "InferenceDataset",
     "MVTec",
