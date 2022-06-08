@@ -35,6 +35,7 @@ class TestModel:
             ("ganomaly", False),
             ("padim", False),
             ("patchcore", False),
+            ("reverse_distillation", False),
             ("stfpm", False),
         ],
     )
