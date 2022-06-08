@@ -26,3 +26,7 @@ terms are listed below.
 3. FastFlowModel
    Copyright (c) 2022 @gathierry, https://github.com/gathierry/FastFlow
    SPDX-License-Identifier: Apache-2.0
+
+4. Torch models and utils of the Draem module (anomalib.models.draem)
+   Copyright (c) 2021 VitjanZ, https://github.com/VitjanZ/DRAEM.
+   SPDX-License-Identifier: MIT
