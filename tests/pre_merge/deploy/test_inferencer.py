@@ -86,7 +86,6 @@ class TestInferencers:
             "dfm",
             "ganomaly",
             "padim",
-            "reverse_distillation",
             "stfpm",
         ],
     )
