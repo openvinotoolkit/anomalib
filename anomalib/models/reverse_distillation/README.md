@@ -12,43 +12,87 @@ During testing, a similar step is followed but this time the cosine distance bet
 
 ## Architecture
 
-![Anomaly Detection via Reverse Distillation from One-Class Embedding Architecture](../../../docs/source/images/reversedistillation/architecture.png "Reverse Distillation Architecture")
+![Anomaly Detection via Reverse Distillation from One-Class Embedding Architecture](../../../docs/source/images/reverse_distillation/architecture.png "Reverse Distillation Architecture")
 
 ## Usage
 
-`python tools/train.py --model reversedistillation`
+`python tools/train.py --model reverse_distillation`
 
 ## Benchmark
 
 All results gathered with seed `42`.
 
+Note: Early Stopping (with patience 3) was enabled during training.
+
 ## [MVTec AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 
 ### Image-Level AUC
 
-|                |    Avg    | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
-| -------------- | :-------: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
-| ResNet-18      | **0.933** | 0.946  |  1.0  |  0.992  | 0.783 | 0.945 |  1.0   | 0.965 |  0.930  |  0.920   |    1.0    | 0.946 | 0.833 |   0.886    |   0.965    | 0.887  |
-| Wide ResNet-50 |   0.881   | 0.984  | 0.990 |   1.0   | 0.984 | 0.770 | 0.994  | 0.892 |  0.718  |  0.996   |   0.991   | 0.709 | 0.948 |   0.925    |   0.861    | 0.457  |
+|            | ResNet 18 | Wide ResNet 50 |
+| :--------- | --------: | -------------: |
+| Bottle     |         1 |          0.977 |
+| Cable      |     0.977 |          0.954 |
+| Capsule    |     0.947 |          0.738 |
+| Carpet     |      0.87 |          0.983 |
+| Grid       |     0.995 |          0.646 |
+| Hazelnut   |     0.915 |          0.994 |
+| Leather    |     0.994 |          0.999 |
+| Metal_nut  |         1 |           0.95 |
+| Pill       |     0.939 |          0.641 |
+| Screw      |       0.9 |          0.832 |
+| Tile       |     0.905 |           0.72 |
+| Toothbrush |       0.9 |          0.817 |
+| Transistor |     0.953 |          0.569 |
+| Wood       |     0.988 |          0.973 |
+| Zipper     |     0.888 |          0.952 |
+| Average    |     0.945 |           0.85 |
 
 ### Pixel-Level AUC
 
-|                |    Avg    | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
-| -------------- | :-------: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
-| ResNet-18      |   0.945   | 0.916  | 0.986 |  0.976  | 0.791 | 0.807 | 0.982  | 0.978 |  0.971  |  0.981   |   0.973   | 0.982 | 0.986 |   0.978    |   0.922    | 0.947  |
-| Wide ResNet-50 | **0.964** | 0.980  | 0.990 |  0.971  | 0.966 | 0.928 | 0.984  | 0.969 |  0.962  |  0.986   |   0.989   | 0.983 | 0.990 |   0.989    |   0.905    | 0.859  |
+|            | ResNet 18 | Wide ResNet 50 |
+| :--------- | --------: | -------------: |
+| Bottle     |     0.982 |          0.985 |
+| Cable      |     0.979 |           0.97 |
+| Capsule    |     0.975 |          0.966 |
+| Carpet     |     0.945 |          0.974 |
+| Grid       |     0.973 |          0.678 |
+| Hazelnut   |     0.981 |          0.987 |
+| Leather    |     0.972 |          0.957 |
+| Metal_nut  |     0.975 |          0.989 |
+| Pill       |     0.981 |          0.984 |
+| Screw      |     0.989 |          0.988 |
+| Tile       |     0.805 |           0.76 |
+| Toothbrush |     0.987 |          0.988 |
+| Transistor |     0.912 |          0.889 |
+| Wood       |     0.814 |          0.956 |
+| Zipper     |     0.943 |          0.968 |
+| Average    |     0.948 |          0.936 |
 
 ### Image F1 Score
 
-|                |    Avg    | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
-| -------------- | :-------: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
-| ResNet-18      |   0.908   | 0.875  | 0.973 |  0.943  | 0.844 | 0.909 | 0.992  | 0.920 |  0.933  |  0.891   |   0.989   | 0.943 | 0.840 |   0.875    |   0.770    | 0.918  |
-| Wide ResNet-50 | **0.922** | 0.953  | 0.982 |   1.0   | 0.957 | 0.945 | 0.942  | 0.859 |  0.919  |  0.972   |   0.972   | 0.916 | 0.933 |   0.897    |   0.694    | 0.887  |
+|            | ResNet 18 | Wide ResNet 50 |
+| :--------- | --------: | -------------: |
+| Bottle     |         1 |          0.977 |
+| Cable      |     0.977 |          0.954 |
+| Capsule    |     0.947 |          0.738 |
+| Carpet     |      0.87 |          0.983 |
+| Grid       |     0.995 |          0.646 |
+| Hazelnut   |     0.915 |          0.994 |
+| Leather    |     0.994 |          0.999 |
+| Metal_nut  |         1 |           0.95 |
+| Pill       |     0.939 |          0.641 |
+| Screw      |       0.9 |          0.832 |
+| Tile       |     0.905 |           0.72 |
+| Toothbrush |       0.9 |          0.817 |
+| Transistor |     0.953 |          0.569 |
+| Wood       |     0.988 |          0.973 |
+| Zipper     |     0.888 |          0.952 |
+| Average    |     0.945 |           0.85 |
 
 ### Sample Results
 
-![Sample Result 1](../../../docs/source/images/reversedistillation/results/0.png "Sample Result 1")
+![Sample Result 1](../../../docs/source/images/reverse_distillation/results/0.png "Sample Result 1")
 
-![Sample Result 2](../../../docs/source/images/reversedistillation/results/1.png "Sample Result 2")
+![Sample Result 2](../../../docs/source/images/reverse_distillation/results/1.png "Sample Result 2")
 
-![Sample Result 3](../../../docs/source/images/reversedistillation/results/2.png "Sample Result 3")
+![Sample Result 3](../../../docs/source/images/reverse_distillation/results/2.png "Sample Result 3")

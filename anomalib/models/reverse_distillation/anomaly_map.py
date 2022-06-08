@@ -59,13 +59,13 @@ class AnomalyMapGenerator:
         else:
             raise ValueError(f"Found mode {mode}. Only multiply and add are supported.")
         for student_feature, teacher_feature in zip(student_features, teacher_features):
-            a_map = 1 - F.cosine_similarity(student_feature, teacher_feature)
-            a_map = torch.unsqueeze(a_map, dim=1)
-            a_map = F.interpolate(a_map, size=self.image_size, mode="bilinear", align_corners=True)
+            distance_map = 1 - F.cosine_similarity(student_feature, teacher_feature)
+            distance_map = torch.unsqueeze(distance_map, dim=1)
+            distance_map = F.interpolate(distance_map, size=self.image_size, mode="bilinear", align_corners=True)
             if mode == "multiply":
-                anomaly_map *= a_map
+                anomaly_map *= distance_map
             elif mode == "add":
-                anomaly_map += a_map
+                anomaly_map += distance_map
             else:
                 raise ValueError(f"Operation {mode} not supported. Only ``add`` and ``multiply`` are supported")
 
