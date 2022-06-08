@@ -31,6 +31,7 @@ class TestModel:
             ("cflow", False),
             ("dfkde", False),
             ("dfm", False),
+            ("draem", False),
             ("fastflow", False),
             ("ganomaly", False),
             ("padim", False),

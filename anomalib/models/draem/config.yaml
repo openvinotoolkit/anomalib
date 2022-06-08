@@ -2,15 +2,15 @@ dataset:
   name: mvtec #options: [mvtec, btech, folder]
   format: mvtec
   path: ./datasets/MVTec
-  task: segmentation
   category: bottle
-  image_size: 224
-  train_batch_size: 32
-  test_batch_size: 1
+  task: segmentation
+  image_size: 256
+  train_batch_size: 8
+  test_batch_size: 32
   num_workers: 8
   transform_config:
-    train: null
-    val: null
+    train: ./anomalib/models/draem/transform_config.yaml
+    val: ./anomalib/models/draem/transform_config.yaml
   create_validation_set: false
   tiling:
     apply: false
@@ -21,15 +21,14 @@ dataset:
     random_tile_count: 16
 
 model:
-  name: patchcore
-  backbone: wide_resnet50_2
-  layers:
-    - layer2
-    - layer3
-  coreset_sampling_ratio: 0.1
-  num_neighbors: 9
-  weight_file: weights/model.ckpt
-  normalization_method: min_max # options: [null, min_max, cdf]
+  name: draem
+  anomaly_source_path: null # optional, e.g. ./datasets/dtd
+  lr: 0.0001
+  early_stopping:
+    patience: 50
+    metric: pixel_AUROC
+    mode: max
+  normalization_method: min_max # options: [none, min_max, cdf]
 
 metrics:
   image:
@@ -39,18 +38,19 @@ metrics:
     - F1Score
     - AUROC
   threshold:
-    image_default: 0
-    pixel_default: 0
+    image_default: 3
+    pixel_default: 3
     adaptive: true
 
 project:
-  seed: 0
+  seed: 42
   path: ./results
+  log_images_to: ["local"]
+  logger: false # options: [tensorboard, wandb, csv] or combinations.
 
-logging:
-  log_images_to: ["local"] # options: [wandb, tensorboard, local]. Make sure you also set logger with using wandb or tensorboard.
-  logger: [] # options: [tensorboard, wandb, csv] or combinations.
-  log_graph: false # Logs the model graph to respective logger.
+optimization:
+  openvino:
+    apply: false
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
@@ -61,7 +61,7 @@ trainer:
   auto_scale_batch_size: false
   auto_select_gpus: false
   benchmark: false
-  check_val_every_n_epoch: 1 # Don't validate before extracting features.
+  check_val_every_n_epoch: 1
   default_root_dir: null
   detect_anomaly: false
   deterministic: false
@@ -79,7 +79,7 @@ trainer:
   limit_val_batches: 1.0
   log_every_n_steps: 50
   log_gpu_memory: null
-  max_epochs: 1
+  max_epochs: 100
   max_steps: -1
   max_time: null
   min_epochs: null
@@ -99,4 +99,4 @@ trainer:
   sync_batchnorm: false
   tpu_cores: null
   track_grad_norm: -1
-  val_check_interval: 1.0 # Don't validate before extracting features.
+  val_check_interval: 1.0

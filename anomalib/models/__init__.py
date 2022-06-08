@@ -74,6 +74,7 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
         "cflow",
         "dfkde",
         "dfm",
+        "draem",
         "fastflow",
         "ganomaly",
         "padim",

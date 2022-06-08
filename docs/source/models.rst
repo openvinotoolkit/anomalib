@@ -10,10 +10,11 @@ Available Models
 Segmentation
 *************
 
+- `CFlow`_
 - `Padim`_
 - `PatchCore`_
-- `STFPM`_ (Supports OpenVINO)
 - `Reverse Distillation`_
+- `STFPM`_ (Supports OpenVINO)
 
 Classification
 ***************
@@ -126,6 +127,41 @@ Usage
     ganomaly.lightning_model
     ganomaly.torch_model
 
+
+CFlow
+-------
+
+This is the implementation of the `CFlow <https://arxiv.org/pdf/2107.12571v1.pdf>`_ paper.
+
+Model Type: Segmentation
+
+Description
+***********
+
+CFLOW model is based on a conditional normalizing flow framework adopted for anomaly detection with localization. It consists of a discriminatively pretrained encoder followed by a multi-scale generative decoders. The encoder extracts features with multi-scale pyramid pooling to capture both global and local semantic information with the growing from top to bottom receptive fields. Pooled features are processed by a set of decoders to explicitly estimate likelihood of the encoded features. The estimated multi-scale likelyhoods are upsampled to input size and added up to produce the anomaly map.
+
+Architecture
+************
+
+.. image:: ./images/cflow/architecture.jpg
+    :alt: CFlow Architecture
+
+Usage
+*****
+
+.. code-block:: bash
+
+$ python tools/train.py --model cflow
+
+.. autosummary::
+    :toctree: models
+    :nosignatures:
+
+    cflow.anomaly_map
+    cflow.lightning_model
+    cflow.torch_model
+    cflow.utils
+
 Padim
 ------
 
@@ -157,6 +193,7 @@ Usage
     :toctree: models
     :nosignatures:
 
+    padim.anomaly_map
     padim.lightning_model
     padim.torch_model
 
@@ -192,6 +229,7 @@ Usage
     :toctree: models
     :nosignatures:
 
+    patchcore.anomaly_map
     patchcore.lightning_model
     patchcore.torch_model
 
@@ -226,11 +264,12 @@ Usage
     :toctree: models
     :nosignatures:
 
+    stfpm.anomaly_map
     stfpm.lightning_model
     stfpm.torch_model
 
 
-STFPM
+Reverse Distillation
 -------
 
 This is the implementation of the `Anomaly Detection via Reverse Distillation from One-Class Embedding <https://arxiv.org/pdf/2201.10703v2.pdf>`_ paper.

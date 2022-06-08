@@ -12,3 +12,4 @@ torchtext>=0.9.1
 wandb==0.12.17
 matplotlib>=3.4.3
 gradio>=2.9.4
+imgaug==0.4.0
