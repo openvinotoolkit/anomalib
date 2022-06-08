@@ -6,12 +6,7 @@ import numpy as np
 import pytest
 
 from anomalib.config import update_input_size_config
-from anomalib.data import (
-    BTechDataModule,
-    FolderDataModule,
-    MVTecDataModule,
-    get_datamodule,
-)
+from anomalib.data import BTechDataModule, FolderDataModule, MVTec, get_datamodule
 from anomalib.pre_processing.transforms import Denormalize, ToNumpy
 from tests.helpers.config import get_test_configurable_parameters
 from tests.helpers.dataset import TestDataset, get_dataset_path
@@ -19,7 +14,7 @@ from tests.helpers.dataset import TestDataset, get_dataset_path
 
 @pytest.fixture(autouse=True)
 def mvtec_data_module():
-    datamodule = MVTecDataModule(
+    datamodule = MVTec(
         root=get_dataset_path(dataset="MVTec"),
         category="leather",
         image_size=(256, 256),

@@ -164,7 +164,7 @@ def make_mvtec_dataset(
     return samples
 
 
-class MVTec(VisionDataset):
+class MVTecDataset(VisionDataset):
     """MVTec AD PyTorch Dataset."""
 
     def __init__(
@@ -189,10 +189,10 @@ class MVTec(VisionDataset):
             create_validation_set: Create a validation subset in addition to the train and test subsets
 
         Examples:
-            >>> from anomalib.data.mvtec import MVTec
+            >>> from anomalib.data.mvtec import MVTecDataset
             >>> from anomalib.data.transforms import PreProcessor
             >>> pre_process = PreProcessor(image_size=256)
-            >>> dataset = MVTec(
+            >>> dataset = MVTecDataset(
             ...     root='./datasets/MVTec',
             ...     category='leather',
             ...     pre_process=pre_process,
@@ -280,7 +280,7 @@ class MVTec(VisionDataset):
         return item
 
 
-class MVTecDataModule(LightningDataModule):
+class MVTec(LightningDataModule):
     """MVTec AD Lightning Data Module."""
 
     def __init__(
@@ -314,8 +314,8 @@ class MVTecDataModule(LightningDataModule):
             create_validation_set: Create a validation subset in addition to the train and test subsets
 
         Examples
-            >>> from anomalib.data import MVTecDataModule
-            >>> datamodule = MVTecDataModule(
+            >>> from anomalib.data import MVTec
+            >>> datamodule = MVTec(
             ...     root="./datasets/MVTec",
             ...     category="leather",
             ...     image_size=256,
@@ -404,7 +404,7 @@ class MVTecDataModule(LightningDataModule):
         """
         logger.info("Setting up train, validation, test and prediction datasets.")
         if stage in (None, "fit"):
-            self.train_data = MVTec(
+            self.train_data = MVTecDataset(
                 root=self.root,
                 category=self.category,
                 pre_process=self.pre_process_train,
@@ -415,7 +415,7 @@ class MVTecDataModule(LightningDataModule):
             )
 
         if self.create_validation_set:
-            self.val_data = MVTec(
+            self.val_data = MVTecDataset(
                 root=self.root,
                 category=self.category,
                 pre_process=self.pre_process_val,
@@ -425,7 +425,7 @@ class MVTecDataModule(LightningDataModule):
                 create_validation_set=self.create_validation_set,
             )
 
-        self.test_data = MVTec(
+        self.test_data = MVTecDataset(
             root=self.root,
             category=self.category,
             pre_process=self.pre_process_val,
