@@ -27,7 +27,7 @@ from torch import Tensor, optim
 
 from anomalib.models.components import AnomalyModule
 
-from .components import ReverseDistillationLoss
+from .loss import ReverseDistillationLoss
 from .torch_model import ReverseDistillationModel
 
 logger = logging.getLogger(__name__)

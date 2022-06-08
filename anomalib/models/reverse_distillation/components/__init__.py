@@ -16,6 +16,5 @@
 
 from .bottleneck import get_bottleneck_layer
 from .de_resnet import get_decoder
-from .loss import ReverseDistillationLoss
 
-__all__ = ["get_bottleneck_layer", "get_decoder", "ReverseDistillationLoss"]
+__all__ = ["get_bottleneck_layer", "get_decoder"]
