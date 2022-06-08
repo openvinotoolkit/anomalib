@@ -49,7 +49,7 @@ class ReverseDistillation(AnomalyModule):
         self.model = ReverseDistillationModel(backbone=backbone, layers=layers, input_size=input_size)
         self.loss = ReverseDistillationLoss()
 
-    def training_step(self, batch, _) -> Dict[str, Tensor]:  # pylint: disable=arguments-differ
+    def training_step(self, batch, _) -> Dict[str, Tensor]:  # type: ignore
         """Training Step of Reverse Distillation Model.
 
         Features are extracted from three layers of the Encoder model. These are passed to the bottleneck layer
