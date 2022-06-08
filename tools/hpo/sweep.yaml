@@ -2,7 +2,7 @@ observation_budget: 10
 method: bayes
 metric:
   name: pixel_AUROC
-  goal: minimize
+  goal: maximize
 parameters:
   dataset:
     category: capsule
