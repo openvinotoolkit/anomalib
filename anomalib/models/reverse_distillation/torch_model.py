@@ -35,9 +35,10 @@ class ReverseDistillationModel(nn.Module):
         backbone (str): Name of the backbone used for encoder and decoder
         input_size (Tuple[int, int]): Size of input image
         layers (List[str]): Name of layers from which the features are extracted.
+        anomaly_map_mode (str): Mode used to generate anomaly map. Options are between ``multiply`` and ``add``.
     """
 
-    def __init__(self, backbone: str, input_size: Tuple[int, int], layers: List[str]):
+    def __init__(self, backbone: str, input_size: Tuple[int, int], layers: List[str], anomaly_map_mode: str):
         super().__init__()
         self.tiler: Optional[Tiler] = None
 
@@ -45,7 +46,6 @@ class ReverseDistillationModel(nn.Module):
         # TODO replace with TIMM feature extractor
         self.encoder = FeatureExtractor(backbone=encoder_backbone(pretrained=True), layers=layers)
         self.bottleneck = get_bottleneck_layer(backbone)
-        self.encoder.eval()
         self.decoder = get_decoder(backbone)
 
         if self.tiler:
@@ -53,7 +53,7 @@ class ReverseDistillationModel(nn.Module):
         else:
             image_size = input_size
 
-        self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(image_size))
+        self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(image_size), mode=anomaly_map_mode)
 
     def forward(self, images: Tensor) -> Union[Tensor, Tuple[List[Tensor], List[Tensor]]]:
         """Forward-pass images to the network.
@@ -68,6 +68,8 @@ class ReverseDistillationModel(nn.Module):
             Union[Tensor, Tuple[List[Tensor],List[Tensor]]]: Encoder and decoder features in training mode,
                 else anomaly maps.
         """
+        self.encoder.eval()
+
         if self.tiler:
             images = self.tiler.tile(images)
         encoder_features = self.encoder(images)
@@ -77,7 +79,7 @@ class ReverseDistillationModel(nn.Module):
         if self.training:
             output = encoder_features, decoder_features
         else:
-            output = self.anomaly_map_generator(encoder_features, decoder_features, mode="add")
+            output = self.anomaly_map_generator(encoder_features, decoder_features)
             if self.tiler:
                 output = self.tiler.untile(output)
 

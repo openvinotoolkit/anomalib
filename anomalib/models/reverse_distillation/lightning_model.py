@@ -43,10 +43,12 @@ class ReverseDistillation(AnomalyModule):
         layers (List[str]): Layers to extract features from the backbone CNN
     """
 
-    def __init__(self, input_size: Tuple[int, int], backbone: str, layers: List[str]):
+    def __init__(self, input_size: Tuple[int, int], backbone: str, layers: List[str], anomaly_map_mode: str):
         super().__init__()
         logger.info("Initializing Reverse Distillation Lightning model.")
-        self.model = ReverseDistillationModel(backbone=backbone, layers=layers, input_size=input_size)
+        self.model = ReverseDistillationModel(
+            backbone=backbone, layers=layers, input_size=input_size, anomaly_map_mode=anomaly_map_mode
+        )
         self.loss = ReverseDistillationLoss()
 
     def training_step(self, batch, _) -> Dict[str, Tensor]:  # type: ignore
@@ -93,7 +95,10 @@ class ReverseDistillationLightning(ReverseDistillation):
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         super().__init__(
-            input_size=hparams.model.input_size, backbone=hparams.model.backbone, layers=hparams.model.layers
+            input_size=hparams.model.input_size,
+            backbone=hparams.model.backbone,
+            layers=hparams.model.layers,
+            anomaly_map_mode=hparams.model.anomaly_map_mode,
         )
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(hparams)
