@@ -19,10 +19,10 @@ from typing import Union
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning import LightningDataModule
 
-from .btech import BTechDataModule
-from .folder import FolderDataModule
+from .btech import BTech
+from .folder import Folder
 from .inference import InferenceDataset
-from .mvtec import MVTecDataModule
+from .mvtec import MVTec
 
 
 def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule:
@@ -37,7 +37,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
     datamodule: LightningDataModule
 
     if config.dataset.format.lower() == "mvtec":
-        datamodule = MVTecDataModule(
+        datamodule = MVTec(
             # TODO: Remove config values. IAAALD-211
             root=config.dataset.path,
             category=config.dataset.category,
@@ -52,7 +52,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
             create_validation_set=config.dataset.create_validation_set,
         )
     elif config.dataset.format.lower() == "btech":
-        datamodule = BTechDataModule(
+        datamodule = BTech(
             # TODO: Remove config values. IAAALD-211
             root=config.dataset.path,
             category=config.dataset.category,
@@ -67,7 +67,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
             create_validation_set=config.dataset.create_validation_set,
         )
     elif config.dataset.format.lower() == "folder":
-        datamodule = FolderDataModule(
+        datamodule = Folder(
             root=config.dataset.path,
             normal_dir=config.dataset.normal_dir,
             abnormal_dir=config.dataset.abnormal_dir,
@@ -97,8 +97,8 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
 
 __all__ = [
     "get_datamodule",
-    "BTechDataModule",
-    "FolderDataModule",
+    "BTech",
+    "Folder",
     "InferenceDataset",
-    "MVTecDataModule",
+    "MVTec",
 ]

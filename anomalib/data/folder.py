@@ -301,7 +301,7 @@ class FolderDataset(Dataset):
         return item
 
 
-class FolderDataModule(LightningDataModule):
+class Folder(LightningDataModule):
     """Folder Lightning Data Module."""
 
     def __init__(
@@ -359,8 +359,8 @@ class FolderDataModule(LightningDataModule):
 
         Examples:
             Assume that we use Folder Dataset for the MVTec/bottle/broken_large category. We would do:
-            >>> from anomalib.data import FolderDataModule
-            >>> datamodule = FolderDataModule(
+            >>> from anomalib.data import Folder
+            >>> datamodule = Folder(
             ...     root="./datasets/MVTec/bottle/test",
             ...     normal="good",
             ...     abnormal="broken_large",
@@ -379,7 +379,7 @@ class FolderDataModule(LightningDataModule):
             The dataset expects that mask annotation filenames must be same as the original filename.
             To this end, we modified mask filenames in MVTec AD bottle category.
             Now we could try folder data module using the mvtec bottle broken large category
-            >>> datamodule = FolderDataModule(
+            >>> datamodule = Folder(
             ...     root="./datasets/bottle/test",
             ...     normal="good",
             ...     abnormal="broken_large",
@@ -401,7 +401,7 @@ class FolderDataModule(LightningDataModule):
             By default, Folder Data Module does not create a validation set. If a validation set
             is needed it could be set as follows:
 
-            >>> datamodule = FolderDataModule(
+            >>> datamodule = Folder(
             ...     root="./datasets/bottle/test",
             ...     normal="good",
             ...     abnormal="broken_large",
