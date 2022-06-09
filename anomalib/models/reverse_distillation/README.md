@@ -30,64 +30,64 @@ Note: Early Stopping (with patience 3) was enabled during training.
 
 |            | ResNet 18 | Wide ResNet 50 |
 | :--------- | --------: | -------------: |
-| Bottle     |         1 |          0.977 |
-| Cable      |     0.977 |          0.954 |
-| Capsule    |     0.947 |          0.738 |
-| Carpet     |      0.87 |          0.983 |
-| Grid       |     0.995 |          0.646 |
-| Hazelnut   |     0.915 |          0.994 |
-| Leather    |     0.994 |          0.999 |
-| Metal_nut  |         1 |           0.95 |
-| Pill       |     0.939 |          0.641 |
-| Screw      |       0.9 |          0.832 |
-| Tile       |     0.905 |           0.72 |
-| Toothbrush |       0.9 |          0.817 |
-| Transistor |     0.953 |          0.569 |
-| Wood       |     0.988 |          0.973 |
-| Zipper     |     0.888 |          0.952 |
-| Average    |     0.945 |           0.85 |
+| Bottle     |     0.998 |          0.992 |
+| Cable      |     0.982 |          0.583 |
+| Capsule    |     0.864 |           0.78 |
+| Carpet     |     0.996 |          0.539 |
+| Grid       |     0.941 |          0.975 |
+| Hazelnut   |     0.978 |          0.817 |
+| Leather    |     0.878 |              1 |
+| Metal_nut  |     0.999 |          0.929 |
+| Pill       |     0.944 |          0.553 |
+| Screw      |     0.778 |           0.86 |
+| Tile       |     0.833 |          0.513 |
+| Toothbrush |     0.967 |            0.7 |
+| Transistor |     0.928 |          0.829 |
+| Wood       |     0.989 |          0.993 |
+| Zipper     |     0.968 |          0.787 |
+| Average    |     0.936 |           0.79 |
 
 ### Pixel-Level AUC
 
 |            | ResNet 18 | Wide ResNet 50 |
 | :--------- | --------: | -------------: |
-| Bottle     |     0.982 |          0.985 |
-| Cable      |     0.979 |           0.97 |
-| Capsule    |     0.975 |          0.966 |
-| Carpet     |     0.945 |          0.974 |
-| Grid       |     0.973 |          0.678 |
-| Hazelnut   |     0.981 |          0.987 |
-| Leather    |     0.972 |          0.957 |
-| Metal_nut  |     0.975 |          0.989 |
-| Pill       |     0.981 |          0.984 |
-| Screw      |     0.989 |          0.988 |
-| Tile       |     0.805 |           0.76 |
-| Toothbrush |     0.987 |          0.988 |
-| Transistor |     0.912 |          0.889 |
-| Wood       |     0.814 |          0.956 |
-| Zipper     |     0.943 |          0.968 |
-| Average    |     0.948 |          0.936 |
+| Bottle     |     0.981 |          0.985 |
+| Cable      |     0.965 |          0.794 |
+| Capsule    |     0.983 |          0.986 |
+| Carpet     |     0.989 |           0.99 |
+| Grid       |     0.964 |           0.99 |
+| Hazelnut   |     0.988 |          0.983 |
+| Leather    |     0.984 |          0.995 |
+| Metal_nut  |     0.971 |          0.979 |
+| Pill       |     0.975 |          0.977 |
+| Screw      |     0.987 |          0.989 |
+| Tile       |     0.867 |          0.953 |
+| Toothbrush |      0.99 |          0.979 |
+| Transistor |      0.84 |          0.853 |
+| Wood       |     0.939 |          0.958 |
+| Zipper     |     0.988 |          0.959 |
+| Average    |     0.961 |          0.958 |
 
 ### Image F1 Score
 
 |            | ResNet 18 | Wide ResNet 50 |
 | :--------- | --------: | -------------: |
-| Bottle     |         1 |          0.977 |
-| Cable      |     0.977 |          0.954 |
-| Capsule    |     0.947 |          0.738 |
-| Carpet     |      0.87 |          0.983 |
-| Grid       |     0.995 |          0.646 |
-| Hazelnut   |     0.915 |          0.994 |
-| Leather    |     0.994 |          0.999 |
-| Metal_nut  |         1 |           0.95 |
-| Pill       |     0.939 |          0.641 |
-| Screw      |       0.9 |          0.832 |
-| Tile       |     0.905 |           0.72 |
-| Toothbrush |       0.9 |          0.817 |
-| Transistor |     0.953 |          0.569 |
-| Wood       |     0.988 |          0.973 |
-| Zipper     |     0.888 |          0.952 |
-| Average    |     0.945 |           0.85 |
+| Bottle     |      0.95 |          0.959 |
+| Cable      |     0.911 |           0.76 |
+| Capsule    |     0.933 |          0.905 |
+| Carpet     |     0.965 |          0.864 |
+| Grid       |     0.964 |          0.945 |
+| Hazelnut   |     0.909 |          0.901 |
+| Leather    |     0.896 |          0.989 |
+| Metal_nut  |     0.995 |          0.939 |
+| Pill       |     0.931 |          0.922 |
+| Screw      |      0.88 |          0.891 |
+| Tile       |      0.88 |          0.836 |
+| Toothbrush |     0.933 |          0.833 |
+| Transistor |     0.769 |          0.744 |
+| Wood       |     0.966 |          0.948 |
+| Zipper     |     0.944 |          0.926 |
+| Average    |     0.922 |          0.891 |
 
 ### Sample Results
 
