@@ -6,12 +6,7 @@ import numpy as np
 import pytest
 
 from anomalib.config import update_input_size_config
-from anomalib.data import (
-    BTechDataModule,
-    FolderDataModule,
-    MVTecDataModule,
-    get_datamodule,
-)
+from anomalib.data import BTech, Folder, MVTec, get_datamodule
 from anomalib.pre_processing.transforms import Denormalize, ToNumpy
 from tests.helpers.config import get_test_configurable_parameters
 from tests.helpers.dataset import TestDataset, get_dataset_path
@@ -19,7 +14,7 @@ from tests.helpers.dataset import TestDataset, get_dataset_path
 
 @pytest.fixture(autouse=True)
 def mvtec_data_module():
-    datamodule = MVTecDataModule(
+    datamodule = MVTec(
         root=get_dataset_path(dataset="MVTec"),
         category="leather",
         image_size=(256, 256),
@@ -36,7 +31,7 @@ def mvtec_data_module():
 @pytest.fixture(autouse=True)
 def btech_data_module():
     """Create BTech Data Module."""
-    datamodule = BTechDataModule(
+    datamodule = BTech(
         root=get_dataset_path(dataset="BTech"),
         category="01",
         image_size=(256, 256),
@@ -54,7 +49,7 @@ def btech_data_module():
 def folder_data_module():
     """Create Folder Data Module."""
     root = get_dataset_path(dataset="bottle")
-    datamodule = FolderDataModule(
+    datamodule = Folder(
         root=root,
         normal_dir="good",
         abnormal_dir="broken_large",
