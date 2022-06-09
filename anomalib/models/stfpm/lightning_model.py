@@ -52,7 +52,6 @@ class Stfpm(AnomalyModule):
     ):
 
         super().__init__()
-        logger.info("Initializing Stfpm Lightning model.")
 
         self.model = STFPMModel(
             input_size=input_size,

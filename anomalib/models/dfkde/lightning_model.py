@@ -55,7 +55,6 @@ class Dfkde(AnomalyModule):
     ):
 
         super().__init__()
-        logger.info("Initializing DFKDE Lightning model.")
 
         self.model = DfkdeModel(
             backbone=backbone,

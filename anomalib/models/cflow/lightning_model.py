@@ -54,7 +54,6 @@ class Cflow(AnomalyModule):
         permute_soft: bool = False,
     ):
         super().__init__()
-        logger.info("Initializing Cflow Lightning model.")
 
         self.model: CflowModel = CflowModel(
             input_size=input_size,

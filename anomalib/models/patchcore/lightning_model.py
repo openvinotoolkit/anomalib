@@ -54,7 +54,6 @@ class Patchcore(AnomalyModule):
     ) -> None:
 
         super().__init__()
-        logger.info("Initializing Patchcore Lightning model.")
 
         self.model: PatchcoreModel = PatchcoreModel(
             input_size=input_size,
