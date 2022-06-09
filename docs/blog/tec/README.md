@@ -162,7 +162,7 @@ results
 ### Logging to Tensorboard and/or W&B
 To use TensorBoard and/or  W&B logger, ensure that the logger parameter is set to `tensorboard`, `wandb` or `[tensorboard, wandb]` in the `logging` section of the config file.
 
-An example configuration for saving to TensorBoard  is shown in the figure below.
+An example configuration for saving to TensorBoard  is shown in the figure below. Similarly after setting logger to `wandb` you will see the images on your wandb project dashboard.
 ```yaml
 logging:
     log_images_to: [tensorboard]
@@ -170,13 +170,7 @@ logging:
 ```
 
 <div align="center">
-<img src="docs/blogs/../../images/tensorboard.png">
-</div>
-
-Similarly after setting logger to `wandb` you will see the images on your wandb project dashboard.
-
-<div align="center">
-<img src="docs/blogs/../../images/wandb.png">
+<img src="docs/blogs/../../images/logging.gif">
 </div>
 
 ### Hyper-Parameter Optimization
@@ -210,7 +204,7 @@ In case `model_config` is not provided, the script looks at the default config l
 
 A sample run is visible in the screenshot below.
 <div align="center">
-<img src="docs/blog/../../images/hpo.png">
+<img src="docs/blog/../../images/hpo.gif">
 </div>
 
 ## Benchmarking
