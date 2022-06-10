@@ -42,14 +42,14 @@ def get_model_nncf_cat() -> List:
         List: Returns a combination of models with their nncf support for each category.
     """
     model_support = [
-        ("padim", False),
+        ("cflow", False),
         ("dfkde", False),
         ("dfm", False),
-        ("stfpm", False),
-        # ("stfpm", True),
-        ("patchcore", False),
-        ("cflow", False),
         ("ganomaly", False),
+        # ("stfpm", True),
+        ("padim", False),
+        ("patchcore", False),
+        ("stfpm", False),
     ]
     categories = random.sample(
         [
@@ -88,10 +88,10 @@ class TestModel:
         thresholds = OmegaConf.load("tests/nightly/models/performance_thresholds.yaml")
 
         threshold = thresholds[config.model.name][config.dataset.category]
-        if "optimization" in config.keys() and config.optimization.nncf.apply:
+        if "optimization" in config.keys() and "nncf" in config.optimization.keys() and config.optimization.nncf.apply:
             threshold = threshold.nncf
         if not (
-            np.isclose(results["image_AUROC"], threshold["image_AUROC"], rtol=0.02)
+            np.isclose(results["image_AUROC"], threshold["image_AUROC"], rtol=0.05)
             or (results["image_AUROC"] >= threshold["image_AUROC"])
         ):
             raise AssertionError(
@@ -100,7 +100,7 @@ class TestModel:
 
         if config.dataset.task == "segmentation":
             if not (
-                np.isclose(results["pixel_AUROC"], threshold["pixel_AUROC"], rtol=0.02)
+                np.isclose(results["pixel_AUROC"], threshold["pixel_AUROC"], rtol=0.05)
                 or (results["pixel_AUROC"] >= threshold["pixel_AUROC"])
             ):
                 raise AssertionError(

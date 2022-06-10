@@ -57,7 +57,7 @@ from torch.utils.data.dataset import Dataset
 from torchvision.datasets.folder import VisionDataset
 
 from anomalib.data.inference import InferenceDataset
-from anomalib.data.utils import DownloadProgressBar, read_image
+from anomalib.data.utils import DownloadProgressBar, hash_check, read_image
 from anomalib.data.utils.split import (
     create_validation_set_from_test_set,
     split_normal_images_in_train_set,
@@ -378,19 +378,22 @@ class MVTecDataModule(LightningDataModule):
             logger.info("Downloading the Mvtec AD dataset.")
             url = "https://www.mydrive.ch/shares/38536/3830184030e49fe74747669442f0f282/download/420938113-1629952094"
             dataset_name = "mvtec_anomaly_detection.tar.xz"
+            zip_filename = self.root / dataset_name
             with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc="MVTec AD") as progress_bar:
                 urlretrieve(
                     url=f"{url}/{dataset_name}",
-                    filename=self.root / dataset_name,
+                    filename=zip_filename,
                     reporthook=progress_bar.update_to,
                 )
+            logger.info("Checking hash")
+            hash_check(zip_filename, "eefca59f2cede9c3fc5b6befbfec275e")
 
             logger.info("Extracting the dataset.")
-            with tarfile.open(self.root / dataset_name) as tar_file:
+            with tarfile.open(zip_filename) as tar_file:
                 tar_file.extractall(self.root)
 
             logger.info("Cleaning the tar file")
-            (self.root / dataset_name).unlink()
+            (zip_filename).unlink()
 
     def setup(self, stage: Optional[str] = None) -> None:
         """Setup train, validation and test data.

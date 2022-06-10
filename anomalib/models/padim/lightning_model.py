@@ -18,10 +18,11 @@ Paper https://arxiv.org/abs/2011.08785
 # and limitations under the License.
 
 import logging
-from typing import List, Union
+from typing import List, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
+from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -29,28 +30,33 @@ from anomalib.models.padim.torch_model import PadimModel
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["PadimLightning"]
+__all__ = ["Padim", "PadimLightning"]
 
 
-class PadimLightning(AnomalyModule):
+@MODEL_REGISTRY
+class Padim(AnomalyModule):
     """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
 
     Args:
-        hparams (Union[DictConfig, ListConfig]): Model params
+        layers (List[str]): Layers to extract features from the backbone CNN
+        input_size (Tuple[int, int]): Size of the model input.
+        backbone (str): Backbone CNN network
     """
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]):
-        super().__init__(hparams)
+    def __init__(
+        self,
+        layers: List[str],
+        input_size: Tuple[int, int],
+        backbone: str,
+    ):
+        super().__init__()
         logger.info("Initializing Padim Lightning model.")
 
-        self.layers = hparams.model.layers
+        self.layers = layers
         self.model: PadimModel = PadimModel(
-            layers=hparams.model.layers,
-            input_size=hparams.model.input_size,
-            tile_size=hparams.dataset.tiling.tile_size,
-            tile_stride=hparams.dataset.tiling.stride,
-            apply_tiling=hparams.dataset.tiling.apply,
-            backbone=hparams.model.backbone,
+            input_size=input_size,
+            backbone=backbone,
+            layers=layers,
         ).eval()
 
         self.stats: List[Tensor] = []
@@ -107,3 +113,20 @@ class PadimLightning(AnomalyModule):
 
         batch["anomaly_maps"] = self.model(batch["image"])
         return batch
+
+
+class PadimLightning(Padim):
+    """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
+
+    Args:
+        hparams (Union[DictConfig, ListConfig]): Model params
+    """
+
+    def __init__(self, hparams: Union[DictConfig, ListConfig]):
+        super().__init__(
+            input_size=hparams.model.input_size,
+            layers=hparams.model.layers,
+            backbone=hparams.model.backbone,
+        )
+        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
+        self.save_hyperparameters(hparams)

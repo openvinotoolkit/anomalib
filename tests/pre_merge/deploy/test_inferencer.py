@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Union
@@ -28,6 +27,7 @@ from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
 from anomalib.deploy import OpenVINOInferencer, TorchInferencer, export_convert
 from anomalib.models import get_model
+from anomalib.utils.callbacks import get_callbacks
 from tests.helpers.dataset import TestDataset, get_dataset_path
 from tests.helpers.inference import MockImageLoader, get_meta_data
 
@@ -40,13 +40,15 @@ def get_model_config(
     model_config.dataset.path = dataset_path
     model_config.dataset.category = category
     model_config.trainer.max_epochs = 1
+    model_config.trainer.devices = 1
+    model_config.trainer.accelerator = "gpu"
     return model_config
 
 
 class TestInferencers:
     @pytest.mark.parametrize(
         "model_name",
-        ["padim", "stfpm", "patchcore", "dfm", "dfkde", "ganomaly", "cflow"],
+        ["cflow", "dfm", "dfkde", "fastflow", "ganomaly", "padim", "patchcore", "stfpm"],
     )
     @TestDataset(num_train=20, num_test=1, path=get_dataset_path(), use_mvtec=False)
     def test_torch_inference(self, model_name: str, category: str = "shapes", path: str = "./datasets/MVTec"):
@@ -61,8 +63,9 @@ class TestInferencers:
             )
 
             model = get_model(model_config)
-            trainer = Trainer(logger=False, **model_config.trainer)
             datamodule = get_datamodule(model_config)
+            callbacks = get_callbacks(model_config)
+            trainer = Trainer(**model_config.trainer, logger=False, callbacks=callbacks)
 
             trainer.fit(model=model, datamodule=datamodule)
 
@@ -99,8 +102,10 @@ class TestInferencers:
             export_path = Path(project_path)
 
             model = get_model(model_config)
-            trainer = Trainer(logger=False, **model_config.trainer)
             datamodule = get_datamodule(model_config)
+            callbacks = get_callbacks(model_config)
+            trainer = Trainer(**model_config.trainer, logger=False, callbacks=callbacks)
+
             trainer.fit(model=model, datamodule=datamodule)
 
             export_convert(

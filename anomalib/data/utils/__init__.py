@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .download import DownloadProgressBar
+from .download import DownloadProgressBar, hash_check
 from .image import get_image_filenames, read_image
 
-__all__ = ["get_image_filenames", "read_image", "DownloadProgressBar"]
+__all__ = ["get_image_filenames", "hash_check", "read_image", "DownloadProgressBar"]

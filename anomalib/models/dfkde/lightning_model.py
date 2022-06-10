@@ -17,8 +17,8 @@
 import logging
 from typing import List, Union
 
-from omegaconf.dictconfig import DictConfig
-from omegaconf.listconfig import ListConfig
+from omegaconf import DictConfig, ListConfig
+from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -28,22 +28,40 @@ from .torch_model import DfkdeModel
 logger = logging.getLogger(__name__)
 
 
-class DfkdeLightning(AnomalyModule):
+@MODEL_REGISTRY
+class Dfkde(AnomalyModule):
     """DFKDE: Deep Feature Kernel Density Estimation.
 
     Args:
-        hparams (Union[DictConfig, ListConfig]): Model params
+        backbone (str): Pre-trained model backbone.
+        max_training_points (int, optional): Number of training points to fit the KDE model.
+            Defaults to 40000.
+        pre_processing (str, optional): Preprocess features before passing to KDE.
+            Options are between `norm` and `scale`. Defaults to "scale".
+        n_components (int, optional): Number of PCA components. Defaults to 16.
+        threshold_steepness (float, optional): Controls how quickly the value saturates around zero.
+            Defaults to 0.05.
+        threshold_offset (float, optional): Offset of the density function from 0. Defaults to 12.0.
     """
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]):
-        super().__init__(hparams)
+    def __init__(
+        self,
+        backbone: str,
+        max_training_points: int = 40000,
+        pre_processing: str = "scale",
+        n_components: int = 16,
+        threshold_steepness: float = 0.05,
+        threshold_offset: int = 12,
+    ):
+
+        super().__init__()
         logger.info("Initializing DFKDE Lightning model.")
-        threshold_steepness = 0.05
-        threshold_offset = 12
 
         self.model = DfkdeModel(
-            backbone=hparams.model.backbone,
-            filter_count=hparams.model.max_training_points,
+            backbone=backbone,
+            n_comps=n_components,
+            pre_processing=pre_processing,
+            filter_count=max_training_points,
             threshold_steepness=threshold_steepness,
             threshold_offset=threshold_offset,
         )
@@ -96,3 +114,23 @@ class DfkdeLightning(AnomalyModule):
         batch["pred_scores"] = self.model(batch["image"])
 
         return batch
+
+
+class DfkdeLightning(Dfkde):
+    """DFKDE: Deep Feature Kernel Density Estimation.
+
+    Args:
+        hparams (Union[DictConfig, ListConfig]): Model params
+    """
+
+    def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
+        super().__init__(
+            backbone=hparams.model.backbone,
+            max_training_points=hparams.model.max_training_points,
+            pre_processing=hparams.model.pre_processing,
+            n_components=hparams.model.n_components,
+            threshold_steepness=hparams.model.threshold_steepness,
+            threshold_offset=hparams.model.threshold_offset,
+        )
+        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
+        self.save_hyperparameters(hparams)

@@ -41,6 +41,13 @@ ___
 
 To get an overview of all the devices where `anomalib` as been tested thoroughly, look at the [Supported Hardware](https://openvinotoolkit.github.io/anomalib/#supported-hardware) section in the documentation.
 
+### Jupyter Notebooks
+
+For getting started with a Jupyter Notebook, please refer to the [Notebooks](./notebooks) folder of this repository. Additionally, you can refer to a few created by the community:
+
+- [Google Colab](https://colab.research.google.com/drive/1K4a4z2iZGBNhWdmt9Aqdld7kTAxBfAmi?usp=sharing) by @bth5
+- [Kaggle](https://www.kaggle.com/code/ipythonx/mvtec-ad-anomaly-detection-with-anomalib-library) by @innat
+
 ### PyPI Install
 
 You can get started with `anomalib` by just using pip.
@@ -96,11 +103,12 @@ python tools/train.py --model padim
 where the currently available models are:
 
 - [CFlow](anomalib/models/cflow)
+- [DFM](anomalib/models/dfm)
+- [DFKDE](anomalib/models/dfkde)
+- [FastFlow](anomalib/models/fastflow)
 - [PatchCore](anomalib/models/patchcore)
 - [PADIM](anomalib/models/padim)
 - [STFPM](anomalib/models/stfpm)
-- [DFM](anomalib/models/dfm)
-- [DFKDE](anomalib/models/dfkde)
 - [GANomaly](anomalib/models/ganomaly)
 
 ### Custom Dataset
@@ -110,18 +118,20 @@ dataset:
   name: <name-of-the-dataset>
   format: folder
   path: <path/to/folder/dataset>
-  normal: normal # name of the folder containing normal images.
-  abnormal: abnormal # name of the folder containing abnormal images.
+  normal_dir: normal # name of the folder containing normal images.
+  abnormal_dir: abnormal # name of the folder containing abnormal images.
+  normal_test_dir: null # name of the folder containing normal test images.
   task: segmentation # classification or segmentation
   mask: <path/to/mask/annotations> #optional
   extensions: null
   split_ratio: 0.2  # ratio of the normal images that will be used to create a test split
-  seed: 0
   image_size: 256
   train_batch_size: 32
   test_batch_size: 32
   num_workers: 8
-  transform_config: null
+  transform_config:
+    train: null
+    val: null
   create_validation_set: true
   tiling:
     apply: false
@@ -179,12 +189,48 @@ python tools/inference.py \
 
 > Ensure that you provide path to `meta_data.json` if you want the normalization to be applied correctly.
 
+## Hyperparameter Optimization
+
+To run hyperparameter optimization, use the following command:
+
+```bash
+python tools/hpo/sweep.py \
+    --model padim --model_config ./path_to_config.yaml \
+    --sweep_config tools/hpo/sweep.yaml
+```
+
+For more details refer the [HPO Documentation](https://openvinotoolkit.github.io/anomalib/guides/hyperparameter_optimization.html)
+
+## Benchmarking
+
+To gather benchmarking data such as throughput across categories, use the following command:
+
+```bash
+python tools/benchmarking/benchmark.py \
+    --config <relative/absolute path>/<paramfile>.yaml
+```
+
+Refer to the [Benchmarking Documentation](https://openvinotoolkit.github.io/anomalib/guides/benchmarking.html) for more details.
+
+## Logging Images
+
+You can save images locally or to a logger such TensorBoard or Weights and Biases by setting the following configuration.
+
+```yaml
+logging:
+  logger: [tensorboard, wandb]
+  log_graph: false
+```
+
+For more information on logging images, refer to the [Logging Documentation](https://openvinotoolkit.github.io/anomalib/guides/logging.html)
 ___
 
 ## Datasets
+
 `anomalib` supports MVTec AD [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/) and BeanTech [(CC-BY-SA)](https://creativecommons.org/licenses/by-sa/4.0/legalcode) for benchmarking and `folder` for custom dataset training/inference.
 
 ### [MVTec AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
+
 MVTec AD dataset is one of the main benchmarks for anomaly detection, and is released under the
 Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 

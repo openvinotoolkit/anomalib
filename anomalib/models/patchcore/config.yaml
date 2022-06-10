@@ -7,7 +7,7 @@ dataset:
   image_size: 224
   train_batch_size: 32
   test_batch_size: 1
-  num_workers: 0
+  num_workers: 8
   transform_config:
     train: null
     val: null
@@ -30,10 +30,6 @@ model:
   num_neighbors: 9
   weight_file: weights/model.ckpt
   normalization_method: min_max # options: [null, min_max, cdf]
-  threshold:
-    image_default: 0
-    pixel_default: 0
-    adaptive: true
 
 metrics:
   image:
@@ -42,12 +38,19 @@ metrics:
   pixel:
     - F1Score
     - AUROC
+  threshold:
+    image_default: 0
+    pixel_default: 0
+    adaptive: true
 
 project:
   seed: 0
   path: ./results
-  log_images_to: [local]
-  logger: false # options: [tensorboard, wandb, csv] or combinations.
+
+logging:
+  log_images_to: ["local"] # options: [wandb, tensorboard, local]. Make sure you also set logger with using wandb or tensorboard.
+  logger: [] # options: [tensorboard, wandb, csv] or combinations.
+  log_graph: false # Logs the model graph to respective logger.
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
@@ -62,6 +65,7 @@ trainer:
   default_root_dir: null
   detect_anomaly: false
   deterministic: false
+  devices: 1
   enable_checkpointing: true
   enable_model_summary: true
   enable_progress_bar: true
@@ -83,7 +87,7 @@ trainer:
   move_metrics_to_cpu: false
   multiple_trainloader_mode: max_size_cycle
   num_nodes: 1
-  num_processes: 1
+  num_processes: null
   num_sanity_val_steps: 0
   overfit_batches: 0.0
   plugins: null

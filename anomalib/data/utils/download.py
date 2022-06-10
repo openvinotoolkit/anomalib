@@ -1,7 +1,4 @@
-"""Helper to show progress bars with `urlretrieve`.
-
-Based on https://stackoverflow.com/a/53877507
-"""
+"""Helper to show progress bars with `urlretrieve`, check hash of file."""
 
 # Copyright (C) 2020 Intel Corporation
 #
@@ -17,7 +14,9 @@ Based on https://stackoverflow.com/a/53877507
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import hashlib
 import io
+from pathlib import Path
 from typing import Dict, Iterable, Optional, Union
 
 from tqdm import tqdm
@@ -146,7 +145,7 @@ class DownloadProgressBar(tqdm):
         colour: Optional[str] = None,
         delay: Optional[float] = 0,
         gui: Optional[bool] = False,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             iterable=iterable,
@@ -175,13 +174,14 @@ class DownloadProgressBar(tqdm):
             colour=colour,
             delay=delay,
             gui=gui,
-            **kwargs
+            **kwargs,
         )
         self.total: Optional[Union[int, float]]
 
     def update_to(self, chunk_number: int = 1, max_chunk_size: int = 1, total_size=None):
         """Progress bar hook for tqdm.
 
+        Based on https://stackoverflow.com/a/53877507
         The implementor does not have to bother about passing parameters to this as it gets them from urlretrieve.
         However the context needs a few parameters. Refer to the example.
 
@@ -193,3 +193,16 @@ class DownloadProgressBar(tqdm):
         if total_size is not None:
             self.total = total_size
         self.update(chunk_number * max_chunk_size - self.n)
+
+
+def hash_check(file_path: Path, expected_hash: str):
+    """Raise assert error if hash does not match the calculated hash of the file.
+
+    Args:
+        file_path (Path): Path to file.
+        expected_hash (str): Expected hash of the file.
+    """
+    with open(file_path, "rb") as hash_file:
+        assert (
+            hashlib.md5(hash_file.read()).hexdigest() == expected_hash
+        ), f"Downloaded file {file_path} does not match the required hash."

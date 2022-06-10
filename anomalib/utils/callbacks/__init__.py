@@ -15,6 +15,7 @@
 # and limitations under the License.
 
 import os
+import warnings
 from importlib import import_module
 from typing import List, Union
 
@@ -23,12 +24,17 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 
 from .cdf_normalization import CdfNormalizationCallback
+from .graph import GraphLogger
+from .metrics_configuration import MetricsConfigurationCallback
 from .min_max_normalization import MinMaxNormalizationCallback
 from .model_loader import LoadModelCallback
 from .timer import TimerCallback
 from .visualizer_callback import VisualizerCallback
 
 __all__ = [
+    "CdfNormalizationCallback",
+    "MetricsConfigurationCallback",
+    "MinMaxNormalizationCallback",
     "LoadModelCallback",
     "TimerCallback",
     "VisualizerCallback",
@@ -59,6 +65,24 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
 
     callbacks.extend([checkpoint, TimerCallback()])
 
+    # Add metric configuration to the model via MetricsConfigurationCallback
+    image_metric_names = config.metrics.image if "image" in config.metrics.keys() else None
+    pixel_metric_names = config.metrics.pixel if "pixel" in config.metrics.keys() else None
+    image_threshold = (
+        config.metrics.threshold.image_default if "image_default" in config.metrics.threshold.keys() else None
+    )
+    pixel_threshold = (
+        config.metrics.threshold.pixel_default if "pixel_default" in config.metrics.threshold.keys() else None
+    )
+    metrics_callback = MetricsConfigurationCallback(
+        config.metrics.threshold.adaptive,
+        image_threshold,
+        pixel_threshold,
+        image_metric_names,
+        pixel_metric_names,
+    )
+    callbacks.append(metrics_callback)
+
     if "weight_file" in config.model.keys():
         load_model = LoadModelCallback(os.path.join(config.project.path, config.model.weight_file))
         callbacks.append(load_model)
@@ -76,10 +100,21 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
         else:
             raise ValueError(f"Normalization method not recognized: {config.model.normalization_method}")
 
-    if not config.project.log_images_to == []:
+    # TODO Modify when logger is deprecated from project
+    if "log_images_to" in config.project.keys():
+        warnings.warn(
+            "'log_images_to' key will be deprecated from 'project' section of the config file."
+            " Please use the logging section in config file",
+            DeprecationWarning,
+        )
+        config.logging.log_images_to = config.project.log_images_to
+
+    if not config.logging.log_images_to == []:
         callbacks.append(
             VisualizerCallback(
-                task=config.dataset.task, inputs_are_normalized=not config.model.normalization_method == "none"
+                task=config.dataset.task,
+                log_images_to=config.logging.log_images_to,
+                inputs_are_normalized=not config.model.normalization_method == "none",
             )
         )
 
@@ -108,5 +143,9 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
                     filename="openvino_model",
                 )
             )
+
+    # Add callback to log graph to loggers
+    if config.logging.log_graph not in [None, False]:
+        callbacks.append(GraphLogger())
 
     return callbacks

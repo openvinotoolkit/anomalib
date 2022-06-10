@@ -5,11 +5,14 @@ import pytorch_lightning as pl
 import torch
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
+from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
 
 from anomalib.models.components import AnomalyModule
+from anomalib.utils.callbacks.metrics_configuration import MetricsConfigurationCallback
 from anomalib.utils.callbacks.visualizer_callback import VisualizerCallback
+from anomalib.utils.metrics import get_metrics
 
 
 class DummyDataset(Dataset):
@@ -41,14 +44,19 @@ class DummyModel(nn.Module):
 
 
 class DummyModule(AnomalyModule):
-    """A dummy model which calls visualizer callback on fake images and
-    masks."""
+    """A dummy model which calls visualizer callback on fake images and masks."""
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
-        super().__init__(hparams)
+        super().__init__()
         self.model = DummyModel()
         self.task = "segmentation"
-        self.callbacks = [VisualizerCallback(task=self.task)]  # test if this is removed
+        self.callbacks = [
+            VisualizerCallback(task=self.task, log_images_to=hparams.logging.log_images_to),
+        ]  # test if this is removed
+
+        self.image_metrics, self.pixel_metrics = get_metrics(hparams)
+        self.image_metrics.set_threshold(hparams.model.threshold.image_default)
+        self.pixel_metrics.set_threshold(hparams.model.threshold.pixel_default)
 
     def test_step(self, batch, _):
         """Only used to trigger on_test_epoch_end."""

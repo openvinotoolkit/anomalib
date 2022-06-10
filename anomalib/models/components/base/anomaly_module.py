@@ -15,18 +15,17 @@
 # and limitations under the License.
 
 from abc import ABC
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional
 
 import pytorch_lightning as pl
-from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks.base import Callback
 from torch import Tensor, nn
 
 from anomalib.utils.metrics import (
     AdaptiveThreshold,
+    AnomalibMetricCollection,
     AnomalyScoreDistribution,
     MinMax,
-    get_metrics,
 )
 
 
@@ -34,32 +33,28 @@ class AnomalyModule(pl.LightningModule, ABC):
     """AnomalyModule to train, validate, predict and test images.
 
     Acts as a base class for all the Anomaly Modules in the library.
-
-    Args:
-        params (Union[DictConfig, ListConfig]): Configuration
     """
 
-    def __init__(self, params: Union[DictConfig, ListConfig]):
-
+    def __init__(self):
         super().__init__()
-        # Force the type for hparams so that it works with OmegaConfig style of accessing
-        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
-        self.save_hyperparameters(params)
+        self.save_hyperparameters()
+        self.model: nn.Module
         self.loss: Tensor
         self.callbacks: List[Callback]
 
-        self.image_threshold = AdaptiveThreshold(self.hparams.model.threshold.image_default).cpu()
-        self.pixel_threshold = AdaptiveThreshold(self.hparams.model.threshold.pixel_default).cpu()
+        self.adaptive_threshold: bool
+
+        self.image_threshold = AdaptiveThreshold().cpu()
+        self.pixel_threshold = AdaptiveThreshold().cpu()
 
         self.training_distribution = AnomalyScoreDistribution().cpu()
         self.min_max = MinMax().cpu()
 
-        self.model: nn.Module
-
-        # metrics
-        self.image_metrics, self.pixel_metrics = get_metrics(self.hparams)
-        self.image_metrics.set_threshold(self.hparams.model.threshold.image_default)
-        self.pixel_metrics.set_threshold(self.hparams.model.threshold.pixel_default)
+        # Create placeholders for image and pixel metrics.
+        # If set from the config file, MetricsConfigurationCallback will
+        #   create the metric collections upon setup.
+        self.image_metrics: AnomalibMetricCollection
+        self.pixel_metrics: AnomalibMetricCollection
 
     def forward(self, batch):  # pylint: disable=arguments-differ
         """Forward-pass input tensor to the module.
@@ -128,7 +123,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         Args:
           outputs: Batch of outputs from the validation step
         """
-        if self.hparams.model.threshold.adaptive:
+        if self.adaptive_threshold:
             self._compute_adaptive_threshold(outputs)
         self._collect_outputs(self.image_metrics, self.pixel_metrics, outputs)
         self._log_metrics()
@@ -176,6 +171,8 @@ class AnomalyModule(pl.LightningModule, ABC):
 
     def _log_metrics(self):
         """Log computed performance metrics."""
-        self.log_dict(self.image_metrics)
         if self.pixel_metrics.update_called:
-            self.log_dict(self.pixel_metrics)
+            self.log_dict(self.pixel_metrics, prog_bar=True)
+            self.log_dict(self.image_metrics, prog_bar=False)
+        else:
+            self.log_dict(self.image_metrics, prog_bar=True)

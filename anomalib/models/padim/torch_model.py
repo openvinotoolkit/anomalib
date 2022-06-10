@@ -36,27 +36,22 @@ class PadimModel(nn.Module):
     """Padim Module.
 
     Args:
-        layers (List[str]): Layers used for feature extraction
         input_size (Tuple[int, int]): Input size for the model.
-        tile_size (Tuple[int, int]): Tile size
-        tile_stride (int): Stride for tiling
-        apply_tiling (bool, optional): Apply tiling. Defaults to False.
+        layers (List[str]): Layers used for feature extraction
         backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
     """
 
     def __init__(
         self,
-        layers: List[str],
         input_size: Tuple[int, int],
+        layers: List[str],
         backbone: str = "resnet18",
-        apply_tiling: bool = False,
-        tile_size: Optional[Tuple[int, int]] = None,
-        tile_stride: Optional[int] = None,
     ):
         super().__init__()
+        self.tiler: Optional[Tiler] = None
+
         self.backbone = getattr(torchvision.models, backbone)
         self.layers = layers
-        self.apply_tiling = apply_tiling
         self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
         self.dims = DIMS[backbone]
         # pylint: disable=not-callable
@@ -73,11 +68,6 @@ class PadimModel(nn.Module):
         patches_dims = torch.tensor(input_size) / DIMS[backbone]["emb_scale"]
         n_patches = patches_dims.ceil().prod().int().item()
         self.gaussian = MultiVariateGaussian(n_features, n_patches)
-
-        if apply_tiling:
-            assert tile_size is not None
-            assert tile_stride is not None
-            self.tiler = Tiler(tile_size, tile_stride)
 
     def forward(self, input_tensor: Tensor) -> Tensor:
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
@@ -101,12 +91,14 @@ class PadimModel(nn.Module):
             torch.Size([32, 256, 14, 14])]
         """
 
-        if self.apply_tiling:
+        if self.tiler:
             input_tensor = self.tiler.tile(input_tensor)
+
         with torch.no_grad():
             features = self.feature_extractor(input_tensor)
             embeddings = self.generate_embedding(features)
-        if self.apply_tiling:
+
+        if self.tiler:
             embeddings = self.tiler.untile(embeddings)
 
         if self.training:

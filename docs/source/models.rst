@@ -13,6 +13,7 @@ Segmentation
 - `Padim`_
 - `PatchCore`_
 - `STFPM`_ (Supports OpenVINO)
+- `CFlow`_
 
 Classification
 ***************
@@ -60,8 +61,8 @@ Usage
     :toctree: models
     :nosignatures:
 
-    dfkde.model
-    dfkde.normality_model
+    dfkde.lightning_model
+    dfkde.torch_model
 
 DFM
 ---
@@ -96,8 +97,8 @@ Usage
     :toctree: models
     :nosignatures:
 
-    dfm.model
-    dfm.dfm_model
+    dfm.lightning_model
+    dfm.torch_model
 
 GANomaly
 ---
@@ -122,7 +123,7 @@ Usage
     :toctree: models
     :nosignatures:
 
-    ganomaly.model
+    ganomaly.lightning_model
     ganomaly.torch_model
 
 Padim
@@ -156,7 +157,9 @@ Usage
     :toctree: models
     :nosignatures:
 
-    padim.model
+    padim.anomaly_map
+    padim.lightning_model
+    padim.torch_model
 
 PatchCore
 ----------
@@ -190,10 +193,9 @@ Usage
     :toctree: models
     :nosignatures:
 
-    patchcore.model
-    patchcore.utils.sampling.k_center_greedy
-    patchcore.utils.sampling.nearest_neighbors
-    patchcore.utils.sampling.random_projection
+    patchcore.anomaly_map
+    patchcore.lightning_model
+    patchcore.torch_model
 
 STFPM
 -------
@@ -226,4 +228,41 @@ Usage
     :toctree: models
     :nosignatures:
 
-    stfpm.model
+    stfpm.anomaly_map
+    stfpm.lightning_model
+    stfpm.torch_model
+
+
+CFlow
+-------
+
+This is the implementation of the `CFlow <https://arxiv.org/pdf/2107.12571v1.pdf>`_ paper.
+
+Model Type: Segmentation
+
+Description
+***********
+
+CFLOW model is based on a conditional normalizing flow framework adopted for anomaly detection with localization. It consists of a discriminatively pretrained encoder followed by a multi-scale generative decoders. The encoder extracts features with multi-scale pyramid pooling to capture both global and local semantic information with the growing from top to bottom receptive fields. Pooled features are processed by a set of decoders to explicitly estimate likelihood of the encoded features. The estimated multi-scale likelyhoods are upsampled to input size and added up to produce the anomaly map.
+
+Architecture
+************
+
+.. image:: ./images/cflow/architecture.jpg
+    :alt: CFlow Architecture
+
+Usage
+*****
+
+.. code-block:: bash
+
+    $ python tools/train.py --model cflow
+
+.. autosummary::
+    :toctree: models
+    :nosignatures:
+
+    cflow.anomaly_map
+    cflow.lightning_model
+    cflow.torch_model
+    cflow.utils

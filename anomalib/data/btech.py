@@ -41,7 +41,7 @@ from torchvision.datasets.folder import VisionDataset
 from tqdm import tqdm
 
 from anomalib.data.inference import InferenceDataset
-from anomalib.data.utils import DownloadProgressBar, read_image
+from anomalib.data.utils import DownloadProgressBar, hash_check, read_image
 from anomalib.data.utils.split import (
     create_validation_set_from_test_set,
     split_normal_images_in_train_set,
@@ -359,7 +359,8 @@ class BTechDataModule(LightningDataModule):
                     filename=zip_filename,
                     reporthook=progress_bar.update_to,
                 )  # nosec
-
+            logger.info("Checking hash")
+            hash_check(zip_filename, "c1fa4d56ac50dd50908ce04e81037a8e")
             logger.info("Extracting the dataset.")
             with zipfile.ZipFile(zip_filename, "r") as zip_file:
                 zip_file.extractall(self.root.parent)
