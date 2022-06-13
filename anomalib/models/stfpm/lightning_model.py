@@ -17,7 +17,6 @@ https://arxiv.org/abs/2103.04257
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import logging
 from typing import List, Tuple, Union
 
 import torch
@@ -28,8 +27,6 @@ from torch import optim
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.stfpm.torch_model import STFPMModel
-
-logger = logging.getLogger(__name__)
 
 __all__ = ["StfpmLightning"]
 
@@ -50,9 +47,7 @@ class Stfpm(AnomalyModule):
         backbone: str,
         layers: List[str],
     ):
-
         super().__init__()
-        logger.info("Initializing Stfpm Lightning model.")
 
         self.model = STFPMModel(
             input_size=input_size,
