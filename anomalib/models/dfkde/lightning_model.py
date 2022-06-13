@@ -53,7 +53,6 @@ class Dfkde(AnomalyModule):
         threshold_steepness: float = 0.05,
         threshold_offset: int = 12,
     ):
-
         super().__init__()
 
         self.model = DfkdeModel(

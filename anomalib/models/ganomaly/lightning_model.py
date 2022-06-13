@@ -62,7 +62,6 @@ class Ganomaly(AnomalyModule):
         wcon: int = 50,
         wenc: int = 1,
     ):
-
         super().__init__()
 
         self.model: GanomalyModel = GanomalyModel(

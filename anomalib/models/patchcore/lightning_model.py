@@ -52,7 +52,6 @@ class Patchcore(AnomalyModule):
         coreset_sampling_ratio: float = 0.1,
         num_neighbors: int = 9,
     ) -> None:
-
         super().__init__()
 
         self.model: PatchcoreModel = PatchcoreModel(

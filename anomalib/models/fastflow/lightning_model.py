@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-import logging
 from typing import Tuple, Union
 
 import torch
@@ -15,8 +14,6 @@ from torch import optim
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.fastflow.torch_model import FastflowLoss, FastflowModel
-
-logger = logging.getLogger(__name__)
 
 
 @MODEL_REGISTRY
