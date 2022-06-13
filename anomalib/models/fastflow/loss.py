@@ -20,7 +20,7 @@ class FastflowLoss(nn.Module):
             jacobians (List[Tensor]): Log of the jacobian determinants from the fastflow model.
 
         Returns:
-            Tensor: _description_
+            Tensor: Fastflow loss computed based on the hidden variables and the log of the Jacobians.
         """
         loss = torch.tensor(0.0, device=hidden_variables[0].device)  # pylint: disable=not-callable
         for (hidden_variable, jacobian) in zip(hidden_variables, jacobians):
