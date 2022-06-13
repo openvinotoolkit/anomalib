@@ -5,6 +5,7 @@
 #
 
 from .lightning_model import Fastflow, FastflowLightning
-from .torch_model import FastflowLoss, FastflowModel
+from .loss import FastflowLoss
+from .torch_model import FastflowModel
 
 __all__ = ["FastflowModel", "FastflowLoss", "FastflowLightning", "Fastflow"]
