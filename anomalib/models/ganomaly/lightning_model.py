@@ -62,9 +62,7 @@ class Ganomaly(AnomalyModule):
         wcon: int = 50,
         wenc: int = 1,
     ):
-
         super().__init__()
-        logger.info("Initializing Ganomaly Lightning model.")
 
         self.model: GanomalyModel = GanomalyModel(
             input_size=input_size,

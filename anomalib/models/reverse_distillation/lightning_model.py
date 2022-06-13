@@ -1,9 +1,9 @@
-"""STFPM: Student-Teacher Feature Pyramid Matching for Unsupervised Anomaly Detection.
+"""Anomaly Detection via Reverse Distillation from One-Class Embedding.
 
-https://arxiv.org/abs/2103.04257
+https://arxiv.org/abs/2201.10703v2
 """
 
-# Copyright (C) 2020 Intel Corporation
+# Copyright (C) 2022 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,67 +17,57 @@ https://arxiv.org/abs/2103.04257
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from typing import List, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
-import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
-from torch import optim
+from torch import Tensor, optim
 
 from anomalib.models.components import AnomalyModule
-from anomalib.models.stfpm.torch_model import STFPMModel
 
-__all__ = ["StfpmLightning"]
+from .loss import ReverseDistillationLoss
+from .torch_model import ReverseDistillationModel
 
 
 @MODEL_REGISTRY
-class Stfpm(AnomalyModule):
-    """PL Lightning Module for the STFPM algorithm.
+class ReverseDistillation(AnomalyModule):
+    """PL Lightning Module for Reverse Distillation Algorithm.
 
     Args:
-        input_size (Tuple[int, int]): Size of the model input.
-        backbone (str): Backbone CNN network
+        input_size (Tuple[int, int]): Size of model input
+        backbone (str): Backbone of CNN network
         layers (List[str]): Layers to extract features from the backbone CNN
     """
 
-    def __init__(
-        self,
-        input_size: Tuple[int, int],
-        backbone: str,
-        layers: List[str],
-    ):
+    def __init__(self, input_size: Tuple[int, int], backbone: str, layers: List[str], anomaly_map_mode: str):
         super().__init__()
-
-        self.model = STFPMModel(
-            input_size=input_size,
-            backbone=backbone,
-            layers=layers,
+        self.model = ReverseDistillationModel(
+            backbone=backbone, layers=layers, input_size=input_size, anomaly_map_mode=anomaly_map_mode
         )
-        self.loss_val = 0
+        self.loss = ReverseDistillationLoss()
 
-    def training_step(self, batch, _):  # pylint: disable=arguments-differ
-        """Training Step of STFPM.
+    def training_step(self, batch, _) -> Dict[str, Tensor]:  # type: ignore
+        """Training Step of Reverse Distillation Model.
 
-        For each batch, teacher and student and teacher features are extracted from the CNN.
+        Features are extracted from three layers of the Encoder model. These are passed to the bottleneck layer
+        that are passed to the decoder network. The loss is then calculated based on the cosine similarity between the
+        encoder and decoder features.
 
         Args:
           batch (Tensor): Input batch
           _: Index of the batch.
 
         Returns:
-          Hierarchical feature map
+          Feature Map
         """
-        self.model.teacher_model.eval()
-        teacher_features, student_features = self.model.forward(batch["image"])
-        loss = self.loss_val + self.model.loss(teacher_features, student_features)
-        self.loss_val = 0
+        loss = self.loss(*self.model(batch["image"]))
         return {"loss": loss}
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
-        """Validation Step of STFPM.
+        """Validation Step of Reverse Distillation Model.
 
-        Similar to the training step, student/teacher features are extracted from the CNN for each batch, and
+        Similar to the training step, encoder/decoder features are extracted from the CNN for each batch, and
         anomaly map is computed.
 
         Args:
@@ -89,22 +79,22 @@ class Stfpm(AnomalyModule):
           These are required in `validation_epoch_end` for feature concatenation.
         """
         batch["anomaly_maps"] = self.model(batch["image"])
-
         return batch
 
 
-class StfpmLightning(Stfpm):
-    """PL Lightning Module for the STFPM algorithm.
+class ReverseDistillationLightning(ReverseDistillation):
+    """PL Lightning Module for Reverse Distillation Algorithm.
 
     Args:
-        hparams (Union[DictConfig, ListConfig]): Model params
+        hparams(Union[DictConfig, ListConfig]): Model parameters
     """
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
+    def __init__(self, hparams: Union[DictConfig, ListConfig]):
         super().__init__(
             input_size=hparams.model.input_size,
             backbone=hparams.model.backbone,
             layers=hparams.model.layers,
+            anomaly_map_mode=hparams.model.anomaly_map_mode,
         )
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(hparams)
@@ -125,8 +115,8 @@ class StfpmLightning(Stfpm):
         )
         return [early_stopping]
 
-    def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configures optimizers for each decoder.
+    def configure_optimizers(self):
+        """Configures optimizers for decoder and bottleneck.
 
         Note:
             This method is used for the existing CLI.
@@ -137,9 +127,8 @@ class StfpmLightning(Stfpm):
         Returns:
             Optimizer: Adam optimizer for each decoder
         """
-        return optim.SGD(
-            params=self.model.student_model.parameters(),
+        return optim.Adam(
+            params=list(self.model.decoder.parameters()) + list(self.model.bottleneck.parameters()),
             lr=self.hparams.model.lr,
-            momentum=self.hparams.model.momentum,
-            weight_decay=self.hparams.model.weight_decay,
+            betas=(self.hparams.model.beta1, self.hparams.model.beta2),
         )
