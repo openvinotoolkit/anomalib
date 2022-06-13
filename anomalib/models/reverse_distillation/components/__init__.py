@@ -1,6 +1,6 @@
-"""Anomalib library for research and benchmarking."""
+"""PyTorch modules for Reverse Distillation."""
 
-# Copyright (C) 2020 Intel Corporation
+# Copyright (C) 2022 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,4 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-__version__ = "0.3.2"
+from .bottleneck import get_bottleneck_layer
+from .de_resnet import get_decoder
+
+__all__ = ["get_bottleneck_layer", "get_decoder"]

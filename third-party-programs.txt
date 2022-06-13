@@ -30,3 +30,7 @@ terms are listed below.
 4. Torch models and utils of the Draem module (anomalib.models.draem)
    Copyright (c) 2021 VitjanZ, https://github.com/VitjanZ/DRAEM.
    SPDX-License-Identifier: MIT
+
+5. Reverse Distillation AnomalyMapGenerator, De-Convolution
+   Copyright (c) 2022 @hq-deng, https://github.com/hq-deng/RD4AD
+    SPDX-License-Identifier: MIT
