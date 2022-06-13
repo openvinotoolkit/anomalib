@@ -17,7 +17,6 @@ https://arxiv.org/pdf/2107.12571v1.pdf
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import logging
 from typing import List, Tuple, Union
 
 import einops
@@ -31,8 +30,6 @@ from torch import optim
 from anomalib.models.cflow.torch_model import CflowModel
 from anomalib.models.cflow.utils import get_logp, positional_encoding_2d
 from anomalib.models.components import AnomalyModule
-
-logger = logging.getLogger(__name__)
 
 __all__ = ["Cflow", "CflowLightning"]
 
@@ -54,7 +51,6 @@ class Cflow(AnomalyModule):
         permute_soft: bool = False,
     ):
         super().__init__()
-        logger.info("Initializing Cflow Lightning model.")
 
         self.model: CflowModel = CflowModel(
             input_size=input_size,

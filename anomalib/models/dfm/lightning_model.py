@@ -53,7 +53,6 @@ class Dfm(AnomalyModule):
         score_type: str = "fre",
     ):
         super().__init__()
-        logger.info("Initializing DFKDE Lightning model.")
 
         self.model: DFMModel = DFMModel(
             backbone=backbone,

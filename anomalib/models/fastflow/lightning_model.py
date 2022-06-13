@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-import logging
 from typing import Tuple, Union
 
 import torch
@@ -15,8 +14,6 @@ from torch import optim
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.fastflow.torch_model import FastflowLoss, FastflowModel
-
-logger = logging.getLogger(__name__)
 
 
 @MODEL_REGISTRY
@@ -40,7 +37,6 @@ class Fastflow(AnomalyModule):
         hidden_ratio: float = 1.0,
     ):
         super().__init__()
-        logger.info("Initializing Fastflow Lightning model.")
 
         self.model = FastflowModel(
             input_size=input_size,

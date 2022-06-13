@@ -141,7 +141,7 @@ def make_btech_dataset(
     return samples
 
 
-class BTech(VisionDataset):
+class BTechDataset(VisionDataset):
     """BTech PyTorch Dataset."""
 
     def __init__(
@@ -166,10 +166,10 @@ class BTech(VisionDataset):
             create_validation_set: Create a validation subset in addition to the train and test subsets
 
         Examples:
-            >>> from anomalib.data.btech import BTech
+            >>> from anomalib.data.btech import BTechDataset
             >>> from anomalib.data.transforms import PreProcessor
             >>> pre_process = PreProcessor(image_size=256)
-            >>> dataset = BTech(
+            >>> dataset = BTechDataset(
             ...     root='./datasets/BTech',
             ...     category='leather',
             ...     pre_process=pre_process,
@@ -257,7 +257,7 @@ class BTech(VisionDataset):
         return item
 
 
-class BTechDataModule(LightningDataModule):
+class BTech(LightningDataModule):
     """BTechDataModule Lightning Data Module."""
 
     def __init__(
@@ -291,8 +291,8 @@ class BTechDataModule(LightningDataModule):
             create_validation_set: Create a validation subset in addition to the train and test subsets
 
         Examples
-            >>> from anomalib.data import BTechDataModule
-            >>> datamodule = BTechDataModule(
+            >>> from anomalib.data import BTech
+            >>> datamodule = BTech(
             ...     root="./datasets/BTech",
             ...     category="leather",
             ...     image_size=256,
@@ -398,7 +398,7 @@ class BTechDataModule(LightningDataModule):
         """
         logger.info("Setting up train, validation, test and prediction datasets.")
         if stage in (None, "fit"):
-            self.train_data = BTech(
+            self.train_data = BTechDataset(
                 root=self.root,
                 category=self.category,
                 pre_process=self.pre_process_train,
@@ -409,7 +409,7 @@ class BTechDataModule(LightningDataModule):
             )
 
         if self.create_validation_set:
-            self.val_data = BTech(
+            self.val_data = BTechDataset(
                 root=self.root,
                 category=self.category,
                 pre_process=self.pre_process_val,
@@ -419,7 +419,7 @@ class BTechDataModule(LightningDataModule):
                 create_validation_set=self.create_validation_set,
             )
 
-        self.test_data = BTech(
+        self.test_data = BTechDataset(
             root=self.root,
             category=self.category,
             pre_process=self.pre_process_val,
