@@ -15,7 +15,7 @@ Anomalib aims to collect the most recent deep-learning based anomaly detection a
 
 ## How to train a Custom dataset with Anomalib
 
-Anomalib supports a number of datasets in various formats, including the state-of-the-art anomaly detection benchmarks such as MVTec AD and BeanTech. For those who would like to use the library on their custom datasets, anomalib also provides a `FolderDatasetModule` that can load datasets from a folder on a file system. The scope of this post will be to train anomalib models on custom datasets using the `FolderDatasetModule`.
+Anomalib supports a number of datasets in various formats, including the state-of-the-art anomaly detection benchmarks such as MVTec AD and BeanTech. For those who would like to use the library on their custom datasets, anomalib also provides a `Folder` datamodule that can load datasets from a folder on a file system. The scope of this post will be to train anomalib models on custom datasets using the `Folder` datamodule.
 
 ### Step 1: Install Anomalib
 #### Option - 1 : PyPI
@@ -42,7 +42,7 @@ Depending on the use-case and collection, custom datasets can have different for
 -   A dataset with good and bad images as well as mask ground-truths for pixel-wise evaluation.
 -   A dataset with good and bad images that is already split into training and testing sets.
 
-Each of these use-cases is addressed by anomalib's  `FolderDataModule`. Let's focus on the first use-case as an example of end-to-end model training and inference. In this post, we will use a toy dataset which you can download from [here](https://openvinotoolkit.github.io/anomalib/_downloads/3f2af1d7748194b18c2177a34c03a2c4/hazelnut_toy.zip). The dataset consists of several folders, each containing a set of images. The _colour_ and the _crack_ folders represent two kinds of defects. We can ignore the _masks_ folder for now.
+Each of these use-cases is addressed by anomalib's  `Folder` datamodule. Let's focus on the first use-case as an example of end-to-end model training and inference. In this post, we will use a toy dataset which you can download from [here](https://openvinotoolkit.github.io/anomalib/_downloads/3f2af1d7748194b18c2177a34c03a2c4/hazelnut_toy.zip). The dataset consists of several folders, each containing a set of images. The _colour_ and the _crack_ folders represent two kinds of defects. We can ignore the _masks_ folder for now.
 
 Load your data to the following directory structure. Anomalib will use all images in the _colour_ folder as part of the validation dataset and then randomly split the good images for training and validation.
 ```
