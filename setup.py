@@ -86,7 +86,7 @@ EXTRAS_REQUIRE = {
 setup(
     name="anomalib",
     # TODO: https://github.com/openvinotoolkit/anomalib/issues/36
-    version="0.2.4",
+    version="0.2.4a",
     author="Intel OpenVINO",
     author_email="help@openvino.intel.com",
     description="anomalib - Anomaly Detection Library",
