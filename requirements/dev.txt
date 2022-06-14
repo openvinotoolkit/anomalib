@@ -4,6 +4,7 @@ flake8
 flaky
 isort==5.10.1
 mypy
+nbqa
 pytest
 pylint
 pre-commit>=2.15.0
