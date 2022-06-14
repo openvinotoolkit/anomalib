@@ -59,8 +59,9 @@ class AnomalyMapGenerator:
         distances = (torch.matmul(delta, inv_covariance) * delta).sum(2).permute(1, 0)
         distances = distances.reshape(batch, height, width)
         distances = torch.sqrt(distances)
+        max_activation_val, _ = torch.max((torch.matmul(delta, inv_covariance) * delta), 0)
 
-        return distances
+        return {distances, max_activation_val}
 
     def up_sample(self, distance: Tensor) -> Tensor:
         """Up sample anomaly score to match the input image size.
@@ -111,14 +112,14 @@ class AnomalyMapGenerator:
             Output anomaly score.
         """
 
-        score_map = self.compute_distance(
+        score_map, max_activation_val = self.compute_distance(
             embedding=embedding,
             stats=[mean.to(embedding.device), inv_covariance.to(embedding.device)],
         )
         up_sampled_score_map = self.up_sample(score_map)
         smoothed_anomaly_map = self.smooth_anomaly_map(up_sampled_score_map)
 
-        return smoothed_anomaly_map
+        return (smoothed_anomaly_map, max_activation_val)
 
     def __call__(self, **kwds):
         """Returns anomaly_map.

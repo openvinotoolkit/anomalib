@@ -250,6 +250,7 @@ class MVTecDataset(VisionDataset):
         item: Dict[str, Union[str, Tensor]] = {}
 
         image_path = self.samples.image_path[index]
+        label = self.samples.label[index]
         image = read_image(image_path)
 
         pre_processed = self.pre_process(image=image)
@@ -259,6 +260,7 @@ class MVTecDataset(VisionDataset):
             label_index = self.samples.label_index[index]
 
             item["image_path"] = image_path
+            item["class"] = label
             item["label"] = label_index
 
             if self.task == "segmentation":
@@ -296,7 +298,7 @@ class MVTec(LightningDataModule):
         transform_config_train: Optional[Union[str, A.Compose]] = None,
         transform_config_val: Optional[Union[str, A.Compose]] = None,
         seed: int = 0,
-        create_validation_set: bool = False,
+        create_validation_set: bool = True,
     ) -> None:
         """Mvtec AD Lightning Data Module.
 

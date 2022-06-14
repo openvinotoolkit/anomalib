@@ -22,12 +22,15 @@ dataset:
 
 model:
   name: padim
-  backbone: resnet18
+  backbone: wide_resnet50_2
   layers:
     - layer1
     - layer2
     - layer3
   normalization_method: min_max # options: [none, min_max, cdf]
+  selective_feature_model:
+    apply: true
+    feature_percentage: 0.1
 
 metrics:
   image:

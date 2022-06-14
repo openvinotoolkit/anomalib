@@ -111,7 +111,9 @@ class Padim(AnomalyModule):
             These are required in `validation_epoch_end` for feature concatenation.
         """
 
-        batch["anomaly_maps"] = self.model(batch["image"])
+        map, max_activation_val = self.model(batch["image"])
+        batch["anomaly_maps"] = map
+        batch["max_activation_val"] = max_activation_val
         return batch
 
 
