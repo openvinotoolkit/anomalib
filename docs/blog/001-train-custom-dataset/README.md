@@ -4,7 +4,7 @@
 </div>
 
 ## Introducing Anomalib
-In early 2022, a group of Intel AI Researchers released a ground-breaking Deep Learning Library named Anomalib. The library provides state-of-the art algorithms for Anomaly Detection on Image datasets. Anomalib serves to be a thorough end-to-end solution, offering many features to achieve the highest accuracy model while also providing inference deployment code with Intel’s OpenVino Toolkit.
+A Deep Learning Library called Anomalib was released by a group of Intel AI researchers in early 2022. The library includes cutting-edge algorithms for detecting anomalies in image datasets. Anomalib is a comprehensive end-to-end solution that includes many features for achieving the highest accuracy model as well as inference deployment code with Intel's OpenVino Toolkit.
 
 
 ## Why a dedicated library for Anomaly Detection?
@@ -242,4 +242,4 @@ A nice feature about the provided benchmarking script is that if the host system
 
 **Call to Action**
 
-The Anomalib repository is actively maintained by some of Intel’s top researchers. Their goal is to provide the AI-community with top of the class performance and accuracy while also providing a great user-experience for developers. Checkout out the repo and install anomalib today!
+Intel researchers actively maintain the Anomalib repository. Their mission is to provide the AI community with best-in-class performance and accuracy while also providing a positive developer experience. Check out the repo and start using anomalib right away!
