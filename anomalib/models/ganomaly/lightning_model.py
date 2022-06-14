@@ -26,8 +26,8 @@ from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor, optim
 
-from anomalib.data.utils.image import pad_nextpow2
 from anomalib.models.components import AnomalyModule
+from anomalib.models.ganomaly.loss import DiscriminatorLoss, GeneratorLoss
 
 from .torch_model import GanomalyModel
 
@@ -71,9 +71,6 @@ class Ganomaly(AnomalyModule):
             latent_vec_size=latent_vec_size,
             extra_layers=extra_layers,
             add_final_conv_layer=add_final_conv_layer,
-            wadv=wadv,
-            wcon=wcon,
-            wenc=wenc,
         )
 
         self.real_label = torch.ones(size=(batch_size,), dtype=torch.float32)
@@ -81,6 +78,9 @@ class Ganomaly(AnomalyModule):
 
         self.min_scores: Tensor = torch.tensor(float("inf"), dtype=torch.float32)  # pylint: disable=not-callable
         self.max_scores: Tensor = torch.tensor(float("-inf"), dtype=torch.float32)  # pylint: disable=not-callable
+
+        self.generator_loss = GeneratorLoss(wadv, wcon, wenc)
+        self.discriminator_loss = DiscriminatorLoss()
 
     def _reset_min_max(self):
         """Resets min_max scores."""
@@ -97,24 +97,18 @@ class Ganomaly(AnomalyModule):
         Returns:
             Dict[str, Tensor]: Loss
         """
-        images = batch["image"]
-        padded_images = pad_nextpow2(images)
-        loss: Dict[str, Tensor]
+        # forward pass
+        padded, fake, latent_i, latent_o = self.model(batch["image"])
+        pred_real, _ = self.model.discriminator(padded)
 
-        # Discriminator
-        if optimizer_idx == 0:
-            # forward pass
-            loss_discriminator = self.model.get_discriminator_loss(padded_images)
-            loss = {"loss": loss_discriminator}
+        if optimizer_idx == 0:  # Discriminator
+            pred_fake, _ = self.model.discriminator(fake.detach())
+            loss = self.discriminator_loss(pred_real, pred_fake)
+        else:  # Generator
+            pred_fake, _ = self.model.discriminator(fake)
+            loss = self.generator_loss(latent_i, latent_o, padded, fake, pred_real, pred_fake)
 
-        # Generator
-        else:
-            # forward pass
-            loss_generator = self.model.get_generator_loss(padded_images)
-
-            loss = {"loss": loss_generator}
-
-        return loss
+        return {"loss": loss}
 
     def on_validation_start(self) -> None:
         """Reset min and max values for current validation epoch."""

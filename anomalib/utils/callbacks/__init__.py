@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 import os
 import warnings
 from importlib import import_module
@@ -41,6 +42,9 @@ __all__ = [
 ]
 
 
+logger = logging.getLogger(__name__)
+
+
 def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
     """Return base callbacks for all the lightning models.
 
@@ -50,6 +54,8 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
     Return:
         (List[Callback]): List of callbacks.
     """
+    logger.info("Loading the callbacks")
+
     callbacks: List[Callback] = []
 
     monitor_metric = None if "early_stopping" not in config.model.keys() else config.model.early_stopping.metric
