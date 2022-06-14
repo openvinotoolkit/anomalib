@@ -35,6 +35,9 @@ __all__ = [
 AVAILABLE_LOGGERS = ["tensorboard", "wandb", "csv"]
 
 
+logger = logging.getLogger(__name__)
+
+
 class UnknownLogger(Exception):
     """This is raised when the logger option in `config.yaml` file is set incorrectly."""
 
@@ -75,6 +78,7 @@ def get_experiment_logger(
     Returns:
         Union[LightningLoggerBase, Iterable[LightningLoggerBase], bool]: Logger
     """
+    logger.info("Loading the experiment logger(s)")
 
     # TODO remove when logger is deprecated from project
     if "logger" in config.project.keys():
@@ -95,8 +99,8 @@ def get_experiment_logger(
     if isinstance(config.logging.logger, str):
         config.logging.logger = [config.logging.logger]
 
-    for logger in config.logging.logger:
-        if logger == "tensorboard":
+    for experiment_logger in config.logging.logger:
+        if experiment_logger == "tensorboard":
             logger_list.append(
                 AnomalibTensorBoardLogger(
                     name="Tensorboard Logs",
@@ -104,7 +108,7 @@ def get_experiment_logger(
                     log_graph=config.logging.log_graph,
                 )
             )
-        elif logger == "wandb":
+        elif experiment_logger == "wandb":
             wandb_logdir = os.path.join(config.project.path, "logs")
             os.makedirs(wandb_logdir, exist_ok=True)
             name = (
@@ -119,7 +123,7 @@ def get_experiment_logger(
                     save_dir=wandb_logdir,
                 )
             )
-        elif logger == "csv":
+        elif experiment_logger == "csv":
             logger_list.append(CSVLogger(save_dir=os.path.join(config.project.path, "logs")))
         else:
             raise UnknownLogger(

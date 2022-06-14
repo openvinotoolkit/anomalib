@@ -26,6 +26,7 @@ from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import optim
 
 from anomalib.models.components import AnomalyModule
+from anomalib.models.stfpm.loss import STFPMLoss
 from anomalib.models.stfpm.torch_model import STFPMModel
 
 __all__ = ["StfpmLightning"]
@@ -54,6 +55,7 @@ class Stfpm(AnomalyModule):
             backbone=backbone,
             layers=layers,
         )
+        self.loss = STFPMLoss()
         self.loss_val = 0
 
     def training_step(self, batch, _):  # pylint: disable=arguments-differ
@@ -70,7 +72,7 @@ class Stfpm(AnomalyModule):
         """
         self.model.teacher_model.eval()
         teacher_features, student_features = self.model.forward(batch["image"])
-        loss = self.loss_val + self.model.loss(teacher_features, student_features)
+        loss = self.loss_val + self.loss(teacher_features, student_features)
         self.loss_val = 0
         return {"loss": loss}
 

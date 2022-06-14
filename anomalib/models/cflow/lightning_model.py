@@ -63,7 +63,6 @@ class Cflow(AnomalyModule):
             clamp_alpha=clamp_alpha,
             permute_soft=permute_soft,
         )
-        self.loss_val = 0
         self.automatic_optimization = False
 
     def training_step(self, batch, _):  # pylint: disable=arguments-differ
