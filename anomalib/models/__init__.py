@@ -22,7 +22,30 @@ from typing import List, Union
 from omegaconf import DictConfig, ListConfig
 from torch import load
 
+from anomalib.models.cflow import Cflow
 from anomalib.models.components import AnomalyModule
+from anomalib.models.dfkde import Dfkde
+from anomalib.models.dfm import Dfm
+from anomalib.models.draem import Draem
+from anomalib.models.fastflow import Fastflow
+from anomalib.models.ganomaly import Ganomaly
+from anomalib.models.padim import Padim
+from anomalib.models.patchcore import Patchcore
+from anomalib.models.reverse_distillation import ReverseDistillation
+from anomalib.models.stfpm import Stfpm
+
+__all__ = [
+    "Cflow",
+    "Dfkde",
+    "Dfm",
+    "Draem",
+    "Fastflow",
+    "Ganomaly",
+    "Padim",
+    "Patchcore",
+    "ReverseDistillation",
+    "Stfpm",
+]
 
 logger = logging.getLogger(__name__)
 

@@ -8,4 +8,4 @@ from .lightning_model import Fastflow, FastflowLightning
 from .loss import FastflowLoss
 from .torch_model import FastflowModel
 
-__all__ = ["FastflowModel", "FastflowLoss", "FastflowLightning", "Fastflow"]
+__all__ = ["FastflowModel", "FastflowLoss", "Fastflow", "FastflowLightning"]
