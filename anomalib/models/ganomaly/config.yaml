@@ -8,7 +8,7 @@ dataset:
   train_batch_size: 32
   test_batch_size: 32
   inference_batch_size: 32
-  num_workers: 32
+  num_workers: 8
   transform_config:
     train: null
     val: null
@@ -37,6 +37,7 @@ model:
   wadv: 1
   wcon: 50
   wenc: 1
+  normalization_method: none
 
 metrics:
   image:
@@ -50,10 +51,13 @@ metrics:
     adaptive: true
 
 project:
-  seed: 0
+  seed: 42
   path: ./results
-  log_images_to: []
-  logger: false # options: [tensorboard, wandb, csv] or combinations.
+
+logging:
+  log_images_to: ["local"] # options: [wandb, tensorboard, local]. Make sure you also set logger with using wandb or tensorboard.
+  logger: [] # options: [tensorboard, wandb, csv] or combinations.
+  log_graph: false # Logs the model graph to respective logger.
 
 optimization:
   openvino:

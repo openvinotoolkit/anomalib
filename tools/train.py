@@ -64,23 +64,16 @@ def train():
     args = get_args()
     configure_logger(level=args.log_level)
 
+    if args.log_level == "ERROR":
+        warnings.filterwarnings("ignore")
+
     config = get_configurable_parameters(model_name=args.model, config_path=args.config)
     if config.project.seed != 0:
         seed_everything(config.project.seed)
 
-    if args.log_level == "ERROR":
-        warnings.filterwarnings("ignore")
-
-    logger.info("Loading the datamodule")
     datamodule = get_datamodule(config)
-
-    logger.info("Loading the model.")
     model = get_model(config)
-
-    logger.info("Loading the experiment logger(s)")
     experiment_logger = get_experiment_logger(config)
-
-    logger.info("Loading the callbacks")
     callbacks = get_callbacks(config)
 
     trainer = Trainer(**config.trainer, logger=experiment_logger, callbacks=callbacks)

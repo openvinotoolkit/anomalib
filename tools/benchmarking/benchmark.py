@@ -100,7 +100,7 @@ def get_single_model_metrics(model_config: Union[DictConfig, ListConfig], openvi
         datamodule = get_datamodule(model_config)
         model = get_model(model_config)
 
-        callbacks = get_sweep_callbacks()
+        callbacks = get_sweep_callbacks(model_config)
 
         trainer = Trainer(**model_config.trainer, logger=None, callbacks=callbacks)
 

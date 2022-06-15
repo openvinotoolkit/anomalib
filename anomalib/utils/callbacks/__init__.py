@@ -14,7 +14,9 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 import os
+import warnings
 from importlib import import_module
 from typing import List, Union
 
@@ -23,6 +25,7 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 
 from .cdf_normalization import CdfNormalizationCallback
+from .graph import GraphLogger
 from .metrics_configuration import MetricsConfigurationCallback
 from .min_max_normalization import MinMaxNormalizationCallback
 from .model_loader import LoadModelCallback
@@ -39,6 +42,9 @@ __all__ = [
 ]
 
 
+logger = logging.getLogger(__name__)
+
+
 def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
     """Return base callbacks for all the lightning models.
 
@@ -48,6 +54,8 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
     Return:
         (List[Callback]): List of callbacks.
     """
+    logger.info("Loading the callbacks")
+
     callbacks: List[Callback] = []
 
     monitor_metric = None if "early_stopping" not in config.model.keys() else config.model.early_stopping.metric
@@ -98,11 +106,20 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
         else:
             raise ValueError(f"Normalization method not recognized: {config.model.normalization_method}")
 
-    if not config.project.log_images_to == []:
+    # TODO Modify when logger is deprecated from project
+    if "log_images_to" in config.project.keys():
+        warnings.warn(
+            "'log_images_to' key will be deprecated from 'project' section of the config file."
+            " Please use the logging section in config file",
+            DeprecationWarning,
+        )
+        config.logging.log_images_to = config.project.log_images_to
+
+    if not config.logging.log_images_to == []:
         callbacks.append(
             VisualizerCallback(
                 task=config.dataset.task,
-                log_images_to=config.project.log_images_to,
+                log_images_to=config.logging.log_images_to,
                 inputs_are_normalized=not config.model.normalization_method == "none",
             )
         )
@@ -132,5 +149,9 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
                     filename="openvino_model",
                 )
             )
+
+    # Add callback to log graph to loggers
+    if config.logging.log_graph not in [None, False]:
+        callbacks.append(GraphLogger())
 
     return callbacks

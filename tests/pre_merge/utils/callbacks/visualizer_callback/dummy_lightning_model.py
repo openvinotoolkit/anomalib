@@ -51,7 +51,7 @@ class DummyModule(AnomalyModule):
         self.model = DummyModel()
         self.task = "segmentation"
         self.callbacks = [
-            VisualizerCallback(task=self.task, log_images_to=hparams.project.log_images_to),
+            VisualizerCallback(task=self.task, log_images_to=hparams.logging.log_images_to),
         ]  # test if this is removed
 
         self.image_metrics, self.pixel_metrics = get_metrics(hparams)

@@ -57,7 +57,7 @@ class MetricsConfigurationCallback(Callback):
         self.pixel_metric_names = pixel_metric_names
 
         assert (
-            adaptive_threshold or default_image_threshold and default_pixel_threshold
+            adaptive_threshold or default_image_threshold is not None and default_pixel_threshold is not None
         ), "Default thresholds must be specified when adaptive threshold is disabled."
         self.adaptive_threshold = adaptive_threshold
         self.default_image_threshold = default_image_threshold

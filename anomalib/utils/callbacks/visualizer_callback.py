@@ -90,7 +90,7 @@ class VisualizerCallback(Callback):
                         f"Requested {log_to} logging but logger object is of type: {type(module.logger)}."
                         f" Skipping logging to {log_to}"
                     )
-            else:
+            elif log_to not in ["local"]:
                 warn(f"{log_to} not in the list of supported image loggers.")
 
         if "local" in self.log_images_to:

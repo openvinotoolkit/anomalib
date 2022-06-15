@@ -9,3 +9,8 @@ Link to the original repo: https://github.com/VLL-HD/FrEIA
 # Copyright (c) 2018-2022 Lynton Ardizzone, Visual Learning Lab Heidelberg.
 # SPDX-License-Identifier: MIT
 #
+
+from .framework import SequenceINN
+from .modules import AllInOneBlock
+
+__all__ = ["SequenceINN", "AllInOneBlock"]
