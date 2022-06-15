@@ -25,6 +25,13 @@ def get_args() -> Namespace:
     parser.add_argument("--config", type=Path, required=True, help="Path to a model config file")
     parser.add_argument("--weight_path", type=Path, required=True, help="Path to a model weights")
     parser.add_argument("--image_path", type=Path, required=True, help="Path to an image to infer.")
+    parser.add_argument(
+        "--disable_show_images",
+        action="store_true",
+        required=False,
+        help="Do not show the visualized predictions on the screen.",
+    )
+    parser.add_argument("--save_path", type=str, required=False, help="Path to save the output images.")
 
     args = parser.parse_args()
     if args.model_config_path is not None:
@@ -43,6 +50,12 @@ def infer():
     args = get_args()
     config = get_configurable_parameters(config_path=args.config)
     config.model["weight_file"] = str(args.weight_path)
+    config.visualization.show_images = not args.disable_show_images
+    if args.save_path:  # overwrite save path
+        config.visualization.save_images = True
+        config.visualization.image_save_path = args.save_path
+    else:
+        config.visualization.save_images = False
 
     model = get_model(config)
     callbacks = get_callbacks(config)

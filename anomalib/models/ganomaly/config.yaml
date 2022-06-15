@@ -49,10 +49,15 @@ metrics:
     image_default: 0
     adaptive: true
 
+visualization:
+  show_images: False # show images on the screen
+  save_images: True # save images to the file system
+  log_images: True # log images to the available loggers (if any)
+  image_save_path: null # path to which images will be saved
+
 project:
   seed: 0
   path: ./results
-  log_images_to: []
   logger: false # options: [tensorboard, wandb, csv] or combinations.
 
 optimization:

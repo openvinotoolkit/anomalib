@@ -15,6 +15,7 @@
 # and limitations under the License.
 
 import os
+import warnings
 from importlib import import_module
 from typing import List, Union
 
@@ -98,14 +99,7 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
         else:
             raise ValueError(f"Normalization method not recognized: {config.model.normalization_method}")
 
-    if not config.project.log_images_to == []:
-        callbacks.append(
-            VisualizerCallback(
-                task=config.dataset.task,
-                log_images_to=config.project.log_images_to,
-                inputs_are_normalized=not config.model.normalization_method == "none",
-            )
-        )
+    add_visualizer_callback(callbacks, config)
 
     if "optimization" in config.keys():
         if "nncf" in config.optimization and config.optimization.nncf.apply:
@@ -134,3 +128,41 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
             )
 
     return callbacks
+
+
+def add_visualizer_callback(callbacks: List[Callback], config: Union[DictConfig, ListConfig]):
+    """Initialize the visualizer callback based on the parameters in the config and add to the callback list.
+
+    Args:
+        callbacks (List[Callback]): List of callbacks
+        config: Config object
+    """
+    # visualization settings
+    assert isinstance(config, DictConfig)
+    if "log_images_to" in config.project.keys() and len(config.project.log_images_to) > 0:
+        warnings.warn(
+            "log_images_to parameter is deprecated and will be removed in version 0.3.4. Please use "
+            "the visualization.log_images and visualization.save_images parameters instead."
+        )
+        if "visualization" not in config.keys():
+            config["visualization"] = dict(log_images=False, save_images=False, show_image=False, image_save_path=None)
+        if "local" in config.project.log_images_to:
+            config.visualization["save_images"] = True
+        if "local" not in config.project.log_images_to or len(config.project.log_images_to) > 1:
+            config.visualization["log_images"] = True
+    if config.visualization.log_images or config.visualization.save_images or config.visualization.show_images:
+        image_save_path = (
+            config.visualization.image_save_path
+            if config.visualization.image_save_path
+            else config.project.path + "/images"
+        )
+        callbacks.append(
+            VisualizerCallback(
+                task=config.dataset.task,
+                image_save_path=image_save_path,
+                inputs_are_normalized=not config.model.normalization_method == "none",
+                show_images=config.visualization.show_images,
+                log_images=config.visualization.log_images,
+                save_images=config.visualization.save_images,
+            )
+        )
