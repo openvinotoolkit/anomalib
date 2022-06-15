@@ -99,44 +99,6 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
         else:
             raise ValueError(f"Normalization method not recognized: {config.model.normalization_method}")
 
-    add_visualizer_callback(callbacks, config)
-
-    if "optimization" in config.keys():
-        if "nncf" in config.optimization and config.optimization.nncf.apply:
-            # NNCF wraps torch's jit which conflicts with kornia's jit calls.
-            # Hence, nncf is imported only when required
-            nncf_module = import_module("anomalib.utils.callbacks.nncf.callback")
-            nncf_callback = getattr(nncf_module, "NNCFCallback")
-            nncf_config = yaml.safe_load(OmegaConf.to_yaml(config.optimization.nncf))
-            callbacks.append(
-                nncf_callback(
-                    config=nncf_config,
-                    export_dir=os.path.join(config.project.path, "compressed"),
-                )
-            )
-        if "openvino" in config.optimization and config.optimization.openvino.apply:
-            from .openvino import (  # pylint: disable=import-outside-toplevel
-                OpenVINOCallback,
-            )
-
-            callbacks.append(
-                OpenVINOCallback(
-                    input_size=config.model.input_size,
-                    dirpath=os.path.join(config.project.path, "openvino"),
-                    filename="openvino_model",
-                )
-            )
-
-    return callbacks
-
-
-def add_visualizer_callback(callbacks: List[Callback], config: Union[DictConfig, ListConfig]):
-    """Initialize the visualizer callback based on the parameters in the config and add to the callback list.
-
-    Args:
-        callbacks (List[Callback]): List of callbacks
-        config: Config object
-    """
     # visualization settings
     assert isinstance(config, DictConfig)
     if "log_images_to" in config.project.keys() and len(config.project.log_images_to) > 0:
@@ -166,3 +128,31 @@ def add_visualizer_callback(callbacks: List[Callback], config: Union[DictConfig,
                 save_images=config.visualization.save_images,
             )
         )
+
+    if "optimization" in config.keys():
+        if "nncf" in config.optimization and config.optimization.nncf.apply:
+            # NNCF wraps torch's jit which conflicts with kornia's jit calls.
+            # Hence, nncf is imported only when required
+            nncf_module = import_module("anomalib.utils.callbacks.nncf.callback")
+            nncf_callback = getattr(nncf_module, "NNCFCallback")
+            nncf_config = yaml.safe_load(OmegaConf.to_yaml(config.optimization.nncf))
+            callbacks.append(
+                nncf_callback(
+                    config=nncf_config,
+                    export_dir=os.path.join(config.project.path, "compressed"),
+                )
+            )
+        if "openvino" in config.optimization and config.optimization.openvino.apply:
+            from .openvino import (  # pylint: disable=import-outside-toplevel
+                OpenVINOCallback,
+            )
+
+            callbacks.append(
+                OpenVINOCallback(
+                    input_size=config.model.input_size,
+                    dirpath=os.path.join(config.project.path, "openvino"),
+                    filename="openvino_model",
+                )
+            )
+
+    return callbacks
