@@ -50,6 +50,7 @@ import numpy as np
 import pandas as pd
 from pandas.core.frame import DataFrame
 from pytorch_lightning.core.datamodule import LightningDataModule
+from pytorch_lightning.utilities.cli import DATAMODULE_REGISTRY
 from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch import Tensor
 from torch.utils.data import DataLoader
@@ -280,6 +281,7 @@ class MVTecDataset(VisionDataset):
         return item
 
 
+@DATAMODULE_REGISTRY
 class MVTec(LightningDataModule):
     """MVTec AD Lightning Data Module."""
 
