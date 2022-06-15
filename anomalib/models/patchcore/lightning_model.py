@@ -52,9 +52,7 @@ class Patchcore(AnomalyModule):
         coreset_sampling_ratio: float = 0.1,
         num_neighbors: int = 9,
     ) -> None:
-
         super().__init__()
-        logger.info("Initializing Patchcore Lightning model.")
 
         self.model: PatchcoreModel = PatchcoreModel(
             input_size=input_size,

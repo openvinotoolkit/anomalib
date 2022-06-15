@@ -7,7 +7,7 @@ dataset:
   image_size: 256
   train_batch_size: 32
   test_batch_size: 32
-  num_workers: 36
+  num_workers: 8
   transform_config:
     train: null
     val: null
@@ -43,7 +43,10 @@ visualization:
 project:
   seed: 42
   path: ./results
-  logger: false # options: [tensorboard, wandb, csv] or combinations.
+
+logging:
+  logger: [] # options: [tensorboard, wandb, csv] or combinations.
+  log_graph: false # Logs the model graph to respective logger.
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:

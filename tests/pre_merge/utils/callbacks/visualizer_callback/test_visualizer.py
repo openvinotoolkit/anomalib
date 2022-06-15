@@ -29,7 +29,8 @@ def test_add_images(dataset):
             {
                 "dataset": {"task": dataset},
                 "model": {"threshold": {"image_default": 0.5, "pixel_default": 0.5, "adaptive": True}},
-                "project": {"path": dir_loc, "log_images_to": ["tensorboard", "local"]},
+                "project": {"path": dir_loc},
+                "logging": {"log_images_to": ["tensorboard", "local"]},
                 "metrics": {},
             }
         )

@@ -8,7 +8,7 @@ dataset:
   train_batch_size: 32
   test_batch_size: 32
   inference_batch_size: 32
-  num_workers: 32
+  num_workers: 8
   transform_config:
     train: null
     val: null
@@ -37,6 +37,7 @@ model:
   wadv: 1
   wcon: 50
   wenc: 1
+  normalization_method: none
 
 metrics:
   image:
@@ -56,9 +57,12 @@ visualization:
   image_save_path: null # path to which images will be saved
 
 project:
-  seed: 0
+  seed: 42
   path: ./results
-  logger: false # options: [tensorboard, wandb, csv] or combinations.
+
+logging:
+  logger: [] # options: [tensorboard, wandb, csv] or combinations.
+  log_graph: false # Logs the model graph to respective logger.
 
 optimization:
   openvino:

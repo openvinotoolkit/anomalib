@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 from abc import ABC
 from typing import Any, List, Optional
 
@@ -28,6 +29,8 @@ from anomalib.utils.metrics import (
     MinMax,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class AnomalyModule(pl.LightningModule, ABC):
     """AnomalyModule to train, validate, predict and test images.
@@ -37,6 +40,8 @@ class AnomalyModule(pl.LightningModule, ABC):
 
     def __init__(self):
         super().__init__()
+        logger.info("Initializing %s model.", self.__class__.__name__)
+
         self.save_hyperparameters()
         self.model: nn.Module
         self.loss: Tensor
@@ -171,6 +176,8 @@ class AnomalyModule(pl.LightningModule, ABC):
 
     def _log_metrics(self):
         """Log computed performance metrics."""
-        self.log_dict(self.image_metrics)
         if self.pixel_metrics.update_called:
-            self.log_dict(self.pixel_metrics)
+            self.log_dict(self.pixel_metrics, prog_bar=True)
+            self.log_dict(self.image_metrics, prog_bar=False)
+        else:
+            self.log_dict(self.image_metrics, prog_bar=True)

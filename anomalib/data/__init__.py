@@ -14,15 +14,18 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 from typing import Union
 
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning import LightningDataModule
 
-from .btech import BTechDataModule
-from .folder import FolderDataModule
+from .btech import BTech
+from .folder import Folder
 from .inference import InferenceDataset
-from .mvtec import MVTecDataModule
+from .mvtec import MVTec
+
+logger = logging.getLogger(__name__)
 
 
 def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule:
@@ -34,10 +37,12 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
     Returns:
         PyTorch Lightning DataModule
     """
+    logger.info("Loading the datamodule")
+
     datamodule: LightningDataModule
 
     if config.dataset.format.lower() == "mvtec":
-        datamodule = MVTecDataModule(
+        datamodule = MVTec(
             # TODO: Remove config values. IAAALD-211
             root=config.dataset.path,
             category=config.dataset.category,
@@ -52,7 +57,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
             create_validation_set=config.dataset.create_validation_set,
         )
     elif config.dataset.format.lower() == "btech":
-        datamodule = BTechDataModule(
+        datamodule = BTech(
             # TODO: Remove config values. IAAALD-211
             root=config.dataset.path,
             category=config.dataset.category,
@@ -67,7 +72,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
             create_validation_set=config.dataset.create_validation_set,
         )
     elif config.dataset.format.lower() == "folder":
-        datamodule = FolderDataModule(
+        datamodule = Folder(
             root=config.dataset.path,
             normal_dir=config.dataset.normal_dir,
             abnormal_dir=config.dataset.abnormal_dir,
@@ -76,7 +81,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
             mask_dir=config.dataset.mask,
             extensions=config.dataset.extensions,
             split_ratio=config.dataset.split_ratio,
-            seed=config.dataset.seed,
+            seed=config.project.seed,
             image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
             train_batch_size=config.dataset.train_batch_size,
             test_batch_size=config.dataset.test_batch_size,
@@ -97,8 +102,8 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
 
 __all__ = [
     "get_datamodule",
-    "BTechDataModule",
-    "FolderDataModule",
+    "BTech",
+    "Folder",
     "InferenceDataset",
-    "MVTecDataModule",
+    "MVTec",
 ]

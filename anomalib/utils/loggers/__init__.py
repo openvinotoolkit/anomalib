@@ -16,6 +16,7 @@
 
 import logging
 import os
+import warnings
 from typing import Iterable, List, Union
 
 from omegaconf.dictconfig import DictConfig
@@ -32,6 +33,9 @@ __all__ = [
     "get_experiment_logger",
 ]
 AVAILABLE_LOGGERS = ["tensorboard", "wandb", "csv"]
+
+
+logger = logging.getLogger(__name__)
 
 
 class UnknownLogger(Exception):
@@ -74,36 +78,56 @@ def get_experiment_logger(
     Returns:
         Union[LightningLoggerBase, Iterable[LightningLoggerBase], bool]: Logger
     """
-    if config.project.logger in [None, False]:
+    logger.info("Loading the experiment logger(s)")
+
+    # TODO remove when logger is deprecated from project
+    if "logger" in config.project.keys():
+        warnings.warn(
+            "'logger' key will be deprecated from 'project' section of the config file."
+            " Please use the logging section in config file.",
+            DeprecationWarning,
+        )
+        if "logging" not in config:
+            config.logging = {"logger": config.project.logger, "log_graph": False}
+        else:
+            config.logging.logger = config.project.logger
+
+    if config.logging.logger in [None, False]:
         return False
 
     logger_list: List[LightningLoggerBase] = []
-    if isinstance(config.project.logger, str):
-        config.project.logger = [config.project.logger]
+    if isinstance(config.logging.logger, str):
+        config.logging.logger = [config.logging.logger]
 
-    for logger in config.project.logger:
-        if logger == "tensorboard":
+    for experiment_logger in config.logging.logger:
+        if experiment_logger == "tensorboard":
             logger_list.append(
                 AnomalibTensorBoardLogger(
                     name="Tensorboard Logs",
                     save_dir=os.path.join(config.project.path, "logs"),
+                    log_graph=config.logging.log_graph,
                 )
             )
-        elif logger == "wandb":
+        elif experiment_logger == "wandb":
             wandb_logdir = os.path.join(config.project.path, "logs")
             os.makedirs(wandb_logdir, exist_ok=True)
+            name = (
+                config.model.name
+                if "category" not in config.dataset.keys()
+                else f"{config.dataset.category} {config.model.name}"
+            )
             logger_list.append(
                 AnomalibWandbLogger(
                     project=config.dataset.name,
-                    name=f"{config.dataset.category} {config.model.name}",
+                    name=name,
                     save_dir=wandb_logdir,
                 )
             )
-        elif logger == "csv":
+        elif experiment_logger == "csv":
             logger_list.append(CSVLogger(save_dir=os.path.join(config.project.path, "logs")))
         else:
             raise UnknownLogger(
-                f"Unknown logger type: {config.project.logger}. "
+                f"Unknown logger type: {config.logging.logger}. "
                 f"Available loggers are: {AVAILABLE_LOGGERS}.\n"
                 f"To enable the logger, set `project.logger` to `true` or use one of available loggers in config.yaml\n"
                 f"To disable the logger, set `project.logger` to `false`."

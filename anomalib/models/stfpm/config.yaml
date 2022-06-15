@@ -58,7 +58,10 @@ visualization:
 project:
   seed: 0
   path: ./results
-  logger: false # options: [tensorboard, wandb, csv] or combinations.
+
+logging:
+  logger: [] # options: [tensorboard, wandb, csv] or combinations.
+  log_graph: false # Logs the model graph to respective logger.
 
 optimization:
   openvino:
