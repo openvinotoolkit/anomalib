@@ -20,6 +20,7 @@ from typing import List, Optional
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning.callbacks import Callback
+from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 
 from anomalib.models.components.base.anomaly_module import AnomalyModule
 from anomalib.utils.metrics import metric_collection_from_names
@@ -27,6 +28,7 @@ from anomalib.utils.metrics import metric_collection_from_names
 __all__ = ["MetricsConfigurationCallback"]
 
 
+@CALLBACK_REGISTRY
 class MetricsConfigurationCallback(Callback):
     """Metrics Configuration Callback."""
 
