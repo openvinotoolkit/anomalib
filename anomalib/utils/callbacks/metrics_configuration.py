@@ -39,6 +39,7 @@ class MetricsConfigurationCallback(Callback):
         default_pixel_threshold: Optional[float] = None,
         image_metric_names: Optional[List[str]] = None,
         pixel_metric_names: Optional[List[str]] = None,
+        normalization_method: str = "min_max",
     ):
         """Create image and pixel-level AnomalibMetricsCollection.
 
@@ -53,10 +54,16 @@ class MetricsConfigurationCallback(Callback):
             default_pixel_threshold (Optional[float]): Default pixel threshold value.
             image_metric_names (Optional[List[str]]): List of image-level metrics.
             pixel_metric_names (Optional[List[str]]): List of pixel-level metrics.
+            normalization_method(Optional[str]): Normalization method. <None, min_max, cdf>
         """
 
         self.image_metric_names = image_metric_names
         self.pixel_metric_names = pixel_metric_names
+
+        # TODO: This is a workaround. normalization-method is actually not used in metrics.
+        #   It's only accessed from `before_instantiate` method in `AnomalibCLI` to configure
+        #   its callback.
+        self.normalization_method = normalization_method
 
         assert (
             adaptive_threshold or default_image_threshold is not None and default_pixel_threshold is not None
