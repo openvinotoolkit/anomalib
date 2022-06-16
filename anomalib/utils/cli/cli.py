@@ -3,6 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import logging
 import os
 from datetime import datetime
 from importlib import import_module
@@ -26,6 +27,9 @@ from anomalib.utils.callbacks import (
     TimerCallback,
     VisualizerCallback,
 )
+from anomalib.utils.loggers import configure_logger
+
+logger = logging.getLogger("anomalib.cli")
 
 
 class AnomalibCLI(LightningCLI):
@@ -211,3 +215,13 @@ class AnomalibCLI(LightningCLI):
                 raise ValueError(f"--nncf expects a path to nncf config which is a yaml file, but got {config.nncf}")
 
         self.config[subcommand].trainer.callbacks = callbacks
+
+
+def main() -> None:
+    """Trainer via Anomalib CLI."""
+    configure_logger()
+    AnomalibCLI()
+
+
+if __name__ == "__main__":
+    main()
