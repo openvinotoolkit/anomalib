@@ -1,3 +1,6 @@
+# This is the config file for the new Anomalib CLI.
+# To use this, run the following command:
+# anomalib fit --config ./config/model.patchcore.yaml
 ckpt_path: null
 seed_everything: null
 

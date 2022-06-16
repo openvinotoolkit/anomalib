@@ -1,6 +1,6 @@
 # This is the config file for the new Anomalib CLI.
 # To use this, run the following command:
-# anomalib fit --config ./config/model.cflow.yaml
+# anomalib fit --config ./config/model/fastflow.yaml
 ckpt_path: null
 seed_everything: null
 
@@ -10,8 +10,8 @@ data:
     root: ./datasets/MVTec
     category: bottle
     image_size: [256, 256]
-    train_batch_size: 16
-    test_batch_size: 16
+    train_batch_size: 32
+    test_batch_size: 32
     num_workers: 8
     task: segmentation
     transform_config_train: null
@@ -20,21 +20,19 @@ data:
     create_validation_set: false
 
 model:
-  class_path: anomalib.models.Cflow
+  class_path: anomalib.models.Fastflow
   init_args:
     input_size: [256, 256]
-    backbone: wide_resnet50_2
-    layers:
-      - layer2
-      - layer3
-      - layer4
-    fiber_batch_size: 64
-    decoder: freia-cflow
-    condition_vector: 128
-    coupling_blocks: 8
-    clamp_alpha: 1.9
-    permute_soft: false
-    lr: 0.0001
+    backbone: resnet18 # options: [resnet18, wide_resnet50_2, cait_m48_448, deit_base_distilled_patch16_384]
+    flow_steps: 8 # options: [8, 8, 20, 20] - for each supported backbone
+    conv3x3_only: True # options: [True, False, False, False] - for each supported backbone
+    hidden_ratio: 1.0 # options: [1.0, 1.0, 0.16, 0.16] - for each supported backbone
+
+optimizer:
+  class_path: torch.optim.Adam
+  init_args:
+    lr: 0.001
+    weight_decay: 0.00001
 
 metrics:
   adaptive_threshold: true
@@ -58,7 +56,7 @@ trainer:
   callbacks:
     - class_path: pytorch_lightning.callbacks.EarlyStopping
       init_args:
-        patience: 2
+        patience: 3
         monitor: pixel_AUROC
         mode: max
   accelerator: auto # <"cpu", "gpu", "tpu", "ipu", "hpu", "auto">
@@ -68,7 +66,7 @@ trainer:
   auto_scale_batch_size: false
   auto_select_gpus: false
   benchmark: false
-  check_val_every_n_epoch: 1
+  check_val_every_n_epoch: 1 # Don't validate before extracting features.
   default_root_dir: null
   detect_anomaly: false
   deterministic: false
@@ -86,7 +84,7 @@ trainer:
   limit_val_batches: 1.0
   log_every_n_steps: 50
   log_gpu_memory: null
-  max_epochs: 50
+  max_epochs: 500
   max_steps: -1
   max_time: null
   min_epochs: null
@@ -107,4 +105,4 @@ trainer:
   sync_batchnorm: false
   tpu_cores: null
   track_grad_norm: -1
-  val_check_interval: 1.0
+  val_check_interval: 1.0 # Don't validate before extracting features.

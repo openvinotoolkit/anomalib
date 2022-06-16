@@ -1,6 +1,6 @@
 # This is the config file for the new Anomalib CLI.
 # To use this, run the following command:
-# anomalib fit --config ./config/model.cflow.yaml
+# anomalib fit --config ./config/model/ganomaly.yaml
 ckpt_path: null
 seed_everything: null
 
@@ -10,8 +10,8 @@ data:
     root: ./datasets/MVTec
     category: bottle
     image_size: [256, 256]
-    train_batch_size: 16
-    test_batch_size: 16
+    train_batch_size: 32
+    test_batch_size: 32
     num_workers: 8
     task: segmentation
     transform_config_train: null
@@ -20,46 +20,22 @@ data:
     create_validation_set: false
 
 model:
-  class_path: anomalib.models.Cflow
+  class_path: anomalib.models.Ganomaly
   init_args:
-    input_size: [256, 256]
-    backbone: wide_resnet50_2
-    layers:
-      - layer2
-      - layer3
-      - layer4
-    fiber_batch_size: 64
-    decoder: freia-cflow
-    condition_vector: 128
-    coupling_blocks: 8
-    clamp_alpha: 1.9
-    permute_soft: false
-    lr: 0.0001
 
 metrics:
   adaptive_threshold: true
   default_image_threshold: null
-  default_pixel_threshold: null
   image_metric_names:
     - F1Score
     - AUROC
-  pixel_metric_names:
-    - F1Score
-    - AUROC
-  normalization_method: min_max
-
-visualization:
-  task: segmentation
-  log_images_to:
-    - local
-  inputs_are_normalized: true
 
 trainer:
   callbacks:
     - class_path: pytorch_lightning.callbacks.EarlyStopping
       init_args:
-        patience: 2
-        monitor: pixel_AUROC
+        patience: 3
+        monitor: image_AUROC
         mode: max
   accelerator: auto # <"cpu", "gpu", "tpu", "ipu", "hpu", "auto">
   accumulate_grad_batches: 1
@@ -68,7 +44,7 @@ trainer:
   auto_scale_batch_size: false
   auto_select_gpus: false
   benchmark: false
-  check_val_every_n_epoch: 1
+  check_val_every_n_epoch: 2
   default_root_dir: null
   detect_anomaly: false
   deterministic: false
@@ -86,9 +62,8 @@ trainer:
   limit_val_batches: 1.0
   log_every_n_steps: 50
   log_gpu_memory: null
-  max_epochs: 50
-  max_steps: -1
-  max_time: null
+  max_epochs: 100
+  max_steps: null
   min_epochs: null
   min_steps: null
   move_metrics_to_cpu: false
