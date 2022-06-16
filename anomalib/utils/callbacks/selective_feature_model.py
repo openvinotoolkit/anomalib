@@ -1,10 +1,15 @@
+"""Callback to implement Selective Feature Modelling."""
+
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import logging
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
+from warnings import warn
 
 import numpy as np
 import torch
 from pytorch_lightning import Callback, LightningModule, Trainer
-from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
 from anomalib.models.components import SelectiveFeatureModel
@@ -13,6 +18,12 @@ logger = logging.getLogger(__name__)
 
 
 class SelectiveFeatureModelCallback(Callback):
+    """Callback which implements Selective Feature Model.
+
+    Args:
+        feature_percentage (float, optional): Percentage of features to store. Defaults to 0.1.
+    """
+
     def __init__(self, feature_percentage: float = 0.1) -> None:
         self.feature_model = SelectiveFeatureModel(feature_percentage)
         self.max_features: Optional[Tensor] = None
@@ -20,24 +31,38 @@ class SelectiveFeatureModelCallback(Callback):
 
     def on_validation_batch_end(
         self,
-        trainer: Trainer,
-        pl_module: LightningModule,
-        outputs: Optional[STEP_OUTPUT],
-        batch: Any,
-        batch_idx: int,
-        dataloader_idx: int,
+        _trainer: Trainer,
+        _pl_module: LightningModule,
+        outputs: Dict[str, Tensor],
+        _batch: Any,
+        _batch_idx: int,
+        _dataloader_idx: int,
     ) -> None:
-        max_val_features = torch.vstack([x for x in outputs["max_activation_val"]])
-        class_labels = np.hstack([x for x in outputs["class"]])
+        """Stores max activation values for all images.
+
+        Args:
+            outputs (Dict[str, Tensor]): Outputs containing `max_activation_val`.
+        """
+        if "max_activation_val" not in outputs.keys() and "class" not in outputs.keys():
+            warn("Need both max_activation_val and class keys in outputs. Skipping SFM validation step")
+        else:
+            max_val_features = torch.vstack(list(outputs["max_activation_val"]))
+            class_labels = np.hstack(list(outputs["class"]))
+
+            if self.max_features is None:
+                self.max_features = max_val_features
+                self.class_labels = class_labels
+            else:
+                self.max_features = torch.vstack([self.max_features, max_val_features])
+                self.class_labels = np.hstack([self.class_labels, class_labels])
+
+    def on_validation_epoch_end(self, _trainer: Trainer, _pl_module: LightningModule) -> None:
+        """Fit SFM model and reset max_features and class_labels."""
 
         if self.max_features is None:
-            self.max_features = max_val_features
-            self.class_labels = class_labels
-        else:
-            self.max_features = torch.vstack([self.max_features, max_val_features])
-            self.class_labels = np.hstack([self.class_labels, class_labels])
+            warn("`self.max_features is None")
+            return
 
-    def on_validation_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
         logger.info("Fitting Selective Feature model")
 
         self.feature_model.fit(self.max_features, self.class_labels)
@@ -46,35 +71,49 @@ class SelectiveFeatureModelCallback(Callback):
         self.max_features = None
         self.class_labels = []
 
-    def on_test_epoch_start(self, trainer: Trainer, pl_module: LightningModule) -> None:
+    def on_test_epoch_start(self, _trainer: Trainer, _pl_module: LightningModule) -> None:
+        """Reset max_features and class_labels before testing starts."""
         self.max_features = None
         self.class_labels = []
 
     def on_test_batch_end(
         self,
-        trainer: Trainer,
-        pl_module: LightningModule,
-        outputs: Optional[STEP_OUTPUT],
-        batch: Any,
-        batch_idx: int,
-        dataloader_idx: int,
+        _trainer: Trainer,
+        _pl_module: LightningModule,
+        outputs: Dict[str, Tensor],
+        _batch: Any,
+        _batch_idx: int,
+        _dataloader_idx: int,
     ) -> None:
-        max_val_features = torch.vstack([x for x in outputs["max_activation_val"]])
-        class_labels = np.hstack([x for x in outputs["class"]])
+        """Stores max activation values for all images.
 
-        if self.max_features is None:
-            self.max_features = max_val_features
-            self.class_labels = class_labels
+        Args:
+            outputs (Dict[str, Tensor]): Outputs containing `max_activation_val`.
+        """
+        if "max_activation_val" not in outputs.keys() and "class" not in outputs.keys():
+            warn("Need both max_activation_val and class keys in outputs. Skipping SFM test step")
         else:
-            self.max_features = torch.vstack([self.max_features, max_val_features])
-            self.class_labels = np.hstack([self.class_labels, class_labels])
+            max_val_features = torch.vstack(list(outputs["max_activation_val"]))
+            class_labels = np.hstack(list(outputs["class"]))
 
-    def on_test_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
+            if self.max_features is None:
+                self.max_features = max_val_features
+                self.class_labels = class_labels
+            else:
+                self.max_features = torch.vstack([self.max_features, max_val_features])
+                self.class_labels = np.hstack([self.class_labels, class_labels])
+
+    def on_test_epoch_end(self, _trainer: Trainer, _pl_module: LightningModule) -> None:
+        """Compute sub-class testing accuracy."""
+        if self.max_features is None:
+            warn("`self.max_features is None")
+            return
+
         class_names = np.unique(self.class_labels)
         # print(class_labels)
         # print(max_activation_val.shape)
 
-        results = {}
+        results: Dict[str, list] = {}
         for class_name in class_names:
             results[class_name] = []
         # sorted values and idx for entire feature set

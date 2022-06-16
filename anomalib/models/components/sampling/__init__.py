@@ -15,5 +15,6 @@
 # and limitations under the License.
 
 from .k_center_greedy import KCenterGreedy
+from .selective_feature_model import SelectiveFeatureModel
 
-__all__ = ["KCenterGreedy"]
+__all__ = ["KCenterGreedy", "SelectiveFeatureModel"]

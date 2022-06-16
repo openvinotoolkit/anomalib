@@ -16,6 +16,5 @@
 
 from .kde import GaussianKDE
 from .multi_variate_gaussian import MultiVariateGaussian
-from .selective_feature_model import SelectiveFeatureModel
 
-__all__ = ["GaussianKDE", "MultiVariateGaussian", "SelectiveFeatureModel"]
+__all__ = ["GaussianKDE", "MultiVariateGaussian"]
