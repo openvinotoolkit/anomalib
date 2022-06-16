@@ -77,7 +77,6 @@ class AnomalibCLI(LightningCLI):
         Args:
             parser (LightningArgumentParser): Lightning Argument Parser.
         """
-        parser.add_argument("--save_images", type=bool, default=True, help="Flag to save output images locally.")
         # TODO: https://github.com/openvinotoolkit/anomalib/issues/19
         # TODO: https://github.com/openvinotoolkit/anomalib/issues/20
         parser.add_argument("--openvino", type=bool, default=False, help="Export to ONNX and OpenVINO IR format.")
@@ -115,8 +114,8 @@ class AnomalibCLI(LightningCLI):
     def before_instantiate_classes(self) -> None:
         """Modify the configuration to properly instantiate classes."""
 
-        # 0. Get the root dir.
-        # NOTE: This always assumes that the script calls 'fit' subcommand. This may not alwyas be the case.
+        # Get the root dir.
+        # NOTE: This always assumes that the script calls 'fit' subcommand. This may not always be the case.
 
         # subcommand could be <fit, test, predict or tune>.
         subcommand = self.config["subcommand"]
@@ -135,7 +134,7 @@ class AnomalibCLI(LightningCLI):
 
         callbacks = []
 
-        # 1. Model Checkpoint.
+        # Model Checkpoint.
         monitor = None
         mode = "max"
         if config.trainer.callbacks is not None:
@@ -160,15 +159,15 @@ class AnomalibCLI(LightningCLI):
         )
         callbacks.append(checkpoint)
 
-        # 2. LoadModel from Checkpoint.
+        # LoadModel from Checkpoint.
         if config.trainer.resume_from_checkpoint:
             load_model = LoadModelCallback(config.trainer.resume_from_checkpoint)
             callbacks.append(load_model)
 
-        # 3. Add timing to the pipeline.
+        # Add timing to the pipeline.
         callbacks.append(TimerCallback())
 
-        # 4. Normalization.
+        # Normalization.
         normalization = config.metrics.normalization_method
         if normalization:
             if normalization == "min_max":
@@ -180,18 +179,11 @@ class AnomalibCLI(LightningCLI):
                     f"Unknown normalization type {normalization}. \n" "Available types are either None, min_max or cdf"
                 )
 
-        # 5. Visualization
-        # if self.config["save_images"]:
-        #     if self.config["model"]["init_args"]["task"] == "segmentation":
-        #         # NOTE: Currently only segmentation tasks are supported for visualizaition.
-        #         # NOTE: When ready, add wandb logger here.
-        #         callbacks.append(VisualizerCallback(loggers=["local"]))
-
         # TODO: https://github.com/openvinotoolkit/anomalib/issues/19
         if config.openvino and config.nncf:
             raise ValueError("OpenVINO and NNCF cannot be set simultaneously.")
 
-        # 6. Export to OpenVINO
+        # Export to OpenVINO
         if config.openvino:
             from anomalib.utils.callbacks.openvino import (  # pylint: disable=import-outside-toplevel
                 OpenVINOCallback,
