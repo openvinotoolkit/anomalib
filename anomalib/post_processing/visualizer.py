@@ -68,11 +68,12 @@ class Visualizer:
             axis.title.set_text(image_dict["title"])
 
     def show(self, filename: Optional[str] = None):
-        """Show image on a matplotlib figure."""
+        """Convert figure to array and show with opencv."""
         self.figure.canvas.draw()
+        # convert canvas to numpy array
         img = np.frombuffer(self.figure.canvas.tostring_rgb(), dtype=np.uint8)
         img = img.reshape(self.figure.canvas.get_width_height()[::-1] + (3,))
-
+        # show image with opencv
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         title = "Prediction"
         title = title + f" for {filename}" if filename else title
