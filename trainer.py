@@ -5,4 +5,11 @@
 
 from anomalib.utils.cli import AnomalibCLI
 
-cli = AnomalibCLI()
+
+def main() -> None:
+    """Trainer via Anomalib CLI."""
+    AnomalibCLI()
+
+
+if __name__ == "__main__":
+    main()
