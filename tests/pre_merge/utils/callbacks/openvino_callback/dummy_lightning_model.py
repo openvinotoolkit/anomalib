@@ -74,7 +74,14 @@ class DummyLightningModule(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters(hparams)
         self.loss_fn = nn.NLLLoss()
-        self.callbacks = [VisualizerCallback(task="segmentation")]  # test if this is removed
+        self.callbacks = [
+            VisualizerCallback(
+                task="segmentation",
+                image_save_path=hparams.project.path + "/images",
+                log_images=False,
+                save_images=True,
+            )
+        ]  # test if this is removed
 
         self.image_threshold = AdaptiveThreshold(hparams.model.threshold.image_default).cpu()
         self.pixel_threshold = AdaptiveThreshold(hparams.model.threshold.pixel_default).cpu()
