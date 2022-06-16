@@ -5,13 +5,10 @@ import pytorch_lightning as pl
 import torch
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
-from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
 
 from anomalib.models.components import AnomalyModule
-from anomalib.utils.callbacks import add_visualizer_callback
-from anomalib.utils.callbacks.metrics_configuration import MetricsConfigurationCallback
 from anomalib.utils.callbacks.visualizer_callback import VisualizerCallback
 from anomalib.utils.metrics import get_metrics
 
