@@ -40,12 +40,44 @@ class ReverseDistillation(AnomalyModule):
         layers (List[str]): Layers to extract features from the backbone CNN
     """
 
-    def __init__(self, input_size: Tuple[int, int], backbone: str, layers: List[str], anomaly_map_mode: str):
+    def __init__(
+        self,
+        input_size: Tuple[int, int],
+        backbone: str,
+        layers: List[str],
+        anomaly_map_mode: str,
+        lr: float,
+        beta1: float,
+        beta2: float,
+    ):
         super().__init__()
         self.model = ReverseDistillationModel(
             backbone=backbone, layers=layers, input_size=input_size, anomaly_map_mode=anomaly_map_mode
         )
         self.loss = ReverseDistillationLoss()
+        # TODO: LR should be part of optimizer in config.yaml! Since reverse distillation has custom
+        #   optimizer this is to be addressed later.
+        self.learning_rate = lr
+        self.beta1 = beta1
+        self.beta2 = beta2
+
+    def configure_optimizers(self):
+        """Configures optimizers for decoder and bottleneck.
+
+        Note:
+            This method is used for the existing CLI.
+            When PL CLI is introduced, configure optimizers method will be
+                deprecated, and optimizers will be configured from either
+                config.yaml file or from CLI.
+
+        Returns:
+            Optimizer: Adam optimizer for each decoder
+        """
+        return optim.Adam(
+            params=list(self.model.decoder.parameters()) + list(self.model.bottleneck.parameters()),
+            lr=self.learning_rate,
+            betas=(self.beta1, self.beta2),
+        )
 
     def training_step(self, batch, _) -> Dict[str, Tensor]:  # type: ignore
         """Training Step of Reverse Distillation Model.
@@ -95,6 +127,9 @@ class ReverseDistillationLightning(ReverseDistillation):
             backbone=hparams.model.backbone,
             layers=hparams.model.layers,
             anomaly_map_mode=hparams.model.anomaly_map_mode,
+            lr=hparams.model.lr,
+            beta1=hparams.model.beta1,
+            beta2=hparams.model.beta2,
         )
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(hparams)
@@ -114,21 +149,3 @@ class ReverseDistillationLightning(ReverseDistillation):
             mode=self.hparams.model.early_stopping.mode,
         )
         return [early_stopping]
-
-    def configure_optimizers(self):
-        """Configures optimizers for decoder and bottleneck.
-
-        Note:
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure optimizers method will be
-                deprecated, and optimizers will be configured from either
-                config.yaml file or from CLI.
-
-        Returns:
-            Optimizer: Adam optimizer for each decoder
-        """
-        return optim.Adam(
-            params=list(self.model.decoder.parameters()) + list(self.model.bottleneck.parameters()),
-            lr=self.hparams.model.lr,
-            betas=(self.hparams.model.beta1, self.hparams.model.beta2),
-        )
