@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 from typing import Union
 
 from omegaconf import DictConfig, ListConfig
@@ -23,6 +24,8 @@ from .btech import BTech
 from .folder import Folder
 from .inference import InferenceDataset
 from .mvtec import MVTec
+
+logger = logging.getLogger(__name__)
 
 
 def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule:
@@ -34,6 +37,8 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
     Returns:
         PyTorch Lightning DataModule
     """
+    logger.info("Loading the datamodule")
+
     datamodule: LightningDataModule
 
     if config.dataset.format.lower() == "mvtec":
