@@ -19,7 +19,7 @@ jobs:
       - name: Install Tox
         run: pip install tox
       - name: Code quality checks
-        run: tox -e black,isort,flake8,pylint,mypy,pydocstyle
+        run: tox -e black,isort,flake8,pylint,mypy,pydocstyle,notebooks
       - name: Coverage
         run: |
           export ANOMALIB_DATASET_PATH=/media/data1/datasets/
