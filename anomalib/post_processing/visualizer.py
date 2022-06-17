@@ -17,6 +17,7 @@
 from pathlib import Path
 from typing import Dict, List, Optional
 
+import cv2
 import matplotlib.figure
 import matplotlib.pyplot as plt
 import numpy as np
@@ -66,10 +67,19 @@ class Visualizer:
             axis.imshow(image_dict["image"], image_dict["color_map"], vmin=0, vmax=255)
             axis.title.set_text(image_dict["title"])
 
-    def show(self):
-        """Show image on a matplotlib figure."""
-        self.figure.show()
-        plt.waitforbuttonpress()
+    def show(self, filename: Optional[str] = None):
+        """Convert figure to array and show with opencv."""
+        self.figure.canvas.draw()
+        # convert canvas to numpy array
+        img = np.frombuffer(self.figure.canvas.tostring_rgb(), dtype=np.uint8)
+        img = img.reshape(self.figure.canvas.get_width_height()[::-1] + (3,))
+        # show image with opencv
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+        title = "Prediction"
+        title = title + f" for {filename}" if filename else title
+        cv2.imshow(title, img)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
     def save(self, filename: Path):
         """Save image.
