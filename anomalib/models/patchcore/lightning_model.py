@@ -115,9 +115,10 @@ class Patchcore(AnomalyModule):
             Dict[str, Any]: Image filenames, test images, GT and predicted label/masks
         """
 
-        anomaly_maps, anomaly_score = self.model(batch["image"])
+        anomaly_maps, anomaly_score, max_activation_val = self.model(batch["image"])
         batch["anomaly_maps"] = anomaly_maps
         batch["pred_scores"] = anomaly_score.unsqueeze(0)
+        batch["max_activation_val"] = max_activation_val
 
         return batch
 
