@@ -9,3 +9,8 @@ sections = ['FUTURE', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'LOCALFOLDER']
 
 [tool.black]
 line-length = 120
+
+[tool.nbqa.addopts]
+pylint = [
+    "--disable=C0103,C0114,C0116,E0401,R0801,W0106"
+]
