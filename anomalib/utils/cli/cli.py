@@ -7,6 +7,7 @@ import logging
 import os
 from datetime import datetime
 from importlib import import_module
+from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Type, Union
 
 from omegaconf.omegaconf import OmegaConf
@@ -126,13 +127,24 @@ class AnomalibCLI(LightningCLI):
         # Configurations are stored in self.config.<fit,test,predict,tune>
         config = self.config[subcommand]
 
-        root_dir = config.trainer.default_root_dir if config.trainer.default_root_dir else "./results"
-        model_name = config.model.class_path.split(".")[-1].lower()
-        data_name = config.data.class_path.split(".")[-1].lower()
-        category = config.data.init_args.category if config.data.init_args.keys() else ""
-        time_stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        # If the subcommand is `train`, a new project directory is to be created.
+        if subcommand == "train":
+            root_dir = config.trainer.default_root_dir if config.trainer.default_root_dir else "./results"
+            model_name = config.model.class_path.split(".")[-1].lower()
+            data_name = config.data.class_path.split(".")[-1].lower()
+            category = config.data.init_args.category if config.data.init_args.keys() else ""
+            time_stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            default_root_dir = os.path.join(root_dir, model_name, data_name, category, time_stamp)
 
-        default_root_dir = os.path.join(root_dir, model_name, data_name, category, time_stamp)
+        # Otherwise, the assumption is that the project directory has alrady been created.
+        # <test, predict and tune> would use this project directory to save their artifacts.
+        else:
+            # By default, train subcommand saves the weights to
+            #   ./results/<model>/<data>/time_stamp/weights/model.ckpt.
+            # For this reason, we set the project directory to the parent directory
+            #   that is two-level up.
+            default_root_dir = str(Path(config.trainer.resume_from_checkpoint).parent.parent)
+
         os.makedirs(default_root_dir, exist_ok=True)
         self.config[subcommand].trainer.default_root_dir = default_root_dir
 
