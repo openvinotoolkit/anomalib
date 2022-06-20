@@ -71,10 +71,14 @@ class SelectiveFeatureModelCallback(Callback):
         self.max_features = None
         self.class_labels = []
 
-    def on_test_epoch_start(self, _trainer: Trainer, _pl_module: LightningModule) -> None:
+    def on_test_epoch_start(self, _trainer: Trainer, pl_module: LightningModule) -> None:
         """Reset max_features and class_labels before testing starts."""
         self.max_features = None
         self.class_labels = []
+        if hasattr(pl_module.model.anomaly_map_generator, "category_features"):
+            for name, _ in self.feature_model.named_buffers():
+                if name != "good":
+                    pl_module.model.anomaly_map_generator.category_features[name] = getattr(self.feature_model, name)[0]
 
     def on_test_batch_end(
         self,
@@ -103,11 +107,14 @@ class SelectiveFeatureModelCallback(Callback):
                 self.max_features = torch.vstack([self.max_features, max_val_features])
                 self.class_labels = np.hstack([self.class_labels, class_labels])
 
-    def on_test_epoch_end(self, _trainer: Trainer, _pl_module: LightningModule) -> None:
+    def on_test_epoch_end(self, _trainer: Trainer, pl_module: LightningModule) -> None:
         """Compute sub-class testing accuracy."""
         if self.max_features is None:
             warn("`self.max_features is None")
             return
+
+        if hasattr(pl_module.model.anomaly_map_generator, "category_features"):
+            pl_module.model.anomaly_map_generator.category_features = {}
 
         class_names = np.unique(self.class_labels)
         # print(class_labels)

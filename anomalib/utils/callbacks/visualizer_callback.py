@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any, List, Optional, cast
 from warnings import warn
 
+import numpy as np
 import pytorch_lightning as pl
 from pytorch_lightning import Callback
 from pytorch_lightning.utilities.types import STEP_OUTPUT
@@ -124,6 +125,10 @@ class VisualizerCallback(Callback):
         else:
             normalize = True  # raw anomaly maps. Still need to normalize
 
+        selected_featuremaps = None
+        if "selected_features" in outputs.keys():
+            selected_featuremaps = outputs["selected_features"]
+
         threshold = pl_module.pixel_metrics.threshold
         for i, (filename, image, anomaly_map, pred_score, gt_label) in enumerate(
             zip(
@@ -150,6 +155,13 @@ class VisualizerCallback(Callback):
                 visualizer.add_image(image=heat_map, title="Predicted Heat Map")
                 visualizer.add_image(image=pred_mask, color_map="gray", title="Predicted Mask")
                 visualizer.add_image(image=vis_img, title="Segmentation Result")
+                if selected_featuremaps is not None:
+                    for label in selected_featuremaps.keys():
+                        heat_map = selected_featuremaps[label][i].squeeze(0).cpu().numpy()
+                        # normalize
+                        heat_map = ((heat_map - np.min(heat_map)) / (np.max(heat_map) - np.min(heat_map))) * 255
+                        visualizer.add_image(image=heat_map, title=label, color_map="gray")
+
             elif self.task == "classification":
                 gt_im = add_anomalous_label(image) if gt_label else add_normal_label(image)
                 visualizer.add_image(gt_im, title="Image/True label")

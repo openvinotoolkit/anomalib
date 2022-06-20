@@ -43,20 +43,13 @@ class Padim(AnomalyModule):
         backbone (str): Backbone CNN network
     """
 
-    def __init__(
-        self,
-        layers: List[str],
-        input_size: Tuple[int, int],
-        backbone: str,
-    ):
+    def __init__(self, layers: List[str], input_size: Tuple[int, int], backbone: str, top_k_images: int = 5):
         super().__init__()
         logger.info("Initializing Padim Lightning model.")
 
         self.layers = layers
         self.model: PadimModel = PadimModel(
-            input_size=input_size,
-            backbone=backbone,
-            layers=layers,
+            input_size=input_size, backbone=backbone, layers=layers, top_k_images=top_k_images
         ).eval()
 
         self.stats: List[Tensor] = []
@@ -111,9 +104,14 @@ class Padim(AnomalyModule):
             These are required in `validation_epoch_end` for feature concatenation.
         """
 
-        map, max_activation_val = self.model(batch["image"])
+        outputs = self.model(batch["image"])
+        map, max_activation_val, selected_features = outputs
+        if selected_features != {}:
+            batch["selected_features"] = selected_features
+
         batch["anomaly_maps"] = map
         batch["max_activation_val"] = max_activation_val
+
         return batch
 
 
@@ -129,6 +127,7 @@ class PadimLightning(Padim):
             input_size=hparams.model.input_size,
             layers=hparams.model.layers,
             backbone=hparams.model.backbone,
+            top_k_images=hparams.model.selective_feature_model.top_k_images,
         )
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(hparams)

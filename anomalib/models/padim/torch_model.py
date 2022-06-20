@@ -15,7 +15,7 @@
 # and limitations under the License.
 
 from random import sample
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 import torch.nn.functional as F
@@ -42,10 +42,7 @@ class PadimModel(nn.Module):
     """
 
     def __init__(
-        self,
-        input_size: Tuple[int, int],
-        layers: List[str],
-        backbone: str = "resnet18",
+        self, input_size: Tuple[int, int], layers: List[str], backbone: str = "resnet18", top_k_images: int = 5
     ):
         super().__init__()
         self.tiler: Optional[Tiler] = None
@@ -62,14 +59,14 @@ class PadimModel(nn.Module):
         )
         self.idx: Tensor
         self.loss = None
-        self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
+        self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size, top_k_images=top_k_images)
 
         n_features = DIMS[backbone]["reduced_dims"]
         patches_dims = torch.tensor(input_size) / DIMS[backbone]["emb_scale"]
         n_patches = patches_dims.ceil().prod().int().item()
         self.gaussian = MultiVariateGaussian(n_features, n_patches)
 
-    def forward(self, input_tensor: Tensor) -> Tensor:
+    def forward(self, input_tensor: Tensor) -> Union[Tensor, Tuple[Tensor, Tensor, Dict]]:
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
 
         Args:

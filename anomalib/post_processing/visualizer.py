@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+from math import ceil
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -54,12 +55,14 @@ class Visualizer:
 
     def generate(self):
         """Generate the image."""
-        num_cols = len(self.images)
-        figure_size = (num_cols * 3, 3)
-        self.figure, self.axis = plt.subplots(1, num_cols, figsize=figure_size)
+        num_cols = 4
+        num_rows = ceil(len(self.images) / 4)
+
+        figure_size = (num_cols * 3, num_rows * 3)
+        self.figure, self.axis = plt.subplots(num_rows, num_cols, figsize=figure_size)
         self.figure.subplots_adjust(right=0.9)
 
-        axes = self.axis if len(self.images) > 1 else [self.axis]
+        axes = self.axis.flatten() if len(self.images) > 1 else [self.axis]
         for axis, image_dict in zip(axes, self.images):
             axis.axes.xaxis.set_visible(False)
             axis.axes.yaxis.set_visible(False)
