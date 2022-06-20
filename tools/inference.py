@@ -26,6 +26,13 @@ def get_args() -> Namespace:
     parser.add_argument("--weight_path", type=Path, required=True, help="Path to a model weights")
     parser.add_argument("--image_path", type=Path, required=True, help="Path to an image to infer.")
     parser.add_argument(
+        "--visualization_mode",
+        type=str,
+        required=False,
+        default="simple",
+        help="Visualization mode. 'full' or 'simple'",
+    )
+    parser.add_argument(
         "--disable_show_images",
         action="store_true",
         required=False,
@@ -51,6 +58,7 @@ def infer():
     config = get_configurable_parameters(config_path=args.config)
     config.model["weight_file"] = str(args.weight_path)
     config.visualization.show_images = not args.disable_show_images
+    config.visualization.mode = args.visualization_mode
     if args.save_path:  # overwrite save path
         config.visualization.save_images = True
         config.visualization.image_save_path = args.save_path

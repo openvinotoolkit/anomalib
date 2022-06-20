@@ -175,6 +175,7 @@ def add_visualizer_callback(callbacks: List[Callback], config: Union[DictConfig,
         callbacks.append(
             VisualizerCallback(
                 task=config.dataset.task,
+                mode=config.visualization.mode,
                 image_save_path=image_save_path,
                 inputs_are_normalized=not config.model.normalization_method == "none",
                 show_images=config.visualization.show_images,

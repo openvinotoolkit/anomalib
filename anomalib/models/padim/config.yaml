@@ -3,7 +3,7 @@ dataset:
   format: mvtec
   path: ./datasets/MVTec
   category: bottle
-  task: segmentation
+  task: classification
   image_size: 256
   train_batch_size: 32
   test_batch_size: 32
@@ -46,6 +46,7 @@ visualization:
   save_images: True # save images to the file system
   log_images: True # log images to the available loggers (if any)
   image_save_path: null # path to which images will be saved
+  mode: simple # options: ["full", "simple"]
 
 project:
   seed: 42
