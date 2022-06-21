@@ -15,6 +15,7 @@
 # and limitations under the License.
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Dict, Iterator, List, Optional
 
 import cv2
@@ -48,10 +49,10 @@ class ImageResult:
     def __post_init__(self):
         """Generate heatmap overlay and segmentations, convert masks to images."""
         self.heat_map = superimpose_anomaly_map(self.anomaly_map, self.image, normalize=False)
-        if self.pred_mask is not None:
+        if self.pred_mask is not None and not np.max(self.pred_mask) == 255:
             self.pred_mask *= 255
             self.segmentations = mark_boundaries(self.image, self.pred_mask, color=(1, 0, 0), mode="thick")
-        if self.gt_mask is not None:
+        if self.gt_mask is not None and not np.max(self.pred_mask) == 255:
             self.gt_mask *= 255
 
 
@@ -160,6 +161,30 @@ class Visualizer:
                 image_classified = add_normal_label(image_result.heat_map, 1 - image_result.pred_score)
             return cv2.cvtColor(image_classified, cv2.COLOR_RGB2BGR)
         raise ValueError(f"Unknown task type: {self.task}")
+
+    @staticmethod
+    def show(title: str, image: np.ndarray, delay: int = 0):
+        """Show an image on the screen.
+
+        Args:
+            title (str): Title that will be given to the window showing the image.
+            image (np.ndarray): Image that will be shown in the window.
+            delay (int): Delay in milliseconds to wait for keystroke. 0 for infinite.
+        """
+        cv2.imshow(title, image)
+        cv2.waitKey(delay)
+        cv2.destroyAllWindows()
+
+    @staticmethod
+    def save(file_path: Path, image: np.ndarray):
+        """Save an image to the file system.
+
+        Args:
+            file_path (Path): Path to which the image will be saved.
+            image (np.ndarray): Image that will be saved to the file system.
+        """
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        cv2.imwrite(str(file_path), image)
 
 
 class ImageGrid:

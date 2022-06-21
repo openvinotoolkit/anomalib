@@ -17,7 +17,6 @@
 from pathlib import Path
 from typing import Any, Optional, cast
 
-import cv2
 import numpy as np
 import pytorch_lightning as pl
 from pytorch_lightning import Callback
@@ -95,17 +94,6 @@ class VisualizerCallback(Callback):
                         global_step=module.global_step,
                     )
 
-    @staticmethod
-    def _show_image(title, image):
-        cv2.imshow(title, image)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-
-    @staticmethod
-    def _save_image(file_path, image):
-        file_path.parent.mkdir(parents=True, exist_ok=True)
-        cv2.imwrite(str(file_path), image)
-
     def on_predict_batch_end(
         self,
         _trainer: pl.Trainer,
@@ -131,9 +119,9 @@ class VisualizerCallback(Callback):
             filename = Path(outputs["image_path"][i])
             if self.save_images:
                 file_path = self.image_save_path / filename.parent.name / filename.name
-                self._save_image(file_path, image)
+                self.visualizer.save(file_path, image)
             if self.show_images:
-                self._show_image(str(filename), image)
+                self.visualizer.show(str(filename), image)
 
     def on_test_batch_end(
         self,
@@ -160,11 +148,11 @@ class VisualizerCallback(Callback):
             filename = Path(outputs["image_path"][i])
             if self.save_images:
                 file_path = self.image_save_path / filename.parent.name / filename.name
-                self._save_image(file_path, image)
+                self.visualizer.save(file_path, image)
             if self.log_images:
                 self._add_to_logger(image, pl_module, trainer, filename)
             if self.show_images:
-                self._show_image(str(filename), image)
+                self.visualizer.show(str(filename), image)
 
     def on_test_end(self, _trainer: pl.Trainer, pl_module: AnomalyModule) -> None:
         """Sync logs.
