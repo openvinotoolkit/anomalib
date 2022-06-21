@@ -37,7 +37,7 @@ visualization:
   save_images: True # save images to the file system
   log_images: True # log images to the available loggers (if any)
   image_save_path: null # path to which images will be saved
-  mode: simple # options: ["full", "simple"]
+  mode: full # options: ["full", "simple"]
 
 project:
   seed: 42
