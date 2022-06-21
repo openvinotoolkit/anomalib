@@ -50,6 +50,11 @@ class VisualizerCallback(Callback):
         save_images: bool = True,
     ):
         """Visualizer callback."""
+        if mode not in ["full", "simple"]:
+            raise ValueError(f"Unknown visualization mode: {mode}. Please choose one of ['full', 'simple']")
+        self.mode = mode
+        if task not in ["classification", "segmentation"]:
+            raise ValueError(f"Unknown task type: {mode}. Please choose one of ['classification', 'segmentation']")
         self.task = task
         self.inputs_are_normalized = inputs_are_normalized
         self.show_images = show_images

@@ -31,6 +31,7 @@ def get_args() -> Namespace:
         required=False,
         default="simple",
         help="Visualization mode. 'full' or 'simple'",
+        choices=["full", "simple"],
     )
     parser.add_argument(
         "--disable_show_images",

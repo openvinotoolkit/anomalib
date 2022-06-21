@@ -64,7 +64,11 @@ class Visualizer:
     """
 
     def __init__(self, mode: str, task: str):
+        if mode not in ["full", "simple"]:
+            raise ValueError(f"Unknown visualization mode: {mode}. Please choose one of ['full', 'simple']")
         self.mode = mode
+        if task not in ["classification", "segmentation"]:
+            raise ValueError(f"Unknown task type: {mode}. Please choose one of ['classification', 'segmentation']")
         self.task = task
 
     def visualize_batch(self, batch: Dict) -> Iterator[np.ndarray]:
