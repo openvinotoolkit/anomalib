@@ -127,8 +127,9 @@ class AnomalibCLI(LightningCLI):
         # Configurations are stored in self.config.<fit,test,predict,tune>
         config = self.config[subcommand]
 
-        # If the subcommand is `train`, a new project directory is to be created.
-        if subcommand == "train":
+        # If `resume_from_checkpoint` is not specified, it means that the project has not been created before.
+        # Therefore, we need to create the project directory first.
+        if config.trainer.resume_from_checkpoint:
             root_dir = config.trainer.default_root_dir if config.trainer.default_root_dir else "./results"
             model_name = config.model.class_path.split(".")[-1].lower()
             data_name = config.data.class_path.split(".")[-1].lower()
@@ -137,7 +138,6 @@ class AnomalibCLI(LightningCLI):
             default_root_dir = os.path.join(root_dir, model_name, data_name, category, time_stamp)
 
         # Otherwise, the assumption is that the project directory has alrady been created.
-        # <test, predict and tune> would use this project directory to save their artifacts.
         else:
             # By default, train subcommand saves the weights to
             #   ./results/<model>/<data>/time_stamp/weights/model.ckpt.
