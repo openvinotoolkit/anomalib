@@ -4,13 +4,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+import pickle
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 from warnings import warn
 
 import numpy as np
 import torch
 from pytorch_lightning import Callback, LightningModule, Trainer
-from torch import Tensor
+from torch import Tensor, tensor
 
 from anomalib.models.components import SelectiveFeatureModel
 
@@ -22,12 +24,35 @@ class SelectiveFeatureModelCallback(Callback):
 
     Args:
         feature_percentage (float, optional): Percentage of features to store. Defaults to 0.1.
+        save_dir (Path): Location where class features are saved to.
     """
 
-    def __init__(self, feature_percentage: float = 0.1) -> None:
+    def __init__(self, save_dir: str, feature_percentage: float = 0.1) -> None:
         self.feature_model = SelectiveFeatureModel(feature_percentage)
         self.max_features: Optional[Tensor] = None
         self.class_labels: List[str] = []
+        self.save_dir = Path(save_dir)
+
+    def _save_features(self, pl_module):
+        # save category_features to disk
+
+        with open(self.save_dir / "category_features.pkl", "wb") as pkl_file:
+            pickle.dump(
+                {
+                    key: val.cpu().numpy()
+                    for key, val in pl_module.model.anomaly_map_generator.category_features.items()
+                },
+                pkl_file,
+            )
+
+    def _load_features(self, pl_module):
+        if hasattr(pl_module.model.anomaly_map_generator, "category_features"):
+            # load category features
+            with open(self.save_dir / "category_features.pkl", "rb") as pkl_file:
+                data = pickle.load(pkl_file)
+                pl_module.model.anomaly_map_generator.category_features = {
+                    key: tensor(val, device=pl_module.device) for key, val in data.items()
+                }
 
     def on_validation_batch_end(
         self,
@@ -56,7 +81,7 @@ class SelectiveFeatureModelCallback(Callback):
                 self.max_features = torch.vstack([self.max_features, max_val_features])
                 self.class_labels = np.hstack([self.class_labels, class_labels])
 
-    def on_validation_epoch_end(self, _trainer: Trainer, _pl_module: LightningModule) -> None:
+    def on_validation_epoch_end(self, _trainer: Trainer, pl_module: LightningModule) -> None:
         """Fit SFM model and reset max_features and class_labels."""
 
         if self.max_features is None:
@@ -67,6 +92,13 @@ class SelectiveFeatureModelCallback(Callback):
 
         self.feature_model.fit(self.max_features, self.class_labels)
 
+        for name, _ in self.feature_model.named_buffers():
+            if name != "good":
+                pl_module.model.anomaly_map_generator.category_features[name] = getattr(self.feature_model, name)[0]
+
+        if hasattr(pl_module.model.anomaly_map_generator, "category_features"):
+            self._save_features(pl_module)
+
         # reset arrays
         self.max_features = None
         self.class_labels = []
@@ -75,10 +107,7 @@ class SelectiveFeatureModelCallback(Callback):
         """Reset max_features and class_labels before testing starts."""
         self.max_features = None
         self.class_labels = []
-        if hasattr(pl_module.model.anomaly_map_generator, "category_features"):
-            for name, _ in self.feature_model.named_buffers():
-                if name != "good":
-                    pl_module.model.anomaly_map_generator.category_features[name] = getattr(self.feature_model, name)[0]
+        self._load_features(pl_module)
 
     def on_test_batch_end(
         self,
@@ -114,7 +143,7 @@ class SelectiveFeatureModelCallback(Callback):
             return
 
         if hasattr(pl_module.model.anomaly_map_generator, "category_features"):
-            pl_module.model.anomaly_map_generator.category_features = {}
+            pl_module.model.anomaly_map_generator.category_features = dict()
 
         class_names = np.unique(self.class_labels)
         # print(class_labels)

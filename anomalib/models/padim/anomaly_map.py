@@ -37,7 +37,7 @@ class AnomalyMapGenerator:
         self.top_k_images = top_k_images
         # save indices of top features used for sub classification.
         # these features are selected for visualization
-        self.category_features = {}
+        self.category_features = dict()
 
     @staticmethod
     def compute_distance(embedding: Tensor, stats: List[Tensor]) -> Tensor:
@@ -112,7 +112,7 @@ class AnomalyMapGenerator:
             embedding (Tensor): Embedding vector extracted from the test set.
             mean (Tensor): Mean of the multivariate gaussian distribution
             inv_covariance (Tensor): Inverse Covariance matrix of the multivariate gaussian distribution.
-        
+
         Returns:
             Tuple: Anomaly map and max_activation value
         """
