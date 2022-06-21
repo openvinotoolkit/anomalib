@@ -68,6 +68,7 @@ pip install -e .
 ```
 
 ## Training
+### ⚠️ Anomalib < v.4.0
 
 By default [`python tools/train.py`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/-/blob/development/train.py)
 runs [PADIM](https://arxiv.org/abs/2011.08785) model on `leather` category from the [MVTec AD](https://www.mvtec.com/company/research/datasets/mvtec-ad) [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/)  dataset.
@@ -141,8 +142,22 @@ dataset:
     use_random_tiling: False
     random_tile_count: 16
 ```
-## Inference
 
+### ⚠️ Anomalib > v.4.0 Beta - Subject to Change
+We introduce a new CLI approach that uses [PyTorch Lightning CLI](https://pytorch-lightning.readthedocs.io/en/stable/common/lightning_cli.html). To train a model using the new CLI, one would call the following:
+```bash
+anomalib fit --config <path/to/new/config/file>
+```
+
+For instance, to train a [PatchCore](https://github.com/openvinotoolkit/anomalib/tree/development/anomalib/models/patchcore) model, the following command would be run:
+```bash
+anomalib fit --config ./configs/model/patchcore.yaml
+```
+
+The new CLI approach offers a lot more flexibility, details of which are explained in the [documentation](https://pytorch-lightning.readthedocs.io/en/stable/common/lightning_cli.html).
+
+## Inference
+### ⚠️ Anomalib < v.4.0
 Anomalib contains several tools that can be used to perform inference with a trained model. The script in [`tools/inference`](tools/inference.py) contains an example of how the inference tools can be used to generate a prediction for an input image.
 
 If the specified weight path points to a PyTorch Lightning checkpoint file (`.ckpt`), inference will run in PyTorch. If the path points to an ONNX graph (`.onnx`) or OpenVINO IR (`.bin` or `.xml`), inference will run in OpenVINO.
