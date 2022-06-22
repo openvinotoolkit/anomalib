@@ -103,7 +103,7 @@ class SelectiveFeatureModelCallback(Callback):
                 self.max_features = torch.vstack([self.max_features, max_val_features])
                 self.class_labels = np.hstack([self.class_labels, class_labels])
 
-    def on_test_epoch_end(self, _trainer: Trainer, _pl_module: LightningModule) -> None:
+    def on_test_epoch_end(self, _trainer: Trainer, pl_module: LightningModule) -> None:
         """Compute sub-class testing accuracy."""
         if self.max_features is None:
             warn("`self.max_features is None")
@@ -141,8 +141,8 @@ class SelectiveFeatureModelCallback(Callback):
                     results[self.class_labels[idx]].append(0)
         for class_name in class_names:
             if class_name not in ["good", "thread", "combined"]:
-                logger.info(
-                    f"{class_name} accuracy ({sum(results[class_name])}/{len(results[class_name])}):"
-                    f" {sum(results[class_name])/len(results[class_name])}"
+                pl_module.log(
+                    f"{class_name} accuracy ({sum(results[class_name])}/{len(results[class_name])})",
+                    sum(results[class_name]) / len(results[class_name]),
                 )
-        logger.info(f"average accuracy: {sum(correct_class)/len(correct_class)}")
+        pl_module.log("Average sub-class accuracy", sum(correct_class) / len(correct_class))
