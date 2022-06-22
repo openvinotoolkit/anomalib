@@ -3,7 +3,9 @@ coverage
 flake8
 flaky
 isort==5.10.1
+mdformat
 mypy
+nbqa
 pytest
 pylint
 pre-commit>=2.15.0
