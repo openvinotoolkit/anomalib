@@ -121,7 +121,6 @@ class AnomalibCLI(LightningCLI):
 
         # Get the root dir.
         # NOTE: This always assumes that the script calls 'fit' subcommand. This may not always be the case.
-
         # subcommand could be <fit, test, predict or tune>.
         subcommand = self.config["subcommand"]
         # Configurations are stored in self.config.<fit,test,predict,tune>
