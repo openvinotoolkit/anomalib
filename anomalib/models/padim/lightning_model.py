@@ -50,7 +50,6 @@ class Padim(AnomalyModule):
         backbone: str,
     ):
         super().__init__()
-        logger.info("Initializing Padim Lightning model.")
 
         self.layers = layers
         self.model: PadimModel = PadimModel(

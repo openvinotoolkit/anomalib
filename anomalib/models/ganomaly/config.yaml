@@ -51,7 +51,7 @@ metrics:
     adaptive: true
 
 project:
-  seed: 0
+  seed: 42
   path: ./results
 
 logging:
