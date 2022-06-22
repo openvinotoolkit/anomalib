@@ -31,10 +31,12 @@ class TestModel:
             ("cflow", False),
             ("dfkde", False),
             ("dfm", False),
+            ("draem", False),
             ("fastflow", False),
             ("ganomaly", False),
             ("padim", False),
             ("patchcore", False),
+            ("reverse_distillation", False),
             ("stfpm", False),
         ],
     )

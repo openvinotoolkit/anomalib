@@ -1,5 +1,46 @@
 # Changelog
 
+## v.0.3.2
+## What's Changed
+* Refactor `AnomalyModule` and `LightningModules` to explicitly define class arguments. by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/315
+* 🐞 Fix inferencer in Gradio by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/332
+* fix too many open images warning by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/334
+* Upgrade wandb version by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/340
+* Minor fix: Update folder dataset + notebooks link by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/338
+* Upgrade TorchMetrics version by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/342
+* 🚀 Set pylint version in tox.ini by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/345
+* Add metrics configuration callback to benchmarking by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/346
+* ➕ Add FastFlow Model by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/336
+* ✨ Add toy dataset to the repository by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/350
+* Add DRAEM Model by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/344
+* 📃Update documentation by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/280
+* 🏷️ Refactor Datamodule names  by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/354
+* ✨ Add Reverse Distillation by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/343
+
+
+**Full Changelog**: https://github.com/openvinotoolkit/anomalib/compare/v.0.3.1...v.0.3.2
+
+## v.0.3.1
+## What's Changed
+* 🔧  Properly assign values to dataframe in folder dataset. by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/272
+* ➕ Add warnings ⚠️ for inproper task setting in config files. by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/274
+* Updated CHANGELOG.md by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/276
+* ➕ Add long description to `setup.py` to make `README.md` PyPI friendly. by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/279
+* ✨ Add hash check to data download by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/284
+* ➕ Add Gradio by @julien-blanchon in https://github.com/openvinotoolkit/anomalib/pull/283
+* 🔨 Fix nncf key issue in nightly job by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/238
+* Visualizer improvements pt1 by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/293
+* 🧪 Fix nightly by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/299
+* 🧪 Add tests for benchmarking script by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/297
+* ➕ add input_info to nncf config when not defined by user by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/307
+* 🐞 Increase tolerance + nightly path fix by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/318
+* ➕ Add jupyter notebooks directory and first tutorial for `getting-started` by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/292
+
+New Contributors
+* @julien-blanchon made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/283
+
+**Full Changelog**: https://github.com/openvinotoolkit/anomalib/compare/v0.3.0...v.0.3.1
+
 ## v.0.3.0
 ### What's Changed
 * 🛠 ⚠️ Fix configs to properly use pytorch-lightning==1.6 with GPU by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/234
@@ -51,7 +92,7 @@
 * assign test split for folder dataset by @alexriedel1 in https://github.com/openvinotoolkit/anomalib/pull/220
 * 🛠 Refactor model implementations by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/225
 
-## New Contributors
+New Contributors
 * @LukasBommes made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/172
 * @dreaquil made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/158
 * @nahuja-intel made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/215
@@ -108,7 +149,7 @@
 * Added extension as an option when saving the result images. by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/162
 * Update `anomalib` version and requirements by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/163
 
-## New Contributors
+New Contributors
 * @LeonidBeynenson made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/52
 * @blakshma made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/47
 * @alexriedel1 made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/113
@@ -144,7 +185,7 @@
 * Add FPS counter to `TimerCallback` by @ashwinvaidya17 in [#12](https://github.com/openvinotoolkit/anomalib/pull/12)
 
 
-## Contributors
+Contributors
 * @ashwinvaidya17
 * @djdameln
 * @samet-akcay
