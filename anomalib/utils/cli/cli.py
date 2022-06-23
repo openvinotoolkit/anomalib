@@ -34,7 +34,13 @@ logger = logging.getLogger("anomalib.cli")
 
 
 class AnomalibCLI(LightningCLI):
-    """Anomalib CLI."""
+    """Implementation of a fully configurable CLI tool for anomalib.
+
+    The advantage of this tool is its flexibility to configure the pipeline
+    from both the CLI and a configuration file (.yaml or .json). It is even
+    possible to use both the CLI and a configuration file simultaneously.
+    For more details, the reader could refer to PyTorch Lightning CLI documentation.
+    """
 
     def __init__(  # pylint: disable=too-many-function-args
         self,
