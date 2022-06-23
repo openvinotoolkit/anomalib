@@ -41,9 +41,7 @@ class PadimModel(nn.Module):
         backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
     """
 
-    def __init__(
-        self, input_size: Tuple[int, int], layers: List[str], backbone: str = "resnet18", top_k_images: int = 5
-    ):
+    def __init__(self, input_size: Tuple[int, int], layers: List[str], backbone: str = "resnet18"):
         super().__init__()
         self.tiler: Optional[Tiler] = None
 
@@ -59,7 +57,7 @@ class PadimModel(nn.Module):
         )
         self.idx: Tensor
         self.loss = None
-        self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size, top_k_images=top_k_images)
+        self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
 
         n_features = DIMS[backbone]["reduced_dims"]
         patches_dims = torch.tensor(input_size) / DIMS[backbone]["emb_scale"]

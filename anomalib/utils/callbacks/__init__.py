@@ -117,6 +117,7 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
                 task=config.dataset.task,
                 log_images_to=config.logging.log_images_to,
                 inputs_are_normalized=not config.model.normalization_method == "none",
+                top_k_images=config.model.selective_feature_model.top_k_images,
             )
         )
 

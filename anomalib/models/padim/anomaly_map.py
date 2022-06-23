@@ -31,16 +31,18 @@ class AnomalyMapGenerator:
         sigma (int, optional): Standard deviation for Gaussian Kernel. Defaults to 4.
     """
 
-    def __init__(self, image_size: Union[ListConfig, Tuple], sigma: int = 4, top_k_images: int = 5):
+    def __init__(self, image_size: Union[ListConfig, Tuple], sigma: int = 4):
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
         self.sigma = sigma
-        self.top_k_images = top_k_images
+
         # save indices of top features used for sub classification.
         # these features are selected for visualization
         self.category_features = dict()
 
     @staticmethod
-    def compute_distance(embedding: Tensor, stats: List[Tensor]) -> Tensor:
+    def compute_distance(
+        embedding: Tensor, stats: List[Tensor], category_features: Dict[str, Tensor]
+    ) -> Tuple[Tensor, Tensor, Dict[str, Tensor]]:
         """Compute anomaly score to the patch in position(i,j) of a test image.
 
         Ref: Equation (2), Section III-C of the paper.
@@ -61,12 +63,20 @@ class AnomalyMapGenerator:
 
         delta = (embedding - mean).permute(2, 0, 1)
 
-        distances = (torch.matmul(delta, inv_covariance) * delta).sum(2).permute(1, 0)
-        distances = distances.reshape(batch, height, width)
-        distances = torch.sqrt(distances)
+        distances_full = (torch.matmul(delta, inv_covariance) * delta).sum(2).permute(1, 0)
+        distances_full = distances_full.reshape(batch, height, width)
+        distances_full = torch.sqrt(distances_full)
         max_activation_val, _ = torch.max((torch.matmul(delta, inv_covariance) * delta), 0)
 
-        return {distances, max_activation_val}
+        distances = (torch.matmul(delta, inv_covariance) * delta).permute(1, 2, 0)
+        distances = distances.reshape(batch, channel, height, width)
+
+        selected_features = {}
+        if category_features != {}:
+            for name, keep_idx in category_features.items():
+                selected_features[name] = distances[:, keep_idx.long(), :]
+
+        return (distances_full, max_activation_val, selected_features)
 
     def up_sample(self, distance: Tensor) -> Tensor:
         """Up sample anomaly score to match the input image size.
@@ -102,7 +112,9 @@ class AnomalyMapGenerator:
 
         return anomaly_map
 
-    def compute_and_smooth(self, embedding: Tensor, mean: Tensor, inv_covariance: Tensor) -> Tuple[Tensor, Tensor]:
+    def compute_and_smooth(
+        self, embedding: Tensor, mean: Tensor, inv_covariance: Tensor
+    ) -> Tuple[Tensor, Tensor, Dict]:
         """Compute anomaly score.
 
         Scores are calculated based on embedding vector, mean and inv_covariance of the multivariate gaussian
@@ -116,14 +128,13 @@ class AnomalyMapGenerator:
         Returns:
             Tuple: Anomaly map and max_activation value
         """
-        score_map, max_activation_val = self.compute_distance(
-            embedding=embedding,
-            stats=[mean, inv_covariance],
+        score_map, max_activation_val, selected_features = self.compute_distance(
+            embedding=embedding, stats=[mean, inv_covariance], category_features=self.category_features
         )
         up_sampled_score_map = self.up_sample(score_map)
         smoothed_anomaly_map = self.smooth_anomaly_map(up_sampled_score_map)
 
-        return (smoothed_anomaly_map, max_activation_val)
+        return (smoothed_anomaly_map, max_activation_val, selected_features)
 
     def compute_anomaly_map(
         self, embedding: Tensor, mean: Tensor, inv_covariance: Tensor
@@ -145,29 +156,9 @@ class AnomalyMapGenerator:
         mean = mean.to(embedding.device)
         inv_covariance = inv_covariance.to(embedding.device)
 
-        smoothed_anomaly_map, max_activation_val = self.compute_and_smooth(embedding, mean, inv_covariance)
-
-        # compute anomaly maps for sub-features
-        selected_features = {}
-        if self.category_features != {}:
-            for name, feature_ids in self.category_features.items():
-                # select only sub class embeddings
-                # another option is to create a one-hot embedding to visualize each sub category
-                feature_ids = feature_ids.long()
-                anomaly_map, _ = self.compute_and_smooth(
-                    embedding[:, feature_ids, ...],
-                    mean[feature_ids, ...],
-                    inv_covariance[:, feature_ids][..., feature_ids],
-                )
-                selected_features[f"{name} all"] = anomaly_map
-                for idx in feature_ids[: self.top_k_images]:
-                    anomaly_map, _ = self.compute_and_smooth(
-                        embedding[:, idx, ...].unsqueeze(1),
-                        mean[idx, ...].unsqueeze(0),
-                        inv_covariance[:, idx][..., idx].reshape(-1, 1, 1),
-                    )
-                    selected_features[f"{name} top {idx+1}"] = anomaly_map
-
+        smoothed_anomaly_map, max_activation_val, selected_features = self.compute_and_smooth(
+            embedding, mean, inv_covariance
+        )
         return (smoothed_anomaly_map, max_activation_val, selected_features)
 
     def __call__(self, **kwds):

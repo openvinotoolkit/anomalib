@@ -20,6 +20,7 @@ from warnings import warn
 
 import numpy as np
 import pytorch_lightning as pl
+import torch
 from pytorch_lightning import Callback
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from skimage.segmentation import mark_boundaries
@@ -48,11 +49,18 @@ class VisualizerCallback(Callback):
     config.yaml file.
     """
 
-    def __init__(self, task: str, log_images_to: Optional[List[str]] = None, inputs_are_normalized: bool = True):
+    def __init__(
+        self,
+        task: str,
+        log_images_to: Optional[List[str]] = None,
+        inputs_are_normalized: bool = True,
+        top_k_images: int = 5,
+    ):
         """Visualizer callback."""
         self.task = task
         self.log_images_to = [] if log_images_to is None else log_images_to
         self.inputs_are_normalized = inputs_are_normalized
+        self.top_k_images = top_k_images
 
     def _add_images(
         self,
@@ -97,6 +105,9 @@ class VisualizerCallback(Callback):
 
         if "local" in self.log_images_to:
             visualizer.save(Path(trainer.default_root_dir) / "images" / filename.parent.name / filename.name)
+
+    def _min_max_normalize(self, image: np.ndarray) -> np.ndarray:
+        return ((image - np.min(image)) * 255 / (np.max(image) - np.min(image))).astype(int)
 
     def on_test_batch_end(
         self,
@@ -157,10 +168,42 @@ class VisualizerCallback(Callback):
                 visualizer.add_image(image=vis_img, title="Segmentation Result")
                 if selected_featuremaps is not None:
                     for label in selected_featuremaps.keys():
-                        heat_map = selected_featuremaps[label][i].squeeze(0).cpu().numpy()
-                        # normalize
-                        heat_map = ((heat_map - np.min(heat_map)) / (np.max(heat_map) - np.min(heat_map))) * 255
-                        visualizer.add_image(image=heat_map, title=label, color_map="gray")
+                        subclass_features = selected_featuremaps[label][i]
+                        all_features = torch.sum(subclass_features, 0).unsqueeze(0)
+                        all_features = (
+                            pl_module.model.anomaly_map_generator.smooth_anomaly_map(
+                                pl_module.model.anomaly_map_generator.up_sample(all_features)
+                            )
+                            .cpu()
+                            .numpy()
+                        )
+                        all_features_heatmap = superimpose_anomaly_map(all_features, image, normalize=True)
+                        visualizer.add_image(image=all_features_heatmap, title=f"All {label}")
+                        all_features_pred_mask = compute_mask(
+                            (all_features - all_features.min()) / np.ptp(all_features), threshold
+                        )
+                        all_features_vis_image = mark_boundaries(
+                            image, all_features_pred_mask, color=(1, 0, 0), mode="thick"
+                        )
+                        visualizer.add_image(image=all_features_vis_image, title=f"All {label}")
+                        for idx in range(self.top_k_images):
+                            selected_feature = subclass_features[idx].unsqueeze(0)
+                            selected_feature = (
+                                pl_module.model.anomaly_map_generator.smooth_anomaly_map(
+                                    pl_module.model.anomaly_map_generator.up_sample(selected_feature)
+                                )
+                                .cpu()
+                                .numpy()
+                            )
+                            selected_feature_heatmap = superimpose_anomaly_map(selected_feature, image, normalize=True)
+                            visualizer.add_image(image=selected_feature_heatmap, title=f"Top #{idx} {label}")
+                            selected_feature_pred_mask = compute_mask(
+                                (selected_feature - selected_feature.min()) / np.ptp(selected_feature), threshold
+                            )
+                            selected_feature_vis_image = mark_boundaries(
+                                image, selected_feature_pred_mask, color=(1, 0, 0), mode="thick"
+                            )
+                            visualizer.add_image(image=selected_feature_vis_image, title=f"Top #{idx} {label}")
 
             elif self.task == "classification":
                 gt_im = add_anomalous_label(image) if gt_label else add_normal_label(image)
