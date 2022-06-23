@@ -48,9 +48,14 @@ class DummyModule(AnomalyModule):
         super().__init__()
         self.model = DummyModel()
         self.task = "segmentation"
+        self.mode = "full"
         self.callbacks = [
             VisualizerCallback(
-                task=self.task, image_save_path=hparams.project.path + "/images", log_images=True, save_images=True
+                task=self.task,
+                mode=self.mode,
+                image_save_path=hparams.project.path + "/images",
+                log_images=True,
+                save_images=True,
             )
         ]  # test if this is removed
 
