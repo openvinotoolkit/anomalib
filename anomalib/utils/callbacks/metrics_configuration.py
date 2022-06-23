@@ -56,10 +56,11 @@ class MetricsConfigurationCallback(Callback):
             pixel_metric_names (Optional[List[str]]): List of pixel-level metrics.
             normalization_method(Optional[str]): Normalization method. <None, min_max, cdf>
         """
-
+        # TODO: https://github.com/openvinotoolkit/anomalib/issues/384
         self.image_metric_names = image_metric_names
         self.pixel_metric_names = pixel_metric_names
 
+        # TODO: https://github.com/openvinotoolkit/anomalib/issues/384
         # TODO: This is a workaround. normalization-method is actually not used in metrics.
         #   It's only accessed from `before_instantiate` method in `AnomalibCLI` to configure
         #   its callback.

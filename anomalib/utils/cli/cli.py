@@ -101,6 +101,8 @@ class AnomalibCLI(LightningCLI):
         parser.add_lightning_class_args(TilerConfigurationCallback, "tiling")  # type: ignore
         parser.set_defaults({"tiling.enable": False})
 
+        # TODO: Assign these default values within the MetricsConfigurationCallback
+        #   - https://github.com/openvinotoolkit/anomalib/issues/384
         parser.add_lightning_class_args(MetricsConfigurationCallback, "metrics")  # type: ignore
         parser.set_defaults(
             {
@@ -188,6 +190,8 @@ class AnomalibCLI(LightningCLI):
         # Add timing to the pipeline.
         callbacks.append(TimerCallback())
 
+        #  TODO: This could be set in PostProcessingConfiguration callback
+        #   - https://github.com/openvinotoolkit/anomalib/issues/384
         # Normalization.
         normalization = config.metrics.normalization_method
         if normalization:
