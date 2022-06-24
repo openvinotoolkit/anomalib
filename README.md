@@ -17,7 +17,7 @@ ___
 [![Nightly-regression Test](https://github.com/openvinotoolkit/anomalib/actions/workflows/nightly.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/nightly.yml)
 [![Pre-merge Checks](https://github.com/openvinotoolkit/anomalib/actions/workflows/pre_merge.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/pre_merge.yml)
 [![Build Docs](https://github.com/openvinotoolkit/anomalib/actions/workflows/docs.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/docs.yml)
-
+[![Downloads](https://static.pepy.tech/personalized-badge/anomalib?period=total&units=international_system&left_color=grey&right_color=green&left_text=PyPI%20Downloads)](https://pepy.tech/project/anomalib)
 </div>
 
 ___
@@ -45,8 +45,9 @@ To get an overview of all the devices where `anomalib` as been tested thoroughly
 
 For getting started with a Jupyter Notebook, please refer to the [Notebooks](./notebooks) folder of this repository. Additionally, you can refer to a few created by the community:
 
-- [Google Colab](https://colab.research.google.com/drive/1K4a4z2iZGBNhWdmt9Aqdld7kTAxBfAmi?usp=sharing) by @bth5
-- [Kaggle](https://www.kaggle.com/code/ipythonx/mvtec-ad-anomaly-detection-with-anomalib-library) by @innat
+<a href="https://colab.research.google.com/drive/1K4a4z2iZGBNhWdmt9Aqdld7kTAxBfAmi?usp=sharing" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> by [@bth5](https://github.com/bth5)
+
+<a target="_blank" href="https://www.kaggle.com/code/ipythonx/mvtec-ad-anomaly-detection-with-anomalib-library"><img src="https://kaggle.com/static/images/open-in-kaggle.svg" /></a> by [@innat](https://github.com/innat)
 
 ### PyPI Install
 
@@ -68,7 +69,7 @@ pip install -e .
 ```
 
 ## Training
-### ⚠️ Anomalib < v.4.0
+### ⚠️ Anomalib < v.0.4.0
 
 By default [`python tools/train.py`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/-/blob/development/train.py)
 runs [PADIM](https://arxiv.org/abs/2011.08785) model on `leather` category from the [MVTec AD](https://www.mvtec.com/company/research/datasets/mvtec-ad) [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/)  dataset.
@@ -143,7 +144,7 @@ dataset:
     random_tile_count: 16
 ```
 
-### ⚠️ Anomalib > v.4.0 Beta - Subject to Change
+### ⚠️ Anomalib > v.0.4.0 Beta - Subject to Change
 We introduce a new CLI approach that uses [PyTorch Lightning CLI](https://pytorch-lightning.readthedocs.io/en/stable/common/lightning_cli.html). To train a model using the new CLI, one would call the following:
 ```bash
 anomalib fit --config <path/to/new/config/file>
@@ -157,7 +158,7 @@ anomalib fit --config ./configs/model/patchcore.yaml
 The new CLI approach offers a lot more flexibility, details of which are explained in the [documentation](https://pytorch-lightning.readthedocs.io/en/stable/common/lightning_cli.html).
 
 ## Inference
-### ⚠️ Anomalib < v.4.0
+### ⚠️ Anomalib < v.0.4.0
 Anomalib contains several tools that can be used to perform inference with a trained model. The script in [`tools/inference`](tools/inference.py) contains an example of how the inference tools can be used to generate a prediction for an input image.
 
 If the specified weight path points to a PyTorch Lightning checkpoint file (`.ckpt`), inference will run in PyTorch. If the path points to an ONNX graph (`.onnx`) or OpenVINO IR (`.bin` or `.xml`), inference will run in OpenVINO.

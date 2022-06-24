@@ -34,7 +34,13 @@ logger = logging.getLogger("anomalib.cli")
 
 
 class AnomalibCLI(LightningCLI):
-    """Anomalib CLI."""
+    """Implementation of a fully configurable CLI tool for anomalib.
+
+    The advantage of this tool is its flexibility to configure the pipeline
+    from both the CLI and a configuration file (.yaml or .json). It is even
+    possible to use both the CLI and a configuration file simultaneously.
+    For more details, the reader could refer to PyTorch Lightning CLI documentation.
+    """
 
     def __init__(  # pylint: disable=too-many-function-args
         self,
@@ -95,6 +101,8 @@ class AnomalibCLI(LightningCLI):
         parser.add_lightning_class_args(TilerConfigurationCallback, "tiling")  # type: ignore
         parser.set_defaults({"tiling.enable": False})
 
+        # TODO: Assign these default values within the MetricsConfigurationCallback
+        #   - https://github.com/openvinotoolkit/anomalib/issues/384
         parser.add_lightning_class_args(MetricsConfigurationCallback, "metrics")  # type: ignore
         parser.set_defaults(
             {
@@ -116,15 +124,10 @@ class AnomalibCLI(LightningCLI):
             }
         )
 
-    def before_instantiate_classes(self) -> None:
-        """Modify the configuration to properly instantiate classes."""
-
-        # Get the root dir.
-        # NOTE: This always assumes that the script calls 'fit' subcommand. This may not always be the case.
-
-        # subcommand could be <fit, test, predict or tune>.
+    def __set_default_root_dir(self) -> None:
+        """Sets the default root directory depending on the subcommand type. <train, fit, predict, tune.>."""
+        # Get configs.
         subcommand = self.config["subcommand"]
-        # Configurations are stored in self.config.<fit,test,predict,tune>
         config = self.config[subcommand]
 
         # If `resume_from_checkpoint` is not specified, it means that the project has not been created before.
@@ -145,8 +148,12 @@ class AnomalibCLI(LightningCLI):
             #   that is two-level up.
             default_root_dir = str(Path(config.trainer.resume_from_checkpoint).parent.parent)
 
-        os.makedirs(default_root_dir, exist_ok=True)
         self.config[subcommand].trainer.default_root_dir = default_root_dir
+
+    def __set_callbacks(self) -> None:
+        """Sets the default callbacks used within the pipeline."""
+        subcommand = self.config["subcommand"]
+        config = self.config[subcommand]
 
         callbacks = []
 
@@ -183,6 +190,8 @@ class AnomalibCLI(LightningCLI):
         # Add timing to the pipeline.
         callbacks.append(TimerCallback())
 
+        #  TODO: This could be set in PostProcessingConfiguration callback
+        #   - https://github.com/openvinotoolkit/anomalib/issues/384
         # Normalization.
         normalization = config.metrics.normalization_method
         if normalization:
@@ -208,7 +217,7 @@ class AnomalibCLI(LightningCLI):
             callbacks.append(
                 OpenVINOCallback(
                     input_size=config.data.init_args.image_size,
-                    dirpath=os.path.join(self.config["trainer"]["default_root_dir"], "compressed"),
+                    dirpath=os.path.join(config.trainer.default_root_dir, "compressed"),
                     filename="model",
                 )
             )
@@ -227,6 +236,12 @@ class AnomalibCLI(LightningCLI):
                 raise ValueError(f"--nncf expects a path to nncf config which is a yaml file, but got {config.nncf}")
 
         self.config[subcommand].trainer.callbacks = callbacks
+
+    def before_instantiate_classes(self) -> None:
+        """Modify the configuration to properly instantiate classes."""
+        self.__set_default_root_dir()
+        self.__set_callbacks()
+        print("done.")
 
 
 def main() -> None:
