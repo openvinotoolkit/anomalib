@@ -49,10 +49,10 @@ class ImageResult:
     def __post_init__(self):
         """Generate heatmap overlay and segmentations, convert masks to images."""
         self.heat_map = superimpose_anomaly_map(self.anomaly_map, self.image, normalize=False)
-        if self.pred_mask is not None and not np.max(self.pred_mask) == 255:
+        if self.pred_mask is not None and np.max(self.pred_mask) <= 1.0:
             self.pred_mask *= 255
             self.segmentations = mark_boundaries(self.image, self.pred_mask, color=(1, 0, 0), mode="thick")
-        if self.gt_mask is not None and not np.max(self.pred_mask) == 255:
+        if self.gt_mask is not None and np.max(self.pred_mask) <= 1.0:
             self.gt_mask *= 255
 
 
