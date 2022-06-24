@@ -19,6 +19,7 @@ from typing import Any, Dict, Optional
 
 import pytorch_lightning as pl
 from pytorch_lightning import Callback, Trainer
+from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch.distributions import LogNormal
 
@@ -29,6 +30,7 @@ from anomalib.post_processing.normalization.cdf import normalize, standardize
 logger = logging.getLogger(__name__)
 
 
+@CALLBACK_REGISTRY
 class CdfNormalizationCallback(Callback):
     """Callback that standardizes the image-level and pixel-level anomaly scores."""
 

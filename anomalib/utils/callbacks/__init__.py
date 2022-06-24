@@ -29,14 +29,16 @@ from .graph import GraphLogger
 from .metrics_configuration import MetricsConfigurationCallback
 from .min_max_normalization import MinMaxNormalizationCallback
 from .model_loader import LoadModelCallback
+from .tiler_configuration import TilerConfigurationCallback
 from .timer import TimerCallback
 from .visualizer_callback import VisualizerCallback
 
 __all__ = [
     "CdfNormalizationCallback",
+    "LoadModelCallback",
     "MetricsConfigurationCallback",
     "MinMaxNormalizationCallback",
-    "LoadModelCallback",
+    "TilerConfigurationCallback",
     "TimerCallback",
     "VisualizerCallback",
 ]
