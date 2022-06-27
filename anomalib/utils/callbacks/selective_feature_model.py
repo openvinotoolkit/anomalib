@@ -142,7 +142,7 @@ class SelectiveFeatureModelCallback(Callback):
         for class_name in class_names:
             if class_name not in ["good", "thread", "combined"]:
                 pl_module.log(
-                    f"{class_name} accuracy ({sum(results[class_name])}/{len(results[class_name])})",
+                    f"{class_name} accuracy",
                     sum(results[class_name]) / len(results[class_name]),
                 )
         pl_module.log("Average sub-class accuracy", sum(correct_class) / len(correct_class))

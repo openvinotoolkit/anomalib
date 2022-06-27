@@ -40,10 +40,10 @@ def write_metrics(model_metrics: Dict[str, Union[str, float]], writers: List[str
     metrics_df = pd.DataFrame(model_metrics, index=[0])
     result_path = Path(f"runs/{model_metrics['model_name']}_{model_metrics['device']}.csv")
     Path.mkdir(result_path.parent, parents=True, exist_ok=True)
-    if not result_path.is_file():
-        metrics_df.to_csv(result_path)
-    else:
-        metrics_df.to_csv(result_path, mode="a", header=False)
+    if result_path.is_file():
+        prev_df = pd.read_csv(result_path, index_col=[0])
+        metrics_df = pd.concat([prev_df, metrics_df])
+    metrics_df.to_csv(result_path)
 
     if "tensorboard" in writers:
         write_to_tensorboard(model_metrics)
@@ -103,7 +103,8 @@ def upload_to_wandb(team: str = "anomalib"):
         team (str, optional): Name of the team on wandb. This can also be the id of your personal account.
         Defaults to "anomalib".
     """
-    project = f"benchmarking_{get_unique_key(2)}"
+    # project = f"benchmarking_{get_unique_key(2)}"
+    project = f"sfm"
     tag_list = ["dataset.category", "model_name", "dataset.image_size", "model.backbone", "device"]
     for csv_file in glob("runs/*.csv"):
         table = pd.read_csv(csv_file)
