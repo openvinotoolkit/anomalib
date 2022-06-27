@@ -55,7 +55,7 @@ project:
   path: ./results
 
 logging:
-  log_images_to: ["local"] # options: [wandb, tensorboard, local]. Make sure you also set logger with using wandb or tensorboard.
+  log_images_to: [] # Not available for classification-based models.
   logger: [] # options: [tensorboard, wandb, csv] or combinations.
   log_graph: false # Logs the model graph to respective logger.
 
