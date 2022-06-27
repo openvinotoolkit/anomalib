@@ -222,7 +222,8 @@ class ImageGrid:
         self.figure, self.axis = plt.subplots(1, num_cols, figsize=figure_size)
         self.figure.subplots_adjust(right=0.9)
 
-        for axis, image_dict in zip(list(self.axis), self.images):
+        axes = self.axis if isinstance(self.axis, np.ndarray) else np.array([self.axis])
+        for axis, image_dict in zip(axes, self.images):
             axis.axes.xaxis.set_visible(False)
             axis.axes.yaxis.set_visible(False)
             axis.imshow(image_dict["image"], image_dict["color_map"], vmin=0, vmax=255)
