@@ -122,6 +122,7 @@ class Visualizer:
         """
         visualization = ImageGrid()
         if self.task == "segmentation":
+            assert image_result.pred_mask is not None
             visualization.add_image(image_result.image, "Image")
             if image_result.gt_mask is not None:
                 visualization.add_image(image=image_result.gt_mask, color_map="gray", title="Ground Truth")
@@ -221,8 +222,7 @@ class ImageGrid:
         self.figure, self.axis = plt.subplots(1, num_cols, figsize=figure_size)
         self.figure.subplots_adjust(right=0.9)
 
-        axes = self.axis if len(self.images) > 1 else [self.axis]
-        for axis, image_dict in zip(axes, self.images):
+        for axis, image_dict in zip(list(self.axis), self.images):
             axis.axes.xaxis.set_visible(False)
             axis.axes.yaxis.set_visible(False)
             axis.imshow(image_dict["image"], image_dict["color_map"], vmin=0, vmax=255)
