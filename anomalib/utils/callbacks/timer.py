@@ -18,10 +18,12 @@ import logging
 import time
 
 from pytorch_lightning import Callback, LightningModule, Trainer
+from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 
 logger = logging.getLogger(__name__)
 
 
+@CALLBACK_REGISTRY
 class TimerCallback(Callback):
     """Callback that measures the training and testing time of a PyTorch Lightning module."""
 

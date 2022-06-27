@@ -20,6 +20,7 @@ from warnings import warn
 
 import pytorch_lightning as pl
 from pytorch_lightning import Callback
+from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from skimage.segmentation import mark_boundaries
 
@@ -37,6 +38,7 @@ from anomalib.utils.loggers import AnomalibWandbLogger
 from anomalib.utils.loggers.base import ImageLoggerBase
 
 
+@CALLBACK_REGISTRY
 class VisualizerCallback(Callback):
     """Callback that visualizes the inference results of a model.
 
