@@ -49,6 +49,7 @@ class Cflow(AnomalyModule):
         coupling_blocks: int = 8,
         clamp_alpha: float = 1.9,
         permute_soft: bool = False,
+        lr: float = 0.0001,
     ):
         super().__init__()
 
@@ -64,6 +65,31 @@ class Cflow(AnomalyModule):
             permute_soft=permute_soft,
         )
         self.automatic_optimization = False
+        # TODO: LR should be part of optimizer in config.yaml! Since cflow has custom
+        #   optimizer this is to be addressed later.
+        self.learning_rate = lr
+
+    def configure_optimizers(self) -> torch.optim.Optimizer:
+        """Configures optimizers for each decoder.
+
+        Note:
+            This method is used for the existing CLI.
+            When PL CLI is introduced, configure optimizers method will be
+                deprecated, and optimizers will be configured from either
+                config.yaml file or from CLI.
+
+        Returns:
+            Optimizer: Adam optimizer for each decoder
+        """
+        decoders_parameters = []
+        for decoder_idx in range(len(self.model.pool_layers)):
+            decoders_parameters.extend(list(self.model.decoders[decoder_idx].parameters()))
+
+        optimizer = optim.Adam(
+            params=decoders_parameters,
+            lr=self.learning_rate,
+        )
+        return optimizer
 
     def training_step(self, batch, _):  # pylint: disable=arguments-differ
         """Training Step of CFLOW.
@@ -193,25 +219,3 @@ class CflowLightning(Cflow):
             mode=self.hparams.model.early_stopping.mode,
         )
         return [early_stopping]
-
-    def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configures optimizers for each decoder.
-
-        Note:
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure optimizers method will be
-                deprecated, and optimizers will be configured from either
-                config.yaml file or from CLI.
-
-        Returns:
-            Optimizer: Adam optimizer for each decoder
-        """
-        decoders_parameters = []
-        for decoder_idx in range(len(self.model.pool_layers)):
-            decoders_parameters.extend(list(self.model.decoders[decoder_idx].parameters()))
-
-        optimizer = optim.Adam(
-            params=decoders_parameters,
-            lr=self.hparams.model.lr,
-        )
-        return optimizer

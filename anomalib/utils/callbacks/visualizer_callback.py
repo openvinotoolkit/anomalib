@@ -20,6 +20,7 @@ from typing import Any, Optional, cast
 import numpy as np
 import pytorch_lightning as pl
 from pytorch_lightning import Callback
+from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 
 from anomalib.models.components import AnomalyModule
@@ -28,6 +29,7 @@ from anomalib.utils.loggers import AnomalibWandbLogger
 from anomalib.utils.loggers.base import ImageLoggerBase
 
 
+@CALLBACK_REGISTRY
 class VisualizerCallback(Callback):
     """Callback that visualizes the inference results of a model.
 

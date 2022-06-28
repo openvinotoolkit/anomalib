@@ -114,4 +114,5 @@ setup(
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRAS_REQUIRE,
     package_data={"": ["config.yaml"]},
+    entry_points={"console_scripts": ["anomalib=anomalib.utils.cli.cli:main"]},
 )
