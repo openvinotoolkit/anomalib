@@ -29,7 +29,7 @@ model:
     hidden_ratio: 1.0 # options: [1.0, 1.0, 0.16, 0.16] - for each supported backbone
 
 optimizer:
-  class_path: torch.optim.Adam
+  class_path: torch.optim._multi_tensor.Adam
   init_args:
     lr: 0.001
     weight_decay: 0.00001
