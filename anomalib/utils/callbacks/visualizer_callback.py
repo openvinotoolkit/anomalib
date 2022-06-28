@@ -15,21 +15,15 @@
 # and limitations under the License.
 
 from pathlib import Path
-from typing import Any, Iterator, Optional, cast
+from typing import Any, Optional, cast
 
+import numpy as np
 import pytorch_lightning as pl
 from pytorch_lightning import Callback
 from pytorch_lightning.utilities.types import STEP_OUTPUT
-from skimage.segmentation import mark_boundaries
 
 from anomalib.models.components import AnomalyModule
-from anomalib.post_processing import (
-    Visualizer,
-    add_anomalous_label,
-    add_normal_label,
-    superimpose_anomaly_map,
-)
-from anomalib.pre_processing.transforms import Denormalize
+from anomalib.post_processing import Visualizer
 from anomalib.utils.loggers import AnomalibWandbLogger
 from anomalib.utils.loggers.base import ImageLoggerBase
 
@@ -47,6 +41,7 @@ class VisualizerCallback(Callback):
     def __init__(
         self,
         task: str,
+        mode: str,
         image_save_path: str,
         inputs_are_normalized: bool = True,
         show_images: bool = False,
@@ -54,6 +49,11 @@ class VisualizerCallback(Callback):
         save_images: bool = True,
     ):
         """Visualizer callback."""
+        if mode not in ["full", "simple"]:
+            raise ValueError(f"Unknown visualization mode: {mode}. Please choose one of ['full', 'simple']")
+        self.mode = mode
+        if task not in ["classification", "segmentation"]:
+            raise ValueError(f"Unknown task type: {mode}. Please choose one of ['classification', 'segmentation']")
         self.task = task
         self.inputs_are_normalized = inputs_are_normalized
         self.show_images = show_images
@@ -61,9 +61,11 @@ class VisualizerCallback(Callback):
         self.save_images = save_images
         self.image_save_path = Path(image_save_path)
 
+        self.visualizer = Visualizer(mode, task)
+
     def _add_to_logger(
         self,
-        visualizer: Visualizer,
+        image: np.ndarray,
         module: AnomalyModule,
         trainer: pl.Trainer,
         filename: Path,
@@ -71,7 +73,7 @@ class VisualizerCallback(Callback):
         """Log image from a visualizer to each of the available loggers in the project.
 
         Args:
-            visualizer (Visualizer): Visualizer object from which the `figure` is logged.
+            image (np.ndarray): Image that should be added to the loggers.
             module (AnomalyModule): Anomaly module.
             trainer (Trainer): Pytorch Lightning trainer which holds reference to `logger`
             filename (Path): Path of the input image. This name is used as name for the generated image.
@@ -87,41 +89,10 @@ class VisualizerCallback(Callback):
                 if isinstance(available_loggers[log_to], ImageLoggerBase):
                     logger: ImageLoggerBase = cast(ImageLoggerBase, available_loggers[log_to])  # placate mypy
                     logger.add_image(
-                        image=visualizer.figure,
+                        image=image,
                         name=filename.parent.name + "_" + filename.name,
                         global_step=module.global_step,
                     )
-
-    def generate_visualizer(self, outputs) -> Iterator[Visualizer]:
-        """Yields a visualizer object for each of the images in the output."""
-        for i in range(outputs["image"].size(0)):
-            visualizer = Visualizer()
-
-            image = Denormalize()(outputs["image"][i].cpu())
-            anomaly_map = outputs["anomaly_maps"][i].cpu().numpy()
-            heat_map = superimpose_anomaly_map(anomaly_map, image, normalize=not self.inputs_are_normalized)
-            pred_score = outputs["pred_scores"][i].cpu().numpy()
-            pred_label = outputs["pred_labels"][i].cpu().numpy()
-
-            if self.task == "segmentation":
-                pred_mask = outputs["pred_masks"][i].squeeze().int().cpu().numpy() * 255
-                vis_img = mark_boundaries(image, pred_mask, color=(1, 0, 0), mode="thick")
-                visualizer.add_image(image=image, title="Image")
-                if "mask" in outputs:
-                    true_mask = outputs["mask"][i].cpu().numpy() * 255
-                    visualizer.add_image(image=true_mask, color_map="gray", title="Ground Truth")
-                visualizer.add_image(image=heat_map, title="Predicted Heat Map")
-                visualizer.add_image(image=pred_mask, color_map="gray", title="Predicted Mask")
-                visualizer.add_image(image=vis_img, title="Segmentation Result")
-            elif self.task == "classification":
-                visualizer.add_image(image, title="Image")
-                if pred_label:
-                    image_classified = add_anomalous_label(heat_map, pred_score)
-                else:
-                    image_classified = add_normal_label(heat_map, 1 - pred_score)
-                visualizer.add_image(image=image_classified, title="Prediction")
-
-            yield visualizer
 
     def on_predict_batch_end(
         self,
@@ -144,13 +115,13 @@ class VisualizerCallback(Callback):
             _dataloader_idx (int): Index of the dataloader that yielded the current batch (unused).
         """
         assert outputs is not None
-        for i, visualizer in enumerate(self.generate_visualizer(outputs)):
+        for i, image in enumerate(self.visualizer.visualize_batch(outputs)):
             filename = Path(outputs["image_path"][i])
-            visualizer.generate()
             if self.save_images:
-                visualizer.save(self.image_save_path / filename.parent.name / filename.name)
+                file_path = self.image_save_path / filename.parent.name / filename.name
+                self.visualizer.save(file_path, image)
             if self.show_images:
-                visualizer.show(str(filename))
+                self.visualizer.show(str(filename), image)
 
     def on_test_batch_end(
         self,
@@ -173,16 +144,15 @@ class VisualizerCallback(Callback):
             _dataloader_idx (int): Index of the dataloader that yielded the current batch (unused).
         """
         assert outputs is not None
-        for i, visualizer in enumerate(self.generate_visualizer(outputs)):
+        for i, image in enumerate(self.visualizer.visualize_batch(outputs)):
             filename = Path(outputs["image_path"][i])
-            visualizer.generate()
             if self.save_images:
-                visualizer.save(self.image_save_path / filename.parent.name / filename.name)
+                file_path = self.image_save_path / filename.parent.name / filename.name
+                self.visualizer.save(file_path, image)
             if self.log_images:
-                self._add_to_logger(visualizer, pl_module, trainer, Path(outputs["image_path"][i]))
+                self._add_to_logger(image, pl_module, trainer, filename)
             if self.show_images:
-                visualizer.show(str(filename))
-            visualizer.close()
+                self.visualizer.show(str(filename), image)
 
     def on_test_end(self, _trainer: pl.Trainer, pl_module: AnomalyModule) -> None:
         """Sync logs.

@@ -76,6 +76,7 @@ class DummyLightningModule(pl.LightningModule):
         self.loss_fn = nn.NLLLoss()
         self.callbacks = [
             VisualizerCallback(
+                mode="full",
                 task="segmentation",
                 image_save_path=hparams.project.path + "/images",
                 log_images=False,
