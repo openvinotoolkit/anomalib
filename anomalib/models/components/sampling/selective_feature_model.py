@@ -40,9 +40,9 @@ class SelectiveFeatureModel(nn.Module):
             # sorted values and idx for entire feature set
             max_val, max_idx = torch.sort(class_max_activations, descending=True)
             reduced_range = int(max_val.shape[1] * self.feature_percentage)
-            # indexes of top 10% FEATURES HAVING MAX VALUE
+            # indexes of top k% features across all images of the category
             top_max_idx = max_idx[:, 0:reduced_range]
-            # out of sorted top 10, what features are affiliated the most
+            # out of sorted top k%, what features are affiliated the most
             idx, repetitions = torch.unique(top_max_idx, return_counts=True)
             sorted_repetition, sorted_repetition_idx = torch.sort(repetitions, descending=True)
             sorted_idx = idx[sorted_repetition_idx]
