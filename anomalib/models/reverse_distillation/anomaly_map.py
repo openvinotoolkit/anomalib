@@ -9,8 +9,9 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
+import einops
 import torch
 import torch.nn.functional as F
 from kornia.filters import gaussian_blur2d
@@ -40,7 +41,7 @@ class AnomalyMapGenerator:
             raise ValueError(f"Found mode {mode}. Only multiply and add are supported.")
         self.mode = mode
 
-    def __call__(self, student_features: List[Tensor], teacher_features: List[Tensor]) -> Tensor:
+    def __call__(self, student_features: List[Tensor], teacher_features: List[Tensor]) -> Tuple[Tensor, Tensor]:
         """Computes anomaly map given encoder and decoder features.
 
         Args:
@@ -59,10 +60,21 @@ class AnomalyMapGenerator:
                 [student_features[0].shape[0], 1, *self.image_size], device=student_features[0].device
             )
 
+        max_activation_val: Optional[Tensor] = None
+
         for student_feature, teacher_feature in zip(student_features, teacher_features):
             distance_map = 1 - F.cosine_similarity(student_feature, teacher_feature)
             distance_map = torch.unsqueeze(distance_map, dim=1)
             distance_map = F.interpolate(distance_map, size=self.image_size, mode="bilinear", align_corners=True)
+
+            # Use l1 norm to compute max activation values
+            diff = torch.abs(F.normalize(student_feature) - F.normalize(teacher_feature))
+            max_activations, _ = torch.max(einops.rearrange(diff, "b c h w -> b c (h w)"), -1)
+
+            max_activation_val = (
+                max_activations if max_activation_val is None else torch.hstack([max_activation_val, max_activations])
+            )
+
             if self.mode == "multiply":
                 anomaly_map *= distance_map
             elif self.mode == "add":
@@ -72,4 +84,4 @@ class AnomalyMapGenerator:
             anomaly_map, kernel_size=(self.kernel_size, self.kernel_size), sigma=(self.sigma, self.sigma)
         )
 
-        return anomaly_map
+        return (anomaly_map, max_activation_val)
