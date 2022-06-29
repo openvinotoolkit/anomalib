@@ -9,17 +9,21 @@ Torch Inference
 ==============
 The entrypoint script in ``tools/inference.py`` can be used to run inference with a trained PyTorch model. The entrypoint script has several command line arguments that can be used to configure inference:
 
-+-------------+----------+-------------------------------------------------------------------------------------+
-| Parameter   | Required | Description                                                                         |
-+=============+==========+=====================================================================================+
-| config      | True     | Path to the model config file.                                                      |
-+-------------+----------+-------------------------------------------------------------------------------------+
-| weight_path | True     | Path to the ``.ckpt`` model checkpoint file.                                        |
-+-------------+----------+-------------------------------------------------------------------------------------+
-| image_path  | True     | Path to the image source. This can be a single image or a folder of images.         |
-+-------------+----------+-------------------------------------------------------------------------------------+
-| save_data   | False    | Path to which the output images should be saved. Leave empty for live visualization.|
-+-------------+----------+-------------------------------------------------------------------------------------+
++---------------------+----------+-------------------------------------------------------------------------------------+
+| Parameter           | Required | Description                                                                         |
++=====================+==========+=====================================================================================+
+| config              | True     | Path to the model config file.                                                      |
++---------------------+----------+-------------------------------------------------------------------------------------+
+| weight_path         | True     | Path to the ``.ckpt`` model checkpoint file.                                        |
++---------------------+----------+-------------------------------------------------------------------------------------+
+| image_path          | True     | Path to the image source. This can be a single image or a folder of images.         |
++---------------------+----------+-------------------------------------------------------------------------------------+
+| save_path           | False    | Path to which the output images should be saved.                                    |
++---------------------+----------+-------------------------------------------------------------------------------------+
+| visualization_mode  | False    | Determines how the inference results are visualized. Options: "full", "simple".     |
++---------------------+----------+-------------------------------------------------------------------------------------+
+| disable_show_images | False    | When this flag is passed, visualizations will not be shown on the screen.           |
++---------------------+----------+-------------------------------------------------------------------------------------+
 
 To run inference, call the script from the command line with the with the following parameters, e.g.:
 
