@@ -41,7 +41,7 @@ class LoadModelCallback(Callback):
         pl_module.load_state_dict(torch.load(self.weights_path)["state_dict"])
 
     def on_predict_start(self, _trainer, pl_module: AnomalyModule) -> None:
-        """Call when inferebce begins.
+        """Call when inference begins.
 
         Loads the model weights from ``weights_path`` into the PyTorch module.
         """
