@@ -25,6 +25,7 @@ class SelectiveFeatureModelCallback(Callback):
     """
 
     def __init__(self, feature_percentage: float = 0.1) -> None:
+        self.feature_percentage = feature_percentage
         self.feature_model = SelectiveFeatureModel(feature_percentage)
         self.max_features: Optional[Tensor] = None
         self.class_labels: List[str] = []
@@ -116,8 +117,8 @@ class SelectiveFeatureModelCallback(Callback):
             results[class_name] = []
         # sorted values and idx for entire feature set
         max_val, max_idx = torch.sort(self.max_features, descending=True)
-        reduced_range = int(max_val.shape[1] * 0.10)
-        # indexes of top 10% FEATURES HAVING MAX VALUE
+        reduced_range = int(max_val.shape[1] * self.feature_percentage)
+        # indexes of top self.feature_percentage features having max value
         top_max_idx = max_idx[:, 0:reduced_range]
         correct_class = []
         for idx, feature in enumerate(top_max_idx):
