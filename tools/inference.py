@@ -1,5 +1,8 @@
 """Inference Entrypoint script."""
 
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import warnings
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
