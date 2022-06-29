@@ -118,9 +118,12 @@ class AnomalibCLI(LightningCLI):
         parser.add_lightning_class_args(VisualizerCallback, "visualization")  # type: ignore
         parser.set_defaults(
             {
+                "visualization.mode": "full",
                 "visualization.task": "segmentation",
-                "visualization.log_images_to": ["local"],
-                "visualization.inputs_are_normalized": True,
+                "visualization.image_save_path": "",
+                "visualization.save_images": False,
+                "visualization.show_images": False,
+                "visualization.log_images": False,
             }
         )
 
@@ -148,6 +151,8 @@ class AnomalibCLI(LightningCLI):
             #   that is two-level up.
             default_root_dir = str(Path(config.trainer.resume_from_checkpoint).parent.parent)
 
+        if "image_save_path" not in config.visualization.keys() or config.visualization.image_save_path is None:
+            self.config[subcommand].visualization.image_save_path = config.project.path
         self.config[subcommand].trainer.default_root_dir = default_root_dir
 
     def __set_callbacks(self) -> None:
