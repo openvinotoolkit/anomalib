@@ -29,6 +29,7 @@ from .graph import GraphLogger
 from .metrics_configuration import MetricsConfigurationCallback
 from .min_max_normalization import MinMaxNormalizationCallback
 from .model_loader import LoadModelCallback
+from .selective_feature_model import SelectiveFeatureModelCallback
 from .timer import TimerCallback
 from .visualizer_callback import VisualizerCallback
 
@@ -39,6 +40,7 @@ __all__ = [
     "LoadModelCallback",
     "TimerCallback",
     "VisualizerCallback",
+    "SelectiveFeatureModelCallback",
 ]
 
 
@@ -153,5 +155,9 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
     # Add callback to log graph to loggers
     if config.logging.log_graph not in [None, False]:
         callbacks.append(GraphLogger())
+
+    # Add selective feature model
+    if "selective_feature_model" in config.model.keys() and config.model.selective_feature_model.apply:
+        callbacks.append(SelectiveFeatureModelCallback(config.model.selective_feature_model.feature_percentage))
 
     return callbacks

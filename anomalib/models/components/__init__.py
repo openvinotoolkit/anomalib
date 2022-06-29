@@ -17,7 +17,7 @@
 from .base import AnomalyModule, DynamicBufferModule
 from .dimensionality_reduction import PCA, SparseRandomProjection
 from .feature_extractors import FeatureExtractor
-from .sampling import KCenterGreedy
+from .sampling import KCenterGreedy, SelectiveFeatureModel
 from .stats import GaussianKDE, MultiVariateGaussian
 
 __all__ = [
@@ -29,4 +29,5 @@ __all__ = [
     "KCenterGreedy",
     "GaussianKDE",
     "MultiVariateGaussian",
+    "SelectiveFeatureModel",
 ]

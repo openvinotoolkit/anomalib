@@ -37,6 +37,9 @@ model:
   beta2: 0.99
   normalization_method: min_max # options: [null, min_max, cdf]
   anomaly_map_mode: multiply
+  selective_feature_model:
+    apply: true
+    feature_percentage: 0.1
 
 metrics:
   image:

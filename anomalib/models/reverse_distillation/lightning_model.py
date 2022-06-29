@@ -78,7 +78,9 @@ class ReverseDistillation(AnomalyModule):
           Dictionary containing images, anomaly maps, true labels and masks.
           These are required in `validation_epoch_end` for feature concatenation.
         """
-        batch["anomaly_maps"] = self.model(batch["image"])
+        anomaly_maps, max_activation_val = self.model(batch["image"])
+        batch["anomaly_maps"] = anomaly_maps
+        batch["max_activation_val"] = max_activation_val
         return batch
 
 

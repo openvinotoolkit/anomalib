@@ -32,7 +32,7 @@ class AnomalyMapGenerator:
         self.distance = torch.nn.PairwiseDistance(p=2, keepdim=True)
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
 
-    def compute_layer_map(self, teacher_features: Tensor, student_features: Tensor) -> Tensor:
+    def compute_layer_map(self, teacher_features: Tensor, student_features: Tensor) -> Tuple[Tensor, Tensor]:
         """Compute the layer map based on cosine similarity.
 
         Args:
@@ -45,13 +45,20 @@ class AnomalyMapGenerator:
         norm_teacher_features = F.normalize(teacher_features)
         norm_student_features = F.normalize(student_features)
 
-        layer_map = 0.5 * torch.norm(norm_teacher_features - norm_student_features, p=2, dim=-3, keepdim=True) ** 2
+        diff = norm_teacher_features - norm_student_features
+
+        batch, channel, height, width = diff.shape
+
+        layer_map = 0.5 * torch.norm(diff, p=2, dim=-3, keepdim=True) ** 2
+        diff = diff.reshape(batch, channel, height * width)
+        layer_dist, _ = torch.max(torch.abs(diff), 2)
+
         layer_map = F.interpolate(layer_map, size=self.image_size, align_corners=False, mode="bilinear")
-        return layer_map
+        return (layer_map, layer_dist)
 
     def compute_anomaly_map(
         self, teacher_features: Dict[str, Tensor], student_features: Dict[str, Tensor]
-    ) -> torch.Tensor:
+    ) -> Tuple[Tensor, Tensor]:
         """Compute the overall anomaly map via element-wise production the interpolated anomaly maps.
 
         Args:
@@ -63,12 +70,15 @@ class AnomalyMapGenerator:
         """
         batch_size = list(teacher_features.values())[0].shape[0]
         anomaly_map = torch.ones(batch_size, 1, self.image_size[0], self.image_size[1])
+        max_activation_val = []
         for layer in teacher_features.keys():
-            layer_map = self.compute_layer_map(teacher_features[layer], student_features[layer])
+            layer_map, layer_dist = self.compute_layer_map(teacher_features[layer], student_features[layer])
             anomaly_map = anomaly_map.to(layer_map.device)
             anomaly_map *= layer_map
+            max_activation_val.append(layer_dist)
+        max_activation_val_t = torch.cat(max_activation_val, 1)
 
-        return anomaly_map
+        return (anomaly_map, max_activation_val_t)
 
     def __call__(self, **kwds: Dict[str, Tensor]) -> torch.Tensor:
         """Returns anomaly map.

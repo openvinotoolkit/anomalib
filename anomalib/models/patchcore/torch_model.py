@@ -88,11 +88,13 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         if self.training:
             output = embedding
         else:
-            patch_scores = self.nearest_neighbors(embedding=embedding, n_neighbors=self.num_neighbors)
+            patch_scores, max_activation_val = self.nearest_neighbors(
+                embedding=embedding, n_neighbors=self.num_neighbors
+            )
             anomaly_map, anomaly_score = self.anomaly_map_generator(
                 patch_scores=patch_scores, feature_map_shape=feature_map_shape
             )
-            output = (anomaly_map, anomaly_score)
+            output = (anomaly_map, anomaly_score, max_activation_val)
 
         return output
 
@@ -145,7 +147,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         coreset = sampler.sample_coreset()
         self.memory_bank = coreset
 
-    def nearest_neighbors(self, embedding: Tensor, n_neighbors: int = 9) -> Tensor:
+    def nearest_neighbors(self, embedding: Tensor, n_neighbors: int = 9) -> Tuple[Tensor, Tensor]:
         """Nearest Neighbours using brute force method and euclidean norm.
 
         Args:
@@ -156,5 +158,8 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             Tensor: Patch scores.
         """
         distances = torch.cdist(embedding, self.memory_bank, p=2.0)  # euclidean norm
-        patch_scores, _ = distances.topk(k=n_neighbors, largest=False, dim=1)
-        return patch_scores
+        patch_scores, patch_idx = distances.topk(k=n_neighbors, largest=False, dim=1)
+        nearest_point = self.memory_bank[patch_idx[:, 0]]
+
+        max_activation_val, _ = torch.max(torch.abs(embedding - nearest_point), 0)
+        return (patch_scores, max_activation_val.unsqueeze(0))

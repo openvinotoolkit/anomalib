@@ -11,6 +11,7 @@
 
 from typing import Tuple, Union
 
+import einops
 import torch
 from torch import Tensor, nn
 
@@ -35,10 +36,10 @@ class DraemModel(nn.Module):
         """
         reconstruction = self.reconstructive_subnetwork(batch)
         concatenated_inputs = torch.cat([batch, reconstruction], axis=1)
-        prediction = self.discriminative_subnetwork(concatenated_inputs)
+        prediction, max_activation_val = self.discriminative_subnetwork(concatenated_inputs)
         if self.training:
             return reconstruction, prediction
-        return torch.softmax(prediction, dim=1)
+        return torch.softmax(prediction, dim=1), max_activation_val
 
 
 class ReconstructiveSubNetwork(nn.Module):
@@ -83,7 +84,7 @@ class DiscriminativeSubNetwork(nn.Module):
         self.encoder_segment = EncoderDiscriminative(in_channels, base_width)
         self.decoder_segment = DecoderDiscriminative(base_width, out_channels=out_channels)
 
-    def forward(self, batch: Tensor) -> Tensor:
+    def forward(self, batch: Tensor) -> Tuple[Tensor, Tensor]:
         """Generate the predicted anomaly masks for a batch of input images.
 
         Args:
@@ -93,9 +94,13 @@ class DiscriminativeSubNetwork(nn.Module):
         Returns:
             Activations of the output layer corresponding to the normal and anomalous class scores on the pixel level.
         """
-        act1, act2, act3, act4, act5, act6 = self.encoder_segment(batch)
-        segmentation = self.decoder_segment(act1, act2, act3, act4, act5, act6)
-        return segmentation
+        encoder_activations = self.encoder_segment(batch)
+
+        max_activation_fn = lambda x: torch.max(einops.rearrange(x, "b c h w -> b c (h w)"), -1)[0]
+        max_activation_val = torch.hstack([max_activation_fn(act) for act in encoder_activations])
+
+        segmentation = self.decoder_segment(*encoder_activations)
+        return segmentation, max_activation_val
 
 
 class EncoderDiscriminative(nn.Module):
