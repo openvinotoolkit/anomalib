@@ -58,7 +58,7 @@ class AnomalyMapGenerator:
 
         distances = (torch.matmul(delta, inv_covariance) * delta).sum(2).permute(1, 0)
         distances = distances.reshape(batch, height, width)
-        distances = torch.sqrt(distances)
+        distances = distances.clamp(0).sqrt()
 
         return distances
 
