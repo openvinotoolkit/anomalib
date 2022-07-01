@@ -3,7 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import warnings
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
@@ -23,8 +22,6 @@ def get_args() -> Namespace:
         Namespace: List of arguments.
     """
     parser = ArgumentParser()
-    # --model_config_path will be deprecated in 0.2.8 and removed in 0.2.9
-    parser.add_argument("--model_config_path", type=str, required=False, help="Path to a model config file")
     parser.add_argument("--config", type=Path, required=True, help="Path to a model config file")
     parser.add_argument("--weight_path", type=Path, required=True, help="Path to a model weights")
     parser.add_argument("--image_path", type=Path, required=True, help="Path to an image to infer.")
@@ -45,14 +42,6 @@ def get_args() -> Namespace:
     parser.add_argument("--save_path", type=str, required=False, help="Path to save the output images.")
 
     args = parser.parse_args()
-    if args.model_config_path is not None:
-        warnings.warn(
-            message="--model_config_path will be deprecated in v0.2.8 and removed in v0.2.9. Use --config instead.",
-            category=DeprecationWarning,
-            stacklevel=2,
-        )
-        args.config = args.model_config_path
-
     return args
 
 

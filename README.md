@@ -93,9 +93,6 @@ For example, to train [PADIM](anomalib/models/padim) you can use
 python tools/train.py --config anomalib/models/padim/config.yaml
 ```
 
-Note that `--model_config_path` will be deprecated in `v0.2.8` and removed
-in `v0.2.9`.
-
 Alternatively, a model name could also be provided as an argument, where the scripts automatically finds the corresponding config file.
 
 ```bash
