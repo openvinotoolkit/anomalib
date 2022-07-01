@@ -14,8 +14,14 @@
 | MVTec    | [102_mvtec](100_datamodules/102_mvtec.ipynb)   | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/development/notebooks/100_datamodules/102_mvtec.ipynb)  |
 | Folder   | [103_folder](100_datamodules/103_folder.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/development/notebooks/100_datamodules/103_folder.ipynb) |
 
-## 2. Benchmarking and Hyperparameter Optimization
+## 2. Models
+| Notebook     | GitHub                                                      | Colab                                                                                                                                                                                                              |
+| ------------ | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Model | [201_fastflow](200_models/201_fastflow.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/development/notebooks/200_models/201_fastflow.ipynb) |
+
+
+## 3. Benchmarking and Hyperparameter Optimization
 
 | Notebook     | GitHub                                                      | Colab                                                                                                                                                                                                              |
 | ------------ | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Benchmarking | [201_benchmarking](200_benchmarking/201_benchmarking.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/development/notebooks/200_benchmarking/201_benchmarking.ipynb) |
+| Benchmarking | [301_benchmarking](300_benchmarking/301_benchmarking.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/development/notebooks/300_benchmarking/301_benchmarking.ipynb) |
