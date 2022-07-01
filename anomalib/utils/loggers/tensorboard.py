@@ -100,6 +100,5 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
             image.canvas.draw()  # cache the renderer
             buffer = np.frombuffer(image.canvas.tostring_rgb(), dtype=np.uint8)
             image = buffer.reshape(image.canvas.get_width_height()[::-1] + (3,))
-            kwargs["dataformats"] = "HWC"
 
-        self.experiment.add_image(img_tensor=image, tag=name, **kwargs)
+        self.experiment.add_image(img_tensor=image, tag=name, dataformats="HWC", **kwargs)

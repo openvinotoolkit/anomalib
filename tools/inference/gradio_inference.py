@@ -98,13 +98,13 @@ def get_inferencer(config_path: Path, weight_path: Path, meta_data_path: Optiona
     inferencer: Inferencer
     if extension in (".ckpt"):
         module = import_module("anomalib.deploy.inferencers.torch")
-        TorchInferencer = getattr(module, "TorchInferencer")
-        inferencer = TorchInferencer(config=config, model_source=weight_path, meta_data_path=meta_data_path)
+        torch_inferencer = getattr(module, "TorchInferencer")
+        inferencer = torch_inferencer(config=config, model_source=weight_path, meta_data_path=meta_data_path)
 
     elif extension in (".onnx", ".bin", ".xml"):
         module = import_module("anomalib.deploy.inferencers.openvino")
-        OpenVINOInferencer = getattr(module, "OpenVINOInferencer")
-        inferencer = OpenVINOInferencer(config=config, path=weight_path, meta_data_path=meta_data_path)
+        openvino_inferencer = getattr(module, "OpenVINOInferencer")
+        inferencer = openvino_inferencer(config=config, path=weight_path, meta_data_path=meta_data_path)
 
     else:
         raise ValueError(

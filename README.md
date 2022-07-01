@@ -93,9 +93,6 @@ For example, to train [PADIM](anomalib/models/padim) you can use
 python tools/train.py --config anomalib/models/padim/config.yaml
 ```
 
-Note that `--model_config_path` will be deprecated in `v0.2.8` and removed
-in `v0.2.9`.
-
 Alternatively, a model name could also be provided as an argument, where the scripts automatically finds the corresponding config file.
 
 ```bash
@@ -159,7 +156,7 @@ The new CLI approach offers a lot more flexibility, details of which are explain
 
 ## Inference
 ### ⚠️ Anomalib < v.0.4.0
-Anomalib contains several tools that can be used to perform inference with a trained model. The script in [`tools/inference`](tools/inference.py) contains an example of how the inference tools can be used to generate a prediction for an input image.
+Anomalib contains several tools that can be used to perform inference with a trained model. The script in [`tools/inference`](tools/inference/lightning.py) contains an example of how the inference tools can be used to generate a prediction for an input image.
 
 If the specified weight path points to a PyTorch Lightning checkpoint file (`.ckpt`), inference will run in PyTorch. If the path points to an ONNX graph (`.onnx`) or OpenVINO IR (`.bin` or `.xml`), inference will run in OpenVINO.
 
