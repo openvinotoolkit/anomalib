@@ -6,9 +6,9 @@ opencv-python>=4.5.3.56
 pandas>=1.1.0
 pytorch-lightning[extra]>=1.6.0
 timm==0.5.4
-torchmetrics>=0.9.0
-torchvision>=0.9.1
-torchtext>=0.9.1
+torchmetrics==0.9.1
+torchvision==0.12.0
+torchtext==0.12.0
 wandb==0.12.17
 matplotlib>=3.4.3
 gradio>=2.9.4
