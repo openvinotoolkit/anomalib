@@ -18,16 +18,16 @@ command line, and show the visualization results.
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import warnings
 from argparse import ArgumentParser, Namespace
-from importlib import import_module
 from pathlib import Path
 from typing import Optional
 
 import cv2
 import numpy as np
+from torchvision.datasets.folder import IMG_EXTENSIONS
 
 from anomalib.config import get_configurable_parameters
+from anomalib.deploy.inferencers import OpenVINOInferencer
 from anomalib.deploy.inferencers.base import Inferencer
 
 
@@ -38,13 +38,11 @@ def get_args() -> Namespace:
         Namespace: List of arguments.
     """
     parser = ArgumentParser()
-    # --model_config_path will be deprecated in 0.2.8 and removed in 0.2.9
-    parser.add_argument("--model_config_path", type=str, required=False, help="Path to a model config file")
     parser.add_argument("--config", type=Path, required=True, help="Path to a model config file")
     parser.add_argument("--weight_path", type=Path, required=True, help="Path to a model weights")
     parser.add_argument("--image_path", type=Path, required=True, help="Path to an image to infer.")
     parser.add_argument("--save_path", type=Path, required=False, help="Path to save the output image.")
-    parser.add_argument("--meta_data", type=Path, required=False, help="Path to JSON file containing the metadata.")
+    parser.add_argument("--meta_data", type=Path, required=True, help="Path to JSON file containing the metadata.")
     parser.add_argument(
         "--overlay_mask",
         type=bool,
@@ -54,13 +52,6 @@ def get_args() -> Namespace:
     )
 
     args = parser.parse_args()
-    if args.model_config_path is not None:
-        warnings.warn(
-            message="--model_config_path will be deprecated in v0.2.8 and removed in v0.2.9. Use --config instead.",
-            category=DeprecationWarning,
-            stacklevel=2,
-        )
-        args.config = args.model_config_path
 
     return args
 
@@ -96,33 +87,17 @@ def stream() -> None:
     args = get_args()
     config = get_configurable_parameters(config_path=args.config)
 
-    # Get the inferencer. We use .ckpt extension for Torch models and (onnx, bin)
-    # for the openvino models.
-    extension = args.weight_path.suffix
-    inferencer: Inferencer
-    if extension in (".ckpt"):
-        module = import_module("anomalib.deploy.inferencers.torch")
-        TorchInferencer = getattr(module, "TorchInferencer")  # pylint: disable=invalid-name
-        inferencer = TorchInferencer(config=config, model_source=args.weight_path, meta_data_path=args.meta_data)
+    # Get the inferencer.
+    inferencer = OpenVINOInferencer(config=config, path=args.weight_path, meta_data_path=args.meta_data)
 
-    elif extension in (".onnx", ".bin", ".xml"):
-        module = import_module("anomalib.deploy.inferencers.openvino")
-        OpenVINOInferencer = getattr(module, "OpenVINOInferencer")  # pylint: disable=invalid-name
-        inferencer = OpenVINOInferencer(config=config, path=args.weight_path, meta_data_path=args.meta_data)
-
-    else:
-        raise ValueError(
-            f"Model extension is not supported. Torch Inferencer exptects a .ckpt file,"
-            f"OpenVINO Inferencer expects either .onnx, .bin or .xml file. Got {extension}"
-        )
     if args.image_path.is_dir():
         # Write the output to save_path in the same structure as the input directory.
         for image in args.image_path.glob("**/*"):
-            if image.is_file() and image.suffix in (".jpg", ".png", ".jpeg"):
+            if image.is_file() and image.suffix in IMG_EXTENSIONS:
                 # Here save_path is assumed to be a directory. Image subdirectories are appended to the save_path.
                 save_path = Path(args.save_path / image.relative_to(args.image_path).parent) if args.save_path else None
                 infer(image, inferencer, save_path, args.overlay_mask)
-    elif args.image_path.suffix in (".jpg", ".png", ".jpeg"):
+    elif args.image_path.suffix in IMG_EXTENSIONS:
         infer(args.image_path, inferencer, args.save_path, args.overlay_mask)
     else:
         raise ValueError(

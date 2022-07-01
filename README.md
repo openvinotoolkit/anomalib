@@ -159,7 +159,7 @@ The new CLI approach offers a lot more flexibility, details of which are explain
 
 ## Inference
 ### ⚠️ Anomalib < v.0.4.0
-Anomalib contains several tools that can be used to perform inference with a trained model. The script in [`tools/inference`](tools/inference.py) contains an example of how the inference tools can be used to generate a prediction for an input image.
+Anomalib contains several tools that can be used to perform inference with a trained model. The script in [`tools/inference`](tools/inference/lightning.py) contains an example of how the inference tools can be used to generate a prediction for an input image.
 
 If the specified weight path points to a PyTorch Lightning checkpoint file (`.ckpt`), inference will run in PyTorch. If the path points to an ONNX graph (`.onnx`) or OpenVINO IR (`.bin` or `.xml`), inference will run in OpenVINO.
 

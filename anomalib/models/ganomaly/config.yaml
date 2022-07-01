@@ -50,12 +50,18 @@ metrics:
     image_default: 0
     adaptive: true
 
+visualization:
+  show_images: False # show images on the screen
+  save_images: True # save images to the file system
+  log_images: True # log images to the available loggers (if any)
+  image_save_path: null # path to which images will be saved
+  mode: full # options: ["full", "simple"]
+
 project:
   seed: 42
   path: ./results
 
 logging:
-  log_images_to: [] # Not available for classification-based models.
   logger: [] # options: [tensorboard, wandb, csv] or combinations.
   log_graph: false # Logs the model graph to respective logger.
 
