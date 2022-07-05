@@ -110,7 +110,7 @@ setup(
     'Licensed under the Apache License, Version 2.0 (the "License")'
     "See LICENSE file for more details.",
     python_requires=">=3.7",
-    packages=find_packages("."),
+    packages=find_packages(exclude=("tests",)),
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRAS_REQUIRE,
     package_data={"": ["config.yaml"]},
