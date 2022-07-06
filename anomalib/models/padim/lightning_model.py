@@ -45,7 +45,6 @@ class Padim(AnomalyModule):
 
     def __init__(self, layers: List[str], input_size: Tuple[int, int], backbone: str):
         super().__init__()
-        logger.info("Initializing Padim Lightning model.")
 
         self.layers = layers
         self.model: PadimModel = PadimModel(input_size=input_size, backbone=backbone, layers=layers).eval()

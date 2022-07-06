@@ -199,7 +199,7 @@ class SelectiveFeatureModelCallback(Callback):
         # sorted values and idx for entire feature set
         max_val, max_idx = torch.sort(self.max_features, descending=True)
         reduced_range = int(max_val.shape[1] * self.feature_percentage)
-        # indexes of top 10% FEATURES HAVING MAX VALUE
+        # indexes of top self.feature_percentage features having max value
         top_max_idx = max_idx[:, 0:reduced_range]
         correct_class = []
         for idx, feature in enumerate(top_max_idx):

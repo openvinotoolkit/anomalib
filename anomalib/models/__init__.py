@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import logging
 import os
 from importlib import import_module
 from typing import List, Union
@@ -22,6 +23,8 @@ from omegaconf import DictConfig, ListConfig
 from torch import load
 
 from anomalib.models.components import AnomalyModule
+
+logger = logging.getLogger(__name__)
 
 
 def _snake_to_pascal_case(model_name: str) -> str:
@@ -54,6 +57,8 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     Returns:
         AnomalyModule: Anomaly Model
     """
+    logger.info("Loading the model.")
+
     model_list: List[str] = [
         "cflow",
         "dfkde",

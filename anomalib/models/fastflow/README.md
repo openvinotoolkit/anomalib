@@ -1,6 +1,6 @@
 # FastFlow: Unsupervised Anomaly Detection and Localization via 2D Normalizing Flows
 
-This is the implementation of the [FastFlow](https://arxiv.org/abs/2111.07677) paper. This code is developed inspired by [https://github.com/gathierry/FastFlow](https://github.com/gathierry/FastFlow).
+This is the implementation of the [FastFlow](https://arxiv.org/abs/2111.07677) paper. This code is developed by utilizing the torch model implemented in  [https://github.com/gathierry/FastFlow](https://github.com/gathierry/FastFlow).
 
 Model Type: Segmentation
 

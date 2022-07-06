@@ -6,7 +6,6 @@ Paper https://arxiv.org/abs/2108.07610
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import logging
 from typing import Optional, Union
 
 import torch
@@ -18,8 +17,6 @@ from anomalib.models.components import AnomalyModule
 from anomalib.models.draem.loss import DraemLoss
 from anomalib.models.draem.torch_model import DraemModel
 from anomalib.models.draem.utils import Augmenter
-
-logger = logging.getLogger(__name__)
 
 __all__ = ["Draem", "DraemLightning"]
 
@@ -70,8 +67,9 @@ class Draem(AnomalyModule):
         Returns:
             Dictionary to which predicted anomaly maps have been added.
         """
-        prediction = self.model(batch["image"])
+        prediction, max_activation_val = self.model(batch["image"])
         batch["anomaly_maps"] = prediction[:, 1, :, :]
+        batch["max_activation_val"] = max_activation_val
         return batch
 
 

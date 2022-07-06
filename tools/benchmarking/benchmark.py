@@ -273,7 +273,7 @@ def sweep(
         if legacy_device in model_config.trainer:
             model_config.trainer[legacy_device] = None
 
-    if run_config.model_name in ["patchcore", "cflow"]:
+    if run_config.model_name in ["cflow"]:
         convert_openvino = False  # `torch.cdist` is not supported by onnx version 11
         # TODO Remove this line when issue #40 is fixed https://github.com/openvinotoolkit/anomalib/issues/40
         if model_config.model.input_size != (224, 224):

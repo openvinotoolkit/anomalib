@@ -17,7 +17,6 @@ https://arxiv.org/abs/2201.10703v2
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import logging
 from typing import Dict, List, Tuple, Union
 
 from omegaconf import DictConfig, ListConfig
@@ -29,8 +28,6 @@ from anomalib.models.components import AnomalyModule
 
 from .loss import ReverseDistillationLoss
 from .torch_model import ReverseDistillationModel
-
-logger = logging.getLogger(__name__)
 
 
 @MODEL_REGISTRY
@@ -45,7 +42,6 @@ class ReverseDistillation(AnomalyModule):
 
     def __init__(self, input_size: Tuple[int, int], backbone: str, layers: List[str], anomaly_map_mode: str):
         super().__init__()
-        logger.info("Initializing Reverse Distillation Lightning model.")
         self.model = ReverseDistillationModel(
             backbone=backbone, layers=layers, input_size=input_size, anomaly_map_mode=anomaly_map_mode
         )
@@ -82,7 +78,9 @@ class ReverseDistillation(AnomalyModule):
           Dictionary containing images, anomaly maps, true labels and masks.
           These are required in `validation_epoch_end` for feature concatenation.
         """
-        batch["anomaly_maps"] = self.model(batch["image"])
+        anomaly_maps, max_activation_val = self.model(batch["image"])
+        batch["anomaly_maps"] = anomaly_maps
+        batch["max_activation_val"] = max_activation_val
         return batch
 
 

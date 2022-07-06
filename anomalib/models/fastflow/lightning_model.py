@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-import logging
 from typing import Tuple, Union
 
 import torch
@@ -14,9 +13,8 @@ from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import optim
 
 from anomalib.models.components import AnomalyModule
-from anomalib.models.fastflow.torch_model import FastflowLoss, FastflowModel
-
-logger = logging.getLogger(__name__)
+from anomalib.models.fastflow.loss import FastflowLoss
+from anomalib.models.fastflow.torch_model import FastflowModel
 
 
 @MODEL_REGISTRY
@@ -40,7 +38,6 @@ class Fastflow(AnomalyModule):
         hidden_ratio: float = 1.0,
     ):
         super().__init__()
-        logger.info("Initializing Fastflow Lightning model.")
 
         self.model = FastflowModel(
             input_size=input_size,
@@ -49,7 +46,7 @@ class Fastflow(AnomalyModule):
             conv3x3_only=conv3x3_only,
             hidden_ratio=hidden_ratio,
         )
-        self.loss_func = FastflowLoss()
+        self.loss = FastflowLoss()
 
     def training_step(self, batch, _):  # pylint: disable=arguments-differ
         """Forward-pass input and return the loss.
@@ -62,7 +59,7 @@ class Fastflow(AnomalyModule):
             STEP_OUTPUT: Dictionary containing the loss value.
         """
         hidden_variables, jacobians = self.model(batch["image"])
-        loss = self.loss_func(hidden_variables, jacobians)
+        loss = self.loss(hidden_variables, jacobians)
         return {"loss": loss}
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
@@ -75,8 +72,9 @@ class Fastflow(AnomalyModule):
         Returns:
             dict: batch dictionary containing anomaly-maps.
         """
-        anomaly_maps = self.model(batch["image"])
+        anomaly_maps, max_activation_val = self.model(batch["image"])
         batch["anomaly_maps"] = anomaly_maps
+        batch["max_activation_val"] = max_activation_val
         return batch
 
 
