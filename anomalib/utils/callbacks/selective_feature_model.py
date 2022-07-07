@@ -159,28 +159,25 @@ class SelectiveFeatureModelCallback(Callback):
 
         # compute metrics
         # compute adaptive threshold
-        self.sub_pixel_metrics.cpu()
-        self.sub_pixel_threshold.cpu()
         selected_features = None
         anomaly_ids = []
         for idx, class_name in enumerate(outputs["class"]):
             if class_name == "good":
                 continue
             anomaly_ids.append(idx)
-            feature_map = torch.sum(outputs["selected_features"][class_name][idx], 0).unsqueeze(0)
-            feature_map = pl_module.model.anomaly_map_generator.smooth_anomaly_map(
-                pl_module.model.anomaly_map_generator.up_sample(feature_map)
-            )
+            feature_map = pl_module.model.anomaly_map_generator.feature_to_anomaly_map(outputs["selected_features"][class_name][idx], feature=-1)
             if selected_features is None:
                 selected_features = feature_map
             else:
                 selected_features = torch.vstack([selected_features, feature_map])
-        self.sub_pixel_threshold.update(selected_features.flatten(), outputs["mask"][anomaly_ids].flatten().int())
+        if selected_features is not None:
+            self.sub_pixel_threshold.update(selected_features.flatten(), outputs["mask"][anomaly_ids].flatten().int())
 
     def on_test_epoch_end(self, _trainer: Trainer, pl_module: LightningModule) -> None:
         """Compute sub-class testing accuracy."""
 
         self.sub_pixel_threshold.cpu()
+        self.sub_pixel_metrics.cpu()
         self.sub_pixel_threshold.compute()
         self.sub_pixel_metrics.set_threshold(self.sub_pixel_threshold.value.item())
 
@@ -216,12 +213,9 @@ class SelectiveFeatureModelCallback(Callback):
             predicted_class = class_names[scores.index(max(scores))]
 
             # Get feature maps for predicted class
-            feature_map = torch.sum(self.selected_featuremaps[predicted_class][idx], 0).unsqueeze(0)
-            selected_features = pl_module.model.anomaly_map_generator.smooth_anomaly_map(
-                pl_module.model.anomaly_map_generator.up_sample(feature_map)
-            )
+            feature_map = pl_module.model.anomaly_map_generator.feature_to_anomaly_map(self.selected_featuremaps[predicted_class][idx], feature=-1)
             # compute pixel metrics
-            self.sub_pixel_metrics.update(selected_features.flatten(), self.output_masks[idx].flatten().int())
+            self.sub_pixel_metrics.update(feature_map.flatten(), self.output_masks[idx].flatten().int())
 
             if self.class_labels[idx] not in ["good", "thread", "combined"]:
                 if predicted_class == self.class_labels[idx]:

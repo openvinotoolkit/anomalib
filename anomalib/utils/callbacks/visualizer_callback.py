@@ -169,14 +169,7 @@ class VisualizerCallback(Callback):
                 if selected_featuremaps is not None:
                     for label in selected_featuremaps.keys():
                         subclass_features = selected_featuremaps[label][i]
-                        all_features = torch.sum(subclass_features, 0).unsqueeze(0)
-                        all_features = (
-                            pl_module.model.anomaly_map_generator.smooth_anomaly_map(
-                                pl_module.model.anomaly_map_generator.up_sample(all_features)
-                            )
-                            .cpu()
-                            .numpy()
-                        )
+                        all_features = pl_module.model.anomaly_map_generator.feature_to_anomaly_map(subclass_features, feature=-1).cpu().numpy()
                         all_features_heatmap = superimpose_anomaly_map(all_features, image, normalize=True)
                         visualizer.add_image(image=all_features_heatmap, title=f"All {label}")
                         all_features_pred_mask = compute_mask(
@@ -187,14 +180,7 @@ class VisualizerCallback(Callback):
                         )
                         visualizer.add_image(image=all_features_vis_image, title=f"All {label}")
                         for idx in range(self.top_k_images):
-                            selected_feature = subclass_features[idx].unsqueeze(0)
-                            selected_feature = (
-                                pl_module.model.anomaly_map_generator.smooth_anomaly_map(
-                                    pl_module.model.anomaly_map_generator.up_sample(selected_feature)
-                                )
-                                .cpu()
-                                .numpy()
-                            )
+                            selected_feature = pl_module.model.anomaly_map_generator.feature_to_anomaly_map(subclass_features, feature = idx).cpu().numpy()
                             selected_feature_heatmap = superimpose_anomaly_map(selected_feature, image, normalize=True)
                             visualizer.add_image(image=selected_feature_heatmap, title=f"Top #{idx} {label}")
                             selected_feature_pred_mask = compute_mask(

@@ -33,6 +33,8 @@ model:
   selective_feature_model:
     apply: true
     feature_percentage: 0.1
+    top_k_images: 0 # showing top k embedding feature maps is not supported yet
+    feature_ids_path: ./results
 
 metrics:
   image:

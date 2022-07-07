@@ -21,6 +21,7 @@ import torch.nn.functional as F
 from kornia.filters import gaussian_blur2d
 from omegaconf import ListConfig
 from torch import Tensor
+import numpy as np
 
 
 class AnomalyMapGenerator:
@@ -185,3 +186,11 @@ class AnomalyMapGenerator:
         inv_covariance: Tensor = kwds["inv_covariance"]
 
         return self.compute_anomaly_map(embedding, mean, inv_covariance)
+
+
+    def feature_to_anomaly_map(self, distance: Tensor, feature:int) -> np.ndarray:
+        if feature==-1:
+            distance = torch.sum(distance, 0).unsqueeze(0)
+        else:
+            distance = distance[feature].unsqueeze(0)
+        return self.smooth_anomaly_map(self.up_sample(distance))

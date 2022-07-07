@@ -14,9 +14,11 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from typing import Tuple, Union
+from typing import Dict, Tuple, Union
 
 import torch
+from torch import Tensor
+import numpy as np
 import torch.nn.functional as F
 from kornia.filters import gaussian_blur2d
 from omegaconf import ListConfig
@@ -32,6 +34,11 @@ class AnomalyMapGenerator:
     ) -> None:
         self.input_size = input_size
         self.sigma = sigma
+
+        # save indices of top features used for sub classification.
+        # these features are selected for visualization
+        self.category_features = dict()
+        self.feature_map_shape = torch.Size((28,28))
 
     def compute_anomaly_map(self, patch_scores: torch.Tensor, feature_map_shape: torch.Size) -> torch.Tensor:
         """Pixel Level Anomaly Heatmap.
@@ -95,6 +102,12 @@ class AnomalyMapGenerator:
         patch_scores = kwargs["patch_scores"]
         feature_map_shape = kwargs["feature_map_shape"]
 
+        self.feature_map_shape = feature_map_shape
+
         anomaly_map = self.compute_anomaly_map(patch_scores, feature_map_shape)
         anomaly_score = self.compute_anomaly_score(patch_scores)
         return anomaly_map, anomaly_score
+
+
+    def feature_to_anomaly_map(self, distance: Tensor, **kwargs)-> np.ndarray:
+        return self.compute_anomaly_map(distance, self.feature_map_shape)
