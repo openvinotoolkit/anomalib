@@ -164,9 +164,11 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         max_activation_val, _ = torch.max(torch.abs(embedding - nearest_point), 0)
 
         selected_features = {}
-        if self.anomaly_map_generator.category_features !={}:
+        if self.anomaly_map_generator.category_features != {}:
             for name, keep_idx in self.anomaly_map_generator.category_features.items():
-                top_feature_distances = torch.cdist(embedding[:,keep_idx.long()], self.memory_bank[:,keep_idx.long()], p=2.0)
+                top_feature_distances = torch.cdist(
+                    embedding[:, keep_idx.long()], self.memory_bank[:, keep_idx.long()], p=2.0
+                )
                 top_feature_patch_scores, _ = top_feature_distances.topk(k=9, largest=False, dim=1)
                 selected_features[name] = top_feature_patch_scores.unsqueeze(0)
 

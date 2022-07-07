@@ -77,11 +77,11 @@ class STFPMModel(nn.Module):
         if self.training:
             output = teacher_features, student_features
         else:
-            activation_map, max_activation_val = self.anomaly_map_generator(
+            activation_map, max_activation_val, selected_features = self.anomaly_map_generator(
                 teacher_features=teacher_features, student_features=student_features
             )
             if self.tiler:
                 activation_map = self.tiler.untile(activation_map)
-            output = (activation_map, max_activation_val)
+            output = (activation_map, max_activation_val, selected_features)
 
         return output

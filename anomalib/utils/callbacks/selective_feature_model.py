@@ -146,7 +146,8 @@ class SelectiveFeatureModelCallback(Callback):
                 self.class_labels = class_labels
                 self.output_masks = outputs["mask"]
                 self.selected_featuremaps = {
-                    k: v.to(self.output_masks.device) for k, v in outputs["selected_features"].items()
+                    k: v.to(self.output_masks.device) if isinstance(v, Tensor) else v
+                    for k, v in outputs["selected_features"].items()
                 }
             else:
                 self.max_features = torch.vstack([self.max_features, max_val_features])
@@ -154,6 +155,8 @@ class SelectiveFeatureModelCallback(Callback):
                 self.output_masks = torch.vstack([self.output_masks, outputs["mask"]])
                 self.selected_featuremaps = {
                     k: torch.vstack([self.selected_featuremaps[k], v.to(self.output_masks.device)])
+                    if isinstance(v, Tensor)
+                    else self.selected_featuremaps[k] + v
                     for k, v in outputs["selected_features"].items()
                 }
 
@@ -165,13 +168,17 @@ class SelectiveFeatureModelCallback(Callback):
             if class_name == "good":
                 continue
             anomaly_ids.append(idx)
-            feature_map = pl_module.model.anomaly_map_generator.feature_to_anomaly_map(outputs["selected_features"][class_name][idx], feature=-1)
+            feature_map = pl_module.model.anomaly_map_generator.feature_to_anomaly_map(
+                outputs["selected_features"][class_name][idx], feature=-1
+            )
             if selected_features is None:
                 selected_features = feature_map
             else:
                 selected_features = torch.vstack([selected_features, feature_map])
         if selected_features is not None:
-            self.sub_pixel_threshold.update(selected_features.flatten(), outputs["mask"][anomaly_ids].flatten().int())
+            self.sub_pixel_threshold.update(
+                selected_features.flatten().cpu(), outputs["mask"][anomaly_ids].flatten().int().cpu()
+            )
 
     def on_test_epoch_end(self, _trainer: Trainer, pl_module: LightningModule) -> None:
         """Compute sub-class testing accuracy."""
@@ -213,9 +220,11 @@ class SelectiveFeatureModelCallback(Callback):
             predicted_class = class_names[scores.index(max(scores))]
 
             # Get feature maps for predicted class
-            feature_map = pl_module.model.anomaly_map_generator.feature_to_anomaly_map(self.selected_featuremaps[predicted_class][idx], feature=-1)
+            feature_map = pl_module.model.anomaly_map_generator.feature_to_anomaly_map(
+                self.selected_featuremaps[predicted_class][idx], feature=-1
+            )
             # compute pixel metrics
-            self.sub_pixel_metrics.update(feature_map.flatten(), self.output_masks[idx].flatten().int())
+            self.sub_pixel_metrics.update(feature_map.flatten().cpu(), self.output_masks[idx].flatten().int().cpu())
 
             if self.class_labels[idx] not in ["good", "thread", "combined"]:
                 if predicted_class == self.class_labels[idx]:

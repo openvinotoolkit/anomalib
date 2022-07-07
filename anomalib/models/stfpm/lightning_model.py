@@ -90,9 +90,11 @@ class Stfpm(AnomalyModule):
           Dictionary containing images, anomaly maps, true labels and masks.
           These are required in `validation_epoch_end` for feature concatenation.
         """
-        activation_map, max_activation_val = self.model(batch["image"])
+        activation_map, max_activation_val, selected_features = self.model(batch["image"])
         batch["anomaly_maps"] = activation_map
         batch["max_activation_val"] = max_activation_val
+        if selected_features != {}:
+            batch["selected_features"] = selected_features
 
         return batch
 
