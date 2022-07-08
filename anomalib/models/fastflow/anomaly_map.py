@@ -18,6 +18,9 @@ class AnomalyMapGenerator:
 
     def __init__(self, input_size: Union[ListConfig, Tuple]):
         self.input_size = input_size if isinstance(input_size, tuple) else tuple(input_size)
+        # save indices of top features used for sub classification.
+        # these features are selected for visualization
+        self.category_features = dict()
 
     def __call__(self, hidden_variables: List[Tensor]) -> Tuple[Tensor, Tensor]:
         """Generate Anomaly Heatmap.
@@ -39,8 +42,23 @@ class AnomalyMapGenerator:
         # and stacking them.
         max_activation_val: Optional[Tensor] = None
 
+        selected_features = {k: [] for k in self.category_features.keys()}
+        prev_len = 0
+
         for hidden_variable in hidden_variables:
             log_prob = -torch.mean(hidden_variable**2, dim=1, keepdim=True) * 0.5
+
+            # Store each feature map in a list
+            for name, _ in self.category_features.items():
+                indices = (
+                    self.category_features[name][
+                        (self.category_features[name].long() >= prev_len)
+                        & (self.category_features[name].long() < (prev_len + hidden_variable.shape[1]))
+                    ].long()
+                    - prev_len
+                )
+                selected_features[name].append(hidden_variable[:, indices, ...])
+            prev_len = hidden_variable.shape[1]
 
             max_features = torch.exp(-(hidden_variable**2))
             max_features, _ = torch.max(einops.rearrange(max_features, "b c h w -> b c (h w)"), -1)
@@ -60,4 +78,29 @@ class AnomalyMapGenerator:
         flow_maps = torch.stack(flow_maps, dim=-1)
         anomaly_map = torch.mean(flow_maps, dim=-1)
 
-        return anomaly_map, max_activation_val
+        selected_features = {k: list(zip(*feature_maps)) for k, feature_maps in selected_features.items()}
+
+        return anomaly_map, max_activation_val, selected_features
+
+    def _compute_subclass_anomaly_map(self, distances: Tuple[Tensor]) -> Tensor:
+        flow_maps: List[Tensor] = []
+        for hidden_variable in distances:
+            log_prob = -torch.mean(hidden_variable**2, dim=1, keepdim=True) * 0.5
+            prob = torch.exp(log_prob)
+            flow_map = F.interpolate(
+                input=-prob,
+                size=self.input_size,
+                mode="bilinear",
+                align_corners=False,
+            )
+            flow_maps.append(flow_map)
+        flow_maps = torch.stack(flow_maps, dim=-1)
+        anomaly_map = torch.mean(flow_maps, dim=-1)
+        return anomaly_map
+
+    def feature_to_anomaly_map(self, distance: Tensor, feature: int) -> Tensor:
+        if feature == -1:
+            distance = tuple(dist.unsqueeze(0) for dist in distance)
+        else:
+            distance = tuple(dist[feature].reshape(1, 1, *dist[feature].shape) for dist in distance)
+        return self._compute_subclass_anomaly_map(distance)

@@ -72,9 +72,11 @@ class Fastflow(AnomalyModule):
         Returns:
             dict: batch dictionary containing anomaly-maps.
         """
-        anomaly_maps, max_activation_val = self.model(batch["image"])
+        anomaly_maps, max_activation_val, selected_features = self.model(batch["image"])
         batch["anomaly_maps"] = anomaly_maps
         batch["max_activation_val"] = max_activation_val
+        if selected_features != {}:
+            batch["selected_features"] = selected_features
         return batch
 
 
