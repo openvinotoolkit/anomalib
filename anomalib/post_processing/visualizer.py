@@ -164,7 +164,7 @@ class Visualizer:
         raise ValueError(f"Unknown task type: {self.task}")
 
     @staticmethod
-    def show(title: str, image: np.ndarray, delay: int = 500):
+    def show(title: str, image: np.ndarray, delay: int = 0):
         """Show an image on the screen.
 
         Args:
