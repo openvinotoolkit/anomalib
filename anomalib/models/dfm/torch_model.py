@@ -115,7 +115,7 @@ class DFMModel(nn.Module):
         features_reduced = self.pca_model.transform(dataset)
         self.gaussian_model.fit(features_reduced.T)
 
-    def score(self, features: Tensor) -> Tensor:
+    def score(self, features: Tensor, shapes) -> Tensor:
         """Compute scores.
 
         Scores are either PCA-based feature reconstruction error (FRE) scores or
@@ -132,11 +132,16 @@ class DFMModel(nn.Module):
             score = self.gaussian_model.score_samples(feats_projected)
         elif self.score_type == "fre":
             feats_reconstructed = self.pca_model.inverse_transform(feats_projected)
-            score = torch.sum(torch.square(features - feats_reconstructed), dim=1)
+            fre = torch.abs(features - feats_reconstructed)
+            for l in shapes:
+                fre_map = fre.reshape(shapes[l])
+            score = torch.sum(torch.square(fre), dim=1)
+            max_act_w, _ = torch.max(fre_map, 3)
+            max_activations, _ = torch.max(max_act_w, 2)
         else:
             raise ValueError(f"unsupported score type: {self.score_type}")
 
-        return score
+        return score, max_activations
 
     def get_features(self, batch: Tensor) -> Tensor:
         """Extract features from the pretrained network.
@@ -149,14 +154,16 @@ class DFMModel(nn.Module):
         """
         self.feature_extractor.eval()
         features = self.feature_extractor(batch)
+        feature_shapes = dict()
         for layer in features:
             batch_size = len(features[layer])
             if self.pooling_kernel_size > 1:
                 features[layer] = F.avg_pool2d(input=features[layer], kernel_size=self.pooling_kernel_size)
+            feature_shapes[layer] = features[layer].shape
             features[layer] = features[layer].view(batch_size, -1)
 
         features = torch.cat(list(features.values())).detach()
-        return features
+        return features, feature_shapes
 
     def forward(self, batch: Tensor) -> Tensor:
         """Computer score from input images.
@@ -167,5 +174,11 @@ class DFMModel(nn.Module):
         Returns:
             Tensor: Scores
         """
-        feature_vector = self.get_features(batch)
-        return self.score(feature_vector.view(feature_vector.shape[:2]))
+        feature_vector, feature_shapes = self.get_features(batch)
+        scores, max_activations = self.score(feature_vector.view(feature_vector.shape[:2]), feature_shapes)
+        if self.training:
+            output = scores
+        else:
+            output = (scores, max_activations)
+
+        return output
