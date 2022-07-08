@@ -40,6 +40,8 @@ model:
   selective_feature_model:
     apply: true
     feature_percentage: 0.1
+    top_k_images: 3
+    feature_ids_path: ./results
 
 metrics:
   image:
@@ -75,7 +77,7 @@ trainer:
   auto_scale_batch_size: false
   auto_select_gpus: false
   benchmark: false
-  check_val_every_n_epoch: 2
+  check_val_every_n_epoch: 1
   default_root_dir: null
   detect_anomaly: false
   deterministic: false
@@ -94,7 +96,8 @@ trainer:
   log_every_n_steps: 50
   log_gpu_memory: null
   max_epochs: 200
-  max_steps: null
+  max_steps: -1
+  max_time: null
   min_epochs: null
   min_steps: null
   move_metrics_to_cpu: false

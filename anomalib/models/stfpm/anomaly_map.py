@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from typing import Dict, List, Tuple, Union
+from typing import Dict, Tuple, Union
 
 import torch
 import torch.nn.functional as F

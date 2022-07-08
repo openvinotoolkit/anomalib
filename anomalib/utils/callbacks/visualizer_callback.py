@@ -20,7 +20,6 @@ from warnings import warn
 
 import numpy as np
 import pytorch_lightning as pl
-import torch
 from pytorch_lightning import Callback
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from skimage.segmentation import mark_boundaries
