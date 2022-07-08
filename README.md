@@ -156,7 +156,7 @@ The new CLI approach offers a lot more flexibility, details of which are explain
 
 ## Inference
 ### ⚠️ Anomalib < v.0.4.0
-Anomalib includes multiple tools, including Lightning, Gradio, and OpenVINO inferences, for performing inference with a trained model.
+Anomalib includes multiple tools, including Lightning, Gradio, and OpenVINO inferencers, for performing inference with a trained model.
 
 The following command can be used to run PyTorch Lightning inference from the command line:
 
