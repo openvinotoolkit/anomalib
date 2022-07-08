@@ -14,8 +14,8 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .base import Inferencer
-from .openvino import OpenVINOInferencer
-from .torch import TorchInferencer
+from .base_inference import Inferencer
+from .openvino_inference import OpenVINOInferencer
+from .torch_inference import TorchInferencer
 
 __all__ = ["Inferencer", "OpenVINOInferencer", "TorchInferencer"]

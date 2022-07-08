@@ -27,8 +27,7 @@ import numpy as np
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
 from anomalib.config import get_configurable_parameters
-from anomalib.deploy.inferencers import OpenVINOInferencer
-from anomalib.deploy.inferencers.base import Inferencer
+from anomalib.deploy import Inferencer, OpenVINOInferencer
 
 
 def get_args() -> Namespace:
