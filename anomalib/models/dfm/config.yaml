@@ -2,7 +2,7 @@ dataset:
   name: mvtec #options: [mvtec, btech, folder]
   format: mvtec
   path: ./datasets/MVTec
-  category: bottle
+  category: pill
   task: classification
   image_size: 256
   train_batch_size: 32
@@ -15,13 +15,16 @@ dataset:
 
 model:
   name: dfm
-  backbone: resnet18
+  backbone: resnet50
   layer: layer3
   pooling_kernel_size: 4
   pca_level: 0.97
   score_type: fre # nll: for Gaussian modeling, fre: pca feature reconstruction error
   project_path: ./results
   normalization_method: min_max # options: [null, min_max, cdf]
+  selective_feature_model:
+    apply: true
+    feature_percentage: 0.1
 
 metrics:
   image:
@@ -39,7 +42,8 @@ project:
   path: ./results
 
 logging:
-  log_images_to: ["local"] # options: [wandb, tensorboard, local]. Make sure you also set logger with using wandb or tensorboard.
+  log_images_to: [] # options: [wandb, tensorboard, local]. Make sure you also set logger with using wandb or tensorboard.
+  # log_images_to: ["local"] # options: [wandb, tensorboard, local]. Make sure you also set logger with using wandb or tensorboard.
   logger: [] # options: [tensorboard, wandb, csv] or combinations.
   log_graph: false # Logs the model graph to respective logger.
 

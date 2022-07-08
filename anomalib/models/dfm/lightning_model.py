@@ -80,7 +80,8 @@ class Dfm(AnomalyModule):
         Returns:
           Deep CNN features.
         """
-        embedding = self.model.get_features(batch["image"]).squeeze()
+        features, feature_shapes = self.model.get_features(batch["image"])
+        embedding = features.squeeze()
 
         # NOTE: `self.embedding` appends each batch embedding to
         #   store the training set embedding. We manually append these
@@ -110,7 +111,9 @@ class Dfm(AnomalyModule):
         Returns:
           Dictionary containing FRE anomaly scores and ground-truth.
         """
-        batch["pred_scores"] = self.model(batch["image"])
+        scores, max_activation_val = self.model(batch["image"])
+        batch["pred_scores"] = scores
+        batch["max_activation_val"] = max_activation_val
 
         return batch
 
