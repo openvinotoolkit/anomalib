@@ -189,15 +189,12 @@ optimization:
 Example OpenVINO Inference:
 
 ```bash
-python tools/inference.py \
-    --config  \
-    anomalib/models/padim/config.yaml  \
-    --weight_path  \
-    results/padim/mvtec/bottle/compressed/compressed_model.xml  \
-    --image_path  \
-    datasets/MVTec/bottle/test/broken_large/000.png  \
-    --meta_data  \
-    results/padim/mvtec/bottle/compressed/meta_data.json
+python tools/inference/openvino_inference.py \
+    --config anomalib/models/padim/config.yaml \
+    --weight_path results/padim/mvtec/bottle/openvino/openvino_model.bin \
+    --image_path datasets/MVTec/bottle/test/broken_large/000.png \
+    --meta_data results/padim/mvtec/bottle/openvino/meta_data.json \
+    --save_path results/padim/mvtec/bottle/images
 ```
 
 > Ensure that you provide path to `meta_data.json` if you want the normalization to be applied correctly.

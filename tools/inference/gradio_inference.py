@@ -15,7 +15,7 @@ import numpy as np
 from skimage.segmentation import mark_boundaries
 
 from anomalib.config import get_configurable_parameters
-from anomalib.deploy.inferencers.base import Inferencer
+from anomalib.deploy import Inferencer
 from anomalib.post_processing import compute_mask, superimpose_anomaly_map
 
 
