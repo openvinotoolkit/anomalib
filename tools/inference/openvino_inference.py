@@ -37,11 +37,11 @@ def get_args() -> Namespace:
         Namespace: List of arguments.
     """
     parser = ArgumentParser()
-    parser.add_argument("--config", type=Path, required=True, help="Path to a model config file")
-    parser.add_argument("--weight_path", type=Path, required=True, help="Path to a model weights")
-    parser.add_argument("--image_path", type=Path, required=True, help="Path to an image to infer.")
-    parser.add_argument("--save_path", type=Path, required=False, help="Path to save the output image.")
-    parser.add_argument("--meta_data", type=Path, required=True, help="Path to JSON file containing the metadata.")
+    parser.add_argument("--config", type=Path, required=True, help="Path to a config file")
+    parser.add_argument("--weights", type=Path, required=True, help="Path to model weights")
+    parser.add_argument("--meta_data", type=Path, required=True, help="Path to a JSON file containing the metadata.")
+    parser.add_argument("--input", type=Path, required=True, help="Path to an image to infer.")
+    parser.add_argument("--output", type=Path, required=False, help="Path to save the output image.")
     parser.add_argument(
         "--overlay_mask",
         type=bool,
@@ -75,6 +75,41 @@ def add_label(prediction: np.ndarray, scores: float, font: int = cv2.FONT_HERSHE
     return prediction
 
 
+def infer(image_path: Path, inferencer: Inferencer, output_path: Optional[Path] = None, overlay: bool = False) -> None:
+    """Perform inference on a single image.
+
+    Args:
+        image_path (Path): Path to image/directory containing images.
+        inferencer (Inferencer): Inferencer to use.
+        output_path (Path, optional): Path to save the output image. If this is None, the output is visualized.
+        overlay (bool, optional): Overlay the segmentation mask on the image. It assumes that the task is segmentation.
+    """
+    # Perform inference for the given image or image path. if image
+    # path is provided, `predict` method will read the image from
+    # file for convenience. We set the superimpose flag to True
+    # to overlay the predicted anomaly map on top of the input image.
+    prediction = inferencer.predict(image=image_path, superimpose=True, overlay_mask=overlay)
+
+    # Incase both anomaly map and scores are returned add scores to the image.
+    if isinstance(prediction, tuple):
+        anomaly_map, score = prediction
+        output_image = add_label(anomaly_map, score)
+
+    # Show or save the output image, depending on what's provided as
+    # the command line argument.
+    output_image = cv2.cvtColor(output_image, cv2.COLOR_RGB2BGR)
+    if output_path is None:
+        cv2.imshow("Anomaly Map", output_image)
+        cv2.waitKey(0)  # wait for any key press
+    else:
+        # Create directory for parents if it doesn't exist.
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        if output_path.suffix == "":  # This is a directory
+            output_path.mkdir(exist_ok=True)  # Create current directory
+            output_path = output_path / image_path.name
+        cv2.imwrite(filename=str(output_path), img=output_image)
+
+
 def stream() -> None:
     """Stream predictions.
 
@@ -87,57 +122,21 @@ def stream() -> None:
     config = get_configurable_parameters(config_path=args.config)
 
     # Get the inferencer.
-    inferencer = OpenVINOInferencer(config=config, path=args.weight_path, meta_data_path=args.meta_data)
+    inferencer = OpenVINOInferencer(config=config, path=args.weights, meta_data_path=args.meta_data)
 
-    if args.image_path.is_dir():
+    if args.input.is_dir():
         # Write the output to save_path in the same structure as the input directory.
-        for image in args.image_path.glob("**/*"):
+        for image in args.input.glob("**/*"):
             if image.is_file() and image.suffix in IMG_EXTENSIONS:
                 # Here save_path is assumed to be a directory. Image subdirectories are appended to the save_path.
-                save_path = Path(args.save_path / image.relative_to(args.image_path).parent) if args.save_path else None
+                save_path = Path(args.output / image.relative_to(args.input).parent) if args.output else None
                 infer(image, inferencer, save_path, args.overlay_mask)
-    elif args.image_path.suffix in IMG_EXTENSIONS:
-        infer(args.image_path, inferencer, args.save_path, args.overlay_mask)
+    elif args.input.suffix in IMG_EXTENSIONS:
+        infer(args.input, inferencer, args.output, args.overlay_mask)
     else:
         raise ValueError(
-            f"Image extension is not supported. Supported extensions are .jpg, .png, .jpeg."
-            f" Got {args.image_path.suffix}"
+            f"Image extension is not supported. Supported extensions are .jpg, .png, .jpeg." f" Got {args.input.suffix}"
         )
-
-
-def infer(image_path: Path, inferencer: Inferencer, save_path: Optional[Path] = None, overlay: bool = False) -> None:
-    """Perform inference on a single image.
-
-    Args:
-        image_path (Path): Path to image/directory containing images.
-        inferencer (Inferencer): Inferencer to use.
-        save_path (Path, optional): Path to save the output image. If this is None, the output is visualized.
-        overlay (bool, optional): Overlay the segmentation mask on the image. It assumes that the task is segmentation.
-    """
-    # Perform inference for the given image or image path. if image
-    # path is provided, `predict` method will read the image from
-    # file for convenience. We set the superimpose flag to True
-    # to overlay the predicted anomaly map on top of the input image.
-    output = inferencer.predict(image=image_path, superimpose=True, overlay_mask=overlay)
-
-    # Incase both anomaly map and scores are returned add scores to the image.
-    if isinstance(output, tuple):
-        anomaly_map, score = output
-        output = add_label(anomaly_map, score)
-
-    # Show or save the output image, depending on what's provided as
-    # the command line argument.
-    output = cv2.cvtColor(output, cv2.COLOR_RGB2BGR)
-    if save_path is None:
-        cv2.imshow("Anomaly Map", output)
-        cv2.waitKey(0)  # wait for any key press
-    else:
-        # Create directory for parents if it doesn't exist.
-        save_path.parent.mkdir(parents=True, exist_ok=True)
-        if save_path.suffix == "":  # This is a directory
-            save_path.mkdir(exist_ok=True)  # Create current directory
-            save_path = save_path / image_path.name
-        cv2.imwrite(filename=str(save_path), img=output)
 
 
 if __name__ == "__main__":
