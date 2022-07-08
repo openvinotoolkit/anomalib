@@ -52,7 +52,7 @@ class ImageResult:
         if self.pred_mask is not None and np.max(self.pred_mask) <= 1.0:
             self.pred_mask *= 255
             self.segmentations = mark_boundaries(self.image, self.pred_mask, color=(1, 0, 0), mode="thick")
-        if self.gt_mask is not None and np.max(self.pred_mask) <= 1.0:
+        if self.gt_mask is not None and np.max(self.gt_mask) <= 1.0:
             self.gt_mask *= 255
 
 
