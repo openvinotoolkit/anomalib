@@ -195,6 +195,16 @@ python tools/inference/openvino_inference.py \
 
 > Ensure that you provide path to `meta_data.json` if you want the normalization to be applied correctly.
 
+You can also use Gradio Inference to interact with the trained models using a UI. Refer to our [guide](https://openvinotoolkit.github.io/anomalib/guides/inference.html#gradio-inference) for more details.
+
+A quick example:
+
+```bash
+python tools/inference/gradio_inference.py \
+        --config ./anomalib/models/padim/config.yaml \
+        --weights ./results/padim/mvtec/bottle/weights/model.ckpt
+```
+
 ## Hyperparameter Optimization
 
 To run hyperparameter optimization, use the following command:
