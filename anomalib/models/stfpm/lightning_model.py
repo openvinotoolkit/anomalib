@@ -56,7 +56,6 @@ class Stfpm(AnomalyModule):
             layers=layers,
         )
         self.loss = STFPMLoss()
-        self.loss_val = 0
 
     def training_step(self, batch, _):  # pylint: disable=arguments-differ
         """Training Step of STFPM.
@@ -72,8 +71,7 @@ class Stfpm(AnomalyModule):
         """
         self.model.teacher_model.eval()
         teacher_features, student_features = self.model.forward(batch["image"])
-        loss = self.loss_val + self.loss(teacher_features, student_features)
-        self.loss_val = 0
+        loss = self.loss(teacher_features, student_features)
         return {"loss": loss}
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
