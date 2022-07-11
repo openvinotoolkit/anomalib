@@ -21,7 +21,7 @@ import torch
 from torch import Tensor
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
-from anomalib.models.draem.utils.perlin import rand_perlin_2d_np
+from anomalib.utils.generators import rand_perlin_2d_np
 
 
 class Augmenter:
