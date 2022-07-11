@@ -151,7 +151,7 @@ def rand_perlin_2d_octaves(shape, res, octaves=1, persistence=0.5):
     frequency = 1
     amplitude = 1
     for _ in range(octaves):
-        noise += amplitude * rand_perlin_2d(shape, (frequency * res[0], frequency * res[1]))
+        noise += amplitude * _rand_perlin_2d(shape, (frequency * res[0], frequency * res[1]))
         frequency *= 2
         amplitude *= persistence
     return noise
