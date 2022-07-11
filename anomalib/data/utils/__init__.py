@@ -15,6 +15,7 @@
 # and limitations under the License.
 
 from .download import DownloadProgressBar, hash_check
+from .generators import random_2d_perlin
 from .image import get_image_filenames, read_image
 
-__all__ = ["get_image_filenames", "hash_check", "read_image", "DownloadProgressBar"]
+__all__ = ["get_image_filenames", "hash_check", "random_2d_perlin", "read_image", "DownloadProgressBar"]

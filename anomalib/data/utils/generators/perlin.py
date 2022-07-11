@@ -12,9 +12,11 @@
 # pylint: disable=invalid-name
 
 import math
+from typing import Tuple, Union
 
 import numpy as np
 import torch
+from torch import Tensor
 
 
 def lerp_np(x, y, w):
@@ -63,7 +65,28 @@ def generate_perlin_noise_2d(shape, res):
     return np.sqrt(2) * ((1 - t[:, :, 1]) * n0 + t[:, :, 1] * n1)
 
 
-def rand_perlin_2d_np(shape, res, fade=lambda t: 6 * t**5 - 15 * t**4 + 10 * t**3):
+def random_2d_perlin(
+    shape: Tuple, res: Tuple[Union[np.ndarray, Tensor]], fade=lambda t: 6 * t**5 - 15 * t**4 + 10 * t**3
+) -> Union[np.ndarray, Tensor]:
+    """Returns a random 2d perlin noise array.
+
+    Args:
+        shape (Tuple): Shape of the 2d map.
+        res (Tuple[Union[np.ndarray, Tensor]]): Tuple of scales for perlin noise for height and width dimension.
+        fade (_type_, optional): Function used for fading the resulting 2d map.
+            Defaults to equation 6*t**5-15*t**4+10*t**3.
+
+    Returns:
+        Union[np.ndarray, Tensor]: Random 2d-array/tensor generated using perlin noise.
+    """
+    if isinstance(res, np.ndarray):
+        result = _rand_perlin_2d_np(shape, res, fade)
+    else:
+        result = _rand_perlin_2d(shape, res, fade)
+    return result
+
+
+def _rand_perlin_2d_np(shape, res, fade=lambda t: 6 * t**5 - 15 * t**4 + 10 * t**3):
     """Generate a random image containing Perlin noise. Numpy version."""
     delta = (res[0] / shape[0], res[1] / shape[1])
     d = (shape[0] // res[0], shape[1] // res[1])
@@ -89,7 +112,7 @@ def rand_perlin_2d_np(shape, res, fade=lambda t: 6 * t**5 - 15 * t**4 + 10 * t**
     return math.sqrt(2) * lerp_np(lerp_np(n00, n10, t[..., 0]), lerp_np(n01, n11, t[..., 0]), t[..., 1])
 
 
-def rand_perlin_2d(shape, res, fade=lambda t: 6 * t**5 - 15 * t**4 + 10 * t**3):
+def _rand_perlin_2d(shape, res, fade=lambda t: 6 * t**5 - 15 * t**4 + 10 * t**3):
     """Generate a random image containing Perlin noise. PyTorch version."""
     delta = (res[0] / shape[0], res[1] / shape[1])
     d = (shape[0] // res[0], shape[1] // res[1])
