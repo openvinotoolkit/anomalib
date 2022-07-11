@@ -31,7 +31,8 @@ from .min_max_normalization import MinMaxNormalizationCallback
 from .model_loader import LoadModelCallback
 from .tiler_configuration import TilerConfigurationCallback
 from .timer import TimerCallback
-from .visualizer_callback import VisualizerCallback
+from .visualizer_image import VisualizerCallbackImage
+from .visualizer_metric import VisualizerCallbackMetric
 
 __all__ = [
     "CdfNormalizationCallback",
@@ -40,7 +41,8 @@ __all__ = [
     "MinMaxNormalizationCallback",
     "TilerConfigurationCallback",
     "TimerCallback",
-    "VisualizerCallback",
+    "VisualizerCallbackImage",
+    "VisualizerCallbackMetric",
 ]
 
 
@@ -174,14 +176,15 @@ def add_visualizer_callback(callbacks: List[Callback], config: Union[DictConfig,
             if config.visualization.image_save_path
             else config.project.path + "/images"
         )
-        callbacks.append(
-            VisualizerCallback(
-                task=config.dataset.task,
-                mode=config.visualization.mode,
-                image_save_path=image_save_path,
-                inputs_are_normalized=not config.model.normalization_method == "none",
-                show_images=config.visualization.show_images,
-                log_images=config.visualization.log_images,
-                save_images=config.visualization.save_images,
+        for callback in (VisualizerCallbackImage, VisualizerCallbackMetric):
+            callbacks.append(
+                callback(
+                    task=config.dataset.task,
+                    mode=config.visualization.mode,
+                    image_save_path=image_save_path,
+                    inputs_are_normalized=not config.model.normalization_method == "none",
+                    show_images=config.visualization.show_images,
+                    log_images=config.visualization.log_images,
+                    save_images=config.visualization.save_images,
+                )
             )
-        )
