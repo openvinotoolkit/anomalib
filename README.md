@@ -156,26 +156,22 @@ The new CLI approach offers a lot more flexibility, details of which are explain
 
 ## Inference
 ### ⚠️ Anomalib < v.0.4.0
-Anomalib contains several tools that can be used to perform inference with a trained model. The script in [`tools/inference`](tools/inference/lightning.py) contains an example of how the inference tools can be used to generate a prediction for an input image.
+Anomalib includes multiple tools, including Lightning, Gradio, and OpenVINO inferencers, for performing inference with a trained model.
 
-If the specified weight path points to a PyTorch Lightning checkpoint file (`.ckpt`), inference will run in PyTorch. If the path points to an ONNX graph (`.onnx`) or OpenVINO IR (`.bin` or `.xml`), inference will run in OpenVINO.
-
-The following command can be used to run inference from the command line:
+The following command can be used to run PyTorch Lightning inference from the command line:
 
 ```bash
-python tools/inference.py \
-    --config <path/to/model/config.yaml> \
-    --weight_path <path/to/weight/file> \
-    --image_path <path/to/image>
+python tools/inference/lightning_inference.py -h
 ```
 
 As a quick example:
 
 ```bash
-python tools/inference.py \
+python tools/inference/lightning_inference.py \
     --config anomalib/models/padim/config.yaml \
-    --weight_path results/padim/mvtec/bottle/weights/model.ckpt \
-    --image_path datasets/MVTec/bottle/test/broken_large/000.png
+    --weights results/padim/mvtec/bottle/weights/model.ckpt \
+    --input datasets/MVTec/bottle/test/broken_large/000.png \
+    --output results/padim/mvtec/bottle/images
 ```
 
 If you want to run OpenVINO model, ensure that `openvino` `apply` is set to `True` in the respective model `config.yaml`.
@@ -191,10 +187,10 @@ Example OpenVINO Inference:
 ```bash
 python tools/inference/openvino_inference.py \
     --config anomalib/models/padim/config.yaml \
-    --weight_path results/padim/mvtec/bottle/openvino/openvino_model.bin \
-    --image_path datasets/MVTec/bottle/test/broken_large/000.png \
+    --weights results/padim/mvtec/bottle/openvino/openvino_model.bin \
     --meta_data results/padim/mvtec/bottle/openvino/meta_data.json \
-    --save_path results/padim/mvtec/bottle/images
+    --input datasets/MVTec/bottle/test/broken_large/000.png \
+    --output results/padim/mvtec/bottle/images
 ```
 
 > Ensure that you provide path to `meta_data.json` if you want the normalization to be applied correctly.

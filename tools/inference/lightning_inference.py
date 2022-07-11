@@ -22,24 +22,24 @@ def get_args() -> Namespace:
         Namespace: List of arguments.
     """
     parser = ArgumentParser()
-    parser.add_argument("--config", type=Path, required=True, help="Path to a model config file")
-    parser.add_argument("--weight_path", type=Path, required=True, help="Path to a model weights")
-    parser.add_argument("--image_path", type=Path, required=True, help="Path to an image to infer.")
+    parser.add_argument("--config", type=Path, required=True, help="Path to a config file")
+    parser.add_argument("--weights", type=Path, required=True, help="Path to model weights")
+    parser.add_argument("--input", type=Path, required=True, help="Path to image(s) to infer.")
+    parser.add_argument("--output", type=str, required=False, help="Path to save the output image(s).")
     parser.add_argument(
         "--visualization_mode",
         type=str,
         required=False,
         default="simple",
-        help="Visualization mode. 'full' or 'simple'",
+        help="Visualization mode.",
         choices=["full", "simple"],
     )
     parser.add_argument(
-        "--disable_show_images",
+        "--show",
         action="store_true",
         required=False,
-        help="Do not show the visualized predictions on the screen.",
+        help="Show the visualized predictions on the screen.",
     )
-    parser.add_argument("--save_path", type=str, required=False, help="Path to save the output images.")
 
     args = parser.parse_args()
     return args
@@ -49,12 +49,12 @@ def infer():
     """Run inference."""
     args = get_args()
     config = get_configurable_parameters(config_path=args.config)
-    config.model["weight_file"] = str(args.weight_path)
-    config.visualization.show_images = not args.disable_show_images
+    config.trainer.resume_from_checkpoint = str(args.weights)
+    config.visualization.show_images = args.show
     config.visualization.mode = args.visualization_mode
-    if args.save_path:  # overwrite save path
+    if args.output:  # overwrite save path
         config.visualization.save_images = True
-        config.visualization.image_save_path = args.save_path
+        config.visualization.image_save_path = args.output
     else:
         config.visualization.save_images = False
 
@@ -63,7 +63,7 @@ def infer():
 
     trainer = Trainer(callbacks=callbacks, **config.trainer)
 
-    dataset = InferenceDataset(args.image_path, image_size=tuple(config.dataset.image_size))
+    dataset = InferenceDataset(args.input, image_size=tuple(config.dataset.image_size))
     dataloader = DataLoader(dataset)
     trainer.predict(model=model, dataloaders=[dataloader])
 

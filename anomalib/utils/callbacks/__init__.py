@@ -91,8 +91,8 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
     )
     callbacks.append(metrics_callback)
 
-    if "weight_file" in config.model.keys():
-        load_model = LoadModelCallback(os.path.join(config.project.path, config.model.weight_file))
+    if "resume_from_checkpoint" in config.trainer.keys() and config.trainer.resume_from_checkpoint is not None:
+        load_model = LoadModelCallback(config.trainer.resume_from_checkpoint)
         callbacks.append(load_model)
 
     if "normalization_method" in config.model.keys() and not config.model.normalization_method == "none":

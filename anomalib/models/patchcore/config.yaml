@@ -28,7 +28,6 @@ model:
     - layer3
   coreset_sampling_ratio: 0.1
   num_neighbors: 9
-  weight_file: weights/model.ckpt
   normalization_method: min_max # options: [null, min_max, cdf]
 
 metrics:
