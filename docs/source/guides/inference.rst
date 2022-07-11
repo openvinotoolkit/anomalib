@@ -64,7 +64,8 @@ Similar to PyTorch inference, the visualization results will be displayed on the
 
 Gradio Inference
 ==============
-To use gradio with OpenVINO model, first make sure that your model has been exported to the OpenVINO IR format.
+
+The gradio inference is supported for both PyTorch and OpenVINO models.
 
 +-----------+----------+------------------------------------------------------------------+
 | Parameter | Required |                           Description                            |
@@ -81,7 +82,7 @@ To use gradio with OpenVINO model, first make sure that your model has been expo
 | share     | False    | Share Gradio `share_url`                                         |
 +-----------+----------+------------------------------------------------------------------+
 
-For correct inference results with OpenVINO model, the ``meta_data`` argument should be specified and point to the ``meta_data.json`` file that was generated when exporting the OpenVINO IR model. The file is stored in the same folder as the ``.xml`` and ``.bin`` files of the model.
+To use gradio with OpenVINO model, first make sure that your model has been exported to the OpenVINO IR format and ensure that the `meta_data` argument points to the ``meta_data.json`` file that was generated when exporting the OpenVINO IR model. The file is stored in the same folder as the ``.xml`` and ``.bin`` files of the model.
 
 As an example, PyTorch model can be used by the following command:
 
