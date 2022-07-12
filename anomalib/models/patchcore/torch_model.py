@@ -38,6 +38,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         input_size: Tuple[int, int],
         layers: List[str],
         backbone: str = "wide_resnet50_2",
+        pre_trained: bool = True,
         num_neighbors: int = 9,
     ) -> None:
         super().__init__()
@@ -48,7 +49,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         self.input_size = input_size
         self.num_neighbors = num_neighbors
 
-        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
+        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=pre_trained), layers=self.layers)
         self.feature_pooler = torch.nn.AvgPool2d(3, 1, 1)
         self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
 

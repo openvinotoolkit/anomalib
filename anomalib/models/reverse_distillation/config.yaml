@@ -25,6 +25,7 @@ model:
   name: reverse_distillation
   lr: 0.005
   backbone: wide_resnet50_2
+  pre_trained: true
   layers:
     - layer1
     - layer2

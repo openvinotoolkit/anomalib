@@ -18,6 +18,7 @@ dataset:
 model:
   name: cflow
   backbone: wide_resnet50_2
+  pre_trained: true
   layers:
     - layer2
     - layer3

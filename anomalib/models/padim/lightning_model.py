@@ -41,6 +41,7 @@ class Padim(AnomalyModule):
         layers (List[str]): Layers to extract features from the backbone CNN
         input_size (Tuple[int, int]): Size of the model input.
         backbone (str): Backbone CNN network
+        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
     """
 
     def __init__(
@@ -48,6 +49,7 @@ class Padim(AnomalyModule):
         layers: List[str],
         input_size: Tuple[int, int],
         backbone: str,
+        pre_trained: bool = True,
     ):
         super().__init__()
 
@@ -55,6 +57,7 @@ class Padim(AnomalyModule):
         self.model: PadimModel = PadimModel(
             input_size=input_size,
             backbone=backbone,
+            pre_trained=pre_trained,
             layers=layers,
         ).eval()
 
