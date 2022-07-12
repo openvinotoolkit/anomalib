@@ -94,7 +94,8 @@ class FastflowModel(nn.Module):
     Args:
         input_size (Tuple[int, int]): Model input size.
         backbone (str): Backbone CNN network
-        flow_steps (int): Flow steps.
+        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+        flow_steps (int, optional): Flow steps.
         conv3x3_only (bool, optinoal): Use only conv3x3 in fast_flow model. Defaults to False.
         hidden_ratio (float, optional): Ratio to calculate hidden var channels. Defaults to 1.0.
 
@@ -106,7 +107,8 @@ class FastflowModel(nn.Module):
         self,
         input_size: Tuple[int, int],
         backbone: str,
-        flow_steps: int,
+        pre_trained: bool = True,
+        flow_steps: int = 8,
         conv3x3_only: bool = False,
         hidden_ratio: float = 1.0,
     ) -> None:
@@ -115,13 +117,13 @@ class FastflowModel(nn.Module):
         self.input_size = input_size
 
         if backbone in ["cait_m48_448", "deit_base_distilled_patch16_384"]:
-            self.feature_extractor = timm.create_model(backbone, pretrained=True)
+            self.feature_extractor = timm.create_model(backbone, pretrained=pre_trained)
             channels = [768]
             scales = [16]
         elif backbone in ["resnet18", "wide_resnet50_2"]:
             self.feature_extractor = timm.create_model(
                 backbone,
-                pretrained=True,
+                pretrained=pre_trained,
                 features_only=True,
                 out_indices=[1, 2, 3],
             )

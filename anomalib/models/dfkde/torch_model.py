@@ -32,6 +32,7 @@ class DfkdeModel(nn.Module):
 
     Args:
         backbone (str): Pre-trained model backbone.
+        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         n_comps (int, optional): Number of PCA components. Defaults to 16.
         pre_processing (str, optional): Preprocess features before passing to KDE.
             Options are between `norm` and `scale`. Defaults to "scale".
@@ -43,6 +44,7 @@ class DfkdeModel(nn.Module):
     def __init__(
         self,
         backbone: str,
+        pre_trained: bool = True,
         n_comps: int = 16,
         pre_processing: str = "scale",
         filter_count: int = 40000,
@@ -57,7 +59,7 @@ class DfkdeModel(nn.Module):
         self.threshold_offset = threshold_offset
 
         _backbone = getattr(torchvision.models, backbone)
-        self.feature_extractor = FeatureExtractor(backbone=_backbone(pretrained=True), layers=["avgpool"]).eval()
+        self.feature_extractor = FeatureExtractor(backbone=_backbone(pretrained=pre_trained), layers=["avgpool"]).eval()
 
         self.pca_model = PCA(n_components=self.n_components)
         self.kde_model = GaussianKDE()

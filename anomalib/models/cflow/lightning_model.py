@@ -43,6 +43,7 @@ class Cflow(AnomalyModule):
         input_size: Tuple[int, int],
         backbone: str,
         layers: List[str],
+        pre_trained: bool = True,
         fiber_batch_size: int = 64,
         decoder: str = "freia-cflow",
         condition_vector: int = 128,
@@ -56,6 +57,7 @@ class Cflow(AnomalyModule):
         self.model: CflowModel = CflowModel(
             input_size=input_size,
             backbone=backbone,
+            pre_trained=pre_trained,
             layers=layers,
             fiber_batch_size=fiber_batch_size,
             decoder=decoder,
