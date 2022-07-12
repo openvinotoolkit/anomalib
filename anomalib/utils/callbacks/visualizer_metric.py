@@ -14,7 +14,11 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+from pathlib import Path
+
+import numpy as np
 import pytorch_lightning as pl
+from matplotlib import pyplot as plt
 from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 
 from anomalib.models.components import AnomalyModule
@@ -31,10 +35,32 @@ class VisualizerCallbackMetric(VisualizerCallbackBase):
     """
 
     def on_test_end(self, trainer: pl.Trainer, pl_module: AnomalyModule) -> None:
-        """Log images of the metric scoires for all appropriate.
+        """Log images of the metrics contained in pl_module.
+
+        In order to also plot custom metrics, they need to have implemented a `generate_figure` function that returns
+        Tuple[matplotlib.figure.Figure, str].
 
         Args:
             trainer (pl.Trainer): pytorch lightning trainer.
             pl_module (AnomalyModule): pytorch lightning module.
         """
-        super().on_batch_end(trainer, pl_module)
+
+        if self.save_images or self.log_images:
+            for metric_type in ("image_metrics", "pixel_metrics"):
+                metrics = getattr(pl_module, metric_type)
+                for metric in metrics.values():
+                    # `generate_figure` needs to be defined for every metric that should be plotted automatically
+                    if hasattr(metric, "generate_figure"):
+                        fig, log_name = metric.generate_figure()
+                        file_name = f"{metrics.prefix}{log_name}"
+                        if self.log_images:
+                            self._add_to_logger(fig, pl_module, trainer, file_name)
+
+                        if self.save_images:
+                            fig.canvas.draw()
+                            # convert figure to np.ndarray for saving via visualizer
+                            img = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+                            img = img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+                            self.visualizer.save(Path(self.image_save_path.joinpath(f"{file_name}.png")), img)
+                        plt.close(fig)
+        super().on_test_end(trainer, pl_module)
