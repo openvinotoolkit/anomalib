@@ -66,7 +66,7 @@ def generate_perlin_noise_2d(shape, res):
 
 
 def random_2d_perlin(
-    shape: Tuple, res: Tuple[Union[np.ndarray, Tensor]], fade=lambda t: 6 * t**5 - 15 * t**4 + 10 * t**3
+    shape: Tuple, res: Tuple[Union[np.ndarray, Tensor],Union[np.ndarray, Tensor]], fade=lambda t: 6 * t**5 - 15 * t**4 + 10 * t**3
 ) -> Union[np.ndarray, Tensor]:
     """Returns a random 2d perlin noise array.
 
