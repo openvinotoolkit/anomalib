@@ -39,6 +39,7 @@ class PadimModel(nn.Module):
         input_size (Tuple[int, int]): Input size for the model.
         layers (List[str]): Layers used for feature extraction
         backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
+        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
     """
 
     def __init__(
@@ -46,13 +47,14 @@ class PadimModel(nn.Module):
         input_size: Tuple[int, int],
         layers: List[str],
         backbone: str = "resnet18",
+        pre_trained: bool = True,
     ):
         super().__init__()
         self.tiler: Optional[Tiler] = None
 
         self.backbone = getattr(torchvision.models, backbone)
         self.layers = layers
-        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
+        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=pre_trained), layers=self.layers)
         self.dims = DIMS[backbone]
         # pylint: disable=not-callable
         # Since idx is randomly selected, save it with model to get same results

@@ -16,6 +16,7 @@ dataset:
 model:
   name: dfm
   backbone: resnet18
+  pre_trained: true
   layer: layer3
   pooling_kernel_size: 4
   pca_level: 0.97
