@@ -26,6 +26,7 @@ model:
       - 256 # Height
       - 256 # Width
     backbone: resnet18
+    pre_trained: true
     layers:
       - layer1
       - layer2

@@ -24,6 +24,7 @@ model:
   init_args:
     input_size: [256, 256]
     backbone: wide_resnet50_2
+    pre_trained: true
     layers:
       - layer2
       - layer3
