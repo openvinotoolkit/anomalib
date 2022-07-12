@@ -17,7 +17,7 @@ class AUROC(ROC):
         """First compute ROC curve, then compute area under the curve.
 
         Returns:
-            Value of the AUROC metric
+            Tensor: Value of the AUROC metric
         """
         tpr: Tensor
         fpr: Tensor
@@ -28,8 +28,19 @@ class AUROC(ROC):
             return auc(fpr, tpr, reorder=True)  # only reorder if fpr is not increasing or decreasing
         return auc(fpr, tpr)
 
+    def update(self, preds: Tensor, target: Tensor) -> None:
+        """Update state with new values.
+
+        Need to flatten new values as ROC expects them in this format for binary classification.
+
+        Args:
+            preds (Tensor): predictions of the model
+            target (Tensor): ground truth targets
+        """
+        super().update(preds.flatten(), target.flatten())
+
     def _compute(self) -> Tuple[Tensor, Tensor]:
-        """Method used by Visualizer callback to extract fpr/tpr required for plot generation.
+        """Compute fpr/tpr value pairs.
 
         Returns:
             Tuple containing Tensors for fpr and tpr
@@ -40,10 +51,10 @@ class AUROC(ROC):
         return (fpr, tpr)
 
     def generate_figure(self) -> Tuple[Figure, str]:
-        """Generate a figure containing the ROC curve as well as the random baseline and the AUC.
+        """Generate a figure containing the ROC curve, the baseline and the AUROC.
 
         Returns:
-            Tuple[Figure, str]: Tuple containing both the ROC curve and the figure title to be used for logging
+            Tuple[Figure, str]: Tuple containing both the figure and the figure title to be used for logging
         """
         fpr, tpr = self._compute()
         auroc = self.compute()

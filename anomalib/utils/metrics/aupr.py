@@ -29,8 +29,19 @@ class AUPR(PrecisionRecallCurve):
             return auc(rec, prec, reorder=True)  # only reorder if rec is not increasing or decreasing
         return auc(rec, prec)
 
+    def update(self, preds: Tensor, target: Tensor) -> None:
+        """Update state with new values.
+
+        Need to flatten new values as PrecicionRecallCurve expects them in this format for binary classification.
+
+        Args:
+            preds (Tensor): predictions of the model
+            target (Tensor): ground truth targets
+        """
+        super().update(preds.flatten(), target.flatten())
+
     def _compute(self) -> Tuple[Tensor, Tensor]:
-        """Method used by Visualizer callback to extract rec/prec required for plot generation.
+        """Compute prec/rec value pairs.
 
         Returns:
             Tuple containing Tensors for rec and prec
