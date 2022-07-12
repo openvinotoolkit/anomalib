@@ -22,6 +22,7 @@ import pytorch_lightning as pl
 from pytorch_lightning import Callback
 
 from anomalib.models.components import AnomalyModule
+from anomalib.post_processing import Visualizer
 from anomalib.utils.loggers import AnomalibWandbLogger
 from anomalib.utils.loggers.base import ImageLoggerBase
 
@@ -55,6 +56,8 @@ class VisualizerCallbackBase(Callback):
         self.log_images = log_images
         self.save_images = save_images
         self.image_save_path = Path(image_save_path)
+
+        self.visualizer = Visualizer(mode, task)
 
     def _add_to_logger(
         self,

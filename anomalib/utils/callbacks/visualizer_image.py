@@ -22,7 +22,6 @@ from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 
 from anomalib.models.components import AnomalyModule
-from anomalib.post_processing import Visualizer
 
 from .visualizer_base import VisualizerCallbackBase
 
@@ -37,29 +36,6 @@ class VisualizerCallbackImage(VisualizerCallbackBase):
     To save the images to the filesystem, add the 'local' keyword to the `project.log_images_to` parameter in the
     config.yaml file.
     """
-
-    def __init__(
-        self,
-        task: str,
-        mode: str,
-        image_save_path: str,
-        inputs_are_normalized: bool = True,
-        show_images: bool = False,
-        log_images: bool = True,
-        save_images: bool = True,
-    ):
-        """Visualizer callback."""
-        super().__init__(
-            task=task,
-            mode=mode,
-            image_save_path=image_save_path,
-            inputs_are_normalized=inputs_are_normalized,
-            show_images=show_images,
-            log_images=log_images,
-            save_images=save_images,
-        )
-
-        self.visualizer = Visualizer(mode, task)
 
     def on_predict_batch_end(
         self,
