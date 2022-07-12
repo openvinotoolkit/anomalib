@@ -26,7 +26,7 @@ from anomalib.utils.callbacks import (
     ModelCheckpoint,
     TilerConfigurationCallback,
     TimerCallback,
-    VisualizerCallback,
+    VisualizerCallbackImage,
 )
 from anomalib.utils.loggers import configure_logger
 
@@ -115,7 +115,7 @@ class AnomalibCLI(LightningCLI):
             }
         )
 
-        parser.add_lightning_class_args(VisualizerCallback, "visualization")  # type: ignore
+        parser.add_lightning_class_args(VisualizerCallbackImage, "visualization")  # type: ignore
         parser.set_defaults(
             {
                 "visualization.mode": "full",
