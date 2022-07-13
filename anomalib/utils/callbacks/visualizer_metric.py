@@ -46,8 +46,7 @@ class VisualizerCallbackMetric(VisualizerCallbackBase):
         """
 
         if self.save_images or self.log_images:
-            for metric_type in ("image_metrics", "pixel_metrics"):
-                metrics = getattr(pl_module, metric_type)
+            for metrics in (pl_module.image_metrics, pl_module.pixel_metrics):
                 for metric in metrics.values():
                     # `generate_figure` needs to be defined for every metric that should be plotted automatically
                     if hasattr(metric, "generate_figure"):
