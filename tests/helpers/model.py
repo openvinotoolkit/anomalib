@@ -27,7 +27,7 @@ from anomalib.data import get_datamodule
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
 from anomalib.utils.callbacks import get_callbacks
-from anomalib.utils.callbacks.visualizer import VisualizerCallbackBase
+from anomalib.utils.callbacks.visualizer import BaseVisualizerCallback
 
 
 def setup_model_train(
@@ -103,7 +103,7 @@ def setup_model_train(
         callbacks.append(model_checkpoint)
 
     for index, callback in enumerate(callbacks):
-        if isinstance(callback, VisualizerCallbackBase):
+        if isinstance(callback, BaseVisualizerCallback):
             callbacks.pop(index)
             break
 
@@ -135,7 +135,7 @@ def model_load_test(config: Union[DictConfig, ListConfig], datamodule: Lightning
 
     for index, callback in enumerate(callbacks):
         # Remove visualizer callback as saving results takes time
-        if isinstance(callback, VisualizerCallbackBase):
+        if isinstance(callback, BaseVisualizerCallback):
             callbacks.pop(index)
             break
 

@@ -23,11 +23,11 @@ from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 
 from anomalib.models.components import AnomalyModule
 
-from .visualizer_base import VisualizerCallbackBase
+from .visualizer_base import BaseVisualizerCallback
 
 
 @CALLBACK_REGISTRY
-class VisualizerCallbackMetric(VisualizerCallbackBase):
+class MetricVisualizerCallback(BaseVisualizerCallback):
     """Callback that visualizes the metric results of a model by plotting the corresponding curves.
 
     To save the images to the filesystem, add the 'local' keyword to the `project.log_images_to` parameter in the

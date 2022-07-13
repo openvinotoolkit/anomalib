@@ -23,11 +23,11 @@ from pytorch_lightning.utilities.types import STEP_OUTPUT
 
 from anomalib.models.components import AnomalyModule
 
-from .visualizer_base import VisualizerCallbackBase
+from .visualizer_base import BaseVisualizerCallback
 
 
 @CALLBACK_REGISTRY
-class VisualizerCallbackImage(VisualizerCallbackBase):
+class ImageVisualizerCallback(BaseVisualizerCallback):
     """Callback that visualizes the inference results of a model.
 
     The callback generates a figure showing the original image, the ground truth segmentation mask,

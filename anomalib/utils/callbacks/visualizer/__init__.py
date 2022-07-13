@@ -1,6 +1,6 @@
 """Callbacks to visualize anomaly detection performance."""
-from .visualizer_base import VisualizerCallbackBase
-from .visualizer_image import VisualizerCallbackImage
-from .visualizer_metric import VisualizerCallbackMetric
+from .visualizer_base import BaseVisualizerCallback
+from .visualizer_image import ImageVisualizerCallback
+from .visualizer_metric import MetricVisualizerCallback
 
-__all__ = ["VisualizerCallbackBase", "VisualizerCallbackImage", "VisualizerCallbackMetric"]
+__all__ = ["BaseVisualizerCallback", "ImageVisualizerCallback", "MetricVisualizerCallback"]

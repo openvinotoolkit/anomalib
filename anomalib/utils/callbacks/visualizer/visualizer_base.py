@@ -27,7 +27,7 @@ from anomalib.utils.loggers import AnomalibWandbLogger
 from anomalib.utils.loggers.base import ImageLoggerBase
 
 
-class VisualizerCallbackBase(Callback):
+class BaseVisualizerCallback(Callback):
     """Callback that visualizes the results of a model.
 
     To save the images to the filesystem, add the 'local' keyword to the `project.log_images_to` parameter in the

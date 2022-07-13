@@ -9,7 +9,7 @@ from torch import nn
 from torch.utils.data import DataLoader, Dataset
 
 from anomalib.models.components import AnomalyModule
-from anomalib.utils.callbacks import VisualizerCallbackImage
+from anomalib.utils.callbacks import ImageVisualizerCallback
 from anomalib.utils.metrics import get_metrics
 
 
@@ -50,7 +50,7 @@ class DummyModule(AnomalyModule):
         self.task = "segmentation"
         self.mode = "full"
         self.callbacks = [
-            VisualizerCallbackImage(
+            ImageVisualizerCallback(
                 task=self.task,
                 mode=self.mode,
                 image_save_path=hparams.project.path + "/images",

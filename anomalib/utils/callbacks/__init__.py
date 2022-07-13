@@ -31,7 +31,7 @@ from .min_max_normalization import MinMaxNormalizationCallback
 from .model_loader import LoadModelCallback
 from .tiler_configuration import TilerConfigurationCallback
 from .timer import TimerCallback
-from .visualizer import VisualizerCallbackImage, VisualizerCallbackMetric
+from .visualizer import ImageVisualizerCallback, MetricVisualizerCallback
 
 __all__ = [
     "CdfNormalizationCallback",
@@ -40,8 +40,8 @@ __all__ = [
     "MinMaxNormalizationCallback",
     "TilerConfigurationCallback",
     "TimerCallback",
-    "VisualizerCallbackImage",
-    "VisualizerCallbackMetric",
+    "ImageVisualizerCallback",
+    "MetricVisualizerCallback",
 ]
 
 
@@ -175,7 +175,7 @@ def add_visualizer_callback(callbacks: List[Callback], config: Union[DictConfig,
             if config.visualization.image_save_path
             else config.project.path + "/images"
         )
-        for callback in (VisualizerCallbackImage, VisualizerCallbackMetric):
+        for callback in (ImageVisualizerCallback, MetricVisualizerCallback):
             callbacks.append(
                 callback(
                     task=config.dataset.task,
