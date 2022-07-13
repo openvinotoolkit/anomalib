@@ -29,7 +29,7 @@ class AUPR(PrecisionRecallCurve):
             return auc(rec, prec, reorder=True)  # only reorder if rec is not increasing or decreasing
         return auc(rec, prec)
 
-    def update(self, preds: Tensor, target: Tensor) -> None:
+    def update(self, preds: Tensor, target: Tensor) -> None:  # type: ignore
         """Update state with new values.
 
         Need to flatten new values as PrecicionRecallCurve expects them in this format for binary classification.

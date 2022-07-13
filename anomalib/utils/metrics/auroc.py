@@ -28,7 +28,7 @@ class AUROC(ROC):
             return auc(fpr, tpr, reorder=True)  # only reorder if fpr is not increasing or decreasing
         return auc(fpr, tpr)
 
-    def update(self, preds: Tensor, target: Tensor) -> None:
+    def update(self, preds: Tensor, target: Tensor) -> None:  # type: ignore
         """Update state with new values.
 
         Need to flatten new values as ROC expects them in this format for binary classification.

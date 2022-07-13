@@ -40,7 +40,7 @@ class AUPRO(Metric):
         self.add_state("target", default=[], dist_reduce_fx="cat")  # pylint: disable=not-callable
         self.fpr_limit = fpr_limit
 
-    def update(self, preds: Tensor, target: Tensor) -> None:
+    def update(self, preds: Tensor, target: Tensor) -> None:  # type: ignore
         """Update state with new values.
 
         Args:
@@ -83,7 +83,7 @@ class AUPRO(Metric):
         target = target.flatten()
 
         # compute the global fpr-size
-        fpr, _, _ = roc(preds, target)
+        fpr: Tensor = roc(preds, target)[0]  # only need fpr
         output_size = torch.where(fpr <= self.fpr_limit)[0].size(0)
 
         # compute the pro curve value by aggregating per-region tpr/fpr curves/values.
@@ -96,9 +96,11 @@ class AUPRO(Metric):
         # different/unique tpr/fpr curves (i.e. len(_fpr_idx) is different for every call).
         # We therefore need to resample per-region curves to a fixed sampling ratio (defined above).
         labels = cca.unique()[1:]  # 0 is background
+        _fpr: Tensor
+        _tpr: Tensor
         for label in labels:
             mask = cca == label
-            _fpr, _tpr, _ = roc(preds, mask)
+            _fpr, _tpr = roc(preds, mask)[:-1]  # don't need threshs
             _fpr_idx = torch.where(_fpr <= self.fpr_limit)[0]
             _fpr = _fpr[_fpr_idx]
             _tpr = _tpr[_fpr_idx]
