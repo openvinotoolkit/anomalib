@@ -82,21 +82,37 @@ class AUPRO(Metric):
         cca = cca.flatten()
         target = target.flatten()
 
-        # compute the global fpr and extract correspondig idx
+        # compute the global fpr-size
         fpr, _, _ = roc(preds, target)
-        fpr_idx = torch.where(fpr <= self.fpr_limit)[0]
-        fpr = fpr[fpr_idx]
+        output_size = torch.where(fpr <= self.fpr_limit)[0].size(0)
 
-        # compute the pro value by aggregating per-region tpr values.
-        pro = torch.zeros_like(fpr_idx, device=preds.device, dtype=torch.float)
+        # compute the pro curve value by aggregating per-region tpr/fpr curves/values.
+        pro = torch.zeros(output_size, device=preds.device, dtype=torch.float)
+        fpr = torch.zeros(output_size, device=preds.device, dtype=torch.float)
+        new_idx = torch.arange(0, output_size, device=preds.device)
 
+        # Loop over the labels, computing per-region tpr/fpr curves, and aggregating them.
+        # Note that, since the groundtruth is different for every all to `roc`, we also get
+        # different/unique tpr/fpr curves (i.e. len(_fpr_idx) is different for every call).
+        # We therefore need to resample per-region curves to a fixed sampling ratio (defined above).
         labels = cca.unique()[1:]  # 0 is background
         for label in labels:
             mask = cca == label
-            _, tpr, _ = roc(preds, mask)
-            pro += tpr[fpr_idx]
+            _fpr, _tpr, _ = roc(preds, mask)
+            _fpr_idx = torch.where(_fpr <= self.fpr_limit)[0]
+            _fpr = _fpr[_fpr_idx]
+            _tpr = _tpr[_fpr_idx]
+            _fpr_idx = _fpr_idx.float()
+            _fpr_idx /= _fpr_idx.max()
+            _fpr_idx *= new_idx.max()
+            _tpr = self.interp1d(_fpr_idx, _tpr, new_idx)
+            _fpr = self.interp1d(_fpr_idx, _fpr, new_idx)
+            pro += _tpr
+            fpr += _fpr
 
+        # Actually perform the averaging
         pro /= labels.size(0)
+        fpr /= labels.size(0)
         return fpr, pro
 
     def compute(self) -> Tensor:
@@ -131,3 +147,35 @@ class AUPRO(Metric):
         fig, _axis = plot_figure(fpr, pro, aupro, xlim, ylim, xlabel, ylabel, loc, title)
 
         return fig, "PRO"
+
+    @staticmethod
+    def interp1d(old_x: Tensor, old_y: Tensor, new_x: Tensor) -> Tensor:
+        """Function to interpolate a 1D signal linearly to new sampling points.
+
+        Args:
+            old_x (Tensor): original 1-D x values (same size as y)
+            old_y (Tensor): original 1-D y values (same size as x)
+            new_x (Tensor): x-values where y should be interpolated at
+
+        Returns:
+            Tensor: y-values at corresponding new_x values.
+        """
+
+        # Compute slope
+        eps = torch.finfo(old_y.dtype).eps
+        slope = (old_y[1:] - old_y[:-1]) / (eps + (old_x[1:] - old_x[:-1]))
+
+        # Prepare idx for linear interpolation
+        idx = torch.searchsorted(old_x, new_x)
+
+        # searchsorted looks for the index where the values must be inserted
+        # to preserve order, but we actually want the preceeding index.
+        idx -= 1
+        # we clamp the index, because the number of intervals = old_x.size(0) -1,
+        # and the left neighbour should hence be at most number of intervals -1, i.e. old_x.size(0) - 2
+        idx = torch.clamp(idx, 0, old_x.size(0) - 2)
+
+        # perform actual linear interpolation
+        y_new = old_y[idx] + slope[idx] * (new_x - old_x[idx])
+
+        return y_new
