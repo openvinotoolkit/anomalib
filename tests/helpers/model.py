@@ -27,7 +27,7 @@ from anomalib.data import get_datamodule
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
 from anomalib.utils.callbacks import get_callbacks
-from anomalib.utils.callbacks.visualizer_base import VisualizerCallbackBase
+from anomalib.utils.callbacks.visualizer import VisualizerCallbackBase
 
 
 def setup_model_train(
