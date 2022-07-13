@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.datasets import FakeData
 
-from anomalib.utils.callbacks.visualizer_callback import VisualizerCallback
+from anomalib.utils.callbacks import ImageVisualizerCallback
 from anomalib.utils.metrics import AdaptiveThreshold, AnomalyScoreDistribution, MinMax
 
 
@@ -75,7 +75,7 @@ class DummyLightningModule(pl.LightningModule):
         self.save_hyperparameters(hparams)
         self.loss_fn = nn.NLLLoss()
         self.callbacks = [
-            VisualizerCallback(
+            ImageVisualizerCallback(
                 mode="full",
                 task="segmentation",
                 image_save_path=hparams.project.path + "/images",

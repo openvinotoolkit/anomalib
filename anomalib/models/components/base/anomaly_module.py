@@ -159,7 +159,7 @@ class AnomalyModule(pl.LightningModule, ABC):
             image_metric.update(output["pred_scores"], output["label"].int())
             if "mask" in output.keys() and "anomaly_maps" in output.keys():
                 pixel_metric.cpu()
-                pixel_metric.update(output["anomaly_maps"].flatten(), output["mask"].flatten().int())
+                pixel_metric.update(output["anomaly_maps"], output["mask"].int())
 
     def _post_process(self, outputs):
         """Compute labels based on model predictions."""

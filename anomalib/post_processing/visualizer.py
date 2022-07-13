@@ -48,7 +48,8 @@ class ImageResult:
 
     def __post_init__(self):
         """Generate heatmap overlay and segmentations, convert masks to images."""
-        self.heat_map = superimpose_anomaly_map(self.anomaly_map, self.image, normalize=False)
+        if self.anomaly_map is not None:
+            self.heat_map = superimpose_anomaly_map(self.anomaly_map, self.image, normalize=False)
         if self.pred_mask is not None and np.max(self.pred_mask) <= 1.0:
             self.pred_mask *= 255
             self.segmentations = mark_boundaries(self.image, self.pred_mask, color=(1, 0, 0), mode="thick")
@@ -86,7 +87,7 @@ class Visualizer:
                 image=Denormalize()(batch["image"][i].cpu()),
                 pred_score=batch["pred_scores"][i].cpu().numpy().item(),
                 pred_label=batch["pred_labels"][i].cpu().numpy().item(),
-                anomaly_map=batch["anomaly_maps"][i].cpu().numpy(),
+                anomaly_map=batch["anomaly_maps"][i].cpu().numpy() if "anomaly_maps" in batch else None,
                 pred_mask=batch["pred_masks"][i].squeeze().int().cpu().numpy() if "pred_masks" in batch else None,
                 gt_mask=batch["mask"][i].squeeze().int().cpu().numpy() if "mask" in batch else None,
             )
@@ -132,9 +133,9 @@ class Visualizer:
         elif self.task == "classification":
             visualization.add_image(image_result.image, title="Image")
             if image_result.pred_label:
-                image_classified = add_anomalous_label(image_result.heat_map, image_result.pred_score)
+                image_classified = add_anomalous_label(image_result.image, image_result.pred_score)
             else:
-                image_classified = add_normal_label(image_result.heat_map, 1 - image_result.pred_score)
+                image_classified = add_normal_label(image_result.image, 1 - image_result.pred_score)
             visualization.add_image(image=image_classified, title="Prediction")
 
         return visualization.generate()
@@ -235,4 +236,5 @@ class ImageGrid:
         # convert canvas to numpy array to prepare for visualization with opencv
         img = np.frombuffer(self.figure.canvas.tostring_rgb(), dtype=np.uint8)
         img = img.reshape(self.figure.canvas.get_width_height()[::-1] + (3,))
+        plt.close(self.figure)
         return img
