@@ -177,7 +177,7 @@ class GeneratedDummyDataset(ContextDecorator):
         max_size: Optional[int] = 10,
         train_shapes: List[str] = ["triangle", "rectangle"],
         test_shapes: List[str] = ["star", "hexagon"],
-        seed: int = 0,
+        seed: Optional[int] = None,
     ) -> None:
         self.root_dir = mkdtemp()
         self.num_train = num_train
@@ -244,7 +244,7 @@ class GeneratedDummyDataset(ContextDecorator):
 
     def __enter__(self):
         """Creates the dataset in temp folder."""
-        if self.seed > 0:
+        if self.seed:
             np.random.seed(self.seed)
         self._generate_dataset()
         return self.root_dir

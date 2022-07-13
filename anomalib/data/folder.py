@@ -95,7 +95,7 @@ def make_dataset(
     mask_dir: Optional[Union[str, Path]] = None,
     split: Optional[str] = None,
     split_ratio: float = 0.2,
-    seed: int = 0,
+    seed: Optional[int] = None,
     create_validation_set: bool = True,
     extensions: Optional[Tuple[str, ...]] = None,
 ):
@@ -191,7 +191,7 @@ class FolderDataset(Dataset):
         mask_dir: Optional[Union[Path, str]] = None,
         extensions: Optional[Tuple[str, ...]] = None,
         task: Optional[str] = None,
-        seed: int = 0,
+        seed: Optional[int] = None,
         create_validation_set: bool = False,
     ) -> None:
         """Create Folder Folder Dataset.
@@ -316,7 +316,7 @@ class Folder(LightningDataModule):
         mask_dir: Optional[Union[Path, str]] = None,
         extensions: Optional[Tuple[str, ...]] = None,
         split_ratio: float = 0.2,
-        seed: int = 0,
+        seed: Optional[int] = None,
         image_size: Optional[Union[int, Tuple[int, int]]] = None,
         train_batch_size: int = 32,
         test_batch_size: int = 32,
@@ -424,6 +424,13 @@ class Folder(LightningDataModule):
 
         """
         super().__init__()
+
+        if seed is None and normal_test_dir is None:
+            raise ValueError(
+                "Both seed and normal_test_dir cannot be None."
+                " When seed is not set, images from the normal directory are split between training and test dir."
+                " This will lead to inconsistency between runs."
+            )
 
         self.root = _check_and_convert_path(root)
         self.normal_dir = self.root / normal_dir
