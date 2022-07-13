@@ -29,7 +29,7 @@ from pandas.core.frame import DataFrame
 
 
 def split_normal_images_in_train_set(
-    samples: DataFrame, split_ratio: float = 0.1, seed: Optional[int] = 0, normal_label: str = "good"
+    samples: DataFrame, split_ratio: float = 0.1, seed: Optional[int] = None, normal_label: str = "good"
 ) -> DataFrame:
     """Split normal images in train set.
 
@@ -64,7 +64,7 @@ def split_normal_images_in_train_set(
 
 
 def create_validation_set_from_test_set(
-    samples: DataFrame, seed: Optional[int] = 0, normal_label: str = "good"
+    samples: DataFrame, seed: Optional[int] = None, normal_label: str = "good"
 ) -> DataFrame:
     """Craete Validation Set from Test Set.
 
