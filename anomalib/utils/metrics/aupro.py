@@ -54,14 +54,14 @@ class AUPRO(Metric):
         """Compute the pro/fpr value-pairs until the fpr specified by self.fpr_limit.
 
         It leverages the fact that the overlap corresponds to the tpr, and thus computes the overall
-        tpr/pro by aggregating per-region tprs produced by ROC-construction.
+        PRO curve by aggregating per-region tpr/fpr values produced by ROC-construction.
 
         Raises:
             ValueError: ValueError is raised if self.target doesn't conform with requirements imposed by kornia for
                         connected component analysis.
 
         Returns:
-            Tuple[Tensor, Tensor]: tuple containing final fpr and pro values.
+            Tuple[Tensor, Tensor]: tuple containing final fpr and tpr values.
         """
         target = dim_zero_cat(self.target)
         preds = dim_zero_cat(self.preds)
@@ -86,8 +86,8 @@ class AUPRO(Metric):
         fpr: Tensor = roc(preds, target)[0]  # only need fpr
         output_size = torch.where(fpr <= self.fpr_limit)[0].size(0)
 
-        # compute the pro curve value by aggregating per-region tpr/fpr curves/values.
-        pro = torch.zeros(output_size, device=preds.device, dtype=torch.float)
+        # compute the PRO curve by aggregating per-region tpr/fpr curves/values.
+        tpr = torch.zeros(output_size, device=preds.device, dtype=torch.float)
         fpr = torch.zeros(output_size, device=preds.device, dtype=torch.float)
         new_idx = torch.arange(0, output_size, device=preds.device)
 
@@ -109,13 +109,13 @@ class AUPRO(Metric):
             _fpr_idx *= new_idx.max()
             _tpr = self.interp1d(_fpr_idx, _tpr, new_idx)
             _fpr = self.interp1d(_fpr_idx, _fpr, new_idx)
-            pro += _tpr
+            tpr += _tpr
             fpr += _fpr
 
         # Actually perform the averaging
-        pro /= labels.size(0)
+        tpr /= labels.size(0)
         fpr /= labels.size(0)
-        return fpr, pro
+        return fpr, tpr
 
     def compute(self) -> Tensor:
         """Fist compute PRO curve, then compute and scale area under the curve.
@@ -123,9 +123,9 @@ class AUPRO(Metric):
         Returns:
             Tensor: Value of the AUPRO metric
         """
-        fpr, pro = self._compute()
+        fpr, tpr = self._compute()
 
-        aupro = auc(fpr, pro)
+        aupro = auc(fpr, tpr)
         aupro = aupro / fpr[-1]  # normalize the area
 
         return aupro
@@ -136,17 +136,17 @@ class AUPRO(Metric):
         Returns:
             Tuple[Figure, str]: Tuple containing both the figure and the figure title to be used for logging
         """
-        fpr, pro = self._compute()
+        fpr, tpr = self._compute()
         aupro = self.compute()
 
         xlim = (0.0, self.fpr_limit)
         ylim = (0.0, 1.0)
-        xlabel = "False Positive Rate"
-        ylabel = "Per-Region Overlap/TPR"
+        xlabel = "Global FPR"
+        ylabel = "Averaged Per-Region TPR"
         loc = "lower right"
         title = "PRO"
 
-        fig, _axis = plot_figure(fpr, pro, aupro, xlim, ylim, xlabel, ylabel, loc, title)
+        fig, _axis = plot_figure(fpr, tpr, aupro, xlim, ylim, xlabel, ylabel, loc, title)
 
         return fig, "PRO"
 
