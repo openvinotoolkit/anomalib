@@ -43,9 +43,6 @@ metrics:
   image:
     - F1Score
     - AUROC
-  pixel:
-    - F1Score
-    - AUROC
   threshold:
     image_default: 0
     adaptive: true
@@ -96,7 +93,7 @@ trainer:
   limit_val_batches: 1.0
   log_every_n_steps: 50
   log_gpu_memory: null
-  max_epochs: 100
+  max_epochs: 2
   max_steps: null
   min_epochs: null
   min_steps: null
