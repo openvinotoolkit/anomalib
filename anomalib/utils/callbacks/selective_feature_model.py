@@ -4,15 +4,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-import pickle
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from warnings import warn
 
+import einops
 import numpy as np
 import torch
 from pytorch_lightning import Callback, LightningModule, Trainer
-from torch import Tensor, tensor
+from torch import Tensor
 
 from anomalib.models.components import SelectiveFeatureModel
 from anomalib.utils.metrics import AdaptiveThreshold, metric_collection_from_names
@@ -224,7 +224,9 @@ class SelectiveFeatureModelCallback(Callback):
                 self.selected_featuremaps[predicted_class][idx], feature=-1
             )
             # compute pixel metrics
-            self.sub_pixel_metrics.update(feature_map.cpu(), self.output_masks[idx].int().cpu())
+            self.sub_pixel_metrics.update(
+                feature_map.cpu(), einops.rearrange(self.output_masks[idx], "h w-> 1 1 h w").int().cpu()
+            )
 
             if self.class_labels[idx] not in ["good", "thread", "combined"]:
                 if predicted_class == self.class_labels[idx]:
