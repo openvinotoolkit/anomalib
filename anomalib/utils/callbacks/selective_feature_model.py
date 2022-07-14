@@ -36,32 +36,32 @@ class SelectiveFeatureModelCallback(Callback):
         self.save_dir = Path(save_dir)
 
         self.sub_pixel_threshold = AdaptiveThreshold().cpu()
-        self.sub_pixel_metrics = metric_collection_from_names(["F1Score", "AUROC"], prefix="sfm_pixel_")
+        self.sub_pixel_metrics = metric_collection_from_names(["F1Score", "AUROC", "AUPR", "AUPRO"], prefix="sfm_pixel_")
         self.sub_pixel_metrics.set_threshold(self.sub_pixel_threshold.value)
 
         self.output_masks: Optional[Tensor] = None
         self.selected_featuremaps: Optional[Dict[str, Tensor]] = None
 
-    def _save_features(self, pl_module):
-        # save category_features to disk
+    # def _save_features(self, pl_module):
+    #     # save category_features to disk
 
-        with open(self.save_dir / "category_features.pkl", "wb") as pkl_file:
-            pickle.dump(
-                {
-                    key: val.cpu().numpy()
-                    for key, val in pl_module.model.anomaly_map_generator.category_features.items()
-                },
-                pkl_file,
-            )
+    #     with open(self.save_dir / "category_features.pkl", "wb") as pkl_file:
+    #         pickle.dump(
+    #             {
+    #                 key: val.cpu().numpy()
+    #                 for key, val in pl_module.model.anomaly_map_generator.category_features.items()
+    #             },
+    #             pkl_file,
+    #         )
 
-    def _load_features(self, pl_module):
-        if hasattr(pl_module.model.anomaly_map_generator, "category_features"):
-            # load category features
-            with open(self.save_dir / "category_features.pkl", "rb") as pkl_file:
-                data = pickle.load(pkl_file)
-                pl_module.model.anomaly_map_generator.category_features = {
-                    key: tensor(val, device=pl_module.device) for key, val in data.items()
-                }
+    # def _load_features(self, pl_module):
+    #     if hasattr(pl_module.model.anomaly_map_generator, "category_features"):
+    #         # load category features
+    #         with open(self.save_dir / "category_features.pkl", "rb") as pkl_file:
+    #             data = pickle.load(pkl_file)
+    #             pl_module.model.anomaly_map_generator.category_features = {
+    #                 key: tensor(val, device=pl_module.device) for key, val in data.items()
+    #             }
 
     def on_validation_batch_end(
         self,
@@ -105,8 +105,8 @@ class SelectiveFeatureModelCallback(Callback):
             if name != "good":
                 pl_module.model.anomaly_map_generator.category_features[name] = getattr(self.feature_model, name)[0]
 
-        if hasattr(pl_module.model.anomaly_map_generator, "category_features"):
-            self._save_features(pl_module)
+        # if hasattr(pl_module.model.anomaly_map_generator, "category_features"):
+        #     self._save_features(pl_module)
 
         # reset arrays
         self.max_features = None
@@ -118,7 +118,7 @@ class SelectiveFeatureModelCallback(Callback):
         self.class_labels = []
         self.selected_featuremaps = None
         self.output_masks = None
-        self._load_features(pl_module)
+        # self._load_features(pl_module)
 
     def on_test_batch_end(
         self,
@@ -177,7 +177,7 @@ class SelectiveFeatureModelCallback(Callback):
                 selected_features = torch.vstack([selected_features, feature_map])
         if selected_features is not None:
             self.sub_pixel_threshold.update(
-                selected_features.flatten().cpu(), outputs["mask"][anomaly_ids].flatten().int().cpu()
+                selected_features.cpu(), outputs["mask"][anomaly_ids].int().cpu()
             )
 
     def on_test_epoch_end(self, _trainer: Trainer, pl_module: LightningModule) -> None:
@@ -224,7 +224,7 @@ class SelectiveFeatureModelCallback(Callback):
                 self.selected_featuremaps[predicted_class][idx], feature=-1
             )
             # compute pixel metrics
-            self.sub_pixel_metrics.update(feature_map.flatten().cpu(), self.output_masks[idx].flatten().int().cpu())
+            self.sub_pixel_metrics.update(feature_map.cpu(), self.output_masks[idx].int().cpu())
 
             if self.class_labels[idx] not in ["good", "thread", "combined"]:
                 if predicted_class == self.class_labels[idx]:

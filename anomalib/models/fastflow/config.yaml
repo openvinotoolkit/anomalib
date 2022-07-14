@@ -23,6 +23,7 @@ dataset:
 model:
   name: fastflow
   backbone: resnet18 # options: [resnet18, wide_resnet50_2, cait_m48_448, deit_base_distilled_patch16_384]
+  pre_trained: true
   flow_steps: 8 # options: [8, 8, 20, 20] - for each supported backbone
   hidden_ratio: 1.0 # options: [1.0, 1.0, 0.16, 0.16] - for each supported backbone
   conv3x3_only: True # options: [True, False, False, False] - for each supported backbone
@@ -46,17 +47,25 @@ metrics:
   pixel:
     - F1Score
     - AUROC
+    - AUPR
+    - AUPRO
   threshold:
     image_default: 0
     pixel_default: 0
     adaptive: true
+
+visualization:
+  show_images: False # show images on the screen
+  save_images: False # save images to the file system
+  log_images: False # log images to the available loggers (if any)
+  image_save_path: null # path to which images will be saved
+  mode: full # options: ["full", "simple"]
 
 project:
   seed: 42
   path: ./results
 
 logging:
-  log_images_to: ["local"] # options: [wandb, tensorboard, local]. Make sure you also set logger with using wandb or tensorboard.
   logger: [] # options: [tensorboard, wandb, csv] or combinations.
   log_graph: false # Logs the model graph to respective logger.
 

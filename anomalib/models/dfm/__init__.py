@@ -14,6 +14,6 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .lightning_model import DfmLightning
+from .lightning_model import Dfm, DfmLightning
 
-__all__ = ["DfmLightning"]
+__all__ = ["Dfm", "DfmLightning"]

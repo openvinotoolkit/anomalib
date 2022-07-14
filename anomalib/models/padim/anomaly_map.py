@@ -38,7 +38,7 @@ class AnomalyMapGenerator:
 
         # save indices of top features used for sub classification.
         # these features are selected for visualization
-        self.category_features = dict()
+        self.category_features = {}
 
     @staticmethod
     def compute_distance(
