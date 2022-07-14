@@ -36,7 +36,9 @@ class SelectiveFeatureModelCallback(Callback):
         self.save_dir = Path(save_dir)
 
         self.sub_pixel_threshold = AdaptiveThreshold().cpu()
-        self.sub_pixel_metrics = metric_collection_from_names(["F1Score", "AUROC", "AUPR", "AUPRO"], prefix="sfm_pixel_")
+        self.sub_pixel_metrics = metric_collection_from_names(
+            ["F1Score", "AUROC", "AUPR", "AUPRO"], prefix="sfm_pixel_"
+        )
         self.sub_pixel_metrics.set_threshold(self.sub_pixel_threshold.value)
 
         self.output_masks: Optional[Tensor] = None
@@ -176,9 +178,7 @@ class SelectiveFeatureModelCallback(Callback):
             else:
                 selected_features = torch.vstack([selected_features, feature_map])
         if selected_features is not None:
-            self.sub_pixel_threshold.update(
-                selected_features.cpu(), outputs["mask"][anomaly_ids].int().cpu()
-            )
+            self.sub_pixel_threshold.update(selected_features.cpu(), outputs["mask"][anomaly_ids].int().cpu())
 
     def on_test_epoch_end(self, _trainer: Trainer, pl_module: LightningModule) -> None:
         """Compute sub-class testing accuracy."""
