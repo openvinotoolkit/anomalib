@@ -49,17 +49,25 @@ metrics:
   pixel:
     - F1Score
     - AUROC
+    - AUPR
+    - AUPRO
   threshold:
     image_default: 0
     pixel_default: 0
     adaptive: true
+
+visualization:
+  show_images: False # show images on the screen
+  save_images: False # save images to the file system
+  log_images: False # log images to the available loggers (if any)
+  image_save_path: null # path to which images will be saved
+  mode: full # options: ["full", "simple"]
 
 project:
   seed: 0
   path: ./results
 
 logging:
-  log_images_to: ["local"] # options: [wandb, tensorboard, local]. Make sure you also set logger with using wandb or tensorboard.
   logger: [] # options: [tensorboard, wandb, csv] or combinations.
   log_graph: false # Logs the model graph to respective logger.
 

@@ -8,12 +8,14 @@ from omegaconf import DictConfig, ListConfig
 
 from .adaptive_threshold import AdaptiveThreshold
 from .anomaly_score_distribution import AnomalyScoreDistribution
+from .aupr import AUPR
+from .aupro import AUPRO
 from .auroc import AUROC
 from .collection import AnomalibMetricCollection
 from .min_max import MinMax
 from .optimal_f1 import OptimalF1
 
-__all__ = ["AUROC", "OptimalF1", "AdaptiveThreshold", "AnomalyScoreDistribution", "MinMax"]
+__all__ = ["AUROC", "AUPR", "AUPRO", "OptimalF1", "AdaptiveThreshold", "AnomalyScoreDistribution", "MinMax"]
 
 
 def get_metrics(config: Union[ListConfig, DictConfig]) -> Tuple[AnomalibMetricCollection, AnomalibMetricCollection]:

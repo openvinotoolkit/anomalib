@@ -26,7 +26,8 @@ from anomalib.config import get_configurable_parameters, update_nncf_config
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
-from anomalib.utils.callbacks import VisualizerCallback, get_callbacks
+from anomalib.utils.callbacks import get_callbacks
+from anomalib.utils.callbacks.visualizer import BaseVisualizerCallback
 
 
 def setup_model_train(
@@ -72,12 +73,6 @@ def setup_model_train(
         if legacy_device in config.trainer:
             config.trainer[legacy_device] = None
 
-    # If weight file is empty, remove the key from config
-    if "weight_file" in config.model.keys() and weight_file == "":
-        config.model.pop("weight_file")
-    else:
-        config.model.weight_file = weight_file if not fast_run else "weights/last.ckpt"
-
     if nncf:
         config.optimization["nncf"] = {"apply": True, "input_info": {"sample_size": None}}
         config = update_nncf_config(config)
@@ -108,7 +103,7 @@ def setup_model_train(
         callbacks.append(model_checkpoint)
 
     for index, callback in enumerate(callbacks):
-        if isinstance(callback, VisualizerCallback):
+        if isinstance(callback, BaseVisualizerCallback):
             callbacks.pop(index)
             break
 
@@ -132,12 +127,15 @@ def model_load_test(config: Union[DictConfig, ListConfig], datamodule: Lightning
 
     """
     loaded_model = get_model(config)  # get new model
+    # Assing the weight file to resume_from_checkpoint. When trainer is initialized, Trainer
+    # object will automatically load the weights.
+    config.trainer.resume_from_checkpoint = os.path.join(config.project.path, "weights/last.ckpt")
 
     callbacks = get_callbacks(config)
 
     for index, callback in enumerate(callbacks):
         # Remove visualizer callback as saving results takes time
-        if isinstance(callback, VisualizerCallback):
+        if isinstance(callback, BaseVisualizerCallback):
             callbacks.pop(index)
             break
 

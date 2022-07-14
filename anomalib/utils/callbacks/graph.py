@@ -16,10 +16,12 @@
 
 import torch
 from pytorch_lightning import Callback, LightningModule, Trainer
+from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 
 from anomalib.utils.loggers import AnomalibTensorBoardLogger, AnomalibWandbLogger
 
 
+@CALLBACK_REGISTRY
 class GraphLogger(Callback):
     """Log model graph to respective logger."""
 

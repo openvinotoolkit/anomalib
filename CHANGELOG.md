@@ -1,5 +1,27 @@
 # Changelog
 
+## v.0.3.3
+## What's Changed
+* 🚚 Move initialization log message to base class by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/363
+* 🚚 Move logging from train.py to the getter functions by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/365
+* 🚜 Refactor loss computation by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/364
+* 📝 Add a technical blog post to explain how to run anomalib. by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/359
+* 📚 Add datamodule jupyter notebooks. by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/357
+* 📝 Add benchmarking notebook by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/353
+* ➕ Add PyPI downloads badge to the readme. by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/370
+* 📃 Update README.md by @innat in https://github.com/openvinotoolkit/anomalib/pull/382
+* 💻 Create Anomalib CLI by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/378
+* 🐞  Fix configs to remove logging heatmaps from classification models. by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/387
+* ✨ Add FastFlow model training testing inference via Anomalib API by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/386
+* 🐞 PaDim occasionally NaNs in anomaly map by @VdLMV in https://github.com/openvinotoolkit/anomalib/pull/392
+* 🖼 Inference + Visualization by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/390
+
+New Contributors
+* @innat made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/382
+* @VdLMV made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/392
+
+**Full Changelog**: https://github.com/openvinotoolkit/anomalib/compare/v.0.3.2...v.0.3.3
+
 ## v.0.3.2
 ## What's Changed
 * Refactor `AnomalyModule` and `LightningModules` to explicitly define class arguments. by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/315

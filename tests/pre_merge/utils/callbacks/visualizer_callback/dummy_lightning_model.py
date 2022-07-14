@@ -5,13 +5,11 @@ import pytorch_lightning as pl
 import torch
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
-from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
 
 from anomalib.models.components import AnomalyModule
-from anomalib.utils.callbacks.metrics_configuration import MetricsConfigurationCallback
-from anomalib.utils.callbacks.visualizer_callback import VisualizerCallback
+from anomalib.utils.callbacks import ImageVisualizerCallback
 from anomalib.utils.metrics import get_metrics
 
 
@@ -50,8 +48,15 @@ class DummyModule(AnomalyModule):
         super().__init__()
         self.model = DummyModel()
         self.task = "segmentation"
+        self.mode = "full"
         self.callbacks = [
-            VisualizerCallback(task=self.task, log_images_to=hparams.logging.log_images_to),
+            ImageVisualizerCallback(
+                task=self.task,
+                mode=self.mode,
+                image_save_path=hparams.project.path + "/images",
+                log_images=True,
+                save_images=True,
+            )
         ]  # test if this is removed
 
         self.image_metrics, self.pixel_metrics = get_metrics(hparams)
@@ -67,6 +72,8 @@ class DummyModule(AnomalyModule):
             mask=torch.zeros((1, 100, 100)),
             anomaly_maps=torch.ones((1, 100, 100)),
             label=torch.Tensor([0]),
+            pred_labels=torch.Tensor([0]),
+            pred_masks=torch.zeros((1, 100, 100)),
         )
         return outputs
 

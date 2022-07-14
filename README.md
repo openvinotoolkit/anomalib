@@ -69,6 +69,7 @@ pip install -e .
 ```
 
 ## Training
+### ⚠️ Anomalib < v.0.4.0
 
 By default [`python tools/train.py`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/-/blob/development/train.py)
 runs [PADIM](https://arxiv.org/abs/2011.08785) model on `leather` category from the [MVTec AD](https://www.mvtec.com/company/research/datasets/mvtec-ad) [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/)  dataset.
@@ -91,9 +92,6 @@ For example, to train [PADIM](anomalib/models/padim) you can use
 ```bash
 python tools/train.py --config anomalib/models/padim/config.yaml
 ```
-
-Note that `--model_config_path` will be deprecated in `v0.2.8` and removed
-in `v0.2.9`.
 
 Alternatively, a model name could also be provided as an argument, where the scripts automatically finds the corresponding config file.
 
@@ -142,28 +140,38 @@ dataset:
     use_random_tiling: False
     random_tile_count: 16
 ```
+
+### ⚠️ Anomalib > v.0.4.0 Beta - Subject to Change
+We introduce a new CLI approach that uses [PyTorch Lightning CLI](https://pytorch-lightning.readthedocs.io/en/stable/common/lightning_cli.html). To train a model using the new CLI, one would call the following:
+```bash
+anomalib fit --config <path/to/new/config/file>
+```
+
+For instance, to train a [PatchCore](https://github.com/openvinotoolkit/anomalib/tree/development/anomalib/models/patchcore) model, the following command would be run:
+```bash
+anomalib fit --config ./configs/model/patchcore.yaml
+```
+
+The new CLI approach offers a lot more flexibility, details of which are explained in the [documentation](https://pytorch-lightning.readthedocs.io/en/stable/common/lightning_cli.html).
+
 ## Inference
+### ⚠️ Anomalib < v.0.4.0
+Anomalib includes multiple tools, including Lightning, Gradio, and OpenVINO inferencers, for performing inference with a trained model.
 
-Anomalib contains several tools that can be used to perform inference with a trained model. The script in [`tools/inference`](tools/inference.py) contains an example of how the inference tools can be used to generate a prediction for an input image.
-
-If the specified weight path points to a PyTorch Lightning checkpoint file (`.ckpt`), inference will run in PyTorch. If the path points to an ONNX graph (`.onnx`) or OpenVINO IR (`.bin` or `.xml`), inference will run in OpenVINO.
-
-The following command can be used to run inference from the command line:
+The following command can be used to run PyTorch Lightning inference from the command line:
 
 ```bash
-python tools/inference.py \
-    --config <path/to/model/config.yaml> \
-    --weight_path <path/to/weight/file> \
-    --image_path <path/to/image>
+python tools/inference/lightning_inference.py -h
 ```
 
 As a quick example:
 
 ```bash
-python tools/inference.py \
+python tools/inference/lightning_inference.py \
     --config anomalib/models/padim/config.yaml \
-    --weight_path results/padim/mvtec/bottle/weights/model.ckpt \
-    --image_path datasets/MVTec/bottle/test/broken_large/000.png
+    --weights results/padim/mvtec/bottle/weights/model.ckpt \
+    --input datasets/MVTec/bottle/test/broken_large/000.png \
+    --output results/padim/mvtec/bottle/images
 ```
 
 If you want to run OpenVINO model, ensure that `openvino` `apply` is set to `True` in the respective model `config.yaml`.
@@ -177,18 +185,25 @@ optimization:
 Example OpenVINO Inference:
 
 ```bash
-python tools/inference.py \
-    --config  \
-    anomalib/models/padim/config.yaml  \
-    --weight_path  \
-    results/padim/mvtec/bottle/compressed/compressed_model.xml  \
-    --image_path  \
-    datasets/MVTec/bottle/test/broken_large/000.png  \
-    --meta_data  \
-    results/padim/mvtec/bottle/compressed/meta_data.json
+python tools/inference/openvino_inference.py \
+    --config anomalib/models/padim/config.yaml \
+    --weights results/padim/mvtec/bottle/openvino/openvino_model.bin \
+    --meta_data results/padim/mvtec/bottle/openvino/meta_data.json \
+    --input datasets/MVTec/bottle/test/broken_large/000.png \
+    --output results/padim/mvtec/bottle/images
 ```
 
 > Ensure that you provide path to `meta_data.json` if you want the normalization to be applied correctly.
+
+You can also use Gradio Inference to interact with the trained models using a UI. Refer to our [guide](https://openvinotoolkit.github.io/anomalib/guides/inference.html#gradio-inference) for more details.
+
+A quick example:
+
+```bash
+python tools/inference/gradio_inference.py \
+        --config ./anomalib/models/padim/config.yaml \
+        --weights ./results/padim/mvtec/bottle/weights/model.ckpt
+```
 
 ## Hyperparameter Optimization
 

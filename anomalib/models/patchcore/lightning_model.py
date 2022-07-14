@@ -39,6 +39,7 @@ class Patchcore(AnomalyModule):
         input_size (Tuple[int, int]): Size of the model input.
         backbone (str): Backbone CNN network
         layers (List[str]): Layers to extract features from the backbone CNN
+        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         coreset_sampling_ratio (float, optional): Coreset sampling ratio to subsample embedding.
             Defaults to 0.1.
         num_neighbors (int, optional): Number of nearest neighbors. Defaults to 9.
@@ -49,6 +50,7 @@ class Patchcore(AnomalyModule):
         input_size: Tuple[int, int],
         backbone: str,
         layers: List[str],
+        pre_trained: bool = True,
         coreset_sampling_ratio: float = 0.1,
         num_neighbors: int = 9,
     ) -> None:
@@ -57,6 +59,7 @@ class Patchcore(AnomalyModule):
         self.model: PatchcoreModel = PatchcoreModel(
             input_size=input_size,
             backbone=backbone,
+            pre_trained=pre_trained,
             layers=layers,
             num_neighbors=num_neighbors,
         )

@@ -63,5 +63,6 @@ class InferenceDataset(Dataset):
         image_filename = self.image_filenames[index]
         image = read_image(path=image_filename)
         pre_processed = self.pre_process(image=image)
+        pre_processed["image_path"] = image_filename
 
         return pre_processed
