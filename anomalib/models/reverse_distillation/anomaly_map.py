@@ -9,7 +9,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import einops
 import torch
@@ -41,7 +41,11 @@ class AnomalyMapGenerator:
             raise ValueError(f"Found mode {mode}. Only multiply and add are supported.")
         self.mode = mode
 
-    def __call__(self, student_features: List[Tensor], teacher_features: List[Tensor]) -> Tuple[Tensor, Tensor]:
+        self.category_features = dict()
+
+    def __call__(
+        self, student_features: List[Tensor], teacher_features: List[Tensor]
+    ) -> Tuple[Tensor, Tensor, Dict[str, Tensor]]:
         """Computes anomaly map given encoder and decoder features.
 
         Args:
@@ -62,6 +66,9 @@ class AnomalyMapGenerator:
 
         max_activation_val: Optional[Tensor] = None
 
+        selected_featuremap = {k: [] for k in self.category_features.keys()}
+        prev_len = 0
+
         for student_feature, teacher_feature in zip(student_features, teacher_features):
             distance_map = 1 - F.cosine_similarity(student_feature, teacher_feature)
             distance_map = torch.unsqueeze(distance_map, dim=1)
@@ -80,8 +87,54 @@ class AnomalyMapGenerator:
             elif self.mode == "add":
                 anomaly_map += distance_map
 
+            for name, _ in self.category_features.items():
+                indices = (
+                    self.category_features[name][
+                        (self.category_features[name].long() >= prev_len)
+                        & (self.category_features[name].long() < (prev_len + student_feature.shape[1]))
+                    ].long()
+                    - prev_len
+                )
+                selected_featuremap[name].append([student_feature[:, indices, ...], teacher_feature[:, indices, ...]])
+
+        prev_len = student_feature.shape[1]
         anomaly_map = gaussian_blur2d(
             anomaly_map, kernel_size=(self.kernel_size, self.kernel_size), sigma=(self.sigma, self.sigma)
         )
 
-        return (anomaly_map, max_activation_val)
+        selected_featuremap = {
+            k: list(zip(*[features for layer_tuple in layer_tuples for features in layer_tuple]))
+            for k, layer_tuples in selected_featuremap.items()
+        }
+
+        return (anomaly_map, max_activation_val, selected_featuremap)
+
+    def _compute_subclass_anomaly_map(self, distances: Tuple[Tensor]):
+        distances = [(distances[0], distances[1]), (distances[2], distances[3]), (distances[4], distances[5])]
+        if self.mode == "multiply":
+            anomaly_map = torch.ones(
+                [distances[0][0].shape[0], 1, *self.image_size], device=distances[0][0].device
+            )  # b c h w
+        elif self.mode == "add":
+            anomaly_map = torch.zeros([distances[0][0].shape[0], 1, *self.image_size], device=distances[0][0].device)
+
+        for student_feature, teacher_feature in distances:
+            distance_map = 1 - F.cosine_similarity(student_feature, teacher_feature)
+            distance_map = torch.unsqueeze(distance_map, dim=1)
+            distance_map = F.interpolate(distance_map, size=self.image_size, mode="bilinear", align_corners=True)
+
+            if self.mode == "multiply":
+                anomaly_map *= distance_map
+            elif self.mode == "add":
+                anomaly_map += distance_map
+        anomaly_map = gaussian_blur2d(
+            anomaly_map, kernel_size=(self.kernel_size, self.kernel_size), sigma=(self.sigma, self.sigma)
+        )
+        return anomaly_map
+
+    def feature_to_anomaly_map(self, distance: Tensor, feature: int) -> Tensor:
+        if feature == -1:
+            distance = tuple(dist.unsqueeze(0) for dist in distance)
+        else:
+            distance = tuple(dist[feature].reshape(1, 1, *dist[feature].shape) for dist in distance)
+        return self._compute_subclass_anomaly_map(distance)

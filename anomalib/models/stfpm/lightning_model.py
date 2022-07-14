@@ -56,7 +56,6 @@ class Stfpm(AnomalyModule):
             layers=layers,
         )
         self.loss = STFPMLoss()
-        self.loss_val = 0
 
     def training_step(self, batch, _):  # pylint: disable=arguments-differ
         """Training Step of STFPM.
@@ -72,8 +71,7 @@ class Stfpm(AnomalyModule):
         """
         self.model.teacher_model.eval()
         teacher_features, student_features = self.model.forward(batch["image"])
-        loss = self.loss_val + self.loss(teacher_features, student_features)
-        self.loss_val = 0
+        loss = self.loss(teacher_features, student_features)
         return {"loss": loss}
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
@@ -90,9 +88,11 @@ class Stfpm(AnomalyModule):
           Dictionary containing images, anomaly maps, true labels and masks.
           These are required in `validation_epoch_end` for feature concatenation.
         """
-        activation_map, max_activation_val = self.model(batch["image"])
+        activation_map, max_activation_val, selected_features = self.model(batch["image"])
         batch["anomaly_maps"] = activation_map
         batch["max_activation_val"] = max_activation_val
+        if selected_features != {}:
+            batch["selected_features"] = selected_features
 
         return batch
 

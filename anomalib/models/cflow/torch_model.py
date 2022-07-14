@@ -34,6 +34,7 @@ class CflowModel(nn.Module):
         input_size: Tuple[int, int],
         backbone: str,
         layers: List[str],
+        pre_trained: bool = True,
         fiber_batch_size: int = 64,
         decoder: str = "freia-cflow",
         condition_vector: int = 128,
@@ -49,7 +50,7 @@ class CflowModel(nn.Module):
         self.dec_arch = decoder
         self.pool_layers = layers
 
-        self.encoder = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.pool_layers)
+        self.encoder = FeatureExtractor(backbone=self.backbone(pretrained=pre_trained), layers=self.pool_layers)
         self.pool_dims = self.encoder.out_dims
         self.decoders = nn.ModuleList(
             [

@@ -28,7 +28,7 @@ from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
 from anomalib.pre_processing import PreProcessor
 
-from .base import Inferencer
+from .base_inference import Inferencer
 
 
 class TorchInferencer(Inferencer):

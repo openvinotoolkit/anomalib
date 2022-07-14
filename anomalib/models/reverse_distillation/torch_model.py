@@ -36,15 +36,23 @@ class ReverseDistillationModel(nn.Module):
         input_size (Tuple[int, int]): Size of input image
         layers (List[str]): Name of layers from which the features are extracted.
         anomaly_map_mode (str): Mode used to generate anomaly map. Options are between ``multiply`` and ``add``.
+        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
     """
 
-    def __init__(self, backbone: str, input_size: Tuple[int, int], layers: List[str], anomaly_map_mode: str):
+    def __init__(
+        self,
+        backbone: str,
+        input_size: Tuple[int, int],
+        layers: List[str],
+        anomaly_map_mode: str,
+        pre_trained: bool = True,
+    ):
         super().__init__()
         self.tiler: Optional[Tiler] = None
 
         encoder_backbone = getattr(torchvision.models, backbone)
         # TODO replace with TIMM feature extractor
-        self.encoder = FeatureExtractor(backbone=encoder_backbone(pretrained=True), layers=layers)
+        self.encoder = FeatureExtractor(backbone=encoder_backbone(pretrained=pre_trained), layers=layers)
         self.bottleneck = get_bottleneck_layer(backbone)
         self.decoder = get_decoder(backbone)
 

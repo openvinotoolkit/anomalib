@@ -61,6 +61,9 @@ class Ganomaly(AnomalyModule):
         wadv: int = 1,
         wcon: int = 50,
         wenc: int = 1,
+        lr: float = 0.0002,
+        beta1: float = 0.5,
+        beta2: float = 0.999,
     ):
         super().__init__()
 
@@ -82,10 +85,40 @@ class Ganomaly(AnomalyModule):
         self.generator_loss = GeneratorLoss(wadv, wcon, wenc)
         self.discriminator_loss = DiscriminatorLoss()
 
+        # TODO: LR should be part of optimizer in config.yaml! Since ganomaly has custom
+        #   optimizer this is to be addressed later.
+        self.learning_rate = lr
+        self.beta1 = beta1
+        self.beta2 = beta2
+
     def _reset_min_max(self):
         """Resets min_max scores."""
         self.min_scores = torch.tensor(float("inf"), dtype=torch.float32)  # pylint: disable=not-callable
         self.max_scores = torch.tensor(float("-inf"), dtype=torch.float32)  # pylint: disable=not-callable
+
+    def configure_optimizers(self) -> List[optim.Optimizer]:
+        """Configures optimizers for each decoder.
+
+        Note:
+            This method is used for the existing CLI.
+            When PL CLI is introduced, configure optimizers method will be
+                deprecated, and optimizers will be configured from either
+                config.yaml file or from CLI.
+
+        Returns:
+            Optimizer: Adam optimizer for each decoder
+        """
+        optimizer_d = optim.Adam(
+            self.model.discriminator.parameters(),
+            lr=self.learning_rate,
+            betas=(self.beta1, self.beta2),
+        )
+        optimizer_g = optim.Adam(
+            self.model.generator.parameters(),
+            lr=self.learning_rate,
+            betas=(self.beta1, self.beta2),
+        )
+        return [optimizer_d, optimizer_g]
 
     def training_step(self, batch, _, optimizer_idx):  # pylint: disable=arguments-differ
         """Training step.
@@ -191,6 +224,9 @@ class GanomalyLightning(Ganomaly):
             wadv=hparams.model.wadv,
             wcon=hparams.model.wcon,
             wenc=hparams.model.wenc,
+            lr=hparams.model.lr,
+            beta1=hparams.model.beta1,
+            beta2=hparams.model.beta2,
         )
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(hparams)
@@ -210,27 +246,3 @@ class GanomalyLightning(Ganomaly):
             mode=self.hparams.model.early_stopping.mode,
         )
         return [early_stopping]
-
-    def configure_optimizers(self) -> List[optim.Optimizer]:
-        """Configures optimizers for each decoder.
-
-        Note:
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure optimizers method will be
-                deprecated, and optimizers will be configured from either
-                config.yaml file or from CLI.
-
-        Returns:
-            Optimizer: Adam optimizer for each decoder
-        """
-        optimizer_d = optim.Adam(
-            self.model.discriminator.parameters(),
-            lr=self.hparams.model.lr,
-            betas=(self.hparams.model.beta1, self.hparams.model.beta2),
-        )
-        optimizer_g = optim.Adam(
-            self.model.generator.parameters(),
-            lr=self.hparams.model.lr,
-            betas=(self.hparams.model.beta1, self.hparams.model.beta2),
-        )
-        return [optimizer_d, optimizer_g]

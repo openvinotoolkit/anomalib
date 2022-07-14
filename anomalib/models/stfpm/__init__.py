@@ -14,6 +14,6 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .lightning_model import StfpmLightning
+from .lightning_model import Stfpm, StfpmLightning
 
-__all__ = ["StfpmLightning"]
+__all__ = ["Stfpm", "StfpmLightning"]

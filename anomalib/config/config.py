@@ -161,7 +161,7 @@ def get_configurable_parameters(
     config.trainer.default_root_dir = str(project_path)
 
     if weight_file:
-        config.model.weight_file = weight_file
+        config.trainer.resume_from_checkpoint = weight_file
 
     config = update_nncf_config(config)
 

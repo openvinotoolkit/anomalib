@@ -108,7 +108,7 @@ class AnomalyModule(pl.LightningModule, ABC):
           Dictionary containing images, features, true labels and masks.
           These are required in `validation_epoch_end` for feature concatenation.
         """
-        return self.validation_step(batch, _)
+        return self.predict_step(batch, _)
 
     def validation_step_end(self, val_step_outputs):  # pylint: disable=arguments-differ
         """Called at the end of each validation step."""
@@ -159,7 +159,7 @@ class AnomalyModule(pl.LightningModule, ABC):
             image_metric.update(output["pred_scores"], output["label"].int())
             if "mask" in output.keys() and "anomaly_maps" in output.keys():
                 pixel_metric.cpu()
-                pixel_metric.update(output["anomaly_maps"].flatten(), output["mask"].flatten().int())
+                pixel_metric.update(output["anomaly_maps"], output["mask"].int())
 
     def _post_process(self, outputs):
         """Compute labels based on model predictions."""

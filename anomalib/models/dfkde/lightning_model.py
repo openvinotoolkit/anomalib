@@ -34,6 +34,7 @@ class Dfkde(AnomalyModule):
 
     Args:
         backbone (str): Pre-trained model backbone.
+        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         max_training_points (int, optional): Number of training points to fit the KDE model.
             Defaults to 40000.
         pre_processing (str, optional): Preprocess features before passing to KDE.
@@ -47,6 +48,7 @@ class Dfkde(AnomalyModule):
     def __init__(
         self,
         backbone: str,
+        pre_trained: bool = True,
         max_training_points: int = 40000,
         pre_processing: str = "scale",
         n_components: int = 16,
@@ -57,6 +59,7 @@ class Dfkde(AnomalyModule):
 
         self.model = DfkdeModel(
             backbone=backbone,
+            pre_trained=pre_trained,
             n_comps=n_components,
             pre_processing=pre_processing,
             filter_count=max_training_points,

@@ -36,6 +36,7 @@ class Dfm(AnomalyModule):
     Args:
         backbone (str): Backbone CNN network
         layer (str): Layer to extract features from the backbone CNN
+        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         pooling_kernel_size (int, optional): Kernel size to pool features extracted from the CNN.
             Defaults to 4.
         pca_level (float, optional): Ratio from which number of components for PCA are calculated.
@@ -48,6 +49,7 @@ class Dfm(AnomalyModule):
         self,
         backbone: str,
         layer: str,
+        pre_trained: bool = True,
         pooling_kernel_size: int = 4,
         pca_level: float = 0.97,
         score_type: str = "fre",
@@ -56,6 +58,7 @@ class Dfm(AnomalyModule):
 
         self.model: DFMModel = DFMModel(
             backbone=backbone,
+            pre_trained=pre_trained,
             layer=layer,
             pooling_kernel_size=pooling_kernel_size,
             n_comps=pca_level,

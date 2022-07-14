@@ -27,6 +27,7 @@ import cv2
 import numpy as np
 from pandas.core.frame import DataFrame
 from pytorch_lightning.core.datamodule import LightningDataModule
+from pytorch_lightning.utilities.cli import DATAMODULE_REGISTRY
 from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
@@ -301,6 +302,7 @@ class FolderDataset(Dataset):
         return item
 
 
+@DATAMODULE_REGISTRY
 class Folder(LightningDataModule):
     """Folder Lightning Data Module."""
 

@@ -17,14 +17,14 @@
 import numpy as np
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
-from anomalib.post_processing.visualizer import Visualizer
+from anomalib.post_processing.visualizer import ImageGrid
 
 
 def test_visualize_fully_defected_masks():
     """Test if a fully defected anomaly mask results in a completely white image."""
 
     # create visualizer and add fully defected mask
-    visualizer = Visualizer()
+    visualizer = ImageGrid()
     mask = np.ones((256, 256)) * 255
     visualizer.add_image(image=mask, color_map="gray", title="fully defected mask")
     visualizer.generate()

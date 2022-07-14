@@ -24,7 +24,8 @@ class Fastflow(AnomalyModule):
     Args:
         input_size (Tuple[int, int]): Model input size.
         backbone (str): Backbone CNN network
-        flow_steps (int): Flow steps.
+        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+        flow_steps (int, optional): Flow steps.
         conv3x3_only (bool, optinoal): Use only conv3x3 in fast_flow model. Defaults to False.
         hidden_ratio (float, optional): Ratio to calculate hidden var channels. Defaults to 1.0.
     """
@@ -33,7 +34,8 @@ class Fastflow(AnomalyModule):
         self,
         input_size: Tuple[int, int],
         backbone: str,
-        flow_steps: int,
+        pre_trained: bool = True,
+        flow_steps: int = 8,
         conv3x3_only: bool = False,
         hidden_ratio: float = 1.0,
     ):
@@ -42,6 +44,7 @@ class Fastflow(AnomalyModule):
         self.model = FastflowModel(
             input_size=input_size,
             backbone=backbone,
+            pre_trained=pre_trained,
             flow_steps=flow_steps,
             conv3x3_only=conv3x3_only,
             hidden_ratio=hidden_ratio,
@@ -72,9 +75,11 @@ class Fastflow(AnomalyModule):
         Returns:
             dict: batch dictionary containing anomaly-maps.
         """
-        anomaly_maps, max_activation_val = self.model(batch["image"])
+        anomaly_maps, max_activation_val, selected_features = self.model(batch["image"])
         batch["anomaly_maps"] = anomaly_maps
         batch["max_activation_val"] = max_activation_val
+        if selected_features != {}:
+            batch["selected_features"] = selected_features
         return batch
 
 

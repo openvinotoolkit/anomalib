@@ -25,6 +25,7 @@ model:
   name: reverse_distillation
   lr: 0.005
   backbone: wide_resnet50_2
+  pre_trained: true
   layers:
     - layer1
     - layer2
@@ -40,6 +41,8 @@ model:
   selective_feature_model:
     apply: true
     feature_percentage: 0.1
+    top_k_images: 3
+    feature_ids_path: ./results
 
 metrics:
   image:
@@ -48,17 +51,25 @@ metrics:
   pixel:
     - F1Score
     - AUROC
+    - AUPR
+    - AUPRO
   threshold:
     image_default: 0
     pixel_default: 0
     adaptive: true
+
+visualization:
+  show_images: False # show images on the screen
+  save_images: False # save images to the file system
+  log_images: False # log images to the available loggers (if any)
+  image_save_path: null # path to which images will be saved
+  mode: full # options: ["full", "simple"]
 
 project:
   seed: 42
   path: ./results
 
 logging:
-  log_images_to: ["local"] # options: [wandb, tensorboard, local]. Make sure you also set logger with using wandb or tensorboard.
   logger: [] # options: [tensorboard, wandb, csv] or combinations.
   log_graph: false # Logs the model graph to respective logger.
 
@@ -75,7 +86,7 @@ trainer:
   auto_scale_batch_size: false
   auto_select_gpus: false
   benchmark: false
-  check_val_every_n_epoch: 2
+  check_val_every_n_epoch: 1
   default_root_dir: null
   detect_anomaly: false
   deterministic: false
@@ -94,7 +105,8 @@ trainer:
   log_every_n_steps: 50
   log_gpu_memory: null
   max_epochs: 200
-  max_steps: null
+  max_steps: -1
+  max_time: null
   min_epochs: null
   min_steps: null
   move_metrics_to_cpu: false

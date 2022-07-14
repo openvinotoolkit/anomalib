@@ -14,8 +14,9 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from typing import List, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 from kornia.filters import gaussian_blur2d
@@ -35,8 +36,14 @@ class AnomalyMapGenerator:
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
         self.sigma = sigma
 
+        # save indices of top features used for sub classification.
+        # these features are selected for visualization
+        self.category_features = {}
+
     @staticmethod
-    def compute_distance(embedding: Tensor, stats: List[Tensor]) -> Tensor:
+    def compute_distance(
+        embedding: Tensor, stats: List[Tensor], category_features: Dict[str, Tensor]
+    ) -> Tuple[Tensor, Tensor, Dict[str, Tensor]]:
         """Compute anomaly score to the patch in position(i,j) of a test image.
 
         Ref: Equation (2), Section III-C of the paper.
@@ -54,14 +61,23 @@ class AnomalyMapGenerator:
 
         # calculate mahalanobis distances
         mean, inv_covariance = stats
+
         delta = (embedding - mean).permute(2, 0, 1)
 
-        distances = (torch.matmul(delta, inv_covariance) * delta).sum(2).permute(1, 0)
-        distances = distances.reshape(batch, height, width)
-        distances = torch.sqrt(distances)
+        distances_full = (torch.matmul(delta, inv_covariance) * delta).sum(2).permute(1, 0)
+        distances_full = distances_full.reshape(batch, height, width)
+        distances_full = torch.sqrt(distances_full)
         max_activation_val, _ = torch.max((torch.matmul(delta, inv_covariance) * delta), 0)
 
-        return {distances, max_activation_val}
+        distances = (torch.matmul(delta, inv_covariance) * delta).permute(1, 2, 0)
+        distances = distances.reshape(batch, channel, height, width)
+
+        selected_features = {}
+        if category_features != {}:
+            for name, keep_idx in category_features.items():
+                selected_features[name] = distances[:, keep_idx.long(), :]
+
+        return (distances_full, max_activation_val, selected_features)
 
     def up_sample(self, distance: Tensor) -> Tensor:
         """Up sample anomaly score to match the input image size.
@@ -97,7 +113,9 @@ class AnomalyMapGenerator:
 
         return anomaly_map
 
-    def compute_anomaly_map(self, embedding: Tensor, mean: Tensor, inv_covariance: Tensor) -> Tensor:
+    def compute_and_smooth(
+        self, embedding: Tensor, mean: Tensor, inv_covariance: Tensor
+    ) -> Tuple[Tensor, Tensor, Dict]:
         """Compute anomaly score.
 
         Scores are calculated based on embedding vector, mean and inv_covariance of the multivariate gaussian
@@ -109,17 +127,40 @@ class AnomalyMapGenerator:
             inv_covariance (Tensor): Inverse Covariance matrix of the multivariate gaussian distribution.
 
         Returns:
-            Output anomaly score.
+            Tuple: Anomaly map and max_activation value
         """
-
-        score_map, max_activation_val = self.compute_distance(
-            embedding=embedding,
-            stats=[mean.to(embedding.device), inv_covariance.to(embedding.device)],
+        score_map, max_activation_val, selected_features = self.compute_distance(
+            embedding=embedding, stats=[mean, inv_covariance], category_features=self.category_features
         )
         up_sampled_score_map = self.up_sample(score_map)
         smoothed_anomaly_map = self.smooth_anomaly_map(up_sampled_score_map)
 
-        return (smoothed_anomaly_map, max_activation_val)
+        return (smoothed_anomaly_map, max_activation_val, selected_features)
+
+    def compute_anomaly_map(
+        self, embedding: Tensor, mean: Tensor, inv_covariance: Tensor
+    ) -> Tuple[Tensor, Tensor, Dict]:
+        """Compute anomaly score.
+
+        Scores are calculated based on embedding vector, mean and inv_covariance of the multivariate gaussian
+        distribution.
+
+        Args:
+            embedding (Tensor): Embedding vector extracted from the test set.
+            mean (Tensor): Mean of the multivariate gaussian distribution
+            inv_covariance (Tensor): Inverse Covariance matrix of the multivariate gaussian distribution.
+
+        Returns:
+            Tuple: Anomaly map, Max anomaly score, Anomaly map from selected features
+        """
+
+        mean = mean.to(embedding.device)
+        inv_covariance = inv_covariance.to(embedding.device)
+
+        smoothed_anomaly_map, max_activation_val, selected_features = self.compute_and_smooth(
+            embedding, mean, inv_covariance
+        )
+        return (smoothed_anomaly_map, max_activation_val, selected_features)
 
     def __call__(self, **kwds):
         """Returns anomaly_map.
@@ -145,3 +186,10 @@ class AnomalyMapGenerator:
         inv_covariance: Tensor = kwds["inv_covariance"]
 
         return self.compute_anomaly_map(embedding, mean, inv_covariance)
+
+    def feature_to_anomaly_map(self, distance: Tensor, feature: int) -> np.ndarray:
+        if feature == -1:
+            distance = torch.sum(distance, 0).unsqueeze(0)
+        else:
+            distance = distance[feature].unsqueeze(0)
+        return self.smooth_anomaly_map(self.up_sample(distance))

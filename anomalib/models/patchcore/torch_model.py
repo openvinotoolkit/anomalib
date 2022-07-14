@@ -38,6 +38,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         input_size: Tuple[int, int],
         layers: List[str],
         backbone: str = "wide_resnet50_2",
+        pre_trained: bool = True,
         num_neighbors: int = 9,
     ) -> None:
         super().__init__()
@@ -48,7 +49,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         self.input_size = input_size
         self.num_neighbors = num_neighbors
 
-        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=self.layers)
+        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=pre_trained), layers=self.layers)
         self.feature_pooler = torch.nn.AvgPool2d(3, 1, 1)
         self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
 
@@ -88,13 +89,13 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         if self.training:
             output = embedding
         else:
-            patch_scores, max_activation_val = self.nearest_neighbors(
+            patch_scores, max_activation_val, selected_features = self.nearest_neighbors(
                 embedding=embedding, n_neighbors=self.num_neighbors
             )
             anomaly_map, anomaly_score = self.anomaly_map_generator(
                 patch_scores=patch_scores, feature_map_shape=feature_map_shape
             )
-            output = (anomaly_map, anomaly_score, max_activation_val)
+            output = (anomaly_map, anomaly_score, max_activation_val, selected_features)
 
         return output
 
@@ -162,4 +163,14 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         nearest_point = self.memory_bank[patch_idx[:, 0]]
 
         max_activation_val, _ = torch.max(torch.abs(embedding - nearest_point), 0)
-        return (patch_scores, max_activation_val.unsqueeze(0))
+
+        selected_features = {}
+        if self.anomaly_map_generator.category_features:
+            for name, keep_idx in self.anomaly_map_generator.category_features.items():
+                top_feature_distances = torch.cdist(
+                    embedding[:, keep_idx.long()], self.memory_bank[:, keep_idx.long()], p=2.0
+                )
+                top_feature_patch_scores, _ = top_feature_distances.topk(k=9, largest=False, dim=1)
+                selected_features[name] = top_feature_patch_scores.unsqueeze(0)
+
+        return (patch_scores, max_activation_val.unsqueeze(0), selected_features)

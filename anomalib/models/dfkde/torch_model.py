@@ -32,6 +32,7 @@ class DfkdeModel(nn.Module):
 
     Args:
         backbone (str): Pre-trained model backbone.
+        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         n_comps (int, optional): Number of PCA components. Defaults to 16.
         pre_processing (str, optional): Preprocess features before passing to KDE.
             Options are between `norm` and `scale`. Defaults to "scale".
@@ -43,6 +44,7 @@ class DfkdeModel(nn.Module):
     def __init__(
         self,
         backbone: str,
+        pre_trained: bool = True,
         n_comps: int = 16,
         pre_processing: str = "scale",
         filter_count: int = 40000,
@@ -57,7 +59,7 @@ class DfkdeModel(nn.Module):
         self.threshold_offset = threshold_offset
 
         _backbone = getattr(torchvision.models, backbone)
-        self.feature_extractor = FeatureExtractor(backbone=_backbone(pretrained=True), layers=["avgpool"]).eval()
+        self.feature_extractor = FeatureExtractor(backbone=_backbone(pretrained=pre_trained), layers=["avgpool"]).eval()
 
         self.pca_model = PCA(n_components=self.n_components)
         self.kde_model = GaussianKDE()
@@ -78,6 +80,29 @@ class DfkdeModel(nn.Module):
         layer_outputs = self.feature_extractor(batch)
         layer_outputs = torch.cat(list(layer_outputs.values())).detach()
         return layer_outputs
+
+    def pre_process(self, feature_stack: Tensor, max_length: Optional[Tensor] = None) -> Tuple[Tensor, Tensor]:
+        """Pre-process the CNN features.
+
+        Args:
+          feature_stack (Tensor): Features extracted from CNN
+          max_length (Optional[Tensor]): Used to unit normalize the feature_stack vector. If ``max_len`` is not
+            provided, the length is calculated from the ``feature_stack``. Defaults to None.
+
+        Returns:
+            (Tuple): Stacked features and length
+        """
+
+        if max_length is None:
+            max_length = torch.max(torch.linalg.norm(feature_stack, ord=2, dim=1))
+
+        if self.pre_processing == "norm":
+            feature_stack /= torch.linalg.norm(feature_stack, ord=2, dim=1)[:, None]
+        elif self.pre_processing == "scale":
+            feature_stack /= max_length
+        else:
+            raise RuntimeError("Unknown pre-processing mode. Available modes are: Normalized and Scale.")
+        return feature_stack, max_length
 
     def fit(self, embeddings: List[Tensor]) -> bool:
         """Fit a kde model to embeddings.
@@ -103,36 +128,13 @@ class DfkdeModel(nn.Module):
             selected_features = _embeddings
 
         feature_stack = self.pca_model.fit_transform(selected_features)
-        feature_stack, max_length = self.preprocess(feature_stack)
+        feature_stack, max_length = self.pre_process(feature_stack)
         self.max_length = max_length
         self.kde_model.fit(feature_stack)
 
         return True
 
-    def preprocess(self, feature_stack: Tensor, max_length: Optional[Tensor] = None) -> Tuple[Tensor, Tensor]:
-        """Pre-process the CNN features.
-
-        Args:
-          feature_stack (Tensor): Features extracted from CNN
-          max_length (Optional[Tensor]): Used to unit normalize the feature_stack vector. If ``max_len`` is not
-            provided, the length is calculated from the ``feature_stack``. Defaults to None.
-
-        Returns:
-            (Tuple): Stacked features and length
-        """
-
-        if max_length is None:
-            max_length = torch.max(torch.linalg.norm(feature_stack, ord=2, dim=1))
-
-        if self.pre_processing == "norm":
-            feature_stack /= torch.linalg.norm(feature_stack, ord=2, dim=1)[:, None]
-        elif self.pre_processing == "scale":
-            feature_stack /= max_length
-        else:
-            raise RuntimeError("Unknown pre-processing mode. Available modes are: Normalized and Scale.")
-        return feature_stack, max_length
-
-    def evaluate(self, features: Tensor, as_log_likelihood: Optional[bool] = False) -> Tensor:
+    def compute_kde_scores(self, features: Tensor, as_log_likelihood: Optional[bool] = False) -> Tensor:
         """Compute the KDE scores.
 
         The scores calculated from the KDE model are converted to densities. If `as_log_likelihood` is set to true then
@@ -147,7 +149,7 @@ class DfkdeModel(nn.Module):
         """
 
         features = self.pca_model.transform(features)
-        features, _ = self.preprocess(features, self.max_length)
+        features, _ = self.pre_process(features, self.max_length)
         # Scores are always assumed to be passed as a density
         kde_scores = self.kde_model(features)
 
@@ -159,6 +161,18 @@ class DfkdeModel(nn.Module):
 
         return kde_scores
 
+    def compute_probabilities(self, scores: Tensor) -> Tensor:
+        """Converts density scores to anomaly probabilities (see https://www.desmos.com/calculator/ifju7eesg7).
+
+        Args:
+          scores (Tensor): density of an image.
+
+        Returns:
+          probability that image with {density} is anomalous
+        """
+
+        return 1 / (1 + torch.exp(self.threshold_steepness * (scores - self.threshold_offset)))
+
     def predict(self, features: Tensor) -> Tensor:
         """Predicts the probability that the features belong to the anomalous class.
 
@@ -169,22 +183,10 @@ class DfkdeModel(nn.Module):
           Detection probabilities
         """
 
-        densities = self.evaluate(features, as_log_likelihood=True)
-        probabilities = self.to_probability(densities)
+        scores = self.compute_kde_scores(features, as_log_likelihood=True)
+        probabilities = self.compute_probabilities(scores)
 
         return probabilities
-
-    def to_probability(self, densities: Tensor) -> Tensor:
-        """Converts density scores to anomaly probabilities (see https://www.desmos.com/calculator/ifju7eesg7).
-
-        Args:
-          densities (Tensor): density of an image.
-
-        Returns:
-          probability that image with {density} is anomalous
-        """
-
-        return 1 / (1 + torch.exp(self.threshold_steepness * (densities - self.threshold_offset)))
 
     def forward(self, batch: Tensor) -> Tensor:
         """Prediction by normality model.

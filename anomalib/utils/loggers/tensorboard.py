@@ -92,14 +92,8 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
         if "global_step" not in kwargs:
             raise ValueError("`global_step` is required for tensorboard logger")
 
-        # Matplotlib Figure is not supported by tensorboard
+        # Need to call different functions of `SummaryWriter` for  Figure vs np.ndarray
         if isinstance(image, Figure):
-            axis = image.gca()
-            axis.axis("off")
-            axis.margins(0)
-            image.canvas.draw()  # cache the renderer
-            buffer = np.frombuffer(image.canvas.tostring_rgb(), dtype=np.uint8)
-            image = buffer.reshape(image.canvas.get_width_height()[::-1] + (3,))
-            kwargs["dataformats"] = "HWC"
-
-        self.experiment.add_image(img_tensor=image, tag=name, **kwargs)
+            self.experiment.add_figure(figure=image, tag=name, close=False, **kwargs)
+        else:
+            self.experiment.add_image(img_tensor=image, tag=name, dataformats="HWC", **kwargs)
