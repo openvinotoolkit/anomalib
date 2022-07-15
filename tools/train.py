@@ -58,7 +58,7 @@ def train():
         warnings.filterwarnings("ignore")
 
     config = get_configurable_parameters(model_name=args.model, config_path=args.config)
-    if config.project.seed != 0:
+    if config.project.seed:
         seed_everything(config.project.seed)
 
     datamodule = get_datamodule(config)

@@ -92,6 +92,17 @@ class TestMVTecDataModule:
         assert sorted(["image_path", "mask_path", "image", "label", "mask"]) == sorted(val_data.keys())
         assert sorted(["image_path", "mask_path", "image", "label", "mask"]) == sorted(test_data.keys())
 
+    def test_non_overlapping_splits(self, mvtec_data_module):
+        """This test ensures that the train and test splits generated are non-overlapping."""
+        assert (
+            len(
+                set(mvtec_data_module.test_data.samples["image_path"].values).intersection(
+                    set(mvtec_data_module.train_data.samples["image_path"].values)
+                )
+            )
+            == 0
+        ), "Found train and test split contamination"
+
 
 class TestBTechDataModule:
     """Test BTech Data Module."""
@@ -111,6 +122,17 @@ class TestBTechDataModule:
         assert sorted(["image_path", "mask_path", "image", "label", "mask"]) == sorted(val_data.keys())
         assert sorted(["image_path", "mask_path", "image", "label", "mask"]) == sorted(test_data.keys())
 
+    def test_non_overlapping_splits(self, btech_data_module):
+        """This test ensures that the train and test splits generated are non-overlapping."""
+        assert (
+            len(
+                set(btech_data_module.test_data.samples["image_path"].values).intersection(
+                    set(btech_data_module.train_data.samples["image_path"].values)
+                )
+            )
+            == 0
+        ), "Found train and test split contamination"
+
 
 class TestFolderDataModule:
     """Test Folder Data Module."""
@@ -129,6 +151,17 @@ class TestFolderDataModule:
 
         assert sorted(["image_path", "mask_path", "image", "label", "mask"]) == sorted(val_data.keys())
         assert sorted(["image_path", "mask_path", "image", "label", "mask"]) == sorted(test_data.keys())
+
+    def test_non_overlapping_splits(self, folder_data_module):
+        """This test ensures that the train and test splits generated are non-overlapping."""
+        assert (
+            len(
+                set(folder_data_module.test_data.samples["image_path"].values).intersection(
+                    set(folder_data_module.train_data.samples["image_path"].values)
+                )
+            )
+            == 0
+        ), "Found train and test split contamination"
 
 
 class TestDenormalize:

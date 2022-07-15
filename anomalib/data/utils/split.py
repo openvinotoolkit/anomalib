@@ -23,12 +23,13 @@ These function are useful
 # and limitations under the License.
 
 import random
+from typing import Optional
 
 from pandas.core.frame import DataFrame
 
 
 def split_normal_images_in_train_set(
-    samples: DataFrame, split_ratio: float = 0.1, seed: int = 0, normal_label: str = "good"
+    samples: DataFrame, split_ratio: float = 0.1, seed: Optional[int] = None, normal_label: str = "good"
 ) -> DataFrame:
     """Split normal images in train set.
 
@@ -49,7 +50,7 @@ def split_normal_images_in_train_set(
         DataFrame: Output dataframe where the part of the training set is assigned to test set.
     """
 
-    if seed >= 0:
+    if seed:
         random.seed(seed)
 
     normal_train_image_indices = samples.index[(samples.split == "train") & (samples.label == normal_label)].to_list()
@@ -62,7 +63,9 @@ def split_normal_images_in_train_set(
     return samples
 
 
-def create_validation_set_from_test_set(samples: DataFrame, seed: int = 0, normal_label: str = "good") -> DataFrame:
+def create_validation_set_from_test_set(
+    samples: DataFrame, seed: Optional[int] = None, normal_label: str = "good"
+) -> DataFrame:
     """Craete Validation Set from Test Set.
 
     This function creates a validation set from test set by splitting both
@@ -74,7 +77,7 @@ def create_validation_set_from_test_set(samples: DataFrame, seed: int = 0, norma
         normal_label (str): Name of the normal label. For MVTec AD, for instance, this is normal_label.
     """
 
-    if seed >= 0:
+    if seed:
         random.seed(seed)
 
     # Split normal images.

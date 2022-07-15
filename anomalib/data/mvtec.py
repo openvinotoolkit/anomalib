@@ -40,6 +40,7 @@ Reference:
 
 import logging
 import tarfile
+import warnings
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
 from urllib.request import urlretrieve
@@ -72,7 +73,7 @@ def make_mvtec_dataset(
     path: Path,
     split: Optional[str] = None,
     split_ratio: float = 0.1,
-    seed: int = 0,
+    seed: Optional[int] = None,
     create_validation_set: bool = False,
 ) -> DataFrame:
     """Create MVTec AD samples by parsing the MVTec AD data file structure.
@@ -175,7 +176,7 @@ class MVTecDataset(VisionDataset):
         pre_process: PreProcessor,
         split: str,
         task: str = "segmentation",
-        seed: int = 0,
+        seed: Optional[int] = None,
         create_validation_set: bool = False,
     ) -> None:
         """Mvtec AD Dataset class.
@@ -220,6 +221,14 @@ class MVTecDataset(VisionDataset):
             (torch.Size([3, 256, 256]), torch.Size([256, 256]))
         """
         super().__init__(root)
+
+        if seed is None:
+            warnings.warn(
+                "seed is None."
+                " When seed is not set, images from the normal directory are split between training and test dir."
+                " This will lead to inconsistency between runs."
+            )
+
         self.root = Path(root) if isinstance(root, str) else root
         self.category: str = category
         self.split = split
@@ -297,7 +306,7 @@ class MVTec(LightningDataModule):
         task: str = "segmentation",
         transform_config_train: Optional[Union[str, A.Compose]] = None,
         transform_config_val: Optional[Union[str, A.Compose]] = None,
-        seed: int = 0,
+        seed: Optional[int] = None,
         create_validation_set: bool = False,
     ) -> None:
         """Mvtec AD Lightning Data Module.
