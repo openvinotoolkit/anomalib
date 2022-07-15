@@ -21,7 +21,7 @@ import torch
 from torch import Tensor
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
-from anomalib.models.draem.utils.perlin import rand_perlin_2d_np
+from anomalib.data.utils import random_2d_perlin
 
 
 class Augmenter:
@@ -84,7 +84,7 @@ class Augmenter:
         perlin_scalex = 2 ** random.randint(min_perlin_scale, perlin_scale)
         perlin_scaley = 2 ** random.randint(min_perlin_scale, perlin_scale)
 
-        perlin_noise = rand_perlin_2d_np((height, width), (perlin_scalex, perlin_scaley))
+        perlin_noise = random_2d_perlin((height, width), (perlin_scalex, perlin_scaley))
         perlin_noise = self.rot(image=perlin_noise)
 
         # Create mask from perlin noise
