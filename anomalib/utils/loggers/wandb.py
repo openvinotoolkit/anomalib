@@ -127,3 +127,4 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
         super().save()
         if len(self.image_list) > 1:
             wandb.log({"Predictions": self.image_list})
+            self.image_list = []

@@ -43,9 +43,6 @@ metrics:
   image:
     - F1Score
     - AUROC
-  pixel:
-    - F1Score
-    - AUROC
   threshold:
     image_default: 0
     adaptive: true

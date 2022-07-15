@@ -20,13 +20,13 @@ from pytorch_lightning.utilities.cli import (
 
 from anomalib.utils.callbacks import (
     CdfNormalizationCallback,
+    ImageVisualizerCallback,
     LoadModelCallback,
     MetricsConfigurationCallback,
     MinMaxNormalizationCallback,
     ModelCheckpoint,
     TilerConfigurationCallback,
     TimerCallback,
-    VisualizerCallback,
 )
 from anomalib.utils.loggers import configure_logger
 
@@ -115,7 +115,7 @@ class AnomalibCLI(LightningCLI):
             }
         )
 
-        parser.add_lightning_class_args(VisualizerCallback, "visualization")  # type: ignore
+        parser.add_lightning_class_args(ImageVisualizerCallback, "visualization")  # type: ignore
         parser.set_defaults(
             {
                 "visualization.mode": "full",
