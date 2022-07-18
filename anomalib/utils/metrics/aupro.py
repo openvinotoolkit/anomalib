@@ -76,7 +76,9 @@ class AUPRO(Metric):
             )
         target = target.unsqueeze(1)  # kornia expects N1HW format
         target = target.type(torch.float)  # kornia expects FloatTensor
-        cca = connected_components(target)
+        cca = connected_components(
+            target, num_iterations=1000
+        )  # Need higher thresholds this to avoid oversegmentation.
 
         preds = preds.flatten()
         cca = cca.flatten()
@@ -101,6 +103,7 @@ class AUPRO(Metric):
         _tpr: Tensor
         for label in labels:
             interp: bool = False
+            new_idx[-1] = output_size - 1
             mask = cca == label
             # Need to calculate label-wise roc on union of background & mask, as otherwise we wrongly consider other
             # label in labels as FPs. We also don't need to return the thresholds
@@ -131,8 +134,6 @@ class AUPRO(Metric):
             if interp:
                 # last point will be sampled at self.fpr_limit
                 new_idx[-1] = _fpr_idx[-2] + ((_fpr_idx[-1] - _fpr_idx[-2]) * _slope)
-            else:
-                new_idx[-1] = output_size - 1
 
             _tpr = self.interp1d(_fpr_idx, _tpr, new_idx)
             _fpr = self.interp1d(_fpr_idx, _fpr, new_idx)
