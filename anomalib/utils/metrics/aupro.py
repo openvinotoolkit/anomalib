@@ -38,7 +38,7 @@ class AUPRO(Metric):
 
         self.add_state("preds", default=[], dist_reduce_fx="cat")  # pylint: disable=not-callable
         self.add_state("target", default=[], dist_reduce_fx="cat")  # pylint: disable=not-callable
-        self.fpr_limit = fpr_limit
+        self.register_buffer("fpr_limit", torch.tensor(fpr_limit))
 
     def update(self, preds: Tensor, target: Tensor) -> None:  # type: ignore
         """Update state with new values.
@@ -89,7 +89,7 @@ class AUPRO(Metric):
         # compute the PRO curve by aggregating per-region tpr/fpr curves/values.
         tpr = torch.zeros(output_size, device=preds.device, dtype=torch.float)
         fpr = torch.zeros(output_size, device=preds.device, dtype=torch.float)
-        new_idx = torch.arange(0, output_size, device=preds.device)
+        new_idx = torch.arange(0, output_size, device=preds.device, dtype=torch.float)
 
         # Loop over the labels, computing per-region tpr/fpr curves, and aggregating them.
         # Note that, since the groundtruth is different for every all to `roc`, we also get
@@ -100,16 +100,40 @@ class AUPRO(Metric):
         _fpr: Tensor
         _tpr: Tensor
         for label in labels:
+            interp: bool = False
             mask = cca == label
             # Need to calculate label-wise roc on union of background & mask, as otherwise we wrongly consider other
             # label in labels as FPs. We also don't need to return the thresholds
             _fpr, _tpr = roc(preds[background | mask], mask[background | mask])[:-1]
-            _fpr_idx = torch.where(_fpr <= self.fpr_limit)[0]
+
+            # catch edge-case where ROC only has fpr vals > self.fpr_limit
+            if _fpr[_fpr <= self.fpr_limit].max() == 0:
+                _fpr_limit = _fpr[_fpr > self.fpr_limit].min()
+            else:
+                _fpr_limit = self.fpr_limit
+
+            _fpr_idx = torch.where(_fpr <= _fpr_limit)[0]
+            # if computed roc curve is not specified sufficiently close to self.fpr_limit,
+            # we include the closest higher tpr/fpr pair and linearly interpolate the tpr/fpr point at self.fpr_limit
+            if not torch.allclose(_fpr[_fpr_idx].max(), self.fpr_limit):
+                _tmp_idx = torch.searchsorted(_fpr, self.fpr_limit)
+                _fpr_idx = torch.cat([_fpr_idx, _tmp_idx.unsqueeze_(0)])
+                _slope = 1 - ((_fpr[_tmp_idx] - self.fpr_limit) / (_fpr[_tmp_idx] - _fpr[_tmp_idx - 1]))
+                interp = True
+
             _fpr = _fpr[_fpr_idx]
             _tpr = _tpr[_fpr_idx]
+
             _fpr_idx = _fpr_idx.float()
             _fpr_idx /= _fpr_idx.max()
             _fpr_idx *= new_idx.max()
+
+            if interp:
+                # last point will be sampled at self.fpr_limit
+                new_idx[-1] = _fpr_idx[-2] + ((_fpr_idx[-1] - _fpr_idx[-2]) * _slope)
+            else:
+                new_idx[-1] = output_size - 1
+
             _tpr = self.interp1d(_fpr_idx, _tpr, new_idx)
             _fpr = self.interp1d(_fpr_idx, _fpr, new_idx)
             tpr += _tpr
@@ -142,7 +166,7 @@ class AUPRO(Metric):
         fpr, tpr = self._compute()
         aupro = self.compute()
 
-        xlim = (0.0, self.fpr_limit)
+        xlim = (0.0, self.fpr_limit.detach_().cpu().numpy())
         ylim = (0.0, 1.0)
         xlabel = "Global FPR"
         ylabel = "Averaged Per-Region TPR"
