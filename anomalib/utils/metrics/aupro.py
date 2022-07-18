@@ -96,11 +96,14 @@ class AUPRO(Metric):
         # different/unique tpr/fpr curves (i.e. len(_fpr_idx) is different for every call).
         # We therefore need to resample per-region curves to a fixed sampling ratio (defined above).
         labels = cca.unique()[1:]  # 0 is background
+        background = cca == 0
         _fpr: Tensor
         _tpr: Tensor
         for label in labels:
             mask = cca == label
-            _fpr, _tpr = roc(preds, mask)[:-1]  # don't need threshs
+            # Need to calculate label-wise roc on union of background & mask, as otherwise we wrongly consider other
+            # label in labels as FPs. We also don't need to return the thresholds
+            _fpr, _tpr = roc(preds[background | mask], mask[background | mask])[:-1]
             _fpr_idx = torch.where(_fpr <= self.fpr_limit)[0]
             _fpr = _fpr[_fpr_idx]
             _tpr = _tpr[_fpr_idx]
