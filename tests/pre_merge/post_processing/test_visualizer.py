@@ -68,4 +68,4 @@ class TestVisualizer:
                 dataset_task=task,
                 visualizer_mode=mode,
             )[1:]
-            trainer.test(model=model, datamodule=datamodule)[0]
+            trainer.test(model=model, datamodule=datamodule)
