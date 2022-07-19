@@ -14,10 +14,15 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import tempfile
+
 import numpy as np
+import pytest
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
 from anomalib.post_processing.visualizer import ImageGrid
+from tests.helpers.dataset import TestDataset
+from tests.helpers.model import setup_model_train
 
 
 def test_visualize_fully_defected_masks():
@@ -36,3 +41,31 @@ def test_visualize_fully_defected_masks():
 
     # assert that the plotted image is completely white
     assert np.all(plotted_img[0][..., 0] == 255)
+
+
+class TestVisualizer:
+    @pytest.mark.parametrize(
+        ["model_name", "nncf"],
+        [
+            ("padim", False),
+            ("ganomaly", False),
+        ],
+    )
+    @pytest.mark.parametrize("task", ("classification", "segmentation"))
+    @pytest.mark.parametrize("mode", ("full", "simple"))
+    @TestDataset(num_train=20, num_test=10)
+    def test_model_visualizer_mode(self, model_name, nncf, task, mode, category="shapes", path=""):
+        """Test combination of model/visualizer/mode on only 1 epoch as a sanity check before merge."""
+        with tempfile.TemporaryDirectory() as project_path:
+            # Train test
+            datamodule, model, trainer = setup_model_train(
+                model_name,
+                dataset_path=path,
+                project_path=project_path,
+                nncf=nncf,
+                category=category,
+                fast_run=True,
+                dataset_task=task,
+                visualizer_mode=mode,
+            )[1:]
+            trainer.test(model=model, datamodule=datamodule)[0]

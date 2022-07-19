@@ -15,7 +15,7 @@
 # and limitations under the License.
 
 import os
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from omegaconf import DictConfig, ListConfig
@@ -36,9 +36,10 @@ def setup_model_train(
     project_path: str,
     nncf: bool,
     category: str,
-    score_type: str = None,
-    weight_file: str = "weights/model.ckpt",
+    score_type: Optional[str] = None,
     fast_run: bool = False,
+    dataset_task: Optional[str] = None,
+    visualizer_mode: Optional[str] = None,
     device: Union[List[int], int] = [0],
 ) -> Tuple[Union[DictConfig, ListConfig], LightningDataModule, AnomalyModule, Trainer]:
     """Train the model based on the parameters passed.
@@ -50,9 +51,12 @@ def setup_model_train(
         nncf (bool): Add nncf callback.
         category (str): Category to train on.
         score_type (str, optional): Only used for DFM. Defaults to None.
-        weight_file (str, optional): Path to weight file.
         fast_run (bool, optional): If set to true, the model trains for only 1 epoch. We train for one epoch as
             this ensures that both anomalous and non-anomalous images are present in the validation step.
+        dataset_task (str, optional): Specify the type of task. Must be in ["classification", "segmentation"].
+            Used for integration testing of model / task / visualizer_mode.
+        visualizer_mode (str, optional): Specify the type of visualization. Must be in ["full", "simple"].
+            Used for integration testing of model / task / visualizer_mode.
         device (List[int], int, optional): Select which device you want to train the model on. Defaults to first GPU.
 
     Returns:
@@ -67,6 +71,13 @@ def setup_model_train(
     config.project.log_images_to = []
     config.trainer.devices = device
     config.trainer.accelerator = "gpu" if device != 0 else "cpu"
+    if dataset_task is not None:
+        config.dataset.task = dataset_task
+    if visualizer_mode is not None:
+        config.visualization.mode = visualizer_mode
+        config.visualization.save_images = True  # Enforce processing by Visualizer
+        if "pixel" in config.metrics and dataset_task == "classification":
+            del config.metrics.pixel
 
     # Remove legacy flags
     for legacy_device in ["num_processes", "gpus", "ipus", "tpu_cores"]:
