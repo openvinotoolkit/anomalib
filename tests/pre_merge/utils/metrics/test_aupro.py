@@ -8,7 +8,7 @@ from tests.helpers.aupro_reference import calculate_au_pro
 
 
 def pytest_generate_tests(metafunc):
-    if metafunc.function == test_pro:
+    if metafunc.function is test_pro:
         labels = [
             torch.tensor(
                 [
