@@ -34,3 +34,7 @@ terms are listed below.
 5. Reverse Distillation AnomalyMapGenerator, De-Convolution
    Copyright (c) 2022 @hq-deng, https://github.com/hq-deng/RD4AD
     SPDX-License-Identifier: MIT
+
+6. Reference aupro-implementation contained in ./tests/helpers/aupro_reference.py
+   Copyright (c) 2021 @eliahuhorwitz, https://github.com/eliahuhorwitz/3D-ADS.
+   SPDX-License-Identifier: MIT
