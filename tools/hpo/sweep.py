@@ -22,13 +22,14 @@ import pytorch_lightning as pl
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning import seed_everything
 from pytorch_lightning.loggers import WandbLogger
-from utils import flatten_hpo_params
 
 import wandb
 from anomalib.config import get_configurable_parameters, update_input_size_config
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
 from anomalib.utils.sweep import flatten_sweep_params, set_in_nested_config
+
+from .utils import flatten_hpo_params
 
 
 class WandbSweep:
