@@ -40,7 +40,8 @@ repos:
         exclude: "tests|anomalib/models/components/freia"
 
   # python linting
-  - repo: local
+  - repo: https://github.com/PyCQA/pylint
+    rev: v2.14.5
     hooks:
       - id: pylint
         name: pylint
