@@ -16,7 +16,7 @@
 
 from importlib.util import find_spec
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import cv2
 import numpy as np
@@ -122,7 +122,7 @@ class OpenVINOInferencer(Inferencer):
 
     def post_process(
         self, predictions: np.ndarray, meta_data: Optional[Union[Dict, DictConfig]] = None
-    ) -> Tuple[np.ndarray, float]:
+    ) -> Dict[str, Any]:
         """Post process the output predictions.
 
         Args:
@@ -132,7 +132,7 @@ class OpenVINOInferencer(Inferencer):
                 Defaults to None.
 
         Returns:
-            np.ndarray: Post processed predictions that are ready to be visualized.
+            Dict[str, Any]: Post processed prediction results.
         """
         if meta_data is None:
             meta_data = self.meta_data
@@ -141,9 +141,27 @@ class OpenVINOInferencer(Inferencer):
         anomaly_map = predictions.squeeze()
         pred_score = anomaly_map.reshape(-1).max()
 
+        # Common practice in anomaly detection is to assign anomalous
+        # label to the prediction if the prediction score is greater
+        # than the image threshold.
+        pred_label: Optional[float] = None
+        if "image_threshold" in meta_data:
+            pred_label = pred_score >= meta_data["image_threshold"]
+
+        pred_mask: Optional[float] = None
+        if "pixel_threshold" in meta_data:
+            pred_mask = anomaly_map >= meta_data["pixel_threshold"]
+
         anomaly_map, pred_score = self._normalize(anomaly_map, pred_score, meta_data)
 
         if "image_shape" in meta_data and anomaly_map.shape != meta_data["image_shape"]:
-            anomaly_map = cv2.resize(anomaly_map, meta_data["image_shape"])
+            image_height = meta_data["image_shape"][0]
+            image_width = meta_data["image_shape"][1]
+            anomaly_map = cv2.resize(anomaly_map, (image_width, image_height))
 
-        return anomaly_map, float(pred_score)
+        return {
+            "anomaly_map": anomaly_map,
+            "pred_label": pred_label,
+            "pred_score": pred_score,
+            "pred_mask": pred_mask,
+        }

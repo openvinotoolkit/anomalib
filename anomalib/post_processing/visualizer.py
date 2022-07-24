@@ -46,15 +46,15 @@ class ImageResult:
     heat_map: np.ndarray = field(init=False)
     segmentations: np.ndarray = field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Generate heatmap overlay and segmentations, convert masks to images."""
         if self.anomaly_map is not None:
             self.heat_map = superimpose_anomaly_map(self.anomaly_map, self.image, normalize=False)
         if self.pred_mask is not None and np.max(self.pred_mask) <= 1.0:
             self.pred_mask *= 255
-            self.segmentations = mark_boundaries(self.image, self.pred_mask, color=(1, 0, 0), mode="thick")
         if self.gt_mask is not None and np.max(self.gt_mask) <= 1.0:
             self.gt_mask *= 255
+        self.segmentations = mark_boundaries(self.image, self.pred_mask, color=(1, 0, 0), mode="thick")
 
 
 class Visualizer:
@@ -65,7 +65,7 @@ class Visualizer:
         task (str): task type, either "segmentation" or "classification"
     """
 
-    def __init__(self, mode: str, task: str):
+    def __init__(self, mode: str, task: str) -> None:
         if mode not in ["full", "simple"]:
             raise ValueError(f"Unknown visualization mode: {mode}. Please choose one of ['full', 'simple']")
         self.mode = mode
@@ -108,7 +108,7 @@ class Visualizer:
             return self._visualize_simple(image_result)
         raise ValueError(f"Unknown visualization mode: {self.mode}")
 
-    def _visualize_full(self, image_result: ImageResult):
+    def _visualize_full(self, image_result: ImageResult) -> np.ndarray:
         """Generate the full set of visualization for an image.
 
         The full visualization mode shows a grid with subplots that contain the original image, the GT mask (if
@@ -140,7 +140,7 @@ class Visualizer:
 
         return visualization.generate()
 
-    def _visualize_simple(self, image_result):
+    def _visualize_simple(self, image_result: ImageResult) -> None:
         """Generate a simple visualization for an image.
 
         The simple visualization mode only shows the model's predictions in a single image.
@@ -165,7 +165,7 @@ class Visualizer:
         raise ValueError(f"Unknown task type: {self.task}")
 
     @staticmethod
-    def show(title: str, image: np.ndarray, delay: int = 0):
+    def show(title: str, image: np.ndarray, delay: int = 0) -> None:
         """Show an image on the screen.
 
         Args:
@@ -179,7 +179,7 @@ class Visualizer:
         cv2.destroyAllWindows()
 
     @staticmethod
-    def save(file_path: Path, image: np.ndarray):
+    def save(file_path: Path, image: np.ndarray) -> None:
         """Save an image to the file system.
 
         Args:
@@ -203,7 +203,7 @@ class ImageGrid:
         self.figure: matplotlib.figure.Figure
         self.axis: np.ndarray
 
-    def add_image(self, image: np.ndarray, title: Optional[str] = None, color_map: Optional[str] = None):
+    def add_image(self, image: np.ndarray, title: Optional[str] = None, color_map: Optional[str] = None) -> None:
         """Add an image to the grid.
 
         Args:

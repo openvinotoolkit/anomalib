@@ -15,7 +15,7 @@
 # and limitations under the License.
 
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Union
 
 import cv2
 import numpy as np
@@ -23,6 +23,7 @@ import torch
 from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
+from anomalib.config import get_configurable_parameters
 from anomalib.deploy.optimize import get_model_metadata
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
@@ -44,11 +45,20 @@ class TorchInferencer(Inferencer):
 
     def __init__(
         self,
-        config: Union[DictConfig, ListConfig],
+        config: Union[str, Path, DictConfig, ListConfig],
         model_source: Union[str, Path, AnomalyModule],
         meta_data_path: Union[str, Path] = None,
     ):
-        self.config = config
+
+        # Check and load the configuration
+        if isinstance(config, (str, Path)):
+            self.config = get_configurable_parameters(config_path=config)
+        elif isinstance(config, (DictConfig, ListConfig)):
+            self.config = config
+        else:
+            raise ValueError(f"Unknown config type {type(config)}")
+
+        # Check and load the model weights.
         if isinstance(model_source, AnomalyModule):
             self.model = model_source
         else:
@@ -117,9 +127,7 @@ class TorchInferencer(Inferencer):
         """
         return self.model(image)
 
-    def post_process(
-        self, predictions: Tensor, meta_data: Optional[Union[Dict, DictConfig]] = None
-    ) -> Tuple[np.ndarray, float]:
+    def post_process(self, predictions: Tensor, meta_data: Optional[Union[Dict, DictConfig]] = None) -> Dict[str, Any]:
         """Post process the output predictions.
 
         Args:
@@ -129,7 +137,7 @@ class TorchInferencer(Inferencer):
                 Defaults to None.
 
         Returns:
-            np.ndarray: Post processed predictions that are ready to be visualized.
+            Dict[str, Union[str, float, np.ndarray]]: Post processed prediction results.
         """
         if meta_data is None:
             meta_data = self.meta_data
@@ -149,8 +157,19 @@ class TorchInferencer(Inferencer):
                 anomaly_map, pred_score = predictions
                 pred_score = pred_score.detach().numpy()
 
-        anomaly_map = anomaly_map.squeeze()
+        # Common practice in anomaly detection is to assign anomalous
+        # label to the prediction if the prediction score is greater
+        # than the image threshold.
+        pred_label: Optional[str] = None
+        if "image_threshold" in meta_data:
+            pred_idx = pred_score >= meta_data["image_threshold"]
+            pred_label = "Anomalous" if pred_idx else "Normal"
 
+        pred_mask: Optional[np.ndarray] = None
+        if "pixel_threshold" in meta_data:
+            pred_mask = (anomaly_map >= meta_data["pixel_threshold"]).squeeze().cpu().numpy().astype(np.uint8)
+
+        anomaly_map = anomaly_map.squeeze()
         anomaly_map, pred_score = self._normalize(anomaly_map, pred_score, meta_data)
 
         if isinstance(anomaly_map, Tensor):
@@ -161,4 +180,12 @@ class TorchInferencer(Inferencer):
             image_width = meta_data["image_shape"][1]
             anomaly_map = cv2.resize(anomaly_map, (image_width, image_height))
 
-        return anomaly_map, float(pred_score)
+            if pred_mask is not None:
+                pred_mask = cv2.resize(pred_mask, (image_width, image_height))
+
+        return {
+            "anomaly_map": anomaly_map,
+            "pred_label": pred_label,
+            "pred_score": pred_score,
+            "pred_mask": pred_mask,
+        }
