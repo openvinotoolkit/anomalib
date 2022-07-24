@@ -18,7 +18,6 @@ from typing import List, Tuple
 
 import einops
 import torch
-import torchvision
 from torch import nn
 
 from anomalib.models.cflow.anomaly_map import AnomalyMapGenerator
@@ -44,13 +43,13 @@ class CflowModel(nn.Module):
     ):
         super().__init__()
 
-        self.backbone = getattr(torchvision.models, backbone)
+        self.backbone = backbone
         self.fiber_batch_size = fiber_batch_size
         self.condition_vector: int = condition_vector
         self.dec_arch = decoder
         self.pool_layers = layers
 
-        self.encoder = FeatureExtractor(backbone=self.backbone(pretrained=pre_trained), layers=self.pool_layers)
+        self.encoder = FeatureExtractor(backbone=self.backbone, layers=self.pool_layers, pre_trained=pre_trained)
         self.pool_dims = self.encoder.out_dims
         self.decoders = nn.ModuleList(
             [

@@ -17,8 +17,9 @@ This script extracts features from a CNN network
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from typing import Callable, Dict, Iterable
+from typing import Dict, List
 
+import timm
 import torch
 from torch import Tensor, nn
 
@@ -45,42 +46,19 @@ class FeatureExtractor(nn.Module):
             [torch.Size([32, 64, 64, 64]), torch.Size([32, 128, 32, 32]), torch.Size([32, 256, 16, 16])]
     """
 
-    def __init__(self, backbone: nn.Module, layers: Iterable[str]):
+    def __init__(self, backbone: str, layers: List[str], pre_trained: bool = True):
         super().__init__()
         self.backbone = backbone
         self.layers = layers
+        self.idx = [int(i.split("layer")[1]) for i in layers]
+        self.feature_extractor = timm.create_model(
+            backbone,
+            pretrained=pre_trained,
+            features_only=True,
+            out_indices=self.idx,
+        )
+        self.out_dims = self.feature_extractor.feature_info.channels()
         self._features = {layer: torch.empty(0) for layer in self.layers}
-        self.out_dims = []
-
-        for layer_id in layers:
-            layer = dict([*self.backbone.named_modules()])[layer_id]
-            layer.register_forward_hook(self.get_features(layer_id))
-            # get output dimension of features if available
-            layer_modules = [*layer.modules()]
-            for idx in reversed(range(len(layer_modules))):
-                if hasattr(layer_modules[idx], "out_channels"):
-                    self.out_dims.append(layer_modules[idx].out_channels)
-                    break
-
-    def get_features(self, layer_id: str) -> Callable:
-        """Get layer features.
-
-        Args:
-            layer_id (str): Layer ID
-
-        Returns:
-            Layer features
-        """
-
-        def hook(_, __, output):
-            """Hook to extract features via a forward-pass.
-
-            Args:
-              output: Feature map collected after the forward-pass.
-            """
-            self._features[layer_id] = output
-
-        return hook
 
     def forward(self, input_tensor: Tensor) -> Dict[str, Tensor]:
         """Forward-pass input tensor into the CNN.
@@ -91,6 +69,5 @@ class FeatureExtractor(nn.Module):
         Returns:
             Feature map extracted from the CNN
         """
-        self._features = {layer: torch.empty(0) for layer in self.layers}
-        _ = self.backbone(input_tensor)
-        return self._features
+        features = dict(zip(self.layers, self.feature_extractor(input_tensor)))
+        return features
