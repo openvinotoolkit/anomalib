@@ -36,7 +36,7 @@ class TorchInferencer(Inferencer):
     """PyTorch implementation for the inference.
 
     Args:
-        config (DictConfig): Configurable parameters that are used
+        config (Union[str, Path, DictConfig, ListConfig]): Configurable parameters that are used
             during the training stage.
         model_source (Union[str, Path, AnomalyModule]): Path to the model ckpt file or the Anomaly model.
         meta_data_path (Union[str, Path], optional): Path to metadata file. If none, it tries to load the params

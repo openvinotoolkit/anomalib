@@ -4,30 +4,19 @@ This script performs inference by reading a model config file from
 command line, and show the visualization results.
 """
 
-# Copyright (C) 2020 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions
-# and limitations under the License.
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
-from typing import Optional
 
-import cv2
-import numpy as np
-from torchvision.datasets.folder import IMG_EXTENSIONS
-
-from anomalib.config import get_configurable_parameters
-from anomalib.deploy import Inferencer, OpenVINOInferencer
+from anomalib.data.utils import (
+    generate_output_image_filename,
+    get_image_filenames,
+    read_image,
+)
+from anomalib.deploy import OpenVINOInferencer
+from anomalib.post_processing import Visualizer
 
 
 def get_args() -> Namespace:
@@ -39,15 +28,30 @@ def get_args() -> Namespace:
     parser = ArgumentParser()
     parser.add_argument("--config", type=Path, required=True, help="Path to a config file")
     parser.add_argument("--weights", type=Path, required=True, help="Path to model weights")
-    parser.add_argument("--meta_data", type=Path, required=True, help="Path to a JSON file containing the metadata.")
+    parser.add_argument("--meta_data", type=Path, required=False, help="Path to a JSON file containing the metadata.")
     parser.add_argument("--input", type=Path, required=True, help="Path to an image to infer.")
     parser.add_argument("--output", type=Path, required=False, help="Path to save the output image.")
     parser.add_argument(
-        "--overlay_mask",
-        type=bool,
+        "--task",
+        type=str,
         required=False,
-        default=False,
-        help="Overlay the segmentation mask on the image. It assumes that the task is segmentation.",
+        help="Path to save the output image.",
+        default="classification",
+        choices=["classification", "segmentation"],
+    )
+    parser.add_argument(
+        "--visualization_mode",
+        type=str,
+        required=False,
+        default="simple",
+        help="Visualization mode.",
+        choices=["full", "simple"],
+    )
+    parser.add_argument(
+        "--show",
+        action="store_true",
+        required=False,
+        help="Show the visualized predictions on the screen.",
     )
 
     args = parser.parse_args()
@@ -55,63 +59,8 @@ def get_args() -> Namespace:
     return args
 
 
-def add_label(prediction: np.ndarray, scores: float, font: int = cv2.FONT_HERSHEY_PLAIN) -> np.ndarray:
-    """If the model outputs score, it adds the score to the output image.
-
-    Args:
-        prediction (np.ndarray): Resized anomaly map.
-        scores (float): Confidence score.
-
-    Returns:
-        np.ndarray: Image with score text.
-    """
-    text = f"Confidence Score {scores:.0%}"
-    font_size = prediction.shape[1] // 1024 + 1  # Text scale is calculated based on the reference size of 1024
-    (width, height), baseline = cv2.getTextSize(text, font, font_size, thickness=font_size // 2)
-    label_patch = np.zeros((height + baseline, width + baseline, 3), dtype=np.uint8)
-    label_patch[:, :] = (225, 252, 134)
-    cv2.putText(label_patch, text, (0, baseline // 2 + height), font, font_size, 0, lineType=cv2.LINE_AA)
-    prediction[: baseline + height, : baseline + width] = label_patch
-    return prediction
-
-
-def infer(image_path: Path, inferencer: Inferencer, output_path: Optional[Path] = None, overlay: bool = False) -> None:
-    """Perform inference on a single image.
-
-    Args:
-        image_path (Path): Path to image/directory containing images.
-        inferencer (Inferencer): Inferencer to use.
-        output_path (Path, optional): Path to save the output image. If this is None, the output is visualized.
-        overlay (bool, optional): Overlay the segmentation mask on the image. It assumes that the task is segmentation.
-    """
-    # Perform inference for the given image or image path. if image
-    # path is provided, `predict` method will read the image from
-    # file for convenience. We set the superimpose flag to True
-    # to overlay the predicted anomaly map on top of the input image.
-    prediction = inferencer.predict(image=image_path, superimpose=True, overlay_mask=overlay)
-
-    # Incase both anomaly map and scores are returned add scores to the image.
-    if isinstance(prediction, tuple):
-        anomaly_map, score = prediction
-        output_image = add_label(anomaly_map, score)
-
-    # Show or save the output image, depending on what's provided as
-    # the command line argument.
-    output_image = cv2.cvtColor(output_image, cv2.COLOR_RGB2BGR)
-    if output_path is None:
-        cv2.imshow("Anomaly Map", output_image)
-        cv2.waitKey(0)  # wait for any key press
-    else:
-        # Create directory for parents if it doesn't exist.
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        if output_path.suffix == "":  # This is a directory
-            output_path.mkdir(exist_ok=True)  # Create current directory
-            output_path = output_path / image_path.name
-        cv2.imwrite(filename=str(output_path), img=output_image)
-
-
-def stream() -> None:
-    """Stream predictions.
+def infer() -> None:
+    """Infer predictions.
 
     Show/save the output if path is to an image. If the path is a directory, go over each image in the directory.
     """
@@ -119,25 +68,25 @@ def stream() -> None:
     # This config file is also used for training and contains all the relevant
     # information regarding the data, model, train and inference details.
     args = get_args()
-    config = get_configurable_parameters(config_path=args.config)
 
     # Get the inferencer.
-    inferencer = OpenVINOInferencer(config=config, path=args.weights, meta_data_path=args.meta_data)
+    inferencer = OpenVINOInferencer(config=args.config, path=args.weights, meta_data_path=args.meta_data)
+    visualizer = Visualizer(mode=args.visualization_mode, task=args.task)
 
-    if args.input.is_dir():
-        # Write the output to save_path in the same structure as the input directory.
-        for image in args.input.glob("**/*"):
-            if image.is_file() and image.suffix in IMG_EXTENSIONS:
-                # Here save_path is assumed to be a directory. Image subdirectories are appended to the save_path.
-                save_path = Path(args.output / image.relative_to(args.input).parent) if args.output else None
-                infer(image, inferencer, save_path, args.overlay_mask)
-    elif args.input.suffix in IMG_EXTENSIONS:
-        infer(args.input, inferencer, args.output, args.overlay_mask)
-    else:
-        raise ValueError(
-            f"Image extension is not supported. Supported extensions are .jpg, .png, .jpeg." f" Got {args.input.suffix}"
-        )
+    filenames = get_image_filenames(path=args.input)
+    for filename in filenames:
+        image = read_image(filename)
+        predictions = inferencer.predict(image=image)
+        output = visualizer.visualize_image(predictions)
+
+        if args.output:
+            file_path = generate_output_image_filename(input_path=args.input, output_path=args.output)
+            visualizer.save(file_path=file_path, image=output)
+
+        # Show the image in case the flag is set by the user.
+        if args.show:
+            visualizer.show(title="Output Image", image=output)
 
 
 if __name__ == "__main__":
-    stream()
+    infer()

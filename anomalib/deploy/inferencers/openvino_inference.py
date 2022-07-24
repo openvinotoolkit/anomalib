@@ -22,6 +22,7 @@ import cv2
 import numpy as np
 from omegaconf import DictConfig, ListConfig
 
+from anomalib.config import get_configurable_parameters
 from anomalib.pre_processing import PreProcessor
 
 from .base_inference import Inferencer
@@ -36,7 +37,7 @@ class OpenVINOInferencer(Inferencer):
     """OpenVINO implementation for the inference.
 
     Args:
-        config (DictConfig): Configurable parameters that are used
+        config (Union[str, Path, DictConfig, ListConfig]): Configurable parameters that are used
             during the training stage.
         path (Union[str, Path]): Path to the openvino onnx, xml or bin file.
         meta_data_path (Union[str, Path], optional): Path to metadata file. Defaults to None.
@@ -44,11 +45,18 @@ class OpenVINOInferencer(Inferencer):
 
     def __init__(
         self,
-        config: Union[DictConfig, ListConfig],
+        config: Union[str, Path, DictConfig, ListConfig],
         path: Union[str, Path, Tuple[bytes, bytes]],
         meta_data_path: Union[str, Path] = None,
     ):
-        self.config = config
+        # Check and load the configuration
+        if isinstance(config, (str, Path)):
+            self.config = get_configurable_parameters(config_path=config)
+        elif isinstance(config, (DictConfig, ListConfig)):
+            self.config = config
+        else:
+            raise ValueError(f"Unknown config type {type(config)}")
+
         self.input_blob, self.output_blob, self.network = self.load_model(path)
         self.meta_data = super()._load_meta_data(meta_data_path)
 
@@ -150,7 +158,7 @@ class OpenVINOInferencer(Inferencer):
 
         pred_mask: Optional[float] = None
         if "pixel_threshold" in meta_data:
-            pred_mask = anomaly_map >= meta_data["pixel_threshold"]
+            pred_mask = (anomaly_map >= meta_data["pixel_threshold"]).astype(np.uint8)
 
         anomaly_map, pred_score = self._normalize(anomaly_map, pred_score, meta_data)
 
@@ -158,6 +166,9 @@ class OpenVINOInferencer(Inferencer):
             image_height = meta_data["image_shape"][0]
             image_width = meta_data["image_shape"][1]
             anomaly_map = cv2.resize(anomaly_map, (image_width, image_height))
+
+            if pred_mask is not None:
+                pred_mask = cv2.resize(pred_mask, (image_width, image_height))
 
         return {
             "anomaly_map": anomaly_map,
