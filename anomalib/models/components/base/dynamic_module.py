@@ -34,7 +34,7 @@ class DynamicBufferModule(ABC, nn.Module):
         Returns:
             Tensor: Tensor attribute
         """
-        attribute = self.__getattr__(attribute_name)
+        attribute = getattr(self, attribute_name)
         if isinstance(attribute, Tensor):
             return attribute
 
