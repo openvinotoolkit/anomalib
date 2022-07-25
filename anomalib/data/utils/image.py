@@ -15,6 +15,7 @@
 # and limitations under the License.
 
 import math
+import warnings
 from pathlib import Path
 from typing import List, Union
 
@@ -25,31 +26,128 @@ from torch import Tensor
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
 
-def get_image_filenames(path: Union[str, Path]) -> List[str]:
+def get_image_filenames(path: Union[str, Path]) -> List[Path]:
     """Get image filenames.
 
     Args:
         path (Union[str, Path]): Path to image or image-folder.
 
     Returns:
-        List[str]: List of image filenames
+        List[Path]: List of image filenames
 
     """
-    image_filenames: List[str]
+    image_filenames: List[Path]
 
     if isinstance(path, str):
         path = Path(path)
 
     if path.is_file() and path.suffix in IMG_EXTENSIONS:
-        image_filenames = [str(path)]
+        image_filenames = [path]
 
     if path.is_dir():
-        image_filenames = [str(p) for p in path.glob("**/*") if p.suffix in IMG_EXTENSIONS]
+        image_filenames = [p for p in path.glob("**/*") if p.suffix in IMG_EXTENSIONS]
 
     if len(image_filenames) == 0:
         raise ValueError(f"Found 0 images in {path}")
 
     return image_filenames
+
+
+def duplicate_filename(path: Union[str, Path]) -> Path:
+    """Check and duplicate filename.
+
+    This function checks the path and adds a suffix if it already exists on the file system.
+
+    Args:
+        path (Union[str, Path]): Input Path
+
+    Examples:
+        >>> path = Path("datasets/MVTec/bottle/test/broken_large/000.png")
+        >>> path.exists()
+        True
+
+        If we pass this to ``duplicate_filename`` function we would get the following:
+        >>> duplicate_filename(path)
+        PosixPath('datasets/MVTec/bottle/test/broken_large/000_1.png')
+
+    Returns:
+        Path: Duplicated output path.
+    """
+
+    if isinstance(path, str):
+        path = Path(path)
+
+    i = 0
+    while True:
+        duplicated_path = path if i == 0 else path.parent / (path.stem + f"_{i}" + path.suffix)
+        if not duplicated_path.exists():
+            break
+        i += 1
+
+    return duplicated_path
+
+
+def generate_output_image_filename(input_path: Union[str, Path], output_path: Union[str, Path]) -> Path:
+    """Generate an output filename to save the inference image.
+
+    This function generates an output filaname by checking the input and output filenames. Input path is
+    the input to infer, and output path is the path to save the output predictions specified by the user.
+
+    The function expects ``input_path`` to always be a file, not a directory. ``output_path`` could be a
+    filename or directory. If it is a filename, the function checks if the specified filename exists on
+    the file system. If yes, the function calls ``duplicate_filename`` to duplicate the filename to avoid
+    overwriting the existing file. If ``output_path`` is a directory, this function adds the parent and
+    filenames of ``input_path`` to ``output_path``.
+
+    Args:
+        input_path (Union[str, Path]): Path to the input image to infer.
+        output_path (Union[str, Path]): Path to output to save the predictions.
+            Could be a filename or a directory.
+
+    Examples:
+        >>> input_path = Path("datasets/MVTec/bottle/test/broken_large/000.png")
+        >>> output_path = Path("datasets/MVTec/bottle/test/broken_large/000.png")
+        >>> generate_output_image_filename(input_path, output_path)
+        PosixPath('datasets/MVTec/bottle/test/broken_large/000_1.png')
+
+        >>> input_path = Path("datasets/MVTec/bottle/test/broken_large/000.png")
+        >>> output_path = Path("results/images")
+        >>> generate_output_image_filename(input_path, output_path)
+        PosixPath('results/images/broken_large/000.png')
+
+    Raises:
+        ValueError: When the ``input_path`` is not a file.
+
+    Returns:
+        Path: The output filename to save the output predictions from the inferencer.
+    """
+
+    if isinstance(input_path, str):
+        input_path = Path(input_path)
+
+    if isinstance(output_path, str):
+        output_path = Path(output_path)
+
+    # This function expects an ``input_path`` that is a file. This is to check if output_path
+    if input_path.is_file() is False:
+        raise ValueError("input_path is expected to be a file to generate a proper output filename.")
+
+    file_path: Path
+    if output_path.suffix == "":
+        # If the output is a directory, then add parent directory name
+        # and filename to the path. This is to ensure we do not overwrite
+        # images and organize based on the categories.
+        file_path = output_path / input_path.parent.name / input_path.name
+
+    # This new ``file_path`` might contain a directory path yet to be created.
+    # Create the parent directory to avoid such cases.
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if file_path.is_file():
+        warnings.warn(f"{output_path} already exists. Renaming the file to avoid overwriting.")
+        file_path = duplicate_filename(file_path)
+
+    return file_path
 
 
 def read_image(path: Union[str, Path]) -> np.ndarray:

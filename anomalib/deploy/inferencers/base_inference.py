@@ -16,7 +16,7 @@
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Union, cast
+from typing import Any, Dict, Optional, Tuple, Union, cast
 
 import cv2
 import numpy as np
@@ -26,7 +26,7 @@ from skimage.segmentation import find_boundaries
 from torch import Tensor
 
 from anomalib.data.utils import read_image
-from anomalib.post_processing import compute_mask, superimpose_anomaly_map
+from anomalib.post_processing import ImageResult, compute_mask
 from anomalib.post_processing.normalization.cdf import normalize as normalize_cdf
 from anomalib.post_processing.normalization.cdf import standardize
 from anomalib.post_processing.normalization.min_max import (
@@ -57,18 +57,16 @@ class Inferencer(ABC):
 
     @abstractmethod
     def post_process(
-        self, predictions: Union[np.ndarray, Tensor], meta_data: Optional[Dict]
-    ) -> Tuple[np.ndarray, float]:
+        self, predictions: Union[np.ndarray, Tensor], meta_data: Optional[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Post-Process."""
         raise NotImplementedError
 
     def predict(
         self,
         image: Union[str, np.ndarray, Path],
-        superimpose: bool = True,
-        meta_data: Optional[dict] = None,
-        overlay_mask: bool = False,
-    ) -> Tuple[np.ndarray, float]:
+        meta_data: Optional[Dict[str, Any]] = None,
+    ) -> ImageResult:
         """Perform a prediction for a given input image.
 
         The main workflow is (i) pre-processing, (ii) forward-pass, (iii) post-process.
@@ -77,14 +75,10 @@ class Inferencer(ABC):
             image (Union[str, np.ndarray]): Input image whose output is to be predicted.
                 It could be either a path to image or numpy array itself.
 
-            superimpose (bool): If this is set to True, output predictions
-                will be superimposed onto the original image. If false, `predict`
-                method will return the raw heatmap.
-
-            overlay_mask (bool): If this is set to True, output segmentation mask on top of image.
+            meta_data: Meta-data information such as shape, threshold.
 
         Returns:
-            np.ndarray: Output predictions to be visualized.
+            ImageResult: Prediction results to be visualized.
         """
         if meta_data is None:
             if hasattr(self, "meta_data"):
@@ -99,16 +93,15 @@ class Inferencer(ABC):
 
         processed_image = self.pre_process(image_arr)
         predictions = self.forward(processed_image)
-        anomaly_map, pred_scores = self.post_process(predictions, meta_data=meta_data)
+        output = self.post_process(predictions, meta_data=meta_data)
 
-        # Overlay segmentation mask using raw predictions
-        if overlay_mask and meta_data is not None:
-            image_arr = self._superimpose_segmentation_mask(meta_data, anomaly_map, image_arr)
-
-        if superimpose is True:
-            anomaly_map = superimpose_anomaly_map(anomaly_map, image_arr)
-
-        return anomaly_map, pred_scores
+        return ImageResult(
+            image=image_arr,
+            pred_score=output["pred_score"],
+            pred_label=output["pred_label"],
+            anomaly_map=output["anomaly_map"],
+            pred_mask=output["pred_mask"],
+        )
 
     def _superimpose_segmentation_mask(self, meta_data: dict, anomaly_map: np.ndarray, image: np.ndarray):
         """Superimpose segmentation mask on top of image.
@@ -130,14 +123,14 @@ class Inferencer(ABC):
         image[outlines] = [255, 0, 0]
         return image
 
-    def __call__(self, image: np.ndarray) -> Tuple[np.ndarray, float]:
+    def __call__(self, image: np.ndarray) -> ImageResult:
         """Call predict on the Image.
 
         Args:
             image (np.ndarray): Input Image
 
         Returns:
-            np.ndarray: Output predictions to be visualized
+            ImageResult: Prediction results to be visualized.
         """
         return self.predict(image)
 
@@ -185,9 +178,7 @@ class Inferencer(ABC):
 
         return anomaly_maps, float(pred_scores)
 
-    def _load_meta_data(
-        self, path: Optional[Union[str, Path]] = None
-    ) -> Union[DictConfig, Dict[str, Union[float, np.ndarray, Tensor]]]:
+    def _load_meta_data(self, path: Optional[Union[str, Path]] = None) -> Union[DictConfig, Dict]:
         """Loads the meta data from the given path.
 
         Args:

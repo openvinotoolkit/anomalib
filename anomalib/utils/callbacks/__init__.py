@@ -133,7 +133,7 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
                 OpenVINOCallback(
                     input_size=config.model.input_size,
                     dirpath=os.path.join(config.project.path, "openvino"),
-                    filename="openvino_model",
+                    filename="model",
                 )
             )
 
