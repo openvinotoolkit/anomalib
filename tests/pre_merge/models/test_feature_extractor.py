@@ -1,6 +1,5 @@
 import pytest
 import torch
-import torchvision
 
 from anomalib.models.components.feature_extractors import FeatureExtractor
 
