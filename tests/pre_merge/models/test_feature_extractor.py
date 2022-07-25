@@ -16,8 +16,8 @@ class TestFeatureExtractor:
     def test_feature_extraction(self, backbone, pretrained):
         layers = ["layer1", "layer2", "layer3"]
         model = FeatureExtractor(backbone=backbone, layers=layers, pre_trained=pretrained)
-        input = torch.rand((32, 3, 256, 256))
-        features = model(input)
+        test_input = torch.rand((32, 3, 256, 256))
+        features = model(test_input)
 
         if backbone == "resnet18":
             assert features["layer1"].shape == torch.Size((32, 64, 64, 64))
@@ -32,4 +32,4 @@ class TestFeatureExtractor:
             assert model.out_dims == [256, 512, 1024]
             assert model.idx == [1, 2, 3]
         else:
-            assert "Unknown key for backbone"
+            pass
