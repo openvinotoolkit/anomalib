@@ -50,11 +50,13 @@ class ImageResult:
         """Generate heatmap overlay and segmentations, convert masks to images."""
         if self.anomaly_map is not None:
             self.heat_map = superimpose_anomaly_map(self.anomaly_map, self.image, normalize=False)
-        if self.pred_mask is not None and np.max(self.pred_mask) <= 1.0:
+        if self.pred_mask is not None and self.pred_mask.max() <= 1.0:
             self.pred_mask *= 255
-        if self.gt_mask is not None and np.max(self.gt_mask) <= 1.0:
+            self.segmentations = mark_boundaries(self.image, self.pred_mask, color=(1, 0, 0), mode="thick")
+            if self.segmentations.max() <= 1.0:
+                self.segmentations = (self.segmentations * 255).astype(np.uint8)
+        if self.gt_mask is not None and self.gt_mask.max() <= 1.0:
             self.gt_mask *= 255
-        self.segmentations = mark_boundaries(self.image, self.pred_mask, color=(1, 0, 0), mode="thick")
 
 
 class Visualizer:
@@ -221,7 +223,7 @@ class ImageGrid:
             Image consisting of a grid of added images and their title.
         """
         num_cols = len(self.images)
-        figure_size = (num_cols * 3, 3)
+        figure_size = (num_cols * 5, 5)
         self.figure, self.axis = plt.subplots(1, num_cols, figsize=figure_size)
         self.figure.subplots_adjust(right=0.9)
 
