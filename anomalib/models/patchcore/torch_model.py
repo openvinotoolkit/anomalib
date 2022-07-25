@@ -18,7 +18,6 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 import torch.nn.functional as F
-import torchvision
 from torch import Tensor, nn
 
 from anomalib.models.components import (
@@ -44,12 +43,12 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         super().__init__()
         self.tiler: Optional[Tiler] = None
 
-        self.backbone = getattr(torchvision.models, backbone)
+        self.backbone = backbone
         self.layers = layers
         self.input_size = input_size
         self.num_neighbors = num_neighbors
 
-        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=pre_trained), layers=self.layers)
+        self.feature_extractor = FeatureExtractor(backbone=self.backbone, pre_trained=pre_trained, layers=self.layers)
         self.feature_pooler = torch.nn.AvgPool2d(3, 1, 1)
         self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
 

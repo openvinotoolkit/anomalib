@@ -16,7 +16,6 @@
 
 from typing import Dict, List, Optional, Tuple
 
-import torchvision
 from torch import Tensor, nn
 
 from anomalib.models.components import FeatureExtractor
@@ -42,9 +41,9 @@ class STFPMModel(nn.Module):
         super().__init__()
         self.tiler: Optional[Tiler] = None
 
-        self.backbone = getattr(torchvision.models, backbone)
-        self.teacher_model = FeatureExtractor(backbone=self.backbone(pretrained=True), layers=layers)
-        self.student_model = FeatureExtractor(backbone=self.backbone(pretrained=False), layers=layers)
+        self.backbone = backbone
+        self.teacher_model = FeatureExtractor(backbone=self.backbone, pre_trained=True, layers=layers)
+        self.student_model = FeatureExtractor(backbone=self.backbone, pre_trained=False, layers=layers)
 
         # teacher model is fixed
         for parameters in self.teacher_model.parameters():

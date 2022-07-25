@@ -18,7 +18,6 @@ import math
 
 import torch
 import torch.nn.functional as F
-import torchvision
 from torch import Tensor, nn
 
 from anomalib.models.components import PCA, DynamicBufferModule, FeatureExtractor
@@ -103,13 +102,15 @@ class DFMModel(nn.Module):
         score_type: str = "fre",
     ):
         super().__init__()
-        self.backbone = getattr(torchvision.models, backbone)
+        self.backbone = backbone
         self.pooling_kernel_size = pooling_kernel_size
         self.n_components = n_comps
         self.pca_model = PCA(n_components=self.n_components)
         self.gaussian_model = SingleClassGaussian()
         self.score_type = score_type
-        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=pre_trained), layers=[layer]).eval()
+        self.feature_extractor = FeatureExtractor(
+            backbone=self.backbone, pre_trained=pre_trained, layers=[layer]
+        ).eval()
 
     def fit(self, dataset: Tensor) -> None:
         """Fit a pca transformation and a Gaussian model to dataset.
