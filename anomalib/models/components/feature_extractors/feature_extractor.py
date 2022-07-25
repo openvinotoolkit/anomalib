@@ -54,6 +54,7 @@ class FeatureExtractor(nn.Module):
             backbone,
             pretrained=pre_trained,
             features_only=True,
+            exportable=True,
             out_indices=self.idx,
         )
         self.out_dims = self.feature_extractor.feature_info.channels()
