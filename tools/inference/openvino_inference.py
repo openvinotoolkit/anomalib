@@ -28,7 +28,7 @@ def get_args() -> Namespace:
     parser = ArgumentParser()
     parser.add_argument("--config", type=Path, required=True, help="Path to a config file")
     parser.add_argument("--weights", type=Path, required=True, help="Path to model weights")
-    parser.add_argument("--meta_data", type=Path, required=False, help="Path to a JSON file containing the metadata.")
+    parser.add_argument("--meta_data", type=Path, required=True, help="Path to a JSON file containing the metadata.")
     parser.add_argument("--input", type=Path, required=True, help="Path to an image to infer.")
     parser.add_argument("--output", type=Path, required=False, help="Path to save the output image.")
     parser.add_argument(
