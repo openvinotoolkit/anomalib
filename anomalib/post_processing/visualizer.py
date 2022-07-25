@@ -142,7 +142,7 @@ class Visualizer:
 
         return visualization.generate()
 
-    def _visualize_simple(self, image_result: ImageResult) -> None:
+    def _visualize_simple(self, image_result: ImageResult) -> np.ndarray:
         """Generate a simple visualization for an image.
 
         The simple visualization mode only shows the model's predictions in a single image.

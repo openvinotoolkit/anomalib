@@ -96,7 +96,7 @@ class Inferencer(ABC):
         output = self.post_process(predictions, meta_data=meta_data)
 
         return ImageResult(
-            image=image,
+            image=image_arr,
             pred_score=output["pred_score"],
             pred_label=output["pred_label"],
             anomaly_map=output["anomaly_map"],
