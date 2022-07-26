@@ -146,29 +146,41 @@ class OpenVINOInferencer(Inferencer):
             meta_data = self.meta_data
 
         predictions = predictions[self.output_blob]
-        anomaly_map = predictions.squeeze()
-        pred_score = anomaly_map.reshape(-1).max()
+
+        # Initialize the result variables.
+        anomaly_map: Optional[np.ndarray] = None
+        pred_label: Optional[float] = None
+        pred_mask: Optional[float] = None
+
+        # If predictions returns a single value, this means that the task is
+        # classification, and the value is the classification prediction score.
+        if len(predictions.shape) == 1:
+            task = "classification"
+            pred_score = predictions.item()
+        else:
+            task = "segmentation"
+            anomaly_map = predictions.squeeze()
+            pred_score = anomaly_map.reshape(-1).max()
 
         # Common practice in anomaly detection is to assign anomalous
         # label to the prediction if the prediction score is greater
         # than the image threshold.
-        pred_label: Optional[float] = None
         if "image_threshold" in meta_data:
             pred_label = pred_score >= meta_data["image_threshold"]
 
-        pred_mask: Optional[float] = None
-        if "pixel_threshold" in meta_data:
-            pred_mask = (anomaly_map >= meta_data["pixel_threshold"]).astype(np.uint8)
+        if task == "segmentation":
+            if "pixel_threshold" in meta_data:
+                pred_mask = (anomaly_map >= meta_data["pixel_threshold"]).astype(np.uint8)
 
-        anomaly_map, pred_score = self._normalize(anomaly_map, pred_score, meta_data)
+            anomaly_map, pred_score = self._normalize(anomaly_map, pred_score, meta_data)
 
-        if "image_shape" in meta_data and anomaly_map.shape != meta_data["image_shape"]:
-            image_height = meta_data["image_shape"][0]
-            image_width = meta_data["image_shape"][1]
-            anomaly_map = cv2.resize(anomaly_map, (image_width, image_height))
+            if "image_shape" in meta_data and anomaly_map.shape != meta_data["image_shape"]:
+                image_height = meta_data["image_shape"][0]
+                image_width = meta_data["image_shape"][1]
+                anomaly_map = cv2.resize(anomaly_map, (image_width, image_height))
 
-            if pred_mask is not None:
-                pred_mask = cv2.resize(pred_mask, (image_width, image_height))
+                if pred_mask is not None:
+                    pred_mask = cv2.resize(pred_mask, (image_width, image_height))
 
         return {
             "anomaly_map": anomaly_map,
