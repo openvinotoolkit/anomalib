@@ -143,7 +143,7 @@ class TorchInferencer(Inferencer):
             meta_data = self.meta_data
 
         if isinstance(predictions, Tensor):
-            anomaly_map = predictions
+            anomaly_map = predictions.cpu().numpy()
             pred_score = anomaly_map.reshape(-1).max()
         else:
             # NOTE: Patchcore `forward`` returns heatmap and score.
@@ -152,10 +152,11 @@ class TorchInferencer(Inferencer):
             #   throws an error regarding type mismatch torch vs np.
             if isinstance(predictions[1], (Tensor)):
                 anomaly_map, pred_score = predictions
-                pred_score = pred_score.detach()
+                anomaly_map = anomaly_map.detach().cpu().numpy()
+                pred_score = pred_score.detach().cpu().numpy()
             else:
                 anomaly_map, pred_score = predictions
-                pred_score = pred_score.detach().numpy()
+                pred_score = pred_score.detach()
 
         # Common practice in anomaly detection is to assign anomalous
         # label to the prediction if the prediction score is greater
@@ -167,7 +168,7 @@ class TorchInferencer(Inferencer):
 
         pred_mask: Optional[np.ndarray] = None
         if "pixel_threshold" in meta_data:
-            pred_mask = (anomaly_map >= meta_data["pixel_threshold"]).squeeze().cpu().numpy().astype(np.uint8)
+            pred_mask = (anomaly_map >= meta_data["pixel_threshold"]).squeeze().astype(np.uint8)
 
         anomaly_map = anomaly_map.squeeze()
         anomaly_map, pred_score = self._normalize(anomaly_map, pred_score, meta_data)
