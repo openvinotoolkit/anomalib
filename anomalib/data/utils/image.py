@@ -138,6 +138,8 @@ def generate_output_image_filename(input_path: Union[str, Path], output_path: Un
         # and filename to the path. This is to ensure we do not overwrite
         # images and organize based on the categories.
         file_path = output_path / input_path.parent.name / input_path.name
+    else:
+        file_path = output_path
 
     # This new ``file_path`` might contain a directory path yet to be created.
     # Create the parent directory to avoid such cases.

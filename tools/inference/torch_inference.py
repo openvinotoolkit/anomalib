@@ -28,7 +28,6 @@ def get_args() -> Namespace:
     parser = ArgumentParser()
     parser.add_argument("--config", type=Path, required=True, help="Path to a config file")
     parser.add_argument("--weights", type=Path, required=True, help="Path to model weights")
-    parser.add_argument("--meta_data", type=Path, required=False, help="Path to a JSON file containing the metadata.")
     parser.add_argument("--input", type=Path, required=True, help="Path to an image to infer.")
     parser.add_argument("--output", type=Path, required=False, help="Path to save the output image.")
     parser.add_argument(
@@ -70,7 +69,7 @@ def infer() -> None:
     args = get_args()
 
     # Create the inferencer and visualizer.
-    inferencer = TorchInferencer(config=args.config, model_source=args.weights, meta_data_path=args.meta_data)
+    inferencer = TorchInferencer(config=args.config, model_source=args.weights)
     visualizer = Visualizer(mode=args.visualization_mode, task=args.task)
 
     filenames = get_image_filenames(path=args.input)
@@ -80,7 +79,7 @@ def infer() -> None:
         output = visualizer.visualize_image(predictions)
 
         if args.output:
-            file_path = generate_output_image_filename(input_path=args.input, output_path=args.output)
+            file_path = generate_output_image_filename(input_path=filename, output_path=args.output)
             visualizer.save(file_path=file_path, image=output)
 
         # Show the image in case the flag is set by the user.
