@@ -25,7 +25,7 @@ from omegaconf import DictConfig, ListConfig
 from anomalib.config import get_configurable_parameters
 from anomalib.pre_processing import PreProcessor
 
-from .base_inference import Inferencer
+from .base_inferencer import Inferencer
 
 if find_spec("openvino") is not None:
     from openvino.inference_engine import (  # type: ignore  # pylint: disable=no-name-in-module
