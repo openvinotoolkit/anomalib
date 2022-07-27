@@ -1,14 +1,12 @@
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # SETUP CONFIGURATION.                                                        #
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 [build-system]
 requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# ISORT CONFIGURATION.
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# ISORT CONFIGURATION.                                                        #
 [tool.isort]
 profile = "black"
 known_first_party = "wandb"
@@ -16,8 +14,7 @@ sections = ['FUTURE', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'LOCALFOLDER']
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# BLACK CONFIGURATION
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# BLACK CONFIGURATION                                                         #
 [tool.black]
 line-length = 120
 
@@ -28,7 +25,6 @@ max-line-length = 120
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # PYLINT CONFIGURATION                                                        #
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 [tool.pylint.main]
 extension-pkg-whitelist = "cv2"
 ignore = ["tests", "docs", "anomalib/models/components/freia"]
@@ -65,7 +61,6 @@ min-similarity-lines = 5
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # MYPY CONFIGURATION.                                                         #
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 [tool.mypy]
 ignore_missing_imports = true
 show_error_codes = true
@@ -84,7 +79,6 @@ follow_imports_for_stubs = true
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # COVERAGE CONFIGURATION                                                      #
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 [tool.coverage.report]
 exclude_lines = [
     "except ImportError",
@@ -111,6 +105,5 @@ ignore = [
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # NBQA CONFIGURATION                                                          #
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 [tool.nbqa.addopts]
 pylint = ["--disable=C0103,C0114,C0116,E0401,R0801,W0106"]
