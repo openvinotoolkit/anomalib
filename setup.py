@@ -91,9 +91,8 @@ VERSION = get_version()
 LONG_DESCRIPTION = (Path(__file__).parent / "README.md").read_text(encoding="utf8")
 INSTALL_REQUIRES = get_required_packages(requirement_files=["base"])
 EXTRAS_REQUIRE = {
-    "dev": get_required_packages(requirement_files=["dev", "docs"]),
     "openvino": get_required_packages(requirement_files=["openvino"]),
-    "full": get_required_packages(requirement_files=["dev", "docs", "openvino"]),
+    "full": get_required_packages(requirement_files=["docs", "openvino"]),
 }
 
 
