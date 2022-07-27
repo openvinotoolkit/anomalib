@@ -47,7 +47,7 @@ class InferenceDataset(Dataset):
         """
         super().__init__()
 
-        self.image_filenames = [str(filename) for filename in get_image_filenames(path)]
+        self.image_filenames = get_image_filenames(path)
 
         if pre_process is None:
             self.pre_process = PreProcessor(transform_config, image_size)
@@ -63,6 +63,6 @@ class InferenceDataset(Dataset):
         image_filename = self.image_filenames[index]
         image = read_image(path=image_filename)
         pre_processed = self.pre_process(image=image)
-        pre_processed["image_path"] = image_filename
+        pre_processed["image_path"] = str(image_filename)
 
         return pre_processed

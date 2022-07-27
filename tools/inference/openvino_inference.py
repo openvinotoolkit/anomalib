@@ -7,6 +7,7 @@ command line, and show the visualization results.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import warnings
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
@@ -78,6 +79,11 @@ def infer() -> None:
         image = read_image(filename)
         predictions = inferencer.predict(image=image)
         output = visualizer.visualize_image(predictions)
+
+        if args.output is None and args.show is False:
+            warnings.warn(
+                "Neither output path is provided nor show flag is set. Inferencer will run but return nothing."
+            )
 
         if args.output:
             file_path = generate_output_image_filename(input_path=args.input, output_path=args.output)
