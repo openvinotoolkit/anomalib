@@ -39,7 +39,7 @@ class ImageResult:
     image: np.ndarray
     pred_score: float
     pred_label: str
-    anomaly_map: np.ndarray
+    anomaly_map: Optional[np.ndarray] = None
     gt_mask: Optional[np.ndarray] = None
     pred_mask: Optional[np.ndarray] = None
 
