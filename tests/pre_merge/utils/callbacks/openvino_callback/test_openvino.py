@@ -23,9 +23,7 @@ def test_openvino_model_callback():
         config.project.path = tmp_dir
         model = DummyLightningModule(hparams=config)
         model.callbacks = [
-            OpenVINOCallback(
-                input_size=config.model.input_size, dirpath=os.path.join(tmp_dir), filename="openvino_model"
-            ),
+            OpenVINOCallback(input_size=config.model.input_size, dirpath=os.path.join(tmp_dir), filename="model"),
             EarlyStopping(monitor=config.model.metric),
         ]
         datamodule = FakeDataModule()
@@ -39,4 +37,4 @@ def test_openvino_model_callback():
         )
         trainer.fit(model, datamodule=datamodule)
 
-        assert os.path.exists(os.path.join(tmp_dir, "openvino_model.bin")), "Failed to generate OpenVINO model"
+        assert os.path.exists(os.path.join(tmp_dir, "model.bin")), "Failed to generate OpenVINO model"

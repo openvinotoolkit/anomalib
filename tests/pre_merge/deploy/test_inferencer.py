@@ -77,7 +77,7 @@ class TestInferencers:
             meta_data = get_meta_data(model, model_config.dataset.image_size)
             with torch.no_grad():
                 for image in torch_dataloader():
-                    torch_inferencer.predict(image, superimpose=False, meta_data=meta_data)
+                    torch_inferencer.predict(image, meta_data=meta_data)
 
     @pytest.mark.parametrize(
         "model_name",
@@ -120,4 +120,4 @@ class TestInferencers:
             openvino_dataloader = MockImageLoader(model_config.dataset.image_size, total_count=1)
             meta_data = get_meta_data(model, model_config.dataset.image_size)
             for image in openvino_dataloader():
-                openvino_inferencer.predict(image, superimpose=False, meta_data=meta_data)
+                openvino_inferencer.predict(image, meta_data=meta_data)

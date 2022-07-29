@@ -114,7 +114,7 @@ def get_torch_throughput(
     start_time = time.time()
     # Since we don't care about performance metrics and just the throughput, use mock data.
     for image in torch_dataloader():
-        inferencer.predict(image, superimpose=False, meta_data=meta_data)
+        inferencer.predict(image, meta_data=meta_data)
 
     # get throughput
     inference_time = time.time() - start_time
@@ -143,7 +143,7 @@ def get_openvino_throughput(
     start_time = time.time()
     # Create test images on CPU. Since we don't care about performance metrics and just the throughput, use mock data.
     for image in openvino_dataloader():
-        inferencer.predict(image, superimpose=False, meta_data=meta_data)
+        inferencer.predict(image, meta_data=meta_data)
 
     # get throughput
     inference_time = time.time() - start_time

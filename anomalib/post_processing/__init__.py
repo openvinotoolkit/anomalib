@@ -21,7 +21,7 @@ from .post_process import (
     compute_mask,
     superimpose_anomaly_map,
 )
-from .visualizer import Visualizer
+from .visualizer import ImageResult, Visualizer
 
 __all__ = [
     "add_anomalous_label",
@@ -29,5 +29,6 @@ __all__ = [
     "anomaly_map_to_color_map",
     "superimpose_anomaly_map",
     "compute_mask",
+    "ImageResult",
     "Visualizer",
 ]
