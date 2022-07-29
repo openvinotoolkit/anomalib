@@ -57,6 +57,8 @@ def get_sweep_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]
 
     # Add selective feature model
     if "selective_feature_model" in config.model.keys() and config.model.selective_feature_model.apply:
-        callbacks.append(SelectiveFeatureModelCallback(config.model.selective_feature_model.feature_percentage))
+        callbacks.append(
+            SelectiveFeatureModelCallback(config.project.path, config.model.selective_feature_model.feature_percentage)
+        )
 
     return callbacks

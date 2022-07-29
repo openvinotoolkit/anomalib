@@ -83,7 +83,7 @@ def hide_output(func):
     return wrapper
 
 
-@hide_output
+# @hide_output
 def get_single_model_metrics(model_config: Union[DictConfig, ListConfig], openvino_metrics: bool = False) -> Dict:
     """Collects metrics for `model_name` and returns a dict of results.
 
@@ -121,25 +121,25 @@ def get_single_model_metrics(model_config: Union[DictConfig, ListConfig], openvi
 
         meta_data = get_meta_data(model, model_config.model.input_size)
 
-        throughput = get_torch_throughput(model_config, model, datamodule.test_dataloader().dataset, meta_data)
+        # throughput = get_torch_throughput(model_config, model, datamodule.test_dataloader().dataset, meta_data)
 
         # Get OpenVINO metrics
-        openvino_throughput = float("nan")
-        if openvino_metrics:
-            # Create dirs for openvino model export
-            openvino_export_path = project_path / Path("exported_models")
-            openvino_export_path.mkdir(parents=True, exist_ok=True)
-            convert_to_openvino(model, openvino_export_path, model_config.model.input_size)
-            openvino_throughput = get_openvino_throughput(
-                model_config, openvino_export_path, datamodule.test_dataloader().dataset, meta_data
-            )
+        # openvino_throughput = float("nan")
+        # if openvino_metrics:
+        #     # Create dirs for openvino model export
+        #     openvino_export_path = project_path / Path("exported_models")
+        #     openvino_export_path.mkdir(parents=True, exist_ok=True)
+        #     convert_to_openvino(model, openvino_export_path, model_config.model.input_size)
+        #     openvino_throughput = get_openvino_throughput(
+        #         model_config, openvino_export_path, datamodule.test_dataloader().dataset, meta_data
+        #     )
 
         # arrange the data
         data = {
-            "Training Time (s)": training_time,
-            "Testing Time (s)": testing_time,
-            "Inference Throughput (fps)": throughput,
-            "OpenVINO Inference Throughput (fps)": openvino_throughput,
+            # "Training Time (s)": training_time,
+            # "Testing Time (s)": testing_time,
+            # "Inference Throughput (fps)": throughput,
+            # "OpenVINO Inference Throughput (fps)": openvino_throughput,
         }
         for key, val in test_results[0].items():
             data[key] = float(val)
@@ -182,18 +182,14 @@ def compute_on_gpu(
 
 def distribute_over_gpus(sweep_config: Union[DictConfig, ListConfig]):
     """Distribute metric collection over all available GPUs. This is done by splitting the list of configurations."""
-    with ProcessPoolExecutor(
-        max_workers=torch.cuda.device_count(), mp_context=multiprocessing.get_context("spawn")
-    ) as executor:
+    with ProcessPoolExecutor(max_workers=1, mp_context=multiprocessing.get_context("spawn")) as executor:
         run_configs = list(get_run_config(sweep_config.grid_search))
         jobs = []
-        for device_id, run_split in enumerate(
-            range(0, len(run_configs), math.ceil(len(run_configs) / torch.cuda.device_count()))
-        ):
+        for device_id, run_split in enumerate(range(0, len(run_configs), math.ceil(len(run_configs) / 1))):
             jobs.append(
                 executor.submit(
                     compute_on_gpu,
-                    run_configs[run_split : run_split + math.ceil(len(run_configs) / torch.cuda.device_count())],
+                    run_configs[run_split : run_split + math.ceil(len(run_configs) / 1)],
                     device_id + 1,
                     sweep_config.seed,
                     sweep_config.writer,
