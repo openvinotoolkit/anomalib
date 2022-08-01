@@ -16,7 +16,6 @@ jobs:
       - name: Install requirements
         run: |
           pip install -r requirements/base.txt
-          pip install -r requirements/dev.txt
           pip install -r requirements/openvino.txt
       - name: Build and Commit Docs
         run: |
