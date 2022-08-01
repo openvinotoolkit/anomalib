@@ -1,6 +1,6 @@
 # FastFlow: Unsupervised Anomaly Detection and Localization via 2D Normalizing Flows
 
-This is the implementation of the [FastFlow](https://arxiv.org/abs/2111.07677) paper. This code is developed by utilizing the torch model implemented in  [https://github.com/gathierry/FastFlow](https://github.com/gathierry/FastFlow).
+This is the implementation of the [FastFlow](https://arxiv.org/abs/2111.07677) paper. This code is developed by utilizing the torch model implemented in [https://github.com/gathierry/FastFlow](https://github.com/gathierry/FastFlow).
 
 Model Type: Segmentation
 
@@ -23,6 +23,7 @@ All results gathered with seed `0`.
 ## [MVTec AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 
 ---
+
 **NOTE**
 
 When the numbers are produced, early stopping callback (patience: 3) is used. It might be possible to achieve higher-metrics by increasing the patience.
@@ -50,7 +51,6 @@ When the numbers are produced, early stopping callback (patience: 3) is used. It
 | Zipper     |   0.878   |     0.951     | 0.981 | 0.977 |
 | Average    |           |               |       |       |
 
-
 ### Pixel-Level AUC
 
 |            | ResNet-18 | Wide ResNet50 | DeiT  | CaiT  |
@@ -72,9 +72,8 @@ When the numbers are produced, early stopping callback (patience: 3) is used. It
 | Zipper     |   0.965   |     0.985     | 0.978 | 0.979 |
 | Average    |           |               |       |       |
 
-
-
 ### Image F1 Score
+
 |            | ResNet-18 | Wide ResNet50 | DeiT  | CaiT  |
 | ---------- | :-------: | :-----------: | :---: | :---: |
 | Bottle     |   0.976   |     0.952     | 0.741 | 0.977 |
@@ -95,6 +94,7 @@ When the numbers are produced, early stopping callback (patience: 3) is used. It
 | Average    |           |               |       |       |
 
 ### Pixel F1 Score
+
 |            | ResNet-18 | Wide ResNet50 | DeiT  | CaiT  |
 | ---------- | :-------: | :-----------: | :---: | :---: |
 | Bottle     |   0.670   |     0.733     | 0.753 | 0.725 |
@@ -113,7 +113,6 @@ When the numbers are produced, early stopping callback (patience: 3) is used. It
 | Wood       |   0.557   |     0.488     | 0.614 | 0.572 |
 | Zipper     |   0.492   |     0.621     | 0.522 | 0.504 |
 | Average    |           |               |       |       |
-
 
 ### Sample Results
 

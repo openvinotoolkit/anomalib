@@ -11,6 +11,7 @@ DRAEM is a reconstruction based algorithm that consists of a reconstructive subn
 For optimal results, DRAEM requires specifying the path to a folder of image data that will be used as the source of the anomalous pixel regions in the simulated anomaly images. The path can be specified by editing the value of the `model.anomaly_source_path` parameter in the `config.yaml` file. The authors of the original paper recommend using the [DTD](https://www.robots.ox.ac.uk/~vgg/data/dtd/) dataset as anomaly source.
 
 ## Architecture
+
 ![DRAEM Architecture](../../../docs/source/images/draem/architecture.png "DRAEM Architecture")
 
 ## Usage

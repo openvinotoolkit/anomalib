@@ -15,10 +15,10 @@
 | Folder   | [103_folder](100_datamodules/103_folder.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/development/notebooks/100_datamodules/103_folder.ipynb) |
 
 ## 2. Models
-| Notebook     | GitHub                                                      | Colab                                                                                                                                                                                                              |
-| ------------ | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Model | [201_fastflow](200_models/201_fastflow.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/development/notebooks/200_models/201_fastflow.ipynb) |
 
+| Notebook | GitHub                                        | Colab                                                                                                                                                                                                    |
+| -------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Model    | [201_fastflow](200_models/201_fastflow.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/development/notebooks/200_models/201_fastflow.ipynb) |
 
 ## 3. Benchmarking and Hyperparameter Optimization
 
