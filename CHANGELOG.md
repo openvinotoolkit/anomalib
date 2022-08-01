@@ -29,7 +29,7 @@
 - Remove docs requirements by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/467>
 - Add codacy badge to readme by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/468>
 
-## New Contributors
+New Contributors
 
 - @ORippler made their first contribution in <https://github.com/openvinotoolkit/anomalib/pull/417>
 - @jeongHwarr made their first contribution in <https://github.com/openvinotoolkit/anomalib/pull/404>
