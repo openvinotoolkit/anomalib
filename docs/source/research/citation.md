@@ -2,7 +2,7 @@
 
 You can cite this repository as
 
-```
+```tex
 @misc{anomalib,
       title={Anomalib: A Deep Learning Library for Anomaly Detection},
       author={Samet Akcay and

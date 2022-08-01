@@ -3,7 +3,8 @@
 <img src="docs/source/images/logos/anomalib-wide-blue.png" width="600px">
 
 **A library for benchmarking, developing and deploying deep learning anomaly detection algorithms**
-___
+
+---
 
 [Key Features](#key-features) •
 [Getting Started](#getting-started) •
@@ -18,11 +19,12 @@ ___
 [![Pre-merge Checks](https://github.com/openvinotoolkit/anomalib/actions/workflows/pre_merge.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/pre_merge.yml)
 [![Build Docs](https://github.com/openvinotoolkit/anomalib/actions/workflows/docs.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/docs.yml)
 [![Downloads](https://static.pepy.tech/personalized-badge/anomalib?period=total&units=international_system&left_color=grey&right_color=green&left_text=PyPI%20Downloads)](https://pepy.tech/project/anomalib)
+
 </div>
 
-___
+---
 
-## Introduction
+# Introduction
 
 Anomalib is a deep learning library that aims to collect state-of-the-art anomaly detection algorithms for benchmarking on both public and private datasets. Anomalib provides several ready-to-use implementations of anomaly detection algorithms described in the recent literature, as well as a set of tools that facilitate the development and implementation of custom models. The library has a strong focus on image-based anomaly detection, where the goal of the algorithm is to identify anomalous images, or anomalous pixel regions within images in a dataset. Anomalib is constantly updated with new algorithms and training/inference extensions, so keep checking!
 
@@ -35,13 +37,13 @@ Anomalib is a deep learning library that aims to collect state-of-the-art anomal
 - All models can be exported to [**OpenVINO**](https://www.intel.com/content/www/us/en/developer/tools/openvino-toolkit/overview.html) Intermediate Representation (IR) for accelerated inference on intel hardware.
 - A set of [inference tools](#inference) for quick and easy deployment of the standard or custom anomaly detection models.
 
-___
+---
 
-## Getting Started
+# Getting Started
 
 To get an overview of all the devices where `anomalib` as been tested thoroughly, look at the [Supported Hardware](https://openvinotoolkit.github.io/anomalib/#supported-hardware) section in the documentation.
 
-### Jupyter Notebooks
+## Jupyter Notebooks
 
 For getting started with a Jupyter Notebook, please refer to the [Notebooks](./notebooks) folder of this repository. Additionally, you can refer to a few created by the community:
 
@@ -49,7 +51,7 @@ For getting started with a Jupyter Notebook, please refer to the [Notebooks](./n
 
 <a target="_blank" href="https://www.kaggle.com/code/ipythonx/mvtec-ad-anomaly-detection-with-anomalib-library"><img src="https://kaggle.com/static/images/open-in-kaggle.svg" /></a> by [@innat](https://github.com/innat)
 
-### PyPI Install
+## PyPI Install
 
 You can get started with `anomalib` by just using pip.
 
@@ -57,7 +59,8 @@ You can get started with `anomalib` by just using pip.
 pip install anomalib
 ```
 
-### Local Install
+## Local Install
+
 It is highly recommended to use virtual environment when installing anomalib. For instance, with [anaconda](https://www.anaconda.com/products/individual), `anomalib` could be installed as,
 
 ```bash
@@ -68,11 +71,12 @@ cd anomalib
 pip install -e .
 ```
 
-## Training
-### ⚠️ Anomalib < v.0.4.0
+# Training
+
+## ⚠️ Anomalib < v.0.4.0
 
 By default [`python tools/train.py`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/-/blob/development/train.py)
-runs [PADIM](https://arxiv.org/abs/2011.08785) model on `leather` category from the [MVTec AD](https://www.mvtec.com/company/research/datasets/mvtec-ad) [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/)  dataset.
+runs [PADIM](https://arxiv.org/abs/2011.08785) model on `leather` category from the [MVTec AD](https://www.mvtec.com/company/research/datasets/mvtec-ad) [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/) dataset.
 
 ```bash
 python tools/train.py    # Train PADIM on MVTec AD leather
@@ -110,8 +114,10 @@ where the currently available models are:
 - [STFPM](anomalib/models/stfpm)
 - [GANomaly](anomalib/models/ganomaly)
 
-### Custom Dataset
+## Custom Dataset
+
 It is also possible to train on a custom folder dataset. To do so, `data` section in `config.yaml` is to be modified as follows:
+
 ```yaml
 dataset:
   name: <name-of-the-dataset>
@@ -123,7 +129,7 @@ dataset:
   task: segmentation # classification or segmentation
   mask: <path/to/mask/annotations> #optional
   extensions: null
-  split_ratio: 0.2  # ratio of the normal images that will be used to create a test split
+  split_ratio: 0.2 # ratio of the normal images that will be used to create a test split
   image_size: 256
   train_batch_size: 32
   test_batch_size: 32
@@ -141,21 +147,26 @@ dataset:
     random_tile_count: 16
 ```
 
-### ⚠️ Anomalib > v.0.4.0 Beta - Subject to Change
+## ⚠️ Anomalib > v.0.4.0 Beta - Subject to Change
+
 We introduce a new CLI approach that uses [PyTorch Lightning CLI](https://pytorch-lightning.readthedocs.io/en/stable/common/lightning_cli.html). To train a model using the new CLI, one would call the following:
+
 ```bash
 anomalib fit --config <path/to/new/config/file>
 ```
 
 For instance, to train a [PatchCore](https://github.com/openvinotoolkit/anomalib/tree/development/anomalib/models/patchcore) model, the following command would be run:
+
 ```bash
 anomalib fit --config ./configs/model/patchcore.yaml
 ```
 
 The new CLI approach offers a lot more flexibility, details of which are explained in the [documentation](https://pytorch-lightning.readthedocs.io/en/stable/common/lightning_cli.html).
 
-## Inference
-### ⚠️ Anomalib < v.0.4.0
+# Inference
+
+## ⚠️ Anomalib < v.0.4.0
+
 Anomalib includes multiple tools, including Lightning, Gradio, and OpenVINO inferencers, for performing inference with a trained model.
 
 The following command can be used to run PyTorch Lightning inference from the command line:
@@ -205,7 +216,7 @@ python tools/inference/gradio_inference.py \
         --weights ./results/padim/mvtec/bottle/weights/model.ckpt
 ```
 
-## Hyperparameter Optimization
+# Hyperparameter Optimization
 
 To run hyperparameter optimization, use the following command:
 
@@ -217,7 +228,7 @@ python tools/hpo/sweep.py \
 
 For more details refer the [HPO Documentation](https://openvinotoolkit.github.io/anomalib/guides/hyperparameter_optimization.html)
 
-## Benchmarking
+# Benchmarking
 
 To gather benchmarking data such as throughput across categories, use the following command:
 
@@ -228,7 +239,7 @@ python tools/benchmarking/benchmark.py \
 
 Refer to the [Benchmarking Documentation](https://openvinotoolkit.github.io/anomalib/guides/benchmarking.html) for more details.
 
-## Logging Images
+# Logging Images
 
 You can save images locally or to a logger such TensorBoard or Weights and Biases by setting the following configuration.
 
@@ -239,18 +250,19 @@ logging:
 ```
 
 For more information on logging images, refer to the [Logging Documentation](https://openvinotoolkit.github.io/anomalib/guides/logging.html)
-___
 
-## Datasets
+---
+
+# Datasets
 
 `anomalib` supports MVTec AD [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/) and BeanTech [(CC-BY-SA)](https://creativecommons.org/licenses/by-sa/4.0/legalcode) for benchmarking and `folder` for custom dataset training/inference.
 
-### [MVTec AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
+## [MVTec AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 
 MVTec AD dataset is one of the main benchmarks for anomaly detection, and is released under the
 Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 
-### Image-Level AUC
+## Image-Level AUC
 
 | Model         |                    |    Avg    |  Carpet   |   Grid    | Leather |   Tile    |   Wood    | Bottle  |   Cable   |  Capsule  | Hazelnut | Metal Nut |   Pill    |   Screw   | Toothbrush | Transistor |  Zipper   |
 | ------------- | ------------------ | :-------: | :-------: | :-------: | :-----: | :-------: | :-------: | :-----: | :-------: | :-------: | :------: | :-------: | :-------: | :-------: | :--------: | :--------: | :-------: |
@@ -279,7 +291,7 @@ Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License 
 | STFPM         | Wide ResNet-50     |   0.903   |   0.987   | **0.989** |   0.980   |   0.966   |   0.956   |   0.966   |   0.913   |   0.956   |   0.974   |   0.961   |   0.946   |   0.988   |   0.178    |   0.807    |   0.980   |
 | STFPM         | ResNet-18          |   0.951   |   0.986   |   0.988   |   0.991   |   0.946   |   0.949   |   0.971   |   0.898   |   0.962   |   0.981   |   0.942   |   0.878   |   0.983   |   0.983    |   0.838    |   0.972   |
 
-### Image F1 Score
+## Image F1 Score
 
 | Model         |                    |    Avg    |  Carpet   |   Grid    |  Leather  |   Tile    |   Wood    |  Bottle   |   Cable   |  Capsule  | Hazelnut  | Metal Nut |   Pill    |   Screw   | Toothbrush | Transistor |  Zipper   |
 | ------------- | ------------------ | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :--------: | :--------: | :-------: |
@@ -296,9 +308,11 @@ Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License 
 | DFKDE         | ResNet-18          |   0.872   |   0.864   |   0.844   |   0.854   |   0.960   |   0.898   |   0.942   |   0.793   |   0.908   |   0.827   |   0.894   |   0.916   |   0.859   |   0.853    |   0.756    |   0.916   |
 | GANomaly      |                    |   0.834   |   0.864   |   0.844   |   0.852   |   0.836   |   0.863   |   0.863   |   0.760   |   0.905   |   0.777   |   0.894   |   0.916   |   0.853   |   0.833    |   0.571    |   0.881   |
 
-## Reference
+# Reference
+
 If you use this library and love it, use this to cite it 🤗
-```
+
+```tex
 @misc{anomalib,
       title={Anomalib: A Deep Learning Library for Anomaly Detection},
       author={Samet Akcay and
