@@ -1,4 +1,4 @@
-name: Nightly-regression Test
+name: Nightly-Regression Tests
 
 on:
   workflow_dispatch: # run on request (no need for PR)
