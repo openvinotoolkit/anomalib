@@ -22,14 +22,17 @@ import pytorch_lightning as pl
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning import seed_everything
 from pytorch_lightning.loggers import WandbLogger
+from utils import flatten_hpo_params
 
 import wandb
 from anomalib.config import get_configurable_parameters, update_input_size_config
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
-from anomalib.utils.sweep import flatten_sweep_params, set_in_nested_config
-
-from .utils import flatten_hpo_params
+from anomalib.utils.sweep import (
+    flatten_sweep_params,
+    get_sweep_callbacks,
+    set_in_nested_config,
+)
 
 
 class WandbSweep:
@@ -70,11 +73,12 @@ class WandbSweep:
 
         model = get_model(config)
         datamodule = get_datamodule(config)
+        callbacks = get_sweep_callbacks(config)
 
         # Disable saving checkpoints as all checkpoints from the sweep will get uploaded
         config.trainer.checkpoint_callback = False
 
-        trainer = pl.Trainer(**config.trainer, logger=wandb_logger)
+        trainer = pl.Trainer(**config.trainer, logger=wandb_logger, callbacks=callbacks)
         trainer.fit(model, datamodule=datamodule)
 
 
