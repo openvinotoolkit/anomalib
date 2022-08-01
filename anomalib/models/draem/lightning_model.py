@@ -68,7 +68,7 @@ class Draem(AnomalyModule):
             Dictionary to which predicted anomaly maps have been added.
         """
         prediction = self.model(batch["image"])
-        batch["anomaly_maps"] = prediction[:, 1, :, :]
+        batch["anomaly_maps"] = prediction
         return batch
 
 
