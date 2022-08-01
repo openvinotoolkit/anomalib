@@ -1,3 +1,8 @@
+################################################################################
+# Modified using
+# https://github.com/jumanjihouse/pre-commit-hooks/blob/master/ci/jumanjistyle.rb
+################################################################################
+
 
 # frozen_string_literal: true
 
