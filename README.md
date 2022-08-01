@@ -11,6 +11,7 @@
 [Docs](https://openvinotoolkit.github.io/anomalib) •
 [License](https://github.com/openvinotoolkit/anomalib/blob/development/LICENSE)
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/51cc2e6cc2b6406aaef3436baf87edc9)](https://app.codacy.com/gh/openvinotoolkit/anomalib?utm_source=github.com&utm_medium=referral&utm_content=openvinotoolkit/anomalib&utm_campaign=Badge_Grade_Settings)
 [![python](https://img.shields.io/badge/python-3.7%2B-green)]()
 [![pytorch](https://img.shields.io/badge/pytorch-1.8.1%2B-orange)]()
 [![openvino](https://img.shields.io/badge/openvino-2021.4.2-purple)]()
