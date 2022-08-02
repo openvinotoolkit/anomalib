@@ -106,9 +106,11 @@ class TorchInferencer(Inferencer):
         Returns:
             Tensor: pre-processed image.
         """
-        config = self.config.transform if "transform" in self.config.keys() else None
+        transform_config = (
+            self.config.dataset.transform_config.val if "transform_config" in self.config.dataset.keys() else None
+        )
         image_size = tuple(self.config.dataset.image_size)
-        pre_processor = PreProcessor(config, image_size)
+        pre_processor = PreProcessor(transform_config, image_size)
         processed_image = pre_processor(image=image)["image"]
 
         if len(processed_image) == 3:
@@ -143,7 +145,7 @@ class TorchInferencer(Inferencer):
             meta_data = self.meta_data
 
         if isinstance(predictions, Tensor):
-            anomaly_map = predictions.cpu().numpy()
+            anomaly_map = predictions.detach().cpu().numpy()
             pred_score = anomaly_map.reshape(-1).max()
         else:
             # NOTE: Patchcore `forward`` returns heatmap and score.
