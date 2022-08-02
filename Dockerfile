@@ -32,10 +32,10 @@ FROM python_base_cuda as anomalib_development_env
 
 # Install all anomalib requirements
 COPY ./requirements/base.txt /tmp/anomalib/requirements/base.txt
-RUN pip install -r /tmp/anomalib/requirements/base.txt
+RUN pip install --no-cache-dir -r /tmp/anomalib/requirements/base.txt
 
 COPY ./requirements/openvino.txt /tmp/anomalib/requirements/openvino.txt
-RUN pip install -r /tmp/anomalib/requirements/openvino.txt
+RUN pip install --no-cache-dir -r /tmp/anomalib/requirements/openvino.txt
 
 # Install other requirements related to development
 RUN apt-get update && \
@@ -46,9 +46,9 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 COPY ./requirements/dev.txt /tmp/anomalib/requirements/dev.txt
-RUN pip install -r /tmp/anomalib/requirements/dev.txt
+RUN pip install --no-cache-dir -r /tmp/anomalib/requirements/dev.txt
 
 # Install anomalib
 COPY . /anomalib
 WORKDIR /anomalib
-RUN pip install -e .
+RUN pip install --no-cache-dir -e .
