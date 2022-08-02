@@ -10,9 +10,9 @@ from anomalib.models.utils import GaussianBlur2d
 @pytest.mark.parametrize("channels", list(range(1, 6)))
 def test_blur_equivalence(kernel_size, sigma, channels):
     for _ in range(10):
-        input = torch.randn((3, channels, 128, 128))
+        input_tensor = torch.randn((3, channels, 128, 128))
         kornia = korniaGaussianBlur2d(kernel_size, sigma, separable=False)
-        blur_kornia = kornia(input)
+        blur_kornia = kornia(input_tensor)
         gaussian = GaussianBlur2d(kernel_size, sigma, channels)
-        blur_gaussian = gaussian(input)
+        blur_gaussian = gaussian(input_tensor)
         torch.testing.assert_allclose(blur_kornia, blur_gaussian)
