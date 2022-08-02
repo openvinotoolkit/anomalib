@@ -29,6 +29,7 @@ COPY ./requirements/openvino.txt /tmp/anomalib/requirements/openvino.txt
 RUN pip install -r /tmp/anomalib/requirements/openvino.txt
 
 # Install other requirements related to development
+RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y nodejs npm ruby
 COPY ./requirements/dev.txt /tmp/anomalib/requirements/dev.txt
 RUN pip install -r /tmp/anomalib/requirements/dev.txt
 
