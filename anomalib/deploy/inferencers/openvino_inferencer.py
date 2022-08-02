@@ -104,9 +104,11 @@ class OpenVINOInferencer(Inferencer):
         Returns:
             np.ndarray: pre-processed image.
         """
-        config = self.config.transform if "transform" in self.config.keys() else None
+        transform_config = (
+            self.config.dataset.transform_config.val if "transform_config" in self.config.dataset.keys() else None
+        )
         image_size = tuple(self.config.dataset.image_size)
-        pre_processor = PreProcessor(config, image_size)
+        pre_processor = PreProcessor(transform_config, image_size)
         processed_image = pre_processor(image=image)["image"]
 
         if len(processed_image.shape) == 3:

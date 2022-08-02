@@ -48,7 +48,18 @@ def get_model_config(
 class TestInferencers:
     @pytest.mark.parametrize(
         "model_name",
-        ["cflow", "dfm", "dfkde", "fastflow", "ganomaly", "padim", "patchcore", "reverse_distillation", "stfpm"],
+        [
+            "cflow",
+            "dfm",
+            "dfkde",
+            "draem",
+            "fastflow",
+            "ganomaly",
+            "padim",
+            "patchcore",
+            "reverse_distillation",
+            "stfpm",
+        ],
     )
     @TestDataset(num_train=20, num_test=1, path=get_dataset_path(), use_mvtec=False)
     def test_torch_inference(self, model_name: str, category: str = "shapes", path: str = "./datasets/MVTec"):
@@ -81,12 +92,7 @@ class TestInferencers:
 
     @pytest.mark.parametrize(
         "model_name",
-        [
-            "dfm",
-            "ganomaly",
-            "padim",
-            "stfpm",
-        ],
+        ["dfm", "draem", "ganomaly", "padim", "stfpm"],
     )
     @TestDataset(num_train=20, num_test=1, path=get_dataset_path(), use_mvtec=False)
     def test_openvino_inference(self, model_name: str, category: str = "shapes", path: str = "./datasets/MVTec"):
