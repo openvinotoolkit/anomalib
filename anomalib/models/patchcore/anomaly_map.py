@@ -18,11 +18,13 @@ from typing import Tuple, Union
 
 import torch
 import torch.nn.functional as F
-from kornia.filters import gaussian_blur2d
 from omegaconf import ListConfig
+from torch import nn
+
+from anomalib.models.utils import GaussianBlur2d
 
 
-class AnomalyMapGenerator:
+class AnomalyMapGenerator(nn.Module):
     """Generate Anomaly Heatmap."""
 
     def __init__(
@@ -30,8 +32,10 @@ class AnomalyMapGenerator:
         input_size: Union[ListConfig, Tuple],
         sigma: int = 4,
     ) -> None:
+        super().__init__()
         self.input_size = input_size
-        self.sigma = sigma
+        kernel_size = 2 * int(4.0 * sigma + 0.5) + 1
+        self.blur = GaussianBlur2d(kernel_size=(kernel_size, kernel_size), sigma=(sigma, sigma), channels=1)
 
     def compute_anomaly_map(self, patch_scores: torch.Tensor, feature_map_shape: torch.Size) -> torch.Tensor:
         """Pixel Level Anomaly Heatmap.
@@ -49,8 +53,7 @@ class AnomalyMapGenerator:
         anomaly_map = patch_scores[:, 0].reshape((batch_size, 1, width, height))
         anomaly_map = F.interpolate(anomaly_map, size=(self.input_size[0], self.input_size[1]))
 
-        kernel_size = 2 * int(4.0 * self.sigma + 0.5) + 1
-        anomaly_map = gaussian_blur2d(anomaly_map, (kernel_size, kernel_size), sigma=(self.sigma, self.sigma))
+        anomaly_map = self.blur(anomaly_map)
 
         return anomaly_map
 
@@ -69,7 +72,7 @@ class AnomalyMapGenerator:
         score = weights * torch.max(patch_scores[:, 0])
         return score
 
-    def __call__(self, **kwargs: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, **kwargs: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """Returns anomaly_map and anomaly_score.
 
         Expects `patch_scores` keyword to be passed explicitly
