@@ -1,5 +1,14 @@
 # Changelog
 
+## v.0.3.5
+
+## What's Changed
+
+- 🐞 Fix inference for draem by @djdameln in <https://github.com/openvinotoolkit/anomalib/pull/470>
+- 🐞 🛠 Bug fix in the inferencer by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/475>
+
+**Full Changelog**: <https://github.com/openvinotoolkit/anomalib/compare/v0.3.4...v0.3.5>
+
 ## v.0.3.4
 
 ## What's Changed

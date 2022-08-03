@@ -9,7 +9,7 @@
 [Key Features](#key-features) •
 [Getting Started](#getting-started) •
 [Docs](https://openvinotoolkit.github.io/anomalib) •
-[License](https://github.com/openvinotoolkit/anomalib/blob/development/LICENSE)
+[License](https://github.com/openvinotoolkit/anomalib/blob/main/LICENSE)
 
 [![python](https://img.shields.io/badge/python-3.7%2B-green)]()
 [![pytorch](https://img.shields.io/badge/pytorch-1.8.1%2B-orange)]()
@@ -76,7 +76,7 @@ pip install -e .
 
 ## ⚠️ Anomalib < v.0.4.0
 
-By default [`python tools/train.py`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/-/blob/development/train.py)
+By default [`python tools/train.py`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/-/blob/main/train.py)
 runs [PADIM](https://arxiv.org/abs/2011.08785) model on `leather` category from the [MVTec AD](https://www.mvtec.com/company/research/datasets/mvtec-ad) [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/) dataset.
 
 ```bash
@@ -84,7 +84,7 @@ python tools/train.py    # Train PADIM on MVTec AD leather
 ```
 
 Training a model on a specific dataset and category requires further configuration. Each model has its own configuration
-file, [`config.yaml`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/-/blob/development/padim/anomalib/models/padim/config.yaml)
+file, [`config.yaml`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/-/blob/main/padim/anomalib/models/padim/config.yaml)
 , which contains data, model and training configurable parameters. To train a specific model on a specific dataset and
 category, the config file is to be provided:
 
@@ -156,7 +156,7 @@ We introduce a new CLI approach that uses [PyTorch Lightning CLI](https://pytorc
 anomalib fit --config <path/to/new/config/file>
 ```
 
-For instance, to train a [PatchCore](https://github.com/openvinotoolkit/anomalib/tree/development/anomalib/models/patchcore) model, the following command would be run:
+For instance, to train a [PatchCore](https://github.com/openvinotoolkit/anomalib/tree/main/anomalib/models/patchcore) model, the following command would be run:
 
 ```bash
 anomalib fit --config ./configs/model/patchcore.yaml
