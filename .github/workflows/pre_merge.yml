@@ -2,7 +2,7 @@ name: Pre-Merge Checks
 
 on:
   push:
-    branches: [development, master]
+    branches: [main]
   pull_request:
   workflow_dispatch: # run on request (no need for PR)
 
