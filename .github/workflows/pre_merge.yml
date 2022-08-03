@@ -1,8 +1,8 @@
-name: Pre-merge Checks
+name: Pre-Merge Checks
 
 on:
   push:
-    branches: [development, master]
+    branches: [main]
   pull_request:
   workflow_dispatch: # run on request (no need for PR)
 
@@ -19,7 +19,7 @@ jobs:
       - name: Install Tox
         run: pip install tox
       - name: Code quality checks
-        run: tox -e black,isort,flake8,pylint,mypy,pydocstyle,notebooks
+        run: tox -e pre-commit
       - name: Coverage
         run: |
           export ANOMALIB_DATASET_PATH=/media/data1/datasets/

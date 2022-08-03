@@ -38,7 +38,7 @@ class DraemModel(nn.Module):
         prediction = self.discriminative_subnetwork(concatenated_inputs)
         if self.training:
             return reconstruction, prediction
-        return torch.softmax(prediction, dim=1)
+        return torch.softmax(prediction, dim=1)[:, 1, ...]
 
 
 class ReconstructiveSubNetwork(nn.Module):

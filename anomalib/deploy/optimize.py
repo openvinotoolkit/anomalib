@@ -38,14 +38,14 @@ def get_model_metadata(model: AnomalyModule) -> Dict[str, Tensor]:
     """
     meta_data = {}
     cached_meta_data = {
-        "image_threshold": model.image_threshold.cpu().value,
-        "pixel_threshold": model.pixel_threshold.cpu().value,
+        "image_threshold": model.image_threshold.cpu().value.item(),
+        "pixel_threshold": model.pixel_threshold.cpu().value.item(),
         "pixel_mean": model.training_distribution.pixel_mean.cpu(),
         "image_mean": model.training_distribution.image_mean.cpu(),
         "pixel_std": model.training_distribution.pixel_std.cpu(),
         "image_std": model.training_distribution.image_std.cpu(),
-        "min": model.min_max.min.cpu(),
-        "max": model.min_max.max.cpu(),
+        "min": model.min_max.min.cpu().item(),
+        "max": model.min_max.max.cpu().item(),
     }
     # Remove undefined values by copying in a new dict
     for key, val in cached_meta_data.items():

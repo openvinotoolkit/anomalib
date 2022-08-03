@@ -2,3 +2,7 @@
 * text=auto eol=lf
 *.{cmd,[cC][mM][dD]} text eol=crlf
 *.{bat,[bB][aA][tT]} text eol=crlf
+
+# Ignore *ipynb files to detect the language.
+# This is because GitHub misdetects the repo language when ipynb files are included.
+*.ipynb linguist-detectable=false

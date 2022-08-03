@@ -1,13 +1,13 @@
 # Structure of the Documentation
 
-
 This documentation is divided into the following sections:
+
 1. Getting Started
-2. Models
-3. API Reference
-4. Tutorials
-5. Guides
-6. Research
+1. Models
+1. API Reference
+1. Tutorials
+1. Guides
+1. Research
 
 ## Getting Started
 
@@ -23,6 +23,7 @@ responsibility to update this page when a new model is added to the repo.
 
 This page lists all the modules, classes and functions available within the `anomalib` package. This page is update
 automatically for the following modules:
+
 - config
 - core
 - datasets

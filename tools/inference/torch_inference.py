@@ -1,7 +1,7 @@
-"""Anomalib Inferencer Script.
+"""Anomalib Torch Inferencer Script.
 
-This script performs inference by reading a model config file from
-command line, and show the visualization results.
+This script performs torch inference by reading model config files and weights
+from command line, and show the visualization results.
 """
 
 # Copyright (C) 2022 Intel Corporation
@@ -16,7 +16,7 @@ from anomalib.data.utils import (
     get_image_filenames,
     read_image,
 )
-from anomalib.deploy import OpenVINOInferencer
+from anomalib.deploy import TorchInferencer
 from anomalib.post_processing import Visualizer
 
 
@@ -29,7 +29,6 @@ def get_args() -> Namespace:
     parser = ArgumentParser()
     parser.add_argument("--config", type=Path, required=True, help="Path to a config file")
     parser.add_argument("--weights", type=Path, required=True, help="Path to model weights")
-    parser.add_argument("--meta_data", type=Path, required=True, help="Path to a JSON file containing the metadata.")
     parser.add_argument("--input", type=Path, required=True, help="Path to an image to infer.")
     parser.add_argument("--output", type=Path, required=False, help="Path to save the output image.")
     parser.add_argument(
@@ -70,8 +69,8 @@ def infer() -> None:
     # information regarding the data, model, train and inference details.
     args = get_args()
 
-    # Get the inferencer.
-    inferencer = OpenVINOInferencer(config=args.config, path=args.weights, meta_data_path=args.meta_data)
+    # Create the inferencer and visualizer.
+    inferencer = TorchInferencer(config=args.config, model_source=args.weights)
     visualizer = Visualizer(mode=args.visualization_mode, task=args.task)
 
     filenames = get_image_filenames(path=args.input)
@@ -86,7 +85,7 @@ def infer() -> None:
             )
 
         if args.output:
-            file_path = generate_output_image_filename(input_path=args.input, output_path=args.output)
+            file_path = generate_output_image_filename(input_path=filename, output_path=args.output)
             visualizer.save(file_path=file_path, image=output)
 
         # Show the image in case the flag is set by the user.

@@ -38,7 +38,7 @@ After building the image, you can run it as follows
 	anomalib \
 	/bin/bash
 
-This creates an interactive bash session inside the Docker container, in which you can run all anomalib commands as described in the `readme <https://github.com/openvinotoolkit/anomalib/blob/development/README.md>`_.
+This creates an interactive bash session inside the Docker container, in which you can run all anomalib commands as described in the `readme <https://github.com/openvinotoolkit/anomalib/blob/main/README.md>`_.
 
 The source code is mapped into the running container by means of the `-v "$(pwd)":/anomalib` parameter. This facilitates changes to the source code without having to rebuild the Docker image.
 

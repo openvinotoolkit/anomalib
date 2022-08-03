@@ -63,7 +63,10 @@ def infer():
 
     trainer = Trainer(callbacks=callbacks, **config.trainer)
 
-    dataset = InferenceDataset(args.input, image_size=tuple(config.dataset.image_size))
+    transform_config = config.dataset.transform_config.val if "transform_config" in config.dataset.keys() else None
+    dataset = InferenceDataset(
+        args.input, image_size=tuple(config.dataset.image_size), transform_config=transform_config
+    )
     dataloader = DataLoader(dataset)
     trainer.predict(model=model, dataloaders=[dataloader])
 
