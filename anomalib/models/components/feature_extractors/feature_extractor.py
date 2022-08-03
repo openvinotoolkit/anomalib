@@ -17,6 +17,7 @@ This script extracts features from a CNN network
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import warnings
 from typing import Dict, List
 
 import timm
@@ -49,16 +50,35 @@ class FeatureExtractor(nn.Module):
         super().__init__()
         self.backbone = backbone
         self.layers = layers
-        self.idx = [int(i.split("layer")[1]) for i in layers]
+        self.idx = self._map_layer_to_idx()
+        print(self.idx)
         self.feature_extractor = timm.create_model(
             backbone,
             pretrained=pre_trained,
-            features_only=True,
+            features_only=False,
             exportable=True,
             out_indices=self.idx,
         )
         self.out_dims = self.feature_extractor.feature_info.channels()
         self._features = {layer: torch.empty(0) for layer in self.layers}
+
+    def _map_layer_to_idx(self) -> List[int]:
+        idx = []
+        features = timm.create_model(
+            self.backbone,
+            pretrained=False,
+            features_only=False,
+            exportable=True,
+        )
+        for i in self.layers:
+            try:
+                idx.append(list(dict(features.named_children()).keys()).index(i) - 3)
+            except ValueError:
+                warnings.warn(f"Layer {i} not found in model {self.backbone}")
+                # Remove unfound key from layer dict
+                self.layers.remove(i)
+
+        return idx
 
     def forward(self, input_tensor: Tensor) -> Dict[str, Tensor]:
         """Forward-pass input tensor into the CNN.
