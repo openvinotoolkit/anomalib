@@ -60,7 +60,6 @@ class DfkdeModel(nn.Module):
         self.threshold_offset = threshold_offset
 
         _backbone = getattr(torchvision.models, backbone)
-        self.layers = layers
         self.feature_extractor = FeatureExtractor(backbone=_backbone(pretrained=pre_trained), layers=layers).eval()
 
         self.pca_model = PCA(n_components=self.n_components)
