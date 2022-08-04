@@ -43,6 +43,7 @@ class DfkdeModel(nn.Module):
 
     def __init__(
         self,
+        layers: List[str],
         backbone: str,
         pre_trained: bool = True,
         n_comps: int = 16,
@@ -59,7 +60,8 @@ class DfkdeModel(nn.Module):
         self.threshold_offset = threshold_offset
 
         _backbone = getattr(torchvision.models, backbone)
-        self.feature_extractor = FeatureExtractor(backbone=_backbone(pretrained=pre_trained), layers=["avgpool"]).eval()
+        self.layers = layers
+        self.feature_extractor = FeatureExtractor(backbone=_backbone(pretrained=pre_trained), layers=layers).eval()
 
         self.pca_model = PCA(n_components=self.n_components)
         self.kde_model = GaussianKDE()
