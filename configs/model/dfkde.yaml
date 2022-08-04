@@ -24,6 +24,8 @@ model:
   init_args:
     backbone: resnet18
     pre_trained: true
+    layers:
+      - avgpool
     max_training_points: 40000
     pre_processing: scale
     n_components: 16

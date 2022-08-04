@@ -47,6 +47,7 @@ class Dfkde(AnomalyModule):
 
     def __init__(
         self,
+        layers: List[str],
         backbone: str,
         pre_trained: bool = True,
         max_training_points: int = 40000,
@@ -58,6 +59,7 @@ class Dfkde(AnomalyModule):
         super().__init__()
 
         self.model = DfkdeModel(
+            layers=layers,
             backbone=backbone,
             pre_trained=pre_trained,
             n_comps=n_components,
@@ -126,6 +128,7 @@ class DfkdeLightning(Dfkde):
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
         super().__init__(
+            layers=hparams.model.layers,
             backbone=hparams.model.backbone,
             max_training_points=hparams.model.max_training_points,
             pre_processing=hparams.model.pre_processing,
