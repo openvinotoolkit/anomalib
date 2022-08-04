@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from .blur import GaussianBlur2d
 from .post_process import (
     add_anomalous_label,
     add_normal_label,
@@ -32,5 +31,4 @@ __all__ = [
     "compute_mask",
     "ImageResult",
     "Visualizer",
-    "GaussianBlur2d",
 ]

@@ -21,7 +21,7 @@ import torch.nn.functional as F
 from omegaconf import ListConfig
 from torch import Tensor, nn
 
-from anomalib.post_processing import GaussianBlur2d
+from anomalib.models.components import GaussianBlur2d
 
 
 class AnomalyMapGenerator(nn.Module):

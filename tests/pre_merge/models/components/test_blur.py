@@ -2,7 +2,7 @@ import pytest
 import torch
 from kornia.filters import GaussianBlur2d as korniaGaussianBlur2d
 
-from anomalib.post_processing import GaussianBlur2d
+from anomalib.models.components import GaussianBlur2d
 
 
 @pytest.mark.parametrize("kernel_size", [(33, 33), (9, 9), (11, 5), (3, 3)])
