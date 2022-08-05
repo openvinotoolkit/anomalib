@@ -19,7 +19,7 @@ import random
 from typing import List, Optional, Tuple
 
 import torch
-import torchvision
+import torch.nn.functional as F
 from torch import Tensor, nn
 
 from anomalib.models.components import PCA, FeatureExtractor, GaussianKDE
@@ -59,8 +59,8 @@ class DfkdeModel(nn.Module):
         self.threshold_steepness = threshold_steepness
         self.threshold_offset = threshold_offset
 
-        _backbone = getattr(torchvision.models, backbone)
-        self.feature_extractor = FeatureExtractor(backbone=_backbone(pretrained=pre_trained), layers=layers).eval()
+        _backbone = backbone
+        self.feature_extractor = FeatureExtractor(backbone=_backbone, pre_trained=pre_trained, layers=layers).eval()
 
         self.pca_model = PCA(n_components=self.n_components)
         self.kde_model = GaussianKDE()
@@ -79,6 +79,10 @@ class DfkdeModel(nn.Module):
         """
         self.feature_extractor.eval()
         layer_outputs = self.feature_extractor(batch)
+        for layer in layer_outputs:
+            batch_size = len(layer_outputs[layer])
+            layer_outputs[layer] = F.avg_pool2d(input=layer_outputs[layer], kernel_size=(1, 1))
+            layer_outputs[layer] = layer_outputs[layer].view(batch_size, -1)
         layer_outputs = torch.cat(list(layer_outputs.values())).detach()
         return layer_outputs
 
