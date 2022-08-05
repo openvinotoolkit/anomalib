@@ -51,11 +51,10 @@ class FeatureExtractor(nn.Module):
         self.backbone = backbone
         self.layers = layers
         self.idx = self._map_layer_to_idx()
-        print(self.idx)
         self.feature_extractor = timm.create_model(
             backbone,
             pretrained=pre_trained,
-            features_only=False,
+            features_only=True,
             exportable=True,
             out_indices=self.idx,
         )
