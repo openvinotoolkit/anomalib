@@ -13,7 +13,7 @@ data:
     train_batch_size: 32
     test_batch_size: 32
     num_workers: 8
-    task: segmentation
+    task: classification
     transform_config_train: null
     transform_config_val: null
     seed: 0

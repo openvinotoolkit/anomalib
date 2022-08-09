@@ -211,6 +211,7 @@ class AnomalibCLI(LightningCLI):
                 )
 
         add_visualizer_callback(callbacks, config)
+        self.config[subcommand].visualization = config.visualization
 
         # TODO: https://github.com/openvinotoolkit/anomalib/issues/19
         if config.openvino and config.nncf:

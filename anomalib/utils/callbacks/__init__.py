@@ -174,11 +174,11 @@ def add_visualizer_callback(callbacks: List[Callback], config: Union[DictConfig,
                 config.visualization["save_images"] = True
             if "local" not in config.project.log_images_to or len(config.project.log_images_to) > 1:
                 config.visualization["log_images"] = True
-        task = config.dataset.task
-        normalization_method = config.model.normalization_method
+        config.visualization.task = config.dataset.task
+        config.visualization.inputs_are_normalized = not config.model.normalization_method == "none"
     else:
-        task = config.data.init_args.task
-        normalization_method = config.metrics.normalization_method
+        config.visualization.task = config.data.init_args.task
+        config.visualization.inputs_are_normalized = not config.metrics.normalization_method == "none"
     if config.visualization.log_images or config.visualization.save_images or config.visualization.show_images:
         image_save_path = (
             config.visualization.image_save_path
@@ -188,10 +188,10 @@ def add_visualizer_callback(callbacks: List[Callback], config: Union[DictConfig,
         for callback in (ImageVisualizerCallback, MetricVisualizerCallback):
             callbacks.append(
                 callback(
-                    task=task,
+                    task=config.visualization.task,
                     mode=config.visualization.mode,
                     image_save_path=image_save_path,
-                    inputs_are_normalized=not normalization_method == "none",
+                    inputs_are_normalized=config.visualization.inputs_are_normalized,
                     show_images=config.visualization.show_images,
                     log_images=config.visualization.log_images,
                     save_images=config.visualization.save_images,
