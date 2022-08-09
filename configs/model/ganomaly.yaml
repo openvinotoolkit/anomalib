@@ -42,6 +42,12 @@ metrics:
     - F1Score
     - AUROC
 
+visualization:
+  show_images: False # show images on the screen
+  save_images: False # save images to the file system
+  log_images: False # log images to the available loggers (if any)
+  mode: full # options: ["full", "simple"]
+
 trainer:
   callbacks:
     - class_path: pytorch_lightning.callbacks.EarlyStopping
