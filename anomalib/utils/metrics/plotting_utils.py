@@ -1,4 +1,8 @@
 """Helper functions to generate ROC-style plots of various metrics."""
+
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from typing import Tuple
 
 import torch
