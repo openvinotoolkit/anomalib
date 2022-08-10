@@ -1,4 +1,8 @@
 """Implementation of Optimal F1 score based on TorchMetrics."""
+
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import torch
 from torchmetrics import Metric, PrecisionRecallCurve
 
