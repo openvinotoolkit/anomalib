@@ -44,3 +44,7 @@ class AdaptiveThreshold(Metric):
         else:
             self.value = thresholds[torch.argmax(f1_score)]
         return self.value
+
+    def reset(self) -> None:
+        """Reset the metric."""
+        self.precision_recall_curve.reset()
