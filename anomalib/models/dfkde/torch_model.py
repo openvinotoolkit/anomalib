@@ -81,7 +81,7 @@ class DfkdeModel(nn.Module):
         layer_outputs = self.feature_extractor(batch)
         for layer in layer_outputs:
             batch_size = len(layer_outputs[layer])
-            layer_outputs[layer] = F.avg_pool2d(input=layer_outputs[layer], kernel_size=(1, 1))
+            layer_outputs[layer] = F.adaptive_avg_pool2d(input=layer_outputs[layer], output_size=(1, 1))
             layer_outputs[layer] = layer_outputs[layer].view(batch_size, -1)
         layer_outputs = torch.cat(list(layer_outputs.values())).detach()
         return layer_outputs
