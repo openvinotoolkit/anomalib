@@ -4,11 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import Dict, Iterable, List, Tuple
+from typing import Iterable, List
 
 import numpy as np
-
-from anomalib.models.components import AnomalyModule
 
 
 class MockImageLoader:

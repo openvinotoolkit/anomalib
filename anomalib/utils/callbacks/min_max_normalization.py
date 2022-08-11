@@ -19,7 +19,7 @@ from anomalib.utils.metrics import MinMax
 class MinMaxNormalizationCallback(Callback):
     """Callback that normalizes the image-level and pixel-level anomaly scores using min-max normalization."""
 
-    def setup(self, trainer: pl.Trainer, pl_module: AnomalyModule, stage: Optional[str] = None) -> None:
+    def setup(self, _trainer: pl.Trainer, pl_module: AnomalyModule, stage: Optional[str] = None) -> None:
         """Adds min_max metrics to normalization metrics."""
         if not hasattr(pl_module, "normalization_metrics"):
             pl_module.normalization_metrics = MinMax().cpu()
