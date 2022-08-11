@@ -8,10 +8,10 @@ from typing import List, Tuple, Union, cast
 import torch
 import torch.nn.functional as F
 from omegaconf import ListConfig
-from torch import Tensor
+from torch import Tensor, nn
 
 
-class AnomalyMapGenerator:
+class AnomalyMapGenerator(nn.Module):
     """Generate Anomaly Heatmap."""
 
     def __init__(
@@ -19,6 +19,7 @@ class AnomalyMapGenerator:
         image_size: Union[ListConfig, Tuple],
         pool_layers: List[str],
     ):
+        super().__init__()
         self.distance = torch.nn.PairwiseDistance(p=2, keepdim=True)
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
         self.pool_layers: List[str] = pool_layers
@@ -60,7 +61,7 @@ class AnomalyMapGenerator:
 
         return anomaly_map
 
-    def __call__(self, **kwargs: Union[List[Tensor], List[int], List[List]]) -> Tensor:
+    def forward(self, **kwargs: Union[List[Tensor], List[int], List[List]]) -> Tensor:
         """Returns anomaly_map.
 
         Expects `distribution`, `height` and 'width' keywords to be passed explicitly

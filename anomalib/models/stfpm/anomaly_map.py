@@ -8,16 +8,17 @@ from typing import Dict, Tuple, Union
 import torch
 import torch.nn.functional as F
 from omegaconf import ListConfig
-from torch import Tensor
+from torch import Tensor, nn
 
 
-class AnomalyMapGenerator:
+class AnomalyMapGenerator(nn.Module):
     """Generate Anomaly Heatmap."""
 
     def __init__(
         self,
         image_size: Union[ListConfig, Tuple],
     ):
+        super().__init__()
         self.distance = torch.nn.PairwiseDistance(p=2, keepdim=True)
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
 
@@ -59,7 +60,7 @@ class AnomalyMapGenerator:
 
         return anomaly_map
 
-    def __call__(self, **kwds: Dict[str, Tensor]) -> torch.Tensor:
+    def forward(self, **kwargs: Dict[str, Tensor]) -> torch.Tensor:
         """Returns anomaly map.
 
         Expects `teach_features` and `student_features` keywords to be passed explicitly.
@@ -78,10 +79,10 @@ class AnomalyMapGenerator:
             torch.Tensor: anomaly map
         """
 
-        if not ("teacher_features" in kwds and "student_features" in kwds):
-            raise ValueError(f"Expected keys `teacher_features` and `student_features. Found {kwds.keys()}")
+        if not ("teacher_features" in kwargs and "student_features" in kwargs):
+            raise ValueError(f"Expected keys `teacher_features` and `student_features. Found {kwargs.keys()}")
 
-        teacher_features: Dict[str, Tensor] = kwds["teacher_features"]
-        student_features: Dict[str, Tensor] = kwds["student_features"]
+        teacher_features: Dict[str, Tensor] = kwargs["teacher_features"]
+        student_features: Dict[str, Tensor] = kwargs["student_features"]
 
         return self.compute_anomaly_map(teacher_features, student_features)
