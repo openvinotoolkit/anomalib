@@ -30,7 +30,8 @@ class CdfNormalizationCallback(Callback):
 
     def setup(self, trainer: pl.Trainer, pl_module: AnomalyModule, stage: Optional[str] = None) -> None:
         """Adds training_distribution metrics to normalization metrics."""
-        pl_module.normalization_metrics = AnomalyScoreDistribution().cpu()
+        if not hasattr(pl_module, "normalization_metrics"):
+            pl_module.normalization_metrics = AnomalyScoreDistribution().cpu()
 
     def on_test_start(self, _trainer: pl.Trainer, pl_module: AnomalyModule) -> None:
         """Called when the test begins."""
