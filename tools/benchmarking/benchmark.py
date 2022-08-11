@@ -28,7 +28,6 @@ from anomalib.data import get_datamodule
 from anomalib.models import get_model
 from anomalib.utils.loggers import configure_logger
 from anomalib.utils.sweep import (
-    get_meta_data,
     get_openvino_throughput,
     get_run_config,
     get_sweep_callbacks,
@@ -108,9 +107,7 @@ def get_single_model_metrics(model_config: Union[DictConfig, ListConfig], openvi
         # get testing time
         testing_time = time.time() - start_time
 
-        meta_data = get_meta_data(model, model_config.model.input_size)
-
-        throughput = get_torch_throughput(model_config, model, datamodule.test_dataloader().dataset, meta_data)
+        throughput = get_torch_throughput(model_config, model, datamodule.test_dataloader().dataset)
 
         # Get OpenVINO metrics
         openvino_throughput = float("nan")
@@ -120,7 +117,7 @@ def get_single_model_metrics(model_config: Union[DictConfig, ListConfig], openvi
             openvino_export_path.mkdir(parents=True, exist_ok=True)
             convert_to_openvino(model, openvino_export_path, model_config.model.input_size)
             openvino_throughput = get_openvino_throughput(
-                model_config, openvino_export_path, datamodule.test_dataloader().dataset, meta_data
+                model_config, openvino_export_path, datamodule.test_dataloader().dataset
             )
 
         # arrange the data
