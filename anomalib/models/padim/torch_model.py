@@ -8,7 +8,6 @@ from typing import Dict, List, Optional, Tuple
 
 import torch
 import torch.nn.functional as F
-import torchvision
 from torch import Tensor, nn
 
 from anomalib.models.components import FeatureExtractor, MultiVariateGaussian
@@ -41,9 +40,9 @@ class PadimModel(nn.Module):
         super().__init__()
         self.tiler: Optional[Tiler] = None
 
-        self.backbone = getattr(torchvision.models, backbone)
+        self.backbone = backbone
         self.layers = layers
-        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=pre_trained), layers=self.layers)
+        self.feature_extractor = FeatureExtractor(backbone=self.backbone, layers=layers, pre_trained=pre_trained)
         self.dims = DIMS[backbone]
         # pylint: disable=not-callable
         # Since idx is randomly selected, save it with model to get same results
@@ -98,7 +97,6 @@ class PadimModel(nn.Module):
             output = self.anomaly_map_generator(
                 embedding=embeddings, mean=self.gaussian.mean, inv_covariance=self.gaussian.inv_covariance
             )
-
         return output
 
     def generate_embedding(self, features: Dict[str, Tensor]) -> Tensor:
