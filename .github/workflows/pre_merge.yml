@@ -28,4 +28,4 @@ jobs:
       - name: Upload coverage report
         run: |
           pip install codacy-coverage
-          python-codacy-coverage -r .tox/coverage.xml -t ${{ secrets.CODACY }} -c ${{ GITHUB_SHA }}
+          python-codacy-coverage -r .tox/coverage.xml -t ${{ secrets.CODACY }} -c `git ref-parse HEAD`
