@@ -25,7 +25,7 @@ model:
     backbone: resnet18
     pre_trained: true
     layers:
-      - avgpool
+      - layer4
     max_training_points: 40000
     pre_processing: scale
     n_components: 16
@@ -40,10 +40,10 @@ metrics:
     - AUROC
 
 visualization:
-  task: segmentation
-  log_images_to:
-    - local
-  inputs_are_normalized: true
+  show_images: False # show images on the screen
+  save_images: False # save images to the file system
+  log_images: False # log images to the available loggers (if any)
+  mode: full # options: ["full", "simple"]
 
 trainer:
   accelerator: auto # <"cpu", "gpu", "tpu", "ipu", "hpu", "auto">

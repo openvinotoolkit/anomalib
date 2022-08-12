@@ -129,11 +129,11 @@ class TestDataset:
 
     def __call__(self, func):
         @wraps(func)
-        def inner(*args, **kwds):
+        def inner(*args, **kwargs):
             # If true, will use MVTech AD dataset for testing.
             # Useful for nightly builds
             if self.use_mvtec:
-                return func(*args, path=self.path, **kwds)
+                return func(*args, path=self.path, **kwargs)
             else:
                 with GeneratedDummyDataset(
                     num_train=self.num_train,
@@ -145,8 +145,8 @@ class TestDataset:
                     max_size=self.max_size,
                     seed=self.seed,
                 ) as dataset_path:
-                    kwds["category"] = "shapes"
-                    return func(*args, path=dataset_path, **kwds)
+                    kwargs["category"] = "shapes"
+                    return func(*args, path=dataset_path, **kwargs)
 
         return inner
 

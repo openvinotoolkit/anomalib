@@ -1,24 +1,12 @@
 """PyTorch model for CFlow model implementation."""
 
-# Copyright (C) 2020 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions
-# and limitations under the License.
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 from typing import List, Tuple
 
 import einops
 import torch
-import torchvision
 from torch import nn
 
 from anomalib.models.cflow.anomaly_map import AnomalyMapGenerator
@@ -44,13 +32,13 @@ class CflowModel(nn.Module):
     ):
         super().__init__()
 
-        self.backbone = getattr(torchvision.models, backbone)
+        self.backbone = backbone
         self.fiber_batch_size = fiber_batch_size
         self.condition_vector: int = condition_vector
         self.dec_arch = decoder
         self.pool_layers = layers
 
-        self.encoder = FeatureExtractor(backbone=self.backbone(pretrained=pre_trained), layers=self.pool_layers)
+        self.encoder = FeatureExtractor(backbone=self.backbone, layers=self.pool_layers, pre_trained=pre_trained)
         self.pool_dims = self.encoder.out_dims
         self.decoders = nn.ModuleList(
             [

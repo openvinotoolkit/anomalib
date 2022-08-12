@@ -1,28 +1,17 @@
 """Anomaly Map Generator for CFlow model implementation."""
 
-# Copyright (C) 2020 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions
-# and limitations under the License.
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 from typing import List, Tuple, Union, cast
 
 import torch
 import torch.nn.functional as F
 from omegaconf import ListConfig
-from torch import Tensor
+from torch import Tensor, nn
 
 
-class AnomalyMapGenerator:
+class AnomalyMapGenerator(nn.Module):
     """Generate Anomaly Heatmap."""
 
     def __init__(
@@ -30,6 +19,7 @@ class AnomalyMapGenerator:
         image_size: Union[ListConfig, Tuple],
         pool_layers: List[str],
     ):
+        super().__init__()
         self.distance = torch.nn.PairwiseDistance(p=2, keepdim=True)
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
         self.pool_layers: List[str] = pool_layers
@@ -71,7 +61,7 @@ class AnomalyMapGenerator:
 
         return anomaly_map
 
-    def __call__(self, **kwargs: Union[List[Tensor], List[int], List[List]]) -> Tensor:
+    def forward(self, **kwargs: Union[List[Tensor], List[int], List[List]]) -> Tensor:
         """Returns anomaly_map.
 
         Expects `distribution`, `height` and 'width' keywords to be passed explicitly

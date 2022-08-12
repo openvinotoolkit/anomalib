@@ -1,4 +1,8 @@
 """Implementation of AUPRO score based on TorchMetrics."""
+
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from typing import Any, Callable, List, Optional, Tuple
 
 import torch

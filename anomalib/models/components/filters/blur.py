@@ -1,4 +1,5 @@
 """Gaussian blurring via pytorch."""
+
 from typing import Tuple, Union
 
 from kornia.filters import get_gaussian_kernel2d

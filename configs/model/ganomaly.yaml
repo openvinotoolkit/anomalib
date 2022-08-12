@@ -13,7 +13,7 @@ data:
     train_batch_size: 32
     test_batch_size: 32
     num_workers: 8
-    task: segmentation
+    task: classification
     transform_config_train: null
     transform_config_val: null
     seed: 0
@@ -41,6 +41,12 @@ metrics:
   image_metric_names:
     - F1Score
     - AUROC
+
+visualization:
+  show_images: False # show images on the screen
+  save_images: False # save images to the file system
+  log_images: False # log images to the available loggers (if any)
+  mode: full # options: ["full", "simple"]
 
 trainer:
   callbacks:

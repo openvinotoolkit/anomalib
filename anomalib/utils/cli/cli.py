@@ -27,6 +27,7 @@ from anomalib.utils.callbacks import (
     ModelCheckpoint,
     TilerConfigurationCallback,
     TimerCallback,
+    add_visualizer_callback,
 )
 from anomalib.utils.loggers import configure_logger
 
@@ -151,8 +152,8 @@ class AnomalibCLI(LightningCLI):
             #   that is two-level up.
             default_root_dir = str(Path(config.trainer.resume_from_checkpoint).parent.parent)
 
-        if "image_save_path" not in config.visualization.keys() or config.visualization.image_save_path is None:
-            self.config[subcommand].visualization.image_save_path = config.project.path
+        if config.visualization.image_save_path == "":
+            self.config[subcommand].visualization.image_save_path = default_root_dir + "/images"
         self.config[subcommand].trainer.default_root_dir = default_root_dir
 
     def __set_callbacks(self) -> None:
@@ -208,6 +209,9 @@ class AnomalibCLI(LightningCLI):
                 raise ValueError(
                     f"Unknown normalization type {normalization}. \n" "Available types are either None, min_max or cdf"
                 )
+
+        add_visualizer_callback(callbacks, config)
+        self.config[subcommand].visualization = config.visualization
 
         # TODO: https://github.com/openvinotoolkit/anomalib/issues/19
         if config.openvino and config.nncf:

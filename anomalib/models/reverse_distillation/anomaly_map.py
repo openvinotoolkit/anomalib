@@ -15,10 +15,10 @@ import torch
 import torch.nn.functional as F
 from kornia.filters import gaussian_blur2d
 from omegaconf import ListConfig
-from torch import Tensor
+from torch import Tensor, nn
 
 
-class AnomalyMapGenerator:
+class AnomalyMapGenerator(nn.Module):
     """Generate Anomaly Heatmap.
 
     Args:
@@ -32,6 +32,7 @@ class AnomalyMapGenerator:
     """
 
     def __init__(self, image_size: Union[ListConfig, Tuple], sigma: int = 4, mode: str = "multiply"):
+        super().__init__()
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
         self.sigma = sigma
         self.kernel_size = 2 * int(4.0 * sigma + 0.5) + 1
@@ -40,7 +41,7 @@ class AnomalyMapGenerator:
             raise ValueError(f"Found mode {mode}. Only multiply and add are supported.")
         self.mode = mode
 
-    def __call__(self, student_features: List[Tensor], teacher_features: List[Tensor]) -> Tensor:
+    def forward(self, student_features: List[Tensor], teacher_features: List[Tensor]) -> Tensor:
         """Computes anomaly map given encoder and decoder features.
 
         Args:
