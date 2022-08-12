@@ -1,28 +1,19 @@
 """Anomaly Map Generator for the PatchCore model implementation."""
 
-# Copyright (C) 2020 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions
-# and limitations under the License.
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 from typing import Tuple, Union
 
 import torch
 import torch.nn.functional as F
-from kornia.filters import gaussian_blur2d
 from omegaconf import ListConfig
+from torch import nn
+
+from anomalib.models.components import GaussianBlur2d
 
 
-class AnomalyMapGenerator:
+class AnomalyMapGenerator(nn.Module):
     """Generate Anomaly Heatmap."""
 
     def __init__(
@@ -30,8 +21,10 @@ class AnomalyMapGenerator:
         input_size: Union[ListConfig, Tuple],
         sigma: int = 4,
     ) -> None:
+        super().__init__()
         self.input_size = input_size
-        self.sigma = sigma
+        kernel_size = 2 * int(4.0 * sigma + 0.5) + 1
+        self.blur = GaussianBlur2d(kernel_size=(kernel_size, kernel_size), sigma=(sigma, sigma), channels=1)
 
     def compute_anomaly_map(self, patch_scores: torch.Tensor, feature_map_shape: torch.Size) -> torch.Tensor:
         """Pixel Level Anomaly Heatmap.
@@ -49,8 +42,7 @@ class AnomalyMapGenerator:
         anomaly_map = patch_scores[:, 0].reshape((batch_size, 1, width, height))
         anomaly_map = F.interpolate(anomaly_map, size=(self.input_size[0], self.input_size[1]))
 
-        kernel_size = 2 * int(4.0 * self.sigma + 0.5) + 1
-        anomaly_map = gaussian_blur2d(anomaly_map, (kernel_size, kernel_size), sigma=(self.sigma, self.sigma))
+        anomaly_map = self.blur(anomaly_map)
 
         return anomaly_map
 
@@ -69,7 +61,7 @@ class AnomalyMapGenerator:
         score = weights * torch.max(patch_scores[:, 0])
         return score
 
-    def __call__(self, **kwargs: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, **kwargs: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """Returns anomaly_map and anomaly_score.
 
         Expects `patch_scores` keyword to be passed explicitly

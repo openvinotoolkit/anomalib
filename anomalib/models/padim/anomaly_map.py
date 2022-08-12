@@ -1,29 +1,19 @@
 """Anomaly Map Generator for the PaDiM model implementation."""
 
-# Copyright (C) 2020 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions
-# and limitations under the License.
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 from typing import List, Tuple, Union
 
 import torch
 import torch.nn.functional as F
-from kornia.filters import gaussian_blur2d
 from omegaconf import ListConfig
-from torch import Tensor
+from torch import Tensor, nn
+
+from anomalib.models.components import GaussianBlur2d
 
 
-class AnomalyMapGenerator:
+class AnomalyMapGenerator(nn.Module):
     """Generate Anomaly Heatmap.
 
     Args:
@@ -32,8 +22,10 @@ class AnomalyMapGenerator:
     """
 
     def __init__(self, image_size: Union[ListConfig, Tuple], sigma: int = 4):
+        super().__init__()
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
-        self.sigma = sigma
+        kernel_size = 2 * int(4.0 * sigma + 0.5) + 1
+        self.blur = GaussianBlur2d(kernel_size=(kernel_size, kernel_size), sigma=(sigma, sigma), channels=1)
 
     @staticmethod
     def compute_distance(embedding: Tensor, stats: List[Tensor]) -> Tensor:
@@ -57,7 +49,7 @@ class AnomalyMapGenerator:
         delta = (embedding - mean).permute(2, 0, 1)
 
         distances = (torch.matmul(delta, inv_covariance) * delta).sum(2).permute(1, 0)
-        distances = distances.reshape(batch, height, width)
+        distances = distances.reshape(batch, 1, height, width)
         distances = distances.clamp(0).sqrt()
 
         return distances
@@ -73,7 +65,7 @@ class AnomalyMapGenerator:
         """
 
         score_map = F.interpolate(
-            distance.unsqueeze(1),
+            distance,
             size=self.image_size,
             mode="bilinear",
             align_corners=False,
@@ -90,11 +82,8 @@ class AnomalyMapGenerator:
             Filtered anomaly scores
         """
 
-        kernel_size = 2 * int(4.0 * self.sigma + 0.5) + 1
-        sigma = torch.as_tensor(self.sigma).to(anomaly_map.device)
-        anomaly_map = gaussian_blur2d(anomaly_map, (kernel_size, kernel_size), sigma=(sigma, sigma))
-
-        return anomaly_map
+        blurred_anomaly_map = self.blur(anomaly_map)
+        return blurred_anomaly_map
 
     def compute_anomaly_map(self, embedding: Tensor, mean: Tensor, inv_covariance: Tensor) -> Tensor:
         """Compute anomaly score.
@@ -120,7 +109,7 @@ class AnomalyMapGenerator:
 
         return smoothed_anomaly_map
 
-    def __call__(self, **kwds):
+    def forward(self, **kwargs):
         """Returns anomaly_map.
 
         Expects `embedding`, `mean` and `covariance` keywords to be passed explicitly.
@@ -136,11 +125,11 @@ class AnomalyMapGenerator:
             torch.Tensor: anomaly map
         """
 
-        if not ("embedding" in kwds and "mean" in kwds and "inv_covariance" in kwds):
-            raise ValueError(f"Expected keys `embedding`, `mean` and `covariance`. Found {kwds.keys()}")
+        if not ("embedding" in kwargs and "mean" in kwargs and "inv_covariance" in kwargs):
+            raise ValueError(f"Expected keys `embedding`, `mean` and `covariance`. Found {kwargs.keys()}")
 
-        embedding: Tensor = kwds["embedding"]
-        mean: Tensor = kwds["mean"]
-        inv_covariance: Tensor = kwds["inv_covariance"]
+        embedding: Tensor = kwargs["embedding"]
+        mean: Tensor = kwargs["mean"]
+        inv_covariance: Tensor = kwargs["inv_covariance"]
 
         return self.compute_anomaly_map(embedding, mean, inv_covariance)

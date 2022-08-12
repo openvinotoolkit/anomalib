@@ -1,4 +1,8 @@
 """Custom anomaly evaluation metrics."""
+
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import importlib
 import warnings
 from typing import List, Optional, Tuple, Union

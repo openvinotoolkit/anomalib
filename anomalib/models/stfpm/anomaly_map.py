@@ -1,34 +1,24 @@
 """Anomaly Map Generator for the STFPM model implementation."""
 
-# Copyright (C) 2020 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions
-# and limitations under the License.
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 from typing import Dict, Tuple, Union
 
 import torch
 import torch.nn.functional as F
 from omegaconf import ListConfig
-from torch import Tensor
+from torch import Tensor, nn
 
 
-class AnomalyMapGenerator:
+class AnomalyMapGenerator(nn.Module):
     """Generate Anomaly Heatmap."""
 
     def __init__(
         self,
         image_size: Union[ListConfig, Tuple],
     ):
+        super().__init__()
         self.distance = torch.nn.PairwiseDistance(p=2, keepdim=True)
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
 
@@ -70,7 +60,7 @@ class AnomalyMapGenerator:
 
         return anomaly_map
 
-    def __call__(self, **kwds: Dict[str, Tensor]) -> torch.Tensor:
+    def forward(self, **kwargs: Dict[str, Tensor]) -> torch.Tensor:
         """Returns anomaly map.
 
         Expects `teach_features` and `student_features` keywords to be passed explicitly.
@@ -89,10 +79,10 @@ class AnomalyMapGenerator:
             torch.Tensor: anomaly map
         """
 
-        if not ("teacher_features" in kwds and "student_features" in kwds):
-            raise ValueError(f"Expected keys `teacher_features` and `student_features. Found {kwds.keys()}")
+        if not ("teacher_features" in kwargs and "student_features" in kwargs):
+            raise ValueError(f"Expected keys `teacher_features` and `student_features. Found {kwargs.keys()}")
 
-        teacher_features: Dict[str, Tensor] = kwds["teacher_features"]
-        student_features: Dict[str, Tensor] = kwds["student_features"]
+        teacher_features: Dict[str, Tensor] = kwargs["teacher_features"]
+        student_features: Dict[str, Tensor] = kwargs["student_features"]
 
         return self.compute_anomaly_map(teacher_features, student_features)

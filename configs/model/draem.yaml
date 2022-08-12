@@ -42,10 +42,10 @@ metrics:
   normalization_method: min_max
 
 visualization:
-  task: segmentation
-  log_images_to:
-    - local
-  inputs_are_normalized: true
+  show_images: False # show images on the screen
+  save_images: False # save images to the file system
+  log_images: False # log images to the available loggers (if any)
+  mode: full # options: ["full", "simple"]
 
 trainer:
   callbacks:

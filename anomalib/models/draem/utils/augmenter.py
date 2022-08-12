@@ -11,6 +11,7 @@
 
 
 import glob
+import math
 import random
 from typing import Optional, Tuple
 
@@ -22,6 +23,11 @@ from torch import Tensor
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
 from anomalib.data.utils import random_2d_perlin
+
+
+def nextpow2(value):
+    """Returns the smallest power of 2 greater than or equal to the input value."""
+    return 2 ** (math.ceil(math.log(value, 2)))
 
 
 class Augmenter:
@@ -84,7 +90,9 @@ class Augmenter:
         perlin_scalex = 2 ** random.randint(min_perlin_scale, perlin_scale)
         perlin_scaley = 2 ** random.randint(min_perlin_scale, perlin_scale)
 
-        perlin_noise = random_2d_perlin((height, width), (perlin_scalex, perlin_scaley))
+        perlin_noise = random_2d_perlin((nextpow2(height), nextpow2(width)), (perlin_scalex, perlin_scaley))[
+            :height, :width
+        ]
         perlin_noise = self.rot(image=perlin_noise)
 
         # Create mask from perlin noise

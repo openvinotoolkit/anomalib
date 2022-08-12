@@ -1,4 +1,8 @@
 """Implementation of Optimal F1 score based on TorchMetrics."""
+
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import torch
 from torchmetrics import Metric, PrecisionRecallCurve
 
@@ -40,3 +44,7 @@ class OptimalF1(Metric):
         self.threshold = thresholds[torch.argmax(f1_score)]
         optimal_f1_score = torch.max(f1_score)
         return optimal_f1_score
+
+    def reset(self) -> None:
+        """Reset the metric."""
+        self.precision_recall_curve.reset()

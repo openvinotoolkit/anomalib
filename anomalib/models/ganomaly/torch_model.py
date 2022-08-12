@@ -1,15 +1,13 @@
-# Copyright (c) 2018-2022 Samet Akcay, Durham University, UK
-# SPDX-License-Identifier: MIT
-#
-# Copyright (C) 2020-2022 Intel Corporation
-# SPDX-License-Identifier: Apache-2.0
-#
-
 """Torch models defining encoder, decoder, Generator and Discriminator.
 
 Code adapted from https://github.com/samet-akcay/ganomaly.
 """
 
+# Copyright (c) 2018-2022 Samet Akcay, Durham University, UK
+# SPDX-License-Identifier: MIT
+#
+# Copyright (C) 2020-2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 import math
 from typing import Tuple, Union

@@ -25,7 +25,7 @@ model:
   anomaly_source_path: null # optional, e.g. ./datasets/dtd
   lr: 0.0001
   early_stopping:
-    patience: 50
+    patience: 20
     metric: pixel_AUROC
     mode: max
   normalization_method: min_max # options: [none, min_max, cdf]
@@ -88,7 +88,7 @@ trainer:
   limit_val_batches: 1.0
   log_every_n_steps: 50
   log_gpu_memory: null
-  max_epochs: 100
+  max_epochs: 700
   max_steps: -1
   max_time: null
   min_epochs: null

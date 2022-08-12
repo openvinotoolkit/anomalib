@@ -1,4 +1,8 @@
 """Implementation of AUROC metric based on TorchMetrics."""
+
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from typing import Tuple
 
 import torch

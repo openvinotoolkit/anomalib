@@ -26,7 +26,7 @@ We utilize GitHub issues to track the feature requests as well. If you are certa
 
 We actively welcome your pull requests:
 
-1. Fork the repo and create your branch from [`development`](https://github.com/openvinotoolkit/anomalib/tree/development).
+1. Fork the repo and create your branch from [`main`](https://github.com/openvinotoolkit/anomalib/tree/main).
 1. If you've added code that should be tested, add tests.
 1. If you've changed APIs, update the documentation.
 1. Ensure the test suite passes.

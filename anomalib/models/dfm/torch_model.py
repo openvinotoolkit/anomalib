@@ -1,24 +1,12 @@
 """PyTorch model for DFM model implementation."""
 
-# Copyright (C) 2020 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions
-# and limitations under the License.
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 import math
 
 import torch
 import torch.nn.functional as F
-import torchvision
 from torch import Tensor, nn
 
 from anomalib.models.components import PCA, DynamicBufferModule, FeatureExtractor
@@ -103,13 +91,15 @@ class DFMModel(nn.Module):
         score_type: str = "fre",
     ):
         super().__init__()
-        self.backbone = getattr(torchvision.models, backbone)
+        self.backbone = backbone
         self.pooling_kernel_size = pooling_kernel_size
         self.n_components = n_comps
         self.pca_model = PCA(n_components=self.n_components)
         self.gaussian_model = SingleClassGaussian()
         self.score_type = score_type
-        self.feature_extractor = FeatureExtractor(backbone=self.backbone(pretrained=pre_trained), layers=[layer]).eval()
+        self.feature_extractor = FeatureExtractor(
+            backbone=self.backbone, pre_trained=pre_trained, layers=[layer]
+        ).eval()
 
     def fit(self, dataset: Tensor) -> None:
         """Fit a pca transformation and a Gaussian model to dataset.

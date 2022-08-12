@@ -2,23 +2,23 @@
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-#
 
 from typing import List, Tuple, Union
 
 import torch
 import torch.nn.functional as F
 from omegaconf import ListConfig
-from torch import Tensor
+from torch import Tensor, nn
 
 
-class AnomalyMapGenerator:
+class AnomalyMapGenerator(nn.Module):
     """Generate Anomaly Heatmap."""
 
     def __init__(self, input_size: Union[ListConfig, Tuple]):
+        super().__init__()
         self.input_size = input_size if isinstance(input_size, tuple) else tuple(input_size)
 
-    def __call__(self, hidden_variables: List[Tensor]) -> Tensor:
+    def forward(self, hidden_variables: List[Tensor]) -> Tensor:
         """Generate Anomaly Heatmap.
 
         This implementation generates the heatmap based on the flow maps

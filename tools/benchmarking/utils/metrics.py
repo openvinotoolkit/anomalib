@@ -1,23 +1,13 @@
 """Methods to compute and save metrics."""
 
-# Copyright (C) 2020 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions
-# and limitations under the License.
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import random
 import string
 from glob import glob
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 import pandas as pd
 from torch.utils.tensorboard.writer import SummaryWriter
@@ -25,12 +15,17 @@ from torch.utils.tensorboard.writer import SummaryWriter
 import wandb
 
 
-def write_metrics(model_metrics: Dict[str, Union[str, float]], writers: List[str]):
+def write_metrics(
+    model_metrics: Dict[str, Union[str, float]],
+    writers: List[str],
+    folder: Optional[str] = None,
+):
     """Writes metrics to destination provided in the sweep config.
 
     Args:
         model_metrics (Dict): Dictionary to be written
         writers (List[str]): List of destinations.
+        folder (optional, str): Sub-directory to which runs are written to. Defaults to None. If none writes to root.
     """
     # Write to file as each run is computed
     if model_metrics == {} or model_metrics is None:
@@ -38,7 +33,8 @@ def write_metrics(model_metrics: Dict[str, Union[str, float]], writers: List[str
 
     # Write to CSV
     metrics_df = pd.DataFrame(model_metrics, index=[0])
-    result_path = Path(f"runs/{model_metrics['model_name']}_{model_metrics['device']}.csv")
+    result_folder = Path("runs") if folder is None else Path(f"runs/{folder}")
+    result_path = result_folder / f"{model_metrics['model_name']}_{model_metrics['device']}.csv"
     Path.mkdir(result_path.parent, parents=True, exist_ok=True)
     if not result_path.is_file():
         metrics_df.to_csv(result_path)
@@ -93,7 +89,10 @@ def get_unique_key(str_len: int) -> str:
     return "".join([random.choice(string.ascii_lowercase) for _ in range(str_len)])
 
 
-def upload_to_wandb(team: str = "anomalib"):
+def upload_to_wandb(
+    team: str = "anomalib",
+    folder: Optional[str] = None,
+):
     """Upload the data in csv files to wandb.
 
     Creates a project named benchmarking_[two random characters]. This is so that the project names are unique.
@@ -102,10 +101,12 @@ def upload_to_wandb(team: str = "anomalib"):
     Args:
         team (str, optional): Name of the team on wandb. This can also be the id of your personal account.
         Defaults to "anomalib".
+        folder (optional, str): Sub-directory from which runs are picked up. Defaults to None. If none picks from runs.
     """
     project = f"benchmarking_{get_unique_key(2)}"
     tag_list = ["dataset.category", "model_name", "dataset.image_size", "model.backbone", "device"]
-    for csv_file in glob("runs/*.csv"):
+    search_path = "runs/*.csv" if folder is None else f"runs/{folder}/*.csv"
+    for csv_file in glob(search_path):
         table = pd.read_csv(csv_file)
         for index, row in table.iterrows():
             row = dict(row[1:])  # remove index column

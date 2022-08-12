@@ -2,7 +2,7 @@ name: Docs
 
 on:
   push:
-    branches: [development]
+    branches: [main]
     paths-ignore:
       - ".github/**" # Ignore changes towards the .github directory
   workflow_dispatch: # run on request (no need for PR)

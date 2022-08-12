@@ -1,25 +1,14 @@
 """Normality model of DFKDE."""
 
-# Copyright (C) 2020 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions
-# and limitations under the License.
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 import logging
 import random
 from typing import List, Optional, Tuple
 
 import torch
-import torchvision
+import torch.nn.functional as F
 from torch import Tensor, nn
 
 from anomalib.models.components import PCA, FeatureExtractor, GaussianKDE
@@ -43,6 +32,7 @@ class DfkdeModel(nn.Module):
 
     def __init__(
         self,
+        layers: List[str],
         backbone: str,
         pre_trained: bool = True,
         n_comps: int = 16,
@@ -58,8 +48,8 @@ class DfkdeModel(nn.Module):
         self.threshold_steepness = threshold_steepness
         self.threshold_offset = threshold_offset
 
-        _backbone = getattr(torchvision.models, backbone)
-        self.feature_extractor = FeatureExtractor(backbone=_backbone(pretrained=pre_trained), layers=["avgpool"]).eval()
+        _backbone = backbone
+        self.feature_extractor = FeatureExtractor(backbone=_backbone, pre_trained=pre_trained, layers=layers).eval()
 
         self.pca_model = PCA(n_components=self.n_components)
         self.kde_model = GaussianKDE()
@@ -78,6 +68,10 @@ class DfkdeModel(nn.Module):
         """
         self.feature_extractor.eval()
         layer_outputs = self.feature_extractor(batch)
+        for layer in layer_outputs:
+            batch_size = len(layer_outputs[layer])
+            layer_outputs[layer] = F.adaptive_avg_pool2d(input=layer_outputs[layer], output_size=(1, 1))
+            layer_outputs[layer] = layer_outputs[layer].view(batch_size, -1)
         layer_outputs = torch.cat(list(layer_outputs.values())).detach()
         return layer_outputs
 

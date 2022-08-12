@@ -1,22 +1,10 @@
 """PyTorch model for Reverse Distillation."""
 
 # Copyright (C) 2022 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions
-# and limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
 
 from typing import List, Optional, Tuple, Union
 
-import torchvision
 from torch import Tensor, nn
 
 from anomalib.models.components import FeatureExtractor
@@ -50,9 +38,8 @@ class ReverseDistillationModel(nn.Module):
         super().__init__()
         self.tiler: Optional[Tiler] = None
 
-        encoder_backbone = getattr(torchvision.models, backbone)
-        # TODO replace with TIMM feature extractor
-        self.encoder = FeatureExtractor(backbone=encoder_backbone(pretrained=pre_trained), layers=layers)
+        encoder_backbone = backbone
+        self.encoder = FeatureExtractor(backbone=encoder_backbone, pre_trained=pre_trained, layers=layers)
         self.bottleneck = get_bottleneck_layer(backbone)
         self.decoder = get_decoder(backbone)
 

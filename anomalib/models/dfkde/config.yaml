@@ -24,6 +24,8 @@ model:
   threshold_steepness: 0.05
   threshold_offset: 12
   normalization_method: min_max # options: [null, min_max, cdf]
+  layers:
+    - layer4
 
 metrics:
   image:
