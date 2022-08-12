@@ -25,8 +25,7 @@ jobs:
           export ANOMALIB_DATASET_PATH=/media/data1/datasets/
           export CUDA_VISIBLE_DEVICES=3
           tox -e pre_merge
-      - name: Run codacy-coverage-reporter
-        uses: codacy/codacy-coverage-reporter-action@v1
-        with:
-          project-token: ${{ secrets.CODACY }}
-          coverage-reports: .tox/coverage.xml
+      - name: Upload coverage report
+        run: |
+          pip install codacy-coverage
+          python-codacy-coverage -r .tox/coverage.xml -t ${{ secrets.CODACY }}
