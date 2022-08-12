@@ -28,7 +28,9 @@ class CdfNormalizationCallback(Callback):
         self.image_dist: Optional[LogNormal] = None
         self.pixel_dist: Optional[LogNormal] = None
 
-    def setup(self, _trainer: pl.Trainer, pl_module: AnomalyModule, _stage: Optional[str] = None) -> None:
+    def setup(
+        self, trainer: pl.Trainer, pl_module: AnomalyModule, stage: Optional[str] = None
+    ) -> None:  # pylint: disable=unused-argument
         """Adds training_distribution metrics to normalization metrics."""
         if not hasattr(pl_module, "normalization_metrics"):
             pl_module.normalization_metrics = AnomalyScoreDistribution().cpu()
