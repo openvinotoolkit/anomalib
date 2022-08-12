@@ -28,14 +28,19 @@ class CdfNormalizationCallback(Callback):
         self.image_dist: Optional[LogNormal] = None
         self.pixel_dist: Optional[LogNormal] = None
 
-    def setup(
-        self, trainer: pl.Trainer, pl_module: AnomalyModule, stage: Optional[str] = None
-    ) -> None:  # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def setup(self, trainer: pl.Trainer, pl_module: AnomalyModule, stage: Optional[str] = None) -> None:
         """Adds training_distribution metrics to normalization metrics."""
         if not hasattr(pl_module, "normalization_metrics"):
             pl_module.normalization_metrics = AnomalyScoreDistribution().cpu()
+        elif not isinstance(pl_module.normalization_metrics, AnomalyScoreDistribution):
+            raise AttributeError(
+                f"Expected normalization_metrics to be of type AnomalyScoreDistribution,"
+                f" got {type(pl_module.normalization_metrics)}"
+            )
 
-    def on_test_start(self, _trainer: pl.Trainer, pl_module: AnomalyModule) -> None:
+    # pylint: disable=unused-argument
+    def on_test_start(self, trainer: pl.Trainer, pl_module: AnomalyModule) -> None:
         """Called when the test begins."""
         if pl_module.image_metrics is not None:
             pl_module.image_metrics.set_threshold(0.5)
