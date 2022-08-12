@@ -32,10 +32,9 @@ class MinMaxNormalizationCallback(Callback):
     # pylint: disable=unused-argument
     def on_test_start(self, trainer: pl.Trainer, pl_module: AnomalyModule) -> None:
         """Called when the test begins."""
-        if pl_module.image_metrics is not None:
-            pl_module.image_metrics.set_threshold(0.5)
-        if pl_module.pixel_metrics is not None:
-            pl_module.pixel_metrics.set_threshold(0.5)
+        for metric in (pl_module.image_metrics, pl_module.pixel_metrics):
+            if metric is not None:
+                metric.set_threshold(0.5)
 
     def on_validation_batch_end(
         self,
