@@ -59,7 +59,7 @@ class Draem(AnomalyModule):
 
             def hook(_, __, output: Tensor):
                 """Hook for retrieving the activations."""
-                self.sspcab_activations[name] = output.detach()
+                self.sspcab_activations[name] = output
 
             return hook
 
