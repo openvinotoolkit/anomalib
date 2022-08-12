@@ -29,8 +29,9 @@ class DummyDataModule(pl.LightningDataModule):
         return DataLoader(DummyDataset())
 
 
-class DummyAnomalyMapGenerator:
+class DummyAnomalyMapGenerator(nn.Module):
     def __init__(self):
+        super().__init__()
         self.input_size = (100, 100)
         self.sigma = 4
 
