@@ -27,6 +27,16 @@ jobs:
       #     tox -e pre_merge
       - name: Upload coverage report
         run: |
-          echo $GITHUB_SHA
+          echo ${{ github.sha }}
+          echo ${{ github.head_ref }}
+          echo ${{ github.event.pull_request.head.sha }}
+          if [ "${{ github.event.pull_request.head.sha }}" ]
+          then
+            $commit_id = ${{ github.event.pull_request.head.sha }}
+          else
+            $commit_id = ${{ github.sha }}
+          fi
+          echo $commit_id
+
           # pip install codacy-coverage
           # python-codacy-coverage -r .tox/coverage.xml -t ${{ secrets.CODACY }}
