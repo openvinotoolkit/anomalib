@@ -16,17 +16,17 @@ jobs:
         run: nvidia-smi
       - name: CHECKOUT REPOSITORY
         uses: actions/checkout@v2
-      - name: Install Tox
-        run: pip install tox
-      - name: Code quality checks
-        run: tox -e pre-commit
-      - name: Coverage
-        run: |
-          export ANOMALIB_DATASET_PATH=/media/data1/datasets/
-          export CUDA_VISIBLE_DEVICES=3
-          tox -e pre_merge
+      # - name: Install Tox
+      #   run: pip install tox
+      # - name: Code quality checks
+      #   run: tox -e pre-commit
+      # - name: Coverage
+      #   run: |
+      #     export ANOMALIB_DATASET_PATH=/media/data1/datasets/
+      #     export CUDA_VISIBLE_DEVICES=3
+      #     tox -e pre_merge
       - name: Upload coverage report
         run: |
-          echo `git rev-parse HEAD`
-          pip install codacy-coverage
-          python-codacy-coverage -r .tox/coverage.xml -t ${{ secrets.CODACY }}
+          echo $GITHUB_SHA
+          # pip install codacy-coverage
+          # python-codacy-coverage -r .tox/coverage.xml -t ${{ secrets.CODACY }}
