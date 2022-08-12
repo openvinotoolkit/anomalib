@@ -30,7 +30,7 @@ jobs:
           # If the workflow is triggered from PR then it gets the commit id from the PR.
           # else it uses the commit id of the latest commit. This is because the commit
           # of the checked-out branch/commit does not exist in the tree as it is grafted.
-          if [[ ${{ github.event.pull_request.head.sha }} ]]
+          if [ -n "${{ github.event.pull_request.head.sha }}" ]
           then
             COMMIT_ID=${{ github.event.pull_request.head.sha }}
           else
