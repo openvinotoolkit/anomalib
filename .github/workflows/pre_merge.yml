@@ -31,11 +31,11 @@ jobs:
           echo ${{ github.event.pull_request.head.sha }}
           if [[ ${{ github.event.pull_request.head.sha }} ]]
           then
-            $commit_id = ${{ github.event.pull_request.head.sha }}
+            COMMIT_id=${{ github.event.pull_request.head.sha }}
           else
-            $commit_id = ${{ github.sha }}
+            COMMIT_id=${{ github.sha }}
           fi
-          echo $commit_id
+          echo $COMMIT_id
 
           # pip install codacy-coverage
           # python-codacy-coverage -r .tox/coverage.xml -t ${{ secrets.CODACY }}
