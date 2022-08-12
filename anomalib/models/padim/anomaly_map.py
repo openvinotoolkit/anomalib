@@ -109,7 +109,7 @@ class AnomalyMapGenerator(nn.Module):
 
         return smoothed_anomaly_map
 
-    def forward(self, **kwds):
+    def forward(self, **kwargs):
         """Returns anomaly_map.
 
         Expects `embedding`, `mean` and `covariance` keywords to be passed explicitly.
@@ -125,11 +125,11 @@ class AnomalyMapGenerator(nn.Module):
             torch.Tensor: anomaly map
         """
 
-        if not ("embedding" in kwds and "mean" in kwds and "inv_covariance" in kwds):
-            raise ValueError(f"Expected keys `embedding`, `mean` and `covariance`. Found {kwds.keys()}")
+        if not ("embedding" in kwargs and "mean" in kwargs and "inv_covariance" in kwargs):
+            raise ValueError(f"Expected keys `embedding`, `mean` and `covariance`. Found {kwargs.keys()}")
 
-        embedding: Tensor = kwds["embedding"]
-        mean: Tensor = kwds["mean"]
-        inv_covariance: Tensor = kwds["inv_covariance"]
+        embedding: Tensor = kwargs["embedding"]
+        mean: Tensor = kwargs["mean"]
+        inv_covariance: Tensor = kwargs["inv_covariance"]
 
         return self.compute_anomaly_map(embedding, mean, inv_covariance)

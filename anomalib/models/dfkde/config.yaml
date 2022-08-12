@@ -25,7 +25,7 @@ model:
   threshold_offset: 12
   normalization_method: min_max # options: [null, min_max, cdf]
   layers:
-    - avgpool
+    - layer4
 
 metrics:
   image:

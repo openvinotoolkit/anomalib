@@ -5,7 +5,6 @@
 
 from typing import List, Optional, Tuple, Union
 
-import torchvision
 from torch import Tensor, nn
 
 from anomalib.models.components import FeatureExtractor
@@ -39,9 +38,8 @@ class ReverseDistillationModel(nn.Module):
         super().__init__()
         self.tiler: Optional[Tiler] = None
 
-        encoder_backbone = getattr(torchvision.models, backbone)
-        # TODO replace with TIMM feature extractor
-        self.encoder = FeatureExtractor(backbone=encoder_backbone(pretrained=pre_trained), layers=layers)
+        encoder_backbone = backbone
+        self.encoder = FeatureExtractor(backbone=encoder_backbone, pre_trained=pre_trained, layers=layers)
         self.bottleneck = get_bottleneck_layer(backbone)
         self.decoder = get_decoder(backbone)
 
