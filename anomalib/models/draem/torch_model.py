@@ -14,13 +14,15 @@ from typing import Tuple, Union
 import torch
 from torch import Tensor, nn
 
+from anomalib.models.components.layers import SSPCAB
+
 
 class DraemModel(nn.Module):
     """DRAEM PyTorch model consisting of the reconstructive and discriminative sub networks."""
 
-    def __init__(self):
+    def __init__(self, sspcab: bool = False):
         super().__init__()
-        self.reconstructive_subnetwork = ReconstructiveSubNetwork()
+        self.reconstructive_subnetwork = ReconstructiveSubNetwork(sspcab=sspcab)
         self.discriminative_subnetwork = DiscriminativeSubNetwork(in_channels=6, out_channels=2)
 
     def forward(self, batch: Tensor) -> Union[Tensor, Tuple[Tensor, Tensor]]:
@@ -50,9 +52,9 @@ class ReconstructiveSubNetwork(nn.Module):
         base_width (int): Base dimensionality of the layers of the autoencoder.
     """
 
-    def __init__(self, in_channels: int = 3, out_channels: int = 3, base_width=128):
+    def __init__(self, in_channels: int = 3, out_channels: int = 3, base_width=128, sspcab: bool = False):
         super().__init__()
-        self.encoder = EncoderReconstructive(in_channels, base_width)
+        self.encoder = EncoderReconstructive(in_channels, base_width, sspcab=sspcab)
         self.decoder = DecoderReconstructive(base_width, out_channels=out_channels)
 
     def forward(self, batch: Tensor) -> Tensor:
@@ -321,7 +323,7 @@ class EncoderReconstructive(nn.Module):
         base_width (int): Base dimensionality of the layers of the autoencoder.
     """
 
-    def __init__(self, in_channels: int, base_width: int):
+    def __init__(self, in_channels: int, base_width: int, sspcab: bool = False):
         super().__init__()
         self.block1 = nn.Sequential(
             nn.Conv2d(in_channels, base_width, kernel_size=3, padding=1),
@@ -359,14 +361,17 @@ class EncoderReconstructive(nn.Module):
             nn.ReLU(inplace=True),
         )
         self.mp4 = nn.Sequential(nn.MaxPool2d(2))
-        self.block5 = nn.Sequential(
-            nn.Conv2d(base_width * 8, base_width * 8, kernel_size=3, padding=1),
-            nn.BatchNorm2d(base_width * 8),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(base_width * 8, base_width * 8, kernel_size=3, padding=1),
-            nn.BatchNorm2d(base_width * 8),
-            nn.ReLU(inplace=True),
-        )
+        if sspcab:
+            self.block5 = SSPCAB(base_width * 8)
+        else:
+            self.block5 = nn.Sequential(
+                nn.Conv2d(base_width * 8, base_width * 8, kernel_size=3, padding=1),
+                nn.BatchNorm2d(base_width * 8),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(base_width * 8, base_width * 8, kernel_size=3, padding=1),
+                nn.BatchNorm2d(base_width * 8),
+                nn.ReLU(inplace=True),
+            )
 
     def forward(self, batch: Tensor) -> Tensor:
         """Encode a batch of input images to the salient space.
