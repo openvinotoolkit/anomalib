@@ -154,9 +154,4 @@ def get_configurable_parameters(
 
     config = update_nncf_config(config)
 
-    # thresholding
-    if "metrics" in config.keys():
-        if "pixel_default" not in config.metrics.threshold.keys():
-            config.metrics.threshold.pixel_default = config.metrics.threshold.image_default
-
     return config

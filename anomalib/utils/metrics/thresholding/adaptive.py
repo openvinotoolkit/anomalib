@@ -4,10 +4,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import torch
-from torchmetrics import Metric, PrecisionRecallCurve
+from torchmetrics import PrecisionRecallCurve
+
+from .base import BaseThreshold
 
 
-class AdaptiveThreshold(Metric):
+class AdaptiveThreshold(BaseThreshold):
     """Optimal F1 Metric.
 
     Compute the optimal F1 score at the adaptive threshold, based on the F1 metric of the true labels and the
@@ -15,13 +17,9 @@ class AdaptiveThreshold(Metric):
     """
 
     def __init__(self, default_value: float = 0.5, **kwargs):
-        super().__init__(**kwargs)
-
+        super().__init__(default_value, **kwargs)
         self.precision_recall_curve = PrecisionRecallCurve(num_classes=1)
-        self.add_state("value", default=torch.tensor(default_value), persistent=True)  # pylint: disable=not-callable
-        self.value = torch.tensor(default_value)  # pylint: disable=not-callable
 
-    # pylint: disable=arguments-differ
     def update(self, preds: torch.Tensor, target: torch.Tensor) -> None:  # type: ignore
         """Update the precision-recall curve metric."""
         self.precision_recall_curve.update(preds, target)

@@ -12,7 +12,7 @@ from pytorch_lightning.callbacks.base import Callback
 from torch import Tensor, nn
 from torchmetrics import Metric
 
-from anomalib.utils.metrics import AdaptiveThreshold, AnomalibMetricCollection
+from anomalib.utils.metrics import AnomalibMetricCollection, BaseThreshold
 
 logger = logging.getLogger(__name__)
 
@@ -32,10 +32,9 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.loss: Tensor
         self.callbacks: List[Callback]
 
-        self.adaptive_threshold: bool
-
-        self.image_threshold = AdaptiveThreshold().cpu()
-        self.pixel_threshold = AdaptiveThreshold().cpu()
+        self.threshold_type: str
+        self.image_threshold: BaseThreshold
+        self.pixel_threshold: BaseThreshold
 
         self.normalization_metrics: Metric
 
@@ -109,7 +108,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         Args:
           outputs: Batch of outputs from the validation step
         """
-        if self.adaptive_threshold:
+        if self.threshold_type == "adaptive":
             self._compute_adaptive_threshold(outputs)
         self._collect_outputs(self.image_metrics, self.pixel_metrics, outputs)
         self._log_metrics()

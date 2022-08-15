@@ -37,10 +37,7 @@ metrics:
   pixel:
     - F1Score
     - AUROC
-  threshold:
-    image_default: 3
-    pixel_default: 3
-    adaptive: true
+  threshold: adaptive
 
 visualization:
   show_images: False # show images on the screen
