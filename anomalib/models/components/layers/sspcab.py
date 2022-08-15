@@ -28,7 +28,7 @@ class AttentionModule(nn.Module):
 
     def forward(self, inputs: Tensor) -> Tensor:
         """Forward pass through the attention module."""
-        # average pool
+        # reduce feature map to 1d vector through global average pooling
         avg_pooled = inputs.mean(dim=(2, 3))
 
         # squeeze and excite
