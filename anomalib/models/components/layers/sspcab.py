@@ -19,12 +19,12 @@ class AttentionModule(nn.Module):
         reduction_ratio (int): Reduction ratio of the attention module.
     """
 
-    def __init__(self, channels: int, reduction_ratio: int = 8):
+    def __init__(self, in_channels: int, reduction_ratio: int = 8):
         super().__init__()
 
-        out_channels = channels // reduction_ratio
-        self.fc1 = nn.Linear(channels, out_channels)
-        self.fc2 = nn.Linear(out_channels, channels)
+        out_channels = in_channels // reduction_ratio
+        self.fc1 = nn.Linear(in_channels, out_channels)
+        self.fc2 = nn.Linear(out_channels, in_channels)
 
     def forward(self, inputs: Tensor) -> Tensor:
         """Forward pass through the attention module."""
@@ -47,24 +47,24 @@ class SSPCAB(nn.Module):
     """SSPCAB block.
 
     Args:
-        channels (int): Number of input channels.
+        in_channels (int): Number of input channels.
         kernel_size (int): Size of the receptive fields of the masked convolution kernel.
         dilation (int): Dilation factor of the masked convolution kernel.
         reduction_ratio (int): Reduction ratio of the attention module.
     """
 
-    def __init__(self, channels, kernel_size: int = 1, dilation: int = 1, reduction_ratio: int = 8):
+    def __init__(self, in_channels, kernel_size: int = 1, dilation: int = 1, reduction_ratio: int = 8):
         super().__init__()
 
         self.pad = kernel_size + dilation
         self.crop = 2 * (kernel_size + dilation)
 
-        self.masked_conv1 = nn.Conv2d(in_channels=channels, out_channels=channels, kernel_size=kernel_size)
-        self.masked_conv2 = nn.Conv2d(in_channels=channels, out_channels=channels, kernel_size=kernel_size)
-        self.masked_conv3 = nn.Conv2d(in_channels=channels, out_channels=channels, kernel_size=kernel_size)
-        self.masked_conv4 = nn.Conv2d(in_channels=channels, out_channels=channels, kernel_size=kernel_size)
+        self.masked_conv1 = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=kernel_size)
+        self.masked_conv2 = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=kernel_size)
+        self.masked_conv3 = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=kernel_size)
+        self.masked_conv4 = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=kernel_size)
 
-        self.attention_module = AttentionModule(channels=channels, reduction_ratio=reduction_ratio)
+        self.attention_module = AttentionModule(in_channels=in_channels, reduction_ratio=reduction_ratio)
 
     def forward(self, inputs: Tensor) -> Tensor:
         """Forward pass through the SSPCAB block."""
