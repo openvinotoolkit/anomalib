@@ -4,11 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import Dict, Iterable, List, Tuple
+from typing import Iterable, List
 
 import numpy as np
-
-from anomalib.models.components import AnomalyModule
 
 
 class MockImageLoader:
@@ -35,36 +33,3 @@ class MockImageLoader:
         """
         for _ in range(self.total_count):
             yield self.image
-
-
-def get_meta_data(model: AnomalyModule, input_size: Tuple[int, int]) -> Dict:
-    """Get meta data for inference.
-    Args:
-        model (AnomalyModule): Trained model from which the metadata is extracted.
-        input_size (Tuple[int, int]): Input size used to resize the pixel level mean and std.
-    Returns:
-        (Dict): Metadata as dictionary.
-    """
-    meta_data = {
-        "image_threshold": model.image_threshold.value.cpu().numpy(),
-        "pixel_threshold": model.pixel_threshold.value.cpu().numpy(),
-        "stats": {},
-    }
-
-    image_mean = model.training_distribution.image_mean.cpu().numpy()
-    if image_mean.size > 0:
-        meta_data["stats"]["image_mean"] = image_mean
-
-    image_std = model.training_distribution.image_std.cpu().numpy()
-    if image_std.size > 0:
-        meta_data["stats"]["image_std"] = image_std
-
-    pixel_mean = model.training_distribution.pixel_mean.cpu().numpy()
-    if pixel_mean.size > 0:
-        meta_data["stats"]["pixel_mean"] = pixel_mean.reshape(input_size)
-
-    pixel_std = model.training_distribution.pixel_std.cpu().numpy()
-    if pixel_std.size > 0:
-        meta_data["stats"]["pixel_std"] = pixel_std.reshape(input_size)
-
-    return meta_data

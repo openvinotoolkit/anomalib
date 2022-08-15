@@ -10,13 +10,9 @@ from typing import Any, List, Optional
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks.base import Callback
 from torch import Tensor, nn
+from torchmetrics import Metric
 
-from anomalib.utils.metrics import (
-    AdaptiveThreshold,
-    AnomalibMetricCollection,
-    AnomalyScoreDistribution,
-    MinMax,
-)
+from anomalib.utils.metrics import AdaptiveThreshold, AnomalibMetricCollection
 
 logger = logging.getLogger(__name__)
 
@@ -41,12 +37,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.image_threshold = AdaptiveThreshold().cpu()
         self.pixel_threshold = AdaptiveThreshold().cpu()
 
-        self.training_distribution = AnomalyScoreDistribution().cpu()
-        self.min_max = MinMax().cpu()
+        self.normalization_metrics: Metric
 
-        # Create placeholders for image and pixel metrics.
-        # If set from the config file, MetricsConfigurationCallback will
-        #   create the metric collections upon setup.
         self.image_metrics: AnomalibMetricCollection
         self.pixel_metrics: AnomalibMetricCollection
 

@@ -18,7 +18,7 @@ from anomalib.deploy import OpenVINOInferencer, TorchInferencer, export_convert
 from anomalib.models import get_model
 from anomalib.utils.callbacks import get_callbacks
 from tests.helpers.dataset import TestDataset, get_dataset_path
-from tests.helpers.inference import MockImageLoader, get_meta_data
+from tests.helpers.inference import MockImageLoader
 
 
 def get_model_config(
@@ -74,10 +74,9 @@ class TestInferencers:
             # Test torch inferencer
             torch_inferencer = TorchInferencer(model_config, model)
             torch_dataloader = MockImageLoader(model_config.dataset.image_size, total_count=1)
-            meta_data = get_meta_data(model, model_config.dataset.image_size)
             with torch.no_grad():
                 for image in torch_dataloader():
-                    torch_inferencer.predict(image, meta_data=meta_data)
+                    torch_inferencer.predict(image)
 
     @pytest.mark.parametrize(
         "model_name",
@@ -111,8 +110,9 @@ class TestInferencers:
             )
 
             # Test OpenVINO inferencer
-            openvino_inferencer = OpenVINOInferencer(model_config, export_path / "model.xml")
+            openvino_inferencer = OpenVINOInferencer(
+                model_config, export_path / "model.xml", export_path / "meta_data.json"
+            )
             openvino_dataloader = MockImageLoader(model_config.dataset.image_size, total_count=1)
-            meta_data = get_meta_data(model, model_config.dataset.image_size)
             for image in openvino_dataloader():
-                openvino_inferencer.predict(image, meta_data=meta_data)
+                openvino_inferencer.predict(image)
