@@ -1,4 +1,7 @@
-"""Self-Supervised Predictive Convolutional Attention (SSPCAB) block for reconstruction-based models."""
+"""SSPCAB: Self-Supervised Predictive Convolutional Attention Block for reconstruction-based models.
+
+Paper https://arxiv.org/abs/2111.09099
+"""
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
