@@ -18,8 +18,7 @@ project:
   path: ./results
 
 optimization:
-  openvino:
-    apply: true
+  export_mode: "onnx"
 
 trainer:
   accelerator: auto # <"cpu", "gpu", "tpu", "ipu", "hpu", "auto">
