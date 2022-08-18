@@ -67,7 +67,7 @@ def test_get_experiment_logger():
         assert isinstance(logger[0], AnomalibTensorBoardLogger)
         assert isinstance(logger[1], AnomalibWandbLogger)
         assert isinstance(logger[2], CSVLogger)
-        assert isinstance(logger[2], AnomalibCometLogger)
+        assert isinstance(logger[3], AnomalibCometLogger)
 
         # raise unknown
         with pytest.raises(UnknownLogger):
