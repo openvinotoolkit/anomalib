@@ -6,13 +6,13 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 from anomalib.utils.callbacks.export import ExportCallback
 from tests.helpers.config import get_test_configurable_parameters
-from tests.pre_merge.utils.callbacks.openvino_callback.dummy_lightning_model import (
+from tests.pre_merge.utils.callbacks.export_callback.dummy_lightning_model import (
     DummyLightningModule,
     FakeDataModule,
 )
 
 
-def test_openvino_model_callback():
+def test_export_model_callback():
     """Tests if an optimized model is created."""
 
     config = get_test_configurable_parameters(
