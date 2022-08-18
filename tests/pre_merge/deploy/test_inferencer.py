@@ -107,11 +107,12 @@ class TestInferencers:
                 input_size=model_config.dataset.image_size,
                 onnx_path=export_path / "model.onnx",
                 export_path=export_path,
+                export_mode="openvino",
             )
 
             # Test OpenVINO inferencer
             openvino_inferencer = OpenVINOInferencer(
-                model_config, export_path / "model.xml", export_path / "meta_data.json"
+                model_config, export_path / "openvino/model.xml", export_path / "openvino/meta_data.json"
             )
             openvino_dataloader = MockImageLoader(model_config.dataset.image_size, total_count=1)
             for image in openvino_dataloader():
