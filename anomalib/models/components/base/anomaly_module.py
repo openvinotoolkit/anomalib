@@ -5,9 +5,11 @@
 
 import logging
 from abc import ABC
-from typing import Any, List, Optional
+from importlib import import_module
+from typing import Any, List, Optional, Union
 
 import pytorch_lightning as pl
+from omegaconf import DictConfig
 from pytorch_lightning.callbacks.base import Callback
 from torch import Tensor, nn
 from torchmetrics import Metric
@@ -32,9 +34,10 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.loss: Tensor
         self.callbacks: List[Callback]
 
-        self.threshold_type: str
-        self.image_threshold: BaseThreshold
-        self.pixel_threshold: BaseThreshold
+        # Defaults to "adaptive thresholding"
+        self._threshold_type: str
+        self._image_threshold: BaseThreshold
+        self._pixel_threshold: BaseThreshold
 
         self.normalization_metrics: Metric
 
@@ -108,7 +111,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         Args:
           outputs: Batch of outputs from the validation step
         """
-        if self.threshold_type == "adaptive":
+        if self._threshold_type == "adaptive":
             self._compute_adaptive_threshold(outputs)
         self._collect_outputs(self.image_metrics, self.pixel_metrics, outputs)
         self._log_metrics()
@@ -161,3 +164,90 @@ class AnomalyModule(pl.LightningModule, ABC):
             self.log_dict(self.image_metrics, prog_bar=False)
         else:
             self.log_dict(self.image_metrics, prog_bar=True)
+
+    @property
+    def image_threshold(self):
+        """Get the image threshold."""
+        if not hasattr(self, "_image_threshold"):
+            raise AttributeError("Image threshold is not initialized.")
+        return self._image_threshold
+
+    @property
+    def pixel_threshold(self):
+        """Get the pixel threshold."""
+        if not hasattr(self, "_pixel_threshold"):
+            raise AttributeError("Pixel threshold is not initialized")
+        return self._pixel_threshold
+
+    @property
+    def threshold(self) -> str:
+        """Returns the name of the threshold type."""
+        return self._threshold_type
+
+    @threshold.setter
+    def threshold(self, value: Union[str, DictConfig]) -> None:
+        """Used to assign threshold by using assignment operator.
+
+        Args:
+            value (Union[str, DictConfig]): Threshold type or config dict.
+
+        Raises:
+            ValueError: If the threshold type is not supported.
+        """
+        if not (
+            hasattr(self, "_image_threshold") and hasattr(self, "_pixel_threshold")
+        ):  # Set threshold only if it is not initialized
+            if isinstance(value, str):
+                self._threshold_type = value
+                thresholding_args = {}
+            else:
+                assert len(list(value.keys())) == 1, (
+                    "threshold should either be a string or a dictionary with one thresholding type."
+                    " with one key. See `https://openvinotoolkit.github.io/anomalib/guides/thresholding.html`"
+                    " for more details"
+                )
+                self._threshold_type = str(list(value.keys())[0])
+                thresholding_args = value[self._threshold_type]
+
+            # check for valid thresholding method.
+            if self._threshold_type not in ["adaptive", "manual", "maximum"]:
+                raise ValueError(f"Invalid threshold type: {self._threshold_type}")
+
+            # copy devault_value key to both image and pixel threshold and remove it from thresholding_args
+            if (
+                "default_value" in thresholding_args
+            ):  # if default value is provided, use it for image and pixel threshold.
+                thresholding_args["image_threshold"] = thresholding_args["default_value"]
+                thresholding_args["pixel_threshold"] = thresholding_args["default_value"]
+                thresholding_args.pop("default_value")
+            if self._threshold_type == "manual":
+                assert (
+                    "image_threshold" in thresholding_args or "pixel_threshold" in thresholding_args
+                ), "Need to provide image_threshold or pixel_threshold"
+                if "image_threshold" not in thresholding_args:
+                    thresholding_args["image_threshold"] = thresholding_args["pixel_threshold"]
+                elif "pixel_threshold" not in thresholding_args:
+                    thresholding_args["pixel_threshold"] = thresholding_args["image_threshold"]
+
+            self._image_threshold = self._assign_threshold_class(
+                self._threshold_type, thresholding_args.get("image_threshold", 0.0), **thresholding_args
+            )
+            self._pixel_threshold = self._assign_threshold_class(
+                self._threshold_type, thresholding_args.get("pixel_threshold", 0.0), **thresholding_args
+            )
+
+    def _assign_threshold_class(self, class_name: str, default_value: float, **thresholding_args: Any) -> BaseThreshold:
+        """Assign class to image threshold and pixel threshold.
+
+        Args:
+            class_name (str): name of the thresholding class
+            default_value (float): default value of the threshold
+            thresholding_args (Any): arguments for the thresholding class
+
+        Returns:
+            BaseThreshold: threshold class
+        """
+        # importlib is used as mypy throws type error for BaseThreshold
+        module = import_module("anomalib.utils.metrics.thresholding")
+        threshold_class = getattr(module, class_name.capitalize() + "Threshold")
+        return threshold_class(default_value, **thresholding_args).cpu()

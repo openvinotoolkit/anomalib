@@ -47,5 +47,14 @@ You can also manually pass thresholds.
                 image_threshold: 0.5
                 pixel_threshold: 0.5
 
-.. note::
-    When using manual thresholding, you need to pass the image or pixel threshold. Otherwise, it will throw an error.
+If both are same then you can also just pass `default_value`
+
+.. code-block:: yaml
+    :caption: Manual Thresholding with default value
+
+    ...
+    metrics:
+          ...
+          threshold:
+            manual:
+                default_value: 0.5

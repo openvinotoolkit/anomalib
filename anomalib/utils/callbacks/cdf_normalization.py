@@ -118,7 +118,10 @@ class CdfNormalizationCallback(Callback):
     def _create_inference_model(pl_module):
         """Create a duplicate of the PL module that can be used to perform inference on the training set."""
         new_model = get_model(pl_module.hparams)
+        # Assign normalization metrics to the new model and assign image and pixel thresholds.
+        # These are needed to match the keys to the state_dict of the old model.
         new_model.normalization_metrics = AnomalyScoreDistribution().cpu()
+        new_model.threshold = "adaptive"
         new_model.load_state_dict(pl_module.state_dict())
         return new_model
 

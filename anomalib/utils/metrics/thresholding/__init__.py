@@ -5,6 +5,7 @@
 
 from .adaptive import AdaptiveThreshold
 from .base import BaseThreshold
+from .manual import ManualThreshold
 from .maximum import MaximumThreshold
 
-__all__ = ["AdaptiveThreshold", "BaseThreshold", "MaximumThreshold"]
+__all__ = ["AdaptiveThreshold", "BaseThreshold", "ManualThreshold", "MaximumThreshold"]
