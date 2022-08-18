@@ -225,7 +225,8 @@ class ImageGrid:
                 axis.title.set_text(image_dict["title"])
         self.figure.canvas.draw()
         # convert canvas to numpy array to prepare for visualization with opencv
-        img = np.frombuffer(self.figure.canvas.tostring_rgb(), dtype=np.uint8)
-        img = img.reshape(self.figure.canvas.get_width_height()[::-1] + (3,))
+        buf = self.figure.canvas.tostring_rgb()
+        ncols, nrows = self.figure.canvas.get_width_height()
+        img = np.fromstring(buf, dtype=np.uint8).reshape(nrows, ncols, 3)
         plt.close(self.figure)
         return img
