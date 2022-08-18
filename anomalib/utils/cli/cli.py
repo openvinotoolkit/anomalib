@@ -91,7 +91,9 @@ class AnomalibCLI(LightningCLI):
         """
         # TODO: https://github.com/openvinotoolkit/anomalib/issues/19
         # TODO: https://github.com/openvinotoolkit/anomalib/issues/20
-        parser.add_argument("--openvino", type=bool, default=False, help="Export to ONNX and OpenVINO IR format.")
+        parser.add_argument(
+            "--export_mode", type=str, default="", help="Select export mode to ONNX or OpenVINO IR format."
+        )
         parser.add_argument("--nncf", type=str, help="Path to NNCF config to enable quantized training.")
 
         # ADD CUSTOM CALLBACKS TO CONFIG
@@ -213,23 +215,37 @@ class AnomalibCLI(LightningCLI):
         add_visualizer_callback(callbacks, config)
         self.config[subcommand].visualization = config.visualization
 
-        # TODO: https://github.com/openvinotoolkit/anomalib/issues/19
-        if config.openvino and config.nncf:
-            raise ValueError("OpenVINO and NNCF cannot be set simultaneously.")
-
         # Export to OpenVINO
-        if config.openvino:
-            from anomalib.utils.callbacks.openvino import (  # pylint: disable=import-outside-toplevel
-                OpenVINOCallback,
+        if "openvino" in config.export_mode:
+            from anomalib.utils.callbacks.export import (  # pylint: disable=import-outside-toplevel
+                ExportCallback,
             )
 
+            logger.info("Setting model export to OpenVINO")
             callbacks.append(
-                OpenVINOCallback(
+                ExportCallback(
                     input_size=config.data.init_args.image_size,
                     dirpath=os.path.join(config.trainer.default_root_dir, "compressed"),
                     filename="model",
+                    export_mode="openvino",
                 )
             )
+        elif "onnx" in config.export_mode:
+            from anomalib.utils.callbacks.export import (  # pylint: disable=import-outside-toplevel
+                ExportCallback,
+            )
+
+            logger.info("Setting model export to ONNX")
+            callbacks.append(
+                ExportCallback(
+                    input_size=config.data.init_args.image_size,
+                    dirpath=os.path.join(config.trainer.default_root_dir, "compressed"),
+                    filename="model",
+                    export_mode="onnx",
+                )
+            )
+        else:
+            logger.info("No model export")
         if config.nncf:
             if os.path.isfile(config.nncf) and config.nncf.endswith(".yaml"):
                 nncf_module = import_module("anomalib.core.callbacks.nncf_callback")
