@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 @CALLBACK_REGISTRY
-class OpenVINOCallback(Callback):
+class ExportCallback(Callback):
     """Callback to compresses a trained model.
 
     Model is first exported to ``.onnx`` format, and then converted to OpenVINO IR.
@@ -28,10 +28,11 @@ class OpenVINOCallback(Callback):
         filename (str): Name of output model
     """
 
-    def __init__(self, input_size: Tuple[int, int], dirpath: str, filename: str):
+    def __init__(self, input_size: Tuple[int, int], dirpath: str, filename: str, export_mode: str):
         self.input_size = input_size
         self.dirpath = dirpath
         self.filename = filename
+        self.export_mode = export_mode
 
     def on_train_end(self, trainer, pl_module: AnomalyModule) -> None:  # pylint: disable=W0613
         """Call when the train ends.
@@ -47,4 +48,5 @@ class OpenVINOCallback(Callback):
             input_size=self.input_size,
             onnx_path=onnx_path,
             export_path=self.dirpath,
+            export_mode=self.export_mode,
         )

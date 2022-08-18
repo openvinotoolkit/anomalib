@@ -114,18 +114,36 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
                     export_dir=os.path.join(config.project.path, "compressed"),
                 )
             )
-        if "openvino" in config.optimization and config.optimization.openvino.apply:
-            from .openvino import (  # pylint: disable=import-outside-toplevel
-                OpenVINOCallback,
+        if "openvino" in config.optimization.export_mode:
+            from .export import (  # pylint: disable=import-outside-toplevel
+                ExportCallback,
             )
 
+            logger.info("Setting model export to OpenVINO")
             callbacks.append(
-                OpenVINOCallback(
+                ExportCallback(
                     input_size=config.model.input_size,
-                    dirpath=os.path.join(config.project.path, "openvino"),
+                    dirpath=config.project.path,
                     filename="model",
+                    export_mode="openvino",
                 )
             )
+        elif "onnx" in config.optimization.export_mode:
+            from .export import (  # pylint: disable=import-outside-toplevel
+                ExportCallback,
+            )
+
+            logger.info("Setting model export to ONNX")
+            callbacks.append(
+                ExportCallback(
+                    input_size=config.model.input_size,
+                    dirpath=config.project.path,
+                    filename="model",
+                    export_mode="onnx",
+                )
+            )
+        else:
+            logger.info("Export option not found")
 
     # Add callback to log graph to loggers
     if config.logging.log_graph not in [None, False]:
