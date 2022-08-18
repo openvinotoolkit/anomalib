@@ -14,4 +14,4 @@ def convert_to_openvino(model: AnomalyModule, export_path: Union[Path, str], inp
     """Convert the trained model to OpenVINO."""
     export_path = export_path if isinstance(export_path, Path) else Path(export_path)
     onnx_path = export_path / "model.onnx"
-    export_convert(model, input_size, onnx_path, export_path)
+    export_convert(model, input_size, onnx_path, export_path, export_mode="openvino")
