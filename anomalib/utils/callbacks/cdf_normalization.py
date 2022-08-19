@@ -15,6 +15,7 @@ from torch.distributions import LogNormal
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
 from anomalib.post_processing.normalization.cdf import normalize, standardize
+from anomalib.utils.metrics import AnomalyScoreDistribution
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,19 @@ class CdfNormalizationCallback(Callback):
         self.image_dist: Optional[LogNormal] = None
         self.pixel_dist: Optional[LogNormal] = None
 
-    def on_test_start(self, _trainer: pl.Trainer, pl_module: AnomalyModule) -> None:
+    # pylint: disable=unused-argument
+    def setup(self, trainer: pl.Trainer, pl_module: AnomalyModule, stage: Optional[str] = None) -> None:
+        """Adds training_distribution metrics to normalization metrics."""
+        if not hasattr(pl_module, "normalization_metrics"):
+            pl_module.normalization_metrics = AnomalyScoreDistribution().cpu()
+        elif not isinstance(pl_module.normalization_metrics, AnomalyScoreDistribution):
+            raise AttributeError(
+                f"Expected normalization_metrics to be of type AnomalyScoreDistribution,"
+                f" got {type(pl_module.normalization_metrics)}"
+            )
+
+    # pylint: disable=unused-argument
+    def on_test_start(self, trainer: pl.Trainer, pl_module: AnomalyModule) -> None:
         """Called when the test begins."""
         if pl_module.image_metrics is not None:
             pl_module.image_metrics.set_threshold(0.5)
@@ -93,24 +106,25 @@ class CdfNormalizationCallback(Callback):
         predictions = Trainer(gpus=trainer.gpus).predict(
             model=self._create_inference_model(pl_module), dataloaders=trainer.datamodule.train_dataloader()
         )
-        pl_module.training_distribution.reset()
+        pl_module.normalization_metrics.reset()
         for batch in predictions:
             if "pred_scores" in batch.keys():
-                pl_module.training_distribution.update(anomaly_scores=batch["pred_scores"])
+                pl_module.normalization_metrics.update(anomaly_scores=batch["pred_scores"])
             if "anomaly_maps" in batch.keys():
-                pl_module.training_distribution.update(anomaly_maps=batch["anomaly_maps"])
-        pl_module.training_distribution.compute()
+                pl_module.normalization_metrics.update(anomaly_maps=batch["anomaly_maps"])
+        pl_module.normalization_metrics.compute()
 
     @staticmethod
     def _create_inference_model(pl_module):
         """Create a duplicate of the PL module that can be used to perform inference on the training set."""
         new_model = get_model(pl_module.hparams)
+        new_model.normalization_metrics = AnomalyScoreDistribution().cpu()
         new_model.load_state_dict(pl_module.state_dict())
         return new_model
 
     @staticmethod
     def _standardize_batch(outputs: STEP_OUTPUT, pl_module) -> None:
-        stats = pl_module.training_distribution.to(outputs["pred_scores"].device)
+        stats = pl_module.normalization_metrics.to(outputs["pred_scores"].device)
         outputs["pred_scores"] = standardize(outputs["pred_scores"], stats.image_mean, stats.image_std)
         if "anomaly_maps" in outputs.keys():
             outputs["anomaly_maps"] = standardize(

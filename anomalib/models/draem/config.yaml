@@ -24,6 +24,8 @@ model:
   name: draem
   anomaly_source_path: null # optional, e.g. ./datasets/dtd
   lr: 0.0001
+  enable_sspcab: false
+  sspcab_lambda: 0.1
   early_stopping:
     patience: 20
     metric: pixel_AUROC

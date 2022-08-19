@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import pytorch_lightning as pl
 from pytorch_lightning import Callback
@@ -12,18 +12,29 @@ from pytorch_lightning.utilities.types import STEP_OUTPUT
 
 from anomalib.models.components import AnomalyModule
 from anomalib.post_processing.normalization.min_max import normalize
+from anomalib.utils.metrics import MinMax
 
 
 @CALLBACK_REGISTRY
 class MinMaxNormalizationCallback(Callback):
     """Callback that normalizes the image-level and pixel-level anomaly scores using min-max normalization."""
 
-    def on_test_start(self, _trainer: pl.Trainer, pl_module: AnomalyModule) -> None:
+    # pylint: disable=unused-argument
+    def setup(self, trainer: pl.Trainer, pl_module: AnomalyModule, stage: Optional[str] = None) -> None:
+        """Adds min_max metrics to normalization metrics."""
+        if not hasattr(pl_module, "normalization_metrics"):
+            pl_module.normalization_metrics = MinMax().cpu()
+        elif not isinstance(pl_module.normalization_metrics, MinMax):
+            raise AttributeError(
+                f"Expected normalization_metrics to be of type MinMax, got {type(pl_module.normalization_metrics)}"
+            )
+
+    # pylint: disable=unused-argument
+    def on_test_start(self, trainer: pl.Trainer, pl_module: AnomalyModule) -> None:
         """Called when the test begins."""
-        if pl_module.image_metrics is not None:
-            pl_module.image_metrics.set_threshold(0.5)
-        if pl_module.pixel_metrics is not None:
-            pl_module.pixel_metrics.set_threshold(0.5)
+        for metric in (pl_module.image_metrics, pl_module.pixel_metrics):
+            if metric is not None:
+                metric.set_threshold(0.5)
 
     def on_validation_batch_end(
         self,
@@ -36,9 +47,9 @@ class MinMaxNormalizationCallback(Callback):
     ) -> None:
         """Called when the validation batch ends, update the min and max observed values."""
         if "anomaly_maps" in outputs.keys():
-            pl_module.min_max(outputs["anomaly_maps"])
+            pl_module.normalization_metrics(outputs["anomaly_maps"])
         else:
-            pl_module.min_max(outputs["pred_scores"])
+            pl_module.normalization_metrics(outputs["pred_scores"])
 
     def on_test_batch_end(
         self,
@@ -67,7 +78,7 @@ class MinMaxNormalizationCallback(Callback):
     @staticmethod
     def _normalize_batch(outputs, pl_module):
         """Normalize a batch of predictions."""
-        stats = pl_module.min_max.cpu()
+        stats = pl_module.normalization_metrics.cpu()
         outputs["pred_scores"] = normalize(
             outputs["pred_scores"], pl_module.image_threshold.value.cpu(), stats.min, stats.max
         )

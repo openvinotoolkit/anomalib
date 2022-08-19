@@ -9,6 +9,10 @@ Config:
 Callbacks:
   - "anomalib/utils/callbacks/**/*"
 
+CI:
+  - ".github/**/*"
+  - "tox.ini"
+
 CLI:
   - "anomalib/utils/cli/**/*"
 
