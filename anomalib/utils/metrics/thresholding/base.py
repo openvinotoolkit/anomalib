@@ -14,10 +14,9 @@ class BaseThreshold(Metric, ABC):
     def __init__(self, default_value: Optional[float] = 0.0, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
-        self.add_state("value", default=torch.tensor(default_value), persistent=True)  # pylint: disable=not-callable
-        self.value = torch.tensor(default_value)  # pylint: disable=not-callable
+        self.add_state("value", default=torch.tensor(default_value), persistent=True)
+        self.value = torch.tensor(default_value)
 
-    # pylint: disable=arguments-differ
     @abstractmethod
     def update(self, preds: Tensor, target: Tensor) -> None:  # type: ignore
         """Update the metric.
