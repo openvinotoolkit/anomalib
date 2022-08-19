@@ -243,11 +243,11 @@ Refer to the [Benchmarking Documentation](https://openvinotoolkit.github.io/anom
 
 # Logging Images
 
-You can save images locally or to a logger such TensorBoard or Weights and Biases by setting the following configuration.
+You can save images locally or to a logger such as Comet, TensorBoard or Weights and Biases by setting the following configuration.
 
 ```yaml
 logging:
-  logger: [tensorboard, wandb]
+  logger: [comet, tensorboard, wandb]
   log_graph: false
 ```
 
