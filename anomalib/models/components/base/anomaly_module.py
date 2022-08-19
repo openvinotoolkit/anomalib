@@ -34,7 +34,6 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.loss: Tensor
         self.callbacks: List[Callback]
 
-        # Defaults to "adaptive thresholding"
         self._threshold_type: str
         self._image_threshold: BaseThreshold
         self._pixel_threshold: BaseThreshold
@@ -213,13 +212,15 @@ class AnomalyModule(pl.LightningModule, ABC):
             if self._threshold_type not in ["adaptive", "manual", "maximum"]:
                 raise ValueError(f"Invalid threshold type: {self._threshold_type}")
 
-            # copy devault_value key to both image and pixel threshold and remove it from thresholding_args
+            # copy default_value key to both image and pixel threshold and remove it from thresholding_args
             if (
                 "default_value" in thresholding_args
             ):  # if default value is provided, use it for image and pixel threshold.
-                thresholding_args["image_threshold"] = thresholding_args["default_value"]
-                thresholding_args["pixel_threshold"] = thresholding_args["default_value"]
+                for threshold_key in ("image_threshold", "pixel_threshold"):
+                    thresholding_args[threshold_key] = thresholding_args["default_value"]
                 thresholding_args.pop("default_value")
+
+            # for manual thresholding assign missing key to the other threshold.
             if self._threshold_type == "manual":
                 assert (
                     "image_threshold" in thresholding_args or "pixel_threshold" in thresholding_args
