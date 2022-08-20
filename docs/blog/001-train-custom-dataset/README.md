@@ -151,11 +151,11 @@ Here is an example of the generated results for a toy dataset containing Hazelnu
 
 ## Logging and Experiment Management
 
-While it is delightful to know how good your model performed on your preferred metric, it is even more exciting to see the predicted outputs. Anomalib provides a couple of ways to log and track experiments. These can be used individually or in a combination. As of the current release, you can save images to a local folder, or upload to weights and biases, or TensorBoard.
+While it is delightful to know how good your model performed on your preferred metric, it is even more exciting to see the predicted outputs. Anomalib provides a couple of ways to log and track experiments. These can be used individually or in a combination. As of the current release, you can save images to a local folder, or upload to comet, weights and biases, or TensorBoard.
 
-To select where you would like to save the images, change the `log_images_to` parameter in the `project` section in the config file.
+To select where you would like to save the images, change the `log_images` parameter in the `Visualization` section in the config file to true.
 
-For example, setting the following `log_images_to: ["local"]` will result in saving the images in the results folder as shown in the tree structure below:
+For example, setting the following `log_images: True` will result in saving the images in the results folder as shown in the tree structure below:
 
 ```bash
 results
@@ -176,14 +176,21 @@ results
 
 ### Logging to Tensorboard and/or W&B
 
-To use TensorBoard and/or W&B logger, ensure that the logger parameter is set to `tensorboard`, `wandb` or `[tensorboard, wandb]` in the `logging` section of the config file.
+To use TensorBoard and/or W&B logger and/or Comet logger, ensure that the logger parameter is set to `comet`, `tensorboard`, `wandb` or `[tensorboard, wandb]` in the `logging` section of the config file.
 
-An example configuration for saving to TensorBoard is shown in the figure below. Similarly after setting logger to `wandb` you will see the images on your wandb project dashboard.
+An example configuration for saving to TensorBoard is shown in the figure below. Similarly after setting logger to `wandb` or 'comet' you will see the images on your wandb and/or comet project dashboard.
 
 ```yaml
-logging:
-  log_images_to: [tensorboard]
-  logger: tensorboard # options: [tensorboard, wandb, csv] or combinations.
+  visualization:
+  show_images: False # show images on the screen
+  save_images: False # save images to the file system
+  log_images: True # log images to the available loggers (if any)
+  image_save_path: null # path to which images will be saved
+  mode: full # options: ["full", "simple"]
+
+  logging:
+    logger: [comet, tensorboard, wandb] #Choose any combination of these 3
+    log_graph: false
 ```
 
 <div align="center">
