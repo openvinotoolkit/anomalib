@@ -176,9 +176,9 @@ results
 
 ### Logging to Tensorboard and/or W&B
 
-To use TensorBoard and/or W&B logger, ensure that the logger parameter is set to `tensorboard`, `wandb` or `[tensorboard, wandb]` in the `logging` section of the config file.
+To use TensorBoard and/or W&B logger and/or Comet logger, ensure that the logger parameter is set to `comet`, `tensorboard`, `wandb` or `[tensorboard, wandb]` in the `logging` section of the config file.
 
-An example configuration for saving to TensorBoard is shown in the figure below. Similarly after setting logger to `wandb` you will see the images on your wandb project dashboard.
+An example configuration for saving to TensorBoard is shown in the figure below. Similarly after setting logger to `wandb` or 'comet' you will see the images on your wandb and/or comet project dashboard.
 
 ```yaml
   visualization:
@@ -189,7 +189,7 @@ An example configuration for saving to TensorBoard is shown in the figure below.
   mode: full # options: ["full", "simple"]
 
   logging:
-    logger: [comet, tensorboard, wandb]
+    logger: [comet, tensorboard, wandb] #Choose any combination of these 3
     log_graph: false
 ```
 
