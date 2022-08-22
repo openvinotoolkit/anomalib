@@ -22,10 +22,10 @@ class PRO(Metric):
         super().__init__(**kwargs)
         self.threshold = threshold
 
-        self.add_state("preds", default=[], dist_reduce_fx="cat")  # pylint: disable=not-callable
-        self.add_state("target", default=[], dist_reduce_fx="cat")  # pylint: disable=not-callable
+        self.add_state("preds", default=[], dist_reduce_fx="cat")
+        self.add_state("target", default=[], dist_reduce_fx="cat")
 
-    def update(self, predictions: Tensor, targets: Tensor) -> None:  # type: ignore  # pylint: disable=arguments-differ
+    def update(self, predictions: Tensor, targets: Tensor) -> None:
         """Compute the PRO score for the current batch."""
 
         self.target.append(targets)
