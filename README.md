@@ -253,7 +253,7 @@ logging:
 
 For more information on logging images, refer to the [Logging Documentation](https://openvinotoolkit.github.io/anomalib/guides/logging.html)
 
-Note: For logging with Comet.ml, set your API key with using `comet_ml.init()` in interactive python or  `export COMET_API_KEY=<Your API Key>`
+Note: Set your API Key for comet.ml via `comet_ml.init()` in interactive python or  `export COMET_API_KEY=<Your API Key>`
 
 # Datasets
 
