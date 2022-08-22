@@ -40,7 +40,9 @@ class PRO(Metric):
             comps = connected_components_gpu(target.unsqueeze(1))
         else:
             comps = connected_components_cpu(target.unsqueeze(1))
-
+        if not len(comps.unique()) > comps.max():
+            print("here")
+            connected_components_cpu(target.unsqueeze(1))
         pro = pro_score(preds, comps, threshold=self.threshold)
         return pro
 
@@ -118,15 +120,13 @@ def connected_components_cpu(image: Tensor) -> Tensor:
     Returns:
         Tensor: Components labeled from 0 to N.
     """
-    components_list = []
+    components = torch.zeros_like(image)
     label_idx = 1
-    for mask in image:
+    for i, mask in enumerate(image):
         mask = mask.squeeze().numpy().astype(np.uint8)
         _, comps = cv2.connectedComponents(mask)
         # remap component values to make sure every component has a unique value when outputs are concatenated
         for label in np.unique(comps)[1:]:
-            comps[np.where(comps == label)] = label_idx
+            components[i, 0, ...][np.where(comps == label)] = label_idx
             label_idx += 1
-        components_list.append(comps)
-    components = torch.Tensor(np.stack(components_list)).unsqueeze(1).int()
-    return components
+    return components.int()
