@@ -1,11 +1,10 @@
 """Implementation of PRO metric based on TorchMetrics."""
-import warnings
 from typing import List
 
 import cv2
 import numpy as np
 import torch
-import torch.nn.functional as F
+from kornia.contrib import connected_components
 from torch import Tensor
 from torchmetrics import Metric
 from torchmetrics.functional import recall
@@ -71,37 +70,17 @@ def pro_score(predictions: Tensor, comps: Tensor, threshold: float = 0.5) -> Ten
     return pro
 
 
-def connected_components_gpu(binary_input: torch.Tensor, max_iterations: int = 1000) -> Tensor:
-    """Pytorch implementation for Connected Component Labeling on GPU.
+def connected_components_gpu(binary_input: torch.Tensor, num_iterations: int = 1000) -> Tensor:
+    """Perform connected component labeling on GPU and remap the labels from 0 to N.
 
     Args:
         binary_input (Tensor): Binary input data from which we want to extract connected components (Bx1xHxW)
-        max_iterations (int): Maximum number of iterations used in the connected component computaion.
+        num_iterations (int): Number of iterations used in the connected component computation.
 
     Returns:
         Tensor: Components labeled from 0 to N.
     """
-    mask = binary_input.bool()
-
-    batch, _, height, width = binary_input.shape
-    components = torch.arange(batch * height * width, device=binary_input.device, dtype=torch.float).reshape(
-        (batch, 1, height, width)
-    )
-    components[~mask] = 0
-
-    converged = False
-    for _ in range(max_iterations):
-        previous = components.clone()
-        components[mask] = F.max_pool2d(components, kernel_size=3, stride=1, padding=1)[mask]
-        if torch.all(torch.eq(components, previous)):
-            converged = True
-            break
-
-    if not converged:
-        warnings.warn(
-            f"Max iterations ({max_iterations}) reached before converging. Connected component results may be "
-            f"inaccurate. Consider increasing the maximum number of iterations."
-        )
+    components = connected_components(binary_input, num_iterations=num_iterations)
 
     # remap component values from 0 to N
     labels = components.unique()
