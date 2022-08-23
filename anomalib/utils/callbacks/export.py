@@ -42,11 +42,9 @@ class ExportCallback(Callback):
         """
         logger.info("Exporting the model")
         os.makedirs(self.dirpath, exist_ok=True)
-        onnx_path = os.path.join(self.dirpath, self.filename + ".onnx")
         export_convert(
             model=pl_module,
             input_size=self.input_size,
-            onnx_path=onnx_path,
             export_path=self.dirpath,
             export_mode=self.export_mode,
         )

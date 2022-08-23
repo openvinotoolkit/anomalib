@@ -119,7 +119,7 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
                 ExportCallback,
             )
 
-            logger.info("Setting model export to OpenVINO")
+            logger.info("Setting model export to %s", config.optimization.export_mode)
             callbacks.append(
                 ExportCallback(
                     input_size=config.model.input_size,

@@ -6,7 +6,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -44,20 +44,19 @@ def get_model_metadata(model: AnomalyModule) -> Dict[str, Tensor]:
 def export_convert(
     model: AnomalyModule,
     input_size: Union[List[int], Tuple[int, int]],
-    onnx_path: Union[str, Path],
-    export_path: Union[str, Path],
     export_mode: str,
+    export_path: Optional[Union[str, Path]] = None,
 ):
     """Export the model to onnx format and convert to OpenVINO IR.
 
     Args:
         model (AnomalyModule): Model to convert.
         input_size (Union[List[int], Tuple[int, int]]): Image size used as the input for onnx converter.
-        onnx_path (Union[str, Path]): Path to output onnx model.
         export_path (Union[str, Path]): Path to exported OpenVINO IR.
         export_mode (str): Mode to export onnx or openvino
     """
     height, width = input_size
+    onnx_path = os.path.join(str(export_path) + "/model.onnx")
     torch.onnx.export(
         model.model,
         torch.zeros((1, 3, height, width)).to(model.device),

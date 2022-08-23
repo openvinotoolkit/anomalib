@@ -105,7 +105,6 @@ class TestInferencers:
             export_convert(
                 model=model,
                 input_size=model_config.dataset.image_size,
-                onnx_path=export_path / "model.onnx",
                 export_path=export_path,
                 export_mode="openvino",
             )
