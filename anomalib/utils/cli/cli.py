@@ -5,6 +5,7 @@
 
 import logging
 import os
+import warnings
 from datetime import datetime
 from importlib import import_module
 from pathlib import Path
@@ -216,36 +217,22 @@ class AnomalibCLI(LightningCLI):
         self.config[subcommand].visualization = config.visualization
 
         # Export to OpenVINO
-        if "openvino" in config.export_mode:
+        if config.export_mode is not None:
             from anomalib.utils.callbacks.export import (  # pylint: disable=import-outside-toplevel
                 ExportCallback,
             )
 
-            logger.info("Setting model export to OpenVINO")
+            logger.info("Setting model export to %s", config.export_mode)
             callbacks.append(
                 ExportCallback(
                     input_size=config.data.init_args.image_size,
                     dirpath=os.path.join(config.trainer.default_root_dir, "compressed"),
                     filename="model",
-                    export_mode="openvino",
-                )
-            )
-        elif "onnx" in config.export_mode:
-            from anomalib.utils.callbacks.export import (  # pylint: disable=import-outside-toplevel
-                ExportCallback,
-            )
-
-            logger.info("Setting model export to ONNX")
-            callbacks.append(
-                ExportCallback(
-                    input_size=config.data.init_args.image_size,
-                    dirpath=os.path.join(config.trainer.default_root_dir, "compressed"),
-                    filename="model",
-                    export_mode="onnx",
+                    export_mode=config.export_mode,
                 )
             )
         else:
-            logger.info("No model export")
+            warnings.warn(f"Export option: {config.export_mode} not found. Defaulting to no model export")
         if config.nncf:
             if os.path.isfile(config.nncf) and config.nncf.endswith(".yaml"):
                 nncf_module = import_module("anomalib.core.callbacks.nncf_callback")
