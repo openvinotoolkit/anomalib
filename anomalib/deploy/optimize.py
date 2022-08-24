@@ -56,7 +56,7 @@ def export_convert(
         export_mode (str): Mode to export onnx or openvino
     """
     height, width = input_size
-    onnx_path = os.path.join(str(export_path) + "/model.onnx")
+    onnx_path = os.path.join(str(export_path), "model.onnx")
     torch.onnx.export(
         model.model,
         torch.zeros((1, 3, height, width)).to(model.device),
