@@ -242,19 +242,25 @@ python tools/benchmarking/benchmark.py \
 
 Refer to the [Benchmarking Documentation](https://openvinotoolkit.github.io/anomalib/guides/benchmarking.html) for more details.
 
-# Logging Images
+# Experiment Management 
 
-You can save images locally or to a logger such as Comet, TensorBoard or Weights and Biases by setting the following configuration.
+Anomablib is integrated with various libraries for experiment tracking such as comet, tensorboard, and wandb through [pytorch lighting loggers](https://pytorch-lightning.readthedocs.io/en/stable/extensions/logging.html). 
+
+Below is an example of how to enable logging for hyper-parameters, metrics, model graphs, and predictions on images in the test data-set
 
 ```yaml
-logging:
+visualization:
+  log_images: True # log images to the available loggers (if any)
+  mode: full # options: ["full", "simple"]
+
+ logging:
   logger: [comet, tensorboard, wandb]
-  log_graph: false
+  log_graph: True
 ```
 
-For more information on logging images, refer to the [Logging Documentation](https://openvinotoolkit.github.io/anomalib/guides/logging.html)
+For more information, refer to the [Logging Documentation](https://openvinotoolkit.github.io/anomalib/guides/logging.html)
 
-Note: Set your API Key for comet.ml via `comet_ml.init()` in interactive python or  `export COMET_API_KEY=<Your API Key>`
+Note: Set your API Key for [comet.ml](https://www.comet.com/signup) via `comet_ml.init()` in interactive python or simply run `export COMET_API_KEY=<Your API Key>`
 
 # Datasets
 
