@@ -6,7 +6,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -44,18 +44,19 @@ def get_model_metadata(model: AnomalyModule) -> Dict[str, Tensor]:
 def export_convert(
     model: AnomalyModule,
     input_size: Union[List[int], Tuple[int, int]],
-    onnx_path: Union[str, Path],
-    export_path: Union[str, Path],
+    export_mode: str,
+    export_path: Optional[Union[str, Path]] = None,
 ):
     """Export the model to onnx format and convert to OpenVINO IR.
 
     Args:
         model (AnomalyModule): Model to convert.
         input_size (Union[List[int], Tuple[int, int]]): Image size used as the input for onnx converter.
-        onnx_path (Union[str, Path]): Path to output onnx model.
         export_path (Union[str, Path]): Path to exported OpenVINO IR.
+        export_mode (str): Mode to export onnx or openvino
     """
     height, width = input_size
+    onnx_path = os.path.join(str(export_path), "model.onnx")
     torch.onnx.export(
         model.model,
         torch.zeros((1, 3, height, width)).to(model.device),
@@ -64,12 +65,14 @@ def export_convert(
         input_names=["input"],
         output_names=["output"],
     )
-    optimize_command = "mo --input_model " + str(onnx_path) + " --output_dir " + str(export_path)
-    os.system(optimize_command)
-    with open(Path(export_path) / "meta_data.json", "w", encoding="utf-8") as metadata_file:
-        meta_data = get_model_metadata(model)
-        # Convert metadata from torch
-        for key, value in meta_data.items():
-            if isinstance(value, Tensor):
-                meta_data[key] = value.numpy().tolist()
-        json.dump(meta_data, metadata_file, ensure_ascii=False, indent=4)
+    if export_mode == "openvino":
+        export_path = os.path.join(str(export_path), "openvino")
+        optimize_command = "mo --input_model " + str(onnx_path) + " --output_dir " + str(export_path)
+        os.system(optimize_command)
+        with open(Path(export_path) / "meta_data.json", "w", encoding="utf-8") as metadata_file:
+            meta_data = get_model_metadata(model)
+            # Convert metadata from torch
+            for key, value in meta_data.items():
+                if isinstance(value, Tensor):
+                    meta_data[key] = value.numpy().tolist()
+            json.dump(meta_data, metadata_file, ensure_ascii=False, indent=4)

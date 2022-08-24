@@ -63,8 +63,7 @@ logging:
   log_graph: false # Logs the model graph to respective logger.
 
 optimization:
-  openvino:
-    apply: false
+  export_mode: ""
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
