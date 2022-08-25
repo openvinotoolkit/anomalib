@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+import logging
 from typing import List, Optional
 
 import pytorch_lightning as pl
@@ -14,6 +15,8 @@ from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 from anomalib.models.components.base.anomaly_module import AnomalyModule
 from anomalib.utils.metrics import metric_collection_from_names
 
+logger = logging.getLogger(__name__)
+
 __all__ = ["MetricsConfigurationCallback"]
 
 
@@ -23,6 +26,7 @@ class MetricsConfigurationCallback(Callback):
 
     def __init__(
         self,
+        task: str,
         adaptive_threshold: bool,
         default_image_threshold: Optional[float] = None,
         default_pixel_threshold: Optional[float] = None,
@@ -38,6 +42,7 @@ class MetricsConfigurationCallback(Callback):
         these to the lightning module.
 
         Args:
+            task (str): Task type of the current run.
             adaptive_threshold (bool): Flag indicating whether threshold should be adaptive.
             default_image_threshold (Optional[float]): Default image threshold value.
             default_pixel_threshold (Optional[float]): Default pixel threshold value.
@@ -46,6 +51,7 @@ class MetricsConfigurationCallback(Callback):
             normalization_method(Optional[str]): Normalization method. <None, min_max, cdf>
         """
         # TODO: https://github.com/openvinotoolkit/anomalib/issues/384
+        self.task = task
         self.image_metric_names = image_metric_names
         self.pixel_metric_names = pixel_metric_names
 
@@ -76,7 +82,19 @@ class MetricsConfigurationCallback(Callback):
             stage (Optional[str], optional): fit, validate, test or predict. Defaults to None.
         """
         image_metric_names = [] if self.image_metric_names is None else self.image_metric_names
-        pixel_metric_names = [] if self.pixel_metric_names is None else self.pixel_metric_names
+
+        pixel_metric_names: List[str]
+        if self.pixel_metric_names is None:
+            pixel_metric_names = []
+        elif self.task == "classification":
+            pixel_metric_names = []
+            logger.warning(
+                "Cannot perform pixel-level evaluation when task type is classification. "
+                "Ignoring the following pixel-level metrics: %s",
+                self.pixel_metric_names,
+            )
+        else:
+            pixel_metric_names = self.pixel_metric_names
 
         if isinstance(pl_module, AnomalyModule):
             pl_module.adaptive_threshold = self.adaptive_threshold

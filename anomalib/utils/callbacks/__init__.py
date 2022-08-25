@@ -74,6 +74,7 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
         config.metrics.threshold.pixel_default if "pixel_default" in config.metrics.threshold.keys() else None
     )
     metrics_callback = MetricsConfigurationCallback(
+        config.dataset.task,
         config.metrics.threshold.adaptive,
         image_threshold,
         pixel_threshold,
