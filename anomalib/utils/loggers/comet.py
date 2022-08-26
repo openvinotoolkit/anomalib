@@ -93,6 +93,7 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
             prefix=prefix,
             **kwargs
         )
+        self.experiment.log_other("Created from", "Anomalib")
        
 
     @rank_zero_only
