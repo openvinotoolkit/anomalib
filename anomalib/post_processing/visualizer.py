@@ -123,6 +123,7 @@ class Visualizer:
             visualization.add_image(image=image_result.segmentations, title="Segmentation Result")
         elif self.task == "classification":
             visualization.add_image(image_result.image, title="Image")
+            visualization.add_image(image_result.heat_map, "Predicted Heat Map")
             if image_result.pred_label:
                 image_classified = add_anomalous_label(image_result.image, image_result.pred_score)
             else:
