@@ -76,7 +76,7 @@ To log other artifacts to the logger, you can directly access the logger object 
   When accessing the base ``logger/logger.experiment`` object, refer to the documentation of the respective logger for the list of available methods.
 
 
-Anomalib makes it easier to log your model graph to Comet,TensorBoard or Weights and Biases. Just set ``log_graph`` to True under ``logging`` parameter of the model configuration file.
+Anomalib makes it easier to log your model graph to Comet, TensorBoard or Weights and Biases. Just set ``log_graph`` to True under ``logging`` parameter of the model configuration file.
 
 .. code-block:: yaml
 
