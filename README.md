@@ -260,7 +260,7 @@ visualization:
 
 For more information, refer to the [Logging Documentation](https://openvinotoolkit.github.io/anomalib/guides/logging.html)
 
-Note: Set your API Key for [comet.ml](https://www.comet.com/signup?utm_source=anomalib&utm_medium=referral) via `comet_ml.init()` in interactive python or simply run `export COMET_API_KEY=<Your API Key>`
+Note: Set your API Key for [Comet.ml](https://www.comet.com/signup?utm_source=anomalib&utm_medium=referral) via `comet_ml.init()` in interactive python or simply run `export COMET_API_KEY=<Your API Key>`
 
 # Datasets
 
