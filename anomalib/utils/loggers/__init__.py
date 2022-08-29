@@ -17,7 +17,7 @@ from .wandb import AnomalibWandbLogger
 from .comet import AnomalibCometLogger
 
 __all__ = [
-    "AnomalibCometLogger"
+    "AnomalibCometLogger",
     "AnomalibTensorBoardLogger",
     "AnomalibWandbLogger",
     "configure_logger",
