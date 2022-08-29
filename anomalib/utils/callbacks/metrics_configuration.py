@@ -26,8 +26,8 @@ class MetricsConfigurationCallback(Callback):
 
     def __init__(
         self,
-        task: str,
         adaptive_threshold: bool,
+        task: str = "segmentation",
         default_image_threshold: Optional[float] = None,
         default_pixel_threshold: Optional[float] = None,
         image_metric_names: Optional[List[str]] = None,
