@@ -67,7 +67,7 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
         >>> trainer = Trainer(logger=comet_logger)
 
     See Also:
-        - `Demo in Google Colab <https://tinyurl.com/22phzw5s>`__
+        - `Demo in Google Colab <https://colab.research.google.com/github/comet-ml/comet-examples/blob/master/integrations/model-training/pytorch-lightning/notebooks/Comet_and_Pytorch_Lightning.ipynb>`__
         - `Comet Documentation <https://www.comet.com/docs/v2/integrations/ml-frameworks/pytorch-lightning/>`__
     """
     def __init__(
