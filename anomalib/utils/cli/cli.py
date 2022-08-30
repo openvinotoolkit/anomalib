@@ -111,6 +111,7 @@ class AnomalibCLI(LightningCLI):
         parser.set_defaults(
             {
                 "metrics.adaptive_threshold": True,
+                "metrics.task": "segmentation",
                 "metrics.default_image_threshold": None,
                 "metrics.default_pixel_threshold": None,
                 "metrics.image_metric_names": ["F1Score", "AUROC"],
