@@ -30,7 +30,7 @@ You can also pass a list of loggers to enable multiple loggers. For example:
 Logging Images
 **************
 
-Anomalib allows you to save predictions to the file system by setting ``log_images: True`` in the visualization section . As of the current version, Anomalib also supports TensorBoard and Weights and Biases loggers for logging images. These loggers extend upon the base loggers by providing a common interface for logging images. You can access the required logger from ``trainer.loggers``. Then you can use ``logger.add_image`` method to log images. For a complete overview of this method refer to our `API documentation <https://openvinotoolkit.github.io/anomalib/api/anomalib/utils/loggers/index.html>`_.
+Anomalib allows you to save predictions to the file system by setting ``log_images: True`` in the visualization section . As of the current version, Anomalib also supports Comet, TensorBoard and Weights and Biases loggers for logging images. These loggers extend upon the base loggers by providing a common interface for logging images. You can access the required logger from ``trainer.loggers``. Then you can use ``logger.add_image`` method to log images. For a complete overview of this method refer to our `API documentation <https://openvinotoolkit.github.io/anomalib/api/anomalib/utils/loggers/index.html>`_.
 
 .. code-block:: yaml
 
