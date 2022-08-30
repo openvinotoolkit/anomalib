@@ -75,6 +75,7 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
     )
     metrics_callback = MetricsConfigurationCallback(
         config.metrics.threshold.adaptive,
+        config.dataset.task,
         image_threshold,
         pixel_threshold,
         image_metric_names,
