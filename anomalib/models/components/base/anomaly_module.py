@@ -124,6 +124,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         self._log_metrics()
 
     def _compute_adaptive_threshold(self, outputs):
+        self.image_threshold.reset()
+        self.pixel_threshold.reset()
         self._collect_outputs(self.image_threshold, self.pixel_threshold, outputs)
         self.image_threshold.compute()
         if "mask" in outputs[0].keys() and "anomaly_maps" in outputs[0].keys():
@@ -134,7 +136,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.image_metrics.set_threshold(self.image_threshold.value.item())
         self.pixel_metrics.set_threshold(self.pixel_threshold.value.item())
 
-    def _collect_outputs(self, image_metric, pixel_metric, outputs):
+    @staticmethod
+    def _collect_outputs(image_metric, pixel_metric, outputs):
         for output in outputs:
             image_metric.cpu()
             image_metric.update(output["pred_scores"], output["label"].int())
@@ -142,15 +145,16 @@ class AnomalyModule(pl.LightningModule, ABC):
                 pixel_metric.cpu()
                 pixel_metric.update(output["anomaly_maps"], output["mask"].int())
 
-    def _post_process(self, outputs):
+    @staticmethod
+    def _post_process(outputs):
         """Compute labels based on model predictions."""
         if "pred_scores" not in outputs and "anomaly_maps" in outputs:
             outputs["pred_scores"] = (
                 outputs["anomaly_maps"].reshape(outputs["anomaly_maps"].shape[0], -1).max(dim=1).values
             )
 
-    def _outputs_to_cpu(self, output):
-        # for output in outputs:
+    @staticmethod
+    def _outputs_to_cpu(output):
         for key, value in output.items():
             if isinstance(value, Tensor):
                 output[key] = value.cpu()
