@@ -15,7 +15,7 @@ from .base import ImageLoggerBase
 
 
 class AnomalibCometLogger(ImageLoggerBase, CometLogger):
-    """Logger for comet. 
+    """Logger for comet.
     
     Adds interface for `add_image` in the logger rather than calling the experiment object.
     
