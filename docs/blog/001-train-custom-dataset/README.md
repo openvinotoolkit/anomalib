@@ -182,11 +182,11 @@ An example configuration for saving to TensorBoard is shown in the figure below.
 
 ```yaml
   visualization:
-  show_images: False # show images on the screen
-  save_images: False # save images to the file system
-  log_images: True # log images to the available loggers (if any)
-  image_save_path: null # path to which images will be saved
-  mode: full # options: ["full", "simple"]
+    show_images: False # show images on the screen
+    save_images: False # save images to the file system
+    log_images: True # log images to the available loggers (if any)
+    image_save_path: null # path to which images will be saved
+    mode: full # options: ["full", "simple"]
 
   logging:
     logger: [comet, tensorboard, wandb] #Choose any combination of these 3
