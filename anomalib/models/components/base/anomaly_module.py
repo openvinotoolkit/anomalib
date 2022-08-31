@@ -5,14 +5,20 @@
 
 import logging
 from abc import ABC
-from typing import Any, List, Optional
+from typing import Any, List, Optional, OrderedDict
+from warnings import warn
 
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks.base import Callback
 from torch import Tensor, nn
 from torchmetrics import Metric
 
-from anomalib.utils.metrics import AdaptiveThreshold, AnomalibMetricCollection
+from anomalib.utils.metrics import (
+    AdaptiveThreshold,
+    AnomalibMetricCollection,
+    AnomalyScoreDistribution,
+    MinMax,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -166,3 +172,21 @@ class AnomalyModule(pl.LightningModule, ABC):
             self.log_dict(self.image_metrics, prog_bar=False)
         else:
             self.log_dict(self.image_metrics, prog_bar=True)
+
+    def _load_normalization_class(self, state_dict: OrderedDict[str, Tensor]):
+        """Assigns the normalization method to use."""
+        if "normalization_metrics.max" in state_dict.keys():
+            self.normalization_metrics = MinMax()
+        elif "normalization_metrics.image_mean" in state_dict.keys():
+            self.normalization_metrics = AnomalyScoreDistribution()
+        else:
+            warn("No known normalization found in model weights.")
+
+    def load_state_dict(self, state_dict: OrderedDict[str, Tensor], strict: bool = True):
+        """Load state dict from checkpoint.
+
+        Ensures that normalization and thresholding attributes is properly setup before model is loaded.
+        """
+        # Used to load missing normalization and threshold parameters
+        self._load_normalization_class(state_dict)
+        super().load_state_dict(state_dict, strict=strict)
