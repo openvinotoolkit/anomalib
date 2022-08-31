@@ -118,6 +118,7 @@ class DfmLightning(Dfm):
         super().__init__(
             backbone=hparams.model.backbone,
             layer=hparams.model.layer,
+            pre_trained=hparams.model.pre_trained,
             pooling_kernel_size=hparams.model.pooling_kernel_size,
             pca_level=hparams.model.pca_level,
             score_type=hparams.model.score_type,
