@@ -1,4 +1,8 @@
 """Implementation of PRO metric based on TorchMetrics."""
+
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from typing import List
 
 import cv2
@@ -39,9 +43,6 @@ class PRO(Metric):
             comps = connected_components_gpu(target.unsqueeze(1))
         else:
             comps = connected_components_cpu(target.unsqueeze(1))
-        if not len(comps.unique()) > comps.max():
-            print("here")
-            connected_components_cpu(target.unsqueeze(1))
         pro = pro_score(preds, comps, threshold=self.threshold)
         return pro
 
@@ -70,7 +71,7 @@ def pro_score(predictions: Tensor, comps: Tensor, threshold: float = 0.5) -> Ten
     return pro
 
 
-def connected_components_gpu(binary_input: torch.Tensor, num_iterations: int = 1000) -> Tensor:
+def connected_components_gpu(binary_input: Tensor, num_iterations: int = 1000) -> Tensor:
     """Perform connected component labeling on GPU and remap the labels from 0 to N.
 
     Args:
