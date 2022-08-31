@@ -15,9 +15,8 @@ from .base import ImageLoggerBase
 
 
 class AnomalibCometLogger(ImageLoggerBase, CometLogger):
-    """Logger for comet.
-    
-    Adds interface for `add_image` in the logger rather than calling the experiment object.
+    """Logger for comet.   
+   Adds interface for `add_image` in the logger rather than calling the experiment object.
     
     Note:
         Same as the CometLogger provided by PyTorch Lightning and the doc string is reproduced below.
@@ -51,7 +50,7 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
             save_dir to control the checkpoints directory and have a ~/.comet.config
             file but still want to run offline experiments.
         prefix: A string to put at the beginning of metric keys.
-        \**kwargs: Additional arguments like `workspace`, `log_code`, etc. used by
+        kwargs: Additional arguments like `workspace`, `log_code`, etc. used by
             :class:`CometExperiment` can be passed as keyword arguments in this logger.
 
     Raises:
@@ -67,7 +66,6 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
         >>> trainer = Trainer(logger=comet_logger)
 
     See Also:
-        - `Demo in Google Colab <https://colab.research.google.com/github/comet-ml/comet-examples/blob/master/integrations/model-training/pytorch-lightning/notebooks/Comet_and_Pytorch_Lightning.ipynb>`__
         - `Comet Documentation <https://www.comet.com/docs/v2/integrations/ml-frameworks/pytorch-lightning/>`__
     """
     def __init__(
