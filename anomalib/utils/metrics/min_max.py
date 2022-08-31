@@ -13,6 +13,8 @@ from torchmetrics import Metric
 class MinMax(Metric):
     """Track the min and max values of the observations in each batch."""
 
+    full_state_update: bool = True
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.add_state("min", torch.tensor(float("inf")), persistent=True)  # pylint: disable=not-callable
