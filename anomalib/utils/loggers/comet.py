@@ -22,7 +22,7 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
         Same as the CometLogger provided by PyTorch Lightning and the doc string is reproduced below.
     
     Track your parameters, metrics, source code and more using
-    `Comet <https://www.comet.com/?utm_source=pytorch_lightning&utm_medium=referral>`_.
+    `Comet <https://www.comet.com/site/products/ml-experiment-tracking/?utm_source=anomalib&utm_medium=referral>`_.
 
     Install it with pip:
 
