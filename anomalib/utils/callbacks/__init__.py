@@ -75,6 +75,7 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
     )
     metrics_callback = MetricsConfigurationCallback(
         config.metrics.threshold.adaptive,
+        config.dataset.task,
         image_threshold,
         pixel_threshold,
         image_metric_names,
@@ -114,18 +115,22 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
                     export_dir=os.path.join(config.project.path, "compressed"),
                 )
             )
-        if "openvino" in config.optimization and config.optimization.openvino.apply:
-            from .openvino import (  # pylint: disable=import-outside-toplevel
-                OpenVINOCallback,
+        if config.optimization.export_mode is not None:
+            from .export import (  # pylint: disable=import-outside-toplevel
+                ExportCallback,
             )
 
+            logger.info("Setting model export to %s", config.optimization.export_mode)
             callbacks.append(
-                OpenVINOCallback(
+                ExportCallback(
                     input_size=config.model.input_size,
-                    dirpath=os.path.join(config.project.path, "openvino"),
+                    dirpath=config.project.path,
                     filename="model",
+                    export_mode=config.optimization.export_mode,
                 )
             )
+        else:
+            warnings.warn(f"Export option: {config.optimization.export_mode} not found. Defaulting to no model export")
 
     # Add callback to log graph to loggers
     if config.logging.log_graph not in [None, False]:

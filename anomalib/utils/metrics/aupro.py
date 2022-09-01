@@ -6,12 +6,16 @@
 from typing import Any, Callable, List, Optional, Tuple
 
 import torch
-from kornia.contrib import connected_components
 from matplotlib.figure import Figure
 from torch import Tensor
 from torchmetrics import Metric
 from torchmetrics.functional import auc, roc
 from torchmetrics.utilities.data import dim_zero_cat
+
+from anomalib.utils.metrics.pro import (
+    connected_components_cpu,
+    connected_components_gpu,
+)
 
 from .plotting_utils import plot_figure
 
@@ -80,9 +84,10 @@ class AUPRO(Metric):
             )
         target = target.unsqueeze(1)  # kornia expects N1HW format
         target = target.type(torch.float)  # kornia expects FloatTensor
-        cca = connected_components(
-            target, num_iterations=1000
-        )  # Need higher thresholds this to avoid oversegmentation.
+        if target.is_cuda:
+            cca = connected_components_gpu(target)
+        else:
+            cca = connected_components_cpu(target)
 
         preds = preds.flatten()
         cca = cca.flatten()
