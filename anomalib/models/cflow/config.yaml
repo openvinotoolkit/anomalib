@@ -62,6 +62,9 @@ logging:
   logger: [] # options: [comet, tensorboard, wandb, csv] or combinations.
   log_graph: false # Logs the model graph to respective logger.
 
+optimization:
+  export_mode: null #options: onnx, openvino
+
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
   accelerator: auto # <"cpu", "gpu", "tpu", "ipu", "hpu", "auto">

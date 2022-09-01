@@ -117,6 +117,17 @@ where the currently available models are:
 - [STFPM](anomalib/models/stfpm)
 - [GANomaly](anomalib/models/ganomaly)
 
+## Exporting Model to ONNX or OpenVINO IR
+
+It is possible to export your model to ONNX or OpenVINO IR
+
+If you want to export your PyTorch model to an OpenVINO model, ensure that `export_mode` is set to `"openvino"` in the respective model `config.yaml`.
+
+```yaml
+optimization:
+  export_mode: "openvino" # options: openvino, onnx
+```
+
 ## Custom Dataset
 
 It is also possible to train on a custom folder dataset. To do so, `data` section in `config.yaml` is to be modified as follows:
@@ -186,14 +197,6 @@ python tools/inference/lightning_inference.py \
     --weights results/padim/mvtec/bottle/weights/model.ckpt \
     --input datasets/MVTec/bottle/test/broken_large/000.png \
     --output results/padim/mvtec/bottle/images
-```
-
-If you want to run OpenVINO model, ensure that `openvino` `apply` is set to `True` in the respective model `config.yaml`.
-
-```yaml
-optimization:
-  openvino:
-    apply: true
 ```
 
 Example OpenVINO Inference:
