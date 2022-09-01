@@ -18,7 +18,7 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
     """Logger for comet.
 
     Adds interface for `add_image` in the logger rather than calling the experiment object.
-    
+   
     Note:
         Same as the CometLogger provided by PyTorch Lightning and the doc string is reproduced below.
     
