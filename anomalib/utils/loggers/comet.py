@@ -15,8 +15,9 @@ from .base import ImageLoggerBase
 
 
 class AnomalibCometLogger(ImageLoggerBase, CometLogger):
-    """Logger for comet.   
-   Adds interface for `add_image` in the logger rather than calling the experiment object.
+    """Logger for comet.
+
+    Adds interface for `add_image` in the logger rather than calling the experiment object.
     
     Note:
         Same as the CometLogger provided by PyTorch Lightning and the doc string is reproduced below.
@@ -68,6 +69,7 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
     See Also:
         - `Comet Documentation <https://www.comet.com/docs/v2/integrations/ml-frameworks/pytorch-lightning/>`__
     """
+    
     def __init__(
         self,
         api_key: Optional[str] = None,
