@@ -14,6 +14,8 @@ class OptimalF1(Metric):
     predicted anomaly scores.
     """
 
+    full_state_update: bool = False
+
     def __init__(self, num_classes: int, **kwargs):
         super().__init__(**kwargs)
 
