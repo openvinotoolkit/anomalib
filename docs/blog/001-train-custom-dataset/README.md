@@ -181,16 +181,16 @@ To use TensorBoard and/or W&B logger and/or Comet logger, ensure that the logger
 An example configuration for saving to TensorBoard is shown in the figure below. Similarly after setting logger to `wandb` or 'comet' you will see the images on your wandb and/or comet project dashboard.
 
 ```yaml
-  visualization:
-    show_images: False # show images on the screen
-    save_images: False # save images to the file system
-    log_images: True # log images to the available loggers (if any)
-    image_save_path: null # path to which images will be saved
-    mode: full # options: ["full", "simple"]
+visualization:
+  show_images: False # show images on the screen
+  save_images: False # save images to the file system
+  log_images: True # log images to the available loggers (if any)
+  image_save_path: null # path to which images will be saved
+  mode: full # options: ["full", "simple"]
 
-  logging:
-    logger: [comet, tensorboard, wandb] #Choose any combination of these 3
-    log_graph: false
+logging:
+  logger: [comet, tensorboard, wandb] #Choose any combination of these 3
+  log_graph: false
 ```
 
 <div align="center">
