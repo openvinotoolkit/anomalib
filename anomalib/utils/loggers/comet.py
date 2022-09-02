@@ -10,7 +10,6 @@ from matplotlib.figure import Figure
 from pytorch_lightning.loggers.comet import CometLogger
 from pytorch_lightning.utilities import rank_zero_only
 
-
 from .base import ImageLoggerBase
 
 
