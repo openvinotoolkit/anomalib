@@ -14,6 +14,7 @@
 [![python](https://img.shields.io/badge/python-3.7%2B-green)]()
 [![pytorch](https://img.shields.io/badge/pytorch-1.8.1%2B-orange)]()
 [![openvino](https://img.shields.io/badge/openvino-2021.4.2-purple)]()
+[![comet](https://custom-icon-badges.herokuapp.com/badge/comet__ml-3.31.7-orange?logo=logo_comet_ml)](https://www.comet.com/site/products/ml-experiment-tracking/?utm_source=anomalib&utm_medium=referral)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/684927c1c76c4c5e94bb53480812fbbb)](https://www.codacy.com/gh/openvinotoolkit/anomalib/dashboard?utm_source=github.com&utm_medium=referral&utm_content=openvinotoolkit/anomalib&utm_campaign=Badge_Grade)
 [![black](https://img.shields.io/badge/code%20style-black-000000.svg)]()
 [![Nightly-Regression Test](https://github.com/openvinotoolkit/anomalib/actions/workflows/nightly.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/nightly.yml)
@@ -116,6 +117,17 @@ where the currently available models are:
 - [STFPM](anomalib/models/stfpm)
 - [GANomaly](anomalib/models/ganomaly)
 
+## Exporting Model to ONNX or OpenVINO IR
+
+It is possible to export your model to ONNX or OpenVINO IR
+
+If you want to export your PyTorch model to an OpenVINO model, ensure that `export_mode` is set to `"openvino"` in the respective model `config.yaml`.
+
+```yaml
+optimization:
+  export_mode: "openvino" # options: openvino, onnx
+```
+
 ## Custom Dataset
 
 It is also possible to train on a custom folder dataset. To do so, `data` section in `config.yaml` is to be modified as follows:
@@ -187,14 +199,6 @@ python tools/inference/lightning_inference.py \
     --output results/padim/mvtec/bottle/images
 ```
 
-If you want to run OpenVINO model, ensure that `openvino` `apply` is set to `True` in the respective model `config.yaml`.
-
-```yaml
-optimization:
-  openvino:
-    apply: true
-```
-
 Example OpenVINO Inference:
 
 ```bash
@@ -241,19 +245,25 @@ python tools/benchmarking/benchmark.py \
 
 Refer to the [Benchmarking Documentation](https://openvinotoolkit.github.io/anomalib/guides/benchmarking.html) for more details.
 
-# Logging Images
+# Experiment Management
 
-You can save images locally or to a logger such TensorBoard or Weights and Biases by setting the following configuration.
+Anomablib is integrated with various libraries for experiment tracking such as Comet, tensorboard, and wandb through [pytorch lighting loggers](https://pytorch-lightning.readthedocs.io/en/stable/extensions/logging.html).
+
+Below is an example of how to enable logging for hyper-parameters, metrics, model graphs, and predictions on images in the test data-set
 
 ```yaml
-logging:
-  logger: [tensorboard, wandb]
-  log_graph: false
+visualization:
+  log_images: True # log images to the available loggers (if any)
+  mode: full # options: ["full", "simple"]
+
+ logging:
+  logger: [comet, tensorboard, wandb]
+  log_graph: True
 ```
 
-For more information on logging images, refer to the [Logging Documentation](https://openvinotoolkit.github.io/anomalib/guides/logging.html)
+For more information, refer to the [Logging Documentation](https://openvinotoolkit.github.io/anomalib/guides/logging.html)
 
----
+Note: Set your API Key for [Comet.ml](https://www.comet.com/signup?utm_source=anomalib&utm_medium=referral) via `comet_ml.init()` in interactive python or simply run `export COMET_API_KEY=<Your API Key>`
 
 # Datasets
 
