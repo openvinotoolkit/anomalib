@@ -10,6 +10,7 @@ from .image import (
     get_image_filenames,
     get_image_height_and_width,
     read_image,
+    read_mask,
 )
 from .split import Split, ValSplitMode, concatenate_datasets, random_split
 
@@ -20,6 +21,7 @@ __all__ = [
     "hash_check",
     "random_2d_perlin",
     "read_image",
+    "read_mask",
     "DownloadProgressBar",
     "random_split",
     "concatenate_datasets",
