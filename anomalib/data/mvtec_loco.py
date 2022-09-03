@@ -440,11 +440,11 @@ def _make_dataset(
 
     if imread_strategy == IMREAD_STRATEGY_PRELOAD:
 
-        # warnings.warn(
-        #     "Preloading images into memory. "
-        #     "If your dataset is too large, consider using another imread_strategy instead.",
-        #     stacklevel=3
-        # )
+        warnings.warn(
+            "Preloading images into memory. "
+            "If your dataset is too large, consider using another imread_strategy instead.",
+            stacklevel=3,
+        )
 
         logger.debug("Preloading images into memory")
         samples["image"] = samples.image_path.map(read_image)
