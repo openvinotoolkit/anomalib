@@ -1,4 +1,26 @@
-"""
+"""MVTec LOCO AD Dataset (CC BY-NC-SA 4.0).
+
+Description:
+    This script contains PyTorch Dataset, Dataloader and PyTorch
+        Lightning DataModule for the MVTec LOCO AD dataset.
+
+    If the dataset is not on the file system, the script downloads and extracts the dataset.
+
+License:
+    MVTec LOCO AD dataset is released under the Creative Commons
+    Attribution-NonCommercial-ShareAlike 4.0 International License
+    (CC BY-NC-SA 4.0)(https://creativecommons.org/licenses/by-nc-sa/4.0/).
+
+Reference:
+
+    - Paul Bergmann, Kilian Batzner, Michael Fauser, David Sattlegger, Carsten Steger:
+      Beyond Dents and Scratches: Logical Constraints in Unsupervised Anomaly Detection
+      and Localization; in: International Journal of Computer Vision, 2022,
+      DOI: 10.1007/s11263-022-01578-9.
+
+    - https://www.mvtec.com/company/research/datasets/mvtec-loco
+
+##################################################
 
 distinguishes structural and logical anomalies
 n_image: 3644
@@ -35,8 +57,10 @@ assumptions
 objects are in a fixed position (mechanical alignment)
 illumination is well suited
 the access to images with real anomalies is limited (“impossible”)
-images only show a single object or logically ensemble set of objects (i.e. one-class setting although a “class” here is a composed object)
-no training annotations -- although it is assumed that the images in training are indeed from the target class (i.e. no noise)
+images only show a single object or logically ensemble set of objects
+    (i.e. one-class setting although a “class” here is a composed object)
+no training annotations -- although it is assumed that the images in training
+    are indeed from the target class (i.e. no noise)
 problem 1 (image-wise anomaly detection): “is there an anomaly in the image?”
 problem 2 (pixel-wise anomaly detection or anomaly segmentation): “which pixels belong to the anomaly?”
 pixel-wise metric: Saturated Per-Region Overlap  (sPRO)
@@ -116,7 +140,8 @@ the number of clamps has a one-to-one correspondence to the color of the cable
 2: yellow
 3: blue
 5: red
-the cable has to terminate in the same relative position on its two ends such that the whole construction exhibits a mirror symmetry
+the cable has to terminate in the same relative position on its two ends such
+    that the whole construction exhibits a mirror symmetry
 examples of logical defects
 (left) the two splicing connectors do not have the same number of clamps
 (center) the color of the cable does not match the number of clamps
@@ -127,7 +152,8 @@ examples of logical defects
 missing objects
 the area in which the object could occur
 the saturation threshold is chosen to be equal to the area of the missing object
-the saturation threshold for an object is chosen from the lower end of the distribution of its (manually annotated) area
+the saturation threshold for an object is chosen from the lower end of
+    the distribution of its (manually annotated) area
 example (image): pushpin
 the missing pushpin can occur anywhere inside its compartment, therefore its entire area is annotated
 the saturation threshold is set to the size of a pushpin
@@ -150,24 +176,23 @@ a method that marks both is neither penalized nor (extra-)rewarded
 other logical constraints
 example (image, left): juice bottle
 the bottle is filled with orange juice but carries the label of the cherry juice
-both the orange juice and the label with the cherry are present in the training set, but the logical anomaly arises due to the erroneous combination of the two in the same image
-either the area filled with juice or the cherry as could be considered anomalous, therefore the union of the two regions is annotated
-the saturation threshold is set to the area of the cherry because the segmentation of the cherry is sufficient to solve the anomaly localization
+both the orange juice and the label with the cherry are present in the training set,
+    but the logical anomaly arises due to the erroneous combination of the two in the same image
+either the area filled with juice or the cherry as could be considered anomalous,
+    therefore the union of the two regions is annotated
+the saturation threshold is set to the area of the cherry because the
+    segmentation of the cherry is sufficient to solve the anomaly localization
 """
 
 # TODO: clear module docstring
 
 import logging
-import tarfile
 import warnings
 from pathlib import Path
-from posixpath import split
-from typing import Dict, List, Optional, Tuple, Union
-from unicodedata import category
+from typing import Dict, Optional, Tuple, Union
 from urllib.request import urlretrieve
 
 import albumentations as A
-import cv2
 import numpy as np
 import pandas as pd
 from numpy import ndarray
@@ -187,7 +212,9 @@ from anomalib.data.utils.download import tar_extract_all
 from anomalib.pre_processing import PreProcessor
 
 # TODO: open discussion about keeping pre-resized tensors in the dataset folder
-# TODO: create an issue in mvtec so the dataset will retain the information abou the anomaly type (label) so one can do per-label evaluation
+#  obs: mvtecad's doc says "...and create PyTorch data objects." but it does not!!!
+# TODO: create an issue in mvtec so the dataset will retain the information abou
+#   the anomaly type (label) so one can do per-label evaluation
 # TODO: document the notion of label and superlabel
 
 logger = logging.getLogger(__name__)
@@ -342,7 +369,8 @@ ANOTYPES_SPLICING_CONNECTORS: Tuple[str, ...] = (
 )
 
 # this is given at the paper, each anomaly type (label) has a different gtvalue in the mask
-# source: Beyond Dents and Scratches: Logical Constraints in Unsupervised Anomaly Detection and Localization (Bergmann, P. et al, 2022).
+# source: Beyond Dents and Scratches: Logical Constraints in
+#   Unsupervised Anomaly Detection and Localization (Bergmann, P. et al, 2022).
 _MAP_ANOTYPE_2_GTVALUE: Dict[Tuple[str, str, str], int] = {
     (CATEGORY_BREAKFAST_BOX, SUPER_ANOTYPE_LOGICAL, ANOTYPE_BB_COMPARTMENTS_SWAPPED): 242,
     (CATEGORY_BREAKFAST_BOX, SUPER_ANOTYPE_LOGICAL, ANOTYPE_BB_MISSING_ALMONDS): 255,
@@ -442,7 +470,8 @@ _MAP_GTVALUE_2_ANOTYPE: Dict[Tuple[str, int], Tuple[str, str]] = {
 }
 
 # expected number of images in each category split so that we can check if the dataset is complete
-# source: Beyond Dents and Scratches: Logical Constraints in Unsupervised Anomaly Detection and Localization (Bergmann, P. et al, 2022).
+# source: Beyond Dents and Scratches: Logical Constraints
+#   in Unsupervised Anomaly Detection and Localization (Bergmann, P. et al, 2022).
 _EXPECTED_NSAMPLES: Dict[Tuple[str, str], int] = {
     (CATEGORY_BREAKFAST_BOX, SPLIT_TRAIN): 351,
     (CATEGORY_BREAKFAST_BOX, SPLIT_VALIDATION): 62,
@@ -466,10 +495,11 @@ _EXPECTED_NSAMPLES: Dict[Tuple[str, str], int] = {
 }
 
 
-def _binarize_mask_float(mask: np.ndarray) -> np.ndarray:
+def _binarize_mask_float(mask: np.ndarray) -> np.ndarray:  # noqa
     """
     the masks use different gtvalue values for the different anomaly types so the > 0 is making it binary
-    this operation is very simple but it is in a function to make sure its standard because it is used in different places
+    this operation is very simple but it is in a function to make
+    sure its standard because it is used in different places
     e.g. preloading while building the dataset and on the fly while training
     """
     return (mask > 0).astype(float)
@@ -479,22 +509,11 @@ def _make_dataset(
     path: Path,
     split: Optional[str] = None,
     imread_strategy: str = IMREAD_STRATEGY_PRELOAD,
-) -> DataFrame:
-    # todo create optional to get a subset of anomlies in the test
-
-    assert split is None or split in SPLITS, f"Invalid split: {split}"
-    assert imread_strategy in IMREAD_STRATEGIES, f"Invalid imread strategy: {imread_strategy}"
-
-    category = path.resolve().name
-    assert category in CATEGORIES, f"Invalid path '{path}'. The directory ('{category}') must be one of {CATEGORIES}"
-
-    if split is None:
-        return pd.concat([_make_dataset(path, split_, imread_strategy) for split_ in SPLITS], axis=0)
-
-    logger.info(f"Creating MVTec LOCO AD dataset for category '{category}' split '{split}'")
-
+) -> DataFrame:  # noqa D212
     """
-    structure of the files in the dataset ("/" is 'path')
+    Find the images in the given path and create a DataFrame with all the information from each sample.
+
+    Expected structure of the files in the dataset ("/" is 'path')
 
     images: /{split}/{super_anotype}/{image_index}.png
 
@@ -517,6 +536,18 @@ def _make_dataset(
     /ground_truth/structural_anomalies/.../000.png
     ...
     """
+    # todo create optional to get a subset of anomlies in the test
+
+    assert split is None or split in SPLITS, f"Invalid split: {split}"
+    assert imread_strategy in IMREAD_STRATEGIES, f"Invalid imread strategy: {imread_strategy}"
+
+    category = path.resolve().name
+    assert category in CATEGORIES, f"Invalid path '{path}'. The directory ('{category}') must be one of {CATEGORIES}"
+
+    if split is None:
+        return pd.concat([_make_dataset(path, split_, imread_strategy) for split_ in SPLITS], axis=0)
+
+    logger.info("Creating MVTec LOCO AD dataset for category '%s' split '%s'", category, split)
 
     # these values look like "(train|validation|test)/(good|logical_anomalies|structural_anomalies)/(000|...|n).png"
     # where (a|b) means either a or b
@@ -525,7 +556,8 @@ def _make_dataset(
 
     if len(samples_paths) != expected_nsamples:
         warnings.warn(
-            f"Expected {expected_nsamples} samples for split '{split}' in category '{category}' but found {len(samples_paths)}."
+            f"Expected {expected_nsamples} samples for split '{split}' "
+            "in category '{category}' but found {len(samples_paths)}."
             "Is the dataset corrupted?"
         )
 
@@ -549,7 +581,7 @@ def _make_dataset(
             )
             return ret
 
-        elif super_anotype in (SUPER_ANOTYPE_LOGICAL, SUPER_ANOTYPE_STRUCTURAL):
+        if super_anotype in (SUPER_ANOTYPE_LOGICAL, SUPER_ANOTYPE_STRUCTURAL):
 
             mask_path: Path = path / "ground_truth" / super_anotype / sample_path.stem / "000.png"
 
@@ -573,11 +605,8 @@ def _make_dataset(
 
             return ret
 
-        else:
-            # there should only be the folders "good", "logical_anomalies" and "structural_anomalies"
-            raise RuntimeError(
-                f"Something wrong in the dataset folder. Unknown folder {super_anotype}, path={sample_path}"
-            )
+        # there should only be the folders "good", "logical_anomalies" and "structural_anomalies"
+        raise RuntimeError(f"Something wrong in the dataset folder. Unknown folder {super_anotype}, path={sample_path}")
 
     samples = pd.DataFrame.from_records([build_record(sp) for sp in samples_paths])
 
@@ -589,10 +618,10 @@ def _make_dataset(
         #     stacklevel=3
         # )
 
-        logger.debug(f"Preloading images into memory")
+        logger.debug("Preloading images into memory")
         samples["image"] = samples.image_path.map(read_image)
 
-        logger.debug(f"Preloading masks into memory")
+        logger.debug("Preloading masks into memory")
 
         # this is used to select the rows in the dataframe
         has_mask = ~samples.mask_path.isnull()
@@ -634,14 +663,14 @@ class MVTecLOCODataset(VisionDataset):
         self.imread_strategy = imread_strategy
 
         self.samples = _make_dataset(
-            path=self.dataset_path,
+            path=self.category_dataset_path,
             split=self.split,
             imread_strategy=self.imread_strategy,
         )
 
     @property
-    def dataset_path(self) -> Path:
-        """Path to the dataset folder."""
+    def category_dataset_path(self) -> Path:
+        """Path to the category dataset (root/category) folder."""
         return self.root / self.category
 
     def __len__(self) -> int:
@@ -654,11 +683,10 @@ class MVTecLOCODataset(VisionDataset):
         if self.imread_strategy == IMREAD_STRATEGY_PRELOAD:
             return self.samples.image[index]
 
-        elif self.imread_strategy == IMREAD_STRATEGY_ONTHEFLY:
+        if self.imread_strategy == IMREAD_STRATEGY_ONTHEFLY:
             return read_image(self.samples.image_path[index])
 
-        else:
-            raise NotImplementedError(f"Imread strategy '{self.imread_strategy}' is not supported.")
+        raise NotImplementedError(f"Imread strategy '{self.imread_strategy}' is not supported.")
 
     def _get_mask(self, index: int) -> ndarray:
         """Get mask at index."""
@@ -666,11 +694,10 @@ class MVTecLOCODataset(VisionDataset):
         if self.imread_strategy == IMREAD_STRATEGY_PRELOAD:
             return self.samples.mask[index]
 
-        elif self.imread_strategy == IMREAD_STRATEGY_ONTHEFLY:
+        if self.imread_strategy == IMREAD_STRATEGY_ONTHEFLY:
             return _binarize_mask_float(read_mask(self.samples.mask_path[index]))
 
-        else:
-            raise NotImplementedError(f"Imread strategy '{self.imread_strategy}' is not supported.")
+        raise NotImplementedError(f"Imread strategy '{self.imread_strategy}' is not supported.")
 
     def __getitem__(self, index: int) -> Dict[str, Union[str, Tensor]]:
         """Get dataset item for the index ``index``.
@@ -731,7 +758,8 @@ class MVTecLOCODataset(VisionDataset):
 class MVTecLOCO(LightningDataModule):
     """MVTec LOCO AD Lightning Data Module."""
 
-    # todo correct inconsistency: `transform_config_*val*` used for val and test set, but `*test*_batch_size` used for val and set
+    # todo correct inconsistency: `transform_config_*val*` used for val and
+    #   test set, but `*test*_batch_size` used for val and set
 
     def __init__(
         self,
@@ -779,35 +807,38 @@ class MVTecLOCO(LightningDataModule):
         self.inference_data: Dataset
 
     @property
-    def dataset_path(self) -> Path:
+    def category_dataset_path(self) -> Path:
+        """Path to the category dataset (root/category) folder."""
         return self.root / self.category
 
     def prepare_data(self) -> None:
         """Download the dataset if not available."""
 
-        if self.dataset_path.is_dir():
+        if self.category_dataset_path.is_dir():
             logger.info("Found the dataset.")
 
         else:
             self.root.mkdir(parents=True, exist_ok=True)
 
             logger.info("Downloading the Mvtec LOCO AD dataset.")
-            URL_MVTEC_LOCO_TARGZ = "https://www.mydrive.ch/shares/48237/1b9106ccdfbb09a0c414bd49fe44a14a/download/430647091-1646842701/mvtec_loco_anomaly_detection.tar.xz"
+            # flake8: noqa: E501
+            # pylint: disable=line-too-long
+            url_mvtec_loco_targz = "https://www.mydrive.ch/shares/48237/1b9106ccdfbb09a0c414bd49fe44a14a/download/430647091-1646842701/mvtec_loco_anomaly_detection.tar.xz"
             dataset_name = "mvtec_loco_anomaly_detection.tar.xz"
             zip_filename = self.root / dataset_name
             with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc="MVTec LOCO download") as progress_bar:
                 urlretrieve(
-                    url=URL_MVTEC_LOCO_TARGZ,
+                    url=url_mvtec_loco_targz,
                     filename=zip_filename,
                     reporthook=progress_bar.update_to,
                 )
 
             logger.info("Checking hash")
-            MD5HASH_MVTEC_LOCO = "d40f092ac6f88433f609583c4a05f56f"
-            hash_check(zip_filename, MD5HASH_MVTEC_LOCO)
+            md5hash_mvtec_loco = "d40f092ac6f88433f609583c4a05f56f"
+            hash_check(zip_filename, md5hash_mvtec_loco)
 
-            logger.info(f"Extracting the dataset.")
-            logger.debug(f"Extracting to {self.root}")
+            logger.info("Extracting the dataset.")
+            logger.debug("Extracting to %s", self.root)
             tar_extract_all(zip_filename, self.root)
 
             logger.info("Cleaning the tar file")
@@ -820,7 +851,8 @@ class MVTecLOCO(LightningDataModule):
           stage: Optional[str]:  fit/validate/test/predict stages. (Default value = None = fit)
 
         """
-        logger.info("Setting up {} dataset." % str(stage or TrainerFn.FITTING))
+        # pylint: disable=consider-using-f-string
+        logger.info("Setting up %s dataset." % stage or TrainerFn.FITTING)
 
         if stage in (None, TrainerFn.FITTING):
             self.train_data = MVTecLOCODataset(
