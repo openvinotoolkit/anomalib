@@ -19,172 +19,7 @@ Reference:
       DOI: 10.1007/s11263-022-01578-9.
 
     - https://www.mvtec.com/company/research/datasets/mvtec-loco
-
-##################################################
-
-distinguishes structural and logical anomalies
-n_image: 3644
-splits:
-no overlap and fixed
-train
-normal-only
-n_image_train: 1772
-validation
-normal-only
-n_image_validation: 304
-test
-normal + anomalous (structural and logical)
-n_image_test: 1568
-n_category: 5
-breakfast_box
-juice_bottle
-pushpins
-screw_bag
-splicing_connectors
-n_defect_type: 89
-
-##################################################
-
-configs
-https://docs.google.com/spreadsheets/d/1qHbyTsU2At1fusQsV8KH3_qdp3SYHHLy7QtpohKJIk0/edit?usp=sharing
-
-stats overview
-https://docs.google.com/spreadsheets/d/11GSf1SVsHFYDSwMAULEd7g5QK7P3Y21YMB10D_g0-Gk/edit?usp=sharing
-
-##################################################
-
-assumptions
-objects are in a fixed position (mechanical alignment)
-illumination is well suited
-the access to images with real anomalies is limited (“impossible”)
-images only show a single object or logically ensemble set of objects
-    (i.e. one-class setting although a “class” here is a composed object)
-no training annotations -- although it is assumed that the images in training
-    are indeed from the target class (i.e. no noise)
-problem 1 (image-wise anomaly detection): “is there an anomaly in the image?”
-problem 2 (pixel-wise anomaly detection or anomaly segmentation): “which pixels belong to the anomaly?”
-pixel-wise metric: Saturated Per-Region Overlap  (sPRO)
-structural anomaly pixel annotation policy
-defects are confined to local regions
-each pixel that introduces a visual structure that is not present in the anomaly-free images is anomalous
-logical anomaly pixel annotation policy
-the union of all areas of the image that could be the cause for the anomaly is anomalous
-a method is not necessarily required to predict the whole ground truth area as anomalous
-
-##################################################
-
-breakfast box
-n_anomaly_type (n_structural, n_logical): 22 (5, 17)
-logical constraints
-contains 2 tangerines
-contains 1 nectarine
-the tangerines and the nectarine on the left
-cereals (C) and a mix of banana chips and almonds (B&A) on the right
-the ratio between C and B&A is fixed
-the relative position of C and B&A is fixed
-examples of logical defects
-too many banana chips and almonds
-
-##################################################
-
-juice bottle
-n_anomaly_type (n_structural, n_logical): 18 (7, 11)
-logical constraints
-there is 1 bottle
-the bottle is filled with a liquid and the fill level is always the same
-the liquid is of 1 out of 3 colors (red, yellow, white-ish)
-the bottle carries 2 labels
-the first label is attached to the center of the bottle
-the first label displays an icon that determines the type of liquid (cherry, orange, banana)
-cherry: red
-orange: yellow
-banana: white-ish
-the second label is attached to the lower part of the bottle
-the second label contains the text “100% Juice”
-examples of logical defects
-(left) the icon does not match the type of juice
-(middle) the icon is slightly misplaced
-(right) the fill level is too high
-
-##################################################
-
-pushpins
-n_anomaly_type (n_structural, n_logical): 8 (4, 4)
-logical constraints
-each compartment contains 1 pushpin
-examples of logical defects
-1 compartment has a missing pin
-
-##################################################
-
-screw bag
-n_anomaly_type (n_structural, n_logical): 20 (4, 16)
-logical constraints
-the bag contains
-2 washers
-2 nuts
-1 long screw
-2 short screw
-examples of logical defects
-two long screws and lacks a short one
-
-##################################################
-
-splicing connectors
-n_anomaly_type (n_structural, n_logical): 21 (8, 13)
-logical constraints
-there are 2 splicing connectors
-they have the same number of cable clamps
-they are linked by 1 cable
-the number of clamps has a one-to-one correspondence to the color of the cable
-2: yellow
-3: blue
-5: red
-the cable has to terminate in the same relative position on its two ends such
-    that the whole construction exhibits a mirror symmetry
-examples of logical defects
-(left) the two splicing connectors do not have the same number of clamps
-(center) the color of the cable does not match the number of clamps
-(right) the cable terminates in different positions
-
-##################################################
-
-missing objects
-the area in which the object could occur
-the saturation threshold is chosen to be equal to the area of the missing object
-the saturation threshold for an object is chosen from the lower end of
-    the distribution of its (manually annotated) area
-example (image): pushpin
-the missing pushpin can occur anywhere inside its compartment, therefore its entire area is annotated
-the saturation threshold is set to the size of a pushpin
-
-##################################################
-
-additional objects
-too many instances of an object: all instances of the object are annotated
-the saturation threshold is set to the area of the extraneous objects
-example (image): splicing connectors
-an additional cable is present between the two splicing connectors
-it is not clear which of the two cables represents the anomaly, therefore both are annotated
-the saturation threshold is set to the area of one cable (i.e., half of the annotated region)
-properties
-a method can obtain a perfect score even if it only marks one of the two cables as an anomaly
-a method that marks both is neither penalized nor (extra-)rewarded
-
-##################################################
-
-other logical constraints
-example (image, left): juice bottle
-the bottle is filled with orange juice but carries the label of the cherry juice
-both the orange juice and the label with the cherry are present in the training set,
-    but the logical anomaly arises due to the erroneous combination of the two in the same image
-either the area filled with juice or the cherry as could be considered anomalous,
-    therefore the union of the two regions is annotated
-the saturation threshold is set to the area of the cherry because the
-    segmentation of the cherry is sufficient to solve the anomaly localization
 """
-
-# TODO: clear module docstring
 
 import logging
 import warnings
@@ -211,17 +46,12 @@ from anomalib.data.utils import DownloadProgressBar, hash_check, read_image, rea
 from anomalib.data.utils.download import tar_extract_all
 from anomalib.pre_processing import PreProcessor
 
-# TODO: open discussion about keeping pre-resized tensors in the dataset folder
-#  obs: mvtecad's doc says "...and create PyTorch data objects." but it does not!!!
-# TODO: create an issue in mvtec so the dataset will retain the information abou
-#   the anomaly type (label) so one can do per-label evaluation
-# TODO: document the notion of label and superlabel
-
 logger = logging.getLogger(__name__)
 
 
+TASK_CLASSIFICATION = "classification"
 TASK_SEGMENTATION = "segmentation"
-TASKS = TASK_SEGMENTATION
+TASKS = (TASK_CLASSIFICATION, TASK_SEGMENTATION)
 
 SPLIT_TRAIN = "train"
 # "validation" instead of "val" is an explicit choice because this will match the name of the folder
@@ -234,7 +64,6 @@ IMREAD_STRATEGY_ONTHEFLY = "onthefly"
 # all images are pre-loaded into memory at initialization
 IMREAD_STRATEGY_PRELOAD = "preload"
 IMREAD_STRATEGIES = (IMREAD_STRATEGY_ONTHEFLY, IMREAD_STRATEGY_PRELOAD)
-# TODO make a strategy preload_tensor
 
 CATEGORY_BREAKFAST_BOX = "breakfast_box"
 CATEGORY_JUICE_BOTTLE = "juice_bottle"
@@ -486,7 +315,6 @@ _EXPECTED_NSAMPLES: Dict[Tuple[str, str], int] = {
     (CATEGORY_SCREW_BAG, SPLIT_VALIDATION): 60,
     (CATEGORY_SCREW_BAG, SPLIT_TEST): 341,
     # these two below were wrong in the paper
-    # TODO send a correction to the authors
     # (CATEGORY_SPLICING_CONNECTORS, SPLIT_TRAIN): 354,
     # (CATEGORY_SPLICING_CONNECTORS, SPLIT_VALIDATION): 59,
     (CATEGORY_SPLICING_CONNECTORS, SPLIT_TRAIN): 360,
@@ -702,10 +530,6 @@ class MVTecLOCODataset(VisionDataset):
     def __getitem__(self, index: int) -> Dict[str, Union[str, Tensor]]:
         """Get dataset item for the index ``index``.
 
-        TODO: include the label string
-        TODO: include the label anomaly type (strutural, logical)
-        TODO: here? probably better to separate it... return the sPRO saturation value
-
         Args:
             index (int): Index to get the item.
 
@@ -728,6 +552,8 @@ class MVTecLOCODataset(VisionDataset):
             {
                 "label": self.samples.label[index],
                 "image_path": self.samples.image_path[index],
+                "anotype": self.samples.anotype[index],
+                "super_anotype": self.samples.super_anotype[index],
             }
         )
 
@@ -742,7 +568,6 @@ class MVTecLOCODataset(VisionDataset):
         else:
             mask = self._get_mask(index)
 
-        # TODO: ask how this works, does the transform re-apply the last call when mask is not None?
         pre_processed = self.pre_process(image=image, mask=mask)
         item.update(
             {
@@ -765,7 +590,7 @@ class MVTecLOCO(LightningDataModule):
         self,
         root: str,
         category: str,
-        # TODO: add a parameter to specify the anomaly types and (more specifically) the anomaly classes -- "label"
+        # TODO: add a parameter to specify the anomaly types and (more specifically)
         image_size: Optional[Union[int, Tuple[int, int]]] = None,
         train_batch_size: int = 32,
         test_batch_size: int = 32,
