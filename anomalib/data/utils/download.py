@@ -5,6 +5,7 @@
 
 import hashlib
 import io
+import tarfile
 from pathlib import Path
 from typing import Dict, Iterable, Optional, Union
 
@@ -195,3 +196,15 @@ def hash_check(file_path: Path, expected_hash: str):
         assert (
             hashlib.md5(hash_file.read()).hexdigest() == expected_hash
         ), f"Downloaded file {file_path} does not match the required hash."
+
+
+def tar_extract_all(file_path: Path, output_dir: Path):
+    """Extract all files from a targz archive.
+
+    Args:
+        file_path (Path): Path to archive.
+        output_dir (Path): Output directory.
+    """
+    with tarfile.open(name=file_path) as tar_file:
+        for member in tqdm(iterable=tar_file.getmembers(), total=len(tar_file.getmembers())):
+            tar_file.extract(member=member, path=output_dir)

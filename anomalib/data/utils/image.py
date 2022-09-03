@@ -160,6 +160,11 @@ def read_image(path: Union[str, Path]) -> np.ndarray:
     return image
 
 
+def read_mask(mask_path: Union[str, Path]) -> np.ndarray:
+    """Read a mask image from disk and keep the original values."""
+    return cv2.imread(str(mask_path), flags=cv2.IMREAD_GRAYSCALE)
+
+
 def pad_nextpow2(batch: Tensor) -> Tensor:
     """Compute required padding from input size and return padded images.
 
