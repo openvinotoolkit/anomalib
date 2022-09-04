@@ -59,11 +59,14 @@ SPLIT_VALIDATION = "validation"
 SPLIT_TEST = "test"
 SPLITS = (SPLIT_TRAIN, SPLIT_VALIDATION, SPLIT_TEST)
 
-# each image is read upon demand
 IMREAD_STRATEGY_ONTHEFLY = "onthefly"
-# all images are pre-loaded into memory at initialization
+"""Images are read into memory upon demand (no cache)."""
+
 IMREAD_STRATEGY_PRELOAD = "preload"
+"""All images are read into memory at initialization."""
+
 IMREAD_STRATEGIES = (IMREAD_STRATEGY_ONTHEFLY, IMREAD_STRATEGY_PRELOAD)
+"""Options of strategies to read images into memory."""
 
 CATEGORY_BREAKFAST_BOX = "breakfast_box"
 CATEGORY_JUICE_BOTTLE = "juice_bottle"
@@ -333,9 +336,46 @@ def _binarize_mask_float(mask: np.ndarray) -> np.ndarray:  # noqa
     return (mask > 0).astype(float)
 
 
+def download_and_extract_mvtec_loco(root: Union[str, Path]) -> None:
+    """Download and extract the MVTec LOCO dataset to the given root directory.
+
+    Args:
+        root (Union[str, Path]): directory where the dataset will be stored.
+
+    """
+    root = Path(root)
+    root.mkdir(parents=True, exist_ok=True)
+
+    logger.info("Downloading the Mvtec LOCO AD dataset.")
+
+    # flake8: noqa: E501
+    # pylint: disable=line-too-long
+    url_mvtec_loco_targz = "https://www.mydrive.ch/shares/48237/1b9106ccdfbb09a0c414bd49fe44a14a/download/430647091-1646842701/mvtec_loco_anomaly_detection.tar.xz"
+
+    dataset_name = "mvtec_loco_anomaly_detection.tar.xz"
+    zip_filename = root / dataset_name
+    with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc="MVTec LOCO download") as progress_bar:
+        urlretrieve(
+            url=url_mvtec_loco_targz,
+            filename=zip_filename,
+            reporthook=progress_bar.update_to,
+        )
+
+    logger.info("Checking hash")
+    md5hash_mvtec_loco = "d40f092ac6f88433f609583c4a05f56f"
+    hash_check(zip_filename, md5hash_mvtec_loco)
+
+    logger.info("Extracting the dataset.")
+    logger.debug("Extracting to %s", root)
+    tar_extract_all(zip_filename, root)
+
+    logger.info("Cleaning the tar file")
+    zip_filename.unlink()
+
+
 def _make_dataset(
     path: Path,
-    split: Optional[str] = None,
+    split: str,
     imread_strategy: str = IMREAD_STRATEGY_PRELOAD,
 ) -> DataFrame:  # noqa D212
     """
@@ -364,16 +404,12 @@ def _make_dataset(
     /ground_truth/structural_anomalies/.../000.png
     ...
     """
-    # todo create optional to get a subset of anomlies in the test
 
-    assert split is None or split in SPLITS, f"Invalid split: {split}"
+    assert split in SPLITS, f"Invalid split: {split}"
     assert imread_strategy in IMREAD_STRATEGIES, f"Invalid imread strategy: {imread_strategy}"
 
     category = path.resolve().name
-    assert category in CATEGORIES, f"Invalid path '{path}'. The directory ('{category}') must be one of {CATEGORIES}"
-
-    if split is None:
-        return pd.concat([_make_dataset(path, split_, imread_strategy) for split_ in SPLITS], axis=0)
+    assert category in CATEGORIES, f"Invalid path '{path}'. The category '{category}' must be one of {CATEGORIES}"
 
     logger.info("Creating MVTec LOCO AD dataset for category '%s' split '%s'", category, split)
 
@@ -382,10 +418,12 @@ def _make_dataset(
     samples_paths = sorted(path.glob(f"{split}/**/*.png"))
     expected_nsamples = _EXPECTED_NSAMPLES[(category, split)]
 
+    assert len(samples_paths) > 0, f"No samples found in {path}"
+
     if len(samples_paths) != expected_nsamples:
         warnings.warn(
             f"Expected {expected_nsamples} samples for split '{split}' "
-            "in category '{category}' but found {len(samples_paths)}."
+            f"in category '{category}' but found {len(samples_paths)}."
             "Is the dataset corrupted?"
         )
 
@@ -447,12 +485,12 @@ def _make_dataset(
         )
 
         logger.debug("Preloading images into memory")
-        samples["image"] = samples.image_path.map(read_image)
+        samples["image"] = samples["image_path"].map(read_image)
 
         logger.debug("Preloading masks into memory")
 
         # this is used to select the rows in the dataframe
-        has_mask = ~samples.mask_path.isnull()
+        has_mask = ~samples["mask_path"].isnull()
 
         samples.loc[has_mask, "mask"] = samples.loc[has_mask, "mask_path"].map(
             lambda x: _binarize_mask_float(read_mask(x))
@@ -469,12 +507,31 @@ class MVTecLOCODataset(VisionDataset):
         self,
         root: Union[Path, str],
         category: str,
-        pre_process: PreProcessor,
         split: str,
+        pre_process: PreProcessor,
         task: str = TASK_SEGMENTATION,
-        # create_validation_set: bool = False,
         imread_strategy: str = IMREAD_STRATEGY_PRELOAD,
     ) -> None:
+        """Mvtec LOCO AD Dataset class.
+
+        Args:
+            root: Path to the MVTec LOCO AD dataset root folder.
+            category: Name of the MVTec LOCO AD category (there are 5).
+                See ``anomalib.data.mvtec_loco.CATEGORIES``.
+            split: 'train', 'validation' or 'test'
+                    See anomalib.data.mvtec_loco.SPLITS.
+            pre_process: List of pre_processing object containing albumentation compose or config.
+            task: ``classification`` or ``segmentation``
+                Default: ``segmentation``
+                ``anomalib.data.mvtec_loco.TASKS``.
+            imread_strategy: When should images be read into memory?
+                Default: ``preload``
+                See ``anomalib.data.mvtec_loco.IMREAD_STRATEGIES``.
+
+        TODO add link
+        See examples in the repository ``anomalib/notebooks/100_datamodules/104_mvtec_loco.ipynb``.
+        """
+
         super().__init__(root)
 
         assert split in SPLITS, f"Split '{split}' is not supported. Supported splits are {SPLITS}"
@@ -509,10 +566,10 @@ class MVTecLOCODataset(VisionDataset):
         """Get image at index."""
 
         if self.imread_strategy == IMREAD_STRATEGY_PRELOAD:
-            return self.samples.image[index]
+            return self.samples.iloc[index]["image"]
 
         if self.imread_strategy == IMREAD_STRATEGY_ONTHEFLY:
-            return read_image(self.samples.image_path[index])
+            return read_image(self.samples.iloc[index]["image_path"])
 
         raise NotImplementedError(f"Imread strategy '{self.imread_strategy}' is not supported.")
 
@@ -520,14 +577,14 @@ class MVTecLOCODataset(VisionDataset):
         """Get mask at index."""
 
         if self.imread_strategy == IMREAD_STRATEGY_PRELOAD:
-            return self.samples.mask[index]
+            return self.samples.iloc[index]["mask"]
 
         if self.imread_strategy == IMREAD_STRATEGY_ONTHEFLY:
-            return _binarize_mask_float(read_mask(self.samples.mask_path[index]))
+            return _binarize_mask_float(read_mask(self.samples.iloc[index]["mask_path"]))
 
         raise NotImplementedError(f"Imread strategy '{self.imread_strategy}' is not supported.")
 
-    def __getitem__(self, index: int) -> Dict[str, Union[str, Tensor]]:
+    def __getitem__(self, index: int) -> Union[Dict[str, Tensor], Dict[str, Union[str, Tensor, int]]]:
         """Get dataset item for the index ``index``.
 
         Args:
@@ -535,9 +592,10 @@ class MVTecLOCODataset(VisionDataset):
 
         Returns:
             Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]: Dict of image tensor during training.
-                Otherwise, Dict containing image path, target path, image tensor, label and transformed bounding box.
+                Otherwise, Dict containing image path, image tensor, label, anomaly type and,
+                if it is segmentation task, mask path and mask tensor.
         """
-        item: Dict[str, Union[str, Tensor]] = {}
+        item: Dict[str, Union[str, Tensor, int]] = {}
 
         image = self._get_image(index)
         pre_processed = self.pre_process(image=image)
@@ -550,10 +608,10 @@ class MVTecLOCODataset(VisionDataset):
 
         item.update(
             {
-                "label": self.samples.label[index],
-                "image_path": self.samples.image_path[index],
-                "anotype": self.samples.anotype[index],
-                "super_anotype": self.samples.super_anotype[index],
+                "label": self.samples.iloc[index]["label"],
+                "image_path": str(self.samples.iloc[index]["image_path"]),
+                "anotype": self.samples.iloc[index]["anotype"],
+                "super_anotype": self.samples.iloc[index]["super_anotype"],
             }
         )
 
@@ -562,7 +620,7 @@ class MVTecLOCODataset(VisionDataset):
 
         # Only Anomalous (1) images has masks in MVTec LOCO AD dataset.
         # Therefore, create empty mask for Normal (0) images.
-        if self.samples.label[index] == LABEL_NORMAL:
+        if self.samples.iloc[index]["label"] == LABEL_NORMAL:
             mask = np.zeros(shape=image.shape[:2])  # shape: (H, W, C)
 
         else:
@@ -571,7 +629,7 @@ class MVTecLOCODataset(VisionDataset):
         pre_processed = self.pre_process(image=image, mask=mask)
         item.update(
             {
-                "mask_path": self.samples.mask_path[index],
+                "mask_path": str(self.samples.iloc[index]["mask_path"]),
                 "mask": pre_processed["mask"],
             }
         )
@@ -590,20 +648,47 @@ class MVTecLOCO(LightningDataModule):
         self,
         root: str,
         category: str,
-        # TODO: add a parameter to specify the anomaly types and (more specifically)
-        image_size: Optional[Union[int, Tuple[int, int]]] = None,
-        train_batch_size: int = 32,
-        test_batch_size: int = 32,
-        num_workers: int = 8,
         task: str = TASK_SEGMENTATION,
-        transform_config_train: Optional[Union[str, A.Compose]] = None,
-        transform_config_val: Optional[Union[str, A.Compose]] = None,
-        seed: Optional[int] = None,
         imread_strategy: str = IMREAD_STRATEGY_PRELOAD,
+        image_size: Optional[Union[int, Tuple[int, int]]] = None,
+        num_workers: int = 8,
+        train_batch_size: int = 32,
+        transform_config_train: Optional[Union[str, A.Compose]] = None,
+        test_batch_size: int = 32,
+        transform_config_val: Optional[Union[str, A.Compose]] = None,
+        # TODO: add a parameter to specify the anomaly types and (more specifically)
     ) -> None:
+        """Mvtec LOCO AD Lightning Data Module.
+
+        Args:
+            root: Path to the MVTec LOCO AD dataset root folder.
+            category: Name of the MVTec LOCO AD category (there are 5).
+                See ``anomalib.data.mvtec_loco.CATEGORIES``.
+            task: ``classification`` or ``segmentation``
+                Default: ``segmentation``
+                See ``anomalib.data.mvtec_loco.TASKS``.
+            imread_strategy: When should images be read into memory?
+                Default: ``preload``
+                See ``anomalib.data.mvtec_loco.IMREAD_STRATEGIES``.
+            image_size: Images are resized to `image_size` (HEIGHT, WIDTH), or (SIZE, SIZE) if a single value is given.
+            num_workers: Number of workers.
+            train_batch_size: Training batch size.
+            transform_config_train: List of pre_processing object containing albumentation compose or
+                config applied during training.
+            test_batch_size: Testing batch size.
+            transform_config_val: List of pre_processing object containing albumentation compose or
+                config applied during validation.
+
+        TODO add link
+        See examples in the repository ``anomalib/notebooks/100_datamodules/104_mvtec_loco.ipynb``.
+        """
         super().__init__()
 
-        # todo? add input assertions/validations
+        # TODO create option to get a subset of anomalies in the test
+        # TODO the images are not squared here, maybe we should add warn the user if
+        #      the ration from image_size is too different from the original image when
+        #     the image size is given as an int
+
         assert task in TASKS, f"Task '{task}' is not supported. Supported tasks are {TASKS}"
         assert (
             imread_strategy in IMREAD_STRATEGIES
@@ -623,7 +708,6 @@ class MVTecLOCO(LightningDataModule):
         self.num_workers = num_workers
 
         self.task = task
-        self.seed = seed
         self.imread_strategy = imread_strategy
 
         self.train_data: Dataset
@@ -643,31 +727,7 @@ class MVTecLOCO(LightningDataModule):
             logger.info("Found the dataset.")
 
         else:
-            self.root.mkdir(parents=True, exist_ok=True)
-
-            logger.info("Downloading the Mvtec LOCO AD dataset.")
-            # flake8: noqa: E501
-            # pylint: disable=line-too-long
-            url_mvtec_loco_targz = "https://www.mydrive.ch/shares/48237/1b9106ccdfbb09a0c414bd49fe44a14a/download/430647091-1646842701/mvtec_loco_anomaly_detection.tar.xz"
-            dataset_name = "mvtec_loco_anomaly_detection.tar.xz"
-            zip_filename = self.root / dataset_name
-            with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc="MVTec LOCO download") as progress_bar:
-                urlretrieve(
-                    url=url_mvtec_loco_targz,
-                    filename=zip_filename,
-                    reporthook=progress_bar.update_to,
-                )
-
-            logger.info("Checking hash")
-            md5hash_mvtec_loco = "d40f092ac6f88433f609583c4a05f56f"
-            hash_check(zip_filename, md5hash_mvtec_loco)
-
-            logger.info("Extracting the dataset.")
-            logger.debug("Extracting to %s", self.root)
-            tar_extract_all(zip_filename, self.root)
-
-            logger.info("Cleaning the tar file")
-            zip_filename.unlink()
+            download_and_extract_mvtec_loco(self.root)
 
     def setup(self, stage: Optional[str] = None) -> None:
         """Setup train, validation and test data.
@@ -680,6 +740,11 @@ class MVTecLOCO(LightningDataModule):
         logger.info("Setting up %s dataset." % stage or TrainerFn.FITTING)
 
         if stage in (None, TrainerFn.FITTING):
+
+            if hasattr(self, "train_data"):
+                logger.debug("Train data already exists. Skipping setup.")
+                return
+
             self.train_data = MVTecLOCODataset(
                 root=self.root,
                 category=self.category,
@@ -690,6 +755,11 @@ class MVTecLOCO(LightningDataModule):
             )
 
         if stage == TrainerFn.VALIDATING:
+
+            if hasattr(self, "val_data"):
+                logger.debug("Validation data already exists. Skipping setup.")
+                return
+
             self.val_data = MVTecLOCODataset(
                 root=self.root,
                 category=self.category,
@@ -700,6 +770,11 @@ class MVTecLOCO(LightningDataModule):
             )
 
         if stage == TrainerFn.TESTING:
+
+            if hasattr(self, "test_data"):
+                logger.debug("Test data already exists. Skipping setup.")
+                return
+
             self.test_data = MVTecLOCODataset(
                 root=self.root,
                 category=self.category,
@@ -710,75 +785,69 @@ class MVTecLOCO(LightningDataModule):
             )
 
         if stage == TrainerFn.PREDICTING:
+
+            if hasattr(self, "inference_data"):
+                logger.debug("Inference data already exists. Skipping setup.")
+                return
+
             self.inference_data = InferenceDataset(
                 path=self.root, image_size=self.image_size, transform_config=self.transform_config_val
             )
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:
         """Get train dataloader."""
+        if not hasattr(self, "train_data"):
+            raise RuntimeError("Train data not setup. Did you run `datamodule.setup('fit')`?")
         return DataLoader(self.train_data, shuffle=True, batch_size=self.train_batch_size, num_workers=self.num_workers)
 
     def val_dataloader(self) -> EVAL_DATALOADERS:
         """Get validation dataloader."""
+        if not hasattr(self, "val_data"):
+            raise RuntimeError("Validation data not setup. Did you run `datamodule.setup('validate')`?")
         return DataLoader(self.val_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
 
     def test_dataloader(self) -> EVAL_DATALOADERS:
         """Get test dataloader."""
+        if not hasattr(self, "test_data"):
+            raise RuntimeError("Test data not setup. Did you run `datamodule.setup('test')`?")
         return DataLoader(self.test_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
 
     def predict_dataloader(self) -> EVAL_DATALOADERS:
         """Get predict dataloader."""
+        if not hasattr(self, "inference_data"):
+            raise RuntimeError("Inference data not setup. Did you run `datamodule.setup('predict')`?")
         return DataLoader(
             self.inference_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers
         )
 
 
-# TODO remove me
-# debug _make_dataset in main
-if __name__ == "__main__":
-    import itertools
-
-    for cat in CATEGORIES:
-        _make_dataset(Path(f"/home/jcasagrandebertoldo/Downloads/loco/{cat}"))
-
-    for cat, split_ in itertools.product(CATEGORIES, SPLITS):
-        pass
-        # _make_dataset(Path(f"/home/jcasagrandebertoldo/Downloads/loco/{cat}"), split_)
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
-        # test instantiate of the two classes
-        # then test with script
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
-        # next
+# next
+# correct the multi-image ground truth
+# then show it in the notebook
+# then create unit tests
+# next
+# next
+# next
+# next
+# next
+# next
+# next
+# next
+# next
+# next
+# next
+# next
+# next
+# next
+# next
+# next
+# next
+# next
+# next
+# next
+# next
+# next
+# next
+# next
+# next
+# next

@@ -13,6 +13,7 @@ from .btech import BTech
 from .folder import Folder
 from .inference import InferenceDataset
 from .mvtec import MVTec
+from .mvtec_loco import MVTecLOCO
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,19 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             transform_config_eval=config.dataset.transform_config.eval,
             val_split_mode=config.dataset.val_split_mode,
         )
+    elif config.dataset.format.lower() == "mvtec_loco":
+        datamodule = MVTecLOCO(
+            root=config.dataset.path,
+            category=config.dataset.category,
+            image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
+            train_batch_size=config.dataset.train_batch_size,
+            test_batch_size=config.dataset.test_batch_size,
+            num_workers=config.dataset.num_workers,
+            task=config.dataset.task,
+            transform_config_train=config.dataset.transform_config.train,
+            transform_config_val=config.dataset.transform_config.val,
+            imread_strategy=config.dataset.imread_strategy,
+        )
     else:
         raise ValueError(
             "Unknown dataset! \n"
@@ -92,4 +106,5 @@ __all__ = [
     "Folder",
     "InferenceDataset",
     "MVTec",
+    "MVTecLOCO",
 ]
