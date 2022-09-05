@@ -5,14 +5,20 @@
 
 import logging
 from abc import ABC
-from typing import Any, List, Optional
+from typing import Any, List, Optional, OrderedDict
+from warnings import warn
 
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks.base import Callback
 from torch import Tensor, nn
 from torchmetrics import Metric
 
-from anomalib.utils.metrics import AdaptiveThreshold, AnomalibMetricCollection
+from anomalib.utils.metrics import (
+    AdaptiveThreshold,
+    AnomalibMetricCollection,
+    AnomalyScoreDistribution,
+    MinMax,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +130,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         self._log_metrics()
 
     def _compute_adaptive_threshold(self, outputs):
+        self.image_threshold.reset()
+        self.pixel_threshold.reset()
         self._collect_outputs(self.image_threshold, self.pixel_threshold, outputs)
         self.image_threshold.compute()
         if "mask" in outputs[0].keys() and "anomaly_maps" in outputs[0].keys():
@@ -134,7 +142,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.image_metrics.set_threshold(self.image_threshold.value.item())
         self.pixel_metrics.set_threshold(self.pixel_threshold.value.item())
 
-    def _collect_outputs(self, image_metric, pixel_metric, outputs):
+    @staticmethod
+    def _collect_outputs(image_metric, pixel_metric, outputs):
         for output in outputs:
             image_metric.cpu()
             image_metric.update(output["pred_scores"], output["label"].int())
@@ -142,15 +151,16 @@ class AnomalyModule(pl.LightningModule, ABC):
                 pixel_metric.cpu()
                 pixel_metric.update(output["anomaly_maps"], output["mask"].int())
 
-    def _post_process(self, outputs):
+    @staticmethod
+    def _post_process(outputs):
         """Compute labels based on model predictions."""
         if "pred_scores" not in outputs and "anomaly_maps" in outputs:
             outputs["pred_scores"] = (
                 outputs["anomaly_maps"].reshape(outputs["anomaly_maps"].shape[0], -1).max(dim=1).values
             )
 
-    def _outputs_to_cpu(self, output):
-        # for output in outputs:
+    @staticmethod
+    def _outputs_to_cpu(output):
         for key, value in output.items():
             if isinstance(value, Tensor):
                 output[key] = value.cpu()
@@ -162,3 +172,21 @@ class AnomalyModule(pl.LightningModule, ABC):
             self.log_dict(self.image_metrics, prog_bar=False)
         else:
             self.log_dict(self.image_metrics, prog_bar=True)
+
+    def _load_normalization_class(self, state_dict: OrderedDict[str, Tensor]):
+        """Assigns the normalization method to use."""
+        if "normalization_metrics.max" in state_dict.keys():
+            self.normalization_metrics = MinMax()
+        elif "normalization_metrics.image_mean" in state_dict.keys():
+            self.normalization_metrics = AnomalyScoreDistribution()
+        else:
+            warn("No known normalization found in model weights.")
+
+    def load_state_dict(self, state_dict: OrderedDict[str, Tensor], strict: bool = True):
+        """Load state dict from checkpoint.
+
+        Ensures that normalization and thresholding attributes is properly setup before model is loaded.
+        """
+        # Used to load missing normalization and threshold parameters
+        self._load_normalization_class(state_dict)
+        super().load_state_dict(state_dict, strict=strict)

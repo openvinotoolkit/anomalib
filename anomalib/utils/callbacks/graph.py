@@ -7,7 +7,11 @@ import torch
 from pytorch_lightning import Callback, LightningModule, Trainer
 from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 
-from anomalib.utils.loggers import AnomalibTensorBoardLogger, AnomalibWandbLogger
+from anomalib.utils.loggers import (
+    AnomalibCometLogger,
+    AnomalibTensorBoardLogger,
+    AnomalibWandbLogger,
+)
 
 
 @CALLBACK_REGISTRY
@@ -38,7 +42,7 @@ class GraphLogger(Callback):
         """
 
         for logger in trainer.loggers:
-            if isinstance(logger, AnomalibTensorBoardLogger):
+            if isinstance(logger, (AnomalibCometLogger, AnomalibTensorBoardLogger)):
                 logger.log_graph(pl_module, input_array=torch.ones((1, 3, 256, 256)))
             elif isinstance(logger, AnomalibWandbLogger):
                 logger.unwatch(pl_module)  # type: ignore
