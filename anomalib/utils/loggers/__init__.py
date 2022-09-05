@@ -12,9 +12,9 @@ from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
 from pytorch_lightning.loggers import CSVLogger, LightningLoggerBase
 
+from .comet import AnomalibCometLogger
 from .tensorboard import AnomalibTensorBoardLogger
 from .wandb import AnomalibWandbLogger
-from .comet import AnomalibCometLogger
 
 __all__ = [
     "AnomalibCometLogger",
@@ -116,7 +116,7 @@ def get_experiment_logger(
                     save_dir=wandb_logdir,
                 )
             )
-        elif experiment_logger=="comet":
+        elif experiment_logger == "comet":
             comet_logdir = os.path.join(config.project.path, "logs")
             os.makedirs(comet_logdir, exist_ok=True)
             run_name = (
@@ -125,11 +125,7 @@ def get_experiment_logger(
                 else f"{config.dataset.category} {config.model.name}"
             )
             logger_list.append(
-                AnomalibCometLogger(
-                    project_name=config.dataset.name,
-                    experiment_name=run_name,
-                    save_dir=comet_logdir
-                )
+                AnomalibCometLogger(project_name=config.dataset.name, experiment_name=run_name, save_dir=comet_logdir)
             )
         elif experiment_logger == "csv":
             logger_list.append(CSVLogger(save_dir=os.path.join(config.project.path, "logs")))

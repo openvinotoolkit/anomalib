@@ -13,9 +13,9 @@ from omegaconf import OmegaConf
 from pytorch_lightning.loggers import CSVLogger
 
 from anomalib.utils.loggers import (
+    AnomalibCometLogger,
     AnomalibTensorBoardLogger,
     AnomalibWandbLogger,
-    AnomalibCometLogger,
     UnknownLogger,
     get_experiment_logger,
 )
@@ -51,7 +51,7 @@ def test_get_experiment_logger():
         logger = get_experiment_logger(config=config)
         assert isinstance(logger[0], AnomalibWandbLogger)
 
-         # get comet logger
+        # get comet logger
         config.project.logger = "comet"
         logger = get_experiment_logger(config=config)
         assert isinstance(logger[0], AnomalibCometLogger)
