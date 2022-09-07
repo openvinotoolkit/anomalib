@@ -3,7 +3,7 @@
 Benchmarking
 =============
 
-To add to the suit of experiment tracking and optimization, anomalib also includes a benchmarking script for gathering results across different combinations of models, their parameters, and dataset categories. The model performance and throughputs are logged into a csv file that can also serve as a means to track model drift. Optionally, these same results can be logged to Weights and Biases and TensorBoard. A sample configuration file is shown below.
+To add to the suit of experiment tracking and optimization, anomalib also includes a benchmarking script for gathering results across different combinations of models, their parameters, and dataset categories. The model performance and throughputs are logged into a csv file that can also serve as a means to track model drift. Optionally, these same results can be logged to Comet, Weights and Biases and TensorBoard. A sample configuration file is shown below.
 
 .. code-block:: yaml
 
@@ -13,6 +13,7 @@ To add to the suit of experiment tracking and optimization, anomalib also includ
     - cpu
     - gpu
   writer:
+    - comet
     - wandb
     - tensorboard
   grid_search:
