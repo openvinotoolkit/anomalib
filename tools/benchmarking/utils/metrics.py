@@ -10,11 +10,11 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 import pandas as pd
+from comet_ml import Experiment
 from torch.utils.tensorboard.writer import SummaryWriter
 
 import wandb
 
-from comet_ml import Experiment
 
 def write_metrics(
     model_metrics: Dict[str, Union[str, float]],
@@ -118,6 +118,7 @@ def upload_to_wandb(
             wandb.log(row)
             wandb.finish()
 
+
 def upload_to_comet(
     folder: Optional[str] = None,
 ):
@@ -139,6 +140,6 @@ def upload_to_comet(
             tags = [str(row[column]) for column in tag_list if column in row.keys()]
             experiment = Experiment(project_name=project)
             experiment.set_name(f"{row['model_name']}_{row['dataset.category']}_{index}")
-            experiment.log_metrics(row, step=1, epoch=1) #makes auto-generated graph more appealing
+            experiment.log_metrics(row, step=1, epoch=1)  # makes auto-generated graph more appealing
             experiment.add_tags(tags)
             experiment.log_table(filename=csv_file)
