@@ -57,7 +57,7 @@ class AnomalyMapGenerator(nn.Module):
         """
         max_scores = torch.argmax(patch_scores[:, 0])
         confidence = torch.index_select(patch_scores, 0, max_scores)
-        weights = 1 - (torch.max(torch.exp(confidence)) / torch.sum(torch.exp(confidence)))
+        weights = 1 - torch.max(F.softmax(confidence, dim=-1))
         score = weights * torch.max(patch_scores[:, 0])
         return score
 
