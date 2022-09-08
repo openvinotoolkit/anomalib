@@ -140,6 +140,6 @@ def upload_to_comet(
             tags = [str(row[column]) for column in tag_list if column in row.keys()]
             experiment = Experiment(project_name=project)
             experiment.set_name(f"{row['model_name']}_{row['dataset.category']}_{index}")
-            experiment.log_metrics(row, step=1, epoch=1)  # makes auto-generated graph more appealing
+            experiment.log_metrics(row, step=1, epoch=1)  # populates auto-generated charts on panel view
             experiment.add_tags(tags)
             experiment.log_table(filename=csv_file)
