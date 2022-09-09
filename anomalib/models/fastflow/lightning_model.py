@@ -90,6 +90,7 @@ class FastflowLightning(Fastflow):
         super().__init__(
             input_size=hparams.model.input_size,
             backbone=hparams.model.backbone,
+            pre_trained=hparams.model.pre_trained,
             flow_steps=hparams.model.flow_steps,
             conv3x3_only=hparams.model.conv3x3_only,
             hidden_ratio=hparams.model.hidden_ratio,
