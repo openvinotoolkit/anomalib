@@ -189,4 +189,4 @@ class AnomalyModule(pl.LightningModule, ABC):
         """
         # Used to load missing normalization and threshold parameters
         self._load_normalization_class(state_dict)
-        super().load_state_dict(state_dict, strict=strict)
+        return super().load_state_dict(state_dict, strict=strict)
