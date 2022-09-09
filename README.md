@@ -128,8 +128,7 @@ optimization:
   export_mode: "openvino" # options: openvino, onnx
 ```
 
-## Custom Dataset
-# Feature extraction & (pre-trained) backbones
+## Feature extraction & (pre-trained) backbones
 
 The pre-trained backbones come from [PyTorch Image Models (timm)](https://github.com/rwightman/pytorch-image-models), which are wrapped by `FeatureExtractor`.
 
@@ -165,6 +164,7 @@ model:
     pre_trained: true
 ```
 
+## Custom Dataset
 
 It is also possible to train on a custom folder dataset. To do so, `data` section in `config.yaml` is to be modified as follows:
 
