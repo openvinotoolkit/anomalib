@@ -185,6 +185,7 @@ class CflowLightning(Cflow):
             input_size=hparams.model.input_size,
             backbone=hparams.model.backbone,
             layers=hparams.model.layers,
+            pre_trained=hparams.model.pre_trained,
             fiber_batch_size=hparams.dataset.fiber_batch_size,
             decoder=hparams.model.decoder,
             condition_vector=hparams.model.condition_vector,
