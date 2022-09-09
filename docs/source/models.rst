@@ -39,7 +39,7 @@ Several models will use a pre-trained model to extract feature maps from its int
 
 All the pre-trained backbones come from the package  `PyTorch Image Models (timm) <https://github.com/rwightman/pytorch-image-models>`_ and are wrapped by the class FeatureExtractor.
 
-For an introductiont to timm, please check the `Getting Started with PyTorch Image Models (timm): A Practitioner’s Guide <https://towardsdatascience.com/getting-started-with-pytorch-image-models-timm-a-practitioners-guide-4e77b4bf9055>`_, in particular the introduction about models and the section about `feature extraction <https://towardsdatascience.com/getting-started-with-pytorch-image-models-timm-a-practitioners-guide-4e77b4bf9055#b83b:~:text=ready%20to%20train!-,Feature%20Extraction,-timm%20models%20also>`_.
+For an introduction to timm, please check the `Getting Started with PyTorch Image Models (timm): A Practitioner’s Guide <https://towardsdatascience.com/getting-started-with-pytorch-image-models-timm-a-practitioners-guide-4e77b4bf9055>`_, in particular the introduction about models and the section about `feature extraction <https://towardsdatascience.com/getting-started-with-pytorch-image-models-timm-a-practitioners-guide-4e77b4bf9055#b83b:~:text=ready%20to%20train!-,Feature%20Extraction,-timm%20models%20also>`_.
 
 More information at the `section "Multi-scale Feature Maps (Feature Pyramid)" in timm's docummentation about feature extraction <https://rwightman.github.io/pytorch-image-models/feature_extraction/#multi-scale-feature-maps-feature-pyramid>`_.
 
