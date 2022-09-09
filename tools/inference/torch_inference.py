@@ -35,7 +35,7 @@ def get_args() -> Namespace:
         "--task",
         type=str,
         required=False,
-        help="Path to save the output image.",
+        help="Task type.",
         default="classification",
         choices=["classification", "segmentation"],
     )
