@@ -376,12 +376,12 @@ def download_and_extract_mvtec_loco(root: Union[str, Path]) -> None:
 def _make_dataset(
     path: Path,
     split: str,
-    imread_strategy: str = IMREAD_STRATEGY_PRELOAD,
 ) -> DataFrame:  # noqa D212
     """
     Find the images in the given path and create a DataFrame with all the information from each sample.
 
     Expected structure of the files in the dataset ("/" is 'path')
+    Important: notice that the groud truth masks can be in multiple files!
 
     images: /{split}/{super_anotype}/{image_index}.png
 
@@ -402,11 +402,11 @@ def _make_dataset(
     /ground_truth/logical_anomalies/079/000.png
 
     /ground_truth/structural_anomalies/.../000.png
+    /ground_truth/structural_anomalies/.../001.png
     ...
     """
 
     assert split in SPLITS, f"Invalid split: {split}"
-    assert imread_strategy in IMREAD_STRATEGIES, f"Invalid imread strategy: {imread_strategy}"
 
     category = path.resolve().name
     assert category in CATEGORIES, f"Invalid path '{path}'. The category '{category}' must be one of {CATEGORIES}"
@@ -429,7 +429,7 @@ def _make_dataset(
 
     def build_record(sample_path: Path):
 
-        ret: Dict[str, Union[Path, None, str, int]] = {
+        ret: Dict[str, Union[Path, Tuple[Path, ...], None, str, int]] = {
             "image_path": sample_path,
             **dict(zip(("split", "super_anotype", "image_filename"), sample_path.parts[-3:])),
         }
@@ -439,7 +439,7 @@ def _make_dataset(
         if super_anotype == SUPER_ANOTYPE_GOOD:
             ret.update(
                 {
-                    "mask_path": None,
+                    "mask_paths": None,
                     "label": LABEL_NORMAL,
                     "super_anotype": SUPER_ANOTYPE_GOOD,
                     "anotype": ANOTYPE_GOOD,
@@ -449,23 +449,27 @@ def _make_dataset(
 
         if super_anotype in (SUPER_ANOTYPE_LOGICAL, SUPER_ANOTYPE_STRUCTURAL):
 
-            mask_path: Path = path / "ground_truth" / super_anotype / sample_path.stem / "000.png"
+            mask_paths: Tuple[Path, ...] = tuple(
+                sorted((path / "ground_truth" / super_anotype / sample_path.stem).glob("*.png"))
+            )
 
-            assert mask_path.exists(), f"Mask file '{mask_path}' does not exist. Is the dataset corrupted?"
+            assert len(mask_paths) > 0, f"No masks found for sample '{sample_path}'. Is the dataset corrupted?"
 
             # mask images are supposed to have only two values: 0 and GTVALUE_ANOMALY
             # GTVALUE_ANOMALY \in {234, ..., 255} and is given in the paper, encoded in the mapping below
             # TODO create an issue to cache this info so the mask is not read here
-            gtvalue = read_mask(mask_path).astype(int).max()
+            first_mask_path = mask_paths[0]
+            gtvalue = read_mask(first_mask_path).astype(int).max()
             _, anotype = _MAP_GTVALUE_2_ANOTYPE[(category, gtvalue)]
 
             ret.update(
                 {
-                    "mask_path": mask_path,
+                    "mask_paths": mask_paths,
                     "gtvalue": gtvalue,
                     "label": LABEL_ANOMALOUS,
                     "super_anotype": super_anotype,
                     "anotype": anotype,
+                    "is_multimask": len(mask_paths) > 1,
                 }
             )
 
@@ -475,27 +479,6 @@ def _make_dataset(
         raise RuntimeError(f"Something wrong in the dataset folder. Unknown folder {super_anotype}, path={sample_path}")
 
     samples = pd.DataFrame.from_records([build_record(sp) for sp in samples_paths])
-
-    if imread_strategy == IMREAD_STRATEGY_PRELOAD:
-
-        warnings.warn(
-            "Preloading images into memory. "
-            "If your dataset is too large, consider using another imread_strategy instead.",
-            stacklevel=3,
-        )
-
-        logger.debug("Preloading images into memory")
-        samples["image"] = samples["image_path"].map(read_image)
-
-        logger.debug("Preloading masks into memory")
-
-        # this is used to select the rows in the dataframe
-        has_mask = ~samples["mask_path"].isnull()
-
-        samples.loc[has_mask, "mask"] = samples.loc[has_mask, "mask_path"].map(
-            lambda x: _binarize_mask_float(read_mask(x))
-        )
-        samples.loc[~has_mask, "mask"] = None
 
     return samples
 
@@ -528,7 +511,6 @@ class MVTecLOCODataset(VisionDataset):
                 Default: ``preload``
                 See ``anomalib.data.mvtec_loco.IMREAD_STRATEGIES``.
 
-        TODO add link
         See examples in the repository ``anomalib/notebooks/100_datamodules/104_mvtec_loco.ipynb``.
         """
 
@@ -550,8 +532,49 @@ class MVTecLOCODataset(VisionDataset):
         self.samples = _make_dataset(
             path=self.category_dataset_path,
             split=self.split,
-            imread_strategy=self.imread_strategy,
         )
+
+        if self.imread_strategy == IMREAD_STRATEGY_PRELOAD:
+
+            warnings.warn(
+                "Preloading images into memory. "
+                "If your dataset is too large, consider using another imread_strategy instead.",
+                stacklevel=2,
+            )
+
+            logger.debug("Preloading images into memory")
+            self.samples["image"] = self.samples["image_path"].map(read_image)
+
+            logger.debug("Preloading masks into memory")
+            # this is used to select the rows in the dataframe
+            has_mask = ~self.samples["mask_paths"].isnull()
+
+            # iterate the mask paths and read the masks returning a tuple of masks
+            self.samples.loc[has_mask, "masks"] = self.samples.loc[has_mask, "mask_paths"].map(
+                lambda tupe_of_paths: tuple(_binarize_mask_float(read_mask(mask_path)) for mask_path in tupe_of_paths)
+            )
+
+            # combine the multiple masks into a single (binary) mask
+            self.samples.loc[has_mask, "mask"] = self.samples.loc[has_mask, "masks"].map(
+                lambda masks: np.stack(masks, axis=0).sum(axis=0).clip(0, 1)
+            )
+
+            # replace the tuple of masks by a single array where each anomaly has
+            # a different value encoding an individual anomaly region
+            self.samples.loc[has_mask, "masks"] = self.samples.loc[has_mask, "masks"].map(self._sum_masks)
+
+            self.samples.loc[~has_mask, "masks"] = None
+            self.samples.loc[~has_mask, "mask"] = None
+
+    @staticmethod
+    def _sum_masks(tupe_of_masks: Tuple[np.ndarray, ...]) -> np.ndarray:
+        """Combines multiple masks into a single mask by encoding each mask with a different value and summing them."""
+        n_masks = len(tupe_of_masks)
+        # +1 is to compensate the open interval on the right
+        # expand_dims is to add the W and H dimensions, to make sure they are broadcasted
+        gtvalues = np.expand_dims(np.arange(1, n_masks + 1), (1, 2))
+        stacked_masks = np.stack(tupe_of_masks, axis=0)
+        return (gtvalues * stacked_masks).sum(axis=0)
 
     @property
     def category_dataset_path(self) -> Path:
@@ -573,14 +596,36 @@ class MVTecLOCODataset(VisionDataset):
 
         raise NotImplementedError(f"Imread strategy '{self.imread_strategy}' is not supported.")
 
-    def _get_mask(self, index: int) -> ndarray:
+    def _get_masks(self, index: int) -> Dict[str, ndarray]:
         """Get mask at index."""
 
         if self.imread_strategy == IMREAD_STRATEGY_PRELOAD:
-            return self.samples.iloc[index]["mask"]
+            return {
+                "masks": self.samples.iloc[index]["masks"],
+                "mask": self.samples.iloc[index]["mask"],
+            }
 
         if self.imread_strategy == IMREAD_STRATEGY_ONTHEFLY:
-            return _binarize_mask_float(read_mask(self.samples.iloc[index]["mask_path"]))
+
+            mask_paths = self.samples.iloc[index]["mask_paths"]
+            if mask_paths is None:
+                return {
+                    "masks": None,
+                    "mask": None,
+                }
+
+            # iterate the mask paths and read the masks returning a tuple of masks
+            masks: Tuple[np.ndarray, ...] = tuple(
+                _binarize_mask_float(read_mask(mask_path)) for mask_path in mask_paths
+            )
+
+            return {
+                # replace the tuple of masks by a single array where each anomaly has
+                # a different value encoding an individual anomaly region
+                "masks": self._sum_masks(masks),
+                # combine the multiple masks into a single (binary) mask
+                "mask": np.stack(masks, axis=0).sum(axis=0).clip(0, 1),
+            }
 
         raise NotImplementedError(f"Imread strategy '{self.imread_strategy}' is not supported.")
 
@@ -618,19 +663,23 @@ class MVTecLOCODataset(VisionDataset):
         if self.task != TASK_SEGMENTATION:
             return item
 
+        mask_dict: Dict[str, ndarray]
+
         # Only Anomalous (1) images has masks in MVTec LOCO AD dataset.
         # Therefore, create empty mask for Normal (0) images.
         if self.samples.iloc[index]["label"] == LABEL_NORMAL:
             mask = np.zeros(shape=image.shape[:2])  # shape: (H, W, C)
+            mask_dict = {"mask": mask, "masks": mask}
 
         else:
-            mask = self._get_mask(index)
+            mask_dict = self._get_masks(index)
 
-        pre_processed = self.pre_process(image=image, mask=mask)
         item.update(
             {
-                "mask_path": str(self.samples.iloc[index]["mask_path"]),
-                "mask": pre_processed["mask"],
+                "mask_paths": str(self.samples.iloc[index]["mask_paths"]),
+                # TODO CHECK IF THE DOUBLE CALL TO PREPROCESS WILL WORK WITH ALBUMENTATIONS
+                "masks": self.pre_process(image=image, mask=mask_dict["masks"])["mask"],
+                "mask": self.pre_process(image=image, mask=mask_dict["mask"])["mask"],
             }
         )
 
@@ -656,7 +705,6 @@ class MVTecLOCO(LightningDataModule):
         transform_config_train: Optional[Union[str, A.Compose]] = None,
         test_batch_size: int = 32,
         transform_config_val: Optional[Union[str, A.Compose]] = None,
-        # TODO: add a parameter to specify the anomaly types and (more specifically)
     ) -> None:
         """Mvtec LOCO AD Lightning Data Module.
 
@@ -679,15 +727,9 @@ class MVTecLOCO(LightningDataModule):
             transform_config_val: List of pre_processing object containing albumentation compose or
                 config applied during validation.
 
-        TODO add link
         See examples in the repository ``anomalib/notebooks/100_datamodules/104_mvtec_loco.ipynb``.
         """
         super().__init__()
-
-        # TODO create option to get a subset of anomalies in the test
-        # TODO the images are not squared here, maybe we should add warn the user if
-        #      the ration from image_size is too different from the original image when
-        #     the image size is given as an int
 
         assert task in TASKS, f"Task '{task}' is not supported. Supported tasks are {TASKS}"
         assert (
