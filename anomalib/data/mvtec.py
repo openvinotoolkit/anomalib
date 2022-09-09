@@ -60,7 +60,6 @@ logger = logging.getLogger(__name__)
 
 def make_mvtec_dataset(
     path: Path,
-    split: Optional[str] = None,
     split_ratio: float = 0.1,
     seed: Optional[int] = None,
     create_validation_set: bool = False,
@@ -110,6 +109,13 @@ def make_mvtec_dataset(
     Returns:
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
+    if seed is None:
+        warnings.warn(
+            "seed is None."
+            " When seed is not set, images from the normal directory are split between training and test dir."
+            " This will lead to inconsistency between runs."
+        )
+
     samples_list = [(str(path),) + filename.parts[-3:] for filename in path.glob("**/*.png")]
     if len(samples_list) == 0:
         raise RuntimeError(f"Found 0 images in {path}")
@@ -147,11 +153,6 @@ def make_mvtec_dataset(
     if create_validation_set:
         samples = create_validation_set_from_test_set(samples, seed=seed)
 
-    # Get the data frame for the split.
-    if split is not None and split in ["train", "val", "test"]:
-        samples = samples[samples.split == split]
-        samples = samples.reset_index(drop=True)
-
     return samples
 
 
@@ -160,13 +161,12 @@ class MVTecDataset(VisionDataset):
 
     def __init__(
         self,
+        samples: DataFrame,
         root: Union[Path, str],
         category: str,
         pre_process: PreProcessor,
         split: str,
         task: str = "segmentation",
-        seed: Optional[int] = None,
-        create_validation_set: bool = False,
     ) -> None:
         """Mvtec AD Dataset class.
 
@@ -211,26 +211,13 @@ class MVTecDataset(VisionDataset):
         """
         super().__init__(root)
 
-        if seed is None:
-            warnings.warn(
-                "seed is None."
-                " When seed is not set, images from the normal directory are split between training and test dir."
-                " This will lead to inconsistency between runs."
-            )
-
         self.root = Path(root) if isinstance(root, str) else root
         self.category: str = category
         self.split = split
         self.task = task
 
         self.pre_process = pre_process
-
-        self.samples = make_mvtec_dataset(
-            path=self.root / category,
-            split=self.split,
-            seed=seed,
-            create_validation_set=create_validation_set,
-        )
+        self.samples = samples
 
     def __len__(self) -> int:
         """Get length of the dataset."""
@@ -368,6 +355,12 @@ class MVTec(LightningDataModule):
             self.val_data: Dataset
         self.inference_data: Dataset
 
+        self.samples = make_mvtec_dataset(
+            path=self.root / category,
+            seed=seed,
+            create_validation_set=create_validation_set,
+        )
+
     def prepare_data(self) -> None:
         """Download the dataset if not available."""
         if (self.root / self.category).is_dir():
@@ -404,35 +397,38 @@ class MVTec(LightningDataModule):
         """
         logger.info("Setting up train, validation, test and prediction datasets.")
         if stage in (None, "fit"):
+            train_samples = self.samples[self.samples.split == "train"]
+            train_samples = train_samples.reset_index(drop=True)
             self.train_data = MVTecDataset(
+                samples=train_samples,
                 root=self.root,
                 category=self.category,
                 pre_process=self.pre_process_train,
                 split="train",
                 task=self.task,
-                seed=self.seed,
-                create_validation_set=self.create_validation_set,
             )
 
         if self.create_validation_set:
+            val_samples = self.samples[self.samples.split == "val"]
+            val_samples = val_samples.reset_index(drop=True)
             self.val_data = MVTecDataset(
+                samples=val_samples,
                 root=self.root,
                 category=self.category,
                 pre_process=self.pre_process_val,
                 split="val",
                 task=self.task,
-                seed=self.seed,
-                create_validation_set=self.create_validation_set,
             )
 
+        test_samples = self.samples[self.samples.split == "test"]
+        test_samples = test_samples.reset_index(drop=True)
         self.test_data = MVTecDataset(
+            samples=test_samples,
             root=self.root,
             category=self.category,
             pre_process=self.pre_process_val,
             split="test",
             task=self.task,
-            seed=self.seed,
-            create_validation_set=self.create_validation_set,
         )
 
         if stage == "predict":

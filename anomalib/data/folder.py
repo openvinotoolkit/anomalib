@@ -82,7 +82,6 @@ def make_dataset(
     abnormal_dir: Union[str, Path],
     normal_test_dir: Optional[Union[str, Path]] = None,
     mask_dir: Optional[Union[str, Path]] = None,
-    split: Optional[str] = None,
     split_ratio: float = 0.2,
     seed: Optional[int] = None,
     create_validation_set: bool = True,
@@ -120,9 +119,10 @@ def make_dataset(
         dirs = {**dirs, **{"normal_test": normal_test_dir}}
 
     for dir_type, path in dirs.items():
-        filename, label = _prepare_files_labels(path, dir_type, extensions)
-        filenames += filename
-        labels += label
+        if path is not None:
+            filename, label = _prepare_files_labels(path, dir_type, extensions)
+            filenames += filename
+            labels += label
 
     samples = DataFrame({"image_path": filenames, "label": labels})
 
@@ -158,11 +158,6 @@ def make_dataset(
     if create_validation_set:
         samples = create_validation_set_from_test_set(samples, seed=seed, normal_label="normal")
 
-    # Get the data frame for the split.
-    if split is not None and split in ["train", "val", "test"]:
-        samples = samples[samples.split == split]
-        samples = samples.reset_index(drop=True)
-
     return samples
 
 
@@ -171,19 +166,13 @@ class FolderDataset(Dataset):
 
     def __init__(
         self,
-        normal_dir: Union[Path, str],
-        abnormal_dir: Union[Path, str],
+        samples: DataFrame,
         split: str,
         pre_process: PreProcessor,
-        normal_test_dir: Optional[Union[Path, str]] = None,
-        split_ratio: float = 0.2,
         mask_dir: Optional[Union[Path, str]] = None,
-        extensions: Optional[Tuple[str, ...]] = None,
         task: Optional[str] = None,
-        seed: Optional[int] = None,
-        create_validation_set: bool = False,
     ) -> None:
-        """Create Folder Folder Dataset.
+        """Create Folder Dataset.
 
         Args:
             normal_dir (Union[str, Path]): Path to the directory containing normal images.
@@ -232,17 +221,7 @@ class FolderDataset(Dataset):
             self.task = task
 
         self.pre_process = pre_process
-        self.samples = make_dataset(
-            normal_dir=normal_dir,
-            abnormal_dir=abnormal_dir,
-            normal_test_dir=normal_test_dir,
-            mask_dir=mask_dir,
-            split=split,
-            split_ratio=split_ratio,
-            seed=seed,
-            create_validation_set=create_validation_set,
-            extensions=extensions,
-        )
+        self.samples = samples
 
     def __len__(self) -> int:
         """Get length of the dataset."""
@@ -423,7 +402,7 @@ class Folder(LightningDataModule):
 
         self.root = _check_and_convert_path(root)
         self.normal_dir = self.root / normal_dir
-        self.abnormal_dir = self.root / abnormal_dir
+        self.abnormal_dir = self.root / abnormal_dir if abnormal_dir is not None else None
         self.normal_test = normal_test_dir
         if normal_test_dir:
             self.normal_test = self.root / normal_test_dir
@@ -461,6 +440,17 @@ class Folder(LightningDataModule):
             self.val_data: Dataset
         self.inference_data: Dataset
 
+        self.samples = make_dataset(
+            normal_dir=self.normal_dir,
+            abnormal_dir=self.abnormal_dir,
+            normal_test_dir=self.normal_test,
+            mask_dir=mask_dir,
+            split_ratio=split_ratio,
+            seed=seed,
+            create_validation_set=create_validation_set,
+            extensions=extensions,
+        )
+
     def setup(self, stage: Optional[str] = None) -> None:
         """Setup train, validation and test data.
 
@@ -470,47 +460,35 @@ class Folder(LightningDataModule):
         """
         logger.info("Setting up train, validation, test and prediction datasets.")
         if stage in (None, "fit"):
+            train_samples = self.samples[self.samples.split == "train"]
+            train_samples = train_samples.reset_index(drop=True)
             self.train_data = FolderDataset(
-                normal_dir=self.normal_dir,
-                abnormal_dir=self.abnormal_dir,
-                normal_test_dir=self.normal_test,
+                samples=train_samples,
                 split="train",
-                split_ratio=self.split_ratio,
                 mask_dir=self.mask_dir,
                 pre_process=self.pre_process_train,
-                extensions=self.extensions,
                 task=self.task,
-                seed=self.seed,
-                create_validation_set=self.create_validation_set,
             )
 
         if self.create_validation_set:
+            val_samples = self.samples[self.samples.split == "val"]
+            val_samples = val_samples.reset_index(drop=True)
             self.val_data = FolderDataset(
-                normal_dir=self.normal_dir,
-                abnormal_dir=self.abnormal_dir,
-                normal_test_dir=self.normal_test,
+                samples=val_samples,
                 split="val",
-                split_ratio=self.split_ratio,
                 mask_dir=self.mask_dir,
                 pre_process=self.pre_process_val,
-                extensions=self.extensions,
                 task=self.task,
-                seed=self.seed,
-                create_validation_set=self.create_validation_set,
             )
 
+        test_samples = self.samples[self.samples.split == "test"]
+        test_samples = test_samples.reset_index(drop=True)
         self.test_data = FolderDataset(
-            normal_dir=self.normal_dir,
-            abnormal_dir=self.abnormal_dir,
+            samples=test_samples,
             split="test",
-            normal_test_dir=self.normal_test,
-            split_ratio=self.split_ratio,
             mask_dir=self.mask_dir,
             pre_process=self.pre_process_val,
-            extensions=self.extensions,
             task=self.task,
-            seed=self.seed,
-            create_validation_set=self.create_validation_set,
         )
 
         if stage == "predict":
