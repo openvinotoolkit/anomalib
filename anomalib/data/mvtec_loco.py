@@ -861,35 +861,3 @@ class MVTecLOCO(LightningDataModule):
         return DataLoader(
             self.inference_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers
         )
-
-
-# next
-# correct the multi-image ground truth
-# then show it in the notebook
-# then create unit tests
-# next
-# next
-# next
-# next
-# next
-# next
-# next
-# next
-# next
-# next
-# next
-# next
-# next
-# next
-# next
-# next
-# next
-# next
-# next
-# next
-# next
-# next
-# next
-# next
-# next
-# next
