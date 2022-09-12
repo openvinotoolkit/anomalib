@@ -355,12 +355,6 @@ class MVTec(LightningDataModule):
             self.val_data: Dataset
         self.inference_data: Dataset
 
-        self.samples = make_mvtec_dataset(
-            path=self.root / category,
-            seed=seed,
-            create_validation_set=create_validation_set,
-        )
-
     def prepare_data(self) -> None:
         """Download the dataset if not available."""
         if (self.root / self.category).is_dir():
@@ -395,9 +389,15 @@ class MVTec(LightningDataModule):
           stage: Optional[str]:  Train/Val/Test stages. (Default value = None)
 
         """
+        samples = make_mvtec_dataset(
+            path=self.root / self.category,
+            seed=self.seed,
+            create_validation_set=self.create_validation_set,
+        )
+
         logger.info("Setting up train, validation, test and prediction datasets.")
         if stage in (None, "fit"):
-            train_samples = self.samples[self.samples.split == "train"]
+            train_samples = samples[samples.split == "train"]
             train_samples = train_samples.reset_index(drop=True)
             self.train_data = MVTecDataset(
                 samples=train_samples,
@@ -409,7 +409,7 @@ class MVTec(LightningDataModule):
             )
 
         if self.create_validation_set:
-            val_samples = self.samples[self.samples.split == "val"]
+            val_samples = samples[samples.split == "val"]
             val_samples = val_samples.reset_index(drop=True)
             self.val_data = MVTecDataset(
                 samples=val_samples,
@@ -420,7 +420,7 @@ class MVTec(LightningDataModule):
                 task=self.task,
             )
 
-        test_samples = self.samples[self.samples.split == "test"]
+        test_samples = samples[samples.split == "test"]
         test_samples = test_samples.reset_index(drop=True)
         self.test_data = MVTecDataset(
             samples=test_samples,

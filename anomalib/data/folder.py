@@ -440,17 +440,6 @@ class Folder(LightningDataModule):
             self.val_data: Dataset
         self.inference_data: Dataset
 
-        self.samples = make_dataset(
-            normal_dir=self.normal_dir,
-            abnormal_dir=self.abnormal_dir,
-            normal_test_dir=self.normal_test,
-            mask_dir=mask_dir,
-            split_ratio=split_ratio,
-            seed=seed,
-            create_validation_set=create_validation_set,
-            extensions=extensions,
-        )
-
     def setup(self, stage: Optional[str] = None) -> None:
         """Setup train, validation and test data.
 
@@ -458,9 +447,20 @@ class Folder(LightningDataModule):
           stage: Optional[str]:  Train/Val/Test stages. (Default value = None)
 
         """
+        samples = make_dataset(
+            normal_dir=self.normal_dir,
+            abnormal_dir=self.abnormal_dir,
+            normal_test_dir=self.normal_test,
+            mask_dir=self.mask_dir,
+            split_ratio=self.split_ratio,
+            seed=self.seed,
+            create_validation_set=self.create_validation_set,
+            extensions=self.extensions,
+        )
+
         logger.info("Setting up train, validation, test and prediction datasets.")
         if stage in (None, "fit"):
-            train_samples = self.samples[self.samples.split == "train"]
+            train_samples = samples[samples.split == "train"]
             train_samples = train_samples.reset_index(drop=True)
             self.train_data = FolderDataset(
                 samples=train_samples,
@@ -471,7 +471,7 @@ class Folder(LightningDataModule):
             )
 
         if self.create_validation_set:
-            val_samples = self.samples[self.samples.split == "val"]
+            val_samples = samples[samples.split == "val"]
             val_samples = val_samples.reset_index(drop=True)
             self.val_data = FolderDataset(
                 samples=val_samples,
@@ -481,7 +481,7 @@ class Folder(LightningDataModule):
                 task=self.task,
             )
 
-        test_samples = self.samples[self.samples.split == "test"]
+        test_samples = samples[samples.split == "test"]
         test_samples = test_samples.reset_index(drop=True)
         self.test_data = FolderDataset(
             samples=test_samples,
