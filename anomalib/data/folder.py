@@ -15,14 +15,13 @@ import albumentations as A
 import cv2
 import numpy as np
 from pandas.core.frame import DataFrame
-from pytorch_lightning.core.datamodule import LightningDataModule
 from pytorch_lightning.utilities.cli import DATAMODULE_REGISTRY
 from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch import Tensor
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
-from anomalib.data.inference import InferenceDataset
+from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.utils import read_image
 from anomalib.data.utils.split import (
     create_validation_set_from_test_set,
@@ -161,7 +160,7 @@ def make_dataset(
     return samples
 
 
-class FolderDataset(Dataset):
+class FolderDataset(AnomalibDataset):
     """Folder Dataset."""
 
     def __init__(
@@ -199,6 +198,7 @@ class FolderDataset(Dataset):
                 provided, `task` should be set to `segmentation`.
 
         """
+        super().__init__(samples)
         self.split = split
 
         if task == "segmentation" and mask_dir is None:
@@ -221,7 +221,6 @@ class FolderDataset(Dataset):
             self.task = task
 
         self.pre_process = pre_process
-        self.samples = samples
 
     def __len__(self) -> int:
         """Get length of the dataset."""
@@ -271,7 +270,7 @@ class FolderDataset(Dataset):
 
 
 @DATAMODULE_REGISTRY
-class Folder(LightningDataModule):
+class Folder(AnomalibDataModule):
     """Folder Lightning Data Module."""
 
     def __init__(
@@ -434,12 +433,6 @@ class Folder(LightningDataModule):
         self.create_validation_set = create_validation_set
         self.seed = seed
 
-        self.train_data: Dataset
-        self.test_data: Dataset
-        if create_validation_set:
-            self.val_data: Dataset
-        self.inference_data: Dataset
-
     def setup(self, stage: Optional[str] = None) -> None:
         """Setup train, validation and test data.
 
@@ -491,11 +484,6 @@ class Folder(LightningDataModule):
             task=self.task,
         )
 
-        if stage == "predict":
-            self.inference_data = InferenceDataset(
-                path=self.root, image_size=self.image_size, transform_config=self.transform_config_val
-            )
-
     def train_dataloader(self) -> TRAIN_DATALOADERS:
         """Get train dataloader."""
         return DataLoader(self.train_data, shuffle=True, batch_size=self.train_batch_size, num_workers=self.num_workers)
@@ -508,9 +496,3 @@ class Folder(LightningDataModule):
     def test_dataloader(self) -> EVAL_DATALOADERS:
         """Get test dataloader."""
         return DataLoader(self.test_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
-
-    def predict_dataloader(self) -> EVAL_DATALOADERS:
-        """Get predict dataloader."""
-        return DataLoader(
-            self.inference_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers
-        )

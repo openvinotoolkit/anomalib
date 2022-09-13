@@ -39,15 +39,12 @@ import cv2
 import numpy as np
 import pandas as pd
 from pandas.core.frame import DataFrame
-from pytorch_lightning.core.datamodule import LightningDataModule
 from pytorch_lightning.utilities.cli import DATAMODULE_REGISTRY
 from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch import Tensor
 from torch.utils.data import DataLoader
-from torch.utils.data.dataset import Dataset
-from torchvision.datasets.folder import VisionDataset
 
-from anomalib.data.inference import InferenceDataset
+from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.utils import DownloadProgressBar, hash_check, read_image
 from anomalib.data.utils.split import (
     create_validation_set_from_test_set,
@@ -156,7 +153,7 @@ def make_mvtec_dataset(
     return samples
 
 
-class MVTecDataset(VisionDataset):
+class MVTecDataset(AnomalibDataset):
     """MVTec AD PyTorch Dataset."""
 
     def __init__(
@@ -209,7 +206,7 @@ class MVTecDataset(VisionDataset):
             >>> dataset[0]["image"].shape, dataset[0]["mask"].shape
             (torch.Size([3, 256, 256]), torch.Size([256, 256]))
         """
-        super().__init__(root)
+        super().__init__(samples)
 
         self.root = Path(root) if isinstance(root, str) else root
         self.category: str = category
@@ -267,14 +264,13 @@ class MVTecDataset(VisionDataset):
 
 
 @DATAMODULE_REGISTRY
-class MVTec(LightningDataModule):
+class MVTec(AnomalibDataModule):
     """MVTec AD Lightning Data Module."""
 
     def __init__(
         self,
         root: str,
         category: str,
-        # TODO: Remove default values. IAAALD-211
         image_size: Optional[Union[int, Tuple[int, int]]] = None,
         train_batch_size: int = 32,
         test_batch_size: int = 32,
@@ -348,12 +344,6 @@ class MVTec(LightningDataModule):
         self.create_validation_set = create_validation_set
         self.task = task
         self.seed = seed
-
-        self.train_data: Dataset
-        self.test_data: Dataset
-        if create_validation_set:
-            self.val_data: Dataset
-        self.inference_data: Dataset
 
     def prepare_data(self) -> None:
         """Download the dataset if not available."""
@@ -431,11 +421,6 @@ class MVTec(LightningDataModule):
             task=self.task,
         )
 
-        if stage == "predict":
-            self.inference_data = InferenceDataset(
-                path=self.root, image_size=self.image_size, transform_config=self.transform_config_val
-            )
-
     def train_dataloader(self) -> TRAIN_DATALOADERS:
         """Get train dataloader."""
         return DataLoader(self.train_data, shuffle=True, batch_size=self.train_batch_size, num_workers=self.num_workers)
@@ -448,9 +433,3 @@ class MVTec(LightningDataModule):
     def test_dataloader(self) -> EVAL_DATALOADERS:
         """Get test dataloader."""
         return DataLoader(self.test_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
-
-    def predict_dataloader(self) -> EVAL_DATALOADERS:
-        """Get predict dataloader."""
-        return DataLoader(
-            self.inference_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers
-        )
