@@ -18,12 +18,11 @@ from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADER
 from torch.utils.data import DataLoader
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
-from anomalib.data.base import AnomalibDataModule, AnomalibDataset
+from anomalib.data.base import AnomalibDataModule
 from anomalib.data.utils.split import (
     create_validation_set_from_test_set,
     split_normal_images_in_train_set,
 )
-from anomalib.pre_processing import PreProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -70,90 +69,6 @@ def _prepare_files_labels(
     labels = [path_type] * len(filenames)
 
     return filenames, labels
-
-
-def make_dataset(
-    normal_dir: Union[str, Path],
-    abnormal_dir: Union[str, Path],
-    normal_test_dir: Optional[Union[str, Path]] = None,
-    mask_dir: Optional[Union[str, Path]] = None,
-    split_ratio: float = 0.2,
-    seed: Optional[int] = None,
-    create_validation_set: bool = True,
-    extensions: Optional[Tuple[str, ...]] = None,
-):
-    """Make Folder Dataset.
-
-    Args:
-        normal_dir (Union[str, Path]): Path to the directory containing normal images.
-        abnormal_dir (Union[str, Path]): Path to the directory containing abnormal images.
-        normal_test_dir (Optional[Union[str, Path]], optional): Path to the directory containing
-            normal images for the test dataset. Normal test images will be a split of `normal_dir`
-            if `None`. Defaults to None.
-        mask_dir (Optional[Union[str, Path]], optional): Path to the directory containing
-            the mask annotations. Defaults to None.
-        split (Optional[str], optional): Dataset split (ie., either train or test). Defaults to None.
-        split_ratio (float, optional): Ratio to split normal training images and add to the
-            test set in case test set doesn't contain any normal images.
-            Defaults to 0.2.
-        seed (int, optional): Random seed to ensure reproducibility when splitting. Defaults to 0.
-        create_validation_set (bool, optional):Boolean to create a validation set from the test set.
-            Those wanting to create a validation set could set this flag to ``True``.
-        extensions (Optional[Tuple[str, ...]], optional): Type of the image extensions to read from the
-            directory.
-
-    Returns:
-        DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
-    """
-
-    filenames = []
-    labels = []
-    dirs = {"normal": normal_dir, "abnormal": abnormal_dir}
-
-    if normal_test_dir:
-        dirs = {**dirs, **{"normal_test": normal_test_dir}}
-
-    for dir_type, path in dirs.items():
-        if path is not None:
-            filename, label = _prepare_files_labels(path, dir_type, extensions)
-            filenames += filename
-            labels += label
-
-    samples = DataFrame({"image_path": filenames, "label": labels})
-
-    # Create label index for normal (0) and abnormal (1) images.
-    samples.loc[(samples.label == "normal") | (samples.label == "normal_test"), "label_index"] = 0
-    samples.loc[(samples.label == "abnormal"), "label_index"] = 1
-    samples.label_index = samples.label_index.astype(int)
-
-    # If a path to mask is provided, add it to the sample dataframe.
-    if mask_dir is not None:
-        mask_dir = _check_and_convert_path(mask_dir)
-        samples["mask_path"] = ""
-        for index, row in samples.iterrows():
-            if row.label_index == 1:
-                samples.loc[index, "mask_path"] = str(mask_dir / row.image_path.name)
-
-    # Ensure the pathlib objects are converted to str.
-    # This is because torch dataloader doesn't like pathlib.
-    samples = samples.astype({"image_path": "str"})
-
-    # Create train/test split.
-    # By default, all the normal samples are assigned as train.
-    #   and all the abnormal samples are test.
-    samples.loc[(samples.label == "normal"), "split"] = "train"
-    samples.loc[(samples.label == "abnormal") | (samples.label == "normal_test"), "split"] = "test"
-
-    if not normal_test_dir:
-        samples = split_normal_images_in_train_set(
-            samples=samples, split_ratio=split_ratio, seed=seed, normal_label="normal"
-        )
-
-    # If `create_validation_set` is set to True, the test set is split into half.
-    if create_validation_set:
-        samples = create_validation_set_from_test_set(samples, seed=seed, normal_label="normal")
-
-    return samples
 
 
 @DATAMODULE_REGISTRY
@@ -277,7 +192,13 @@ class Folder(AnomalibDataModule):
             torch.Size([12, 3, 256, 256]) torch.Size([12, 256, 256])
 
         """
-        super().__init__()
+        super().__init__(
+            task=task,
+            transform_config_train=transform_config_train,
+            transform_config_val=transform_config_val,
+            image_size=image_size,
+            create_validation_set=create_validation_set,
+        )
 
         if seed is None and normal_test_dir is None:
             raise ValueError(
@@ -285,16 +206,6 @@ class Folder(AnomalibDataModule):
                 " When seed is not set, images from the normal directory are split between training and test dir."
                 " This will lead to inconsistency between runs."
             )
-
-        self.root = _check_and_convert_path(root)
-        self.normal_dir = self.root / normal_dir
-        self.abnormal_dir = self.root / abnormal_dir if abnormal_dir is not None else None
-        self.normal_test = normal_test_dir
-        if normal_test_dir:
-            self.normal_test = self.root / normal_test_dir
-        self.mask_dir = mask_dir
-        self.extensions = extensions
-        self.split_ratio = split_ratio
 
         if task == "segmentation" and mask_dir is None:
             warnings.warn(
@@ -305,15 +216,19 @@ class Folder(AnomalibDataModule):
         else:
             self.task = task
 
+        self.root = _check_and_convert_path(root)
+        self.normal_dir = self.root / normal_dir
+        self.abnormal_dir = self.root / abnormal_dir if abnormal_dir is not None else None
+        self.normal_test_dir = normal_test_dir
+        if normal_test_dir:
+            self.normal_test_dir = self.root / normal_test_dir
+        self.mask_dir = mask_dir
+        self.extensions = extensions
+        self.split_ratio = split_ratio
+
         self.transform_config_train = transform_config_train
         self.transform_config_val = transform_config_val
         self.image_size = image_size
-
-        if self.transform_config_train is not None and self.transform_config_val is None:
-            self.transform_config_val = self.transform_config_train
-
-        self.pre_process_train = PreProcessor(config=self.transform_config_train, image_size=self.image_size)
-        self.pre_process_val = PreProcessor(config=self.transform_config_val, image_size=self.image_size)
 
         self.train_batch_size = train_batch_size
         self.test_batch_size = test_batch_size
@@ -322,53 +237,69 @@ class Folder(AnomalibDataModule):
         self.create_validation_set = create_validation_set
         self.seed = seed
 
-    def setup(self, stage: Optional[str] = None) -> None:
-        """Setup train, validation and test data.
+    def _create_samples(self):
+        """Create the dataframe with samples for the Folder dataset.
 
-        Args:
-          stage: Optional[str]:  Train/Val/Test stages. (Default value = None)
+        This function creates a dataframe to store the parsed information based on the following format:
+        |---|-------------------|--------|-------------|------------------|-------|
+        |   | image_path        | label  | label_index | mask_path        | split |
+        |---|-------------------|--------|-------------|------------------|-------|
+        | 0 | path/to/image.png | normal | 0           | path/to/mask.png | train |
+        |---|-------------------|--------|-------------|------------------|-------|
+
+        Returns:
+            DataFrame: an output dataframe containing the samples of the dataset.
 
         """
-        samples = make_dataset(
-            normal_dir=self.normal_dir,
-            abnormal_dir=self.abnormal_dir,
-            normal_test_dir=self.normal_test,
-            mask_dir=self.mask_dir,
-            split_ratio=self.split_ratio,
-            seed=self.seed,
-            create_validation_set=self.create_validation_set,
-            extensions=self.extensions,
-        )
 
-        logger.info("Setting up train, validation, test and prediction datasets.")
-        if stage in (None, "fit"):
-            train_samples = samples[samples.split == "train"]
-            train_samples = train_samples.reset_index(drop=True)
-            self.train_data = AnomalibDataset(
-                samples=train_samples,
-                split="train",
-                pre_process=self.pre_process_train,
-                task=self.task,
+        filenames = []
+        labels = []
+        dirs = {"normal": self.normal_dir, "abnormal": self.abnormal_dir}
+
+        if self.normal_test_dir:
+            dirs = {**dirs, **{"normal_test": self.normal_test_dir}}
+
+        for dir_type, path in dirs.items():
+            if path is not None:
+                filename, label = _prepare_files_labels(path, dir_type, self.extensions)
+                filenames += filename
+                labels += label
+
+        samples = DataFrame({"image_path": filenames, "label": labels})
+
+        # Create label index for normal (0) and abnormal (1) images.
+        samples.loc[(samples.label == "normal") | (samples.label == "normal_test"), "label_index"] = 0
+        samples.loc[(samples.label == "abnormal"), "label_index"] = 1
+        samples.label_index = samples.label_index.astype(int)
+
+        # If a path to mask is provided, add it to the sample dataframe.
+        if self.mask_dir is not None:
+            self.mask_dir = _check_and_convert_path(self.mask_dir)
+            samples["mask_path"] = ""
+            for index, row in samples.iterrows():
+                if row.label_index == 1:
+                    samples.loc[index, "mask_path"] = str(self.mask_dir / row.image_path.name)
+
+        # Ensure the pathlib objects are converted to str.
+        # This is because torch dataloader doesn't like pathlib.
+        samples = samples.astype({"image_path": "str"})
+
+        # Create train/test split.
+        # By default, all the normal samples are assigned as train.
+        #   and all the abnormal samples are test.
+        samples.loc[(samples.label == "normal"), "split"] = "train"
+        samples.loc[(samples.label == "abnormal") | (samples.label == "normal_test"), "split"] = "test"
+
+        if not self.normal_test_dir:
+            samples = split_normal_images_in_train_set(
+                samples=samples, split_ratio=self.split_ratio, seed=self.seed, normal_label="normal"
             )
 
+        # If `create_validation_set` is set to True, the test set is split into half.
         if self.create_validation_set:
-            val_samples = samples[samples.split == "val"]
-            val_samples = val_samples.reset_index(drop=True)
-            self.val_data = AnomalibDataset(
-                samples=val_samples,
-                split="val",
-                pre_process=self.pre_process_val,
-                task=self.task,
-            )
+            samples = create_validation_set_from_test_set(samples, seed=self.seed, normal_label="normal")
 
-        test_samples = samples[samples.split == "test"]
-        test_samples = test_samples.reset_index(drop=True)
-        self.test_data = AnomalibDataset(
-            samples=test_samples,
-            split="test",
-            pre_process=self.pre_process_val,
-            task=self.task,
-        )
+        return samples
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:
         """Get train dataloader."""

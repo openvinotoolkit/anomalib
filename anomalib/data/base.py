@@ -3,9 +3,11 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from abc import ABC
-from typing import Dict, Optional, Union
+import logging
+from abc import ABC, abstractmethod
+from typing import Dict, Optional, Tuple, Union
 
+import albumentations as A
 import cv2
 import numpy as np
 from pandas import DataFrame
@@ -15,6 +17,8 @@ from torch.utils.data import Dataset
 
 from anomalib.data.utils import read_image
 from anomalib.pre_processing import PreProcessor
+
+logger = logging.getLogger(__name__)
 
 
 class AnomalibDataset(Dataset):
@@ -79,8 +83,66 @@ class AnomalibDataset(Dataset):
 class AnomalibDataModule(LightningDataModule, ABC):
     """Base Anomalib data module."""
 
-    def __init__(self):
+    def __init__(
+        self,
+        task: str,
+        transform_config_train: Optional[Union[str, A.Compose]] = None,
+        transform_config_val: Optional[Union[str, A.Compose]] = None,
+        image_size: Optional[Union[int, Tuple[int, int]]] = None,
+        create_validation_set: bool = False,
+    ):
         super().__init__()
+        self.task = task
+        self.create_validation_set = create_validation_set
+
+        if transform_config_train is not None and transform_config_val is None:
+            transform_config_val = transform_config_train
+        self.pre_process_train = PreProcessor(config=transform_config_train, image_size=image_size)
+        self.pre_process_val = PreProcessor(config=transform_config_val, image_size=image_size)
+
         self.train_data: Optional[AnomalibDataset] = None
         self.val_data: Optional[AnomalibDataset] = None
         self.test_data: Optional[AnomalibDataset] = None
+
+    @abstractmethod
+    def _create_samples(self) -> DataFrame:
+        """To be implemented in subclass."""
+
+    def setup(self, stage: Optional[str] = None) -> None:
+        """Setup train, validation and test data.
+
+        Args:
+          stage: Optional[str]:  Train/Val/Test stages. (Default value = None)
+
+        """
+        samples = self._create_samples()
+
+        logger.info("Setting up train, validation, test and prediction datasets.")
+        if stage in (None, "fit"):
+            train_samples = samples[samples.split == "train"]
+            train_samples = train_samples.reset_index(drop=True)
+            self.train_data = AnomalibDataset(
+                samples=train_samples,
+                split="train",
+                task=self.task,
+                pre_process=self.pre_process_train,
+            )
+
+        if self.create_validation_set:
+            val_samples = samples[samples.split == "val"]
+            val_samples = val_samples.reset_index(drop=True)
+            self.val_data = AnomalibDataset(
+                samples=val_samples,
+                split="val",
+                task=self.task,
+                pre_process=self.pre_process_val,
+            )
+
+        test_samples = samples[samples.split == "test"]
+        test_samples = test_samples.reset_index(drop=True)
+        self.test_data = AnomalibDataset(
+            samples=test_samples,
+            split="test",
+            task=self.task,
+            pre_process=self.pre_process_val,
+        )
