@@ -240,6 +240,11 @@ class Folder(AnomalibDataModule):
     def _create_samples(self):
         """Create the dataframe with samples for the Folder dataset.
 
+        The files are expected to follow the structure:
+            path/to/dataset/normal_folder_name/normal_image_name.png
+            path/to/dataset/abnormal_folder_name/abnormal_image_name.png
+
+
         This function creates a dataframe to store the parsed information based on the following format:
         |---|-------------------|--------|-------------|------------------|-------|
         |   | image_path        | label  | label_index | mask_path        | split |
@@ -249,7 +254,6 @@ class Folder(AnomalibDataModule):
 
         Returns:
             DataFrame: an output dataframe containing the samples of the dataset.
-
         """
 
         filenames = []

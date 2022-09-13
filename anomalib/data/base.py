@@ -106,7 +106,24 @@ class AnomalibDataModule(LightningDataModule, ABC):
 
     @abstractmethod
     def _create_samples(self) -> DataFrame:
-        """To be implemented in subclass."""
+        """This method should be implemented in the subclass.
+
+        This method should return a dataframe that contains the information needed by the dataloader to load each of
+        the dataset items into memory. The dataframe must at least contain the following columns:
+        split - The subset to which the dataset item is assigned.
+        image_path - Path to file system location where the image is stored.
+        label_index - Index of the anomaly label, typically 0 for "normal" and 1 for "anomalous".
+
+        Additionally, when the task type is segmentation, the dataframe must have the mask_path column, which contains
+        the path the ground truth masks (for the anomalous images only).
+
+        Example of a dataframe returned by calling this method from a concrete class:
+        |---|-------------------|-----------|-------------|------------------|-------|
+        |   | image_path        | label     | label_index | mask_path        | split |
+        |---|-------------------|-----------|-------------|------------------|-------|
+        | 0 | path/to/image.png | anomalous | 0           | path/to/mask.png | train |
+        |---|-------------------|-----------|-------------|------------------|-------|
+        """
 
     def setup(self, stage: Optional[str] = None) -> None:
         """Setup train, validation and test data.
