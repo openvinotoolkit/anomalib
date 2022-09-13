@@ -9,20 +9,16 @@ This script creates a custom dataset from a folder.
 import logging
 import warnings
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Union
+from typing import Optional, Tuple, Union
 
 import albumentations as A
-import cv2
-import numpy as np
 from pandas.core.frame import DataFrame
 from pytorch_lightning.utilities.cli import DATAMODULE_REGISTRY
 from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
-from torch import Tensor
 from torch.utils.data import DataLoader
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
-from anomalib.data.utils import read_image
 from anomalib.data.utils.split import (
     create_validation_set_from_test_set,
     split_normal_images_in_train_set,
@@ -158,115 +154,6 @@ def make_dataset(
         samples = create_validation_set_from_test_set(samples, seed=seed, normal_label="normal")
 
     return samples
-
-
-class FolderDataset(AnomalibDataset):
-    """Folder Dataset."""
-
-    def __init__(
-        self,
-        samples: DataFrame,
-        split: str,
-        pre_process: PreProcessor,
-        mask_dir: Optional[Union[Path, str]] = None,
-        task: Optional[str] = None,
-    ) -> None:
-        """Create Folder Dataset.
-
-        Args:
-            normal_dir (Union[str, Path]): Path to the directory containing normal images.
-            abnormal_dir (Union[str, Path]): Path to the directory containing abnormal images.
-            split (Optional[str], optional): Dataset split (ie., either train or test). Defaults to None.
-            pre_process (Optional[PreProcessor], optional): Image Pro-processor to apply transform.
-                Defaults to None.
-            normal_test_dir (Optional[Union[str, Path]], optional): Path to the directory containing
-                normal images for the test dataset. Defaults to None.
-            split_ratio (float, optional): Ratio to split normal training images and add to the
-                test set in case test set doesn't contain any normal images.
-                Defaults to 0.2.
-            mask_dir (Optional[Union[str, Path]], optional): Path to the directory containing
-                the mask annotations. Defaults to None.
-            extensions (Optional[Tuple[str, ...]], optional): Type of the image extensions to read from the
-                directory.
-            task (Optional[str], optional): Task type. (classification or segmentation) Defaults to None.
-            seed (int, optional): Random seed to ensure reproducibility when splitting. Defaults to 0.
-            create_validation_set (bool, optional):Boolean to create a validation set from the test set.
-                Those wanting to create a validation set could set this flag to ``True``.
-
-        Raises:
-            ValueError: When task is set to classification and `mask_dir` is provided. When `mask_dir` is
-                provided, `task` should be set to `segmentation`.
-
-        """
-        super().__init__(samples)
-        self.split = split
-
-        if task == "segmentation" and mask_dir is None:
-            warnings.warn(
-                "Segmentation task is requested, but mask directory is not provided. "
-                "Classification is to be chosen if mask directory is not provided."
-            )
-            self.task = "classification"
-
-        if task == "classification" and mask_dir:
-            warnings.warn(
-                "Classification task is requested, but mask directory is provided. "
-                "Segmentation task is to be chosen if mask directory is provided."
-            )
-            self.task = "segmentation"
-
-        if task is None or mask_dir is None:
-            self.task = "classification"
-        else:
-            self.task = task
-
-        self.pre_process = pre_process
-
-    def __len__(self) -> int:
-        """Get length of the dataset."""
-        return len(self.samples)
-
-    def __getitem__(self, index: int) -> Dict[str, Union[str, Tensor]]:
-        """Get dataset item for the index ``index``.
-
-        Args:
-            index (int): Index to get the item.
-
-        Returns:
-            Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]: Dict of image tensor during training.
-                Otherwise, Dict containing image path, target path, image tensor, label and transformed bounding box.
-        """
-        item: Dict[str, Union[str, Tensor]] = {}
-
-        image_path = self.samples.image_path[index]
-        image = read_image(image_path)
-
-        pre_processed = self.pre_process(image=image)
-        item = {"image": pre_processed["image"]}
-
-        if self.split in ["val", "test"]:
-            label_index = self.samples.label_index[index]
-
-            item["image_path"] = image_path
-            item["label"] = label_index
-
-            if self.task == "segmentation":
-                mask_path = self.samples.mask_path[index]
-
-                # Only Anomalous (1) images has masks in MVTec AD dataset.
-                # Therefore, create empty mask for Normal (0) images.
-                if label_index == 0:
-                    mask = np.zeros(shape=image.shape[:2])
-                else:
-                    mask = cv2.imread(mask_path, flags=0) / 255.0
-
-                pre_processed = self.pre_process(image=image, mask=mask)
-
-                item["mask_path"] = mask_path
-                item["image"] = pre_processed["image"]
-                item["mask"] = pre_processed["mask"]
-
-        return item
 
 
 @DATAMODULE_REGISTRY
@@ -409,13 +296,15 @@ class Folder(AnomalibDataModule):
         self.extensions = extensions
         self.split_ratio = split_ratio
 
-        if task == "classification" and mask_dir is not None:
-            raise ValueError(
-                "Classification type is set but mask_dir provided. "
-                "If mask_dir is provided task type must be segmentation. "
-                "Check your configuration."
+        if task == "segmentation" and mask_dir is None:
+            warnings.warn(
+                "Segmentation task is requested, but mask directory is not provided. "
+                "Classification is to be chosen if mask directory is not provided."
             )
-        self.task = task
+            self.task = "classification"
+        else:
+            self.task = task
+
         self.transform_config_train = transform_config_train
         self.transform_config_val = transform_config_val
         self.image_size = image_size
@@ -455,10 +344,9 @@ class Folder(AnomalibDataModule):
         if stage in (None, "fit"):
             train_samples = samples[samples.split == "train"]
             train_samples = train_samples.reset_index(drop=True)
-            self.train_data = FolderDataset(
+            self.train_data = AnomalibDataset(
                 samples=train_samples,
                 split="train",
-                mask_dir=self.mask_dir,
                 pre_process=self.pre_process_train,
                 task=self.task,
             )
@@ -466,20 +354,18 @@ class Folder(AnomalibDataModule):
         if self.create_validation_set:
             val_samples = samples[samples.split == "val"]
             val_samples = val_samples.reset_index(drop=True)
-            self.val_data = FolderDataset(
+            self.val_data = AnomalibDataset(
                 samples=val_samples,
                 split="val",
-                mask_dir=self.mask_dir,
                 pre_process=self.pre_process_val,
                 task=self.task,
             )
 
         test_samples = samples[samples.split == "test"]
         test_samples = test_samples.reset_index(drop=True)
-        self.test_data = FolderDataset(
+        self.test_data = AnomalibDataset(
             samples=test_samples,
             split="test",
-            mask_dir=self.mask_dir,
             pre_process=self.pre_process_val,
             task=self.task,
         )

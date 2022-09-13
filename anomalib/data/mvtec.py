@@ -31,21 +31,18 @@ import logging
 import tarfile
 import warnings
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Union
+from typing import Optional, Tuple, Union
 from urllib.request import urlretrieve
 
 import albumentations as A
-import cv2
-import numpy as np
 import pandas as pd
 from pandas.core.frame import DataFrame
 from pytorch_lightning.utilities.cli import DATAMODULE_REGISTRY
 from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
-from torch import Tensor
 from torch.utils.data import DataLoader
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
-from anomalib.data.utils import DownloadProgressBar, hash_check, read_image
+from anomalib.data.utils import DownloadProgressBar, hash_check
 from anomalib.data.utils.split import (
     create_validation_set_from_test_set,
     split_normal_images_in_train_set,
@@ -151,116 +148,6 @@ def make_mvtec_dataset(
         samples = create_validation_set_from_test_set(samples, seed=seed)
 
     return samples
-
-
-class MVTecDataset(AnomalibDataset):
-    """MVTec AD PyTorch Dataset."""
-
-    def __init__(
-        self,
-        samples: DataFrame,
-        root: Union[Path, str],
-        category: str,
-        pre_process: PreProcessor,
-        split: str,
-        task: str = "segmentation",
-    ) -> None:
-        """Mvtec AD Dataset class.
-
-        Args:
-            root: Path to the MVTec AD dataset
-            category: Name of the MVTec AD category.
-            pre_process: List of pre_processing object containing albumentation compose.
-            split: 'train', 'val' or 'test'
-            task: ``classification`` or ``segmentation``
-            seed: seed used for the random subset splitting
-            create_validation_set: Create a validation subset in addition to the train and test subsets
-
-        Examples:
-            >>> from anomalib.data.mvtec import MVTecDataset
-            >>> from anomalib.data.transforms import PreProcessor
-            >>> pre_process = PreProcessor(image_size=256)
-            >>> dataset = MVTecDataset(
-            ...     root='./datasets/MVTec',
-            ...     category='leather',
-            ...     pre_process=pre_process,
-            ...     task="classification",
-            ...     is_train=True,
-            ... )
-            >>> dataset[0].keys()
-            dict_keys(['image'])
-
-            >>> dataset.split = "test"
-            >>> dataset[0].keys()
-            dict_keys(['image', 'image_path', 'label'])
-
-            >>> dataset.task = "segmentation"
-            >>> dataset.split = "train"
-            >>> dataset[0].keys()
-            dict_keys(['image'])
-
-            >>> dataset.split = "test"
-            >>> dataset[0].keys()
-            dict_keys(['image_path', 'label', 'mask_path', 'image', 'mask'])
-
-            >>> dataset[0]["image"].shape, dataset[0]["mask"].shape
-            (torch.Size([3, 256, 256]), torch.Size([256, 256]))
-        """
-        super().__init__(samples)
-
-        self.root = Path(root) if isinstance(root, str) else root
-        self.category: str = category
-        self.split = split
-        self.task = task
-
-        self.pre_process = pre_process
-        self.samples = samples
-
-    def __len__(self) -> int:
-        """Get length of the dataset."""
-        return len(self.samples)
-
-    def __getitem__(self, index: int) -> Dict[str, Union[str, Tensor]]:
-        """Get dataset item for the index ``index``.
-
-        Args:
-            index (int): Index to get the item.
-
-        Returns:
-            Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]: Dict of image tensor during training.
-                Otherwise, Dict containing image path, target path, image tensor, label and transformed bounding box.
-        """
-        item: Dict[str, Union[str, Tensor]] = {}
-
-        image_path = self.samples.image_path[index]
-        image = read_image(image_path)
-
-        pre_processed = self.pre_process(image=image)
-        item = {"image": pre_processed["image"]}
-
-        if self.split in ["val", "test"]:
-            label_index = self.samples.label_index[index]
-
-            item["image_path"] = image_path
-            item["label"] = label_index
-
-            if self.task == "segmentation":
-                mask_path = self.samples.mask_path[index]
-
-                # Only Anomalous (1) images has masks in MVTec AD dataset.
-                # Therefore, create empty mask for Normal (0) images.
-                if label_index == 0:
-                    mask = np.zeros(shape=image.shape[:2])
-                else:
-                    mask = cv2.imread(mask_path, flags=0) / 255.0
-
-                pre_processed = self.pre_process(image=image, mask=mask)
-
-                item["mask_path"] = mask_path
-                item["image"] = pre_processed["image"]
-                item["mask"] = pre_processed["mask"]
-
-        return item
 
 
 @DATAMODULE_REGISTRY
@@ -370,7 +257,7 @@ class MVTec(AnomalibDataModule):
                 tar_file.extractall(self.root)
 
             logger.info("Cleaning the tar file")
-            (zip_filename).unlink()
+            zip_filename.unlink()
 
     def setup(self, stage: Optional[str] = None) -> None:
         """Setup train, validation and test data.
@@ -389,10 +276,8 @@ class MVTec(AnomalibDataModule):
         if stage in (None, "fit"):
             train_samples = samples[samples.split == "train"]
             train_samples = train_samples.reset_index(drop=True)
-            self.train_data = MVTecDataset(
+            self.train_data = AnomalibDataset(
                 samples=train_samples,
-                root=self.root,
-                category=self.category,
                 pre_process=self.pre_process_train,
                 split="train",
                 task=self.task,
@@ -401,10 +286,8 @@ class MVTec(AnomalibDataModule):
         if self.create_validation_set:
             val_samples = samples[samples.split == "val"]
             val_samples = val_samples.reset_index(drop=True)
-            self.val_data = MVTecDataset(
+            self.val_data = AnomalibDataset(
                 samples=val_samples,
-                root=self.root,
-                category=self.category,
                 pre_process=self.pre_process_val,
                 split="val",
                 task=self.task,
@@ -412,10 +295,8 @@ class MVTec(AnomalibDataModule):
 
         test_samples = samples[samples.split == "test"]
         test_samples = test_samples.reset_index(drop=True)
-        self.test_data = MVTecDataset(
+        self.test_data = AnomalibDataset(
             samples=test_samples,
-            root=self.root,
-            category=self.category,
             pre_process=self.pre_process_val,
             split="test",
             task=self.task,
