@@ -28,7 +28,7 @@ A Sample configuration files for hyperparameter optimization with Comet is provi
         type: categorical
         values: ["resnet18", "wide_resnet50_2"]
 
-The maxCombo defines the total number of experiments to run. The algorithm is the optimization method to be used. The metric is the metric to be used to evaluate the performance of the model. The parameters are the hyperparameters to be optimized. For details on other possible configurations with Comet's Optimizer  , refer to the `Comet's <https://www.comet.com/docs/v2/api-and-sdk/python-sdk/introduction-optimizer/>`_ documentation. 
+The maxCombo defines the total number of experiments to run. The algorithm is the optimization method to be used. The metric is the metric to be used to evaluate the performance of the model. The parameters are the hyperparameters to be optimized. For details on other possible configurations with Comet's Optimizer  , refer to the `Comet's <https://www.comet.com/docs/v2/api-and-sdk/python-sdk/introduction-optimizer/>`_ documentation.
 
 A sample configuration file for hyperparameter optimization with Weights and Bias is provided at ``tools/hpo/sweep.yaml`` and is reproduced below:
 
@@ -48,7 +48,7 @@ A sample configuration file for hyperparameter optimization with Weights and Bia
       backbone:
         values: [resnet18, wide_resnet50_2]
 
-The observation budget defines the total number of experiments to run. The method is the optimization method to be used. The metric is the metric to be used to evaluate the performance of the model. The parameters are the hyperparameters to be optimized. For details on methods other than ``bayes`` and parameter values apart from list, refer the `Weights and Biases <https://docs.wandb.ai/guides/sweeps/quickstart>`_ documentation. 
+The observation budget defines the total number of experiments to run. The method is the optimization method to be used. The metric is the metric to be used to evaluate the performance of the model. The parameters are the hyperparameters to be optimized. For details on methods other than ``bayes`` and parameter values apart from list, refer the `Weights and Biases <https://docs.wandb.ai/guides/sweeps/quickstart>`_ documentation.
 
 Everything under the ``parameters`` key (in both configuration formats) overrides the default values defined in the model configuration. In these examples, only the dataset and model parameters are overridden for the HPO search.
 
