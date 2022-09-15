@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 import pandas as pd
+from comet_ml import Experiment
 from torch.utils.tensorboard.writer import SummaryWriter
 
 import wandb
@@ -116,3 +117,29 @@ def upload_to_wandb(
             )
             wandb.log(row)
             wandb.finish()
+
+
+def upload_to_comet(
+    folder: Optional[str] = None,
+):
+    """Upload the data in csv files to comet.
+
+    Creates a project named benchmarking_[two random characters]. This is so that the project names are unique.
+    One issue is that it does not check for collision
+
+    Args:
+        folder (optional, str): Sub-directory from which runs are picked up. Defaults to None. If none picks from runs.
+    """
+    project = f"benchmarking_{get_unique_key(2)}"
+    tag_list = ["dataset.category", "model_name", "dataset.image_size", "model.backbone", "device"]
+    search_path = "runs/*.csv" if folder is None else f"runs/{folder}/*.csv"
+    for csv_file in glob(search_path):
+        table = pd.read_csv(csv_file)
+        for index, row in table.iterrows():
+            row = dict(row[1:])  # remove index column
+            tags = [str(row[column]) for column in tag_list if column in row.keys()]
+            experiment = Experiment(project_name=project)
+            experiment.set_name(f"{row['model_name']}_{row['dataset.category']}_{index}")
+            experiment.log_metrics(row, step=1, epoch=1)  # populates auto-generated charts on panel view
+            experiment.add_tags(tags)
+            experiment.log_table(filename=csv_file)

@@ -21,7 +21,7 @@ from typing import Dict, List, Optional, Union, cast
 import torch
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning import Trainer, seed_everything
-from utils import convert_to_openvino, upload_to_wandb, write_metrics
+from utils import convert_to_openvino, upload_to_comet, upload_to_wandb, write_metrics
 
 from anomalib.config import get_configurable_parameters, update_input_size_config
 from anomalib.data import get_datamodule
@@ -225,6 +225,8 @@ def distribute(config: Union[DictConfig, ListConfig]):
         distribute_over_gpus(config, folder=runs_folder)
     if "wandb" in config.writer:
         upload_to_wandb(team="anomalib", folder=runs_folder)
+    if "comet" in config.writer:
+        upload_to_comet(folder=runs_folder)
 
 
 def sweep(
