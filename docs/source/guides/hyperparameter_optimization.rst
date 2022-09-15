@@ -77,6 +77,11 @@ In case ``model_config`` is not provided, the script looks at the default config
 Sample Output
 **************
 
+.. figure:: ../images/logging/comet_sweep.png
+  :alt: Sample configuration of a Comet sweep
+
+  Sample Comet sweep on Padim
+
 
 .. figure:: ../images/logging/wandb_sweep.png
   :alt: Sample configuration of a wandb sweep
