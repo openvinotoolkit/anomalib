@@ -194,7 +194,7 @@ class BTech(AnomalibDataModule):
             + "/ground_truth/"
             + samples.label
             + "/"
-            + samples.image_path.str.rstrip("bmp").str.rstrip(".")
+            + samples.image_path.str.rstrip("bmp|png").str.rstrip(".")
             + ".png"
         )
 
