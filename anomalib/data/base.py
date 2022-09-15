@@ -64,7 +64,7 @@ class AnomalibDataset(Dataset):
             if self.task == "segmentation":
                 mask_path = self.samples.mask_path[index]
 
-                # Only Anomalous (1) images has masks in MVTec AD dataset.
+                # Only Anomalous (1) images have masks in anomaly datasets
                 # Therefore, create empty mask for Normal (0) images.
                 if label_index == 0:
                     mask = np.zeros(shape=image.shape[:2])
