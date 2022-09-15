@@ -1,4 +1,4 @@
-"""Run wandb sweep."""
+"""Run hpo sweep."""
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -8,12 +8,12 @@ from pathlib import Path
 from typing import Union
 
 import pytorch_lightning as pl
+from comet_ml import Optimizer
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning import seed_everything
 from pytorch_lightning.loggers import CometLogger, WandbLogger
 from utils import flatten_hpo_params
 
-from comet_ml import Optimizer
 import wandb
 from anomalib.config import get_configurable_parameters, update_input_size_config
 from anomalib.data import get_datamodule
@@ -88,23 +88,21 @@ class CometSweep:
         """Run the sweep."""
         flattened_hpo_params = flatten_hpo_params(self.sweep_config.parameters)
         self.sweep_config.parameters = flattened_hpo_params
-        
+
         # comet's Optmizer cannot takes dict as an input, not DictConfig
-        std_dict = OmegaConf.to_object(self.sweep_config) 
+        std_dict = OmegaConf.to_object(self.sweep_config)
 
         opt = Optimizer(std_dict)
 
-        hp_keys = std_dict['parameters'].keys()
+        metric = std_dict["spec"]["metric"]
+        print(metric)
         project_name = f"{self.config.model.name}_{self.config.dataset.name}"
 
         for exp in opt.get_experiments(project_name=project_name):
             comet_logger = CometLogger()
-            comet_logger._experiment = exp 
 
-            run_params = {}
-            for key in hp_keys:
-                run_params[key] = comet_logger.experiment.get_parameter(key)
-            
+            comet_logger._experiment = exp
+            run_params = exp.params
             for param in run_params.keys():
                 set_in_nested_config(self.config, param.split("."), run_params[param])
             config = update_input_size_config(self.config)
@@ -113,12 +111,11 @@ class CometSweep:
             datamodule = get_datamodule(config)
             callbacks = get_sweep_callbacks(config)
 
-        # Disable saving checkpoints as all checkpoints from the sweep will get uploaded
+            # Disable saving checkpoints as all checkpoints from the sweep will get uploaded
             config.trainer.checkpoint_callback = False
 
             trainer = pl.Trainer(**config.trainer, logger=comet_logger, callbacks=callbacks)
             trainer.fit(model, datamodule=datamodule)
-
 
 
 def get_args():
@@ -139,5 +136,9 @@ if __name__ == "__main__":
     if model_config.project.seed != 0:
         seed_everything(model_config.project.seed)
 
-    sweep = CometSweep(model_config, hpo_config)
+    # check hpo config structure to see whether it adheres to comet or wandb format
+    if "spec" in hpo_config.keys():
+        sweep = CometSweep(model_config, hpo_config)
+    else:
+        sweep = WandbSweep(model_config, hpo_config)
     sweep.run()
