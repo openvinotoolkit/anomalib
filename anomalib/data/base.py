@@ -124,6 +124,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         | 0 | path/to/image.png | anomalous | 0           | path/to/mask.png | train |
         |---|-------------------|-----------|-------------|------------------|-------|
         """
+        raise NotImplementedError
 
     def setup(self, stage: Optional[str] = None) -> None:
         """Setup train, validation and test data.
