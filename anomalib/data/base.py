@@ -51,31 +51,29 @@ class AnomalibDataset(Dataset):
         """
         image_path = self.samples.image_path[index]
         image = read_image(image_path)
+        label_index = self.samples.label_index[index]
 
-        pre_processed = self.pre_process(image=image)
-        item = {"image": pre_processed["image"]}
+        item = dict(image_path=image_path, label=label_index)
 
-        if self.split in ["val", "test"]:
-            label_index = self.samples.label_index[index]
+        if self.task == "classification":
+            pre_processed = self.pre_process(image=image)
+        elif self.task == "segmentation":
+            mask_path = self.samples.mask_path[index]
 
-            item["image_path"] = image_path
-            item["label"] = label_index
+            # Only Anomalous (1) images have masks in anomaly datasets
+            # Therefore, create empty mask for Normal (0) images.
+            if label_index == 0:
+                mask = np.zeros(shape=image.shape[:2])
+            else:
+                mask = cv2.imread(mask_path, flags=0) / 255.0
 
-            if self.task == "segmentation":
-                mask_path = self.samples.mask_path[index]
+            pre_processed = self.pre_process(image=image, mask=mask)
 
-                # Only Anomalous (1) images have masks in anomaly datasets
-                # Therefore, create empty mask for Normal (0) images.
-                if label_index == 0:
-                    mask = np.zeros(shape=image.shape[:2])
-                else:
-                    mask = cv2.imread(mask_path, flags=0) / 255.0
-
-                pre_processed = self.pre_process(image=image, mask=mask)
-
-                item["mask_path"] = mask_path
-                item["image"] = pre_processed["image"]
-                item["mask"] = pre_processed["mask"]
+            item["mask_path"] = mask_path
+            item["mask"] = pre_processed["mask"]
+        else:
+            raise ValueError(f"Unknown task type: {self.task}")
+        item["image"] = pre_processed["image"]
 
         return item
 
