@@ -109,6 +109,14 @@ class MVTec(AnomalibDataModule):
             >>> data["image"].shape, data["mask"].shape
             (torch.Size([32, 3, 256, 256]), torch.Size([32, 256, 256]))
         """
+        self.root = root if isinstance(root, Path) else Path(root)
+        self.category = category
+        self.path = self.root / self.category
+
+        self.create_validation_set = create_validation_set
+        self.seed = seed
+        self.split_ratio = split_ratio
+
         super().__init__(
             task=task,
             train_batch_size=train_batch_size,
@@ -119,14 +127,6 @@ class MVTec(AnomalibDataModule):
             image_size=image_size,
             create_validation_set=create_validation_set,
         )
-
-        self.root = root if isinstance(root, Path) else Path(root)
-        self.category = category
-        self.path = self.root / self.category
-
-        self.create_validation_set = create_validation_set
-        self.seed = seed
-        self.split_ratio = split_ratio
 
     def prepare_data(self) -> None:
         """Download the dataset if not available."""

@@ -63,7 +63,7 @@ def train():
     load_model_callback = LoadModelCallback(weights_path=trainer.checkpoint_callback.best_model_path)
     trainer.callbacks.insert(0, load_model_callback)
 
-    if datamodule.test_data.contains_anomalous_images():
+    if datamodule.contains_anomalous_images("test"):
         logger.info("Testing the model.")
         trainer.test(model=model, datamodule=datamodule)
     else:

@@ -32,10 +32,6 @@ class AnomalibDataset(Dataset):
         self.split = split
         self.pre_process = pre_process
 
-    def contains_anomalous_images(self):
-        """Check if the dataset contains any anomalous images."""
-        return 1 in list(self.samples.label_index)
-
     def __len__(self) -> int:
         """Get length of the dataset."""
         return len(self.samples)
@@ -109,6 +105,8 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self.val_data: Optional[AnomalibDataset] = None
         self.test_data: Optional[AnomalibDataset] = None
 
+        self._samples: Optional[DataFrame] = None
+
     @abstractmethod
     def _create_samples(self) -> DataFrame:
         """This method should be implemented in the subclass.
@@ -131,44 +129,70 @@ class AnomalibDataModule(LightningDataModule, ABC):
         """
         raise NotImplementedError
 
+    def get_samples(self, split: Optional[str] = None) -> DataFrame:
+        """Retrieve the samples of the full dataset or one of the splits (train, val, test).
+
+        Args:
+            split: (str): The split for which we want to retrieve the samples ("train", "val" or "test"). When
+                left empty, all samples will be returned.
+
+        Returns:
+            DataFrame: A dataframe containing the samples of the split or full dataset.
+        """
+        assert self._samples is not None, "Samples have not been created yet."
+        if split is None:
+            return self._samples
+        samples = self._samples[self._samples.split == split]
+        return samples.reset_index(drop=True)
+
     def setup(self, stage: Optional[str] = None) -> None:
         """Setup train, validation and test data.
 
         Args:
           stage: Optional[str]:  Train/Val/Test stages. (Default value = None)
-
         """
-        samples = self._create_samples()
+        self._samples = self._create_samples()
 
         logger.info("Setting up train, validation, test and prediction datasets.")
         if stage in (None, "fit"):
-            train_samples = samples[samples.split == "train"]
-            train_samples = train_samples.reset_index(drop=True)
+            samples = self.get_samples("train")
             self.train_data = AnomalibDataset(
-                samples=train_samples,
+                samples=samples,
                 split="train",
                 task=self.task,
                 pre_process=self.pre_process_train,
             )
 
-        if self.create_validation_set:
-            val_samples = samples[samples.split == "val"]
-            val_samples = val_samples.reset_index(drop=True)
+        if stage in (None, "fit", "validate"):
+            samples = self.get_samples("val") if self.create_validation_set else self.get_samples("test")
             self.val_data = AnomalibDataset(
-                samples=val_samples,
+                samples=samples,
                 split="val",
                 task=self.task,
                 pre_process=self.pre_process_val,
             )
 
-        test_samples = samples[samples.split == "test"]
-        test_samples = test_samples.reset_index(drop=True)
-        self.test_data = AnomalibDataset(
-            samples=test_samples,
-            split="test",
-            task=self.task,
-            pre_process=self.pre_process_val,
-        )
+        if stage in (None, "test"):
+            samples = self.get_samples("test")
+            self.test_data = AnomalibDataset(
+                samples=samples,
+                split="test",
+                task=self.task,
+                pre_process=self.pre_process_val,
+            )
+
+    def contains_anomalous_images(self, split: Optional[str] = None) -> bool:
+        """Check if the dataset or the specified subset contains any anomalous images.
+
+        Args:
+            split (str): the subset of interest ("train", "val" or "test"). When left empty, the full dataset will be
+                checked.
+
+        Returns:
+            bool: Boolean indicating if any anomalous images have been assigned to the dataset or subset.
+        """
+        samples = self.get_samples(split)
+        return 1 in list(samples.label_index)
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:
         """Get train dataloader."""
@@ -176,8 +200,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
 
     def val_dataloader(self) -> EVAL_DATALOADERS:
         """Get validation dataloader."""
-        dataset = self.val_data if self.create_validation_set else self.test_data
-        return DataLoader(dataset=dataset, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
+        return DataLoader(self.val_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
 
     def test_dataloader(self) -> EVAL_DATALOADERS:
         """Get test dataloader."""

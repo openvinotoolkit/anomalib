@@ -190,17 +190,6 @@ class Folder(AnomalibDataModule):
             torch.Size([12, 3, 256, 256]) torch.Size([12, 256, 256])
 
         """
-        super().__init__(
-            task=task,
-            train_batch_size=train_batch_size,
-            test_batch_size=test_batch_size,
-            num_workers=num_workers,
-            transform_config_train=transform_config_train,
-            transform_config_val=transform_config_val,
-            image_size=image_size,
-            create_validation_set=create_validation_set,
-        )
-
         if seed is None and normal_test_dir is None:
             raise ValueError(
                 "Both seed and normal_test_dir cannot be None."
@@ -229,6 +218,17 @@ class Folder(AnomalibDataModule):
 
         self.create_validation_set = create_validation_set
         self.seed = seed
+
+        super().__init__(
+            task=task,
+            train_batch_size=train_batch_size,
+            test_batch_size=test_batch_size,
+            num_workers=num_workers,
+            transform_config_train=transform_config_train,
+            transform_config_val=transform_config_val,
+            image_size=image_size,
+            create_validation_set=create_validation_set,
+        )
 
     def _create_samples(self):
         """Create the dataframe with samples for the Folder dataset.
