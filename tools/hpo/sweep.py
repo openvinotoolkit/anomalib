@@ -94,14 +94,13 @@ class CometSweep:
 
         opt = Optimizer(std_dict)
 
-        metric = std_dict["spec"]["metric"]
-        print(metric)
         project_name = f"{self.config.model.name}_{self.config.dataset.name}"
 
         for exp in opt.get_experiments(project_name=project_name):
             comet_logger = CometLogger()
 
-            comet_logger._experiment = exp
+            # allow pytorch-lightning to use the experiment from optimizer
+            comet_logger._experiment = exp  # pylint: disable=W0212
             run_params = exp.params
             for param in run_params.keys():
                 set_in_nested_config(self.config, param.split("."), run_params[param])
@@ -137,6 +136,7 @@ if __name__ == "__main__":
         seed_everything(model_config.project.seed)
 
     # check hpo config structure to see whether it adheres to comet or wandb format
+    sweep: Union[CometSweep, WandbSweep]
     if "spec" in hpo_config.keys():
         sweep = CometSweep(model_config, hpo_config)
     else:
