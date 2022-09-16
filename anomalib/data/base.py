@@ -33,7 +33,7 @@ class AnomalibDataset(Dataset):
 
     def contains_anomalous_images(self):
         """Check if the dataset contains any anomalous images."""
-        return "anomalous" in list(self.samples.label)
+        return 1 in list(self.samples.label_index)
 
     def __len__(self) -> int:
         """Get length of the dataset."""
