@@ -49,16 +49,16 @@ class AnomalibDataset(Dataset):
             Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]: Dict of image tensor during training.
                 Otherwise, Dict containing image path, target path, image tensor, label and transformed bounding box.
         """
-        image_path = self.samples.image_path[index]
+        image_path = self.samples.iloc[index].image_path
         image = read_image(image_path)
-        label_index = self.samples.label_index[index]
+        label_index = self.samples.iloc[index].label_index
 
         item = dict(image_path=image_path, label=label_index)
 
         if self.task == "classification":
             pre_processed = self.pre_process(image=image)
         elif self.task == "segmentation":
-            mask_path = self.samples.mask_path[index]
+            mask_path = self.samples.iloc[index].mask_path
 
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
