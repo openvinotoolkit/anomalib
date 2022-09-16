@@ -38,8 +38,6 @@ import albumentations as A
 import pandas as pd
 from pandas.core.frame import DataFrame
 from pytorch_lightning.utilities.cli import DATAMODULE_REGISTRY
-from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
-from torch.utils.data import DataLoader
 
 from anomalib.data.base import AnomalibDataModule
 from anomalib.data.utils import DownloadProgressBar, hash_check
@@ -113,6 +111,9 @@ class MVTec(AnomalibDataModule):
         """
         super().__init__(
             task=task,
+            train_batch_size=train_batch_size,
+            test_batch_size=test_batch_size,
+            num_workers=num_workers,
             transform_config_train=transform_config_train,
             transform_config_val=transform_config_val,
             image_size=image_size,
@@ -121,17 +122,9 @@ class MVTec(AnomalibDataModule):
 
         self.root = root if isinstance(root, Path) else Path(root)
         self.category = category
-        self.dataset_path = self.root / self.category
-        self.transform_config_train = transform_config_train
-        self.transform_config_val = transform_config_val
-        self.image_size = image_size
-
-        self.train_batch_size = train_batch_size
-        self.test_batch_size = test_batch_size
-        self.num_workers = num_workers
+        self.path = self.root / self.category
 
         self.create_validation_set = create_validation_set
-        self.task = task
         self.seed = seed
         self.split_ratio = split_ratio
 
@@ -186,10 +179,9 @@ class MVTec(AnomalibDataModule):
                 " This will lead to inconsistency between runs."
             )
 
-        path = self.root / self.category
-        samples_list = [(str(path),) + filename.parts[-3:] for filename in path.glob("**/*.png")]
+        samples_list = [(str(self.path),) + filename.parts[-3:] for filename in self.path.glob("**/*.png")]
         if len(samples_list) == 0:
-            raise RuntimeError(f"Found 0 images in {path}")
+            raise RuntimeError(f"Found 0 images in {self.path}")
 
         samples = pd.DataFrame(samples_list, columns=["path", "split", "label", "image_path"])
         samples = samples[samples.split != "ground_truth"]
@@ -225,16 +217,3 @@ class MVTec(AnomalibDataModule):
             samples = create_validation_set_from_test_set(samples, seed=self.seed)
 
         return samples
-
-    def train_dataloader(self) -> TRAIN_DATALOADERS:
-        """Get train dataloader."""
-        return DataLoader(self.train_data, shuffle=True, batch_size=self.train_batch_size, num_workers=self.num_workers)
-
-    def val_dataloader(self) -> EVAL_DATALOADERS:
-        """Get validation dataloader."""
-        dataset = self.val_data if self.create_validation_set else self.test_data
-        return DataLoader(dataset=dataset, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
-
-    def test_dataloader(self) -> EVAL_DATALOADERS:
-        """Get test dataloader."""
-        return DataLoader(self.test_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)

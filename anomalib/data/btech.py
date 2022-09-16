@@ -21,8 +21,6 @@ import cv2
 import pandas as pd
 from pandas.core.frame import DataFrame
 from pytorch_lightning.utilities.cli import DATAMODULE_REGISTRY
-from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
-from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from anomalib.data.base import AnomalibDataModule
@@ -97,6 +95,9 @@ class BTech(AnomalibDataModule):
         """
         super().__init__(
             task=task,
+            train_batch_size=train_batch_size,
+            test_batch_size=test_batch_size,
+            num_workers=num_workers,
             transform_config_train=transform_config_train,
             transform_config_val=transform_config_val,
             image_size=image_size,
@@ -106,16 +107,8 @@ class BTech(AnomalibDataModule):
         self.root = root if isinstance(root, Path) else Path(root)
         self.category = category
         self.path = self.root / self.category
-        self.transform_config_train = transform_config_train
-        self.transform_config_val = transform_config_val
-        self.image_size = image_size
-
-        self.train_batch_size = train_batch_size
-        self.test_batch_size = test_batch_size
-        self.num_workers = num_workers
 
         self.create_validation_set = create_validation_set
-        self.task = task
         self.seed = seed
         self.split_ratio = split_ratio
 
@@ -219,16 +212,3 @@ class BTech(AnomalibDataModule):
             samples = create_validation_set_from_test_set(samples, seed=self.seed)
 
         return samples
-
-    def train_dataloader(self) -> TRAIN_DATALOADERS:
-        """Get train dataloader."""
-        return DataLoader(self.train_data, shuffle=True, batch_size=self.train_batch_size, num_workers=self.num_workers)
-
-    def val_dataloader(self) -> EVAL_DATALOADERS:
-        """Get validation dataloader."""
-        dataset = self.val_data if self.create_validation_set else self.test_data
-        return DataLoader(dataset=dataset, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
-
-    def test_dataloader(self) -> EVAL_DATALOADERS:
-        """Get test dataloader."""
-        return DataLoader(self.test_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)

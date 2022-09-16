@@ -12,8 +12,9 @@ import cv2
 import numpy as np
 from pandas import DataFrame
 from pytorch_lightning import LightningDataModule
+from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch import Tensor
-from torch.utils.data import Dataset
+from torch.utils.data import DataLoader, Dataset
 
 from anomalib.data.utils import read_image
 from anomalib.pre_processing import PreProcessor
@@ -84,6 +85,9 @@ class AnomalibDataModule(LightningDataModule, ABC):
     def __init__(
         self,
         task: str,
+        train_batch_size: int,
+        test_batch_size: int,
+        num_workers: int,
         transform_config_train: Optional[Union[str, A.Compose]] = None,
         transform_config_val: Optional[Union[str, A.Compose]] = None,
         image_size: Optional[Union[int, Tuple[int, int]]] = None,
@@ -91,6 +95,9 @@ class AnomalibDataModule(LightningDataModule, ABC):
     ):
         super().__init__()
         self.task = task
+        self.train_batch_size = train_batch_size
+        self.test_batch_size = test_batch_size
+        self.num_workers = num_workers
         self.create_validation_set = create_validation_set
 
         if transform_config_train is not None and transform_config_val is None:
@@ -162,3 +169,16 @@ class AnomalibDataModule(LightningDataModule, ABC):
             task=self.task,
             pre_process=self.pre_process_val,
         )
+
+    def train_dataloader(self) -> TRAIN_DATALOADERS:
+        """Get train dataloader."""
+        return DataLoader(self.train_data, shuffle=True, batch_size=self.train_batch_size, num_workers=self.num_workers)
+
+    def val_dataloader(self) -> EVAL_DATALOADERS:
+        """Get validation dataloader."""
+        dataset = self.val_data if self.create_validation_set else self.test_data
+        return DataLoader(dataset=dataset, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
+
+    def test_dataloader(self) -> EVAL_DATALOADERS:
+        """Get test dataloader."""
+        return DataLoader(self.test_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
