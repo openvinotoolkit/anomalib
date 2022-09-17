@@ -7,7 +7,8 @@ import logging
 from typing import Union
 
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning import LightningDataModule
+
+from anomalib.data.base import AnomalibDataModule
 
 from .btech import BTech
 from .folder import Folder
@@ -17,7 +18,7 @@ from .mvtec import MVTec
 logger = logging.getLogger(__name__)
 
 
-def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule:
+def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
     """Get Anomaly Datamodule.
 
     Args:
@@ -28,7 +29,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
     """
     logger.info("Loading the datamodule")
 
-    datamodule: LightningDataModule
+    datamodule: AnomalibDataModule
 
     if config.dataset.format.lower() == "mvtec":
         datamodule = MVTec(
