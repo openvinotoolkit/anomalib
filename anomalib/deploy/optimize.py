@@ -67,6 +67,8 @@ def export_convert(
     )
     if export_mode == "openvino":
         export_path = os.path.join(str(export_path), "openvino")
+        if not os.path.exists(export_path):
+            os.makedirs(export_path)
         optimize_command = "mo --input_model " + str(onnx_path) + " --output_dir " + str(export_path)
         os.system(optimize_command)
         with open(Path(export_path) / "meta_data.json", "w", encoding="utf-8") as metadata_file:

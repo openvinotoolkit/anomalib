@@ -121,7 +121,7 @@ where the currently available models are:
 
 It is possible to export your model to ONNX or OpenVINO IR
 
-If you want to export your PyTorch model to an OpenVINO model, ensure that `export_mode` is set to `"openvino"` in the respective model `config.yaml`.
+If you want to export your PyTorch model to an OpenVINO model, ensure that you have installed [requirements/openvino.txt](requirements/openvino.txt) and set `export_mode` to `"openvino"` in the respective model `config.yaml`.
 
 ```yaml
 optimization:
