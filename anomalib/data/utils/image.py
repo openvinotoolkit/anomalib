@@ -160,6 +160,22 @@ def read_image(path: Union[str, Path]) -> np.ndarray:
     return image
 
 
+def read_mask(path: Union[str, Path]) -> np.ndarray:
+    """Read mask from disk in gray-level format.
+
+    Args:
+        path (str, Path): path to the mask file
+
+    Example:
+        >>> mask = read_mask("test_mask.jpg")
+
+    Returns:
+        mask as numpy array
+    """
+    path = path if isinstance(path, str) else str(path)
+    return cv2.imread(path, flags=cv2.IMREAD_GRAYSCALE) / 255.0
+
+
 def pad_nextpow2(batch: Tensor) -> Tensor:
     """Compute required padding from input size and return padded images.
 
