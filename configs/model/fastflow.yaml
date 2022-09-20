@@ -5,34 +5,18 @@ ckpt_path: null
 seed_everything: null
 
 data:
-  class_path: anomalib.data.Folder
+  class_path: anomalib.data.MVTec
   init_args:
-    # root: ./datasets/MVTec
-    # category: bottle
-    # image_size: [256, 256]
-    # train_batch_size: 32
-    # test_batch_size: 32
-    # num_workers: 8
-    # task: segmentation
-    # transform_config_train: null
-    # transform_config_val: null
-    # seed: 0
-    # create_validation_set: false
-    root: ./datasets/Hazelnut_toy
-    normal_dir: good
-    abnormal_dir: colour
-    task: segmentation
-    normal_test_dir: null
-    mask_dir: ./datasets/Hazelnut_toy/mask/colour/
-    extensions: null
-    split_ratio: 0.2
-    seed: 0
+    root: ./datasets/MVTec
+    category: bottle
     image_size: [256, 256]
     train_batch_size: 32
     test_batch_size: 32
     num_workers: 8
+    task: segmentation
     transform_config_train: null
     transform_config_val: null
+    seed: 0
     create_validation_set: false
 
 model:
