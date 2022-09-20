@@ -80,7 +80,7 @@ class TestInferencers:
 
     @pytest.mark.parametrize(
         "model_name",
-        ["dfm", "draem", "ganomaly", "padim", "stfpm"],
+        ["dfm", "draem", "ganomaly", "padim", "patchcore", "stfpm"],
     )
     @TestDataset(num_train=20, num_test=1, path=get_dataset_path(), use_mvtec=False)
     def test_openvino_inference(self, model_name: str, category: str = "shapes", path: str = "./datasets/MVTec"):
