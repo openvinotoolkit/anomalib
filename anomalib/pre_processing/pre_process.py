@@ -7,10 +7,13 @@ to an input image before the forward-pass stage.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import logging
 from typing import Optional, Tuple, Union
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
+
+logger = logging.getLogger(__name__)
 
 
 class PreProcessor:
@@ -93,6 +96,10 @@ class PreProcessor:
         transforms: A.Compose
 
         if self.config is None and self.image_size is not None:
+            logger.warning(
+                "Transform configs has not been provided. Images will be normalized using ImageNet statistics."
+            )
+
             height, width = self._get_height_and_width()
             transforms = A.Compose(
                 [
