@@ -5,18 +5,34 @@ ckpt_path: null
 seed_everything: null
 
 data:
-  class_path: anomalib.data.MVTec
+  class_path: anomalib.data.Folder
   init_args:
-    root: ./datasets/MVTec
-    category: bottle
+    # root: ./datasets/MVTec
+    # category: bottle
+    # image_size: [256, 256]
+    # train_batch_size: 32
+    # test_batch_size: 32
+    # num_workers: 8
+    # task: segmentation
+    # transform_config_train: null
+    # transform_config_val: null
+    # seed: 0
+    # create_validation_set: false
+    root: ./datasets/Hazelnut_toy
+    normal_dir: good
+    abnormal_dir: colour
+    task: segmentation
+    normal_test_dir: null
+    mask_dir: ./datasets/Hazelnut_toy/mask/colour/
+    extensions: null
+    split_ratio: 0.2
+    seed: 0
     image_size: [256, 256]
     train_batch_size: 32
     test_batch_size: 32
     num_workers: 8
-    task: segmentation
     transform_config_train: null
     transform_config_val: null
-    seed: 0
     create_validation_set: false
 
 model:
@@ -30,7 +46,7 @@ model:
     hidden_ratio: 1.0 # options: [1.0, 1.0, 0.16, 0.16] - for each supported backbone
 
 optimizer:
-  class_path: torch.optim._multi_tensor.Adam
+  class_path: torch.optim._multi_tensor.adam.Adam
   init_args:
     lr: 0.001
     weight_decay: 0.00001
