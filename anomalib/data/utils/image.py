@@ -6,7 +6,7 @@
 import math
 import warnings
 from pathlib import Path
-from typing import List, Union
+from typing import List, Optional, Tuple, Union
 
 import cv2
 import numpy as np
@@ -141,7 +141,48 @@ def generate_output_image_filename(input_path: Union[str, Path], output_path: Un
     return file_path
 
 
-def read_image(path: Union[str, Path]) -> np.ndarray:
+def get_image_height_and_width(image_size: Optional[Union[int, Tuple]] = None) -> Tuple[Optional[int], Optional[int]]:
+    """Get image height and width from ``image_size`` variable.
+
+    Args:
+        image_size (Optional[Union[int, Tuple[int, int]]], optional): Input image size.
+
+    Raises:
+        ValueError: Image size not None, int or tuple.
+
+    Examples:
+        >>> get_image_height_and_width(image_size=256)
+        (256, 256)
+
+        >>> get_image_height_and_width(image_size=(256, 256))
+        (256, 256)
+
+        >>> get_image_height_and_width(image_size=(256, 256, 3))
+        (256, 256)
+
+        >>> get_image_height_and_width(image_size=256.)
+        Traceback (most recent call last):
+        File "<string>", line 1, in <module>
+        File "<string>", line 18, in get_image_height_and_width
+        ValueError: ``image_size`` could be either int or Tuple[int, int]
+
+    Returns:
+        Tuple[Optional[int], Optional[int]]: A tuple containing image height and width values.
+    """
+    height_and_width: Tuple[Optional[int], Optional[int]]
+    if isinstance(image_size, int):
+        height_and_width = (image_size, image_size)
+    elif isinstance(image_size, tuple):
+        height_and_width = int(image_size[0]), int(image_size[1])
+    elif image_size is None:
+        height_and_width = (None, None)
+    else:
+        raise ValueError("``image_size`` could be either int or Tuple[int, int]")
+
+    return height_and_width
+
+
+def read_image(path: Union[str, Path], image_size: Optional[Union[int, Tuple]] = None) -> np.ndarray:
     """Read image from disk in RGB format.
 
     Args:
@@ -156,6 +197,13 @@ def read_image(path: Union[str, Path]) -> np.ndarray:
     path = path if isinstance(path, str) else str(path)
     image = cv2.imread(path)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    if image_size:
+        # This part is optional, where the user wants to quickly resize the image
+        # with a one-liner code. This would particularly be useful especially when
+        # prototyping new ideas.
+        height, width = get_image_height_and_width(image_size)
+        image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
 
     return image
 
