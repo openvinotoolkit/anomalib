@@ -78,20 +78,19 @@ class AnomalibDataset(Dataset):
         """
         raise NotImplementedError
 
-    def _get_subset(self, split: Subset):
+    def _get_subset(self, split: Subset, pre_process: Optional[PreProcessor] = None):
         samples = self.get_samples(split)
-        return AnomalibDataset(
-            task=self.task, pre_process=self.pre_process, split=split, samples=samples, seed=self.seed
-        )
+        pre_process = self.pre_process if pre_process is None else pre_process
+        return AnomalibDataset(task=self.task, pre_process=pre_process, split=split, samples=samples, seed=self.seed)
 
-    def train_subset(self):
-        return self._get_subset(Subset.TRAIN)
+    def train_subset(self, pre_process: Optional[PreProcessor] = None):
+        return self._get_subset(Subset.TRAIN, pre_process=pre_process)
 
-    def val_subset(self):
-        return self._get_subset(Subset.VAL)
+    def val_subset(self, pre_process: Optional[PreProcessor] = None):
+        return self._get_subset(Subset.VAL, pre_process=pre_process)
 
-    def test_subset(self):
-        return self._get_subset(Subset.TEST)
+    def test_subset(self, pre_process: Optional[PreProcessor] = None):
+        return self._get_subset(Subset.TEST, pre_process=pre_process)
 
     def get_samples(self, split: Subset):
         """Retrieve the samples of the full dataset or one of the splits (train, val, test).
@@ -159,14 +158,12 @@ class AnomalibDataModule(LightningDataModule, ABC):
         transform_config_train: Optional[Union[str, A.Compose]] = None,
         transform_config_val: Optional[Union[str, A.Compose]] = None,
         image_size: Optional[Union[int, Tuple[int, int]]] = None,
-        create_validation_set: bool = False,
     ):
         super().__init__()
         self.task = task
         self.train_batch_size = train_batch_size
         self.test_batch_size = test_batch_size
         self.num_workers = num_workers
-        self.create_validation_set = create_validation_set
 
         if transform_config_train is not None and transform_config_val is None:
             transform_config_val = transform_config_train
@@ -199,11 +196,14 @@ class AnomalibDataModule(LightningDataModule, ABC):
           stage: Optional[str]:  Train/Val/Test stages. (Default value = None)
         """
         if stage in (None, "fit"):
-            self.train_data = self.data.train_subset()
+            self.train_data = self.data.train_subset(pre_process=self.pre_process_train)
         if stage in (None, "fit", "validate"):
-            self.val_data = self.data.val_subset() if self.create_validation_set else self.data.test_subset()
+            if self.contains_anomalous_images("val"):
+                self.val_data = self.data.val_subset(pre_process=self.pre_process_val)
+            else:
+                self.val_data = self.data.test_subset(pre_process=self.pre_process_val)
         if stage in (None, "test"):
-            self.test_data = self.data.test_subset()
+            self.test_data = self.data.test_subset(pre_process=self.pre_process_val)
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:
         """Get train dataloader."""
