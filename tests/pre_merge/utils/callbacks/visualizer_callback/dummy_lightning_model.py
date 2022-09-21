@@ -68,7 +68,7 @@ class DummyModule(AnomalyModule):
         """Only used to trigger on_test_epoch_end."""
         self.log(name="loss", value=0.0, prog_bar=True)
         outputs = dict(
-            image_path=[Path("test1.jpg")],
+            image_path=[Path("./datasets/bottle/broken_large/000.png")],
             image=torch.rand((1, 3, 100, 100)),
             mask=torch.zeros((1, 100, 100)),
             anomaly_maps=torch.ones((1, 100, 100)),
