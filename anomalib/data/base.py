@@ -5,6 +5,7 @@
 
 import logging
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Dict, Optional, Tuple, Union
 
 import albumentations as A
@@ -22,19 +23,90 @@ from anomalib.pre_processing import PreProcessor
 logger = logging.getLogger(__name__)
 
 
+class Subset(str, Enum):
+    FULL = "full"
+    TRAIN = "train"
+    VAL = "val"
+    TEST = "test"
+
+
 class AnomalibDataset(Dataset):
     """Anomalib dataset."""
 
-    def __init__(self, samples: DataFrame, task: str, split: str, pre_process: PreProcessor):
+    def __init__(
+        self,
+        task: str,
+        pre_process: PreProcessor,
+        split: Subset = Subset.FULL,
+        samples: Optional[DataFrame] = None,
+        seed: Optional[int] = None,
+    ):
         super().__init__()
-        self.samples = samples
         self.task = task
         self.split = split
         self.pre_process = pre_process
+        self.seed = seed
+        if samples is None:
+            self.samples = self._create_samples()
+        else:
+            self.samples = samples
+        self.samples = self.get_samples(self.split)
 
     def __len__(self) -> int:
         """Get length of the dataset."""
         return len(self.samples)
+
+    @abstractmethod
+    def _create_samples(self) -> DataFrame:
+        """This method should be implemented in the subclass.
+
+        This method should return a dataframe that contains the information needed by the dataloader to load each of
+        the dataset items into memory. The dataframe must at least contain the following columns:
+        split - The subset to which the dataset item is assigned.
+        image_path - Path to file system location where the image is stored.
+        label_index - Index of the anomaly label, typically 0 for "normal" and 1 for "anomalous".
+
+        Additionally, when the task type is segmentation, the dataframe must have the mask_path column, which contains
+        the path the ground truth masks (for the anomalous images only).
+
+        Example of a dataframe returned by calling this method from a concrete class:
+        |---|-------------------|-----------|-------------|------------------|-------|
+        |   | image_path        | label     | label_index | mask_path        | split |
+        |---|-------------------|-----------|-------------|------------------|-------|
+        | 0 | path/to/image.png | anomalous | 0           | path/to/mask.png | train |
+        |---|-------------------|-----------|-------------|------------------|-------|
+        """
+        raise NotImplementedError
+
+    def _get_subset(self, split: Subset):
+        samples = self.get_samples(split)
+        return AnomalibDataset(
+            task=self.task, pre_process=self.pre_process, split=split, samples=samples, seed=self.seed
+        )
+
+    def train_subset(self):
+        return self._get_subset(Subset.TRAIN)
+
+    def val_subset(self):
+        return self._get_subset(Subset.VAL)
+
+    def test_subset(self):
+        return self._get_subset(Subset.TEST)
+
+    def get_samples(self, split: Subset):
+        """Retrieve the samples of the full dataset or one of the splits (train, val, test).
+
+        Args:
+            split: (str): The split for which we want to retrieve the samples ("train", "val" or "test"). When
+                left empty, all samples will be returned.
+
+        Returns:
+            DataFrame: A dataframe containing the samples of the split or full dataset.
+        """
+        if split == Subset.FULL:
+            return self.samples
+        samples = self.samples[self.samples.split == split]
+        return samples.reset_index(drop=True)
 
     def __getitem__(self, index: int) -> Dict[str, Union[str, Tensor]]:
         """Get dataset item for the index ``index``.
@@ -107,92 +179,31 @@ class AnomalibDataModule(LightningDataModule, ABC):
 
         self._samples: Optional[DataFrame] = None
 
+        self.data: Optional[AnomalibDataset] = None
+
     @abstractmethod
-    def _create_samples(self) -> DataFrame:
-        """This method should be implemented in the subclass.
-
-        This method should return a dataframe that contains the information needed by the dataloader to load each of
-        the dataset items into memory. The dataframe must at least contain the following columns:
-        split - The subset to which the dataset item is assigned.
-        image_path - Path to file system location where the image is stored.
-        label_index - Index of the anomaly label, typically 0 for "normal" and 1 for "anomalous".
-
-        Additionally, when the task type is segmentation, the dataframe must have the mask_path column, which contains
-        the path the ground truth masks (for the anomalous images only).
-
-        Example of a dataframe returned by calling this method from a concrete class:
-        |---|-------------------|-----------|-------------|------------------|-------|
-        |   | image_path        | label     | label_index | mask_path        | split |
-        |---|-------------------|-----------|-------------|------------------|-------|
-        | 0 | path/to/image.png | anomalous | 0           | path/to/mask.png | train |
-        |---|-------------------|-----------|-------------|------------------|-------|
-        """
+    def create_dataset(self) -> AnomalibDataset:
         raise NotImplementedError
 
-    def get_samples(self, split: Optional[str] = None) -> DataFrame:
-        """Retrieve the samples of the full dataset or one of the splits (train, val, test).
+    def prepare_data(self) -> None:
+        self.data = self.create_dataset()
 
-        Args:
-            split: (str): The split for which we want to retrieve the samples ("train", "val" or "test"). When
-                left empty, all samples will be returned.
+    def contains_anomalous_images(self, split):
+        samples = self.data.get_samples(split)
+        return 1 in list(samples.label_index)
 
-        Returns:
-            DataFrame: A dataframe containing the samples of the split or full dataset.
-        """
-        assert self._samples is not None, "Samples have not been created yet."
-        if split is None:
-            return self._samples
-        samples = self._samples[self._samples.split == split]
-        return samples.reset_index(drop=True)
-
-    def setup(self, stage: Optional[str] = None) -> None:
+    def setup(self, stage: Optional[str] = None):
         """Setup train, validation and test data.
 
         Args:
           stage: Optional[str]:  Train/Val/Test stages. (Default value = None)
         """
-        self._samples = self._create_samples()
-
-        logger.info("Setting up train, validation, test and prediction datasets.")
         if stage in (None, "fit"):
-            samples = self.get_samples("train")
-            self.train_data = AnomalibDataset(
-                samples=samples,
-                split="train",
-                task=self.task,
-                pre_process=self.pre_process_train,
-            )
-
+            self.train_data = self.data.train_subset()
         if stage in (None, "fit", "validate"):
-            samples = self.get_samples("val") if self.create_validation_set else self.get_samples("test")
-            self.val_data = AnomalibDataset(
-                samples=samples,
-                split="val",
-                task=self.task,
-                pre_process=self.pre_process_val,
-            )
-
+            self.val_data = self.data.val_subset() if self.create_validation_set else self.data.test_subset()
         if stage in (None, "test"):
-            samples = self.get_samples("test")
-            self.test_data = AnomalibDataset(
-                samples=samples,
-                split="test",
-                task=self.task,
-                pre_process=self.pre_process_val,
-            )
-
-    def contains_anomalous_images(self, split: Optional[str] = None) -> bool:
-        """Check if the dataset or the specified subset contains any anomalous images.
-
-        Args:
-            split (str): the subset of interest ("train", "val" or "test"). When left empty, the full dataset will be
-                checked.
-
-        Returns:
-            bool: Boolean indicating if any anomalous images have been assigned to the dataset or subset.
-        """
-        samples = self.get_samples(split)
-        return 1 in list(samples.label_index)
+            self.test_data = self.data.test_subset()
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:
         """Get train dataloader."""
