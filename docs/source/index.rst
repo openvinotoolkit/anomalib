@@ -1,69 +1,76 @@
-Welcome to Anomalib's documentation!
-====================================
+
+.. image:: ./images/logos/anomalib-text.png
+   :scale: 50 %
+   :align: center
 
 Anomalib is a deep learning library that aims to collect state-of-the-art anomaly detection algorithms for benchmarking on both public and private datasets. Anomalib provides several ready-to-use implementations of anomaly detection algorithms described in the recent literature, as well as a set of tools that facilitate the development and implementation of custom models. The library has a strong focus on image-based anomaly detection, where the goal of the algorithm is to identify anomalous images, or anomalous pixel regions within images in a dataset. Anomalib is constantly updated with new algorithms and training/inference extensions, so keep checking!
 
 .. image:: ./images/readme.png
    :alt: Sample Image
 
-Supported Hardware
-------------------
-This repository as been tested on
+Structure of the Documentation
+==============================
 
-- Ubuntu 20.04
-
-- NVIDIA GeForce RTX 3090
+This documentation is divided into the following sections:
 
 .. toctree::
    :maxdepth: 1
    :name: start
-   :caption: Getting Started
+   :caption: Contents
 
-   guides/getting_started
+   tutorials/index
+   how_to_guides/index
+   reference_guide/index
+   developer_guide/index
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Models
+Getting Started
+---------------
 
-   models
+The Getting Started section contains all the necessary information regarding
+setting up and installing the package. It also includes steps needed to train
+the models.
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Python API Reference
+Models
+------
 
-   api/index
+This page contains all the models implemented in the repository as well as
+their API. It is the developer's responsibility to update this page when a new
+model is added to the repo.
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Tutorials
+API Reference
+-------------
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Guides
+This page lists all the modules, classes and functions available within the
+`anomalib` package. This page is update automatically for the following modules:
 
-   guides/developing_on_docker
-   guides/structure_of_documentation
-   guides/using_tox
-   guides/using_pre_commit
-   guides/inference
-   guides/export
-   guides/benchmarking
-   guides/hyperparameter_optimization
-   guides/logging
+- config
+- core
+- datasets
+- hpo
+- loggers
+- utils
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Datasets
+If a change is made to any of these modules, then the document will be
+automatically updated. However, if a new module is introduced, then it must be
+added to `api_references.rst`.
 
-   data/hazelnut_toy
+Tutorials
+---------
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Research
+This contains specific examples of using a feature or a model in the library.
+These are written from the perspective of beginners.
 
-   research/benchmark
-   research/papers
-   research/citation
+Guides
+------
+
+This section contains all the guides written from the perspective of a new user
+or if someone is trying to get some clarity on a topic.
+
+Research
+--------
+
+Contains all the resources related to research such as benchmarks and papers.
+These are written from the perspective of researchers.
 
 
 Indices and tables
