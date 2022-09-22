@@ -144,7 +144,7 @@ class AnomalibCLI(LightningCLI):
             root_dir = config.trainer.default_root_dir if config.trainer.default_root_dir else "./results"
             model_name = config.model.class_path.split(".")[-1].lower()
             data_name = config.data.class_path.split(".")[-1].lower()
-            category = config.data.init_args.category if config.data.init_args.keys() else ""
+            category = config.data.init_args.category if "category" in config.data.init_args else ""
             time_stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             default_root_dir = os.path.join(root_dir, model_name, data_name, category, time_stamp)
 
