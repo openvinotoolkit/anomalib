@@ -28,7 +28,6 @@ COPYRIGHT = "2021, Anomalib Contributors"
 AUTHOR = "Anomalib Contributors"
 VERSION = anomalib.__version__
 
-html_title = " ".join((PROJECT, COPYRIGHT, "documentation"))
 
 # -- General configuration ---------------------------------------------------
 
@@ -36,6 +35,7 @@ html_title = " ".join((PROJECT, COPYRIGHT, "documentation"))
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    "nbsphinx",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.viewcode",
@@ -75,6 +75,8 @@ templates_path = ["_templates"]
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
+html_favicon = "images/logos/anomalib-favicon.png"
+html_title = f"{PROJECT} v{VERSION}"
 html_theme = "furo"
 html_static_path = ["_static"]
 html_logo = "images/logos/anomalib-icon.png"
