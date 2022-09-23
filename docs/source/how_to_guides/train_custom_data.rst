@@ -40,7 +40,7 @@ Depending on the use-case and collection, custom datasets can have different for
 * A dataset with good and bad images as well as mask ground-truths for pixel-wise evaluation.
 * A dataset with good and bad images that is already split into training and testing sets.
 
-Each of these use-cases is addressed by anomalib's ``Folder`` datamodule. Let's focus on the first use-case as an example of end-to-end model training and inference. In this post, we will use a toy dataset which you can download from `here <https://openvinotoolkit.github.io/anomalib/_downloads/3f2af1d7748194b18c2177a34c03a2c4/hazelnut_toy.zip>`_. The dataset consists of several folders, each containing a set of images. The ``colour`` and the ``crack`` folders represent two kinds of defects. We can ignore the ``masks`` folder for now.
+Each of these use-cases is addressed by anomalib's ``Folder`` datamodule. Let's focus on the first use-case as an example of end-to-end model training and inference. In this post, we will use the :ref:`hazelnut-toy-dataset` dataset which you can download from `here <https://openvinotoolkit.github.io/anomalib/_downloads/3f2af1d7748194b18c2177a34c03a2c4/hazelnut_toy.zip>`_. The dataset consists of several folders, each containing a set of images. The ``colour`` and the ``crack`` folders represent two kinds of defects. We can ignore the ``masks`` folder for now.
 
 Load your data to the following directory structure. Anomalib will use all images in the ``colour`` folder as part of the validation dataset and then randomly split the good images for training and validation.
 
