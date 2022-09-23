@@ -6,6 +6,7 @@ How to Guides
    :caption: Contents:
 
    train_custom_data
+   adding_a_new_model
    notebooks/100_datamodules/101_btech.ipynb
    notebooks/100_datamodules/102_mvtec.ipynb
    notebooks/100_datamodules/103_folder.ipynb
