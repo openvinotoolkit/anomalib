@@ -29,6 +29,7 @@ When doing so, please make sure to revisit the issues at a later time. A good wa
 Apart from tox, you can also run ```pre-commit``` on all the files to check formatting and style issues. To do this you can use
 
 .. code-block:: bash
+
   $ pre-commit run --all
 
 

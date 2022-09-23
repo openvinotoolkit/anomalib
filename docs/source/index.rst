@@ -23,54 +23,62 @@ This documentation is divided into the following sections:
    reference_guide/index
    developer_guide/index
 
-Getting Started
+Tutorials
+---------
+The ``Tutorials`` section contains all the necessary information regarding
+setting up and installing the package. It also includes steps needed to train, export, infer models, perform HPO, benchmarking and logging.
+
+Reference Guide
 ---------------
-
-The Getting Started section contains all the necessary information regarding
-setting up and installing the package. It also includes steps needed to train
-the models.
-
-Models
-------
-
+Algorithms
+^^^^^^^^^^
 This page contains all the models implemented in the repository as well as
 their API. It is the developer's responsibility to update this page when a new
 model is added to the repo.
 
 API Reference
--------------
-
+^^^^^^^^^^^^^
 This page lists all the modules, classes and functions available within the
 `anomalib` package. This page is update automatically for the following modules:
 
+- cli
 - config
-- core
-- datasets
-- hpo
+- data
+- model
+- post_processing
+- metrics
 - loggers
-- utils
+- hpo
+- callbacks
 
 If a change is made to any of these modules, then the document will be
-automatically updated. However, if a new module is introduced, then it must be
-added to `api_references.rst`.
+automatically updated. However, if a new algorithm is introduced, then it must be added to :ref:`available models`.
 
-Tutorials
----------
 
-This contains specific examples of using a feature or a model in the library.
-These are written from the perspective of beginners.
+Developer Guide
+---------------
+This section contains all the guidelines for those who would like to contribute to the development of anomalib and to know more about the developer tools.
 
-Guides
-------
 
-This section contains all the guides written from the perspective of a new user
-or if someone is trying to get some clarity on a topic.
+Citing the repository
+=====================
+You can cite this repository as
 
-Research
---------
+.. code-block:: tex
 
-Contains all the resources related to research such as benchmarks and papers.
-These are written from the perspective of researchers.
+   @misc{anomalib,
+         title={Anomalib: A Deep Learning Library for Anomaly Detection},
+         author={Samet Akcay and
+               Dick Ameln and
+               Ashwin Vaidya and
+               Barath Lakshmanan and
+               Nilesh Ahuja and
+               Utku Genc},
+         year={2022},
+         eprint={2202.08341},
+         archivePrefix={arXiv},
+         primaryClass={cs.CV}
+   }
 
 
 Indices and tables
