@@ -3,13 +3,13 @@ Adding a New Model to Anomalib
 New models can be added to anomalib and are always welcome. To add new models, the following steps should be followed:
 
 * Create a new sub-package
-* ``__init__.py`` file.
-* ``config.yaml`` file.
-* ``torch_model.py`` file.
-* ``lightning_model.py`` file.
-* [OPTIONAL] ``loss.py`` file.
-* [OPTIONAL] ``anomaly_map.py`` file.
-* ``README.md`` file.
+* Create an ``__init__.py`` file.
+* Create a ``config.yaml`` file.
+* Create a ``torch_model.py`` file.
+* Create a ``lightning_model.py`` file.
+* [OPTIONAL] Create a ``loss.py`` file.
+* [OPTIONAL] Create an ``anomaly_map.py`` file.
+* Create a ``README.md`` file.
 
 
 Create a New Sub Package
@@ -18,7 +18,7 @@ This is a new directory to be created in ``anomalib/models`` to store the model-
 
 .. code-block:: bash
 
-    ../anomalib/models/<new-model>
+    ./anomalib/models/<new-model>
     ├── __init__.py
     ├── config.yaml
     ├── torch_model.py
@@ -63,7 +63,7 @@ This file contains the torch model implementation that inherits from ``torch.nn.
 
 .. code-block:: python
 
-    class NewModel(nn.Module):
+    class NewModelModel(nn.Module):
         """New Model Module."""
         def __init__(self):
             pass
@@ -77,7 +77,7 @@ This module contains the actual lightning model implementation that inherits fro
 
 .. code-block:: python
 
-    class NewModel:
+    class NewModel(AnomalyModule):
         """PL Lightning Module for the New Model."""
         def __init__(self):
             super().__init__()
@@ -143,7 +143,7 @@ Add Model to the Tests
 ----------------------
 It is essential that newly added models do not disrupt the workflow and that their components are continually inspected. In this regard, the model will be added to our list of tested models.
 
-To test the model you need to add the model `here <https://github.com/openvinotoolkit/anomalib/blob/main/tests/pre_merge/models/test_model_premerge.py#L18>`_.
+To test the model, you need to add the model name `here <https://github.com/openvinotoolkit/anomalib/blob/main/tests/pre_merge/models/test_model_premerge.py#L18>`_.
 
 The list of models to test would then become,
 
