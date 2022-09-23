@@ -57,7 +57,7 @@ Running HPO
 
 .. note::
 
-  You will need to have logged into a Comet wandb account to use HPO search and view the results.
+  You will need to have logged into a Comet or wandb account to use HPO search and view the results.
 
 To run the hyperparameter optimization, use the following command:
 
