@@ -8,7 +8,7 @@ The default configuration for the models will not always work on a new dataset. 
 YAML file
 **********
 
-A Sample configuration files for hyperparameter optimization with Comet is provided at ``tools/hpo/comet_sweep.yaml`` and reproduced below:
+A Sample configuration files for hyperparameter optimization with Comet is provided at ``tools/hpo/config/comet_sweep.yaml`` and reproduced below:
 
 .. code-block:: yaml
 
@@ -30,7 +30,7 @@ A Sample configuration files for hyperparameter optimization with Comet is provi
 
 The maxCombo defines the total number of experiments to run. The algorithm is the optimization method to be used. The metric is the metric to be used to evaluate the performance of the model. The parameters are the hyperparameters to be optimized. For details on other possible configurations with Comet's Optimizer  , refer to the `Comet's <https://www.comet.com/docs/v2/api-and-sdk/python-sdk/introduction-optimizer/>`_ documentation.
 
-A sample configuration file for hyperparameter optimization with Weights and Bias is provided at ``tools/hpo/sweep.yaml`` and is reproduced below:
+A sample configuration file for hyperparameter optimization with Weights and Bias is provided at ``tools/hpo/config/wandb_sweep.yaml`` and is reproduced below:
 
 .. code-block:: yaml
 
@@ -65,14 +65,14 @@ To run the hyperparameter optimization, use the following command:
 
   python tools/hpo/sweep.py --model padim \
     --model_config ./path_to_config.yaml \
-    --sweep_config tools/hpo/comet_sweep.yaml
+    --sweep_config tools/hpo/config/comet_sweep.yaml
 
 
 In case ``model_config`` is not provided, the script looks at the default config location for that model.
 
 .. code-block:: bash
 
-  python tools/hpo/sweep.py --sweep_config tools/hpo/comet_sweep.yaml
+  python tools/hpo/sweep.py --sweep_config tools/hpo/config/comet_sweep.yaml
 
 Sample Output
 **************

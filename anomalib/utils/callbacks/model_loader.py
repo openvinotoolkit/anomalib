@@ -27,7 +27,7 @@ class LoadModelCallback(Callback):
         Loads the model weights from ``weights_path`` into the PyTorch module.
         """
         logger.info("Loading the model from %s", self.weights_path)
-        pl_module.load_state_dict(torch.load(self.weights_path)["state_dict"])
+        pl_module.load_state_dict(torch.load(self.weights_path, map_location=pl_module.device)["state_dict"])
 
     def on_predict_start(self, _trainer, pl_module: AnomalyModule) -> None:
         """Call when inference begins.
@@ -35,4 +35,4 @@ class LoadModelCallback(Callback):
         Loads the model weights from ``weights_path`` into the PyTorch module.
         """
         logger.info("Loading the model from %s", self.weights_path)
-        pl_module.load_state_dict(torch.load(self.weights_path)["state_dict"])
+        pl_module.load_state_dict(torch.load(self.weights_path, map_location=pl_module.device)["state_dict"])
