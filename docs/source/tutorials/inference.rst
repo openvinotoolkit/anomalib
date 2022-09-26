@@ -6,7 +6,7 @@ Anomalib provides entrypoint scripts for using a trained model to generate predi
 
 
 PyTorch (Lightning) Inference
-==============
+=============================
 The entrypoint script in ``tools/inference/lightning.py`` can be used to run inference with a trained PyTorch model. The script runs inference by loading a previously trained model into a PyTorch Lightning trainer and running the ``predict sequence``. The entrypoint script has several command line arguments that can be used to configure inference:
 
 +---------------------+----------+---------------------------------------------------------------------------------+
@@ -34,7 +34,7 @@ This will run inference on the specified image file or all images in the folder.
 
 
 OpenVINO Inference
-==============
+==================
 To run OpenVINO inference, first make sure that your model has been exported to the OpenVINO IR format. Once the model has been exported, OpenVINO inference can be triggered by running the OpenVINO entrypoint script in ``tools/inference/openvino.py``. The command line arguments are very similar to PyTorch inference entrypoint script:
 
 +-----------+----------+--------------------------------------------------------------------------------------+
@@ -63,7 +63,7 @@ Similar to PyTorch inference, the visualization results will be displayed on the
 
 
 Gradio Inference
-==============
+================
 
 The gradio inference is supported for both PyTorch and OpenVINO models.
 
