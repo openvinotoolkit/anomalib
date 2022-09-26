@@ -41,10 +41,10 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         self.feature_pooler = torch.nn.AvgPool2d(3, 1, 1)
         self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
 
-        self.register_buffer("memory_bank", torch.Tensor())
-        self.memory_bank: torch.Tensor
+        self.register_buffer("memory_bank", Tensor())
+        self.memory_bank: Tensor
 
-    def forward(self, input_tensor: Tensor) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
+    def forward(self, input_tensor: Tensor) -> Union[Tensor, Tuple[Tensor, Tensor]]:
         """Return Embedding during training, or a tuple of anomaly map and anomaly score during testing.
 
         Steps performed:
@@ -56,7 +56,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             input_tensor (Tensor): Input tensor
 
         Returns:
-            Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]: Embedding for training,
+            Union[Tensor, Tuple[Tensor, Tensor]]: Embedding for training,
                 anomaly map and anomaly score for testing.
         """
         if self.tiler:
@@ -71,21 +71,29 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         if self.tiler:
             embedding = self.tiler.untile(embedding)
 
-        feature_map_shape = embedding.shape[-2:]
+        batch_size, _, width, height = embedding.shape
         embedding = self.reshape_embedding(embedding)
 
         if self.training:
             output = embedding
         else:
-            patch_scores = self.nearest_neighbors(embedding=embedding, n_neighbors=self.num_neighbors)
-            anomaly_map, anomaly_score = self.anomaly_map_generator(
-                patch_scores=patch_scores, feature_map_shape=feature_map_shape
-            )
+            # apply nearest neighbor search
+            patch_scores, locations = self.nearest_neighbors(embedding=embedding, n_neighbors=1)
+            # reshape to batch dimension
+            patch_scores = patch_scores.reshape((batch_size, -1))
+            locations = locations.reshape((batch_size, -1))
+            # compute anomaly score
+            anomaly_score = self.compute_anomaly_score(patch_scores, locations, embedding)
+            # reshape to w, h
+            patch_scores = patch_scores.reshape((batch_size, 1, width, height))
+            # get anomaly map
+            anomaly_map = self.anomaly_map_generator(patch_scores)
+
             output = (anomaly_map, anomaly_score)
 
         return output
 
-    def generate_embedding(self, features: Dict[str, Tensor]) -> torch.Tensor:
+    def generate_embedding(self, features: Dict[str, Tensor]) -> Tensor:
         """Generate embedding from hierarchical feature map.
 
         Args:
@@ -121,7 +129,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         embedding = embedding.permute(0, 2, 3, 1).reshape(-1, embedding_size)
         return embedding
 
-    def subsample_embedding(self, embedding: torch.Tensor, sampling_ratio: float) -> None:
+    def subsample_embedding(self, embedding: Tensor, sampling_ratio: float) -> None:
         """Subsample embedding based on coreset sampling and store to memory.
 
         Args:
@@ -134,7 +142,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         coreset = sampler.sample_coreset()
         self.memory_bank = coreset
 
-    def nearest_neighbors(self, embedding: Tensor, n_neighbors: int = 9) -> Tensor:
+    def nearest_neighbors(self, embedding: Tensor, n_neighbors: int) -> Tuple[Tensor, Tensor]:
         """Nearest Neighbours using brute force method and euclidean norm.
 
         Args:
@@ -143,7 +151,35 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
 
         Returns:
             Tensor: Patch scores.
+            Tensor: Locations of the nearest neighbor(s).
         """
         distances = torch.cdist(embedding, self.memory_bank, p=2.0)  # euclidean norm
-        patch_scores, _ = distances.topk(k=n_neighbors, largest=False, dim=1)
-        return patch_scores
+        patch_scores, locations = distances.topk(k=n_neighbors, largest=False, dim=1)
+        return patch_scores, locations
+
+    def compute_anomaly_score(self, patch_scores: Tensor, locations: Tensor, embedding: Tensor) -> Tensor:
+        """Compute Image-Level Anomaly Score.
+
+        Args:
+            patch_scores (Tensor): Patch-level anomaly scores
+            locations: Memory bank locations of the nearest neighbor for each patch location
+            embedding: The feature embeddings that generated the patch scores
+        Returns:
+            Tensor: Image-level anomaly scores
+        """
+
+        # 1. Find the patch with the largest distance to it's nearest neighbor in each image
+        max_patches = torch.argmax(patch_scores, dim=1)  # (m^test,* in the paper)
+        # 2. Find the distance of the patch to it's nearest neighbor, and the location of the nn in the membank
+        score = patch_scores[torch.arange(len(patch_scores)), max_patches]  # s in the paper
+        nn_index = locations[torch.arange(len(patch_scores)), max_patches]  # m^* in the paper
+        # 3. Find the support samples of the nearest neighbor in the membank
+        nn_sample = self.memory_bank[nn_index, :]
+        _, support_samples = self.nearest_neighbors(nn_sample, n_neighbors=self.num_neighbors)  # N_b(m^*) in the paper
+        # 4. Find the distance of the patch features to each of the support samples
+        distances = torch.cdist(embedding[max_patches].unsqueeze(1), self.memory_bank[support_samples], p=2.0)
+        # 5. Apply softmax to find the weights
+        weights = (1 - F.softmax(distances.squeeze()))[..., 0]
+        # 6. Apply the weight factor to the score
+        score = weights * score  # S^* in the paper
+        return score
