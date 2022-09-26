@@ -13,12 +13,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from skimage.segmentation import mark_boundaries
 
+from anomalib.data.utils import read_image
 from anomalib.post_processing.post_process import (
     add_anomalous_label,
     add_normal_label,
     superimpose_anomaly_map,
 )
-from anomalib.pre_processing.transforms import Denormalize
 
 
 @dataclass
@@ -73,9 +73,10 @@ class Visualizer:
         Returns:
             Generator that yields a display-ready visualization for each image.
         """
-        for i in range(batch["image"].size(0)):
+        batch_size, _num_channels, height, width = batch["image"].size()
+        for i in range(batch_size):
             image_result = ImageResult(
-                image=Denormalize()(batch["image"][i].cpu()),
+                image=read_image(path=batch["image_path"][i], image_size=(height, width)),
                 pred_score=batch["pred_scores"][i].cpu().numpy().item(),
                 pred_label=batch["pred_labels"][i].cpu().numpy().item(),
                 anomaly_map=batch["anomaly_maps"][i].cpu().numpy() if "anomaly_maps" in batch else None,

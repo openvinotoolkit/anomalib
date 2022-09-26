@@ -5,11 +5,17 @@
 
 from .download import DownloadProgressBar, hash_check
 from .generators import random_2d_perlin
-from .image import generate_output_image_filename, get_image_filenames, read_image
+from .image import (
+    generate_output_image_filename,
+    get_image_filenames,
+    get_image_height_and_width,
+    read_image,
+)
 
 __all__ = [
     "generate_output_image_filename",
     "get_image_filenames",
+    "get_image_height_and_width",
     "hash_check",
     "random_2d_perlin",
     "read_image",

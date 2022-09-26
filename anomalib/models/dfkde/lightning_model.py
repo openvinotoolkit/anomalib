@@ -119,6 +119,7 @@ class DfkdeLightning(Dfkde):
         super().__init__(
             layers=hparams.model.layers,
             backbone=hparams.model.backbone,
+            pre_trained=hparams.model.pre_trained,
             max_training_points=hparams.model.max_training_points,
             pre_processing=hparams.model.pre_processing,
             n_components=hparams.model.n_components,

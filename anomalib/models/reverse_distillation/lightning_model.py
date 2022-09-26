@@ -121,6 +121,7 @@ class ReverseDistillationLightning(ReverseDistillation):
             input_size=hparams.model.input_size,
             backbone=hparams.model.backbone,
             layers=hparams.model.layers,
+            pre_trained=hparams.model.pre_trained,
             anomaly_map_mode=hparams.model.anomaly_map_mode,
             lr=hparams.model.lr,
             beta1=hparams.model.beta1,
