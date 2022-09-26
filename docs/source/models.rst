@@ -51,7 +51,7 @@ Tips:
 
 The backbone can be set in the config file, two examples below.
 
-Anomalib < v.0.4.0 
+Anomalib < v.0.4.0
 
 .. code-block:: yaml
 

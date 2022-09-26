@@ -136,15 +136,13 @@ For more information, please check our documentation or the [section about featu
 
 Tips:
 
-* Papers With Code has an interface to easily browse models available in timm: [https://paperswithcode.com/lib/timm](https://paperswithcode.com/lib/timm)
+- Papers With Code has an interface to easily browse models available in timm: [https://paperswithcode.com/lib/timm](https://paperswithcode.com/lib/timm)
 
-* You can also find them with the function `timm.list_models("resnet*", pretrained=True)`
-
+- You can also find them with the function `timm.list_models("resnet*", pretrained=True)`
 
 The backbone can be set in the config file, two examples below.
 
 Anomalib < v.0.4.0
-
 
 ```yaml
 model:
