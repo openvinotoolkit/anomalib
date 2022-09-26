@@ -142,7 +142,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         coreset = sampler.sample_coreset()
         self.memory_bank = coreset
 
-    def nearest_neighbors(self, embedding: Tensor, n_neighbors: int = 9) -> Tuple[Tensor, Tensor]:
+    def nearest_neighbors(self, embedding: Tensor, n_neighbors: int) -> Tuple[Tensor, Tensor]:
         """Nearest Neighbours using brute force method and euclidean norm.
 
         Args:
