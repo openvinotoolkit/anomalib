@@ -52,9 +52,9 @@ class AnomalyMapGenerator(nn.Module):
         score_map = torch.zeros_like(layer_maps[0])
         for layer_idx in range(len(self.pool_layers)):
             score_map += layer_maps[layer_idx]
-        score_mask = score_map
-        # invert probs to anomaly scores
-        anomaly_map = score_mask.max() - score_mask
+
+        # Invert probs to anomaly scores
+        anomaly_map = score_map.max() - score_map
 
         return anomaly_map
 
