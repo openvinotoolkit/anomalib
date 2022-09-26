@@ -51,7 +51,7 @@ Anomalib allows you to save predictions to the file system by setting ``log_imag
 
   Logging images to Comet,TensorBoard and wandb won't work if you don't have ``logger: [comet, tensorboard, wandb]`` set as well. This ensures that the respective logger is passed to the trainer object.
 
-.. figure:: ../images/logging/comet_media.jpg
+.. figure:: ../images/logging/comet_media.png
   :alt: comet dashboard showing logged images
 
   Comet Images in TensorBoard Dashboard
@@ -84,7 +84,7 @@ Anomalib makes it easier to log your model graph to Comet, TensorBoard or Weight
     logger: [comet, tensorboard]
     log_graph: true
 
-.. figure:: ../images/logging/comet_graph.jpg
+.. figure:: ../images/logging/comet_graph.png
   :alt: comet dashboard showing model graph
 
   Model Graph in Comet Dashboard
