@@ -30,8 +30,8 @@ class MetricsConfigurationCallback(Callback):
         task: str = "segmentation",
         default_image_threshold: Optional[float] = None,
         default_pixel_threshold: Optional[float] = None,
-        image_metric_names: Optional[List[str]] = None,
-        pixel_metric_names: Optional[List[str]] = None,
+        image_metrics: Optional[List[str]] = None,
+        pixel_metrics: Optional[List[str]] = None,
         normalization_method: str = "min_max",
     ):
         """Create image and pixel-level AnomalibMetricsCollection.
@@ -46,14 +46,14 @@ class MetricsConfigurationCallback(Callback):
             adaptive_threshold (bool): Flag indicating whether threshold should be adaptive.
             default_image_threshold (Optional[float]): Default image threshold value.
             default_pixel_threshold (Optional[float]): Default pixel threshold value.
-            image_metric_names (Optional[List[str]]): List of image-level metrics.
-            pixel_metric_names (Optional[List[str]]): List of pixel-level metrics.
+            image_metrics (Optional[List[str]]): List of image-level metrics.
+            pixel_metrics (Optional[List[str]]): List of pixel-level metrics.
             normalization_method(Optional[str]): Normalization method. <None, min_max, cdf>
         """
         # TODO: https://github.com/openvinotoolkit/anomalib/issues/384
         self.task = task
-        self.image_metric_names = image_metric_names
-        self.pixel_metric_names = pixel_metric_names
+        self.image_metric_names = image_metrics
+        self.pixel_metric_names = pixel_metrics
 
         # TODO: https://github.com/openvinotoolkit/anomalib/issues/384
         # TODO: This is a workaround. normalization-method is actually not used in metrics.
