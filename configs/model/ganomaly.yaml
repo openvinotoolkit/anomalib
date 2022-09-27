@@ -38,7 +38,7 @@ model:
 metrics:
   adaptive_threshold: true
   default_image_threshold: null
-  image_metric_names:
+  image_metrics:
     - F1Score
     - AUROC
 

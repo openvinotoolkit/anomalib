@@ -41,10 +41,10 @@ metrics:
   adaptive_threshold: true
   default_image_threshold: null
   default_pixel_threshold: null
-  image_metric_names:
+  image_metrics:
     - F1Score
     - AUROC
-  pixel_metric_names:
+  pixel_metrics:
     - F1Score
     - AUROC
   normalization_method: min_max
