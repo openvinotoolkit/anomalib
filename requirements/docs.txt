@@ -3,3 +3,4 @@ myst-parser
 sphinx>=4.1.2
 sphinx-autoapi
 sphinxemoji==0.1.8
+nbsphinx>=0.8.9

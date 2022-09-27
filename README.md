@@ -117,15 +117,38 @@ where the currently available models are:
 - [STFPM](anomalib/models/stfpm)
 - [GANomaly](anomalib/models/ganomaly)
 
-## Exporting Model to ONNX or OpenVINO IR
+## Feature extraction & (pre-trained) backbones
 
-It is possible to export your model to ONNX or OpenVINO IR
+The pre-trained backbones come from [PyTorch Image Models (timm)](https://github.com/rwightman/pytorch-image-models), which are wrapped by `FeatureExtractor`.
 
-If you want to export your PyTorch model to an OpenVINO model, ensure that `export_mode` is set to `"openvino"` in the respective model `config.yaml`.
+For more information, please check our documentation or the [section about feature extraction in "Getting Started with PyTorch Image Models (timm): A Practitioner’s Guide"](https://towardsdatascience.com/getting-started-with-pytorch-image-models-timm-a-practitioners-guide-4e77b4bf9055#b83b:~:text=ready%20to%20train!-,Feature%20Extraction,-timm%20models%20also>).
+
+Tips:
+
+- Papers With Code has an interface to easily browse models available in timm: [https://paperswithcode.com/lib/timm](https://paperswithcode.com/lib/timm)
+
+- You can also find them with the function `timm.list_models("resnet*", pretrained=True)`
+
+The backbone can be set in the config file, two examples below.
+
+Anomalib < v.0.4.0
 
 ```yaml
-optimization:
-  export_mode: "openvino" # options: openvino, onnx
+model:
+  name: cflow
+  backbone: wide_resnet50_2
+  pre_trained: true
+Anomalib > v.0.4.0 Beta - Subject to Change
+```
+
+Anomalib >= v.0.4.0
+
+```yaml
+model:
+  class_path: anomalib.models.Cflow
+  init_args:
+    backbone: wide_resnet50_2
+    pre_trained: true
 ```
 
 ## Custom Dataset
@@ -220,6 +243,17 @@ A quick example:
 python tools/inference/gradio_inference.py \
         --config ./anomalib/models/padim/config.yaml \
         --weights ./results/padim/mvtec/bottle/weights/model.ckpt
+```
+
+## Exporting Model to ONNX or OpenVINO IR
+
+It is possible to export your model to ONNX or OpenVINO IR
+
+If you want to export your PyTorch model to an OpenVINO model, ensure that `export_mode` is set to `"openvino"` in the respective model `config.yaml`.
+
+```yaml
+optimization:
+  export_mode: "openvino" # options: openvino, onnx
 ```
 
 # Hyperparameter Optimization

@@ -89,7 +89,7 @@ def make_mvtec_dataset(
             MVTec AD dataset does not contain a validation set. Those wanting to create a validation set
             could set this flag to ``True``.
 
-    Example:
+    Examples:
         The following example shows how to get training samples from MVTec AD bottle category:
 
         >>> root = Path('./MVTec')
@@ -313,7 +313,7 @@ class MVTec(LightningDataModule):
             seed: seed used for the random subset splitting
             create_validation_set: Create a validation subset in addition to the train and test subsets
 
-        Examples
+        Examples:
             >>> from anomalib.data import MVTec
             >>> datamodule = MVTec(
             ...     root="./datasets/MVTec",
