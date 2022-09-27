@@ -1,6 +1,6 @@
 Adding a New Model to Anomalib
 ==============================
-New models can be added to anomalib and are always welcome. To add new models, the following steps should be followed:
+Anomalib aims to have the implementation of the state-of-the-art algorithms published in the literature. To integrate an anomaly detection model into anomalib, the following steps should be followed:
 
 * Create a new sub-package
 * Create an ``__init__.py`` file.
@@ -59,7 +59,7 @@ This file stores all the configurations, from data to optimization options. An e
 
 Create a ``torch_model.py`` Module
 ----------------------------------
-This file contains the torch model implementation that inherits from ``torch.nn.Module`` and performs a basic forward-pass. The advantage of storing the model in a separate ``torch_model.py`` file is that the model is de-coupled from the rest of the anomalib implementations and could be used outside the library as well. Basic implementation would look like as follows:
+This file contains the torch model implementation that inherits from ``torch.nn.Module``, defines the model architecture and performs a basic forward-pass. The advantage of storing the model in a separate ``torch_model.py`` file is that the model is de-coupled from the rest of the anomalib implementations and could be used outside the library as well. Basic implementation would look like as follows:
 
 .. code-block:: python
 
@@ -73,7 +73,7 @@ This file contains the torch model implementation that inherits from ``torch.nn.
 
 Create a ``lightning_model.py`` Module
 --------------------------------------
-This module contains the actual lightning model implementation that inherits from the ``AnomalModule``, which already has the ``anomalib`` related attributes and methods. The user does not need to worry about the boilerplate code and only needs to implement the training and validation logic of the algorithm.
+This module contains the lightning model implementation that inherits from the ``AnomalModule``, which already has the ``anomalib`` related attributes and methods. The user does not need to worry about the boilerplate code and only needs to implement the training and validation logic of the algorithm.
 
 .. code-block:: python
 
@@ -90,7 +90,7 @@ This module contains the actual lightning model implementation that inherits fro
 
 Create a ``loss.py`` File - [Optional]
 --------------------------------------
-This module's availability is dependent on the algorithm. If the algorithm requires a custom loss function, this file contains the subclass of the torch.nn.Module class implementation. This loss would subsequently be utilized by the lightning module.
+This module's availability is dependent on the algorithm. If the algorithm requires a custom, complex loss function, this file may contain the subclass of the torch.nn.Module class implementation. This loss would subsequently be utilized by the lightning module.
 
 .. code-block:: python
 
@@ -103,7 +103,7 @@ This module's availability is dependent on the algorithm. If the algorithm requi
 
 Create an ``anomaly_map.py`` File - [Optional]
 ---------------------------------------------
-Similar to the loss.py module, the anomaly map.py module is optional depending on the capabilities of the algorithm. This module should be implemented if the algorithm supports segmentation so that the location of the anomaly can be predicted pixel-by-pixel.
+Similar to the loss.py module, the anomaly map.py module is optional depending on the capabilities of the algorithm. This module may be implemented if the algorithm supports segmentation so that the location of the anomaly can be predicted pixel-by-pixel.
 
 .. code-block:: python
 
