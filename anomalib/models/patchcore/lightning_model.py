@@ -107,7 +107,7 @@ class Patchcore(AnomalyModule):
 
         anomaly_maps, anomaly_score = self.model(batch["image"])
         batch["anomaly_maps"] = anomaly_maps
-        batch["pred_scores"] = anomaly_score.unsqueeze(0)
+        batch["pred_scores"] = anomaly_score
 
         return batch
 

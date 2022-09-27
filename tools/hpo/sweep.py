@@ -100,7 +100,7 @@ class CometSweep:
             comet_logger = CometLogger()
 
             # allow pytorch-lightning to use the experiment from optimizer
-            comet_logger._experiment = exp  # pylint: disable=W0212
+            comet_logger._experiment = exp  # pylint: disable=protected-access
             run_params = exp.params
             for param in run_params.keys():
                 set_in_nested_config(self.config, param.split("."), run_params[param])
