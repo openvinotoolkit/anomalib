@@ -44,6 +44,39 @@ This configuration computes the throughput and performance metrics on CPU and GP
     seed: 0
     image_size: 256
 
+You can also replace the keys from within the benchmarking script. To do this just use the value instead of passing an array. Taking the example of the folder dataset above, the configuration file can be modified as.
+
+.. code-block:: yaml
+
+  seed: 42
+  compute_openvino: false
+  hardware:
+    - cpu
+    - gpu
+  writer:
+    - comet
+    - wandb
+    - tensorboard
+  grid_search:
+    dataset:
+      name: hazelnut
+      format: folder
+      path: path/hazelnut_toy
+      normal_dir: good # name of the folder containing normal images.
+      abnormal_dir: colour # name of the folder containing abnormal images.
+      normal_test_dir: null
+      task: segmentation # classification or segmentation
+      mask: path/hazelnut_toy/mask/colour
+      extensions: .jpg
+      split_ratio: 0.2
+      category:
+        - colour
+        - crack
+      image_size: [128, 256]
+    model_name:
+      - padim
+      - stfpm
+
 By default, ``compute_openvino`` is set to ``False`` to support instances where OpenVINO requirements are not installed in the environment. Once installed, this flag can be set to ``True`` to get the throughput on OpenVINO optimized models. The ``writer`` parameter is optional and can be set to ``writer: []`` in case the user only requires a csv file without logging to each respective logger. It is a good practice to set a value of seed to ensure reproducibility across runs and thus, is set to a non-zero value by default.
 
 Once a configuration is decided, benchmarking can easily be performed by calling
