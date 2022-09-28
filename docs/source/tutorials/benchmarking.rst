@@ -44,7 +44,7 @@ This configuration computes the throughput and performance metrics on CPU and GP
     seed: 0
     image_size: 256
 
-Additionally, the keys can be replaced from the benchmarking script. To do this just use the value instead of passing an array. Taking the example of the folder dataset above, the configuration file can be modified as.
+Additionally, it is possible to pass a single value instead of an array for any specific parameter. This will overwrite the parameter in each of the model configs and thereby ensures that the parameter is kept constant between all runs in the sweep. For example, to ensure that the same dataset is used between runs the configuration file can be modified as shown below.
 
 .. code-block:: yaml
 
