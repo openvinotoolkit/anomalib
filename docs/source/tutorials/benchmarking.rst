@@ -44,7 +44,7 @@ This configuration computes the throughput and performance metrics on CPU and GP
     seed: 0
     image_size: 256
 
-You can also replace the keys from within the benchmarking script. To do this just use the value instead of passing an array. Taking the example of the folder dataset above, the configuration file can be modified as.
+Additionally, the keys can be replaced from the benchmarking script. To do this just use the value instead of passing an array. Taking the example of the folder dataset above, the configuration file can be modified as.
 
 .. code-block:: yaml
 
