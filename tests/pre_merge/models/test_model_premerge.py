@@ -15,22 +15,22 @@ class TestModel:
     """Do a sanity check on the models."""
 
     @pytest.mark.parametrize(
-        ["model_name", "nncf"],
+        "model_name",
         [
-            ("cflow", False),
-            ("dfkde", False),
-            ("dfm", False),
-            ("draem", False),
-            ("fastflow", False),
-            ("ganomaly", False),
-            ("padim", False),
-            ("patchcore", False),
-            ("reverse_distillation", False),
-            ("stfpm", False),
+            "cflow",
+            "dfkde",
+            "dfm",
+            "draem",
+            "fastflow",
+            "ganomaly",
+            "padim",
+            "patchcore",
+            "reverse_distillation",
+            "stfpm",
         ],
     )
     @TestDataset(num_train=20, num_test=10)
-    def test_model(self, model_name, nncf, category="shapes", path=""):
+    def test_model(self, model_name, category="shapes", path=""):
         """Test the models on only 1 epoch as a sanity check before merge."""
         with tempfile.TemporaryDirectory() as project_path:
             # Train test
@@ -38,7 +38,6 @@ class TestModel:
                 model_name,
                 dataset_path=path,
                 project_path=project_path,
-                nncf=nncf,
                 category=category,
                 fast_run=True,
             )
