@@ -36,7 +36,8 @@ def get_args() -> Namespace:
         type=str,
         required=False,
         default="auto",
-        help="Device to use for inference. Defaults to auto. Options: auto, cpu, cuda",
+        help="Device to use for inference. Defaults to auto.",
+        choices=["auto", "cpu", "cuda"],
     )
     parser.add_argument(
         "--task",
