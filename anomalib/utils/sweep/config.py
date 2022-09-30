@@ -5,10 +5,46 @@
 
 import itertools
 import operator
+from collections.abc import Iterable, ValuesView
 from functools import reduce
-from typing import Any, Generator, List
+from typing import Any, Generator, List, Tuple
 
 from omegaconf import DictConfig
+
+
+def convert_to_tuple(values: ValuesView) -> List[Tuple]:
+    """Converts a ValuesView object to a list of tuples.
+
+    This is useful to get list of possible values for each parameter in the config and a tuple for values that are
+    are to be patched. Ideally this is useful when used with product.
+
+    Example:
+        >>> params = DictConfig({
+                "dataset.category": [
+                    "bottle",
+                    "cable",
+                ],
+                "dataset.image_size": 224,
+                "model_name": ["padim"],
+            })
+        >>> convert_to_tuple(params.values())
+        [('bottle', 'cable'), (224,), ('padim',)]
+        >>> list(itertools.product(*convert_to_tuple(params.values())))
+        [('bottle', 224, 'padim'), ('cable', 224, 'padim')]
+
+    Args:
+        values: ValuesView: ValuesView object to be converted to a list of tuples.
+
+    Returns:
+        List[Tuple]: List of tuples.
+    """
+    return_list = []
+    for value in values:
+        if isinstance(value, Iterable) and not isinstance(value, str):
+            return_list.append(tuple(value))
+        else:
+            return_list.append((value,))
+    return return_list
 
 
 def flatten_sweep_params(params_dict: DictConfig) -> DictConfig:
@@ -63,13 +99,14 @@ def get_run_config(params_dict: DictConfig) -> Generator[DictConfig, None, None]
                 "child1": ['a', 'b', 'c'],
                 "child2": [1, 2, 3]
             },
-            "parent2":['model1', 'model2']
+            "parent2":['model1', 'model2'],
+            "parent3": 'replacement_value'
         })
         >>> for run_config in get_run_config(dummy_config):
         >>>    print(run_config)
-        {'parent1.child1': 'a', 'parent1.child2': 1, 'parent2': 'model1'}
-        {'parent1.child1': 'a', 'parent1.child2': 1, 'parent2': 'model2'}
-        {'parent1.child1': 'a', 'parent1.child2': 2, 'parent2': 'model1'}
+        {'parent1.child1': 'a', 'parent1.child2': 1, 'parent2': 'model1', 'parent3': 'replacement_value'}
+        {'parent1.child1': 'a', 'parent1.child2': 1, 'parent2': 'model2', 'parent3': 'replacement_value'}
+        {'parent1.child1': 'a', 'parent1.child2': 2, 'parent2': 'model1', 'parent3': 'replacement_value'}
         ...
 
     Yields:
@@ -77,7 +114,7 @@ def get_run_config(params_dict: DictConfig) -> Generator[DictConfig, None, None]
         and values for current run.
     """
     params = flatten_sweep_params(params_dict)
-    combinations = list(itertools.product(*params.values()))
+    combinations = list(itertools.product(*convert_to_tuple(params.values())))
     keys = params.keys()
     for combination in combinations:
         run_config = DictConfig({})
