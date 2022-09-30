@@ -32,6 +32,13 @@ def get_args() -> Namespace:
     parser.add_argument("--input", type=Path, required=True, help="Path to an image to infer.")
     parser.add_argument("--output", type=Path, required=False, help="Path to save the output image.")
     parser.add_argument(
+        "--device",
+        type=str,
+        required=False,
+        default="auto",
+        help="Device to use for inference. Defaults to auto. Options: auto, cpu, cuda",
+    )
+    parser.add_argument(
         "--task",
         type=str,
         required=False,
@@ -70,7 +77,7 @@ def infer() -> None:
     args = get_args()
 
     # Create the inferencer and visualizer.
-    inferencer = TorchInferencer(config=args.config, model_source=args.weights)
+    inferencer = TorchInferencer(config=args.config, model_source=args.weights, device=args.device)
     visualizer = Visualizer(mode=args.visualization_mode, task=args.task)
 
     filenames = get_image_filenames(path=args.input)
