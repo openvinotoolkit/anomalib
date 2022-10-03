@@ -30,7 +30,7 @@ model:
     score_type: fre
 
 post_processing:
-  normalization_method: min_max
+  normalization_method: min_max # <null, min_max, cdf>
   adaptive_threshold: true
   default_image_threshold: null
   default_pixel_threshold: null
