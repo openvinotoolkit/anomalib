@@ -23,7 +23,7 @@ class PostProcessingConfigurationCallback(Callback):
     """Post-Processing Configuration Callback.
 
     Args:
-        normalization_method(Optional[str]): Normalization method. <None, min_max, cdf
+        normalization_method(Optional[str]): Normalization method. <None, min_max, cdf>
         adaptive_threshold (bool): Flag indicating whether threshold should be adaptive.
         default_image_threshold (Optional[float]): Default image threshold value.
         default_pixel_threshold (Optional[float]): Default pixel threshold value.
