@@ -12,3 +12,4 @@ How to Guides
    notebooks/100_datamodules/103_folder.ipynb
    notebooks/200_models/201_fastflow.ipynb
    notebooks/300_benchmarking/301_benchmarking.ipynb
+   notebooks/300_benchmarking/302_hpo_wandb.ipynb
