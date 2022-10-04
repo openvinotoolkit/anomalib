@@ -59,6 +59,5 @@ class PostProcessingConfigurationCallback(Callback):
         if isinstance(pl_module, AnomalyModule):
             pl_module.adaptive_threshold = self.adaptive_threshold
             if pl_module.adaptive_threshold is False:
-                # pylint: disable=not-callable
                 pl_module.image_threshold.value = torch.tensor(self.default_image_threshold).cpu()
                 pl_module.pixel_threshold.value = torch.tensor(self.default_pixel_threshold).cpu()
