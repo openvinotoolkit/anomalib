@@ -68,11 +68,13 @@ class TorchInferencer(Inferencer):
         Returns:
             torch.device: Device to use for inference.
         """
-        if device not in ("auto", "cpu", "cuda"):
+        if device not in ("auto", "cpu", "cuda", "gpu"):
             raise ValueError(f"Unknown device {device}")
 
         if device == "auto":
             device = "cuda" if torch.cuda.is_available() else "cpu"
+        elif device == "gpu":
+            device = "cuda"
         return torch.device(device)
 
     def _load_meta_data(self, path: Optional[Union[str, Path]] = None) -> Union[Dict, DictConfig]:

@@ -24,12 +24,12 @@ class MockImageLoader:
     Args:
         image_size (List[int]): Size of input image
         total_count (int): Total images in the test dataset
+        device (str, optional): Device to use for inference. Defaults to "cpu".
     """
 
     def __init__(self, image_size: List[int], total_count: int):
         self.total_count = total_count
         self.image_size = image_size
-        self.image = np.ones((*self.image_size, 3)).astype(np.uint8)
 
     def __len__(self):
         """Get total count of images."""
@@ -42,7 +42,7 @@ class MockImageLoader:
             idx (int): Unused
         """
         for _ in range(self.total_count):
-            yield self.image
+            yield np.random.randn(*self.image_size, 3).astype(np.uint8)
 
 
 def get_torch_throughput(
@@ -60,7 +60,12 @@ def get_torch_throughput(
     """
     torch.set_grad_enabled(False)
     model.eval()
-    inferencer = TorchInferencer(config, model)
+
+    device = config.trainer.accelerator
+    if device == "gpu":
+        device = "cuda"
+
+    inferencer = TorchInferencer(config, model.to(device), device=device)
     torch_dataloader = MockImageLoader(config.dataset.image_size, len(test_dataset))
     start_time = time.time()
     # Since we don't care about performance metrics and just the throughput, use mock data.
@@ -86,7 +91,9 @@ def get_openvino_throughput(config: Union[DictConfig, ListConfig], model_path: P
     Returns:
         float: Inference throughput
     """
-    inferencer = OpenVINOInferencer(config, model_path / "model.xml", model_path / "meta_data.json")
+    inferencer = OpenVINOInferencer(
+        config, model_path / "openvino" / "model.xml", model_path / "openvino" / "meta_data.json"
+    )
     openvino_dataloader = MockImageLoader(config.dataset.image_size, total_count=len(test_dataset))
     start_time = time.time()
     # Create test images on CPU. Since we don't care about performance metrics and just the throughput, use mock data.
