@@ -13,6 +13,7 @@
 
    ```bash
    sudo docker run --gpus all \
+   --shm-size=2gb\
     -i -t --mount type=bind,source=<path-to-datasets>,target=/home/user/datasets,readonly\
     -d --name anomalib-ci-container anomalib-ci
    ```
