@@ -1,8 +1,9 @@
-from torch import Tensor
+from typing import Any, Callable, List, Optional, Type, Union
+
 import torch.nn as nn
-from torch.hub import load_state_dict_from_url
-from typing import Type, Any, Callable, Union, List, Optional
 import torch.nn.functional as F
+from torch import Tensor
+from torch.hub import load_state_dict_from_url
 
 __all__ = ["ResNet", "resnet18", "wide_resnet50_2"]
 

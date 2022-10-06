@@ -1,10 +1,8 @@
-from sklearn.metrics import roc_auc_score, auc
 import numpy as np
-from skimage.measure import label, regionprops
-from sklearn.metrics import precision_recall_curve
-from sklearn.metrics import roc_curve
-from scipy.ndimage import gaussian_filter
 import torch.nn.functional as F
+from scipy.ndimage import gaussian_filter
+from skimage.measure import label, regionprops
+from sklearn.metrics import auc, precision_recall_curve, roc_auc_score, roc_curve
 
 
 def roc_auc_img(gt, score):

@@ -1,6 +1,6 @@
-import torch.nn.modules.conv as conv
-import torch.nn as nn
 import torch
+import torch.nn as nn
+import torch.nn.modules.conv as conv
 
 
 class CoordConv2d(conv.Conv2d):

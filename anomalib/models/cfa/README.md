@@ -12,11 +12,11 @@ Install packages with:
 $ pip install -r requirements.txt
 ```
 
-## Dataset 
+## Dataset
 
 Prepare industrial image as:
 
-``` 
+```
 train data:
     dataset_path/class_name/train/good/any_filename.png
     [...]
@@ -27,7 +27,7 @@ test data:
 
     dataset_path/class_name/test/defect_type/any_filename.png
     [...]
-``` 
+```
 
 ## How to train
 
@@ -36,9 +36,9 @@ test data:
 python trainer_cfa.py --class_name all --data_path [/path/to/dataset/] --cnn wrn50_2 --size 224 --gamma_c 1 --gamma_d 1
 ```
 
-## Performance 
+## Performance
 ### WideResNet-50
-R : resize. 
+R : resize.
 C : crop
 
 |            |     R+C     |      R      |     CFA++
@@ -46,7 +46,7 @@ C : crop
 | bottle     | 100  / 98.6 | 100  / 98.9 | 100  / 98.9
 | cable      | 99.8 / 98.7 | 99.8 / 99.0 | 99.8 / 99.0
 | capsule    | 97.3 / 98.9 | 99.2 / 99.1 | 99.2 / 99.1
-| carpet     | 99.5 / 98.7 | 99.4 / 99.0 | 99.5 / 99.0 
+| carpet     | 99.5 / 98.7 | 99.4 / 99.0 | 99.5 / 99.0
 | grid       | 99.2 / 97.8 | 99.9 / 98.1 | 99.9 / 98.1
 | hazelnut   | 100  / 98.6 | 100  / 98.9 | 100  / 98.9
 | leather    | 100  / 99.1 | 100  / 99.3 | 100  / 99.3

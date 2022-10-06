@@ -1,11 +1,12 @@
 import torch
 import torch.nn as nn
-from einops import rearrange
-from tqdm import tqdm
-from sklearn.cluster import KMeans
-from .metric import *
-from utils.coordconv import CoordConv2d
 import torch.nn.functional as F
+from einops import rearrange
+from sklearn.cluster import KMeans
+from tqdm import tqdm
+from utils.coordconv import CoordConv2d
+
+from .metric import *
 
 
 class DSVDD(nn.Module):

@@ -1,8 +1,9 @@
+import os
+
+import matplotlib.pyplot as plt
 import numpy as np
 from skimage import morphology
-import matplotlib.pyplot as plt
 from skimage.segmentation import mark_boundaries
-import os
 
 
 def plot_fig(test_img, scores, gts, threshold, save_dir, class_name):

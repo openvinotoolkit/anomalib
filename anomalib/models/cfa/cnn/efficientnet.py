@@ -1,19 +1,19 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
+
 from .utils import (
+    MemoryEfficientSwish,
+    Swish,
+    calculate_output_image_size,
+    drop_connect,
+    efficientnet_params,
+    get_model_params,
+    get_same_padding_conv2d,
+    load_pretrained_weights,
     round_filters,
     round_repeats,
-    drop_connect,
-    get_same_padding_conv2d,
-    get_model_params,
-    efficientnet_params,
-    load_pretrained_weights,
-    Swish,
-    MemoryEfficientSwish,
-    calculate_output_image_size,
 )
-
 
 VALID_MODELS = "efficientnet-b5"
 
