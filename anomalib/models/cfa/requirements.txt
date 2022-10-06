@@ -1,0 +1,12 @@
+torch>=1.9.0
+torchvision>=0.10.0
+einops
+matplotlib
+numpy
+opencv-python
+pillow
+scikit-image
+scikit-learn
+scipy
+sklearn
+tqdm

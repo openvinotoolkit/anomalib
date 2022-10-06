@@ -58,6 +58,11 @@ class Padim(AnomalyModule):
         """PADIM doesn't require optimization, therefore returns no optimizers."""
         return None
 
+    def on_train_start(self) -> None:
+        tdl = self.trainer.train_dataloader
+        i, data = next(enumerate(tdl))
+        print(i)
+
     def training_step(self, batch, _batch_idx):  # pylint: disable=arguments-differ
         """Training Step of PADIM. For each batch, hierarchical features are extracted from the CNN.
 
