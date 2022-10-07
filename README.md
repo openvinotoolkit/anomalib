@@ -78,7 +78,7 @@ pip install -e .
 
 ## ⚠️ Anomalib < v.0.4.0
 
-By default [`python tools/train.py`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/-/blob/main/train.py)
+By default [`python tools/train.py`](https://github.com/openvinotoolkit/anomalib/blob/main/tools/train.py)
 runs [PADIM](https://arxiv.org/abs/2011.08785) model on `leather` category from the [MVTec AD](https://www.mvtec.com/company/research/datasets/mvtec-ad) [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/) dataset.
 
 ```bash
@@ -86,7 +86,7 @@ python tools/train.py    # Train PADIM on MVTec AD leather
 ```
 
 Training a model on a specific dataset and category requires further configuration. Each model has its own configuration
-file, [`config.yaml`](https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/-/blob/main/padim/anomalib/models/padim/config.yaml)
+file, [`config.yaml`](https://github.com/openvinotoolkit/anomalib/blob/main/configs/model/padim.yaml)
 , which contains data, model and training configurable parameters. To train a specific model on a specific dataset and
 category, the config file is to be provided:
 
