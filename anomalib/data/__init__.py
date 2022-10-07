@@ -11,9 +11,9 @@ from omegaconf import DictConfig, ListConfig
 from anomalib.data.base import AnomalibDataModule
 
 from .btech import BTech
-from .folder import Folder
+from .folder import FolderDataModule
 from .inference import InferenceDataset
-from .mvtec import MVTec
+from .mvtec import MVTecDataModule
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
     datamodule: AnomalibDataModule
 
     if config.dataset.format.lower() == "mvtec":
-        datamodule = MVTec(
+        datamodule = MVTecDataModule(
             # TODO: Remove config values. IAAALD-211
             root=config.dataset.path,
             category=config.dataset.category,
@@ -40,11 +40,10 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             train_batch_size=config.dataset.train_batch_size,
             test_batch_size=config.dataset.test_batch_size,
             num_workers=config.dataset.num_workers,
-            seed=config.project.seed,
             task=config.dataset.task,
             transform_config_train=config.dataset.transform_config.train,
             transform_config_val=config.dataset.transform_config.val,
-            create_validation_set=config.dataset.create_validation_set,
+            val_split_mode=config.dataset.validation_split_mode,
         )
     elif config.dataset.format.lower() == "btech":
         datamodule = BTech(
@@ -62,7 +61,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             create_validation_set=config.dataset.create_validation_set,
         )
     elif config.dataset.format.lower() == "folder":
-        datamodule = Folder(
+        datamodule = FolderDataModule(
             root=config.dataset.path,
             normal_dir=config.dataset.normal_dir,
             abnormal_dir=config.dataset.abnormal_dir,
@@ -71,14 +70,13 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             mask_dir=config.dataset.mask,
             extensions=config.dataset.extensions,
             split_ratio=config.dataset.split_ratio,
-            seed=config.project.seed,
             image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
             train_batch_size=config.dataset.train_batch_size,
             test_batch_size=config.dataset.test_batch_size,
             num_workers=config.dataset.num_workers,
             transform_config_train=config.dataset.transform_config.train,
             transform_config_val=config.dataset.transform_config.val,
-            create_validation_set=config.dataset.create_validation_set,
+            val_split_mode=config.dataset.validation_split_mode,
         )
     else:
         raise ValueError(

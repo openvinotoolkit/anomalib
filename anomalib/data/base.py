@@ -3,14 +3,16 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, Optional, Union
 
-import albumentations as A
 import cv2
 import numpy as np
+import pandas as pd
 from pandas import DataFrame
 from pytorch_lightning import LightningDataModule
 from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
@@ -23,89 +25,54 @@ from anomalib.pre_processing import PreProcessor
 logger = logging.getLogger(__name__)
 
 
-class Subset(str, Enum):
+class Split(str, Enum):
     FULL = "full"
     TRAIN = "train"
     VAL = "val"
     TEST = "test"
 
 
+class ValSplitMode(str, Enum):
+    SAME_AS_TEST = "same_as_test"
+    FROM_TEST = "from_test"
+
+
 class AnomalibDataset(Dataset):
     """Anomalib dataset."""
 
-    def __init__(
-        self,
-        task: str,
-        pre_process: PreProcessor,
-        split: Subset = Subset.FULL,
-        samples: Optional[DataFrame] = None,
-        seed: Optional[int] = None,
-    ):
+    def __init__(self, task: str, pre_process: PreProcessor, samples: Optional[DataFrame] = None):
         super().__init__()
         self.task = task
-        self.split = split
         self.pre_process = pre_process
-        self.seed = seed
-        if samples is None:
-            self.samples = self._create_samples()
-        else:
-            self.samples = samples
-        self.samples = self.get_samples(self.split)
+        self._samples = samples
 
     def __len__(self) -> int:
         """Get length of the dataset."""
-        return len(self.samples)
+        assert isinstance(self._samples, DataFrame)
+        return len(self._samples)
 
-    @abstractmethod
-    def _create_samples(self) -> DataFrame:
-        """This method should be implemented in the subclass.
+    def subsample(self, indices):
+        return AnomalibDataset(task=self.task, pre_process=self.pre_process, samples=self.samples.iloc[indices])
 
-        This method should return a dataframe that contains the information needed by the dataloader to load each of
-        the dataset items into memory. The dataframe must at least contain the following columns:
-        split - The subset to which the dataset item is assigned.
-        image_path - Path to file system location where the image is stored.
-        label_index - Index of the anomaly label, typically 0 for "normal" and 1 for "anomalous".
+    @property
+    def is_setup(self) -> bool:
+        """Has setup() been called?"""
+        return isinstance(self._samples, DataFrame)
 
-        Additionally, when the task type is segmentation, the dataframe must have the mask_path column, which contains
-        the path the ground truth masks (for the anomalous images only).
+    @property
+    def samples(self) -> DataFrame:
+        """TODO"""
+        if not self.is_setup:
+            raise RuntimeError("Dataset is not setup yet. Call setup() first.")
+        return self._samples
 
-        Example of a dataframe returned by calling this method from a concrete class:
-        |---|-------------------|-----------|-------------|------------------|-------|
-        |   | image_path        | label     | label_index | mask_path        | split |
-        |---|-------------------|-----------|-------------|------------------|-------|
-        | 0 | path/to/image.png | anomalous | 0           | path/to/mask.png | train |
-        |---|-------------------|-----------|-------------|------------------|-------|
-        """
-        raise NotImplementedError
+    @property
+    def has_normal(self) -> bool:
+        return 0 in list(self.samples.label_index)
 
-    def _get_subset(self, split: Subset, pre_process: Optional[PreProcessor] = None):
-        samples = self.get_samples(split)
-        pre_process = self.pre_process if pre_process is None else pre_process
-        return AnomalibDataset(task=self.task, pre_process=pre_process, split=split, samples=samples, seed=self.seed)
-
-    def train_subset(self, pre_process: Optional[PreProcessor] = None):
-        return self._get_subset(Subset.TRAIN, pre_process=pre_process)
-
-    def val_subset(self, pre_process: Optional[PreProcessor] = None):
-        return self._get_subset(Subset.VAL, pre_process=pre_process)
-
-    def test_subset(self, pre_process: Optional[PreProcessor] = None):
-        return self._get_subset(Subset.TEST, pre_process=pre_process)
-
-    def get_samples(self, split: Subset):
-        """Retrieve the samples of the full dataset or one of the splits (train, val, test).
-
-        Args:
-            split: (str): The split for which we want to retrieve the samples ("train", "val" or "test"). When
-                left empty, all samples will be returned.
-
-        Returns:
-            DataFrame: A dataframe containing the samples of the split or full dataset.
-        """
-        if split == Subset.FULL:
-            return self.samples
-        samples = self.samples[self.samples.split == split]
-        return samples.reset_index(drop=True)
+    @property
+    def has_anomalous(self) -> bool:
+        return 1 in list(self.samples.label_index)
 
     def __getitem__(self, index: int) -> Dict[str, Union[str, Tensor]]:
         """Get dataset item for the index ``index``.
@@ -117,16 +84,18 @@ class AnomalibDataset(Dataset):
             Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]: Dict of image tensor during training.
                 Otherwise, Dict containing image path, target path, image tensor, label and transformed bounding box.
         """
-        image_path = self.samples.iloc[index].image_path
+        assert isinstance(self._samples, DataFrame)
+
+        image_path = self._samples.iloc[index].image_path
         image = read_image(image_path)
-        label_index = self.samples.iloc[index].label_index
+        label_index = self._samples.iloc[index].label_index
 
         item = dict(image_path=image_path, label=label_index)
 
         if self.task == "classification":
             pre_processed = self.pre_process(image=image)
         elif self.task == "segmentation":
-            mask_path = self.samples.iloc[index].mask_path
+            mask_path = self._samples.iloc[index].mask_path
 
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
@@ -145,6 +114,35 @@ class AnomalibDataset(Dataset):
 
         return item
 
+    def __add__(self, other_dataset: AnomalibDataset):
+        assert self.is_setup and other_dataset.is_setup, "Cannot concatenate uninitialized datasets. Call setup first."
+        samples = pd.concat([self.samples, other_dataset.samples], ignore_index=True)
+        return AnomalibDataset(self.task, self.pre_process, samples)
+
+    def setup(self) -> None:
+        """Load data/metadata into memory"""
+        if not self.is_setup:
+            self._setup()
+        assert self.is_setup, "setup() should set self._samples"
+
+    def _setup(self) -> DataFrame:
+        """previous _create_samples()
+        This method should return a dataframe that contains the information needed by the dataloader to load each of
+        the dataset items into memory.
+        The dataframe must at least contain the following columns:
+            split: the subset to which the dataset item is assigned.
+            image_path: path to file system location where the image is stored.
+            label_index: index of the anomaly label, typically 0 for "normal" and 1 for "anomalous".
+            mask_path (if task == "segmentation"): path to the ground truth masks (for the anomalous images only).
+        Example:
+        |---|-------------------|-----------|-------------|------------------|-------|
+        |   | image_path        | label     | label_index | mask_path        | split |
+        |---|-------------------|-----------|-------------|------------------|-------|
+        | 0 | path/to/image.png | anomalous | 0           | path/to/mask.png | train |
+        |---|-------------------|-----------|-------------|------------------|-------|
+        """
+        pass
+
 
 class AnomalibDataModule(LightningDataModule, ABC):
     """Base Anomalib data module."""
@@ -155,20 +153,14 @@ class AnomalibDataModule(LightningDataModule, ABC):
         train_batch_size: int,
         test_batch_size: int,
         num_workers: int,
-        transform_config_train: Optional[Union[str, A.Compose]] = None,
-        transform_config_val: Optional[Union[str, A.Compose]] = None,
-        image_size: Optional[Union[int, Tuple[int, int]]] = None,
+        val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
     ):
         super().__init__()
         self.task = task
         self.train_batch_size = train_batch_size
         self.test_batch_size = test_batch_size
         self.num_workers = num_workers
-
-        if transform_config_train is not None and transform_config_val is None:
-            transform_config_val = transform_config_train
-        self.pre_process_train = PreProcessor(config=transform_config_train, image_size=image_size)
-        self.pre_process_val = PreProcessor(config=transform_config_val, image_size=image_size)
+        self.val_split_mode = val_split_mode
 
         self.train_data: Optional[AnomalibDataset] = None
         self.val_data: Optional[AnomalibDataset] = None
@@ -178,32 +170,25 @@ class AnomalibDataModule(LightningDataModule, ABC):
 
         self.data: Optional[AnomalibDataset] = None
 
-    @abstractmethod
-    def create_dataset(self) -> AnomalibDataset:
-        raise NotImplementedError
-
-    def prepare_data(self) -> None:
-        self.data = self.create_dataset()
-
-    def contains_anomalous_images(self, split):
-        samples = self.data.get_samples(split)
-        return 1 in list(samples.label_index)
-
     def setup(self, stage: Optional[str] = None):
         """Setup train, validation and test data.
 
         Args:
           stage: Optional[str]:  Train/Val/Test stages. (Default value = None)
         """
-        if stage in (None, "fit"):
-            self.train_data = self.data.train_subset(pre_process=self.pre_process_train)
-        if stage in (None, "fit", "validate"):
-            if self.contains_anomalous_images("val"):
-                self.val_data = self.data.val_subset(pre_process=self.pre_process_val)
-            else:
-                self.val_data = self.data.test_subset(pre_process=self.pre_process_val)
-        if stage in (None, "test"):
-            self.test_data = self.data.test_subset(pre_process=self.pre_process_val)
+        if not self.is_setup:
+            self._setup(stage)
+        assert self.is_setup
+
+    @abstractmethod
+    def _setup(self, _stage: Optional[str] = None) -> None:
+        pass
+
+    @property
+    def is_setup(self):
+        if self.train_data is None or self.val_data is None or self.test_data is None:
+            return False
+        return self.train_data.is_setup and self.val_data.is_setup and self.test_data.is_setup
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:
         """Get train dataloader."""

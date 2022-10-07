@@ -1,58 +1,77 @@
-"""MVTec AD Dataset (CC BY-NC-SA 4.0).
-
-Description:
-    This script contains PyTorch Dataset, Dataloader and PyTorch
-        Lightning DataModule for the MVTec AD dataset.
-
-    If the dataset is not on the file system, the script downloads and
-        extracts the dataset and create PyTorch data objects.
-
-License:
-    MVTec AD dataset is released under the Creative Commons
-    Attribution-NonCommercial-ShareAlike 4.0 International License
-    (CC BY-NC-SA 4.0)(https://creativecommons.org/licenses/by-nc-sa/4.0/).
-
-Reference:
-    - Paul Bergmann, Kilian Batzner, Michael Fauser, David Sattlegger, Carsten Steger:
-      The MVTec Anomaly Detection Dataset: A Comprehensive Real-World Dataset for
-      Unsupervised Anomaly Detection; in: International Journal of Computer Vision
-      129(4):1038-1059, 2021, DOI: 10.1007/s11263-020-01400-4.
-
-    - Paul Bergmann, Michael Fauser, David Sattlegger, Carsten Steger: MVTec AD —
-      A Comprehensive Real-World Dataset for Unsupervised Anomaly Detection;
-      in: IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR),
-      9584-9592, 2019, DOI: 10.1109/CVPR.2019.00982.
-"""
-
-# Copyright (C) 2022 Intel Corporation
-# SPDX-License-Identifier: Apache-2.0
-
-import logging
-import tarfile
-import warnings
 from pathlib import Path
 from typing import Optional, Tuple, Union
-from urllib.request import urlretrieve
 
 import albumentations as A
-import pandas as pd
-from pandas.core.frame import DataFrame
-from pytorch_lightning.utilities.cli import DATAMODULE_REGISTRY
+from pandas import DataFrame
 
-from anomalib.data.base import AnomalibDataModule
-from anomalib.data.utils import DownloadProgressBar, hash_check
-from anomalib.data.utils.split import (
-    create_validation_set_from_test_set,
-    split_normal_images_in_train_set,
-)
-
-logger = logging.getLogger(__name__)
+from anomalib.data.base import AnomalibDataModule, AnomalibDataset, Split, ValSplitMode
+from anomalib.data.utils.split import split_normals_and_anomalous
+from anomalib.pre_processing import PreProcessor
 
 
-@DATAMODULE_REGISTRY
-class MVTec(AnomalibDataModule):
-    """MVTec AD Lightning Data Module."""
+def make_mvtec_dataset(root: Union[str, Path], split: Split = Split.FULL) -> DataFrame:
+    """Create MVTec AD samples by parsing the MVTec AD data file structure.
 
+    The files are expected to follow the structure:
+        path/to/dataset/split/category/image_filename.png
+        path/to/dataset/ground_truth/category/mask_filename.png
+
+    This function creates a dataframe to store the parsed information based on the following format:
+    |---|---------------|-------|---------|---------------|---------------------------------------|-------------|
+    |   | path          | split | label   | image_path    | mask_path                             | label_index |
+    |---|---------------|-------|---------|---------------|---------------------------------------|-------------|
+    | 0 | datasets/name |  test |  defect |  filename.png | ground_truth/defect/filename_mask.png | 1           |
+    |---|---------------|-------|---------|---------------|---------------------------------------|-------------|
+
+    Returns:
+        DataFrame: an output dataframe containing the samples of the dataset.
+    """
+    samples_list = [(str(root),) + filename.parts[-3:] for filename in Path(root).glob("**/*.png")]
+    if len(samples_list) == 0:
+        raise RuntimeError(f"Found 0 images in {root}")
+
+    samples = DataFrame(samples_list, columns=["path", "split", "label", "image_path"])
+    samples = samples[samples.split != "ground_truth"]
+
+    # Create mask_path column
+    samples["mask_path"] = (
+        samples.path
+        + "/ground_truth/"
+        + samples.label
+        + "/"
+        + samples.image_path.str.rstrip("png").str.rstrip(".")
+        + "_mask.png"
+    )
+
+    # Modify image_path column by converting to absolute path
+    samples["image_path"] = samples.path + "/" + samples.split + "/" + samples.label + "/" + samples.image_path
+
+    # Good images don't have mask
+    samples.loc[(samples.split == "test") & (samples.label == "good"), "mask_path"] = ""
+
+    # Create label index for normal (0) and anomalous (1) images.
+    samples.loc[(samples.label == "good"), "label_index"] = 0
+    samples.loc[(samples.label != "good"), "label_index"] = 1
+    samples.label_index = samples.label_index.astype(int)
+
+    if split != Split.FULL:
+        samples = samples[samples.split == split].reset_index(drop=True)
+
+    return samples
+
+
+class MVTec(AnomalibDataset):
+    def __init__(self, task: str, pre_process: PreProcessor, split: Split, root, category, samples=None) -> None:
+        super().__init__(task=task, pre_process=pre_process, samples=samples)
+
+        self.root_category = Path(root) / Path(category)
+        self.split = split
+
+    def _setup(self):
+        self._samples = make_mvtec_dataset(self.root_category, split=self.split)
+
+
+class MVTecDataModule(AnomalibDataModule):
     def __init__(
         self,
         root: str,
@@ -64,156 +83,39 @@ class MVTec(AnomalibDataModule):
         task: str = "segmentation",
         transform_config_train: Optional[Union[str, A.Compose]] = None,
         transform_config_val: Optional[Union[str, A.Compose]] = None,
-        split_ratio: float = 0.2,
-        seed: Optional[int] = None,
-        create_validation_set: bool = False,
-    ) -> None:
-        """Mvtec AD Lightning Data Module.
-
-        Args:
-            root: Path to the MVTec AD dataset
-            category: Name of the MVTec AD category.
-            image_size: Variable to which image is resized.
-            train_batch_size: Training batch size.
-            test_batch_size: Testing batch size.
-            num_workers: Number of workers.
-            task: ``classification`` or ``segmentation``
-            transform_config_train: Config for pre-processing during training.
-            transform_config_val: Config for pre-processing during validation.
-            seed: seed used for the random subset splitting
-            create_validation_set: Create a validation subset in addition to the train and test subsets
-
-        Examples
-            >>> from anomalib.data import MVTec
-            >>> datamodule = MVTec(
-            ...     root="./datasets/MVTec",
-            ...     category="leather",
-            ...     image_size=256,
-            ...     train_batch_size=32,
-            ...     test_batch_size=32,
-            ...     num_workers=8,
-            ...     transform_config_train=None,
-            ...     transform_config_val=None,
-            ... )
-            >>> datamodule.setup()
-
-            >>> i, data = next(enumerate(datamodule.train_dataloader()))
-            >>> data.keys()
-            dict_keys(['image'])
-            >>> data["image"].shape
-            torch.Size([32, 3, 256, 256])
-
-            >>> i, data = next(enumerate(datamodule.val_dataloader()))
-            >>> data.keys()
-            dict_keys(['image_path', 'label', 'mask_path', 'image', 'mask'])
-            >>> data["image"].shape, data["mask"].shape
-            (torch.Size([32, 3, 256, 256]), torch.Size([32, 256, 256]))
-        """
-        self.root = root if isinstance(root, Path) else Path(root)
-        self.category = category
-        self.path = self.root / self.category
-
-        self.create_validation_set = create_validation_set
-        self.seed = seed
-        self.split_ratio = split_ratio
-
+        val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
+    ):
         super().__init__(
             task=task,
             train_batch_size=train_batch_size,
             test_batch_size=test_batch_size,
             num_workers=num_workers,
-            transform_config_train=transform_config_train,
-            transform_config_val=transform_config_val,
-            image_size=image_size,
-            create_validation_set=create_validation_set,
+            val_split_mode=val_split_mode,
         )
 
-    def prepare_data(self) -> None:
-        """Download the dataset if not available."""
-        if (self.root / self.category).is_dir():
-            logger.info("Found the dataset.")
-        else:
-            self.root.mkdir(parents=True, exist_ok=True)
+        self.val_split_mode = val_split_mode
 
-            logger.info("Downloading the Mvtec AD dataset.")
-            url = "https://www.mydrive.ch/shares/38536/3830184030e49fe74747669442f0f282/download/420938113-1629952094"
-            dataset_name = "mvtec_anomaly_detection.tar.xz"
-            zip_filename = self.root / dataset_name
-            with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc="MVTec AD") as progress_bar:
-                urlretrieve(
-                    url=f"{url}/{dataset_name}",
-                    filename=zip_filename,
-                    reporthook=progress_bar.update_to,
-                )
-            logger.info("Checking hash")
-            hash_check(zip_filename, "eefca59f2cede9c3fc5b6befbfec275e")
+        pre_process_train = PreProcessor(config=transform_config_train, image_size=image_size)
+        pre_process_infer = PreProcessor(config=transform_config_val, image_size=image_size)
 
-            logger.info("Extracting the dataset.")
-            with tarfile.open(zip_filename) as tar_file:
-                tar_file.extractall(self.root)
+        self.train_data = MVTec(
+            task=task, pre_process=pre_process_train, split=Split.TRAIN, root=root, category=category
+        )
+        self.test_data = MVTec(task=task, pre_process=pre_process_infer, split=Split.TEST, root=root, category=category)
 
-            logger.info("Cleaning the tar file")
-            zip_filename.unlink()
+    def _setup(self, _stage: Optional[str] = None) -> None:
+        """Set up the datasets and perform dynamic subset splitting if necessary.
 
-    def _create_samples(self) -> DataFrame:
-        """Create MVTec AD samples by parsing the MVTec AD data file structure.
-
-        The files are expected to follow the structure:
-            path/to/dataset/split/category/image_filename.png
-            path/to/dataset/ground_truth/category/mask_filename.png
-
-        This function creates a dataframe to store the parsed information based on the following format:
-        |---|---------------|-------|---------|---------------|---------------------------------------|-------------|
-        |   | path          | split | label   | image_path    | mask_path                             | label_index |
-        |---|---------------|-------|---------|---------------|---------------------------------------|-------------|
-        | 0 | datasets/name |  test |  defect |  filename.png | ground_truth/defect/filename_mask.png | 1           |
-        |---|---------------|-------|---------|---------------|---------------------------------------|-------------|
-
-        Returns:
-            DataFrame: an output dataframe containing the samples of the dataset.
+        This method may be overridden in subclasses for custom splitting behaviour.
         """
-        if self.seed is None:
-            warnings.warn(
-                "seed is None."
-                " When seed is not set, images from the normal directory are split between training and test dir."
-                " This will lead to inconsistency between runs."
-            )
+        assert self.train_data is not None
+        assert self.test_data is not None
 
-        samples_list = [(str(self.path),) + filename.parts[-3:] for filename in self.path.glob("**/*.png")]
-        if len(samples_list) == 0:
-            raise RuntimeError(f"Found 0 images in {self.path}")
-
-        samples = pd.DataFrame(samples_list, columns=["path", "split", "label", "image_path"])
-        samples = samples[samples.split != "ground_truth"]
-
-        # Create mask_path column
-        samples["mask_path"] = (
-            samples.path
-            + "/ground_truth/"
-            + samples.label
-            + "/"
-            + samples.image_path.str.rstrip("png").str.rstrip(".")
-            + "_mask.png"
-        )
-
-        # Modify image_path column by converting to absolute path
-        samples["image_path"] = samples.path + "/" + samples.split + "/" + samples.label + "/" + samples.image_path
-
-        # Split the normal images in training set if test set doesn't
-        # contain any normal images. This is needed because AUC score
-        # cannot be computed based on 1-class
-        if sum((samples.split == "test") & (samples.label == "good")) == 0:
-            samples = split_normal_images_in_train_set(samples, self.split_ratio, self.seed)
-
-        # Good images don't have mask
-        samples.loc[(samples.split == "test") & (samples.label == "good"), "mask_path"] = ""
-
-        # Create label index for normal (0) and anomalous (1) images.
-        samples.loc[(samples.label == "good"), "label_index"] = 0
-        samples.loc[(samples.label != "good"), "label_index"] = 1
-        samples.label_index = samples.label_index.astype(int)
-
-        if self.create_validation_set:
-            samples = create_validation_set_from_test_set(samples, seed=self.seed)
-
-        return samples
+        self.train_data.setup()
+        self.test_data.setup()
+        if self.val_split_mode == ValSplitMode.FROM_TEST:
+            self.val_data, self.test_data = split_normals_and_anomalous(self.test_data, 0.5)
+        elif self.val_split_mode == ValSplitMode.SAME_AS_TEST:
+            self.val_data = self.test_data
+        else:
+            raise ValueError(f"Unknown validation split mode: {self.val_split_mode}")
