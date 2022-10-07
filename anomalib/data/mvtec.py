@@ -54,6 +54,35 @@ def make_mvtec_dataset(root: Union[str, Path], split: Split = Split.FULL) -> Dat
     | 0 | datasets/name |  test |  defect |  filename.png | ground_truth/defect/filename_mask.png | 1           |
     |---|---------------|-------|---------|---------------|---------------------------------------|-------------|
 
+    Args:
+        path (Path): Path to dataset
+        split (str, optional): Dataset split (ie., either train or test). Defaults to None.
+        split_ratio (float, optional): Ratio to split normal training images and add to the
+            test set in case test set doesn't contain any normal images.
+            Defaults to 0.1.
+        seed (int, optional): Random seed to ensure reproducibility when splitting. Defaults to 0.
+        create_validation_set (bool, optional): Boolean to create a validation set from the test set.
+            MVTec AD dataset does not contain a validation set. Those wanting to create a validation set
+            could set this flag to ``True``.
+
+    Examples:
+        The following example shows how to get training samples from MVTec AD bottle category:
+
+        >>> root = Path('./MVTec')
+        >>> category = 'bottle'
+        >>> path = root / category
+        >>> path
+        PosixPath('MVTec/bottle')
+
+        >>> samples = make_mvtec_dataset(path, split='train', split_ratio=0.1, seed=0)
+        >>> samples.head()
+           path         split label image_path                           mask_path                   label_index
+        0  MVTec/bottle train good MVTec/bottle/train/good/105.png MVTec/bottle/ground_truth/good/105_mask.png 0
+        1  MVTec/bottle train good MVTec/bottle/train/good/017.png MVTec/bottle/ground_truth/good/017_mask.png 0
+        2  MVTec/bottle train good MVTec/bottle/train/good/137.png MVTec/bottle/ground_truth/good/137_mask.png 0
+        3  MVTec/bottle train good MVTec/bottle/train/good/152.png MVTec/bottle/ground_truth/good/152_mask.png 0
+        4  MVTec/bottle train good MVTec/bottle/train/good/109.png MVTec/bottle/ground_truth/good/109_mask.png 0
+
     Returns:
         DataFrame: an output dataframe containing the samples of the dataset.
     """

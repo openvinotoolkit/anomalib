@@ -107,7 +107,7 @@ class Patchcore(AnomalyModule):
 
         anomaly_maps, anomaly_score = self.model(batch["image"])
         batch["anomaly_maps"] = anomaly_maps
-        batch["pred_scores"] = anomaly_score.unsqueeze(0)
+        batch["pred_scores"] = anomaly_score
 
         return batch
 
@@ -124,6 +124,7 @@ class PatchcoreLightning(Patchcore):
             input_size=hparams.model.input_size,
             backbone=hparams.model.backbone,
             layers=hparams.model.layers,
+            pre_trained=hparams.model.pre_trained,
             coreset_sampling_ratio=hparams.model.coreset_sampling_ratio,
             num_neighbors=hparams.model.num_neighbors,
         )

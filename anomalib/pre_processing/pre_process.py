@@ -7,10 +7,110 @@ to an input image before the forward-pass stage.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import logging
 from typing import Optional, Tuple, Union
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
+
+from anomalib.data.utils import get_image_height_and_width
+
+logger = logging.getLogger(__name__)
+
+
+def get_transforms(
+    config: Optional[Union[str, A.Compose]] = None,
+    image_size: Optional[Union[int, Tuple]] = None,
+    to_tensor: bool = True,
+) -> A.Compose:
+    """Get transforms from config or image size.
+
+    Args:
+        config (Optional[Union[str, A.Compose]], optional): Albumentations transforms.
+            Either config or albumentations ``Compose`` object. Defaults to None.
+        image_size (Optional[Union[int, Tuple]], optional): Image size to transform. Defaults to None.
+        to_tensor (bool, optional): Boolean to convert the final transforms into Torch tensor. Defaults to True.
+
+    Raises:
+        ValueError: When both ``config`` and ``image_size`` is ``None``.
+        ValueError: When ``config`` is not a ``str`` or `A.Compose`` object.
+
+    Returns:
+        A.Compose: Albumentation ``Compose`` object containing the image transforms.
+
+    Examples:
+        >>> import skimage
+        >>> image = skimage.data.astronaut()
+
+        >>> transforms = get_transforms(image_size=256, to_tensor=False)
+        >>> output = transforms(image=image)
+        >>> output["image"].shape
+        (256, 256, 3)
+
+        >>> transforms = get_transforms(image_size=256, to_tensor=True)
+        >>> output = transforms(image=image)
+        >>> output["image"].shape
+        torch.Size([3, 256, 256])
+
+
+        Transforms could be read from albumentations Compose object.
+        >>> import albumentations as A
+        >>> from albumentations.pytorch import ToTensorV2
+        >>> config = A.Compose([A.Resize(512, 512), ToTensorV2()])
+        >>> transforms = get_transforms(config=config, to_tensor=False)
+        >>> output = transforms(image=image)
+        >>> output["image"].shape
+        (512, 512, 3)
+        >>> type(output["image"])
+        numpy.ndarray
+
+        Transforms could be deserialized from a yaml file.
+        >>> transforms = A.Compose([A.Resize(1024, 1024), ToTensorV2()])
+        >>> A.save(transforms, "/tmp/transforms.yaml", data_format="yaml")
+        >>> transforms = get_transforms(config="/tmp/transforms.yaml")
+        >>> output = transforms(image=image)
+        >>> output["image"].shape
+        torch.Size([3, 1024, 1024])
+    """
+    if config is None and image_size is None:
+        raise ValueError(
+            "Both config and image_size cannot be `None`. "
+            "Provide either config file to de-serialize transforms "
+            "or image_size to get the default transformations"
+        )
+
+    transforms: A.Compose
+
+    if config is None and image_size is not None:
+        logger.warning("Transform configs has not been provided. Images will be normalized using ImageNet statistics.")
+
+        height, width = get_image_height_and_width(image_size)
+        transforms = A.Compose(
+            [
+                A.Resize(height=height, width=width, always_apply=True),
+                A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+                ToTensorV2(),
+            ]
+        )
+
+    if config is not None:
+        if isinstance(config, str):
+            transforms = A.load(filepath=config, data_format="yaml")
+        elif isinstance(config, A.Compose):
+            transforms = config
+        else:
+            raise ValueError("config could be either ``str`` or ``A.Compose``")
+
+    if not to_tensor:
+        if isinstance(transforms[-1], ToTensorV2):
+            transforms = A.Compose(transforms[:-1])
+
+    # always resize to specified image size
+    if not any(isinstance(transform, A.Resize) for transform in transforms) and image_size is not None:
+        height, width = get_image_height_and_width(image_size)
+        transforms = A.Compose([A.Resize(height=height, width=width, always_apply=True), transforms])
+
+    return transforms
 
 
 class PreProcessor:
@@ -74,63 +174,8 @@ class PreProcessor:
         self.image_size = image_size
         self.to_tensor = to_tensor
 
-        self.transforms = self.get_transforms()
-
-    def get_transforms(self) -> A.Compose:
-        """Get transforms from config or image size.
-
-        Returns:
-            A.Compose: List of albumentation transformations to apply to the
-                input image.
-        """
-        if self.config is None and self.image_size is None:
-            raise ValueError(
-                "Both config and image_size cannot be `None`. "
-                "Provide either config file to de-serialize transforms "
-                "or image_size to get the default transformations"
-            )
-
-        transforms: A.Compose
-
-        if self.config is None and self.image_size is not None:
-            height, width = self._get_height_and_width()
-            transforms = A.Compose(
-                [
-                    A.Resize(height=height, width=width, always_apply=True),
-                    A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
-                    ToTensorV2(),
-                ]
-            )
-
-        if self.config is not None:
-            if isinstance(self.config, str):
-                transforms = A.load(filepath=self.config, data_format="yaml")
-            elif isinstance(self.config, A.Compose):
-                transforms = self.config
-            else:
-                raise ValueError("config could be either ``str`` or ``A.Compose``")
-
-        if not self.to_tensor:
-            if isinstance(transforms[-1], ToTensorV2):
-                transforms = A.Compose(transforms[:-1])
-
-        # always resize to specified image size
-        if not any(isinstance(transform, A.Resize) for transform in transforms) and self.image_size is not None:
-            height, width = self._get_height_and_width()
-            transforms = A.Compose([A.Resize(height=height, width=width, always_apply=True), transforms])
-
-        return transforms
+        self.transforms = get_transforms(config, image_size, to_tensor)
 
     def __call__(self, *args, **kwargs):
         """Return transformed arguments."""
         return self.transforms(*args, **kwargs)
-
-    def _get_height_and_width(self) -> Tuple[Optional[int], Optional[int]]:
-        """Extract height and width from image size attribute."""
-        if isinstance(self.image_size, int):
-            return self.image_size, self.image_size
-        if isinstance(self.image_size, tuple):
-            return int(self.image_size[0]), int(self.image_size[1])
-        if self.image_size is None:
-            return None, None
-        raise ValueError("``image_size`` could be either int or Tuple[int, int]")
