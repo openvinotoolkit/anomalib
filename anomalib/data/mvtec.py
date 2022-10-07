@@ -1,3 +1,28 @@
+"""MVTec AD Dataset (CC BY-NC-SA 4.0).
+
+Description:
+    This script contains PyTorch Dataset, Dataloader and PyTorch
+        Lightning DataModule for the MVTec AD dataset.
+    If the dataset is not on the file system, the script downloads and
+        extracts the dataset and create PyTorch data objects.
+License:
+    MVTec AD dataset is released under the Creative Commons
+    Attribution-NonCommercial-ShareAlike 4.0 International License
+    (CC BY-NC-SA 4.0)(https://creativecommons.org/licenses/by-nc-sa/4.0/).
+Reference:
+    - Paul Bergmann, Kilian Batzner, Michael Fauser, David Sattlegger, Carsten Steger:
+      The MVTec Anomaly Detection Dataset: A Comprehensive Real-World Dataset for
+      Unsupervised Anomaly Detection; in: International Journal of Computer Vision
+      129(4):1038-1059, 2021, DOI: 10.1007/s11263-020-01400-4.
+    - Paul Bergmann, Michael Fauser, David Sattlegger, Carsten Steger: MVTec AD —
+      A Comprehensive Real-World Dataset for Unsupervised Anomaly Detection;
+      in: IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR),
+      9584-9592, 2019, DOI: 10.1109/CVPR.2019.00982.
+"""
+
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from pathlib import Path
 from typing import Optional, Tuple, Union
 
@@ -61,7 +86,25 @@ def make_mvtec_dataset(root: Union[str, Path], split: Split = Split.FULL) -> Dat
 
 
 class MVTec(AnomalibDataset):
-    def __init__(self, task: str, pre_process: PreProcessor, split: Split, root, category, samples=None) -> None:
+    """MVTec dataset class.
+
+    Args:
+        task (str): Task type, either 'classification' or 'segmentation'
+        pre_process (PreProcessor): Pre-processor object
+        split (Split): Split of the dataset, usually Split.TRAIN or Split. TEST
+        root (str): Path to the root of the dataset
+        category (str): Sub-category of the dataset, e.g. 'bottle'
+    """
+
+    def __init__(
+        self,
+        task: str,
+        pre_process: PreProcessor,
+        split: Split,
+        root: str,
+        category: str,
+        samples: Optional[DataFrame] = None,
+    ) -> None:
         super().__init__(task=task, pre_process=pre_process, samples=samples)
 
         self.root_category = Path(root) / Path(category)
@@ -72,6 +115,8 @@ class MVTec(AnomalibDataset):
 
 
 class MVTecDataModule(AnomalibDataModule):
+    """MVTec Datamodule."""
+
     def __init__(
         self,
         root: str,
@@ -102,10 +147,7 @@ class MVTecDataModule(AnomalibDataModule):
         self.test_data = MVTec(task=task, pre_process=pre_process_infer, split=Split.TEST, root=root, category=category)
 
     def _setup(self, _stage: Optional[str] = None) -> None:
-        """Set up the datasets and perform dynamic subset splitting if necessary.
-
-        This method may be overridden in subclasses for custom splitting behaviour.
-        """
+        """Set up the datasets and perform dynamic subset splitting."""
         assert self.train_data is not None
         assert self.test_data is not None
 

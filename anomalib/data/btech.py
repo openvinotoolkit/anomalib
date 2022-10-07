@@ -23,18 +23,153 @@ from pandas.core.frame import DataFrame
 from pytorch_lightning.utilities.cli import DATAMODULE_REGISTRY
 from tqdm import tqdm
 
-from anomalib.data.base import AnomalibDataModule
+from anomalib.data.base import AnomalibDataModule, AnomalibDataset, Split, ValSplitMode
 from anomalib.data.utils import DownloadProgressBar, hash_check
-from anomalib.data.utils.split import (
-    create_validation_set_from_test_set,
-    split_normal_images_in_train_set,
-)
+from anomalib.data.utils.split import split_normals_and_anomalous
+from anomalib.pre_processing import PreProcessor
 
 logger = logging.getLogger(__name__)
 
 
+def make_btech_dataset(path: Path, split: Optional[str] = None) -> DataFrame:
+    """Create BTech samples by parsing the BTech data file structure.
+
+    The files are expected to follow the structure:
+        path/to/dataset/split/category/image_filename.png
+        path/to/dataset/ground_truth/category/mask_filename.png
+
+    Args:
+        path (Path): Path to dataset
+        split (str, optional): Dataset split (ie., either train or test). Defaults to None.
+        split_ratio (float, optional): Ratio to split normal training images and add to the
+            test set in case test set doesn't contain any normal images.
+            Defaults to 0.1.
+        seed (int, optional): Random seed to ensure reproducibility when splitting. Defaults to 0.
+        create_validation_set (bool, optional): Boolean to create a validation set from the test set.
+            BTech dataset does not contain a validation set. Those wanting to create a validation set
+            could set this flag to ``True``.
+
+    Example:
+        The following example shows how to get training samples from BTech 01 category:
+
+        >>> root = Path('./BTech')
+        >>> category = '01'
+        >>> path = root / category
+        >>> path
+        PosixPath('BTech/01')
+
+        >>> samples = make_btech_dataset(path, split='train', split_ratio=0.1, seed=0)
+        >>> samples.head()
+           path     split label image_path                  mask_path                     label_index
+        0  BTech/01 train 01    BTech/01/train/ok/105.bmp BTech/01/ground_truth/ok/105.png      0
+        1  BTech/01 train 01    BTech/01/train/ok/017.bmp BTech/01/ground_truth/ok/017.png      0
+        ...
+
+    Returns:
+        DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
+    """
+    samples_list = [
+        (str(path),) + filename.parts[-3:] for filename in path.glob("**/*") if filename.suffix in (".bmp", ".png")
+    ]
+    if len(samples_list) == 0:
+        raise RuntimeError(f"Found 0 images in {path}")
+
+    samples = pd.DataFrame(samples_list, columns=["path", "split", "label", "image_path"])
+    samples = samples[samples.split != "ground_truth"]
+
+    # Create mask_path column
+    samples["mask_path"] = (
+        samples.path
+        + "/ground_truth/"
+        + samples.label
+        + "/"
+        + samples.image_path.str.rstrip("png").str.rstrip(".")
+        + ".png"
+    )
+
+    # Modify image_path column by converting to absolute path
+    samples["image_path"] = samples.path + "/" + samples.split + "/" + samples.label + "/" + samples.image_path
+
+    # Good images don't have mask
+    samples.loc[(samples.split == "test") & (samples.label == "ok"), "mask_path"] = ""
+
+    # Create label index for normal (0) and anomalous (1) images.
+    samples.loc[(samples.label == "ok"), "label_index"] = 0
+    samples.loc[(samples.label != "ok"), "label_index"] = 1
+    samples.label_index = samples.label_index.astype(int)
+
+    # Get the data frame for the split.
+    if split != Split.FULL:
+        samples = samples[samples.split == split]
+        samples = samples.reset_index(drop=True)
+
+    return samples
+
+
+class BTech(AnomalibDataset):
+    """BTech PyTorch Dataset."""
+
+    def __init__(
+        self,
+        root: Union[Path, str],
+        category: str,
+        pre_process: PreProcessor,
+        split: Split,
+        task: str = "segmentation",
+        samples: Optional[DataFrame] = None,
+    ) -> None:
+        """Btech Dataset class.
+
+        Args:
+            root: Path to the BTech dataset
+            category: Name of the BTech category.
+            pre_process: List of pre_processing object containing albumentation compose.
+            split: 'train', 'val' or 'test'
+            task: ``classification`` or ``segmentation``
+            seed: seed used for the random subset splitting
+            create_validation_set: Create a validation subset in addition to the train and test subsets
+
+        Examples:
+            >>> from anomalib.data.btech import BTechDataset
+            >>> from anomalib.data.transforms import PreProcessor
+            >>> pre_process = PreProcessor(image_size=256)
+            >>> dataset = BTechDataset(
+            ...     root='./datasets/BTech',
+            ...     category='leather',
+            ...     pre_process=pre_process,
+            ...     task="classification",
+            ...     is_train=True,
+            ... )
+            >>> dataset[0].keys()
+            dict_keys(['image'])
+
+            >>> dataset.split = "test"
+            >>> dataset[0].keys()
+            dict_keys(['image', 'image_path', 'label'])
+
+            >>> dataset.task = "segmentation"
+            >>> dataset.split = "train"
+            >>> dataset[0].keys()
+            dict_keys(['image'])
+
+            >>> dataset.split = "test"
+            >>> dataset[0].keys()
+            dict_keys(['image_path', 'label', 'mask_path', 'image', 'mask'])
+
+            >>> dataset[0]["image"].shape, dataset[0]["mask"].shape
+            (torch.Size([3, 256, 256]), torch.Size([256, 256]))
+        """
+        super().__init__(task, pre_process, samples)
+
+        self.root_category = Path(root) / Path(category)
+        self.split = split
+
+    def _setup(self):
+        self._samples = make_btech_dataset(path=self.root_category, split=self.split)
+
+
 @DATAMODULE_REGISTRY
-class BTech(AnomalibDataModule):
+class BTechDataModule(AnomalibDataModule):
     """BTechDataModule Lightning Data Module."""
 
     def __init__(
@@ -48,9 +183,7 @@ class BTech(AnomalibDataModule):
         task: str = "segmentation",
         transform_config_train: Optional[Union[str, A.Compose]] = None,
         transform_config_val: Optional[Union[str, A.Compose]] = None,
-        split_ratio: float = 0.2,
-        seed: Optional[int] = None,
-        create_validation_set: bool = False,
+        val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
     ) -> None:
         """Instantiate BTech Lightning Data Module.
 
@@ -67,7 +200,7 @@ class BTech(AnomalibDataModule):
             seed: seed used for the random subset splitting
             create_validation_set: Create a validation subset in addition to the train and test subsets
 
-        Examples
+        Examples:
             >>> from anomalib.data import BTech
             >>> datamodule = BTech(
             ...     root="./datasets/BTech",
@@ -93,24 +226,19 @@ class BTech(AnomalibDataModule):
             >>> data["image"].shape, data["mask"].shape
             (torch.Size([32, 3, 256, 256]), torch.Size([32, 256, 256]))
         """
-        self.root = root if isinstance(root, Path) else Path(root)
-        self.category = category
-        self.path = self.root / self.category
+        super().__init__(train_batch_size, test_batch_size, num_workers)
 
-        self.create_validation_set = create_validation_set
-        self.seed = seed
-        self.split_ratio = split_ratio
+        self.root = Path(root)
+        self.category = Path(category)
+        self.val_split_mode = val_split_mode
 
-        super().__init__(
-            task=task,
-            train_batch_size=train_batch_size,
-            test_batch_size=test_batch_size,
-            num_workers=num_workers,
-            transform_config_train=transform_config_train,
-            transform_config_val=transform_config_val,
-            image_size=image_size,
-            create_validation_set=create_validation_set,
+        pre_process_train = PreProcessor(config=transform_config_train, image_size=image_size)
+        pre_process_infer = PreProcessor(config=transform_config_val, image_size=image_size)
+
+        self.train_data = BTech(
+            task=task, pre_process=pre_process_train, split=Split.TRAIN, root=root, category=category
         )
+        self.test_data = BTech(task=task, pre_process=pre_process_infer, split=Split.TEST, root=root, category=category)
 
     def prepare_data(self) -> None:
         """Download the dataset if not available."""
@@ -153,62 +281,16 @@ class BTech(AnomalibDataModule):
             logger.info("Cleaning the tar file")
             zip_filename.unlink()
 
-    def _create_samples(self) -> DataFrame:
-        """Create BTech samples by parsing the BTech data file structure.
+    def _setup(self, _stage: Optional[str] = None):
+        """Set up the datasets and perform dynamic subset splitting."""
+        assert self.train_data is not None
+        assert self.test_data is not None
 
-        The files are expected to follow the structure:
-            path/to/dataset/category/split/[ok|ko]/image_filename.bmp
-            path/to/dataset/category/ground_truth/ko/mask_filename.png
-
-        This function creates a dataframe to store the parsed information based on the following format:
-        |---|---------------|-------|---------|---------------|---------------------------------------|-------------|
-        |   | path          | split | label   | image_path    | mask_path                             | label_index |
-        |---|---------------|-------|---------|---------------|---------------------------------------|-------------|
-        | 0 | datasets/name |  test |  ko     |  filename.png | ground_truth/ko/filename_mask.png     | 1           |
-        |---|---------------|-------|---------|---------------|---------------------------------------|-------------|
-
-        Returns:
-            DataFrame: an output dataframe containing the samples of the dataset.
-        """
-        samples_list = [
-            (str(self.path),) + filename.parts[-3:]
-            for filename in self.path.glob("**/*")
-            if filename.suffix in (".bmp", ".png")
-        ]
-        if len(samples_list) == 0:
-            raise RuntimeError(f"Found 0 images in {self.path}")
-
-        samples = pd.DataFrame(samples_list, columns=["path", "split", "label", "image_path"])
-        samples = samples[samples.split != "ground_truth"]
-
-        # Create mask_path column
-        samples["mask_path"] = (
-            samples.path
-            + "/ground_truth/"
-            + samples.label
-            + "/"
-            + samples.image_path.str.rstrip("bmp|png").str.rstrip(".")
-            + ".png"
-        )
-
-        # Modify image_path column by converting to absolute path
-        samples["image_path"] = samples.path + "/" + samples.split + "/" + samples.label + "/" + samples.image_path
-
-        # Split the normal images in training set if test set doesn't
-        # contain any normal images. This is needed because AUC score
-        # cannot be computed based on 1-class
-        if sum((samples.split == "test") & (samples.label == "ok")) == 0:
-            samples = split_normal_images_in_train_set(samples, self.split_ratio, self.seed)
-
-        # Good images don't have mask
-        samples.loc[(samples.split == "test") & (samples.label == "ok"), "mask_path"] = ""
-
-        # Create label index for normal (0) and anomalous (1) images.
-        samples.loc[(samples.label == "ok"), "label_index"] = 0
-        samples.loc[(samples.label != "ok"), "label_index"] = 1
-        samples.label_index = samples.label_index.astype(int)
-
-        if self.create_validation_set:
-            samples = create_validation_set_from_test_set(samples, seed=self.seed)
-
-        return samples
+        self.train_data.setup()
+        self.test_data.setup()
+        if self.val_split_mode == ValSplitMode.FROM_TEST:
+            self.val_data, self.test_data = split_normals_and_anomalous(self.test_data, 0.5)
+        elif self.val_split_mode == ValSplitMode.SAME_AS_TEST:
+            self.val_data = self.test_data
+        else:
+            raise ValueError(f"Unknown validation split mode: {self.val_split_mode}")

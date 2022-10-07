@@ -10,7 +10,7 @@ from omegaconf import DictConfig, ListConfig
 
 from anomalib.data.base import AnomalibDataModule
 
-from .btech import BTech
+from .btech import BTechDataModule
 from .folder import FolderDataModule
 from .inference import InferenceDataset
 from .mvtec import MVTecDataModule
@@ -33,7 +33,6 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
 
     if config.dataset.format.lower() == "mvtec":
         datamodule = MVTecDataModule(
-            # TODO: Remove config values. IAAALD-211
             root=config.dataset.path,
             category=config.dataset.category,
             image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
@@ -46,19 +45,17 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             val_split_mode=config.dataset.validation_split_mode,
         )
     elif config.dataset.format.lower() == "btech":
-        datamodule = BTech(
-            # TODO: Remove config values. IAAALD-211
+        datamodule = BTechDataModule(
             root=config.dataset.path,
             category=config.dataset.category,
             image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
             train_batch_size=config.dataset.train_batch_size,
             test_batch_size=config.dataset.test_batch_size,
             num_workers=config.dataset.num_workers,
-            seed=config.project.seed,
             task=config.dataset.task,
             transform_config_train=config.dataset.transform_config.train,
             transform_config_val=config.dataset.transform_config.val,
-            create_validation_set=config.dataset.create_validation_set,
+            val_split_mode=config.dataset.validation_split_mode,
         )
     elif config.dataset.format.lower() == "folder":
         datamodule = FolderDataModule(
@@ -90,8 +87,8 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
 
 __all__ = [
     "get_datamodule",
-    "BTech",
-    "Folder",
+    "BTechDataModule",
+    "FolderDataModule",
     "InferenceDataset",
-    "MVTec",
+    "MVTecDataModule",
 ]
