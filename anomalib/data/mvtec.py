@@ -23,15 +23,21 @@ Reference:
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import logging
+import tarfile
 from pathlib import Path
 from typing import Optional, Tuple, Union
+from urllib.request import urlretrieve
 
 import albumentations as A
 from pandas import DataFrame
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset, Split, ValSplitMode
+from anomalib.data.utils import DownloadProgressBar, hash_check
 from anomalib.data.utils.split import split_normals_and_anomalous
 from anomalib.pre_processing import PreProcessor
+
+logger = logging.getLogger(__name__)
 
 
 def make_mvtec_dataset(root: Union[str, Path], split: Split = Split.FULL) -> DataFrame:
@@ -136,6 +142,8 @@ class MVTecDataModule(AnomalibDataModule):
             num_workers=num_workers,
         )
 
+        self.root = Path(root)
+        self.category = Path(category)
         self.val_split_mode = val_split_mode
 
         pre_process_train = PreProcessor(config=transform_config_train, image_size=image_size)
@@ -145,6 +153,33 @@ class MVTecDataModule(AnomalibDataModule):
             task=task, pre_process=pre_process_train, split=Split.TRAIN, root=root, category=category
         )
         self.test_data = MVTec(task=task, pre_process=pre_process_infer, split=Split.TEST, root=root, category=category)
+
+    def prepare_data(self) -> None:
+        """Download the dataset if not available."""
+        if (self.root / self.category).is_dir():
+            logger.info("Found the dataset.")
+        else:
+            self.root.mkdir(parents=True, exist_ok=True)
+
+            logger.info("Downloading the Mvtec AD dataset.")
+            url = "https://www.mydrive.ch/shares/38536/3830184030e49fe74747669442f0f282/download/420938113-1629952094"
+            dataset_name = "mvtec_anomaly_detection.tar.xz"
+            zip_filename = self.root / dataset_name
+            with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc="MVTec AD") as progress_bar:
+                urlretrieve(
+                    url=f"{url}/{dataset_name}",
+                    filename=zip_filename,
+                    reporthook=progress_bar.update_to,
+                )
+            logger.info("Checking hash")
+            hash_check(zip_filename, "eefca59f2cede9c3fc5b6befbfec275e")
+
+            logger.info("Extracting the dataset.")
+            with tarfile.open(zip_filename) as tar_file:
+                tar_file.extractall(self.root)
+
+            logger.info("Cleaning the tar file")
+            (zip_filename).unlink()
 
     def _setup(self, _stage: Optional[str] = None) -> None:
         """Set up the datasets and perform dynamic subset splitting."""
