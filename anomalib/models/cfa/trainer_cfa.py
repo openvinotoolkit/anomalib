@@ -100,26 +100,26 @@ def run():
         )
 
         if args.cnn == "wide_resnet50_v2":
-            model1 = wrn50_2(pretrained=True, progress=True)
+            feature_extractor = wrn50_2(pretrained=True, progress=True)
         elif args.cnn == "resnet18":
-            model1 = res18(pretrained=True, progress=True)
+            feature_extractor = res18(pretrained=True, progress=True)
         elif args.cnn == "efficientnet_b5":
-            model1 = effnet.from_pretrained("efficientnet-b5")
+            feature_extractor = effnet.from_pretrained("efficientnet-b5")
         elif args.cnn == "vgg19":
-            model1 = vgg19(pretrained=True, progress=True)
+            feature_extractor = vgg19(pretrained=True, progress=True)
 
         # model2 = FeatureExtractor(backbone="efficientnet_b5", layers=["layer1", "layer2", "layer4"], pre_trained=True)
         # model2.to(device)
         # model2.eval()
-        model1 = model1.to(device)
-        model1.eval()
+        feature_extractor = feature_extractor.to(device)
+        feature_extractor.eval()
 
-        loss_fn = DSVDD(model1, train_loader, args.cnn, args.gamma_c, args.gamma_d, device)
-        loss_fn = loss_fn.to(device)
+        model = CfaModel(feature_extractor, train_loader, args.cnn, args.gamma_c, args.gamma_d, device)
+        model = model.to(device)
 
         epochs = 30
         params = [
-            {"params": loss_fn.parameters()},
+            {"params": model.parameters()},
         ]
         optimizer = optim.AdamW(params=params, lr=1e-3, weight_decay=5e-4, amsgrad=True)
 
@@ -131,10 +131,10 @@ def run():
             gt_list = list()
             heatmaps = None
 
-            loss_fn.train()
+            model.train()
             for (x, _, _) in train_loader:
                 optimizer.zero_grad()
-                p = model1(x.to(device))
+                p = feature_extractor(x.to(device))
                 # p = model2(x.to(device))
                 # p = [value for value in p.values()]
                 # p1 = model1(x.to(device))
@@ -143,18 +143,18 @@ def run():
                 # [(f.min(), f.max(), f.shape) for f in p1]
                 # [(f.min(), f.max(), f.shape) for f in p2.values()]
 
-                loss = loss_fn(p)
+                loss = model(p)
                 loss.backward()
                 optimizer.step()
 
-            loss_fn.eval()
+            model.eval()
             for x, y, mask in test_loader:
                 test_imgs.extend(x.cpu().detach().numpy())
                 gt_list.extend(y.cpu().detach().numpy())
                 gt_mask_list.extend(mask.cpu().detach().numpy())
 
-                p = model1(x.to(device))
-                score = loss_fn(p)
+                p = feature_extractor(x.to(device))
+                score = model(p)
                 heatmap = score.cpu().detach()
                 heatmap = torch.mean(heatmap, dim=1)
                 heatmaps = torch.cat((heatmaps, heatmap), dim=0) if heatmaps != None else heatmap

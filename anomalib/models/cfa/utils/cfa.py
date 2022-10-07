@@ -14,9 +14,9 @@ from .metric import *
 SUPPORTED_BACKBONES = ("vgg19", "resnet18", "wide_resnet50_v2", "efficientnet_b5")
 
 
-class DSVDD(nn.Module):
+class CfaModel(nn.Module):
     def __init__(self, model, data_loader, backbone, gamma_c, gamma_d, device):
-        super(DSVDD, self).__init__()
+        super(CfaModel, self).__init__()
         self.device = device
 
         self.memory_bank = 0
@@ -43,16 +43,13 @@ class DSVDD(nn.Module):
         self.memory_bank = self.memory_bank.transpose(-1, -2).detach()
         self.memory_bank = nn.Parameter(self.memory_bank, requires_grad=False)
 
-    def forward(self, patch_features: List[Tensor]):
-        target_oriented_features = self.descriptor(patch_features)
-        target_oriented_features = rearrange(target_oriented_features, "b c h w -> b (h w) c")
-
-        if self.training:
-            output = self.compute_loss(target_oriented_features)
-        else:
-            output = self.compute_score(target_oriented_features)
-
-        return output
+    def _init_centroid(self, model, data_loader) -> None:
+        for i, (x, _, _) in enumerate(tqdm(data_loader)):
+            x = x.to(self.device)
+            p = model(x)
+            self.scale = p[0].size(2)
+            phi_p = self.descriptor(p)
+            self.memory_bank = ((self.memory_bank * i) + torch.mean(phi_p, dim=0, keepdim=True).detach()) / (i + 1)
 
     def compute_distance(self, target_oriented_features: Tensor) -> Tensor:
         features = torch.sum(torch.pow(target_oriented_features, 2), 2, keepdim=True)
@@ -60,17 +57,6 @@ class DSVDD(nn.Module):
         f_c = 2 * torch.matmul(target_oriented_features, (self.memory_bank))
         distance = features + centers - f_c
         return distance
-
-    def compute_score(self, target_oriented_features: Tensor) -> Tensor:
-        distance = self.compute_distance(target_oriented_features)
-
-        distance = torch.sqrt(distance)
-        distance = distance.topk(self.num_nearest_neighbors, largest=False).values
-        distance = (F.softmin(distance, dim=-1)[:, :, 0]) * distance[:, :, 0]
-        distance = distance.unsqueeze(-1)
-
-        score = rearrange(distance, "b (h w) c -> b c h w", h=self.scale)
-        return score
 
     def compute_loss(self, target_oriented_features: Tensor) -> Tensor:
         distance = self.compute_distance(target_oriented_features)
@@ -88,13 +74,27 @@ class DSVDD(nn.Module):
 
         return loss
 
-    def _init_centroid(self, model, data_loader) -> None:
-        for i, (x, _, _) in enumerate(tqdm(data_loader)):
-            x = x.to(self.device)
-            p = model(x)
-            self.scale = p[0].size(2)
-            phi_p = self.descriptor(p)
-            self.memory_bank = ((self.memory_bank * i) + torch.mean(phi_p, dim=0, keepdim=True).detach()) / (i + 1)
+    def compute_score(self, target_oriented_features: Tensor) -> Tensor:
+        distance = self.compute_distance(target_oriented_features)
+
+        distance = torch.sqrt(distance)
+        distance = distance.topk(self.num_nearest_neighbors, largest=False).values
+        distance = (F.softmin(distance, dim=-1)[:, :, 0]) * distance[:, :, 0]
+        distance = distance.unsqueeze(-1)
+
+        score = rearrange(distance, "b (h w) c -> b c h w", h=self.scale)
+        return score
+
+    def forward(self, patch_features: List[Tensor]):
+        target_oriented_features = self.descriptor(patch_features)
+        target_oriented_features = rearrange(target_oriented_features, "b c h w -> b (h w) c")
+
+        if self.training:
+            output = self.compute_loss(target_oriented_features)
+        else:
+            output = self.compute_score(target_oriented_features)
+
+        return output
 
 
 class Descriptor(nn.Module):
