@@ -86,11 +86,9 @@ class MVTecDataModule(AnomalibDataModule):
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
     ):
         super().__init__(
-            task=task,
             train_batch_size=train_batch_size,
             test_batch_size=test_batch_size,
             num_workers=num_workers,
-            val_split_mode=val_split_mode,
         )
 
         self.val_split_mode = val_split_mode

@@ -197,13 +197,12 @@ class FolderDataModule(AnomalibDataModule):
         extensions=None,
     ):
         super().__init__(
-            task=task,
             train_batch_size=train_batch_size,
             test_batch_size=test_batch_size,
             num_workers=num_workers,
-            val_split_mode=val_split_mode,
         )
 
+        self.val_split_mode = val_split_mode
         self.split_ratio = split_ratio
 
         pre_process_train = PreProcessor(config=transform_config_train, image_size=image_size)
@@ -242,11 +241,14 @@ class FolderDataModule(AnomalibDataModule):
         self.train_data.setup()
         self.test_data.setup()
 
+        # add some normal images to the test set
         if not self.test_data.has_normal:
             self.train_data, normal_test_data = split_normals_and_anomalous(self.train_data, self.split_ratio)
             self.test_data += normal_test_data
 
+        # split validation set from test set
         if self.val_split_mode == ValSplitMode.FROM_TEST:
+            assert self.test_data is not None
             self.val_data, self.test_data = split_normals_and_anomalous(self.test_data, 0.5)
         elif self.val_split_mode == ValSplitMode.SAME_AS_TEST:
             self.val_data = self.test_data

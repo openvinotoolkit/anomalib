@@ -149,26 +149,20 @@ class AnomalibDataModule(LightningDataModule, ABC):
 
     def __init__(
         self,
-        task: str,
         train_batch_size: int,
         test_batch_size: int,
         num_workers: int,
-        val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
     ):
         super().__init__()
-        self.task = task
         self.train_batch_size = train_batch_size
         self.test_batch_size = test_batch_size
         self.num_workers = num_workers
-        self.val_split_mode = val_split_mode
 
         self.train_data: Optional[AnomalibDataset] = None
         self.val_data: Optional[AnomalibDataset] = None
         self.test_data: Optional[AnomalibDataset] = None
 
         self._samples: Optional[DataFrame] = None
-
-        self.data: Optional[AnomalibDataset] = None
 
     def setup(self, stage: Optional[str] = None):
         """Setup train, validation and test data.

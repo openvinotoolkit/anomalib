@@ -91,7 +91,7 @@ def create_validation_set_from_test_set(
 
 def split_normals_and_anomalous(
     dataset: "AnomalibDataset", split_ratio: float, seed: Optional[int] = None
-) -> Tuple[Subset, Subset]:
+) -> Tuple[AnomalibDataset, AnomalibDataset]:
     """Wrap dataset wit torch.utils.data.Subset twice to create two (non-overlaping) subsets.
     Args:
         dataset (AnomalibDataset): AnomalibDataset object.
