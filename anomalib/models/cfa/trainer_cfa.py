@@ -27,7 +27,12 @@ def parse_args():
     parser.add_argument("--data_path", type=str)
     parser.add_argument("--save_path", type=str, default="./mvtec_result")
     parser.add_argument("--Rd", type=bool, default=False)
-    parser.add_argument("--cnn", type=str, choices=["res18", "wrn50_2", "effnet-b5", "vgg19"], default="effnet-b5")
+    parser.add_argument(
+        "--cnn",
+        type=str,
+        choices=["vgg19", "resnet18", "wide_resnet50_v2", "efficientnet_b5"],
+        default="efficientnet_b5",
+    )
     parser.add_argument("--size", type=int, choices=[224, 256], default=224)
     parser.add_argument("--gamma_c", type=int, default=1)
     parser.add_argument("--gamma_d", type=int, default=1)
@@ -94,11 +99,11 @@ def run():
             pin_memory=True,
         )
 
-        if args.cnn == "wrn50_2":
+        if args.cnn == "wide_resnet50_v2":
             model1 = wrn50_2(pretrained=True, progress=True)
-        elif args.cnn == "res18":
+        elif args.cnn == "resnet18":
             model1 = res18(pretrained=True, progress=True)
-        elif args.cnn == "effnet-b5":
+        elif args.cnn == "efficientnet_b5":
             model1 = effnet.from_pretrained("efficientnet-b5")
         elif args.cnn == "vgg19":
             model1 = vgg19(pretrained=True, progress=True)
@@ -138,7 +143,7 @@ def run():
                 # [(f.min(), f.max(), f.shape) for f in p1]
                 # [(f.min(), f.max(), f.shape) for f in p2.values()]
 
-                loss, _ = loss_fn(p)
+                loss = loss_fn(p)
                 loss.backward()
                 optimizer.step()
 
@@ -149,7 +154,7 @@ def run():
                 gt_mask_list.extend(mask.cpu().detach().numpy())
 
                 p = model1(x.to(device))
-                _, score = loss_fn(p)
+                score = loss_fn(p)
                 heatmap = score.cpu().detach()
                 heatmap = torch.mean(heatmap, dim=1)
                 heatmaps = torch.cat((heatmaps, heatmap), dim=0) if heatmaps != None else heatmap

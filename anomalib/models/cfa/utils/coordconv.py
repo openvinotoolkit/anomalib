@@ -1,21 +1,24 @@
+from typing import Union
+
 import torch
 import torch.nn as nn
 import torch.nn.modules.conv as conv
+from torch.nn.common_types import _size_2_t
 
 
 class CoordConv2d(conv.Conv2d):
     def __init__(
         self,
-        in_channels,
-        out_channels,
-        kernel_size,
-        stride=1,
-        padding=0,
-        dilation=1,
-        groups=1,
-        bias=True,
-        with_r=False,
-        use_cuda=True,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: _size_2_t,
+        stride: _size_2_t = 1,
+        padding: Union[str, _size_2_t] = 0,
+        dilation: _size_2_t = 1,
+        groups: int = 1,
+        bias: bool = True,
+        with_r: bool = False,
+        use_cuda: bool = True,
     ):
         super(CoordConv2d, self).__init__(
             in_channels, out_channels, kernel_size, stride, padding, dilation, groups, bias
@@ -34,7 +37,7 @@ class CoordConv2d(conv.Conv2d):
 
 
 class AddCoords(nn.Module):
-    def __init__(self, rank, with_r=False, use_cuda=True):
+    def __init__(self, rank, with_r: bool = False, use_cuda: bool = True):
         super(AddCoords, self).__init__()
         self.rank = rank
         self.with_r = with_r
