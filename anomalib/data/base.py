@@ -170,7 +170,7 @@ class AnomalibDataset(Dataset, ABC):
         | 0 | path/to/image.png | anomalous | 0           | path/to/mask.png | train |
         |---|-------------------|-----------|-------------|------------------|-------|
         """
-        pass
+        raise NotImplementedError
 
 
 class AnomalibDataModule(LightningDataModule, ABC):
@@ -212,7 +212,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
     @abstractmethod
     def _setup(self, _stage: Optional[str] = None) -> None:
         """To be implemented in conrete subclass."""
-        pass
+        raise NotImplementedError
 
     @property
     def is_setup(self):
