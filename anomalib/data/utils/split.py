@@ -15,7 +15,7 @@ import math
 import warnings
 from typing import List, Sequence, Union
 
-from torch import randperm, split
+import torch
 
 from anomalib.data.base import AnomalibDataset
 
@@ -76,8 +76,8 @@ def random_split(
             if length == 0:
                 warnings.warn(f"Length of subset at index {index} is 0.")
         # perform random subsampling
-        indices = randperm(len(dataset))
-        subsets.append([dataset.subsample(subset_indices) for subset_indices in split(indices, subset_lengths)])
+        indices = torch.randperm(len(dataset))
+        subsets.append([dataset.subsample(subset_indices) for subset_indices in torch.split(indices, subset_lengths)])
 
     # concatenate and return
     subsets = list(map(list, zip(*subsets)))
