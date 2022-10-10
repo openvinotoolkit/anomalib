@@ -11,7 +11,7 @@ from .metric import *
 
 
 class CfaModel(nn.Module):
-    def __init__(self, model, data_loader, cnn, gamma_c, gamma_d, device):
+    def __init__(self, feature_extractor, data_loader, cnn, gamma_c, gamma_d, device):
         super(CfaModel, self).__init__()
         self.device = device
 
@@ -27,7 +27,7 @@ class CfaModel(nn.Module):
 
         self.radius = nn.Parameter(1e-5 * torch.ones(1), requires_grad=True)
         self.descriptor = Descriptor(self.gamma_d, cnn).to(device)
-        self._init_centroid(model, data_loader)
+        self._init_centroid(feature_extractor, data_loader)
         self.memory_bank = rearrange(self.memory_bank, "b c h w -> (b h w) c").detach()
 
         if self.gamma_c > 1:
