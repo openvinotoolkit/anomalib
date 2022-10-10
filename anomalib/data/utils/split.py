@@ -58,26 +58,28 @@ def random_split(
     # create list of source data
     if label_aware:
         indices_per_label = [group.index for _, group in dataset.samples.groupby("label_index")]
-        datasets = [dataset.subsample(indices) for indices in indices_per_label]
+        per_label_datasets = [dataset.subsample(indices) for indices in indices_per_label]
     else:
-        datasets = [dataset]
+        per_label_datasets = [dataset]
 
     # split each (label-aware) subset of source data
     subsets = []
-    for dataset in datasets:
+    for label_dataset in per_label_datasets:
         # get subset lengths
         subset_lengths = []
         for ratio in split_ratio:
-            subset_lengths.append(int(math.floor(len(dataset) * ratio)))
-        for i in range(len(dataset) - sum(subset_lengths)):
+            subset_lengths.append(int(math.floor(len(label_dataset) * ratio)))
+        for i in range(len(label_dataset) - sum(subset_lengths)):
             subset_idx = i % sum(subset_lengths)
             subset_lengths[subset_idx] += 1
         for index, length in enumerate(subset_lengths):
             if length == 0:
                 warnings.warn(f"Length of subset at index {index} is 0.")
         # perform random subsampling
-        indices = torch.randperm(len(dataset))
-        subsets.append([dataset.subsample(subset_indices) for subset_indices in torch.split(indices, subset_lengths)])
+        indices = torch.randperm(len(label_dataset))
+        subsets.append(
+            [label_dataset.subsample(subset_indices) for subset_indices in torch.split(indices, subset_lengths)]
+        )
 
     # concatenate and return
     subsets = list(map(list, zip(*subsets)))
