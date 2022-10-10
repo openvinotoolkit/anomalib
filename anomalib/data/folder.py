@@ -9,6 +9,7 @@ This script creates a custom dataset from a folder.
 from pathlib import Path
 from typing import Optional, Tuple, Union
 
+import albumentations as A
 from pandas import DataFrame
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
@@ -79,13 +80,7 @@ def make_folder_dataset(
             if `None`. Defaults to None.
         mask_dir (Optional[Union[str, Path]], optional): Path to the directory containing
             the mask annotations. Defaults to None.
-        split (Optional[str], optional): Dataset split (ie., either train or test). Defaults to None.
-        split_ratio (float, optional): Ratio to split normal training images and add to the
-            test set in case test set doesn't contain any normal images.
-            Defaults to 0.2.
-        seed (int, optional): Random seed to ensure reproducibility when splitting. Defaults to 0.
-        create_validation_set (bool, optional):Boolean to create a validation set from the test set.
-            Those wanting to create a validation set could set this flag to ``True``.
+        split (Optional[Split], optional): Dataset split (ie., Split.FULL, Split.TRAIN or Split.TEST). Defaults to None.
         extensions (Optional[Tuple[str, ...]], optional): Type of the image extensions to read from the
             directory.
 
@@ -139,26 +134,52 @@ def make_folder_dataset(
 
 
 class Folder(AnomalibDataset):
+    """Folder dataset.
+
+    Args:
+        task (str): Task type. (classification or segmentation).
+        pre_process (PreProcessor): Image Pre-processor to apply transform.
+        split (Split): Fixed subset split that follows from folder structure on file system. Choose from
+            [Split.FULL, Split.TRAIN, Split.TEST]
+
+        root (Union[str, Path]): Root folder of the dataset.
+        normal_dir (Union[str, Path]): Path to the directory containing normal images.
+        abnormal_dir (Union[str, Path]): Path to the directory containing abnormal images.
+        split (Optional[str], optional): Dataset split (ie., either train or test). Defaults to None.
+        normal_test_dir (Optional[Union[str, Path]], optional): Path to the directory containing
+            normal images for the test dataset. Defaults to None.
+        mask_dir (Optional[Union[str, Path]], optional): Path to the directory containing
+            the mask annotations. Defaults to None.
+
+        extensions (Optional[Tuple[str, ...]], optional): Type of the image extensions to read from the
+            directory.
+        val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
+
+    Raises:
+        ValueError: When task is set to classification and `mask_dir` is provided. When `mask_dir` is
+            provided, `task` should be set to `segmentation`.
+    """
+
     def __init__(
         self,
         task: str,
         pre_process: PreProcessor,
         split: Split,
         #
+        root: Union[str, Path],
         normal_dir: Union[str, Path],
         abnormal_dir: Union[str, Path],
         normal_test_dir: Optional[Union[str, Path]] = None,
         mask_dir: Optional[Union[str, Path]] = None,
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
-        extensions=None,
-        samples=None,
+        extensions: Optional[Tuple[str]] = None,
+        samples: DataFrame = None,
     ) -> None:
         super().__init__(task, pre_process, samples=samples)
 
         self.split = split
-
-        self.normal_dir = normal_dir
-        self.abnormal_dir = abnormal_dir
+        self.normal_dir = Path(root) / Path(normal_dir)
+        self.abnormal_dir = Path(root) / Path(abnormal_dir)
         self.normal_test_dir = normal_test_dir
         self.mask_dir = mask_dir
         self.extensions = extensions
@@ -166,6 +187,7 @@ class Folder(AnomalibDataset):
         self.val_split_mode = val_split_mode
 
     def _setup(self):
+        """Assign samples."""
         self._samples = make_folder_dataset(
             normal_dir=self.normal_dir,
             abnormal_dir=self.abnormal_dir,
@@ -177,24 +199,57 @@ class Folder(AnomalibDataset):
 
 
 class FolderDataModule(AnomalibDataModule):
+    """Folder DataModule.
+
+    Args:
+        root (Union[str, Path]): Path to the root folder containing normal and abnormal dirs.
+        normal_dir (Union[str, Path]): Name of the directory containing normal images.
+            Defaults to "normal".
+        abnormal_dir (str, optional): Name of the directory containing abnormal images.
+            Defaults to "abnormal".
+        normal_test_dir (Optional[Union[str, Path]], optional): Path to the directory containing
+            normal images for the test dataset. Defaults to None.
+        mask_dir (Optional[Union[str, Path]], optional): Path to the directory containing
+            the mask annotations. Defaults to None.
+        split_ratio (float, optional): Ratio to split normal training images and add to the
+            test set in case test set doesn't contain any normal images.
+            Defaults to 0.2.
+        extensions (Optional[Tuple[str, ...]], optional): Type of the image extensions to read from the
+            directory. Defaults to None.
+        image_size (Optional[Union[int, Tuple[int, int]]], optional): Size of the input image.
+            Defaults to None.
+        train_batch_size (int, optional): Training batch size. Defaults to 32.
+        test_batch_size (int, optional): Test batch size. Defaults to 32.
+        num_workers (int, optional): Number of workers. Defaults to 8.
+        task (str, optional): Task type. Could be either classification or segmentation.
+            Defaults to "classification".
+        transform_config_train (Optional[Union[str, A.Compose]], optional): Config for pre-processing
+            during training.
+            Defaults to None.
+        transform_config_val (Optional[Union[str, A.Compose]], optional): Config for pre-processing
+            during validation.
+            Defaults to None.
+        val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
+    """
+
     def __init__(
         self,
-        root,
-        task,
-        train_batch_size,
-        test_batch_size,
-        image_size,
-        num_workers,
-        val_split_mode,
+        root: Union[str, Path],
+        normal_dir: Union[str, Path],
+        abnormal_dir: Union[str, Path],
+        normal_test_dir: Union[str, Path],
+        mask_dir: Union[str, Path],
+        split_ratio: float,
+        extensions: Optional[Tuple[str]] = None,
         #
-        normal_dir,
-        abnormal_dir,
-        normal_test_dir,
-        mask_dir,
-        split_ratio,
-        transform_config_train=None,
-        transform_config_val=None,
-        extensions=None,
+        image_size: Optional[Union[int, Tuple[int, int]]] = None,
+        train_batch_size: int = 32,
+        test_batch_size: int = 32,
+        num_workers: int = 8,
+        task: str = "segmentation",
+        transform_config_train: Optional[Union[str, A.Compose]] = None,
+        transform_config_val: Optional[Union[str, A.Compose]] = None,
+        val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
     ):
         super().__init__(
             train_batch_size=train_batch_size,
@@ -208,13 +263,11 @@ class FolderDataModule(AnomalibDataModule):
         pre_process_train = PreProcessor(config=transform_config_train, image_size=image_size)
         pre_process_infer = PreProcessor(config=transform_config_val, image_size=image_size)
 
-        normal_dir = Path(root) / Path(normal_dir)
-        abnormal_dir = Path(root) / Path(abnormal_dir)
-
         self.train_data = Folder(
             task=task,
             pre_process=pre_process_train,
             split=Split.TRAIN,
+            root=root,
             normal_dir=normal_dir,
             abnormal_dir=abnormal_dir,
             normal_test_dir=normal_test_dir,
@@ -226,6 +279,7 @@ class FolderDataModule(AnomalibDataModule):
             task=task,
             pre_process=pre_process_infer,
             split=Split.TEST,
+            root=root,
             normal_dir=normal_dir,
             abnormal_dir=abnormal_dir,
             normal_test_dir=normal_test_dir,
@@ -234,7 +288,7 @@ class FolderDataModule(AnomalibDataModule):
         )
 
     def _setup(self, _stage: Optional[str] = None):
-
+        """Set up the datasets for the Folder Data Module."""
         assert self.train_data is not None
         assert self.test_data is not None
 
@@ -249,7 +303,7 @@ class FolderDataModule(AnomalibDataModule):
         # split validation set from test set
         if self.val_split_mode == ValSplitMode.FROM_TEST:
             assert self.test_data is not None
-            self.val_data, self.test_data = random_split(self.train_data, [0.5, 0.5], label_aware=True)
+            self.val_data, self.test_data = random_split(self.test_data, [0.5, 0.5], label_aware=True)
         elif self.val_split_mode == ValSplitMode.SAME_AS_TEST:
             self.val_data = self.test_data
         else:
