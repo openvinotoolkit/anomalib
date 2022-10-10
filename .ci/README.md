@@ -4,7 +4,7 @@
    Make sure you are in the root directory of `anomalib`.
 
    ```bash
-   sudo docker build --build-arg HTTP_PROXY="$http_proxy" --build-arg HTTPS_PROXY="$https_proxy" --build-arg NO_PROXY="$no_proxy" . -t anomalib-ci -f .ci/Dockerfile
+   sudo docker build --build-arg HTTP_PROXY="$http_proxy" --build-arg HTTPS_PROXY="$https_proxy" --build-arg NO_PROXY="$no_proxy" . -t anomalib-ci -f .ci/cuda11.4.Dockerfile
    ```
 
    Here, `anomalib-ci` is the name of the image.
@@ -13,7 +13,7 @@
 
    ```bash
    sudo docker run --gpus all \
-   --shm-size=2gb\
+   --shm-size=256M\
     -i -t --mount type=bind,source=<path-to-datasets>,target=/home/user/datasets,readonly\
     -d --name anomalib-ci-container anomalib-ci
    ```
