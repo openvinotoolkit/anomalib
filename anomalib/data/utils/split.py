@@ -13,16 +13,31 @@ These function are useful
 
 import math
 import warnings
-from typing import Sequence, Union
+from typing import List, Sequence, Union
 
 from torch import randperm, split
 
 from anomalib.data.base import AnomalibDataset
 
 
+def concatenate_datasets(datasets: Sequence[AnomalibDataset]) -> AnomalibDataset:
+    """Concatenate multiple datasets into a single dataset object.
+
+    Args:
+        datasets (Sequence[AnomalibDataset]): Sequence of at least two datasets.
+
+    Returns:
+        AnomalibDataset: Dataset that contains the combined samples of all input datasets.
+    """
+    concat_dataset = datasets[0]
+    for dataset in datasets[1:]:
+        concat_dataset += dataset
+    return concat_dataset
+
+
 def random_split(
     dataset: AnomalibDataset, split_ratio: Union[float, Sequence[float]], label_aware: bool = False
-) -> Sequence[AnomalibDataset]:
+) -> List[AnomalibDataset]:
     """Perform a random split of a dataset.
 
     Args:
@@ -66,4 +81,4 @@ def random_split(
 
     # concatenate and return
     subsets = list(map(list, zip(*subsets)))
-    return tuple(sum(subset) for subset in subsets)
+    return [concatenate_datasets(subset) for subset in subsets]

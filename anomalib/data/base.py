@@ -5,10 +5,11 @@
 
 from __future__ import annotations
 
+import copy
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Sequence, Union
 
 import cv2
 import numpy as np
@@ -26,6 +27,8 @@ logger = logging.getLogger(__name__)
 
 
 class Split(str, Enum):
+    """Split of a subset."""
+
     FULL = "full"
     TRAIN = "train"
     VAL = "val"
@@ -33,11 +36,13 @@ class Split(str, Enum):
 
 
 class ValSplitMode(str, Enum):
+    """Splitting mode used to obtain validation subset."""
+
     SAME_AS_TEST = "same_as_test"
     FROM_TEST = "from_test"
 
 
-class AnomalibDataset(Dataset):
+class AnomalibDataset(Dataset, ABC):
     """Anomalib dataset."""
 
     def __init__(self, task: str, pre_process: PreProcessor, samples: Optional[DataFrame] = None):
@@ -51,28 +56,45 @@ class AnomalibDataset(Dataset):
         assert isinstance(self._samples, DataFrame)
         return len(self._samples)
 
-    def subsample(self, indices):
-        samples = self.samples.iloc[indices].reset_index(drop=True)
-        return AnomalibDataset(task=self.task, pre_process=self.pre_process, samples=samples)
+    def subsample(self, indices: Sequence[int], inplace=False) -> AnomalibDataset:
+        """Subsamples the dataset at the provided indices.
+
+        Args:
+            indices (Sequence[int]): Indices at which the dataset is to be subsampled.
+            inplace (bool): When true, the subsampling will be performed on the instance itself.
+        """
+        dataset = self if inplace else copy.deepcopy(self)
+        dataset.assign_samples(self.samples.iloc[indices].reset_index(drop=True))
+        return dataset
 
     @property
     def is_setup(self) -> bool:
-        """Has setup() been called?"""
+        """Checks if setup() been called."""
         return isinstance(self._samples, DataFrame)
 
     @property
     def samples(self) -> DataFrame:
-        """TODO"""
+        """Get the samples dataframe."""
         if not self.is_setup:
             raise RuntimeError("Dataset is not setup yet. Call setup() first.")
         return self._samples
 
+    def assign_samples(self, samples: DataFrame):
+        """Overwrite the samples with a new dataframe.
+
+        Args:
+            samples (DataFrame): DataFrame with new samples.
+        """
+        self._samples = samples
+
     @property
     def has_normal(self) -> bool:
+        """Check if the dataset contains any normal samples."""
         return 0 in list(self.samples.label_index)
 
     @property
     def has_anomalous(self) -> bool:
+        """Check if the dataset contains any anomalous samples."""
         return 1 in list(self.samples.label_index)
 
     def __getitem__(self, index: int) -> Dict[str, Union[str, Tensor]]:
@@ -115,25 +137,24 @@ class AnomalibDataset(Dataset):
 
         return item
 
-    def __add__(self, other_dataset: AnomalibDataset):
+    def __add__(self, other_dataset: AnomalibDataset) -> AnomalibDataset:
+        """Concatenate this dataset with another dataset."""
+        assert isinstance(other_dataset, self.__class__), "Cannot concatenate datasets that are not of same type."
         assert self.is_setup and other_dataset.is_setup, "Cannot concatenate uninitialized datasets. Call setup first."
-        samples = pd.concat([self.samples, other_dataset.samples], ignore_index=True)
-        return AnomalibDataset(self.task, self.pre_process, samples)
-
-    def __radd__(self, other):
-        if other == 0:
-            return self
-        else:
-            return self.__add__(other)
+        dataset = copy.deepcopy(self)
+        dataset.assign_samples(pd.concat([self.samples, other_dataset.samples], ignore_index=True))
+        return dataset
 
     def setup(self) -> None:
-        """Load data/metadata into memory"""
+        """Load data/metadata into memory."""
         if not self.is_setup:
             self._setup()
         assert self.is_setup, "setup() should set self._samples"
 
+    @abstractmethod
     def _setup(self) -> DataFrame:
-        """previous _create_samples()
+        """Set up the data module.
+
         This method should return a dataframe that contains the information needed by the dataloader to load each of
         the dataset items into memory.
         The dataframe must at least contain the following columns:
@@ -141,6 +162,7 @@ class AnomalibDataset(Dataset):
             image_path: path to file system location where the image is stored.
             label_index: index of the anomaly label, typically 0 for "normal" and 1 for "anomalous".
             mask_path (if task == "segmentation"): path to the ground truth masks (for the anomalous images only).
+
         Example:
         |---|-------------------|-----------|-------------|------------------|-------|
         |   | image_path        | label     | label_index | mask_path        | split |
@@ -152,7 +174,13 @@ class AnomalibDataset(Dataset):
 
 
 class AnomalibDataModule(LightningDataModule, ABC):
-    """Base Anomalib data module."""
+    """Base Anomalib data module.
+
+    Args:
+        train_batch_size (int): Batch size used by the train dataloader.
+        test_batch_size (int): Batch size used by the val and test dataloaders.
+        num_workers (int): Number of workers used by the train, val and test dataloaders.
+    """
 
     def __init__(
         self,
@@ -183,10 +211,12 @@ class AnomalibDataModule(LightningDataModule, ABC):
 
     @abstractmethod
     def _setup(self, _stage: Optional[str] = None) -> None:
+        """To be implemented in conrete subclass."""
         pass
 
     @property
     def is_setup(self):
+        """Checks if setup() has been called."""
         if self.train_data is None or self.val_data is None or self.test_data is None:
             return False
         return self.train_data.is_setup and self.val_data.is_setup and self.test_data.is_setup
