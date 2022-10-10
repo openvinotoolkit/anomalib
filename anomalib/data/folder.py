@@ -13,7 +13,7 @@ from pandas import DataFrame
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset, Split, ValSplitMode
-from anomalib.data.utils.split import split_normals_and_anomalous
+from anomalib.data.utils.split import random_split
 from anomalib.pre_processing.pre_process import PreProcessor
 
 
@@ -243,13 +243,13 @@ class FolderDataModule(AnomalibDataModule):
 
         # add some normal images to the test set
         if not self.test_data.has_normal:
-            self.train_data, normal_test_data = split_normals_and_anomalous(self.train_data, self.split_ratio)
+            self.train_data, normal_test_data = random_split(self.train_data, self.split_ratio)
             self.test_data += normal_test_data
 
         # split validation set from test set
         if self.val_split_mode == ValSplitMode.FROM_TEST:
             assert self.test_data is not None
-            self.val_data, self.test_data = split_normals_and_anomalous(self.test_data, 0.5)
+            self.val_data, self.test_data = random_split(self.train_data, [0.5, 0.5], label_aware=True)
         elif self.val_split_mode == ValSplitMode.SAME_AS_TEST:
             self.val_data = self.test_data
         else:

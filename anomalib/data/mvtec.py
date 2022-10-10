@@ -34,7 +34,7 @@ from pandas import DataFrame
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset, Split, ValSplitMode
 from anomalib.data.utils import DownloadProgressBar, hash_check
-from anomalib.data.utils.split import split_normals_and_anomalous
+from anomalib.data.utils.split import random_split
 from anomalib.pre_processing import PreProcessor
 
 logger = logging.getLogger(__name__)
@@ -175,6 +175,7 @@ class MVTecDataModule(AnomalibDataModule):
         self.category = Path(category)
         self.val_split_mode = val_split_mode
 
+        # TODO: Get rid of PreProcessor by passing transform directly
         pre_process_train = PreProcessor(config=transform_config_train, image_size=image_size)
         pre_process_infer = PreProcessor(config=transform_config_val, image_size=image_size)
 
@@ -218,7 +219,7 @@ class MVTecDataModule(AnomalibDataModule):
         self.train_data.setup()
         self.test_data.setup()
         if self.val_split_mode == ValSplitMode.FROM_TEST:
-            self.val_data, self.test_data = split_normals_and_anomalous(self.test_data, 0.5)
+            self.val_data, self.test_data = random_split(self.test_data, [0.5, 0.5], label_aware=True)
         elif self.val_split_mode == ValSplitMode.SAME_AS_TEST:
             self.val_data = self.test_data
         else:

@@ -52,7 +52,8 @@ class AnomalibDataset(Dataset):
         return len(self._samples)
 
     def subsample(self, indices):
-        return AnomalibDataset(task=self.task, pre_process=self.pre_process, samples=self.samples.iloc[indices])
+        samples = self.samples.iloc[indices].reset_index(drop=True)
+        return AnomalibDataset(task=self.task, pre_process=self.pre_process, samples=samples)
 
     @property
     def is_setup(self) -> bool:
@@ -118,6 +119,12 @@ class AnomalibDataset(Dataset):
         assert self.is_setup and other_dataset.is_setup, "Cannot concatenate uninitialized datasets. Call setup first."
         samples = pd.concat([self.samples, other_dataset.samples], ignore_index=True)
         return AnomalibDataset(self.task, self.pre_process, samples)
+
+    def __radd__(self, other):
+        if other == 0:
+            return self
+        else:
+            return self.__add__(other)
 
     def setup(self) -> None:
         """Load data/metadata into memory"""
