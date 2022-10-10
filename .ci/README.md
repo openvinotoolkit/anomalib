@@ -1,10 +1,14 @@
 # Guide to Setting up the CI using the Docker images
 
+## Steps
+
 1. Build the docker image using the Dockerfile in the .ci directory.
    Make sure you are in the root directory of `anomalib`.
 
    ```bash
-   sudo docker build --build-arg HTTP_PROXY="$http_proxy" --build-arg HTTPS_PROXY="$https_proxy" --build-arg NO_PROXY="$no_proxy" . -t anomalib-ci -f .ci/cuda11.4.Dockerfile
+   sudo docker build --build-arg HTTP_PROXY="$http_proxy" --build-arg \
+   HTTPS_PROXY="$https_proxy" --build-arg NO_PROXY="$no_proxy" \
+   . -t anomalib-ci -f .ci/cuda11.4.Dockerfile
    ```
 
    Here, `anomalib-ci` is the name of the image.
@@ -48,8 +52,10 @@
 
 1. Now the container is ready. Type `exit` to leave the container.
 
-1. Start github actions runner in detached mode in the container and set the codacy token and the anomalib dataset environment variables.
+1. Start github actions runner in detached mode in the container and set the
+   codacy token and the anomalib dataset environment variables.
 
    ```bash
-   sudo docker exec -d anomalib-ci-container /bin/bash -c "export ANOMALIB_DATASET_PATH=/home/user/datasets;export CODACY_PROJECT_TOKEN=<codacy-project-token> && /home/user/actions-runner/run.sh"
+   sudo docker exec -d anomalib-ci-container /bin/bash -c \
+   "export ANOMALIB_DATASET_PATH=/home/user/datasets;export CODACY_PROJECT_TOKEN=<codacy-project-token> && /home/user/actions-runner/run.sh"
    ```
