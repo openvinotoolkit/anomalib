@@ -1,6 +1,7 @@
 import argparse
 import random
 import warnings
+from typing import Optional
 
 import datasets.mvtec as mvtec
 import torch
@@ -93,20 +94,11 @@ def run():
             pin_memory=True,
         )
 
-        backbone = args.backbone
-        if backbone == "wrn50_2":
-            feature_extractor = wrn50_2(pretrained=True, progress=True)
-        elif backbone == "res18":
-            feature_extractor = res18(pretrained=True, progress=True)
-        elif backbone == "effnet-b5":
-            feature_extractor = effnet.from_pretrained("efficientnet-b5")
-        elif backbone == "vgg19":
-            feature_extractor = vgg19(pretrained=True, progress=True)
-
+        feature_extractor = get_feature_extractor(args.backbone)
         feature_extractor = feature_extractor.to(device)
         feature_extractor.eval()
 
-        model = CfaModel(feature_extractor, train_loader, backbone, args.gamma_c, args.gamma_d, device)
+        model = CfaModel(feature_extractor, train_loader, args.backbone, args.gamma_c, args.gamma_d, device)
         model = model.to(device)
 
         optimizer = optim.AdamW(params=model.parameters(), lr=1e-3, weight_decay=5e-4, amsgrad=True)
@@ -122,7 +114,9 @@ def run():
             model.train()
             for (x, _, _) in train_loader:
                 optimizer.zero_grad()
-                p = feature_extractor(x.to(device))
+                x = x.to(device)
+                with torch.no_grad():
+                    p = feature_extractor(x)
 
                 loss = model(p)
                 loss.backward()
@@ -134,7 +128,10 @@ def run():
                 gt_list.extend(y.cpu().detach().numpy())
                 gt_mask_list.extend(mask.cpu().detach().numpy())
 
-                p = feature_extractor(x.to(device))
+                x = x.to(device)
+                with torch.no_grad():
+                    p = feature_extractor(x)
+
                 score = model(p)
                 heatmap = score.cpu().detach()
                 heatmap = torch.mean(heatmap, dim=1)
@@ -192,6 +189,21 @@ def run():
 
     fig.tight_layout()
     fig.savefig(os.path.join(args.save_path, "roc_curve.png"), dpi=100)
+
+def get_feature_extractor(backbone: str, device: Optional[torch.device] = None):
+    if backbone == "wrn50_2":
+        feature_extractor = wrn50_2(pretrained=True, progress=True)
+    elif backbone == "res18":
+        feature_extractor = res18(pretrained=True, progress=True)
+    elif backbone == "effnet-b5":
+        feature_extractor = effnet.from_pretrained("efficientnet-b5")
+    elif backbone == "vgg19":
+        feature_extractor = vgg19(pretrained=True, progress=True)
+
+    if device is not None:
+        feature_extractor = feature_extractor.to(device)
+
+    return feature_extractor
 
 
 if __name__ == "__main__":
