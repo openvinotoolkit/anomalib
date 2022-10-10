@@ -25,7 +25,8 @@ def parse_args():
     parser.add_argument("--data_path", type=str)
     parser.add_argument("--save_path", type=str, default="./mvtec_result")
     parser.add_argument("--Rd", type=bool, default=False)
-    parser.add_argument("--cnn", type=str, choices=["res18", "wrn50_2", "effnet-b5", "vgg19"], default="wrn50_2")
+    parser.add_argument("--backbone", type=str, choices=["res18", "wrn50_2", "effnet-b5", "vgg19"], default="wrn50_2")
+    parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--size", type=int, choices=[224, 256], default=224)
     parser.add_argument("--gamma_c", type=int, default=1)
     parser.add_argument("--gamma_d", type=int, default=1)
@@ -92,7 +93,7 @@ def run():
             pin_memory=True,
         )
 
-        backbone = args.cnn
+        backbone = args.backbone
         if backbone == "wrn50_2":
             feature_extractor = wrn50_2(pretrained=True, progress=True)
         elif backbone == "res18":
@@ -108,13 +109,9 @@ def run():
         model = CfaModel(feature_extractor, train_loader, backbone, args.gamma_c, args.gamma_d, device)
         model = model.to(device)
 
-        epochs = 30
-        params = [
-            {"params": model.parameters()},
-        ]
-        optimizer = optim.AdamW(params=params, lr=1e-3, weight_decay=5e-4, amsgrad=True)
+        optimizer = optim.AdamW(params=model.parameters(), lr=1e-3, weight_decay=5e-4, amsgrad=True)
 
-        for epoch in tqdm(range(epochs), "%s -->" % (class_name)):
+        for epoch in tqdm(range(args.epochs), "%s -->" % (class_name)):
             r"TEST PHASE"
 
             test_imgs = list()
@@ -166,9 +163,9 @@ def run():
             per_pixel_proauc = cal_pxl_pro(gt_mask, scores)
             best_pxl_pro = per_pixel_proauc if per_pixel_proauc > best_pxl_pro else best_pxl_pro
 
-            print("[%d / %d]image ROCAUC: %.3f | best: %.3f" % (epoch, epochs, img_roc_auc, best_img_roc))
-            print("[%d / %d]pixel ROCAUC: %.3f | best: %.3f" % (epoch, epochs, per_pixel_rocauc, best_pxl_roc))
-            print("[%d / %d]pixel PROAUC: %.3f | best: %.3f" % (epoch, epochs, per_pixel_proauc, best_pxl_pro))
+            print("[%d / %d]image ROCAUC: %.3f | best: %.3f" % (epoch, args.epochs, img_roc_auc, best_img_roc))
+            print("[%d / %d]pixel ROCAUC: %.3f | best: %.3f" % (epoch, args.epochs, per_pixel_rocauc, best_pxl_roc))
+            print("[%d / %d]pixel PROAUC: %.3f | best: %.3f" % (epoch, args.epochs, per_pixel_proauc, best_pxl_pro))
 
         print("image ROCAUC: %.3f" % (best_img_roc))
         print("pixel ROCAUC: %.3f" % (best_pxl_roc))
@@ -179,7 +176,7 @@ def run():
         total_pixel_pro_auc.append(best_pxl_pro)
 
         fig_pixel_rocauc.plot(fpr, tpr, label="%s ROCAUC: %.3f" % (class_name, per_pixel_rocauc))
-        save_dir = args.save_path + "/" + f"pictures_{args.cnn}"
+        save_dir = args.save_path + "/" + f"pictures_{args.backbone}"
         os.makedirs(save_dir, exist_ok=True)
         plot_fig(test_imgs, scores, gt_mask_list, threshold, save_dir, class_name)
 
