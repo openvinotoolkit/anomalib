@@ -10,9 +10,9 @@ from utils.coordconv import CoordConv2d
 from .metric import *
 
 
-class DSVDD(nn.Module):
+class CfaModel(nn.Module):
     def __init__(self, model, data_loader, cnn, gamma_c, gamma_d, device):
-        super(DSVDD, self).__init__()
+        super(CfaModel, self).__init__()
         self.device = device
 
         self.memory_bank = 0
@@ -39,7 +39,7 @@ class DSVDD(nn.Module):
         self.memory_bank = self.memory_bank.transpose(-1, -2).detach()
         self.memory_bank = nn.Parameter(self.memory_bank, requires_grad=False)
 
-    def _init_centroid(self, feature_extractor, data_loader):
+    def _init_centroid(self, feature_extractor, data_loader) -> None:
         for i, (x, _, _) in enumerate(tqdm(data_loader)):
             x = x.to(self.device)
             patch_features = feature_extractor(x)
@@ -72,10 +72,7 @@ class DSVDD(nn.Module):
 
         return loss
 
-    def forward(self, patch_features: Tensor):
-        target_oriented_features = self.descriptor(patch_features)
-        target_oriented_features = rearrange(target_oriented_features, "b c h w -> b (h w) c")
-
+    def compute_score(self, target_oriented_features: Tensor) -> Tensor:
         distance = self.compute_distance(target_oriented_features)
         distance = torch.sqrt(distance)
 
@@ -86,12 +83,18 @@ class DSVDD(nn.Module):
         distance = distance.unsqueeze(-1)
 
         score = rearrange(distance, "b (h w) c -> b c h w", h=self.scale)
+        return score
 
-        loss = 0
+    def forward(self, patch_features: Tensor):
+        target_oriented_features = self.descriptor(patch_features)
+        target_oriented_features = rearrange(target_oriented_features, "b c h w -> b (h w) c")
+
         if self.training:
-            loss = self.compute_loss(target_oriented_features)
+            output = self.compute_loss(target_oriented_features)
+        else:
+            output = self.compute_score(target_oriented_features)
 
-        return loss, score
+        return output
 
 
 class Descriptor(nn.Module):
