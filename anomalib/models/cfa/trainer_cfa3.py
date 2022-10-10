@@ -5,12 +5,15 @@ import warnings
 import datasets.mvtec as mvtec
 import torch
 import torch.optim as optim
+from cnn.efficientnet import EfficientNet as effnet
+from cnn.resnet import resnet18 as res18
+from cnn.resnet import wide_resnet50_2 as wrn50_2
+from cnn.vgg import vgg19_bn as vgg19
 from datasets.mvtec import MVTecDataset
 from torch.utils.data import DataLoader
+from utils.cfa import *
 from utils.metric import *
 from utils.visualizer import *
-
-from anomalib.models.cfa.utils.cfa2 import *
 
 warnings.filterwarnings("ignore", category=UserWarning)
 use_cuda = torch.cuda.is_available()
@@ -22,12 +25,7 @@ def parse_args():
     parser.add_argument("--data_path", type=str)
     parser.add_argument("--save_path", type=str, default="./mvtec_result")
     parser.add_argument("--Rd", type=bool, default=False)
-    parser.add_argument(
-        "--cnn",
-        type=str,
-        choices=["vgg19_bn", "resnet18", "wide_resnet50_2", "efficientnet_b5"],
-        default="efficientnet_b5",
-    )
+    parser.add_argument("--cnn", type=str, choices=["res18", "wrn50_2", "effnet-b5", "vgg19"], default="wrn50_2")
     parser.add_argument("--size", type=int, choices=[224, 256], default=224)
     parser.add_argument("--gamma_c", type=int, default=1)
     parser.add_argument("--gamma_d", type=int, default=1)
@@ -94,18 +92,24 @@ def run():
             pin_memory=True,
         )
 
-        backbone = args.cnn
-        feature_extractor = get_feature_extractor(backbone)
+        if args.cnn == "wrn50_2":
+            model = wrn50_2(pretrained=True, progress=True)
+        elif args.cnn == "res18":
+            model = res18(pretrained=True, progress=True)
+        elif args.cnn == "effnet-b5":
+            model = effnet.from_pretrained("efficientnet-b5")
+        elif args.cnn == "vgg19":
+            model = vgg19(pretrained=True, progress=True)
 
-        feature_extractor = feature_extractor.to(device)
-        feature_extractor.eval()
-
-        model = CfaModel(backbone, train_loader, args.gamma_c, args.gamma_d, device)
         model = model.to(device)
+        model.eval()
+
+        loss_fn = DSVDD(model, train_loader, args.cnn, args.gamma_c, args.gamma_d, device)
+        loss_fn = loss_fn.to(device)
 
         epochs = 30
         params = [
-            {"params": model.parameters()},
+            {"params": loss_fn.parameters()},
         ]
         optimizer = optim.AdamW(params=params, lr=1e-3, weight_decay=5e-4, amsgrad=True)
 
@@ -117,32 +121,23 @@ def run():
             gt_list = list()
             heatmaps = None
 
-            model.train()
+            loss_fn.train()
             for (x, _, _) in train_loader:
                 optimizer.zero_grad()
-                x = x.to(device)
-                # p = feature_extractor(x)
-                # p = model2(x.to(device))
-                # p = [value for value in p.values()]
-                # p1 = model1(x.to(device))
-                # p2 = model2(x.to(device))
+                p = model(x.to(device))
 
-                # [(f.min(), f.max(), f.shape) for f in p1]
-                # [(f.min(), f.max(), f.shape) for f in p2.values()]
-
-                loss = model(x)
+                loss, _ = loss_fn(p)
                 loss.backward()
                 optimizer.step()
 
-            model.eval()
+            loss_fn.eval()
             for x, y, mask in test_loader:
                 test_imgs.extend(x.cpu().detach().numpy())
                 gt_list.extend(y.cpu().detach().numpy())
                 gt_mask_list.extend(mask.cpu().detach().numpy())
 
-                x = x.to(device)
-                # p = feature_extractor(x)
-                score = model(x)
+                p = model(x.to(device))
+                _, score = loss_fn(p)
                 heatmap = score.cpu().detach()
                 heatmap = torch.mean(heatmap, dim=1)
                 heatmaps = torch.cat((heatmaps, heatmap), dim=0) if heatmaps != None else heatmap
