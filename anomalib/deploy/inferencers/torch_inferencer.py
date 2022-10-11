@@ -37,7 +37,7 @@ class TorchInferencer(Inferencer):
         self,
         config: Union[str, Path, DictConfig, ListConfig],
         model_source: Union[str, Path, AnomalyModule],
-        meta_data_path: Union[str, Path] = None,
+        meta_data_path: Optional[Union[str, Path]] = None,
         device: str = "auto",
     ):
 
@@ -104,7 +104,7 @@ class TorchInferencer(Inferencer):
             (AnomalyModule): PyTorch Lightning model.
         """
         model = get_model(self.config)
-        model.load_state_dict(torch.load(path)["state_dict"])
+        model.load_state_dict(torch.load(path, map_location=self.device)["state_dict"])
         model.eval()
         return model.to(self.device)
 
