@@ -5,10 +5,10 @@
   // Sets the run context to one level up instead of the .devcontainer folder.
   "context": "..",
   // Update the 'dockerFile' property if you aren't using the standard 'Dockerfile' filename.
-  "dockerFile": "../Dockerfile",
+  "dockerFile": "../.ci/cuda11.4.Dockerfile",
   // Set *default* container specific settings.json values on container create.
   "settings": {
-    "python.pythonPath": "/opt/conda/bin/python",
+    "python.pythonPath": "/home/user/conda/bin/python",
     "python.formatting.provider": "black",
     "editor.formatOnSave": true,
     "python.formatting.blackArgs": ["--line-length", "120"],
