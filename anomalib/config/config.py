@@ -136,6 +136,13 @@ def get_configurable_parameters(
     if "format" not in config.dataset.keys():
         config.dataset.format = "mvtec"
 
+    if "create_validation_set" in config.dataset.keys():
+        warn(
+            "The 'create_validation_set' parameter is deprecated and will be removed in v0.4.0. Please use "
+            "validation_split_mode instead."
+        )
+        config.dataset.validation_split_mode = "from_test" if config.dataset.create_validation_set else "same_as_test"
+
     config = update_input_size_config(config)
 
     # Project Configs

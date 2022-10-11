@@ -11,7 +11,7 @@ dataset:
   transform_config:
     train: null
     val: null
-  create_validation_set: false
+  validation_split_mode: same_as_test
 
 model:
   name: dfkde
