@@ -1,6 +1,11 @@
+from typing import List, Optional
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from cnn.efficientnet import EfficientNet as effnet
+from cnn.resnet import resnet18, wide_resnet50_2
+from cnn.vgg import vgg19_bn
 from einops import rearrange
 from sklearn.cluster import KMeans
 from torch import Tensor
@@ -11,6 +16,7 @@ from anomalib.models.cfa.anomaly_map import AnomalyMapGenerator
 
 from .metric import *
 
+SUPPORTED_BACKBONES = ("vgg19_bn", "resnet18", "wide_resnet50_2", "efficientnet_b5")
 
 class CfaModel(nn.Module):
     def __init__(self, feature_extractor, data_loader, backbone, gamma_c, gamma_d, device):
@@ -76,8 +82,6 @@ class CfaModel(nn.Module):
 
         return loss
 
-
-
     def forward(self, patch_features: Tensor):
         target_oriented_features = self.descriptor(patch_features)
         target_oriented_features = rearrange(target_oriented_features, "b c h w -> b (h w) c")
@@ -93,29 +97,26 @@ class CfaModel(nn.Module):
 
 
 class Descriptor(nn.Module):
-    def __init__(self, gamma_d, cnn):
+    def __init__(self, gamma_d: int, backbone: str) -> None:
         super(Descriptor, self).__init__()
-        self.cnn = cnn
-        if cnn == "wrn50_2":
-            dim = 1792
-            self.layer = CoordConv2d(dim, dim // gamma_d, 1)
-        elif cnn == "res18":
-            dim = 448
-            self.layer = CoordConv2d(dim, dim // gamma_d, 1)
-        elif cnn == "effnet-b5":
-            dim = 568
-            self.layer = CoordConv2d(dim, 2 * dim // gamma_d, 1)
-        elif cnn == "vgg19":
-            dim = 1280
-            self.layer = CoordConv2d(dim, dim // gamma_d, 1)
 
-    def forward(self, p):
-        sample = None
-        for o in p:
-            o = F.avg_pool2d(o, 3, 1, 1) / o.size(1) if self.cnn == "effnet-b5" else F.avg_pool2d(o, 3, 1, 1)
-            sample = (
-                o if sample is None else torch.cat((sample, F.interpolate(o, sample.size(2), mode="bilinear")), dim=1)
+        self.backbone = backbone
+        if self.backbone not in SUPPORTED_BACKBONES:
+            raise ValueError(f"Supported backbones are {SUPPORTED_BACKBONES}. Got {self.backbone} instead.")
+
+        backbone_dims = {"vgg19_bn": 1280, "resnet18": 448, "wide_resnet50_2": 1792, "efficientnet_b5": 568}
+        dim = backbone_dims[backbone]
+        out_channels = 2 * dim // gamma_d if backbone == "efficientnet_b5" else dim // gamma_d
+
+        self.layer = CoordConv2d(in_channels=dim, out_channels=out_channels, kernel_size=1)
+
+    def forward(self, raw_patch_features: List[Tensor]) -> Tensor:
+        patch_features: Optional[Tensor] = None
+        for i in raw_patch_features:
+            i = F.avg_pool2d(i, 3, 1, 1) / i.size(1) if self.backbone == "efficientnet_b5" else F.avg_pool2d(i, 3, 1, 1)
+            patch_features = (
+                i if patch_features is None else torch.cat((patch_features, F.interpolate(i, patch_features.size(2), mode="bilinear")), dim=1)
             )
 
-        phi_p = self.layer(sample)
-        return phi_p
+        target_oriented_features = self.layer(patch_features)
+        return target_oriented_features

@@ -7,9 +7,8 @@ import datasets.mvtec as mvtec
 import torch
 import torch.optim as optim
 from cnn.efficientnet import EfficientNet as effnet
-from cnn.resnet import resnet18 as res18
-from cnn.resnet import wide_resnet50_2 as wrn50_2
-from cnn.vgg import vgg19_bn as vgg19
+from cnn.resnet import resnet18, wide_resnet50_2
+from cnn.vgg import vgg19_bn
 from datasets.mvtec import MVTecDataset
 from scipy.ndimage import gaussian_filter
 from torch.utils.data import DataLoader
@@ -27,7 +26,7 @@ def parse_args():
     parser.add_argument("--data_path", type=str)
     parser.add_argument("--save_path", type=str, default="./mvtec_result")
     parser.add_argument("--Rd", type=bool, default=False)
-    parser.add_argument("--backbone", type=str, choices=["res18", "wrn50_2", "effnet-b5", "vgg19"], default="wrn50_2")
+    parser.add_argument("--backbone", type=str, choices=["resnet18", "wide_resnet50_2", "efficientnet_b5", "vgg19_bn"], default="wide_resnet50_2")
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--size", type=int, choices=[224, 256], default=224)
     parser.add_argument("--gamma_c", type=int, default=1)
@@ -188,14 +187,14 @@ def run():
 
 
 def get_feature_extractor(backbone: str, device: Optional[torch.device] = None):
-    if backbone == "wrn50_2":
-        feature_extractor = wrn50_2(pretrained=True, progress=True)
-    elif backbone == "res18":
-        feature_extractor = res18(pretrained=True, progress=True)
-    elif backbone == "effnet-b5":
+    if backbone == "wide_resnet50_2":
+        feature_extractor = wide_resnet50_2(pretrained=True, progress=True)
+    elif backbone == "resnet18":
+        feature_extractor = resnet18(pretrained=True, progress=True)
+    elif backbone == "efficientnet_b5":
         feature_extractor = effnet.from_pretrained("efficientnet-b5")
-    elif backbone == "vgg19":
-        feature_extractor = vgg19(pretrained=True, progress=True)
+    elif backbone == "vgg19_bn":
+        feature_extractor = vgg19_bn(pretrained=True, progress=True)
 
     if device is not None:
         feature_extractor = feature_extractor.to(device)
