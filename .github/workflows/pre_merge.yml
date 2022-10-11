@@ -7,24 +7,27 @@ on:
   workflow_dispatch: # run on request (no need for PR)
 
 jobs:
-  Tox:
+  Code-Quality-Checks:
     runs-on: [self-hosted, linux, x64]
-    strategy:
-      max-parallel: 1
     steps:
-      - name: Print GPU status
-        run: nvidia-smi
       - name: CHECKOUT REPOSITORY
         uses: actions/checkout@v2
       - name: Install Tox
         run: pip install tox
       - name: Code quality checks
         run: tox -e pre-commit
+  Tox:
+    runs-on: [self-hosted, linux, x64]
+    needs: Code-Quality-Checks
+    strategy:
+      max-parallel: 1
+    steps:
+      - name: CHECKOUT REPOSITORY
+        uses: actions/checkout@v2
+      - name: Install Tox
+        run: pip install tox
       - name: Coverage
-        run: |
-          export ANOMALIB_DATASET_PATH=/media/data1/datasets/
-          export CUDA_VISIBLE_DEVICES=3
-          tox -e pre_merge
+        run: tox -e pre_merge
       - name: Upload coverage report
         run: |
           # If the workflow is triggered from PR then it gets the commit id from the PR.
