@@ -11,6 +11,7 @@ from cnn.resnet import resnet18 as res18
 from cnn.resnet import wide_resnet50_2 as wrn50_2
 from cnn.vgg import vgg19_bn as vgg19
 from datasets.mvtec import MVTecDataset
+from scipy.ndimage import gaussian_filter
 from torch.utils.data import DataLoader
 from utils.cfa3 import *
 from utils.metric import *
@@ -27,7 +28,7 @@ def parse_args():
     parser.add_argument("--save_path", type=str, default="./mvtec_result")
     parser.add_argument("--Rd", type=bool, default=False)
     parser.add_argument("--backbone", type=str, choices=["res18", "wrn50_2", "effnet-b5", "vgg19"], default="wrn50_2")
-    parser.add_argument("--epochs", type=int, default=1)
+    parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--size", type=int, choices=[224, 256], default=224)
     parser.add_argument("--gamma_c", type=int, default=1)
     parser.add_argument("--gamma_d", type=int, default=1)
@@ -132,17 +133,11 @@ def run():
                 with torch.no_grad():
                     p = feature_extractor(x)
 
-                score = model(p)
-                heatmap = score.cpu().detach()
-                anomaly_map = heatmap.clone()
-                heatmap = torch.mean(heatmap, dim=1)
-                heatmaps = torch.cat((heatmaps, heatmap), dim=0) if heatmaps != None else heatmap
-
-            heatmaps = upsample(heatmaps, size=x.size(2), mode="bilinear")
-            heatmaps = gaussian_smooth(heatmaps, sigma=4)
+                heatmap = model(p)
+                heatmaps = heatmap if heatmaps is None else torch.cat((heatmaps, heatmap), dim=0)
 
             gt_mask = np.asarray(gt_mask_list)
-            scores = rescale(heatmaps)
+            scores = rescale(heatmaps.squeeze().cpu().detach().numpy())
 
             scores = scores
             threshold = get_threshold(gt_mask, scores)
@@ -190,6 +185,7 @@ def run():
 
     fig.tight_layout()
     fig.savefig(os.path.join(args.save_path, "roc_curve.png"), dpi=100)
+
 
 def get_feature_extractor(backbone: str, device: Optional[torch.device] = None):
     if backbone == "wrn50_2":

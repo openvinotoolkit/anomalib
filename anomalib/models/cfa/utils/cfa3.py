@@ -7,6 +7,8 @@ from torch import Tensor
 from tqdm import tqdm
 from utils.coordconv import CoordConv2d
 
+from anomalib.models.cfa.anomaly_map import AnomalyMapGenerator
+
 from .metric import *
 
 
@@ -39,6 +41,10 @@ class CfaModel(nn.Module):
         self.memory_bank = self.memory_bank.transpose(-1, -2).detach()
         self.memory_bank = nn.Parameter(self.memory_bank, requires_grad=False)
 
+        self.anomaly_map_generator = AnomalyMapGenerator(
+            image_size=(224, 224), layer_size=self.scale, num_nearest_neighbors=self.num_nearest_neighbors, sigma=4
+        )
+
     def _init_centroid(self, feature_extractor, data_loader) -> None:
         for i, (x, _, _) in enumerate(tqdm(data_loader)):
             x = x.to(self.device)
@@ -70,17 +76,7 @@ class CfaModel(nn.Module):
 
         return loss
 
-    def compute_score(self, distance: Tensor) -> Tensor:
-        distance = torch.sqrt(distance)
 
-        n_neighbors = self.num_nearest_neighbors
-        distance = distance.topk(n_neighbors, largest=False).values
-
-        distance = (F.softmin(distance, dim=-1)[:, :, 0]) * distance[:, :, 0]
-        distance = distance.unsqueeze(-1)
-
-        score = rearrange(distance, "b (h w) c -> b c h w", h=self.scale)
-        return score
 
     def forward(self, patch_features: Tensor):
         target_oriented_features = self.descriptor(patch_features)
@@ -91,7 +87,7 @@ class CfaModel(nn.Module):
         if self.training:
             output = self.compute_loss(distance)
         else:
-            output = self.compute_score(distance)
+            output = self.anomaly_map_generator(distance=distance)
 
         return output
 

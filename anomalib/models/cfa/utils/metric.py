@@ -97,7 +97,7 @@ def gaussian_smooth(x, sigma=4):
 
 
 def upsample(x, size, mode):
-    return F.interpolate(x.unsqueeze(1), size=size, mode=mode, align_corners=False).squeeze().numpy()
+    return F.interpolate(x.unsqueeze(1), size=size, mode=mode, align_corners=False).squeeze().cpu().numpy()
 
 
 def cal_img_roc(scores, gt_list):
