@@ -64,7 +64,7 @@ def _prepare_files_labels(
 
 def make_folder_dataset(
     normal_dir: Union[str, Path],
-    abnormal_dir: Union[str, Path],
+    abnormal_dir: Optional[Union[str, Path]] = None,
     normal_test_dir: Optional[Union[str, Path]] = None,
     mask_dir: Optional[Union[str, Path]] = None,
     split: Optional[str] = None,
@@ -90,7 +90,10 @@ def make_folder_dataset(
 
     filenames = []
     labels = []
-    dirs = {"normal": normal_dir, "abnormal": abnormal_dir}
+    dirs = {"normal": normal_dir}
+
+    if abnormal_dir:
+        dirs = {**dirs, **{"abnormal": abnormal_dir}}
 
     if normal_test_dir:
         dirs = {**dirs, **{"normal_test": normal_test_dir}}
@@ -168,7 +171,7 @@ class Folder(AnomalibDataset):
         #
         root: Union[str, Path],
         normal_dir: Union[str, Path],
-        abnormal_dir: Union[str, Path],
+        abnormal_dir: Optional[Union[str, Path]] = None,
         normal_test_dir: Optional[Union[str, Path]] = None,
         mask_dir: Optional[Union[str, Path]] = None,
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
@@ -179,7 +182,7 @@ class Folder(AnomalibDataset):
 
         self.split = split
         self.normal_dir = Path(root) / Path(normal_dir)
-        self.abnormal_dir = Path(root) / Path(abnormal_dir)
+        self.abnormal_dir = Path(root) / Path(abnormal_dir) if abnormal_dir else None
         self.normal_test_dir = normal_test_dir
         self.mask_dir = mask_dir
         self.extensions = extensions
