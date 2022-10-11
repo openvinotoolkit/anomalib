@@ -11,7 +11,7 @@ from .metric import *
 
 
 class CfaModel(nn.Module):
-    def __init__(self, feature_extractor, data_loader, cnn, gamma_c, gamma_d, device):
+    def __init__(self, feature_extractor, data_loader, backbone, gamma_c, gamma_d, device):
         super(CfaModel, self).__init__()
         self.device = device
 
@@ -26,7 +26,7 @@ class CfaModel(nn.Module):
         self.num_hard_negative_features = 3
 
         self.radius = nn.Parameter(1e-5 * torch.ones(1), requires_grad=True)
-        self.descriptor = Descriptor(self.gamma_d, cnn).to(device)
+        self.descriptor = Descriptor(self.gamma_d, backbone).to(device)
         self._init_centroid(feature_extractor, data_loader)
         self.memory_bank = rearrange(self.memory_bank, "b c h w -> (b h w) c").detach()
 
@@ -56,9 +56,7 @@ class CfaModel(nn.Module):
         distance = features + centers - f_c
         return distance
 
-    def compute_loss(self, target_oriented_features: Tensor) -> Tensor:
-        distance = self.compute_distance(target_oriented_features)
-
+    def compute_loss(self, distance: Tensor) -> Tensor:
         n_neighbors = self.num_nearest_neighbors + self.num_hard_negative_features
         distance = distance.topk(n_neighbors, largest=False).values
 
@@ -72,8 +70,7 @@ class CfaModel(nn.Module):
 
         return loss
 
-    def compute_score(self, target_oriented_features: Tensor) -> Tensor:
-        distance = self.compute_distance(target_oriented_features)
+    def compute_score(self, distance: Tensor) -> Tensor:
         distance = torch.sqrt(distance)
 
         n_neighbors = self.num_nearest_neighbors
@@ -89,10 +86,12 @@ class CfaModel(nn.Module):
         target_oriented_features = self.descriptor(patch_features)
         target_oriented_features = rearrange(target_oriented_features, "b c h w -> b (h w) c")
 
+        distance = self.compute_distance(target_oriented_features)
+
         if self.training:
-            output = self.compute_loss(target_oriented_features)
+            output = self.compute_loss(distance)
         else:
-            output = self.compute_score(target_oriented_features)
+            output = self.compute_score(distance)
 
         return output
 

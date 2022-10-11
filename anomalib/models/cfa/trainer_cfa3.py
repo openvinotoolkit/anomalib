@@ -27,7 +27,7 @@ def parse_args():
     parser.add_argument("--save_path", type=str, default="./mvtec_result")
     parser.add_argument("--Rd", type=bool, default=False)
     parser.add_argument("--backbone", type=str, choices=["res18", "wrn50_2", "effnet-b5", "vgg19"], default="wrn50_2")
-    parser.add_argument("--epochs", type=int, default=30)
+    parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--size", type=int, choices=[224, 256], default=224)
     parser.add_argument("--gamma_c", type=int, default=1)
     parser.add_argument("--gamma_d", type=int, default=1)
@@ -134,6 +134,7 @@ def run():
 
                 score = model(p)
                 heatmap = score.cpu().detach()
+                anomaly_map = heatmap.clone()
                 heatmap = torch.mean(heatmap, dim=1)
                 heatmaps = torch.cat((heatmaps, heatmap), dim=0) if heatmaps != None else heatmap
 
