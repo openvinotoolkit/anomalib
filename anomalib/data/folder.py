@@ -240,9 +240,9 @@ class FolderDataModule(AnomalibDataModule):
         root: Union[str, Path],
         normal_dir: Union[str, Path],
         abnormal_dir: Union[str, Path],
-        normal_test_dir: Union[str, Path],
-        mask_dir: Union[str, Path],
-        split_ratio: float,
+        normal_test_dir: Optional[Union[str, Path]] = None,
+        mask_dir: Optional[Union[str, Path]] = None,
+        split_ratio: float = 0.2,
         extensions: Optional[Tuple[str]] = None,
         #
         image_size: Optional[Union[int, Tuple[int, int]]] = None,
@@ -252,7 +252,7 @@ class FolderDataModule(AnomalibDataModule):
         task: str = "segmentation",
         transform_config_train: Optional[Union[str, A.Compose]] = None,
         transform_config_val: Optional[Union[str, A.Compose]] = None,
-        val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
+        val_split_mode: ValSplitMode = ValSplitMode.FROM_TEST,
     ):
         super().__init__(
             train_batch_size=train_batch_size,
