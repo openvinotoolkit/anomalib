@@ -183,7 +183,7 @@ class Folder(AnomalibDataset):
         self.split = split
         self.normal_dir = Path(root) / Path(normal_dir)
         self.abnormal_dir = Path(root) / Path(abnormal_dir) if abnormal_dir else None
-        self.normal_test_dir = normal_test_dir
+        self.normal_test_dir = Path(root) / Path(normal_test_dir) if normal_test_dir else None
         self.mask_dir = mask_dir
         self.extensions = extensions
 
