@@ -3,12 +3,11 @@ from typing import List, Optional
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from cnn.efficientnet import EfficientNet as effnet
-from cnn.resnet import resnet18, wide_resnet50_2
-from cnn.vgg import vgg19_bn
+import torchvision
 from einops import rearrange
 from sklearn.cluster import KMeans
 from torch import Tensor
+from torchvision.models.feature_extraction import create_feature_extractor
 from tqdm import tqdm
 from utils.coordconv import CoordConv2d
 
@@ -17,6 +16,29 @@ from anomalib.models.cfa.anomaly_map import AnomalyMapGenerator
 from .metric import *
 
 SUPPORTED_BACKBONES = ("vgg19_bn", "resnet18", "wide_resnet50_2", "efficientnet_b5")
+
+
+def get_feature_extractor(backbone: str, device: Optional[torch.device] = None):
+    if backbone == "efficientnet_b5":
+        raise NotImplementedError("EfficientNet feature extractor has not implemented yet.")
+
+    return_nodes: List[str]
+    if backbone in ("resnet18", "wide_resnet50_2"):
+        return_nodes = ["layer1", "layer2", "layer3"]
+    elif backbone == "vgg19_bn":
+        return_nodes = ["features.25", "features.38", "features.52"]
+    else:
+        raise ValueError(f"Backbone {backbone} is not supported. Supported backbones are {SUPPORTED_BACKBONES}.")
+
+    model = getattr(torchvision.models, backbone)(pretrained=True)
+    feature_extractor = create_feature_extractor(model=model, return_nodes=return_nodes)
+    feature_extractor.eval()
+
+    if device is not None:
+        feature_extractor = feature_extractor.to(device)
+
+    return feature_extractor
+
 
 class CfaModel(nn.Module):
     def __init__(self, feature_extractor, data_loader, backbone, gamma_c, gamma_d, device):
@@ -55,6 +77,7 @@ class CfaModel(nn.Module):
         for i, (x, _, _) in enumerate(tqdm(data_loader)):
             x = x.to(self.device)
             patch_features = feature_extractor(x)
+            patch_features = [value for value in patch_features.values()]
             self.scale = patch_features[0].size(2)
             target_oriented_features = self.descriptor(patch_features)
             self.memory_bank = (
@@ -115,7 +138,9 @@ class Descriptor(nn.Module):
         for i in raw_patch_features:
             i = F.avg_pool2d(i, 3, 1, 1) / i.size(1) if self.backbone == "efficientnet_b5" else F.avg_pool2d(i, 3, 1, 1)
             patch_features = (
-                i if patch_features is None else torch.cat((patch_features, F.interpolate(i, patch_features.size(2), mode="bilinear")), dim=1)
+                i
+                if patch_features is None
+                else torch.cat((patch_features, F.interpolate(i, patch_features.size(2), mode="bilinear")), dim=1)
             )
 
         target_oriented_features = self.layer(patch_features)

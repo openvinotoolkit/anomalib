@@ -6,12 +6,17 @@ from typing import Optional
 import datasets.mvtec as mvtec
 import torch
 import torch.optim as optim
+import torchvision
 from cnn.efficientnet import EfficientNet as effnet
 from cnn.resnet import resnet18, wide_resnet50_2
 from cnn.vgg import vgg19_bn
 from datasets.mvtec import MVTecDataset
 from scipy.ndimage import gaussian_filter
 from torch.utils.data import DataLoader
+from torchvision.models.feature_extraction import (
+    create_feature_extractor,
+    get_graph_node_names,
+)
 from utils.cfa3 import *
 from utils.metric import *
 from utils.visualizer import *
@@ -26,8 +31,13 @@ def parse_args():
     parser.add_argument("--data_path", type=str)
     parser.add_argument("--save_path", type=str, default="./mvtec_result")
     parser.add_argument("--Rd", type=bool, default=False)
-    parser.add_argument("--backbone", type=str, choices=["resnet18", "wide_resnet50_2", "efficientnet_b5", "vgg19_bn"], default="wide_resnet50_2")
-    parser.add_argument("--epochs", type=int, default=3)
+    parser.add_argument(
+        "--backbone",
+        type=str,
+        choices=["resnet18", "wide_resnet50_2", "efficientnet_b5", "vgg19_bn"],
+        default="wide_resnet50_2",
+    )
+    parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--size", type=int, choices=[224, 256], default=224)
     parser.add_argument("--gamma_c", type=int, default=1)
     parser.add_argument("--gamma_d", type=int, default=1)
@@ -94,9 +104,7 @@ def run():
             pin_memory=True,
         )
 
-        feature_extractor = get_feature_extractor(args.backbone)
-        feature_extractor = feature_extractor.to(device)
-        feature_extractor.eval()
+        feature_extractor = get_feature_extractor(args.backbone, device=device)
 
         model = CfaModel(feature_extractor, train_loader, args.backbone, args.gamma_c, args.gamma_d, device)
         model = model.to(device)
@@ -117,6 +125,7 @@ def run():
                 x = x.to(device)
                 with torch.no_grad():
                     p = feature_extractor(x)
+                    p = [v for v in p.values()]
 
                 loss = model(p)
                 loss.backward()
@@ -131,6 +140,7 @@ def run():
                 x = x.to(device)
                 with torch.no_grad():
                     p = feature_extractor(x)
+                    p = [v for v in p.values()]
 
                 heatmap = model(p)
                 heatmaps = heatmap if heatmaps is None else torch.cat((heatmaps, heatmap), dim=0)
@@ -184,22 +194,6 @@ def run():
 
     fig.tight_layout()
     fig.savefig(os.path.join(args.save_path, "roc_curve.png"), dpi=100)
-
-
-def get_feature_extractor(backbone: str, device: Optional[torch.device] = None):
-    if backbone == "wide_resnet50_2":
-        feature_extractor = wide_resnet50_2(pretrained=True, progress=True)
-    elif backbone == "resnet18":
-        feature_extractor = resnet18(pretrained=True, progress=True)
-    elif backbone == "efficientnet_b5":
-        feature_extractor = effnet.from_pretrained("efficientnet-b5")
-    elif backbone == "vgg19_bn":
-        feature_extractor = vgg19_bn(pretrained=True, progress=True)
-
-    if device is not None:
-        feature_extractor = feature_extractor.to(device)
-
-    return feature_extractor
 
 
 if __name__ == "__main__":
