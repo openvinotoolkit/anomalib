@@ -67,20 +67,21 @@ def make_folder_dataset(
     abnormal_dir: Optional[Union[str, Path]] = None,
     normal_test_dir: Optional[Union[str, Path]] = None,
     mask_dir: Optional[Union[str, Path]] = None,
-    split: Optional[str] = None,
+    split: Optional[Union[Split, str]] = None,
     extensions: Optional[Tuple[str, ...]] = None,
 ):
     """Make Folder Dataset.
 
     Args:
         normal_dir (Union[str, Path]): Path to the directory containing normal images.
-        abnormal_dir (Union[str, Path]): Path to the directory containing abnormal images.
+        abnormal_dir (Optional[Union[str, Path]], optional): Path to the directory containing abnormal images.
         normal_test_dir (Optional[Union[str, Path]], optional): Path to the directory containing
             normal images for the test dataset. Normal test images will be a split of `normal_dir`
             if `None`. Defaults to None.
         mask_dir (Optional[Union[str, Path]], optional): Path to the directory containing
             the mask annotations. Defaults to None.
-        split (Optional[Split], optional): Dataset split (ie., Split.FULL, Split.TRAIN or Split.TEST). Defaults to None.
+        split (Optional[Union[Split, str]], optional): Dataset split (ie., Split.FULL, Split.TRAIN or Split.TEST).
+            Defaults to None.
         extensions (Optional[Tuple[str, ...]], optional): Type of the image extensions to read from the
             directory.
 
@@ -147,8 +148,7 @@ class FolderDataset(AnomalibDataset):
 
         root (Union[str, Path]): Root folder of the dataset.
         normal_dir (Union[str, Path]): Path to the directory containing normal images.
-        abnormal_dir (Union[str, Path]): Path to the directory containing abnormal images.
-        split (Optional[str], optional): Dataset split (ie., either train or test). Defaults to None.
+        abnormal_dir (Optional[Union[str, Path]], optional): Path to the directory containing abnormal images.
         normal_test_dir (Optional[Union[str, Path]], optional): Path to the directory containing
             normal images for the test dataset. Defaults to None.
         mask_dir (Optional[Union[str, Path]], optional): Path to the directory containing
@@ -175,7 +175,7 @@ class FolderDataset(AnomalibDataset):
         normal_test_dir: Optional[Union[str, Path]] = None,
         mask_dir: Optional[Union[str, Path]] = None,
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
-        extensions: Optional[Tuple[str]] = None,
+        extensions: Optional[Tuple[str, ...]] = None,
         samples: DataFrame = None,
     ) -> None:
         super().__init__(task, pre_process, samples=samples)
@@ -208,7 +208,7 @@ class Folder(AnomalibDataModule):
         root (Union[str, Path]): Path to the root folder containing normal and abnormal dirs.
         normal_dir (Union[str, Path]): Name of the directory containing normal images.
             Defaults to "normal".
-        abnormal_dir (str, optional): Name of the directory containing abnormal images.
+        abnormal_dir (Union[str, Path]): Name of the directory containing abnormal images.
             Defaults to "abnormal".
         normal_test_dir (Optional[Union[str, Path]], optional): Path to the directory containing
             normal images for the test dataset. Defaults to None.
