@@ -246,16 +246,16 @@ class Folder(AnomalibDataModule):
         #
         image_size: Optional[Union[int, Tuple[int, int]]] = None,
         train_batch_size: int = 32,
-        test_batch_size: int = 32,
+        eval_batch_size: int = 32,
         num_workers: int = 8,
         task: str = "segmentation",
         transform_config_train: Optional[Union[str, A.Compose]] = None,
-        transform_config_val: Optional[Union[str, A.Compose]] = None,
+        transform_config_eval: Optional[Union[str, A.Compose]] = None,
         val_split_mode: ValSplitMode = ValSplitMode.FROM_TEST,
     ):
         super().__init__(
             train_batch_size=train_batch_size,
-            test_batch_size=test_batch_size,
+            eval_batch_size=eval_batch_size,
             num_workers=num_workers,
         )
 
@@ -263,7 +263,7 @@ class Folder(AnomalibDataModule):
         self.split_ratio = split_ratio
 
         pre_process_train = PreProcessor(config=transform_config_train, image_size=image_size)
-        pre_process_infer = PreProcessor(config=transform_config_val, image_size=image_size)
+        pre_process_eval = PreProcessor(config=transform_config_eval, image_size=image_size)
 
         self.train_data = FolderDataset(
             task=task,
@@ -279,7 +279,7 @@ class Folder(AnomalibDataModule):
 
         self.test_data = FolderDataset(
             task=task,
-            pre_process=pre_process_infer,
+            pre_process=pre_process_eval,
             split=Split.TEST,
             root=root,
             normal_dir=normal_dir,

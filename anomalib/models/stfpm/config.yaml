@@ -6,12 +6,12 @@ dataset:
   task: segmentation
   image_size: 256
   train_batch_size: 32
-  test_batch_size: 32
+  eval_batch_size: 32
   inference_batch_size: 32
   num_workers: 36
   transform_config:
     train: null
-    val: null
+    eval: null
   validation_split_mode: same_as_test # options: [same_as_test, from_test]
   tiling:
     apply: false

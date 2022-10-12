@@ -186,12 +186,12 @@ class AnomalibDataModule(LightningDataModule, ABC):
     def __init__(
         self,
         train_batch_size: int,
-        test_batch_size: int,
+        eval_batch_size: int,
         num_workers: int,
     ):
         super().__init__()
         self.train_batch_size = train_batch_size
-        self.test_batch_size = test_batch_size
+        self.eval_batch_size = eval_batch_size
         self.num_workers = num_workers
 
         self.train_data: Optional[AnomalibDataset] = None
@@ -228,8 +228,8 @@ class AnomalibDataModule(LightningDataModule, ABC):
 
     def val_dataloader(self) -> EVAL_DATALOADERS:
         """Get validation dataloader."""
-        return DataLoader(self.val_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
+        return DataLoader(self.val_data, shuffle=False, batch_size=self.eval_batch_size, num_workers=self.num_workers)
 
     def test_dataloader(self) -> EVAL_DATALOADERS:
         """Get test dataloader."""
-        return DataLoader(self.test_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
+        return DataLoader(self.test_data, shuffle=False, batch_size=self.eval_batch_size, num_workers=self.num_workers)

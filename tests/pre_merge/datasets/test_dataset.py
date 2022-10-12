@@ -19,7 +19,7 @@ def mvtec_data_module():
         category="leather",
         image_size=(256, 256),
         train_batch_size=1,
-        test_batch_size=1,
+        eval_batch_size=1,
         num_workers=0,
     )
     datamodule.prepare_data()
@@ -36,7 +36,7 @@ def btech_data_module():
         category="01",
         image_size=(256, 256),
         train_batch_size=1,
-        test_batch_size=1,
+        eval_batch_size=1,
         num_workers=0,
     )
     datamodule.prepare_data()
@@ -58,7 +58,7 @@ def folder_data_module():
         split_ratio=0.2,
         image_size=(256, 256),
         train_batch_size=32,
-        test_batch_size=32,
+        eval_batch_size=32,
         num_workers=8,
     )
     datamodule.setup()

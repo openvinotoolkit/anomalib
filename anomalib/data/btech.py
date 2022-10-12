@@ -177,11 +177,11 @@ class BTech(AnomalibDataModule):
         category: str,
         image_size: Optional[Union[int, Tuple[int, int]]] = None,
         train_batch_size: int = 32,
-        test_batch_size: int = 32,
+        eval_batch_size: int = 32,
         num_workers: int = 8,
         task: str = "segmentation",
         transform_config_train: Optional[Union[str, A.Compose]] = None,
-        transform_config_val: Optional[Union[str, A.Compose]] = None,
+        transform_config_eval: Optional[Union[str, A.Compose]] = None,
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
     ) -> None:
         """Instantiate BTech Lightning Data Module.
@@ -225,20 +225,20 @@ class BTech(AnomalibDataModule):
             >>> data["image"].shape, data["mask"].shape
             (torch.Size([32, 3, 256, 256]), torch.Size([32, 256, 256]))
         """
-        super().__init__(train_batch_size, test_batch_size, num_workers)
+        super().__init__(train_batch_size, eval_batch_size, num_workers)
 
         self.root = Path(root)
         self.category = Path(category)
         self.val_split_mode = val_split_mode
 
         pre_process_train = PreProcessor(config=transform_config_train, image_size=image_size)
-        pre_process_infer = PreProcessor(config=transform_config_val, image_size=image_size)
+        pre_process_eval = PreProcessor(config=transform_config_eval, image_size=image_size)
 
         self.train_data = BTechDataset(
             task=task, pre_process=pre_process_train, split=Split.TRAIN, root=root, category=category
         )
         self.test_data = BTechDataset(
-            task=task, pre_process=pre_process_infer, split=Split.TEST, root=root, category=category
+            task=task, pre_process=pre_process_eval, split=Split.TEST, root=root, category=category
         )
 
     def prepare_data(self) -> None:

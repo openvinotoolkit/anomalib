@@ -37,11 +37,11 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             category=config.dataset.category,
             image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
             train_batch_size=config.dataset.train_batch_size,
-            test_batch_size=config.dataset.test_batch_size,
+            eval_batch_size=config.dataset.eval_batch_size,
             num_workers=config.dataset.num_workers,
             task=config.dataset.task,
             transform_config_train=config.dataset.transform_config.train,
-            transform_config_val=config.dataset.transform_config.val,
+            transform_config_eval=config.dataset.transform_config.eval,
             val_split_mode=config.dataset.validation_split_mode,
         )
     elif config.dataset.format.lower() == "btech":
@@ -50,11 +50,11 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             category=config.dataset.category,
             image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
             train_batch_size=config.dataset.train_batch_size,
-            test_batch_size=config.dataset.test_batch_size,
+            eval_batch_size=config.dataset.eval_batch_size,
             num_workers=config.dataset.num_workers,
             task=config.dataset.task,
             transform_config_train=config.dataset.transform_config.train,
-            transform_config_val=config.dataset.transform_config.val,
+            transform_config_eval=config.dataset.transform_config.eval,
             val_split_mode=config.dataset.validation_split_mode,
         )
     elif config.dataset.format.lower() == "folder":
@@ -69,10 +69,10 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             split_ratio=config.dataset.split_ratio,
             image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
             train_batch_size=config.dataset.train_batch_size,
-            test_batch_size=config.dataset.test_batch_size,
+            eval_batch_size=config.dataset.eval_batch_size,
             num_workers=config.dataset.num_workers,
             transform_config_train=config.dataset.transform_config.train,
-            transform_config_val=config.dataset.transform_config.val,
+            transform_config_eval=config.dataset.transform_config.eval,
             val_split_mode=config.dataset.validation_split_mode,
         )
     else:
