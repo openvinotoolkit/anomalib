@@ -116,7 +116,6 @@ class BTechDataset(AnomalibDataset):
         pre_process: PreProcessor,
         split: Split,
         task: str = "segmentation",
-        samples: Optional[DataFrame] = None,
     ) -> None:
         """Btech Dataset class.
 
@@ -159,7 +158,7 @@ class BTechDataset(AnomalibDataset):
             >>> dataset[0]["image"].shape, dataset[0]["mask"].shape
             (torch.Size([3, 256, 256]), torch.Size([256, 256]))
         """
-        super().__init__(task, pre_process, samples)
+        super().__init__(task, pre_process)
 
         self.root_category = Path(root) / Path(category)
         self.split = split

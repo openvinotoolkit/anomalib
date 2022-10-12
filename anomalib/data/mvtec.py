@@ -138,9 +138,8 @@ class MVTecDataset(AnomalibDataset):
         split: Split,
         root: str,
         category: str,
-        samples: Optional[DataFrame] = None,
     ) -> None:
-        super().__init__(task=task, pre_process=pre_process, samples=samples)
+        super().__init__(task=task, pre_process=pre_process)
 
         self.root_category = Path(root) / Path(category)
         self.split = split

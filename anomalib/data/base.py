@@ -45,11 +45,11 @@ class ValSplitMode(str, Enum):
 class AnomalibDataset(Dataset, ABC):
     """Anomalib dataset."""
 
-    def __init__(self, task: str, pre_process: PreProcessor, samples: Optional[DataFrame] = None):
+    def __init__(self, task: str, pre_process: PreProcessor):
         super().__init__()
         self.task = task
         self.pre_process = pre_process
-        self._samples = samples
+        self._samples = None
 
     def __len__(self) -> int:
         """Get length of the dataset."""

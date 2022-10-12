@@ -176,9 +176,8 @@ class FolderDataset(AnomalibDataset):
         mask_dir: Optional[Union[str, Path]] = None,
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
         extensions: Optional[Tuple[str, ...]] = None,
-        samples: DataFrame = None,
     ) -> None:
-        super().__init__(task, pre_process, samples=samples)
+        super().__init__(task, pre_process)
 
         self.split = split
         self.normal_dir = Path(root) / Path(normal_dir)
