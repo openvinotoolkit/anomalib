@@ -64,7 +64,7 @@ class AnomalibDataset(Dataset, ABC):
             inplace (bool): When true, the subsampling will be performed on the instance itself.
         """
         dataset = self if inplace else copy.deepcopy(self)
-        dataset.assign_samples(self.samples.iloc[indices].reset_index(drop=True))
+        dataset.samples = self.samples.iloc[indices].reset_index(drop=True)
         return dataset
 
     @property
@@ -79,7 +79,8 @@ class AnomalibDataset(Dataset, ABC):
             raise RuntimeError("Dataset is not setup yet. Call setup() first.")
         return self._samples
 
-    def assign_samples(self, samples: DataFrame):
+    @samples.setter
+    def samples(self, samples: DataFrame):
         """Overwrite the samples with a new dataframe.
 
         Args:
@@ -142,7 +143,7 @@ class AnomalibDataset(Dataset, ABC):
         assert isinstance(other_dataset, self.__class__), "Cannot concatenate datasets that are not of same type."
         assert self.is_setup and other_dataset.is_setup, "Cannot concatenate uninitialized datasets. Call setup first."
         dataset = copy.deepcopy(self)
-        dataset.assign_samples(pd.concat([self.samples, other_dataset.samples], ignore_index=True))
+        dataset.samples = pd.concat([self.samples, other_dataset.samples], ignore_index=True)
         return dataset
 
     def setup(self) -> None:
