@@ -290,7 +290,7 @@ class BTech(LightningDataModule):
             seed: seed used for the random subset splitting
             create_validation_set: Create a validation subset in addition to the train and test subsets
 
-        Examples
+        Examples:
             >>> from anomalib.data import BTech
             >>> datamodule = BTech(
             ...     root="./datasets/BTech",

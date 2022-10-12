@@ -350,6 +350,7 @@ class Folder(LightningDataModule):
 
         Examples:
             Assume that we use Folder Dataset for the MVTec/bottle/broken_large category. We would do:
+
             >>> from anomalib.data import Folder
             >>> datamodule = Folder(
             ...     root="./datasets/MVTec/bottle/test",
@@ -370,6 +371,7 @@ class Folder(LightningDataModule):
             The dataset expects that mask annotation filenames must be same as the original filename.
             To this end, we modified mask filenames in MVTec AD bottle category.
             Now we could try folder data module using the mvtec bottle broken large category
+
             >>> datamodule = Folder(
             ...     root="./datasets/bottle/test",
             ...     normal="good",

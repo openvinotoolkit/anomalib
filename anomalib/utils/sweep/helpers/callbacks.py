@@ -33,11 +33,13 @@ def get_sweep_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]
         config.metrics.threshold.pixel_default if "pixel_default" in config.metrics.threshold.keys() else None
     )
     metrics_callback = MetricsConfigurationCallback(
-        config.metrics.threshold.adaptive,
-        image_threshold,
-        pixel_threshold,
-        image_metric_names,
-        pixel_metric_names,
+        adaptive_threshold=config.metrics.threshold.adaptive,
+        task=config.dataset.task,
+        default_image_threshold=image_threshold,
+        default_pixel_threshold=pixel_threshold,
+        image_metric_names=image_metric_names,
+        pixel_metric_names=pixel_metric_names,
+        normalization_method=config.model.normalization_method,
     )
     callbacks.append(metrics_callback)
 

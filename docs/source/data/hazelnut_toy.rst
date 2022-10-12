@@ -1,3 +1,5 @@
+.. _hazelnut-toy-dataset:
+
 Hazelnut Toy
 ============
 

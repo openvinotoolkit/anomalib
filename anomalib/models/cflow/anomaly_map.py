@@ -24,9 +24,7 @@ class AnomalyMapGenerator(nn.Module):
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
         self.pool_layers: List[str] = pool_layers
 
-    def compute_anomaly_map(
-        self, distribution: Union[List[Tensor], List[List]], height: List[int], width: List[int]
-    ) -> Tensor:
+    def compute_anomaly_map(self, distribution: List[Tensor], height: List[int], width: List[int]) -> Tensor:
         """Compute the layer map based on likelihood estimation.
 
         Args:
@@ -38,26 +36,25 @@ class AnomalyMapGenerator(nn.Module):
           Final Anomaly Map
 
         """
-
-        test_map: List[Tensor] = []
+        layer_maps: List[Tensor] = []
         for layer_idx in range(len(self.pool_layers)):
-            test_norm = torch.tensor(distribution[layer_idx], dtype=torch.double)  # pylint: disable=not-callable
-            test_norm -= torch.max(test_norm)  # normalize likelihoods to (-Inf:0] by subtracting a constant
-            test_prob = torch.exp(test_norm)  # convert to probs in range [0:1]
-            test_mask = test_prob.reshape(-1, height[layer_idx], width[layer_idx])
+            layer_distribution = distribution[layer_idx].clone().detach()
+            # Normalize the likelihoods to (-Inf:0] and convert to probs in range [0:1]
+            layer_probabilities = torch.exp(layer_distribution - layer_distribution.max())
+            layer_map = layer_probabilities.reshape(-1, height[layer_idx], width[layer_idx])
             # upsample
-            test_map.append(
+            layer_maps.append(
                 F.interpolate(
-                    test_mask.unsqueeze(1), size=self.image_size, mode="bilinear", align_corners=True
-                ).squeeze()
+                    layer_map.unsqueeze(1), size=self.image_size, mode="bilinear", align_corners=True
+                ).squeeze(1)
             )
         # score aggregation
-        score_map = torch.zeros_like(test_map[0])
+        score_map = torch.zeros_like(layer_maps[0])
         for layer_idx in range(len(self.pool_layers)):
-            score_map += test_map[layer_idx]
-        score_mask = score_map
-        # invert probs to anomaly scores
-        anomaly_map = score_mask.max() - score_mask
+            score_map += layer_maps[layer_idx]
+
+        # Invert probs to anomaly scores
+        anomaly_map = score_map.max() - score_map
 
         return anomaly_map
 

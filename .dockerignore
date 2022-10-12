@@ -1,4 +1,5 @@
 *.dot
+.git
 .idea
 .pytest_cache
 .tox
