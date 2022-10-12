@@ -1,22 +1,12 @@
 import argparse
 import random
 import warnings
-from typing import Optional
 
 import datasets.mvtec as mvtec
 import torch
 import torch.optim as optim
-import torchvision
-from cnn.efficientnet import EfficientNet as effnet
-from cnn.resnet import resnet18, wide_resnet50_2
-from cnn.vgg import vgg19_bn
 from datasets.mvtec import MVTecDataset
-from scipy.ndimage import gaussian_filter
 from torch.utils.data import DataLoader
-from torchvision.models.feature_extraction import (
-    create_feature_extractor,
-    get_graph_node_names,
-)
 from utils.cfa3 import *
 from utils.metric import *
 from utils.visualizer import *
@@ -123,11 +113,7 @@ def run():
             for (x, _, _) in train_loader:
                 optimizer.zero_grad()
                 x = x.to(device)
-                with torch.no_grad():
-                    p = feature_extractor(x)
-                    p = [v for v in p.values()]
-
-                loss = model(p)
+                loss = model(x)
                 loss.backward()
                 optimizer.step()
 
@@ -138,11 +124,7 @@ def run():
                 gt_mask_list.extend(mask.cpu().detach().numpy())
 
                 x = x.to(device)
-                with torch.no_grad():
-                    p = feature_extractor(x)
-                    p = [v for v in p.values()]
-
-                heatmap = model(p)
+                heatmap = model(x)
                 heatmaps = heatmap if heatmaps is None else torch.cat((heatmaps, heatmap), dim=0)
 
             gt_mask = np.asarray(gt_mask_list)

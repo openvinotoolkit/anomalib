@@ -44,6 +44,7 @@ class CfaModel(nn.Module):
     def __init__(self, feature_extractor, data_loader, backbone, gamma_c, gamma_d, device):
         super(CfaModel, self).__init__()
         self.device = device
+        self.feature_extractor = get_feature_extractor(backbone, device=device)
 
         self.memory_bank = 0
         self.nu = 1e-3
@@ -57,7 +58,7 @@ class CfaModel(nn.Module):
 
         self.radius = nn.Parameter(1e-5 * torch.ones(1), requires_grad=True)
         self.descriptor = Descriptor(self.gamma_d, backbone).to(device)
-        self._init_centroid(feature_extractor, data_loader)
+        self._init_centroid(self.feature_extractor, data_loader)
         self.memory_bank = rearrange(self.memory_bank, "b c h w -> (b h w) c").detach()
 
         if self.gamma_c > 1:
@@ -105,7 +106,13 @@ class CfaModel(nn.Module):
 
         return loss
 
-    def forward(self, patch_features: Tensor):
+    def forward(self, input_tensor: Tensor):
+        # def forward(self, patch_features: Tensor):
+        self.feature_extractor.eval()
+        with torch.no_grad():
+            patch_features = self.feature_extractor(input_tensor)
+
+        patch_features = [v for v in patch_features.values()]
         target_oriented_features = self.descriptor(patch_features)
         target_oriented_features = rearrange(target_oriented_features, "b c h w -> b (h w) c")
 
