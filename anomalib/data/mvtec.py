@@ -120,7 +120,7 @@ def make_mvtec_dataset(root: Union[str, Path], split: Split = Split.FULL) -> Dat
     return samples
 
 
-class MVTec(AnomalibDataset):
+class MVTecDataset(AnomalibDataset):
     """MVTec dataset class.
 
     Args:
@@ -149,7 +149,7 @@ class MVTec(AnomalibDataset):
         self._samples = make_mvtec_dataset(self.root_category, split=self.split)
 
 
-class MVTecDataModule(AnomalibDataModule):
+class MVTec(AnomalibDataModule):
     """MVTec Datamodule."""
 
     def __init__(
@@ -179,10 +179,12 @@ class MVTecDataModule(AnomalibDataModule):
         pre_process_train = PreProcessor(config=transform_config_train, image_size=image_size)
         pre_process_infer = PreProcessor(config=transform_config_val, image_size=image_size)
 
-        self.train_data = MVTec(
+        self.train_data = MVTecDataset(
             task=task, pre_process=pre_process_train, split=Split.TRAIN, root=root, category=category
         )
-        self.test_data = MVTec(task=task, pre_process=pre_process_infer, split=Split.TEST, root=root, category=category)
+        self.test_data = MVTecDataset(
+            task=task, pre_process=pre_process_infer, split=Split.TEST, root=root, category=category
+        )
 
     def prepare_data(self) -> None:
         """Download the dataset if not available."""

@@ -106,7 +106,7 @@ def make_btech_dataset(path: Path, split: Optional[str] = None) -> DataFrame:
     return samples
 
 
-class BTech(AnomalibDataset):
+class BTechDataset(AnomalibDataset):
     """BTech PyTorch Dataset."""
 
     def __init__(
@@ -169,7 +169,7 @@ class BTech(AnomalibDataset):
 
 
 @DATAMODULE_REGISTRY
-class BTechDataModule(AnomalibDataModule):
+class BTech(AnomalibDataModule):
     """BTechDataModule Lightning Data Module."""
 
     def __init__(
@@ -235,10 +235,12 @@ class BTechDataModule(AnomalibDataModule):
         pre_process_train = PreProcessor(config=transform_config_train, image_size=image_size)
         pre_process_infer = PreProcessor(config=transform_config_val, image_size=image_size)
 
-        self.train_data = BTech(
+        self.train_data = BTechDataset(
             task=task, pre_process=pre_process_train, split=Split.TRAIN, root=root, category=category
         )
-        self.test_data = BTech(task=task, pre_process=pre_process_infer, split=Split.TEST, root=root, category=category)
+        self.test_data = BTechDataset(
+            task=task, pre_process=pre_process_infer, split=Split.TEST, root=root, category=category
+        )
 
     def prepare_data(self) -> None:
         """Download the dataset if not available."""

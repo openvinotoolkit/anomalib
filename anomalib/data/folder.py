@@ -136,7 +136,7 @@ def make_folder_dataset(
     return samples
 
 
-class Folder(AnomalibDataset):
+class FolderDataset(AnomalibDataset):
     """Folder dataset.
 
     Args:
@@ -201,7 +201,7 @@ class Folder(AnomalibDataset):
         )
 
 
-class FolderDataModule(AnomalibDataModule):
+class Folder(AnomalibDataModule):
     """Folder DataModule.
 
     Args:
@@ -266,7 +266,7 @@ class FolderDataModule(AnomalibDataModule):
         pre_process_train = PreProcessor(config=transform_config_train, image_size=image_size)
         pre_process_infer = PreProcessor(config=transform_config_val, image_size=image_size)
 
-        self.train_data = Folder(
+        self.train_data = FolderDataset(
             task=task,
             pre_process=pre_process_train,
             split=Split.TRAIN,
@@ -278,7 +278,7 @@ class FolderDataModule(AnomalibDataModule):
             extensions=extensions,
         )
 
-        self.test_data = Folder(
+        self.test_data = FolderDataset(
             task=task,
             pre_process=pre_process_infer,
             split=Split.TEST,

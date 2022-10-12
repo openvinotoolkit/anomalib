@@ -10,10 +10,10 @@ from omegaconf import DictConfig, ListConfig
 
 from anomalib.data.base import AnomalibDataModule
 
-from .btech import BTechDataModule
-from .folder import FolderDataModule
+from .btech import BTech
+from .folder import Folder
 from .inference import InferenceDataset
-from .mvtec import MVTecDataModule
+from .mvtec import MVTec
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
     datamodule: AnomalibDataModule
 
     if config.dataset.format.lower() == "mvtec":
-        datamodule = MVTecDataModule(
+        datamodule = MVTec(
             root=config.dataset.path,
             category=config.dataset.category,
             image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
@@ -45,7 +45,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             val_split_mode=config.dataset.validation_split_mode,
         )
     elif config.dataset.format.lower() == "btech":
-        datamodule = BTechDataModule(
+        datamodule = BTech(
             root=config.dataset.path,
             category=config.dataset.category,
             image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
@@ -58,7 +58,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             val_split_mode=config.dataset.validation_split_mode,
         )
     elif config.dataset.format.lower() == "folder":
-        datamodule = FolderDataModule(
+        datamodule = Folder(
             root=config.dataset.path,
             normal_dir=config.dataset.normal_dir,
             abnormal_dir=config.dataset.abnormal_dir,
@@ -87,8 +87,8 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
 
 __all__ = [
     "get_datamodule",
-    "BTechDataModule",
-    "FolderDataModule",
+    "BTech",
+    "Folder",
     "InferenceDataset",
-    "MVTecDataModule",
+    "MVTec",
 ]
