@@ -11,7 +11,7 @@ dataset:
   transform_config:
     train: null
     val: null
-  validation_split_mode: same_as_test
+  validation_split_mode: same_as_test # options: [same_as_test, from_test]
   tiling:
     apply: false
     tile_size: null
@@ -58,7 +58,7 @@ logging:
   log_graph: false # Logs the model graph to respective logger.
 
 optimization:
-  export_mode: openvino #options: onnx, openvino
+  export_mode: null #options: onnx, openvino
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:

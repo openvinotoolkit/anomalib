@@ -13,7 +13,7 @@ dataset:
   transform_config:
     train: null
     val: null
-  validation_split_mode: same_as_test
+  validation_split_mode: same_as_test # options: [same_as_test, from_test]
 
 model:
   name: cflow
