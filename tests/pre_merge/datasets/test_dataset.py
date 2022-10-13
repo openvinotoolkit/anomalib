@@ -2,6 +2,7 @@
 
 import random
 
+import pandas as pd
 import pytest
 
 from anomalib.data.folder import FolderDataset
@@ -44,15 +45,12 @@ class TestAnomalibDataset:
     def test_random_split(self, folder_dataset):
         """Test the random subset splitting."""
 
-        # split the dataset
-        subsets = random_split(folder_dataset, [0.4, 0.35, 0.25], label_aware=True)
-
+        # subset splitting
+        subsets = random_split(folder_dataset, [0.4, 0.35, 0.25])
         # check if subset splitting has been performed correctly
         assert len(subsets) == 3
-
         # reconstruct the original dataset by concatenating the subsets
         reconstructed_dataset = concatenate_datasets(subsets)
-
         # check if reconstructed dataset is equal to original dataset
         assert folder_dataset.samples.equals(reconstructed_dataset.samples)
 
@@ -60,3 +58,17 @@ class TestAnomalibDataset:
         split_ratios = [1 - (1 / (len(folder_dataset) + 1)), 1 / (len(folder_dataset) + 1)]
         with pytest.warns():
             subsets = random_split(folder_dataset, split_ratios)
+
+        # label-aware subset splitting
+        samples = folder_dataset.samples
+        normal_samples = samples[samples["label_index"] == 0]
+        anomalous_samples = samples[samples["label_index"] == 1]
+        samples = pd.concat([normal_samples, anomalous_samples[0:5]])
+        folder_dataset.samples = samples
+
+        subsets = random_split(folder_dataset, [0.4, 0.4, 0.2], label_aware=True)
+
+        # 5 anomalous images in total, so the first two subsets should each have 2, and the last subset 1
+        assert len(subsets[0].samples[subsets[0].samples["label_index"] == 1]) == 2
+        assert len(subsets[1].samples[subsets[1].samples["label_index"] == 1]) == 2
+        assert len(subsets[2].samples[subsets[2].samples["label_index"] == 1]) == 1
