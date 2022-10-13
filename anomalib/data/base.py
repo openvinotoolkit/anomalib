@@ -85,7 +85,7 @@ class AnomalibDataset(Dataset, ABC):
         Args:
             samples (DataFrame): DataFrame with new samples.
         """
-        self._samples = samples
+        self._samples = samples.sort_values(by="image_path", ignore_index=True)
 
     @property
     def has_normal(self) -> bool:
