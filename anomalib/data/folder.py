@@ -189,7 +189,7 @@ class FolderDataset(AnomalibDataset):
 
     def _setup(self):
         """Assign samples."""
-        self._samples = make_folder_dataset(
+        self.samples = make_folder_dataset(
             normal_dir=self.normal_dir,
             abnormal_dir=self.abnormal_dir,
             normal_test_dir=self.normal_test_dir,

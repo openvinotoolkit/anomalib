@@ -164,7 +164,7 @@ class BTechDataset(AnomalibDataset):
         self.split = split
 
     def _setup(self):
-        self._samples = make_btech_dataset(path=self.root_category, split=self.split)
+        self.samples = make_btech_dataset(path=self.root_category, split=self.split)
 
 
 @DATAMODULE_REGISTRY

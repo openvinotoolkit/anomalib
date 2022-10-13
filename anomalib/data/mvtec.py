@@ -145,7 +145,7 @@ class MVTecDataset(AnomalibDataset):
         self.split = split
 
     def _setup(self):
-        self._samples = make_mvtec_dataset(self.root_category, split=self.split)
+        self.samples = make_mvtec_dataset(self.root_category, split=self.split)
 
 
 class MVTec(AnomalibDataModule):
