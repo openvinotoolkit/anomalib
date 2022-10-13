@@ -73,8 +73,10 @@ def random_split(
             subset_idx = i % sum(subset_lengths)
             subset_lengths[subset_idx] += 1
         if 0 in subset_lengths:
-            warnings.warn("Zero subset length encountered during splitting. This means one of your subsets might be"
-                          " empty or devoid of either normal or anomalous images.")
+            warnings.warn(
+                "Zero subset length encountered during splitting. This means one of your subsets might be"
+                " empty or devoid of either normal or anomalous images."
+            )
         # perform random subsampling
         indices = torch.randperm(len(label_dataset))
         subsets.append(
