@@ -31,7 +31,7 @@ from anomalib.pre_processing import PreProcessor
 logger = logging.getLogger(__name__)
 
 
-def make_btech_dataset(path: Path, split: Optional[str] = None) -> DataFrame:
+def make_btech_dataset(path: Path, split: Optional[Union[Split, str]] = None) -> DataFrame:
     """Create BTech samples by parsing the BTech data file structure.
 
     The files are expected to follow the structure:
@@ -40,7 +40,7 @@ def make_btech_dataset(path: Path, split: Optional[str] = None) -> DataFrame:
 
     Args:
         path (Path): Path to dataset
-        split (str, optional): Dataset split (ie., either train or test). Defaults to None.
+        split (Optional[Union[Split, str]], optional): Dataset split (ie., either train or test). Defaults to None.
         split_ratio (float, optional): Ratio to split normal training images and add to the
             test set in case test set doesn't contain any normal images.
             Defaults to 0.1.
@@ -99,7 +99,7 @@ def make_btech_dataset(path: Path, split: Optional[str] = None) -> DataFrame:
     samples.label_index = samples.label_index.astype(int)
 
     # Get the data frame for the split.
-    if split != Split.FULL:
+    if split:
         samples = samples[samples.split == split]
         samples = samples.reset_index(drop=True)
 
@@ -114,7 +114,7 @@ class BTechDataset(AnomalibDataset):
         root: Union[Path, str],
         category: str,
         pre_process: PreProcessor,
-        split: Split,
+        split: Optional[Union[Split, str]] = None,
         task: str = "segmentation",
     ) -> None:
         """Btech Dataset class.

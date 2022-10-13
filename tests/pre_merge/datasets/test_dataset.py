@@ -21,6 +21,7 @@ def mvtec_data_module():
         train_batch_size=1,
         eval_batch_size=1,
         num_workers=0,
+        val_split_mode="from_test",
     )
     datamodule.prepare_data()
     datamodule.setup()
@@ -38,6 +39,7 @@ def btech_data_module():
         train_batch_size=1,
         eval_batch_size=1,
         num_workers=0,
+        val_split_mode="from_test",
     )
     datamodule.prepare_data()
     datamodule.setup()
@@ -60,6 +62,7 @@ def folder_data_module():
         train_batch_size=32,
         eval_batch_size=32,
         num_workers=8,
+        val_split_mode="from_test",
     )
     datamodule.setup()
 

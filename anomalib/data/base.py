@@ -29,7 +29,6 @@ logger = logging.getLogger(__name__)
 class Split(str, Enum):
     """Split of a subset."""
 
-    FULL = "full"
     TRAIN = "train"
     VAL = "val"
     TEST = "test"

@@ -130,7 +130,7 @@ def make_folder_dataset(
     samples.loc[(samples.label == "abnormal") | (samples.label == "normal_test"), "split"] = "test"
 
     # Get the data frame for the split.
-    if split != Split.FULL:
+    if split:
         samples = samples[samples.split == split]
         samples = samples.reset_index(drop=True)
 
@@ -143,8 +143,8 @@ class FolderDataset(AnomalibDataset):
     Args:
         task (str): Task type. (classification or segmentation).
         pre_process (PreProcessor): Image Pre-processor to apply transform.
-        split (Split): Fixed subset split that follows from folder structure on file system. Choose from
-            [Split.FULL, Split.TRAIN, Split.TEST]
+        split (Optional[Union[Split, str]]): Fixed subset split that follows from folder structure on file system.
+            Choose from [Split.FULL, Split.TRAIN, Split.TEST]
 
         root (Union[str, Path]): Root folder of the dataset.
         normal_dir (Union[str, Path]): Path to the directory containing normal images.
@@ -167,13 +167,12 @@ class FolderDataset(AnomalibDataset):
         self,
         task: str,
         pre_process: PreProcessor,
-        split: Split,
-        #
         root: Union[str, Path],
         normal_dir: Union[str, Path],
         abnormal_dir: Optional[Union[str, Path]] = None,
         normal_test_dir: Optional[Union[str, Path]] = None,
         mask_dir: Optional[Union[str, Path]] = None,
+        split: Optional[Union[Split, str]] = None,
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
         extensions: Optional[Tuple[str, ...]] = None,
     ) -> None:

@@ -40,7 +40,7 @@ from anomalib.pre_processing import PreProcessor
 logger = logging.getLogger(__name__)
 
 
-def make_mvtec_dataset(root: Union[str, Path], split: Split = Split.FULL) -> DataFrame:
+def make_mvtec_dataset(root: Union[str, Path], split: Optional[Union[Split, str]] = None) -> DataFrame:
     """Create MVTec AD samples by parsing the MVTec AD data file structure.
 
     The files are expected to follow the structure:
@@ -56,7 +56,7 @@ def make_mvtec_dataset(root: Union[str, Path], split: Split = Split.FULL) -> Dat
 
     Args:
         path (Path): Path to dataset
-        split (str, optional): Dataset split (ie., either train or test). Defaults to None.
+        split (Optional[Union[Split, str]], optional): Dataset split (ie., either train or test). Defaults to None.
         split_ratio (float, optional): Ratio to split normal training images and add to the
             test set in case test set doesn't contain any normal images.
             Defaults to 0.1.
@@ -114,7 +114,7 @@ def make_mvtec_dataset(root: Union[str, Path], split: Split = Split.FULL) -> Dat
     samples.loc[(samples.label != "good"), "label_index"] = 1
     samples.label_index = samples.label_index.astype(int)
 
-    if split != Split.FULL:
+    if split:
         samples = samples[samples.split == split].reset_index(drop=True)
 
     return samples
@@ -126,7 +126,7 @@ class MVTecDataset(AnomalibDataset):
     Args:
         task (str): Task type, either 'classification' or 'segmentation'
         pre_process (PreProcessor): Pre-processor object
-        split (Split): Split of the dataset, usually Split.TRAIN or Split. TEST
+        split (Optional[Union[Split, str]]): Split of the dataset, usually Split.TRAIN or Split.TEST
         root (str): Path to the root of the dataset
         category (str): Sub-category of the dataset, e.g. 'bottle'
     """
@@ -135,9 +135,9 @@ class MVTecDataset(AnomalibDataset):
         self,
         task: str,
         pre_process: PreProcessor,
-        split: Split,
         root: str,
         category: str,
+        split: Optional[Union[Split, str]] = None,
     ) -> None:
         super().__init__(task=task, pre_process=pre_process)
 
