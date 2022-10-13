@@ -26,6 +26,7 @@ def parse_args():
     parser.add_argument("--save_path", type=str, default="./mvtec_result")
     parser.add_argument("--Rd", type=bool, default=False)
     parser.add_argument("--cnn", type=str, choices=["res18", "wrn50_2", "effnet-b5", "vgg19"], default="wrn50_2")
+    parser.add_argument("--resize", type=int, choices=[224, 256], default=224)
     parser.add_argument("--size", type=int, choices=[224, 256], default=224)
     parser.add_argument("--gamma_c", type=int, default=1)
     parser.add_argument("--gamma_d", type=int, default=1)
@@ -63,7 +64,7 @@ def run():
         train_dataset = MVTecDataset(
             dataset_path=args.data_path,
             class_name=class_name,
-            resize=256,
+            resize=args.resize,
             cropsize=args.size,
             is_train=True,
             wild_ver=args.Rd,
@@ -72,7 +73,7 @@ def run():
         test_dataset = MVTecDataset(
             dataset_path=args.data_path,
             class_name=class_name,
-            resize=256,
+            resize=args.resize,
             cropsize=args.size,
             is_train=False,
             wild_ver=args.Rd,

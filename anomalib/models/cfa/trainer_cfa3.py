@@ -5,11 +5,11 @@ import warnings
 import datasets.mvtec as mvtec
 import torch
 import torch.optim as optim
-from datasets.mvtec import MVTecDataset
-from torch.utils.data import DataLoader
 from utils.cfa3 import *
 from utils.metric import *
 from utils.visualizer import *
+
+from anomalib.data import MVTec
 
 warnings.filterwarnings("ignore", category=UserWarning)
 use_cuda = torch.cuda.is_available()
@@ -62,41 +62,18 @@ def run():
         print(" ")
         print("%s | newly initialized..." % class_name)
 
-        train_dataset = MVTecDataset(
-            dataset_path=args.data_path,
-            class_name=class_name,
-            resize=256,
-            cropsize=args.size,
-            is_train=True,
-            wild_ver=args.Rd,
+        datamodule = MVTec(
+            root="./datasets/MVTec",
+            category="screw",
+            image_size=(224, 224),
+            train_batch_size=4,
+            test_batch_size=4,
+            num_workers=8,
+            task="segmentation",
         )
+        datamodule.setup()
 
-        test_dataset = MVTecDataset(
-            dataset_path=args.data_path,
-            class_name=class_name,
-            resize=256,
-            cropsize=args.size,
-            is_train=False,
-            wild_ver=args.Rd,
-        )
-
-        train_loader = DataLoader(
-            dataset=train_dataset,
-            batch_size=4,
-            pin_memory=True,
-            shuffle=True,
-            drop_last=True,
-        )
-
-        test_loader = DataLoader(
-            dataset=test_dataset,
-            batch_size=4,
-            pin_memory=True,
-        )
-
-        feature_extractor = get_feature_extractor(args.backbone, device=device)
-
-        model = CfaModel(feature_extractor, train_loader, args.backbone, args.gamma_c, args.gamma_d, device)
+        model = CfaModel(datamodule.train_dataloader(), args.backbone, args.gamma_c, args.gamma_d, device)
         model = model.to(device)
 
         optimizer = optim.AdamW(params=model.parameters(), lr=1e-3, weight_decay=5e-4, amsgrad=True)
@@ -110,15 +87,19 @@ def run():
             heatmaps = None
 
             model.train()
-            for (x, _, _) in train_loader:
+            for batch in datamodule.train_dataloader():
                 optimizer.zero_grad()
+                x = batch["image"]
                 x = x.to(device)
                 loss = model(x)
                 loss.backward()
                 optimizer.step()
 
             model.eval()
-            for x, y, mask in test_loader:
+            for batch in datamodule.test_dataloader():
+                x = batch["image"]
+                y = batch["label"]
+                mask = batch["mask"].unsqueeze(1)
                 test_imgs.extend(x.cpu().detach().numpy())
                 gt_list.extend(y.cpu().detach().numpy())
                 gt_mask_list.extend(mask.cpu().detach().numpy())
@@ -159,10 +140,10 @@ def run():
         total_pixel_roc_auc.append(best_pxl_roc)
         total_pixel_pro_auc.append(best_pxl_pro)
 
-        fig_pixel_rocauc.plot(fpr, tpr, label="%s ROCAUC: %.3f" % (class_name, per_pixel_rocauc))
-        save_dir = args.save_path + "/" + f"pictures_{args.backbone}"
-        os.makedirs(save_dir, exist_ok=True)
-        plot_fig(test_imgs, scores, gt_mask_list, threshold, save_dir, class_name)
+        # fig_pixel_rocauc.plot(fpr, tpr, label="%s ROCAUC: %.3f" % (class_name, per_pixel_rocauc))
+        # save_dir = args.save_path + "/" + f"pictures_{args.backbone}"
+        # os.makedirs(save_dir, exist_ok=True)
+        # plot_fig(test_imgs, scores, gt_mask_list, threshold, save_dir, class_name)
 
     print("Average ROCAUC: %.3f" % np.mean(total_roc_auc))
     fig_img_rocauc.title.set_text("Average image ROCAUC: %.3f" % np.mean(total_roc_auc))
