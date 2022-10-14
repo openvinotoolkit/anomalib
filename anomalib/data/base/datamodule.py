@@ -15,6 +15,7 @@ from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADER
 from torch.utils.data import DataLoader
 
 from anomalib.data.base.dataset import AnomalibDataset
+from anomalib.data.synthetic import SyntheticValidationSet
 from anomalib.data.utils import ValSplitMode, random_split
 
 logger = logging.getLogger(__name__)
@@ -66,6 +67,9 @@ class AnomalibDataModule(LightningDataModule, ABC):
             self.val_data, self.test_data = random_split(self.test_data, [0.5, 0.5], label_aware=True)
         elif self.val_split_mode == ValSplitMode.SAME_AS_TEST:
             self.val_data = self.test_data
+        elif self.val_split_mode == ValSplitMode.SYNTHETIC:
+            self.train_data, normal_val_data = random_split(self.train_data, 0.5)
+            self.val_data = SyntheticValidationSet.from_dataset(normal_val_data)
         else:
             raise ValueError(f"Unknown validation split mode: {self.val_split_mode}")
 
