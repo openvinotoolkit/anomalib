@@ -180,7 +180,7 @@ class TestDenormalize:
 
     def test_denormalize_channel_order(self, data_sample):
         """Denormalize should return a numpy array of order [HxWxC]"""
-        denormalized_sample = Denormalize().__call__(data_sample["image"].squeeze())
+        denormalized_sample = Denormalize()(data_sample["image"].squeeze())
         assert len(denormalized_sample.shape) == 3 and denormalized_sample.shape[-1] == 3
 
     def test_representation(self):
@@ -241,4 +241,4 @@ class TestConfigToDataModule:
 
         data_module = get_datamodule(configurable_parameters)
         data_module.setup()
-        assert iter(data_module.train_dataloader()).__next__()["image"].shape[-2:] == effective_image_size
+        assert next(iter(data_module.train_dataloader()))["image"].shape[-2:] == effective_image_size
