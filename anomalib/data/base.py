@@ -182,16 +182,12 @@ class AnomalibDataModule(LightningDataModule, ABC):
         num_workers (int): Number of workers used by the train, val and test dataloaders.
     """
 
-    def __init__(
-        self,
-        train_batch_size: int,
-        eval_batch_size: int,
-        num_workers: int,
-    ):
+    def __init__(self, train_batch_size: int, eval_batch_size: int, num_workers: int, val_split_mode: ValSplitMode):
         super().__init__()
         self.train_batch_size = train_batch_size
         self.eval_batch_size = eval_batch_size
         self.num_workers = num_workers
+        self.val_split_mode = val_split_mode
 
         self.train_data: Optional[AnomalibDataset] = None
         self.val_data: Optional[AnomalibDataset] = None

@@ -167,11 +167,11 @@ class MVTec(AnomalibDataModule):
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
             num_workers=num_workers,
+            val_split_mode=val_split_mode,
         )
 
         self.root = Path(root)
         self.category = Path(category)
-        self.val_split_mode = val_split_mode
 
         # TODO: Get rid of PreProcessor by passing transform directly
         pre_process_train = PreProcessor(config=transform_config_train, image_size=image_size)

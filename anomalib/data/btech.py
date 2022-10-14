@@ -224,11 +224,10 @@ class BTech(AnomalibDataModule):
             >>> data["image"].shape, data["mask"].shape
             (torch.Size([32, 3, 256, 256]), torch.Size([32, 256, 256]))
         """
-        super().__init__(train_batch_size, eval_batch_size, num_workers)
+        super().__init__(train_batch_size, eval_batch_size, num_workers, val_split_mode)
 
         self.root = Path(root)
         self.category = Path(category)
-        self.val_split_mode = val_split_mode
 
         pre_process_train = PreProcessor(config=transform_config_train, image_size=image_size)
         pre_process_eval = PreProcessor(config=transform_config_eval, image_size=image_size)

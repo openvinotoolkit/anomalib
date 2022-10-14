@@ -256,9 +256,9 @@ class Folder(AnomalibDataModule):
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
             num_workers=num_workers,
+            val_split_mode=val_split_mode,
         )
 
-        self.val_split_mode = val_split_mode
         self.split_ratio = split_ratio
 
         pre_process_train = PreProcessor(config=transform_config_train, image_size=image_size)
