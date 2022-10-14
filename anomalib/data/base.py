@@ -20,7 +20,7 @@ from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADER
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
-from anomalib.data.utils import read_image
+from anomalib.data.utils import random_split, read_image
 from anomalib.pre_processing import PreProcessor
 
 logger = logging.getLogger(__name__)
@@ -209,10 +209,22 @@ class AnomalibDataModule(LightningDataModule, ABC):
             self._setup(stage)
         assert self.is_setup
 
-    @abstractmethod
     def _setup(self, _stage: Optional[str] = None) -> None:
-        """To be implemented in conrete subclass."""
-        raise NotImplementedError
+        """Set up the datasets and perform dynamic subset splitting.
+
+        May be overridden in subclass for custom splitting behaviour.
+        """
+        assert self.train_data is not None
+        assert self.test_data is not None
+
+        self.train_data.setup()
+        self.test_data.setup()
+        if self.val_split_mode == ValSplitMode.FROM_TEST:
+            self.val_data, self.test_data = random_split(self.test_data, [0.5, 0.5], label_aware=True)
+        elif self.val_split_mode == ValSplitMode.SAME_AS_TEST:
+            self.val_data = self.test_data
+        else:
+            raise ValueError(f"Unknown validation split mode: {self.val_split_mode}")
 
     @property
     def is_setup(self):

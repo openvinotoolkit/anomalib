@@ -11,6 +11,7 @@ from .image import (
     get_image_height_and_width,
     read_image,
 )
+from .split import concatenate_datasets, random_split
 
 __all__ = [
     "generate_output_image_filename",
@@ -20,4 +21,6 @@ __all__ = [
     "random_2d_perlin",
     "read_image",
     "DownloadProgressBar",
+    "random_split",
+    "concatenate_datasets",
 ]

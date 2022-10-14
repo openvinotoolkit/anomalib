@@ -301,11 +301,4 @@ class Folder(AnomalibDataModule):
             self.train_data, normal_test_data = random_split(self.train_data, self.split_ratio)
             self.test_data += normal_test_data
 
-        # split validation set from test set
-        if self.val_split_mode == ValSplitMode.FROM_TEST:
-            assert self.test_data is not None
-            self.val_data, self.test_data = random_split(self.test_data, [0.5, 0.5], label_aware=True)
-        elif self.val_split_mode == ValSplitMode.SAME_AS_TEST:
-            self.val_data = self.test_data
-        else:
-            raise ValueError(f"Unknown validation split mode: {self.val_split_mode}")
+        super()._setup()

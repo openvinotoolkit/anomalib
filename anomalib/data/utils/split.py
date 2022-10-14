@@ -11,13 +11,16 @@ These function are useful
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import math
 import warnings
-from typing import List, Sequence, Union
+from typing import TYPE_CHECKING, List, Sequence, Union
 
 import torch
 
-from anomalib.data.base import AnomalibDataset
+if TYPE_CHECKING:
+    from anomalib.data.base import AnomalibDataset
 
 
 def concatenate_datasets(datasets: Sequence[AnomalibDataset]) -> AnomalibDataset:

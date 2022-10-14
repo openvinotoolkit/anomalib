@@ -34,7 +34,6 @@ from pandas import DataFrame
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset, Split, ValSplitMode
 from anomalib.data.utils import DownloadProgressBar, hash_check
-from anomalib.data.utils.split import random_split
 from anomalib.pre_processing import PreProcessor
 
 logger = logging.getLogger(__name__)
@@ -211,17 +210,3 @@ class MVTec(AnomalibDataModule):
 
             logger.info("Cleaning the tar file")
             (zip_filename).unlink()
-
-    def _setup(self, _stage: Optional[str] = None) -> None:
-        """Set up the datasets and perform dynamic subset splitting."""
-        assert self.train_data is not None
-        assert self.test_data is not None
-
-        self.train_data.setup()
-        self.test_data.setup()
-        if self.val_split_mode == ValSplitMode.FROM_TEST:
-            self.val_data, self.test_data = random_split(self.test_data, [0.5, 0.5], label_aware=True)
-        elif self.val_split_mode == ValSplitMode.SAME_AS_TEST:
-            self.val_data = self.test_data
-        else:
-            raise ValueError(f"Unknown validation split mode: {self.val_split_mode}")
