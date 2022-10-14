@@ -3,6 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from .augmenter import Augmenter
 from .download import DownloadProgressBar, hash_check
 from .generators import random_2d_perlin
 from .image import (
@@ -25,4 +26,5 @@ __all__ = [
     "concatenate_datasets",
     "Split",
     "ValSplitMode",
+    "Augmenter",
 ]

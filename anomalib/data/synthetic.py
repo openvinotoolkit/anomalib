@@ -15,8 +15,7 @@ from albumentations.pytorch import ToTensorV2
 from pandas import DataFrame
 
 from anomalib.data.base.dataset import AnomalibDataset
-from anomalib.data.utils import read_image
-from anomalib.models.draem.utils import Augmenter
+from anomalib.data.utils import Augmenter, read_image
 from anomalib.pre_processing import PreProcessor
 
 
@@ -36,7 +35,7 @@ def make_synthetic_dataset(normal_samples: DataFrame, root: Union[Path, str]) ->
     os.makedirs(mask_dir)
 
     # make fakes
-    augmenter = Augmenter("./datasets/dtd")
+    augmenter = Augmenter("./datasets/dtd", beta=(0.01, 0.2))
 
     transform = A.Compose([A.ToFloat(), ToTensorV2()])
 
