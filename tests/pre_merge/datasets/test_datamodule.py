@@ -170,7 +170,7 @@ class TestDenormalize:
 
     def test_denormalize_image_pixel_values(self, data_sample):
         """Test Denormalize denormalizes tensor into [0, 256] range."""
-        denormalized_sample = Denormalize().__call__(data_sample["image"].squeeze())
+        denormalized_sample = Denormalize()(data_sample["image"].squeeze())
         assert denormalized_sample.min() >= 0 and denormalized_sample.max() <= 256
 
     def test_denormalize_return_numpy(self, data_sample):
