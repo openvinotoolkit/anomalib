@@ -23,8 +23,8 @@ from pandas.core.frame import DataFrame
 from pytorch_lightning.utilities.cli import DATAMODULE_REGISTRY
 from tqdm import tqdm
 
-from anomalib.data.base import AnomalibDataModule, AnomalibDataset, Split, ValSplitMode
-from anomalib.data.utils import DownloadProgressBar, hash_check
+from anomalib.data import AnomalibDataModule, AnomalibDataset
+from anomalib.data.utils import DownloadProgressBar, Split, ValSplitMode, hash_check
 from anomalib.pre_processing import PreProcessor
 
 logger = logging.getLogger(__name__)

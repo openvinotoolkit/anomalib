@@ -15,12 +15,28 @@ from __future__ import annotations
 
 import math
 import warnings
+from enum import Enum
 from typing import TYPE_CHECKING, List, Sequence, Union
 
 import torch
 
 if TYPE_CHECKING:
-    from anomalib.data.base import AnomalibDataset
+    from anomalib.data import AnomalibDataset
+
+
+class Split(str, Enum):
+    """Split of a subset."""
+
+    TRAIN = "train"
+    VAL = "val"
+    TEST = "test"
+
+
+class ValSplitMode(str, Enum):
+    """Splitting mode used to obtain validation subset."""
+
+    SAME_AS_TEST = "same_as_test"
+    FROM_TEST = "from_test"
 
 
 def concatenate_datasets(datasets: Sequence[AnomalibDataset]) -> AnomalibDataset:

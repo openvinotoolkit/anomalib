@@ -8,8 +8,7 @@ from typing import Union
 
 from omegaconf import DictConfig, ListConfig
 
-from anomalib.data.base import AnomalibDataModule
-
+from .base import AnomalibDataModule, AnomalibDataset
 from .btech import BTech
 from .folder import Folder
 from .inference import InferenceDataset
@@ -86,6 +85,8 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
 
 
 __all__ = [
+    "AnomalibDataset",
+    "AnomalibDataModule",
     "get_datamodule",
     "BTech",
     "Folder",
