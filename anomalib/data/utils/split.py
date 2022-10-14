@@ -37,6 +37,7 @@ class ValSplitMode(str, Enum):
 
     SAME_AS_TEST = "same_as_test"
     FROM_TEST = "from_test"
+    SYNTHETIC = "synthetic"
 
 
 def concatenate_datasets(datasets: Sequence[AnomalibDataset]) -> AnomalibDataset:
