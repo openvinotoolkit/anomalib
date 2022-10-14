@@ -82,12 +82,12 @@ Let's choose `Padim algorithm <https://arxiv.org/pdf/2011.08785.pdf>`_, copy the
     seed: 0
     image_size: 256
     train_batch_size: 32
-    test_batch_size: 32
+    eval_batch_size: 32
     num_workers: 8
     transform_config:
         train: null
-        val: null
-    create_validation_set: true
+        eval: null
+    validation_split_mode: from_test # determines how the validation set is created, options [same_as_test, from_test]
     tiling:
         apply: false
         tile_size: null
