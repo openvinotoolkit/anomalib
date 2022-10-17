@@ -140,7 +140,7 @@ class Augmenter:
         perturbations_list = []
         masks_list = []
         for _ in range(batch_size):
-            if random.random() < self.p_anomalous:  # include 50% normal samples
+            if random.random() > self.p_anomalous:  # include normal samples
                 perturbations_list.append(torch.zeros((channels, height, width)))
                 masks_list.append(torch.zeros((1, height, width)))
             else:
@@ -159,7 +159,7 @@ class Augmenter:
             beta = self.beta
         elif isinstance(self.beta, tuple):
             beta = torch.rand(batch_size) * (self.beta[1] - self.beta[0]) + self.beta[0]
-            beta = beta.view(batch_size, 1, 1, 1).expand_as(batch).to(batch.device)
+            beta = beta.view(batch_size, 1, 1, 1).expand_as(batch).to(batch.device)  # type: ignore
         else:
             raise ValueError("Beta must be either float or tuple of floats")
 
