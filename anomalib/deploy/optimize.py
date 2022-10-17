@@ -15,7 +15,6 @@ from torch.types import Number
 
 from anomalib.models.components import AnomalyModule
 
-
 def get_model_metadata(model: AnomalyModule) -> Dict[str, Tensor]:
     """Get meta data related to normalization from model.
 
