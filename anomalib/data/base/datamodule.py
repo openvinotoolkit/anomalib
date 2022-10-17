@@ -68,7 +68,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         elif self.val_split_mode == ValSplitMode.SAME_AS_TEST:
             self.val_data = self.test_data
         elif self.val_split_mode == ValSplitMode.SYNTHETIC:
-            self.train_data, normal_val_data = random_split(self.train_data, 0.5)
+            self.train_data, normal_val_data = random_split(self.train_data, 0.3)
             self.val_data = SyntheticValidationSet.from_dataset(normal_val_data)
         else:
             raise ValueError(f"Unknown validation split mode: {self.val_split_mode}")
