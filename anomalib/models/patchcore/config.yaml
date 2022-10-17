@@ -6,7 +6,7 @@ dataset:
   category: bottle
   image_size: 224
   train_batch_size: 32
-  test_batch_size: 1
+  test_batch_size: 32
   num_workers: 8
   transform_config:
     train: null
