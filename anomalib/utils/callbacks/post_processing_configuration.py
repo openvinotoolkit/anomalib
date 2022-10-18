@@ -40,12 +40,21 @@ class PostProcessingConfigurationCallback(Callback):
         super().__init__()
         self.normalization_method = normalization_method
 
-        assert threshold_method == ThresholdMethod.ADAPTIVE and all(
+        if threshold_method == ThresholdMethod.ADAPTIVE and all(
+            i is not None for i in [fixed_image_threshold, fixed_pixel_threshold]
+        ):
+            raise ValueError(
+                "When `threshold_method` is set to `adaptive`, `fixed_image_threshold` and `fixed_pixel_threshold` "
+                "must not be set."
+            )
+
+        if threshold_method == ThresholdMethod.FIXED and all(
             i is None for i in [fixed_image_threshold, fixed_pixel_threshold]
-        ), (
-            "Default thresholds must be specified when adaptive threshold is disabled. "
-            "When adaptive threshold is enabled, please set default image and pixel thresholds to None."
-        )
+        ):
+            raise ValueError(
+                "When `threshold_method` is set to `fixed`, `fixed_image_threshold` and `fixed_pixel_threshold` "
+                "must be set."
+            )
 
         self.threshold_method = threshold_method
         self.fixed_image_threshold = fixed_image_threshold
@@ -62,6 +71,6 @@ class PostProcessingConfigurationCallback(Callback):
         """
         if isinstance(pl_module, AnomalyModule):
             pl_module.threshold_method = self.threshold_method
-            if pl_module.threshold_method is False:
+            if pl_module.threshold_method == ThresholdMethod.FIXED:
                 pl_module.image_threshold.value = torch.tensor(self.fixed_image_threshold).cpu()
                 pl_module.pixel_threshold.value = torch.tensor(self.fixed_pixel_threshold).cpu()

@@ -47,8 +47,8 @@ def test_non_adaptive_threshold():
 
     image_threshold = random.random()
     pixel_threshold = random.random()
-    config.metrics.threshold.image_default = image_threshold
-    config.metrics.threshold.pixel_default = pixel_threshold
+    config.metrics.threshold.fixed_image = image_threshold
+    config.metrics.threshold.fixed_pixel = pixel_threshold
 
     model = get_model(config)
     datamodule = get_datamodule(config)
