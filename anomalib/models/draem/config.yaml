@@ -11,7 +11,7 @@ dataset:
   transform_config:
     train: ./anomalib/models/draem/transform_config.yaml
     eval: ./anomalib/models/draem/transform_config.yaml
-  validation_split_mode: same_as_test # options: [same_as_test, from_test]
+  val_split_mode: same_as_test # options: [same_as_test, from_test]
   tiling:
     apply: false
     tile_size: null

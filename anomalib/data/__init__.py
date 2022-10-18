@@ -41,7 +41,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             task=config.dataset.task,
             transform_config_train=config.dataset.transform_config.train,
             transform_config_eval=config.dataset.transform_config.eval,
-            val_split_mode=config.dataset.validation_split_mode,
+            val_split_mode=config.dataset.val_split_mode,
         )
     elif config.dataset.format.lower() == "btech":
         datamodule = BTech(
@@ -54,7 +54,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             task=config.dataset.task,
             transform_config_train=config.dataset.transform_config.train,
             transform_config_eval=config.dataset.transform_config.eval,
-            val_split_mode=config.dataset.validation_split_mode,
+            val_split_mode=config.dataset.val_split_mode,
         )
     elif config.dataset.format.lower() == "folder":
         datamodule = Folder(
@@ -72,7 +72,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             num_workers=config.dataset.num_workers,
             transform_config_train=config.dataset.transform_config.train,
             transform_config_eval=config.dataset.transform_config.eval,
-            val_split_mode=config.dataset.validation_split_mode,
+            val_split_mode=config.dataset.val_split_mode,
         )
     else:
         raise ValueError(

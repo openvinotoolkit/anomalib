@@ -12,7 +12,7 @@ dataset:
   transform_config:
     train: null
     eval: null
-  validation_split_mode: same_as_test # options: [same_as_test, from_test]
+  val_split_mode: same_as_test # options: [same_as_test, from_test]
   tiling:
     apply: true
     tile_size: 64
