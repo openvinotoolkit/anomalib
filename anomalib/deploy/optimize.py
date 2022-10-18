@@ -65,7 +65,7 @@ def export_convert(
         input_names=["input"],
         output_names=["output"],
     )
-    export_path = os.path.join(str(export_path), "openvino")
+    export_path = os.path.join(str(export_path), export_mode)
     if export_mode == "openvino":
         optimize_command = "mo --input_model " + str(onnx_path) + " --output_dir " + str(export_path)
         assert os.system(optimize_command) == 0, "OpenVINO conversion failed"
