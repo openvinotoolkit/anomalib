@@ -33,10 +33,10 @@ def get_sweep_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]
         image_metrics = config.metrics.image if "image" in config.metrics.keys() else None
         pixel_metrics = config.metrics.pixel if "pixel" in config.metrics.keys() else None
         image_threshold = (
-            config.metrics.threshold.image_default if "image_default" in config.metrics.threshold.keys() else None
+            config.metrics.threshold.manual_image if "manual_image" in config.metrics.threshold.keys() else None
         )
         pixel_threshold = (
-            config.metrics.threshold.pixel_default if "pixel_default" in config.metrics.threshold.keys() else None
+            config.metrics.threshold.manual_pixel if "manual_pixel" in config.metrics.threshold.keys() else None
         )
         normalization_method = config.model.normalization_method
     # NOTE: This is for the new anomalib CLI.
@@ -44,17 +44,17 @@ def get_sweep_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]
         image_metrics = config.metrics.image_metrics if "image_metrics" in config.metrics else None
         pixel_metrics = config.metrics.pixel_metrics if "pixel_metrics" in config.metrics else None
         image_threshold = (
-            config.post_processing.default_image_threshold if "image_default" in config.post_processing.keys() else None
+            config.post_processing.manual_image_threshold if "image_default" in config.post_processing.keys() else None
         )
         pixel_threshold = (
-            config.post_processing.default_pixel_threshold if "pixel_default" in config.post_processing.keys() else None
+            config.post_processing.manual_pixel_threshold if "pixel_default" in config.post_processing.keys() else None
         )
         normalization_method = config.post_processing.normalization_method
 
     post_processing_configuration_callback = PostProcessingConfigurationCallback(
         normalization_method=normalization_method,
-        default_image_threshold=image_threshold,
-        default_pixel_threshold=pixel_threshold,
+        manual_image_threshold=image_threshold,
+        manual_pixel_threshold=pixel_threshold,
     )
     callbacks.append(post_processing_configuration_callback)
 

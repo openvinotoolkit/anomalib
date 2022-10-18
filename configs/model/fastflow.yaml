@@ -37,9 +37,9 @@ optimizer:
 
 post_processing:
   normalization_method: min_max # <null, min_max, cdf>
-  adaptive_threshold: true
-  default_image_threshold: null
-  default_pixel_threshold: null
+  threshold_method: adaptive # options: [adaptive, manual]
+  manual_image_threshold: null
+  manual_pixel_threshold: null
 
 metrics:
   image_metrics:

@@ -109,9 +109,9 @@ class AnomalibCLI(LightningCLI):
         parser.set_defaults(
             {
                 "post_processing.normalization_method": "min_max",
-                "post_processing.adaptive_threshold": True,
-                "post_processing.default_image_threshold": None,
-                "post_processing.default_pixel_threshold": None,
+                "post_processing.threshold_method": "adaptive",
+                "post_processing.manual_image_threshold": None,
+                "post_processing.manual_pixel_threshold": None,
             }
         )
 

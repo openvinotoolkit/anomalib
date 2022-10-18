@@ -1,4 +1,4 @@
-"""Implementation of Optimal F1 score based on TorchMetrics."""
+"""Implementation of AnomalyScoreThreshold based on TorchMetrics."""
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -7,11 +7,16 @@ import torch
 from torchmetrics import PrecisionRecallCurve
 
 
-class AdaptiveThreshold(PrecisionRecallCurve):
-    """Optimal F1 Metric.
+class AnomalyScoreThreshold(PrecisionRecallCurve):
+    """Anomaly Score Threshold.
 
-    Compute the optimal F1 score at the adaptive threshold, based on the F1 metric of the true labels and the
-    predicted anomaly scores.
+    This class computes/stores the threshold that determines the anomalous label
+    given anomaly scores. If the threshold method is ``manual``, the class only
+    stores the manual threshold values.
+
+    If the threshold method is ``adaptive``, the class initially computes the
+    adaptive threshold to find the optimal f1_score and stores the computed
+    adaptive threshold value.
     """
 
     def __init__(self, default_value: float = 0.5, **kwargs):

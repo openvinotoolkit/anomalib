@@ -12,6 +12,7 @@ from pytorch_lightning import Callback, LightningModule, Trainer
 from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 
 from anomalib.models.components.base.anomaly_module import AnomalyModule
+from anomalib.post_processing import NormalizationMethod, ThresholdMethod
 
 logger = logging.getLogger(__name__)
 
@@ -23,29 +24,41 @@ class PostProcessingConfigurationCallback(Callback):
     """Post-Processing Configuration Callback.
 
     Args:
-        normalization_method(Optional[str]): Normalization method. <None, min_max, cdf>
-        adaptive_threshold (bool): Flag indicating whether threshold should be adaptive.
-        default_image_threshold (Optional[float]): Default image threshold value.
-        default_pixel_threshold (Optional[float]): Default pixel threshold value.
+        normalization_method(NormalizationMethod): Normalization method. <none, min_max, cdf>
+        threshold_method (ThresholdMethod): Flag indicating whether threshold should be manual or adaptive.
+        manual_image_threshold (Optional[float]): Default manual image threshold value.
+        manual_pixel_threshold (Optional[float]): Default manual pixel threshold value.
     """
 
     def __init__(
         self,
-        normalization_method: str = "min_max",
-        adaptive_threshold: bool = True,
-        default_image_threshold: Optional[float] = None,
-        default_pixel_threshold: Optional[float] = None,
+        normalization_method: NormalizationMethod = NormalizationMethod.MIN_MAX,
+        threshold_method: ThresholdMethod = ThresholdMethod.ADAPTIVE,
+        manual_image_threshold: Optional[float] = None,
+        manual_pixel_threshold: Optional[float] = None,
     ) -> None:
         super().__init__()
         self.normalization_method = normalization_method
 
-        assert (
-            adaptive_threshold or default_image_threshold is not None and default_pixel_threshold is not None
-        ), "Default thresholds must be specified when adaptive threshold is disabled."
+        if threshold_method == ThresholdMethod.ADAPTIVE and all(
+            i is not None for i in [manual_image_threshold, manual_pixel_threshold]
+        ):
+            raise ValueError(
+                "When `threshold_method` is set to `adaptive`, `manual_image_threshold` and `manual_pixel_threshold` "
+                "must not be set."
+            )
 
-        self.adaptive_threshold = adaptive_threshold
-        self.default_image_threshold = default_image_threshold
-        self.default_pixel_threshold = default_pixel_threshold
+        if threshold_method == ThresholdMethod.MANUAL and all(
+            i is None for i in [manual_image_threshold, manual_pixel_threshold]
+        ):
+            raise ValueError(
+                "When `threshold_method` is set to `manual`, `manual_image_threshold` and `manual_pixel_threshold` "
+                "must be set."
+            )
+
+        self.threshold_method = threshold_method
+        self.manual_image_threshold = manual_image_threshold
+        self.manual_pixel_threshold = manual_pixel_threshold
 
     # pylint: disable=unused-argument
     def setup(self, trainer: Trainer, pl_module: LightningModule, stage: Optional[str] = None) -> None:
@@ -57,7 +70,7 @@ class PostProcessingConfigurationCallback(Callback):
             stage (Optional[str], optional): fit, validate, test or predict. Defaults to None.
         """
         if isinstance(pl_module, AnomalyModule):
-            pl_module.adaptive_threshold = self.adaptive_threshold
-            if pl_module.adaptive_threshold is False:
-                pl_module.image_threshold.value = torch.tensor(self.default_image_threshold).cpu()
-                pl_module.pixel_threshold.value = torch.tensor(self.default_pixel_threshold).cpu()
+            pl_module.threshold_method = self.threshold_method
+            if pl_module.threshold_method == ThresholdMethod.MANUAL:
+                pl_module.image_threshold.value = torch.tensor(self.manual_image_threshold).cpu()
+                pl_module.pixel_threshold.value = torch.tensor(self.manual_pixel_threshold).cpu()
