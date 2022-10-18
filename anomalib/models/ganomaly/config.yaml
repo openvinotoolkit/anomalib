@@ -45,7 +45,7 @@ metrics:
     - AUROC
   threshold:
     method: adaptive #options: [adaptive, manual]
-    fixed_image: null
+    manual_image: null
 
 visualization:
   show_images: False # show images on the screen

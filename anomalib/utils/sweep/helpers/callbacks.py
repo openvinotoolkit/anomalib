@@ -33,10 +33,10 @@ def get_sweep_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]
         image_metrics = config.metrics.image if "image" in config.metrics.keys() else None
         pixel_metrics = config.metrics.pixel if "pixel" in config.metrics.keys() else None
         image_threshold = (
-            config.metrics.threshold.fixed_image if "fixed_image" in config.metrics.threshold.keys() else None
+            config.metrics.threshold.manual_image if "manual_image" in config.metrics.threshold.keys() else None
         )
         pixel_threshold = (
-            config.metrics.threshold.fixed_pixel if "fixed_pixel" in config.metrics.threshold.keys() else None
+            config.metrics.threshold.manual_pixel if "manual_pixel" in config.metrics.threshold.keys() else None
         )
         normalization_method = config.model.normalization_method
     # NOTE: This is for the new anomalib CLI.
