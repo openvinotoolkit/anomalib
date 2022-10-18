@@ -15,9 +15,9 @@ from torchmetrics import Metric
 
 from anomalib.post_processing import ThresholdMethod
 from anomalib.utils.metrics import (
-    AdaptiveThreshold,
     AnomalibMetricCollection,
     AnomalyScoreDistribution,
+    AnomalyScoreThreshold,
     MinMax,
 )
 
@@ -40,8 +40,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.callbacks: List[Callback]
 
         self.threshold_method: ThresholdMethod
-        self.image_threshold = AdaptiveThreshold().cpu()
-        self.pixel_threshold = AdaptiveThreshold().cpu()
+        self.image_threshold = AnomalyScoreThreshold().cpu()
+        self.pixel_threshold = AnomalyScoreThreshold().cpu()
 
         self.normalization_metrics: Metric
 

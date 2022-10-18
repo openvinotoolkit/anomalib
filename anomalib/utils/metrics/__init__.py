@@ -10,7 +10,7 @@ from typing import List, Optional, Tuple, Union
 import torchmetrics
 from omegaconf import DictConfig, ListConfig
 
-from .adaptive_threshold import AdaptiveThreshold
+from .adaptive_threshold import AnomalyScoreThreshold
 from .anomaly_score_distribution import AnomalyScoreDistribution
 from .aupr import AUPR
 from .aupro import AUPRO
@@ -20,7 +20,7 @@ from .min_max import MinMax
 from .optimal_f1 import OptimalF1
 from .pro import PRO
 
-__all__ = ["AUROC", "AUPR", "AUPRO", "OptimalF1", "AdaptiveThreshold", "AnomalyScoreDistribution", "MinMax", "PRO"]
+__all__ = ["AUROC", "AUPR", "AUPRO", "OptimalF1", "AnomalyScoreThreshold", "AnomalyScoreDistribution", "MinMax", "PRO"]
 
 
 def get_metrics(config: Union[ListConfig, DictConfig]) -> Tuple[AnomalibMetricCollection, AnomalibMetricCollection]:

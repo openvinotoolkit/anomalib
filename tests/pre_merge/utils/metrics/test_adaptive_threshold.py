@@ -11,7 +11,7 @@ from pytorch_lightning import Trainer
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
 from anomalib.utils.callbacks import get_callbacks
-from anomalib.utils.metrics import AdaptiveThreshold
+from anomalib.utils.metrics import AnomalyScoreThreshold
 from tests.helpers.config import get_test_configurable_parameters
 
 
@@ -25,7 +25,7 @@ from tests.helpers.config import get_test_configurable_parameters
 def test_adaptive_threshold(labels, preds, target_threshold):
     """Test if the adaptive threshold computation returns the desired value."""
 
-    adaptive_threshold = AdaptiveThreshold(default_value=0.5)
+    adaptive_threshold = AnomalyScoreThreshold(default_value=0.5)
     adaptive_threshold.update(preds, labels)
     threshold_value = adaptive_threshold.compute()
 
