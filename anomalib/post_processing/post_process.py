@@ -17,7 +17,7 @@ class ThresholdMethod(str, Enum):
     """Threshold method to apply post-processing to the output predictions."""
 
     ADAPTIVE = "adaptive"
-    FIXED = "fixed"
+    MANUAL = "manual"
 
 
 def add_label(

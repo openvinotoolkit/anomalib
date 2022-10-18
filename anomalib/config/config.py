@@ -159,7 +159,7 @@ def get_configurable_parameters(
         # NOTE: Deprecate this after v0.4.0.
         if "adaptive" in config.metrics.threshold.keys():
             warn("adaptive will be deprecated in favor of method in config.metrics.threshold in v0.4.0.")
-            config.metrics.threshold.method = "adaptive" if config.metrics.threshold.adaptive else "fixed"
+            config.metrics.threshold.method = "adaptive" if config.metrics.threshold.adaptive else "manual"
         if "image_default" in config.metrics.threshold.keys():
             warn("image_default will be deprecated in favor of fixed_image in config.metrics.threshold in v0.4.0.")
             config.metrics.threshold.fixed_image = (

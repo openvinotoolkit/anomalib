@@ -72,8 +72,8 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
     pixel_threshold = config.metrics.threshold.fixed_pixel if "fixed_pixel" in config.metrics.threshold.keys() else None
     post_processing_callback = PostProcessingConfigurationCallback(
         threshold_method=config.metrics.threshold.method,
-        fixed_image_threshold=image_threshold,
-        fixed_pixel_threshold=pixel_threshold,
+        manual_image_threshold=image_threshold,
+        manual_pixel_threshold=pixel_threshold,
     )
     callbacks.append(post_processing_callback)
 

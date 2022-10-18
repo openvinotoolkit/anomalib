@@ -40,7 +40,7 @@ metrics:
     - F1Score
     - AUROC
   threshold:
-    method: adaptive #options: [adaptive, fixed]
+    method: adaptive #options: [adaptive, manual]
     fixed_image: null
     fixed_pixel: null
 

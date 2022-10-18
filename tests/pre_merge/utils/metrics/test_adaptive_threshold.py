@@ -32,15 +32,15 @@ def test_adaptive_threshold(labels, preds, target_threshold):
     assert threshold_value == target_threshold
 
 
-def test_non_adaptive_threshold():
+def test_manual_threshold():
     """
-    Test if the non-adaptive threshold gets used in the F1 score computation when
+    Test if the manual threshold gets used in the F1 score computation when
     adaptive thresholding is disabled and no normalization is used.
     """
     config = get_test_configurable_parameters(config_path="anomalib/models/padim/config.yaml")
 
     config.model.normalization_method = "none"
-    config.metrics.threshold.method = "fixed"
+    config.metrics.threshold.method = "manual"
     config.trainer.fast_dev_run = True
     config.metrics.image = ["F1Score"]
     config.metrics.pixel = ["F1Score"]

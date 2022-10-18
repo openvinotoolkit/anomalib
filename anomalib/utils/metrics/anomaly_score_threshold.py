@@ -11,8 +11,8 @@ class AnomalyScoreThreshold(PrecisionRecallCurve):
     """Anomaly Score Threshold.
 
     This class computes/stores the threshold that determines the anomalous label
-    given anomaly scores. If the threshold method is ``fixed``, the class only
-    stores the fixed threshold values.
+    given anomaly scores. If the threshold method is ``manual``, the class only
+    stores the manual threshold values.
 
     If the threshold method is ``adaptive``, the class initially computes the
     adaptive threshold to find the optimal f1_score and stores the computed
