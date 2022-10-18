@@ -5,11 +5,19 @@
 
 
 import math
+from enum import Enum
 from typing import Optional, Tuple
 
 import cv2
 import numpy as np
 from skimage import morphology
+
+
+class ThresholdMethod(str, Enum):
+    """Threshold method to apply post-processing to the output predictions."""
+
+    ADAPTIVE = "adaptive"
+    MANUAL = "manual"
 
 
 def add_label(

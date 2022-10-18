@@ -69,15 +69,15 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
 
     # Add post-processing configurations to AnomalyModule.
     image_threshold = (
-        config.metrics.threshold.image_default if "image_default" in config.metrics.threshold.keys() else None
+        config.metrics.threshold.manual_image if "manual_image" in config.metrics.threshold.keys() else None
     )
     pixel_threshold = (
-        config.metrics.threshold.pixel_default if "pixel_default" in config.metrics.threshold.keys() else None
+        config.metrics.threshold.manual_pixel if "manual_pixel" in config.metrics.threshold.keys() else None
     )
     post_processing_callback = PostProcessingConfigurationCallback(
-        adaptive_threshold=config.metrics.threshold.adaptive,
-        default_image_threshold=image_threshold,
-        default_pixel_threshold=pixel_threshold,
+        threshold_method=config.metrics.threshold.method,
+        manual_image_threshold=image_threshold,
+        manual_pixel_threshold=pixel_threshold,
     )
     callbacks.append(post_processing_callback)
 
