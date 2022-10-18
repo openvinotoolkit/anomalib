@@ -37,21 +37,23 @@ model:
     permute_soft: false
     lr: 0.0001
 
+post_processing:
+  normalization_method: min_max # <null, min_max, cdf>
+  threshold_method: adaptive # options: [adaptive, manual]
+  manual_image_threshold: null
+  manual_pixel_threshold: null
+
 metrics:
-  adaptive_threshold: true
-  default_image_threshold: null
-  default_pixel_threshold: null
-  image_metric_names:
+  image_metrics:
     - F1Score
     - AUROC
-  pixel_metric_names:
+  pixel_metrics:
     - F1Score
     - AUROC
-  normalization_method: min_max
 
 visualization:
   show_images: False # show images on the screen
-  save_images: False # save images to the file system
+  save_images: True # save images to the file system
   log_images: False # log images to the available loggers (if any)
   mode: full # options: ["full", "simple"]
 

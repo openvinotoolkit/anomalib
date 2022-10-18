@@ -9,7 +9,11 @@ from torchvision import transforms
 from torchvision.datasets import FakeData
 
 from anomalib.utils.callbacks import ImageVisualizerCallback
-from anomalib.utils.metrics import AdaptiveThreshold, AnomalyScoreDistribution, MinMax
+from anomalib.utils.metrics import (
+    AnomalyScoreDistribution,
+    AnomalyScoreThreshold,
+    MinMax,
+)
 
 
 class FakeDataModule(pl.LightningDataModule):
@@ -84,8 +88,8 @@ class DummyLightningModule(pl.LightningModule):
             )
         ]  # test if this is removed
 
-        self.image_threshold = AdaptiveThreshold(hparams.model.threshold.image_default).cpu()
-        self.pixel_threshold = AdaptiveThreshold(hparams.model.threshold.pixel_default).cpu()
+        self.image_threshold = AnomalyScoreThreshold(hparams.model.threshold.image_default).cpu()
+        self.pixel_threshold = AnomalyScoreThreshold(hparams.model.threshold.pixel_default).cpu()
 
         self.training_distribution = AnomalyScoreDistribution().cpu()
         self.min_max = MinMax().cpu()
