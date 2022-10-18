@@ -32,7 +32,7 @@ from urllib.request import urlretrieve
 import albumentations as A
 from pandas import DataFrame
 
-from anomalib.data import AnomalibDataModule, AnomalibDataset
+from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.utils import DownloadProgressBar, Split, ValSplitMode, hash_check
 from anomalib.pre_processing import PreProcessor
 

@@ -13,7 +13,7 @@ import albumentations as A
 from pandas import DataFrame
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
-from anomalib.data import AnomalibDataModule, AnomalibDataset
+from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.utils import Split, ValSplitMode, random_split
 from anomalib.pre_processing.pre_process import PreProcessor
 
