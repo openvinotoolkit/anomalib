@@ -162,8 +162,13 @@ def get_configurable_parameters(
             config.metrics.threshold.method = "adaptive" if config.metrics.threshold.adaptive else "fixed"
         if "image_default" in config.metrics.threshold.keys():
             warn("image_default will be deprecated in favor of fixed_image in config.metrics.threshold in v0.4.0.")
-            config.metrics.threshold.fixed_image = config.metrics.threshold.image_default
-        if "pixel_default" not in config.metrics.threshold.keys():
-            config.metrics.threshold.fixed_pixel = config.metrics.threshold.pixel_default
+            config.metrics.threshold.fixed_image = (
+                None if config.metrics.threshold.adaptive else config.metrics.threshold.image_default
+            )
+        if "pixel_default" in config.metrics.threshold.keys():
+            warn("pixel_default will be deprecated in favor of fixed_pixel in config.metrics.threshold in v0.4.0.")
+            config.metrics.threshold.fixed_pixel = (
+                None if config.metrics.threshold.adaptive else config.metrics.threshold.pixel_default
+            )
 
     return config

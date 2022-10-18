@@ -40,7 +40,7 @@ def test_non_adaptive_threshold():
     config = get_test_configurable_parameters(config_path="anomalib/models/padim/config.yaml")
 
     config.model.normalization_method = "none"
-    config.metrics.threshold.adaptive = False
+    config.metrics.threshold.method = "fixed"
     config.trainer.fast_dev_run = True
     config.metrics.image = ["F1Score"]
     config.metrics.pixel = ["F1Score"]
