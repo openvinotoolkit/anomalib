@@ -10,7 +10,7 @@ from typing import Tuple
 from pytorch_lightning import Callback
 from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 
-from anomalib.deploy import ExportMode, export_convert
+from anomalib.deploy import ExportMode, export
 from anomalib.models.components import AnomalyModule
 
 logger = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ class ExportCallback(Callback):
         """
         logger.info("Exporting the model")
         os.makedirs(self.dirpath, exist_ok=True)
-        export_convert(
+        export(
             model=pl_module,
             input_size=self.input_size,
             export_root=self.dirpath,

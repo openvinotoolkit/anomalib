@@ -49,13 +49,13 @@ def get_model_metadata(model: AnomalyModule) -> Dict[str, Tensor]:
     return meta_data
 
 
-def export_convert(
+def export(
     model: AnomalyModule,
     input_size: Union[List[int], Tuple[int, int]],
     export_mode: ExportMode,
     export_root: Union[str, Path],
 ):
-    """Export the model to onnx format and convert to OpenVINO IR.
+    """Export the model to onnx format and (optionally) convert to OpenVINO IR if export mode is set to OpenVINO.
 
     Metadata.json is generated regardless of export mode.
 
