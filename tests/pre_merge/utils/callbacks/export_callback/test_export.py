@@ -50,6 +50,6 @@ def test_export_model_callback(export_mode):
         if "openvino" in export_mode:
             assert os.path.exists(os.path.join(tmp_dir, "openvino/model.bin")), "Failed to generate OpenVINO model"
         elif "onnx" in export_mode:
-            assert os.path.exists(os.path.join(tmp_dir, "model.onnx")), "Failed to generate ONNX model"
+            assert os.path.exists(os.path.join(tmp_dir, "onnx/model.onnx")), "Failed to generate ONNX model"
         else:
             raise ValueError(f"Unknown export_mode {export_mode}. Supported modes: onnx or openvino.")

@@ -4,7 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
-import os
+import subprocess
+from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -14,6 +15,13 @@ from torch import Tensor
 from torch.types import Number
 
 from anomalib.models.components import AnomalyModule
+
+
+class ExportMode(str, Enum):
+    """Model export mode."""
+
+    ONNX = "onnx"
+    OPENVINO = "openvino"
 
 
 def get_model_metadata(model: AnomalyModule) -> Dict[str, Tensor]:
@@ -44,19 +52,32 @@ def get_model_metadata(model: AnomalyModule) -> Dict[str, Tensor]:
 def export_convert(
     model: AnomalyModule,
     input_size: Union[List[int], Tuple[int, int]],
-    export_mode: str,
+    export_mode: ExportMode,
     export_path: Optional[Union[str, Path]] = None,
 ):
-    """Export the model to onnx format and convert to OpenVINO IR. Metadata.json is generated regardless of export mode.
+    """Export the model to onnx format and convert to OpenVINO IR.
+
+    Metadata.json is generated regardless of export mode.
 
     Args:
         model (AnomalyModule): Model to convert.
         input_size (Union[List[int], Tuple[int, int]]): Image size used as the input for onnx converter.
         export_path (Union[str, Path]): Path to exported OpenVINO IR.
-        export_mode (str): Mode to export onnx or openvino
+        export_mode (ExportMode): Mode to export the model. ONNX or OpenVINO.
     """
+    # Write metadata to json file. The file is written in the same directory as the target model.
+    export_path = Path(str(export_path)) / export_mode.value
+    export_path.mkdir(parents=True, exist_ok=True)
+    with open(Path(export_path) / "meta_data.json", "w", encoding="utf-8") as metadata_file:
+        meta_data = get_model_metadata(model)
+        # Convert metadata from torch
+        for key, value in meta_data.items():
+            if isinstance(value, Tensor):
+                meta_data[key] = value.numpy().tolist()
+        json.dump(meta_data, metadata_file, ensure_ascii=False, indent=4)
+
     height, width = input_size
-    onnx_path = os.path.join(str(export_path), "model.onnx")
+    onnx_path = export_path / "model.onnx"
     torch.onnx.export(
         model.model,
         torch.zeros((1, 3, height, width)).to(model.device),
@@ -65,14 +86,6 @@ def export_convert(
         input_names=["input"],
         output_names=["output"],
     )
-    export_path = os.path.join(str(export_path), export_mode)
-    if export_mode == "openvino":
-        optimize_command = "mo --input_model " + str(onnx_path) + " --output_dir " + str(export_path)
-        assert os.system(optimize_command) == 0, "OpenVINO conversion failed"
-    with open(Path(export_path) / "meta_data.json", "w", encoding="utf-8") as metadata_file:
-        meta_data = get_model_metadata(model)
-        # Convert metadata from torch
-        for key, value in meta_data.items():
-            if isinstance(value, Tensor):
-                meta_data[key] = value.numpy().tolist()
-        json.dump(meta_data, metadata_file, ensure_ascii=False, indent=4)
+    if export_mode == ExportMode.OPENVINO:
+        optimize_command = ["mo", "--input_model", str(onnx_path), "--output_dir", str(export_path)]
+        subprocess.run(optimize_command, check=True)

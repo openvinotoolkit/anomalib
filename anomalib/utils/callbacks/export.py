@@ -10,7 +10,7 @@ from typing import Tuple
 from pytorch_lightning import Callback
 from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 
-from anomalib.deploy import export_convert
+from anomalib.deploy import ExportMode, export_convert
 from anomalib.models.components import AnomalyModule
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ class ExportCallback(Callback):
         self.input_size = input_size
         self.dirpath = dirpath
         self.filename = filename
-        self.export_mode = export_mode
+        self.export_mode = ExportMode(export_mode)
 
     def on_train_end(self, trainer, pl_module: AnomalyModule) -> None:  # pylint: disable=W0613
         """Call when the train ends.
