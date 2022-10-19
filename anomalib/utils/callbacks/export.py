@@ -28,11 +28,11 @@ class ExportCallback(Callback):
         filename (str): Name of output model
     """
 
-    def __init__(self, input_size: Tuple[int, int], dirpath: str, filename: str, export_mode: str):
+    def __init__(self, input_size: Tuple[int, int], dirpath: str, filename: str, export_mode: ExportMode):
         self.input_size = input_size
         self.dirpath = dirpath
         self.filename = filename
-        self.export_mode = ExportMode(export_mode)
+        self.export_mode = export_mode
 
     def on_train_end(self, trainer, pl_module: AnomalyModule) -> None:  # pylint: disable=W0613
         """Call when the train ends.
@@ -45,6 +45,6 @@ class ExportCallback(Callback):
         export_convert(
             model=pl_module,
             input_size=self.input_size,
-            export_path=self.dirpath,
+            export_root=self.dirpath,
             export_mode=self.export_mode,
         )
