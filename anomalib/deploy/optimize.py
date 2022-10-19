@@ -47,7 +47,7 @@ def export_convert(
     export_mode: str,
     export_path: Optional[Union[str, Path]] = None,
 ):
-    """Export the model to onnx format and convert to OpenVINO IR.
+    """Export the model to onnx format and convert to OpenVINO IR. Metadata.json is generated regardless of export mode.
 
     Args:
         model (AnomalyModule): Model to convert.
@@ -65,14 +65,14 @@ def export_convert(
         input_names=["input"],
         output_names=["output"],
     )
+    export_path = os.path.join(str(export_path), export_mode)
     if export_mode == "openvino":
-        export_path = os.path.join(str(export_path), "openvino")
         optimize_command = "mo --input_model " + str(onnx_path) + " --output_dir " + str(export_path)
         assert os.system(optimize_command) == 0, "OpenVINO conversion failed"
-        with open(Path(export_path) / "meta_data.json", "w", encoding="utf-8") as metadata_file:
-            meta_data = get_model_metadata(model)
-            # Convert metadata from torch
-            for key, value in meta_data.items():
-                if isinstance(value, Tensor):
-                    meta_data[key] = value.numpy().tolist()
-            json.dump(meta_data, metadata_file, ensure_ascii=False, indent=4)
+    with open(Path(export_path) / "meta_data.json", "w", encoding="utf-8") as metadata_file:
+        meta_data = get_model_metadata(model)
+        # Convert metadata from torch
+        for key, value in meta_data.items():
+            if isinstance(value, Tensor):
+                meta_data[key] = value.numpy().tolist()
+        json.dump(meta_data, metadata_file, ensure_ascii=False, indent=4)
