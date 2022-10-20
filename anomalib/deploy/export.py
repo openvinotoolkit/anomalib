@@ -113,4 +113,4 @@ def _export_to_openvino(export_path: Union[str, Path], onnx_path: Path):
         onnx_path (Path): Path to the exported onnx model.
     """
     optimize_command = ["mo", "--input_model", str(onnx_path), "--output_dir", str(export_path)]
-    subprocess.run(optimize_command, check=True)
+    subprocess.run(optimize_command, check=True)  # nosec
