@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
-import subprocess
+import subprocess  # nosec
 from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Tuple, Union
