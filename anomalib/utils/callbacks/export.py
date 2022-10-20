@@ -10,7 +10,7 @@ from typing import Tuple
 from pytorch_lightning import Callback
 from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 
-from anomalib.deploy import export_convert
+from anomalib.deploy import ExportMode, export
 from anomalib.models.components import AnomalyModule
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class ExportCallback(Callback):
         filename (str): Name of output model
     """
 
-    def __init__(self, input_size: Tuple[int, int], dirpath: str, filename: str, export_mode: str):
+    def __init__(self, input_size: Tuple[int, int], dirpath: str, filename: str, export_mode: ExportMode):
         self.input_size = input_size
         self.dirpath = dirpath
         self.filename = filename
@@ -42,9 +42,9 @@ class ExportCallback(Callback):
         """
         logger.info("Exporting the model")
         os.makedirs(self.dirpath, exist_ok=True)
-        export_convert(
+        export(
             model=pl_module,
             input_size=self.input_size,
-            export_path=self.dirpath,
+            export_root=self.dirpath,
             export_mode=self.export_mode,
         )
