@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from .export import ExportMode, export, get_model_metadata
 from .inferencers import Inferencer, OpenVINOInferencer, TorchInferencer
-from .optimize import export_convert, get_model_metadata
 
-__all__ = ["Inferencer", "OpenVINOInferencer", "TorchInferencer", "export_convert", "get_model_metadata"]
+__all__ = ["ExportMode", "Inferencer", "OpenVINOInferencer", "TorchInferencer", "export", "get_model_metadata"]
