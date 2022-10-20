@@ -16,7 +16,7 @@ from tests.pre_merge.utils.callbacks.export_callback.dummy_lightning_model impor
 
 @pytest.mark.parametrize(
     "export_mode",
-    ["openvino", "onnx"],
+    [ExportMode.OPENVINO, ExportMode.ONNX],
 )
 def test_export_model_callback(export_mode):
     """Tests if an optimized model is created."""
