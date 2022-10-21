@@ -89,7 +89,6 @@ class AnomalibDataset(Dataset, ABC):
             Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]: Dict of image tensor during training.
                 Otherwise, Dict containing image path, target path, image tensor, label and transformed bounding box.
         """
-        assert isinstance(self._samples, DataFrame)
 
         image_path = self._samples.iloc[index].image_path
         image = read_image(image_path)
