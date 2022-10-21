@@ -104,5 +104,7 @@ def random_split(
             [label_dataset.subsample(subset_indices) for subset_indices in torch.split(indices, subset_lengths)]
         )
 
+    # invert outer/inner lists
+    # outer list: subsets with the given ratio, inner list: per-label unique
     subsets = list(map(list, zip(*subsets)))
     return [concatenate_datasets(subset) for subset in subsets]
