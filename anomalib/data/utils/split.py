@@ -16,7 +16,7 @@ from __future__ import annotations
 import math
 import warnings
 from enum import Enum
-from typing import TYPE_CHECKING, List, Sequence, Union
+from typing import TYPE_CHECKING, List, Optional, Sequence, Union
 
 import torch
 
@@ -55,7 +55,10 @@ def concatenate_datasets(datasets: Sequence[AnomalibDataset]) -> AnomalibDataset
 
 
 def random_split(
-    dataset: AnomalibDataset, split_ratio: Union[float, Sequence[float]], label_aware: bool = False
+    dataset: AnomalibDataset,
+    split_ratio: Union[float, Sequence[float]],
+    label_aware: bool = False,
+    seed: Optional[int] = None,
 ) -> List[AnomalibDataset]:
     """Perform a random split of a dataset.
 
@@ -66,6 +69,7 @@ def random_split(
             [1-split_ratio, split_ratio].
         label_aware (bool): When True, the relative occurrence of the different class labels of the source dataset will
             be maintained in each of the subsets.
+        seed (Optional[int], optional): Seed that can be passed if results need to be reproducible
     """
 
     if isinstance(split_ratio, float):
@@ -99,8 +103,10 @@ def random_split(
                 "Zero subset length encountered during splitting. This means one of your subsets might be"
                 " empty or devoid of either normal or anomalous images."
             )
+
         # perform random subsampling
-        indices = torch.randperm(len(label_dataset))
+        random_state = torch.Generator().manual_seed(seed) if seed else None
+        indices = torch.randperm(len(label_dataset), generator=random_state)
         subsets.append(
             [label_dataset.subsample(subset_indices) for subset_indices in torch.split(indices, subset_lengths)]
         )
