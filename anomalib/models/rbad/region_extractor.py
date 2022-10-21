@@ -80,13 +80,15 @@ class RegionExtractor(nn.Module):
         else:
             original_image_sizes = [image.shape[-2:] for image in input_tensor]
             images, targets = self.transform(input_tensor)
-            new_image_sizes = images.image_sizes
+            transformed_image_sizes = images.image_sizes
 
             features = self.backbone(images.tensors)
             proposals = self.rpn(images, features, targets)[0]
 
             if self.stage == "rpn":
-                for boxes, original_image_size, new_image_size in zip(proposals, original_image_sizes, new_image_sizes):
+                for boxes, original_image_size, new_image_size in zip(
+                    proposals, original_image_sizes, transformed_image_sizes
+                ):
                     boxes = box_ops.clip_boxes_to_image(boxes, new_image_size)
 
                     keep = box_ops.remove_small_boxes(boxes, min_size=self.min_size)
@@ -105,13 +107,15 @@ class RegionExtractor(nn.Module):
 
                     output_boxes.append(boxes)
             elif self.stage == "rcnn":
-                box_features = self.box_roi_pool(features, proposals, new_image_sizes)
+                box_features = self.box_roi_pool(features, proposals, transformed_image_sizes)
                 box_features = self.box_head(box_features)
                 class_logits, box_regression = self.box_predictor(box_features)
-                boxes_list, _, _ = self.postprocess_detections(class_logits, box_regression, proposals, new_image_sizes)
+                boxes_list, _, _ = self.postprocess_detections(
+                    class_logits, box_regression, proposals, transformed_image_sizes
+                )
 
                 for boxes, original_image_size, new_image_size in zip(
-                    boxes_list, original_image_sizes, new_image_sizes
+                    boxes_list, original_image_sizes, transformed_image_sizes
                 ):
                     boxes = update_box_sizes_following_image_resize(boxes, new_image_size, original_image_size)
 
