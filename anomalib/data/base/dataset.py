@@ -20,6 +20,13 @@ from torch.utils.data import Dataset
 from anomalib.data.utils import read_image
 from anomalib.pre_processing import PreProcessor
 
+_EXPECTED_COlS_CLASSIFICATION = ["image_path", "label", "label_index", "mask_path", "split"]
+_EXPECTED_COLS_SEGMENTATION = _EXPECTED_COlS_CLASSIFICATION + ["mask_path"]
+_EXPECTED_COLS_PERTASK = {
+    "classification": _EXPECTED_COlS_CLASSIFICATION,
+    "segmentation": _EXPECTED_COLS_SEGMENTATION,
+}
+
 logger = logging.getLogger(__name__)
 
 
@@ -67,6 +74,13 @@ class AnomalibDataset(Dataset, ABC):
         Args:
             samples (DataFrame): DataFrame with new samples.
         """
+        # validate the passed samples by checking the
+        assert isinstance(samples, DataFrame), f"samples must be a pandas.DataFrame, found {type(samples)}"
+        expected_columns = _EXPECTED_COLS_PERTASK[self.task]
+        assert all(
+            col in samples.columns for col in expected_columns
+        ), f"samples must have (at least) columns {expected_columns}, found {samples.columns}"
+
         self._samples = samples.sort_values(by="image_path", ignore_index=True)
 
     @property
