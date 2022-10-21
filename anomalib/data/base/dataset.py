@@ -43,6 +43,7 @@ class AnomalibDataset(Dataset, ABC):
             indices (Sequence[int]): Indices at which the dataset is to be subsampled.
             inplace (bool): When true, the subsampling will be performed on the instance itself.
         """
+        assert len(set(indices)) == len(indices), "No duplicates allowed in indices."
         dataset = self if inplace else copy.deepcopy(self)
         dataset.samples = self.samples.iloc[indices].reset_index(drop=True)
         return dataset
