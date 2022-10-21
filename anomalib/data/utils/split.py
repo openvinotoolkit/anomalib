@@ -71,8 +71,10 @@ def random_split(
     if isinstance(split_ratio, float):
         split_ratio = [1 - split_ratio, split_ratio]
 
-    assert math.isclose(sum(split_ratio), 1) and sum(split_ratio) <= 1, "split ratios must sum to 1."
-    assert all(0 < ratio < 1 for ratio in split_ratio), "all split ratios must be between 0 and 1."
+    assert (
+        math.isclose(sum(split_ratio), 1) and sum(split_ratio) <= 1
+    ), f"split ratios must sum to 1, found {sum(split_ratio)}"
+    assert all(0 < ratio < 1 for ratio in split_ratio), f"all split ratios must be between 0 and 1, found {split_ratio}"
 
     # create list of source data
     if label_aware:
@@ -102,6 +104,5 @@ def random_split(
             [label_dataset.subsample(subset_indices) for subset_indices in torch.split(indices, subset_lengths)]
         )
 
-    # concatenate and return
     subsets = list(map(list, zip(*subsets)))
     return [concatenate_datasets(subset) for subset in subsets]
