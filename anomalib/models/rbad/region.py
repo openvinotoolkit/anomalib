@@ -230,7 +230,7 @@ class RegionExtractor(nn.Module):
             output_boxes = [b.cpu().detach().numpy() for b in output_boxes]
             output_scores = [s.view((-1, 1)).cpu().detach().numpy() for s in output_scores]
 
-            return output_boxes[0]
+            return output_boxes
 
     def postprocess_detections(self, class_logits, box_regression, proposals, image_shapes):
         device = class_logits.device

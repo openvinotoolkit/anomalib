@@ -6,6 +6,8 @@ Region Extractor.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from typing import List, Union
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -64,30 +66,26 @@ class RegionExtractor(nn.Module):
         self.box_coder = self.base_model.roi_heads.box_coder
 
     @torch.no_grad()
-    def forward(self, input_tensor: Tensor):
+    def forward(self, input_tensor: Union[Tensor, List[Tensor]]):
 
         if self.training:
             raise ValueError("Should not be in training mode")
 
-        if len(input_tensor.shape) != 4:
-            raise ValueError("Expected 4D tensor, got {}".format(input_tensor.shape))
-
-        images = [image for image in input_tensor]
+        output_boxes: List[Tensor] = []
 
         if self.use_original:
-            out = self.base_model(images)
-            out = [x["boxes"] for x in out]
-            return out
+            predictions = self.base_model(input_tensor)
+            output_boxes = [prediction["boxes"] for prediction in predictions]
+            return output_boxes
         else:
-            original_image_sizes = [image.shape[-2:] for image in images]
-            images, targets = self.transform(images)
+            original_image_sizes = [image.shape[-2:] for image in input_tensor]
+            images, targets = self.transform(input_tensor)
             new_image_sizes = images.image_sizes
 
             features = self.backbone(images.tensors)
-            proposals, _proposal_losses = self.rpn(images, features, targets)
+            proposals = self.rpn(images, features, targets)[0]
 
             if self.stage == "rpn":
-                output_boxes = []
                 for boxes, original_image_size, new_image_size in zip(proposals, original_image_sizes, new_image_sizes):
                     boxes = box_ops.clip_boxes_to_image(boxes, new_image_size)
 
@@ -112,7 +110,6 @@ class RegionExtractor(nn.Module):
                 class_logits, box_regression = self.box_predictor(box_features)
                 boxes_list, _, _ = self.postprocess_detections(class_logits, box_regression, proposals, new_image_sizes)
 
-                output_boxes = []
                 for boxes, original_image_size, new_image_size in zip(
                     boxes_list, original_image_sizes, new_image_sizes
                 ):
@@ -128,7 +125,7 @@ class RegionExtractor(nn.Module):
             else:
                 raise ValueError("Unknown stage {}".format(self.stage))
 
-            return output_boxes[0]
+            return output_boxes
 
     def postprocess_detections(self, class_logits, box_regression, proposals, image_shapes):
         device = class_logits.device
