@@ -122,7 +122,8 @@ class AnomalibDataset(Dataset, ABC):
     def __add__(self, other_dataset: AnomalibDataset) -> AnomalibDataset:
         """Concatenate this dataset with another dataset."""
         assert isinstance(other_dataset, self.__class__), "Cannot concatenate datasets that are not of the same type."
-        assert self.is_setup and other_dataset.is_setup, "Cannot concatenate uninitialized datasets. Call setup first."
+        assert self.is_setup, "Cannot concatenate uninitialized datasets. Call setup first."
+        assert other_dataset.is_setup, "Cannot concatenate uninitialized datasets. Call setup first."
         dataset = copy.deepcopy(self)
         dataset.samples = pd.concat([self.samples, other_dataset.samples], ignore_index=True)
         return dataset
