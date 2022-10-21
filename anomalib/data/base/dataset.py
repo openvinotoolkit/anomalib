@@ -34,8 +34,7 @@ class AnomalibDataset(Dataset, ABC):
 
     def __len__(self) -> int:
         """Get length of the dataset."""
-        assert isinstance(self._samples, DataFrame)
-        return len(self._samples)
+        return len(self.samples)
 
     def subsample(self, indices: Sequence[int], inplace=False) -> AnomalibDataset:
         """Subsamples the dataset at the provided indices.
