@@ -83,8 +83,9 @@ def random_split(
     else:
         per_label_datasets = [dataset]
 
+    # outer list: per-label unique, inner list: random subsets with the given ratio
+    subsets: List[List[AnomalibDataset]] = []
     # split each (label-aware) subset of source data
-    subsets = []
     for label_dataset in per_label_datasets:
         # get subset lengths
         subset_lengths = []
