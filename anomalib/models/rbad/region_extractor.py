@@ -6,8 +6,9 @@ Region Extractor.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Union
+from typing import List, Optional, Union
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -21,32 +22,39 @@ from anomalib.models.rbad.region import (
 )
 
 
+def likelihood_to_class_threshold(likelihood):
+    threshold = np.cos(likelihood * np.pi / 2.0) ** 4.0
+    return threshold
+
+
 class RegionExtractor(nn.Module):
-    def __init__(self, stage="rcnn", patch_mode=False, patch_size=32, use_original=False, **kwargs):
-        # kwargs gives the configurable parameters
-        # kwargs.keys() == {'max_overlap', 'min_size', 'likelihood'}
-
-        assert stage in ["rpn", "rcnn"]
-
+    def __init__(
+        self,
+        stage: str = "rcnn",
+        patch_mode: bool = False,
+        patch_size: int = 32,
+        use_original: bool = False,
+        min_size: int = 25,
+        iou_threshold: float = 0.3,
+        likelihood: Optional[float] = None,
+    ) -> None:
         super(RegionExtractor, self).__init__()
 
         device = "cuda:0" if torch.cuda.is_available() else "cpu"
         self.pseudo_scores = torch.arange(1000, 0, -1, dtype=torch.float32, device=device)
 
         # Affects global behaviour of the extractor
-        self.use_original = use_original
         self.stage = stage
-        self.patch_mode = patch_mode
-
-        self.min_size = 25 if "min_size" not in kwargs else kwargs["min_size"]
-        self.stage_nms_thresh = 0.3 if "max_overlap" not in kwargs else kwargs["max_overlap"]
-        self.box_confidence = 0.2 if "likelihood" not in kwargs else likelihood_to_class_threshold(kwargs["likelihood"])
+        self.use_original = use_original
+        self.min_size = min_size
+        self.iou_threshold = iou_threshold
 
         # Affects operation only when stage='rcnn'
-        self.rcnn_score_thresh = self.box_confidence
+        self.rcnn_score_thresh = 0.2 if likelihood is None else likelihood_to_class_threshold(likelihood)
         self.rcnn_detections_per_img = 100
 
         # Affects operation only when patch_mode == True
+        self.patch_mode = patch_mode
         self.patch_side_length = patch_size
         self.patch_nms_thresh = 0.3
 
@@ -55,18 +63,8 @@ class RegionExtractor(nn.Module):
             pretrained=True, rpn_pre_nms_top_n_test=1000, rpn_nms_thresh=0.7, rpn_post_nms_top_n_test=1000
         )
 
-        self.transform = self.base_model.transform
-        self.backbone = self.base_model.backbone
-        self.rpn = self.base_model.rpn
-
-        self.box_roi_pool = self.base_model.roi_heads.box_roi_pool
-        self.box_head = self.base_model.roi_heads.box_head
-        self.box_predictor = self.base_model.roi_heads.box_predictor
-
-        self.box_coder = self.base_model.roi_heads.box_coder
-
     @torch.no_grad()
-    def forward(self, input_tensor: Union[Tensor, List[Tensor]]):
+    def forward(self, input_tensor: Union[Tensor, List[Tensor]]) -> List[Tensor]:
 
         if self.training:
             raise ValueError("Should not be in training mode")
@@ -79,25 +77,25 @@ class RegionExtractor(nn.Module):
             return output_boxes
         else:
             original_image_sizes = [image.shape[-2:] for image in input_tensor]
-            images, targets = self.transform(input_tensor)
+            images, targets = self.base_model.transform(input_tensor)
             transformed_image_sizes = images.image_sizes
 
-            features = self.backbone(images.tensors)
-            proposals = self.rpn(images, features, targets)[0]
+            features = self.base_model.backbone(images.tensors)
+            proposals = self.base_model.rpn(images, features, targets)[0]
 
             if self.stage == "rpn":
-                for boxes, original_image_size, new_image_size in zip(
+                for boxes, original_image_size, transformed_image_size in zip(
                     proposals, original_image_sizes, transformed_image_sizes
                 ):
-                    boxes = box_ops.clip_boxes_to_image(boxes, new_image_size)
+                    boxes = box_ops.clip_boxes_to_image(boxes, transformed_image_size)
 
                     keep = box_ops.remove_small_boxes(boxes, min_size=self.min_size)
                     boxes = boxes[keep]
 
-                    keep = box_ops.nms(boxes, self.pseudo_scores[: boxes.shape[0]], self.stage_nms_thresh)
+                    keep = box_ops.nms(boxes, self.pseudo_scores[: boxes.shape[0]], self.iou_threshold)
                     boxes = boxes[keep]
 
-                    boxes = update_box_sizes_following_image_resize(boxes, new_image_size, original_image_size)
+                    boxes = update_box_sizes_following_image_resize(boxes, transformed_image_size, original_image_size)
 
                     if self.patch_mode:
                         boxes = convert_to_patch_boxes(boxes, original_image_size, self.patch_side_length)
@@ -107,17 +105,17 @@ class RegionExtractor(nn.Module):
 
                     output_boxes.append(boxes)
             elif self.stage == "rcnn":
-                box_features = self.box_roi_pool(features, proposals, transformed_image_sizes)
-                box_features = self.box_head(box_features)
-                class_logits, box_regression = self.box_predictor(box_features)
+                box_features = self.base_model.roi_heads.box_roi_pool(features, proposals, transformed_image_sizes)
+                box_features = self.base_model.roi_heads.box_head(box_features)
+                class_logits, box_regression = self.base_model.roi_heads.box_predictor(box_features)
                 boxes_list, _, _ = self.postprocess_detections(
                     class_logits, box_regression, proposals, transformed_image_sizes
                 )
 
-                for boxes, original_image_size, new_image_size in zip(
+                for boxes, original_image_size, transformed_image_size in zip(
                     boxes_list, original_image_sizes, transformed_image_sizes
                 ):
-                    boxes = update_box_sizes_following_image_resize(boxes, new_image_size, original_image_size)
+                    boxes = update_box_sizes_following_image_resize(boxes, transformed_image_size, original_image_size)
 
                     if self.patch_mode:
                         boxes = convert_to_patch_boxes(boxes, original_image_size, self.patch_side_length)
@@ -136,7 +134,7 @@ class RegionExtractor(nn.Module):
         num_classes = class_logits.shape[-1]
 
         boxes_per_image = [len(boxes_in_image) for boxes_in_image in proposals]
-        pred_boxes = self.box_coder.decode(box_regression, proposals)
+        pred_boxes = self.base_model.roi_heads.box_coder.decode(box_regression, proposals)
 
         pred_scores = F.softmax(class_logits, -1)
 
@@ -174,7 +172,7 @@ class RegionExtractor(nn.Module):
             boxes, scores, labels = boxes[keep], scores[keep], labels[keep]
 
             # non-maximum suppression, all boxes together
-            keep = box_ops.nms(boxes, scores, self.stage_nms_thresh)
+            keep = box_ops.nms(boxes, scores, self.iou_threshold)
 
             # keep only topk scoring predictions
             keep = keep[: self.rcnn_detections_per_img]
