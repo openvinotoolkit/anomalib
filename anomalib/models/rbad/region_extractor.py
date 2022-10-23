@@ -16,84 +16,6 @@ from torch import Size, Tensor
 from torchvision.ops import boxes as box_ops
 
 
-# TODO: Refactor tile_boxes
-def tile_boxes(boxes, frame_size, tile_size: int):
-    # boxes:      x1, y1, x2, y2
-    # frame_size: (height, width)
-
-    boxes = boxes.round_().to(torch.int32)
-    assert tile_size % 2 == 0
-    assert isinstance(frame_size[0], int)
-    assert isinstance(frame_size[1], int)
-    assert isinstance(tile_size, int)
-    assert isinstance(boxes, torch.Tensor)
-    assert boxes.dtype == torch.int32
-
-    widths = boxes[:, 2] - boxes[:, 0]
-    heights = boxes[:, 3] - boxes[:, 1]
-
-    x2 = boxes[:, 2]
-    y2 = boxes[:, 3]
-
-    x2[(widths % 2) == 1] += 1
-    y2[(heights % 2) == 1] += 1
-
-    widths = boxes[:, 2] - boxes[:, 0]
-    heights = boxes[:, 3] - boxes[:, 1]
-    assert (widths % 2 == 0).all()
-    assert (heights % 2 == 0).all()
-
-    deltas = torch.zeros_like(boxes)
-    deltas[:, 0] = (widths - tile_size) / 2
-    deltas[:, 1] = (heights - tile_size) / 2
-    deltas[:, 2] = (tile_size - widths) / 2
-    deltas[:, 3] = (tile_size - heights) / 2
-
-    boxes = boxes + deltas
-
-    overhang = boxes[:, 0] * -1
-    overhang_mask = overhang < 0
-    overhang[overhang_mask] = 0
-    boxes[:, 0] += overhang
-    boxes[:, 2] += overhang
-
-    overhang = boxes[:, 1] * -1
-    overhang_mask = overhang < 0
-    overhang[overhang_mask] = 0
-    boxes[:, 1] += overhang
-    boxes[:, 3] += overhang
-
-    overhang = boxes[:, 2] - frame_size[1] + 1
-    overhang_mask = overhang < 0
-    overhang[overhang_mask] = 0
-    boxes[:, 0] -= overhang
-    boxes[:, 2] -= overhang
-
-    overhang = boxes[:, 3] - frame_size[0] + 1
-    overhang_mask = overhang < 0
-    overhang[overhang_mask] = 0
-    boxes[:, 1] -= overhang
-    boxes[:, 3] -= overhang
-
-    boxes = boxes.to(torch.float32)
-    return boxes
-
-
-def update_box_sizes_following_image_resize(boxes: Tensor, original_size: Size, new_size: Size) -> Tensor:
-    height_ratio, width_ratio = (new_s / org_s for new_s, org_s in zip(new_size, original_size))
-    xmin, ymin, xmax, ymax = boxes.unbind(1)
-    xmin = xmin * width_ratio
-    xmax = xmax * width_ratio
-    ymin = ymin * height_ratio
-    ymax = ymax * height_ratio
-    return torch.stack((xmin, ymin, xmax, ymax), dim=1)
-
-
-def likelihood_to_class_threshold(likelihood: float) -> float:
-    threshold = (torch.cos(torch.tensor(likelihood) * torch.pi / 2.0) ** 4.0).item()
-    return threshold
-
-
 class RegionExtractor(nn.Module):
     def __init__(
         self,
@@ -238,3 +160,87 @@ class RegionExtractor(nn.Module):
             post_processed_boxes.append(boxes)
 
         return post_processed_boxes
+
+
+def tile_boxes(boxes: Tensor, image_size: Tuple[int, int], tile_size: int) -> Tensor:
+    """Tile boxes.
+
+    Args:
+        boxes (Tensor): Box predictions, shape: [N, 4] - (x1, y1, x2, y2)
+        image_size (Tuple[int, int]): Height and width of the image from which
+            boxes are predicted.
+        tile_size (int): Tile size.
+
+    Returns:
+        Tensor: _description_
+    """
+    assert tile_size % 2 == 0, "``tile_size`` must be power of 2."
+
+    boxes = boxes.round_().to(torch.int32)
+
+    widths = boxes[:, 2] - boxes[:, 0]
+    heights = boxes[:, 3] - boxes[:, 1]
+
+    x2 = boxes[:, 2]
+    y2 = boxes[:, 3]
+
+    x2[(widths % 2) == 1] += 1
+    y2[(heights % 2) == 1] += 1
+
+    widths = boxes[:, 2] - boxes[:, 0]
+    heights = boxes[:, 3] - boxes[:, 1]
+    assert (widths % 2 == 0).all()
+    assert (heights % 2 == 0).all()
+
+    deltas = torch.zeros_like(boxes)
+    deltas[:, 0] = (widths - tile_size) / 2
+    deltas[:, 1] = (heights - tile_size) / 2
+    deltas[:, 2] = (tile_size - widths) / 2
+    deltas[:, 3] = (tile_size - heights) / 2
+
+    boxes = boxes + deltas
+
+    overhang = boxes[:, 0] * -1
+    overhang_mask = overhang < 0
+    overhang[overhang_mask] = 0
+    boxes[:, 0] += overhang
+    boxes[:, 2] += overhang
+
+    overhang = boxes[:, 1] * -1
+    overhang_mask = overhang < 0
+    overhang[overhang_mask] = 0
+    boxes[:, 1] += overhang
+    boxes[:, 3] += overhang
+
+    overhang = boxes[:, 2] - image_size[1] + 1
+    overhang_mask = overhang < 0
+    overhang[overhang_mask] = 0
+    boxes[:, 0] -= overhang
+    boxes[:, 2] -= overhang
+
+    overhang = boxes[:, 3] - image_size[0] + 1
+    overhang_mask = overhang < 0
+    overhang[overhang_mask] = 0
+    boxes[:, 1] -= overhang
+    boxes[:, 3] -= overhang
+
+    boxes = boxes.to(torch.float32)
+    return boxes
+
+
+def update_box_sizes_following_image_resize(boxes: Tensor, original_size: Size, new_size: Size) -> Tensor:
+    height_ratio, width_ratio = (new_s / org_s for new_s, org_s in zip(new_size, original_size))
+    xmin, ymin, xmax, ymax = boxes.unbind(1)
+    xmin = xmin * width_ratio
+    xmax = xmax * width_ratio
+    ymin = ymin * height_ratio
+    ymax = ymax * height_ratio
+    return torch.stack((xmin, ymin, xmax, ymax), dim=1)
+
+
+def likelihood_to_class_threshold(likelihood: float) -> float:
+    threshold = (torch.cos(torch.tensor(likelihood) * torch.pi / 2.0) ** 4.0).item()
+    return threshold
+
+
+
