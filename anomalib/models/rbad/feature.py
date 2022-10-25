@@ -26,11 +26,11 @@ class BaseModel(nn.Module):
         head_module = self.model.features[:-1]
         head_module.module_type = module_type
 
-        # Load head module
-        checkpoint = load_url(
-            "https://files.cosmonio.com/combined_head_1_2-a9f83242.pth", check_hash=True, map_location=self.device
-        )
-        head_module.load_state_dict(checkpoint["module_state"])
+        # # Load head module
+        # checkpoint = load_url(
+        #     "https://files.cosmonio.com/combined_head_1_2-a9f83242.pth", check_hash=True, map_location=self.device
+        # )
+        # head_module.load_state_dict(checkpoint["module_state"])
 
         return head_module
 
@@ -231,10 +231,10 @@ class RCNN(nn.Module):
         self.RCNN_verb_score = nn.Linear(tail_dimensions, self.n_verbs)
 
     def load(self):
-        checkpoint = load_url(
-            "https://files.cosmonio.com/rcnn_1_2-31296d99.pth", check_hash=True, map_location=self.device
-        )
-        self.load_state_dict(checkpoint["module_state"])
+        # checkpoint = load_url(
+        #     "https://files.cosmonio.com/rcnn_1_2-31296d99.pth", check_hash=True, map_location=self.device
+        # )
+        # self.load_state_dict(checkpoint["module_state"])
         return self
 
     def forward(self, base_feat, rois):
