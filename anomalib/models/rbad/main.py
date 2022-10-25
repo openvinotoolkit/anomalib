@@ -9,12 +9,12 @@ Test script to compare the anomalib implementation with the actual one.
 
 import albumentations as A
 import cv2
-import pytest
 import torch
 from albumentations.pytorch import ToTensorV2
 from torch.utils.data import DataLoader
 
 from anomalib.data import InferenceDataset
+from anomalib.models.rbad.feature import FeatureExtractor as FeatureExtractor1
 from anomalib.models.rbad.region import RegionExtractor as RegionExtractor1
 from anomalib.models.rbad.region_extractor import RegionExtractor as RegionExtractor2
 from anomalib.pre_processing import PreProcessor
@@ -39,10 +39,14 @@ def main():
     # Create the region extractor.
     stage = "rcnn"
     use_original = False
+    region_extractor1 = RegionExtractor1(stage=stage, use_original=use_original).eval().cuda()
     region_extractor2 = RegionExtractor2(stage=stage, use_original=use_original).eval().cuda()
 
     # Forward-Pass the input
-    out2 = region_extractor2(data["image"].cuda())
+    boxes1 = region_extractor1([image])
+    boxes2 = region_extractor2(data["image"].cuda())
+
+    feature_extractor = FeatureExtractor1().eval().cuda()
 
 
 if __name__ == "__main__":
