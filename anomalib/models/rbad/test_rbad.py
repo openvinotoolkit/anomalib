@@ -47,10 +47,10 @@ def test_output_shapes(stage, use_original):
     region_extractor2 = RegionExtractor2(stage=stage, use_original=use_original).eval().cuda()
 
     # Forward-Pass the input
-    out1 = region_extractor1([image])
+    boxes1 = region_extractor1([image])
 
     # images = [image.to(device) for image in data["image"]]
     # out2 = region_extractor2(images)
-    out2 = region_extractor2(data["image"].cuda())
+    boxes2 = region_extractor2(data["image"].cuda())
 
-    assert out1[0].shape == out2[0].cpu().numpy().shape
+    assert boxes1[0].shape == boxes2[0].cpu().numpy().shape
