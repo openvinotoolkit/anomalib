@@ -8,11 +8,13 @@ from typing import Union
 
 from omegaconf import DictConfig, ListConfig
 
+from .avenue import Avenue
 from .base import AnomalibDataModule, AnomalibDataset
 from .btech import BTech
 from .folder import Folder
 from .inference import InferenceDataset
 from .mvtec import MVTec
+from .ucsd_ped import UCSDped
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +74,36 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             num_workers=config.dataset.num_workers,
             transform_config_train=config.dataset.transform_config.train,
             transform_config_eval=config.dataset.transform_config.eval,
+            val_split_mode=config.dataset.val_split_mode,
+        )
+    elif config.dataset.format.lower() == "ucsdped":
+        datamodule = UCSDped(
+            root=config.dataset.path,
+            category=config.dataset.category,
+            task=config.dataset.task,
+            frames_per_clip=config.dataset.frames_per_clip,
+            stride=config.dataset.stride,
+            image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
+            transform_config_train=config.dataset.transform_config.train,
+            transform_config_eval=config.dataset.transform_config.eval,
+            train_batch_size=config.dataset.train_batch_size,
+            eval_batch_size=config.dataset.eval_batch_size,
+            num_workers=config.dataset.num_workers,
+            val_split_mode=config.dataset.val_split_mode,
+        )
+    elif config.dataset.format.lower() == "avenue":
+        datamodule = Avenue(
+            root=config.dataset.path,
+            gt_dir=config.dataset.gt_dir,
+            task=config.dataset.task,
+            frames_per_clip=config.dataset.frames_per_clip,
+            stride=config.dataset.stride,
+            image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
+            transform_config_train=config.dataset.transform_config.train,
+            transform_config_eval=config.dataset.transform_config.eval,
+            train_batch_size=config.dataset.train_batch_size,
+            eval_batch_size=config.dataset.eval_batch_size,
+            num_workers=config.dataset.num_workers,
             val_split_mode=config.dataset.val_split_mode,
         )
     else:

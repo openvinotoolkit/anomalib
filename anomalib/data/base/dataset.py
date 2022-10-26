@@ -21,7 +21,7 @@ from torch.utils.data import Dataset
 from anomalib.data.utils import read_image
 from anomalib.pre_processing import PreProcessor
 
-_EXPECTED_COLS_CLASSIFICATION = ["image_path", "label", "label_index", "split"]
+_EXPECTED_COLS_CLASSIFICATION = ["image_path", "split"]
 _EXPECTED_COLS_SEGMENTATION = _EXPECTED_COLS_CLASSIFICATION + ["mask_path"]
 _EXPECTED_COLS_PERTASK = {
     "classification": _EXPECTED_COLS_CLASSIFICATION,
