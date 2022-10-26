@@ -17,6 +17,8 @@ from torchvision.ops import boxes as box_ops
 
 
 class RegionExtractor(nn.Module):
+    """Extracts regions from the image."""
+
     def __init__(
         self,
         stage: str = "rcnn",
@@ -48,29 +50,40 @@ class RegionExtractor(nn.Module):
         self.tile_iou_threshold = 0.3
 
         # Model and model components
-        self.base_model = detection.fasterrcnn_resnet50_fpn(
+        self.faster_rcnn = detection.fasterrcnn_resnet50_fpn(
             pretrained=True, rpn_pre_nms_top_n_test=1000, rpn_nms_thresh=0.7, rpn_post_nms_top_n_test=1000
         )
 
     @torch.no_grad()
-    def forward(self, batch: Union[Tensor, List[Tensor]]) -> List[Tensor]:
+    def forward(self, input: Union[Tensor, List[Tensor]]) -> List[Tensor]:
+        """Forward pass of the model.
 
+        Args:
+            input (Union[Tensor, List[Tensor]]): Input tensor or list of tensors.
+
+        Raises:
+            ValueError: When the model is not in the correct mode.
+            ValueError: When ``stage`` is not one of ``rcnn`` or ``rpn``.
+
+        Returns:
+            List[Tensor]: Regions, comprising ``List`` of boxes for each image.
+        """
         if self.training:
             raise ValueError("Should not be in training mode")
 
         regions: List[Tensor] = []
 
         if self.use_original:
-            predictions = self.base_model(batch)
+            predictions = self.faster_rcnn(input)
             regions = [prediction["boxes"] for prediction in predictions]
             return regions
         else:
-            original_image_sizes = [image.shape[-2:] for image in batch]
-            images, targets = self.base_model.transform(batch)
+            original_image_sizes = [image.shape[-2:] for image in input]
+            images, targets = self.faster_rcnn.transform(input)
             transformed_image_sizes = images.image_sizes
 
-            features = self.base_model.backbone(images.tensors)
-            proposals = self.base_model.rpn(images, features, targets)[0]
+            features = self.faster_rcnn.backbone(images.tensors)
+            proposals = self.faster_rcnn.rpn(images, features, targets)[0]
 
             if self.stage == "rpn":
                 for boxes, original_image_size, transformed_image_size in zip(
@@ -94,9 +107,9 @@ class RegionExtractor(nn.Module):
 
                     regions.append(boxes)
             elif self.stage == "rcnn":
-                box_features = self.base_model.roi_heads.box_roi_pool(features, proposals, transformed_image_sizes)  # type: ignore
-                box_features = self.base_model.roi_heads.box_head(box_features)  # type: ignore
-                class_logits, box_regression = self.base_model.roi_heads.box_predictor(box_features)  # type: ignore
+                box_features = self.faster_rcnn.roi_heads.box_roi_pool(features, proposals, transformed_image_sizes)  # type: ignore
+                box_features = self.faster_rcnn.roi_heads.box_head(box_features)  # type: ignore
+                class_logits, box_regression = self.faster_rcnn.roi_heads.box_predictor(box_features)  # type: ignore
                 box_predictions = self.post_process_box_predictions(
                     class_logits, box_regression, proposals, transformed_image_sizes
                 )
@@ -121,8 +134,19 @@ class RegionExtractor(nn.Module):
     def post_process_box_predictions(
         self, class_logits: Tensor, box_regression: Tensor, proposals: List[Tensor], image_shapes: List[Tuple[int, int]]
     ) -> List[Tensor]:
+        """Post-processes the box predictions.
+
+        Args:
+            class_logits (Tensor): Class logits.
+            box_regression (Tensor): Box predictions of shape (N, 4).
+            proposals (List[Tensor]): Proposals from the RPN.
+            image_shapes (List[Tuple[int, int]]): Shapes of the transformed images.
+
+        Returns:
+            List[Tensor]: Post-processed box predictions of shape (N, 4).
+        """
         boxes_per_image = [len(boxes_in_image) for boxes_in_image in proposals]
-        pred_boxes = self.base_model.roi_heads.box_coder.decode(box_regression, proposals)  # type: ignore
+        pred_boxes = self.faster_rcnn.roi_heads.box_coder.decode(box_regression, proposals)  # type: ignore
 
         pred_scores = F.softmax(class_logits, -1)
 
@@ -172,7 +196,7 @@ def tile_boxes(boxes: Tensor, image_size: Tuple[int, int], tile_size: int) -> Te
         tile_size (int): Tile size.
 
     Returns:
-        Tensor: _description_
+        Tensor: Tiled boxes, shape: [N, 4] - (x1, y1, x2, y2)
     """
     assert tile_size % 2 == 0, "``tile_size`` must be power of 2."
 
@@ -229,6 +253,16 @@ def tile_boxes(boxes: Tensor, image_size: Tuple[int, int], tile_size: int) -> Te
 
 
 def update_box_sizes_following_image_resize(boxes: Tensor, original_size: Size, new_size: Size) -> Tensor:
+    """Update box sizes following image resize.
+
+    Args:
+        boxes (Tensor): Boxes of shape (N, 4) - (x1, y1, x2, y2).
+        original_size (Size): Size of the original image.
+        new_size (Size): Size of the transformed image.
+
+    Returns:
+        Tensor: Updated boxes of shape (N, 4) - (x1, y1, x2, y2).
+    """
     height_ratio, width_ratio = (new_s / org_s for new_s, org_s in zip(new_size, original_size))
     xmin, ymin, xmax, ymax = boxes.unbind(1)
     xmin = xmin * width_ratio
@@ -239,6 +273,14 @@ def update_box_sizes_following_image_resize(boxes: Tensor, original_size: Size, 
 
 
 def likelihood_to_class_threshold(likelihood: float) -> float:
+    """Convert likelihood to class threshold.
+
+    Args:
+        likelihood (float): Input likelihood.
+
+    Returns:
+        float: Class threshold.
+    """
     threshold = (torch.cos(torch.tensor(likelihood) * torch.pi / 2.0) ** 4.0).item()
     return threshold
 
