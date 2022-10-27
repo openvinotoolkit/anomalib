@@ -22,16 +22,16 @@ class BaseModel(nn.Module):
         self.head_module = self.get_head_module()
         self.tail_module, self.tail_dimensions = self.get_tail_module()
 
-    def get_head_module(self, module_type: str = "combined_head") -> nn.Sequential:
+    def get_head_module(self, module_type: str = "combined_head"):
         head_module = self.model.features[:-1]
         head_module.module_type = module_type
 
-        # # Load head module
+        # Load head module
+        checkpoint = torch.load(f="combined_head_1_2-a9f83242.pth")
         # checkpoint = load_url(
         #     "https://files.cosmonio.com/combined_head_1_2-a9f83242.pth", check_hash=True, map_location=self.device
         # )
-        # head_module.load_state_dict(checkpoint["module_state"])
-
+        head_module.load_state_dict(checkpoint["module_state"], strict=False)
         return head_module
 
     def get_tail_module(self, module_type: str = "tail") -> Tuple[nn.Sequential, int]:
@@ -231,10 +231,11 @@ class RCNN(nn.Module):
         self.RCNN_verb_score = nn.Linear(tail_dimensions, self.n_verbs)
 
     def load(self):
+        checkpoint = torch.load("rcnn_1_2-31296d99.pth")
         # checkpoint = load_url(
         #     "https://files.cosmonio.com/rcnn_1_2-31296d99.pth", check_hash=True, map_location=self.device
         # )
-        # self.load_state_dict(checkpoint["module_state"])
+        self.load_state_dict(checkpoint["module_state"])
         return self
 
     def forward(self, base_feat, rois):
