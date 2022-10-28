@@ -35,6 +35,7 @@ class Split(str, Enum):
 class ValSplitMode(str, Enum):
     """Splitting mode used to obtain validation subset."""
 
+    NONE = "none"
     SAME_AS_TEST = "same_as_test"
     FROM_TEST = "from_test"
 

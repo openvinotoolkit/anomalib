@@ -27,14 +27,23 @@ class AnomalibDataModule(LightningDataModule, ABC):
         train_batch_size (int): Batch size used by the train dataloader.
         test_batch_size (int): Batch size used by the val and test dataloaders.
         num_workers (int): Number of workers used by the train, val and test dataloaders.
+        seed (Optional[int], optional): Seed used during random subset splitting.
     """
 
-    def __init__(self, train_batch_size: int, eval_batch_size: int, num_workers: int, val_split_mode: ValSplitMode):
+    def __init__(
+        self,
+        train_batch_size: int,
+        eval_batch_size: int,
+        num_workers: int,
+        val_split_mode: ValSplitMode,
+        seed: Optional[int] = None,
+    ):
         super().__init__()
         self.train_batch_size = train_batch_size
         self.eval_batch_size = eval_batch_size
         self.num_workers = num_workers
         self.val_split_mode = val_split_mode
+        self.seed = seed
 
         self.train_data: Optional[AnomalibDataset] = None
         self.val_data: Optional[AnomalibDataset] = None
@@ -55,7 +64,12 @@ class AnomalibDataModule(LightningDataModule, ABC):
     def _setup(self, _stage: Optional[str] = None) -> None:
         """Set up the datasets and perform dynamic subset splitting.
 
-        May be overridden in subclass for custom splitting behaviour.
+        This method yay be overridden in subclass for custom splitting behaviour.
+
+        Note: The stage argument is not used here. This is because, for a given instance of an AnomalibDataModule
+        subclass, all three subsets are created at the first call of setup(). This is to accommodate the subset
+        splitting behaviour of anomaly tasks, where the validation set is usually extracted from the test set, and
+        the test set must therefore be created as early as the `fit` stage.
         """
         assert self.train_data is not None
         assert self.test_data is not None
@@ -63,18 +77,23 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self.train_data.setup()
         self.test_data.setup()
         if self.val_split_mode == ValSplitMode.FROM_TEST:
-            self.val_data, self.test_data = random_split(self.test_data, [0.5, 0.5], label_aware=True)
+            self.val_data, self.test_data = random_split(self.test_data, [0.5, 0.5], label_aware=True, seed=self.seed)
         elif self.val_split_mode == ValSplitMode.SAME_AS_TEST:
             self.val_data = self.test_data
-        else:
+        elif self.val_split_mode != ValSplitMode.NONE:
             raise ValueError(f"Unknown validation split mode: {self.val_split_mode}")
 
     @property
     def is_setup(self):
         """Checks if setup() has been called."""
-        if self.train_data is None or self.val_data is None or self.test_data is None:
-            return False
-        return self.train_data.is_setup and self.val_data.is_setup and self.test_data.is_setup
+        # at least one of [train_data, val_data, test_data] should be setup
+        if self.train_data is not None and self.train_data.is_setup:
+            return True
+        if self.val_data is not None and self.val_data.is_setup:
+            return True
+        if self.test_data is not None and self.test_data.is_setup:
+            return True
+        return False
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:
         """Get train dataloader."""
