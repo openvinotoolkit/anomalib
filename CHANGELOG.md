@@ -31,6 +31,7 @@
 - Create meta_data.json with ONNX export as well as OpenVINO export by @calebmm in <https://github.com/openvinotoolkit/anomalib/pull/636>
 - 🖌 refactor export callback by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/640>
 - 🐞 Address docs build by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/639>
+- Optimized inference with onnx for patchcore. by @acai66 in <https://github.com/openvinotoolkit/anomalib/pull/652>
 
 New Contributors
 
@@ -40,6 +41,7 @@ New Contributors
 - @zywvvd made their first contribution in <https://github.com/openvinotoolkit/anomalib/pull/546>
 - @Owaiskhan9654 made their first contribution in <https://github.com/openvinotoolkit/anomalib/pull/623>
 - @calebmm made their first contribution in <https://github.com/openvinotoolkit/anomalib/pull/636>
+- @acai66 made their first contribution in <https://github.com/openvinotoolkit/anomalib/pull/652>
 
 **Full Changelog**: <https://github.com/openvinotoolkit/anomalib/compare/v0.3.6...v0.3.7>
 
