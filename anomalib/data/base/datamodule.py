@@ -75,15 +75,20 @@ class AnomalibDataModule(LightningDataModule, ABC):
             self.val_data, self.test_data = random_split(self.test_data, [0.5, 0.5], label_aware=True, seed=self.seed)
         elif self.val_split_mode == ValSplitMode.SAME_AS_TEST:
             self.val_data = self.test_data
-        else:
+        elif self.val_split_mode != ValSplitMode.NONE:
             raise ValueError(f"Unknown validation split mode: {self.val_split_mode}")
 
     @property
     def is_setup(self):
         """Checks if setup() has been called."""
-        if self.train_data is None or self.val_data is None or self.test_data is None:
-            return False
-        return self.train_data.is_setup and self.val_data.is_setup and self.test_data.is_setup
+        # at least one of [train_data, val_data, test_data] should be setup
+        if self.train_data is not None and self.train_data.is_setup:
+            return True
+        if self.val_data is not None and self.val_data.is_setup:
+            return True
+        if self.test_data is not None and self.test_data.is_setup:
+            return True
+        return False
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:
         """Get train dataloader."""
