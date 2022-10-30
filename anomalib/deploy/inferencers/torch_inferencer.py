@@ -13,7 +13,7 @@ from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
 from anomalib.config import get_configurable_parameters
-from anomalib.deploy.optimize import get_model_metadata
+from anomalib.deploy.export import get_model_metadata
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
 from anomalib.pre_processing import PreProcessor
