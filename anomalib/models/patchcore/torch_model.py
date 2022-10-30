@@ -77,21 +77,17 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         if self.training:
             output = embedding
         else:
-
-            if self.num_neighbors > 1:
-                patch_scores, b_idx = torch.cdist(embedding, self.memory_bank).min(1)
-                patch_scores, b_idx = patch_scores.reshape(batch_size, -1), b_idx.reshape(batch_size, -1)
-                anomaly_score, p_idx = patch_scores.max(1)
-                # Embeds in bank with the Nearest Distance to Patch with the highest scores
-                ndp_e = self.memory_bank[b_idx[torch.arange(batch_size), p_idx], :]
-                # Embeds of Bank Nearest Neighbours of embeds in bank with the nearest distance to patch with the highest scores
-                bnn_e = self.memory_bank[torch.cdist(ndp_e, self.memory_bank).topk(self.num_neighbors, largest=False)[1]]
-                dist = torch.cdist(embedding[p_idx][:, None], bnn_e)[:, 0]
-                anomaly_score = (1 - F.softmax(dist, 1))[:, 0] * anomaly_score
-            else:
-                patch_scores = torch.cdist(embedding, self.memory_bank).amin(1).reshape(batch_size, -1)
-                anomaly_score = patch_scores.amax(1)
-
+            # apply nearest neighbor search
+            patch_scores, locations = self.nearest_neighbors(embedding=embedding, n_neighbors=1)
+            # reshape to batch dimension
+            patch_scores = patch_scores.reshape((batch_size, -1))
+            locations = locations.reshape((batch_size, -1))
+            # compute anomaly score
+            anomaly_score = self.compute_anomaly_score(patch_scores, locations, embedding)
+            # reshape to w, h
+            patch_scores = patch_scores.reshape((batch_size, 1, width, height))
+            # get anomaly map
+            anomaly_map = self.anomaly_map_generator(patch_scores)
             # reshape to w, h
             patch_scores = patch_scores.reshape((batch_size, 1, width, height))
             # get anomaly map
@@ -161,8 +157,12 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             Tensor: Patch scores.
             Tensor: Locations of the nearest neighbor(s).
         """
-        distances = torch.cdist(embedding, self.memory_bank, p=2.0)  # euclidean norm
-        patch_scores, locations = distances.topk(k=n_neighbors, largest=False, dim=1)
+        distances = torch.cdist(embedding, self.memory_bank, p=2.0)   # euclidean norm
+        if n_neighbors == 1:
+            # when n_neighbors is 1, speed up computation by using min instead of topk
+            patch_scores, locations = distances.min(1)
+        else:
+            patch_scores, locations = distances.topk(k=n_neighbors, largest=False, dim=1)
         return patch_scores, locations
 
     def compute_anomaly_score(self, patch_scores: Tensor, locations: Tensor, embedding: Tensor) -> Tensor:
@@ -176,6 +176,9 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             Tensor: Image-level anomaly scores
         """
 
+        # Don't need to compute weights if num_neighbors is 1
+        if self.num_neighbors == 1:
+            return patch_scores.amax(1)
         # 1. Find the patch with the largest distance to it's nearest neighbor in each image
         max_patches = torch.argmax(patch_scores, dim=1)  # (m^test,* in the paper)
         # 2. Find the distance of the patch to it's nearest neighbor, and the location of the nn in the membank
@@ -187,7 +190,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         # 4. Find the distance of the patch features to each of the support samples
         distances = torch.cdist(embedding[max_patches].unsqueeze(1), self.memory_bank[support_samples], p=2.0)
         # 5. Apply softmax to find the weights
-        weights = (1 - F.softmax(distances.squeeze()))[..., 0]
+        weights = (1 - F.softmax(distances.squeeze(), 1))[..., 0]
         # 6. Apply the weight factor to the score
         score = weights * score  # S^* in the paper
         return score
