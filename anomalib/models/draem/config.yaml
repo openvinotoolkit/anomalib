@@ -6,12 +6,12 @@ dataset:
   task: segmentation
   image_size: 256
   train_batch_size: 8
-  test_batch_size: 32
+  eval_batch_size: 32
   num_workers: 8
   transform_config:
     train: ./anomalib/models/draem/transform_config.yaml
-    val: ./anomalib/models/draem/transform_config.yaml
-  create_validation_set: false
+    eval: ./anomalib/models/draem/transform_config.yaml
+  val_split_mode: same_as_test # options: [same_as_test, from_test]
   tiling:
     apply: false
     tile_size: null

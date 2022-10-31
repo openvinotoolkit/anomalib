@@ -63,8 +63,11 @@ def train():
     load_model_callback = LoadModelCallback(weights_path=trainer.checkpoint_callback.best_model_path)
     trainer.callbacks.insert(0, load_model_callback)
 
-    logger.info("Testing the model.")
-    trainer.test(model=model, datamodule=datamodule)
+    if datamodule.test_data.has_anomalous:
+        logger.info("Testing the model.")
+        trainer.test(model=model, datamodule=datamodule)
+    else:
+        logger.info("No anomalous images found in dataset. Skipping test stage.")
 
 
 if __name__ == "__main__":

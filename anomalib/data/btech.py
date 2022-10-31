@@ -11,44 +11,26 @@ extracts the dataset and create PyTorch data objects.
 
 import logging
 import shutil
-import warnings
 import zipfile
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Union
+from typing import Optional, Tuple, Union
 from urllib.request import urlretrieve
 
 import albumentations as A
 import cv2
-import numpy as np
 import pandas as pd
 from pandas.core.frame import DataFrame
-from pytorch_lightning.core.datamodule import LightningDataModule
 from pytorch_lightning.utilities.cli import DATAMODULE_REGISTRY
-from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
-from torch import Tensor
-from torch.utils.data import DataLoader
-from torch.utils.data.dataset import Dataset
-from torchvision.datasets.folder import VisionDataset
 from tqdm import tqdm
 
-from anomalib.data.inference import InferenceDataset
-from anomalib.data.utils import DownloadProgressBar, hash_check, read_image
-from anomalib.data.utils.split import (
-    create_validation_set_from_test_set,
-    split_normal_images_in_train_set,
-)
+from anomalib.data.base import AnomalibDataModule, AnomalibDataset
+from anomalib.data.utils import DownloadProgressBar, Split, ValSplitMode, hash_check
 from anomalib.pre_processing import PreProcessor
 
 logger = logging.getLogger(__name__)
 
 
-def make_btech_dataset(
-    path: Path,
-    split: Optional[str] = None,
-    split_ratio: float = 0.1,
-    seed: Optional[int] = None,
-    create_validation_set: bool = False,
-) -> DataFrame:
+def make_btech_dataset(path: Path, split: Optional[Union[Split, str]] = None) -> DataFrame:
     """Create BTech samples by parsing the BTech data file structure.
 
     The files are expected to follow the structure:
@@ -57,7 +39,7 @@ def make_btech_dataset(
 
     Args:
         path (Path): Path to dataset
-        split (str, optional): Dataset split (ie., either train or test). Defaults to None.
+        split (Optional[Union[Split, str]], optional): Dataset split (ie., either train or test). Defaults to None.
         split_ratio (float, optional): Ratio to split normal training images and add to the
             test set in case test set doesn't contain any normal images.
             Defaults to 0.1.
@@ -107,12 +89,6 @@ def make_btech_dataset(
     # Modify image_path column by converting to absolute path
     samples["image_path"] = samples.path + "/" + samples.split + "/" + samples.label + "/" + samples.image_path
 
-    # Split the normal images in training set if test set doesn't
-    # contain any normal images. This is needed because AUC score
-    # cannot be computed based on 1-class
-    if sum((samples.split == "test") & (samples.label == "ok")) == 0:
-        samples = split_normal_images_in_train_set(samples, split_ratio, seed)
-
     # Good images don't have mask
     samples.loc[(samples.split == "test") & (samples.label == "ok"), "mask_path"] = ""
 
@@ -121,18 +97,15 @@ def make_btech_dataset(
     samples.loc[(samples.label != "ok"), "label_index"] = 1
     samples.label_index = samples.label_index.astype(int)
 
-    if create_validation_set:
-        samples = create_validation_set_from_test_set(samples, seed=seed)
-
     # Get the data frame for the split.
-    if split is not None and split in ["train", "val", "test"]:
+    if split:
         samples = samples[samples.split == split]
         samples = samples.reset_index(drop=True)
 
     return samples
 
 
-class BTechDataset(VisionDataset):
+class BTechDataset(AnomalibDataset):
     """BTech PyTorch Dataset."""
 
     def __init__(
@@ -140,10 +113,8 @@ class BTechDataset(VisionDataset):
         root: Union[Path, str],
         category: str,
         pre_process: PreProcessor,
-        split: str,
+        split: Optional[Union[Split, str]] = None,
         task: str = "segmentation",
-        seed: Optional[int] = None,
-        create_validation_set: bool = False,
     ) -> None:
         """Btech Dataset class.
 
@@ -153,7 +124,6 @@ class BTechDataset(VisionDataset):
             pre_process: List of pre_processing object containing albumentation compose.
             split: 'train', 'val' or 'test'
             task: ``classification`` or ``segmentation``
-            seed: seed used for the random subset splitting
             create_validation_set: Create a validation subset in addition to the train and test subsets
 
         Examples:
@@ -186,94 +156,32 @@ class BTechDataset(VisionDataset):
             >>> dataset[0]["image"].shape, dataset[0]["mask"].shape
             (torch.Size([3, 256, 256]), torch.Size([256, 256]))
         """
-        super().__init__(root)
+        super().__init__(task, pre_process)
 
-        if seed is None:
-            warnings.warn(
-                "seed is None."
-                " When seed is not set, images from the normal directory are split between training and test dir."
-                " This will lead to inconsistency between runs."
-            )
-
-        self.root = Path(root) if isinstance(root, str) else root
-        self.category: str = category
+        self.root_category = Path(root) / category
         self.split = split
-        self.task = task
 
-        self.pre_process = pre_process
-
-        self.samples = make_btech_dataset(
-            path=self.root / category,
-            split=self.split,
-            seed=seed,
-            create_validation_set=create_validation_set,
-        )
-
-    def __len__(self) -> int:
-        """Get length of the dataset."""
-        return len(self.samples)
-
-    def __getitem__(self, index: int) -> Dict[str, Union[str, Tensor]]:
-        """Get dataset item for the index ``index``.
-
-        Args:
-            index (int): Index to get the item.
-
-        Returns:
-            Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]: Dict of image tensor during training.
-                Otherwise, Dict containing image path, target path, image tensor, label and transformed bounding box.
-        """
-        item: Dict[str, Union[str, Tensor]] = {}
-
-        image_path = self.samples.image_path[index]
-        image = read_image(image_path)
-
-        pre_processed = self.pre_process(image=image)
-        item = {"image": pre_processed["image"]}
-
-        if self.split in ["val", "test"]:
-            label_index = self.samples.label_index[index]
-
-            item["image_path"] = image_path
-            item["label"] = label_index
-
-            if self.task == "segmentation":
-                mask_path = self.samples.mask_path[index]
-
-                # Only Anomalous (1) images has masks in BTech dataset.
-                # Therefore, create empty mask for Normal (0) images.
-                if label_index == 0:
-                    mask = np.zeros(shape=image.shape[:2])
-                else:
-                    mask = cv2.imread(mask_path, flags=0) / 255.0
-
-                pre_processed = self.pre_process(image=image, mask=mask)
-
-                item["mask_path"] = mask_path
-                item["image"] = pre_processed["image"]
-                item["mask"] = pre_processed["mask"]
-
-        return item
+    def _setup(self):
+        self.samples = make_btech_dataset(path=self.root_category, split=self.split)
 
 
 @DATAMODULE_REGISTRY
-class BTech(LightningDataModule):
+class BTech(AnomalibDataModule):
     """BTechDataModule Lightning Data Module."""
 
     def __init__(
         self,
         root: str,
         category: str,
-        # TODO: Remove default values. IAAALD-211
         image_size: Optional[Union[int, Tuple[int, int]]] = None,
         train_batch_size: int = 32,
-        test_batch_size: int = 32,
+        eval_batch_size: int = 32,
         num_workers: int = 8,
         task: str = "segmentation",
         transform_config_train: Optional[Union[str, A.Compose]] = None,
-        transform_config_val: Optional[Union[str, A.Compose]] = None,
+        transform_config_eval: Optional[Union[str, A.Compose]] = None,
+        val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
         seed: Optional[int] = None,
-        create_validation_set: bool = False,
     ) -> None:
         """Instantiate BTech Lightning Data Module.
 
@@ -287,8 +195,8 @@ class BTech(LightningDataModule):
             task: ``classification`` or ``segmentation``
             transform_config_train: Config for pre-processing during training.
             transform_config_val: Config for pre-processing during validation.
-            seed: seed used for the random subset splitting
             create_validation_set: Create a validation subset in addition to the train and test subsets
+            seed (Optional[int], optional): Seed used during random subset splitting.
 
         Examples:
             >>> from anomalib.data import BTech
@@ -316,34 +224,20 @@ class BTech(LightningDataModule):
             >>> data["image"].shape, data["mask"].shape
             (torch.Size([32, 3, 256, 256]), torch.Size([32, 256, 256]))
         """
-        super().__init__()
+        super().__init__(train_batch_size, eval_batch_size, num_workers, val_split_mode, seed)
 
-        self.root = root if isinstance(root, Path) else Path(root)
-        self.category = category
-        self.dataset_path = self.root / self.category
-        self.transform_config_train = transform_config_train
-        self.transform_config_val = transform_config_val
-        self.image_size = image_size
+        self.root = Path(root)
+        self.category = Path(category)
 
-        if self.transform_config_train is not None and self.transform_config_val is None:
-            self.transform_config_val = self.transform_config_train
+        pre_process_train = PreProcessor(config=transform_config_train, image_size=image_size)
+        pre_process_eval = PreProcessor(config=transform_config_eval, image_size=image_size)
 
-        self.pre_process_train = PreProcessor(config=self.transform_config_train, image_size=self.image_size)
-        self.pre_process_val = PreProcessor(config=self.transform_config_val, image_size=self.image_size)
-
-        self.train_batch_size = train_batch_size
-        self.test_batch_size = test_batch_size
-        self.num_workers = num_workers
-
-        self.create_validation_set = create_validation_set
-        self.task = task
-        self.seed = seed
-
-        self.train_data: Dataset
-        self.test_data: Dataset
-        if create_validation_set:
-            self.val_data: Dataset
-        self.inference_data: Dataset
+        self.train_data = BTechDataset(
+            task=task, pre_process=pre_process_train, split=Split.TRAIN, root=root, category=category
+        )
+        self.test_data = BTechDataset(
+            task=task, pre_process=pre_process_eval, split=Split.TEST, root=root, category=category
+        )
 
     def prepare_data(self) -> None:
         """Download the dataset if not available."""
@@ -385,70 +279,3 @@ class BTech(LightningDataModule):
 
             logger.info("Cleaning the tar file")
             zip_filename.unlink()
-
-    def setup(self, stage: Optional[str] = None) -> None:
-        """Setup train, validation and test data.
-
-        BTech dataset uses BTech dataset structure, which is the reason for
-        using `anomalib.data.btech.BTech` class to get the dataset items.
-
-        Args:
-          stage: Optional[str]:  Train/Val/Test stages. (Default value = None)
-
-        """
-        logger.info("Setting up train, validation, test and prediction datasets.")
-        if stage in (None, "fit"):
-            self.train_data = BTechDataset(
-                root=self.root,
-                category=self.category,
-                pre_process=self.pre_process_train,
-                split="train",
-                task=self.task,
-                seed=self.seed,
-                create_validation_set=self.create_validation_set,
-            )
-
-        if self.create_validation_set:
-            self.val_data = BTechDataset(
-                root=self.root,
-                category=self.category,
-                pre_process=self.pre_process_val,
-                split="val",
-                task=self.task,
-                seed=self.seed,
-                create_validation_set=self.create_validation_set,
-            )
-
-        self.test_data = BTechDataset(
-            root=self.root,
-            category=self.category,
-            pre_process=self.pre_process_val,
-            split="test",
-            task=self.task,
-            seed=self.seed,
-            create_validation_set=self.create_validation_set,
-        )
-
-        if stage == "predict":
-            self.inference_data = InferenceDataset(
-                path=self.root, image_size=self.image_size, transform_config=self.transform_config_val
-            )
-
-    def train_dataloader(self) -> TRAIN_DATALOADERS:
-        """Get train dataloader."""
-        return DataLoader(self.train_data, shuffle=True, batch_size=self.train_batch_size, num_workers=self.num_workers)
-
-    def val_dataloader(self) -> EVAL_DATALOADERS:
-        """Get validation dataloader."""
-        dataset = self.val_data if self.create_validation_set else self.test_data
-        return DataLoader(dataset=dataset, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
-
-    def test_dataloader(self) -> EVAL_DATALOADERS:
-        """Get test dataloader."""
-        return DataLoader(self.test_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers)
-
-    def predict_dataloader(self) -> EVAL_DATALOADERS:
-        """Get predict dataloader."""
-        return DataLoader(
-            self.inference_data, shuffle=False, batch_size=self.test_batch_size, num_workers=self.num_workers
-        )
