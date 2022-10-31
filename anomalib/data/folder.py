@@ -139,6 +139,13 @@ def make_dataset(
             if row.label_index == 1:
                 samples.loc[index, "mask_path"] = str(mask_dir / row.image_path.name)
 
+    # make sure all the files exist, dirs_str is used for error message
+    dirs_str = f"normal_dir={normal_dir}, abnormal_dir {abnormal_dir}, normal_test_dir={normal_test_dir}"
+    assert samples.image_path.apply(lambda x: x.exists()).all(), f"missing image files, {dirs_str}"
+    assert samples.mask_path.apply(
+        lambda x: Path(x).exists() if x != "" else True
+    ).all(), f"missing mask files, mask_dir={mask_dir}"
+
     # Ensure the pathlib objects are converted to str.
     # This is because torch dataloader doesn't like pathlib.
     samples = samples.astype({"image_path": "str"})
@@ -430,6 +437,8 @@ class Folder(LightningDataModule):
         if normal_test_dir:
             self.normal_test = self.root / normal_test_dir
         self.mask_dir = mask_dir
+        if mask_dir:
+            self.mask_dir = self.root / mask_dir
         self.extensions = extensions
         self.split_ratio = split_ratio
 
