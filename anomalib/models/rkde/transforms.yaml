@@ -1,0 +1,15 @@
+__version__: 1.2.1
+transform:
+  __class_fullname__: Compose
+  p: 1.0
+  transforms:
+  - __class_fullname__: Normalize
+    always_apply: false
+    max_pixel_value: 255.0
+    mean: 0.0
+    std: 1.0
+    p: 1.0
+  - __class_fullname__: ToTensorV2
+    always_apply: true
+    p: 1.0
+    transpose_mask: false

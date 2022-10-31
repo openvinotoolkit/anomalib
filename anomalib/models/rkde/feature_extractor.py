@@ -11,9 +11,115 @@ from typing import List, Optional, Tuple, Union
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision.models as models
 import torchvision.models.detection as detection
 from torch import Size, Tensor
+from torch.utils.model_zoo import load_url
+from torchvision.ops import RoIAlign
 from torchvision.ops import boxes as box_ops
+
+
+class FeatureExtractor(nn.Module):
+    """Region-based Feature Extractor."""
+
+    def __init__(
+        self,
+        region_extractor_stage: str = "rcnn",
+        # TODO: Rename ``use_original``
+        use_original: bool = False,
+        min_box_size: int = 25,
+        iou_threshold: float = 0.3,
+        likelihood: Optional[float] = None,
+        tiling: bool = False,
+        tile_size: int = 32,
+    ) -> None:
+        super().__init__()
+
+        self.__model = models.alexnet(pretrained=False)
+
+        # TODO: Load this via torch url.
+        state_dict = torch.load("rcnn_feature_extractor.pth", map_location="cpu")
+
+        # Create the backbone.
+        self.backbone = self.__model.features[:-1]
+        self.backbone.load_state_dict(state_dict=state_dict["backbone"])
+
+        # Create the region proposal network.
+        self.region_extractor = RegionExtractor(
+            stage=region_extractor_stage,
+            use_original=use_original,
+            min_size=min_box_size,
+            iou_threshold=iou_threshold,
+            likelihood=likelihood,
+            tiling=tiling,
+            tile_size=tile_size,
+        ).eval()
+
+        # Create RoI Align Network.
+        self.roi_align = RoIAlign(output_size=(6, 6), spatial_scale=1 / 16, sampling_ratio=0)
+
+        # Classifier network to extract the features.
+        self.classifer = self.__model.classifier[:-1]
+        self.classifer.load_state_dict(state_dict=state_dict["classifier"])
+
+    @torch.no_grad()
+    def forward(self, input: Tensor) -> Tensor:
+        """Forward-Pass Method.
+
+        Args:
+            input (Tensor): Input tensor of shape (N, C, H, W).
+
+        Returns:
+            Tensor: Region-based features extracted from the input tensor.
+        """
+
+        # Get the extracted regions from the region extractor.
+        boxes = self.region_extractor(input)
+
+        # Apply the feature extractor transforms
+        input, scale = self.transform(input)
+
+        # Process RoIs.
+        boxes = [box.unsqueeze(0) for box in boxes]
+        rois = torch.cat(boxes, dim=0)
+        # Add zero column for the scores.
+        rois = F.pad(input=rois, pad=(1, 0, 0, 0), mode="constant", value=0)
+        # Scale the RoIs based on the the new image size.
+        rois *= scale
+
+        # Forward-pass through the backbone, RoI Align and classifier.
+        features = self.backbone(input)  # n_rois x 256 x 6 x 6 (AlexNet)
+        features = self.roi_align(features, rois.view(-1, 5))  # n_rois x 4096
+        features = self.classifer(features.view(features.size(0), -1))
+
+        return features
+
+    def transform(self, input: Tensor) -> Tuple[Tensor, float]:
+        """Apply the feature extractor transforms
+
+        Args:
+            input (Tensor): Input tensor of shape (N, C, H, W).
+
+        Returns:
+            Tuple[Tensor, float]: Output tensor of shape (N, C, H, W) and the scale.
+        """
+        height, width = input.shape[2:]
+        shorter_image_size, longer_image_size = min(height, width), max(height, width)
+        target_image_size, max_image_size = 600, 1000
+
+        scale = target_image_size / shorter_image_size
+        if round(scale * longer_image_size) > max_image_size:
+            print("WARNING: cfg.MAX_SIZE exceeded. Using a different scaling ratio")
+            scale = max_image_size / longer_image_size
+
+        resized_tensor = F.interpolate(input, scale_factor=scale, mode="bilinear", align_corners=False)
+
+        # Apply the same transformation as the original model.
+        mean = torch.tensor([0.485, 0.456, 0.406]).unsqueeze(0).unsqueeze(2).unsqueeze(3).to(input.device)
+        std = torch.tensor([0.229, 0.224, 0.225]).unsqueeze(0).unsqueeze(2).unsqueeze(3).to(input.device)
+        normalized_tensor = (resized_tensor - mean) / std
+
+        return normalized_tensor, scale
 
 
 class RegionExtractor(nn.Module):
@@ -283,6 +389,3 @@ def likelihood_to_class_threshold(likelihood: float) -> float:
     """
     threshold = (torch.cos(torch.tensor(likelihood) * torch.pi / 2.0) ** 4.0).item()
     return threshold
-
-
-

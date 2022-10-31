@@ -14,9 +14,9 @@ from albumentations.pytorch import ToTensorV2
 from torch.utils.data import DataLoader
 
 from anomalib.data import InferenceDataset
-from anomalib.models.rbad.feature import FeatureExtractor as FeatureExtractor1
-from anomalib.models.rbad.region import RegionExtractor as RegionExtractor1
-from anomalib.models.rbad.region_extractor import RegionExtractor as RegionExtractor2
+from anomalib.models.rkde.feature import FeatureExtractor as FeatureExtractor1
+from anomalib.models.rkde.feature_extractor import RegionExtractor as RegionExtractor2
+from anomalib.models.rkde.region import RegionExtractor as RegionExtractor1
 from anomalib.pre_processing import PreProcessor
 from anomalib.pre_processing.pre_process import get_transforms
 
@@ -46,7 +46,8 @@ def main():
     boxes1 = region_extractor1([image])
     boxes2 = region_extractor2(data["image"].cuda())
 
-    feature_extractor = FeatureExtractor1().eval().cuda()
+    feature_extractor1 = FeatureExtractor1().eval().cuda()
+    features1 = feature_extractor1(image, boxes1)
 
 
 if __name__ == "__main__":

@@ -15,10 +15,10 @@ from albumentations.pytorch import ToTensorV2
 from torch.utils.data import DataLoader
 
 from anomalib.data import InferenceDataset
-from anomalib.models.rbad.feature import BaseModel as BaseModel1
-from anomalib.models.rbad.feature_extractor import BaseModel as BaseModel2
-from anomalib.models.rbad.region import RegionExtractor as RegionExtractor1
-from anomalib.models.rbad.region_extractor import RegionExtractor as RegionExtractor2
+from anomalib.models.rkde.feature import BaseModel as BaseModel1
+from anomalib.models.rkde.feature_extractor import BaseModel as BaseModel2
+from anomalib.models.rkde.feature_extractor import RegionExtractor as RegionExtractor2
+from anomalib.models.rkde.region import RegionExtractor as RegionExtractor1
 from anomalib.pre_processing import PreProcessor
 from anomalib.pre_processing.pre_process import get_transforms
 
