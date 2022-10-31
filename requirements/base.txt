@@ -1,6 +1,7 @@
 albumentations>=1.1.0
 comet-ml>=3.31.7
 einops>=0.3.2
+freia>=0.2
 gradio>=2.9.4
 imgaug==0.4.0
 jsonargparse[signatures]>=4.3

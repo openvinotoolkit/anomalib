@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from anomalib.models.components.feature_extractors import FeatureExtractor
+from anomalib.models.components.feature_extractors import TimmFeatureExtractor
 
 
 class TestFeatureExtractor:
@@ -15,7 +15,7 @@ class TestFeatureExtractor:
     )
     def test_feature_extraction(self, backbone, pretrained):
         layers = ["layer1", "layer2", "layer3"]
-        model = FeatureExtractor(backbone=backbone, layers=layers, pre_trained=pretrained)
+        model = TimmFeatureExtractor(backbone=backbone, layers=layers, pre_trained=pretrained)
         test_input = torch.rand((32, 3, 256, 256))
         features = model(test_input)
 
