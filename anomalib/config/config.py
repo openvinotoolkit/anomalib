@@ -6,6 +6,7 @@
 # TODO: This would require a new design.
 # TODO: https://jira.devtools.intel.com/browse/IAAALD-149
 
+from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Union
 from warnings import warn
@@ -140,6 +141,19 @@ def get_configurable_parameters(
 
     # Project Configs
     project_path = Path(config.project.path) / config.model.name / config.dataset.name
+
+    if "unique_dir" not in config.project.keys():
+        warn("config.project.unique_dir not found config file. Setting to False for backward compatibility")
+        config.project.unique_dir = False  # backward compatibility
+
+    if config.project.unique_dir:
+        project_path = project_path / datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    else:
+        warn(
+            "config.project.unique_dir is set to False. "
+            "This does not ensure that your results will be written in an empty directory and you may overwrite files."
+        )
+
     if config.dataset.format.lower() in ("btech", "mvtec"):
         project_path = project_path / config.dataset.category
 
