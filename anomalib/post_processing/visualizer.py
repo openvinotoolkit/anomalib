@@ -14,6 +14,7 @@ import numpy as np
 from skimage.segmentation import mark_boundaries
 
 from anomalib.data.utils import read_image
+from anomalib.data.utils.video import read_frames_from_video
 from anomalib.post_processing.post_process import (
     add_anomalous_label,
     add_normal_label,
@@ -75,8 +76,17 @@ class Visualizer:
         """
         batch_size, _num_channels, height, width = batch["image"].size()
         for i in range(batch_size):
+            if "image_path" in batch.keys():
+                image = read_image(path=batch["image_path"][i], image_size=(height, width))
+            elif "video_path" in batch.keys():
+                image = read_frames_from_video(
+                    batch["video_path"][i], batch["frames"][i].int(), image_size=(height, width)
+                ).squeeze()
+            else:
+                raise KeyError("Batch must have either 'image_path' or 'video_path' defined.")
+
             image_result = ImageResult(
-                image=read_image(path=batch["image_path"][i], image_size=(height, width)),
+                image=image,
                 pred_score=batch["pred_scores"][i].cpu().numpy().item(),
                 pred_label=batch["pred_labels"][i].cpu().numpy().item(),
                 anomaly_map=batch["anomaly_maps"][i].cpu().numpy() if "anomaly_maps" in batch else None,

@@ -2,13 +2,28 @@
 
 import glob
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
+import cv2
+import numpy as np
 import torch
 from torch import Tensor
 from torchvision.datasets.video_utils import VideoClips
 
 from anomalib.data.utils import read_image
+
+
+def read_frames_from_video(video_path: str, frame_idx: Iterable[int], image_size: Tuple[int, int] = None):
+    """Read images from a folder of video frames."""
+    frames = sorted(glob.glob(video_path + "/*"))
+
+    frame_paths = [frames[pt] for pt in frame_idx]
+    video = np.stack([read_image(frame_path) for frame_path in frame_paths])
+
+    if image_size:
+        height, width = image_size
+        video = np.stack([cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA) for image in video])
+    return video
 
 
 class ClipsFromFolderMixin:
@@ -82,6 +97,10 @@ class ClipsIndexer(VideoClips, ABC):
         super().__init__(video_paths=video_paths, *args, **kwargs)
         self.mask_paths = mask_paths
 
+    def last_frame_idx(self, video_idx: int) -> int:
+        """Returns the index of the last frame for a given video."""
+        return self.clips[video_idx][-1][-1].item()
+
     @abstractmethod
     def get_mask(self, idx) -> Optional[Tensor]:
         """Return the masks for the given index."""
@@ -99,6 +118,7 @@ class ClipsIndexer(VideoClips, ABC):
             mask=self.get_mask(idx),
             video_path=video_path,
             frames=clip_pts,
+            last_frame=self.last_frame_idx(video_idx),
         )
 
         return item
