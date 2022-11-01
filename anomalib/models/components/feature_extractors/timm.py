@@ -47,9 +47,6 @@ class TimmFeatureExtractor(nn.Module):
             exportable=True,
             out_indices=self.idx,
         )
-        # Freeze weights
-        for param in self.feature_extractor.parameters():
-            param.requires_grad_(False)
 
         self.out_dims = self.feature_extractor.feature_info.channels()
         self._features = {layer: torch.empty(0) for layer in self.layers}
