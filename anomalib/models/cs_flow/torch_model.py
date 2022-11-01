@@ -206,21 +206,23 @@ class ParallelPermute(InvertibleModule):
         perm_inv = torch.LongTensor(perm_inv)
         return perm, perm_inv
 
-    def forward(self, x: List[Tensor], rev=False, jac=True) -> Tuple[List[Tensor], float]:
+    def forward(
+        self, input_tensor: List[Tensor], rev=False, jac=True
+    ) -> Tuple[List[Tensor], float]:  # pylint: disable=unused-argument
         """Applies the permutation to the input.
 
         Args:
-            x: list of input tensors
-            rev: (unused) if True, applies the inverse permutation
+            input_tensor: list of input tensors
+            rev: if True, applies the inverse permutation
             jac: (unused) if True, computes the log determinant of the Jacobian
 
         Returns:
             Tuple[Tensor, Tensor]: output tensor and log determinant of the Jacobian
         """
         if not rev:
-            return [x[i][:, self.perm[i]] for i in range(self.n_inputs)], 0.0
+            return [input_tensor[i][:, self.perm[i]] for i in range(self.n_inputs)], 0.0
 
-        return [x[i][:, self.perm_inv[i]] for i in range(self.n_inputs)], 0.0
+        return [input_tensor[i][:, self.perm_inv[i]] for i in range(self.n_inputs)], 0.0
 
     def output_dims(self, input_dims: List[Tuple[int]]) -> List[Tuple[int]]:
         """Returns the output dimensions of the module."""
