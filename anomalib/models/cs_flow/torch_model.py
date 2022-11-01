@@ -267,12 +267,21 @@ class ParallelGlowCouplingLayer(InvertibleModule):
         return input_tensor
 
     # pylint: disable=unused-argument
-    def forward(self, x: List[Tensor], rev=False, jac=True):
+    def forward(self, input_tensor: List[Tensor], rev=False, jac=True):
         """Applies GLOW coupling for the three scales."""
 
-        x01, x02 = (x[0].narrow(1, 0, self.split_len1), x[0].narrow(1, self.split_len1, self.split_len2))
-        x11, x12 = (x[1].narrow(1, 0, self.split_len1), x[1].narrow(1, self.split_len1, self.split_len2))
-        x21, x22 = (x[2].narrow(1, 0, self.split_len1), x[2].narrow(1, self.split_len1, self.split_len2))
+        x01, x02 = (
+            input_tensor[0].narrow(1, 0, self.split_len1),
+            input_tensor[0].narrow(1, self.split_len1, self.split_len2),
+        )
+        x11, x12 = (
+            input_tensor[1].narrow(1, 0, self.split_len1),
+            input_tensor[1].narrow(1, self.split_len1, self.split_len2),
+        )
+        x21, x22 = (
+            input_tensor[2].narrow(1, 0, self.split_len1),
+            input_tensor[2].narrow(1, self.split_len1, self.split_len2),
+        )
 
         if not rev:
             r02, r12, r22 = self.subnet2(x02, x12, x22)
