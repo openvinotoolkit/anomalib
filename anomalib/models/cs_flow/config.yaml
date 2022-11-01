@@ -4,10 +4,10 @@ dataset:
   path: ./datasets/MVTec
   category: bottle
   task: segmentation
-  image_size: 256 # 768 is the dimensions used in the official implementation
-  train_batch_size: 32
-  test_batch_size: 32
-  inference_batch_size: 32
+  image_size: 768 # 768 is the dimensions used in the official implementation
+  train_batch_size: 16
+  test_batch_size: 16
+  inference_batch_size: 16
   num_workers: 36
   transform_config:
     train: null

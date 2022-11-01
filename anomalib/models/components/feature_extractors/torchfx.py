@@ -45,5 +45,7 @@ def get_torchfx_feature_extractor(
     except ModuleNotFoundError as exception:
         raise ModuleNotFoundError(f"Backbone {backbone} not found in torchvision.models") from exception
 
-    feature_extractor = create_feature_extractor(backbone_model(weights=weights).features, return_nodes)
-    return feature_extractor.eval()
+    feature_extractor = create_feature_extractor(backbone_model(weights=weights).features, return_nodes).eval()
+    for param in feature_extractor.parameters():
+        param.requires_grad_(False)
+    return feature_extractor

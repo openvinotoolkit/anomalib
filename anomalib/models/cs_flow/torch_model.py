@@ -383,8 +383,8 @@ class CsFlowModel(nn.Module):
                     ParallelGlowCouplingLayer,
                     {
                         "clamp": self.clamp,
-                        "F_class": CrossConvolutions,
-                        "F_args": {
+                        "subnet_constructor": CrossConvolutions,
+                        "subnet_args": {
                             "channels_hidden": self.cross_conv_hidden_channels,
                             "kernel_size": self.kernel_sizes[coupling_block],
                         },
@@ -428,6 +428,7 @@ class CsFlowModel(nn.Module):
         Returns:
             Tensor: Anomaly maps.
         """
+        # TODO compare anomaly maps with only the largest scale
         anomaly_map = torch.ones(z_dists[0].shape[0], 1, *self.input_dims[1:]).to(z_dists[0].device)
         for z_dist in z_dists:
             anomaly_map *= F.interpolate(
