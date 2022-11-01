@@ -96,7 +96,7 @@ class TorchInferencer(Inferencer):
             Tensor: pre-processed image.
         """
         transform_config = (
-            self.config.dataset.transform_config.val if "transform_config" in self.config.dataset.keys() else None
+            self.config.dataset.transform_config.eval if "transform_config" in self.config.dataset.keys() else None
         )
         image_size = tuple(self.config.dataset.image_size)
         pre_processor = PreProcessor(transform_config, image_size)

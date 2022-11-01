@@ -6,14 +6,14 @@ dataset:
   task: segmentation
   image_size: 256
   train_batch_size: 16
-  test_batch_size: 16
+  eval_batch_size: 16
   inference_batch_size: 16
   fiber_batch_size: 64
   num_workers: 8
   transform_config:
     train: null
-    val: null
-  create_validation_set: false
+    eval: null
+  val_split_mode: same_as_test # options: [same_as_test, from_test]
 
 model:
   name: cflow

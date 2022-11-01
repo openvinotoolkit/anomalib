@@ -6,12 +6,12 @@ dataset:
   category: bottle
   image_size: 256 # options: [256, 256, 448, 384] - for each supported backbone
   train_batch_size: 32
-  test_batch_size: 32
+  eval_batch_size: 32
   num_workers: 8
   transform_config:
     train: null
-    val: null
-  create_validation_set: false
+    eval: null
+  val_split_mode: same_as_test # options: [same_as_test, from_test]
   tiling:
     apply: false
     tile_size: null

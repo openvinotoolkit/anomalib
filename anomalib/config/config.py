@@ -136,6 +136,27 @@ def get_configurable_parameters(
     if "format" not in config.dataset.keys():
         config.dataset.format = "mvtec"
 
+    if "create_validation_set" in config.dataset.keys():
+        warn(
+            "The 'create_validation_set' parameter is deprecated and will be removed in v0.4.0. Please use "
+            "'validation_split_mode' instead."
+        )
+        config.dataset.validation_split_mode = "from_test" if config.dataset.create_validation_set else "same_as_test"
+
+    if "test_batch_size" in config.dataset.keys():
+        warn(
+            "The 'test_batch_size' parameter is deprecated and will be removed in v0.4.0. Please use "
+            "'eval_batch_size' instead."
+        )
+        config.dataset.eval_batch_size = config.dataset.test_batch_size
+
+    if "transform_config" in config.dataset.keys() and "val" in config.dataset.transform_config.keys():
+        warn(
+            "The 'transform_config.val' parameter is deprecated and will be removed in v0.4.0. Please use "
+            "'transform_config.eval' instead."
+        )
+        config.dataset.transform_config.eval = config.dataset.transform_config.val
+
     config = update_input_size_config(config)
 
     # Project Configs
