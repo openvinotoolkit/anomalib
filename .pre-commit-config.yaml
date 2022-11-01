@@ -31,6 +31,7 @@ repos:
     hooks:
       - id: flake8
         args: ["--max-line-length=120", "--ignore=E203,W503"]
+        exclude: "tests"
 
   # python linting
   - repo: https://github.com/PyCQA/pylint
