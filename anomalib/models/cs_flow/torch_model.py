@@ -206,9 +206,8 @@ class ParallelPermute(InvertibleModule):
         perm_inv = torch.LongTensor(perm_inv)
         return perm, perm_inv
 
-    def forward(
-        self, input_tensor: List[Tensor], rev=False, jac=True
-    ) -> Tuple[List[Tensor], float]:  # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def forward(self, input_tensor: List[Tensor], rev=False, jac=True) -> Tuple[List[Tensor], float]:
         """Applies the permutation to the input.
 
         Args:
@@ -267,6 +266,7 @@ class ParallelGlowCouplingLayer(InvertibleModule):
             return self.clamp * 0.636 * torch.atan(input_tensor / self.clamp)
         return input_tensor
 
+    # pylint: disable=unused-argument
     def forward(self, x: List[Tensor], rev=False, jac=True):
         """Applies GLOW coupling for the three scales."""
 
