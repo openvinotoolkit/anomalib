@@ -3,7 +3,7 @@
 import glob
 import os
 from pathlib import Path
-from typing import Callable, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 import albumentations as A
 import cv2
@@ -13,8 +13,8 @@ from torch import Tensor
 
 from anomalib.data.base import AnomalibDataModule
 from anomalib.data.base.video import VideoAnomalibDataset
-from anomalib.data.utils import Split, ValSplitMode
-from anomalib.data.utils.video import ClipsFromFolderMixin, ClipsIndexer
+from anomalib.data.utils import Split, ValSplitMode, read_image
+from anomalib.data.utils.video import ClipsIndexer
 from anomalib.pre_processing import PreProcessor
 
 
@@ -70,7 +70,7 @@ def make_ucsd_dataset(path: Path, split: Optional[Union[Split, str]] = None):
     return samples
 
 
-class UCSDpedClips(ClipsFromFolderMixin, ClipsIndexer):
+class UCSDpedClips(ClipsIndexer):
     """Clips class for UCSDped dataset."""
 
     def get_mask(self, idx) -> Optional[Tensor]:
@@ -87,6 +87,40 @@ class UCSDpedClips(ClipsFromFolderMixin, ClipsIndexer):
 
         masks = torch.stack([Tensor(cv2.imread(mask_path, flags=0)) / 255.0 for mask_path in mask_paths])
         return masks
+
+    def _compute_frame_pts(self) -> None:
+        """Retrieve the number of frames in each video."""
+        self.video_pts = []
+        for video_path in self.video_paths:
+            n_frames = len(glob.glob(video_path + "/*"))
+            self.video_pts.append(Tensor(range(n_frames)))
+
+        self.video_fps = [None] * len(self.video_paths)  # fps information cannot be inferred from folder structure
+
+    def get_clip(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor, Dict[str, Any], int]:
+        """Gets a subclip from a list of videos.
+
+        Args:
+            idx (int): index of the subclip. Must be between 0 and num_clips().
+
+        Returns:
+            video (Tensor)
+            audio (Tensor)
+            info (Dict)
+            video_idx (int): index of the video in `video_paths`
+        """
+        if idx >= self.num_clips():
+            raise IndexError(f"Index {idx} out of range ({self.num_clips()} number of clips)")
+        video_idx, clip_idx = self.get_clip_location(idx)
+        video_path = self.video_paths[video_idx]
+        clip_pts = self.clips[video_idx][clip_idx]
+
+        frames = sorted(glob.glob(video_path + "/*"))
+
+        frame_paths = [frames[pt] for pt in clip_pts.int()]
+        video = torch.stack([Tensor(read_image(frame_path)) for frame_path in frame_paths])
+
+        return video, torch.empty((1, 0)), {}, video_idx
 
 
 class UCSDpedDataset(VideoAnomalibDataset):
