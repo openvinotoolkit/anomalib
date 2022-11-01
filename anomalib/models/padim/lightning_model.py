@@ -7,7 +7,7 @@ Paper https://arxiv.org/abs/2011.08785
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
@@ -39,6 +39,7 @@ class Padim(AnomalyModule):
         input_size: Tuple[int, int],
         backbone: str,
         pre_trained: bool = True,
+        n_features: Optional[int] = None,
     ):
         super().__init__()
 
@@ -48,6 +49,7 @@ class Padim(AnomalyModule):
             backbone=backbone,
             pre_trained=pre_trained,
             layers=layers,
+            n_features=n_features,
         ).eval()
 
         self.stats: List[Tensor] = []
@@ -119,6 +121,7 @@ class PadimLightning(Padim):
             layers=hparams.model.layers,
             backbone=hparams.model.backbone,
             pre_trained=hparams.model.pre_trained,
+            n_features=hparams.model.n_features if "n_features" in hparams.model else None,
         )
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(hparams)
