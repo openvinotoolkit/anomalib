@@ -161,12 +161,11 @@ class UCSDped(AnomalibDataModule):
     """UCSDped DataModule class.
 
     Args:
-        task (str): Task type, either 'classification' or 'segmentation'
         root (str): Path to the root of the dataset
         category (str): Sub-category of the dataset, e.g. 'bottle'
         frames_per_clip (int, optional): Number of video frames in each clip.
         stride (int, optional): Number of frames between each consecutive video clip.
-
+        task (str): Task type, either 'classification' or 'segmentation'
         image_size (Optional[Union[int, Tuple[int, int]]], optional): Size of the input image.
             Defaults to None.
         train_batch_size (int, optional): Training batch size. Defaults to 32.
@@ -183,11 +182,11 @@ class UCSDped(AnomalibDataModule):
 
     def __init__(
         self,
-        task: str,
         root: str,
         category: str,
         frames_per_clip: int = 1,
         stride: int = 1,
+        task: str = "segmentation",
         image_size: Optional[Union[int, Tuple[int, int]]] = None,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
