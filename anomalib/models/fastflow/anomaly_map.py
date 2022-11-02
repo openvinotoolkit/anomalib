@@ -34,7 +34,7 @@ class AnomalyMapGenerator(nn.Module):
         """
         flow_maps: List[Tensor] = []
         for hidden_variable in hidden_variables:
-            log_prob = -torch.mean(hidden_variable**2, dim=1, keepdim=True) * 0.5
+            log_prob = -torch.mean(hidden_variable ** 2, dim=1, keepdim=True) * 0.5
             prob = torch.exp(log_prob)
             flow_map = F.interpolate(
                 input=-prob,
