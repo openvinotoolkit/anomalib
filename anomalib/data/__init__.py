@@ -124,4 +124,6 @@ __all__ = [
     "Folder",
     "InferenceDataset",
     "MVTec",
+    "Avenue",
+    "UCSDped",
 ]
