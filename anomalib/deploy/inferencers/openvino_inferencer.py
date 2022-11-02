@@ -177,6 +177,8 @@ class OpenVINOInferencer(Inferencer):
 
                 if pred_mask is not None:
                     pred_mask = cv2.resize(pred_mask, (image_width, image_height))
+        else:
+            raise ValueError(f"Unknown task type: {task}")
 
         return {
             "anomaly_map": anomaly_map,
