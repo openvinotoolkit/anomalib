@@ -6,12 +6,94 @@
 # TODO: This would require a new design.
 # TODO: https://jira.devtools.intel.com/browse/IAAALD-149
 
+import hashlib
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Union
 from warnings import warn
 
 from omegaconf import DictConfig, ListConfig, OmegaConf
+
+CONFIG_KEY_PROJECT_UNIQUEDIR = "unique_dir"
+_CONFIGHASH_KEYS = [
+    "dataset",
+    "model",
+    "project.seed",
+    # trainer
+    "trainer.accelerator",
+    "trainer.accumulate_grad_batches",
+    "trainer.auto_lr_find",
+    "trainer.auto_scale_batch_size",
+    "trainer.benchmark",
+    "trainer.deterministic",
+    "trainer.fast_dev_run",
+    "trainer.gradient_clip_val",
+    "trainer.limit_predict_batches",
+    "trainer.limit_test_batches",
+    "trainer.limit_train_batches",
+    "trainer.limit_val_batches",
+    "trainer.max_epochs",
+    "trainer.max_steps",
+    "trainer.max_time",
+    "trainer.min_epochs",
+    "trainer.min_steps",
+    "trainer.move_metrics_to_cpu",
+    "trainer.multiple_trainloader_mode",
+    "trainer.num_nodes",
+    "trainer.num_processes",
+    "trainer.overfit_batches",
+    "trainer.plugins",
+    "trainer.precision",
+    "trainer.reload_dataloaders_every_n_epochs",
+    "trainer.replace_sampler_ddp",
+    "trainer.sync_batchnorm",
+    # trainer (excluded, keeping in comments for reference)
+    # "trainer.detect_anomaly",
+    # "trainer.devices",
+    # "trainer.enable_checkpointing",
+    # "trainer.enable_model_summary",
+    # "trainer.enable_progress_bar",
+    # "trainer.gpus",
+    # "trainer.ipus",
+    # "trainer.log_every_n_steps",
+    # "trainer.num_sanity_val_steps",
+    # "trainer.profiler",
+    # "trainer.tpu_cores",
+    # "trainer.track_grad_norm",
+    # "trainer.val_check_interval",
+]
+_CONFIGHASH_DIGEST_NUM_BYTES = 8
+
+
+def _get_now_str(timestamp: float) -> str:
+    """Standard format for datetimes is defined here."""
+    return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d_%H-%M-%S")
+
+
+def _get_confighash(dictconfig: DictConfig) -> str:
+    """Standard hash digest for config dict is defined here (not all keys are included)."""
+
+    def get_masked_copy(dicconf: DictConfig, selected_keys: List[str]) -> DictConfig:
+        """Deal with nested keys."""
+
+        nested_keys = set(key for key in selected_keys if "." in key)
+        non_nested_keys = set(selected_keys) - nested_keys
+
+        copy = OmegaConf.masked_copy(dicconf, non_nested_keys)
+
+        for key in nested_keys:
+            first_key, rest = key.split(".", 1)
+            copy[first_key] = get_masked_copy(dicconf[first_key], [rest])
+
+        return copy
+
+    dictconfig = get_masked_copy(dictconfig, _CONFIGHASH_KEYS)
+
+    return hashlib.blake2b(
+        str(dictconfig).encode("utf-8"),
+        digest_size=_CONFIGHASH_DIGEST_NUM_BYTES,
+    ).hexdigest()
 
 
 def update_input_size_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfig, ListConfig]:
@@ -133,33 +215,48 @@ def get_configurable_parameters(
 
     config = OmegaConf.load(config_path)
 
+    # keep track of the original config file because it will be modified
+    config_original: DictConfig = config.copy()
+
     # Dataset Configs
     if "format" not in config.dataset.keys():
         config.dataset.format = "mvtec"
 
     config = update_input_size_config(config)
 
+    # IMPORTANT
+    # the hash digest must be computed after the modifications above and before the modifications below
+    # those from above modify values that are used in the hash digest computation, while those from below don't
+    confighash: str = _get_confighash(config)  # 8-byte long
+
     # Project Configs
     project_path = Path(config.project.path) / config.model.name / config.dataset.name
 
-    if "unique_dir" not in config.project.keys():
-        warn("config.project.unique_dir not found config file. Setting to False for backward compatibility")
-        config.project.unique_dir = False  # backward compatibility
-
-    if config.project.unique_dir:
-        project_path = project_path / datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    else:
-        warn(
-            "config.project.unique_dir is set to False. "
-            "This does not ensure that your results will be written in an empty directory and you may overwrite files."
-        )
-
+    # add category subfolder if needed
     if config.dataset.format.lower() in ("btech", "mvtec"):
         project_path = project_path / config.dataset.category
 
+    # set to False by default for backward compatibility
+    config.project.setdefault(CONFIG_KEY_PROJECT_UNIQUEDIR, False)
+
+    if config.project.unique_dir:
+        project_path = project_path / f"run.{confighash}.{_get_now_str(time.time())}"
+
+    else:
+        project_path = project_path / "run"
+        warn(
+            f"{CONFIG_KEY_PROJECT_UNIQUEDIR} is set to False. "
+            "This does not ensure that your results will be written in an empty directory and you may overwrite files."
+        )
+
     (project_path / "weights").mkdir(parents=True, exist_ok=True)
     (project_path / "images").mkdir(parents=True, exist_ok=True)
+    # write the original config for eventual debug (modified config at the end of the function)
+    (project_path / "config_original.yaml").write_text(OmegaConf.to_yaml(config_original))
+    (project_path / "confighash.txt").write_text(confighash)
+
     config.project.path = str(project_path)
+
     # loggers should write to results/model/dataset/category/ folder
     config.trainer.default_root_dir = str(project_path)
 
@@ -184,5 +281,7 @@ def get_configurable_parameters(
             config.metrics.threshold.manual_pixel = (
                 None if config.metrics.threshold.adaptive else config.metrics.threshold.pixel_default
             )
+
+    (project_path / "config.yaml").write_text(OmegaConf.to_yaml(config))
 
     return config
