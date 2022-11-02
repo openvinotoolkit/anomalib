@@ -1,7 +1,14 @@
 """CUHK Avenue Dataset."""
 
+import logging
+import zipfile
+from collections import namedtuple
+from os import listdir, rmdir
+from os.path import join
 from pathlib import Path
+from shutil import move
 from typing import Callable, Optional, Tuple, Union
+from urllib.request import urlretrieve
 
 import albumentations as A
 import numpy as np
@@ -11,9 +18,21 @@ from torch import Tensor
 
 from anomalib.data.base import AnomalibDataModule
 from anomalib.data.base.video import VideoAnomalibDataset
-from anomalib.data.utils import Split, ValSplitMode
+from anomalib.data.utils import DownloadProgressBar, Split, ValSplitMode, hash_check
 from anomalib.data.utils.video import ClipsIndexer
 from anomalib.pre_processing import PreProcessor
+
+logger = logging.getLogger(__name__)
+
+
+# define some info used for downloading the dataset
+DownloadInfo = namedtuple("DownloadInfo", "description zip_filename expected_hash extracted_folder_name")
+DATASET_DOWNLOAD_INFO = DownloadInfo(
+    "dataset", "Avenue_Dataset.zip", "b7a34b212ecdd30efbd989a6dcb1aceb", "Avenue Dataset"
+)
+ANNOTATIONS_DOWNLOAD_INFO = DownloadInfo(
+    "annotations", "ground_truth_demo.zip", "e8e3bff99195b6b511534083b9dbe1f5", "ground_truth_demo"
+)
 
 
 def make_avenue_dataset(root: Path, gt_dir: Path, split: Optional[Union[Split, str]] = None):
@@ -157,6 +176,9 @@ class Avenue(AnomalibDataModule):
     ):
         super().__init__(train_batch_size, eval_batch_size, num_workers, val_split_mode)
 
+        self.root = Path(root)
+        self.gt_dir = Path(gt_dir)
+
         pre_process_train = PreProcessor(config=transform_config_train, image_size=image_size)
         pre_process_eval = PreProcessor(config=transform_config_eval, image_size=image_size)
 
@@ -179,3 +201,44 @@ class Avenue(AnomalibDataModule):
             gt_dir=gt_dir,
             split=Split.TEST,
         )
+
+    def prepare_data(self) -> None:
+        """Download dataset."""
+        self._download_and_extract(self.root, DATASET_DOWNLOAD_INFO)
+        self._download_and_extract(self.gt_dir, ANNOTATIONS_DOWNLOAD_INFO)
+
+    @staticmethod
+    def _download_and_extract(root: Path, info: DownloadInfo):
+        """Download and extract the dataset or the annotations.
+
+        Args:
+            root (Path): File system location where to search for or install the dataset.
+            info (DownloadInfo): Contains download information specific to either dataset or ground truth annotations.
+        """
+        if root.is_dir():
+            logger.info("Found the %s folder.", info.description)
+        else:
+            root.mkdir(parents=True, exist_ok=True)
+
+            logger.info("Downloading %s.", info.description)
+            url = "http://www.cse.cuhk.edu.hk/leojia/projects/detectabnormal"
+            zip_filepath = root / info.zip_filename
+            with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc=info.description) as progress_bar:
+                urlretrieve(
+                    url=f"{url}/{info.zip_filename}",
+                    filename=zip_filepath,
+                    reporthook=progress_bar.update_to,
+                )
+            logger.info("Checking hash")
+            hash_check(zip_filepath, info.expected_hash)
+
+            logger.info("Extracting the %s.", info.description)
+            with zipfile.ZipFile(zip_filepath, "r") as zip_file:
+                zip_file.extractall(root)
+            # move contents to root
+            for filename in listdir(join(root, info.extracted_folder_name)):
+                move(join(root, info.extracted_folder_name, filename), join(root, filename))
+            rmdir(join(root, info.extracted_folder_name))
+
+            logger.info("Cleaning the zip file")
+            (zip_filepath).unlink()
