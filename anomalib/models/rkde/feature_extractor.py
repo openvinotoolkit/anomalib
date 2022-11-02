@@ -6,7 +6,7 @@ Region Extractor.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -22,38 +22,38 @@ from torchvision.ops import boxes as box_ops
 class FeatureExtractor(nn.Module):
     """Region-based Feature Extractor."""
 
-    def __init__(
-        self,
-        region_extractor_stage: str = "rcnn",
-        # TODO: Rename ``use_original``
-        use_original: bool = False,
-        min_box_size: int = 25,
-        iou_threshold: float = 0.3,
-        likelihood: Optional[float] = None,
-        tiling: bool = False,
-        tile_size: int = 32,
-    ) -> None:
+    # def __init__(
+        # self,
+        # region_extractor_stage: str = "rcnn",
+        # # TODO: Rename ``use_original``
+        # use_original: bool = False,
+        # min_box_size: int = 25,
+        # iou_threshold: float = 0.3,
+        # likelihood: Optional[float] = None,
+        # tiling: bool = False,
+        # tile_size: int = 32,
+    # ) -> None:
+    def __init__(self) -> None:
         super().__init__()
 
         self.__model = models.alexnet(pretrained=False)
 
         # TODO: Load this via torch url.
-        state_dict = torch.load("rcnn_feature_extractor.pth", map_location="cpu")
+        state_dict = torch.load("anomalib/models/rkde/rcnn_feature_extractor.pth", map_location="cpu")
 
         # Create the backbone.
         self.backbone = self.__model.features[:-1]
         self.backbone.load_state_dict(state_dict=state_dict["backbone"])
 
-        # Create the region proposal network.
-        self.region_extractor = RegionExtractor(
-            stage=region_extractor_stage,
-            use_original=use_original,
-            min_size=min_box_size,
-            iou_threshold=iou_threshold,
-            likelihood=likelihood,
-            tiling=tiling,
-            tile_size=tile_size,
-        ).eval()
+        # self.region_extractor = RegionExtractor(
+        #     stage=region_extractor_stage,
+        #     use_original=use_original,
+        #     min_size=min_box_size,
+        #     iou_threshold=iou_threshold,
+        #     likelihood=likelihood,
+        #     tiling=tiling,
+        #     tile_size=tile_size,
+        # ).eval()
 
         # Create RoI Align Network.
         self.roi_align = RoIAlign(output_size=(6, 6), spatial_scale=1 / 16, sampling_ratio=0)
@@ -63,25 +63,31 @@ class FeatureExtractor(nn.Module):
         self.classifer.load_state_dict(state_dict=state_dict["classifier"])
 
     @torch.no_grad()
-    def forward(self, input: Tensor) -> Tensor:
+    def forward(self, input: Tensor, rois: Tensor) -> Tensor:
         """Forward-Pass Method.
 
         Args:
             input (Tensor): Input tensor of shape (N, C, H, W).
+            rois (Tensor): Boxes tensor of shape (N, 4).
 
         Returns:
             Tensor: Region-based features extracted from the input tensor.
         """
 
         # Get the extracted regions from the region extractor.
-        boxes = self.region_extractor(input)
+        # boxes = self.region_extractor(input)
 
         # Apply the feature extractor transforms
         input, scale = self.transform(input)
 
         # Process RoIs.
-        boxes = [box.unsqueeze(0) for box in boxes]
-        rois = torch.cat(boxes, dim=0)
+        # boxes = [box.unsqueeze(0) for box in boxes]
+        # rois = torch.cat(boxes, dim=0)
+        ## Add zero column for the scores.
+        # rois = F.pad(input=rois, pad=(1, 0, 0, 0), mode="constant", value=0)
+        # Scale the RoIs based on the the new image size.
+        # rois *= scale
+
         # Add zero column for the scores.
         rois = F.pad(input=rois, pad=(1, 0, 0, 0), mode="constant", value=0)
         # Scale the RoIs based on the the new image size.
@@ -137,8 +143,7 @@ class RegionExtractor(nn.Module):
     ) -> None:
         super(RegionExtractor, self).__init__()
 
-        device = "cuda:0" if torch.cuda.is_available() else "cpu"
-        self.pseudo_scores = torch.arange(1000, 0, -1, dtype=torch.float32, device=device)
+        self.pseudo_scores = torch.arange(1000, 0, -1, dtype=torch.float32)
 
         # Affects global behaviour of the extractor
         self.stage = stage
@@ -161,7 +166,7 @@ class RegionExtractor(nn.Module):
         )
 
     @torch.no_grad()
-    def forward(self, input: Union[Tensor, List[Tensor]]) -> List[Tensor]:
+    def forward(self, input: Union[Tensor, List[Tensor]]) -> Tensor:
         """Forward pass of the model.
 
         Args:
@@ -182,7 +187,6 @@ class RegionExtractor(nn.Module):
         if self.use_original:
             predictions = self.faster_rcnn(input)
             regions = [prediction["boxes"] for prediction in predictions]
-            return regions
         else:
             original_image_sizes = [image.shape[-2:] for image in input]
             images, targets = self.faster_rcnn.transform(input)
@@ -235,7 +239,7 @@ class RegionExtractor(nn.Module):
             else:
                 raise ValueError("Unknown stage {}".format(self.stage))
 
-            return regions
+        return torch.cat(regions)
 
     def post_process_box_predictions(
         self, class_logits: Tensor, box_regression: Tensor, proposals: List[Tensor], image_shapes: List[Tuple[int, int]]

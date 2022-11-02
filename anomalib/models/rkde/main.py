@@ -14,9 +14,9 @@ from albumentations.pytorch import ToTensorV2
 from torch.utils.data import DataLoader
 
 from anomalib.data import InferenceDataset
-from anomalib.models.rkde.feature import FeatureExtractor as FeatureExtractor1
+from anomalib.models.rkde.feature import FeatureExtractor as NousFeatureExtractor
 from anomalib.models.rkde.feature_extractor import RegionExtractor as RegionExtractor2
-from anomalib.models.rkde.region import RegionExtractor as RegionExtractor1
+from anomalib.models.rkde.region import RegionExtractor as NousRegionExtractor
 from anomalib.pre_processing import PreProcessor
 from anomalib.pre_processing.pre_process import get_transforms
 
@@ -39,14 +39,14 @@ def main():
     # Create the region extractor.
     stage = "rcnn"
     use_original = False
-    region_extractor1 = RegionExtractor1(stage=stage, use_original=use_original).eval().cuda()
+    region_extractor1 = NousRegionExtractor(stage=stage, use_original=use_original).eval().cuda()
     region_extractor2 = RegionExtractor2(stage=stage, use_original=use_original).eval().cuda()
 
     # Forward-Pass the input
     boxes1 = region_extractor1([image])
     boxes2 = region_extractor2(data["image"].cuda())
 
-    feature_extractor1 = FeatureExtractor1().eval().cuda()
+    feature_extractor1 = NousFeatureExtractor().eval().cuda()
     features1 = feature_extractor1(image, boxes1)
 
 

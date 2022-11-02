@@ -9,29 +9,16 @@ Test script to compare the anomalib implementation with the actual one.
 
 import albumentations as A
 import cv2
-import pytest
-import torch
+import numpy as np
 from albumentations.pytorch import ToTensorV2
 from torch.utils.data import DataLoader
 
 from anomalib.data import InferenceDataset
-from anomalib.models.rkde.feature import BaseModel as BaseModel1
-from anomalib.models.rkde.feature_extractor import BaseModel as BaseModel2
-from anomalib.models.rkde.feature_extractor import RegionExtractor as RegionExtractor2
-from anomalib.models.rkde.region import RegionExtractor as RegionExtractor1
+from anomalib.models.rkde.feature import FeatureExtractor as NousFeatureExtractor
+from anomalib.models.rkde.region import RegionExtractor as NousRegionExtractor
+from anomalib.models.rkde.torch_model import RkdeModel
 from anomalib.pre_processing import PreProcessor
 from anomalib.pre_processing.pre_process import get_transforms
-
-
-def test_base_model():
-    tensor = torch.rand(1, 3, 224, 224)
-    base_model1 = BaseModel1().get_head_module()
-    base_model2 = BaseModel2().get_backbone()
-
-    features1 = base_model1(tensor)
-    features2 = base_model2(tensor)
-
-    assert torch.allclose(features1, features2)
 
 
 # @pytest.mark.parametrize(
@@ -39,31 +26,32 @@ def test_base_model():
 #     [("rpn", False), ("rcnn", False), ("rpn", True), ("rcnn", True)],
 # )
 # def test_output_shapes(stage, use_original):
-#     filename = "150.tif"
-#     image = cv2.imread(filename)
+def test_output_shapes() -> None:
+    stage="rcnn"
+    use_original = False
 
-#     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # NOUS implementation
+    filename = "anomalib/models/rkde/150.tif"
+    image = cv2.imread(filename)
 
-#     # Transformations.
-#     transforms = get_transforms(config=A.Compose([A.Normalize(mean=0.0, std=1.0), ToTensorV2()]))
-#     pre_process = PreProcessor(config=transforms)
+    nous_region_extractor = NousRegionExtractor(stage=stage, use_original=use_original).eval().cuda()
+    nous_feature_extractor = NousFeatureExtractor().eval().cuda()
+    nous_boxes = nous_region_extractor([image])
+    nous_features = nous_feature_extractor(image, nous_boxes[0])
 
-#     # Get the data via dataloader
-#     dataset = InferenceDataset(path=filename, pre_process=pre_process)
-#     dataloader = DataLoader(dataset)
-#     i, data = next(enumerate(dataloader))
+    # Anomalib Implementation.
+    # 1. Data
+    transforms = get_transforms(config=A.Compose([A.Normalize(mean=0.0, std=1.0), ToTensorV2()]))
+    pre_process = PreProcessor(config=transforms)
+    dataset = InferenceDataset(path=filename, pre_process=pre_process)
+    dataloader = DataLoader(dataset)
+    i, data = next(enumerate(dataloader))
 
-#     # Create the region extractor.
-#     # stage = "rpn"
-#     # use_original = False
-#     region_extractor1 = RegionExtractor1(stage=stage, use_original=use_original).eval().cuda()
-#     region_extractor2 = RegionExtractor2(stage=stage, use_original=use_original).eval().cuda()
+    # 2. Model
+    torch_model = RkdeModel(region_extractor_stage=stage).eval().cuda()
+    anomalib_rois, anomalib_features = torch_model.get_rois_and_features(data["image"].cuda())
 
-#     # Forward-Pass the input
-#     boxes1 = region_extractor1([image])
-
-#     # images = [image.to(device) for image in data["image"]]
-#     # out2 = region_extractor2(images)
-#     boxes2 = region_extractor2(data["image"].cuda())
-
-#     assert boxes1[0].shape == boxes2[0].cpu().numpy().shape
+    assert len(nous_boxes[0]) == len(anomalib_rois), "Number of boxes should be the same."
+    assert np.allclose(nous_boxes, anomalib_rois.cpu().numpy()), "Boxes should be the same."
+    assert nous_features.shape == anomalib_features.shape, "Feature shapes do not match."
+    assert np.allclose(nous_features, anomalib_features.cpu().numpy(), atol=1e-02), "Features do not match."

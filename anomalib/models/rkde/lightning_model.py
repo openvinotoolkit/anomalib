@@ -12,13 +12,13 @@ from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
 
-from .torch_model import RKdeModel
+from .torch_model import RkdeModel
 
 logger = logging.getLogger(__name__)
 
 
 @MODEL_REGISTRY
-class RKde(AnomalyModule):
+class Rkde(AnomalyModule):
     """Region Based Anomaly Detection With Real-Time Training and Analysis.
 
     Args:
@@ -49,7 +49,7 @@ class RKde(AnomalyModule):
     ):
         super().__init__()
 
-        self.model: RKdeModel = RKdeModel(
+        self.model: RkdeModel = RkdeModel(
             region_extractor_stage=region_extractor_stage,
             min_box_size=min_box_size,
             iou_threshold=iou_threshold,
@@ -76,8 +76,8 @@ class RKde(AnomalyModule):
         Returns:
           Deep CNN features.
         """
-        embedding = self.model.get_features(batch["image"]).squeeze()
-        self.embeddings.append(embedding)
+        _rois, features = self.model.get_rois_and_features(batch["image"])
+        self.embeddings.append(features.squeeze())
 
     def on_validation_start(self) -> None:
         """Fit a KDE Model to the embedding collected from the training set."""
@@ -100,8 +100,8 @@ class RKde(AnomalyModule):
         return batch
 
 
-class RKdeLightning(RKde):
-    """RKde: Deep Feature Kernel Density Estimation.
+class RkdeLightning(Rkde):
+    """Rkde: Deep Feature Kernel Density Estimation.
 
     Args:
         hparams (Union[DictConfig, ListConfig]): Model params
@@ -109,12 +109,12 @@ class RKdeLightning(RKde):
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
         super().__init__(
-            layers=hparams.model.layers,
-            backbone=hparams.model.backbone,
-            pre_trained=hparams.model.pre_trained,
+            region_extractor_stage=hparams.model.region_extractor_stage,
+            min_box_size=hparams.model.min_box_size,
+            iou_threshold=hparams.model.iou_threshold,
             max_training_points=hparams.model.max_training_points,
             pre_processing=hparams.model.pre_processing,
-            n_components=hparams.model.n_components,
+            n_pca_components=hparams.model.n_pca_components,
             threshold_steepness=hparams.model.threshold_steepness,
             threshold_offset=hparams.model.threshold_offset,
         )

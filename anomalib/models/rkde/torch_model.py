@@ -17,7 +17,7 @@ from anomalib.models.rkde.feature_extractor import FeatureExtractor, RegionExtra
 logger = logging.getLogger(__name__)
 
 
-class RKdeModel(nn.Module):
+class RkdeModel(nn.Module):
     """Torch Model for the Region-based Anomaly Detection Model.
 
     Args:
@@ -35,6 +35,7 @@ class RKdeModel(nn.Module):
         self,
         region_extractor_stage: str = "rcnn",
         min_box_size: int = 25,
+        confidence_threshold: float = 0.3,
         iou_threshold: float = 0.3,
         n_pca_components: int = 16,
         pre_processing: str = "scale",
@@ -43,13 +44,24 @@ class RKdeModel(nn.Module):
         threshold_offset: float = 12.0,
     ):
         super().__init__()
+        self.confidence_threshold = confidence_threshold
         self.n_pca_components = n_pca_components
         self.pre_processing = pre_processing
         self.filter_count = filter_count
         self.threshold_steepness = threshold_steepness
         self.threshold_offset = threshold_offset
 
-        self.feature_extractor = FeatureExtractor()
+        self.region_extractor = RegionExtractor(
+            stage=region_extractor_stage, min_size=min_box_size, iou_threshold=iou_threshold
+        ).eval()
+
+        self.feature_extractor = FeatureExtractor().eval()
+
+        # self.feature_extractor = FeatureExtractor(
+            # region_extractor_stage=region_extractor_stage,
+            # min_box_size=min_box_size,
+            # iou_threshold=iou_threshold,
+        # )
 
         self.pca_model = PCA(n_components=self.n_pca_components)
         self.kde_model = GaussianKDE()
@@ -57,18 +69,22 @@ class RKdeModel(nn.Module):
         self.register_buffer("max_length", Tensor(torch.Size([])))
         self.max_length = Tensor(torch.Size([]))
 
-    def get_features(self, input: Tensor) -> Tensor:
-        """Extract features from an RCNN-based region and feature extractors.
+    def get_rois_and_features(self, input: Tensor) -> Tuple[Tensor, Tensor]:
+        """Extract RoIs and features from an RCNN-based region and feature extractors, respectively.
 
         Args:
             input (Tensor): Input image batch.
 
         Returns:
-            Tensor: Tensor containing extracted features.
+            Tuple[Tensor, Tensor]: Tuple of Tensors containing RoIs and extracted features.
         """
+        self.region_extractor.eval()
         self.feature_extractor.eval()
-        features = self.feature_extractor(input)
-        return features
+
+        rois = self.region_extractor(input)
+        features = self.feature_extractor(input, rois)
+
+        return rois, features
 
     def pre_process(self, feature_stack: Tensor, max_length: Optional[Tensor] = None) -> Tuple[Tensor, Tensor]:
         """Pre-process the CNN features.
@@ -162,11 +178,12 @@ class RKdeModel(nn.Module):
 
         return 1 / (1 + torch.exp(self.threshold_steepness * (scores - self.threshold_offset)))
 
-    def predict(self, features: Tensor) -> Tensor:
+    def predict(self, features: Tensor, rois: Tensor) -> Tensor:
         """Predicts the probability that the features belong to the anomalous class.
 
         Args:
           features (Tensor): Feature from which the output probabilities are detected.
+          rois (Tensor): RoIs from which the features are extracted.
 
         Returns:
           Detection probabilities
@@ -175,17 +192,21 @@ class RKdeModel(nn.Module):
         scores = self.compute_kde_scores(features, as_log_likelihood=True)
         probabilities = self.compute_probabilities(scores)
 
+        keep = probabilities > self.confidence_threshold
+        rois = rois[keep]
+        probabilities = probabilities[keep]
+
         return probabilities
 
-    def forward(self, batch: Tensor) -> Tensor:
+    def forward(self, input: Tensor) -> Tensor:
         """Prediction by normality model.
 
         Args:
-            batch (Tensor): Input images.
+            input (Tensor): Input images.
 
         Returns:
             Tensor: Predictions
         """
-
-        feature_vector = self.get_features(batch)
-        return self.predict(feature_vector.view(feature_vector.shape[:2]))
+        rois, features = self.get_rois_and_features(input)
+        # return self.predict(features.view(features.shape[:2]))
+        return self.predict(features, rois)

@@ -8,7 +8,6 @@ import time
 
 import numpy as np
 import torch
-from anomalib.utils.timer import Timer
 from scipy.stats import gaussian_kde
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import normalize
@@ -121,7 +120,7 @@ class NormalityModel:
         print("That took {:.2} seconds\n".format(time.time() - start_time))
         return True
 
-    def evaluate(self, sem_feats, as_density=False, ln=False, timer=Timer()):
+    def evaluate(self, sem_feats, as_density=False, ln=False):
         if self.pca_model is None or self.kde_model is None:
             if as_density:
                 return np.ones((sem_feats.shape[0],), dtype=np.float64) * sys.float_info.max
@@ -131,7 +130,6 @@ class NormalityModel:
         if torch.is_tensor(sem_feats):
             sem_feats = sem_feats.numpy()
 
-        timer.start()
         if sem_feats.shape[0] == 0:
             return np.empty((0,))
         elif sem_feats.shape[0] == 1:
@@ -151,7 +149,6 @@ class NormalityModel:
         tmp = self.kde_model.evaluate(tmp)
 
         tmp += 1e-300
-        timer.stop()
 
         if as_density:
             return np.log(tmp) if ln else tmp

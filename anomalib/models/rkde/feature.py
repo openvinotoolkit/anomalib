@@ -11,7 +11,8 @@ import torch.nn as nn
 import torchvision.models as models
 from torch.utils.model_zoo import load_url
 from torchvision.ops import RoIAlign
-from utils.normalization import Normalizer
+
+from .utils.normalization import Normalizer
 
 
 class BaseModel(nn.Module):
@@ -27,7 +28,7 @@ class BaseModel(nn.Module):
         head_module.module_type = module_type
 
         # Load head module
-        checkpoint = torch.load(f="combined_head_1_2-a9f83242.pth")
+        checkpoint = torch.load(f="anomalib/models/rkde/combined_head_1_2-a9f83242.pth")
         # checkpoint = load_url(
         #     "https://files.cosmonio.com/combined_head_1_2-a9f83242.pth", check_hash=True, map_location=self.device
         # )
@@ -231,7 +232,7 @@ class RCNN(nn.Module):
         self.RCNN_verb_score = nn.Linear(tail_dimensions, self.n_verbs)
 
     def load(self):
-        checkpoint = torch.load("rcnn_1_2-31296d99.pth")
+        checkpoint = torch.load("anomalib/models/rkde/rcnn_1_2-31296d99.pth")
         # checkpoint = load_url(
         #     "https://files.cosmonio.com/rcnn_1_2-31296d99.pth", check_hash=True, map_location=self.device
         # )
