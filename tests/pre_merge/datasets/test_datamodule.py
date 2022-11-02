@@ -6,10 +6,27 @@ import numpy as np
 import pytest
 
 from anomalib.config import update_input_size_config
-from anomalib.data import BTech, Folder, MVTec, get_datamodule
+from anomalib.data import Avenue, BTech, Folder, MVTec, UCSDped, get_datamodule
 from anomalib.pre_processing.transforms import Denormalize, ToNumpy
 from tests.helpers.config import get_test_configurable_parameters
 from tests.helpers.dataset import TestDataset, get_dataset_path
+
+
+@pytest.fixture(autouse=True)
+def avenue_data_module():
+    root = get_dataset_path(dataset="avenue")
+    datamodule = Avenue(
+        root=root,
+        gt_dir=os.path.join(root, "ground_truth_demo/testing_label_mask"),
+        image_size=(256, 256),
+        train_batch_size=1,
+        eval_batch_size=1,
+        num_workers=0,
+        val_split_mode="from_test",
+    )
+    datamodule.setup()
+
+    return datamodule
 
 
 @pytest.fixture(autouse=True)
@@ -62,6 +79,22 @@ def folder_data_module():
         train_batch_size=32,
         eval_batch_size=32,
         num_workers=8,
+        val_split_mode="from_test",
+    )
+    datamodule.setup()
+
+    return datamodule
+
+
+@pytest.fixture(autouse=True)
+def ucsdped_data_module():
+    datamodule = UCSDped(
+        root=get_dataset_path(dataset="ucsd"),
+        category="UCSDped2",
+        image_size=(256, 256),
+        train_batch_size=1,
+        eval_batch_size=1,
+        num_workers=0,
         val_split_mode="from_test",
     )
     datamodule.setup()
@@ -159,6 +192,66 @@ class TestFolderDataModule:
             len(
                 set(folder_data_module.test_data.samples["image_path"].values).intersection(
                     set(folder_data_module.train_data.samples["image_path"].values)
+                )
+            )
+            == 0
+        ), "Found train and test split contamination"
+
+
+class TestAvenueDataModule:
+    """Test MVTec AD Data Module."""
+
+    def test_batch_size(self, avenue_data_module):
+        """test_mvtec_datamodule [summary]"""
+        _, train_data_sample = next(enumerate(avenue_data_module.train_dataloader()))
+        _, val_data_sample = next(enumerate(avenue_data_module.val_dataloader()))
+        assert train_data_sample["image"].shape[0] == 1
+        assert val_data_sample["image"].shape[0] == 1
+
+    def test_val_and_test_dataloaders_has_mask_and_gt(self, avenue_data_module):
+        """Test Validation and Test dataloaders should return filenames, image, mask and label."""
+        _, val_data = next(enumerate(avenue_data_module.val_dataloader()))
+        _, test_data = next(enumerate(avenue_data_module.test_dataloader()))
+
+        assert sorted(["video_path", "frames", "image", "label", "mask", "last_frame"]) == sorted(val_data.keys())
+        assert sorted(["video_path", "frames", "image", "label", "mask", "last_frame"]) == sorted(test_data.keys())
+
+    def test_non_overlapping_splits(self, avenue_data_module):
+        """This test ensures that the train and test splits generated are non-overlapping."""
+        assert (
+            len(
+                set(avenue_data_module.test_data.samples["image_path"].values).intersection(
+                    set(avenue_data_module.train_data.samples["image_path"].values)
+                )
+            )
+            == 0
+        ), "Found train and test split contamination"
+
+
+class TestUCSDpedDataModule:
+    """Test MVTec AD Data Module."""
+
+    def test_batch_size(self, ucsdped_data_module):
+        """test_mvtec_datamodule [summary]"""
+        _, train_data_sample = next(enumerate(ucsdped_data_module.train_dataloader()))
+        _, val_data_sample = next(enumerate(ucsdped_data_module.val_dataloader()))
+        assert train_data_sample["image"].shape[0] == 1
+        assert val_data_sample["image"].shape[0] == 1
+
+    def test_val_and_test_dataloaders_has_mask_and_gt(self, ucsdped_data_module):
+        """Test Validation and Test dataloaders should return filenames, image, mask and label."""
+        _, val_data = next(enumerate(ucsdped_data_module.val_dataloader()))
+        _, test_data = next(enumerate(ucsdped_data_module.test_dataloader()))
+
+        assert sorted(["video_path", "frames", "image", "label", "mask", "last_frame"]) == sorted(val_data.keys())
+        assert sorted(["video_path", "frames", "image", "label", "mask", "last_frame"]) == sorted(test_data.keys())
+
+    def test_non_overlapping_splits(self, ucsdped_data_module):
+        """This test ensures that the train and test splits generated are non-overlapping."""
+        assert (
+            len(
+                set(ucsdped_data_module.test_data.samples["image_path"].values).intersection(
+                    set(ucsdped_data_module.train_data.samples["image_path"].values)
                 )
             )
             == 0
