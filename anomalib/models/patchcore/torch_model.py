@@ -153,7 +153,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             Tensor: Patch scores.
             Tensor: Locations of the nearest neighbor(s).
         """
-        distances = torch.cdist(embedding, self.memory_bank, p=2.0)   # euclidean norm
+        distances = torch.cdist(embedding, self.memory_bank, p=2.0)  # euclidean norm
         if n_neighbors == 1:
             # when n_neighbors is 1, speed up computation by using min instead of topk
             patch_scores, locations = distances.min(1)
