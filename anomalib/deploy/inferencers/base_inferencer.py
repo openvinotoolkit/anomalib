@@ -125,9 +125,9 @@ class Inferencer(ABC):
 
     def _normalize(
         self,
-        anomaly_maps: Union[Tensor, np.ndarray],
         pred_scores: Union[Tensor, np.float32],
         meta_data: Union[Dict, DictConfig],
+        anomaly_maps: Optional[Union[Tensor, np.ndarray]] = None,
     ) -> Tuple[Union[np.ndarray, Tensor], float]:
         """Applies normalization and resizes the image.
 
@@ -140,25 +140,25 @@ class Inferencer(ABC):
         Returns:
             Tuple[Union[np.ndarray, Tensor], float]: Post processed predictions that are ready to be visualized and
                 predicted scores.
-
-
         """
 
         # min max normalization
         if "min" in meta_data and "max" in meta_data:
-            anomaly_maps = normalize_min_max(
-                anomaly_maps, meta_data["pixel_threshold"], meta_data["min"], meta_data["max"]
-            )
+            if anomaly_maps is not None:
+                anomaly_maps = normalize_min_max(
+                    anomaly_maps, meta_data["pixel_threshold"], meta_data["min"], meta_data["max"]
+                )
             pred_scores = normalize_min_max(
                 pred_scores, meta_data["image_threshold"], meta_data["min"], meta_data["max"]
             )
 
         # standardize pixel scores
         if "pixel_mean" in meta_data.keys() and "pixel_std" in meta_data.keys():
-            anomaly_maps = standardize(
-                anomaly_maps, meta_data["pixel_mean"], meta_data["pixel_std"], center_at=meta_data["image_mean"]
-            )
-            anomaly_maps = normalize_cdf(anomaly_maps, meta_data["pixel_threshold"])
+            if anomaly_maps is not None:
+                anomaly_maps = standardize(
+                    anomaly_maps, meta_data["pixel_mean"], meta_data["pixel_std"], center_at=meta_data["image_mean"]
+                )
+                anomaly_maps = normalize_cdf(anomaly_maps, meta_data["pixel_threshold"])
 
         # standardize image scores
         if "image_mean" in meta_data.keys() and "image_std" in meta_data.keys():

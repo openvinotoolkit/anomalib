@@ -162,7 +162,7 @@ class TorchInferencer(Inferencer):
             pred_mask = (anomaly_map >= meta_data["pixel_threshold"]).squeeze().astype(np.uint8)
 
         anomaly_map = anomaly_map.squeeze()
-        anomaly_map, pred_score = self._normalize(anomaly_map, pred_score, meta_data)
+        anomaly_map, pred_score = self._normalize(anomaly_maps=anomaly_map, pred_scores=pred_score, meta_data=meta_data)
 
         if isinstance(anomaly_map, Tensor):
             anomaly_map = anomaly_map.detach().cpu().numpy()
