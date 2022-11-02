@@ -31,6 +31,8 @@ class Padim(AnomalyModule):
         input_size (Tuple[int, int]): Size of the model input.
         backbone (str): Backbone CNN network
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+        n_features (int, optional): Number of features to retain in the dimension reduction step.
+                                Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
     """
 
     def __init__(
