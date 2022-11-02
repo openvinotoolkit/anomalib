@@ -128,18 +128,18 @@ class Inferencer(ABC):
         pred_scores: Union[Tensor, np.float32],
         meta_data: Union[Dict, DictConfig],
         anomaly_maps: Optional[Union[Tensor, np.ndarray]] = None,
-    ) -> Tuple[Union[np.ndarray, Tensor], float]:
+    ) -> Tuple[Optional[Union[np.ndarray, Tensor]], float]:
         """Applies normalization and resizes the image.
 
         Args:
-            anomaly_maps (Union[Tensor, np.ndarray]): Predicted raw anomaly map.
             pred_scores (Union[Tensor, np.float32]): Predicted anomaly score
             meta_data (Dict): Meta data. Post-processing step sometimes requires
                 additional meta data such as image shape. This variable comprises such info.
+            anomaly_maps (Optional[Union[Tensor, np.ndarray]]): Predicted raw anomaly map.
 
         Returns:
-            Tuple[Union[np.ndarray, Tensor], float]: Post processed predictions that are ready to be visualized and
-                predicted scores.
+            Tuple[Optional[Union[np.ndarray, Tensor], float]]: Post processed predictions that are ready to be
+                visualized and predicted scores.
         """
 
         # min max normalization

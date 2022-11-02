@@ -168,6 +168,7 @@ class OpenVINOInferencer(Inferencer):
             anomaly_map, pred_score = self._normalize(
                 pred_scores=pred_score, anomaly_maps=anomaly_map, meta_data=meta_data
             )
+            assert anomaly_map is not None
 
             if "image_shape" in meta_data and anomaly_map.shape != meta_data["image_shape"]:
                 image_height = meta_data["image_shape"][0]
