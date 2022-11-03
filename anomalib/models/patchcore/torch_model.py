@@ -157,8 +157,6 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         if n_neighbors == 1:
             # when n_neighbors is 1, speed up computation by using min instead of topk
             patch_scores, locations = distances.min(1)
-            # compute anomaly scoree expects patch_scores and locations to be a 2D tensor
-            patch_scores, locations = patch_scores.unsqueeze(1), locations.unsqueeze(1)
         else:
             patch_scores, locations = distances.topk(k=n_neighbors, largest=False, dim=1)
         return patch_scores, locations
