@@ -1,7 +1,11 @@
 import pytest
 import torch
+from torchvision.models.efficientnet import EfficientNet_B5_Weights
 
-from anomalib.models.components.feature_extractors import FeatureExtractor
+from anomalib.models.components.feature_extractors import (
+    TimmFeatureExtractor,
+    get_torchfx_feature_extractor,
+)
 
 
 class TestFeatureExtractor:
@@ -13,9 +17,9 @@ class TestFeatureExtractor:
         "pretrained",
         [True, False],
     )
-    def test_feature_extraction(self, backbone, pretrained):
+    def test_timm_feature_extraction(self, backbone, pretrained):
         layers = ["layer1", "layer2", "layer3"]
-        model = FeatureExtractor(backbone=backbone, layers=layers, pre_trained=pretrained)
+        model = TimmFeatureExtractor(backbone=backbone, layers=layers, pre_trained=pretrained)
         test_input = torch.rand((32, 3, 256, 256))
         features = model(test_input)
 
@@ -33,3 +37,17 @@ class TestFeatureExtractor:
             assert model.idx == [1, 2, 3]
         else:
             pass
+
+    def test_torchfx_feature_extraction(self):
+        model = get_torchfx_feature_extractor("resnet18", ["layer1", "layer2", "layer3"])
+        test_input = torch.rand((32, 3, 256, 256))
+        features = model(test_input)
+        assert features["layer1"].shape == torch.Size((32, 64, 64, 64))
+        assert features["layer2"].shape == torch.Size((32, 128, 32, 32))
+        assert features["layer3"].shape == torch.Size((32, 256, 16, 16))
+
+        model = get_torchfx_feature_extractor(
+            backbone="efficientnet_b5", return_nodes=["features.6.8"], weights=EfficientNet_B5_Weights.DEFAULT
+        )
+        features = model(test_input)
+        assert features["features.6.8"].shape == torch.Size((32, 304, 8, 8))

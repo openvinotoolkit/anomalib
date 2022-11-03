@@ -10,7 +10,7 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from anomalib.models.components import FeatureExtractor, MultiVariateGaussian
+from anomalib.models.components import MultiVariateGaussian, TimmFeatureExtractor
 from anomalib.models.padim.anomaly_map import AnomalyMapGenerator
 from anomalib.pre_processing import Tiler
 
@@ -42,7 +42,7 @@ class PadimModel(nn.Module):
 
         self.backbone = backbone
         self.layers = layers
-        self.feature_extractor = FeatureExtractor(backbone=self.backbone, layers=layers, pre_trained=pre_trained)
+        self.feature_extractor = TimmFeatureExtractor(backbone=self.backbone, layers=layers, pre_trained=pre_trained)
         self.dims = DIMS[backbone]
         # pylint: disable=not-callable
         # Since idx is randomly selected, save it with model to get same results
