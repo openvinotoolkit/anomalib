@@ -1,6 +1,9 @@
 """CUHK Avenue Dataset."""
 
+import glob
 import logging
+import math
+import os
 import zipfile
 from collections import namedtuple
 from os import listdir, rmdir
@@ -11,8 +14,10 @@ from typing import Callable, Optional, Tuple, Union
 from urllib.request import urlretrieve
 
 import albumentations as A
+import cv2
 import numpy as np
 import scipy.io
+import torch
 from pandas import DataFrame
 from torch import Tensor
 
@@ -98,9 +103,17 @@ class AvenueClipsIndexer(ClipsIndexer):
             return None
         frames = self.clips[video_idx][frames_idx]
 
-        mat = scipy.io.loadmat(matfile)
-        masks = Tensor(np.vstack([np.stack(m) for m in mat["volLabel"]]))
-        return masks[frames]
+        # read masks from .png files if available, othwerise from mat files.
+        mask_folder = Path(matfile).with_suffix("")
+        if mask_folder.exists():
+            mask_frames = sorted(glob.glob(str(mask_folder) + "/*"))
+            mask_paths = [mask_frames[idx] for idx in frames.int()]
+            masks = torch.stack([Tensor(cv2.imread(mask_path, flags=0)) / 255.0 for mask_path in mask_paths])
+        else:
+            mat = scipy.io.loadmat(matfile)
+            masks = Tensor(np.vstack([np.stack(m) for m in mat["volLabel"]]))
+            masks = masks[frames]
+        return masks
 
 
 class AvenueDataset(VideoAnomalibDataset):
@@ -205,9 +218,39 @@ class Avenue(AnomalibDataModule):
         )
 
     def prepare_data(self) -> None:
-        """Download dataset."""
+        """Download the dataset and ground truth if not available, and convert mask files to a more usable format."""
+        # download dataset
         self._download_and_extract(self.root, DATASET_DOWNLOAD_INFO)
+        # download annotations
         self._download_and_extract(self.gt_dir, ANNOTATIONS_DOWNLOAD_INFO)
+        # convert masks
+        self._convert_masks(self.gt_dir)
+
+    @staticmethod
+    def _convert_masks(gt_dir: Path):
+        """Convert mask files to .png.
+
+        The masks in the Avenue datasets are provided as matlab (.mat) files. To speed up data loading, we convert the
+        masks into a sepaarte .png file for every video frame in the dataset.
+
+        Args:
+            gt_dir (Path): Ground truth folder of the dataset.
+        """
+        # convert masks to numpy
+        masks_dir = gt_dir / "testing_label_mask"
+        # get file names
+        mat_files = [masks_dir / filename for filename in listdir(masks_dir) if filename.endswith(".mat")]
+        mask_folders = [matfile.with_suffix("") for matfile in mat_files]
+        if not all(folder.exists() for folder in mask_folders):
+            # convert mask files to images
+            logger.info("converting mat files to .png format.")
+            for mat_file, mask_folder in zip(mat_files, mask_folders):
+                mat = scipy.io.loadmat(mat_file)
+                masks = np.vstack([np.stack(m) for m in mat["volLabel"]])
+                os.makedirs(mask_folder, exist_ok=True)
+                for idx, mask in enumerate(masks):
+                    filename = (mask_folder / str(idx).zfill(int(math.log10(len(masks)) + 1))).with_suffix(".png")
+                    cv2.imwrite(str(filename), mask)
 
     @staticmethod
     def _download_and_extract(root: Path, info: DownloadInfo):
