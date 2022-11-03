@@ -34,8 +34,8 @@ def ucsd_dataset(split):
         root=root,
         category="UCSDped2",
         pre_process=PreProcessor(image_size=(256, 256)),
-        frames_per_clip=16,
-        stride=1,
+        clip_length_in_frames=16,
+        frames_between_clips=1,
         split=split,
     )
     dataset.setup()
@@ -67,8 +67,8 @@ class TestVideoDataset:
     @pytest.mark.parametrize(
         "split, required_keys",
         [
-            (Split.TRAIN, ("video_path", "frames", "last_frame", "image")),
-            (Split.TEST, ("video_path", "frames", "label", "last_frame", "image", "mask")),
+            (Split.TRAIN, ("video_path", "frames", "last_frame", "image", "original_image")),
+            (Split.TEST, ("video_path", "frames", "label", "last_frame", "image", "original_image", "mask")),
         ],
     )
     def test_get_item(self, ucsd_dataset, required_keys):

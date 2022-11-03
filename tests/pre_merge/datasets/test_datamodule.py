@@ -17,7 +17,7 @@ def avenue_data_module():
     root = get_dataset_path(dataset="avenue")
     datamodule = Avenue(
         root=root,
-        gt_dir=os.path.join(root, "ground_truth_demo/testing_label_mask"),
+        gt_dir=os.path.join(root, "ground_truth_demo"),
         image_size=(256, 256),
         train_batch_size=1,
         eval_batch_size=1,
@@ -213,8 +213,12 @@ class TestAvenueDataModule:
         _, val_data = next(enumerate(avenue_data_module.val_dataloader()))
         _, test_data = next(enumerate(avenue_data_module.test_dataloader()))
 
-        assert sorted(["video_path", "frames", "image", "label", "mask", "last_frame"]) == sorted(val_data.keys())
-        assert sorted(["video_path", "frames", "image", "label", "mask", "last_frame"]) == sorted(test_data.keys())
+        assert sorted(["video_path", "frames", "image", "label", "mask", "last_frame", "original_image"]) == sorted(
+            val_data.keys()
+        )
+        assert sorted(["video_path", "frames", "image", "label", "mask", "last_frame", "original_image"]) == sorted(
+            test_data.keys()
+        )
 
     def test_non_overlapping_splits(self, avenue_data_module):
         """This test ensures that the train and test splits generated are non-overlapping."""
@@ -243,8 +247,12 @@ class TestUCSDpedDataModule:
         _, val_data = next(enumerate(ucsdped_data_module.val_dataloader()))
         _, test_data = next(enumerate(ucsdped_data_module.test_dataloader()))
 
-        assert sorted(["video_path", "frames", "image", "label", "mask", "last_frame"]) == sorted(val_data.keys())
-        assert sorted(["video_path", "frames", "image", "label", "mask", "last_frame"]) == sorted(test_data.keys())
+        assert sorted(["video_path", "frames", "image", "label", "mask", "last_frame", "original_image"]) == sorted(
+            val_data.keys()
+        )
+        assert sorted(["video_path", "frames", "image", "label", "mask", "last_frame", "original_image"]) == sorted(
+            test_data.keys()
+        )
 
     def test_non_overlapping_splits(self, ucsdped_data_module):
         """This test ensures that the train and test splits generated are non-overlapping."""
