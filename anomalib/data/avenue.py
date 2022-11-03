@@ -69,7 +69,9 @@ def make_avenue_dataset(root: Path, gt_dir: Path, split: Optional[Union[Split, s
     samples.loc[samples.folder == "testing_videos", "mask_path"] = (
         samples.image_path.str.split(".").str[0].str.lstrip("0") + "_label.mat"
     )
-    samples.loc[samples.folder == "testing_videos", "mask_path"] = str(gt_dir) + "/" + samples.mask_path
+    samples.loc[samples.folder == "testing_videos", "mask_path"] = (
+        str(gt_dir) + "/testing_label_mask/" + samples.mask_path
+    )
     samples.loc[samples.folder == "training_videos", "mask_path"] = ""
 
     samples["image_path"] = samples.root + "/" + samples.folder + "/" + samples.image_path
