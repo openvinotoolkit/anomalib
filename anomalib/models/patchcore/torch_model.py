@@ -189,7 +189,6 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         distances = torch.cdist(embedding[max_patches].unsqueeze(1), self.memory_bank[support_samples], p=2.0)
         # 5. Apply softmax to find the weights
         weights = (1 - F.softmax(distances.squeeze(1), 1))[..., 0]
-        # weights = (1 - F.softmax(distances.squeeze()))[..., 0]
         # 6. Apply the weight factor to the score
         score = weights * score  # S^* in the paper
         return score
