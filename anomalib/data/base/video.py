@@ -76,7 +76,7 @@ class VideoAnomalibDataset(AnomalibDataset, ABC):
             item["image"] = torch.stack([item["image"] for item in processed_frames]).squeeze(0)
             mask = item["mask"]
             item["mask"] = torch.stack([item["mask"] for item in processed_frames]).squeeze(0)
-            item["label"] = Tensor([1 in frame for frame in mask]).int()
+            item["label"] = Tensor([1 in frame for frame in mask]).int().squeeze(0)
         else:
             item["image"] = torch.stack(
                 [self.pre_process(image=frame.numpy())["image"] for frame in item["image"]]
