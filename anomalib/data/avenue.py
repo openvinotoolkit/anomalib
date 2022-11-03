@@ -108,7 +108,7 @@ class AvenueClipsIndexer(ClipsIndexer):
         if mask_folder.exists():
             mask_frames = sorted(glob.glob(str(mask_folder) + "/*"))
             mask_paths = [mask_frames[idx] for idx in frames.int()]
-            masks = torch.stack([Tensor(cv2.imread(mask_path, flags=0)) / 255.0 for mask_path in mask_paths])
+            masks = torch.stack([Tensor(cv2.imread(mask_path, flags=0)) for mask_path in mask_paths])
         else:
             mat = scipy.io.loadmat(matfile)
             masks = Tensor(np.vstack([np.stack(m) for m in mat["volLabel"]]))
@@ -246,8 +246,8 @@ class Avenue(AnomalibDataModule):
             logger.info("converting mat files to .png format.")
             for mat_file, mask_folder in zip(mat_files, mask_folders):
                 mat = scipy.io.loadmat(mat_file)
-                masks = np.vstack([np.stack(m) for m in mat["volLabel"]])
                 os.makedirs(mask_folder, exist_ok=True)
+                masks = mat["volLabel"].squeeze()
                 for idx, mask in enumerate(masks):
                     filename = (mask_folder / str(idx).zfill(int(math.log10(len(masks)) + 1))).with_suffix(".png")
                     cv2.imwrite(str(filename), mask)
