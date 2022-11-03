@@ -41,7 +41,7 @@ def generate_perlin_noise_2d(shape, res):
     """Fractal perlin noise."""
 
     def f(t):
-        return 6 * t ** 5 - 15 * t ** 4 + 10 * t ** 3
+        return 6 * t**5 - 15 * t**4 + 10 * t**3
 
     delta = (res[0] / shape[0], res[1] / shape[1])
     d = (shape[0] // res[0], shape[1] // res[1])
@@ -68,7 +68,7 @@ def generate_perlin_noise_2d(shape, res):
 def random_2d_perlin(
     shape: Tuple,
     res: Tuple[Union[int, Tensor], Union[int, Tensor]],
-    fade=lambda t: 6 * t ** 5 - 15 * t ** 4 + 10 * t ** 3,
+    fade=lambda t: 6 * t**5 - 15 * t**4 + 10 * t**3,
 ) -> Union[np.ndarray, Tensor]:
     """Returns a random 2d perlin noise array.
 
@@ -90,7 +90,7 @@ def random_2d_perlin(
     return result
 
 
-def _rand_perlin_2d_np(shape, res, fade=lambda t: 6 * t ** 5 - 15 * t ** 4 + 10 * t ** 3):
+def _rand_perlin_2d_np(shape, res, fade=lambda t: 6 * t**5 - 15 * t**4 + 10 * t**3):
     """Generate a random image containing Perlin noise. Numpy version."""
     delta = (res[0] / shape[0], res[1] / shape[1])
     d = (shape[0] // res[0], shape[1] // res[1])
@@ -116,7 +116,7 @@ def _rand_perlin_2d_np(shape, res, fade=lambda t: 6 * t ** 5 - 15 * t ** 4 + 10 
     return math.sqrt(2) * lerp_np(lerp_np(n00, n10, t[..., 0]), lerp_np(n01, n11, t[..., 0]), t[..., 1])
 
 
-def _rand_perlin_2d(shape, res, fade=lambda t: 6 * t ** 5 - 15 * t ** 4 + 10 * t ** 3):
+def _rand_perlin_2d(shape, res, fade=lambda t: 6 * t**5 - 15 * t**4 + 10 * t**3):
     """Generate a random image containing Perlin noise. PyTorch version."""
     delta = (res[0] / shape[0], res[1] / shape[1])
     d = (shape[0] // res[0], shape[1] // res[1])

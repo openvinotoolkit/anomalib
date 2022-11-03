@@ -123,7 +123,7 @@ class Decoder(nn.Module):
 
         # Calculate input channel size to recreate inverse pyramid
         exp_factor = math.ceil(math.log(min(input_size) // 2, 2)) - 2
-        n_input_features = n_features * (2 ** exp_factor)
+        n_input_features = n_features * (2**exp_factor)
 
         # CNN layer for latent vector input
         self.latent_input.add_module(
