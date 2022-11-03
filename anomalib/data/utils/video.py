@@ -1,5 +1,6 @@
 """Video utils."""
 
+import warnings
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
@@ -33,7 +34,10 @@ class ClipsIndexer(VideoClips, ABC):
 
     def get_item(self, idx: int) -> Dict[str, Any]:
         """Return a dictionary containing the clip, mask, video path and frame indices."""
-        clip, _, _, _ = self.get_clip(idx)
+        with warnings.catch_warnings():
+            # silence warning caused by bug in torchvision, see https://github.com/pytorch/vision/issues/5787
+            warnings.simplefilter("ignore")
+            clip, _, _, _ = self.get_clip(idx)
 
         video_idx, clip_idx = self.get_clip_location(idx)
         video_path = self.video_paths[video_idx]
