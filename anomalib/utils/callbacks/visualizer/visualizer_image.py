@@ -82,8 +82,8 @@ class ImageVisualizerCallback(BaseVisualizerCallback):
                 filename = Path(outputs["image_path"][i])
             elif "video_path" in outputs.keys():
                 zero_fill = int(math.log10(outputs["last_frame"][i])) + 1
-                suffix = f"_{str(outputs['frames'][i].int().item()).zfill(zero_fill)}.png"
-                filename = Path(outputs["video_path"][i] + suffix)
+                suffix = f"{str(outputs['frames'][i].int().item()).zfill(zero_fill)}.png"
+                filename = Path(outputs["video_path"][i]) / suffix
             else:
                 raise KeyError("Batch must have either 'image_path' or 'video_path' defined.")
 
