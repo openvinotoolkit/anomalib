@@ -28,13 +28,13 @@ class VideoAnomalibDataset(AnomalibDataset, ABC):
         self.stride = stride
         self.pre_process = PreProcessor(image_size=(256, 256))
 
-        self.video_clips: Optional[ClipsIndexer] = None
-        self.clips_type: Optional[Callable] = None
+        self.indexer: Optional[ClipsIndexer] = None
+        self.indexer_cls: Optional[Callable] = None
 
     def __len__(self) -> int:
         """Get length of the dataset."""
-        assert isinstance(self.video_clips, ClipsIndexer)
-        return self.video_clips.num_clips()
+        assert isinstance(self.indexer, ClipsIndexer)
+        return self.indexer.num_clips()
 
     @property
     def samples(self):
@@ -52,8 +52,8 @@ class VideoAnomalibDataset(AnomalibDataset, ABC):
 
         Should be called after each change to self._samples
         """
-        assert callable(self.clips_type)
-        self.video_clips = self.clips_type(  # pylint: disable=not-callable
+        assert callable(self.indexer_cls)
+        self.indexer = self.indexer_cls(  # pylint: disable=not-callable
             video_paths=list(self.samples.image_path),
             mask_paths=list(self.samples.mask_path),
             clip_length_in_frames=self.frames_per_clip,
@@ -62,9 +62,9 @@ class VideoAnomalibDataset(AnomalibDataset, ABC):
 
     def __getitem__(self, index: int) -> Dict[str, Union[str, Tensor]]:
         """Return mask, clip and file system information."""
-        assert isinstance(self.video_clips, ClipsIndexer)
+        assert isinstance(self.indexer, ClipsIndexer)
 
-        item = self.video_clips.get_item(index)
+        item = self.indexer.get_item(index)
 
         # apply transforms
         if "mask" in item.keys() and item["mask"] is not None:

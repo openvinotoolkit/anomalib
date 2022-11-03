@@ -84,7 +84,7 @@ def make_ucsd_dataset(path: Path, split: Optional[Union[Split, str]] = None):
     return samples
 
 
-class UCSDpedClips(ClipsIndexer):
+class UCSDpedClipsIndexer(ClipsIndexer):
     """Clips class for UCSDped dataset."""
 
     def get_mask(self, idx) -> Optional[Tensor]:
@@ -164,7 +164,7 @@ class UCSDpedDataset(VideoAnomalibDataset):
 
         self.root_category = Path(root) / category
         self.split = split
-        self.clips_type: Callable = UCSDpedClips
+        self.indexer_cls: Callable = UCSDpedClipsIndexer
 
     def _setup(self):
         """Create and assign samples."""

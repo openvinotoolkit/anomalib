@@ -2,7 +2,11 @@
 
 import pytest
 
-from anomalib.data.ucsd_ped import UCSDpedClips, UCSDpedDataset, make_ucsd_dataset
+from anomalib.data.ucsd_ped import (
+    UCSDpedClipsIndexer,
+    UCSDpedDataset,
+    make_ucsd_dataset,
+)
 from anomalib.data.utils.split import Split, random_split
 from anomalib.pre_processing import PreProcessor
 from tests.helpers.dataset import get_dataset_path
@@ -13,7 +17,7 @@ def ucsd_clips(n_frames, stride, split=Split.TEST):
     """Create Folder Dataset."""
     root = get_dataset_path(dataset="ucsd")
     samples = make_ucsd_dataset(path=root + "/UCSDped2", split=split)
-    clips = UCSDpedClips(
+    clips = UCSDpedClipsIndexer(
         video_paths=samples.image_path,
         mask_paths=samples.mask_path,
         clip_length_in_frames=n_frames,
@@ -55,7 +59,7 @@ class TestVideoDataset:
     @pytest.mark.parametrize("split", [Split.TRAIN, Split.TEST])
     def test_indexing(self, ucsd_dataset):
         # check if clips are indexed at setup
-        assert isinstance(ucsd_dataset.video_clips, UCSDpedClips)
+        assert isinstance(ucsd_dataset.indexer, UCSDpedClipsIndexer)
         # check if clips are re-indexed after splitting
         split0, split1 = random_split(ucsd_dataset, 0.5)
         assert len(split0) + len(split1) == len(ucsd_dataset)

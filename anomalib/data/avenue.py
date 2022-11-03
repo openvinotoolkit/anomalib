@@ -84,7 +84,7 @@ def make_avenue_dataset(root: Path, gt_dir: Path, split: Optional[Union[Split, s
     return samples
 
 
-class AvenueClips(ClipsIndexer):
+class AvenueClipsIndexer(ClipsIndexer):
     """Clips class for UCSDped dataset."""
 
     def get_mask(self, idx) -> Optional[Tensor]:
@@ -129,7 +129,7 @@ class AvenueDataset(VideoAnomalibDataset):
         self.root = root
         self.gt_dir = gt_dir
         self.split = split
-        self.clips_type: Callable = AvenueClips
+        self.indexer_cls: Callable = AvenueClipsIndexer
 
     def _setup(self):
         """Create and assign samples."""
