@@ -1,28 +1,10 @@
 """Video utils."""
 
-import glob
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
-import cv2
-import numpy as np
 from torch import Tensor
 from torchvision.datasets.video_utils import VideoClips
-
-from anomalib.data.utils import read_image
-
-
-def read_frames_from_video(video_path: str, frame_idx: Iterable[int], image_size: Tuple[int, int] = None):
-    """Read images from a folder of video frames."""
-    frames = sorted(glob.glob(video_path + "/*"))
-
-    frame_paths = [frames[pt] for pt in frame_idx]
-    video = np.stack([read_image(frame_path) for frame_path in frame_paths])
-
-    if image_size:
-        height, width = image_size
-        video = np.stack([cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA) for image in video])
-    return video
 
 
 class ClipsIndexer(VideoClips, ABC):

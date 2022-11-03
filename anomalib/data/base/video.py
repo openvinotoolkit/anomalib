@@ -65,6 +65,8 @@ class VideoAnomalibDataset(AnomalibDataset, ABC):
         assert isinstance(self.indexer, ClipsIndexer)
 
         item = self.indexer.get_item(index)
+        # include the untransformed image for visualization
+        item["original_image"] = item["image"].to(torch.uint8)
 
         # apply transforms
         if "mask" in item.keys() and item["mask"] is not None:

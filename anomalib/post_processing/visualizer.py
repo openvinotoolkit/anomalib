@@ -14,7 +14,6 @@ import numpy as np
 from skimage.segmentation import mark_boundaries
 
 from anomalib.data.utils import read_image
-from anomalib.data.utils.video import read_frames_from_video
 from anomalib.post_processing.post_process import (
     add_anomalous_label,
     add_normal_label,
@@ -79,9 +78,8 @@ class Visualizer:
             if "image_path" in batch.keys():
                 image = read_image(path=batch["image_path"][i], image_size=(height, width))
             elif "video_path" in batch.keys():
-                image = read_frames_from_video(
-                    batch["video_path"][i], batch["frames"][i].int(), image_size=(height, width)
-                ).squeeze()
+                image = batch["original_image"][i].squeeze().numpy()
+                image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
             else:
                 raise KeyError("Batch must have either 'image_path' or 'video_path' defined.")
 
