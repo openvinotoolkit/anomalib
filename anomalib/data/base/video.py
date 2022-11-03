@@ -17,15 +17,15 @@ class VideoAnomalibDataset(AnomalibDataset, ABC):
     Args:
         task (str): Task type, either 'classification' or 'segmentation'
         pre_process (PreProcessor): Pre-processor object
-        frames_per_clip (int): Number of video frames in each clip.
-        stride (int): Number of frames between each consecutive video clip.
+        clip_length_in_frames (int): Number of video frames in each clip.
+        frames_between_clips (int): Number of frames between each consecutive video clip.
     """
 
-    def __init__(self, task: str, pre_process: PreProcessor, frames_per_clip: int, stride: int):
+    def __init__(self, task: str, pre_process: PreProcessor, clip_length_in_frames: int, frames_between_clips: int):
         super().__init__(task, pre_process)
 
-        self.frames_per_clip = frames_per_clip
-        self.stride = stride
+        self.clip_length_in_frames = clip_length_in_frames
+        self.frames_between_clips = frames_between_clips
         self.pre_process = PreProcessor(image_size=(256, 256))
 
         self.indexer: Optional[ClipsIndexer] = None
@@ -56,8 +56,8 @@ class VideoAnomalibDataset(AnomalibDataset, ABC):
         self.indexer = self.indexer_cls(  # pylint: disable=not-callable
             video_paths=list(self.samples.image_path),
             mask_paths=list(self.samples.mask_path),
-            clip_length_in_frames=self.frames_per_clip,
-            frames_between_clips=self.stride,
+            clip_length_in_frames=self.clip_length_in_frames,
+            frames_between_clips=self.frames_between_clips,
         )
 
     def __getitem__(self, index: int) -> Dict[str, Union[str, Tensor]]:

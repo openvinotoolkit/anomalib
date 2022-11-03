@@ -146,8 +146,8 @@ class UCSDpedDataset(VideoAnomalibDataset):
         category (str): Sub-category of the dataset, e.g. 'bottle'
         pre_process (PreProcessor): Pre-processor object
         split (Optional[Union[Split, str]]): Split of the dataset, usually Split.TRAIN or Split.TEST
-        frames_per_clip (int, optional): Number of video frames in each clip.
-        stride (int, optional): Number of frames between each consecutive video clip.
+        clip_length_in_frames (int, optional): Number of video frames in each clip.
+        frames_between_clips (int, optional): Number of frames between each consecutive video clip.
     """
 
     def __init__(
@@ -157,10 +157,10 @@ class UCSDpedDataset(VideoAnomalibDataset):
         category: str,
         pre_process: PreProcessor,
         split: Split,
-        frames_per_clip: int = 1,
-        stride: int = 1,
+        clip_length_in_frames: int = 1,
+        frames_between_clips: int = 1,
     ):
-        super().__init__(task, pre_process, frames_per_clip, stride)
+        super().__init__(task, pre_process, clip_length_in_frames, frames_between_clips)
 
         self.root_category = Path(root) / category
         self.split = split
@@ -177,8 +177,8 @@ class UCSDped(AnomalibDataModule):
     Args:
         root (str): Path to the root of the dataset
         category (str): Sub-category of the dataset, e.g. 'bottle'
-        frames_per_clip (int, optional): Number of video frames in each clip.
-        stride (int, optional): Number of frames between each consecutive video clip.
+        clip_length_in_frames (int, optional): Number of video frames in each clip.
+        frames_between_clips (int, optional): Number of frames between each consecutive video clip.
         task (str): Task type, either 'classification' or 'segmentation'
         image_size (Optional[Union[int, Tuple[int, int]]], optional): Size of the input image.
             Defaults to None.
@@ -198,8 +198,8 @@ class UCSDped(AnomalibDataModule):
         self,
         root: str,
         category: str,
-        frames_per_clip: int = 1,
-        stride: int = 1,
+        clip_length_in_frames: int = 1,
+        frames_between_clips: int = 1,
         task: str = "segmentation",
         image_size: Optional[Union[int, Tuple[int, int]]] = None,
         train_batch_size: int = 32,
@@ -220,8 +220,8 @@ class UCSDped(AnomalibDataModule):
         self.train_data = UCSDpedDataset(
             task=task,
             pre_process=pre_process_train,
-            frames_per_clip=frames_per_clip,
-            stride=stride,
+            clip_length_in_frames=clip_length_in_frames,
+            frames_between_clips=frames_between_clips,
             root=root,
             category=category,
             split=Split.TRAIN,
@@ -230,8 +230,8 @@ class UCSDped(AnomalibDataModule):
         self.test_data = UCSDpedDataset(
             task=task,
             pre_process=pre_process_eval,
-            frames_per_clip=frames_per_clip,
-            stride=stride,
+            clip_length_in_frames=clip_length_in_frames,
+            frames_between_clips=frames_between_clips,
             root=root,
             category=category,
             split=Split.TEST,

@@ -20,8 +20,18 @@ class ClipsIndexer(VideoClips, ABC):
         mask_paths (List[str]): List of paths to the masks for each video in the dataset.
     """
 
-    def __init__(self, video_paths: List[str], mask_paths: List[str], *args, **kwargs) -> None:
-        super().__init__(video_paths=video_paths, *args, **kwargs)
+    def __init__(
+        self,
+        video_paths: List[str],
+        mask_paths: List[str],
+        clip_length_in_frames: int = 1,
+        frames_between_clips: int = 1,
+    ) -> None:
+        super().__init__(
+            video_paths=video_paths,
+            clip_length_in_frames=clip_length_in_frames,
+            frames_between_clips=frames_between_clips,
+        )
         self.mask_paths = mask_paths
 
     def last_frame_idx(self, video_idx: int) -> int:

@@ -125,8 +125,8 @@ class AvenueDataset(VideoAnomalibDataset):
         gt_dir (str): Path to the ground truth files
         pre_process (PreProcessor): Pre-processor object
         split (Optional[Union[Split, str]]): Split of the dataset, usually Split.TRAIN or Split.TEST
-        frames_per_clip (int, optional): Number of video frames in each clip.
-        stride (int, optional): Number of frames between each consecutive video clip.
+        clip_length_in_frames (int, optional): Number of video frames in each clip.
+        frames_between_clips (int, optional): Number of frames between each consecutive video clip.
     """
 
     def __init__(
@@ -136,10 +136,10 @@ class AvenueDataset(VideoAnomalibDataset):
         gt_dir: str,
         pre_process: PreProcessor,
         split: Split,
-        frames_per_clip: int = 1,
-        stride: int = 1,
+        clip_length_in_frames: int = 1,
+        frames_between_clips: int = 1,
     ):
-        super().__init__(task, pre_process, frames_per_clip, stride)
+        super().__init__(task, pre_process, clip_length_in_frames, frames_between_clips)
 
         self.root = root
         self.gt_dir = gt_dir
@@ -157,8 +157,8 @@ class Avenue(AnomalibDataModule):
     Args:
         root (str): Path to the root of the dataset
         gt_dir (str): Path to the ground truth files
-        frames_per_clip (int, optional): Number of video frames in each clip.
-        stride (int, optional): Number of frames between each consecutive video clip.
+        clip_length_in_frames (int, optional): Number of video frames in each clip.
+        frames_between_clips (int, optional): Number of frames between each consecutive video clip.
         task (str): Task type, either 'classification' or 'segmentation'
         image_size (Optional[Union[int, Tuple[int, int]]], optional): Size of the input image.
             Defaults to None.
@@ -178,8 +178,8 @@ class Avenue(AnomalibDataModule):
         self,
         root: str,
         gt_dir: str,
-        frames_per_clip: int = 1,
-        stride: int = 1,
+        clip_length_in_frames: int = 1,
+        frames_between_clips: int = 1,
         task: str = "segmentation",
         image_size: Optional[Union[int, Tuple[int, int]]] = None,
         train_batch_size: int = 32,
@@ -200,8 +200,8 @@ class Avenue(AnomalibDataModule):
         self.train_data = AvenueDataset(
             task=task,
             pre_process=pre_process_train,
-            frames_per_clip=frames_per_clip,
-            stride=stride,
+            clip_length_in_frames=clip_length_in_frames,
+            frames_between_clips=frames_between_clips,
             root=root,
             gt_dir=gt_dir,
             split=Split.TRAIN,
@@ -210,8 +210,8 @@ class Avenue(AnomalibDataModule):
         self.test_data = AvenueDataset(
             task=task,
             pre_process=pre_process_eval,
-            frames_per_clip=frames_per_clip,
-            stride=stride,
+            clip_length_in_frames=clip_length_in_frames,
+            frames_between_clips=frames_between_clips,
             root=root,
             gt_dir=gt_dir,
             split=Split.TEST,
