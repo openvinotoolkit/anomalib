@@ -86,7 +86,9 @@ def get_openvino_throughput(config: Union[DictConfig, ListConfig], model_path: P
     Returns:
         float: Inference throughput
     """
-    inferencer = OpenVINOInferencer(config, model_path / "model.xml", model_path / "meta_data.json")
+    inferencer = OpenVINOInferencer(
+        config, model_path / "openvino" / "model.xml", model_path / "openvino" / "meta_data.json"
+    )
     openvino_dataloader = MockImageLoader(config.dataset.image_size, total_count=len(test_dataset))
     start_time = time.time()
     # Create test images on CPU. Since we don't care about performance metrics and just the throughput, use mock data.

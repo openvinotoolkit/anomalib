@@ -44,8 +44,8 @@ metrics:
     - F1Score
     - AUROC
   threshold:
-    image_default: 0
-    adaptive: true
+    method: adaptive #options: [adaptive, manual]
+    manual_image: null
 
 visualization:
   show_images: False # show images on the screen
@@ -63,7 +63,7 @@ logging:
   log_graph: false # Logs the model graph to respective logger.
 
 optimization:
-  export_mode: ""
+  export_mode: null
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:

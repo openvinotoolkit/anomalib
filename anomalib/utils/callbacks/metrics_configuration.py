@@ -8,7 +8,6 @@ import logging
 from typing import List, Optional
 
 import pytorch_lightning as pl
-import torch
 from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 
@@ -26,13 +25,9 @@ class MetricsConfigurationCallback(Callback):
 
     def __init__(
         self,
-        adaptive_threshold: bool,
         task: str = "segmentation",
-        default_image_threshold: Optional[float] = None,
-        default_pixel_threshold: Optional[float] = None,
-        image_metric_names: Optional[List[str]] = None,
-        pixel_metric_names: Optional[List[str]] = None,
-        normalization_method: str = "min_max",
+        image_metrics: Optional[List[str]] = None,
+        pixel_metrics: Optional[List[str]] = None,
     ):
         """Create image and pixel-level AnomalibMetricsCollection.
 
@@ -43,30 +38,12 @@ class MetricsConfigurationCallback(Callback):
 
         Args:
             task (str): Task type of the current run.
-            adaptive_threshold (bool): Flag indicating whether threshold should be adaptive.
-            default_image_threshold (Optional[float]): Default image threshold value.
-            default_pixel_threshold (Optional[float]): Default pixel threshold value.
-            image_metric_names (Optional[List[str]]): List of image-level metrics.
-            pixel_metric_names (Optional[List[str]]): List of pixel-level metrics.
-            normalization_method(Optional[str]): Normalization method. <None, min_max, cdf>
+            image_metrics (Optional[List[str]]): List of image-level metrics.
+            pixel_metrics (Optional[List[str]]): List of pixel-level metrics.
         """
-        # TODO: https://github.com/openvinotoolkit/anomalib/issues/384
         self.task = task
-        self.image_metric_names = image_metric_names
-        self.pixel_metric_names = pixel_metric_names
-
-        # TODO: https://github.com/openvinotoolkit/anomalib/issues/384
-        # TODO: This is a workaround. normalization-method is actually not used in metrics.
-        #   It's only accessed from `before_instantiate` method in `AnomalibCLI` to configure
-        #   its callback.
-        self.normalization_method = normalization_method
-
-        assert (
-            adaptive_threshold or default_image_threshold is not None and default_pixel_threshold is not None
-        ), "Default thresholds must be specified when adaptive threshold is disabled."
-        self.adaptive_threshold = adaptive_threshold
-        self.default_image_threshold = default_image_threshold
-        self.default_pixel_threshold = default_pixel_threshold
+        self.image_metric_names = image_metrics
+        self.pixel_metric_names = pixel_metrics
 
     def setup(
         self,
@@ -97,12 +74,6 @@ class MetricsConfigurationCallback(Callback):
             pixel_metric_names = self.pixel_metric_names
 
         if isinstance(pl_module, AnomalyModule):
-            pl_module.adaptive_threshold = self.adaptive_threshold
-            if not self.adaptive_threshold:
-                # pylint: disable=not-callable
-                pl_module.image_threshold.value = torch.tensor(self.default_image_threshold).cpu()
-                pl_module.pixel_threshold.value = torch.tensor(self.default_pixel_threshold).cpu()
-
             pl_module.image_metrics = metric_collection_from_names(image_metric_names, "image_")
             pl_module.pixel_metrics = metric_collection_from_names(pixel_metric_names, "pixel_")
 

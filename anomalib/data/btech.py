@@ -124,7 +124,6 @@ class BTechDataset(AnomalibDataset):
             pre_process: List of pre_processing object containing albumentation compose.
             split: 'train', 'val' or 'test'
             task: ``classification`` or ``segmentation``
-            seed: seed used for the random subset splitting
             create_validation_set: Create a validation subset in addition to the train and test subsets
 
         Examples:
@@ -159,7 +158,7 @@ class BTechDataset(AnomalibDataset):
         """
         super().__init__(task, pre_process)
 
-        self.root_category = Path(root) / Path(category)
+        self.root_category = Path(root) / category
         self.split = split
 
     def _setup(self):
@@ -182,6 +181,7 @@ class BTech(AnomalibDataModule):
         transform_config_train: Optional[Union[str, A.Compose]] = None,
         transform_config_eval: Optional[Union[str, A.Compose]] = None,
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
+        seed: Optional[int] = None,
     ) -> None:
         """Instantiate BTech Lightning Data Module.
 
@@ -195,8 +195,8 @@ class BTech(AnomalibDataModule):
             task: ``classification`` or ``segmentation``
             transform_config_train: Config for pre-processing during training.
             transform_config_val: Config for pre-processing during validation.
-            seed: seed used for the random subset splitting
             create_validation_set: Create a validation subset in addition to the train and test subsets
+            seed (Optional[int], optional): Seed used during random subset splitting.
 
         Examples:
             >>> from anomalib.data import BTech
@@ -224,7 +224,7 @@ class BTech(AnomalibDataModule):
             >>> data["image"].shape, data["mask"].shape
             (torch.Size([32, 3, 256, 256]), torch.Size([32, 256, 256]))
         """
-        super().__init__(train_batch_size, eval_batch_size, num_workers, val_split_mode)
+        super().__init__(train_batch_size, eval_batch_size, num_workers, val_split_mode, seed)
 
         self.root = Path(root)
         self.category = Path(category)

@@ -24,6 +24,7 @@ RUN apt-get update && \
         libpython3.8=3.8.10-0ubuntu1~20.04.5 \
         nodejs=10.19.0~dfsg-3ubuntu1 \
         npm=6.14.4+ds-1ubuntu2 \
+        pandoc=2.5-3build2 \
         ruby=1:2.7+1 \
         software-properties-common=0.99.9.8 && \
     apt-get clean && \
@@ -32,7 +33,7 @@ RUN apt-get update && \
 # Install latest git for github actions
 RUN add-apt-repository ppa:git-core/ppa &&\
     apt-get update && \
-    apt-get install --no-install-recommends -y git=1:2.38.0-0ppa1~ubuntu20.04.1 &&\
+    apt-get install --no-install-recommends -y git=1:2.38.1-0ppa1~ubuntu20.04.1 &&\
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

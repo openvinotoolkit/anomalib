@@ -16,7 +16,7 @@ from __future__ import annotations
 import math
 import warnings
 from enum import Enum
-from typing import TYPE_CHECKING, List, Sequence, Union
+from typing import TYPE_CHECKING, List, Optional, Sequence, Union
 
 import torch
 
@@ -35,6 +35,7 @@ class Split(str, Enum):
 class ValSplitMode(str, Enum):
     """Splitting mode used to obtain validation subset."""
 
+    NONE = "none"
     SAME_AS_TEST = "same_as_test"
     FROM_TEST = "from_test"
     SYNTHETIC = "synthetic"
@@ -56,7 +57,10 @@ def concatenate_datasets(datasets: Sequence[AnomalibDataset]) -> AnomalibDataset
 
 
 def random_split(
-    dataset: AnomalibDataset, split_ratio: Union[float, Sequence[float]], label_aware: bool = False
+    dataset: AnomalibDataset,
+    split_ratio: Union[float, Sequence[float]],
+    label_aware: bool = False,
+    seed: Optional[int] = None,
 ) -> List[AnomalibDataset]:
     """Perform a random split of a dataset.
 
@@ -67,13 +71,16 @@ def random_split(
             [1-split_ratio, split_ratio].
         label_aware (bool): When True, the relative occurrence of the different class labels of the source dataset will
             be maintained in each of the subsets.
+        seed (Optional[int], optional): Seed that can be passed if results need to be reproducible
     """
 
     if isinstance(split_ratio, float):
         split_ratio = [1 - split_ratio, split_ratio]
 
-    assert math.isclose(sum(split_ratio), 1) and sum(split_ratio) <= 1, "split ratios must sum to 1."
-    assert all(0 < ratio < 1 for ratio in split_ratio), "all split ratios must be between 0 and 1."
+    assert (
+        math.isclose(sum(split_ratio), 1) and sum(split_ratio) <= 1
+    ), f"split ratios must sum to 1, found {sum(split_ratio)}"
+    assert all(0 < ratio < 1 for ratio in split_ratio), f"all split ratios must be between 0 and 1, found {split_ratio}"
 
     # create list of source data
     if label_aware:
@@ -82,8 +89,9 @@ def random_split(
     else:
         per_label_datasets = [dataset]
 
+    # outer list: per-label unique, inner list: random subsets with the given ratio
+    subsets: List[List[AnomalibDataset]] = []
     # split each (label-aware) subset of source data
-    subsets = []
     for label_dataset in per_label_datasets:
         # get subset lengths
         subset_lengths = []
@@ -97,12 +105,15 @@ def random_split(
                 "Zero subset length encountered during splitting. This means one of your subsets might be"
                 " empty or devoid of either normal or anomalous images."
             )
+
         # perform random subsampling
-        indices = torch.randperm(len(label_dataset))
+        random_state = torch.Generator().manual_seed(seed) if seed else None
+        indices = torch.randperm(len(label_dataset), generator=random_state)
         subsets.append(
             [label_dataset.subsample(subset_indices) for subset_indices in torch.split(indices, subset_lengths)]
         )
 
-    # concatenate and return
+    # invert outer/inner lists
+    # outer list: subsets with the given ratio, inner list: per-label unique
     subsets = list(map(list, zip(*subsets)))
     return [concatenate_datasets(subset) for subset in subsets]

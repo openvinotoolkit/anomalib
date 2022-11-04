@@ -231,6 +231,7 @@ class Folder(AnomalibDataModule):
             during validation.
             Defaults to None.
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
+        seed (Optional[int], optional): Seed used during random subset splitting.
     """
 
     def __init__(
@@ -251,12 +252,14 @@ class Folder(AnomalibDataModule):
         transform_config_train: Optional[Union[str, A.Compose]] = None,
         transform_config_eval: Optional[Union[str, A.Compose]] = None,
         val_split_mode: ValSplitMode = ValSplitMode.FROM_TEST,
+        seed: Optional[int] = None,
     ):
         super().__init__(
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
             num_workers=num_workers,
             val_split_mode=val_split_mode,
+            seed=seed,
         )
 
         self.split_ratio = split_ratio
@@ -298,7 +301,7 @@ class Folder(AnomalibDataModule):
 
         # add some normal images to the test set
         if not self.test_data.has_normal:
-            self.train_data, normal_test_data = random_split(self.train_data, self.split_ratio)
+            self.train_data, normal_test_data = random_split(self.train_data, self.split_ratio, seed=self.seed)
             self.test_data += normal_test_data
 
         super()._setup()

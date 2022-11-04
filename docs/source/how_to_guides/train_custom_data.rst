@@ -87,7 +87,7 @@ Let's choose `Padim algorithm <https://arxiv.org/pdf/2011.08785.pdf>`_, copy the
     transform_config:
         train: null
         eval: null
-    validation_split_mode: from_test # determines how the validation set is created, options [same_as_test, from_test]
+    val_split_mode: from_test # determines how the validation set is created, options [same_as_test, from_test]
     tiling:
         apply: false
         tile_size: null
