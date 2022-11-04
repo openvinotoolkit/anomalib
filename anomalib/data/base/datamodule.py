@@ -65,7 +65,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
     def _setup(self, _stage: Optional[str] = None) -> None:
         """Set up the datasets and perform dynamic subset splitting.
 
-        This method yay be overridden in subclass for custom splitting behaviour.
+        This method may be overridden in subclass for custom splitting behaviour.
 
         Note: The stage argument is not used here. This is because, for a given instance of an AnomalibDataModule
         subclass, all three subsets are created at the first call of setup(). This is to accommodate the subset
