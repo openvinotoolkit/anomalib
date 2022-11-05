@@ -35,12 +35,12 @@ def get_metrics(config: Union[ListConfig, DictConfig]) -> Tuple[AnomalibMetricCo
     """
     image_metric_names = config.metrics.image if "image" in config.metrics.keys() else []
     pixel_metric_names = config.metrics.pixel if "pixel" in config.metrics.keys() else []
-    image_metrics = metric_collection_from_names(image_metric_names, "image_")
-    pixel_metrics = metric_collection_from_names(pixel_metric_names, "pixel_")
+    image_metrics = _metric_collection_from_names(image_metric_names, "image_")
+    pixel_metrics = _metric_collection_from_names(pixel_metric_names, "pixel_")
     return image_metrics, pixel_metrics
 
 
-def metric_collection_from_names(metric_names: List[str], prefix: Optional[str]) -> AnomalibMetricCollection:
+def _metric_collection_from_names(metric_names: List[str], prefix: Optional[str]) -> AnomalibMetricCollection:
     """Create a metric collection from a list of metric names.
 
     The function will first try to retrieve the metric from the metrics defined in Anomalib metrics module,
@@ -90,7 +90,9 @@ def _get_class_from_path(class_path: str) -> Any:
     return cls
 
 
-def metric_collection_from_dicts(metrics: Dict[str, Dict[str, Any]], prefix: Optional[str]) -> AnomalibMetricCollection:
+def _metric_collection_from_dicts(
+    metrics: Dict[str, Dict[str, Any]], prefix: Optional[str]
+) -> AnomalibMetricCollection:
     """Create a metric collection from a dict of "metric name" -> "metric kwargs".
 
     The function will first try to retrieve the metric class from `class_path` if this key is present.
@@ -137,10 +139,10 @@ def metric_collection_from_names_or_dicts(
 
     if isinstance(metrics, (ListConfig, list)):
         assert all(isinstance(metric, str) for metric in metrics), f"All metrics must be strings, found {metrics}"
-        return metric_collection_from_names(metrics, prefix)
+        return _metric_collection_from_names(metrics, prefix)
 
     if isinstance(metrics, (DictConfig, dict)):
         _validate_metrics_dict(metrics)
-        return metric_collection_from_dicts(metrics, prefix)
+        return _metric_collection_from_dicts(metrics, prefix)
 
     raise ValueError(f"metrics must be a list or a dict, found {type(metrics)}")
