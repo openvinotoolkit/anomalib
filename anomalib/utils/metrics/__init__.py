@@ -5,7 +5,7 @@
 
 import importlib
 import warnings
-from typing import List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import torchmetrics
 from omegaconf import DictConfig, ListConfig
@@ -68,3 +68,79 @@ def metric_collection_from_names(metric_names: List[str], prefix: Optional[str])
         else:
             warnings.warn(f"No metric with name {metric_name} found in Anomalib metrics or TorchMetrics.")
     return metrics
+
+
+def _validate_metrics_dict(metrics: Dict[str, Dict[str, Any]]) -> None:
+    assert all(
+        isinstance(metric, str) for metric in metrics.keys()
+    ), f"All keys (metric names) must be strings, found {sorted(metrics.keys())}"
+    assert all(
+        isinstance(metric, (dict, DictConfig)) for metric in metrics.values()
+    ), f"All values must be dictionaries, found {list(metrics.values())}"
+    assert all(
+        "class_path" in metric and "init_args" for metric in metrics.values()
+    ), f"All dictionary must have a 'class_path' and 'kwargs' keys, found {list(metrics.values())}"
+
+
+def _get_class_from_path(class_path: str) -> Any:
+    module_name, class_name = class_path.rsplit(".", 1)
+    module = importlib.import_module(module_name)
+    assert hasattr(module, class_name), f"Class {class_name} not found in module {module_name}"
+    cls = getattr(module, class_name)
+    return cls
+
+
+def metric_collection_from_dicts(metrics: Dict[str, Dict[str, Any]], prefix: Optional[str]) -> AnomalibMetricCollection:
+    """Create a metric collection from a dict of "metric name" -> "metric kwargs".
+
+    The function will first try to retrieve the metric class from `class_path` if this key is present.
+    Otherwise the metric is searched first in `anomalib.utils.metrics`, then in `torchmetrics`.
+
+    Args:
+        metrics (Dict[str, Dict[str, Any]]): keys are metric names and values are 'kwargs' and 'class_path'.
+        prefix (Optional[str]): prefix to assign to the metrics in the collection.
+
+    Returns:
+        AnomalibMetricCollection: Collection of metrics.
+    """
+    _validate_metrics_dict(metrics)
+    metrics_collection = {}
+    for name, dict_ in metrics.items():
+        class_path = dict_["class_path"]
+        kwargs = dict_["init_args"]
+        cls = _get_class_from_path(class_path)
+        metrics_collection[name] = cls(**kwargs)
+    return AnomalibMetricCollection(metrics_collection, prefix=prefix)
+
+
+def metric_collection_from_names_or_dicts(
+    metrics: Union[List[str], Dict[str, Dict[str, Any]]], prefix: Optional[str]
+) -> AnomalibMetricCollection:
+    """Create a metric collection from a list of metric names or dictionaries.
+
+    - if names: see `metric_collection_from_names`
+    - if dicts: see `metric_collection_from_dicts`
+
+    The function will first try to retrieve the metric from the metrics defined in Anomalib metrics module,
+    then in TorchMetrics package.
+
+    Args:
+        metrics (Union[List[str], Dict[str, Dict[str, Any]]]):
+            - if List[str]: metric names to be included in the collection;
+            - if Dict[str, Dict[str, Any]]: keys are metric names and values are 'kwargs' and 'class_path'.
+        prefix (Optional[str]): prefix to assign to the metrics in the collection.
+
+    Returns:
+        AnomalibMetricCollection: Collection of metrics.
+    """
+    # fallback is using the names
+
+    if isinstance(metrics, (ListConfig, list)):
+        assert all(isinstance(metric, str) for metric in metrics), f"All metrics must be strings, found {metrics}"
+        return metric_collection_from_names(metrics, prefix)
+
+    if isinstance(metrics, (DictConfig, dict)):
+        _validate_metrics_dict(metrics)
+        return metric_collection_from_dicts(metrics, prefix)
+
+    raise ValueError(f"metrics must be a list or a dict, found {type(metrics)}")
