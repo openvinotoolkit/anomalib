@@ -5,44 +5,14 @@
 
 import time
 from pathlib import Path
-from typing import Iterable, List, Union
+from typing import Union
 
-import numpy as np
 import torch
 from omegaconf import DictConfig, ListConfig
 from torch.utils.data import DataLoader
 
 from anomalib.deploy import OpenVINOInferencer, TorchInferencer
 from anomalib.models.components import AnomalyModule
-
-
-class MockImageLoader:
-    """Create mock images for inference on CPU based on the specifics of the original torch test dataset.
-
-    Uses yield so as to avoid storing everything in the memory.
-
-    Args:
-        image_size (List[int]): Size of input image
-        total_count (int): Total images in the test dataset
-        device (str, optional): Device to use for inference. Defaults to "cpu".
-    """
-
-    def __init__(self, image_size: List[int], total_count: int):
-        self.total_count = total_count
-        self.image_size = image_size
-
-    def __len__(self):
-        """Get total count of images."""
-        return self.total_count
-
-    def __call__(self) -> Iterable[np.ndarray]:
-        """Yield batch of generated images.
-
-        Args:
-            idx (int): Unused
-        """
-        for _ in range(self.total_count):
-            yield np.random.randn(*self.image_size, 3).astype(np.uint8)
 
 
 def get_torch_throughput(
