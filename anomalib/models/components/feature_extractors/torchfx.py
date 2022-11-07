@@ -1,4 +1,4 @@
-"""Feature Extractor based on TrochFX."""
+"""Feature Extractor based on TorchFX."""
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -19,9 +19,9 @@ def get_torchfx_feature_extractor(
     Args:
         backbone (nn.Module): The backbone to which the feature extraction hooks are attached.
         return_nodes (Iterable[str]): List of layer names of the backbone to which the hooks are attached.
-            You can find the names of these nodes by using `get_graph_node_names` function.
+            You can find the names of these nodes by using ``get_graph_node_names`` function.
         weights (Optional[WeightsEnum]): Weights enum to use for the model.
-            These enums are defined in `torchvision.models.<model>`.
+            These enums are defined in ``torchvision.models.<model>``.
 
     Example:
         >>> import torch
@@ -33,7 +33,7 @@ def get_torchfx_feature_extractor(
         >>> input = torch.rand((32, 3, 256, 256))
         >>> features = feature_extractor(input)
         >>> [layer for layer in features.keys()]
-            ["6.8"]
+            ["features.6.8"]
         >>> [feature.shape for feature in features.values()]
             [torch.Size([32, 304, 8, 8])]
 
