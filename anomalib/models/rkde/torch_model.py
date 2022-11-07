@@ -58,9 +58,9 @@ class RkdeModel(nn.Module):
         self.feature_extractor = FeatureExtractor().eval()
 
         # self.feature_extractor = FeatureExtractor(
-            # region_extractor_stage=region_extractor_stage,
-            # min_box_size=min_box_size,
-            # iou_threshold=iou_threshold,
+        # region_extractor_stage=region_extractor_stage,
+        # min_box_size=min_box_size,
+        # iou_threshold=iou_threshold,
         # )
 
         self.pca_model = PCA(n_components=self.n_pca_components)
