@@ -30,9 +30,7 @@ class DummyDataModule(pl.LightningDataModule):
 
 
 class DummyModel(nn.Module):
-    def __init__(self):
-        # pytlint: disable=useless-parent-delegation
-        super().__init__()
+    pass
 
 
 class DummyLogger(AnomalibTensorBoardLogger):
