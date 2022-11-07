@@ -1,9 +1,9 @@
 import shutil
 import tempfile
+from pathlib import Path
 
 import pytorch_lightning as pl
 import torch
-from omegaconf import OmegaConf
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
 
@@ -31,6 +31,7 @@ class DummyDataModule(pl.LightningDataModule):
 
 class DummyModel(nn.Module):
     def __init__(self):
+        # pytlint: disable=useless-parent-delegation
         super().__init__()
 
 
