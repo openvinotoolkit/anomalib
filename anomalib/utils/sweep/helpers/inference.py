@@ -66,11 +66,9 @@ def get_torch_throughput(
         device = "cuda"
 
     inferencer = TorchInferencer(config, model.to(device), device=device)
-    torch_dataloader = MockImageLoader(config.dataset.image_size, len(test_dataset))
     start_time = time.time()
-    # Since we don't care about performance metrics and just the throughput, use mock data.
-    for image in torch_dataloader():
-        inferencer.predict(image)
+    for image_path in test_dataset.samples.image_path:
+        inferencer.predict(image_path)
 
     # get throughput
     inference_time = time.time() - start_time
@@ -94,11 +92,9 @@ def get_openvino_throughput(config: Union[DictConfig, ListConfig], model_path: P
     inferencer = OpenVINOInferencer(
         config, model_path / "openvino" / "model.xml", model_path / "openvino" / "meta_data.json"
     )
-    openvino_dataloader = MockImageLoader(config.dataset.image_size, total_count=len(test_dataset))
     start_time = time.time()
-    # Create test images on CPU. Since we don't care about performance metrics and just the throughput, use mock data.
-    for image in openvino_dataloader():
-        inferencer.predict(image)
+    for image_path in test_dataset.samples.image_path:
+        inferencer.predict(image_path)
 
     # get throughput
     inference_time = time.time() - start_time

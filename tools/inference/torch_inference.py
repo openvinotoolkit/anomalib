@@ -11,6 +11,8 @@ import warnings
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
+import torch
+
 from anomalib.data.utils import (
     generate_output_image_filename,
     get_image_filenames,
@@ -76,6 +78,8 @@ def infer() -> None:
     # This config file is also used for training and contains all the relevant
     # information regarding the data, model, train and inference details.
     args = get_args()
+
+    torch.set_grad_enabled(False)
 
     # Create the inferencer and visualizer.
     inferencer = TorchInferencer(config=args.config, model_source=args.weights, device=args.device)
