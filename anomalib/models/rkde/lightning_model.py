@@ -77,6 +77,7 @@ class Rkde(AnomalyModule):
           Deep CNN features.
         """
         _rois, features = self.model.get_rois_and_features(batch["image"])
+        # TODO: Check if squeeze() is really needed.
         self.embeddings.append(features.squeeze())
 
     def on_validation_start(self) -> None:

@@ -196,6 +196,8 @@ class RkdeModel(nn.Module):
         rois = rois[keep]
         probabilities = probabilities[keep]
 
+        # TODO: Here we need to sort out how to handle box detections.
+
         return probabilities
 
     def forward(self, input: Tensor) -> Tensor:
