@@ -82,7 +82,7 @@ def _validate_metrics_dict(metrics: Dict[str, Dict[str, Any]]) -> None:
 
 
 def _get_class_from_path(class_path: str) -> Any:
-    """Get the module and class from a string assuming the forma `package.subpackage.module.ClassName`."""
+    """Get a class from a module assuming the string format is `package.subpackage.module.ClassName`."""
     module_name, class_name = class_path.rsplit(".", 1)
     module = importlib.import_module(module_name)
     assert hasattr(module, class_name), f"Class {class_name} not found in module {module_name}"
@@ -92,6 +92,35 @@ def _get_class_from_path(class_path: str) -> Any:
 
 def metric_collection_from_dicts(metrics: Dict[str, Dict[str, Any]], prefix: Optional[str]) -> AnomalibMetricCollection:
     """Create a metric collection from a dict of "metric name" -> "metric specifications".
+
+    Example:
+
+    metrics = {
+        "PixelWiseF1Score": {
+            "class_path": "torchmetrics.F1Score",
+            "init_args": {},
+        },
+        "PixelWiseAUROC": {
+            "class_path": "anomalib.utils.metrics.AUROC",
+            "init_args": {
+                "compute_on_cpu": True,
+            },
+        },
+    }
+
+    In the config file, the same specifications (for pixel-wise metrics) look like:
+
+    ```yaml
+    metrics:
+        pixel:
+            PixelWiseF1Score:
+                class_path: torchmetrics.F1Score
+                init_args: {}
+            PixelWiseAUROC:
+                class_path: anomalib.utils.metrics.AUROC
+                init_args:
+                    compute_on_cpu: true
+    ```
 
     Args:
         metrics (Dict[str, Dict[str, Any]]): keys are metric names, values are dictionaries.
