@@ -11,6 +11,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from enum import Enum
 from math import exp
 from typing import Callable, Dict, List, Optional, Tuple
 
@@ -23,6 +24,13 @@ from torch import Tensor, nn
 from torchvision.models.efficientnet import EfficientNet_B5_Weights
 
 from anomalib.models.components.feature_extractors import get_torchfx_feature_extractor
+
+
+class AnomalyMapMode(str, Enum):
+    """Generate anomaly map from all the scales or the max."""
+
+    ALL = "all"
+    MAX = "max"
 
 
 class CrossConvolutions(nn.Module):
@@ -430,24 +438,37 @@ class CsFlowModel(nn.Module):
             output = anomaly_maps, anomaly_scores
         return output
 
-    def _get_anomaly_maps(self, z_dists: Tuple[Tensor]) -> Tensor:
-        """Get anomaly maps by taking mean of the z-distributions across channels for the largest scale.
+    def _get_anomaly_maps(self, z_dists: Tuple[Tensor], mode: AnomalyMapMode = AnomalyMapMode.ALL) -> Tensor:
+        """Get anomaly maps by taking mean of the z-distributions across channels.
+
+        By default it computes anomaly maps for all the scales as it gave better performance on initial tests.
+        Use ``AnomalyMapMode.MAX`` for the largest scale as mentioned in the paper.
 
         Args:
             z_dists (Tensor): z-distributions for the three scales.
+            mode (AnomalyMapMode): Anomaly map mode.
 
         Returns:
             Tensor: Anomaly maps.
         """
-        # TODO compare anomaly maps with only the largest scale
-        anomaly_map = torch.ones(z_dists[0].shape[0], 1, *self.input_dims[1:]).to(z_dists[0].device)
-        for z_dist in z_dists:
-            anomaly_map *= F.interpolate(
-                (z_dist**2).mean(dim=1, keepdim=True),
+        anomaly_map: Tensor
+        if mode == AnomalyMapMode.ALL:
+            anomaly_map = torch.ones(z_dists[0].shape[0], 1, *self.input_dims[1:]).to(z_dists[0].device)
+            for z_dist in z_dists:
+                anomaly_map *= F.interpolate(
+                    (z_dist**2).mean(dim=1, keepdim=True),
+                    size=self.input_dims[1:],
+                    mode="bilinear",
+                    align_corners=False,
+                )
+        else:
+            anomaly_map = F.interpolate(
+                (z_dists[0] ** 2).mean(dim=1, keepdim=True),
                 size=self.input_dims[1:],
                 mode="bilinear",
                 align_corners=False,
             )
+
         return anomaly_map
 
     def _get_anomaly_scores(self, z_dists: Tensor) -> Tensor:
