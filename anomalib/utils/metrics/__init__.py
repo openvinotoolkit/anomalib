@@ -5,7 +5,7 @@
 
 import importlib
 import warnings
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 import torchmetrics
 from omegaconf import DictConfig, ListConfig
@@ -21,23 +21,6 @@ from .optimal_f1 import OptimalF1
 from .pro import PRO
 
 __all__ = ["AUROC", "AUPR", "AUPRO", "OptimalF1", "AnomalyScoreThreshold", "AnomalyScoreDistribution", "MinMax", "PRO"]
-
-
-def get_metrics(config: Union[ListConfig, DictConfig]) -> Tuple[AnomalibMetricCollection, AnomalibMetricCollection]:
-    """Create metric collections based on the config.
-
-    Args:
-        config (Union[DictConfig, ListConfig]): Config.yaml loaded using OmegaConf
-
-    Returns:
-        AnomalibMetricCollection: Image-level metric collection
-        AnomalibMetricCollection: Pixel-level metric collection
-    """
-    image_metric_names = config.metrics.image if "image" in config.metrics.keys() else []
-    pixel_metric_names = config.metrics.pixel if "pixel" in config.metrics.keys() else []
-    image_metrics = metric_collection_from_names(image_metric_names, "image_")
-    pixel_metrics = metric_collection_from_names(pixel_metric_names, "pixel_")
-    return image_metrics, pixel_metrics
 
 
 def metric_collection_from_names(metric_names: List[str], prefix: Optional[str]) -> AnomalibMetricCollection:
