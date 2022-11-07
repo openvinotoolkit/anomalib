@@ -26,6 +26,7 @@ from anomalib.utils.callbacks import (
     MetricsConfigurationCallback,
     MinMaxNormalizationCallback,
     ModelCheckpoint,
+    PostProcessingConfigurationCallback,
     TilerConfigurationCallback,
     TimerCallback,
     add_visualizer_callback,
@@ -90,7 +91,6 @@ class AnomalibCLI(LightningCLI):
         Args:
             parser (LightningArgumentParser): Lightning Argument Parser.
         """
-        # TODO: https://github.com/openvinotoolkit/anomalib/issues/19
         # TODO: https://github.com/openvinotoolkit/anomalib/issues/20
         parser.add_argument(
             "--export_mode", type=str, default="", help="Select export mode to ONNX or OpenVINO IR format."
@@ -105,18 +105,24 @@ class AnomalibCLI(LightningCLI):
         parser.add_lightning_class_args(TilerConfigurationCallback, "tiling")  # type: ignore
         parser.set_defaults({"tiling.enable": False})
 
+        parser.add_lightning_class_args(PostProcessingConfigurationCallback, "post_processing")  # type: ignore
+        parser.set_defaults(
+            {
+                "post_processing.normalization_method": "min_max",
+                "post_processing.threshold_method": "adaptive",
+                "post_processing.manual_image_threshold": None,
+                "post_processing.manual_pixel_threshold": None,
+            }
+        )
+
         # TODO: Assign these default values within the MetricsConfigurationCallback
         #   - https://github.com/openvinotoolkit/anomalib/issues/384
         parser.add_lightning_class_args(MetricsConfigurationCallback, "metrics")  # type: ignore
         parser.set_defaults(
             {
-                "metrics.adaptive_threshold": True,
                 "metrics.task": "segmentation",
-                "metrics.default_image_threshold": None,
-                "metrics.default_pixel_threshold": None,
-                "metrics.image_metric_names": ["F1Score", "AUROC"],
-                "metrics.pixel_metric_names": ["F1Score", "AUROC"],
-                "metrics.normalization_method": "min_max",
+                "metrics.image_metrics": ["F1Score", "AUROC"],
+                "metrics.pixel_metrics": ["F1Score", "AUROC"],
             }
         )
 
@@ -203,7 +209,7 @@ class AnomalibCLI(LightningCLI):
         #  TODO: This could be set in PostProcessingConfiguration callback
         #   - https://github.com/openvinotoolkit/anomalib/issues/384
         # Normalization.
-        normalization = config.metrics.normalization_method
+        normalization = config.post_processing.normalization_method
         if normalization:
             if normalization == "min_max":
                 callbacks.append(MinMaxNormalizationCallback())

@@ -12,16 +12,12 @@ jobs:
       max-parallel: 1
     if: github.ref == 'refs/heads/main'
     steps:
-      - name: Print GPU status
-        run: nvidia-smi
       - name: CHECKOUT REPOSITORY
         uses: actions/checkout@v2
       - name: Install Tox
         run: pip install tox
       - name: Coverage
-        run: |
-          export ANOMALIB_DATASET_PATH=/media/data1/datasets/
-          tox -e nightly
+        run: tox -e nightly
       - name: Upload coverage result
         uses: actions/upload-artifact@v2
         with:

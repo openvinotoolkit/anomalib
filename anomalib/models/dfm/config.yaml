@@ -18,7 +18,7 @@ model:
   backbone: resnet18
   pre_trained: true
   layer: layer3
-  pooling_kernel_size: 4
+  pooling_kernel_size: 2
   pca_level: 0.97
   score_type: fre # nll: for Gaussian modeling, fre: pca feature reconstruction error
   project_path: ./results
@@ -32,8 +32,8 @@ metrics:
     - F1Score
     - AUROC
   threshold:
-    image_default: 0
-    adaptive: true
+    method: adaptive #options: [adaptive, manual]
+    manual_image: null
 
 visualization:
   show_images: False # show images on the screen

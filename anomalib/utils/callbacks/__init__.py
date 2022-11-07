@@ -14,24 +14,29 @@ from jsonargparse.namespace import Namespace
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 
+from anomalib.deploy import ExportMode
+
 from .cdf_normalization import CdfNormalizationCallback
 from .graph import GraphLogger
 from .metrics_configuration import MetricsConfigurationCallback
 from .min_max_normalization import MinMaxNormalizationCallback
 from .model_loader import LoadModelCallback
+from .post_processing_configuration import PostProcessingConfigurationCallback
 from .tiler_configuration import TilerConfigurationCallback
 from .timer import TimerCallback
 from .visualizer import ImageVisualizerCallback, MetricVisualizerCallback
 
 __all__ = [
     "CdfNormalizationCallback",
+    "GraphLogger",
+    "ImageVisualizerCallback",
     "LoadModelCallback",
     "MetricsConfigurationCallback",
+    "MetricVisualizerCallback",
     "MinMaxNormalizationCallback",
+    "PostProcessingConfigurationCallback",
     "TilerConfigurationCallback",
     "TimerCallback",
-    "ImageVisualizerCallback",
-    "MetricVisualizerCallback",
 ]
 
 
@@ -64,20 +69,25 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
 
     callbacks.extend([checkpoint, TimerCallback()])
 
+    # Add post-processing configurations to AnomalyModule.
+    image_threshold = (
+        config.metrics.threshold.manual_image if "manual_image" in config.metrics.threshold.keys() else None
+    )
+    pixel_threshold = (
+        config.metrics.threshold.manual_pixel if "manual_pixel" in config.metrics.threshold.keys() else None
+    )
+    post_processing_callback = PostProcessingConfigurationCallback(
+        threshold_method=config.metrics.threshold.method,
+        manual_image_threshold=image_threshold,
+        manual_pixel_threshold=pixel_threshold,
+    )
+    callbacks.append(post_processing_callback)
+
     # Add metric configuration to the model via MetricsConfigurationCallback
     image_metric_names = config.metrics.image if "image" in config.metrics.keys() else None
     pixel_metric_names = config.metrics.pixel if "pixel" in config.metrics.keys() else None
-    image_threshold = (
-        config.metrics.threshold.image_default if "image_default" in config.metrics.threshold.keys() else None
-    )
-    pixel_threshold = (
-        config.metrics.threshold.pixel_default if "pixel_default" in config.metrics.threshold.keys() else None
-    )
     metrics_callback = MetricsConfigurationCallback(
-        config.metrics.threshold.adaptive,
         config.dataset.task,
-        image_threshold,
-        pixel_threshold,
         image_metric_names,
         pixel_metric_names,
     )
@@ -126,7 +136,7 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
                     input_size=config.model.input_size,
                     dirpath=config.project.path,
                     filename="model",
-                    export_mode=config.optimization.export_mode,
+                    export_mode=ExportMode(config.optimization.export_mode),
                 )
             )
         else:
@@ -172,7 +182,8 @@ def add_visualizer_callback(callbacks: List[Callback], config: Union[DictConfig,
         config.visualization.inputs_are_normalized = not config.model.normalization_method == "none"
     else:
         config.visualization.task = config.data.init_args.task
-        config.visualization.inputs_are_normalized = not config.metrics.normalization_method == "none"
+        config.visualization.inputs_are_normalized = not config.post_processing.normalization_method == "none"
+
     if config.visualization.log_images or config.visualization.save_images or config.visualization.show_images:
         image_save_path = (
             config.visualization.image_save_path

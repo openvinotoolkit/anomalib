@@ -82,3 +82,10 @@ repos:
     rev: 2.1.6
     hooks:
       - id: markdownlint
+
+  - repo: https://github.com/AleksaC/hadolint-py
+    rev: v2.10.0
+    hooks:
+      - id: hadolint
+        name: Lint Dockerfiles
+        description: Runs hadolint to lint Dockerfiles
