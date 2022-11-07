@@ -73,7 +73,7 @@ class TestInferencers:
             model.eval()
 
             # Test torch inferencer
-            torch_inferencer = TorchInferencer(model_config, model)
+            torch_inferencer = TorchInferencer(model_config, model, device="cpu")
             torch_dataloader = MockImageLoader(model_config.dataset.image_size, total_count=1)
             with torch.no_grad():
                 for image in torch_dataloader():
