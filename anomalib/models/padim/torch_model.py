@@ -11,6 +11,7 @@ import torch.nn.functional as F
 from torch import Tensor, nn
 
 from anomalib.models.components import FeatureExtractor, MultiVariateGaussian
+from anomalib.models.components.feature_extractors import dryrun_find_featuremap_dims
 from anomalib.models.padim.anomaly_map import AnomalyMapGenerator
 from anomalib.pre_processing import Tiler
 
@@ -32,16 +33,14 @@ def _deduce_dims(
     Returns:
         Tuple[int, int]: Dimensions of the extracted features: (n_dims_original, n_patches)
     """
+    dimensions_mapping = dryrun_find_featuremap_dims(feature_extractor, input_size, layers)
 
-    dryrun_input = torch.empty(1, 3, *input_size)
-    dryrun_features = feature_extractor(dryrun_input)
-
-    # the first layer in `layers` is the largest spatial size
-    dryrun_emb_first_layer = dryrun_features[layers[0]]
-    n_patches = torch.tensor(dryrun_emb_first_layer.shape[-2:]).prod().int().item()
+    # the first layer in `layers` has the largest resolution
+    first_layer_resolution = dimensions_mapping[layers[0]]["resolution"]
+    n_patches = torch.tensor(first_layer_resolution).prod().int().item()
 
     # the original embedding size is the sum of the channels of all layers
-    n_features_original = sum(dryrun_features[layer].shape[1] for layer in layers)
+    n_features_original = sum(dimensions_mapping[layer]["num_features"] for layer in layers)  # type: ignore
 
     return n_features_original, n_patches
 
