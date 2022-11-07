@@ -10,8 +10,8 @@ from torch.utils.data import DataLoader, Dataset
 
 from anomalib.models.components import AnomalyModule
 from anomalib.utils.callbacks import ImageVisualizerCallback
-from anomalib.utils.metrics import get_metrics
 from tests.helpers.dataset import get_dataset_path
+from tests.helpers.metrics import get_metrics
 
 
 class DummyDataset(Dataset):
