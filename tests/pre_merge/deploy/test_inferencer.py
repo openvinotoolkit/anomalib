@@ -77,7 +77,8 @@ class TestInferencers:
             torch_dataloader = MockImageLoader(model_config.dataset.image_size, total_count=1)
             with torch.no_grad():
                 for image in torch_dataloader():
-                    torch_inferencer.predict(image)
+                    prediction = torch_inferencer.predict(image)
+                    assert 0.0 <= prediction.pred_score <= 1.0  # confirm if predicted scores are normalized
 
     @pytest.mark.parametrize(
         "model_name",
@@ -116,4 +117,5 @@ class TestInferencers:
             )
             openvino_dataloader = MockImageLoader(model_config.dataset.image_size, total_count=1)
             for image in openvino_dataloader():
-                openvino_inferencer.predict(image)
+                prediction = openvino_inferencer.predict(image)
+                assert 0.0 <= prediction.pred_score <= 1.0  # confirm if predicted scores are normalized
