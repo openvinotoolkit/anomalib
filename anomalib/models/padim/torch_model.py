@@ -11,13 +11,38 @@ import torch.nn.functional as F
 from torch import Tensor, nn
 
 from anomalib.models.components import FeatureExtractor, MultiVariateGaussian
+from anomalib.models.components.feature_extractors import dryrun_find_featuremap_dims
 from anomalib.models.padim.anomaly_map import AnomalyMapGenerator
 from anomalib.pre_processing import Tiler
 
-DIMS = {
-    "resnet18": {"orig_dims": 448, "reduced_dims": 100, "emb_scale": 4},
-    "wide_resnet50_2": {"orig_dims": 1792, "reduced_dims": 550, "emb_scale": 4},
+# defaults from the paper
+_N_FEATURES_DEFAULTS = {
+    "resnet18": 100,
+    "wide_resnet50_2": 550,
 }
+
+
+def _deduce_dims(
+    feature_extractor: FeatureExtractor, input_size: Tuple[int, int], layers: List[str]
+) -> Tuple[int, int]:
+    """Run a dry run to deduce the dimensions of the extracted features.
+
+    Important: `layers` is assumed to be ordered and the first (layers[0])
+                is assumed to be the layer with largest resolution.
+
+    Returns:
+        Tuple[int, int]: Dimensions of the extracted features: (n_dims_original, n_patches)
+    """
+    dimensions_mapping = dryrun_find_featuremap_dims(feature_extractor, input_size, layers)
+
+    # the first layer in `layers` has the largest resolution
+    first_layer_resolution = dimensions_mapping[layers[0]]["resolution"]
+    n_patches = torch.tensor(first_layer_resolution).prod().int().item()
+
+    # the original embedding size is the sum of the channels of all layers
+    n_features_original = sum(dimensions_mapping[layer]["num_features"] for layer in layers)  # type: ignore
+
+    return n_features_original, n_patches
 
 
 class PadimModel(nn.Module):
@@ -28,6 +53,8 @@ class PadimModel(nn.Module):
         layers (List[str]): Layers used for feature extraction
         backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+        n_features (int, optional): Number of features to retain in the dimension reduction step.
+                                Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
     """
 
     def __init__(
@@ -36,6 +63,7 @@ class PadimModel(nn.Module):
         layers: List[str],
         backbone: str = "resnet18",
         pre_trained: bool = True,
+        n_features: Optional[int] = None,
     ):
         super().__init__()
         self.tiler: Optional[Tiler] = None
@@ -43,21 +71,33 @@ class PadimModel(nn.Module):
         self.backbone = backbone
         self.layers = layers
         self.feature_extractor = FeatureExtractor(backbone=self.backbone, layers=layers, pre_trained=pre_trained)
-        self.dims = DIMS[backbone]
+        self.n_features_original, self.n_patches = _deduce_dims(self.feature_extractor, input_size, self.layers)
+
+        n_features = n_features or _N_FEATURES_DEFAULTS.get(self.backbone)
+
+        if n_features is None:
+            raise ValueError(
+                f"n_features must be specified for backbone {self.backbone}. "
+                f"Default values are available for: {sorted(_N_FEATURES_DEFAULTS.keys())}"
+            )
+
+        assert (
+            0 < n_features <= self.n_features_original
+        ), f"for backbone {self.backbone}, 0 < n_features <= {self.n_features_original}, found {n_features}"
+
+        self.n_features = n_features
+
         # pylint: disable=not-callable
         # Since idx is randomly selected, save it with model to get same results
         self.register_buffer(
             "idx",
-            torch.tensor(sample(range(0, DIMS[backbone]["orig_dims"]), DIMS[backbone]["reduced_dims"])),
+            torch.tensor(sample(range(0, self.n_features_original), self.n_features)),
         )
         self.idx: Tensor
         self.loss = None
         self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
 
-        n_features = DIMS[backbone]["reduced_dims"]
-        patches_dims = torch.tensor(input_size) / DIMS[backbone]["emb_scale"]
-        n_patches = patches_dims.ceil().prod().int().item()
-        self.gaussian = MultiVariateGaussian(n_features, n_patches)
+        self.gaussian = MultiVariateGaussian(self.n_features, self.n_patches)
 
     def forward(self, input_tensor: Tensor) -> Tensor:
         """Forward-pass image-batch (N, C, H, W) into model to extract features.

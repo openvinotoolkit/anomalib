@@ -1,7 +1,12 @@
+from typing import Tuple
+
 import pytest
 import torch
 
-from anomalib.models.components.feature_extractors import FeatureExtractor
+from anomalib.models.components.feature_extractors import (
+    FeatureExtractor,
+    dryrun_find_featuremap_dims,
+)
 
 
 class TestFeatureExtractor:
@@ -33,3 +38,26 @@ class TestFeatureExtractor:
             assert model.idx == [1, 2, 3]
         else:
             pass
+
+
+@pytest.mark.parametrize(
+    "backbone",
+    ["resnet18", "wide_resnet50_2"],
+)
+@pytest.mark.parametrize(
+    "input_size",
+    [(256, 256), (224, 224), (128, 128)],
+)
+def test_dryrun_find_featuremap_dims(backbone: str, input_size: Tuple[int, int]):
+    """Use the function and check the expected output format."""
+    layers = ["layer1", "layer2", "layer3"]
+    model = FeatureExtractor(backbone=backbone, layers=layers, pre_trained=True)
+    mapping = dryrun_find_featuremap_dims(model, input_size, layers)
+    for lay in layers:
+        layer_mapping = mapping[lay]
+        num_features = layer_mapping["num_features"]
+        assert isinstance(num_features, int), f"{type(num_features)}"
+        resolution = layer_mapping["resolution"]
+        assert isinstance(resolution, tuple), f"{type(resolution)}"
+        assert len(resolution) == len(input_size), f"{len(resolution)}, {len(input_size)}"
+        assert all(isinstance(x, int) for x in resolution), f"{[type(x) for x in resolution]}"
