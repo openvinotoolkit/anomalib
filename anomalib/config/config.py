@@ -6,11 +6,18 @@
 # TODO: This would require a new design.
 # TODO: https://jira.devtools.intel.com/browse/IAAALD-149
 
+import time
+from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Union
 from warnings import warn
 
 from omegaconf import DictConfig, ListConfig, OmegaConf
+
+
+def _get_now_str(timestamp: float) -> str:
+    """Standard format for datetimes is defined here."""
+    return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d_%H-%M-%S")
 
 
 def update_input_size_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfig, ListConfig]:
@@ -132,6 +139,9 @@ def get_configurable_parameters(
 
     config = OmegaConf.load(config_path)
 
+    # keep track of the original config file because it will be modified
+    config_original: DictConfig = config.copy()
+
     # Dataset Configs
     if "format" not in config.dataset.keys():
         config.dataset.format = "mvtec"
@@ -140,12 +150,31 @@ def get_configurable_parameters(
 
     # Project Configs
     project_path = Path(config.project.path) / config.model.name / config.dataset.name
+
+    # add category subfolder if needed
     if config.dataset.format.lower() in ("btech", "mvtec"):
         project_path = project_path / config.dataset.category
 
+    # set to False by default for backward compatibility
+    config.project.setdefault("unique_dir", False)
+
+    if config.project.unique_dir:
+        project_path = project_path / f"run.{_get_now_str(time.time())}"
+
+    else:
+        project_path = project_path / "run"
+        warn(
+            "config.project.unique_dir is set to False. "
+            "This does not ensure that your results will be written in an empty directory and you may overwrite files."
+        )
+
     (project_path / "weights").mkdir(parents=True, exist_ok=True)
     (project_path / "images").mkdir(parents=True, exist_ok=True)
+    # write the original config for eventual debug (modified config at the end of the function)
+    (project_path / "config_original.yaml").write_text(OmegaConf.to_yaml(config_original))
+
     config.project.path = str(project_path)
+
     # loggers should write to results/model/dataset/category/ folder
     config.trainer.default_root_dir = str(project_path)
 
@@ -170,5 +199,7 @@ def get_configurable_parameters(
             config.metrics.threshold.manual_pixel = (
                 None if config.metrics.threshold.adaptive else config.metrics.threshold.pixel_default
             )
+
+    (project_path / "config.yaml").write_text(OmegaConf.to_yaml(config))
 
     return config
