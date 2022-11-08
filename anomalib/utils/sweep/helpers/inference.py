@@ -5,44 +5,14 @@
 
 import time
 from pathlib import Path
-from typing import Iterable, List, Union
+from typing import Union
 
-import numpy as np
 import torch
 from omegaconf import DictConfig, ListConfig
 from torch.utils.data import DataLoader
 
 from anomalib.deploy import OpenVINOInferencer, TorchInferencer
 from anomalib.models.components import AnomalyModule
-
-
-class MockImageLoader:
-    """Create mock images for inference on CPU based on the specifics of the original torch test dataset.
-
-    Uses yield so as to avoid storing everything in the memory.
-
-    Args:
-        image_size (List[int]): Size of input image
-        total_count (int): Total images in the test dataset
-    """
-
-    def __init__(self, image_size: List[int], total_count: int):
-        self.total_count = total_count
-        self.image_size = image_size
-        self.image = np.ones((*self.image_size, 3)).astype(np.uint8)
-
-    def __len__(self):
-        """Get total count of images."""
-        return self.total_count
-
-    def __call__(self) -> Iterable[np.ndarray]:
-        """Yield batch of generated images.
-
-        Args:
-            idx (int): Unused
-        """
-        for _ in range(self.total_count):
-            yield self.image
 
 
 def get_torch_throughput(
@@ -60,12 +30,15 @@ def get_torch_throughput(
     """
     torch.set_grad_enabled(False)
     model.eval()
-    inferencer = TorchInferencer(config, model)
-    torch_dataloader = MockImageLoader(config.dataset.image_size, len(test_dataset))
+
+    device = config.trainer.accelerator
+    if device == "gpu":
+        device = "cuda"
+
+    inferencer = TorchInferencer(config, model.to(device), device=device)
     start_time = time.time()
-    # Since we don't care about performance metrics and just the throughput, use mock data.
-    for image in torch_dataloader():
-        inferencer.predict(image)
+    for image_path in test_dataset.samples.image_path:
+        inferencer.predict(image_path)
 
     # get throughput
     inference_time = time.time() - start_time
@@ -89,11 +62,9 @@ def get_openvino_throughput(config: Union[DictConfig, ListConfig], model_path: P
     inferencer = OpenVINOInferencer(
         config, model_path / "openvino" / "model.xml", model_path / "openvino" / "meta_data.json"
     )
-    openvino_dataloader = MockImageLoader(config.dataset.image_size, total_count=len(test_dataset))
     start_time = time.time()
-    # Create test images on CPU. Since we don't care about performance metrics and just the throughput, use mock data.
-    for image in openvino_dataloader():
-        inferencer.predict(image)
+    for image_path in test_dataset.samples.image_path:
+        inferencer.predict(image_path)
 
     # get throughput
     inference_time = time.time() - start_time
