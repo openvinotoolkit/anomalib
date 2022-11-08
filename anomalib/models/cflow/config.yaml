@@ -27,6 +27,7 @@ model:
   condition_vector: 128
   coupling_blocks: 8
   clamp_alpha: 1.9
+  fiber_batch_size: 64
   soft_permutation: false
   lr: 0.0001
   early_stopping:
