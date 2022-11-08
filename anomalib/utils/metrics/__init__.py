@@ -95,32 +95,32 @@ def metric_collection_from_dicts(metrics: Dict[str, Dict[str, Any]], prefix: Opt
 
     Example:
 
-    metrics = {
-        "PixelWiseF1Score": {
-            "class_path": "torchmetrics.F1Score",
-            "init_args": {},
-        },
-        "PixelWiseAUROC": {
-            "class_path": "anomalib.utils.metrics.AUROC",
-            "init_args": {
-                "compute_on_cpu": True,
+        metrics = {
+            "PixelWiseF1Score": {
+                "class_path": "torchmetrics.F1Score",
+                "init_args": {},
             },
-        },
-    }
+            "PixelWiseAUROC": {
+                "class_path": "anomalib.utils.metrics.AUROC",
+                "init_args": {
+                    "compute_on_cpu": True,
+                },
+            },
+        }
 
     In the config file, the same specifications (for pixel-wise metrics) look like:
 
-    ```yaml
-    metrics:
-        pixel:
-            PixelWiseF1Score:
-                class_path: torchmetrics.F1Score
-                init_args: {}
-            PixelWiseAUROC:
-                class_path: anomalib.utils.metrics.AUROC
-                init_args:
-                    compute_on_cpu: true
-    ```
+        ```yaml
+        metrics:
+            pixel:
+                PixelWiseF1Score:
+                    class_path: torchmetrics.F1Score
+                    init_args: {}
+                PixelWiseAUROC:
+                    class_path: anomalib.utils.metrics.AUROC
+                    init_args:
+                        compute_on_cpu: true
+        ```
 
     Args:
         metrics (Dict[str, Dict[str, Any]]): keys are metric names, values are dictionaries.
