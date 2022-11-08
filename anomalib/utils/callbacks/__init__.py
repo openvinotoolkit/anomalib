@@ -14,6 +14,8 @@ from jsonargparse.namespace import Namespace
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 
+from anomalib.deploy import ExportMode
+
 from .cdf_normalization import CdfNormalizationCallback
 from .graph import GraphLogger
 from .metrics_configuration import MetricsConfigurationCallback
@@ -82,12 +84,10 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
     callbacks.append(post_processing_callback)
 
     # Add metric configuration to the model via MetricsConfigurationCallback
-    image_metric_names = config.metrics.image if "image" in config.metrics.keys() else None
-    pixel_metric_names = config.metrics.pixel if "pixel" in config.metrics.keys() else None
     metrics_callback = MetricsConfigurationCallback(
         config.dataset.task,
-        image_metric_names,
-        pixel_metric_names,
+        config.metrics.get("image", None),
+        config.metrics.get("pixel", None),
     )
     callbacks.append(metrics_callback)
 
@@ -134,7 +134,7 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
                     input_size=config.model.input_size,
                     dirpath=config.project.path,
                     filename="model",
-                    export_mode=config.optimization.export_mode,
+                    export_mode=ExportMode(config.optimization.export_mode),
                 )
             )
         else:
