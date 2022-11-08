@@ -186,12 +186,12 @@ class CflowLightning(Cflow):
             backbone=hparams.model.backbone,
             layers=hparams.model.layers,
             pre_trained=hparams.model.pre_trained,
-            fiber_batch_size=hparams.dataset.fiber_batch_size,
+            fiber_batch_size=hparams.model.fiber_batch_size,
             decoder=hparams.model.decoder,
             condition_vector=hparams.model.condition_vector,
             coupling_blocks=hparams.model.coupling_blocks,
             clamp_alpha=hparams.model.clamp_alpha,
-            permute_soft=hparams.model.soft_permutation,
+            permute_soft=hparams.model.permute_soft,
         )
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(hparams)
