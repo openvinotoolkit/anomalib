@@ -13,7 +13,7 @@ from pytorch_lightning.utilities.cli import (
     SaveConfigCallback,
 )
 
-from anomalib.utils.cli.registry import CUSTOM_CLASS_REGISTRY
+from anomalib.utils.callbacks import ImageVisualizerCallback
 from anomalib.utils.loggers import configure_logger
 
 logger = logging.getLogger("anomalib.cli")
@@ -70,8 +70,7 @@ class AnomalibCLI(LightningCLI):
 
     def add_arguments_to_parser(self, parser: LightningArgumentParser) -> None:
         """Add custom arguments to the parser."""
-        for _class in CUSTOM_CLASS_REGISTRY.values():
-            parser.add_class_arguments(_class, _class.__name__)
+        parser.add_class_arguments(ImageVisualizerCallback, "visualizer")
 
 
 def main() -> None:
