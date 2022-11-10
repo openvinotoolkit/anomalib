@@ -33,8 +33,8 @@ model:
       - layer3
 
 post_processing:
-  normalization_method: min_max # <null, min_max, cdf>
-  threshold_method: adaptive # options: [adaptive, manual]
+  normalization_method: MIN_MAX # <null, min_max, cdf>
+  threshold_method: ADAPTIVE # options: [adaptive, manual]
   manual_image_threshold: null
   manual_pixel_threshold: null
 
@@ -47,6 +47,8 @@ metrics:
     - AUROC
 
 visualization:
+  task: segmentation
+  image_save_path: ""
   show_images: False # show images on the screen
   save_images: True # save images to the file system
   log_images: False # log images to the available loggers (if any)

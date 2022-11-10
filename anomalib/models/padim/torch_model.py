@@ -13,7 +13,7 @@ from torch import Tensor, nn
 from anomalib.models.components import FeatureExtractor, MultiVariateGaussian
 from anomalib.models.components.feature_extractors import dryrun_find_featuremap_dims
 from anomalib.models.padim.anomaly_map import AnomalyMapGenerator
-from anomalib.pre_processing import Tiler
+from anomalib.pre_processing import TilerDecorator
 
 # defaults from the paper
 _N_FEATURES_DEFAULTS = {
@@ -66,7 +66,6 @@ class PadimModel(nn.Module):
         n_features: Optional[int] = None,
     ):
         super().__init__()
-        self.tiler: Optional[Tiler] = None
 
         self.backbone = backbone
         self.layers = layers
@@ -99,6 +98,21 @@ class PadimModel(nn.Module):
 
         self.gaussian = MultiVariateGaussian(self.n_features, self.n_patches)
 
+    @TilerDecorator.attach_callback
+    def _get_embeddings(self, images: Tensor) -> Tensor:
+        """Get embeddings from the model.
+
+        Args:
+            images (Tensor): Input tensor.
+
+        Returns:
+            Tensor: Embeddings.
+        """
+        with torch.no_grad():
+            features = self.feature_extractor(images)
+            embeddings = self.generate_embedding(features)
+        return embeddings
+
     def forward(self, input_tensor: Tensor) -> Tensor:
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
 
@@ -121,15 +135,7 @@ class PadimModel(nn.Module):
             torch.Size([32, 256, 14, 14])]
         """
 
-        if self.tiler:
-            input_tensor = self.tiler.tile(input_tensor)
-
-        with torch.no_grad():
-            features = self.feature_extractor(input_tensor)
-            embeddings = self.generate_embedding(features)
-
-        if self.tiler:
-            embeddings = self.tiler.untile(embeddings)
+        embeddings = self._get_embeddings(input_tensor)
 
         if self.training:
             output = embeddings

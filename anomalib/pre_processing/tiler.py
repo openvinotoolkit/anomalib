@@ -405,3 +405,54 @@ class Tiler:
         image = downscale_image(image=image, size=(self.input_h, self.input_w), mode=self.mode)
 
         return image
+
+
+class TilerDecorator:
+    """Static class decorator for ``Tiler`` object.
+
+    This class can be initialized from the CI and can be used to add tiling functionality to the torch model.
+    See ``Tiler`` class for more details.
+
+    Args:
+        tile_size: Tile dimension for each patch
+        stride: Stride length between patches
+        remove_border_count: Number of border pixels to be removed from tile before untiling
+        mode: Upscaling mode for image resize.Supported formats: padding, interpolation
+    """
+
+    tiler: Tiler
+
+    def __init__(
+        self,
+        apply: bool = False,
+        tile_size: Optional[Union[int, Sequence]] = None,
+        stride: Optional[Union[int, Sequence]] = None,
+        remove_border_count: int = 0,
+        mode: str = "padding",
+        tile_count: int = 4,
+    ):
+        if apply:
+            assert tile_size is not None, "tile_size must be specified if apply is True"
+            self._set_tiler(Tiler(tile_size, stride, remove_border_count, mode, tile_count))
+
+    @classmethod
+    def _set_tiler(cls, tiler: Tiler):
+        cls.tiler = tiler
+
+    @classmethod
+    def attach_callback(cls, forward):
+        """Attaches tiler to the decorated function."""
+
+        def inner(*args, **kwds):
+            if hasattr(cls, "tiler"):
+                args = list(args)  # tuple is immutable
+
+                output = cls.tiler.tile(args[1])  # args[1] contains the first parameter passed to the forward function
+                args[1] = output
+
+                output = forward(*args, **kwds)
+                output = cls.tiler.untile(output)
+                return output
+            return forward(*args, **kwds)  # else do not tile inputs
+
+        return inner
