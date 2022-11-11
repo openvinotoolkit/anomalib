@@ -24,22 +24,21 @@ model:
   init_args:
     input_size: [256, 256]
     backbone: resnet18
-    pre_trained: true
     layers:
       - layer1
       - layer2
       - layer3
 
 optimizer:
-  class_path: torch.optim._multi_tensor.sgd.SGD
+  class_path: torch.optim.SGD
   init_args:
     lr: 0.4
     momentum: 0.9
     weight_decay: 0.0001
 
 post_processing:
-  normalization_method: min_max # <null, min_max, cdf>
-  threshold_method: adaptive # options: [adaptive, manual]
+  normalization_method: MIN_MAX # <null, min_max, cdf>
+  threshold_method: ADAPTIVE # options: [adaptive, manual]
   manual_image_threshold: null
   manual_pixel_threshold: null
 
@@ -52,6 +51,8 @@ metrics:
     - AUROC
 
 visualization:
+  task: segmentation
+  image_save_path: ""
   show_images: False # show images on the screen
   save_images: True # save images to the file system
   log_images: False # log images to the available loggers (if any)

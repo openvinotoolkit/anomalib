@@ -8,7 +8,7 @@ import os
 import warnings
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Type, Union
+from typing import Any, Callable, Dict, Optional, Type, Union
 
 from omegaconf import OmegaConf
 from pytorch_lightning import LightningDataModule, LightningModule, Trainer
@@ -82,6 +82,7 @@ class AnomalibCLI(LightningCLI):
 
     def add_arguments_to_parser(self, parser: LightningArgumentParser) -> None:
         """Add custom arguments to the parser."""
+        # TODO: design for explicit arguments
         parser.add_argument("--dataset.task", type=str, default="segmentation", required=False)
         # TODO: https://github.com/openvinotoolkit/anomalib/issues/20
         parser.add_argument(
@@ -121,95 +122,82 @@ class AnomalibCLI(LightningCLI):
             self.config[subcommand].visualization.image_save_path = default_root_dir + "/images"
         self.config[subcommand].trainer.default_root_dir = default_root_dir
 
+    def __update_callback(self, callbacks: Dict, callback_name: str, update_dict: Dict[str, Any]) -> None:
+        """Updates the callback with the given dictionary.
+
+        If the callback exists in the callbacks dictionary, it will be updated with the passed keys.
+        This ensure that the callback is not overwritten.
+        """
+        if callback_name in callbacks:
+            callbacks[callback_name].update(update_dict)
+        else:
+            callbacks[callback_name] = update_dict
+
     def __set_callbacks(self) -> None:
-        """Sets the default callbacks used within the pipeline."""
+        """Sets the default callbacks used within the pipeline.
+
+        The callbacks are added to trainer.callbacks as a dictionary so that they can be serialized by
+        SaveConfigCallback.
+        """
         subcommand = self.config["subcommand"]
         config = self.config[subcommand]
 
-        callbacks: List[Dict] = []
+        callbacks: Dict = {}
 
-        # Model Checkpoint.
-        monitor = None
-        mode = "max"
+        # Convert trainer callbacks to a dictionary. It makes it easier to search and update values
+        # {"anomalib.utils.callbacks.ImageVisualizerCallback":{'task':...}}
         if config.trainer.callbacks is not None:
-            # If trainer has callbacks defined from the config file, they have the
-            # following format:
-            # [{'class_path': 'pytorch_lightning.ca...lyStopping', 'init_args': {...}}]
-            callbacks = config.trainer.callbacks
+            for callback in config.trainer.callbacks:
+                callbacks[callback.class_path.split(".")[-1]] = dict(callback.init_args)
 
-            # Convert to the following format to get `monitor` and `mode` variables
-            # {'EarlyStopping': {'monitor': 'pixel_AUROC', 'mode': 'max', ...}}
-            callback_args = {c["class_path"].split(".")[-1]: c["init_args"] for c in callbacks}
-            if "EarlyStopping" in callback_args:
-                monitor = callback_args["EarlyStopping"]["monitor"]
-                mode = callback_args["EarlyStopping"]["mode"]
+        monitor = callbacks.get("EarlyStopping", {}).get("monitor", None)
+        mode = callbacks.get("EarlyStopping", {}).get("mode", "max")
 
-        # Add callbacks as a dictionary so that they can be serialized by SaveConfigCallback.
-        callbacks.append(
+        self.__update_callback(
+            callbacks,
+            "ModelCheckpoint",
             {
-                "class_path": "anomalib.utils.callbacks.ModelCheckpoint",
-                "init_args": {
-                    "dirpath": os.path.join(config.trainer.default_root_dir, "weights"),
-                    "filename": "model",
-                    "monitor": monitor,
-                    "mode": mode,
-                    "auto_insert_metric_name": False,
-                },
-            }
+                "dirpath": os.path.join(config.trainer.default_root_dir, "weights"),
+                "filename": "model",
+                "monitor": monitor,
+                "mode": mode,
+                "auto_insert_metric_name": False,
+            },
         )
 
-        image_threshold = (
-            config.post_processing.manual_image_threshold
-            if "manual_image_threshold" in config.post_processing.keys()
-            else None
-        )
-        pixel_threshold = (
-            config.post_processing.manual_pixel_threshold
-            if "manual_pixel_threshold" in config.post_processing.keys()
-            else None
-        )
-        normalization_method = config.post_processing.normalization_method
-
-        callbacks.append(
+        self.__update_callback(
+            callbacks,
+            "PostProcessingConfigurationCallback",
             {
-                "class_path": "anomalib.utils.callbacks.PostProcessingConfigurationCallback",
-                "init_args": {
-                    "normalization_method": normalization_method,
-                    "manual_image_threshold": image_threshold,
-                    "manual_pixel_threshold": pixel_threshold,
-                },
-            }
+                "normalization_method": config.post_processing.normalization_method,
+                "manual_image_threshold": config.post_processing.get("manual_image_threshold", None),
+                "manual_pixel_threshold": config.post_processing.get("manual_pixel_threshold", None),
+            },
         )
 
         # Add metric configuration to the model via MetricsConfigurationCallback
-        callbacks.append(
+        self.__update_callback(
+            callbacks,
+            "MetricsConfigurationCallback",
             {
-                "class_path": "anomalib.utils.callbacks.MetricsConfigurationCallback",
-                "init_args": {
-                    "task": config.dataset.task,
-                    "image_metrics": config.metrics.get("image_metrics", None),
-                    "pixel_metrics": config.metrics.get("pixel_metrics", None),
-                },
-            }
+                "task": config.dataset.task,
+                "image_metrics": config.metrics.get("image_metrics", None),
+                "pixel_metrics": config.metrics.get("pixel_metrics", None),
+            },
         )
 
         # LoadModel from Checkpoint.
         if config.trainer.resume_from_checkpoint:
-            callbacks.append(
+            self.__update_callback(
+                callbacks,
+                "LoadModelCallback",
                 {
-                    "class_path": "anomalib.utils.callbacks.LoadModelCallback",
-                    "init_args": {
-                        "weights_path": config.trainer.resume_from_checkpoint,
-                    },
-                }
+                    "weights_path": config.trainer.resume_from_checkpoint,
+                },
             )
 
         # Add timing to the pipeline.
-        callbacks.append(
-            {
-                "class_path": "anomalib.utils.callbacks.TimerCallback",
-            }
-        )
+        self.__update_callback(callbacks, "TimerCallback", {})
 
         #  TODO: This could be set in PostProcessingConfiguration callback
         #   - https://github.com/openvinotoolkit/anomalib/issues/384
@@ -217,58 +205,57 @@ class AnomalibCLI(LightningCLI):
         normalization = config.post_processing.normalization_method
         if normalization:
             if normalization == "min_max":
-                callbacks.append(
-                    {
-                        "class_path": "anomalib.utils.callbacks.MinMaxNormalizationCallback",
-                    }
-                )
+                self.__update_callback(callbacks, "MinMaxNormalizationCallback", {})
             elif normalization == "cdf":
-                callbacks.append(
-                    {
-                        "class_path": "anomalib.utils.callbacks.CDFNormalizationCallback",
-                    }
-                )
+                self.__update_callback(callbacks, "CDFNormalizationCallback", {})
             else:
                 raise ValueError(
                     f"Unknown normalization type {normalization}. \n" "Available types are either None, min_max or cdf"
                 )
 
-        # TODO
+        # TODO Add visualization support
         # add_visualizer_callback(callbacks, config)
-        self.config[subcommand].visualization = config.visualization
+        # self.config[subcommand].visualization = config.visualization
 
         # Export to OpenVINO
         if config.export_mode is not None:
             logger.info("Setting model export to %s", config.export_mode)
-            callbacks.append(
+            self.__update_callback(
+                callbacks,
+                "ExportCallback",
                 {
-                    "class_path": "anomalib.utils.callbacks.ExportCallback",
-                    "init_args": {
-                        "input_size": config.data.init_args.image_size,
-                        "dirpath": os.path.join(config.trainer.default_root_dir, "compressed"),
-                        "filename": "model",
-                        "export_mode": config.export_mode,
-                    },
-                }
+                    "input_size": config.data.init_args.image_size,
+                    "dirpath": os.path.join(config.trainer.default_root_dir, "compressed"),
+                    "filename": "model",
+                    "export_mode": config.export_mode,
+                },
             )
         else:
             warnings.warn(f"Export option: {config.export_mode} not found. Defaulting to no model export")
         if config.nncf:
             if os.path.isfile(config.nncf) and config.nncf.endswith(".yaml"):
-                callbacks.append(
+                self.__update_callback(
+                    callbacks,
+                    "anomalib.core.callbacks.nncf_callback.NNCFCallback",
                     {
-                        "class_path": "anomalib.core.callbacks.nncf_callback.NNCFCallback",
-                        "init_args": {
-                            "config": OmegaConf.load(config.nncf),
-                            "dirpath": os.path.join(config.trainer.default_root_dir, "compressed"),
-                            "filename": "model",
-                        },
-                    }
+                        "config": OmegaConf.load(config.nncf),
+                        "dirpath": os.path.join(config.trainer.default_root_dir, "compressed"),
+                        "filename": "model",
+                    },
                 )
             else:
                 raise ValueError(f"--nncf expects a path to nncf config which is a yaml file, but got {config.nncf}")
 
-        self.config[subcommand].trainer.callbacks = callbacks
+        # Convert callbacks to dict format expected by pytorch-lightning.
+        # eg [
+        # {"class_path": "ModelCheckpoint", "init_args": {...}},
+        # {"class_path": "PostProcessingConfigurationCallback", "init_args": {...}}
+        # ]
+        trainer_callbacks = []
+        for class_path, init_args in callbacks.items():
+            trainer_callbacks.append({"class_path": class_path, "init_args": init_args})
+
+        self.config[subcommand].trainer.callbacks = trainer_callbacks
 
     def before_instantiate_classes(self) -> None:
         """Modify the configuration to properly instantiate classes and sets up tiler."""
