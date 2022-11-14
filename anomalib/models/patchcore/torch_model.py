@@ -156,7 +156,11 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             Tensor: Locations of the nearest neighbor(s).
         """
         distances = torch.cdist(embedding, self.memory_bank, p=2.0)  # euclidean norm
-        patch_scores, locations = distances.topk(k=n_neighbors, largest=False, dim=1)
+        if n_neighbors == 1:
+            # when n_neighbors is 1, speed up computation by using min instead of topk
+            patch_scores, locations = distances.min(1)
+        else:
+            patch_scores, locations = distances.topk(k=n_neighbors, largest=False, dim=1)
         return patch_scores, locations
 
     def compute_anomaly_score(self, patch_scores: Tensor, locations: Tensor, embedding: Tensor) -> Tensor:
@@ -170,18 +174,21 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             Tensor: Image-level anomaly scores
         """
 
+        # Don't need to compute weights if num_neighbors is 1
+        if self.num_neighbors == 1:
+            return patch_scores.amax(1)
         # 1. Find the patch with the largest distance to it's nearest neighbor in each image
         max_patches = torch.argmax(patch_scores, dim=1)  # (m^test,* in the paper)
         # 2. Find the distance of the patch to it's nearest neighbor, and the location of the nn in the membank
-        score = patch_scores[torch.arange(len(patch_scores)), max_patches]  # s in the paper
-        nn_index = locations[torch.arange(len(patch_scores)), max_patches]  # m^* in the paper
+        score = patch_scores[torch.arange(patch_scores.shape[0]), max_patches]  # s in the paper
+        nn_index = locations[torch.arange(patch_scores.shape[0]), max_patches]  # m^* in the paper
         # 3. Find the support samples of the nearest neighbor in the membank
         nn_sample = self.memory_bank[nn_index, :]
         _, support_samples = self.nearest_neighbors(nn_sample, n_neighbors=self.num_neighbors)  # N_b(m^*) in the paper
         # 4. Find the distance of the patch features to each of the support samples
         distances = torch.cdist(embedding[max_patches].unsqueeze(1), self.memory_bank[support_samples], p=2.0)
         # 5. Apply softmax to find the weights
-        weights = (1 - F.softmax(distances.squeeze()))[..., 0]
+        weights = (1 - F.softmax(distances.squeeze(1), 1))[..., 0]
         # 6. Apply the weight factor to the score
         score = weights * score  # S^* in the paper
         return score

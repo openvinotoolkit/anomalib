@@ -42,20 +42,26 @@ pip install -r requirements/dev.txt
 
 To enforce consistency within the repo, we use several formatters, linters, and style- and type checkers:
 
-| Tool   | Function                   | Documentation                           |
-| ------ | -------------------------- | --------------------------------------- |
-| Black  | Code formatting            | https://black.readthedocs.io/en/stable/ |
-| isort  | Organize import statements | https://pycqa.github.io/isort/          |
-| Flake8 | Code style                 | https://flake8.pycqa.org/en/latest/     |
-| Pylint | Linting                    | http://pylint.pycqa.org/en/latest/      |
-| MyPy   | Type checking              | https://mypy.readthedocs.io/en/stable/  |
+| Tool   | Function                   | Documentation                             |
+| ------ | -------------------------- | ----------------------------------------- |
+| Black  | Code formatting            | <https://black.readthedocs.io/en/stable/> |
+| isort  | Organize import statements | <https://pycqa.github.io/isort/>          |
+| Flake8 | Code style                 | <https://flake8.pycqa.org/en/latest/>     |
+| Pylint | Linting                    | <http://pylint.pycqa.org/en/latest/>      |
+| MyPy   | Type checking              | <https://mypy.readthedocs.io/en/stable/>  |
 
-Instead of running each of these tools manually, we automatically run them before each commit and after each merge request. To achieve this we use pre-commit hooks and tox. Every developer is expected to use pre-commit hooks to make sure that their code remains free of typing and linting issues, and complies with the coding style requirements. When an MR is submitted, tox will be automatically invoked from the CI pipeline in Gitlab to check if the code quality is up to standard. Developers can also run tox locally before making an MR, though this is not strictly necessary since pre-commit hooks should be sufficient to prevent code quality issues. More detailed explanations of how to work with these tools is given in the respective guides:
+Instead of running each of these tools manually, we automatically run them before each commit and after each merge request. To achieve this we use pre-commit hooks and tox. Every developer is expected to use pre-commit hooks to make sure that their code remains free of typing and linting issues, and complies with the coding style requirements. When a PR is submitted, tox will be automatically invoked from the CI pipeline in Gitlab to check if the code quality is up to standard. Developers can also run tox locally before making a PR, though this is not strictly necessary since pre-commit hooks should be sufficient to prevent code quality issues. More detailed explanations of how to work with these tools is given in the respective guides:
 
-- Pre-commit hooks: [Pre-commit hooks guide](https://openvinotoolkit.github.io/anomalib/guides/using_pre_commit.html#pre-commit-hooks)
-- Tox: [Using Tox](https://openvinotoolkit.github.io/anomalib/guides/using_tox.html#using-tox)
+- Pre-commit hooks: [Pre-commit hooks guide](https://openvinotoolkit.github.io/anomalib/developer_guide/pre_commit_hooks.html)
+- Tox: [Using Tox](https://openvinotoolkit.github.io/anomalib/developer_guide/using_tox.html)
 
 In rare cases it might be desired to ignore certain errors or warnings for a particular part of your code. Flake8, Pylint and MyPy allow disabling specific errors for a line or block of code. The instructions for this can be found in the the documentations of each of these tools. Please make sure to only ignore errors/warnings when absolutely necessary, and always add a comment in your code stating why you chose to ignore it.
+
+Before creating the PR, make sure you run the following to avoid pre-commit check fails.
+
+```bash
+tox -e pre-commit
+```
 
 ## License
 

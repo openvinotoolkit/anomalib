@@ -147,7 +147,7 @@ class OpenVINOInferencer(Inferencer):
         # classification, and the value is the classification prediction score.
         if len(predictions.shape) == 1:
             task = "classification"
-            pred_score = predictions.item()
+            pred_score = predictions
         else:
             task = "segmentation"
             anomaly_map = predictions.squeeze()
@@ -159,11 +159,16 @@ class OpenVINOInferencer(Inferencer):
         if "image_threshold" in meta_data:
             pred_label = pred_score >= meta_data["image_threshold"]
 
-        if task == "segmentation":
+        if task == "classification":
+            _, pred_score = self._normalize(pred_scores=pred_score, meta_data=meta_data)
+        elif task == "segmentation":
             if "pixel_threshold" in meta_data:
                 pred_mask = (anomaly_map >= meta_data["pixel_threshold"]).astype(np.uint8)
 
-            anomaly_map, pred_score = self._normalize(anomaly_map, pred_score, meta_data)
+            anomaly_map, pred_score = self._normalize(
+                pred_scores=pred_score, anomaly_maps=anomaly_map, meta_data=meta_data
+            )
+            assert anomaly_map is not None
 
             if "image_shape" in meta_data and anomaly_map.shape != meta_data["image_shape"]:
                 image_height = meta_data["image_shape"][0]
@@ -172,6 +177,8 @@ class OpenVINOInferencer(Inferencer):
 
                 if pred_mask is not None:
                     pred_mask = cv2.resize(pred_mask, (image_width, image_height))
+        else:
+            raise ValueError(f"Unknown task type: {task}")
 
         return {
             "anomaly_map": anomaly_map,
