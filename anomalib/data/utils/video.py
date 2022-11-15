@@ -41,6 +41,7 @@ class ClipsIndexer(VideoClips, ABC):
     @abstractmethod
     def get_mask(self, idx: int) -> Optional[Tensor]:
         """Return the masks for the given index."""
+        raise NotImplementedError
 
     def get_item(self, idx: int) -> Dict[str, Any]:
         """Return a dictionary containing the clip, mask, video path and frame indices."""
