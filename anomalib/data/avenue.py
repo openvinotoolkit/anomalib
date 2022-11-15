@@ -46,7 +46,7 @@ ANNOTATIONS_DOWNLOAD_INFO = DownloadInfo(
 )
 
 
-def make_avenue_dataset(root: Path, gt_dir: Path, split: Optional[Union[Split, str]] = None):
+def make_avenue_dataset(root: Path, gt_dir: Path, split: Optional[Union[Split, str]] = None) -> DataFrame:
     """Create CUHK Avenue dataset by parsing the file structure.
 
     The files are expected to follow the structure:
