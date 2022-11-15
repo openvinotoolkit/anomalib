@@ -1,4 +1,14 @@
-"""CUHK Avenue Dataset."""
+"""CUHK Avenue Dataset.
+
+Description:
+    This module contains PyTorch Dataset and PyTorch
+        Lightning DataModule for the CUHK Avenue dataset.
+    If the dataset is not on the file system, the DataModule class downloads and
+        extracts the dataset and converts the .mat mask files to .png format.
+Reference:
+    - Lu, Cewu, Jianping Shi, and Jiaya Jia. "Abnormal event detection at 150 fps in matlab."
+    Proceedings of the IEEE international conference on computer vision. 2013.
+"""
 
 import glob
 import logging
