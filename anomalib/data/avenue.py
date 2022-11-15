@@ -28,8 +28,7 @@ import torch
 from pandas import DataFrame
 from torch import Tensor
 
-from anomalib.data.base import AnomalibDataModule
-from anomalib.data.base.video import VideoAnomalibDataset
+from anomalib.data.base import AnomalibDataModule, VideoAnomalibDataset
 from anomalib.data.utils import DownloadProgressBar, Split, ValSplitMode, hash_check
 from anomalib.data.utils.video import ClipsIndexer
 from anomalib.pre_processing import PreProcessor
