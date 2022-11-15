@@ -83,6 +83,6 @@ class VideoAnomalibDataset(AnomalibDataset, ABC):
             ).squeeze(0)
 
         if item["mask"] is None:
-            del item["mask"]
+            item.pop("mask")
 
         return item
