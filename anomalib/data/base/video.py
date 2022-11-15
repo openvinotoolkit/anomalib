@@ -69,7 +69,7 @@ class VideoAnomalibDataset(AnomalibDataset, ABC):
         item["original_image"] = item["image"].to(torch.uint8)
 
         # apply transforms
-        if "mask" in item.keys() and item["mask"] is not None:
+        if "mask" in item and item["mask"] is not None:
             processed_frames = [
                 self.pre_process(image=frame.numpy(), mask=m.numpy()) for frame, m in zip(item["image"], item["mask"])
             ]
