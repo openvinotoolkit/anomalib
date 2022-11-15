@@ -5,13 +5,10 @@
 
 import logging
 import os
-import warnings
 from datetime import datetime
-from importlib import import_module
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Type, Union
 
-from omegaconf.omegaconf import OmegaConf
 from pytorch_lightning import LightningDataModule, LightningModule, Trainer
 from pytorch_lightning.utilities.cli import (
     LightningArgumentParser,
@@ -20,16 +17,11 @@ from pytorch_lightning.utilities.cli import (
 )
 
 from anomalib.utils.callbacks import (
-    CdfNormalizationCallback,
     ImageVisualizerCallback,
-    LoadModelCallback,
     MetricsConfigurationCallback,
-    MinMaxNormalizationCallback,
-    ModelCheckpoint,
     PostProcessingConfigurationCallback,
     TilerConfigurationCallback,
-    TimerCallback,
-    add_visualizer_callback,
+    get_callbacks,
 )
 from anomalib.utils.loggers import configure_logger
 
@@ -171,88 +163,7 @@ class AnomalibCLI(LightningCLI):
         subcommand = self.config["subcommand"]
         config = self.config[subcommand]
 
-        callbacks = []
-
-        # Model Checkpoint.
-        monitor = None
-        mode = "max"
-        if config.trainer.callbacks is not None:
-            # If trainer has callbacks defined from the config file, they have the
-            # following format:
-            # [{'class_path': 'pytorch_lightning.ca...lyStopping', 'init_args': {...}}]
-            callbacks = config.trainer.callbacks
-
-            # Convert to the following format to get `monitor` and `mode` variables
-            # {'EarlyStopping': {'monitor': 'pixel_AUROC', 'mode': 'max', ...}}
-            callback_args = {c["class_path"].split(".")[-1]: c["init_args"] for c in callbacks}
-            if "EarlyStopping" in callback_args:
-                monitor = callback_args["EarlyStopping"]["monitor"]
-                mode = callback_args["EarlyStopping"]["mode"]
-
-        checkpoint = ModelCheckpoint(
-            dirpath=os.path.join(config.trainer.default_root_dir, "weights"),
-            filename="model",
-            monitor=monitor,
-            mode=mode,
-            auto_insert_metric_name=False,
-        )
-        callbacks.append(checkpoint)
-
-        # LoadModel from Checkpoint.
-        if config.trainer.resume_from_checkpoint:
-            load_model = LoadModelCallback(config.trainer.resume_from_checkpoint)
-            callbacks.append(load_model)
-
-        # Add timing to the pipeline.
-        callbacks.append(TimerCallback())
-
-        #  TODO: This could be set in PostProcessingConfiguration callback
-        #   - https://github.com/openvinotoolkit/anomalib/issues/384
-        # Normalization.
-        normalization = config.post_processing.normalization_method
-        if normalization:
-            if normalization == "min_max":
-                callbacks.append(MinMaxNormalizationCallback())
-            elif normalization == "cdf":
-                callbacks.append(CdfNormalizationCallback())
-            else:
-                raise ValueError(
-                    f"Unknown normalization type {normalization}. \n" "Available types are either None, min_max or cdf"
-                )
-
-        add_visualizer_callback(callbacks, config)
-        self.config[subcommand].visualization = config.visualization
-
-        # Export to OpenVINO
-        if config.export_mode is not None:
-            from anomalib.utils.callbacks.export import (  # pylint: disable=import-outside-toplevel
-                ExportCallback,
-            )
-
-            logger.info("Setting model export to %s", config.export_mode)
-            callbacks.append(
-                ExportCallback(
-                    input_size=config.data.init_args.image_size,
-                    dirpath=os.path.join(config.trainer.default_root_dir, "compressed"),
-                    filename="model",
-                    export_mode=config.export_mode,
-                )
-            )
-        else:
-            warnings.warn(f"Export option: {config.export_mode} not found. Defaulting to no model export")
-        if config.nncf:
-            if os.path.isfile(config.nncf) and config.nncf.endswith(".yaml"):
-                nncf_module = import_module("anomalib.core.callbacks.nncf_callback")
-                nncf_callback = getattr(nncf_module, "NNCFCallback")
-                callbacks.append(
-                    nncf_callback(
-                        config=OmegaConf.load(config.nncf),
-                        dirpath=os.path.join(config.trainer.default_root_dir, "compressed"),
-                        filename="model",
-                    )
-                )
-            else:
-                raise ValueError(f"--nncf expects a path to nncf config which is a yaml file, but got {config.nncf}")
+        callbacks = get_callbacks(config)
 
         self.config[subcommand].trainer.callbacks = callbacks
 

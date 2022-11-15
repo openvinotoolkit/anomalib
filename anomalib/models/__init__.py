@@ -4,9 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-import os
 from importlib import import_module
-from typing import List, Union
+from typing import Union
 
 from omegaconf import DictConfig, ListConfig
 from torch import load
@@ -70,29 +69,16 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
         AnomalyModule: Anomaly Model
     """
     logger.info("Loading the model.")
-
-    model_list: List[str] = [
-        "cflow",
-        "dfkde",
-        "dfm",
-        "draem",
-        "fastflow",
-        "ganomaly",
-        "padim",
-        "patchcore",
-        "reverse_distillation",
-        "stfpm",
-    ]
     model: AnomalyModule
 
-    if config.model.name in model_list:
-        module = import_module(f"anomalib.models.{config.model.name}")
-        model = getattr(module, f"{_snake_to_pascal_case(config.model.name)}Lightning")(config)
+    try:
+        module = import_module(".".join(config.model.class_path.split(".")[:-1]))
+        model = getattr(module, config.model.class_path.split(".")[-1])(**config.model.init_args)
+    except ModuleNotFoundError as exception:
+        logger.error("Could not find the model class: %s", config.model.class_path)
+        raise exception
 
-    else:
-        raise ValueError(f"Unknown model {config.model.name}!")
-
-    if "init_weights" in config.keys() and config.init_weights:
-        model.load_state_dict(load(os.path.join(config.project.path, config.init_weights))["state_dict"], strict=False)
+    if config.trainer.resume_from_checkpoint is not None:
+        model.load_state_dict(load(config.trainer.resume_from_checkpoint)["state_dict"], strict=False)
 
     return model

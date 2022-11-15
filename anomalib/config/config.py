@@ -6,7 +6,6 @@
 # TODO: This would require a new design.
 # TODO: https://jira.devtools.intel.com/browse/IAAALD-149
 
-import time
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Union
@@ -33,16 +32,16 @@ def update_input_size_config(config: Union[DictConfig, ListConfig]) -> Union[Dic
         Union[DictConfig, ListConfig]: Configurable parameters with updated values
     """
     # handle image size
-    if isinstance(config.dataset.image_size, int):
+    if isinstance(config.data.init_args.image_size, int):
         config.dataset.image_size = (config.dataset.image_size,) * 2
 
-    config.model.input_size = config.dataset.image_size
+    config.model.init_args.input_size = config.data.init_args.image_size
 
-    if "tiling" in config.dataset.keys() and config.dataset.tiling.apply:
-        if isinstance(config.dataset.tiling.tile_size, int):
-            config.dataset.tiling.tile_size = (config.dataset.tiling.tile_size,) * 2
-        if config.dataset.tiling.stride is None:
-            config.dataset.tiling.stride = config.dataset.tiling.tile_size
+    if "tiling" in config.keys() and config.tiling.apply:
+        if isinstance(config.tiling.tile_size, int):
+            config.tiling.tile_size = (config.tiling.tile_size,) * 2
+        if config.tiling.stride is None:
+            config.tiling.stride = config.tiling.tile_size
 
     return config
 
@@ -56,7 +55,7 @@ def update_nncf_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfi
     Returns:
         Union[DictConfig, ListConfig]: Updated configurable parameters in DictConfig object.
     """
-    crop_size = config.dataset.image_size
+    crop_size = config.data.init_args.image_size
     sample_size = (crop_size, crop_size) if isinstance(crop_size, int) else crop_size
     if "optimization" in config.keys():
         if "nncf" in config.optimization.keys():
@@ -109,11 +108,33 @@ def update_multi_gpu_training_config(config: Union[DictConfig, ListConfig]) -> U
     return config
 
 
+def get_default_root_directory(config: Union[DictConfig, ListConfig]) -> Path:
+    """Sets the default root directory."""
+    # If `resume_from_checkpoint` is not specified, it means that the project has not been created before.
+    # Therefore, we need to create the project directory first.
+    if config.trainer.resume_from_checkpoint is None:
+        root_dir = config.trainer.default_root_dir if config.trainer.default_root_dir else "./results"
+        model_name = config.model.class_path.split(".")[-1].lower()
+        data_name = config.data.class_path.split(".")[-1].lower()
+        category = config.data.init_args.category if "category" in config.data.init_args else ""
+        time_stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        default_root_dir = Path(root_dir, model_name, data_name, category, time_stamp)
+
+    # Otherwise, the assumption is that the project directory has alrady been created.
+    else:
+        # By default, train subcommand saves the weights to
+        #   ./results/<model>/<data>/time_stamp/weights/model.ckpt.
+        # For this reason, we set the project directory to the parent directory
+        #   that is two-level up.
+        default_root_dir = Path(config.trainer.resume_from_checkpoint).parent.parent
+
+    return default_root_dir
+
+
 def get_configurable_parameters(
     model_name: Optional[str] = None,
     config_path: Optional[Union[Path, str]] = None,
-    weight_file: Optional[str] = None,
-    config_filename: Optional[str] = "config",
+    config_filename: Optional[str] = None,
     config_file_extension: Optional[str] = "yaml",
 ) -> Union[DictConfig, ListConfig]:
     """Get configurable parameters.
@@ -122,7 +143,7 @@ def get_configurable_parameters(
         model_name: Optional[str]:  (Default value = None)
         config_path: Optional[Union[Path, str]]:  (Default value = None)
         weight_file: Path to the weight file
-        config_filename: Optional[str]:  (Default value = "config")
+        config_filename: Optional[str]:  If None, uses the same name as model name.
         config_file_extension: Optional[str]:  (Default value = "yaml")
 
     Returns:
@@ -135,70 +156,28 @@ def get_configurable_parameters(
         )
 
     if config_path is None:
-        config_path = Path(f"anomalib/models/{model_name}/{config_filename}.{config_file_extension}")
+        file_name = model_name if config_filename is None else config_filename
+        config_path = Path(f"configs/model/{file_name}.{config_file_extension}")
 
     config = OmegaConf.load(config_path)
 
     # keep track of the original config file because it will be modified
     config_original: DictConfig = config.copy()
 
-    # Dataset Configs
-    if "format" not in config.dataset.keys():
-        config.dataset.format = "mvtec"
-
     config = update_input_size_config(config)
 
     # Project Configs
-    project_path = Path(config.project.path) / config.model.name / config.dataset.name
-
-    # add category subfolder if needed
-    if config.dataset.format.lower() in ("btech", "mvtec"):
-        project_path = project_path / config.dataset.category
-
-    # set to False by default for backward compatibility
-    config.project.setdefault("unique_dir", False)
-
-    if config.project.unique_dir:
-        project_path = project_path / f"run.{_get_now_str(time.time())}"
-
-    else:
-        project_path = project_path / "run"
-        warn(
-            "config.project.unique_dir is set to False. "
-            "This does not ensure that your results will be written in an empty directory and you may overwrite files."
-        )
+    project_path = get_default_root_directory(config)
 
     (project_path / "weights").mkdir(parents=True, exist_ok=True)
     (project_path / "images").mkdir(parents=True, exist_ok=True)
     # write the original config for eventual debug (modified config at the end of the function)
     (project_path / "config_original.yaml").write_text(OmegaConf.to_yaml(config_original))
 
-    config.project.path = str(project_path)
-
     # loggers should write to results/model/dataset/category/ folder
     config.trainer.default_root_dir = str(project_path)
 
-    if weight_file:
-        config.trainer.resume_from_checkpoint = weight_file
-
     config = update_nncf_config(config)
-
-    # thresholding
-    if "metrics" in config.keys():
-        # NOTE: Deprecate this after v0.4.0.
-        if "adaptive" in config.metrics.threshold.keys():
-            warn("adaptive will be deprecated in favor of method in config.metrics.threshold in v0.4.0.")
-            config.metrics.threshold.method = "adaptive" if config.metrics.threshold.adaptive else "manual"
-        if "image_default" in config.metrics.threshold.keys():
-            warn("image_default will be deprecated in favor of manual_image in config.metrics.threshold in v0.4.0.")
-            config.metrics.threshold.manual_image = (
-                None if config.metrics.threshold.adaptive else config.metrics.threshold.image_default
-            )
-        if "pixel_default" in config.metrics.threshold.keys():
-            warn("pixel_default will be deprecated in favor of manual_pixel in config.metrics.threshold in v0.4.0.")
-            config.metrics.threshold.manual_pixel = (
-                None if config.metrics.threshold.adaptive else config.metrics.threshold.pixel_default
-            )
 
     (project_path / "config.yaml").write_text(OmegaConf.to_yaml(config))
 

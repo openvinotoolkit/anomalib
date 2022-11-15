@@ -1,15 +1,12 @@
-# This is the config file for the new Anomalib CLI.
-# To use this, run the following command:
-# anomalib fit --config ./config/model/padim.yaml
-ckpt_path: null
 seed_everything: null
-
 data:
   class_path: anomalib.data.MVTec
   init_args:
     root: ./datasets/MVTec
     category: bottle
-    image_size: [256, 256]
+    image_size:
+      - 256
+      - 256
     train_batch_size: 32
     test_batch_size: 32
     num_workers: 8
@@ -19,41 +16,60 @@ data:
     seed: 0
     create_validation_set: false
 
+tiling:
+  apply: false
+  tile_size: null
+  stride: null
+  remove_border_count: 0
+  mode: padding
+  tile_count: 4
+
 model:
   class_path: anomalib.models.Padim
   init_args:
-    input_size:
-      - 256 # Height
-      - 256 # Width
-    backbone: resnet18
-    pre_trained: true
     layers:
       - layer1
       - layer2
       - layer3
+    input_size:
+      - 256
+      - 256
+    backbone: resnet18
+    pre_trained: true
+    n_features: null
 
 post_processing:
-  normalization_method: min_max # <null, min_max, cdf>
-  threshold_method: adaptive # options: [adaptive, manual]
+  normalization_method: MIN_MAX
+  threshold_method: ADAPTIVE
   manual_image_threshold: null
   manual_pixel_threshold: null
 
 metrics:
-  image_metrics:
+  image:
     - F1Score
     - AUROC
-  pixel_metrics:
+  pixel:
     - F1Score
     - AUROC
 
 visualization:
-  show_images: False # show images on the screen
-  save_images: True # save images to the file system
-  log_images: False # log images to the available loggers (if any)
-  mode: full # options: ["full", "simple"]
+  task: segmentation
+  mode: full
+  image_save_path: null
+  inputs_are_normalized: true
+  show_images: false
+  log_images: false
+  save_images: true
 
+logging:
+  logger: [] # options: [comet, tensorboard, wandb, csv] or combinations.
+  log_graph: false # Logs the model graph to respective logger.
+
+optimization:
+  export_mode: null #options: onnx, openvino
+
+# PL Trainer Args. Don't add extra parameter here.
 trainer:
-  logger: true
   accelerator: auto # <"cpu", "gpu", "tpu", "ipu", "hpu", "auto">
   accumulate_grad_batches: 1
   amp_backend: native
@@ -94,7 +110,6 @@ trainer:
   profiler: null
   reload_dataloaders_every_n_epochs: 0
   replace_sampler_ddp: true
-  resume_from_checkpoint: null
   sync_batchnorm: false
   tpu_cores: null
   track_grad_norm: -1

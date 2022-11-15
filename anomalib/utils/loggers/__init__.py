@@ -5,7 +5,6 @@
 
 import logging
 import os
-import warnings
 from typing import Iterable, List, Union
 
 from omegaconf.dictconfig import DictConfig
@@ -73,18 +72,6 @@ def get_experiment_logger(
     """
     logger.info("Loading the experiment logger(s)")
 
-    # TODO remove when logger is deprecated from project
-    if "logger" in config.project.keys():
-        warnings.warn(
-            "'logger' key will be deprecated from 'project' section of the config file."
-            " Please use the logging section in config file.",
-            DeprecationWarning,
-        )
-        if "logging" not in config:
-            config.logging = {"logger": config.project.logger, "log_graph": False}
-        else:
-            config.logging.logger = config.project.logger
-
     if config.logging.logger in [None, False]:
         return False
 
@@ -97,12 +84,12 @@ def get_experiment_logger(
             logger_list.append(
                 AnomalibTensorBoardLogger(
                     name="Tensorboard Logs",
-                    save_dir=os.path.join(config.project.path, "logs"),
+                    save_dir=os.path.join(config.trainer.default_root_dir, "logs"),
                     log_graph=config.logging.log_graph,
                 )
             )
         elif experiment_logger == "wandb":
-            wandb_logdir = os.path.join(config.project.path, "logs")
+            wandb_logdir = os.path.join(config.trainer.default_root_dir, "logs")
             os.makedirs(wandb_logdir, exist_ok=True)
             name = (
                 config.model.name
@@ -117,7 +104,7 @@ def get_experiment_logger(
                 )
             )
         elif experiment_logger == "comet":
-            comet_logdir = os.path.join(config.project.path, "logs")
+            comet_logdir = os.path.join(config.trainer.default_root_dir, "logs")
             os.makedirs(comet_logdir, exist_ok=True)
             run_name = (
                 config.model.name
@@ -128,7 +115,7 @@ def get_experiment_logger(
                 AnomalibCometLogger(project_name=config.dataset.name, experiment_name=run_name, save_dir=comet_logdir)
             )
         elif experiment_logger == "csv":
-            logger_list.append(CSVLogger(save_dir=os.path.join(config.project.path, "logs")))
+            logger_list.append(CSVLogger(save_dir=os.path.join(config.trainer.default_root_dir, "logs")))
         else:
             raise UnknownLogger(
                 f"Unknown logger type: {config.logging.logger}. "

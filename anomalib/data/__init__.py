@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+from importlib import import_module
 from typing import Union
 
 from omegaconf import DictConfig, ListConfig
@@ -30,61 +31,25 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
 
     datamodule: LightningDataModule
 
-    if config.dataset.format.lower() == "mvtec":
-        datamodule = MVTec(
-            # TODO: Remove config values. IAAALD-211
-            root=config.dataset.path,
-            category=config.dataset.category,
-            image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
-            train_batch_size=config.dataset.train_batch_size,
-            test_batch_size=config.dataset.test_batch_size,
-            num_workers=config.dataset.num_workers,
-            seed=config.project.seed,
-            task=config.dataset.task,
-            transform_config_train=config.dataset.transform_config.train,
-            transform_config_val=config.dataset.transform_config.val,
-            create_validation_set=config.dataset.create_validation_set,
+    # Since in the new config based on LightningCLI, seed_everything is a separate parameter, we set the one in dataset
+    # to point to it.
+    if config.data.init_args.seed == 0:
+        config.data.init_args.seed = config.seed_everything
+
+    if isinstance(config, (ListConfig, DictConfig)):
+        # Need to remove image_size from config as transforms checks image_size against int or tuple whereas image_size
+        # is ListConfig.
+        image_size = tuple(config.data.init_args.image_size)
+        config.data.init_args.pop("image_size")
+
+    try:
+        module = import_module(".".join(config.data.class_path.split(".")[:-1]))
+        datamodule = getattr(module, config.data.class_path.split(".")[-1])(
+            image_size=image_size, **config.data.init_args
         )
-    elif config.dataset.format.lower() == "btech":
-        datamodule = BTech(
-            # TODO: Remove config values. IAAALD-211
-            root=config.dataset.path,
-            category=config.dataset.category,
-            image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
-            train_batch_size=config.dataset.train_batch_size,
-            test_batch_size=config.dataset.test_batch_size,
-            num_workers=config.dataset.num_workers,
-            seed=config.project.seed,
-            task=config.dataset.task,
-            transform_config_train=config.dataset.transform_config.train,
-            transform_config_val=config.dataset.transform_config.val,
-            create_validation_set=config.dataset.create_validation_set,
-        )
-    elif config.dataset.format.lower() == "folder":
-        datamodule = Folder(
-            root=config.dataset.path,
-            normal_dir=config.dataset.normal_dir,
-            abnormal_dir=config.dataset.abnormal_dir,
-            task=config.dataset.task,
-            normal_test_dir=config.dataset.normal_test_dir,
-            mask_dir=config.dataset.mask,
-            extensions=config.dataset.extensions,
-            split_ratio=config.dataset.split_ratio,
-            seed=config.project.seed,
-            image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
-            train_batch_size=config.dataset.train_batch_size,
-            test_batch_size=config.dataset.test_batch_size,
-            num_workers=config.dataset.num_workers,
-            transform_config_train=config.dataset.transform_config.train,
-            transform_config_val=config.dataset.transform_config.val,
-            create_validation_set=config.dataset.create_validation_set,
-        )
-    else:
-        raise ValueError(
-            "Unknown dataset! \n"
-            "If you use a custom dataset make sure you initialize it in"
-            "`get_datamodule` in `anomalib.data.__init__.py"
-        )
+    except ModuleNotFoundError as exception:
+        logger.error("Could not find the datamodule class: %s", config.data.class_path)
+        raise exception
 
     return datamodule
 
