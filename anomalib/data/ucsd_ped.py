@@ -2,10 +2,7 @@
 
 import glob
 import logging
-import os
 import tarfile
-from os import listdir, rmdir
-from os.path import join
 from pathlib import Path
 from shutil import move
 from typing import Any, Callable, Dict, Optional, Tuple, Union
@@ -62,7 +59,7 @@ def make_ucsd_dataset(path: Path, split: Optional[Union[Split, str]] = None):
     Returns:
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
-    folders = [filename for filename in sorted(Path(path).glob("*/*")) if os.path.isdir(filename)]
+    folders = [filename for filename in sorted(path.glob("*/*")) if filename.is_dir()]
     folders = [folder for folder in folders if len(list(folder.glob("*.tif"))) > 0]
 
     samples_list = [(str(path),) + folder.parts[-2:] for folder in folders]
@@ -261,9 +258,10 @@ class UCSDped(AnomalibDataModule):
             with tarfile.open(zip_filename) as tar_file:
                 tar_file.extractall(self.root)
             # move contents to root
-            for filename in listdir(join(self.root, "UCSD_Anomaly_Dataset.v1p2")):
-                move(join(self.root, "UCSD_Anomaly_Dataset.v1p2", filename), join(self.root, filename))
-            rmdir(join(self.root, "UCSD_Anomaly_Dataset.v1p2"))
+            extracted_folder = self.root / "UCSD_Anomaly_Dataset.v1p2"
+            for filename in extracted_folder.glob("*"):
+                move(str(filename), str(self.root / filename.name))
+            extracted_folder.rmdir()
 
             logger.info("Cleaning the tar file")
             (zip_filename).unlink()

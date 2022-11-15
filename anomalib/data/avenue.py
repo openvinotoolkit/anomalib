@@ -13,11 +13,8 @@ Reference:
 import glob
 import logging
 import math
-import os
 import zipfile
 from collections import namedtuple
-from os import listdir, rmdir
-from os.path import join
 from pathlib import Path
 from shutil import move
 from typing import Callable, Optional, Tuple, Union
@@ -249,14 +246,14 @@ class Avenue(AnomalibDataModule):
         # convert masks to numpy
         masks_dir = gt_dir / "testing_label_mask"
         # get file names
-        mat_files = [masks_dir / filename for filename in listdir(masks_dir) if filename.endswith(".mat")]
+        mat_files = [filename for filename in masks_dir.glob("*") if filename.suffix == ".mat"]
         mask_folders = [matfile.with_suffix("") for matfile in mat_files]
         if not all(folder.exists() for folder in mask_folders):
             # convert mask files to images
             logger.info("converting mat files to .png format.")
             for mat_file, mask_folder in zip(mat_files, mask_folders):
                 mat = scipy.io.loadmat(mat_file)
-                os.makedirs(mask_folder, exist_ok=True)
+                mask_folder.mkdir(parents=True, exist_ok=True)
                 masks = mat["volLabel"].squeeze()
                 for idx, mask in enumerate(masks):
                     filename = (mask_folder / str(idx).zfill(int(math.log10(len(masks)) + 1))).with_suffix(".png")
@@ -291,9 +288,9 @@ class Avenue(AnomalibDataModule):
             with zipfile.ZipFile(zip_filepath, "r") as zip_file:
                 zip_file.extractall(root)
             # move contents to root
-            for filename in listdir(join(root, info.extracted_folder_name)):
-                move(join(root, info.extracted_folder_name, filename), join(root, filename))
-            rmdir(join(root, info.extracted_folder_name))
+            for filename in (root / info.extracted_folder_name).glob("*"):
+                move(str(filename), str(root / filename.name))
+            (root / info.extracted_folder_name).rmdir()
 
             logger.info("Cleaning the zip file")
             (zip_filepath).unlink()
