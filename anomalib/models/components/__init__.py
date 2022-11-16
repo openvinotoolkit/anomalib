@@ -5,7 +5,7 @@
 
 from .base import AnomalyModule, DynamicBufferModule
 from .dimensionality_reduction import PCA, SparseRandomProjection
-from .feature_extractors import TimmFeatureExtractor, get_torchfx_feature_extractor
+from .feature_extractors import TimmFeatureExtractor, TorchFXFeatureExtractor
 from .filters import GaussianBlur2d
 from .sampling import KCenterGreedy
 from .stats import GaussianKDE, MultiVariateGaussian
@@ -20,5 +20,5 @@ __all__ = [
     "GaussianKDE",
     "GaussianBlur2d",
     "MultiVariateGaussian",
-    "get_torchfx_feature_extractor",
+    "TorchFXFeatureExtractor",
 ]

@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from .timm import TimmFeatureExtractor
-from .torchfx import get_torchfx_feature_extractor
+from .torchfx import TorchFXFeatureExtractor
 from .utils import dryrun_find_featuremap_dims
 
-__all__ = ["TimmFeatureExtractor", "get_torchfx_feature_extractor", "dryrun_find_featuremap_dims"]
+__all__ = ["TimmFeatureExtractor", "TorchFXFeatureExtractor", "dryrun_find_featuremap_dims"]
