@@ -64,7 +64,9 @@ def train():
     # Set callbacks
     callbacks_dict = get_callbacks(config)
     callbacks = instantiate_callbacks(callbacks_dict)
-    config.trainer.pop("callbacks")
+    # Remove callbacks from trainer as it is passed separately
+    if "callbacks" in config.trainer:
+        config.trainer.pop("callbacks")
 
     trainer = Trainer(**config.trainer, logger=experiment_logger, callbacks=callbacks)
     logger.info("Training the model.")

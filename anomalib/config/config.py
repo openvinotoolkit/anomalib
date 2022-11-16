@@ -134,6 +134,7 @@ def get_default_root_directory(config: Union[DictConfig, ListConfig]) -> Path:
 def get_configurable_parameters(
     model_name: Optional[str] = None,
     config_path: Optional[Union[Path, str]] = None,
+    weight_file: Optional[str] = None,
     config_filename: Optional[str] = None,
     config_file_extension: Optional[str] = "yaml",
 ) -> Union[DictConfig, ListConfig]:
@@ -176,6 +177,9 @@ def get_configurable_parameters(
 
     # loggers should write to results/model/dataset/category/ folder
     config.trainer.default_root_dir = str(project_path)
+
+    if weight_file:
+        config.trainer.resume_from_checkpoint = weight_file
 
     config = update_nncf_config(config)
 

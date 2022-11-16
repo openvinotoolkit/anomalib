@@ -64,7 +64,7 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Dict]:
 
     # Convert trainer callbacks to a dictionary. It makes it easier to search and update values
     # {"anomalib.utils.callbacks.ImageVisualizerCallback":{'task':...}}
-    if config.trainer.callbacks is not None:
+    if "callbacks" in config.trainer:
         for callback in config.trainer.callbacks:
             callbacks[callback.class_path.split(".")[-1]] = dict(callback.init_args)
 
