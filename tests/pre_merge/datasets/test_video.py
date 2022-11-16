@@ -1,5 +1,7 @@
 """Test the Video dataset class and utils."""
 
+from pathlib import Path
+
 import pytest
 
 from anomalib.data.ucsd_ped import (
@@ -16,7 +18,8 @@ from tests.helpers.dataset import get_dataset_path
 def ucsd_clips(n_frames, stride, split=Split.TEST):
     """Create Folder Dataset."""
     root = get_dataset_path(dataset="ucsd")
-    samples = make_ucsd_dataset(path=root + "/UCSDped2", split=split)
+    path = Path(root) / "UCSDped2"
+    samples = make_ucsd_dataset(path=path, split=split)
     clips = UCSDpedClipsIndexer(
         video_paths=samples.image_path,
         mask_paths=samples.mask_path,
@@ -31,7 +34,7 @@ def ucsd_dataset(split):
     root = get_dataset_path(dataset="ucsd")
     dataset = UCSDpedDataset(
         task="classification",
-        root=root,
+        root=Path(root),
         category="UCSDped2",
         pre_process=PreProcessor(image_size=(256, 256)),
         clip_length_in_frames=16,
