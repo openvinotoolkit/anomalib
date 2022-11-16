@@ -46,7 +46,7 @@ class FeatureExtractor(nn.Module):
             features_only=True,
             exportable=True,
             out_indices=self.idx,
-        )
+        ).eval()
         self.out_dims = self.feature_extractor.feature_info.channels()
         self._features = {layer: torch.empty(0) for layer in self.layers}
 
@@ -85,5 +85,6 @@ class FeatureExtractor(nn.Module):
         Returns:
             Feature map extracted from the CNN
         """
-        features = dict(zip(self.layers, self.feature_extractor(input_tensor)))
+        with torch.no_grad():
+            features = dict(zip(self.layers, self.feature_extractor(input_tensor)))
         return features
