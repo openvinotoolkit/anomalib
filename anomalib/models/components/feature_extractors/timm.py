@@ -35,11 +35,12 @@ class TimmFeatureExtractor(nn.Module):
             [torch.Size([32, 64, 64, 64]), torch.Size([32, 128, 32, 32]), torch.Size([32, 256, 16, 16])]
     """
 
-    def __init__(self, backbone: str, layers: List[str], pre_trained: bool = True):
+    def __init__(self, backbone: str, layers: List[str], pre_trained: bool = True, requires_grad: bool = False):
         super().__init__()
         self.backbone = backbone
         self.layers = layers
         self.idx = self._map_layer_to_idx()
+        self.requires_grad = requires_grad
         self.feature_extractor = timm.create_model(
             backbone,
             pretrained=pre_trained,
@@ -85,5 +86,10 @@ class TimmFeatureExtractor(nn.Module):
         Returns:
             Feature map extracted from the CNN
         """
-        features = dict(zip(self.layers, self.feature_extractor(input_tensor)))
+        if self.requires_grad:
+            features = dict(zip(self.layers, self.feature_extractor(input_tensor)))
+        else:
+            self.feature_extractor.eval()
+            with torch.no_grad():
+                features = dict(zip(self.layers, self.feature_extractor(input_tensor)))
         return features
