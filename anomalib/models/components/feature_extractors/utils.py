@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple, Union
 
 import torch
 
-from anomalib.models.components.feature_extractors import TimmFeatureExtractor
+from .timm import TimmFeatureExtractor
 
 
 def dryrun_find_featuremap_dims(
