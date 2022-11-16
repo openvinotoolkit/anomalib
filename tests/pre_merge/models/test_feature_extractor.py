@@ -6,8 +6,8 @@ from torchvision.models.efficientnet import EfficientNet_B5_Weights
 
 from anomalib.models.components.feature_extractors import (
     TimmFeatureExtractor,
+    TorchFXFeatureExtractor,
     dryrun_find_featuremap_dims,
-    get_torchfx_feature_extractor,
 )
 
 
@@ -42,14 +42,14 @@ class TestFeatureExtractor:
             pass
 
     def test_torchfx_feature_extraction(self):
-        model = get_torchfx_feature_extractor("resnet18", ["layer1", "layer2", "layer3"])
+        model = TorchFXFeatureExtractor("resnet18", ["layer1", "layer2", "layer3"])
         test_input = torch.rand((32, 3, 256, 256))
         features = model(test_input)
         assert features["layer1"].shape == torch.Size((32, 64, 64, 64))
         assert features["layer2"].shape == torch.Size((32, 128, 32, 32))
         assert features["layer3"].shape == torch.Size((32, 256, 16, 16))
 
-        model = get_torchfx_feature_extractor(
+        model = TorchFXFeatureExtractor(
             backbone="efficientnet_b5", return_nodes=["features.6.8"], weights=EfficientNet_B5_Weights.DEFAULT
         )
         features = model(test_input)
