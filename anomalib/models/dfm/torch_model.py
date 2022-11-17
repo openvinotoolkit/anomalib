@@ -97,7 +97,9 @@ class DFMModel(nn.Module):
         self.pca_model = PCA(n_components=self.n_components)
         self.gaussian_model = SingleClassGaussian()
         self.score_type = score_type
-        self.feature_extractor = FeatureExtractor(backbone=self.backbone, pre_trained=pre_trained, layers=[layer])
+        self.feature_extractor = FeatureExtractor(
+            backbone=self.backbone, pre_trained=pre_trained, layers=[layer]
+        ).eval()
 
     def fit(self, dataset: Tensor) -> None:
         """Fit a pca transformation and a Gaussian model to dataset.
