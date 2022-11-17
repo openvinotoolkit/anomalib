@@ -7,7 +7,7 @@ from typing import List, Optional, Tuple, Union
 
 from torch import Tensor, nn
 
-from anomalib.models.components import TimmFeatureExtractor
+from anomalib.models.components import FeatureExtractor
 from anomalib.models.reverse_distillation.anomaly_map import AnomalyMapGenerator
 from anomalib.models.reverse_distillation.components import (
     get_bottleneck_layer,
@@ -39,7 +39,7 @@ class ReverseDistillationModel(nn.Module):
         self.tiler: Optional[Tiler] = None
 
         encoder_backbone = backbone
-        self.encoder = TimmFeatureExtractor(backbone=encoder_backbone, pre_trained=pre_trained, layers=layers)
+        self.encoder = FeatureExtractor(backbone=encoder_backbone, pre_trained=pre_trained, layers=layers)
         self.bottleneck = get_bottleneck_layer(backbone)
         self.decoder = get_decoder(backbone)
 

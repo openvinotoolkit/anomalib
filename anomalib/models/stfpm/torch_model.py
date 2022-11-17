@@ -7,7 +7,7 @@ from typing import Dict, List, Optional, Tuple
 
 from torch import Tensor, nn
 
-from anomalib.models.components import TimmFeatureExtractor
+from anomalib.models.components import FeatureExtractor
 from anomalib.models.stfpm.anomaly_map import AnomalyMapGenerator
 from anomalib.pre_processing import Tiler
 
@@ -31,8 +31,8 @@ class STFPMModel(nn.Module):
         self.tiler: Optional[Tiler] = None
 
         self.backbone = backbone
-        self.teacher_model = TimmFeatureExtractor(backbone=self.backbone, pre_trained=True, layers=layers)
-        self.student_model = TimmFeatureExtractor(
+        self.teacher_model = FeatureExtractor(backbone=self.backbone, pre_trained=True, layers=layers)
+        self.student_model = FeatureExtractor(
             backbone=self.backbone, pre_trained=False, layers=layers, requires_grad=True
         )
 

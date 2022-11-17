@@ -9,7 +9,7 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from anomalib.models.components import PCA, DynamicBufferModule, TimmFeatureExtractor
+from anomalib.models.components import PCA, DynamicBufferModule, FeatureExtractor
 
 
 class SingleClassGaussian(DynamicBufferModule):
@@ -97,9 +97,7 @@ class DFMModel(nn.Module):
         self.pca_model = PCA(n_components=self.n_components)
         self.gaussian_model = SingleClassGaussian()
         self.score_type = score_type
-        self.feature_extractor = TimmFeatureExtractor(
-            backbone=self.backbone, pre_trained=pre_trained, layers=[layer]
-        ).eval()
+        self.feature_extractor = FeatureExtractor(backbone=self.backbone, pre_trained=pre_trained, layers=[layer])
 
     def fit(self, dataset: Tensor) -> None:
         """Fit a pca transformation and a Gaussian model to dataset.

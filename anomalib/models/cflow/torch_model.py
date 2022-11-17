@@ -11,7 +11,7 @@ from torch import nn
 
 from anomalib.models.cflow.anomaly_map import AnomalyMapGenerator
 from anomalib.models.cflow.utils import cflow_head, get_logp, positional_encoding_2d
-from anomalib.models.components import TimmFeatureExtractor
+from anomalib.models.components import FeatureExtractor
 
 
 class CflowModel(nn.Module):
@@ -38,7 +38,7 @@ class CflowModel(nn.Module):
         self.dec_arch = decoder
         self.pool_layers = layers
 
-        self.encoder = TimmFeatureExtractor(backbone=self.backbone, layers=self.pool_layers, pre_trained=pre_trained)
+        self.encoder = FeatureExtractor(backbone=self.backbone, layers=self.pool_layers, pre_trained=pre_trained)
         self.pool_dims = self.encoder.out_dims
         self.decoders = nn.ModuleList(
             [
