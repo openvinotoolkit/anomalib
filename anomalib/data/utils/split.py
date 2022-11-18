@@ -82,7 +82,7 @@ def random_split(
     assert all(0 < ratio < 1 for ratio in split_ratio), f"all split ratios must be between 0 and 1, found {split_ratio}"
 
     # create list of source data
-    if label_aware:
+    if label_aware and "label_index" in dataset.samples.keys():
         indices_per_label = [group.index for _, group in dataset.samples.groupby("label_index")]
         per_label_datasets = [dataset.subsample(indices) for indices in indices_per_label]
     else:
@@ -95,8 +95,8 @@ def random_split(
         # get subset lengths
         subset_lengths = []
         for ratio in split_ratio:
-            subset_lengths.append(int(math.floor(len(label_dataset) * ratio)))
-        for i in range(len(label_dataset) - sum(subset_lengths)):
+            subset_lengths.append(int(math.floor(len(label_dataset.samples) * ratio)))
+        for i in range(len(label_dataset.samples) - sum(subset_lengths)):
             subset_idx = i % sum(subset_lengths)
             subset_lengths[subset_idx] += 1
         if 0 in subset_lengths:
@@ -107,7 +107,7 @@ def random_split(
 
         # perform random subsampling
         random_state = torch.Generator().manual_seed(seed) if seed else None
-        indices = torch.randperm(len(label_dataset), generator=random_state)
+        indices = torch.randperm(len(label_dataset.samples), generator=random_state)
         subsets.append(
             [label_dataset.subsample(subset_indices) for subset_indices in torch.split(indices, subset_lengths)]
         )

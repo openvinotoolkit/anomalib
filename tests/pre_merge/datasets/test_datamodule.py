@@ -6,10 +6,27 @@ import numpy as np
 import pytest
 
 from anomalib.config import update_input_size_config
-from anomalib.data import BTech, Folder, MVTec, get_datamodule
+from anomalib.data import Avenue, BTech, Folder, MVTec, UCSDped, get_datamodule
 from anomalib.pre_processing.transforms import Denormalize, ToNumpy
 from tests.helpers.config import get_test_configurable_parameters
 from tests.helpers.dataset import TestDataset, get_dataset_path
+
+
+@pytest.fixture(autouse=True)
+def avenue_data_module():
+    root = get_dataset_path(dataset="avenue")
+    datamodule = Avenue(
+        root=root,
+        gt_dir=os.path.join(root, "ground_truth_demo"),
+        image_size=(256, 256),
+        train_batch_size=1,
+        eval_batch_size=1,
+        num_workers=0,
+        val_split_mode="from_test",
+    )
+    datamodule.setup()
+
+    return datamodule
 
 
 @pytest.fixture(autouse=True)
@@ -59,9 +76,25 @@ def folder_data_module():
         task="segmentation",
         split_ratio=0.2,
         image_size=(256, 256),
-        train_batch_size=32,
-        eval_batch_size=32,
+        train_batch_size=1,
+        eval_batch_size=1,
         num_workers=8,
+        val_split_mode="from_test",
+    )
+    datamodule.setup()
+
+    return datamodule
+
+
+@pytest.fixture(autouse=True)
+def ucsdped_data_module():
+    datamodule = UCSDped(
+        root=get_dataset_path(dataset="ucsd"),
+        category="UCSDped2",
+        image_size=(256, 256),
+        train_batch_size=1,
+        eval_batch_size=1,
+        num_workers=0,
         val_split_mode="from_test",
     )
     datamodule.setup()
@@ -75,90 +108,37 @@ def data_sample(mvtec_data_module):
     return data
 
 
-class TestMVTecDataModule:
+@pytest.mark.parametrize(
+    "data_module",
+    ["mvtec_data_module", "btech_data_module", "folder_data_module", "avenue_data_module", "ucsdped_data_module"],
+)
+class TestDataModule:
     """Test MVTec AD Data Module."""
 
-    def test_batch_size(self, mvtec_data_module):
+    def test_batch_size(self, data_module, request):
         """test_mvtec_datamodule [summary]"""
-        _, train_data_sample = next(enumerate(mvtec_data_module.train_dataloader()))
-        _, val_data_sample = next(enumerate(mvtec_data_module.val_dataloader()))
+        data_module = request.getfixturevalue(data_module)
+        _, train_data_sample = next(enumerate(data_module.train_dataloader()))
+        _, val_data_sample = next(enumerate(data_module.val_dataloader()))
         assert train_data_sample["image"].shape[0] == 1
         assert val_data_sample["image"].shape[0] == 1
 
-    def test_val_and_test_dataloaders_has_mask_and_gt(self, mvtec_data_module):
+    def test_val_and_test_dataloaders_has_mask_and_gt(self, data_module, request):
         """Test Validation and Test dataloaders should return filenames, image, mask and label."""
-        _, val_data = next(enumerate(mvtec_data_module.val_dataloader()))
-        _, test_data = next(enumerate(mvtec_data_module.test_dataloader()))
+        data_module = request.getfixturevalue(data_module)
+        _, val_data = next(enumerate(data_module.val_dataloader()))
+        _, test_data = next(enumerate(data_module.test_dataloader()))
 
-        assert sorted(["image_path", "mask_path", "image", "label", "mask"]) == sorted(val_data.keys())
-        assert sorted(["image_path", "mask_path", "image", "label", "mask"]) == sorted(test_data.keys())
+        assert {"image", "label", "mask"}.issubset(set(val_data.keys()))
+        assert {"image", "label", "mask"}.issubset(set(test_data.keys()))
 
-    def test_non_overlapping_splits(self, mvtec_data_module):
+    def test_non_overlapping_splits(self, data_module, request):
         """This test ensures that the train and test splits generated are non-overlapping."""
+        data_module = request.getfixturevalue(data_module)
         assert (
             len(
-                set(mvtec_data_module.test_data.samples["image_path"].values).intersection(
-                    set(mvtec_data_module.train_data.samples["image_path"].values)
-                )
-            )
-            == 0
-        ), "Found train and test split contamination"
-
-
-class TestBTechDataModule:
-    """Test BTech Data Module."""
-
-    def test_batch_size(self, btech_data_module):
-        """Test batch size."""
-        _, train_data_sample = next(enumerate(btech_data_module.train_dataloader()))
-        _, val_data_sample = next(enumerate(btech_data_module.val_dataloader()))
-        assert train_data_sample["image"].shape[0] == 1
-        assert val_data_sample["image"].shape[0] == 1
-
-    def test_val_and_test_dataloaders_has_mask_and_gt(self, btech_data_module):
-        """Test Validation and Test dataloaders should return filenames, image, mask and label."""
-        _, val_data = next(enumerate(btech_data_module.val_dataloader()))
-        _, test_data = next(enumerate(btech_data_module.test_dataloader()))
-
-        assert sorted(["image_path", "mask_path", "image", "label", "mask"]) == sorted(val_data.keys())
-        assert sorted(["image_path", "mask_path", "image", "label", "mask"]) == sorted(test_data.keys())
-
-    def test_non_overlapping_splits(self, btech_data_module):
-        """This test ensures that the train and test splits generated are non-overlapping."""
-        assert (
-            len(
-                set(btech_data_module.test_data.samples["image_path"].values).intersection(
-                    set(btech_data_module.train_data.samples["image_path"].values)
-                )
-            )
-            == 0
-        ), "Found train and test split contamination"
-
-
-class TestFolderDataModule:
-    """Test Folder Data Module."""
-
-    def test_batch_size(self, folder_data_module):
-        """Test batch size."""
-        _, train_data_sample = next(enumerate(folder_data_module.train_dataloader()))
-        _, val_data_sample = next(enumerate(folder_data_module.val_dataloader()))
-        assert train_data_sample["image"].shape[0] == 16
-        assert val_data_sample["image"].shape[0] == 12
-
-    def test_val_and_test_dataloaders_has_mask_and_gt(self, folder_data_module):
-        """Test Validation and Test dataloaders should return filenames, image, mask and label."""
-        _, val_data = next(enumerate(folder_data_module.val_dataloader()))
-        _, test_data = next(enumerate(folder_data_module.test_dataloader()))
-
-        assert sorted(["image_path", "mask_path", "image", "label", "mask"]) == sorted(val_data.keys())
-        assert sorted(["image_path", "mask_path", "image", "label", "mask"]) == sorted(test_data.keys())
-
-    def test_non_overlapping_splits(self, folder_data_module):
-        """This test ensures that the train and test splits generated are non-overlapping."""
-        assert (
-            len(
-                set(folder_data_module.test_data.samples["image_path"].values).intersection(
-                    set(folder_data_module.train_data.samples["image_path"].values)
+                set(data_module.test_data.samples["image_path"].values).intersection(
+                    set(data_module.train_data.samples["image_path"].values)
                 )
             )
             == 0
