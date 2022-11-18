@@ -5,5 +5,6 @@
 
 from .timm import TimmFeatureExtractor
 from .torchfx import get_torchfx_feature_extractor
+from .utils import dryrun_find_featuremap_dims
 
-__all__ = ["TimmFeatureExtractor", "get_torchfx_feature_extractor"]
+__all__ = ["TimmFeatureExtractor", "dryrun_find_featuremap_dims", "get_torchfx_feature_extractor"]

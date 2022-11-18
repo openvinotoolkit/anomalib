@@ -12,7 +12,7 @@ from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 
 from anomalib.models.components.base.anomaly_module import AnomalyModule
-from anomalib.utils.metrics import metric_collection_from_names
+from anomalib.utils.metrics import create_metric_collection
 
 logger = logging.getLogger(__name__)
 
@@ -74,8 +74,8 @@ class MetricsConfigurationCallback(Callback):
             pixel_metric_names = self.pixel_metric_names
 
         if isinstance(pl_module, AnomalyModule):
-            pl_module.image_metrics = metric_collection_from_names(image_metric_names, "image_")
-            pl_module.pixel_metrics = metric_collection_from_names(pixel_metric_names, "pixel_")
+            pl_module.image_metrics = create_metric_collection(image_metric_names, "image_")
+            pl_module.pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
 
             pl_module.image_metrics.set_threshold(pl_module.image_threshold.value)
             pl_module.pixel_metrics.set_threshold(pl_module.pixel_threshold.value)
