@@ -116,7 +116,7 @@ class AvenueClipsIndexer(ClipsIndexer):
         else:
             mat = scipy.io.loadmat(matfile)
             masks = np.vstack([np.stack(m) for m in mat["volLabel"]])
-            masks = masks[frames]
+            masks = np.take(masks, frames, 0)
         return masks
 
 
