@@ -32,7 +32,9 @@ class STFPMModel(nn.Module):
 
         self.backbone = backbone
         self.teacher_model = FeatureExtractor(backbone=self.backbone, pre_trained=True, layers=layers)
-        self.student_model = FeatureExtractor(backbone=self.backbone, pre_trained=False, layers=layers)
+        self.student_model = FeatureExtractor(
+            backbone=self.backbone, pre_trained=False, layers=layers, requires_grad=True
+        )
 
         # teacher model is fixed
         for parameters in self.teacher_model.parameters():
