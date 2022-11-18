@@ -10,6 +10,7 @@ from urllib.request import urlretrieve
 
 import albumentations as A
 import cv2
+import numpy as np
 import torch
 from pandas import DataFrame
 from torch import Tensor
@@ -96,7 +97,7 @@ class UCSDpedClipsIndexer(ClipsIndexer):
         mask_frames = sorted(glob.glob(mask_folder + "/*"))
         mask_paths = [mask_frames[idx] for idx in frames.int()]
 
-        masks = torch.stack([Tensor(cv2.imread(mask_path, flags=0)) / 255.0 for mask_path in mask_paths])
+        masks = np.stack([cv2.imread(mask_path, flags=0) / 255.0 for mask_path in mask_paths])
         return masks
 
     def _compute_frame_pts(self) -> None:

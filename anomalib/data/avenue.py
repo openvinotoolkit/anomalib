@@ -24,7 +24,6 @@ import albumentations as A
 import cv2
 import numpy as np
 import scipy.io
-import torch
 from pandas import DataFrame
 from torch import Tensor
 
@@ -114,10 +113,10 @@ class AvenueClipsIndexer(ClipsIndexer):
         if mask_folder.exists():
             mask_frames = sorted(glob.glob(str(mask_folder) + "/*"))
             mask_paths = [mask_frames[idx] for idx in frames.int()]
-            masks = torch.stack([Tensor(cv2.imread(mask_path, flags=0)) for mask_path in mask_paths])
+            masks = np.stack([cv2.imread(mask_path, flags=0) for mask_path in mask_paths])
         else:
             mat = scipy.io.loadmat(matfile)
-            masks = Tensor(np.vstack([np.stack(m) for m in mat["volLabel"]]))
+            masks = np.vstack([np.stack(m) for m in mat["volLabel"]])
             masks = masks[frames]
         return masks
 
