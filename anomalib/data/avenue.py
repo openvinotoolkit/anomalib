@@ -10,7 +10,6 @@ Reference:
     Proceedings of the IEEE international conference on computer vision. 2013.
 """
 
-import glob
 import logging
 import math
 import zipfile
@@ -111,9 +110,9 @@ class AvenueClipsIndexer(ClipsIndexer):
         # read masks from .png files if available, othwerise from mat files.
         mask_folder = Path(matfile).with_suffix("")
         if mask_folder.exists():
-            mask_frames = sorted(glob.glob(str(mask_folder) + "/*"))
+            mask_frames = sorted(mask_folder.glob("*"))
             mask_paths = [mask_frames[idx] for idx in frames.int()]
-            masks = np.stack([cv2.imread(mask_path, flags=0) for mask_path in mask_paths])
+            masks = np.stack([cv2.imread(str(mask_path), flags=0) for mask_path in mask_paths])
         else:
             mat = scipy.io.loadmat(matfile)
             masks = np.vstack([np.stack(m) for m in mat["volLabel"]])
@@ -244,7 +243,7 @@ class Avenue(AnomalibDataModule):
         # convert masks to numpy
         masks_dir = gt_dir / "testing_label_mask"
         # get file names
-        mat_files = [filename for filename in masks_dir.glob("*") if filename.suffix == ".mat"]
+        mat_files = list(masks_dir.glob("*.mat"))
         mask_folders = [matfile.with_suffix("") for matfile in mat_files]
         if not all(folder.exists() for folder in mask_folders):
             # convert mask files to images
