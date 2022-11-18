@@ -11,14 +11,19 @@ import albumentations as A
 import cv2
 import numpy as np
 from albumentations.pytorch import ToTensorV2
+from pytorch_lightning import Trainer, seed_everything
 from torch.utils.data import DataLoader
 
-from anomalib.data import InferenceDataset
+from anomalib.config import get_configurable_parameters
+from anomalib.data import InferenceDataset, get_datamodule
+from anomalib.models import get_model
 from anomalib.models.rkde.feature import FeatureExtractor as NousFeatureExtractor
+from anomalib.models.rkde.model import NormalityModel
 from anomalib.models.rkde.region import RegionExtractor as NousRegionExtractor
 from anomalib.models.rkde.torch_model import RkdeModel
 from anomalib.pre_processing import PreProcessor
 from anomalib.pre_processing.pre_process import get_transforms
+from anomalib.utils.callbacks import get_callbacks
 
 
 # @pytest.mark.parametrize(
@@ -27,7 +32,7 @@ from anomalib.pre_processing.pre_process import get_transforms
 # )
 # def test_output_shapes(stage, use_original):
 def test_output_shapes() -> None:
-    stage="rcnn"
+    stage = "rcnn"
     use_original = False
 
     # NOUS implementation
@@ -52,6 +57,47 @@ def test_output_shapes() -> None:
     anomalib_rois, anomalib_features = torch_model.get_rois_and_features(data["image"].cuda())
 
     assert len(nous_boxes[0]) == len(anomalib_rois), "Number of boxes should be the same."
-    assert np.allclose(nous_boxes, anomalib_rois.cpu().numpy()), "Boxes should be the same."
+    assert np.allclose(nous_boxes, anomalib_rois.cpu().numpy(), atol=1e-02), "Boxes should be the same."
     assert nous_features.shape == anomalib_features.shape, "Feature shapes do not match."
     assert np.allclose(nous_features, anomalib_features.cpu().numpy(), atol=1e-02), "Features do not match."
+
+
+def test_normality_model():
+    seed_everything(42)
+
+    config = get_configurable_parameters(model_name="rkde")
+    datamodule = get_datamodule(config)
+    model = get_model(config)
+    callbacks = get_callbacks(config)
+
+    # train new model
+    config.trainer.limit_val_batches = 0
+    trainer = Trainer(**config.trainer, callbacks=callbacks)
+    trainer.fit(model=model, datamodule=datamodule)
+    model.model.fit(model.embeddings)
+
+    # fit old normality model
+    nous_normality_model = NormalityModel()
+    for feature_stack in model.embeddings:
+        nous_normality_model.stage_features(feature_stack.cpu())
+    nous_normality_model.commit()
+
+    # infer image
+    model.cuda()
+    batch = next(iter(datamodule.test_dataloader()))
+    features = model.model(batch["image"].cuda())
+    nous_pred = nous_normality_model.evaluate(features.cpu(), as_density=True, ln=True)
+
+    # infer image new
+    model.cuda()
+    model.model.eval()
+    rois = model.model.region_extractor(batch["image"].cuda())
+    features = model.model.feature_extractor(batch["image"].cuda(), rois)
+    anomalib_pred = model.model.compute_kde_scores(features, as_log_likelihood=True)
+
+    assert np.allclose(nous_pred, anomalib_pred.cpu(), atol=1e-02)
+
+
+if __name__ == "__main__":
+    # test_output_shapes()
+    test_normality_model()

@@ -8,7 +8,6 @@ import random
 from typing import List, Optional, Tuple
 
 import torch
-import torch.nn.functional as F
 from torch import Tensor, nn
 
 from anomalib.models.components import PCA, GaussianKDE
@@ -68,23 +67,6 @@ class RkdeModel(nn.Module):
 
         self.register_buffer("max_length", Tensor(torch.Size([])))
         self.max_length = Tensor(torch.Size([]))
-
-    def get_rois_and_features(self, input: Tensor) -> Tuple[Tensor, Tensor]:
-        """Extract RoIs and features from an RCNN-based region and feature extractors, respectively.
-
-        Args:
-            input (Tensor): Input image batch.
-
-        Returns:
-            Tuple[Tensor, Tensor]: Tuple of Tensors containing RoIs and extracted features.
-        """
-        self.region_extractor.eval()
-        self.feature_extractor.eval()
-
-        rois = self.region_extractor(input)
-        features = self.feature_extractor(input, rois)
-
-        return rois, features
 
     def pre_process(self, feature_stack: Tensor, max_length: Optional[Tensor] = None) -> Tuple[Tensor, Tensor]:
         """Pre-process the CNN features.
@@ -198,7 +180,7 @@ class RkdeModel(nn.Module):
 
         # TODO: Here we need to sort out how to handle box detections.
 
-        return probabilities
+        return rois, probabilities
 
     def forward(self, input: Tensor) -> Tensor:
         """Prediction by normality model.
@@ -209,6 +191,11 @@ class RkdeModel(nn.Module):
         Returns:
             Tensor: Predictions
         """
-        rois, features = self.get_rois_and_features(input)
-        # return self.predict(features.view(features.shape[:2]))
+        self.region_extractor.eval()
+        self.feature_extractor.eval()
+
+        rois = self.region_extractor(input)
+        features = self.feature_extractor(input, rois)
+        if self.training:
+            return features
         return self.predict(features, rois)
