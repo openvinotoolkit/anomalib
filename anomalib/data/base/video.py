@@ -26,7 +26,7 @@ class VideoAnomalibDataset(AnomalibDataset, ABC):
 
         self.clip_length_in_frames = clip_length_in_frames
         self.frames_between_clips = frames_between_clips
-        self.pre_process = PreProcessor(image_size=(256, 256))
+        self.pre_process = pre_process
 
         self.indexer: Optional[ClipsIndexer] = None
         self.indexer_cls: Optional[Callable] = None
