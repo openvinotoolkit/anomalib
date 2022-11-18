@@ -1,6 +1,5 @@
 """UCSD Pedestrian dataset."""
 
-import glob
 import logging
 import tarfile
 from pathlib import Path
@@ -94,22 +93,22 @@ class UCSDpedClipsIndexer(ClipsIndexer):
             return None
         frames = self.clips[video_idx][frames_idx]
 
-        mask_frames = sorted(glob.glob(mask_folder + "/*"))
+        mask_frames = sorted(Path(mask_folder).glob("*.bmp"))
         mask_paths = [mask_frames[idx] for idx in frames.int()]
 
-        masks = np.stack([cv2.imread(mask_path, flags=0) / 255.0 for mask_path in mask_paths])
+        masks = np.stack([cv2.imread(str(mask_path), flags=0) / 255.0 for mask_path in mask_paths])
         return masks
 
     def _compute_frame_pts(self) -> None:
         """Retrieve the number of frames in each video."""
         self.video_pts = []
         for video_path in self.video_paths:
-            n_frames = len(glob.glob(video_path + "/*"))
+            n_frames = len(list(Path(video_path).glob("*.tif")))
             self.video_pts.append(Tensor(range(n_frames)))
 
         self.video_fps = [None] * len(self.video_paths)  # fps information cannot be inferred from folder structure
 
-    def get_clip(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor, Dict[str, Any], int]:
+    def get_clip(self, idx: int) -> Tuple[Tensor, Tensor, Dict[str, Any], int]:
         """Gets a subclip from a list of videos.
 
         Args:
@@ -127,10 +126,10 @@ class UCSDpedClipsIndexer(ClipsIndexer):
         video_path = self.video_paths[video_idx]
         clip_pts = self.clips[video_idx][clip_idx]
 
-        frames = sorted(glob.glob(video_path + "/*"))
+        frames = sorted(Path(video_path).glob("*.tif"))
 
         frame_paths = [frames[pt] for pt in clip_pts.int()]
-        video = torch.stack([Tensor(read_image(frame_path)) for frame_path in frame_paths])
+        video = torch.stack([Tensor(read_image(str(frame_path))) for frame_path in frame_paths])
 
         return video, torch.empty((1, 0)), {}, video_idx
 
