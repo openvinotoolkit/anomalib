@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import importlib
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Union
 
 import torch
@@ -13,11 +14,19 @@ from torchvision.models._api import WeightsEnum
 from torchvision.models.feature_extraction import create_feature_extractor
 
 
+@dataclass
+class BackboneParams:
+    """Used for serializing the backbone."""
+
+    class_path: str
+    init_args: Dict
+
+
 class TorchFXFeatureExtractor:
     """Extract features from a CNN.
 
     Args:
-        backbone (Union[str, nn.Module]): The backbone to which the feature extraction hooks are attached.
+        backbone (Union[str, BackboneParams, Dict]): The backbone to which the feature extraction hooks are attached.
             If the name is provided, the model is loaded from torchvision. Otherwise, the model class can be
             provided and it will try to load the weights from the provided weights file.
         return_nodes (Iterable[str]): List of layer names of the backbone to which the hooks are attached.
@@ -27,7 +36,6 @@ class TorchFXFeatureExtractor:
             path for custom models.
         requires_grad (bool): Models like ``stfpm`` use the feature extractor for training. In such cases we should
             set ``requires_grad`` to ``True``. Default is ``False``.
-        **kwargs: Additional arguments to pass to the model class.
 
     Example:
         With torchvision models:
@@ -49,10 +57,9 @@ class TorchFXFeatureExtractor:
 
         With custom models:
 
-            >>> import CustomModel
             >>> from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor
             >>> feature_extractor = TorchFXFeatureExtractor(
-                    CustomModel, ["linear_relu_stack.3"], weights="path/to/weights.pth"
+                    "path.to.CustomModel", ["linear_relu_stack.3"], weights="path/to/weights.pth"
                 )
             >>> input = torch.randn(1, 1, 28, 28)
             >>> features = feature_extractor(input)
@@ -62,28 +69,29 @@ class TorchFXFeatureExtractor:
 
     def __init__(
         self,
-        backbone: Union[str, nn.Module],
+        backbone: Union[str, BackboneParams, Dict],
         return_nodes: List[str],
         weights: Optional[Union[WeightsEnum, str]] = None,
         requires_grad: bool = False,
-        **kwargs,
     ):
-        self.feature_extractor = self.initialize_feature_extractor(
-            backbone, return_nodes, weights, requires_grad, **kwargs
-        )
+        if isinstance(backbone, dict):
+            backbone = BackboneParams(**backbone)
+        elif isinstance(backbone, str):
+            backbone = BackboneParams(class_path=backbone, init_args={})
+
+        self.feature_extractor = self.initialize_feature_extractor(backbone, return_nodes, weights, requires_grad)
 
     def initialize_feature_extractor(
         self,
-        backbone: Union[str, nn.Module],
+        backbone: BackboneParams,
         return_nodes: List[str],
         weights: Optional[Union[WeightsEnum, str]] = None,
         requires_grad: bool = False,
-        **kwargs,
     ) -> Union[GraphModule, nn.Module]:
         """Extract features from a CNN.
 
         Args:
-            backbone (Union[str, nn.Module]): The backbone to which the feature extraction hooks are attached.
+            backbone (Union[str, BackboneParams]): The backbone to which the feature extraction hooks are attached.
                 If the name is provided, the model is loaded from torchvision. Otherwise, the model class can be
                 provided and it will try to load the weights from the provided weights file.
             return_nodes (Iterable[str]): List of layer names of the backbone to which the hooks are attached.
@@ -93,24 +101,17 @@ class TorchFXFeatureExtractor:
                 path for custom models.
             requires_grad (bool): Models like ``stfpm`` use the feature extractor for training. In such cases we should
                 set ``requires_grad`` to ``True``. Default is ``False``.
-            **kwargs: Additional arguments to pass to the model class.
 
         Returns:
             Feature Extractor based on TorchFX.
         """
-        # Get torchvision feature extractor
-        if isinstance(backbone, str):
-            try:
-                models = importlib.import_module("torchvision.models")
-                backbone_model = getattr(models, backbone)
-            except ModuleNotFoundError as exception:
-                raise ModuleNotFoundError(f"Backbone {backbone} not found in torchvision.models") from exception
-            if weights is not None:
-                assert isinstance(weights, WeightsEnum), "Weights should be of type WeightsEnum"
-            feature_extractor = create_feature_extractor(backbone_model(weights=weights), return_nodes)
-        # Load model from ``nn.Module`` class
+        backbone_model = self.get_backbone_class(backbone.class_path)
+        if isinstance(weights, WeightsEnum):  # torchvision models
+            feature_extractor = create_feature_extractor(
+                backbone_model(weights=weights, **backbone.init_args), return_nodes
+            )
         else:
-            backbone_model = backbone(**kwargs)
+            backbone_model = backbone_model(**backbone.init_args)
             if weights is not None:
                 assert isinstance(weights, str), "Weights should point to a path"
                 backbone_model.load_state_dict(torch.load(weights)["state_dict"])
@@ -122,6 +123,32 @@ class TorchFXFeatureExtractor:
                 param.requires_grad_(False)
 
         return feature_extractor
+
+    def get_backbone_class(self, backbone: str) -> nn.Module:
+        """Get the backbone class from the provided path.
+
+        If only the moodel name is provided, it will try to load the model from torchvision.
+
+        Args:
+            backbone (str): Path to the backbone class.
+
+        Returns:
+            Backbone class.
+        """
+        try:
+            if len(backbone.split(".")) > 1:
+                # assumes that the entire class path is provided
+                models = importlib.import_module(".".join(backbone.split(".")[:-1]))
+                backbone_model = getattr(models, backbone.split(".")[-1])
+            else:
+                models = importlib.import_module("torchvision.models")
+                backbone_model = getattr(models, backbone)
+        except ModuleNotFoundError as exception:
+            raise ModuleNotFoundError(
+                f"Backbone {backbone} not found in torchvision.models and not found in {backbone} module either"
+            ) from exception
+
+        return backbone_model
 
     def __call__(self, inputs: Tensor) -> Dict[str, Tensor]:
         """Extract features from the input."""

@@ -3,6 +3,7 @@ from typing import Tuple
 import pytest
 import torch
 from torchvision.models.efficientnet import EfficientNet_B5_Weights
+from torchvision.models.resnet import ResNet18_Weights
 
 from anomalib.models.components.feature_extractors import (
     FeatureExtractor,
@@ -49,11 +50,23 @@ class TestFeatureExtractor:
         assert features["layer2"].shape == torch.Size((32, 128, 32, 32))
         assert features["layer3"].shape == torch.Size((32, 256, 16, 16))
 
+        # Test if model can be loaded by using just its name
         model = TorchFXFeatureExtractor(
             backbone="efficientnet_b5", return_nodes=["features.6.8"], weights=EfficientNet_B5_Weights.DEFAULT
         )
         features = model(test_input)
         assert features["features.6.8"].shape == torch.Size((32, 304, 8, 8))
+
+        # Test if model can be loaded by using entire class path
+        model = TorchFXFeatureExtractor(
+            backbone="torchvision.models.resnet18",
+            return_nodes=["layer1", "layer2", "layer3"],
+            weights=ResNet18_Weights.DEFAULT,
+        )
+        features = model(test_input)
+        assert features["layer1"].shape == torch.Size((32, 64, 64, 64))
+        assert features["layer2"].shape == torch.Size((32, 128, 32, 32))
+        assert features["layer3"].shape == torch.Size((32, 256, 16, 16))
 
 
 @pytest.mark.parametrize(

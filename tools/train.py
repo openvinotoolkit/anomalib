@@ -1,4 +1,4 @@
-"""Anomalib Traning Script.
+"""Anomalib Training Script.
 
 This script reads the name of the model or config file from command
 line, train/test the anomaly model to get quantitative and qualitative
