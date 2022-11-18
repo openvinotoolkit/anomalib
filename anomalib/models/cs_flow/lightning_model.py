@@ -122,4 +122,5 @@ class CsFlowLightning(CsFlow):
             lr=self.hparams.model.lr,
             eps=self.hparams.model.eps,
             weight_decay=self.hparams.model.weight_decay,
+            betas=(0.5, 0.9),
         )
