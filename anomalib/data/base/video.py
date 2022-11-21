@@ -17,24 +17,24 @@ class VideoAnomalibDataset(AnomalibDataset, ABC):
     Args:
         task (str): Task type, either 'classification' or 'segmentation'
         pre_process (PreProcessor): Pre-processor object
-        frames_per_clip (int): Number of video frames in each clip.
-        stride (int): Number of frames between each consecutive video clip.
+        clip_length_in_frames (int): Number of video frames in each clip.
+        frames_between_clips (int): Number of frames between each consecutive video clip.
     """
 
-    def __init__(self, task: str, pre_process: PreProcessor, frames_per_clip: int, stride: int):
+    def __init__(self, task: str, pre_process: PreProcessor, clip_length_in_frames: int, frames_between_clips: int):
         super().__init__(task, pre_process)
 
-        self.frames_per_clip = frames_per_clip
-        self.stride = stride
-        self.pre_process = PreProcessor(image_size=(256, 256))
+        self.clip_length_in_frames = clip_length_in_frames
+        self.frames_between_clips = frames_between_clips
+        self.pre_process = pre_process
 
-        self.video_clips: Optional[ClipsIndexer] = None
-        self.clips_type: Optional[Callable] = None
+        self.indexer: Optional[ClipsIndexer] = None
+        self.indexer_cls: Optional[Callable] = None
 
     def __len__(self) -> int:
         """Get length of the dataset."""
-        assert isinstance(self.video_clips, ClipsIndexer)
-        return self.video_clips.num_clips()
+        assert isinstance(self.indexer, ClipsIndexer)
+        return self.indexer.num_clips()
 
     @property
     def samples(self):
@@ -52,35 +52,37 @@ class VideoAnomalibDataset(AnomalibDataset, ABC):
 
         Should be called after each change to self._samples
         """
-        assert callable(self.clips_type)
-        self.video_clips = self.clips_type(  # pylint: disable=not-callable
+        assert callable(self.indexer_cls)
+        self.indexer = self.indexer_cls(  # pylint: disable=not-callable
             video_paths=list(self.samples.image_path),
             mask_paths=list(self.samples.mask_path),
-            clip_length_in_frames=self.frames_per_clip,
-            frames_between_clips=self.stride,
+            clip_length_in_frames=self.clip_length_in_frames,
+            frames_between_clips=self.frames_between_clips,
         )
 
     def __getitem__(self, index: int) -> Dict[str, Union[str, Tensor]]:
         """Return mask, clip and file system information."""
-        assert isinstance(self.video_clips, ClipsIndexer)
+        assert isinstance(self.indexer, ClipsIndexer)
 
-        item = self.video_clips.get_item(index)
+        item = self.indexer.get_item(index)
+        # include the untransformed image for visualization
+        item["original_image"] = item["image"].to(torch.uint8)
 
         # apply transforms
-        if "mask" in item.keys() and item["mask"] is not None:
+        if "mask" in item and item["mask"] is not None:
             processed_frames = [
-                self.pre_process(image=frame.numpy(), mask=m.numpy()) for frame, m in zip(item["image"], item["mask"])
+                self.pre_process(image=frame.numpy(), mask=mask) for frame, mask in zip(item["image"], item["mask"])
             ]
             item["image"] = torch.stack([item["image"] for item in processed_frames]).squeeze(0)
             mask = item["mask"]
             item["mask"] = torch.stack([item["mask"] for item in processed_frames]).squeeze(0)
-            item["label"] = Tensor([1 in frame for frame in mask]).int()
+            item["label"] = Tensor([1 in frame for frame in mask]).int().squeeze(0)
         else:
             item["image"] = torch.stack(
                 [self.pre_process(image=frame.numpy())["image"] for frame in item["image"]]
             ).squeeze(0)
 
         if item["mask"] is None:
-            del item["mask"]
+            item.pop("mask")
 
         return item

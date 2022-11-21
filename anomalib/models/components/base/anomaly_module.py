@@ -146,7 +146,7 @@ class AnomalyModule(pl.LightningModule, ABC):
     def _collect_outputs(image_metric, pixel_metric, outputs):
         for output in outputs:
             image_metric.cpu()
-            image_metric.update(output["pred_scores"], output["label"].int().squeeze())
+            image_metric.update(output["pred_scores"], output["label"].int())
             if "mask" in output.keys() and "anomaly_maps" in output.keys():
                 pixel_metric.cpu()
                 pixel_metric.update(output["anomaly_maps"], output["mask"].int())

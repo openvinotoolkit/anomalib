@@ -1,28 +1,11 @@
 """Video utils."""
 
-import glob
+import warnings
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
-import cv2
-import numpy as np
 from torch import Tensor
 from torchvision.datasets.video_utils import VideoClips
-
-from anomalib.data.utils import read_image
-
-
-def read_frames_from_video(video_path: str, frame_idx: Iterable[int], image_size: Tuple[int, int] = None):
-    """Read images from a folder of video frames."""
-    frames = sorted(glob.glob(video_path + "/*"))
-
-    frame_paths = [frames[pt] for pt in frame_idx]
-    video = np.stack([read_image(frame_path) for frame_path in frame_paths])
-
-    if image_size:
-        height, width = image_size
-        video = np.stack([cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA) for image in video])
-    return video
 
 
 class ClipsIndexer(VideoClips, ABC):
@@ -37,8 +20,18 @@ class ClipsIndexer(VideoClips, ABC):
         mask_paths (List[str]): List of paths to the masks for each video in the dataset.
     """
 
-    def __init__(self, video_paths: List[str], mask_paths: List[str], *args, **kwargs) -> None:
-        super().__init__(video_paths=video_paths, *args, **kwargs)
+    def __init__(
+        self,
+        video_paths: List[str],
+        mask_paths: List[str],
+        clip_length_in_frames: int = 1,
+        frames_between_clips: int = 1,
+    ) -> None:
+        super().__init__(
+            video_paths=video_paths,
+            clip_length_in_frames=clip_length_in_frames,
+            frames_between_clips=frames_between_clips,
+        )
         self.mask_paths = mask_paths
 
     def last_frame_idx(self, video_idx: int) -> int:
@@ -48,10 +41,14 @@ class ClipsIndexer(VideoClips, ABC):
     @abstractmethod
     def get_mask(self, idx: int) -> Optional[Tensor]:
         """Return the masks for the given index."""
+        raise NotImplementedError
 
     def get_item(self, idx: int) -> Dict[str, Any]:
         """Return a dictionary containing the clip, mask, video path and frame indices."""
-        clip, _, _, _ = self.get_clip(idx)
+        with warnings.catch_warnings():
+            # silence warning caused by bug in torchvision, see https://github.com/pytorch/vision/issues/5787
+            warnings.simplefilter("ignore")
+            clip, _, _, _ = self.get_clip(idx)
 
         video_idx, clip_idx = self.get_clip_location(idx)
         video_path = self.video_paths[video_idx]
