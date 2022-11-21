@@ -431,7 +431,6 @@ class CsFlowModel(nn.Module):
         if self.training:
             output = self.graph(features)
         else:
-            # TODO: add anomaly map generation
             z_dist, _ = self.graph(features)  # Ignore Jacobians
             anomaly_scores = self._get_anomaly_scores(z_dist)
             anomaly_maps = self._get_anomaly_maps(z_dist)
