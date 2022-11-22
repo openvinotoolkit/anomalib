@@ -23,15 +23,15 @@ class FeatureExtractor(nn.Module):
     """Region-based Feature Extractor."""
 
     # def __init__(
-        # self,
-        # region_extractor_stage: str = "rcnn",
-        # # TODO: Rename ``use_original``
-        # use_original: bool = False,
-        # min_box_size: int = 25,
-        # iou_threshold: float = 0.3,
-        # likelihood: Optional[float] = None,
-        # tiling: bool = False,
-        # tile_size: int = 32,
+    # self,
+    # region_extractor_stage: str = "rcnn",
+    # # TODO: Rename ``use_original``
+    # use_original: bool = False,
+    # min_box_size: int = 25,
+    # iou_threshold: float = 0.3,
+    # likelihood: Optional[float] = None,
+    # tiling: bool = False,
+    # tile_size: int = 32,
     # ) -> None:
     def __init__(self) -> None:
         super().__init__()
@@ -86,8 +86,8 @@ class FeatureExtractor(nn.Module):
         ## Add zero column for the scores.
         # rois = F.pad(input=rois, pad=(1, 0, 0, 0), mode="constant", value=0)
         # Scale the RoIs based on the the new image size.
-        # rois *= scale
-        rois = [boxes * scale for boxes in rois]
+        rois[:, 1:] *= scale
+        # rois = [boxes * scale for boxes in rois]
 
         # Add zero column for the scores.
         # rois = [F.pad(input=boxes, pad=(1, 0, 0, 0), mode="constant", value=0) * scale for boxes in rois]
@@ -241,6 +241,8 @@ class RegionExtractor(nn.Module):
             else:
                 raise ValueError("Unknown stage {}".format(self.stage))
 
+        indices = torch.repeat_interleave(torch.arange(len(regions)), Tensor([rois.shape[0] for rois in regions]).int())
+        regions = torch.cat([indices.unsqueeze(1).to(input.device), torch.cat(regions)], dim=1)
         return regions
 
     def post_process_box_predictions(

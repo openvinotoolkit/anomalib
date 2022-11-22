@@ -160,7 +160,7 @@ class RkdeModel(nn.Module):
 
         return 1 / (1 + torch.exp(self.threshold_steepness * (scores - self.threshold_offset)))
 
-    def predict(self, features: Tensor, batch_rois: List[Tensor]) -> Tensor:
+    def predict(self, features: Tensor, rois: List[Tensor]) -> Tensor:
         """Predicts the probability that the features belong to the anomalous class.
 
         Args:
@@ -172,21 +172,21 @@ class RkdeModel(nn.Module):
         """
 
         scores = self.compute_kde_scores(features, as_log_likelihood=True)
-        scores = self.compute_probabilities(scores)
-        batch_scores = torch.split(scores, [len(rois) for rois in batch_rois])
+        probabilities = self.compute_probabilities(scores)
+        # batch_scores = torch.split(scores, [len(rois) for rois in batch_rois])
 
         # remove items with low probability
-        batch_keep = [scores > self.confidence_threshold for scores in batch_scores]
-        batch_rois = [rois[keep] for rois, keep in zip(batch_rois, batch_keep)]
-        batch_scores = [scores[keep] for scores, keep in zip(batch_scores, batch_keep)]
+        # batch_keep = [scores > self.confidence_threshold for scores in batch_scores]
+        # batch_rois = [rois[keep] for rois, keep in zip(batch_rois, batch_keep)]
+        # batch_scores = [scores[keep] for scores, keep in zip(batch_scores, batch_keep)]
 
-        # keep = probabilities > self.confidence_threshold
-        # rois = rois[keep]
-        # probabilities = probabilities[keep]
+        keep = probabilities > self.confidence_threshold
+        rois = rois[keep]
+        probabilities = probabilities[keep]
 
         # TODO: Here we need to sort out how to handle box detections.
 
-        return batch_rois, batch_scores
+        return rois, probabilities
 
     def forward(self, input: Tensor) -> Tensor:
         """Prediction by normality model.
@@ -200,14 +200,13 @@ class RkdeModel(nn.Module):
         self.region_extractor.eval()
         self.feature_extractor.eval()
 
-        batch_rois = self.region_extractor(input)
+        rois = self.region_extractor(input)
 
-        if all(len(rois) == 0 for rois in batch_rois):
-            # no rois found in this batch
+        if rois.shape[0] == 0:
             features = torch.empty((0, 4096)).to(input.device)
         else:
-            features = self.feature_extractor(input, batch_rois)
+            features = self.feature_extractor(input, rois)
 
         if self.training:
             return features
-        return self.predict(features, batch_rois)
+        return self.predict(features, rois)
