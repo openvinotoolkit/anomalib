@@ -87,16 +87,18 @@ class FeatureExtractor(nn.Module):
         # rois = F.pad(input=rois, pad=(1, 0, 0, 0), mode="constant", value=0)
         # Scale the RoIs based on the the new image size.
         # rois *= scale
+        rois = [boxes * scale for boxes in rois]
 
         # Add zero column for the scores.
-        rois = F.pad(input=rois, pad=(1, 0, 0, 0), mode="constant", value=0)
+        # rois = [F.pad(input=boxes, pad=(1, 0, 0, 0), mode="constant", value=0) * scale for boxes in rois]
         # Scale the RoIs based on the the new image size.
-        rois *= scale
+        # rois *= scale
 
         # Forward-pass through the backbone, RoI Align and classifier.
         features = self.backbone(input)  # n_rois x 256 x 6 x 6 (AlexNet)
-        features = self.roi_align(features, rois.view(-1, 5))  # n_rois x 4096
+        features = self.roi_align(features, rois)  # n_rois x 4096
         features = self.classifer(features.view(features.size(0), -1))
+        # features = torch.split(features, [len(boxes) for boxes in rois])
 
         return features
 
@@ -239,7 +241,7 @@ class RegionExtractor(nn.Module):
             else:
                 raise ValueError("Unknown stage {}".format(self.stage))
 
-        return torch.cat(regions)
+        return regions
 
     def post_process_box_predictions(
         self, class_logits: Tensor, box_regression: Tensor, proposals: List[Tensor], image_shapes: List[Tuple[int, int]]

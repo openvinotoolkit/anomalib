@@ -96,7 +96,7 @@ class Rkde(AnomalyModule):
         Returns:
           Dictionary containing probability, prediction and ground truth values.
         """
-        batch["pred_scores"] = self.model(batch["image"])
+        batch["pred_boxes"], batch["boxes_scores"] = self.model(batch["image"])
 
         return batch
 
