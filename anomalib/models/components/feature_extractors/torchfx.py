@@ -5,7 +5,7 @@
 
 import importlib
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Union
+from typing import Callable, Dict, List, Optional, Union
 
 import torch
 from torch import Tensor, nn
@@ -105,13 +105,12 @@ class TorchFXFeatureExtractor:
         Returns:
             Feature Extractor based on TorchFX.
         """
-        backbone_model = self.get_backbone_class(backbone.class_path)
+        backbone_class = self._get_backbone_class(backbone.class_path)
+        backbone_model = backbone_class(weights=weights, **backbone.init_args)
         if isinstance(weights, WeightsEnum):  # torchvision models
-            feature_extractor = create_feature_extractor(
-                backbone_model(weights=weights, **backbone.init_args), return_nodes
-            )
+            feature_extractor = create_feature_extractor(model=backbone_model, return_nodes=return_nodes)
         else:
-            backbone_model = backbone_model(**backbone.init_args)
+            backbone_model = backbone_class(**backbone.init_args)
             if weights is not None:
                 assert isinstance(weights, str), "Weights should point to a path"
                 backbone_model.load_state_dict(torch.load(weights)["state_dict"])
@@ -124,10 +123,24 @@ class TorchFXFeatureExtractor:
 
         return feature_extractor
 
-    def get_backbone_class(self, backbone: str) -> nn.Module:
+    @staticmethod
+    def _get_backbone_class(backbone: str) -> Callable[..., nn.Module]:
         """Get the backbone class from the provided path.
 
-        If only the moodel name is provided, it will try to load the model from torchvision.
+        If only the model name is provided, it will try to load the model from torchvision.
+
+        Example:
+            >>> from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor
+            >>> TorchFXFeatureExtractor._get_backbone_class("efficientnet_b5")
+            <function torchvision.models.efficientnet.efficientnet_b5(
+                *,
+                weights: Union[torchvision.models.efficientnet.EfficientNet_B5_Weights, NoneType] = None,
+                progress: bool = True,
+                **kwargs: Any
+                ) -> torchvision.models.efficientnet.EfficientNet>
+
+            >>> TorchFXFeatureExtractor._get_backbone_class("path.to.CustomModel")
+            <class 'path.to.CustomModel'>
 
         Args:
             backbone (str): Path to the backbone class.
@@ -139,16 +152,16 @@ class TorchFXFeatureExtractor:
             if len(backbone.split(".")) > 1:
                 # assumes that the entire class path is provided
                 models = importlib.import_module(".".join(backbone.split(".")[:-1]))
-                backbone_model = getattr(models, backbone.split(".")[-1])
+                backbone_class = getattr(models, backbone.split(".")[-1])
             else:
                 models = importlib.import_module("torchvision.models")
-                backbone_model = getattr(models, backbone)
+                backbone_class = getattr(models, backbone)
         except ModuleNotFoundError as exception:
             raise ModuleNotFoundError(
-                f"Backbone {backbone} not found in torchvision.models and not found in {backbone} module either"
+                f"Backbone {backbone} not found in torchvision.models nor in {backbone} module."
             ) from exception
 
-        return backbone_model
+        return backbone_class
 
     def __call__(self, inputs: Tensor) -> Dict[str, Tensor]:
         """Extract features from the input."""

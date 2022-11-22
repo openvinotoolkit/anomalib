@@ -84,21 +84,21 @@ class TimmFeatureExtractor(nn.Module):
 
         return idx
 
-    def forward(self, input_tensor: Tensor) -> Dict[str, Tensor]:
+    def forward(self, inputs: Tensor) -> Dict[str, Tensor]:
         """Forward-pass input tensor into the CNN.
 
         Args:
-            input_tensor (Tensor): Input tensor
+            inputs (Tensor): Input tensor
 
         Returns:
             Feature map extracted from the CNN
         """
         if self.requires_grad:
-            features = dict(zip(self.layers, self.feature_extractor(input_tensor)))
+            features = dict(zip(self.layers, self.feature_extractor(inputs)))
         else:
             self.feature_extractor.eval()
             with torch.no_grad():
-                features = dict(zip(self.layers, self.feature_extractor(input_tensor)))
+                features = dict(zip(self.layers, self.feature_extractor(inputs)))
         return features
 
 
