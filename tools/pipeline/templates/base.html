@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="static/anomaly_detection.css">
+    <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+    <link rel="stylesheet" href="//stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"
+        integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    <link rel="icon" href="/static/anomalib-logo.png" type="image/png">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <title>Anomaly Detection App</title>
+</head>
+
+<body>
+    <div class="header">
+        <ul>
+            <li><a href="/index">Home</a></li>
+            <li><a href="/document">Document</a></li>
+            <li><a href="/database">Database</a></li>
+            <li><a href="/train">Train</a></li>
+            <li><a href="/inference">Inference</a></li>
+            <li style="float:right"><a class="active" href="/">Log out</a></li>
+            <li style="float:right"><a href="/"><u>Welcome {{name}}</u></a></li>
+        </ul>
+        <h1 class="title">Anomaly Detection Pipeline</h1>
+        <br>
+    </div>
+    <div class="content">
+        {% block content %} {% endblock %}
+    </div>
+    <div class="footer">
+        <p>&copy; 2022 vnk8071 | Anomaly Detection Pipeline</p>
+    </div>
+
+</body>
+
+
+</html>

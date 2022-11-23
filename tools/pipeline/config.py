@@ -1,0 +1,7 @@
+SQLALCHEMY_DATABASE_URI = "sqlite:///static/uploads/AD.sqlite3"
+SECRET_KEY = "KhoiVN"
+SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+HOST = "0.0.0.0"
+PORT = 5000
+DEBUG = True

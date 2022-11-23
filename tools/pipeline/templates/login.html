@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="static/anomaly_detection.css">
+    <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+    <link rel="stylesheet" href="//stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"
+        integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    <link rel="icon" href="/static/anomalib-logo.png" type="image/png">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <title>Anomaly Detection App</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.2/css/bulma.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+
+<body>
+    <div class="header">
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/document">Document</a></li>
+            <li style="float:right"><a class="active" href="/signup">Sign up</a></li>
+        </ul>
+        <h3 class="title" style="color: #fff;">Anomaly Detection Pipeline</h3>
+        <br>
+    </div>
+    <br>
+    <div class="content-row">
+        <div class="col-sm-5" style="text-align: center;">
+            <div class="title" style="font-family: Roboto, sans-serif;">
+                <center>
+                    <img src="static/anomalib-logo.png" width="50%" style="padding-bottom: 2%;">
+                    <br>
+                    <br>
+                    <h3>Openvinotoolkit</h3>
+                </center>
+            </div>
+            <p>Home page Anomalib: <a
+                    href="https://openvinotoolkit.github.io/anomalib/">openvinotoolkit.github.io/anomalib</a></p>
+        </div>
+        <div class="col-sm-7">
+            <center>
+                <h3 class="title">Login</h3>
+                <div class="box" style="width: 80%;">
+                    {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                    <div class=" notification is-danger">
+                        {{ messages[0] }}
+                    </div>
+                    {% endif %}
+                    {% endwith %}
+                    <form method="POST" action="/login">
+                        <div class="field">
+                            <div class="control">
+                                <label for="name">Username</label>
+                                <input class="input is-large" type="text" name="name" placeholder="User Name"
+                                    autofocus="">
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <div class="control">
+                                <label for="password">Password</label>
+                                <input class="input is-large" type="password" name="password"
+                                    placeholder="User Password">
+                            </div>
+                        </div>
+                        <div class="field" style="text-align: center;">
+                            <label class="checkbox">
+                                <input type="checkbox">
+                                Remember me
+                            </label>
+                        </div>
+                        <div class="field" style="text-align: center;">
+                            <p>Have account yet? <a href="/signup">Sign Up</a></p>
+                        </div>
+                        <button class="button is-block is-info is-large is-fullwidth">Login</button>
+                    </form>
+                </div>
+            </center>
+        </div>
+    </div>
+    <div class="footer">
+        <p>&copy; 2022 vnk8071 | Anomaly Detection Pipeline</p>
+    </div>
+
+</body>

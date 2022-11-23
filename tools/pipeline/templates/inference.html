@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<ul class=flashes>
+    {% for category, message in messages %}
+    <li class="{{ category }}">{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endwith %}
+<div class="content-row">
+    <div class="content-column">
+        <h2 style="text-align: center;">Inference</h2>
+        <div class="div-form">
+            <form method=post enctype=multipart/form-data>
+                <h3>Upload image:</h3>
+                <center><input class="form-control form-control-lg" name="image_input" type="file" id="image_input"
+                        accept=".jpg,.png,.jpeg"></center>
+                <p>(Click to select a file, or drag it here)</p>
+                <label for="user_category" style="font-size: 1.25em;">Choose model and category to predict:</label>
+                <select class="round" name="user_category" id="user_category">
+                    {% for user_category in user_select %}
+                    <option value="{{user_category}}">{{user_category}}</option>"
+                    {% endfor %}
+                </select>
+                <p>Format: model_backbone_category</p>
+                <br>
+                <br>
+                <center><button class="btn btn-outline-primary btn-block" type="submit" style="width: 90%; padding: 5%;"
+                        onclick="progress()">Predict</button></center>
+            </form>
+        </div>
+        <br>
+        <div class="progress">
+            <div id="dynamic" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+                aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
+                <span id="current-progress"></span>
+            </div>
+        </div>
+    </div>
+    <div class="content-column">
+        <center>
+            <h3>Samples (save and try inference)</h3>
+            <div class="content-row">
+                <div class="content-column">
+                    <h3>Metal-nut</h3>
+                    <img src="static/metalnut.png" width="100%">
+                </div>
+                <div class="content-column">
+                    <h3>Grid</h3><img src="static/grid.png" width="100%">
+                </div>
+                <div class="content-column">
+                    <h3>Hazelnut</h3><img src="static/hazelnut.png" width="100%">
+                </div>
+            </div>
+            <div class="content-row">
+                <div class="content-column">
+                    <h3>AQA</h3>
+                    <img src="static/aqa.png" width="100%">
+                </div>
+                <div class="content-column"></div>
+                <div class="content-column"></div>
+            </div>
+        </center>
+    </div>
+</div>
+<hr>
+
+<script type="text/javascript">
+    function progress() {
+        document.getElementById('dynamic');
+        var current_progress = 0;
+        var interval = setInterval(function () {
+            current_progress += 100;
+            $("#dynamic")
+                .css("width", current_progress + "%")
+                .attr("aria-valuenow", current_progress)
+                .text("Please wait a minute");
+            if (current_progress >= 100)
+                clearInterval(interval);
+        }, 3000);
+    }
+</script>
+
+{% endblock %}
