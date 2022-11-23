@@ -205,8 +205,14 @@ class RkdeModel(nn.Module):
         if rois.shape[0] == 0:
             features = torch.empty((0, 4096)).to(input.device)
         else:
-            features = self.feature_extractor(input, rois)
+            features = self.feature_extractor(input, rois.clone())
 
         if self.training:
             return features
-        return self.predict(features, rois)
+
+        rois, scores = self.predict(features, rois)
+        indices = rois[:, 0]
+        unique = torch.unique(indices)
+        rois = [rois[indices == i, 1:] for i in unique]
+        scores = [scores[indices == i] for i in unique]
+        return rois, scores
