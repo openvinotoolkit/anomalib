@@ -56,10 +56,10 @@ Default account login:
 - Password: anomalib
 
 Login:
-<img src='static/login_app.jpg>'>
+<img src='static/login_app.jpg'>
 
 Signup:
-<img src='static/signup_app.jpg>'>
+<img src='static/signup_app.jpg'>
 
 Homepage:
 <img src='static/home_app.jpg'>
