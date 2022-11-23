@@ -3,9 +3,9 @@ dataset:
   format: ucsdped
   path: ./datasets/ucsd
   category: UCSDped2
-  task: segmentation
-  frames_per_clip: 1
-  stride: 1
+  task: detection
+  clip_length_in_frames: 1
+  frames_between_clips: 10
   image_size: 256
   train_batch_size: 32
   eval_batch_size: 32
@@ -46,7 +46,7 @@ metrics:
 
 visualization:
   show_images: False # show images on the screen
-  save_images: False # save images to the file system
+  save_images: True # save images to the file system
   log_images: False # log images to the available loggers (if any)
   image_save_path: null # path to which images will be saved
   mode: full # options: ["full", "simple"]
