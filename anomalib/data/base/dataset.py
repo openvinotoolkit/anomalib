@@ -18,7 +18,7 @@ from pandas import DataFrame
 from torch import Tensor
 from torch.utils.data import Dataset
 
-from anomalib.data.utils import read_image
+from anomalib.data.utils import masks_to_boxes, read_image
 from anomalib.pre_processing import PreProcessor
 
 _EXPECTED_COLS_CLASSIFICATION = ["image_path", "split"]
@@ -26,6 +26,7 @@ _EXPECTED_COLS_SEGMENTATION = _EXPECTED_COLS_CLASSIFICATION + ["mask_path"]
 _EXPECTED_COLS_PERTASK = {
     "classification": _EXPECTED_COLS_CLASSIFICATION,
     "segmentation": _EXPECTED_COLS_SEGMENTATION,
+    "detection": _EXPECTED_COLS_SEGMENTATION,
 }
 
 logger = logging.getLogger(__name__)
@@ -107,16 +108,16 @@ class AnomalibDataset(Dataset, ABC):
         """
 
         image_path = self._samples.iloc[index].image_path
-        image = read_image(image_path)
+        mask_path = self._samples.iloc[index].mask_path
         label_index = self._samples.iloc[index].label_index
 
+        image = read_image(image_path)
         item = dict(image_path=image_path, label=label_index)
 
         if self.task == "classification":
             pre_processed = self.pre_process(image=image)
-        elif self.task == "segmentation":
-            mask_path = self._samples.iloc[index].mask_path
-
+            item["image"] = pre_processed["image"]
+        elif self.task in ["detection", "segmentation"]:
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
             if label_index == 0:
@@ -126,11 +127,15 @@ class AnomalibDataset(Dataset, ABC):
 
             pre_processed = self.pre_process(image=image, mask=mask)
 
+            item["image"] = pre_processed["image"]
             item["mask_path"] = mask_path
             item["mask"] = pre_processed["mask"]
+
+            if self.task == "detection":
+                # create boxes from masks for detection task
+                item["boxes"] = masks_to_boxes(item["mask"])[0]
         else:
             raise ValueError(f"Unknown task type: {self.task}")
-        item["image"] = pre_processed["image"]
 
         return item
 

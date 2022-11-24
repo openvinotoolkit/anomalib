@@ -17,6 +17,7 @@ from anomalib.data.utils import read_image
 from anomalib.post_processing.post_process import (
     add_anomalous_label,
     add_normal_label,
+    draw_boxes,
     superimpose_anomaly_map,
 )
 
@@ -31,6 +32,8 @@ class ImageResult:
     anomaly_map: Optional[np.ndarray] = None
     gt_mask: Optional[np.ndarray] = None
     pred_mask: Optional[np.ndarray] = None
+    gt_boxes: Optional[np.ndarray] = None
+    pred_boxes: Optional[np.ndarray] = None
 
     heat_map: np.ndarray = field(init=False)
     segmentations: np.ndarray = field(init=False)
@@ -60,7 +63,7 @@ class Visualizer:
         if mode not in ["full", "simple"]:
             raise ValueError(f"Unknown visualization mode: {mode}. Please choose one of ['full', 'simple']")
         self.mode = mode
-        if task not in ["classification", "segmentation"]:
+        if task not in ["classification", "segmentation", "detection"]:
             raise ValueError(f"Unknown task type: {mode}. Please choose one of ['classification', 'segmentation']")
         self.task = task
 
@@ -90,6 +93,8 @@ class Visualizer:
                 anomaly_map=batch["anomaly_maps"][i].cpu().numpy() if "anomaly_maps" in batch else None,
                 pred_mask=batch["pred_masks"][i].squeeze().int().cpu().numpy() if "pred_masks" in batch else None,
                 gt_mask=batch["mask"][i].squeeze().int().cpu().numpy() if "mask" in batch else None,
+                gt_boxes=batch["boxes"][i].cpu().numpy() if "boxes" in batch else None,
+                pred_boxes=batch["pred_boxes"][i].cpu().numpy() if "pred_boxes" in batch else None,
             )
             yield self.visualize_image(image_result)
 
@@ -122,6 +127,16 @@ class Visualizer:
             An image showing the full set of visualizations for the input image.
         """
         visualization = ImageGrid()
+        if self.task == "detection":
+            assert image_result.pred_boxes is not None
+            visualization.add_image(image_result.image, "Image")
+            if image_result.gt_boxes is not None:
+                gt_image = draw_boxes(np.copy(image_result.image), image_result.gt_boxes, is_ground_truth=True)
+                visualization.add_image(image=gt_image, color_map="gray", title="Ground Truth")
+            else:
+                visualization.add_image(image_result.image, "Image")
+            pred_image = draw_boxes(np.copy(image_result.image), image_result.pred_boxes, is_ground_truth=False)
+            visualization.add_image(pred_image, "Predictions")
         if self.task == "segmentation":
             assert image_result.pred_mask is not None
             visualization.add_image(image_result.image, "Image")
@@ -151,6 +166,11 @@ class Visualizer:
         Returns:
             An image showing the simple visualization for the input image.
         """
+        if self.task == "detection":
+            # return image with bounding boxes augmented
+            image_with_boxes = draw_boxes(image=image_result.image, boxes=image_result.gt_boxes, is_ground_truth=True)
+            image_with_boxes = draw_boxes(image=image_with_boxes, boxes=image_result.pred_boxes, is_ground_truth=False)
+            return image_with_boxes
         if self.task == "segmentation":
             visualization = mark_boundaries(
                 image_result.heat_map, image_result.pred_mask, color=(1, 0, 0), mode="thick"

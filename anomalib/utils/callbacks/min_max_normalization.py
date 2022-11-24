@@ -6,6 +6,7 @@
 from typing import Any, Dict, Optional
 
 import pytorch_lightning as pl
+import torch
 from pytorch_lightning import Callback
 from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
@@ -46,10 +47,14 @@ class MinMaxNormalizationCallback(Callback):
         _dataloader_idx: int,
     ) -> None:
         """Called when the validation batch ends, update the min and max observed values."""
-        if "anomaly_maps" in outputs.keys():
+        if "anomaly_maps" in outputs:
             pl_module.normalization_metrics(outputs["anomaly_maps"])
-        else:
+        elif "boxes_scores" in outputs:
+            pl_module.normalization_metrics(torch.cat(outputs["boxes_scores"]))
+        elif "pred_scores" in outputs:
             pl_module.normalization_metrics(outputs["pred_scores"])
+        else:
+            raise ValueError("No values found for normalization, provide anomaly maps, bbox scores, or image scores")
 
     def on_test_batch_end(
         self,

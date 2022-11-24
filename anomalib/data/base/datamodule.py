@@ -12,12 +12,26 @@ from typing import Optional
 from pandas import DataFrame
 from pytorch_lightning import LightningDataModule
 from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, default_collate
 
 from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.utils import ValSplitMode, random_split
 
 logger = logging.getLogger(__name__)
+
+
+def collate_fn(batch):
+    """Custom collate function that collates bounding boxes as lists."""
+    elem = batch[0]
+    out_dict = {}
+    if isinstance(elem, dict):
+        if "boxes" in elem.keys():
+            # collate boxes as list
+            out_dict["boxes"] = [item.pop("boxes") for item in batch]
+        # collate other data normally
+        out_dict.update({key: default_collate([item[key] for item in batch]) for key in elem})
+        return out_dict
+    return default_collate(batch)
 
 
 class AnomalibDataModule(LightningDataModule, ABC):
@@ -101,8 +115,20 @@ class AnomalibDataModule(LightningDataModule, ABC):
 
     def val_dataloader(self) -> EVAL_DATALOADERS:
         """Get validation dataloader."""
-        return DataLoader(self.val_data, shuffle=False, batch_size=self.eval_batch_size, num_workers=self.num_workers)
+        return DataLoader(
+            self.val_data,
+            shuffle=False,
+            batch_size=self.eval_batch_size,
+            num_workers=self.num_workers,
+            collate_fn=collate_fn,
+        )
 
     def test_dataloader(self) -> EVAL_DATALOADERS:
         """Get test dataloader."""
-        return DataLoader(self.test_data, shuffle=False, batch_size=self.eval_batch_size, num_workers=self.num_workers)
+        return DataLoader(
+            self.test_data,
+            shuffle=False,
+            batch_size=self.eval_batch_size,
+            num_workers=self.num_workers,
+            collate_fn=collate_fn,
+        )

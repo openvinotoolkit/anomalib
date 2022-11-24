@@ -7,6 +7,7 @@ import torch
 from torch import Tensor
 
 from anomalib.data.base.dataset import AnomalibDataset
+from anomalib.data.utils import masks_to_boxes
 from anomalib.data.utils.video import ClipsIndexer
 from anomalib.pre_processing import PreProcessor
 
@@ -74,9 +75,14 @@ class VideoAnomalibDataset(AnomalibDataset, ABC):
                 self.pre_process(image=frame.numpy(), mask=mask) for frame, mask in zip(item["image"], item["mask"])
             ]
             item["image"] = torch.stack([item["image"] for item in processed_frames]).squeeze(0)
-            mask = item["mask"]
+            mask = Tensor(item["mask"])
             item["mask"] = torch.stack([item["mask"] for item in processed_frames]).squeeze(0)
             item["label"] = Tensor([1 in frame for frame in mask]).int().squeeze(0)
+            item["boxes"] = [
+                torch.empty((0, 4)) if frame.max() == 0 else masks_to_boxes(frame)
+                for frame in item["mask"].view((1, 1) + item["mask"].shape[-2:])
+            ]
+            item["boxes"] = item["boxes"][0] if len(item["boxes"]) == 1 else item["boxes"]
         else:
             item["image"] = torch.stack(
                 [self.pre_process(image=frame.numpy())["image"] for frame in item["image"]]
