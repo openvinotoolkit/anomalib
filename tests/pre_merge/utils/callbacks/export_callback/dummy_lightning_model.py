@@ -68,7 +68,7 @@ class DummyLightningModule(pl.LightningModule):
 
         self.training_distribution = AnomalyScoreDistribution().cpu()
         self.min_max = MinMax().cpu()
-        self.model = DummyModel(hparams)
+        self.model = DummyModel()
 
     def training_step(self, batch, _):
         x, y = batch
