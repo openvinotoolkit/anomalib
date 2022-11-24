@@ -14,6 +14,7 @@ from pandas import DataFrame
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
+from anomalib.data.task_type import TaskType
 from anomalib.data.utils import Split, ValSplitMode, random_split
 from anomalib.pre_processing.pre_process import PreProcessor
 
@@ -141,7 +142,7 @@ class FolderDataset(AnomalibDataset):
     """Folder dataset.
 
     Args:
-        task (str): Task type. (classification or segmentation).
+        task (TaskType): Task type. (classification, detection or segmentation).
         pre_process (PreProcessor): Image Pre-processor to apply transform.
         split (Optional[Union[Split, str]]): Fixed subset split that follows from folder structure on file system.
             Choose from [Split.FULL, Split.TRAIN, Split.TEST]
@@ -165,7 +166,7 @@ class FolderDataset(AnomalibDataset):
 
     def __init__(
         self,
-        task: str,
+        task: TaskType,
         pre_process: PreProcessor,
         root: Union[str, Path],
         normal_dir: Union[str, Path],
@@ -222,8 +223,8 @@ class Folder(AnomalibDataModule):
         train_batch_size (int, optional): Training batch size. Defaults to 32.
         test_batch_size (int, optional): Test batch size. Defaults to 32.
         num_workers (int, optional): Number of workers. Defaults to 8.
-        task (str, optional): Task type. Could be either classification or segmentation.
-            Defaults to "classification".
+        task (TaskType, optional): Task type. Could be classification, detection or segmentation.
+            Defaults to segmentation.
         transform_config_train (Optional[Union[str, A.Compose]], optional): Config for pre-processing
             during training.
             Defaults to None.
@@ -248,7 +249,7 @@ class Folder(AnomalibDataModule):
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
-        task: str = "segmentation",
+        task: TaskType = TaskType.SEGMENTATION,
         transform_config_train: Optional[Union[str, A.Compose]] = None,
         transform_config_eval: Optional[Union[str, A.Compose]] = None,
         val_split_mode: ValSplitMode = ValSplitMode.FROM_TEST,

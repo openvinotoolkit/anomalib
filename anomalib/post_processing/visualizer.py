@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from skimage.segmentation import mark_boundaries
 
+from anomalib.data import TaskType
 from anomalib.data.utils import read_image
 from anomalib.post_processing.post_process import (
     add_anomalous_label,
@@ -56,15 +57,17 @@ class Visualizer:
 
     Args:
         mode (str): visualization mode, either "full" or "simple"
-        task (str): task type, either "segmentation" or "classification"
+        task (TaskType): task type "segmentation", "detection" or "classification"
     """
 
-    def __init__(self, mode: str, task: str) -> None:
+    def __init__(self, mode: str, task: TaskType) -> None:
         if mode not in ["full", "simple"]:
             raise ValueError(f"Unknown visualization mode: {mode}. Please choose one of ['full', 'simple']")
         self.mode = mode
-        if task not in ["classification", "segmentation", "detection"]:
-            raise ValueError(f"Unknown task type: {mode}. Please choose one of ['classification', 'segmentation']")
+        if task not in [TaskType.CLASSIFICATION, TaskType.DETECTION, TaskType.SEGMENTATION]:
+            raise ValueError(
+                f"Unknown task type: {mode}. Please choose one of ['classification', 'detection', 'segmentation']"
+            )
         self.task = task
 
     def visualize_batch(self, batch: Dict) -> Iterator[np.ndarray]:
@@ -127,7 +130,7 @@ class Visualizer:
             An image showing the full set of visualizations for the input image.
         """
         visualization = ImageGrid()
-        if self.task == "detection":
+        if self.task == TaskType.DETECTION:
             assert image_result.pred_boxes is not None
             visualization.add_image(image_result.image, "Image")
             if image_result.gt_boxes is not None:
@@ -137,7 +140,7 @@ class Visualizer:
                 visualization.add_image(image_result.image, "Image")
             pred_image = draw_boxes(np.copy(image_result.image), image_result.pred_boxes, is_ground_truth=False)
             visualization.add_image(pred_image, "Predictions")
-        if self.task == "segmentation":
+        if self.task == TaskType.SEGMENTATION:
             assert image_result.pred_mask is not None
             visualization.add_image(image_result.image, "Image")
             if image_result.gt_mask is not None:
@@ -145,7 +148,7 @@ class Visualizer:
             visualization.add_image(image_result.heat_map, "Predicted Heat Map")
             visualization.add_image(image=image_result.pred_mask, color_map="gray", title="Predicted Mask")
             visualization.add_image(image=image_result.segmentations, title="Segmentation Result")
-        elif self.task == "classification":
+        elif self.task == TaskType.CLASSIFICATION:
             visualization.add_image(image_result.image, title="Image")
             if image_result.pred_label:
                 image_classified = add_anomalous_label(image_result.image, image_result.pred_score)
@@ -166,17 +169,17 @@ class Visualizer:
         Returns:
             An image showing the simple visualization for the input image.
         """
-        if self.task == "detection":
+        if self.task == TaskType.DETECTION:
             # return image with bounding boxes augmented
             image_with_boxes = draw_boxes(image=image_result.image, boxes=image_result.gt_boxes, is_ground_truth=True)
             image_with_boxes = draw_boxes(image=image_with_boxes, boxes=image_result.pred_boxes, is_ground_truth=False)
             return image_with_boxes
-        if self.task == "segmentation":
+        if self.task == TaskType.SEGMENTATION:
             visualization = mark_boundaries(
                 image_result.heat_map, image_result.pred_mask, color=(1, 0, 0), mode="thick"
             )
             return (visualization * 255).astype(np.uint8)
-        if self.task == "classification":
+        if self.task == TaskType.CLASSIFICATION:
             if image_result.pred_label:
                 image_classified = add_anomalous_label(image_result.image, image_result.pred_score)
             else:

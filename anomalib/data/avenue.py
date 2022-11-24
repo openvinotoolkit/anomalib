@@ -27,6 +27,7 @@ from pandas import DataFrame
 from torch import Tensor
 
 from anomalib.data.base import AnomalibDataModule, VideoAnomalibDataset
+from anomalib.data.task_type import TaskType
 from anomalib.data.utils import DownloadProgressBar, Split, ValSplitMode, hash_check
 from anomalib.data.utils.video import ClipsIndexer
 from anomalib.pre_processing import PreProcessor
@@ -124,7 +125,7 @@ class AvenueDataset(VideoAnomalibDataset):
     """Avenue Dataset class.
 
     Args:
-        task (str): Task type, either 'classification' or 'segmentation'
+        task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
         root (str): Path to the root of the dataset
         gt_dir (str): Path to the ground truth files
         pre_process (PreProcessor): Pre-processor object
@@ -135,7 +136,7 @@ class AvenueDataset(VideoAnomalibDataset):
 
     def __init__(
         self,
-        task: str,
+        task: TaskType,
         root: Union[Path, str],
         gt_dir: str,
         pre_process: PreProcessor,
@@ -163,7 +164,7 @@ class Avenue(AnomalibDataModule):
         gt_dir (str): Path to the ground truth files
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
-        task (str): Task type, either 'classification' or 'segmentation'
+        task TaskType): Task type, 'classification', 'detection' or 'segmentation'
         image_size (Optional[Union[int, Tuple[int, int]]], optional): Size of the input image.
             Defaults to None.
         train_batch_size (int, optional): Training batch size. Defaults to 32.
@@ -184,7 +185,7 @@ class Avenue(AnomalibDataModule):
         gt_dir: str,
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
-        task: str = "segmentation",
+        task: TaskType = TaskType.SEGMENTATION,
         image_size: Optional[Union[int, Tuple[int, int]]] = None,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,

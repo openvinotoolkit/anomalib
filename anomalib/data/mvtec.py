@@ -33,6 +33,7 @@ import albumentations as A
 from pandas import DataFrame
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
+from anomalib.data.task_type import TaskType
 from anomalib.data.utils import DownloadProgressBar, Split, ValSplitMode, hash_check
 from anomalib.pre_processing import PreProcessor
 
@@ -123,7 +124,7 @@ class MVTecDataset(AnomalibDataset):
     """MVTec dataset class.
 
     Args:
-        task (str): Task type, either 'classification' or 'segmentation'
+        task (TaskType): Task type,'classification', 'detection' or 'segmentation'
         pre_process (PreProcessor): Pre-processor object
         split (Optional[Union[Split, str]]): Split of the dataset, usually Split.TRAIN or Split.TEST
         root (str): Path to the root of the dataset
@@ -132,7 +133,7 @@ class MVTecDataset(AnomalibDataset):
 
     def __init__(
         self,
-        task: str,
+        task: TaskType,
         pre_process: PreProcessor,
         root: str,
         category: str,
@@ -158,7 +159,7 @@ class MVTec(AnomalibDataModule):
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
-        task: str = "segmentation",
+        task: TaskType = TaskType.SEGMENTATION,
         transform_config_train: Optional[Union[str, A.Compose]] = None,
         transform_config_eval: Optional[Union[str, A.Compose]] = None,
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,

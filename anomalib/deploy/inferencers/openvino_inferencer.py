@@ -12,6 +12,7 @@ import numpy as np
 from omegaconf import DictConfig, ListConfig
 
 from anomalib.config import get_configurable_parameters
+from anomalib.data import TaskType
 from anomalib.pre_processing import PreProcessor
 
 from .base_inferencer import Inferencer
@@ -146,10 +147,10 @@ class OpenVINOInferencer(Inferencer):
         # If predictions returns a single value, this means that the task is
         # classification, and the value is the classification prediction score.
         if len(predictions.shape) == 1:
-            task = "classification"
+            task = TaskType.CLASSIFICATION
             pred_score = predictions.item()
         else:
-            task = "segmentation"
+            task = TaskType.SEGMENTATION
             anomaly_map = predictions.squeeze()
             pred_score = anomaly_map.reshape(-1).max()
 
@@ -159,7 +160,7 @@ class OpenVINOInferencer(Inferencer):
         if "image_threshold" in meta_data:
             pred_label = pred_score >= meta_data["image_threshold"]
 
-        if task == "segmentation":
+        if task == TaskType.SEGMENTATION:
             if "pixel_threshold" in meta_data:
                 pred_mask = (anomaly_map >= meta_data["pixel_threshold"]).astype(np.uint8)
 

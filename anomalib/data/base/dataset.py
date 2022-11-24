@@ -18,6 +18,7 @@ from pandas import DataFrame
 from torch import Tensor
 from torch.utils.data import Dataset
 
+from anomalib.data.task_type import TaskType
 from anomalib.data.utils import masks_to_boxes, read_image
 from anomalib.pre_processing import PreProcessor
 
@@ -35,7 +36,7 @@ logger = logging.getLogger(__name__)
 class AnomalibDataset(Dataset, ABC):
     """Anomalib dataset."""
 
-    def __init__(self, task: str, pre_process: PreProcessor):
+    def __init__(self, task: TaskType, pre_process: PreProcessor):
         super().__init__()
         self.task = task
         self.pre_process = pre_process
@@ -114,10 +115,10 @@ class AnomalibDataset(Dataset, ABC):
         image = read_image(image_path)
         item = dict(image_path=image_path, label=label_index)
 
-        if self.task == "classification":
+        if self.task == TaskType.CLASSIFICATION:
             pre_processed = self.pre_process(image=image)
             item["image"] = pre_processed["image"]
-        elif self.task in ["detection", "segmentation"]:
+        elif self.task in [TaskType.DETECTION, TaskType.SEGMENTATION]:
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
             if label_index == 0:
@@ -131,7 +132,7 @@ class AnomalibDataset(Dataset, ABC):
             item["mask_path"] = mask_path
             item["mask"] = pre_processed["mask"]
 
-            if self.task == "detection":
+            if self.task == TaskType.DETECTION:
                 # create boxes from masks for detection task
                 item["boxes"] = masks_to_boxes(item["mask"])[0]
         else:

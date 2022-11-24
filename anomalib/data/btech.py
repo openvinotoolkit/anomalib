@@ -24,6 +24,7 @@ from pytorch_lightning.utilities.cli import DATAMODULE_REGISTRY
 from tqdm import tqdm
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
+from anomalib.data.task_type import TaskType
 from anomalib.data.utils import DownloadProgressBar, Split, ValSplitMode, hash_check
 from anomalib.pre_processing import PreProcessor
 
@@ -114,7 +115,7 @@ class BTechDataset(AnomalibDataset):
         category: str,
         pre_process: PreProcessor,
         split: Optional[Union[Split, str]] = None,
-        task: str = "segmentation",
+        task: TaskType = TaskType.SEGMENTATION,
     ) -> None:
         """Btech Dataset class.
 
@@ -123,7 +124,7 @@ class BTechDataset(AnomalibDataset):
             category: Name of the BTech category.
             pre_process: List of pre_processing object containing albumentation compose.
             split: 'train', 'val' or 'test'
-            task: ``classification`` or ``segmentation``
+            task: ``classification``, ``detection`` or ``segmentation``
             create_validation_set: Create a validation subset in addition to the train and test subsets
 
         Examples:
@@ -177,7 +178,7 @@ class BTech(AnomalibDataModule):
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
-        task: str = "segmentation",
+        task: TaskType = TaskType.SEGMENTATION,
         transform_config_train: Optional[Union[str, A.Compose]] = None,
         transform_config_eval: Optional[Union[str, A.Compose]] = None,
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
@@ -192,7 +193,7 @@ class BTech(AnomalibDataModule):
             train_batch_size: Training batch size.
             test_batch_size: Testing batch size.
             num_workers: Number of workers.
-            task: ``classification`` or ``segmentation``
+            task: ``classification``, ``detection`` or ``segmentation``
             transform_config_train: Config for pre-processing during training.
             transform_config_val: Config for pre-processing during validation.
             create_validation_set: Create a validation subset in addition to the train and test subsets
