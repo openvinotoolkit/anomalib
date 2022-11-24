@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import importlib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional, Union
 
 import torch
@@ -18,16 +18,16 @@ from torchvision.models.feature_extraction import create_feature_extractor
 class BackboneParams:
     """Used for serializing the backbone."""
 
-    class_path: str
-    init_args: Dict
+    class_path: Union[str, nn.Module]
+    init_args: Dict = field(default_factory=dict)
 
 
 class TorchFXFeatureExtractor:
     """Extract features from a CNN.
 
     Args:
-        backbone (Union[str, BackboneParams, Dict]): The backbone to which the feature extraction hooks are attached.
-            If the name is provided, the model is loaded from torchvision. Otherwise, the model class can be
+        backbone (Union[str, BackboneParams, Dict, nn.Module]): The backbone to which the feature extraction hooks are
+            attached. If the name is provided, the model is loaded from torchvision. Otherwise, the model class can be
             provided and it will try to load the weights from the provided weights file.
         return_nodes (Iterable[str]): List of layer names of the backbone to which the hooks are attached.
             You can find the names of these nodes by using ``get_graph_node_names`` function.
@@ -69,15 +69,15 @@ class TorchFXFeatureExtractor:
 
     def __init__(
         self,
-        backbone: Union[str, BackboneParams, Dict],
+        backbone: Union[str, BackboneParams, Dict, nn.Module],
         return_nodes: List[str],
         weights: Optional[Union[WeightsEnum, str]] = None,
         requires_grad: bool = False,
     ):
         if isinstance(backbone, dict):
             backbone = BackboneParams(**backbone)
-        elif isinstance(backbone, str):
-            backbone = BackboneParams(class_path=backbone, init_args={})
+        elif not isinstance(backbone, BackboneParams):  # if str or nn.Module
+            backbone = BackboneParams(class_path=backbone)
 
         self.feature_extractor = self.initialize_feature_extractor(backbone, return_nodes, weights, requires_grad)
 
@@ -105,15 +105,21 @@ class TorchFXFeatureExtractor:
         Returns:
             Feature Extractor based on TorchFX.
         """
-        backbone_class = self._get_backbone_class(backbone.class_path)
-        backbone_model = backbone_class(weights=weights, **backbone.init_args)
+        if isinstance(backbone.class_path, str):
+            backbone_class = self._get_backbone_class(backbone.class_path)
+            backbone_model = backbone_class(weights=weights, **backbone.init_args)
+        else:
+            backbone_class = backbone.class_path
+            backbone_model = backbone_class(**backbone.init_args)
         if isinstance(weights, WeightsEnum):  # torchvision models
             feature_extractor = create_feature_extractor(model=backbone_model, return_nodes=return_nodes)
         else:
-            backbone_model = backbone_class(**backbone.init_args)
             if weights is not None:
                 assert isinstance(weights, str), "Weights should point to a path"
-                backbone_model.load_state_dict(torch.load(weights)["state_dict"])
+                model_weights = torch.load(weights)
+                if "state_dict" in model_weights:
+                    model_weights = model_weights["state_dict"]
+                backbone_model.load_state_dict(model_weights)
             feature_extractor = create_feature_extractor(backbone_model, return_nodes)
 
         if not requires_grad:

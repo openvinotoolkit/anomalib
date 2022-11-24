@@ -1,3 +1,4 @@
+from tempfile import TemporaryDirectory
 from typing import Tuple
 
 import pytest
@@ -10,6 +11,7 @@ from anomalib.models.components.feature_extractors import (
     TorchFXFeatureExtractor,
     dryrun_find_featuremap_dims,
 )
+from tests.helpers.dummy import DummyModel
 
 
 class TestFeatureExtractor:
@@ -67,6 +69,17 @@ class TestFeatureExtractor:
         assert features["layer1"].shape == torch.Size((32, 64, 64, 64))
         assert features["layer2"].shape == torch.Size((32, 128, 32, 32))
         assert features["layer3"].shape == torch.Size((32, 256, 16, 16))
+
+        # Test if local model can be loaded using string of weights path
+        with TemporaryDirectory() as tmpdir:
+            torch.save(DummyModel().state_dict(), tmpdir + "/dummy_model.pt")
+            model = TorchFXFeatureExtractor(
+                backbone=DummyModel,
+                weights=tmpdir + "/dummy_model.pt",
+                return_nodes=["conv3"],
+            )
+            features = model(test_input)
+            assert features["conv3"].shape == torch.Size((32, 1, 244, 244))
 
 
 @pytest.mark.parametrize(
