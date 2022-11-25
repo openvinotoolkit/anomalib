@@ -23,7 +23,7 @@ from FrEIA.modules import InvertibleModule
 from torch import Tensor, nn
 from torchvision.models.efficientnet import EfficientNet_B5_Weights
 
-from anomalib.models.components.feature_extractors import get_torchfx_feature_extractor
+from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor
 
 
 class AnomalyMapMode(str, Enum):
@@ -503,7 +503,7 @@ class MultiScaleFeatureExtractor(nn.Module):
 
         self.n_scales = n_scales
         self.input_size = input_size
-        self.feature_extractor = get_torchfx_feature_extractor(
+        self.feature_extractor = TorchFXFeatureExtractor(
             backbone="efficientnet_b5", weights=EfficientNet_B5_Weights.DEFAULT, return_nodes=["6.8"]
         )
 

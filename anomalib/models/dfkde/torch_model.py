@@ -11,7 +11,7 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from anomalib.models.components import PCA, GaussianKDE, TimmFeatureExtractor
+from anomalib.models.components import PCA, FeatureExtractor, GaussianKDE
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +48,7 @@ class DfkdeModel(nn.Module):
         self.threshold_steepness = threshold_steepness
         self.threshold_offset = threshold_offset
 
-        _backbone = backbone
-        self.feature_extractor = TimmFeatureExtractor(backbone=_backbone, pre_trained=pre_trained, layers=layers).eval()
+        self.feature_extractor = FeatureExtractor(backbone=backbone, pre_trained=pre_trained, layers=layers).eval()
 
         self.pca_model = PCA(n_components=self.n_components)
         self.kde_model = GaussianKDE()
