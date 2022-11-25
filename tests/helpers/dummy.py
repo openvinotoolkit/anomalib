@@ -1,12 +1,10 @@
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Union
 
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
-from omegaconf import DictConfig, ListConfig
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
 

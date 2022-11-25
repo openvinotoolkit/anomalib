@@ -1,7 +1,6 @@
 from typing import Union
 
 import pytorch_lightning as pl
-import torch.nn.functional as F
 from omegaconf import DictConfig, ListConfig
 from torch import nn, optim
 from torch.utils.data import DataLoader
