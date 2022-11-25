@@ -11,8 +11,8 @@ from torch import Tensor, nn
 
 from anomalib.models.components import (
     DynamicBufferModule,
+    FeatureExtractor,
     KCenterGreedy,
-    TimmFeatureExtractor,
 )
 from anomalib.models.patchcore.anomaly_map import AnomalyMapGenerator
 from anomalib.pre_processing import Tiler
@@ -37,9 +37,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         self.input_size = input_size
         self.num_neighbors = num_neighbors
 
-        self.feature_extractor = TimmFeatureExtractor(
-            backbone=self.backbone, pre_trained=pre_trained, layers=self.layers
-        )
+        self.feature_extractor = FeatureExtractor(backbone=self.backbone, pre_trained=pre_trained, layers=self.layers)
         self.feature_pooler = torch.nn.AvgPool2d(3, 1, 1, count_include_pad=False)
         self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
 
