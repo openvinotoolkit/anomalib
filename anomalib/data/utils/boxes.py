@@ -18,13 +18,7 @@ def masks_to_boxes(masks: Tensor) -> List[Tensor]:
         List[Tensor]: A list of length B where each element is a tensor of shape (N, 4) containing the bounding box
             coordinates of the objects in the masks in xyxy format.
     """
-    masks = masks.view(
-        (
-            -1,
-            1,
-        )
-        + masks.shape[-2:]
-    )  # reshape to (B, 1, H, W)
+    masks = masks.view((-1, 1) + masks.shape[-2:])  # reshape to (B, 1, H, W)
     masks = masks.float()
 
     if masks.is_cuda:
