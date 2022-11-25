@@ -53,7 +53,7 @@ def boxes_to_masks(boxes: List[Tensor], image_size: Tuple[int, int]) -> Tensor:
     for im_idx, im_boxes in enumerate(boxes):
         for box in im_boxes:
             x_1, y_1, x_2, y_2 = box.int()
-            masks[im_idx, y_1:y_2, x_1:x_2] = 1
+            masks[im_idx, y_1 : y_2 + 1, x_1 : x_2 + 1] = 1
     return masks
 
 
@@ -76,6 +76,6 @@ def boxes_to_anomaly_maps(boxes: Tensor, scores: Tensor, image_size: Tuple[int, 
         im_map = torch.zeros((im_boxes.shape[0],) + image_size)
         for box_idx, (box, score) in enumerate(zip(im_boxes, im_scores)):
             x_1, y_1, x_2, y_2 = box.int()
-            im_map[box_idx, y_1:y_2, x_1:x_2] = score
+            im_map[box_idx, y_1 : y_2 + 1, x_1 : x_2 + 1] = score
             anomaly_maps[im_idx], _ = im_map.max(dim=0)
     return anomaly_maps
