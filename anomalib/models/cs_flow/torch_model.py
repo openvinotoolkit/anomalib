@@ -504,7 +504,7 @@ class MultiScaleFeatureExtractor(nn.Module):
         self.n_scales = n_scales
         self.input_size = input_size
         self.feature_extractor = TorchFXFeatureExtractor(
-            backbone="efficientnet_b5", weights=EfficientNet_B5_Weights.DEFAULT, return_nodes=["6.8"]
+            backbone="efficientnet_b5", weights=EfficientNet_B5_Weights.DEFAULT, return_nodes=["features.6.8"]
         )
 
     def forward(self, input_tensor: Tensor) -> List[Tensor]:
@@ -525,7 +525,7 @@ class MultiScaleFeatureExtractor(nn.Module):
                 if scale > 0
                 else input_tensor
             )
-            feat_s = self.feature_extractor(feat_s)["6.8"]
+            feat_s = self.feature_extractor(feat_s)["features.6.8"]
 
             output.append(feat_s)
         return output
