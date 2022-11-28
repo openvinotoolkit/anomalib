@@ -14,6 +14,7 @@ from .btech import BTech
 from .folder import Folder
 from .inference import InferenceDataset
 from .mvtec import MVTec
+from .task_type import TaskType
 from .ucsd_ped import UCSDped
 
 logger = logging.getLogger(__name__)
@@ -126,4 +127,5 @@ __all__ = [
     "MVTec",
     "Avenue",
     "UCSDped",
+    "TaskType",
 ]
