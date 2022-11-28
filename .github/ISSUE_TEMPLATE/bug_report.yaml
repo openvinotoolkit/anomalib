@@ -19,7 +19,9 @@ body:
         - "Folder"
         - "MVTec"
         - "UCSD"
-        - "Other (please specify in the field below)"
+        - "Other (please specify in the text field below)"
+    validations:
+      required: true
   - type: dropdown
     id: model
     attributes:
@@ -38,6 +40,8 @@ body:
         - "Reverse Distillation"
         - "STFPM"
         - "Other (please specify in the field below)"
+    validations:
+      required: true
   - type: textarea
     id: to-reproduce
     attributes:
