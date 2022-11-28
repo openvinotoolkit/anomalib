@@ -2,18 +2,23 @@ name: Bug Report
 description: Create a report to help us improve
 title: "[Bug]: "
 body:
-  - type: markdown
+  - type: textarea
+    id: description
     attributes:
-      value: |
+      label: Describe the bug
+      description: |
         A clear and concise description of what the bug is.
 
         > *__Note:__* Please do not submit support requests or "How to" questions here. Instead, please use our [Discussion forum](https://github.com/openvinotoolkit/anomalib/discussions/categories/q-a)
+    validations:
+      required: true
   - type: dropdown
     id: dataset
     attributes:
       label: Dataset
       description: Which Dataset are you using?
       options:
+        - N/A
         - "Avenue"
         - "BTec"
         - "Folder"
@@ -28,6 +33,7 @@ body:
       label: Model
       description: Which model are you using?
       options:
+        - N/A
         - "CFlow"
         - "CSFlow"
         - "DFKDE"
