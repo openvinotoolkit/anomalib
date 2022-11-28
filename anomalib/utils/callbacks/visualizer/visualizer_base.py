@@ -39,7 +39,9 @@ class BaseVisualizerCallback(Callback):
             raise ValueError(f"Unknown visualization mode: {mode}. Please choose one of ['full', 'simple']")
         self.mode = mode
         if task not in [TaskType.CLASSIFICATION, TaskType.DETECTION, TaskType.SEGMENTATION]:
-            raise ValueError(f"Unknown task type: {mode}. Please choose one of ['classification', 'segmentation']")
+            raise ValueError(
+                f"Unknown task type: {mode}. Please choose one of ['classification', 'detection', 'segmentation']"
+            )
         self.task = task
         self.inputs_are_normalized = inputs_are_normalized
         self.show_images = show_images
