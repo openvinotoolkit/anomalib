@@ -120,12 +120,14 @@ class AnomalibDataModule(LightningDataModule, ABC):
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:
         """Get train dataloader."""
-        return DataLoader(self.train_data, shuffle=True, batch_size=self.train_batch_size, num_workers=self.num_workers)
+        return DataLoader(
+            dataset=self.train_data, shuffle=True, batch_size=self.train_batch_size, num_workers=self.num_workers
+        )
 
     def val_dataloader(self) -> EVAL_DATALOADERS:
         """Get validation dataloader."""
         return DataLoader(
-            self.val_data,
+            dataset=self.val_data,
             shuffle=False,
             batch_size=self.eval_batch_size,
             num_workers=self.num_workers,
@@ -135,7 +137,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
     def test_dataloader(self) -> EVAL_DATALOADERS:
         """Get test dataloader."""
         return DataLoader(
-            self.test_data,
+            dataset=self.test_data,
             shuffle=False,
             batch_size=self.eval_batch_size,
             num_workers=self.num_workers,
