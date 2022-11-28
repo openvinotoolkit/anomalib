@@ -10,13 +10,29 @@ body:
     id: to-reproduce
     attributes:
       label: Steps to reproduce the behavior
-      description: Detailed steps so that we can reproduce the behavior.
+      description: Detailed steps or any other information you think is useful to reproduce the behavior.
       placeholder: |
         Steps to reproduce the behavior:
-        1. Go to '...'
-        2. Click on '....'
-        3. Scroll down to '....'
+        1. Install anomalib using '...'
+        2. Use/modify config '....'
+        3. Run using command '....'
         4. See error
+    validations:
+      required: true
+  - type: textarea
+    id: os-information
+    attributes:
+      label: OS information
+      description: If you think OS information is necessary to reproduce the behavior, please provide it here.
+      value: |
+        OS information:
+        - OS: [e.g. Ubuntu 20.04]
+        - Python version: [e.g. 3.8.10]
+        - Anomalib version: [e.g. 0.3.6]
+        - PyTorch version: [e.g. 1.9.0]
+        - CUDA/cuDNN version: [e.g. 11.1]
+        - GPU models and configuration: [e.g. 2x GeForce RTX 3090]
+        - Any other relevant information: [e.g. I'm using a custom dataset]
     validations:
       required: true
   - type: textarea
@@ -44,26 +60,28 @@ body:
   - type: input
     id: version-branch
     attributes:
-      label: |
-        If you used pip to install Anomalib, what version did you install?
-        If you used GitHub, what branch did you use?
+      label: What version/branch did you use?
   - type: textarea
     id: config
     attributes:
       label: Configuration YAML
       description: Please paste your configuration YAML here.
       render: yaml
+    validations:
+      required: true
   - type: textarea
     id: logs
     attributes:
       label: Logs
       description: Please paste your logs here.
       render: shell
+    validations:
+      required: true
   - type: checkboxes
     id: terms
     attributes:
       label: Code of Conduct
-      description: By submitting this issue, you agree to follow our [Code of Conduct](https://example.com)
+      description: By submitting this issue, you agree to follow our [Code of Conduct](CODE_OF_CONDUCT.md)
       options:
         - label: I agree to follow this project's Code of Conduct
           required: true
