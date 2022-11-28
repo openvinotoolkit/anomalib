@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABC
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 from pandas import DataFrame
 from pytorch_lightning import LightningDataModule
@@ -20,9 +20,18 @@ from anomalib.data.utils import ValSplitMode, random_split
 logger = logging.getLogger(__name__)
 
 
-def collate_fn(batch):
-    """Custom collate function that collates bounding boxes as lists."""
-    elem = batch[0]
+def collate_fn(batch: List) -> Dict[str, Any]:
+    """Custom collate function that collates bounding boxes as lists.
+
+    Bounding boxes are collated as a list of tensors, while the default collate function is used for all other entries.
+
+    Args:
+        batch (List): list of items in the batch where len(batch) is equal to the batch size.
+
+    Returns:
+        Dict[str, Any]: Dictionary containing the collated batch information.
+    """
+    elem = batch[0]  # sample an element from the batch to check the type.
     out_dict = {}
     if isinstance(elem, dict):
         if "boxes" in elem.keys():
