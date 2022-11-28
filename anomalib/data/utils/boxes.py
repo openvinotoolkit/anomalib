@@ -24,8 +24,10 @@ def masks_to_boxes(masks: Tensor) -> List[Tensor]:
     masks = masks.view((-1, 1) + masks.shape[-2:])  # reshape to (B, 1, H, W)
     masks = masks.float()
 
-    connected_components = connected_components_gpu if masks.is_cuda else connected_components_cpu
-    batch_comps = connected_components(masks).squeeze(1)
+    if masks.is_cuda:
+        batch_comps = connected_components_gpu(masks).squeeze(1)
+    else:
+        batch_comps = connected_components_cpu(masks).squeeze(1)
 
     batch_boxes = []
     for im_comps in batch_comps:
