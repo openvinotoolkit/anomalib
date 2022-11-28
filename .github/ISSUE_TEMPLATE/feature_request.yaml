@@ -6,7 +6,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        We encourage our users to submit feature requests in our [Discussion forum](https://github.com/openvinotoolkit/anomalib/discussions/categories/ideas-feature-requests)
+        We encourage our users to submit feature requests in our [Discussion forum](https://github.com/openvinotoolkit/anomalib/discussions/categories/ideas-feature-requests). You can use this template for consistency.
+
   - type: textarea
     id: concern
     attributes:
