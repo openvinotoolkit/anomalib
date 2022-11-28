@@ -1,0 +1,34 @@
+# Default state for all rules
+default: true
+
+# Path to configuration file to extend
+extends: null
+
+# MD001/heading-increment/header-increment - Heading levels should only increment by one level at a time
+MD001: true
+
+# MD013/line-length - Line length
+MD013:
+  # Number of characters
+  line_length: 1000
+
+# This is not useful for some files such as `CHANGELOG.md`
+MD024:
+  # Only check sibling headings
+  allow_different_nesting: true
+  # Only check sibling headings
+  siblings_only: true
+
+MD033: false
+
+# If a page is printed, it helps if the URL is viewable.
+MD034: false # Bare URL used
+
+# This is needed for the anomalib tagline in the README
+MD036: false # Emphasis used instead of a header
+
+# Some md files have comments or links at the top of the files.
+MD041: false # First line in file should be a top level header
+
+# Badges have empty links
+MD042: false # No empty links
