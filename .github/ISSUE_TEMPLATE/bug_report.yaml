@@ -8,6 +8,36 @@ body:
         A clear and concise description of what the bug is.
 
         > *__Note:__* Please do not submit support requests or "How to" questions here. Instead, please use our [Discussion forum](https://github.com/openvinotoolkit/anomalib/discussions/categories/q-a)
+  - type: dropdown
+    id: dataset
+    attributes:
+      label: Dataset
+      description: Which Dataset are you using?
+      options:
+        - "Avenue"
+        - "BTec"
+        - "Folder"
+        - "MVTec"
+        - "UCSD"
+        - "Other (please specify in the field below)"
+  - type: dropdown
+    id: model
+    attributes:
+      label: Model
+      description: Which model are you using?
+      options:
+        - "CFlow"
+        - "CSFlow"
+        - "DFKDE"
+        - "DFM"
+        - "DRAEM"
+        - "FastFlow"
+        - "GANomaly"
+        - "PADiM"
+        - "PatchCore"
+        - "Reverse Distillation"
+        - "STFPM"
+        - "Other (please specify in the field below)"
   - type: textarea
     id: to-reproduce
     attributes:
