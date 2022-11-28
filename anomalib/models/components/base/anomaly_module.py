@@ -166,6 +166,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         elif "pred_scores" not in outputs and "boxes_scores" in outputs:
             # infer image score from bbox confidence scores
             outputs["pred_scores"] = torch.stack([scores.max() for scores in outputs["boxes_scores"]])
+
         if "pred_boxes" in outputs and "anomaly_maps" not in outputs:
             # create anomaly maps from bbox predictions for thresholding and evaluation
             image_size = tuple(outputs["image"].shape[-2:])
