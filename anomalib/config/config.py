@@ -159,6 +159,12 @@ def get_configurable_parameters(
 
     config = update_input_size_config(config)
 
+    if "clip_length_in_frames" in config.dataset.keys() and config.dataset.clip_length_in_frames > 1:
+        warn(
+            "Anomalib's models and visualizer are currently not compatible with video datasets with a clip length > 1.\
+            Custom changes to these modules will be needed to prevent errors and/or unpredictable behaviour."
+        )
+
     # Project Configs
     project_path = Path(config.project.path) / config.model.name / config.dataset.name
     if config.dataset.format.lower() in ("btech", "mvtec"):
