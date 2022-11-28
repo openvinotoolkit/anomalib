@@ -124,7 +124,7 @@ class MVTecDataset(AnomalibDataset):
     """MVTec dataset class.
 
     Args:
-        task (TaskType): Task type,'classification', 'detection' or 'segmentation'
+        task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
         pre_process (PreProcessor): Pre-processor object
         split (Optional[Union[Split, str]]): Split of the dataset, usually Split.TRAIN or Split.TEST
         root (str): Path to the root of the dataset

@@ -142,7 +142,7 @@ class FolderDataset(AnomalibDataset):
     """Folder dataset.
 
     Args:
-        task (TaskType): Task type. (classification, detection or segmentation).
+        task (TaskType): Task type. (``classification``, ``detection`` or ``segmentation``).
         pre_process (PreProcessor): Image Pre-processor to apply transform.
         split (Optional[Union[Split, str]]): Fixed subset split that follows from folder structure on file system.
             Choose from [Split.FULL, Split.TRAIN, Split.TEST]
@@ -223,7 +223,7 @@ class Folder(AnomalibDataModule):
         train_batch_size (int, optional): Training batch size. Defaults to 32.
         test_batch_size (int, optional): Test batch size. Defaults to 32.
         num_workers (int, optional): Number of workers. Defaults to 8.
-        task (TaskType, optional): Task type. Could be classification, detection or segmentation.
+        task (TaskType, optional): Task type. Could be ``classification``, ``detection`` or ``segmentation``.
             Defaults to segmentation.
         transform_config_train (Optional[Union[str, A.Compose]], optional): Config for pre-processing
             during training.
