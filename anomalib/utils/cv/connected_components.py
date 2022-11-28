@@ -1,5 +1,8 @@
 """Connected component labeling."""
 
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import cv2
 import numpy as np
 import torch
