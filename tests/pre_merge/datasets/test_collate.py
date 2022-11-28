@@ -24,7 +24,7 @@ def other_entry():
     ("boxes_present", "other_present"), [(True, True), (True, False), (False, True), (False, False)]
 )
 def test_collate_fn(batch_size, boxes_present, other_present, boxes_entry, other_entry):
-    """Tests the custom collate function defined in datamodules.py"""
+    """Tests the custom collate function used by the anomalib dataloaders"""
 
     batch = []
     for _ in range(batch_size):
