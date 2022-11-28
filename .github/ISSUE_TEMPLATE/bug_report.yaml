@@ -1,0 +1,69 @@
+name: Bug Report
+description: Create a report to help us improve
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A clear and concise description of what the bug is.
+  - type: textarea
+    id: to-reproduce
+    attributes:
+      label: Steps to reproduce the behavior
+      description: Detailed steps so that we can reproduce the behavior.
+      placeholder: |
+        Steps to reproduce the behavior:
+        1. Go to '...'
+        2. Click on '....'
+        3. Scroll down to '....'
+        4. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: A clear and concise description of what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: If applicable, add screenshots to help explain your problem.
+  - type: dropdown
+    id: source
+    attributes:
+      label: Pip/GitHub
+      description: Did you install Anomalib from pip or from GitHub?
+      options:
+        - pip
+        - GitHub
+    validations:
+      required: true
+  - type: input
+    id: version-branch
+    attributes:
+      label: |
+        If you used pip to install Anomalib, what version did you install?
+        If you used GitHub, what branch did you use?
+  - type: textarea
+    id: config
+    attributes:
+      label: Configuration YAML
+      description: Please paste your configuration YAML here.
+      render: yaml
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Please paste your logs here.
+      render: shell
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://example.com)
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true
