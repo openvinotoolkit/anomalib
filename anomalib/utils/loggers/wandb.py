@@ -1,18 +1,7 @@
 """wandb logger with add image interface."""
 
-# Copyright (C) 2020 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions
-# and limitations under the License.
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 from typing import Any, List, Optional, Union
 
@@ -86,10 +75,9 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
         anonymous: Optional[bool] = None,
         version: Optional[str] = None,
         project: Optional[str] = None,
-        log_model: Optional[bool] = False,
+        log_model: Union[str, bool] = False,
         experiment=None,
         prefix: Optional[str] = "",
-        sync_step: Optional[bool] = None,
         **kwargs
     ) -> None:
         super().__init__(
@@ -103,7 +91,6 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
             log_model=log_model,
             experiment=experiment,
             prefix=prefix,
-            sync_step=sync_step,
             **kwargs
         )
         self.image_list: List[wandb.Image] = []  # Cache images
@@ -129,3 +116,4 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
         super().save()
         if len(self.image_list) > 1:
             wandb.log({"Predictions": self.image_list})
+            self.image_list = []

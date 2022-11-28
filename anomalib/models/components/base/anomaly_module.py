@@ -1,69 +1,52 @@
 """Base Anomaly Module for Training Task."""
 
-# Copyright (C) 2020 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions
-# and limitations under the License.
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
+import logging
 from abc import ABC
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional, OrderedDict
+from warnings import warn
 
 import pytorch_lightning as pl
-from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks.base import Callback
 from torch import Tensor, nn
-from torchmetrics import F1, MetricCollection
+from torchmetrics import Metric
 
+from anomalib.post_processing import ThresholdMethod
 from anomalib.utils.metrics import (
-    AUROC,
-    AdaptiveThreshold,
+    AnomalibMetricCollection,
     AnomalyScoreDistribution,
+    AnomalyScoreThreshold,
     MinMax,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class AnomalyModule(pl.LightningModule, ABC):
     """AnomalyModule to train, validate, predict and test images.
 
     Acts as a base class for all the Anomaly Modules in the library.
-
-    Args:
-        params (Union[DictConfig, ListConfig]): Configuration
     """
 
-    def __init__(self, params: Union[DictConfig, ListConfig]):
-
+    def __init__(self):
         super().__init__()
-        # Force the type for hparams so that it works with OmegaConfig style of accessing
-        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
-        self.save_hyperparameters(params)
+        logger.info("Initializing %s model.", self.__class__.__name__)
+
+        self.save_hyperparameters()
+        self.model: nn.Module
         self.loss: Tensor
         self.callbacks: List[Callback]
 
-        self.image_threshold = AdaptiveThreshold(self.hparams.model.threshold.image_default).cpu()
-        self.pixel_threshold = AdaptiveThreshold(self.hparams.model.threshold.pixel_default).cpu()
+        self.threshold_method: ThresholdMethod
+        self.image_threshold = AnomalyScoreThreshold().cpu()
+        self.pixel_threshold = AnomalyScoreThreshold().cpu()
 
-        self.training_distribution = AnomalyScoreDistribution().cpu()
-        self.min_max = MinMax().cpu()
+        self.normalization_metrics: Metric
 
-        self.model: nn.Module
-
-        # metrics
-        image_auroc = AUROC(num_classes=1, pos_label=1, compute_on_step=False)
-        image_f1 = F1(num_classes=1, compute_on_step=False, threshold=self.hparams.model.threshold.image_default)
-        pixel_auroc = AUROC(num_classes=1, pos_label=1, compute_on_step=False)
-        pixel_f1 = F1(num_classes=1, compute_on_step=False, threshold=self.hparams.model.threshold.pixel_default)
-        self.image_metrics = MetricCollection([image_auroc, image_f1], prefix="image_").cpu()
-        self.pixel_metrics = MetricCollection([pixel_auroc, pixel_f1], prefix="pixel_").cpu()
+        self.image_metrics: AnomalibMetricCollection
+        self.pixel_metrics: AnomalibMetricCollection
 
     def forward(self, batch):  # pylint: disable=arguments-differ
         """Forward-pass input tensor to the module.
@@ -112,7 +95,7 @@ class AnomalyModule(pl.LightningModule, ABC):
           Dictionary containing images, features, true labels and masks.
           These are required in `validation_epoch_end` for feature concatenation.
         """
-        return self.validation_step(batch, _)
+        return self.predict_step(batch, _)
 
     def validation_step_end(self, val_step_outputs):  # pylint: disable=arguments-differ
         """Called at the end of each validation step."""
@@ -132,7 +115,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         Args:
           outputs: Batch of outputs from the validation step
         """
-        if self.hparams.model.threshold.adaptive:
+        if self.threshold_method == ThresholdMethod.ADAPTIVE:
             self._compute_adaptive_threshold(outputs)
         self._collect_outputs(self.image_metrics, self.pixel_metrics, outputs)
         self._log_metrics()
@@ -147,6 +130,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         self._log_metrics()
 
     def _compute_adaptive_threshold(self, outputs):
+        self.image_threshold.reset()
+        self.pixel_threshold.reset()
         self._collect_outputs(self.image_threshold, self.pixel_threshold, outputs)
         self.image_threshold.compute()
         if "mask" in outputs[0].keys() and "anomaly_maps" in outputs[0].keys():
@@ -154,32 +139,54 @@ class AnomalyModule(pl.LightningModule, ABC):
         else:
             self.pixel_threshold.value = self.image_threshold.value
 
-        self.image_metrics.F1.threshold = self.image_threshold.value.item()
-        self.pixel_metrics.F1.threshold = self.pixel_threshold.value.item()
+        self.image_metrics.set_threshold(self.image_threshold.value.item())
+        self.pixel_metrics.set_threshold(self.pixel_threshold.value.item())
 
-    def _collect_outputs(self, image_metric, pixel_metric, outputs):
+    @staticmethod
+    def _collect_outputs(image_metric, pixel_metric, outputs):
         for output in outputs:
             image_metric.cpu()
             image_metric.update(output["pred_scores"], output["label"].int())
             if "mask" in output.keys() and "anomaly_maps" in output.keys():
                 pixel_metric.cpu()
-                pixel_metric.update(output["anomaly_maps"].flatten(), output["mask"].flatten().int())
+                pixel_metric.update(output["anomaly_maps"], output["mask"].int())
 
-    def _post_process(self, outputs):
+    @staticmethod
+    def _post_process(outputs):
         """Compute labels based on model predictions."""
         if "pred_scores" not in outputs and "anomaly_maps" in outputs:
             outputs["pred_scores"] = (
                 outputs["anomaly_maps"].reshape(outputs["anomaly_maps"].shape[0], -1).max(dim=1).values
             )
 
-    def _outputs_to_cpu(self, output):
-        # for output in outputs:
+    @staticmethod
+    def _outputs_to_cpu(output):
         for key, value in output.items():
             if isinstance(value, Tensor):
                 output[key] = value.cpu()
 
     def _log_metrics(self):
         """Log computed performance metrics."""
-        self.log_dict(self.image_metrics)
-        if self.hparams.dataset.task == "segmentation":
-            self.log_dict(self.pixel_metrics)
+        if self.pixel_metrics.update_called:
+            self.log_dict(self.pixel_metrics, prog_bar=True)
+            self.log_dict(self.image_metrics, prog_bar=False)
+        else:
+            self.log_dict(self.image_metrics, prog_bar=True)
+
+    def _load_normalization_class(self, state_dict: OrderedDict[str, Tensor]):
+        """Assigns the normalization method to use."""
+        if "normalization_metrics.max" in state_dict.keys():
+            self.normalization_metrics = MinMax()
+        elif "normalization_metrics.image_mean" in state_dict.keys():
+            self.normalization_metrics = AnomalyScoreDistribution()
+        else:
+            warn("No known normalization found in model weights.")
+
+    def load_state_dict(self, state_dict: OrderedDict[str, Tensor], strict: bool = True):
+        """Load state dict from checkpoint.
+
+        Ensures that normalization and thresholding attributes is properly setup before model is loaded.
+        """
+        # Used to load missing normalization and threshold parameters
+        self._load_normalization_class(state_dict)
+        return super().load_state_dict(state_dict, strict=strict)

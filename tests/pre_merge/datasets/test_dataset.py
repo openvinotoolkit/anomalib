@@ -6,12 +6,7 @@ import numpy as np
 import pytest
 
 from anomalib.config import update_input_size_config
-from anomalib.data import (
-    BTechDataModule,
-    FolderDataModule,
-    MVTecDataModule,
-    get_datamodule,
-)
+from anomalib.data import BTech, Folder, MVTec, get_datamodule
 from anomalib.pre_processing.transforms import Denormalize, ToNumpy
 from tests.helpers.config import get_test_configurable_parameters
 from tests.helpers.dataset import TestDataset, get_dataset_path
@@ -19,7 +14,7 @@ from tests.helpers.dataset import TestDataset, get_dataset_path
 
 @pytest.fixture(autouse=True)
 def mvtec_data_module():
-    datamodule = MVTecDataModule(
+    datamodule = MVTec(
         root=get_dataset_path(dataset="MVTec"),
         category="leather",
         image_size=(256, 256),
@@ -36,7 +31,7 @@ def mvtec_data_module():
 @pytest.fixture(autouse=True)
 def btech_data_module():
     """Create BTech Data Module."""
-    datamodule = BTechDataModule(
+    datamodule = BTech(
         root=get_dataset_path(dataset="BTech"),
         category="01",
         image_size=(256, 256),
@@ -54,10 +49,10 @@ def btech_data_module():
 def folder_data_module():
     """Create Folder Data Module."""
     root = get_dataset_path(dataset="bottle")
-    datamodule = FolderDataModule(
+    datamodule = Folder(
         root=root,
-        normal="good",
-        abnormal="broken_large",
+        normal_dir="good",
+        abnormal_dir="broken_large",
         mask_dir=os.path.join(root, "ground_truth/broken_large"),
         task="segmentation",
         split_ratio=0.2,
@@ -97,6 +92,17 @@ class TestMVTecDataModule:
         assert sorted(["image_path", "mask_path", "image", "label", "mask"]) == sorted(val_data.keys())
         assert sorted(["image_path", "mask_path", "image", "label", "mask"]) == sorted(test_data.keys())
 
+    def test_non_overlapping_splits(self, mvtec_data_module):
+        """This test ensures that the train and test splits generated are non-overlapping."""
+        assert (
+            len(
+                set(mvtec_data_module.test_data.samples["image_path"].values).intersection(
+                    set(mvtec_data_module.train_data.samples["image_path"].values)
+                )
+            )
+            == 0
+        ), "Found train and test split contamination"
+
 
 class TestBTechDataModule:
     """Test BTech Data Module."""
@@ -116,6 +122,17 @@ class TestBTechDataModule:
         assert sorted(["image_path", "mask_path", "image", "label", "mask"]) == sorted(val_data.keys())
         assert sorted(["image_path", "mask_path", "image", "label", "mask"]) == sorted(test_data.keys())
 
+    def test_non_overlapping_splits(self, btech_data_module):
+        """This test ensures that the train and test splits generated are non-overlapping."""
+        assert (
+            len(
+                set(btech_data_module.test_data.samples["image_path"].values).intersection(
+                    set(btech_data_module.train_data.samples["image_path"].values)
+                )
+            )
+            == 0
+        ), "Found train and test split contamination"
+
 
 class TestFolderDataModule:
     """Test Folder Data Module."""
@@ -134,6 +151,17 @@ class TestFolderDataModule:
 
         assert sorted(["image_path", "mask_path", "image", "label", "mask"]) == sorted(val_data.keys())
         assert sorted(["image_path", "mask_path", "image", "label", "mask"]) == sorted(test_data.keys())
+
+    def test_non_overlapping_splits(self, folder_data_module):
+        """This test ensures that the train and test splits generated are non-overlapping."""
+        assert (
+            len(
+                set(folder_data_module.test_data.samples["image_path"].values).intersection(
+                    set(folder_data_module.train_data.samples["image_path"].values)
+                )
+            )
+            == 0
+        ), "Found train and test split contamination"
 
 
 class TestDenormalize:

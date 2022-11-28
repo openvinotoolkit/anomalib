@@ -1,40 +1,45 @@
 """Anomaly Score Normalization Callback that uses min-max normalization."""
 
-# Copyright (C) 2020 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions
-# and limitations under the License.
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import pytorch_lightning as pl
 from pytorch_lightning import Callback
+from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 
+from anomalib.models.components import AnomalyModule
 from anomalib.post_processing.normalization.min_max import normalize
+from anomalib.utils.metrics import MinMax
 
 
+@CALLBACK_REGISTRY
 class MinMaxNormalizationCallback(Callback):
     """Callback that normalizes the image-level and pixel-level anomaly scores using min-max normalization."""
 
-    def on_test_start(self, _trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
+    # pylint: disable=unused-argument
+    def setup(self, trainer: pl.Trainer, pl_module: AnomalyModule, stage: Optional[str] = None) -> None:
+        """Adds min_max metrics to normalization metrics."""
+        if not hasattr(pl_module, "normalization_metrics"):
+            pl_module.normalization_metrics = MinMax().cpu()
+        elif not isinstance(pl_module.normalization_metrics, MinMax):
+            raise AttributeError(
+                f"Expected normalization_metrics to be of type MinMax, got {type(pl_module.normalization_metrics)}"
+            )
+
+    # pylint: disable=unused-argument
+    def on_test_start(self, trainer: pl.Trainer, pl_module: AnomalyModule) -> None:
         """Called when the test begins."""
-        pl_module.image_metrics.F1.threshold = 0.5
-        pl_module.pixel_metrics.F1.threshold = 0.5
+        for metric in (pl_module.image_metrics, pl_module.pixel_metrics):
+            if metric is not None:
+                metric.set_threshold(0.5)
 
     def on_validation_batch_end(
         self,
         _trainer: pl.Trainer,
-        pl_module: pl.LightningModule,
+        pl_module: AnomalyModule,
         outputs: STEP_OUTPUT,
         _batch: Any,
         _batch_idx: int,
@@ -42,14 +47,14 @@ class MinMaxNormalizationCallback(Callback):
     ) -> None:
         """Called when the validation batch ends, update the min and max observed values."""
         if "anomaly_maps" in outputs.keys():
-            pl_module.min_max(outputs["anomaly_maps"])
+            pl_module.normalization_metrics(outputs["anomaly_maps"])
         else:
-            pl_module.min_max(outputs["pred_scores"])
+            pl_module.normalization_metrics(outputs["pred_scores"])
 
     def on_test_batch_end(
         self,
         _trainer: pl.Trainer,
-        pl_module: pl.LightningModule,
+        pl_module: AnomalyModule,
         outputs: STEP_OUTPUT,
         _batch: Any,
         _batch_idx: int,
@@ -61,7 +66,7 @@ class MinMaxNormalizationCallback(Callback):
     def on_predict_batch_end(
         self,
         _trainer: pl.Trainer,
-        pl_module: pl.LightningModule,
+        pl_module: AnomalyModule,
         outputs: Dict,
         _batch: Any,
         _batch_idx: int,
@@ -73,7 +78,7 @@ class MinMaxNormalizationCallback(Callback):
     @staticmethod
     def _normalize_batch(outputs, pl_module):
         """Normalize a batch of predictions."""
-        stats = pl_module.min_max.cpu()
+        stats = pl_module.normalization_metrics.cpu()
         outputs["pred_scores"] = normalize(
             outputs["pred_scores"], pl_module.image_threshold.value.cpu(), stats.min, stats.max
         )

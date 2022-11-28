@@ -129,11 +129,11 @@ class TestDataset:
 
     def __call__(self, func):
         @wraps(func)
-        def inner(*args, **kwds):
+        def inner(*args, **kwargs):
             # If true, will use MVTech AD dataset for testing.
             # Useful for nightly builds
             if self.use_mvtec:
-                return func(*args, path=self.path, **kwds)
+                return func(*args, path=self.path, **kwargs)
             else:
                 with GeneratedDummyDataset(
                     num_train=self.num_train,
@@ -145,8 +145,8 @@ class TestDataset:
                     max_size=self.max_size,
                     seed=self.seed,
                 ) as dataset_path:
-                    kwds["category"] = "shapes"
-                    return func(*args, path=dataset_path, **kwds)
+                    kwargs["category"] = "shapes"
+                    return func(*args, path=dataset_path, **kwargs)
 
         return inner
 
@@ -177,7 +177,7 @@ class GeneratedDummyDataset(ContextDecorator):
         max_size: Optional[int] = 10,
         train_shapes: List[str] = ["triangle", "rectangle"],
         test_shapes: List[str] = ["star", "hexagon"],
-        seed: int = 0,
+        seed: Optional[int] = None,
     ) -> None:
         self.root_dir = mkdtemp()
         self.num_train = num_train
@@ -244,7 +244,7 @@ class GeneratedDummyDataset(ContextDecorator):
 
     def __enter__(self):
         """Creates the dataset in temp folder."""
-        if self.seed > 0:
+        if self.seed:
             np.random.seed(self.seed)
         self._generate_dataset()
         return self.root_dir

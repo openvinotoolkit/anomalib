@@ -1,22 +1,21 @@
-name: Build Docs
+name: Docs
 
 on:
   push:
-    branches: [development]
+    branches: [main]
     paths-ignore:
       - ".github/**" # Ignore changes towards the .github directory
   workflow_dispatch: # run on request (no need for PR)
 
 jobs:
   Build-and-Publish-Documentation:
-    runs-on: [self-hosted, linux, x64]
+    runs-on: [docs]
     steps:
       - name: CHECKOUT REPOSITORY
         uses: actions/checkout@v2
       - name: Install requirements
         run: |
           pip install -r requirements/base.txt
-          pip install -r requirements/dev.txt
           pip install -r requirements/openvino.txt
       - name: Build and Commit Docs
         run: |

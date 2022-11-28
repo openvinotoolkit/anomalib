@@ -1,28 +1,23 @@
 """Get configurable parameters."""
 
-# Copyright (C) 2020 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions
-# and limitations under the License.
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 # TODO: This would require a new design.
 # TODO: https://jira.devtools.intel.com/browse/IAAALD-149
 
+import time
+from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Union
 from warnings import warn
 
-import torch
 from omegaconf import DictConfig, ListConfig, OmegaConf
+
+
+def _get_now_str(timestamp: float) -> str:
+    """Standard format for datetimes is defined here."""
+    return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d_%H-%M-%S")
 
 
 def update_input_size_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfig, ListConfig]:
@@ -65,6 +60,8 @@ def update_nncf_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfi
     sample_size = (crop_size, crop_size) if isinstance(crop_size, int) else crop_size
     if "optimization" in config.keys():
         if "nncf" in config.optimization.keys():
+            if "input_info" not in config.optimization.nncf.keys():
+                config.optimization.nncf["input_info"] = {"sample_size": None}
             config.optimization.nncf.input_info.sample_size = [1, 3, *sample_size]
             if config.optimization.nncf.apply:
                 if "update_config" in config.optimization.nncf:
@@ -112,37 +109,10 @@ def update_multi_gpu_training_config(config: Union[DictConfig, ListConfig]) -> U
     return config
 
 
-def update_device_config(config: Union[DictConfig, ListConfig], openvino: bool) -> Union[DictConfig, ListConfig]:
-    """Update XPU Device Config This function ensures devices are configured correctly by the user.
-
-    Args:
-        config (Union[DictConfig, ListConfig]): Input config
-        openvino (bool): Boolean to check if OpenVINO Inference is enabled.
-
-    Returns:
-        Union[DictConfig, ListConfig]: Updated config
-    """
-
-    config.openvino = openvino
-    if openvino:
-        config.trainer.gpus = 0
-
-    if not torch.cuda.is_available():
-        config.trainer.gpus = 0
-
-    if config.trainer.gpus == 0 and torch.cuda.is_available():
-        config.trainer.gpus = 1
-
-    config = update_multi_gpu_training_config(config)
-
-    return config
-
-
 def get_configurable_parameters(
     model_name: Optional[str] = None,
-    model_config_path: Optional[Union[Path, str]] = None,
+    config_path: Optional[Union[Path, str]] = None,
     weight_file: Optional[str] = None,
-    openvino: bool = False,
     config_filename: Optional[str] = "config",
     config_file_extension: Optional[str] = "yaml",
 ) -> Union[DictConfig, ListConfig]:
@@ -150,25 +120,27 @@ def get_configurable_parameters(
 
     Args:
         model_name: Optional[str]:  (Default value = None)
-        model_config_path: Optional[Union[Path, str]]:  (Default value = None)
+        config_path: Optional[Union[Path, str]]:  (Default value = None)
         weight_file: Path to the weight file
-        openvino: Use OpenVINO
         config_filename: Optional[str]:  (Default value = "config")
         config_file_extension: Optional[str]:  (Default value = "yaml")
 
     Returns:
         Union[DictConfig, ListConfig]: Configurable parameters in DictConfig object.
     """
-    if model_name is None and model_config_path is None:
+    if model_name is None and config_path is None:
         raise ValueError(
             "Both model_name and model config path cannot be None! "
             "Please provide a model name or path to a config file!"
         )
 
-    if model_config_path is None:
-        model_config_path = Path(f"anomalib/models/{model_name}/{config_filename}.{config_file_extension}")
+    if config_path is None:
+        config_path = Path(f"anomalib/models/{model_name}/{config_filename}.{config_file_extension}")
 
-    config = OmegaConf.load(model_config_path)
+    config = OmegaConf.load(config_path)
+
+    # keep track of the original config file because it will be modified
+    config_original: DictConfig = config.copy()
 
     # Dataset Configs
     if "format" not in config.dataset.keys():
@@ -178,23 +150,56 @@ def get_configurable_parameters(
 
     # Project Configs
     project_path = Path(config.project.path) / config.model.name / config.dataset.name
+
+    # add category subfolder if needed
     if config.dataset.format.lower() in ("btech", "mvtec"):
         project_path = project_path / config.dataset.category
 
+    # set to False by default for backward compatibility
+    config.project.setdefault("unique_dir", False)
+
+    if config.project.unique_dir:
+        project_path = project_path / f"run.{_get_now_str(time.time())}"
+
+    else:
+        project_path = project_path / "run"
+        warn(
+            "config.project.unique_dir is set to False. "
+            "This does not ensure that your results will be written in an empty directory and you may overwrite files."
+        )
+
     (project_path / "weights").mkdir(parents=True, exist_ok=True)
     (project_path / "images").mkdir(parents=True, exist_ok=True)
+    # write the original config for eventual debug (modified config at the end of the function)
+    (project_path / "config_original.yaml").write_text(OmegaConf.to_yaml(config_original))
+
     config.project.path = str(project_path)
+
     # loggers should write to results/model/dataset/category/ folder
     config.trainer.default_root_dir = str(project_path)
 
     if weight_file:
-        config.model.weight_file = weight_file
+        config.trainer.resume_from_checkpoint = weight_file
 
     config = update_nncf_config(config)
-    config = update_device_config(config, openvino)
 
     # thresholding
-    if "pixel_default" not in config.model.threshold.keys():
-        config.model.threshold.pixel_default = config.model.threshold.image_default
+    if "metrics" in config.keys():
+        # NOTE: Deprecate this after v0.4.0.
+        if "adaptive" in config.metrics.threshold.keys():
+            warn("adaptive will be deprecated in favor of method in config.metrics.threshold in v0.4.0.")
+            config.metrics.threshold.method = "adaptive" if config.metrics.threshold.adaptive else "manual"
+        if "image_default" in config.metrics.threshold.keys():
+            warn("image_default will be deprecated in favor of manual_image in config.metrics.threshold in v0.4.0.")
+            config.metrics.threshold.manual_image = (
+                None if config.metrics.threshold.adaptive else config.metrics.threshold.image_default
+            )
+        if "pixel_default" in config.metrics.threshold.keys():
+            warn("pixel_default will be deprecated in favor of manual_pixel in config.metrics.threshold in v0.4.0.")
+            config.metrics.threshold.manual_pixel = (
+                None if config.metrics.threshold.adaptive else config.metrics.threshold.pixel_default
+            )
+
+    (project_path / "config.yaml").write_text(OmegaConf.to_yaml(config))
 
     return config

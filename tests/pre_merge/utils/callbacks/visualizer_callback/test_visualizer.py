@@ -1,15 +1,16 @@
 import glob
 import os
 import tempfile
-from unittest import mock
+from pathlib import Path
 
 import pytest
 import pytorch_lightning as pl
 from omegaconf.omegaconf import OmegaConf
 
 from anomalib.utils.loggers import AnomalibTensorBoardLogger
+from tests.helpers.dummy import DummyDataModule
 
-from .dummy_lightning_model import DummyDataModule, DummyModule
+from .dummy_lightning_model import DummyModule
 
 
 def get_dummy_module(config):
@@ -29,15 +30,20 @@ def test_add_images(dataset):
             {
                 "dataset": {"task": dataset},
                 "model": {"threshold": {"image_default": 0.5, "pixel_default": 0.5, "adaptive": True}},
-                "project": {"path": dir_loc, "log_images_to": ["tensorboard", "local"]},
+                "project": {"path": dir_loc},
+                "logging": {"logger": ["tensorboard"]},
+                "visualization": {"log_images": True, "save_images": True},
+                "metrics": {},
             }
         )
         logger = get_dummy_logger(config, dir_loc)
         model = get_dummy_module(config)
-        trainer = pl.Trainer(callbacks=model.callbacks, logger=logger, checkpoint_callback=False)
+        trainer = pl.Trainer(
+            callbacks=model.callbacks, logger=logger, checkpoint_callback=False, default_root_dir=config.project.path
+        )
         trainer.test(model=model, datamodule=DummyDataModule())
         # test if images are logged
-        if len(glob.glob(os.path.join(dir_loc, "images", "*.jpg"))) != 1:
+        if len(list(Path(dir_loc).glob("**/*.png"))) != 1:
             raise Exception("Failed to save to local path")
 
         # test if tensorboard logs are created

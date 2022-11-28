@@ -1,38 +1,46 @@
 """Callbacks for Anomalib models."""
 
-# Copyright (C) 2020 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions
-# and limitations under the License.
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
+import logging
 import os
+import warnings
 from importlib import import_module
 from typing import List, Union
 
 import yaml
+from jsonargparse.namespace import Namespace
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 
+from anomalib.deploy import ExportMode
+
 from .cdf_normalization import CdfNormalizationCallback
+from .graph import GraphLogger
+from .metrics_configuration import MetricsConfigurationCallback
 from .min_max_normalization import MinMaxNormalizationCallback
 from .model_loader import LoadModelCallback
+from .post_processing_configuration import PostProcessingConfigurationCallback
+from .tiler_configuration import TilerConfigurationCallback
 from .timer import TimerCallback
-from .visualizer_callback import VisualizerCallback
+from .visualizer import ImageVisualizerCallback, MetricVisualizerCallback
 
 __all__ = [
+    "CdfNormalizationCallback",
+    "GraphLogger",
+    "ImageVisualizerCallback",
     "LoadModelCallback",
+    "MetricsConfigurationCallback",
+    "MetricVisualizerCallback",
+    "MinMaxNormalizationCallback",
+    "PostProcessingConfigurationCallback",
+    "TilerConfigurationCallback",
     "TimerCallback",
-    "VisualizerCallback",
 ]
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
@@ -44,6 +52,8 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
     Return:
         (List[Callback]): List of callbacks.
     """
+    logger.info("Loading the callbacks")
+
     callbacks: List[Callback] = []
 
     monitor_metric = None if "early_stopping" not in config.model.keys() else config.model.early_stopping.metric
@@ -59,8 +69,30 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
 
     callbacks.extend([checkpoint, TimerCallback()])
 
-    if "weight_file" in config.model.keys():
-        load_model = LoadModelCallback(os.path.join(config.project.path, config.model.weight_file))
+    # Add post-processing configurations to AnomalyModule.
+    image_threshold = (
+        config.metrics.threshold.manual_image if "manual_image" in config.metrics.threshold.keys() else None
+    )
+    pixel_threshold = (
+        config.metrics.threshold.manual_pixel if "manual_pixel" in config.metrics.threshold.keys() else None
+    )
+    post_processing_callback = PostProcessingConfigurationCallback(
+        threshold_method=config.metrics.threshold.method,
+        manual_image_threshold=image_threshold,
+        manual_pixel_threshold=pixel_threshold,
+    )
+    callbacks.append(post_processing_callback)
+
+    # Add metric configuration to the model via MetricsConfigurationCallback
+    metrics_callback = MetricsConfigurationCallback(
+        config.dataset.task,
+        config.metrics.get("image", None),
+        config.metrics.get("pixel", None),
+    )
+    callbacks.append(metrics_callback)
+
+    if "resume_from_checkpoint" in config.trainer.keys() and config.trainer.resume_from_checkpoint is not None:
+        load_model = LoadModelCallback(config.trainer.resume_from_checkpoint)
         callbacks.append(load_model)
 
     if "normalization_method" in config.model.keys() and not config.model.normalization_method == "none":
@@ -76,8 +108,7 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
         else:
             raise ValueError(f"Normalization method not recognized: {config.model.normalization_method}")
 
-    if not config.project.log_images_to == []:
-        callbacks.append(VisualizerCallback(inputs_are_normalized=not config.model.normalization_method == "none"))
+    add_visualizer_callback(callbacks, config)
 
     if "optimization" in config.keys():
         if "nncf" in config.optimization and config.optimization.nncf.apply:
@@ -92,17 +123,80 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
                     export_dir=os.path.join(config.project.path, "compressed"),
                 )
             )
-        if "openvino" in config.optimization and config.optimization.openvino.apply:
-            from .openvino import (  # pylint: disable=import-outside-toplevel
-                OpenVINOCallback,
+        if config.optimization.export_mode is not None:
+            from .export import (  # pylint: disable=import-outside-toplevel
+                ExportCallback,
             )
 
+            logger.info("Setting model export to %s", config.optimization.export_mode)
             callbacks.append(
-                OpenVINOCallback(
+                ExportCallback(
                     input_size=config.model.input_size,
-                    dirpath=os.path.join(config.project.path, "openvino"),
-                    filename="openvino_model",
+                    dirpath=config.project.path,
+                    filename="model",
+                    export_mode=ExportMode(config.optimization.export_mode),
                 )
             )
+        else:
+            warnings.warn(f"Export option: {config.optimization.export_mode} not found. Defaulting to no model export")
+
+    # Add callback to log graph to loggers
+    if config.logging.log_graph not in [None, False]:
+        callbacks.append(GraphLogger())
 
     return callbacks
+
+
+def add_visualizer_callback(callbacks: List[Callback], config: Union[DictConfig, ListConfig]):
+    """Configure the visualizer callback based on the config and add it to the list of callbacks.
+
+    Args:
+        callbacks (List[Callback]): Current list of callbacks.
+        config (Union[DictConfig, ListConfig]): The config object.
+    """
+    # visualization settings
+    assert isinstance(config, (DictConfig, Namespace))
+    # TODO remove this when version is upgraded to 0.4.0
+    if isinstance(config, DictConfig):
+        if (
+            "log_images_to" in config.project.keys()
+            and len(config.project.log_images_to) > 0
+            or "log_images_to" in config.logging.keys()
+            and len(config.logging.log_images_to) > 0
+        ):
+            warnings.warn(
+                "log_images_to parameter is deprecated and will be removed in version 0.4.0 Please use "
+                "the visualization.log_images and visualization.save_images parameters instead."
+            )
+            if "visualization" not in config.keys():
+                config["visualization"] = dict(
+                    log_images=False, save_images=False, show_image=False, image_save_path=None
+                )
+            if "local" in config.project.log_images_to:
+                config.visualization["save_images"] = True
+            if "local" not in config.project.log_images_to or len(config.project.log_images_to) > 1:
+                config.visualization["log_images"] = True
+        config.visualization.task = config.dataset.task
+        config.visualization.inputs_are_normalized = not config.model.normalization_method == "none"
+    else:
+        config.visualization.task = config.data.init_args.task
+        config.visualization.inputs_are_normalized = not config.post_processing.normalization_method == "none"
+
+    if config.visualization.log_images or config.visualization.save_images or config.visualization.show_images:
+        image_save_path = (
+            config.visualization.image_save_path
+            if config.visualization.image_save_path
+            else config.project.path + "/images"
+        )
+        for callback in (ImageVisualizerCallback, MetricVisualizerCallback):
+            callbacks.append(
+                callback(
+                    task=config.visualization.task,
+                    mode=config.visualization.mode,
+                    image_save_path=image_save_path,
+                    inputs_are_normalized=config.visualization.inputs_are_normalized,
+                    show_images=config.visualization.show_images,
+                    log_images=config.visualization.log_images,
+                    save_images=config.visualization.save_images,
+                )
+            )

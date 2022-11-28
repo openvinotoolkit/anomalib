@@ -1,4 +1,4 @@
-name: Nightly-regression Test
+name: Nightly-Regression Tests
 
 on:
   workflow_dispatch: # run on request (no need for PR)
@@ -10,18 +10,14 @@ jobs:
     runs-on: [self-hosted, linux, x64]
     strategy:
       max-parallel: 1
-    if: github.ref == 'refs/heads/development'
+    if: github.ref == 'refs/heads/main'
     steps:
-      - name: Print GPU status
-        run: nvidia-smi
       - name: CHECKOUT REPOSITORY
         uses: actions/checkout@v2
       - name: Install Tox
         run: pip install tox
       - name: Coverage
-        run: |
-          export ANOMALIB_DATASET_PATH=/media/data1/datasets/
-          tox -e nightly
+        run: tox -e nightly
       - name: Upload coverage result
         uses: actions/upload-artifact@v2
         with:

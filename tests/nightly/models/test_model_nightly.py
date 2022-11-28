@@ -1,18 +1,7 @@
 """Test Models on all MVTec AD Categories."""
 
-# Copyright (C) 2020 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions
-# and limitations under the License.
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 import itertools
 import math
@@ -42,14 +31,14 @@ def get_model_nncf_cat() -> List:
         List: Returns a combination of models with their nncf support for each category.
     """
     model_support = [
-        ("padim", False),
+        ("cflow", False),
         ("dfkde", False),
         ("dfm", False),
-        ("stfpm", False),
-        # ("stfpm", True),
-        ("patchcore", False),
-        ("cflow", False),
         ("ganomaly", False),
+        # ("stfpm", True),
+        ("padim", False),
+        ("patchcore", False),
+        ("stfpm", False),
     ]
     categories = random.sample(
         [
@@ -88,15 +77,21 @@ class TestModel:
         thresholds = OmegaConf.load("tests/nightly/models/performance_thresholds.yaml")
 
         threshold = thresholds[config.model.name][config.dataset.category]
-        if "optimization" in config.keys() and config.optimization.nncf.apply:
+        if "optimization" in config.keys() and "nncf" in config.optimization.keys() and config.optimization.nncf.apply:
             threshold = threshold.nncf
-        if not  (np.isclose(results["image_AUROC"], threshold["image_AUROC"], rtol=0.02) or (results["image_AUROC"] >= threshold["image_AUROC"])):
+        if not (
+            np.isclose(results["image_AUROC"], threshold["image_AUROC"], rtol=0.05)
+            or (results["image_AUROC"] >= threshold["image_AUROC"])
+        ):
             raise AssertionError(
                 f"results['image_AUROC']:{results['image_AUROC']} >= threshold['image_AUROC']:{threshold['image_AUROC']}"
             )
 
         if config.dataset.task == "segmentation":
-            if not (np.isclose(results["pixel_AUROC"] ,threshold["pixel_AUROC"], rtol=0.02) or (results["pixel_AUROC"] >= threshold["pixel_AUROC"])):
+            if not (
+                np.isclose(results["pixel_AUROC"], threshold["pixel_AUROC"], rtol=0.05)
+                or (results["pixel_AUROC"] >= threshold["pixel_AUROC"])
+            ):
                 raise AssertionError(
                     f"results['pixel_AUROC']:{results['pixel_AUROC']} >= threshold['pixel_AUROC']:{threshold['pixel_AUROC']}"
                 )

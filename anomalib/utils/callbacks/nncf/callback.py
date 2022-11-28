@@ -1,18 +1,7 @@
 """Callbacks for NNCF optimization."""
 
 # Copyright (C) 2022 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions
-# and limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
 
 import os
 from typing import Any, Dict, Optional
@@ -22,10 +11,12 @@ from nncf import NNCFConfig
 from nncf.api.compression import CompressionAlgorithmController
 from nncf.torch import register_default_init_args
 from pytorch_lightning import Callback
+from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 
 from anomalib.utils.callbacks.nncf.utils import InitLoader, wrap_nncf_model
 
 
+@CALLBACK_REGISTRY
 class NNCFCallback(Callback):
     """Callback for NNCF compression.
 
@@ -38,9 +29,9 @@ class NNCFCallback(Callback):
                           If None model will not be exported.
     """
 
-    def __init__(self, nncf_config: Dict, export_dir: str = None):
+    def __init__(self, config: Dict, export_dir: str = None):
         self.export_dir = export_dir
-        self.nncf_config = NNCFConfig(nncf_config)
+        self.config = NNCFConfig(config)
         self.nncf_ctrl: Optional[CompressionAlgorithmController] = None
 
     # pylint: disable=unused-argument
@@ -54,10 +45,10 @@ class NNCFCallback(Callback):
             return
 
         init_loader = InitLoader(trainer.datamodule.train_dataloader())  # type: ignore
-        nncf_config = register_default_init_args(self.nncf_config, init_loader)
+        config = register_default_init_args(self.config, init_loader)
 
         self.nncf_ctrl, pl_module.model = wrap_nncf_model(
-            model=pl_module.model, config=nncf_config, dataloader=trainer.datamodule.train_dataloader()  # type: ignore
+            model=pl_module.model, config=config, dataloader=trainer.datamodule.train_dataloader()  # type: ignore
         )
 
     def on_train_batch_start(

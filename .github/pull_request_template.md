@@ -7,13 +7,14 @@
 ## Changes
 
 - [ ] Bug fix (non-breaking change which fixes an issue)
+- [ ] Refactor (non-breaking change which refactors the code base)
 - [ ] New feature (non-breaking change which adds functionality)
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] This change requires a documentation update
 
 ## Checklist
 
-- [ ] My code follows the [pre-commit style and check guidelines](https://openvinotoolkit.github.io/anomalib/guides/using_pre_commit.html#pre-commit-hooks) of this project.
+- [ ] My code follows the [pre-commit style and check guidelines](https://github.com/openvinotoolkit/anomalib/blob/main/CONTRIBUTING.md) of this project.
 - [ ] I have performed a self-review of my code
 - [ ] I have commented my code, particularly in hard-to-understand areas
 - [ ] I have made corresponding changes to the documentation

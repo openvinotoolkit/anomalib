@@ -1,18 +1,7 @@
 """Image Tiler."""
 
-# Copyright (C) 2020 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions
-# and limitations under the License.
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 from itertools import product
 from math import ceil
@@ -158,7 +147,7 @@ class Tiler:
     def __init__(
         self,
         tile_size: Union[int, Sequence],
-        stride: Union[int, Sequence],
+        stride: Optional[Union[int, Sequence]] = None,
         remove_border_count: int = 0,
         mode: str = "padding",
         tile_count: int = 4,
@@ -166,7 +155,10 @@ class Tiler:
 
         self.tile_size_h, self.tile_size_w = self.__validate_size_type(tile_size)
         self.tile_count = tile_count
-        self.stride_h, self.stride_w = self.__validate_size_type(stride)
+
+        if stride is not None:
+            self.stride_h, self.stride_w = self.__validate_size_type(stride)
+
         self.remove_border_count = int(remove_border_count)
         self.overlapping = not (self.stride_h == self.tile_size_h and self.stride_w == self.tile_size_w)
         self.mode = mode

@@ -1,21 +1,10 @@
 """Common helpers for both nightly and pre-merge model tests."""
 
-# Copyright (C) 2020 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions
-# and limitations under the License.
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 import os
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from omegaconf import DictConfig, ListConfig
@@ -26,7 +15,8 @@ from anomalib.config import get_configurable_parameters, update_nncf_config
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
-from anomalib.utils.callbacks import VisualizerCallback, get_callbacks
+from anomalib.utils.callbacks import get_callbacks
+from anomalib.utils.callbacks.visualizer import BaseVisualizerCallback
 
 
 def setup_model_train(
@@ -35,9 +25,10 @@ def setup_model_train(
     project_path: str,
     nncf: bool,
     category: str,
-    score_type: str = None,
-    weight_file: str = "weights/model.ckpt",
+    score_type: Optional[str] = None,
     fast_run: bool = False,
+    dataset_task: Optional[str] = None,
+    visualizer_mode: Optional[str] = None,
     device: Union[List[int], int] = [0],
 ) -> Tuple[Union[DictConfig, ListConfig], LightningDataModule, AnomalyModule, Trainer]:
     """Train the model based on the parameters passed.
@@ -49,9 +40,12 @@ def setup_model_train(
         nncf (bool): Add nncf callback.
         category (str): Category to train on.
         score_type (str, optional): Only used for DFM. Defaults to None.
-        weight_file (str, optional): Path to weight file.
         fast_run (bool, optional): If set to true, the model trains for only 1 epoch. We train for one epoch as
             this ensures that both anomalous and non-anomalous images are present in the validation step.
+        dataset_task (str, optional): Specify the type of task. Must be in ["classification", "segmentation"].
+            Used for integration testing of model / task / visualizer_mode.
+        visualizer_mode (str, optional): Specify the type of visualization. Must be in ["full", "simple"].
+            Used for integration testing of model / task / visualizer_mode.
         device (List[int], int, optional): Select which device you want to train the model on. Defaults to first GPU.
 
     Returns:
@@ -64,16 +58,23 @@ def setup_model_train(
     config.dataset.category = category
     config.dataset.path = dataset_path
     config.project.log_images_to = []
-    config.trainer.gpus = device
+    config.trainer.devices = device
+    config.trainer.accelerator = "gpu" if device != 0 else "cpu"
+    if dataset_task is not None:
+        config.dataset.task = dataset_task
+    if visualizer_mode is not None:
+        config.visualization.mode = visualizer_mode
+        config.visualization.save_images = True  # Enforce processing by Visualizer
+        if "pixel" in config.metrics and dataset_task == "classification":
+            del config.metrics.pixel
 
-    # If weight file is empty, remove the key from config
-    if "weight_file" in config.model.keys() and weight_file == "":
-        config.model.pop("weight_file")
-    else:
-        config.model.weight_file = weight_file if not fast_run else "weights/last.ckpt"
+    # Remove legacy flags
+    for legacy_device in ["num_processes", "gpus", "ipus", "tpu_cores"]:
+        if legacy_device in config.trainer:
+            config.trainer[legacy_device] = None
 
     if nncf:
-        config.optimization.nncf.apply = True
+        config.optimization["nncf"] = {"apply": True, "input_info": {"sample_size": None}}
         config = update_nncf_config(config)
         config.init_weights = None
 
@@ -102,13 +103,14 @@ def setup_model_train(
         callbacks.append(model_checkpoint)
 
     for index, callback in enumerate(callbacks):
-        if isinstance(callback, VisualizerCallback):
+        if isinstance(callback, BaseVisualizerCallback):
             callbacks.pop(index)
             break
 
     # Train the model.
     if fast_run:
         config.trainer.max_epochs = 1
+        config.trainer.check_val_every_n_epoch = 1
 
     trainer = Trainer(callbacks=callbacks, **config.trainer)
     trainer.fit(model=model, datamodule=datamodule)
@@ -125,12 +127,15 @@ def model_load_test(config: Union[DictConfig, ListConfig], datamodule: Lightning
 
     """
     loaded_model = get_model(config)  # get new model
+    # Assing the weight file to resume_from_checkpoint. When trainer is initialized, Trainer
+    # object will automatically load the weights.
+    config.trainer.resume_from_checkpoint = os.path.join(config.project.path, "weights/last.ckpt")
 
     callbacks = get_callbacks(config)
 
     for index, callback in enumerate(callbacks):
         # Remove visualizer callback as saving results takes time
-        if isinstance(callback, VisualizerCallback):
+        if isinstance(callback, BaseVisualizerCallback):
             callbacks.pop(index)
             break
 
@@ -140,7 +145,7 @@ def model_load_test(config: Union[DictConfig, ListConfig], datamodule: Lightning
     new_results = trainer.test(model=loaded_model, datamodule=datamodule)[0]
     assert np.isclose(
         results["image_AUROC"], new_results["image_AUROC"]
-    ), "Loaded model does not yield close performance results"
+    ), f"Loaded model does not yield close performance results. {results['image_AUROC']} : {new_results['image_AUROC']}"
     if config.dataset.task == "segmentation":
         assert np.isclose(
             results["pixel_AUROC"], new_results["pixel_AUROC"]

@@ -8,27 +8,17 @@ These function are useful
     - when the dataset doesn't have a validation set.
 """
 
-# Copyright (C) 2020 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions
-# and limitations under the License.
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 import random
+from typing import Optional
 
 from pandas.core.frame import DataFrame
 
 
 def split_normal_images_in_train_set(
-    samples: DataFrame, split_ratio: float = 0.1, seed: int = 0, normal_label: str = "good"
+    samples: DataFrame, split_ratio: float = 0.1, seed: Optional[int] = None, normal_label: str = "good"
 ) -> DataFrame:
     """Split normal images in train set.
 
@@ -49,7 +39,7 @@ def split_normal_images_in_train_set(
         DataFrame: Output dataframe where the part of the training set is assigned to test set.
     """
 
-    if seed > 0:
+    if seed is not None:
         random.seed(seed)
 
     normal_train_image_indices = samples.index[(samples.split == "train") & (samples.label == normal_label)].to_list()
@@ -62,7 +52,9 @@ def split_normal_images_in_train_set(
     return samples
 
 
-def create_validation_set_from_test_set(samples: DataFrame, seed: int = 0, normal_label: str = "good") -> DataFrame:
+def create_validation_set_from_test_set(
+    samples: DataFrame, seed: Optional[int] = None, normal_label: str = "good"
+) -> DataFrame:
     """Craete Validation Set from Test Set.
 
     This function creates a validation set from test set by splitting both
@@ -74,7 +66,7 @@ def create_validation_set_from_test_set(samples: DataFrame, seed: int = 0, norma
         normal_label (str): Name of the normal label. For MVTec AD, for instance, this is normal_label.
     """
 
-    if seed > 0:
+    if seed is not None:
         random.seed(seed)
 
     # Split normal images.

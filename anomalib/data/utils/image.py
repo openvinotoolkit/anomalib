@@ -1,47 +1,40 @@
 """Image Utils."""
 
-# Copyright (C) 2020 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions
-# and limitations under the License.
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
+import math
+import warnings
 from pathlib import Path
-from typing import List, Union
+from typing import List, Optional, Tuple, Union
 
 import cv2
 import numpy as np
+import torch.nn.functional as F
+from torch import Tensor
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
 
-def get_image_filenames(path: Union[str, Path]) -> List[str]:
+def get_image_filenames(path: Union[str, Path]) -> List[Path]:
     """Get image filenames.
 
     Args:
         path (Union[str, Path]): Path to image or image-folder.
 
     Returns:
-        List[str]: List of image filenames
+        List[Path]: List of image filenames
 
     """
-    image_filenames: List[str]
+    image_filenames: List[Path]
 
     if isinstance(path, str):
         path = Path(path)
 
     if path.is_file() and path.suffix in IMG_EXTENSIONS:
-        image_filenames = [str(path)]
+        image_filenames = [path]
 
     if path.is_dir():
-        image_filenames = [str(p) for p in path.glob("**/*") if p.suffix in IMG_EXTENSIONS]
+        image_filenames = [p for p in path.glob("**/*") if p.suffix in IMG_EXTENSIONS]
 
     if len(image_filenames) == 0:
         raise ValueError(f"Found 0 images in {path}")
@@ -49,7 +42,147 @@ def get_image_filenames(path: Union[str, Path]) -> List[str]:
     return image_filenames
 
 
-def read_image(path: Union[str, Path]) -> np.ndarray:
+def duplicate_filename(path: Union[str, Path]) -> Path:
+    """Check and duplicate filename.
+
+    This function checks the path and adds a suffix if it already exists on the file system.
+
+    Args:
+        path (Union[str, Path]): Input Path
+
+    Examples:
+        >>> path = Path("datasets/MVTec/bottle/test/broken_large/000.png")
+        >>> path.exists()
+        True
+
+        If we pass this to ``duplicate_filename`` function we would get the following:
+        >>> duplicate_filename(path)
+        PosixPath('datasets/MVTec/bottle/test/broken_large/000_1.png')
+
+    Returns:
+        Path: Duplicated output path.
+    """
+
+    if isinstance(path, str):
+        path = Path(path)
+
+    i = 0
+    while True:
+        duplicated_path = path if i == 0 else path.parent / (path.stem + f"_{i}" + path.suffix)
+        if not duplicated_path.exists():
+            break
+        i += 1
+
+    return duplicated_path
+
+
+def generate_output_image_filename(input_path: Union[str, Path], output_path: Union[str, Path]) -> Path:
+    """Generate an output filename to save the inference image.
+
+    This function generates an output filaname by checking the input and output filenames. Input path is
+    the input to infer, and output path is the path to save the output predictions specified by the user.
+
+    The function expects ``input_path`` to always be a file, not a directory. ``output_path`` could be a
+    filename or directory. If it is a filename, the function checks if the specified filename exists on
+    the file system. If yes, the function calls ``duplicate_filename`` to duplicate the filename to avoid
+    overwriting the existing file. If ``output_path`` is a directory, this function adds the parent and
+    filenames of ``input_path`` to ``output_path``.
+
+    Args:
+        input_path (Union[str, Path]): Path to the input image to infer.
+        output_path (Union[str, Path]): Path to output to save the predictions.
+            Could be a filename or a directory.
+
+    Examples:
+        >>> input_path = Path("datasets/MVTec/bottle/test/broken_large/000.png")
+        >>> output_path = Path("datasets/MVTec/bottle/test/broken_large/000.png")
+        >>> generate_output_image_filename(input_path, output_path)
+        PosixPath('datasets/MVTec/bottle/test/broken_large/000_1.png')
+
+        >>> input_path = Path("datasets/MVTec/bottle/test/broken_large/000.png")
+        >>> output_path = Path("results/images")
+        >>> generate_output_image_filename(input_path, output_path)
+        PosixPath('results/images/broken_large/000.png')
+
+    Raises:
+        ValueError: When the ``input_path`` is not a file.
+
+    Returns:
+        Path: The output filename to save the output predictions from the inferencer.
+    """
+
+    if isinstance(input_path, str):
+        input_path = Path(input_path)
+
+    if isinstance(output_path, str):
+        output_path = Path(output_path)
+
+    # This function expects an ``input_path`` that is a file. This is to check if output_path
+    if input_path.is_file() is False:
+        raise ValueError("input_path is expected to be a file to generate a proper output filename.")
+
+    file_path: Path
+    if output_path.suffix == "":
+        # If the output is a directory, then add parent directory name
+        # and filename to the path. This is to ensure we do not overwrite
+        # images and organize based on the categories.
+        file_path = output_path / input_path.parent.name / input_path.name
+    else:
+        file_path = output_path
+
+    # This new ``file_path`` might contain a directory path yet to be created.
+    # Create the parent directory to avoid such cases.
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if file_path.is_file():
+        warnings.warn(f"{output_path} already exists. Renaming the file to avoid overwriting.")
+        file_path = duplicate_filename(file_path)
+
+    return file_path
+
+
+def get_image_height_and_width(image_size: Optional[Union[int, Tuple]] = None) -> Tuple[Optional[int], Optional[int]]:
+    """Get image height and width from ``image_size`` variable.
+
+    Args:
+        image_size (Optional[Union[int, Tuple[int, int]]], optional): Input image size.
+
+    Raises:
+        ValueError: Image size not None, int or tuple.
+
+    Examples:
+        >>> get_image_height_and_width(image_size=256)
+        (256, 256)
+
+        >>> get_image_height_and_width(image_size=(256, 256))
+        (256, 256)
+
+        >>> get_image_height_and_width(image_size=(256, 256, 3))
+        (256, 256)
+
+        >>> get_image_height_and_width(image_size=256.)
+        Traceback (most recent call last):
+        File "<string>", line 1, in <module>
+        File "<string>", line 18, in get_image_height_and_width
+        ValueError: ``image_size`` could be either int or Tuple[int, int]
+
+    Returns:
+        Tuple[Optional[int], Optional[int]]: A tuple containing image height and width values.
+    """
+    height_and_width: Tuple[Optional[int], Optional[int]]
+    if isinstance(image_size, int):
+        height_and_width = (image_size, image_size)
+    elif isinstance(image_size, tuple):
+        height_and_width = int(image_size[0]), int(image_size[1])
+    elif image_size is None:
+        height_and_width = (None, None)
+    else:
+        raise ValueError("``image_size`` could be either int or Tuple[int, int]")
+
+    return height_and_width
+
+
+def read_image(path: Union[str, Path], image_size: Optional[Union[int, Tuple]] = None) -> np.ndarray:
     """Read image from disk in RGB format.
 
     Args:
@@ -65,4 +198,31 @@ def read_image(path: Union[str, Path]) -> np.ndarray:
     image = cv2.imread(path)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
+    if image_size:
+        # This part is optional, where the user wants to quickly resize the image
+        # with a one-liner code. This would particularly be useful especially when
+        # prototyping new ideas.
+        height, width = get_image_height_and_width(image_size)
+        image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
+
     return image
+
+
+def pad_nextpow2(batch: Tensor) -> Tensor:
+    """Compute required padding from input size and return padded images.
+
+    Finds the largest dimension and computes a square image of dimensions that are of the power of 2.
+    In case the image dimension is odd, it returns the image with an extra padding on one side.
+
+    Args:
+        batch (Tensor): Input images
+
+    Returns:
+        batch: Padded batch
+    """
+    # find the largest dimension
+    l_dim = 2 ** math.ceil(math.log(max(*batch.shape[-2:]), 2))
+    padding_w = [math.ceil((l_dim - batch.shape[-2]) / 2), math.floor((l_dim - batch.shape[-2]) / 2)]
+    padding_h = [math.ceil((l_dim - batch.shape[-1]) / 2), math.floor((l_dim - batch.shape[-1]) / 2)]
+    padded_batch = F.pad(batch, pad=[*padding_h, *padding_w])
+    return padded_batch

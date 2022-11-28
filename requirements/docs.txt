@@ -1,5 +1,7 @@
-furo==2021.7.31b41
+furo==2022.9.29
 myst-parser
+pandoc
 sphinx>=4.1.2
 sphinx-autoapi
 sphinxemoji==0.1.8
+nbsphinx>=0.8.9

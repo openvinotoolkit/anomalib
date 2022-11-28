@@ -1,11 +1,109 @@
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# SETUP CONFIGURATION.                                                        #
 [build-system]
 requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
 
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# ISORT CONFIGURATION.                                                        #
 [tool.isort]
 profile = "black"
 known_first_party = "wandb"
 sections = ['FUTURE', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'LOCALFOLDER']
 
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# BLACK CONFIGURATION                                                         #
 [tool.black]
 line-length = 120
+
+[tool.flake8]
+ignore = ["E203", "W503"]
+max-line-length = 120
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# PYLINT CONFIGURATION                                                        #
+[tool.pylint.main]
+extension-pkg-whitelist = "cv2"
+ignore = ["tests", "docs", "anomalib/models/components/freia"]
+ignored-modules = "cv2"
+
+[tool.pylint.messages_control]
+disable = [
+    "duplicate-code",
+    "arguments-differ",
+    "fixme",
+    "import-error",
+    "too-many-arguments",
+    "too-many-branches",
+    "too-many-instance-attributes",
+    "too-many-locals",
+    "too-few-public-methods",
+]
+
+[tool.pylint.typecheck]
+generated-members = ["numpy.*", "torch.*"]
+
+[tool.pylint.basic]
+good-names = ["e", "i", "id"]
+
+[tool.pylint.format]
+max-line-length = 120
+
+[tool.pylint.design]
+max-parents = 15
+
+[tool.pylint.similarities]
+min-similarity-lines = 5
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# MYPY CONFIGURATION.                                                         #
+[tool.mypy]
+ignore_missing_imports = true
+show_error_codes = true
+exclude = ["anomalib/models/components/freia/"]
+
+# mypy per-module options:
+[[tool.mypy.overrides]]
+module = "anomalib.models.components.freia.*"
+follow_imports = "skip"
+
+[[tool.mypy.overrides]]
+module = "torch.*"
+follow_imports = "skip"
+follow_imports_for_stubs = true
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# COVERAGE CONFIGURATION                                                      #
+[tool.coverage.report]
+exclude_lines = [
+    "except ImportError",
+    "raise ImportError",
+    "except ApiException",
+    "raise ApiException",
+    "raise ValueError",
+]
+
+[tool.pydocstyle]
+inherit = false
+ignore = [
+    "D107", # Missing docstring in __init__
+    "D202", # No blank lines allowed after function docstring
+    "D203", # 1 blank line required before class docstring
+    "D213", # Multi-line docstring summary should start at the second line
+    "D401", # First line should be in imperative mood; try rephrasing
+    "D404", # First word of the docstring should not be This
+    "D406", # Section name should end with a newline
+    "D407", # Missing dashed underline after section
+    "D413", # Missing blank line after last section
+]
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# NBQA CONFIGURATION                                                          #
+[tool.nbqa.addopts]
+pylint = ["--disable=C0103,C0114,C0116,E0401,R0801,W0106"]

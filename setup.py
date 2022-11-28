@@ -1,22 +1,30 @@
 """Setup file for anomalib."""
 
-# Copyright (C) 2020 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions
-# and limitations under the License.
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from typing import List
 
 from setuptools import find_packages, setup
+
+
+def load_module(name: str = "anomalib/__init__.py"):
+    """Load Python Module.
+
+    Args:
+        name (str, optional): Name of the module to load.
+            Defaults to "anomalib/__init__.py".
+
+    Returns:
+        _type_: _description_
+    """
+    location = str(Path(__file__).parent / name)
+    spec = spec_from_file_location(name=name, location=location)
+    module = module_from_spec(spec)  # type: ignore
+    spec.loader.exec_module(module)  # type: ignore
+    return module
 
 
 def get_version() -> str:
@@ -28,21 +36,15 @@ def get_version() -> str:
     the value assigned to it.
 
     Example:
-        >>> # Assume that __version__ = "0.2.1"
+        >>> # Assume that __version__ = "0.2.6"
         >>> get_version()
-        "0.2.1"
+        "0.2.6"
 
     Returns:
-        str: Version number of `anomalib` package.
+        str: `anomalib` version.
     """
-
-    with open(Path.cwd() / "anomalib" / "__init__.py", "r", encoding="utf8") as file:
-        lines = file.readlines()
-        for line in lines:
-            line = line.strip()
-            if line.startswith("__version__"):
-                version = line.replace("__version__ = ", "")
-
+    anomalib = load_module(name="anomalib/__init__.py")
+    version = anomalib.__version__
     return version
 
 
@@ -76,27 +78,30 @@ def get_required_packages(requirement_files: List[str]) -> List[str]:
 
 
 VERSION = get_version()
+LONG_DESCRIPTION = (Path(__file__).parent / "README.md").read_text(encoding="utf8")
 INSTALL_REQUIRES = get_required_packages(requirement_files=["base"])
 EXTRAS_REQUIRE = {
-    "dev": get_required_packages(requirement_files=["dev", "docs"]),
     "openvino": get_required_packages(requirement_files=["openvino"]),
-    "full": get_required_packages(requirement_files=["dev", "docs", "openvino"]),
+    "full": get_required_packages(requirement_files=["docs", "openvino"]),
 }
+
 
 setup(
     name="anomalib",
-    # TODO: https://github.com/openvinotoolkit/anomalib/issues/36
-    version="0.2.5",
+    version=get_version(),
     author="Intel OpenVINO",
     author_email="help@openvino.intel.com",
     description="anomalib - Anomaly Detection Library",
+    long_description=LONG_DESCRIPTION,
+    long_description_content_type="text/markdown",
     url="",
     license="Copyright (c) Intel - All Rights Reserved. "
     'Licensed under the Apache License, Version 2.0 (the "License")'
     "See LICENSE file for more details.",
     python_requires=">=3.7",
-    packages=find_packages("."),
+    packages=find_packages(exclude=("tests",)),
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRAS_REQUIRE,
     package_data={"": ["config.yaml"]},
+    entry_points={"console_scripts": ["anomalib=anomalib.utils.cli.cli:main"]},
 )
