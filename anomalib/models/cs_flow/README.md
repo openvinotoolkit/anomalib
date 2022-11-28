@@ -41,25 +41,25 @@ All results gathered with seed `42`.
 
 > The following table is generated with image size of 768 and generating the anomaly map from all the three scales unlike the paper. Initial experiments showed that the anomaly map from all the three scales gives better results than the one from the largest scale.
 
-### Image AUROC
+### Image AUROC - 768 Image Size
 
 |                 | Average | Carpet |  Grid | Leather |  Tile |  Wood | Bottle | Cable | Capsule | Hazelnut | Metal_nut | Pill | Screw | Toothbrush | Transistor | Zipper |
 | :-------------- | ------: | -----: | ----: | ------: | ----: | ----: | -----: | ----: | ------: | -------: | --------: | ---: | ----: | ---------: | ---------: | -----: |
 | EfficientNet-B5 |   0.987 |      1 | 0.989 |       1 | 0.998 | 0.998 |      1 | 0.996 |   0.981 |    0.994 |         1 | 0.98 |  0.95 |      0.919 |          1 |  0.999 |
 
-### Pixel AUROC
+### Pixel AUROC - 768 Image Size
 
 |                 | Average | Carpet |  Grid | Leather |  Tile |  Wood | Bottle | Cable | Capsule | Hazelnut | Metal_nut | Pill | Screw | Toothbrush | Transistor | Zipper |
 | :-------------- | ------: | -----: | ----: | ------: | ----: | ----: | -----: | ----: | ------: | -------: | --------: | ---: | ----: | ---------: | ---------: | -----: |
 | EfficientNet-B5 |   0.921 |  0.936 | 0.878 |   0.917 | 0.872 | 0.782 |  0.889 | 0.935 |   0.961 |    0.957 |     0.953 | 0.95 | 0.947 |      0.951 |      0.974 |  0.919 |
 
-### Pixel F1Score
+### Pixel F1Score - 768 Image Size
 
 |                 | Average | Carpet |  Grid | Leather | Tile |  Wood | Bottle | Cable | Capsule | Hazelnut | Metal_nut |  Pill | Screw | Toothbrush | Transistor | Zipper |
 | :-------------- | ------: | -----: | ----: | ------: | ---: | ----: | -----: | ----: | ------: | -------: | --------: | ----: | ----: | ---------: | ---------: | -----: |
 | EfficientNet-B5 |    0.33 |  0.219 | 0.104 |   0.144 | 0.41 | 0.211 |  0.357 | 0.375 |   0.333 |    0.375 |     0.689 | 0.458 | 0.094 |      0.342 |      0.597 |  0.238 |
 
-### Image F1 Score
+### Image F1 Score - 768 Image Size
 
 |                 | Average | Carpet |  Grid | Leather |  Tile |  Wood | Bottle | Cable | Capsule | Hazelnut | Metal_nut |  Pill | Screw | Toothbrush | Transistor | Zipper |
 | :-------------- | ------: | -----: | ----: | ------: | ----: | ----: | -----: | ----: | ------: | -------: | --------: | ----: | ----: | ---------: | ---------: | -----: |
@@ -67,25 +67,25 @@ All results gathered with seed `42`.
 
 > For fair comparison with other algorithms, the following results are computed with image size of 256.
 
-### Image AUROC
+### Image AUROC - 256 Image Size
 
 |                 | Average | Carpet |  Grid | Leather |  Tile |  Wood | Bottle | Cable | Capsule | Hazelnut | Metal_nut |  Pill | Screw | Toothbrush | Transistor | Zipper |
 | :-------------- | ------: | -----: | ----: | ------: | ----: | ----: | -----: | ----: | ------: | -------: | --------: | ----: | ----: | ---------: | ---------: | -----: |
 | EfficientNet-B5 |   0.972 |  0.995 | 0.982 |       1 | 0.972 | 0.988 |      1 |  0.97 |   0.907 |    0.995 |     0.972 | 0.953 | 0.896 |      0.969 |      0.987 |  0.987 |
 
-### Pixel AUROC
+### Pixel AUROC - 256 Image Size
 
 |                 | Average | Carpet |  Grid | Leather |  Tile |  Wood | Bottle | Cable | Capsule | Hazelnut | Metal_nut | Pill | Screw | Toothbrush | Transistor | Zipper |
 | :-------------- | ------: | -----: | ----: | ------: | ----: | ----: | -----: | ----: | ------: | -------: | --------: | ---: | ----: | ---------: | ---------: | -----: |
 | EfficientNet B5 |   0.845 |  0.847 | 0.746 |   0.851 | 0.775 | 0.677 |  0.853 | 0.863 |   0.882 |    0.895 |     0.932 | 0.92 | 0.779 |      0.892 |       0.96 |  0.803 |
 
-### Pixel F1Score
+### Pixel F1Score - 256 Image Size
 
 |                 | Average | Carpet |  Grid | Leather |  Tile |  Wood | Bottle | Cable | Capsule | Hazelnut | Metal_nut |  Pill | Screw | Toothbrush | Transistor | Zipper |
 | :-------------- | ------: | -----: | ----: | ------: | ----: | ----: | -----: | ----: | ------: | -------: | --------: | ----: | ----: | ---------: | ---------: | -----: |
 | EfficientNet B5 |   0.231 |  0.108 | 0.069 |   0.048 | 0.306 | 0.127 |  0.303 |  0.21 |   0.165 |    0.215 |     0.659 | 0.412 | 0.017 |      0.214 |      0.513 |  0.106 |
 
-### Image F1 Score
+### Image F1 Score - 256 Image Size
 
 |                 | Average | Carpet |  Grid | Leather |  Tile |  Wood | Bottle | Cable | Capsule | Hazelnut | Metal_nut |  Pill | Screw | Toothbrush | Transistor | Zipper |
 | :-------------- | ------: | -----: | ----: | ------: | ----: | ----: | -----: | ----: | ------: | -------: | --------: | ----: | ----: | ---------: | ---------: | -----: |

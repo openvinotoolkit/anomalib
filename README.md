@@ -33,7 +33,7 @@ Anomalib is a deep learning library that aims to collect state-of-the-art anomal
 
 ![Sample Image](./docs/source/images/readme.png)
 
-**Key features:**
+## Key features
 
 - The largest public collection of ready-to-use deep learning anomaly detection algorithms and benchmark datasets.
 - [**PyTorch Lightning**](https://www.pytorchlightning.ai/) based model implementations to reduce boilerplate code and limit the implementation efforts to the bare essentials.
@@ -328,7 +328,7 @@ Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License 
 | DFKDE         | ResNet-18          |   0.762   |   0.646   |   0.577   |  0.669  |   0.965   |   0.863   |  0.951  |   0.751   |   0.698   |  0.806   |   0.729   |   0.607   |   0.694   |   0.767    |   0.839    |   0.866   |
 | GANomaly      |                    |   0.421   |   0.203   |   0.404   |  0.413  |   0.408   |   0.744   |  0.251  |   0.457   |   0.682   |  0.537   |   0.270   |   0.472   |   0.231   |   0.372    |   0.440    |   0.434   |
 
-### Pixel-Level AUC
+## Pixel-Level AUC
 
 | Model         |                    |    Avg    |  Carpet   |   Grid    |  Leather  |   Tile    |   Wood    |  Bottle   |   Cable   |  Capsule  | Hazelnut  | Metal Nut |   Pill    |   Screw   | Toothbrush | Transistor |  Zipper   |
 | ------------- | ------------------ | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :-------: | :--------: | :--------: | :-------: |
