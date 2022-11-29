@@ -10,6 +10,7 @@ import torch.nn.functional as F
 from torch import Tensor, nn
 
 from anomalib.models.components import PCA, DynamicBufferModule, FeatureExtractor
+from typing import Tuple
 
 
 class SingleClassGaussian(DynamicBufferModule):
@@ -85,6 +86,7 @@ class DFMModel(nn.Module):
         self,
         backbone: str,
         layer: str,
+        input_size: Tuple[int, int],
         pre_trained: bool = True,
         pooling_kernel_size: int = 4,
         n_comps: float = 0.97,
@@ -97,6 +99,8 @@ class DFMModel(nn.Module):
         self.pca_model = PCA(n_components=self.n_components)
         self.gaussian_model = SingleClassGaussian()
         self.score_type = score_type
+        self.layer = layer
+        self.input_size = tuple(input_size)
         self.feature_extractor = FeatureExtractor(
             backbone=self.backbone, pre_trained=pre_trained, layers=[layer]
         ).eval()
@@ -109,10 +113,11 @@ class DFMModel(nn.Module):
         """
 
         self.pca_model.fit(dataset)
-        features_reduced = self.pca_model.transform(dataset)
-        self.gaussian_model.fit(features_reduced.T)
+        if self.score_type == 'nll':
+            features_reduced = self.pca_model.transform(dataset)
+            self.gaussian_model.fit(features_reduced.T)
 
-    def score(self, features: Tensor) -> Tensor:
+    def score(self, features: Tensor, feature_shape) -> Tensor:
         """Compute scores.
 
         Scores are either PCA-based feature reconstruction error (FRE) scores or
@@ -129,11 +134,19 @@ class DFMModel(nn.Module):
             score = self.gaussian_model.score_samples(feats_projected)
         elif self.score_type == "fre":
             feats_reconstructed = self.pca_model.inverse_transform(feats_projected)
+            fre = torch.square(features - feats_reconstructed).reshape(feature_shape)
+            fre_map = torch.unsqueeze(torch.sum(fre, dim=1), 1)
+            score_map = F.interpolate(fre_map, size=self.input_size, mode="bilinear", align_corners=False,)            
             score = torch.sum(torch.square(features - feats_reconstructed), dim=1)
         else:
             raise ValueError(f"unsupported score type: {self.score_type}")
 
-        return score
+        if self.score_type == 'nll':
+            output = score
+        else:
+            output = score, score_map
+
+        return output
 
     def get_features(self, batch: Tensor) -> Tensor:
         """Extract features from the pretrained network.
@@ -145,15 +158,18 @@ class DFMModel(nn.Module):
             Tensor: Tensor containing extracted features.
         """
         self.feature_extractor.eval()
-        features = self.feature_extractor(batch)
-        for layer in features:
-            batch_size = len(features[layer])
-            if self.pooling_kernel_size > 1:
-                features[layer] = F.avg_pool2d(input=features[layer], kernel_size=self.pooling_kernel_size)
-            features[layer] = features[layer].view(batch_size, -1)
+        features = self.feature_extractor(batch)[self.layer]
+        batch_size = len(features)
+        if self.pooling_kernel_size > 1:
+            features = F.avg_pool2d(input=features, kernel_size=self.pooling_kernel_size)
+        feature_shapes = features.shape
+        features = features.view(batch_size, -1).detach()
+        if self.training:
+            output = features
+        else:
+            output = (features, feature_shapes)
 
-        features = torch.cat(list(features.values())).detach()
-        return features
+        return output
 
     def forward(self, batch: Tensor) -> Tensor:
         """Computer score from input images.
@@ -164,5 +180,5 @@ class DFMModel(nn.Module):
         Returns:
             Tensor: Scores
         """
-        feature_vector = self.get_features(batch)
-        return self.score(feature_vector.view(feature_vector.shape[:2]))
+        feature_vector, feature_shapes = self.get_features(batch)
+        return self.score(feature_vector.view(feature_vector.shape[:2]), feature_shapes)

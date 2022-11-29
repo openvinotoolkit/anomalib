@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import List, Union
+from typing import List, Union, Tuple
 
 import torch
 from omegaconf import DictConfig, ListConfig
@@ -38,6 +38,7 @@ class Dfm(AnomalyModule):
         self,
         backbone: str,
         layer: str,
+        input_size: Tuple[int, int],
         pre_trained: bool = True,
         pooling_kernel_size: int = 4,
         pca_level: float = 0.97,
@@ -49,6 +50,7 @@ class Dfm(AnomalyModule):
             backbone=backbone,
             pre_trained=pre_trained,
             layer=layer,
+            input_size=input_size,
             pooling_kernel_size=pooling_kernel_size,
             n_comps=pca_level,
             score_type=score_type,
@@ -102,7 +104,7 @@ class Dfm(AnomalyModule):
         Returns:
           Dictionary containing FRE anomaly scores and ground-truth.
         """
-        batch["pred_scores"] = self.model(batch["image"])
+        batch["pred_scores"], batch["anomaly_maps"] = self.model(batch["image"])
 
         return batch
 
@@ -116,6 +118,7 @@ class DfmLightning(Dfm):
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
         super().__init__(
+            input_size=hparams.model.input_size,
             backbone=hparams.model.backbone,
             layer=hparams.model.layer,
             pre_trained=hparams.model.pre_trained,
