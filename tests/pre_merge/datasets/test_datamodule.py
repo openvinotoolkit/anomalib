@@ -11,130 +11,176 @@ from anomalib.pre_processing.transforms import Denormalize, ToNumpy
 from tests.helpers.config import get_test_configurable_parameters
 from tests.helpers.dataset import TestDataset, get_dataset_path
 
-
-@pytest.fixture(autouse=True)
-def avenue_data_module():
-    root = get_dataset_path(dataset="avenue")
-    datamodule = Avenue(
-        root=root,
-        gt_dir=os.path.join(root, "ground_truth_demo"),
-        image_size=(256, 256),
-        train_batch_size=1,
-        eval_batch_size=1,
-        num_workers=0,
-        val_split_mode="from_test",
-    )
-    datamodule.setup()
-
-    return datamodule
+EXPECTED_KEYS_CLASSIFICATION = ["image", "label"]
+EXPECTED_KEYS_DETECTION = ["image", "label", "boxes"]
+EXPECTED_KEYS_SEGMENTATION = ["image", "label", "mask"]
+EXPECTED_KEYS_PER_TASK_TYPE = {
+    "classification": EXPECTED_KEYS_CLASSIFICATION,
+    "detection": EXPECTED_KEYS_DETECTION,
+    "segmentation": EXPECTED_KEYS_SEGMENTATION,
+}
 
 
 @pytest.fixture(autouse=True)
-def mvtec_data_module():
-    datamodule = MVTec(
-        root=get_dataset_path(dataset="MVTec"),
-        category="leather",
-        image_size=(256, 256),
-        train_batch_size=1,
-        eval_batch_size=1,
-        num_workers=0,
-        val_split_mode="from_test",
-    )
-    datamodule.prepare_data()
-    datamodule.setup()
+def make_avenue_data_module():
+    def make(task="classification", batch_size=1):
+        root = get_dataset_path(dataset="avenue")
+        data_module = Avenue(
+            root=root,
+            gt_dir=os.path.join(root, "ground_truth_demo"),
+            image_size=(256, 256),
+            train_batch_size=batch_size,
+            eval_batch_size=batch_size,
+            num_workers=0,
+            task=task,
+            val_split_mode="from_test",
+        )
+        data_module.setup()
+        return data_module
 
-    return datamodule
-
-
-@pytest.fixture(autouse=True)
-def btech_data_module():
-    """Create BTech Data Module."""
-    datamodule = BTech(
-        root=get_dataset_path(dataset="BTech"),
-        category="01",
-        image_size=(256, 256),
-        train_batch_size=1,
-        eval_batch_size=1,
-        num_workers=0,
-        val_split_mode="from_test",
-    )
-    datamodule.prepare_data()
-    datamodule.setup()
-
-    return datamodule
+    return make
 
 
 @pytest.fixture(autouse=True)
-def folder_data_module():
-    """Create Folder Data Module."""
+def make_mvtec_data_module():
+    def make(task="classification", batch_size=1):
+        data_module = MVTec(
+            root=get_dataset_path(dataset="MVTec"),
+            category="leather",
+            image_size=(256, 256),
+            train_batch_size=batch_size,
+            eval_batch_size=batch_size,
+            num_workers=0,
+            task=task,
+            val_split_mode="from_test",
+        )
+        data_module.prepare_data()
+        data_module.setup()
+        return data_module
+
+    return make
+
+
+@pytest.fixture(autouse=True)
+def make_btech_data_module():
+    def make(task="classification", batch_size=1):
+        """Create BTech Data Module."""
+        data_module = BTech(
+            root=get_dataset_path(dataset="BTech"),
+            category="01",
+            image_size=(256, 256),
+            train_batch_size=batch_size,
+            eval_batch_size=batch_size,
+            num_workers=0,
+            task=task,
+            val_split_mode="from_test",
+        )
+        data_module.prepare_data()
+        data_module.setup()
+        return data_module
+
+    return make
+
+
+@pytest.fixture(autouse=True)
+def make_folder_data_module():
+    def make(task="classification", batch_size=1):
+        """Create Folder Data Module."""
+        root = get_dataset_path(dataset="bottle")
+        data_module = Folder(
+            root=root,
+            normal_dir="good",
+            abnormal_dir="broken_large",
+            mask_dir=os.path.join(root, "ground_truth/broken_large"),
+            split_ratio=0.2,
+            image_size=(256, 256),
+            train_batch_size=batch_size,
+            eval_batch_size=batch_size,
+            num_workers=8,
+            task=task,
+            val_split_mode="from_test",
+        )
+        data_module.setup()
+        return data_module
+
+    return make
+
+
+@pytest.fixture(autouse=True)
+def make_ucsdped_data_module():
+    def make(task="classification", batch_size=1):
+        data_module = UCSDped(
+            root=get_dataset_path(dataset="ucsd"),
+            category="UCSDped2",
+            image_size=(256, 256),
+            train_batch_size=batch_size,
+            eval_batch_size=batch_size,
+            num_workers=0,
+            task=task,
+            val_split_mode="from_test",
+        )
+        data_module.setup()
+        return data_module
+
+    return make
+
+
+@pytest.fixture(autouse=True)
+def make_data_sample():
     root = get_dataset_path(dataset="bottle")
     datamodule = Folder(
         root=root,
         normal_dir="good",
         abnormal_dir="broken_large",
         mask_dir=os.path.join(root, "ground_truth/broken_large"),
-        task="segmentation",
         split_ratio=0.2,
         image_size=(256, 256),
         train_batch_size=1,
         eval_batch_size=1,
         num_workers=8,
+        task="classification",
         val_split_mode="from_test",
     )
     datamodule.setup()
-
-    return datamodule
-
-
-@pytest.fixture(autouse=True)
-def ucsdped_data_module():
-    datamodule = UCSDped(
-        root=get_dataset_path(dataset="ucsd"),
-        category="UCSDped2",
-        image_size=(256, 256),
-        train_batch_size=1,
-        eval_batch_size=1,
-        num_workers=0,
-        val_split_mode="from_test",
-    )
-    datamodule.setup()
-
-    return datamodule
-
-
-@pytest.fixture(autouse=True)
-def data_sample(mvtec_data_module):
-    _, data = next(enumerate(mvtec_data_module.train_dataloader()))
+    _, data = next(enumerate(datamodule.train_dataloader()))
     return data
 
 
 @pytest.mark.parametrize(
-    "data_module",
-    ["mvtec_data_module", "btech_data_module", "folder_data_module", "avenue_data_module", "ucsdped_data_module"],
+    "make_data_module",
+    [
+        "make_mvtec_data_module",
+        "make_btech_data_module",
+        "make_folder_data_module",
+        "make_avenue_data_module",
+        "make_ucsdped_data_module",
+    ],
 )
 class TestDataModule:
     """Test MVTec AD Data Module."""
 
-    def test_batch_size(self, data_module, request):
+    @pytest.mark.parametrize("batch_size", [1, 8])
+    def test_batch_size(self, make_data_module, batch_size, request):
         """test_mvtec_datamodule [summary]"""
-        data_module = request.getfixturevalue(data_module)
+        data_module = request.getfixturevalue(make_data_module)(batch_size=batch_size)
         _, train_data_sample = next(enumerate(data_module.train_dataloader()))
         _, val_data_sample = next(enumerate(data_module.val_dataloader()))
-        assert train_data_sample["image"].shape[0] == 1
-        assert val_data_sample["image"].shape[0] == 1
+        assert train_data_sample["image"].shape[0] == batch_size
+        assert val_data_sample["image"].shape[0] == batch_size
 
-    def test_val_and_test_dataloaders_has_mask_and_gt(self, data_module, request):
+    @pytest.mark.parametrize("task", ["classification", "detection", "segmentation"])
+    def test_val_and_test_dataloaders_has_mask_and_gt(self, make_data_module, task, request):
         """Test Validation and Test dataloaders should return filenames, image, mask and label."""
-        data_module = request.getfixturevalue(data_module)
+        data_module = request.getfixturevalue(make_data_module)(task=task)
         _, val_data = next(enumerate(data_module.val_dataloader()))
         _, test_data = next(enumerate(data_module.test_dataloader()))
 
-        assert {"image", "label", "mask"}.issubset(set(val_data.keys()))
-        assert {"image", "label", "mask"}.issubset(set(test_data.keys()))
+        assert set(EXPECTED_KEYS_PER_TASK_TYPE[task]).issubset(set(val_data.keys()))
+        assert set(EXPECTED_KEYS_PER_TASK_TYPE[task]).issubset(set(test_data.keys()))
 
-    def test_non_overlapping_splits(self, data_module, request):
+    def test_non_overlapping_splits(self, make_data_module, request):
         """This test ensures that the train and test splits generated are non-overlapping."""
-        data_module = request.getfixturevalue(data_module)
+        data_module = request.getfixturevalue(make_data_module)()
         assert (
             len(
                 set(data_module.test_data.samples["image_path"].values).intersection(
