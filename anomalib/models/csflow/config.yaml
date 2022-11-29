@@ -8,7 +8,7 @@ dataset:
   train_batch_size: 16
   test_batch_size: 16
   inference_batch_size: 16
-  num_workers: 36
+  num_workers: 8
   transform_config:
     train: null
     val: null
@@ -22,7 +22,7 @@ dataset:
     random_tile_count: 16
 
 model:
-  name: cs_flow
+  name: csflow
   backbone: efficientnet_b5
   clamp: 3
   cross_conv_hidden_channels: 1024

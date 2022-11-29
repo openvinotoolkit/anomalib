@@ -3,6 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from .lightning_model import CsFlow, CsFlowLightning
+from .lightning_model import Csflow, CsflowLightning
 
-__all__ = ["CsFlow", "CsFlowLightning"]
+__all__ = ["Csflow", "CsflowLightning"]

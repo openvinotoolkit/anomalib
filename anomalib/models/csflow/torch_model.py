@@ -357,6 +357,7 @@ class CsFlowModel(nn.Module):
 
     Args:
         input_size (Tuple[int, int]): Input image size.
+        cross_conv_hidden_channels (int): Number of hidden channels in the cross convolution.
         n_coupling_blocks (int): Number of coupling blocks.
         clamp (float): Clamp value for the coupling blocks.
         num_channels (int): Number of channels in the input image.
@@ -454,15 +455,17 @@ class CsFlowModel(nn.Module):
         if mode == AnomalyMapMode.ALL:
             anomaly_map = torch.ones(z_dists[0].shape[0], 1, *self.input_dims[1:]).to(z_dists[0].device)
             for z_dist in z_dists:
+                mean_z = (z_dist**2).mean(dim=1, keepdim=True)
                 anomaly_map *= F.interpolate(
-                    (z_dist**2).mean(dim=1, keepdim=True),
+                    mean_z,
                     size=self.input_dims[1:],
                     mode="bilinear",
                     align_corners=False,
                 )
         else:
+            mean_z = (z_dists[0] ** 2).mean(dim=1, keepdim=True)
             anomaly_map = F.interpolate(
-                (z_dists[0] ** 2).mean(dim=1, keepdim=True),
+                mean_z,
                 size=self.input_dims[1:],
                 mode="bilinear",
                 align_corners=False,

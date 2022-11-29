@@ -12,24 +12,25 @@ from typing import Tuple, Union
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
-from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
 
+from .loss import CsFlowLoss
 from .torch_model import CsFlowModel
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["CsFlow", "CsFlowLightning"]
+__all__ = ["Csflow", "CsflowLightning"]
 
 
 @MODEL_REGISTRY
-class CsFlow(AnomalyModule):
+class Csflow(AnomalyModule):
     """Fully Convolutional Cross-Scale-Flows for Image-based Defect Detection.
 
     Args:
         input_size (Tuple[int, int]): Size of the model input.
         n_coupling_blocks (int): Number of coupling blocks in the model.
+        cross_conv_hidden_channels (int): Number of hidden channels in the cross convolution.
         clamp (int): Clamp value for glow layer.
         num_channels (int): Number of channels in the model.
     """
@@ -50,22 +51,10 @@ class CsFlow(AnomalyModule):
             clamp=clamp,
             num_channels=num_channels,
         )
-
-    def _get_loss(self, z_dist: Tensor, jacobians: Tensor):
-        """Loss function of CsFlow.
-
-        Args:
-            z_distribution (Tensor): Latent space image mappings from NF.
-            jacobians (Tensor): Jacobians of the distribution
-
-        Returns:
-            Loss value
-        """
-        z_dist = torch.cat([z_dist[i].reshape(z_dist[i].shape[0], -1) for i in range(len(z_dist))], dim=1)
-        return torch.mean(0.5 * torch.sum(z_dist**2, dim=(1,)) - jacobians) / z_dist.shape[1]
+        self.loss = CsFlowLoss()
 
     def training_step(self, batch, _):
-        """Training Step of CsFlow.
+        """Training Step of CS-Flow.
 
         Args:
             batch (Tensor): Input batch
@@ -76,7 +65,7 @@ class CsFlow(AnomalyModule):
         """
         self.model.feature_extractor.eval()
         z_dist, jacobians = self.model(batch["image"])
-        loss = self._get_loss(z_dist, jacobians)
+        loss = self.loss(z_dist, jacobians)
         return {"loss": loss}
 
     def validation_step(self, batch, _):
@@ -87,7 +76,7 @@ class CsFlow(AnomalyModule):
         return batch
 
 
-class CsFlowLightning(CsFlow):
+class CsflowLightning(Csflow):
     """Fully Convolutional Cross-Scale-Flows for Image-based Defect Detection.
 
     Args:
