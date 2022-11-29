@@ -18,7 +18,7 @@ class TestModel:
         ["model_name", "nncf"],
         [
             ("cflow", False),
-            ("cs_flow", False),
+            ("csflow", False),
             ("dfkde", False),
             ("dfm", False),
             ("draem", False),
