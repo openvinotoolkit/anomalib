@@ -33,7 +33,7 @@ Anomalib is a deep learning library that aims to collect state-of-the-art anomal
 
 ![Sample Image](./docs/source/images/readme.png)
 
-**Key features:**
+## Key features
 
 - The largest public collection of ready-to-use deep learning anomaly detection algorithms and benchmark datasets.
 - [**PyTorch Lightning**](https://www.pytorchlightning.ai/) based model implementations to reduce boilerplate code and limit the implementation efforts to the bare essentials.
