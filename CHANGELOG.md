@@ -2,7 +2,7 @@
 
 ## v0.3.7
 
-## What's Changed
+### What's Changed
 
 - Feature/comet logging by @sherpan in <https://github.com/openvinotoolkit/anomalib/pull/517>
 - 🐞 Fix linting issues by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/535>
@@ -47,7 +47,7 @@ New Contributors
 
 ## v.0.3.6
 
-## What's Changed
+### What's Changed
 
 - Add publish workflow + update references to main by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/480>
 - Fix Dockerfile by @ORippler in <https://github.com/openvinotoolkit/anomalib/pull/478>
@@ -85,7 +85,7 @@ New Contributors
 
 ## v.0.3.5
 
-## What's Changed
+### What's Changed
 
 - 🐞 Fix inference for draem by @djdameln in <https://github.com/openvinotoolkit/anomalib/pull/470>
 - 🐞 🛠 Bug fix in the inferencer by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/475>
@@ -94,7 +94,7 @@ New Contributors
 
 ## v.0.3.4
 
-## What's Changed
+### What's Changed
 
 - Add encoding to LONG_DESCRIPTION in setup.py by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/419>
 - Fix visualization by @ORippler in <https://github.com/openvinotoolkit/anomalib/pull/417>
@@ -130,7 +130,7 @@ New Contributors
 
 ## v.0.3.3
 
-## What's Changed
+### What's Changed
 
 - 🚚 Move initialization log message to base class by @djdameln in <https://github.com/openvinotoolkit/anomalib/pull/363>
 - 🚚 Move logging from train.py to the getter functions by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/365>
@@ -155,7 +155,7 @@ New Contributors
 
 ## v.0.3.2
 
-## What's Changed
+### What's Changed
 
 - Refactor `AnomalyModule` and `LightningModules` to explicitly define class arguments. by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/315>
 - 🐞 Fix inferencer in Gradio by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/332>
@@ -176,7 +176,7 @@ New Contributors
 
 ## v.0.3.1
 
-## What's Changed
+### What's Changed
 
 - 🔧 Properly assign values to dataframe in folder dataset. by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/272>
 - ➕ Add warnings ⚠️ for inproper task setting in config files. by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/274>

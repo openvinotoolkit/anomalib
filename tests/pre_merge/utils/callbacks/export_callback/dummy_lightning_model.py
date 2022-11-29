@@ -1,7 +1,6 @@
 from typing import Union
 
 import pytorch_lightning as pl
-import torch.nn.functional as F
 from omegaconf import DictConfig, ListConfig
 from torch import nn, optim
 from torch.utils.data import DataLoader
@@ -14,6 +13,7 @@ from anomalib.utils.metrics import (
     AnomalyScoreThreshold,
     MinMax,
 )
+from tests.helpers.dummy import DummyModel
 
 
 class FakeDataModule(pl.LightningDataModule):
@@ -45,32 +45,6 @@ class FakeDataModule(pl.LightningDataModule):
         )
 
 
-class DummyModel(nn.Module):
-    """Creates a very basic CNN model to fit image data for classification task
-    The test uses this to check if this model is converted to OpenVINO IR."""
-
-    def __init__(self, hparams: Union[DictConfig, ListConfig]):
-        super().__init__()
-        self.hparams = hparams
-        self.conv1 = nn.Conv2d(3, 32, 3)
-        self.conv2 = nn.Conv2d(32, 32, 5)
-        self.conv3 = nn.Conv2d(32, 1, 7)
-        self.fc1 = nn.Linear(400, 256)
-        self.fc2 = nn.Linear(256, 10)
-
-    def forward(self, x):
-        batch_size, _, _, _ = x.size()
-        x = self.conv1(x)
-        x = self.conv2(x)
-        x = self.conv3(x)
-        x = x.view(batch_size, -1)
-        x = self.fc1(x)
-        x = F.dropout(x, p=self.hparams.model.dropout)
-        x = self.fc2(x)
-        x = F.log_softmax(x, dim=1)
-        return x
-
-
 class DummyLightningModule(pl.LightningModule):
     """A dummy model which fits the torchvision FakeData dataset."""
 
@@ -93,7 +67,7 @@ class DummyLightningModule(pl.LightningModule):
 
         self.training_distribution = AnomalyScoreDistribution().cpu()
         self.min_max = MinMax().cpu()
-        self.model = DummyModel(hparams)
+        self.model = DummyModel()
 
     def training_step(self, batch, _):
         x, y = batch

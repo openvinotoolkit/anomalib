@@ -8,7 +8,6 @@ dataset:
   train_batch_size: 16
   test_batch_size: 16
   inference_batch_size: 16
-  fiber_batch_size: 64
   num_workers: 8
   transform_config:
     train: null
@@ -27,7 +26,8 @@ model:
   condition_vector: 128
   coupling_blocks: 8
   clamp_alpha: 1.9
-  soft_permutation: false
+  fiber_batch_size: 64
+  permute_soft: false
   lr: 0.0001
   early_stopping:
     patience: 2
