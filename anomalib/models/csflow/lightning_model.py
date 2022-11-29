@@ -7,11 +7,12 @@ https://arxiv.org/pdf/2110.02855.pdf
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import Tuple, Union
+from typing import Dict, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
+from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
 
@@ -53,7 +54,7 @@ class Csflow(AnomalyModule):
         )
         self.loss = CsFlowLoss()
 
-    def training_step(self, batch, _):
+    def training_step(self, batch, _) -> Dict[str, Tensor]:
         """Training Step of CS-Flow.
 
         Args:
@@ -68,11 +69,18 @@ class Csflow(AnomalyModule):
         loss = self.loss(z_dist, jacobians)
         return {"loss": loss}
 
-    def validation_step(self, batch, _):
-        """Validation step for CS Flow."""
+    def validation_step(self, batch, _) -> Dict[str, Tensor]:
+        """Validation step for CS Flow.
+
+        Args:
+            batch (Tensor): Input batch
+
+        Returns:
+            Dict[str, Tensor]: Dictionary containing the anomaly map, scores, etc.
+        """
         anomaly_maps, anomaly_scores = self.model(batch["image"])
         batch["anomaly_maps"] = anomaly_maps
-        batch["anomaly_scores"] = anomaly_scores
+        batch["pred_scores"] = anomaly_scores
         return batch
 
 
