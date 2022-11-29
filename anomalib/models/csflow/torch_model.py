@@ -11,7 +11,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from enum import Enum
 from math import exp
 from typing import Callable, Dict, List, Optional, Tuple
 
@@ -25,12 +24,7 @@ from torchvision.models.efficientnet import EfficientNet_B5_Weights
 
 from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor
 
-
-class AnomalyMapMode(str, Enum):
-    """Generate anomaly map from all the scales or the max."""
-
-    ALL = "all"
-    MAX = "max"
+from .anomaly_map import AnomalyMapGenerator, AnomalyMapMode
 
 
 class CrossConvolutions(nn.Module):
@@ -352,33 +346,19 @@ class ParallelGlowCouplingLayer(InvertibleModule):
         return input_dims
 
 
-class CsFlowModel(nn.Module):
-    """CS Flow Module.
+class CrossScaleFlow(nn.Module):
+    """Cross scale coupling layer.
 
     Args:
-        input_size (Tuple[int, int]): Input image size.
-        cross_conv_hidden_channels (int): Number of hidden channels in the cross convolution.
+        input_dims (Tuple[int, int, int]): Input dimensions of the module.
         n_coupling_blocks (int): Number of coupling blocks.
-        clamp (float): Clamp value for the coupling blocks.
-        num_channels (int): Number of channels in the input image.
     """
 
-    def __init__(
-        self,
-        input_size: Tuple[int, int],
-        cross_conv_hidden_channels: int,
-        n_coupling_blocks: int = 4,
-        clamp: int = 3,
-        num_channels: int = 3,
-    ):
-
+    def __init__(self, input_dims: Tuple[int, int, int], n_coupling_blocks: int):
         super().__init__()
-        self.input_dims = (num_channels, *input_size)
+        self.input_dims = input_dims
         self.n_coupling_blocks = n_coupling_blocks
         self.kernel_sizes = [3] * (n_coupling_blocks - 1) + [5]
-        self.clamp = clamp
-        self.cross_conv_hidden_channels = cross_conv_hidden_channels
-        self.feature_extractor = MultiScaleFeatureExtractor(n_scales=3, input_size=input_size)
         self.graph = self._create_graph()
 
     def _create_graph(self):
@@ -418,77 +398,16 @@ class CsFlowModel(nn.Module):
         nodes.append(OutputNode([nodes[-3].out2], name="output_end2"))
         return GraphINN(nodes)
 
-    def forward(self, images) -> Tuple[Tensor, Tensor]:
-        """Forward method of the model.
+    def forward(self, inputs: Tensor) -> Tuple[Tensor, Tensor]:
+        """Forward pass.
 
         Args:
-            images (Tensor): Input images.
+            inputs (Tensor): Input tensor.
 
         Returns:
-            Tuple[Tensor, Tensor]: During training: Tuple containing the z_distribution for three scales and the sum
-                of log determinant of the Jacobian. During evaluation: Tuple containing anomaly maps and anomaly scores
+            Tuple[Tensor, Tensor]: Output tensor and log determinant of Jacobian.
         """
-        features = self.feature_extractor(images)
-        if self.training:
-            output = self.graph(features)
-        else:
-            z_dist, _ = self.graph(features)  # Ignore Jacobians
-            anomaly_scores = self._get_anomaly_scores(z_dist)
-            anomaly_maps = self._get_anomaly_maps(z_dist)
-            output = anomaly_maps, anomaly_scores
-        return output
-
-    def _get_anomaly_maps(self, z_dists: Tuple[Tensor], mode: AnomalyMapMode = AnomalyMapMode.ALL) -> Tensor:
-        """Get anomaly maps by taking mean of the z-distributions across channels.
-
-        By default it computes anomaly maps for all the scales as it gave better performance on initial tests.
-        Use ``AnomalyMapMode.MAX`` for the largest scale as mentioned in the paper.
-
-        Args:
-            z_dists (Tensor): z-distributions for the three scales.
-            mode (AnomalyMapMode): Anomaly map mode.
-
-        Returns:
-            Tensor: Anomaly maps.
-        """
-        anomaly_map: Tensor
-        if mode == AnomalyMapMode.ALL:
-            anomaly_map = torch.ones(z_dists[0].shape[0], 1, *self.input_dims[1:]).to(z_dists[0].device)
-            for z_dist in z_dists:
-                mean_z = (z_dist**2).mean(dim=1, keepdim=True)
-                anomaly_map *= F.interpolate(
-                    mean_z,
-                    size=self.input_dims[1:],
-                    mode="bilinear",
-                    align_corners=False,
-                )
-        else:
-            mean_z = (z_dists[0] ** 2).mean(dim=1, keepdim=True)
-            anomaly_map = F.interpolate(
-                mean_z,
-                size=self.input_dims[1:],
-                mode="bilinear",
-                align_corners=False,
-            )
-
-        return anomaly_map
-
-    def _get_anomaly_scores(self, z_dists: Tensor) -> Tensor:
-        """Get anomaly scores from the latent distribution.
-
-        Args:
-            z_dist (Tensor): Latent distribution.
-
-        Returns:
-            Tensor: Anomaly scores.
-        """
-        # z_dist is a 3 length list of tensors with shape b x 304 x fx x fy
-        flat_maps: List[Tensor] = []
-        for z_dist in z_dists:
-            flat_maps.append(z_dist.reshape(z_dist.shape[0], -1))
-        flat_maps_tensor = torch.cat(flat_maps, dim=1)
-        anomaly_scores = torch.mean(flat_maps_tensor**2 / 2, dim=1)
-        return anomaly_scores
+        return self.graph(inputs)
 
 
 class MultiScaleFeatureExtractor(nn.Module):
@@ -532,3 +451,69 @@ class MultiScaleFeatureExtractor(nn.Module):
 
             output.append(feat_s)
         return output
+
+
+class CsFlowModel(nn.Module):
+    """CS Flow Module.
+
+    Args:
+        input_size (Tuple[int, int]): Input image size.
+        cross_conv_hidden_channels (int): Number of hidden channels in the cross convolution.
+        n_coupling_blocks (int): Number of coupling blocks.
+        clamp (float): Clamp value for the coupling blocks.
+        num_channels (int): Number of channels in the input image.
+    """
+
+    def __init__(
+        self,
+        input_size: Tuple[int, int],
+        cross_conv_hidden_channels: int,
+        n_coupling_blocks: int = 4,
+        clamp: int = 3,
+        num_channels: int = 3,
+    ):
+
+        super().__init__()
+        self.input_dims = (num_channels, *input_size)
+        self.clamp = clamp
+        self.cross_conv_hidden_channels = cross_conv_hidden_channels
+        self.feature_extractor = MultiScaleFeatureExtractor(n_scales=3, input_size=input_size)
+        self.graph = CrossScaleFlow(input_dims=self.input_dims, n_coupling_blocks=n_coupling_blocks)
+        self.anomaly_map_generator = AnomalyMapGenerator(input_dims=self.input_dims, mode=AnomalyMapMode.ALL)
+
+    def forward(self, images) -> Tuple[Tensor, Tensor]:
+        """Forward method of the model.
+
+        Args:
+            images (Tensor): Input images.
+
+        Returns:
+            Tuple[Tensor, Tensor]: During training: Tuple containing the z_distribution for three scales and the sum
+                of log determinant of the Jacobian. During evaluation: Tuple containing anomaly maps and anomaly scores
+        """
+        features = self.feature_extractor(images)
+        if self.training:
+            output = self.graph(features)
+        else:
+            z_dist, _ = self.graph(features)  # Ignore Jacobians
+            anomaly_scores = self._get_anomaly_scores(z_dist)
+            anomaly_maps = self.anomaly_map_generator(z_dist)
+            output = anomaly_maps, anomaly_scores
+        return output
+
+    def _get_anomaly_scores(self, z_dists: Tensor) -> Tensor:
+        """Get anomaly scores from the latent distribution.
+
+        Args:
+            z_dist (Tensor): Latent distribution.
+
+        Returns:
+            Tensor: Anomaly scores.
+        """
+        # z_dist is a 3 length list of tensors with shape b x 304 x fx x fy
+        flat_maps: List[Tensor] = []
+        for z_dist in z_dists:
+            flat_maps.append(z_dist.reshape(z_dist.shape[0], -1))
+        flat_maps_tensor = torch.cat(flat_maps, dim=1)
+        anomaly_scores = torch.mean(flat_maps_tensor**2 / 2, dim=1)
+        return anomaly_scores
