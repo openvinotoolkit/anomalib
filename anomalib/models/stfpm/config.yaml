@@ -23,11 +23,12 @@ dataset:
 
 model:
   name: stfpm
-  backbone: resnet18
-  layers:
-    - layer1
-    - layer2
-    - layer3
+  feature_extractor:
+    backbone: resnet18
+    layers:
+      - layer1
+      - layer2
+      - layer3
   lr: 0.4
   momentum: 0.9
   weight_decay: 0.0001
@@ -57,7 +58,7 @@ visualization:
   mode: full # options: ["full", "simple"]
 
 project:
-  seed: 0
+  seed: 42
   path: ./results
 
 logging:

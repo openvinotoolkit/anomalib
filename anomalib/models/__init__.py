@@ -38,18 +38,6 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-def _snake_to_pascal_case(model_name: str) -> str:
-    """Convert model name from snake case to Pascal case.
-
-    Args:
-        model_name (str): Model name in snake case.
-
-    Returns:
-        str: Model name in Pascal case.
-    """
-    return "".join([split.capitalize() for split in model_name.split("_")])
-
-
 def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     """Load model from the configuration file.
 

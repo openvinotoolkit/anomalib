@@ -2,7 +2,7 @@
 # To use this, run the following command:
 # anomalib fit --config ./config/model/stfpm.yaml
 ckpt_path: null
-seed_everything: null
+seed_everything: 42
 
 data:
   class_path: anomalib.data.MVTec
@@ -31,15 +31,15 @@ model:
       - layer3
 
 optimizer:
-  class_path: torch.optim._multi_tensor.sgd.SGD
+  class_path: torch.optim.sgd.SGD
   init_args:
     lr: 0.4
     momentum: 0.9
     weight_decay: 0.0001
 
 post_processing:
-  normalization_method: min_max # <null, min_max, cdf>
-  threshold_method: adaptive # options: [adaptive, manual]
+  normalization_method: MIN_MAX # <null, min_max, cdf>
+  threshold_method: ADAPTIVE # options: [adaptive, manual]
   manual_image_threshold: null
   manual_pixel_threshold: null
 

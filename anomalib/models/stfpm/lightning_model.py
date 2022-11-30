@@ -6,7 +6,7 @@ https://arxiv.org/abs/2103.04257
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Tuple, Union
+from typing import Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
@@ -15,6 +15,7 @@ from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import optim
 
 from anomalib.models.components import AnomalyModule
+from anomalib.models.components.feature_extractors import TimmFeatureExtractorParams
 from anomalib.models.stfpm.loss import STFPMLoss
 from anomalib.models.stfpm.torch_model import STFPMModel
 
@@ -34,15 +35,13 @@ class Stfpm(AnomalyModule):
     def __init__(
         self,
         input_size: Tuple[int, int],
-        backbone: str,
-        layers: List[str],
+        feature_extractor: TimmFeatureExtractorParams,
     ):
         super().__init__()
 
         self.model = STFPMModel(
             input_size=input_size,
-            backbone=backbone,
-            layers=layers,
+            feature_extractor=feature_extractor,
         )
         self.loss = STFPMLoss()
 
@@ -92,8 +91,7 @@ class StfpmLightning(Stfpm):
     def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
         super().__init__(
             input_size=hparams.model.input_size,
-            backbone=hparams.model.backbone,
-            layers=hparams.model.layers,
+            feature_extractor=hparams.model.feature_extractor,
         )
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(hparams)

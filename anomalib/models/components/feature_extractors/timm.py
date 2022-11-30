@@ -8,6 +8,7 @@ This script extracts features from a CNN network
 
 import logging
 import warnings
+from dataclasses import dataclass
 from typing import Dict, List
 
 import timm
@@ -15,6 +16,16 @@ import torch
 from torch import Tensor, nn
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class TimmFeatureExtractorParams:
+    """Used for serializing the Timm Feature Extractor."""
+
+    backbone: str
+    layers: List[str]
+    pre_trained: bool = True
+    requires_grad: bool = False
 
 
 class TimmFeatureExtractor(nn.Module):
@@ -44,6 +55,7 @@ class TimmFeatureExtractor(nn.Module):
 
     def __init__(self, backbone: str, layers: List[str], pre_trained: bool = True, requires_grad: bool = False):
         super().__init__()
+        logger.warning("TimmFeatureExtractor will be removed in 2023.1")
         self.backbone = backbone
         self.layers = layers
         self.idx = self._map_layer_to_idx()
@@ -100,17 +112,3 @@ class TimmFeatureExtractor(nn.Module):
             with torch.no_grad():
                 features = dict(zip(self.layers, self.feature_extractor(inputs)))
         return features
-
-
-class FeatureExtractor(TimmFeatureExtractor):
-    """Compatibility wrapper for the old FeatureExtractor class.
-
-    See :class:`anomalib.models.components.feature_extractors.timm.TimmFeatureExtractor` for more details.
-    """
-
-    def __init__(self, *args, **kwargs):
-        logger.warning(
-            "FeatureExtractor is deprecated. Use TimmFeatureExtractor instead."
-            " Both FeatureExtractor and TimmFeatureExtractor will be removed in version 2023.1"
-        )
-        super().__init__(*args, **kwargs)

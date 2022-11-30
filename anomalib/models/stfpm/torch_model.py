@@ -3,11 +3,12 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 from torch import Tensor, nn
 
 from anomalib.models.components import FeatureExtractor
+from anomalib.models.components.feature_extractors import TimmFeatureExtractorParams
 from anomalib.models.stfpm.anomaly_map import AnomalyMapGenerator
 from anomalib.pre_processing import Tiler
 
@@ -23,17 +24,17 @@ class STFPMModel(nn.Module):
 
     def __init__(
         self,
-        layers: List[str],
         input_size: Tuple[int, int],
-        backbone: str = "resnet18",
+        feature_extractor: TimmFeatureExtractorParams,
     ):
         super().__init__()
         self.tiler: Optional[Tiler] = None
 
-        self.backbone = backbone
-        self.teacher_model = FeatureExtractor(backbone=self.backbone, pre_trained=True, layers=layers)
+        self.teacher_model = FeatureExtractor(
+            backbone=feature_extractor.backbone, pre_trained=True, layers=feature_extractor.layers
+        )
         self.student_model = FeatureExtractor(
-            backbone=self.backbone, pre_trained=False, layers=layers, requires_grad=True
+            backbone=self.backbone, pre_trained=False, layers=feature_extractor.layers, requires_grad=True
         )
 
         # teacher model is fixed
