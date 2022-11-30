@@ -90,9 +90,11 @@ class Inferencer(ABC):
             pred_label=output["pred_label"],
             anomaly_map=output["anomaly_map"],
             pred_mask=output["pred_mask"],
+            pred_boxes=output["pred_boxes"],
         )
 
-    def _superimpose_segmentation_mask(self, meta_data: dict, anomaly_map: np.ndarray, image: np.ndarray):
+    @staticmethod
+    def _superimpose_segmentation_mask(meta_data: dict, anomaly_map: np.ndarray, image: np.ndarray):
         """Superimpose segmentation mask on top of image.
 
         Args:
@@ -123,8 +125,8 @@ class Inferencer(ABC):
         """
         return self.predict(image)
 
+    @staticmethod
     def _normalize(
-        self,
         anomaly_maps: Union[Tensor, np.ndarray],
         pred_scores: Union[Tensor, np.float32],
         meta_data: Union[Dict, DictConfig],
@@ -167,6 +169,7 @@ class Inferencer(ABC):
 
         return anomaly_maps, float(pred_scores)
 
+    # pylint: disable=no-self-use  # (see https://stackoverflow.com/questions/53365941)
     def _load_meta_data(self, path: Optional[Union[str, Path]] = None) -> Union[DictConfig, Dict]:
         """Loads the meta data from the given path.
 
