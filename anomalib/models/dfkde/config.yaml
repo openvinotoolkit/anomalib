@@ -15,8 +15,11 @@ dataset:
 
 model:
   name: dfkde
-  backbone: resnet18
-  pre_trained: true
+  feature_extractor:
+    backbone: resnet18
+    pre_trained: true
+    layers:
+      - layer4
   max_training_points: 40000
   confidence_threshold: 0.5
   pre_processing: scale
@@ -24,8 +27,6 @@ model:
   threshold_steepness: 0.05
   threshold_offset: 12
   normalization_method: min_max # options: [null, min_max, cdf]
-  layers:
-    - layer4
 
 metrics:
   image:

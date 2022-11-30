@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import torch
 import torch.nn.functional as F
@@ -13,6 +13,10 @@ from anomalib.models.components import (
     DynamicBufferModule,
     FeatureExtractor,
     KCenterGreedy,
+)
+from anomalib.models.components.feature_extractors import (
+    TimmFeatureExtractorParams,
+    TorchFXFeatureExtractorParams,
 )
 from anomalib.models.patchcore.anomaly_map import AnomalyMapGenerator
 from anomalib.pre_processing import Tiler
@@ -24,20 +28,17 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
     def __init__(
         self,
         input_size: Tuple[int, int],
-        layers: List[str],
-        backbone: str = "wide_resnet50_2",
-        pre_trained: bool = True,
+        feature_extractor: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams],
         num_neighbors: int = 9,
     ) -> None:
         super().__init__()
         self.tiler: Optional[Tiler] = None
 
-        self.backbone = backbone
-        self.layers = layers
         self.input_size = input_size
         self.num_neighbors = num_neighbors
 
-        self.feature_extractor = FeatureExtractor(backbone=self.backbone, pre_trained=pre_trained, layers=self.layers)
+        self.feature_extractor = FeatureExtractor(feature_extractor)
+        self.layers = self.feature_extractor.layers
         self.feature_pooler = torch.nn.AvgPool2d(3, 1, 1, count_include_pad=False)
         self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
 

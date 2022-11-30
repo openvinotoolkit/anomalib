@@ -4,12 +4,17 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import math
+from typing import Union
 
 import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
 from anomalib.models.components import PCA, DynamicBufferModule, FeatureExtractor
+from anomalib.models.components.feature_extractors import (
+    TimmFeatureExtractorParams,
+    TorchFXFeatureExtractorParams,
+)
 
 
 class SingleClassGaussian(DynamicBufferModule):
@@ -73,9 +78,7 @@ class DFMModel(nn.Module):
     """Model for the DFM algorithm.
 
     Args:
-        backbone (str): Pre-trained model backbone.
-        layer (str): Layer from which to extract features.
-        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+        feature_extractor (Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams]): Feature extractor params
         pooling_kernel_size (int, optional): Kernel size to pool features extracted from the CNN.
         n_comps (float, optional): Ratio from which number of components for PCA are calculated. Defaults to 0.97.
         score_type (str, optional): Scoring type. Options are `fre` and `nll`. Defaults to "fre".
@@ -83,23 +86,18 @@ class DFMModel(nn.Module):
 
     def __init__(
         self,
-        backbone: str,
-        layer: str,
-        pre_trained: bool = True,
+        feature_extractor: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams],
         pooling_kernel_size: int = 4,
         n_comps: float = 0.97,
         score_type: str = "fre",
     ):
         super().__init__()
-        self.backbone = backbone
         self.pooling_kernel_size = pooling_kernel_size
         self.n_components = n_comps
         self.pca_model = PCA(n_components=self.n_components)
         self.gaussian_model = SingleClassGaussian()
         self.score_type = score_type
-        self.feature_extractor = FeatureExtractor(
-            backbone=self.backbone, pre_trained=pre_trained, layers=[layer]
-        ).eval()
+        self.feature_extractor = FeatureExtractor(feature_extractor).eval()
 
     def fit(self, dataset: Tensor) -> None:
         """Fit a pca transformation and a Gaussian model to dataset.

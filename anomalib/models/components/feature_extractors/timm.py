@@ -68,7 +68,6 @@ class TimmFeatureExtractor(nn.Module):
             out_indices=self.idx,
         )
         self.out_dims = self.feature_extractor.feature_info.channels()
-        self._features = {layer: torch.empty(0) for layer in self.layers}
 
     def _map_layer_to_idx(self, offset: int = 3) -> List[int]:
         """Maps set of layer names to indices of model.

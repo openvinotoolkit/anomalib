@@ -8,6 +8,10 @@ from typing import List, Optional, Tuple, Union
 from torch import Tensor, nn
 
 from anomalib.models.components import FeatureExtractor
+from anomalib.models.components.feature_extractors import (
+    TimmFeatureExtractorParams,
+    TorchFXFeatureExtractorParams,
+)
 from anomalib.models.reverse_distillation.anomaly_map import AnomalyMapGenerator
 from anomalib.models.reverse_distillation.components import (
     get_bottleneck_layer,
@@ -20,28 +24,24 @@ class ReverseDistillationModel(nn.Module):
     """Reverse Distillation Model.
 
     Args:
-        backbone (str): Name of the backbone used for encoder and decoder
         input_size (Tuple[int, int]): Size of input image
-        layers (List[str]): Name of layers from which the features are extracted.
         anomaly_map_mode (str): Mode used to generate anomaly map. Options are between ``multiply`` and ``add``.
-        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+        feature_extractor (Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams]): Feature extractor params
     """
 
     def __init__(
         self,
-        backbone: str,
         input_size: Tuple[int, int],
-        layers: List[str],
         anomaly_map_mode: str,
-        pre_trained: bool = True,
+        feature_extractor: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams],
     ):
         super().__init__()
         self.tiler: Optional[Tiler] = None
 
-        encoder_backbone = backbone
-        self.encoder = FeatureExtractor(backbone=encoder_backbone, pre_trained=pre_trained, layers=layers)
-        self.bottleneck = get_bottleneck_layer(backbone)
-        self.decoder = get_decoder(backbone)
+        encoder_backbone = str(feature_extractor.backbone)
+        self.encoder = FeatureExtractor(feature_extractor)
+        self.bottleneck = get_bottleneck_layer(encoder_backbone)
+        self.decoder = get_decoder(encoder_backbone)
 
         if self.tiler:
             image_size = (self.tiler.tile_size_h, self.tiler.tile_size_w)

@@ -116,6 +116,8 @@ class TorchFXFeatureExtractor(nn.Module):
         Returns:
             Feature Extractor based on TorchFX.
         """
+        self.return_nodes = return_nodes
+
         if isinstance(backbone.class_path, str):
             backbone_class = self._get_backbone_class(backbone.class_path)
             backbone_model = backbone_class(weights=weights, **backbone.init_args)
@@ -123,7 +125,7 @@ class TorchFXFeatureExtractor(nn.Module):
             backbone_class = backbone.class_path
             backbone_model = backbone_class(**backbone.init_args)
         if isinstance(weights, WeightsEnum):  # torchvision models
-            feature_extractor = create_feature_extractor(model=backbone_model, return_nodes=return_nodes)
+            feature_extractor = create_feature_extractor(model=backbone_model, return_nodes=self.return_nodes)
         else:
             if weights is not None:
                 assert isinstance(weights, str), "Weights should point to a path"
@@ -131,7 +133,7 @@ class TorchFXFeatureExtractor(nn.Module):
                 if "state_dict" in model_weights:
                     model_weights = model_weights["state_dict"]
                 backbone_model.load_state_dict(model_weights)
-            feature_extractor = create_feature_extractor(backbone_model, return_nodes)
+            feature_extractor = create_feature_extractor(backbone_model, self.return_nodes)
 
         if not requires_grad:
             feature_extractor.eval()

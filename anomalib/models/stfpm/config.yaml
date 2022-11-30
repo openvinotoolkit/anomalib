@@ -23,8 +23,16 @@ dataset:
 
 model:
   name: stfpm
-  feature_extractor:
+  teacher_model:
     backbone: resnet18
+    layers:
+      - layer1
+      - layer2
+      - layer3
+  student_model:
+    backbone: resnet18
+    pre_trained: false
+    requires_grad: true
     layers:
       - layer1
       - layer2

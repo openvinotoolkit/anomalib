@@ -6,7 +6,7 @@ https://arxiv.org/pdf/2107.12571v1.pdf
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Tuple, Union
+from typing import Tuple, Union
 
 import einops
 import torch
@@ -19,6 +19,10 @@ from torch import optim
 from anomalib.models.cflow.torch_model import CflowModel
 from anomalib.models.cflow.utils import get_logp, positional_encoding_2d
 from anomalib.models.components import AnomalyModule
+from anomalib.models.components.feature_extractors import (
+    TimmFeatureExtractorParams,
+    TorchFXFeatureExtractorParams,
+)
 
 __all__ = ["Cflow", "CflowLightning"]
 
@@ -30,9 +34,7 @@ class Cflow(AnomalyModule):
     def __init__(
         self,
         input_size: Tuple[int, int],
-        backbone: str,
-        layers: List[str],
-        pre_trained: bool = True,
+        feature_extractor: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams],
         fiber_batch_size: int = 64,
         decoder: str = "freia-cflow",
         condition_vector: int = 128,
@@ -45,9 +47,7 @@ class Cflow(AnomalyModule):
 
         self.model: CflowModel = CflowModel(
             input_size=input_size,
-            backbone=backbone,
-            pre_trained=pre_trained,
-            layers=layers,
+            feature_extractor=feature_extractor,
             fiber_batch_size=fiber_batch_size,
             decoder=decoder,
             condition_vector=condition_vector,
@@ -183,9 +183,7 @@ class CflowLightning(Cflow):
     def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
         super().__init__(
             input_size=hparams.model.input_size,
-            backbone=hparams.model.backbone,
-            layers=hparams.model.layers,
-            pre_trained=hparams.model.pre_trained,
+            feature_extractor=hparams.model.feature_extractor,
             fiber_batch_size=hparams.model.fiber_batch_size,
             decoder=hparams.model.decoder,
             condition_vector=hparams.model.condition_vector,

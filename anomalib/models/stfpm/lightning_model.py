@@ -31,20 +31,22 @@ class Stfpm(AnomalyModule):
 
     Args:
         input_size (Tuple[int, int]): Size of the model input.
-        backbone (str): Backbone CNN network
-        layers (List[str]): Layers to extract features from the backbone CNN
+        teacher_model (Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams]): Teacher model parameters.
+        student_model (Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams]): Student model parameters.
     """
 
     def __init__(
         self,
         input_size: Tuple[int, int],
-        feature_extractor: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams],
+        teacher_model: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams],
+        student_model: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams],
     ):
         super().__init__()
 
         self.model = STFPMModel(
             input_size=input_size,
-            feature_extractor=feature_extractor,
+            teacher_model=teacher_model,
+            student_model=student_model,
         )
         self.loss = STFPMLoss()
 
@@ -94,7 +96,8 @@ class StfpmLightning(Stfpm):
     def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
         super().__init__(
             input_size=hparams.model.input_size,
-            feature_extractor=hparams.model.feature_extractor,
+            teacher_model=hparams.model.teacher_model,
+            student_model=hparams.model.student_model,
         )
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(hparams)

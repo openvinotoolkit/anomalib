@@ -22,23 +22,21 @@ class STFPMModel(nn.Module):
     Args:
         layers (List[str]): Layers used for feature extraction
         input_size (Tuple[int, int]): Input size for the model.
-        backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
+        teacher_model (Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams]): Teacher model parameters.
+        student_model (Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams]): Student model parameters.
     """
 
     def __init__(
         self,
         input_size: Tuple[int, int],
-        feature_extractor: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams],
+        teacher_model: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams],
+        student_model: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams],
     ):
         super().__init__()
         self.tiler: Optional[Tiler] = None
 
-        self.teacher_model = FeatureExtractor(
-            backbone=feature_extractor.backbone, pre_trained=True, layers=feature_extractor.layers
-        )
-        self.student_model = FeatureExtractor(
-            backbone=feature_extractor.backbone, pre_trained=False, layers=feature_extractor.layers, requires_grad=True
-        )
+        self.teacher_model = FeatureExtractor(teacher_model)
+        self.student_model = FeatureExtractor(student_model)
 
         # teacher model is fixed
         for parameters in self.teacher_model.parameters():
