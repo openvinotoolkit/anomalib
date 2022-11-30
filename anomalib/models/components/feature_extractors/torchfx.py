@@ -15,14 +15,24 @@ from torchvision.models.feature_extraction import create_feature_extractor
 
 
 @dataclass
-class BackboneParams:
+class TorchFXBackboneParams:
     """Used for serializing the backbone."""
 
     class_path: Union[str, nn.Module]
     init_args: Dict = field(default_factory=dict)
 
 
-class TorchFXFeatureExtractor:
+@dataclass
+class TorchFXFeatureExtractorParams:
+    """Used for serializing the TorchFX Feature Extractor."""
+
+    backbone: Union[str, TorchFXBackboneParams, Dict, nn.Module]
+    return_nodes: List[str]
+    weights: Optional[Union[WeightsEnum, str]] = None
+    requires_grad: bool = False
+
+
+class TorchFXFeatureExtractor(nn.Module):
     """Extract features from a CNN.
 
     Args:
@@ -69,21 +79,22 @@ class TorchFXFeatureExtractor:
 
     def __init__(
         self,
-        backbone: Union[str, BackboneParams, Dict, nn.Module],
+        backbone: Union[str, TorchFXBackboneParams, Dict, nn.Module],
         return_nodes: List[str],
         weights: Optional[Union[WeightsEnum, str]] = None,
         requires_grad: bool = False,
     ):
+        super().__init__()
         if isinstance(backbone, dict):
-            backbone = BackboneParams(**backbone)
-        elif not isinstance(backbone, BackboneParams):  # if str or nn.Module
-            backbone = BackboneParams(class_path=backbone)
+            backbone = TorchFXBackboneParams(**backbone)
+        elif not isinstance(backbone, TorchFXBackboneParams):  # if str or nn.Module
+            backbone = TorchFXBackboneParams(class_path=backbone)
 
         self.feature_extractor = self.initialize_feature_extractor(backbone, return_nodes, weights, requires_grad)
 
     def initialize_feature_extractor(
         self,
-        backbone: BackboneParams,
+        backbone: TorchFXBackboneParams,
         return_nodes: List[str],
         weights: Optional[Union[WeightsEnum, str]] = None,
         requires_grad: bool = False,
@@ -169,6 +180,6 @@ class TorchFXFeatureExtractor:
 
         return backbone_class
 
-    def __call__(self, inputs: Tensor) -> Dict[str, Tensor]:
+    def forward(self, inputs: Tensor) -> Dict[str, Tensor]:
         """Extract features from the input."""
         return self.feature_extractor(inputs)

@@ -4,11 +4,11 @@ from typing import Dict, List, Tuple, Union
 
 import torch
 
-from .timm import FeatureExtractor
+from .timm import TimmFeatureExtractor
 
 
 def dryrun_find_featuremap_dims(
-    feature_extractor: FeatureExtractor,
+    feature_extractor: TimmFeatureExtractor,
     input_size: Tuple[int, int],
     layers: List[str],
 ) -> Dict[str, Dict[str, Union[int, Tuple[int, int]]]]:
