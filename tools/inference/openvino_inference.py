@@ -38,7 +38,7 @@ def get_args() -> Namespace:
         required=False,
         help="Task type.",
         default="classification",
-        choices=["classification", "segmentation"],
+        choices=["classification", "detection", "segmentation"],
     )
     parser.add_argument(
         "--visualization_mode",
@@ -86,7 +86,7 @@ def infer() -> None:
             )
 
         if args.output:
-            file_path = generate_output_image_filename(input_path=args.input, output_path=args.output)
+            file_path = generate_output_image_filename(input_path=filename, output_path=args.output)
             visualizer.save(file_path=file_path, image=output)
 
         # Show the image in case the flag is set by the user.

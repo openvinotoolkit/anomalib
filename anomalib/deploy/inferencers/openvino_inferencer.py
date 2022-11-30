@@ -160,7 +160,7 @@ class OpenVINOInferencer(Inferencer):
         if "image_threshold" in meta_data:
             pred_label = pred_score >= meta_data["image_threshold"]
 
-        if task == TaskType.SEGMENTATION:
+        if task in [TaskType.SEGMENTATION, TaskType.DETECTION]:
             if "pixel_threshold" in meta_data:
                 pred_mask = (anomaly_map >= meta_data["pixel_threshold"]).astype(np.uint8)
 
@@ -174,9 +174,36 @@ class OpenVINOInferencer(Inferencer):
                 if pred_mask is not None:
                     pred_mask = cv2.resize(pred_mask, (image_width, image_height))
 
+        if self.config.dataset.task == TaskType.DETECTION:
+            pred_boxes = self._get_boxes(pred_mask)
+        else:
+            pred_boxes = None
+
         return {
             "anomaly_map": anomaly_map,
             "pred_label": pred_label,
             "pred_score": pred_score,
             "pred_mask": pred_mask,
+            "pred_boxes": pred_boxes,
         }
+
+    @staticmethod
+    def _get_boxes(mask: np.ndarray) -> np.ndarray:
+        """Get bounding boxes from masks.
+
+        Args:
+            masks (np.ndarray): Input mask of shape (H, W)
+
+        Returns:
+            np.ndarray: array of shape (N, 4) containing the bounding box coordinates of the objects in the masks
+            in xyxy format.
+        """
+        _, comps = cv2.connectedComponents(mask)
+
+        labels = np.unique(comps)
+        boxes = []
+        for label in labels[labels != 0]:
+            y_loc, x_loc = np.where(comps == label)
+            boxes.append([np.min(x_loc), np.min(y_loc), np.max(x_loc), np.max(y_loc)])
+        boxes = np.stack(boxes) if len(boxes) > 0 else np.empty((0, 4))
+        return boxes
