@@ -169,7 +169,6 @@ class Inferencer(ABC):
 
         return anomaly_maps, float(pred_scores)
 
-    # pylint: disable=no-self-use  # (see https://stackoverflow.com/questions/53365941)
     def _load_meta_data(self, path: Optional[Union[str, Path]] = None) -> Union[DictConfig, Dict]:
         """Loads the meta data from the given path.
 
