@@ -59,9 +59,30 @@ class FeatureExtractor(nn.Module):
 
     def __init__(self, *args: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams, DictConfig], **kwargs):
         super().__init__()
-        self.feature_extractor: Union[TorchFXFeatureExtractor, TimmFeatureExtractor]
 
         # Check if argument is passed as a key word argument or as a single argument of dictionary or dataclass.
+        feature_extractor_params = self._get_feature_extractor_params(args, kwargs)
+        self.feature_extractor = self._assign_feature_extractor(feature_extractor_params)
+        self.layers = (
+            self.feature_extractor.layers
+            if isinstance(self.feature_extractor, TimmFeatureExtractor)
+            else self.feature_extractor.return_nodes
+        )
+        self._out_dims: List[int]
+
+    def _get_feature_extractor_params(self, args, kwargs):
+        """Performs validation checks and converts the arguments to the correct data type.
+
+        Checks if the arguments are passed as a key word argument or as a single argument of dictionary or dataclass.
+        If the checks pass, returns the feature extractor parameters as a dataclass.
+
+        The feature extractor expects only one of args of kwargs
+
+        Args:
+            args (Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams, DictConfig]): Feature extractor
+                parameters.
+            kwargs (Dict[str, Any]): Feature extractor parameters as key word arguments.
+        """
         if len(args) == 1:
             feature_extractor_params = self._convert_datatype(args[0])
         elif len(args) > 0 and kwargs is not None:
@@ -71,20 +92,20 @@ class FeatureExtractor(nn.Module):
             )
         else:
             feature_extractor_params = self._convert_datatype(kwargs)
-
-        self._assign_feature_extractor(feature_extractor_params)
-        self.layers = (
-            self.feature_extractor.layers
-            if isinstance(self.feature_extractor, TimmFeatureExtractor)
-            else self.feature_extractor.return_nodes
-        )
-        self._out_dims: List[int]
+        return feature_extractor_params
 
     def _convert_datatype(
         self,
         feature_extractor_params: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams, DictConfig, Dict],
     ):
-        """When config us loaded from entry point scripts, the data type of the arguments is DictConfig."""
+        """When config us loaded from entry point scripts, the data type of the arguments is DictConfig.
+
+        Args:
+            feature_extractor_params: Feature extractor parameters to convert.
+
+        Returns:
+            Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams]: Converted feature extractor parameters.
+        """
         if isinstance(feature_extractor_params, (DictConfig, dict)):
             if "layers" in feature_extractor_params:
                 feature_extractor_params = TimmFeatureExtractorParams(**feature_extractor_params)
@@ -96,12 +117,13 @@ class FeatureExtractor(nn.Module):
 
     def _assign_feature_extractor(
         self, feature_extractor_params: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams]
-    ):
+    ) -> Union[TimmFeatureExtractor, TorchFXFeatureExtractor]:
         """Assigns the feature extractor based on the arguments passed."""
         if isinstance(feature_extractor_params, TimmFeatureExtractorParams):
-            self.feature_extractor = TimmFeatureExtractor(**vars(feature_extractor_params))
+            feature_extractor = TimmFeatureExtractor(**vars(feature_extractor_params))
         else:
-            self.feature_extractor = TorchFXFeatureExtractor(**vars(feature_extractor_params))
+            feature_extractor = TorchFXFeatureExtractor(**vars(feature_extractor_params))
+        return feature_extractor
 
     def forward(self, inputs: Tensor) -> Tensor:
         """Returns the feature maps from the selected feature extractor."""
