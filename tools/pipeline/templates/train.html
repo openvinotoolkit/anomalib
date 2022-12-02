@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="content-row">
+    <div class="content-column">
+        <h2 style="text-align: center;">Training</h2>
+        <div class="div-form">
+            <form method=post enctype=multipart/form-data>
+                <h3>Upload zip file:</h3>
+                <center><input class="form-control form-control-lg" name="zip_input" type="file" id="zip_input"
+                        accept=".zip"></center>
+                <p>(Click to select a file, or drag it here) or can use data custom sample: <a
+                        href="https://drive.google.com/drive/folders/1mUhEG-eHZetGabc9tC8YhvI8KIAu7AAn?usp=share_link">Link
+                        Drive</a></p>
+                <label for="user_model" style="font-size: 1.25em;">Choose model to training:</label>
+                <select class="round" name="user_model" id="user_model">
+                    <option value="patchcore" selected>patchcore</option>
+                    {% for user_model in user_models %}
+                    <option value="{{user_model}}">{{user_model}}</option>"
+                    {% endfor %}
+                </select>
+                <br><br>
+                <label for="user_backbone" style="font-size: 1.25em;">Choose backbone for model training:</label>
+                <select class="round" name="user_backbone" id="user_backbone">
+                    <option value="resnet18" selected>resnet18</option>
+                    <option value="resnet50">resnet50</option>
+                    <option value="wide_resnet50_2">wide_resnet50_2</option>"
+                </select>
+                <br><br>
+                <label for="user_task" style="font-size: 1.25em;">Choose task to training:</label>
+                <select class="round" name="user_task" id="user_task">
+                    <option value="segmentation" selected>segmentation</option>
+                    <option value="classification">classification</option>"
+                </select>
+                <br>
+                <br>
+                <center><button class="btn btn-outline-primary btn-block" type="submit" style="width: 90%; padding: 5%;"
+                        onclick="progress()">Start training</button></center>
+            </form>
+        </div>
+        <br>
+        <div class="progress">
+            <div id="dynamic" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+                aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
+                <span id="current-progress"></span>
+            </div>
+        </div>
+        <center>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <ul class=flashes>
+                {% for category, message in messages %}
+                <h5>{{ message }}</h5>
+                <a class="btn btn-outline-primary btn-block" href="/inference">Move to inference page</a>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            {% endwith %}
+        </center>
+        <div class="container">
+            <p>Time estimated:<br>
+                - About 30 seconds with 50 good images.<br>
+                - About 3 minutes with 200 good images.<br>
+            </p>
+        </div>
+        <hr>
+    </div>
+    <div class="content-column">
+        <h3>Data Structure</h3>
+        <p>For each new dataset, the data consist of three folders:<br>
+            - train, which contains the (defect-free) training images<br>
+            - test, which contains the test images<br>
+            - ground_truth, which contains the pixel-precise annotations of anomalous regions<br>
+        </p>
+        <center><img src="static/data_structure.jpg" width="70%"></center>
+
+    </div>
+</div>
+<hr>
+
+<script type="text/javascript">
+    function progress() {
+        document.getElementById('dynamic');
+        var current_progress = 0;
+        var interval = setInterval(function () {
+            current_progress += 100;
+            $("#dynamic")
+                .css("width", current_progress + "%")
+                .attr("aria-valuenow", current_progress)
+                .text("Please wait a minute");
+            if (current_progress >= 100)
+                clearInterval(interval);
+        }, 3000);
+    }
+</script>
+
+{% endblock %}

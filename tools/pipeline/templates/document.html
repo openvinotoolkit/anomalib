@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="content">
+    <h3>Dataset</h3>
+    <p>
+        MVTec AD is a dataset for benchmarking anomaly detection methods with a focus on industrial inspection. It
+        contains over 5000 high-resolution images divided into fifteen different object and texture categories. Each
+        category comprises a set of defect-free training images and a test set of images with various kinds of defects
+        as well as images without defects.
+    </p>
+    <img src='static/mvtec_dataset.jpg'>
+    <p>Link dataset: <a href="https://www.mvtec.com/company/research/datasets/mvtec-ad">MVTec-AD Dataset</a></p>
+    <p>Data custom sample: <a
+            href="https://drive.google.com/drive/folders/1mUhEG-eHZetGabc9tC8YhvI8KIAu7AAn?usp=share_link">Link
+            Drive</a></p>
+    <hr>
+    <h3>Paper</h3>
+    <p>
+        Being able to spot defective parts is a critical component in large-scale industrial manufacturing. A particular
+        challenge that we address in this work is the cold-start problem: fit a model using nominal (non-defective)
+        example images only. While handcrafted solutions per class are possible, the goal is to build systems that work
+        well simultaneously on many different tasks automatically. The best performing approaches combine embeddings
+        from ImageNet models with an outlier detection model. In this paper, we extend on this line of work and propose
+        \textbf{PatchCore}, which uses a maximally representative memory bank of nominal patch-features. PatchCore
+        offers competitive inference times while achieving state-of-the-art performance for both detection and
+        localization. On the challenging, widely used MVTec AD benchmark PatchCore achieves an image-level anomaly
+        detection AUROC score of up to 99.6%, more than halving the error compared to the next best competitor.
+    </p>
+    <p>Link paper: <a href="https://arxiv.org/abs/2106.08265">Patchcore</a></p>
+    <hr>
+    <h3>Setup EC2 instance</h3>
+    <p>
+        Being able to spot defective parts is a critical component in large-scale industrial manufacturing. A particular
+        challenge that we address in this work is the cold-start problem: fit a model using nominal (non-defective)
+        example images only. While handcrafted solutions per class are possible, the goal is to build systems that work
+        well simultaneously on many different tasks automatically. The best performing approaches combine embeddings
+        from ImageNet models with an outlier detection model. In this paper, we extend on this line of work and propose
+        \textbf{PatchCore}, which uses a maximally representative memory bank of nominal patch-features. PatchCore
+        offers competitive inference times while achieving state-of-the-art performance for both detection and
+        localization. On the challenging, widely used MVTec AD benchmark PatchCore achieves an image-level anomaly
+        detection AUROC score of up to 99.6%, more than halving the error compared to the next best competitor.
+    </p>
+    <p>Install miniconda: <a href="https://varhowto.com/install-miniconda-ubuntu-18-04/">Link</a></p>
+    <p>Install docker: <a href="https://docs.docker.com/engine/install/ubuntu/">Link</a></p>
+    <p>Static IPv4: <a
+            href="https://aws.amazon.com/premiumsupport/knowledge-center/ec2-associate-static-public-ip/">Link</a></p>
+
+    <hr>
+    <center>
+        <a href="{{ url_for('index') }}"><button class="btn btn-outline-primary btn-block" style="width: 50%;">Kick
+                start
+                your brain</button></a>
+    </center>
+</div>
+{% endblock %}

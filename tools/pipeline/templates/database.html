@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="content-database">
+    <h1>Anomaly Database</h1>
+    <table>
+        <th>ID</th>
+        <th>Input Image</th>
+        <th>Anomaly Score</th>
+        <th>Target Label</th>
+        <th>Predict Heatmap</th>
+        <th>Predict Mask</th>
+        <th>Predict Segment</th>
+        <th>Delete</th>
+        {% for result in results %}
+        <tr>
+            <td style="text-align: left;">{{ result.id }}</td>
+            <td style="text-align: center;"><img src="{{ result.image_upload }}" width="70%"></td>
+            <td style="text-align: center; font-size: 1.5em;">{{ '%0.3f' % result.anomaly_score|float}}</td>
+            <td style="text-align: center; font-size: 1.5em;">{{ result.target }}</td>
+            <td style="text-align: center;"><img src="{{ result.heatmap_predict }}" width="70%"></td>
+            <td style="text-align: center;"><img src="{{ result.mask_predict }}" width="70%"></td>
+            <td style="text-align: center;"><img src="{{ result.segment_predict }}" width="70%"></td>
+            <td><a href="{{ url_for('delete', id=result.id) }}" id="deletealert">X</a></td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+<!-- <div class="content">
+    <br>
+    <center>
+        <form method="post" action="/database" style="display: flex; margin-left: 45%;">
+            <input type="submit" name="delete" value="Delete All Database" id="deletealert">
+        </form>
+    </center>
+</div> -->
+<script>
+    document.getElementById("deletealert").onclick = function () {
+        alert("Delete row successfully");
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  web:
+    image: anomaly:v2
+    container_name: anomaly_container
+    build: .
+    ports:
+      - "5000:5000"
+      - "80:5000"
+    volumes:
+      - .:/anomaly
+    restart: always

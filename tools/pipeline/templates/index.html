@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    {% with messages = get_flashed_messages(with_categories=True) %}
+    {% if messages %}
+
+    {% for category, message in messages %}
+    <div class="alert alert-{{category}} alert-dismissible fade show" role="alert">
+        <span> {{ message }} </span>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    {% endfor %}
+
+    {% endif %}
+    {% endwith %}
+</div>
+<div class="container">
+    <h3>Introduction</h3>
+    <p>Anomalib is a deep learning library that aims to collect state-of-the-art anomaly detection algorithms for
+        benchmarking on both public and private datasets. Anomalib provides several ready-to-use implementations of
+        anomaly detection algorithms described in the recent literature, as well as a set of tools that facilitate the
+        development and implementation of custom models. The library has a strong focus on image-based anomaly
+        detection, where the goal of the algorithm is to identify anomalous images, or anomalous pixel regions within
+        images in a dataset. Anomalib is constantly updated with new algorithms and training/inference extensions, so
+        keep checking!
+    </p>
+    <p>Source code anomalib: <a href="https://github.com/openvinotoolkit/anomalib">anomalib</a>
+        | Source code pipeline: <a
+            href="https://github.com/vnk8071/anomaly-detection-in-industry-manufacturing">github_vnk8071</a></p>
+    <br>
+    <h3>Features:</h3>
+</div>
+<div class="content-row">
+    <div class="content-column">
+        <center><a class="btn btn-outline-primary btn-block" href="/train" style="width: 80%;">Training</a></center>
+    </div>
+    <div class="content-column">
+        <center><a class="btn btn-outline-primary btn-block" href="/inference" style="width: 80%;">Inference</a></cter>
+    </div>
+    <div class="content-column">
+        <center><a class="btn btn-outline-primary btn-block" href="/database" style="width: 80%;">Database</a></cter>
+    </div>
+</div>
+<div class="container">
+    <h3>Flow model:</h3>
+    <img class="center" src="static/flow-app.jpg" style="width: 90%;">
+</div>
+<hr>
+{% endblock %}
