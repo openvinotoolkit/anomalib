@@ -14,10 +14,7 @@ from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor, optim
 
 from anomalib.models.components import AnomalyModule
-from anomalib.models.components.feature_extractors import (
-    TimmFeatureExtractorParams,
-    TorchFXFeatureExtractorParams,
-)
+from anomalib.models.components.feature_extractors import FeatureExtractorParams
 
 from .loss import ReverseDistillationLoss
 from .torch_model import ReverseDistillationModel
@@ -29,13 +26,13 @@ class ReverseDistillation(AnomalyModule):
 
     Args:
         input_size (Tuple[int, int]): Size of model input
-        feature_extractor (Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams]): Feature extractor params
+        feature_extractor (FeatureExtractorParams): Feature extractor params
     """
 
     def __init__(
         self,
         input_size: Tuple[int, int],
-        feature_extractor: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams],
+        feature_extractor: FeatureExtractorParams,
         anomaly_map_mode: str,
         lr: float,
         beta1: float,

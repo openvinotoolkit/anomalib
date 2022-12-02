@@ -15,10 +15,7 @@ from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
-from anomalib.models.components.feature_extractors import (
-    TimmFeatureExtractorParams,
-    TorchFXFeatureExtractorParams,
-)
+from anomalib.models.components.feature_extractors import FeatureExtractorParams
 from anomalib.models.patchcore.torch_model import PatchcoreModel
 
 logger = logging.getLogger(__name__)
@@ -30,7 +27,7 @@ class Patchcore(AnomalyModule):
 
     Args:
         input_size (Tuple[int, int]): Size of the model input.
-        feature_extractor (Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams]): Feature extractor params
+        feature_extractor (FeatureExtractorParams): Feature extractor params
         coreset_sampling_ratio (float, optional): Coreset sampling ratio to subsample embedding.
             Defaults to 0.1.
         num_neighbors (int, optional): Number of nearest neighbors. Defaults to 9.
@@ -39,7 +36,7 @@ class Patchcore(AnomalyModule):
     def __init__(
         self,
         input_size: Tuple[int, int],
-        feature_extractor: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams],
+        feature_extractor: FeatureExtractorParams,
         coreset_sampling_ratio: float = 0.1,
         num_neighbors: int = 9,
     ) -> None:

@@ -4,12 +4,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from .feature_extractor import FeatureExtractor
 from .timm import TimmFeatureExtractor, TimmFeatureExtractorParams
 from .torchfx import TorchFXFeatureExtractor, TorchFXFeatureExtractorParams
+from .wrapper import FeatureExtractorParams, get_feature_extractor
 
 __all__ = [
-    "FeatureExtractor",
+    "get_feature_extractor",
+    "FeatureExtractorParams",
     "TimmFeatureExtractor",
     "TimmFeatureExtractorParams",
     "TorchFXFeatureExtractor",

@@ -15,10 +15,7 @@ from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
-from anomalib.models.components.feature_extractors import (
-    TimmFeatureExtractorParams,
-    TorchFXFeatureExtractorParams,
-)
+from anomalib.models.components.feature_extractors import FeatureExtractorParams
 from anomalib.models.padim.torch_model import PadimModel
 
 logger = logging.getLogger(__name__)
@@ -32,7 +29,7 @@ class Padim(AnomalyModule):
 
     Args:
         input_size (Tuple[int, int]): Size of the model input.
-        feature_extractor (Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams]): Feature extractor params
+        feature_extractor (FeatureExtractorParams): Feature extractor params
         n_features (int, optional): Number of features to retain in the dimension reduction step.
                                 Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
     """
@@ -40,7 +37,7 @@ class Padim(AnomalyModule):
     def __init__(
         self,
         input_size: Tuple[int, int],
-        feature_extractor: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams],
+        feature_extractor: FeatureExtractorParams,
         n_features: Optional[int] = None,
     ):
         super().__init__()

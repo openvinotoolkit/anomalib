@@ -13,6 +13,8 @@ from torch.fx.graph_module import GraphModule
 from torchvision.models._api import WeightsEnum
 from torchvision.models.feature_extraction import create_feature_extractor
 
+from .base import BaseFeatureExtractor
+
 
 @dataclass
 class TorchFXBackboneParams:
@@ -32,7 +34,7 @@ class TorchFXFeatureExtractorParams:
     requires_grad: bool = False
 
 
-class TorchFXFeatureExtractor(nn.Module):
+class TorchFXFeatureExtractor(BaseFeatureExtractor):
     """Extract features from a CNN.
 
     Args:
@@ -91,6 +93,8 @@ class TorchFXFeatureExtractor(nn.Module):
             backbone = TorchFXBackboneParams(class_path=backbone)
 
         self.feature_extractor = self.initialize_feature_extractor(backbone, return_nodes, weights, requires_grad)
+        self._out_dims: List[int]
+        self.layers = self.return_nodes
 
     def initialize_feature_extractor(
         self,
@@ -185,3 +189,11 @@ class TorchFXFeatureExtractor(nn.Module):
     def forward(self, inputs: Tensor) -> Dict[str, Tensor]:
         """Extract features from the input."""
         return self.feature_extractor(inputs)
+
+    @property
+    def out_dims(self) -> List[int]:
+        """Get the number of channels in the selected layers of the feature extractor."""
+        if not hasattr(self, "_out_dims"):
+            # run a small tensor through the model to get the output dimensions
+            self._out_dims = [val["num_features"] for val in self.dryrun_find_featuremap_dims((1, 1)).values()]
+        return self._out_dims

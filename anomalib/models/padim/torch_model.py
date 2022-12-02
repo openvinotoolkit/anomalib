@@ -10,10 +10,11 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from anomalib.models.components import FeatureExtractor, MultiVariateGaussian
+from anomalib.models.components import MultiVariateGaussian, get_feature_extractor
 from anomalib.models.components.feature_extractors import (
-    TimmFeatureExtractorParams,
-    TorchFXFeatureExtractorParams,
+    FeatureExtractorParams,
+    TimmFeatureExtractor,
+    TorchFXFeatureExtractor,
 )
 from anomalib.models.padim.anomaly_map import AnomalyMapGenerator
 from anomalib.pre_processing import Tiler
@@ -26,7 +27,9 @@ _N_FEATURES_DEFAULTS = {
 
 
 def _deduce_dims(
-    feature_extractor: FeatureExtractor, input_size: Tuple[int, int], layers: List[str]
+    feature_extractor: Union[TorchFXFeatureExtractor, TimmFeatureExtractor],
+    input_size: Tuple[int, int],
+    layers: List[str],
 ) -> Tuple[int, int]:
     """Run a dry run to deduce the dimensions of the extracted features.
 
@@ -53,7 +56,7 @@ class PadimModel(nn.Module):
 
     Args:
         input_size (Tuple[int, int]): Input size for the model.
-        feature_extractor (Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams]): Feature extractor params
+        feature_extractor (FeatureExtractorParams): Feature extractor params
         n_features (int, optional): Number of features to retain in the dimension reduction step.
                                 Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
     """
@@ -61,14 +64,14 @@ class PadimModel(nn.Module):
     def __init__(
         self,
         input_size: Tuple[int, int],
-        feature_extractor: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams],
+        feature_extractor: FeatureExtractorParams,
         n_features: Optional[int] = None,
     ):
         super().__init__()
         self.tiler: Optional[Tiler] = None
 
         self.backbone = str(feature_extractor.backbone)
-        self.feature_extractor = FeatureExtractor(feature_extractor)
+        self.feature_extractor = get_feature_extractor(feature_extractor)
         self.layers = self.feature_extractor.layers
         self.n_features_original, self.n_patches = _deduce_dims(self.feature_extractor, input_size, self.layers)
 

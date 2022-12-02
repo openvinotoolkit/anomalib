@@ -13,7 +13,9 @@ from typing import Dict, List
 
 import timm
 import torch
-from torch import Tensor, nn
+from torch import Tensor
+
+from .base import BaseFeatureExtractor
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +30,7 @@ class TimmFeatureExtractorParams:
     requires_grad: bool = False
 
 
-class TimmFeatureExtractor(nn.Module):
+class TimmFeatureExtractor(BaseFeatureExtractor):
     """Extract features from a CNN.
 
     Args:
@@ -67,7 +69,6 @@ class TimmFeatureExtractor(nn.Module):
             exportable=True,
             out_indices=self.idx,
         )
-        self.out_dims = self.feature_extractor.feature_info.channels()
 
     def _map_layer_to_idx(self, offset: int = 3) -> List[int]:
         """Maps set of layer names to indices of model.
@@ -94,6 +95,11 @@ class TimmFeatureExtractor(nn.Module):
                 self.layers.remove(i)
 
         return idx
+
+    @property
+    def out_dims(self) -> List[int]:
+        """Returns the number of channels of the requested layers."""
+        return self.feature_extractor.feature_info.channels()
 
     def forward(self, inputs: Tensor) -> Dict[str, Tensor]:
         """Forward-pass input tensor into the CNN.

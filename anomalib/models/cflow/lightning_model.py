@@ -19,10 +19,7 @@ from torch import optim
 from anomalib.models.cflow.torch_model import CflowModel
 from anomalib.models.cflow.utils import get_logp, positional_encoding_2d
 from anomalib.models.components import AnomalyModule
-from anomalib.models.components.feature_extractors import (
-    TimmFeatureExtractorParams,
-    TorchFXFeatureExtractorParams,
-)
+from anomalib.models.components.feature_extractors import FeatureExtractorParams
 
 __all__ = ["Cflow", "CflowLightning"]
 
@@ -34,7 +31,7 @@ class Cflow(AnomalyModule):
     def __init__(
         self,
         input_size: Tuple[int, int],
-        feature_extractor: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams],
+        feature_extractor: FeatureExtractorParams,
         fiber_batch_size: int = 64,
         decoder: str = "freia-cflow",
         condition_vector: int = 128,

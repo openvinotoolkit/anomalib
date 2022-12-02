@@ -7,11 +7,8 @@ from typing import List, Optional, Tuple, Union
 
 from torch import Tensor, nn
 
-from anomalib.models.components import FeatureExtractor
-from anomalib.models.components.feature_extractors import (
-    TimmFeatureExtractorParams,
-    TorchFXFeatureExtractorParams,
-)
+from anomalib.models.components import get_feature_extractor
+from anomalib.models.components.feature_extractors import FeatureExtractorParams
 from anomalib.models.reverse_distillation.anomaly_map import AnomalyMapGenerator
 from anomalib.models.reverse_distillation.components import (
     get_bottleneck_layer,
@@ -26,20 +23,20 @@ class ReverseDistillationModel(nn.Module):
     Args:
         input_size (Tuple[int, int]): Size of input image
         anomaly_map_mode (str): Mode used to generate anomaly map. Options are between ``multiply`` and ``add``.
-        feature_extractor (Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams]): Feature extractor params
+        feature_extractor (FeatureExtractorParams): Feature extractor params
     """
 
     def __init__(
         self,
         input_size: Tuple[int, int],
         anomaly_map_mode: str,
-        feature_extractor: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams],
+        feature_extractor: FeatureExtractorParams,
     ):
         super().__init__()
         self.tiler: Optional[Tiler] = None
 
         encoder_backbone = str(feature_extractor.backbone)
-        self.encoder = FeatureExtractor(feature_extractor)
+        self.encoder = get_feature_extractor(feature_extractor)
         self.bottleneck = get_bottleneck_layer(encoder_backbone)
         self.decoder = get_decoder(encoder_backbone)
 

@@ -11,10 +11,7 @@ from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
-from anomalib.models.components.feature_extractors import (
-    TimmFeatureExtractorParams,
-    TorchFXFeatureExtractorParams,
-)
+from anomalib.models.components.feature_extractors import FeatureExtractorParams
 
 from .torch_model import DfkdeModel
 
@@ -26,7 +23,7 @@ class Dfkde(AnomalyModule):
     """DFKDE: Deep Feature Kernel Density Estimation.
 
     Args:
-        feature_extractor (Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams]): Feature extractor params
+        feature_extractor (FeatureExtractorParams): Feature extractor params
         max_training_points (int, optional): Number of training points to fit the KDE model.
             Defaults to 40000.
         pre_processing (str, optional): Preprocess features before passing to KDE.
@@ -39,7 +36,7 @@ class Dfkde(AnomalyModule):
 
     def __init__(
         self,
-        feature_extractor: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams],
+        feature_extractor: FeatureExtractorParams,
         max_training_points: int = 40000,
         pre_processing: str = "scale",
         n_components: int = 16,

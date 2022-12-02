@@ -5,17 +5,14 @@
 
 import logging
 import random
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple
 
 import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from anomalib.models.components import PCA, FeatureExtractor, GaussianKDE
-from anomalib.models.components.feature_extractors import (
-    TimmFeatureExtractorParams,
-    TorchFXFeatureExtractorParams,
-)
+from anomalib.models.components import PCA, GaussianKDE, get_feature_extractor
+from anomalib.models.components.feature_extractors import FeatureExtractorParams
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +21,7 @@ class DfkdeModel(nn.Module):
     """Normality Model for the DFKDE algorithm.
 
     Args:
-        feature_extractor (Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams]): Feature extractor params
+        feature_extractor (FeatureExtractorParams): Feature extractor params
         n_comps (int, optional): Number of PCA components. Defaults to 16.
         pre_processing (str, optional): Preprocess features before passing to KDE.
             Options are between `norm` and `scale`. Defaults to "scale".
@@ -35,7 +32,7 @@ class DfkdeModel(nn.Module):
 
     def __init__(
         self,
-        feature_extractor: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams],
+        feature_extractor: FeatureExtractorParams,
         n_comps: int = 16,
         pre_processing: str = "scale",
         filter_count: int = 40000,
@@ -49,7 +46,7 @@ class DfkdeModel(nn.Module):
         self.threshold_steepness = threshold_steepness
         self.threshold_offset = threshold_offset
 
-        self.feature_extractor = FeatureExtractor(feature_extractor).eval()
+        self.feature_extractor = get_feature_extractor(feature_extractor).eval()
 
         self.pca_model = PCA(n_components=self.n_components)
         self.kde_model = GaussianKDE()
