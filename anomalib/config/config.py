@@ -123,22 +123,28 @@ def update_datasets_config(config: Union[DictConfig, ListConfig]) -> Union[DictC
 
     if "create_validation_set" in config.dataset.keys():
         warn(
-            "The 'create_validation_set' parameter is deprecated and will be removed in v0.4.0. Please use "
-            "'validation_split_mode' instead."
+            DeprecationWarning(
+                "The 'create_validation_set' parameter is deprecated and will be removed in v0.4.0. Please use "
+                "'validation_split_mode' instead."
+            )
         )
-        config.dataset.validation_split_mode = "from_test" if config.dataset.create_validation_set else "same_as_test"
+        config.dataset.val_split_mode = "from_test" if config.dataset.create_validation_set else "same_as_test"
 
     if "test_batch_size" in config.dataset.keys():
         warn(
-            "The 'test_batch_size' parameter is deprecated and will be removed in v0.4.0. Please use "
-            "'eval_batch_size' instead."
+            DeprecationWarning(
+                "The 'test_batch_size' parameter is deprecated and will be removed in v0.4.0. Please use "
+                "'eval_batch_size' instead."
+            )
         )
         config.dataset.eval_batch_size = config.dataset.test_batch_size
 
     if "transform_config" in config.dataset.keys() and "val" in config.dataset.transform_config.keys():
         warn(
-            "The 'transform_config.val' parameter is deprecated and will be removed in v0.4.0. Please use "
-            "'transform_config.eval' instead."
+            DeprecationWarning(
+                "The 'transform_config.val' parameter is deprecated and will be removed in v0.4.0. Please use "
+                "'transform_config.eval' instead."
+            )
         )
         config.dataset.transform_config.eval = config.dataset.transform_config.val
 
@@ -152,8 +158,10 @@ def update_datasets_config(config: Union[DictConfig, ListConfig]) -> Union[DictC
 
     if config.dataset.format == "folder" and "split_ratio" in config.dataset.keys():
         warn(
-            "The 'split_ratio' parameter is deprecated and will be removed in v0.4.0. Please use "
-            "'normal_split_ratio' instead."
+            DeprecationWarning(
+                "The 'split_ratio' parameter is deprecated and will be removed in v0.4.0. Please use "
+                "'normal_split_ratio' instead."
+            )
         )
         config.dataset.normal_split_ratio = config.dataset.split_ratio
     return config
