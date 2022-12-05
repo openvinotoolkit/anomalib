@@ -84,12 +84,10 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
     callbacks.append(post_processing_callback)
 
     # Add metric configuration to the model via MetricsConfigurationCallback
-    image_metric_names = config.metrics.image if "image" in config.metrics.keys() else None
-    pixel_metric_names = config.metrics.pixel if "pixel" in config.metrics.keys() else None
     metrics_callback = MetricsConfigurationCallback(
         config.dataset.task,
-        image_metric_names,
-        pixel_metric_names,
+        config.metrics.get("image", None),
+        config.metrics.get("pixel", None),
     )
     callbacks.append(metrics_callback)
 

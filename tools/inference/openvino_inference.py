@@ -41,6 +41,14 @@ def get_args() -> Namespace:
         choices=["classification", "detection", "segmentation"],
     )
     parser.add_argument(
+        "--device",
+        type=str,
+        required=False,
+        help="Hardware device on which the model will be deployed",
+        default="CPU",
+        choices=["CPU", "GPU", "VPU"],
+    )
+    parser.add_argument(
         "--visualization_mode",
         type=str,
         required=False,
@@ -71,7 +79,9 @@ def infer() -> None:
     args = get_args()
 
     # Get the inferencer.
-    inferencer = OpenVINOInferencer(config=args.config, path=args.weights, meta_data_path=args.meta_data)
+    inferencer = OpenVINOInferencer(
+        config=args.config, path=args.weights, meta_data_path=args.meta_data, device=args.device
+    )
     visualizer = Visualizer(mode=args.visualization_mode, task=args.task)
 
     filenames = get_image_filenames(path=args.input)

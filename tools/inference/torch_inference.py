@@ -11,6 +11,8 @@ import warnings
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
+import torch
+
 from anomalib.data.utils import (
     generate_output_image_filename,
     get_image_filenames,
@@ -31,6 +33,14 @@ def get_args() -> Namespace:
     parser.add_argument("--weights", type=Path, required=True, help="Path to model weights")
     parser.add_argument("--input", type=Path, required=True, help="Path to an image to infer.")
     parser.add_argument("--output", type=Path, required=False, help="Path to save the output image.")
+    parser.add_argument(
+        "--device",
+        type=str,
+        required=False,
+        default="auto",
+        help="Device to use for inference. Defaults to auto.",
+        choices=["auto", "cpu", "gpu", "cuda"],  # cuda and gpu are the same but provided for convenience
+    )
     parser.add_argument(
         "--task",
         type=str,
@@ -69,8 +79,10 @@ def infer() -> None:
     # information regarding the data, model, train and inference details.
     args = get_args()
 
+    torch.set_grad_enabled(False)
+
     # Create the inferencer and visualizer.
-    inferencer = TorchInferencer(config=args.config, model_source=args.weights)
+    inferencer = TorchInferencer(config=args.config, model_source=args.weights, device=args.device)
     visualizer = Visualizer(mode=args.visualization_mode, task=args.task)
 
     filenames = get_image_filenames(path=args.input)
