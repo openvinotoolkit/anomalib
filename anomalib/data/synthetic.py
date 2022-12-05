@@ -3,6 +3,7 @@
 This dataset can be used when there is a lack of real anomalous data.
 """
 
+import logging
 import math
 import os
 import shutil
@@ -18,6 +19,8 @@ from pandas import DataFrame, Series
 from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.utils import Augmenter, Split, read_image
 from anomalib.pre_processing import PreProcessor
+
+logger = logging.getLogger(__name__)
 
 
 def make_synthetic_dataset(
@@ -126,6 +129,7 @@ class SyntheticValidationSet(AnomalibDataset):
 
     def _setup(self) -> None:
         """Create samples dataframe."""
+        logger.info("Generating synthetic anomalous images for validation set")
         self.samples = make_synthetic_dataset(self.source_samples, self.im_dir, self.mask_dir, 0.5)
 
     def __del__(self):
