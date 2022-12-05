@@ -119,6 +119,12 @@ def make_folder_dataset(
             if row.label_index == 1:
                 samples.loc[index, "mask_path"] = str(mask_dir / row.image_path.name)
 
+        # make sure all the files exist
+        # samples.image_path does NOT need to be checked because we build the df based on that
+        assert samples.mask_path.apply(
+            lambda x: Path(x).exists() if x != "" else True
+        ).all(), f"missing mask files, mask_dir={mask_dir}"
+
     # Ensure the pathlib objects are converted to str.
     # This is because torch dataloader doesn't like pathlib.
     samples = samples.astype({"image_path": "str"})

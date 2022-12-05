@@ -1,46 +1,28 @@
 from pathlib import Path
 from typing import Union
 
-import pytorch_lightning as pl
 import torch
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
 from torch import nn
-from torch.utils.data import DataLoader, Dataset
 
 from anomalib.models.components import AnomalyModule
 from anomalib.utils.callbacks import ImageVisualizerCallback
-from anomalib.utils.metrics import get_metrics
 from tests.helpers.dataset import get_dataset_path
+from tests.helpers.metrics import get_metrics
 
 
-class DummyDataset(Dataset):
-    def __init__(self):
-        super().__init__()
-
-    def __len__(self):
-        return 1
-
-    def __getitem__(self, idx):
-        return torch.ones(1)
-
-
-class DummyDataModule(pl.LightningDataModule):
-    def test_dataloader(self) -> DataLoader:
-        return DataLoader(DummyDataset())
-
-
-class DummyAnomalyMapGenerator(nn.Module):
+class _DummyAnomalyMapGenerator(nn.Module):
     def __init__(self):
         super().__init__()
         self.input_size = (100, 100)
         self.sigma = 4
 
 
-class DummyModel(nn.Module):
+class _DummyModel(nn.Module):
     def __init__(self):
         super().__init__()
-        self.anomaly_map_generator = DummyAnomalyMapGenerator()
+        self.anomaly_map_generator = _DummyAnomalyMapGenerator()
 
 
 class DummyModule(AnomalyModule):
@@ -48,7 +30,7 @@ class DummyModule(AnomalyModule):
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         super().__init__()
-        self.model = DummyModel()
+        self.model = _DummyModel()
         self.task = "segmentation"
         self.mode = "full"
         self.callbacks = [
@@ -79,7 +61,7 @@ class DummyModule(AnomalyModule):
         )
         return outputs
 
-    def validation_epoch_end(self, output):
+    def validation_epoch_end(self, outputs):
         return None
 
     def test_epoch_end(self, outputs):
