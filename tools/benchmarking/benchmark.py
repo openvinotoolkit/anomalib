@@ -126,7 +126,7 @@ def get_single_model_metrics(model_config: Union[DictConfig, ListConfig], openvi
         data = {
             "Training Time (s)": training_time,
             "Testing Time (s)": testing_time,
-            "Inference Throughput (fps)": throughput,
+            f"Inference Throughput {model_config.trainer.accelerator} (fps)": throughput,
             "OpenVINO Inference Throughput (fps)": openvino_throughput,
         }
         for key, val in test_results[0].items():

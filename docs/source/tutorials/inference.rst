@@ -51,6 +51,8 @@ To run OpenVINO inference, first make sure that your model has been exported to 
 | meta_data | True     | Path to the JSON file containing the model's meta data (e.g. normalization           |
 |           |          | parameters and anomaly score threshold).                                             |
 +-----------+----------+--------------------------------------------------------------------------------------+
+| device    | False    | Device on which OpenVINO will perform the computations (``CPU``, ``GPU`` or ``VPU``) |
++-----------+----------+--------------------------------------------------------------------------------------+
 
 For correct inference results, the ``meta_data`` argument should be specified and point to the ``meta_data.json`` file that was generated when exporting the OpenVINO IR model. The file is stored in the same folder as the ``.xml`` and ``.bin`` files of the model.
 

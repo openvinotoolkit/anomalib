@@ -41,6 +41,14 @@ def get_args() -> Namespace:
         choices=["classification", "segmentation"],
     )
     parser.add_argument(
+        "--device",
+        type=str,
+        required=False,
+        help="Hardware device on which the model will be deployed",
+        default="CPU",
+        choices=["CPU", "GPU", "VPU"],
+    )
+    parser.add_argument(
         "--visualization_mode",
         type=str,
         required=False,
@@ -71,7 +79,9 @@ def infer() -> None:
     args = get_args()
 
     # Get the inferencer.
-    inferencer = OpenVINOInferencer(config=args.config, path=args.weights, meta_data_path=args.meta_data)
+    inferencer = OpenVINOInferencer(
+        config=args.config, path=args.weights, meta_data_path=args.meta_data, device=args.device
+    )
     visualizer = Visualizer(mode=args.visualization_mode, task=args.task)
 
     filenames = get_image_filenames(path=args.input)
@@ -86,7 +96,7 @@ def infer() -> None:
             )
 
         if args.output:
-            file_path = generate_output_image_filename(input_path=args.input, output_path=args.output)
+            file_path = generate_output_image_filename(input_path=filename, output_path=args.output)
             visualizer.save(file_path=file_path, image=output)
 
         # Show the image in case the flag is set by the user.
