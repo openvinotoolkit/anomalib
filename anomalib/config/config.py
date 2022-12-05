@@ -109,6 +109,56 @@ def update_multi_gpu_training_config(config: Union[DictConfig, ListConfig]) -> U
     return config
 
 
+def update_datasets_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfig, ListConfig]:
+    """Updates the dataset section of the config.
+
+    Args:
+        config (Union[DictConfig, ListConfig]): Configurable parameters for the current run.
+
+    Returns:
+        Union[DictConfig, ListConfig]: Updated config
+    """
+    if "format" not in config.dataset.keys():
+        config.dataset.format = "mvtec"
+
+    if "create_validation_set" in config.dataset.keys():
+        warn(
+            "The 'create_validation_set' parameter is deprecated and will be removed in v0.4.0. Please use "
+            "'validation_split_mode' instead."
+        )
+        config.dataset.validation_split_mode = "from_test" if config.dataset.create_validation_set else "same_as_test"
+
+    if "test_batch_size" in config.dataset.keys():
+        warn(
+            "The 'test_batch_size' parameter is deprecated and will be removed in v0.4.0. Please use "
+            "'eval_batch_size' instead."
+        )
+        config.dataset.eval_batch_size = config.dataset.test_batch_size
+
+    if "transform_config" in config.dataset.keys() and "val" in config.dataset.transform_config.keys():
+        warn(
+            "The 'transform_config.val' parameter is deprecated and will be removed in v0.4.0. Please use "
+            "'transform_config.eval' instead."
+        )
+        config.dataset.transform_config.eval = config.dataset.transform_config.val
+
+    config = update_input_size_config(config)
+
+    if "clip_length_in_frames" in config.dataset.keys() and config.dataset.clip_length_in_frames > 1:
+        warn(
+            "Anomalib's models and visualizer are currently not compatible with video datasets with a clip length > 1.\
+            Custom changes to these modules will be needed to prevent errors and/or unpredictable behaviour."
+        )
+
+    if config.dataset.format == "folder" and "split_ratio" in config.dataset.keys():
+        warn(
+            "The 'split_ratio' parameter is deprecated and will be removed in v0.4.0. Please use "
+            "'normal_split_ratio' instead."
+        )
+        config.dataset.normal_split_ratio = config.dataset.split_ratio
+    return config
+
+
 def get_configurable_parameters(
     model_name: Optional[str] = None,
     config_path: Optional[Union[Path, str]] = None,
@@ -142,38 +192,7 @@ def get_configurable_parameters(
     # keep track of the original config file because it will be modified
     config_original: DictConfig = config.copy()
 
-    # Dataset Configs
-    if "format" not in config.dataset.keys():
-        config.dataset.format = "mvtec"
-
-    if "create_validation_set" in config.dataset.keys():
-        warn(
-            "The 'create_validation_set' parameter is deprecated and will be removed in v0.4.0. Please use "
-            "'validation_split_mode' instead."
-        )
-        config.dataset.validation_split_mode = "from_test" if config.dataset.create_validation_set else "same_as_test"
-
-    if "test_batch_size" in config.dataset.keys():
-        warn(
-            "The 'test_batch_size' parameter is deprecated and will be removed in v0.4.0. Please use "
-            "'eval_batch_size' instead."
-        )
-        config.dataset.eval_batch_size = config.dataset.test_batch_size
-
-    if "transform_config" in config.dataset.keys() and "val" in config.dataset.transform_config.keys():
-        warn(
-            "The 'transform_config.val' parameter is deprecated and will be removed in v0.4.0. Please use "
-            "'transform_config.eval' instead."
-        )
-        config.dataset.transform_config.eval = config.dataset.transform_config.val
-
-    config = update_input_size_config(config)
-
-    if "clip_length_in_frames" in config.dataset.keys() and config.dataset.clip_length_in_frames > 1:
-        warn(
-            "Anomalib's models and visualizer are currently not compatible with video datasets with a clip length > 1.\
-            Custom changes to these modules will be needed to prevent errors and/or unpredictable behaviour."
-        )
+    config = update_datasets_config(config)
 
     # Project Configs
     project_path = Path(config.project.path) / config.model.name / config.dataset.name

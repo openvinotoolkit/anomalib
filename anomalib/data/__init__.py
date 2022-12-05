@@ -44,6 +44,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             transform_config_train=config.dataset.transform_config.train,
             transform_config_eval=config.dataset.transform_config.eval,
             val_split_mode=config.dataset.val_split_mode,
+            val_split_ratio=config.dataset.val_split_ratio,
         )
     elif config.dataset.format.lower() == "btech":
         datamodule = BTech(
@@ -57,6 +58,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             transform_config_train=config.dataset.transform_config.train,
             transform_config_eval=config.dataset.transform_config.eval,
             val_split_mode=config.dataset.val_split_mode,
+            val_split_ratio=config.dataset.val_split_ratio,
         )
     elif config.dataset.format.lower() == "folder":
         datamodule = Folder(
@@ -67,7 +69,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             normal_test_dir=config.dataset.normal_test_dir,
             mask_dir=config.dataset.mask,
             extensions=config.dataset.extensions,
-            split_ratio=config.dataset.split_ratio,
+            normal_split_ratio=config.dataset.normal_split_ratio,
             image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
             train_batch_size=config.dataset.train_batch_size,
             eval_batch_size=config.dataset.eval_batch_size,
@@ -75,6 +77,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             transform_config_train=config.dataset.transform_config.train,
             transform_config_eval=config.dataset.transform_config.eval,
             val_split_mode=config.dataset.val_split_mode,
+            val_split_ratio=config.dataset.val_split_ratio,
         )
     elif config.dataset.format.lower() == "ucsdped":
         datamodule = UCSDped(
@@ -90,6 +93,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             eval_batch_size=config.dataset.eval_batch_size,
             num_workers=config.dataset.num_workers,
             val_split_mode=config.dataset.val_split_mode,
+            val_split_ratio=config.dataset.val_split_ratio,
         )
     elif config.dataset.format.lower() == "avenue":
         datamodule = Avenue(
@@ -105,6 +109,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             eval_batch_size=config.dataset.eval_batch_size,
             num_workers=config.dataset.num_workers,
             val_split_mode=config.dataset.val_split_mode,
+            val_split_ratio=config.dataset.val_split_ratio,
         )
     else:
         raise ValueError(
