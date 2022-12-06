@@ -106,6 +106,9 @@ class TorchInferencer(Inferencer):
         model = get_model(self.config)
         model.load_state_dict(torch.load(path, map_location=self.device)["state_dict"])
         model.eval()
+        # Turn off gradient calculation
+        for param in model.parameters():
+            param.requires_grad = False
         return model.to(self.device)
 
     def pre_process(self, image: np.ndarray) -> Tensor:
@@ -118,9 +121,11 @@ class TorchInferencer(Inferencer):
             Tensor: pre-processed image.
         """
         transform_config = (
-            self.config.dataset.transform_config.val if "transform_config" in self.config.dataset.keys() else None
+            self.config.data.init_args.transform_config.val
+            if "transform_config" in self.config.data.init_args.keys()
+            else None
         )
-        image_size = tuple(self.config.dataset.image_size)
+        image_size = tuple(self.config.data.init_args.image_size)
         pre_processor = PreProcessor(transform_config, image_size)
         processed_image = pre_processor(image=image)["image"]
 

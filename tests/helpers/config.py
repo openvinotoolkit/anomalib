@@ -13,8 +13,6 @@ def get_test_configurable_parameters(
     model_name: Optional[str] = None,
     config_path: Optional[Union[Path, str]] = None,
     weight_file: Optional[str] = None,
-    config_filename: Optional[str] = "config",
-    config_file_extension: Optional[str] = "yaml",
 ) -> Union[DictConfig, ListConfig]:
     """Get configurable parameters for testing.
 
@@ -30,9 +28,9 @@ def get_test_configurable_parameters(
         Union[DictConfig, ListConfig]: Configurable parameters in DictConfig object.
     """
 
-    config = get_configurable_parameters(model_name, config_path, weight_file, config_filename, config_file_extension)
+    config = get_configurable_parameters(model_name, config_path, weight_file)
 
     # Update path to match the dataset path in the test image/runner
-    config.dataset.path = get_dataset_path() if dataset_path is None else dataset_path
+    config.data.init_args.root = get_dataset_path() if dataset_path is None else dataset_path
 
     return config

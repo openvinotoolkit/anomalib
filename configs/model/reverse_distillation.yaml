@@ -34,7 +34,7 @@ model:
 optimizer:
   class_path: torch.optim.Adam
   init_args:
-    lr: 0.4
+    lr: 0.005
     betas: [0.5, 0.99]
 
 metrics:

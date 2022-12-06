@@ -177,7 +177,7 @@ def get_image_height_and_width(image_size: Optional[Union[int, Tuple]] = None) -
     elif image_size is None:
         height_and_width = (None, None)
     else:
-        raise ValueError("``image_size`` could be either int or Tuple[int, int]")
+        raise ValueError("``image_size`` should be either int or Tuple[int, int]")
 
     return height_and_width
 

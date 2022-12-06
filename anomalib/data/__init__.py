@@ -7,7 +7,7 @@ import logging
 from importlib import import_module
 from typing import Union
 
-from omegaconf import DictConfig, ListConfig
+from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning import LightningDataModule
 
 from .btech import BTech
@@ -36,17 +36,16 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
     if config.data.init_args.seed == 0:
         config.data.init_args.seed = config.seed_everything
 
+    # store init_args separately as is is immutable in OmegaConf
+    init_args = config.data.init_args
     if isinstance(config, (ListConfig, DictConfig)):
-        # Need to remove image_size from config as transforms checks image_size against int or tuple whereas image_size
-        # is ListConfig.
-        image_size = tuple(config.data.init_args.image_size)
-        config.data.init_args.pop("image_size")
+        init_args = OmegaConf.to_container(init_args, resolve=True)
+    if isinstance(init_args["image_size"], list):
+        init_args["image_size"] = tuple(init_args["image_size"])
 
     try:
         module = import_module(".".join(config.data.class_path.split(".")[:-1]))
-        datamodule = getattr(module, config.data.class_path.split(".")[-1])(
-            image_size=image_size, **config.data.init_args
-        )
+        datamodule = getattr(module, config.data.class_path.split(".")[-1])(**init_args)
     except ModuleNotFoundError as exception:
         logger.error("Could not find the datamodule class: %s", config.data.class_path)
         raise exception

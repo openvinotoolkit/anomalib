@@ -56,14 +56,14 @@ class DummyLightningModule(pl.LightningModule):
             ImageVisualizerCallback(
                 mode="full",
                 task="segmentation",
-                image_save_path=hparams.project.path + "/images",
+                image_save_path=hparams.trainer.default_root_dir + "/images",
                 log_images=False,
                 save_images=True,
             )
         ]  # test if this is removed
 
-        self.image_threshold = AnomalyScoreThreshold(hparams.model.threshold.image_default).cpu()
-        self.pixel_threshold = AnomalyScoreThreshold(hparams.model.threshold.pixel_default).cpu()
+        self.image_threshold = AnomalyScoreThreshold(hparams.model.init_args.threshold.image_default).cpu()
+        self.pixel_threshold = AnomalyScoreThreshold(hparams.model.init_args.threshold.pixel_default).cpu()
 
         self.training_distribution = AnomalyScoreDistribution().cpu()
         self.min_max = MinMax().cpu()
@@ -84,7 +84,7 @@ class DummyLightningModule(pl.LightningModule):
     def configure_optimizers(self):
         return optim.SGD(
             self.parameters(),
-            lr=self.hparams.model.lr,
-            momentum=self.hparams.model.momentum,
-            weight_decay=self.hparams.model.weight_decay,
+            lr=self.hparams.model.init_args.lr,
+            momentum=self.hparams.model.init_args.momentum,
+            weight_decay=self.hparams.model.init_args.weight_decay,
         )

@@ -33,7 +33,7 @@ def update_input_size_config(config: Union[DictConfig, ListConfig]) -> Union[Dic
     """
     # handle image size
     if isinstance(config.data.init_args.image_size, int):
-        config.dataset.image_size = (config.dataset.image_size,) * 2
+        config.data.init_args.image_size = (config.data.init_args.image_size,) * 2
 
     if "input_size" in config.model.init_args:
         config.model.init_args.input_size = config.data.init_args.image_size

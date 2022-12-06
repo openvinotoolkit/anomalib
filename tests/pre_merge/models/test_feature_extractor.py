@@ -33,14 +33,14 @@ class TestFeatureExtractor:
             assert features["layer1"].shape == torch.Size((32, 64, 64, 64))
             assert features["layer2"].shape == torch.Size((32, 128, 32, 32))
             assert features["layer3"].shape == torch.Size((32, 256, 16, 16))
-            assert model.out_dims == [64, 128, 256]
-            assert model.idx == [1, 2, 3]
+            assert model.feature_extractor.out_dims == [64, 128, 256]
+            assert model.feature_extractor.idx == [1, 2, 3]
         elif backbone == "wide_resnet50_2":
             assert features["layer1"].shape == torch.Size((32, 256, 64, 64))
             assert features["layer2"].shape == torch.Size((32, 512, 32, 32))
             assert features["layer3"].shape == torch.Size((32, 1024, 16, 16))
-            assert model.out_dims == [256, 512, 1024]
-            assert model.idx == [1, 2, 3]
+            assert model.feature_extractor.out_dims == [256, 512, 1024]
+            assert model.feature_extractor.idx == [1, 2, 3]
         else:
             pass
 

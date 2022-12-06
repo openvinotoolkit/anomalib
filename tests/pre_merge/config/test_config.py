@@ -15,7 +15,7 @@ class TestConfig:
         """Configurable parameter should return the correct model name."""
         model_name = "stfpm"
         configurable_parameters = get_configurable_parameters(model_name)
-        assert configurable_parameters.model.name == model_name
+        assert configurable_parameters.model.class_path == f"anomalib.models.{model_name.title()}"
 
     def test_get_configurable_parameter_fails_with_none_arguments(self):
         """Configurable parameter should raise an error with none arguments."""
