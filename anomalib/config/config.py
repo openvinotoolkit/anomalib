@@ -124,8 +124,8 @@ def update_datasets_config(config: Union[DictConfig, ListConfig]) -> Union[DictC
     if "create_validation_set" in config.dataset.keys():
         warn(
             DeprecationWarning(
-                "The 'create_validation_set' parameter is deprecated and will be removed in v0.4.0. Please use "
-                "'validation_split_mode' instead."
+                "The 'create_validation_set' parameter is deprecated and will be removed in a future release. Please "
+                "use 'validation_split_mode' instead."
             )
         )
         config.dataset.val_split_mode = "from_test" if config.dataset.create_validation_set else "same_as_test"
@@ -133,7 +133,7 @@ def update_datasets_config(config: Union[DictConfig, ListConfig]) -> Union[DictC
     if "test_batch_size" in config.dataset.keys():
         warn(
             DeprecationWarning(
-                "The 'test_batch_size' parameter is deprecated and will be removed in v0.4.0. Please use "
+                "The 'test_batch_size' parameter is deprecated and will be removed in a future release. Please use "
                 "'eval_batch_size' instead."
             )
         )
@@ -142,8 +142,8 @@ def update_datasets_config(config: Union[DictConfig, ListConfig]) -> Union[DictC
     if "transform_config" in config.dataset.keys() and "val" in config.dataset.transform_config.keys():
         warn(
             DeprecationWarning(
-                "The 'transform_config.val' parameter is deprecated and will be removed in v0.4.0. Please use "
-                "'transform_config.eval' instead."
+                "The 'transform_config.val' parameter is deprecated and will be removed in a future release. Please "
+                "use 'transform_config.eval' instead."
             )
         )
         config.dataset.transform_config.eval = config.dataset.transform_config.val
@@ -152,14 +152,14 @@ def update_datasets_config(config: Union[DictConfig, ListConfig]) -> Union[DictC
 
     if "clip_length_in_frames" in config.dataset.keys() and config.dataset.clip_length_in_frames > 1:
         warn(
-            "Anomalib's models and visualizer are currently not compatible with video datasets with a clip length > 1.\
-            Custom changes to these modules will be needed to prevent errors and/or unpredictable behaviour."
+            "Anomalib's models and visualizer are currently not compatible with video datasets with a clip length > 1. "
+            "Custom changes to these modules will be needed to prevent errors and/or unpredictable behaviour."
         )
 
     if config.dataset.format == "folder" and "split_ratio" in config.dataset.keys():
         warn(
             DeprecationWarning(
-                "The 'split_ratio' parameter is deprecated and will be removed in v0.4.0. Please use "
+                "The 'split_ratio' parameter is deprecated and will be removed in a future release. Please use "
                 "'normal_split_ratio' instead."
             )
         )
@@ -241,15 +241,21 @@ def get_configurable_parameters(
     if "metrics" in config.keys():
         # NOTE: Deprecate this after v0.4.0.
         if "adaptive" in config.metrics.threshold.keys():
-            warn("adaptive will be deprecated in favor of method in config.metrics.threshold in v0.4.0.")
+            warn("adaptive will be deprecated in favor of method in config.metrics.threshold in a future release")
             config.metrics.threshold.method = "adaptive" if config.metrics.threshold.adaptive else "manual"
         if "image_default" in config.metrics.threshold.keys():
-            warn("image_default will be deprecated in favor of manual_image in config.metrics.threshold in v0.4.0.")
+            warn(
+                "image_default will be deprecated in favor of manual_image in config.metrics.threshold in a future "
+                "release."
+            )
             config.metrics.threshold.manual_image = (
                 None if config.metrics.threshold.adaptive else config.metrics.threshold.image_default
             )
         if "pixel_default" in config.metrics.threshold.keys():
-            warn("pixel_default will be deprecated in favor of manual_pixel in config.metrics.threshold in v0.4.0.")
+            warn(
+                "pixel_default will be deprecated in favor of manual_pixel in config.metrics.threshold in a future "
+                "release."
+            )
             config.metrics.threshold.manual_pixel = (
                 None if config.metrics.threshold.adaptive else config.metrics.threshold.pixel_default
             )
