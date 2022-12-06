@@ -5,10 +5,8 @@ This dataset can be used when there is a lack of real anomalous data.
 
 import logging
 import math
-import os
 import shutil
 from pathlib import Path
-from typing import Union
 
 import albumentations as A
 import cv2
@@ -24,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def make_synthetic_dataset(
-    source_samples: DataFrame, im_dir: Union[Path, str], mask_dir: Union[Path, str], anomalous_ratio: float = 0.5
+    source_samples: DataFrame, im_dir: Path, mask_dir: Path, anomalous_ratio: float = 0.5
 ) -> DataFrame:
     """Convert a set of normal samples into a mixed set of normal and synthetic anomalous samples.
 
@@ -33,13 +31,13 @@ def make_synthetic_dataset(
 
     Args:
         source_samples (DataFrame): Normal images that will be used as source for the synthetic anomalous images.
-        im_dir (Union[Path, str]): Directory to which the synthetic anomalous image files will be written.
-        mask_dir (Union[Path, str]): Directory to which the ground truth anomaly masks will be written.
+        im_dir (Path): Directory to which the synthetic anomalous image files will be written.
+        mask_dir (Path): Directory to which the ground truth anomaly masks will be written.
         anomalous_ratio (float): Fraction of source samples that will be converted into anomalous samples.
     """
     assert 1 not in source_samples.label_index.values, "All source images must be normal."
-    assert os.path.isdir(im_dir), f"{im_dir} is not a folder."
-    assert os.path.isdir(mask_dir), f"{mask_dir} is not a folder"
+    assert im_dir.is_dir(), f"{im_dir} is not a folder."
+    assert mask_dir.is_dir(), f"{mask_dir} is not a folder"
 
     # filter relevant columns
     source_samples = source_samples.filter(["image_path", "label", "label_index", "mask_path", "split"])
@@ -77,13 +75,13 @@ def make_synthetic_dataset(
         # write image
         aug_im = (aug_im.squeeze().permute((1, 2, 0)) * 255).numpy()
         aug_im = cv2.cvtColor(aug_im, cv2.COLOR_RGB2BGR)
-        im_path = str(Path(im_dir) / file_name)
-        cv2.imwrite(im_path, aug_im)
+        im_path = im_dir / file_name
+        cv2.imwrite(str(im_path), aug_im)
         # write mask
         mask = (mask.squeeze() * 255).numpy()
-        mask_path = str(Path(mask_dir) / file_name)
-        cv2.imwrite(mask_path, mask)
-        out = dict(image_path=im_path, label="abnormal", label_index=1, mask_path=mask_path, split=Split.VAL)
+        mask_path = mask_dir / file_name
+        cv2.imwrite(str(mask_path), mask)
+        out = dict(image_path=str(im_path), label="abnormal", label_index=1, mask_path=str(mask_path), split=Split.VAL)
         return Series(out)
 
     anomalous_samples = anomalous_samples.apply(augment, axis=1)
@@ -113,12 +111,12 @@ class SyntheticValidationSet(AnomalibDataset):
         self.mask_dir = self.root / "ground_truth"
 
         # clean up any existing data that may be left over from previous run
-        if os.path.exists(self.root):
+        if self.root.exists():
             shutil.rmtree(self.root)
 
         # create directories
-        os.makedirs(self.im_dir)
-        os.makedirs(self.mask_dir)
+        self.im_dir.mkdir(parents=True)
+        self.mask_dir.mkdir()
 
         self.setup()
 
