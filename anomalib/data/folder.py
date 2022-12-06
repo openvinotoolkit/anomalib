@@ -219,7 +219,7 @@ class Folder(AnomalibDataModule):
             normal images for the test dataset. Defaults to None.
         mask_dir (Optional[Union[str, Path]], optional): Path to the directory containing
             the mask annotations. Defaults to None.
-        split_ratio (float, optional): Ratio to split normal training images and add to the
+        normal_split_ratio (float, optional): Ratio to split normal training images and add to the
             test set in case test set doesn't contain any normal images.
             Defaults to 0.2.
         extensions (Optional[Tuple[str, ...]], optional): Type of the image extensions to read from the
@@ -248,7 +248,7 @@ class Folder(AnomalibDataModule):
         abnormal_dir: Union[str, Path],
         normal_test_dir: Optional[Union[str, Path]] = None,
         mask_dir: Optional[Union[str, Path]] = None,
-        split_ratio: float = 0.2,
+        normal_split_ratio: float = 0.2,
         extensions: Optional[Tuple[str]] = None,
         #
         image_size: Optional[Union[int, Tuple[int, int]]] = None,
@@ -259,6 +259,7 @@ class Folder(AnomalibDataModule):
         transform_config_train: Optional[Union[str, A.Compose]] = None,
         transform_config_eval: Optional[Union[str, A.Compose]] = None,
         val_split_mode: ValSplitMode = ValSplitMode.FROM_TEST,
+        val_split_ratio: float = 0.5,
         seed: Optional[int] = None,
     ):
         super().__init__(
@@ -266,10 +267,11 @@ class Folder(AnomalibDataModule):
             eval_batch_size=eval_batch_size,
             num_workers=num_workers,
             val_split_mode=val_split_mode,
+            val_split_ratio=val_split_ratio,
             seed=seed,
         )
 
-        self.split_ratio = split_ratio
+        self.normal_split_ratio = normal_split_ratio
 
         pre_process_train = PreProcessor(config=transform_config_train, image_size=image_size)
         pre_process_eval = PreProcessor(config=transform_config_eval, image_size=image_size)
@@ -308,7 +310,7 @@ class Folder(AnomalibDataModule):
 
         # add some normal images to the test set
         if not self.test_data.has_normal:
-            self.train_data, normal_test_data = random_split(self.train_data, self.split_ratio, seed=self.seed)
+            self.train_data, normal_test_data = random_split(self.train_data, self.normal_split_ratio, seed=self.seed)
             self.test_data += normal_test_data
 
         super()._setup()
