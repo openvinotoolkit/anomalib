@@ -4,13 +4,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import math
+from typing import Tuple
 
 import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
 from anomalib.models.components import PCA, DynamicBufferModule, FeatureExtractor
-from typing import Tuple
 
 
 class SingleClassGaussian(DynamicBufferModule):
@@ -115,7 +115,7 @@ class DFMModel(nn.Module):
         """
 
         self.pca_model.fit(dataset)
-        if self.score_type == 'nll':
+        if self.score_type == "nll":
             features_reduced = self.pca_model.transform(dataset)
             self.gaussian_model.fit(features_reduced.T)
 
@@ -127,7 +127,7 @@ class DFMModel(nn.Module):
 
         Args:
             features (torch.Tensor): semantic features on which PCA and density modeling is performed.
-            feature_shapes  (tuple): shape of `features` tensor. Used to generate anomaly heatmap of correct shape.
+            feature_shapes  (tuple): shape of `features` tensor. Used to generate anomaly map of correct shape.
 
         Returns:
             score (Tensor): numpy array of scores
@@ -144,7 +144,7 @@ class DFMModel(nn.Module):
         else:
             raise ValueError(f"unsupported score type: {self.score_type}")
 
-        if self.score_type == 'nll':
+        if self.score_type == "nll":
             output = score
         else:
             output = score, score_map
