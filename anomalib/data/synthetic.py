@@ -14,6 +14,7 @@ import pandas as pd
 from albumentations.pytorch import ToTensorV2
 from pandas import DataFrame, Series
 
+from anomalib.data import TaskType
 from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.utils import Augmenter, Split, read_image
 from anomalib.pre_processing import PreProcessor
@@ -100,7 +101,7 @@ class SyntheticValidationSet(AnomalibDataset):
         source_samples (DataFrame): Normal samples to which the anomalous augmentations will be applied.
     """
 
-    def __init__(self, task: str, pre_process: PreProcessor, source_samples: DataFrame):
+    def __init__(self, task: TaskType, pre_process: PreProcessor, source_samples: DataFrame):
         super().__init__(task, pre_process)
 
         self.source_samples = source_samples

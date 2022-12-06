@@ -12,7 +12,7 @@ from pytorch_lightning import LightningDataModule, Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 
 from anomalib.config import get_configurable_parameters, update_nncf_config
-from anomalib.data import get_datamodule
+from anomalib.data import TaskType, get_datamodule
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
 from anomalib.utils.callbacks import get_callbacks
@@ -27,7 +27,7 @@ def setup_model_train(
     category: str,
     score_type: Optional[str] = None,
     fast_run: bool = False,
-    dataset_task: Optional[str] = None,
+    dataset_task: Optional[TaskType] = None,
     visualizer_mode: Optional[str] = None,
     device: Union[List[int], int] = [0],
 ) -> Tuple[Union[DictConfig, ListConfig], LightningDataModule, AnomalyModule, Trainer]:
@@ -65,7 +65,7 @@ def setup_model_train(
     if visualizer_mode is not None:
         config.visualization.mode = visualizer_mode
         config.visualization.save_images = True  # Enforce processing by Visualizer
-        if "pixel" in config.metrics and dataset_task == "classification":
+        if "pixel" in config.metrics and dataset_task == TaskType.CLASSIFICATION:
             del config.metrics.pixel
 
     # Remove legacy flags

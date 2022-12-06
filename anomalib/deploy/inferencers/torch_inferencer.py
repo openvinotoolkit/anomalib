@@ -13,6 +13,8 @@ from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
 from anomalib.config import get_configurable_parameters
+from anomalib.data import TaskType
+from anomalib.data.utils.boxes import masks_to_boxes
 from anomalib.deploy.export import get_model_metadata
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
@@ -197,9 +199,15 @@ class TorchInferencer(Inferencer):
             if pred_mask is not None:
                 pred_mask = cv2.resize(pred_mask, (image_width, image_height))
 
+        if self.config.dataset.task == TaskType.DETECTION:
+            pred_boxes = masks_to_boxes(torch.from_numpy(pred_mask))[0].numpy()
+        else:
+            pred_boxes = None
+
         return {
             "anomaly_map": anomaly_map,
             "pred_label": pred_label,
             "pred_score": pred_score,
             "pred_mask": pred_mask,
+            "pred_boxes": pred_boxes,
         }

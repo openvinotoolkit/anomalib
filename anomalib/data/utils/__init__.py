@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from .augmenter import Augmenter
+from .boxes import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
 from .download import DownloadProgressBar, hash_check
 from .generators import random_2d_perlin
 from .image import (
@@ -27,4 +28,7 @@ __all__ = [
     "Split",
     "ValSplitMode",
     "Augmenter",
+    "masks_to_boxes",
+    "boxes_to_masks",
+    "boxes_to_anomaly_maps",
 ]

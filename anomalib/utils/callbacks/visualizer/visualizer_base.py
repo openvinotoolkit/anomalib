@@ -10,6 +10,7 @@ import numpy as np
 import pytorch_lightning as pl
 from pytorch_lightning import Callback
 
+from anomalib.data import TaskType
 from anomalib.models.components import AnomalyModule
 from anomalib.post_processing import Visualizer
 from anomalib.utils.loggers import AnomalibWandbLogger
@@ -25,7 +26,7 @@ class BaseVisualizerCallback(Callback):
 
     def __init__(
         self,
-        task: str,
+        task: TaskType,
         mode: str,
         image_save_path: str,
         inputs_are_normalized: bool = True,
@@ -37,8 +38,10 @@ class BaseVisualizerCallback(Callback):
         if mode not in ["full", "simple"]:
             raise ValueError(f"Unknown visualization mode: {mode}. Please choose one of ['full', 'simple']")
         self.mode = mode
-        if task not in ["classification", "segmentation"]:
-            raise ValueError(f"Unknown task type: {mode}. Please choose one of ['classification', 'segmentation']")
+        if task not in [TaskType.CLASSIFICATION, TaskType.DETECTION, TaskType.SEGMENTATION]:
+            raise ValueError(
+                f"Unknown task type: {mode}. Please choose one of ['classification', 'detection', 'segmentation']"
+            )
         self.task = task
         self.inputs_are_normalized = inputs_are_normalized
         self.show_images = show_images
