@@ -6,21 +6,18 @@ https://arxiv.org/pdf/2107.12571v1.pdf
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Tuple, Union
+from typing import List, Tuple
 
 import einops
 import torch
 import torch.nn.functional as F
-from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
-from torch import optim
 
 from anomalib.models.cflow.torch_model import CflowModel
 from anomalib.models.cflow.utils import get_logp, positional_encoding_2d
 from anomalib.models.components import AnomalyModule
 
-__all__ = ["Cflow", "CflowLightning"]
+__all__ = ["Cflow"]
 
 
 @MODEL_REGISTRY
@@ -39,7 +36,6 @@ class Cflow(AnomalyModule):
         coupling_blocks: int = 8,
         clamp_alpha: float = 1.9,
         permute_soft: bool = False,
-        lr: float = 0.0001,
     ):
         super().__init__()
 
@@ -56,31 +52,6 @@ class Cflow(AnomalyModule):
             permute_soft=permute_soft,
         )
         self.automatic_optimization = False
-        # TODO: LR should be part of optimizer in config.yaml! Since cflow has custom
-        #   optimizer this is to be addressed later.
-        self.learning_rate = lr
-
-    def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configures optimizers for each decoder.
-
-        Note:
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure optimizers method will be
-                deprecated, and optimizers will be configured from either
-                config.yaml file or from CLI.
-
-        Returns:
-            Optimizer: Adam optimizer for each decoder
-        """
-        decoders_parameters = []
-        for decoder_idx in range(len(self.model.pool_layers)):
-            decoders_parameters.extend(list(self.model.decoders[decoder_idx].parameters()))
-
-        optimizer = optim.Adam(
-            params=decoders_parameters,
-            lr=self.learning_rate,
-        )
-        return optimizer
 
     def training_step(self, batch, _):  # pylint: disable=arguments-differ
         """Training Step of CFLOW.
@@ -171,43 +142,3 @@ class Cflow(AnomalyModule):
         batch["anomaly_maps"] = self.model(batch["image"])
 
         return batch
-
-
-class CflowLightning(Cflow):
-    """PL Lightning Module for the CFLOW algorithm.
-
-    Args:
-        hparams (Union[DictConfig, ListConfig]): Model params
-    """
-
-    def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
-        super().__init__(
-            input_size=hparams.model.input_size,
-            backbone=hparams.model.backbone,
-            layers=hparams.model.layers,
-            pre_trained=hparams.model.pre_trained,
-            fiber_batch_size=hparams.model.fiber_batch_size,
-            decoder=hparams.model.decoder,
-            condition_vector=hparams.model.condition_vector,
-            coupling_blocks=hparams.model.coupling_blocks,
-            clamp_alpha=hparams.model.clamp_alpha,
-            permute_soft=hparams.model.permute_soft,
-        )
-        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
-        self.save_hyperparameters(hparams)
-
-    def configure_callbacks(self):
-        """Configure model-specific callbacks.
-
-        Note:
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure callback method will be
-                deprecated, and callbacks will be configured from either
-                config.yaml file or from CLI.
-        """
-        early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
-        )
-        return [early_stopping]

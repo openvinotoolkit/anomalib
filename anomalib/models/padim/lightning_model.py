@@ -7,10 +7,9 @@ Paper https://arxiv.org/abs/2011.08785
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple
 
 import torch
-from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor
 
@@ -19,7 +18,7 @@ from anomalib.models.padim.torch_model import PadimModel
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["Padim", "PadimLightning"]
+__all__ = ["Padim"]
 
 
 @MODEL_REGISTRY
@@ -108,22 +107,3 @@ class Padim(AnomalyModule):
 
         batch["anomaly_maps"] = self.model(batch["image"])
         return batch
-
-
-class PadimLightning(Padim):
-    """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
-
-    Args:
-        hparams (Union[DictConfig, ListConfig]): Model params
-    """
-
-    def __init__(self, hparams: Union[DictConfig, ListConfig]):
-        super().__init__(
-            input_size=hparams.model.input_size,
-            layers=hparams.model.layers,
-            backbone=hparams.model.backbone,
-            pre_trained=hparams.model.pre_trained,
-            n_features=hparams.model.n_features if "n_features" in hparams.model else None,
-        )
-        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
-        self.save_hyperparameters(hparams)

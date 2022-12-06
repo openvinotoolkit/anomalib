@@ -35,7 +35,8 @@ def update_input_size_config(config: Union[DictConfig, ListConfig]) -> Union[Dic
     if isinstance(config.data.init_args.image_size, int):
         config.dataset.image_size = (config.dataset.image_size,) * 2
 
-    config.model.init_args.input_size = config.data.init_args.image_size
+    if "input_size" in config.model.init_args:
+        config.model.init_args.input_size = config.data.init_args.image_size
 
     if "tiling" in config.keys() and config.tiling.apply:
         if isinstance(config.tiling.tile_size, int):
@@ -135,8 +136,6 @@ def get_configurable_parameters(
     model_name: Optional[str] = None,
     config_path: Optional[Union[Path, str]] = None,
     weight_file: Optional[str] = None,
-    config_filename: Optional[str] = None,
-    config_file_extension: Optional[str] = "yaml",
 ) -> Union[DictConfig, ListConfig]:
     """Get configurable parameters.
 
@@ -144,8 +143,6 @@ def get_configurable_parameters(
         model_name: Optional[str]:  (Default value = None)
         config_path: Optional[Union[Path, str]]:  (Default value = None)
         weight_file: Path to the weight file
-        config_filename: Optional[str]:  If None, uses the same name as model name.
-        config_file_extension: Optional[str]:  (Default value = "yaml")
 
     Returns:
         Union[DictConfig, ListConfig]: Configurable parameters in DictConfig object.
@@ -157,8 +154,7 @@ def get_configurable_parameters(
         )
 
     if config_path is None:
-        file_name = model_name if config_filename is None else config_filename
-        config_path = Path(f"configs/model/{file_name}.{config_file_extension}")
+        config_path = Path(f"anomalib/models/{model_name}/config.yaml")
 
     config = OmegaConf.load(config_path)
 

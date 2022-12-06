@@ -3,6 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from .lightning_model import Dfm, DfmLightning
+from .lightning_model import Dfm
 
-__all__ = ["Dfm", "DfmLightning"]
+__all__ = ["Dfm"]

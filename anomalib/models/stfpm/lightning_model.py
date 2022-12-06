@@ -6,20 +6,14 @@ https://arxiv.org/abs/2103.04257
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Tuple, Union
+from typing import Tuple
 
-import torch
-from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
-from torch import optim
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.components.feature_extractors import TimmFeatureExtractorParams
 from anomalib.models.stfpm.loss import STFPMLoss
 from anomalib.models.stfpm.torch_model import STFPMModel
-
-__all__ = ["StfpmLightning"]
 
 
 @MODEL_REGISTRY
@@ -79,54 +73,3 @@ class Stfpm(AnomalyModule):
         batch["anomaly_maps"] = self.model(batch["image"])
 
         return batch
-
-
-class StfpmLightning(Stfpm):
-    """PL Lightning Module for the STFPM algorithm.
-
-    Args:
-        hparams (Union[DictConfig, ListConfig]): Model params
-    """
-
-    def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
-        super().__init__(
-            input_size=hparams.model.input_size,
-            feature_extractor=hparams.model.feature_extractor,
-        )
-        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
-        self.save_hyperparameters(hparams)
-
-    def configure_callbacks(self):
-        """Configure model-specific callbacks.
-
-        Note:
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure callback method will be
-                deprecated, and callbacks will be configured from either
-                config.yaml file or from CLI.
-        """
-        early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
-        )
-        return [early_stopping]
-
-    def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configures optimizers for each decoder.
-
-        Note:
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure optimizers method will be
-                deprecated, and optimizers will be configured from either
-                config.yaml file or from CLI.
-
-        Returns:
-            Optimizer: Adam optimizer for each decoder
-        """
-        return optim.SGD(
-            params=self.model.student_model.parameters(),
-            lr=self.hparams.model.lr,
-            momentum=self.hparams.model.momentum,
-            weight_decay=self.hparams.model.weight_decay,
-        )

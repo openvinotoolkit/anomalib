@@ -1,65 +1,61 @@
-dataset:
-  name: mvtec #options: [mvtec, btech, folder]
-  format: mvtec
-  path: ./datasets/MVTec
-  category: bottle
-  task: segmentation
-  image_size: 256
-  train_batch_size: 32
-  test_batch_size: 32
-  inference_batch_size: 32
-  num_workers: 36
-  transform_config:
-    train: null
-    val: null
-  create_validation_set: false
-  tiling:
-    apply: false
-    tile_size: null
-    stride: null
-    remove_border_count: 0
-    use_random_tiling: False
-    random_tile_count: 16
+seed_everything: 42
+
+data:
+  class_path: anomalib.data.MVTec
+  init_args:
+    root: ./datasets/MVTec
+    category: bottle
+    image_size: [256, 256]
+    train_batch_size: 32
+    test_batch_size: 32
+    num_workers: 8
+    task: segmentation
+    transform_config_train: null
+    transform_config_val: null
+    seed: 0
+    create_validation_set: false
 
 model:
-  name: stfpm
-  feature_extractor:
-    backbone: resnet18
-    layers:
-      - layer1
-      - layer2
-      - layer3
-  lr: 0.4
-  momentum: 0.9
-  weight_decay: 0.0001
-  early_stopping:
-    patience: 3
-    metric: pixel_AUROC
-    mode: max
-  normalization_method: min_max # options: [null, min_max, cdf]
+  class_path: anomalib.models.Stfpm
+  init_args:
+    input_size: [256, 256]
+    feature_extractor:
+      backbone: resnet18
+      pre_trained: true
+      layers:
+        - layer1
+        - layer2
+        - layer3
+
+optimizer:
+  class_path: torch.optim.sgd.SGD
+  init_args:
+    lr: 0.4
+    momentum: 0.9
+    weight_decay: 0.0001
 
 metrics:
-  image:
+  image_metrics:
     - F1Score
     - AUROC
-  pixel:
+  pixel_metrics:
     - F1Score
     - AUROC
-  threshold:
-    method: adaptive #options: [adaptive, manual]
-    manual_image: null
-    manual_pixel: null
+
+post_processing:
+  normalization_method: MIN_MAX # <null, min_max, cdf>
+  threshold_method: ADAPTIVE # options: [adaptive, manual]
+  manual_image_threshold: null
+  manual_pixel_threshold: null
 
 visualization:
-  show_images: False # show images on the screen
-  save_images: True # save images to the file system
-  log_images: True # log images to the available loggers (if any)
-  image_save_path: null # path to which images will be saved
-  mode: full # options: ["full", "simple"]
-
-project:
-  seed: 42
-  path: ./results
+  task: segmentation
+  mode: full
+  image_save_path: null
+  inputs_are_normalized: true
+  show_images: false
+  log_images: false
+  save_images: true
 
 logging:
   logger: [] # options: [comet, tensorboard, wandb, csv] or combinations.
@@ -69,6 +65,12 @@ optimization:
   export_mode: null #options: onnx, openvino
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
+  callbacks:
+    - class_path: pytorch_lightning.callbacks.EarlyStopping
+      init_args:
+        patience: 3
+        monitor: pixel_AUROC
+        mode: max
   accelerator: auto # <"cpu", "gpu", "tpu", "ipu", "hpu", "auto">
   accumulate_grad_batches: 1
   amp_backend: native
@@ -110,6 +112,7 @@ trainer:
   profiler: null
   reload_dataloaders_every_n_epochs: 0
   replace_sampler_ddp: true
+  resume_from_checkpoint: null
   strategy: null
   sync_batchnorm: false
   tpu_cores: null

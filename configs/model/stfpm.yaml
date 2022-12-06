@@ -23,12 +23,13 @@ model:
   class_path: anomalib.models.Stfpm
   init_args:
     input_size: [256, 256]
-    backbone: resnet18
-    pre_trained: true
-    layers:
-      - layer1
-      - layer2
-      - layer3
+    feature_extractor:
+      backbone: resnet18
+      pre_trained: true
+      layers:
+        - layer1
+        - layer2
+        - layer3
 
 optimizer:
   class_path: torch.optim.sgd.SGD
@@ -52,16 +53,23 @@ metrics:
     - AUROC
 
 visualization:
-  show_images: False # show images on the screen
-  save_images: True # save images to the file system
-  log_images: False # log images to the available loggers (if any)
-  mode: full # options: ["full", "simple"]
+  task: segmentation
+  mode: full
+  image_save_path: null
+  inputs_are_normalized: true
+  show_images: false
+  log_images: false
+  save_images: true
+
+logging:
+  logger: [] # options: [comet, tensorboard, wandb, csv] or combinations.
+  log_graph: false # Logs the model graph to respective logger.
 
 trainer:
   callbacks:
     - class_path: pytorch_lightning.callbacks.EarlyStopping
       init_args:
-        patience: 5
+        patience: 3
         monitor: pixel_AUROC
         mode: max
   accelerator: auto # <"cpu", "gpu", "tpu", "ipu", "hpu", "auto">

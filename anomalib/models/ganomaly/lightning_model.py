@@ -7,11 +7,9 @@ https://arxiv.org/abs/1805.06725
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Tuple
 
 import torch
-from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor, optim
 
@@ -192,46 +190,3 @@ class Ganomaly(AnomalyModule):
             self.max_scores.to(scores.device) - self.min_scores.to(scores.device)
         )
         return scores
-
-
-class GanomalyLightning(Ganomaly):
-    """PL Lightning Module for the GANomaly Algorithm.
-
-    Args:
-        hparams (Union[DictConfig, ListConfig]): Model params
-    """
-
-    def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
-
-        super().__init__(
-            batch_size=hparams.dataset.train_batch_size,
-            input_size=hparams.model.input_size,
-            n_features=hparams.model.n_features,
-            latent_vec_size=hparams.model.latent_vec_size,
-            extra_layers=hparams.model.extra_layers,
-            add_final_conv_layer=hparams.model.add_final_conv,
-            wadv=hparams.model.wadv,
-            wcon=hparams.model.wcon,
-            wenc=hparams.model.wenc,
-            lr=hparams.model.lr,
-            beta1=hparams.model.beta1,
-            beta2=hparams.model.beta2,
-        )
-        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
-        self.save_hyperparameters(hparams)
-
-    def configure_callbacks(self):
-        """Configure model-specific callbacks.
-
-        Note:
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure callback method will be
-                deprecated, and callbacks will be configured from either
-                config.yaml file or from CLI.
-        """
-        early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
-        )
-        return [early_stopping]

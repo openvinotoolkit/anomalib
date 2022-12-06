@@ -39,7 +39,7 @@ class CflowModel(nn.Module):
         self.pool_layers = layers
 
         self.encoder = FeatureExtractor(backbone=self.backbone, layers=self.pool_layers, pre_trained=pre_trained)
-        self.pool_dims = self.encoder.out_dims
+        self.pool_dims = self.encoder.feature_extractor.out_dims  # TODO change when feature extractor PR is merged
         self.decoders = nn.ModuleList(
             [
                 cflow_head(

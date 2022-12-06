@@ -24,5 +24,5 @@ def configure_optimizer(model: AnomalyModule, config: DictConfig) -> None:
     if "optimizer" in config:
         optimizer_module = import_module(".".join(config.optimizer.class_path.split(".")[:-1]))
         optimizer_class = getattr(optimizer_module, config.optimizer.class_path.split(".")[-1])
-        optimizer = optimizer_class(params=model.parameters(), **config.optimizer.init_args)
+        optimizer = optimizer_class(params=model.model.parameters(), **config.optimizer.init_args)
         model.configure_optimizers = lambda: optimizer

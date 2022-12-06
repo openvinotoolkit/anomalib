@@ -35,24 +35,29 @@ model:
     beta1: 0.5
     beta2: 0.999
 
-post_processing:
-  normalization_method: min_max # <null, min_max, cdf>
-  threshold_method: adaptive # options: [adaptive, manual]
-  manual_image_threshold: null
-  manual_pixel_threshold: null
-
 metrics:
-  threshold_method: adaptive # options: [adaptive, manual]
-  manual_image_threshold: null
   image_metrics:
     - F1Score
     - AUROC
 
+post_processing:
+  normalization_method: MIN_MAX # <null, min_max, cdf>
+  threshold_method: ADAPTIVE # options: [adaptive, manual]
+  manual_image_threshold: null
+  manual_pixel_threshold: null
+
 visualization:
-  show_images: False # show images on the screen
-  save_images: True # save images to the file system
-  log_images: False # log images to the available loggers (if any)
-  mode: full # options: ["full", "simple"]
+  task: classification
+  mode: full
+  image_save_path: null
+  inputs_are_normalized: true
+  show_images: false
+  log_images: false
+  save_images: true
+
+logging:
+  logger: [] # options: [comet, tensorboard, wandb, csv] or combinations.
+  log_graph: false # Logs the model graph to respective logger.
 
 trainer:
   callbacks:

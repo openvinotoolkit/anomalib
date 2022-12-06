@@ -3,6 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from .lightning_model import Cflow, CflowLightning
+from .lightning_model import Cflow
 
-__all__ = ["Cflow", "CflowLightning"]
+__all__ = ["Cflow"]

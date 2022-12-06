@@ -5,18 +5,12 @@
 
 import logging
 import os
-import warnings
 from importlib import import_module
-from typing import Dict, List, Union
+from typing import Any, Dict, List, Union
 
-import yaml
 from jsonargparse.namespace import Namespace
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning.callbacks import Callback
-
-from anomalib.config import get_default_root_directory
-from anomalib.deploy import ExportMode
-from anomalib.post_processing import NormalizationMethod
 
 from .cdf_normalization import CdfNormalizationCallback
 from .graph import GraphLogger
@@ -45,8 +39,22 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
+def __update_callback(callbacks: Dict, callback_name: str, update_dict: Dict[str, Any]) -> None:
+    """Updates the callback with the given dictionary.
+
+    If the callback exists in the callbacks dictionary, it will be updated with the passed keys.
+    This ensure that the callback is not overwritten.
+    """
+    if callback_name in callbacks:
+        # TODO check if keys have been replaced from cli and only then update the keys.
+        # basically compare against default keys first
+        callbacks[callback_name].update(update_dict)
+    else:
+        callbacks[callback_name] = update_dict
+
+
 def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Dict]:
-    """Return base callbacks for all the lightning models.
+    """Sets the callbacks in trainer key and also returns a list for populating the CLI.
 
     Args:
         config (DictConfig): Model config
@@ -60,7 +68,7 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Dict]:
     """
     logger.info("Loading the callbacks")
 
-    callbacks: Dict[str, Dict] = {}
+    callbacks: Dict = {}
 
     # Convert trainer callbacks to a dictionary. It makes it easier to search and update values
     # {"anomalib.utils.callbacks.ImageVisualizerCallback":{'task':...}}
@@ -71,69 +79,91 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Dict]:
     monitor = callbacks.get("EarlyStopping", {}).get("monitor", None)
     mode = callbacks.get("EarlyStopping", {}).get("mode", "max")
 
-    if config.trainer.default_root_dir is None:
-        config.trainer.default_root_dir = str(get_default_root_directory(config))
+    __update_callback(
+        callbacks,
+        "ModelCheckpoint",
+        {
+            "dirpath": os.path.join(config.trainer.default_root_dir, "weights"),
+            "filename": "model",
+            "monitor": monitor,
+            "mode": mode,
+            "auto_insert_metric_name": False,
+        },
+    )
 
-    callbacks["pytorch_lightning.callbacks.ModelCheckpoint"] = {
-        "dirpath": os.path.join(config.trainer.default_root_dir, "weights"),
-        "filename": "model",
-        "monitor": monitor,
-        "mode": mode,
-        "auto_insert_metric_name": False,
-    }
+    __update_callback(
+        callbacks,
+        "PostProcessingConfigurationCallback",
+        config.post_processing,
+    )
 
-    callbacks["TimerCallback"] = {}
-    callbacks["PostProcessingConfigurationCallback"] = config.post_processing
     # Add metric configuration to the model via MetricsConfigurationCallback
-    callbacks["MetricsConfigurationCallback"] = {"task": config.data.init_args.task, **config.metrics}
+    __update_callback(
+        callbacks,
+        "MetricsConfigurationCallback",
+        {
+            "task": config.data.init_args.task,
+            "image_metrics": config.metrics.get("image_metrics", None),
+            "pixel_metrics": config.metrics.get("pixel_metrics", None),
+        },
+    )
 
-    if "resume_from_checkpoint" in config.trainer.keys() and config.trainer.resume_from_checkpoint is not None:
-        callbacks["LoadModelCallback"] = {"weights_path": config.trainer.resume_from_checkpoint}
+    # LoadModel from Checkpoint.
+    if config.trainer.resume_from_checkpoint:
+        __update_callback(
+            callbacks,
+            "LoadModelCallback",
+            {
+                "weights_path": config.trainer.resume_from_checkpoint,
+            },
+        )
 
-    if config.post_processing.normalization_method is not None:
-        # CLI returns an Enum whereas the entrypoint files returns a string
-        if isinstance(config.post_processing.normalization_method, NormalizationMethod):
-            normalization_method = config.post_processing.normalization_method.name
+    # Add timing to the pipeline.
+    __update_callback(callbacks, "TimerCallback", {})
+
+    #  TODO: This could be set in PostProcessingConfiguration callback
+    #   - https://github.com/openvinotoolkit/anomalib/issues/384
+    # Normalization.
+    normalization = config.post_processing.normalization_method
+    if normalization:
+        if normalization == "MIN_MAX":
+            __update_callback(callbacks, "MinMaxNormalizationCallback", {})
+        elif normalization == "CDF":
+            __update_callback(callbacks, "CDFNormalizationCallback", {})
         else:
-            normalization_method = config.post_processing.normalization_method
-
-        if normalization_method == NormalizationMethod.CDF.name:
-            if config.model.name in ["padim", "stfpm"]:
-                if "nncf" in config.optimization and config.optimization.nncf.apply:
-                    raise NotImplementedError("CDF Score Normalization is currently not compatible with NNCF.")
-                callbacks["CdfNormalizationCallback"] = {}
-            else:
-                raise NotImplementedError("Score Normalization is currently supported for PADIM and STFPM only.")
-        elif normalization_method == NormalizationMethod.MIN_MAX.name:
-            callbacks["MinMaxNormalizationCallback"] = {}
-        else:
-            raise ValueError(f"Normalization method not recognized: {config.post_processing.normalization_method}")
+            raise ValueError(
+                f"Unknown normalization type {normalization}. \n" "Available types are either None, min_max or cdf"
+            )
 
     add_visualizer_callback(callbacks, config)
 
-    if "optimization" in config.keys():
-        if "nncf" in config.optimization and config.optimization.nncf.apply:
-            # NNCF wraps torch's jit which conflicts with kornia's jit calls.
-            # Hence, nncf is imported only when required
-            nncf_config = yaml.safe_load(OmegaConf.to_yaml(config.optimization.nncf))
-            callbacks["anomalib.utils.callbacks.nncf.callback.NNCFCallback"] = {
-                "config": nncf_config,
-                "export_dir": os.path.join(config.trainer.default_root_dir, "compressed"),
-            }
-        if config.optimization.export_mode is not None:
-            logger.info("Setting model export to %s", config.optimization.export_mode)
-            callbacks["ExportCallback"] = {
-                "input_size": config.model.input_size,
-                "dirpath": config.trainer.default_root_dir,
+    # Export to OpenVINO
+    if "export_mode" in config is not None:
+        logger.info("Setting model export to %s", config.export_mode)
+        __update_callback(
+            callbacks,
+            "ExportCallback",
+            {
+                "input_size": config.data.init_args.image_size,
+                "dirpath": os.path.join(config.trainer.default_root_dir, "compressed"),
                 "filename": "model",
-                "export_mode": ExportMode(config.optimization.export_mode),
-            }
-        else:
-            warnings.warn(f"Export option: {config.optimization.export_mode} not found. Defaulting to no model export")
+                "export_mode": config.export_mode,
+            },
+        )
 
-    # Add callback to log graph to loggers
-    if config.logging.log_graph not in [None, False]:
-        callbacks["GraphLogger"] = {}
+    if "nncf" in config:
+        if os.path.isfile(config.nncf) and config.nncf.endswith(".yaml"):
+            __update_callback(
+                callbacks,
+                "anomalib.core.callbacks.nncf_callback.NNCFCallback",
+                {
+                    "config": OmegaConf.load(config.nncf),
+                    "dirpath": os.path.join(config.trainer.default_root_dir, "compressed"),
+                    "filename": "model",
+                },
+            )
+        else:
+            raise ValueError(f"--nncf expects a path to nncf config which is a yaml file, but got {config.nncf}")
 
     # Convert callbacks to dict format expected by pytorch-lightning.
     # eg [
@@ -175,7 +205,13 @@ def instantiate_callbacks(callbacks: List[Dict]) -> List[Callback]:
             callback_class = getattr(module, class_path.split(".")[-1])
         else:
             raise ValueError(f"Callback {class_path} not found.")
-        instantiated_callbacks.append(callback_class(**init_args))
+
+        try:
+            instantiated_callbacks.append(callback_class(**init_args))
+        except Exception as exception:
+            raise AttributeError(
+                f"Could not instantiate callback {class_path} with arguments {init_args}"
+            ) from exception
 
     return instantiated_callbacks
 
