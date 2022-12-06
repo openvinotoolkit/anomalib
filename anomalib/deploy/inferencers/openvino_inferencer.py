@@ -12,6 +12,7 @@ import numpy as np
 from omegaconf import DictConfig, ListConfig
 
 from anomalib.config import get_configurable_parameters
+from anomalib.data import TaskType
 from anomalib.pre_processing import PreProcessor
 
 from .base_inferencer import Inferencer
@@ -148,10 +149,10 @@ class OpenVINOInferencer(Inferencer):
         # If predictions returns a single value, this means that the task is
         # classification, and the value is the classification prediction score.
         if len(predictions.shape) == 1:
-            task = "classification"
+            task = TaskType.CLASSIFICATION
             pred_score = predictions
         else:
-            task = "segmentation"
+            task = TaskType.SEGMENTATION
             anomaly_map = predictions.squeeze()
             pred_score = anomaly_map.reshape(-1).max()
 
@@ -161,9 +162,9 @@ class OpenVINOInferencer(Inferencer):
         if "image_threshold" in meta_data:
             pred_label = pred_score >= meta_data["image_threshold"]
 
-        if task == "classification":
+        if task == TaskType.CLASSIFICATION:
             _, pred_score = self._normalize(pred_scores=pred_score, meta_data=meta_data)
-        elif task == "segmentation":
+        elif task in [TaskType.SEGMENTATION, TaskType.DETECTION]:
             if "pixel_threshold" in meta_data:
                 pred_mask = (anomaly_map >= meta_data["pixel_threshold"]).astype(np.uint8)
 
@@ -182,9 +183,36 @@ class OpenVINOInferencer(Inferencer):
         else:
             raise ValueError(f"Unknown task type: {task}")
 
+        if self.config.dataset.task == TaskType.DETECTION:
+            pred_boxes = self._get_boxes(pred_mask)
+        else:
+            pred_boxes = None
+
         return {
             "anomaly_map": anomaly_map,
             "pred_label": pred_label,
             "pred_score": pred_score,
             "pred_mask": pred_mask,
+            "pred_boxes": pred_boxes,
         }
+
+    @staticmethod
+    def _get_boxes(mask: np.ndarray) -> np.ndarray:
+        """Get bounding boxes from masks.
+
+        Args:
+            masks (np.ndarray): Input mask of shape (H, W)
+
+        Returns:
+            np.ndarray: array of shape (N, 4) containing the bounding box coordinates of the objects in the masks
+            in xyxy format.
+        """
+        _, comps = cv2.connectedComponents(mask)
+
+        labels = np.unique(comps)
+        boxes = []
+        for label in labels[labels != 0]:
+            y_loc, x_loc = np.where(comps == label)
+            boxes.append([np.min(x_loc), np.min(y_loc), np.max(x_loc), np.max(y_loc)])
+        boxes = np.stack(boxes) if len(boxes) > 0 else np.empty((0, 4))
+        return boxes

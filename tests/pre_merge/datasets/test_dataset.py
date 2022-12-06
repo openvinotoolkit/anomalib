@@ -5,6 +5,7 @@ import random
 import pandas as pd
 import pytest
 
+from anomalib.data import TaskType
 from anomalib.data.folder import FolderDataset
 from anomalib.data.utils.split import concatenate_datasets, random_split
 from anomalib.pre_processing import PreProcessor
@@ -17,7 +18,7 @@ def folder_dataset():
     root = get_dataset_path(dataset="bottle")
     pre_process = PreProcessor(image_size=(256, 256))
     dataset = FolderDataset(
-        task="classification",
+        task=TaskType.CLASSIFICATION,
         pre_process=pre_process,
         root=root,
         normal_dir="good",

@@ -7,17 +7,40 @@ from __future__ import annotations
 
 import logging
 from abc import ABC
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 from pandas import DataFrame
 from pytorch_lightning import LightningDataModule
 from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, default_collate
 
 from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.utils import ValSplitMode, random_split
 
 logger = logging.getLogger(__name__)
+
+
+def collate_fn(batch: List) -> Dict[str, Any]:
+    """Custom collate function that collates bounding boxes as lists.
+
+    Bounding boxes are collated as a list of tensors, while the default collate function is used for all other entries.
+
+    Args:
+        batch (List): list of items in the batch where len(batch) is equal to the batch size.
+
+    Returns:
+        Dict[str, Any]: Dictionary containing the collated batch information.
+    """
+    elem = batch[0]  # sample an element from the batch to check the type.
+    out_dict = {}
+    if isinstance(elem, dict):
+        if "boxes" in elem.keys():
+            # collate boxes as list
+            out_dict["boxes"] = [item.pop("boxes") for item in batch]
+        # collate other data normally
+        out_dict.update({key: default_collate([item[key] for item in batch]) for key in elem})
+        return out_dict
+    return default_collate(batch)
 
 
 class AnomalibDataModule(LightningDataModule, ABC):
@@ -101,12 +124,26 @@ class AnomalibDataModule(LightningDataModule, ABC):
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:
         """Get train dataloader."""
-        return DataLoader(self.train_data, shuffle=True, batch_size=self.train_batch_size, num_workers=self.num_workers)
+        return DataLoader(
+            dataset=self.train_data, shuffle=True, batch_size=self.train_batch_size, num_workers=self.num_workers
+        )
 
     def val_dataloader(self) -> EVAL_DATALOADERS:
         """Get validation dataloader."""
-        return DataLoader(self.val_data, shuffle=False, batch_size=self.eval_batch_size, num_workers=self.num_workers)
+        return DataLoader(
+            dataset=self.val_data,
+            shuffle=False,
+            batch_size=self.eval_batch_size,
+            num_workers=self.num_workers,
+            collate_fn=collate_fn,
+        )
 
     def test_dataloader(self) -> EVAL_DATALOADERS:
         """Get test dataloader."""
-        return DataLoader(self.test_data, shuffle=False, batch_size=self.eval_batch_size, num_workers=self.num_workers)
+        return DataLoader(
+            dataset=self.test_data,
+            shuffle=False,
+            batch_size=self.eval_batch_size,
+            num_workers=self.num_workers,
+            collate_fn=collate_fn,
+        )
