@@ -76,10 +76,12 @@ class DFMModel(nn.Module):
     Args:
         backbone (str): Pre-trained model backbone.
         layer (str): Layer from which to extract features.
+        input_size (Tuple[int, int]): Input size for the model.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         pooling_kernel_size (int, optional): Kernel size to pool features extracted from the CNN.
         n_comps (float, optional): Ratio from which number of components for PCA are calculated. Defaults to 0.97.
-        score_type (str, optional): Scoring type. Options are `fre` and `nll`. Defaults to "fre".
+        score_type (str, optional): Scoring type. Options are `fre` and `nll`. Defaults to "fre". Anomaly
+        segmentation is supported with `fre` only. If using `nll`, set `task` in config.yaml to classification
     """
 
     def __init__(
@@ -117,7 +119,7 @@ class DFMModel(nn.Module):
             features_reduced = self.pca_model.transform(dataset)
             self.gaussian_model.fit(features_reduced.T)
 
-    def score(self, features: Tensor, feature_shape) -> Tensor:
+    def score(self, features: Tensor, feature_shapes: tuple) -> Tensor:
         """Compute scores.
 
         Scores are either PCA-based feature reconstruction error (FRE) scores or
@@ -125,6 +127,7 @@ class DFMModel(nn.Module):
 
         Args:
             features (torch.Tensor): semantic features on which PCA and density modeling is performed.
+            feature_shapes  (tuple): shape of `features` tensor. Used to generate anomaly heatmap of correct shape.
 
         Returns:
             score (Tensor): numpy array of scores
@@ -134,9 +137,9 @@ class DFMModel(nn.Module):
             score = self.gaussian_model.score_samples(feats_projected)
         elif self.score_type == "fre":
             feats_reconstructed = self.pca_model.inverse_transform(feats_projected)
-            fre = torch.square(features - feats_reconstructed).reshape(feature_shape)
+            fre = torch.square(features - feats_reconstructed).reshape(feature_shapes)
             fre_map = torch.unsqueeze(torch.sum(fre, dim=1), 1)
-            score_map = F.interpolate(fre_map, size=self.input_size, mode="bilinear", align_corners=False,)            
+            score_map = F.interpolate(fre_map, size=self.input_size, mode="bilinear", align_corners=False)
             score = torch.sum(torch.square(features - feats_reconstructed), dim=1)
         else:
             raise ValueError(f"unsupported score type: {self.score_type}")

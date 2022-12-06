@@ -25,13 +25,15 @@ class Dfm(AnomalyModule):
     Args:
         backbone (str): Backbone CNN network
         layer (str): Layer to extract features from the backbone CNN
+        input_size (Tuple[int, int]): Input size for the model.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         pooling_kernel_size (int, optional): Kernel size to pool features extracted from the CNN.
             Defaults to 4.
         pca_level (float, optional): Ratio from which number of components for PCA are calculated.
             Defaults to 0.97.
         score_type (str, optional): Scoring type. Options are `fre` and `nll`. Defaults to "fre".
-        nll: for Gaussian modeling, fre: pca feature reconstruction error
+        nll: for Gaussian modeling, fre: pca feature reconstruction error. Anomaly segmentation is
+        supported with `fre` only. If using `nll`, set `task` in config.yaml to classification
     """
 
     def __init__(
@@ -102,7 +104,7 @@ class Dfm(AnomalyModule):
           batch (List[Dict[str, Any]]): Input batch
 
         Returns:
-          Dictionary containing FRE anomaly scores and ground-truth.
+          Dictionary containing FRE anomaly scores and anomaly maps.
         """
         batch["pred_scores"], batch["anomaly_maps"] = self.model(batch["image"])
 
