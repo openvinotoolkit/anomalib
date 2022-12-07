@@ -69,6 +69,10 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
 
     callbacks.extend([checkpoint, TimerCallback()])
 
+    if "resume_from_checkpoint" in config.trainer.keys() and config.trainer.resume_from_checkpoint is not None:
+        load_model = LoadModelCallback(config.trainer.resume_from_checkpoint)
+        callbacks.append(load_model)
+
     # Add post-processing configurations to AnomalyModule.
     image_threshold = (
         config.metrics.threshold.manual_image if "manual_image" in config.metrics.threshold.keys() else None
@@ -90,10 +94,6 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
         config.metrics.get("pixel", None),
     )
     callbacks.append(metrics_callback)
-
-    if "resume_from_checkpoint" in config.trainer.keys() and config.trainer.resume_from_checkpoint is not None:
-        load_model = LoadModelCallback(config.trainer.resume_from_checkpoint)
-        callbacks.append(load_model)
 
     if "normalization_method" in config.model.keys() and not config.model.normalization_method == "none":
         if config.model.normalization_method == "cdf":
