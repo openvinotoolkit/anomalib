@@ -6,7 +6,7 @@
 
 from .timm import TimmFeatureExtractor, TimmFeatureExtractorParams
 from .torchfx import TorchFXFeatureExtractor, TorchFXFeatureExtractorParams
-from .wrapper import FeatureExtractorParams, get_feature_extractor
+from .utils import FeatureExtractorParams, get_feature_extractor
 
 __all__ = [
     "get_feature_extractor",

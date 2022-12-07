@@ -14,7 +14,7 @@ FeatureExtractorParams = Union[TimmFeatureExtractorParams, TorchFXFeatureExtract
 
 
 def get_feature_extractor(
-    *args: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams, DictConfig], **kwargs
+    feature_extractor_params: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams, DictConfig], **kwargs
 ) -> Union[TorchFXFeatureExtractor, TimmFeatureExtractor]:
     """Convenience wrapper for feature extractors.
 
@@ -26,23 +26,29 @@ def get_feature_extractor(
     If you want to use torchfx feature extractor, you need to pass the following arguments:
     backbone,return_nodes,weights,requires_grad
 
-    Example:
+    Args:
+        feature_extractor_params: Feature extractor parameters passed in a single container.
+        **kwargs: Pass arguments as keyword arguments to the feature extractor.
+
+    > *__Note:__* Use either feature_extractor_params or kwargs, not both.
+
+    Examples:
         Using Timm
 
-        >>> from anomalib.models.components import FeatureExtractor
-        >>> FeatureExtractor(backbone="resnet18",layers=["layer1","layer2","layer3"])
-        TimmFeatureExtractor will be removed in 2023.1
-        FeatureExtractor(
-        (feature_extractor): TimmFeatureExtractor(
+        >>> from anomalib.models.components import get_feature_extractor
+        >>> get_feature_extractor(backbone="resnet18",layers=["layer1","layer2","layer3"])
+        TimmFeatureExtractor will be removed in the future version.
+            TimmFeatureExtractor(
             (feature_extractor): FeatureListNet(
+                (conv1): Conv2d(3, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
                 ...
 
         Using TorchFX
 
-        >>> FeatureExtractor(backbone="resnet18",return_nodes=["layer1","layer2","layer3"])
-            FeatureExtractor(
-            (feature_extractor): TorchFXFeatureExtractor(
+        >>> get_feature_extractor(backbone="resnet18",return_nodes=["layer1","layer2","layer3"])
+            TorchFXFeatureExtractor(
                 (feature_extractor): ResNet(
+                    (conv1): Conv2d(3, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
 
         Using Backbone params
 
@@ -52,13 +58,12 @@ def get_feature_extractor(
         ...                     return_nodes=["features.6.8"],
         ...                     weights=EfficientNet_B5_Weights.DEFAULT
         ... )
-        >>> FeatureExtractor(params)
-        FeatureExtractor(
-        (feature_extractor): TorchFXFeatureExtractor(
+        >>> get_feature_extractor(params)
+            TorchFXFeatureExtractor(
             (feature_extractor): EfficientNet(
                 ...
     """
-    feature_extractor_params = _get_feature_extractor_params(args, kwargs)
+    feature_extractor_params = _get_feature_extractor_params(feature_extractor_params, kwargs)
     if isinstance(feature_extractor_params, TimmFeatureExtractorParams):
         feature_extractor = TimmFeatureExtractor(**vars(feature_extractor_params))
     else:
@@ -66,26 +71,29 @@ def get_feature_extractor(
     return feature_extractor
 
 
-def _get_feature_extractor_params(args, kwargs):
+def _get_feature_extractor_params(
+    feature_extractor_params: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams, DictConfig], kwargs
+):
     """Performs validation checks and converts the arguments to the correct data type.
 
     Checks if the arguments are passed as a key word argument or as a single argument of dictionary or dataclass.
     If the checks pass, returns the feature extractor parameters as a dataclass.
 
-    The feature extractor expects only one of args of kwargs
+    The feature extractor expects only one of feature_extractor_params of kwargs
 
     Args:
-        args (Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams, DictConfig]): Feature extractor
+        feature_extractor_params: Feature extractor parameters passed in a single container.
             parameters.
         kwargs (Dict[str, Any]): Feature extractor parameters as key word arguments.
     """
-    if len(args) == 1:
-        feature_extractor_params = _convert_datatype(args[0])
-    elif len(args) > 0 and kwargs is not None:
+    if feature_extractor_params is not None and kwargs is not None:
         raise ValueError(
             "Either arguments as keyword arguments or as a single argument of type TimmFeatureExtractorParams or"
             " TorchFXFeatureExtractorParams"
         )
+
+    if feature_extractor_params is not None:
+        feature_extractor_params = _convert_datatype(feature_extractor_params)
     else:
         feature_extractor_params = _convert_datatype(kwargs)
     return feature_extractor_params
@@ -94,7 +102,7 @@ def _get_feature_extractor_params(args, kwargs):
 def _convert_datatype(
     feature_extractor_params: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams, DictConfig, Dict],
 ) -> FeatureExtractorParams:
-    """When config us loaded from entry point scripts, the data type of the arguments is DictConfig.
+    """When config is loaded from entry point scripts, the data type of the arguments is DictConfig.
 
     Args:
         feature_extractor_params: Feature extractor parameters to convert.

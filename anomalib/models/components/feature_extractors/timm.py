@@ -45,7 +45,7 @@ class TimmFeatureExtractor(BaseFeatureExtractor):
         >>> import torch
         >>> from anomalib.models.components.feature_extractors import TimmFeatureExtractor
 
-        >>> model = TimmFeatureExtractor(model="resnet18", layers=['layer1', 'layer2', 'layer3'])
+        >>> model = TimmFeatureExtractor(backbone="resnet18", layers=['layer1', 'layer2', 'layer3'])
         >>> input = torch.rand((32, 3, 256, 256))
         >>> features = model(input)
 
@@ -57,7 +57,7 @@ class TimmFeatureExtractor(BaseFeatureExtractor):
 
     def __init__(self, backbone: str, layers: List[str], pre_trained: bool = True, requires_grad: bool = False):
         super().__init__()
-        logger.warning("TimmFeatureExtractor will be removed in 2023.1")
+        logger.warning(FutureWarning("TimmFeatureExtractor will be removed in the future version."))
         self.backbone = backbone
         self.layers = layers
         self.idx = self._map_layer_to_idx()

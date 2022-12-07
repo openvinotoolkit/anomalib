@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple
 
 from torch import Tensor, nn
 
@@ -13,7 +13,7 @@ from anomalib.models.components.feature_extractors import (
     TimmFeatureExtractorParams,
     TorchFXFeatureExtractorParams,
 )
-from anomalib.models.components.feature_extractors.wrapper import _convert_datatype
+from anomalib.models.components.feature_extractors.utils import _convert_datatype
 from anomalib.models.stfpm.anomaly_map import AnomalyMapGenerator
 from anomalib.pre_processing import Tiler
 
@@ -55,8 +55,8 @@ class STFPMModel(nn.Module):
         """
         # When loading from the entrypoint scripts student_teacher_model is DictConfig
         student_teacher_model = _convert_datatype(student_teacher_model)
-        teacher_model_params: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams]
-        student_model_params: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams]
+        teacher_model_params: FeatureExtractorParams
+        student_model_params: FeatureExtractorParams
         if isinstance(student_teacher_model, TimmFeatureExtractorParams):
             teacher_model_params = TimmFeatureExtractorParams(
                 backbone=student_teacher_model.backbone,
