@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import List, Union, Tuple
+from typing import List, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
@@ -32,7 +32,7 @@ class Dfm(AnomalyModule):
         pca_level (float, optional): Ratio from which number of components for PCA are calculated.
             Defaults to 0.97.
         score_type (str, optional): Scoring type. Options are `fre` and `nll`. Defaults to "fre".
-        nll: for Gaussian modeling, fre: pca feature reconstruction error. Anomaly segmentation is
+        nll: for Gaussian modeling, fre: pca feature-reconstruction error. Anomaly segmentation is
         supported with `fre` only. If using `nll`, set `task` in config.yaml to classification
     """
 
