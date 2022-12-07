@@ -142,6 +142,14 @@ def get_configurable_parameters(
     # keep track of the original config file because it will be modified
     config_original: DictConfig = config.copy()
 
+    if config.project.get("seed") == 0:
+        warn(
+            "The seed value is now fixed to 0. "
+            "Up to v0.3.7, the seed value was randomized when the seed value was set to 0. "
+            "If you want to use the randomized seed values, please select the seed value of `None` "
+            "(`null` in the YAML file) or remove the `seed` key from the YAML file."
+        )
+
     # Dataset Configs
     if "format" not in config.dataset.keys():
         config.dataset.format = "mvtec"
