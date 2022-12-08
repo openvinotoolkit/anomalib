@@ -11,6 +11,7 @@ from cnn.vgg import vgg19_bn
 from datasets.mvtec import MVTecDataset
 from torch.utils.data import DataLoader
 from utils.cfa import *
+from utils.cfa_new import *
 from utils.metric import *
 from utils.visualizer import *
 
@@ -108,6 +109,8 @@ def run():
 
         model = model.to(device)
         model.eval()
+
+        # cfa_model = CfaModel(train_loader, args.cnn, args.gamma_c, args.gamma_d, device)
 
         loss_fn = DSVDD(model, train_loader, args.cnn, args.gamma_c, args.gamma_d, device)
         loss_fn = loss_fn.to(device)

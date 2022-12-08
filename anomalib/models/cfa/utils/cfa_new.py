@@ -42,7 +42,7 @@ def get_feature_extractor(backbone: str, device: Optional[torch.device] = None):
 
 class CfaModel(nn.Module):
     def __init__(self, data_loader, backbone, gamma_c, gamma_d, device):
-        super(CfaModel, self).__init__()
+        super().__init__()
         self.device = device
         self.feature_extractor = get_feature_extractor(backbone, device=device)
 
@@ -75,8 +75,9 @@ class CfaModel(nn.Module):
         )
 
     def _init_centroid(self, feature_extractor, data_loader) -> None:
-        for i, batch in enumerate(tqdm(data_loader)):
-            x = batch["image"]
+        # for i, batch in enumerate(tqdm(data_loader)):
+        for i, (x, _, _) in enumerate(tqdm(data_loader)):
+            # x = batch["image"]
             x = x.to(self.device)
             patch_features = feature_extractor(x)
             patch_features = [value for value in patch_features.values()]

@@ -33,7 +33,7 @@ test data:
 
 ### Example
 ```
-python trainer_cfa.py --class_name all --data_path [/path/to/dataset/] --cnn wrn50_2 --size 224 --gamma_c 1 --gamma_d 1
+python trainer_cfa.py --class_name all --data_path [/path/to/dataset/] --cnn wide_resnet50_2 --size 224 --gamma_c 1 --gamma_d 1
 ```
 
 ## Performance

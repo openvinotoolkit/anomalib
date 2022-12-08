@@ -9,6 +9,18 @@ from utils.coordconv import CoordConv2d
 from .metric import *
 
 
+# TODO: >>> This is temporary.
+def initialize_weights(m) -> None:
+    torch.manual_seed(0)
+    if isinstance(m, nn.Conv2d):
+        nn.init.kaiming_uniform_(m.weight.data, nonlinearity="relu")
+        if m.bias is not None:
+            nn.init.constant_(m.bias.data, 0)
+
+
+# TODO: <<< This is temporary.
+
+
 class DSVDD(nn.Module):
     def __init__(self, model, data_loader, cnn, gamma_c, gamma_d, device):
         super(DSVDD, self).__init__()
@@ -26,6 +38,9 @@ class DSVDD(nn.Module):
 
         self.r = nn.Parameter(1e-5 * torch.ones(1), requires_grad=True)
         self.Descriptor = Descriptor(self.gamma_d, cnn).to(device)
+        # TODO: >>> Temporary.
+        self.Descriptor.apply(initialize_weights)
+        # TODO <<< Temporary.
         self._init_centroid(model, data_loader)
         self.C = rearrange(self.C, "b c h w -> (b h w) c").detach()
 
@@ -92,23 +107,23 @@ class Descriptor(nn.Module):
     def __init__(self, gamma_d, cnn):
         super(Descriptor, self).__init__()
         self.cnn = cnn
-        if cnn == "wrn50_2":
+        if cnn == "wide_resnet50_2":
             dim = 1792
             self.layer = CoordConv2d(dim, dim // gamma_d, 1)
-        elif cnn == "res18":
+        elif cnn == "resnet18":
             dim = 448
             self.layer = CoordConv2d(dim, dim // gamma_d, 1)
-        elif cnn == "effnet-b5":
+        elif cnn == "efficientnet_b5":
             dim = 568
             self.layer = CoordConv2d(dim, 2 * dim // gamma_d, 1)
-        elif cnn == "vgg19":
+        elif cnn == "vgg19_bn":
             dim = 1280
             self.layer = CoordConv2d(dim, dim // gamma_d, 1)
 
     def forward(self, p):
         sample = None
         for o in p:
-            o = F.avg_pool2d(o, 3, 1, 1) / o.size(1) if self.cnn == "effnet-b5" else F.avg_pool2d(o, 3, 1, 1)
+            o = F.avg_pool2d(o, 3, 1, 1) / o.size(1) if self.cnn == "efficientnet_b5" else F.avg_pool2d(o, 3, 1, 1)
             sample = (
                 o if sample is None else torch.cat((sample, F.interpolate(o, sample.size(2), mode="bilinear")), dim=1)
             )

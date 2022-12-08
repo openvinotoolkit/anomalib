@@ -5,7 +5,7 @@ import warnings
 import datasets.mvtec as mvtec
 import torch
 import torch.optim as optim
-from utils.cfa3 import *
+from utils.cfa_new import *
 from utils.metric import *
 from utils.visualizer import *
 
@@ -18,7 +18,7 @@ device = torch.device("cuda" if use_cuda else "cpu")
 
 def parse_args():
     parser = argparse.ArgumentParser("CFA configuration")
-    parser.add_argument("--data_path", type=str)
+    parser.add_argument("--data_path", type=str, default="/home/sakcay/projects/anomalib/datasets/MVTec")
     parser.add_argument("--save_path", type=str, default="./mvtec_result")
     parser.add_argument("--Rd", type=bool, default=False)
     parser.add_argument(
@@ -32,7 +32,7 @@ def parse_args():
     parser.add_argument("--gamma_c", type=int, default=1)
     parser.add_argument("--gamma_d", type=int, default=1)
 
-    parser.add_argument("--class_name", type=str, default="all")
+    parser.add_argument("--class_name", type=str, default="zipper")
 
     return parser.parse_args()
 
@@ -63,8 +63,8 @@ def run():
         print("%s | newly initialized..." % class_name)
 
         datamodule = MVTec(
-            root="./datasets/MVTec",
-            category="screw",
+            root=args.data_path,
+            category=args.class_name,
             image_size=(224, 224),
             train_batch_size=4,
             test_batch_size=4,
