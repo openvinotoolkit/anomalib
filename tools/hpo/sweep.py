@@ -35,7 +35,7 @@ if __name__ == "__main__":
     model_config = get_configurable_parameters(model_name=args.model, config_path=args.model_config)
     hpo_config = OmegaConf.load(args.sweep_config)
 
-    if model_config.project.seed != 0:
+    if model_config.project.get("seed") is not None:
         seed_everything(model_config.project.seed)
 
     # check hpo config structure to see whether it adheres to comet or wandb format

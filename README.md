@@ -299,6 +299,15 @@ For more information, refer to the [Logging Documentation](https://openvinotoolk
 
 Note: Set your API Key for [Comet.ml](https://www.comet.com/signup?utm_source=anomalib&utm_medium=referral) via `comet_ml.init()` in interactive python or simply run `export COMET_API_KEY=<Your API Key>`
 
+# Community Projects
+
+## 1. Web-based Pipeline for Training and Inference
+
+This project showcases an end-to-end training and inference pipeline build on top of Anomalib. It provides a web-based UI for uploading MVTec style datasets and training them on the available Anomalib models. It also has sections for calling inference on individual images as well as listing all the images with their predictions in the database.
+
+You can view the project on [Github](https://github.com/vnk8071/anomaly-detection-in-industry-manufacturing/tree/master/anomalib_contribute)
+For more details see the [Discussion forum](https://github.com/openvinotoolkit/anomalib/discussions/733)
+
 # Datasets
 
 `anomalib` supports MVTec AD [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/) and BeanTech [(CC-BY-SA)](https://creativecommons.org/licenses/by-sa/4.0/legalcode) for benchmarking and `folder` for custom dataset training/inference.

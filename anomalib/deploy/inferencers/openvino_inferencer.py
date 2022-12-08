@@ -37,6 +37,7 @@ class OpenVINOInferencer(Inferencer):
         config: Union[str, Path, DictConfig, ListConfig],
         path: Union[str, Path, Tuple[bytes, bytes]],
         meta_data_path: Union[str, Path] = None,
+        device: Optional[str] = "CPU",
     ):
         # Check and load the configuration
         if isinstance(config, (str, Path)):
@@ -46,6 +47,7 @@ class OpenVINOInferencer(Inferencer):
         else:
             raise ValueError(f"Unknown config type {type(config)}")
 
+        self.device = device
         self.input_blob, self.output_blob, self.network = self.load_model(path)
         self.meta_data = super()._load_meta_data(meta_data_path)
 
@@ -80,7 +82,7 @@ class OpenVINOInferencer(Inferencer):
 
         input_blob = next(iter(network.input_info))
         output_blob = next(iter(network.outputs))
-        executable_network = ie_core.load_network(network=network, device_name="CPU")
+        executable_network = ie_core.load_network(network=network, device_name=self.device)
 
         return input_blob, output_blob, executable_network
 
