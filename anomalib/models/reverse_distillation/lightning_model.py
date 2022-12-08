@@ -40,7 +40,7 @@ class ReverseDistillation(AnomalyModule):
     ):
         super().__init__()
         self.model = ReverseDistillationModel(
-            feature_extractor=feature_extractor,
+            feature_extractor_params=feature_extractor,
             input_size=input_size,
             anomaly_map_mode=anomaly_map_mode,
         )

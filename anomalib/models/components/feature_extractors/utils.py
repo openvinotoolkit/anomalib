@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, Union
+from typing import Dict, Optional, Union
 
 from omegaconf import DictConfig
 
@@ -14,7 +14,10 @@ FeatureExtractorParams = Union[TimmFeatureExtractorParams, TorchFXFeatureExtract
 
 
 def get_feature_extractor(
-    feature_extractor_params: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams, DictConfig], **kwargs
+    feature_extractor_params: Optional[
+        Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams, DictConfig]
+    ] = None,
+    **kwargs,
 ) -> Union[TorchFXFeatureExtractor, TimmFeatureExtractor]:
     """Convenience wrapper for feature extractors.
 
@@ -63,7 +66,7 @@ def get_feature_extractor(
             (feature_extractor): EfficientNet(
                 ...
     """
-    feature_extractor_params = _get_feature_extractor_params(feature_extractor_params, kwargs)
+    feature_extractor_params = _get_feature_extractor_params(feature_extractor_params, **kwargs)
     if isinstance(feature_extractor_params, TimmFeatureExtractorParams):
         feature_extractor = TimmFeatureExtractor(**vars(feature_extractor_params))
     else:
@@ -72,7 +75,10 @@ def get_feature_extractor(
 
 
 def _get_feature_extractor_params(
-    feature_extractor_params: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams, DictConfig], kwargs
+    feature_extractor_params: Optional[
+        Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams, DictConfig]
+    ] = None,
+    **kwargs,
 ):
     """Performs validation checks and converts the arguments to the correct data type.
 
@@ -86,7 +92,7 @@ def _get_feature_extractor_params(
             parameters.
         kwargs (Dict[str, Any]): Feature extractor parameters as key word arguments.
     """
-    if feature_extractor_params is not None and kwargs is not None:
+    if feature_extractor_params is not None and len(kwargs) > 0:
         raise ValueError(
             "Either arguments as keyword arguments or as a single argument of type TimmFeatureExtractorParams or"
             " TorchFXFeatureExtractorParams"

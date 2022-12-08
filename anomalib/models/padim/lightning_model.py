@@ -44,7 +44,7 @@ class Padim(AnomalyModule):
 
         self.model: PadimModel = PadimModel(
             input_size=input_size,
-            feature_extractor=feature_extractor,
+            feature_extractor_params=feature_extractor,
             n_features=n_features,
         ).eval()
 

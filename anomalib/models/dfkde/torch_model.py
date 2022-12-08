@@ -21,7 +21,7 @@ class DfkdeModel(nn.Module):
     """Normality Model for the DFKDE algorithm.
 
     Args:
-        feature_extractor (FeatureExtractorParams): Feature extractor params
+        feature_extractor_params (FeatureExtractorParams): Feature extractor params
         n_comps (int, optional): Number of PCA components. Defaults to 16.
         pre_processing (str, optional): Preprocess features before passing to KDE.
             Options are between `norm` and `scale`. Defaults to "scale".
@@ -32,7 +32,7 @@ class DfkdeModel(nn.Module):
 
     def __init__(
         self,
-        feature_extractor: FeatureExtractorParams,
+        feature_extractor_params: FeatureExtractorParams,
         n_comps: int = 16,
         pre_processing: str = "scale",
         filter_count: int = 40000,
@@ -46,7 +46,7 @@ class DfkdeModel(nn.Module):
         self.threshold_steepness = threshold_steepness
         self.threshold_offset = threshold_offset
 
-        self.feature_extractor = get_feature_extractor(feature_extractor).eval()
+        self.feature_extractor = get_feature_extractor(feature_extractor_params).eval()
 
         self.pca_model = PCA(n_components=self.n_components)
         self.kde_model = GaussianKDE()

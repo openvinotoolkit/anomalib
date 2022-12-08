@@ -25,7 +25,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
     def __init__(
         self,
         input_size: Tuple[int, int],
-        feature_extractor: FeatureExtractorParams,
+        feature_extractor_params: FeatureExtractorParams,
         num_neighbors: int = 9,
     ) -> None:
         super().__init__()
@@ -34,7 +34,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         self.input_size = input_size
         self.num_neighbors = num_neighbors
 
-        self.feature_extractor = get_feature_extractor(feature_extractor)
+        self.feature_extractor = get_feature_extractor(feature_extractor_params)
         self.layers = self.feature_extractor.layers
         self.feature_pooler = torch.nn.AvgPool2d(3, 1, 1, count_include_pad=False)
         self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)

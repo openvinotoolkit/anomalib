@@ -43,7 +43,7 @@ class Dfm(AnomalyModule):
         super().__init__()
 
         self.model: DFMModel = DFMModel(
-            feature_extractor=feature_extractor,
+            feature_extractor_params=feature_extractor,
             pooling_kernel_size=pooling_kernel_size,
             n_comps=pca_level,
             score_type=score_type,

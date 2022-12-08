@@ -23,20 +23,20 @@ class ReverseDistillationModel(nn.Module):
     Args:
         input_size (Tuple[int, int]): Size of input image
         anomaly_map_mode (str): Mode used to generate anomaly map. Options are between ``multiply`` and ``add``.
-        feature_extractor (FeatureExtractorParams): Feature extractor params
+        feature_extractor_params (FeatureExtractorParams): Feature extractor params
     """
 
     def __init__(
         self,
         input_size: Tuple[int, int],
         anomaly_map_mode: str,
-        feature_extractor: FeatureExtractorParams,
+        feature_extractor_params: FeatureExtractorParams,
     ):
         super().__init__()
         self.tiler: Optional[Tiler] = None
 
-        encoder_backbone = str(feature_extractor.backbone)
-        self.encoder = get_feature_extractor(feature_extractor)
+        encoder_backbone = str(feature_extractor_params.backbone)
+        self.encoder = get_feature_extractor(feature_extractor_params)
         self.bottleneck = get_bottleneck_layer(encoder_backbone)
         self.decoder = get_decoder(encoder_backbone)
 

@@ -56,7 +56,7 @@ class PadimModel(nn.Module):
 
     Args:
         input_size (Tuple[int, int]): Input size for the model.
-        feature_extractor (FeatureExtractorParams): Feature extractor params
+        feature_extractor_params (FeatureExtractorParams): Feature extractor params
         n_features (int, optional): Number of features to retain in the dimension reduction step.
                                 Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
     """
@@ -64,14 +64,14 @@ class PadimModel(nn.Module):
     def __init__(
         self,
         input_size: Tuple[int, int],
-        feature_extractor: FeatureExtractorParams,
+        feature_extractor_params: FeatureExtractorParams,
         n_features: Optional[int] = None,
     ):
         super().__init__()
         self.tiler: Optional[Tiler] = None
 
-        self.backbone = str(feature_extractor.backbone)
-        self.feature_extractor = get_feature_extractor(feature_extractor)
+        self.backbone = str(feature_extractor_params.backbone)
+        self.feature_extractor = get_feature_extractor(feature_extractor_params)
         self.layers = self.feature_extractor.layers
         self.n_features_original, self.n_patches = _deduce_dims(self.feature_extractor, input_size, self.layers)
 

@@ -74,7 +74,7 @@ class DFMModel(nn.Module):
     """Model for the DFM algorithm.
 
     Args:
-        feature_extractor (FeatureExtractorParams): Feature extractor params
+        feature_extractor_params (FeatureExtractorParams): Feature extractor params
         pooling_kernel_size (int, optional): Kernel size to pool features extracted from the CNN.
         n_comps (float, optional): Ratio from which number of components for PCA are calculated. Defaults to 0.97.
         score_type (str, optional): Scoring type. Options are `fre` and `nll`. Defaults to "fre".
@@ -82,7 +82,7 @@ class DFMModel(nn.Module):
 
     def __init__(
         self,
-        feature_extractor: FeatureExtractorParams,
+        feature_extractor_params: FeatureExtractorParams,
         pooling_kernel_size: int = 4,
         n_comps: float = 0.97,
         score_type: str = "fre",
@@ -93,7 +93,7 @@ class DFMModel(nn.Module):
         self.pca_model = PCA(n_components=self.n_components)
         self.gaussian_model = SingleClassGaussian()
         self.score_type = score_type
-        self.feature_extractor = get_feature_extractor(feature_extractor).eval()
+        self.feature_extractor = get_feature_extractor(feature_extractor_params).eval()
 
     def fit(self, dataset: Tensor) -> None:
         """Fit a pca transformation and a Gaussian model to dataset.

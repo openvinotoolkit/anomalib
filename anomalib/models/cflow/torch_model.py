@@ -21,7 +21,7 @@ class CflowModel(nn.Module):
     def __init__(
         self,
         input_size: Tuple[int, int],
-        feature_extractor: FeatureExtractorParams,
+        feature_extractor_params: FeatureExtractorParams,
         fiber_batch_size: int = 64,
         decoder: str = "freia-cflow",
         condition_vector: int = 128,
@@ -34,7 +34,7 @@ class CflowModel(nn.Module):
         self.fiber_batch_size = fiber_batch_size
         self.condition_vector: int = condition_vector
         self.dec_arch = decoder
-        self.encoder = get_feature_extractor(feature_extractor)
+        self.encoder = get_feature_extractor(feature_extractor_params)
         self.pool_layers = self.encoder.layers
         self.pool_dims = self.encoder.out_dims
         self.decoders = nn.ModuleList(

@@ -44,7 +44,7 @@ class Patchcore(AnomalyModule):
 
         self.model: PatchcoreModel = PatchcoreModel(
             input_size=input_size,
-            feature_extractor=feature_extractor,
+            feature_extractor_params=feature_extractor,
             num_neighbors=num_neighbors,
         )
         self.coreset_sampling_ratio = coreset_sampling_ratio

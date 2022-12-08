@@ -44,7 +44,7 @@ class Cflow(AnomalyModule):
 
         self.model: CflowModel = CflowModel(
             input_size=input_size,
-            feature_extractor=feature_extractor,
+            feature_extractor_params=feature_extractor,
             fiber_batch_size=fiber_batch_size,
             decoder=decoder,
             condition_vector=condition_vector,

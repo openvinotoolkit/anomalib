@@ -24,16 +24,16 @@ class STFPMModel(nn.Module):
     Args:
         layers (List[str]): Layers used for feature extraction
         input_size (Tuple[int, int]): Input size for the model.
-        student_teacher_model (FeatureExtractorParams): Teacher model parameters.
+        student_teacher_model_params (FeatureExtractorParams): Teacher model parameters.
     """
 
-    def __init__(self, input_size: Tuple[int, int], student_teacher_model: FeatureExtractorParams):
+    def __init__(self, input_size: Tuple[int, int], student_teacher_model_params: FeatureExtractorParams):
         super().__init__()
         self.tiler: Optional[Tiler] = None
 
         self.teacher_model: nn.Module
         self.student_model: nn.Module
-        self._initialize_models(student_teacher_model)
+        self._initialize_models(student_teacher_model_params)
 
         # teacher model is fixed
         for parameters in self.teacher_model.parameters():
@@ -47,39 +47,39 @@ class STFPMModel(nn.Module):
             image_size = input_size
         self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(image_size))
 
-    def _initialize_models(self, student_teacher_model: FeatureExtractorParams):
+    def _initialize_models(self, student_teacher_model_params: FeatureExtractorParams):
         """Initialize the teacher and student models.
 
         Args:
-            student_teacher_model (FeatureExtractorParams): Model parameters.
+            student_teacher_model_params (FeatureExtractorParams): Model parameters.
         """
-        # When loading from the entrypoint scripts student_teacher_model is DictConfig
-        student_teacher_model = _convert_datatype(student_teacher_model)
+        # When loading from the entrypoint scripts student_teacher_model_params is DictConfig
+        student_teacher_model_params = _convert_datatype(student_teacher_model_params)
         teacher_model_params: FeatureExtractorParams
         student_model_params: FeatureExtractorParams
-        if isinstance(student_teacher_model, TimmFeatureExtractorParams):
+        if isinstance(student_teacher_model_params, TimmFeatureExtractorParams):
             teacher_model_params = TimmFeatureExtractorParams(
-                backbone=student_teacher_model.backbone,
-                layers=student_teacher_model.layers,
+                backbone=student_teacher_model_params.backbone,
+                layers=student_teacher_model_params.layers,
                 pre_trained=True,
                 requires_grad=False,
             )
             student_model_params = TimmFeatureExtractorParams(
-                backbone=student_teacher_model.backbone,
-                layers=student_teacher_model.layers,
+                backbone=student_teacher_model_params.backbone,
+                layers=student_teacher_model_params.layers,
                 pre_trained=False,
                 requires_grad=True,
             )
         else:
             teacher_model_params = TorchFXFeatureExtractorParams(
-                backbone=student_teacher_model.backbone,
-                return_nodes=student_teacher_model.return_nodes,
-                weights=student_teacher_model.weights,
+                backbone=student_teacher_model_params.backbone,
+                return_nodes=student_teacher_model_params.return_nodes,
+                weights=student_teacher_model_params.weights,
                 requires_grad=False,
             )
             student_model_params = TorchFXFeatureExtractorParams(
-                backbone=student_teacher_model.backbone,
-                return_nodes=student_teacher_model.return_nodes,
+                backbone=student_teacher_model_params.backbone,
+                return_nodes=student_teacher_model_params.return_nodes,
                 weights=None,
                 requires_grad=True,
             )

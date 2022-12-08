@@ -46,7 +46,7 @@ class Dfkde(AnomalyModule):
         super().__init__()
 
         self.model = DfkdeModel(
-            feature_extractor=feature_extractor,
+            feature_extractor_params=feature_extractor,
             n_comps=n_components,
             pre_processing=pre_processing,
             filter_count=max_training_points,

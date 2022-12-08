@@ -40,7 +40,7 @@ class Stfpm(AnomalyModule):
 
         self.model = STFPMModel(
             input_size=input_size,
-            student_teacher_model=student_teacher_model,
+            student_teacher_model_params=student_teacher_model,
         )
         self.loss = STFPMLoss()
 
