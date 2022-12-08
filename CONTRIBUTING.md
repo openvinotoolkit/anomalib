@@ -32,7 +32,7 @@ We actively welcome your pull requests:
 1. Ensure the test suite passes.
 1. Make sure your code lints.
 1. Make sure you own the code you're submitting or that you obtain it from a source with an appropriate license.
-1. Within your PR, add a summary of your changes in the [changelog](https://github.com/openvinotoolkit/anomalib/blob/main/CHANGELOG.md) of the repository.
+1. Add a summary of the changes to the [CHANGELOG](https://github.com/openvinotoolkit/anomalib/blob/main/CHANGELOG.md) (not for minor changes, docs and tests).
 1. Issue that pull request!
 
 To setup the development environment, you will need to install development requirements.
