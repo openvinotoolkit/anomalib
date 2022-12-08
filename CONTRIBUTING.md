@@ -5,6 +5,7 @@ We welcome your input! 👐
 We want to make it as simple and straightforward as possible to contribute to this project, whether it is a:
 
 - Bug Report
+- Task
 - Discussion
 - Feature Request
 - Creating a Pull Request (PR)
@@ -12,7 +13,11 @@ We want to make it as simple and straightforward as possible to contribute to th
 
 ## Bug Report
 
-We use GitHub issues to track the bugs. Report a bug by using our Bug Report Template in [Issues](https://github.com/openvinotoolkit/anomalib/issues/new?assignees=&labels=&template=bug_report.md).
+We use GitHub issues to track the bugs. Report a bug by using our Bug Report Template in [Issues](https://github.com/openvinotoolkit/anomalib/issues/new?assignees=&labels=&template=bug_report.yaml&title=%5BBug%5D%3A+).
+
+## Tasks
+
+We use GitHub issues to track tasks as well. If you are implementing a feature or refactoring a piece of code, you can use the Task Template in [Issues](https://github.com/openvinotoolkit/anomalib/issues/new?assignees=&labels=Task&template=task.yaml&title=%5BTask%5D%3A+).
 
 ## Discussion
 
@@ -20,7 +25,7 @@ We enabled [GitHub Discussions](https://github.com/openvinotoolkit/anomalib/disc
 
 ## Feature Request
 
-We utilize GitHub issues to track the feature requests as well. If you are certain regarding the feature you are interested and have a solid proposal, you could then create the feature request by using our [Feature Request Template](https://github.com/openvinotoolkit/anomalib/issues/new?assignees=&labels=&template=feature_request.md) in Issues. If it's still in an idea phase, you could then discuss that with the community in our [Discussion](https://github.com/openvinotoolkit/anomalib/discussions/categories/ideas).
+We utilize GitHub Discussions to track the feature requests. If you are certain regarding the feature you are interested and have a solid proposal, you could then create the feature request by posting in our [Ideas, Features and Requests](https://github.com/openvinotoolkit/anomalib/discussions/categories/ideas-feature-requests) section of our Discussion forum. You can also use this section even if your request is still in an idea phase. This is a good way to start a discussion with the community and get feedback on your idea.
 
 ## Development & PRs
 
