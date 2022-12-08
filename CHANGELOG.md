@@ -17,7 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
-- Switch to new [changelog format](https://keepachangelog.com/en/1.0.0/).
+- Switch to new [changelog format](https://keepachangelog.com/en/1.0.0/). (<https://github.com/openvinotoolkit/anomalib/pull/777>)
 - Rename feature to task (<https://github.com/openvinotoolkit/anomalib/pull/769>)
 - make device configurable in OpenVINO inference (<https://github.com/openvinotoolkit/anomalib/pull/755>)
 - 🚨 Fix torchmetrics version (<https://github.com/openvinotoolkit/anomalib/pull/754>)
