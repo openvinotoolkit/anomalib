@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import logging
-import warnings
 from abc import ABC
 from typing import Any, Dict, List, Optional
 
@@ -117,43 +116,37 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self._create_val_split()
 
     def _create_test_split(self):
-        # perform subset splitting for test set
+        """Obtain the test set based on the settings in the config."""
+        if self.test_data.has_normal:
+            # split the test data into normal and anomalous so these can be processed separately
+            normal_test_data, self.test_data = split_normal_and_anomalous(self.test_data)
+        else:
+            # when the user did not provide any normal images for testing, we sample some from the training set
+            logger.info(
+                "No normal test images found. Sampling from training set using a split ratio of %d",
+                self.test_split_ratio,
+            )
+            self.train_data, normal_test_data = random_split(self.train_data, self.test_split_ratio)
+
         if self.test_split_mode == TestSplitMode.FROM_DIR:
-            # normal data taken from normal_test_dir if available, otherwise sampled from training set
-            if not self.test_data.has_normal:
-                logger.info(
-                    "No normal test images found. Sampling from training set using a split ratio of %d",
-                    self.test_split_ratio,
-                )
-                self.train_data, normal_test_data = random_split(self.train_data, self.test_split_ratio)
-                self.test_data += normal_test_data
-            # anomalous data taken from abnormal_dir if available, otherwise raise warning
-            if not self.test_data.has_anomalous:
-                warnings.warn(
-                    "Your test set does not contain any anomalous images, which may lead to unreliable "
-                    "evaluation results. To fix, please include anomalous images in your dataset, or set "
-                    "`test_split_mode` to `synthetic`."
-                )
+            self.test_data += normal_test_data
         elif self.test_split_mode == TestSplitMode.SYNTHETIC:
-            if not self.test_data.has_normal:
-                logger.info(
-                    "No normal test images found. Sampling from training set using a split ratio of %d",
-                    self.test_split_ratio,
-                )
-                self.train_data, normal_test_data = random_split(self.train_data, self.test_split_ratio)
-            else:
-                normal_test_data, _ = split_normal_and_anomalous(self.test_data)
             self.test_data = SyntheticAnomalyDataset.from_dataset(normal_test_data)
+        else:
+            raise ValueError(f"Unsupported Test Split Mode: {self.test_split_mode}")
 
     def _create_val_split(self):
-        # perform subset splitting for validation set
+        """Obtain the validation set based on the settings in the config."""
         if self.val_split_mode == ValSplitMode.FROM_TEST:
+            # randomly sampled from test set
             self.test_data, self.val_data = random_split(
                 self.test_data, self.val_split_ratio, label_aware=True, seed=self.seed
             )
         elif self.val_split_mode == ValSplitMode.SAME_AS_TEST:
+            # equal to test set
             self.val_data = self.test_data
         elif self.val_split_mode == ValSplitMode.SYNTHETIC:
+            # converted from random training sample
             self.train_data, normal_val_data = random_split(self.train_data, self.val_split_ratio)
             self.val_data = SyntheticAnomalyDataset.from_dataset(normal_val_data)
         elif self.val_split_mode != ValSplitMode.NONE:
