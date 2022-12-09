@@ -87,9 +87,9 @@ class CfaModel(nn.Module):
         """
         memory_bank: Tensor = torch.tensor(0, requires_grad=False)
         with torch.no_grad():
-            for i, (x, _, _) in enumerate(tqdm(data_loader)):
-                x = x.to(self.device)
-                features = self.feature_extractor(x)
+            for i, (batch, _, _) in enumerate(tqdm(data_loader)):
+                batch = batch.to(self.device)
+                features = self.feature_extractor(batch)
                 # TODO: >>> Conversion from dict to list.
                 features = [val for val in features.values()]
                 # TODO <<< Conversion from dict to list.
@@ -109,6 +109,15 @@ class CfaModel(nn.Module):
         return memory_bank
 
     def compute_distance(self, target_oriented_features: Tensor) -> Tensor:
+        """Compute distance using target oriented features.
+
+        Args:
+            target_oriented_features (Tensor): Target oriented features computed
+                using the descriptor.
+
+        Returns:
+            Tensor: Distance tensor.
+        """
         features = target_oriented_features.pow(2).sum(dim=2, keepdim=True)
         centers = self.memory_bank.pow(2).sum(dim=0, keepdim=True)
         f_c = 2 * torch.matmul(target_oriented_features, (self.memory_bank))
@@ -138,6 +147,15 @@ class CfaModel(nn.Module):
         return loss
 
     def compute_score(self, distance: Tensor) -> Tensor:
+        """Compute score based on the distance.
+
+        Args:
+            distance (Tensor): Distance tensor computed using target oriented
+                features.
+
+        Returns:
+            Tensor: Score value.
+        """
         distance = torch.sqrt(distance)
 
         n_neighbors = self.num_nearest_neighbors
@@ -150,6 +168,14 @@ class CfaModel(nn.Module):
         return score
 
     def forward(self, input: Tensor) -> Tensor:
+        """Forward pass of the CFA model.
+
+        Args:
+            input (Tensor): Input batch to the model.
+
+        Returns:
+            Tensor: Loss or the score values depending on train/eval modes.
+        """
         self.feature_extractor.eval()
         features = self.feature_extractor(input)
 
