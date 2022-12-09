@@ -352,13 +352,19 @@ class CrossScaleFlow(nn.Module):
     Args:
         input_dims (Tuple[int, int, int]): Input dimensions of the module.
         n_coupling_blocks (int): Number of coupling blocks.
+        clamp (float): Clamp value for the inputs.
+        corss_conv_hidden_channels (int): Number of hidden channels in the cross convolution.
     """
 
-    def __init__(self, input_dims: Tuple[int, int, int], n_coupling_blocks: int):
+    def __init__(
+        self, input_dims: Tuple[int, int, int], n_coupling_blocks: int, clamp: float, cross_conv_hidden_channels: int
+    ):
         super().__init__()
         self.input_dims = input_dims
         self.n_coupling_blocks = n_coupling_blocks
         self.kernel_sizes = [3] * (n_coupling_blocks - 1) + [5]
+        self.clamp = clamp
+        self.cross_conv_hidden_channels = cross_conv_hidden_channels
         self.graph = self._create_graph()
 
     def _create_graph(self):
@@ -478,7 +484,12 @@ class CsFlowModel(nn.Module):
         self.clamp = clamp
         self.cross_conv_hidden_channels = cross_conv_hidden_channels
         self.feature_extractor = MultiScaleFeatureExtractor(n_scales=3, input_size=input_size)
-        self.graph = CrossScaleFlow(input_dims=self.input_dims, n_coupling_blocks=n_coupling_blocks)
+        self.graph = CrossScaleFlow(
+            input_dims=self.input_dims,
+            n_coupling_blocks=n_coupling_blocks,
+            clamp=clamp,
+            cross_conv_hidden_channels=cross_conv_hidden_channels,
+        )
         self.anomaly_map_generator = AnomalyMapGenerator(input_dims=self.input_dims, mode=AnomalyMapMode.ALL)
 
     def forward(self, images) -> Tuple[Tensor, Tensor]:
