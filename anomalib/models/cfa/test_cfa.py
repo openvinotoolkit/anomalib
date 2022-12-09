@@ -90,16 +90,23 @@ class TestCfaModel:
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
         # Compute the memory bank.
         cfa_old = DSVDD(old_feature_extractor, train_loader, "wide_resnet50_2", 1, 1, device).to(device)
-        cfa_new = CfaModel(new_feature_extractor, train_loader, "wide_resnet50_2", 1, 1, device).to(device)
+        cfa_new = CfaModel(train_loader, "wide_resnet50_2", 1, 1, device).to(device)
         assert torch.allclose(cfa_old.C, cfa_new.memory_bank, atol=1e-1)
         assert cfa_new.memory_bank.requires_grad is False
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
         # Compute Forward-Pass.
-        old_loss, _ = cfa_old(old_features)
-        new_loss, _ = cfa_new(new_features)
+        old_loss, old_score = cfa_old(old_features)
+
+        cfa_new.train()
+        new_loss = cfa_new(input)
+
+        cfa_new.eval()
+        new_score = cfa_new(input)
+
         assert (old_loss - new_loss).abs() / 1000 < 1e-1, "Old and new losses should match."
+        assert torch.allclose(old_score, new_score, atol=1e-1), "Old and new scores should match."
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #

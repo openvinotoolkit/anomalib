@@ -1,6 +1,6 @@
 """Torch Model Implementation of the CFA Model."""
 
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import torch
 import torch.nn as nn
@@ -53,7 +53,7 @@ def initialize_weights(m) -> None:
 
 class CfaModel(nn.Module):
     def __init__(
-        self, model: nn.Module, data_loader: DataLoader, backbone: str, gamma_c: int, gamma_d: int, device: torch.device
+        self, data_loader: DataLoader, backbone: str, gamma_c: int, gamma_d: int, device: torch.device
     ) -> None:
         super().__init__()
         self.gamma_c = gamma_c
@@ -74,10 +74,8 @@ class CfaModel(nn.Module):
         # TODO <<< Temporary.
 
         self.memory_bank = self._init_centroid(data_loader)
-        # self.memory_bank = self._init_centroid(model, data_loader)
 
     def _init_centroid(self, data_loader: DataLoader) -> Tensor:
-        # def _init_centroid(self, model: nn.Module, data_loader: DataLoader) -> Tensor:
         """Initialize the Centroid of the Memory Bank.
 
         Args:
@@ -92,7 +90,6 @@ class CfaModel(nn.Module):
             for i, (x, _, _) in enumerate(tqdm(data_loader)):
                 x = x.to(self.device)
                 features = self.feature_extractor(x)
-                # features = model(x)
                 # TODO: >>> Conversion from dict to list.
                 features = [val for val in features.values()]
                 # TODO <<< Conversion from dict to list.
@@ -112,23 +109,21 @@ class CfaModel(nn.Module):
         return memory_bank
 
     def compute_distance(self, target_oriented_features: Tensor) -> Tensor:
-        features = torch.sum(torch.pow(target_oriented_features, 2), 2, keepdim=True)
-        centers = torch.sum(torch.pow(self.memory_bank, 2), 0, keepdim=True)
+        features = target_oriented_features.pow(2).sum(dim=2, keepdim=True)
+        centers = self.memory_bank.pow(2).sum(dim=0, keepdim=True)
         f_c = 2 * torch.matmul(target_oriented_features, (self.memory_bank))
         distance = features + centers - f_c
         return distance
 
-    def compute_loss(self, target_oriented_features: Tensor) -> Tensor:
+    def compute_loss(self, distance: Tensor) -> Tensor:
         """Compute the CFA loss.
 
         Args:
-            target_oriented_features (Tensor): Target oriented features.
+            distance (Tensor): Distance computed using target oriented features.
 
         Returns:
             Tensor: CFA loss.
         """
-        distance = self.compute_distance(target_oriented_features)
-
         num_neighbors = self.num_nearest_neighbors + self.num_hard_negative_features
         distance = distance.topk(num_neighbors, largest=False).values
 
@@ -142,29 +137,32 @@ class CfaModel(nn.Module):
 
         return loss
 
-    def forward(self, features: List[Tensor]):
+    def compute_score(self, distance: Tensor) -> Tensor:
+        distance = torch.sqrt(distance)
+
+        n_neighbors = self.num_nearest_neighbors
+        distance = distance.topk(n_neighbors, largest=False).values
+
+        distance = (F.softmin(distance, dim=-1)[:, :, 0]) * distance[:, :, 0]
+        distance = distance.unsqueeze(-1)
+
+        score = rearrange(distance, "b (h w) c -> b c h w", h=self.scale)
+        return score
+
+    def forward(self, input: Tensor) -> Tensor:
+        self.feature_extractor.eval()
+        features = self.feature_extractor(input)
+
         target_features = self.descriptor(features)
         target_features = rearrange(target_features, "b c h w -> b (h w) c")
 
-        features = torch.sum(torch.pow(target_features, 2), 2, keepdim=True)
-        centers = torch.sum(torch.pow(self.memory_bank, 2), 0, keepdim=True)
-        f_c = 2 * torch.matmul(target_features, (self.memory_bank))
-        dist = features + centers - f_c
-        dist = torch.sqrt(dist)
+        distance = self.compute_distance(target_features)
 
-        n_neighbors = self.num_nearest_neighbors
-        dist = dist.topk(n_neighbors, largest=False).values
-
-        dist = (F.softmin(dist, dim=-1)[:, :, 0]) * dist[:, :, 0]
-        dist = dist.unsqueeze(-1)
-
-        score = rearrange(dist, "b (h w) c -> b c h w", h=self.scale)
-
-        loss = 0
         if self.training:
-            loss = self.compute_loss(target_features)
-
-        return loss, score
+            output = self.compute_loss(distance)
+        else:
+            output = self.compute_score(distance)
+        return output
 
 
 class Descriptor(nn.Module):
@@ -181,7 +179,11 @@ class Descriptor(nn.Module):
 
         self.layer = CoordConv2d(in_channels=dim, out_channels=out_channels, kernel_size=1)
 
-    def forward(self, features: List[Tensor]) -> Tensor:
+    def forward(self, features: Union[List[Tensor], Dict[str, Tensor]]) -> Tensor:
+        """Forward pass."""
+        if isinstance(features, dict):
+            features = [values for values in features.values()]
+
         patch_features: Optional[Tensor] = None
         for i in features:
             i = F.avg_pool2d(i, 3, 1, 1) / i.size(1) if self.backbone == "efficientnet_b5" else F.avg_pool2d(i, 3, 1, 1)
