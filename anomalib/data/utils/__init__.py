@@ -13,7 +13,14 @@ from .image import (
     get_image_height_and_width,
     read_image,
 )
-from .split import Split, ValSplitMode, concatenate_datasets, random_split
+from .split import (
+    Split,
+    TestSplitMode,
+    ValSplitMode,
+    concatenate_datasets,
+    random_split,
+    split_normal_and_anomalous,
+)
 
 __all__ = [
     "generate_output_image_filename",
@@ -24,9 +31,11 @@ __all__ = [
     "read_image",
     "DownloadProgressBar",
     "random_split",
+    "split_normal_and_anomalous",
     "concatenate_datasets",
     "Split",
     "ValSplitMode",
+    "TestSplitMode",
     "Augmenter",
     "masks_to_boxes",
     "boxes_to_masks",

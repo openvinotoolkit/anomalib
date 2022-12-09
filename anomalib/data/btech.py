@@ -25,7 +25,13 @@ from tqdm import tqdm
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.task_type import TaskType
-from anomalib.data.utils import DownloadProgressBar, Split, ValSplitMode, hash_check
+from anomalib.data.utils import (
+    DownloadProgressBar,
+    Split,
+    TestSplitMode,
+    ValSplitMode,
+    hash_check,
+)
 from anomalib.pre_processing import PreProcessor
 
 logger = logging.getLogger(__name__)
@@ -181,6 +187,8 @@ class BTech(AnomalibDataModule):
         task: TaskType = TaskType.SEGMENTATION,
         transform_config_train: Optional[Union[str, A.Compose]] = None,
         transform_config_eval: Optional[Union[str, A.Compose]] = None,
+        test_split_mode: TestSplitMode = TestSplitMode.FROM_DIR,
+        test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
         val_split_ratio: float = 0.5,
         seed: Optional[int] = None,
@@ -199,6 +207,11 @@ class BTech(AnomalibDataModule):
             transform_config_val: Config for pre-processing during validation.
             create_validation_set: Create a validation subset in addition to the train and test subsets
             seed (Optional[int], optional): Seed used during random subset splitting.
+            test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
+            test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
+            val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
+            val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
+            seed (Optional[int], optional): Seed which may be set to a fixed value for reproducibility.
 
         Examples:
             >>> from anomalib.data import BTech
@@ -230,6 +243,8 @@ class BTech(AnomalibDataModule):
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
             num_workers=num_workers,
+            test_split_mode=test_split_mode,
+            test_split_ratio=test_split_ratio,
             val_split_mode=val_split_mode,
             val_split_ratio=val_split_ratio,
             seed=seed,

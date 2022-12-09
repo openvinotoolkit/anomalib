@@ -6,7 +6,10 @@ This dataset can be used when there is a lack of real anomalous data.
 import logging
 import math
 import shutil
+from copy import deepcopy
 from pathlib import Path
+from tempfile import mkdtemp
+from typing import Dict
 
 import albumentations as A
 import cv2
@@ -14,12 +17,15 @@ import pandas as pd
 from albumentations.pytorch import ToTensorV2
 from pandas import DataFrame, Series
 
-from anomalib.data import TaskType
 from anomalib.data.base.dataset import AnomalibDataset
+from anomalib.data.task_type import TaskType
 from anomalib.data.utils import Augmenter, Split, read_image
 from anomalib.pre_processing import PreProcessor
 
 logger = logging.getLogger(__name__)
+
+
+ROOT = "./.tmp/synthetic_anomaly"
 
 
 def make_synthetic_dataset(
@@ -92,7 +98,7 @@ def make_synthetic_dataset(
     return samples
 
 
-class SyntheticValidationSet(AnomalibDataset):
+class SyntheticAnomalyDataset(AnomalibDataset):
     """Dataset which reads synthetically generated anomalous images from a temporary folder.
 
     Args:
@@ -107,24 +113,41 @@ class SyntheticValidationSet(AnomalibDataset):
         self.source_samples = source_samples
 
         # Files will be written to a temporary directory in the workdir, which is cleaned up after code execution
-        self.root = Path("./.tmp/synthetic_anomaly")
-        self.im_dir = self.root / "images"
+        root = Path(ROOT)
+        root.mkdir(parents=True, exist_ok=True)
+
+        self.root = Path(mkdtemp(dir=root))
+        self.im_dir = self.root / "abnormal"
         self.mask_dir = self.root / "ground_truth"
 
-        # clean up any existing data that may be left over from previous run
-        if self.root.exists():
-            shutil.rmtree(self.root)
-
         # create directories
-        self.im_dir.mkdir(parents=True)
+        self.im_dir.mkdir()
         self.mask_dir.mkdir()
 
+        self._cleanup = True  # flag that determines if temp dir is cleaned up when instance is deleted
         self.setup()
 
     @classmethod
     def from_dataset(cls, dataset):
         """Create a synthetic anomaly dataset from an existing dataset of normal images."""
         return cls(task=dataset.task, pre_process=dataset.pre_process, source_samples=dataset.samples)
+
+    def __copy__(self) -> "SyntheticAnomalyDataset":
+        """Returns a shallow copy of the dataset object and prevents cleanup when original object is deleted."""
+        cls = self.__class__
+        new = cls.__new__(cls)
+        new.__dict__.update(self.__dict__)
+        self._cleanup = False
+        return new
+
+    def __deepcopy__(self, _memo: Dict) -> "SyntheticAnomalyDataset":
+        """Returns a deep copy of the dataset object and prevents cleanup when original object is deleted."""
+        cls = self.__class__
+        new = cls.__new__(cls)
+        for key, value in self.__dict__.items():
+            setattr(new, key, deepcopy(value))
+        self._cleanup = False
+        return new
 
     def _setup(self) -> None:
         """Create samples dataframe."""
@@ -133,4 +156,5 @@ class SyntheticValidationSet(AnomalibDataset):
 
     def __del__(self):
         """Make sure the temporary directory is cleaned up when the dataset object is deleted."""
-        shutil.rmtree(self.root)
+        if self._cleanup:
+            shutil.rmtree(self.root)

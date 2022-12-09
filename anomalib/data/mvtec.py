@@ -34,7 +34,13 @@ from pandas import DataFrame
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.task_type import TaskType
-from anomalib.data.utils import DownloadProgressBar, Split, ValSplitMode, hash_check
+from anomalib.data.utils import (
+    DownloadProgressBar,
+    Split,
+    TestSplitMode,
+    ValSplitMode,
+    hash_check,
+)
 from anomalib.pre_processing import PreProcessor
 
 logger = logging.getLogger(__name__)
@@ -149,7 +155,29 @@ class MVTecDataset(AnomalibDataset):
 
 
 class MVTec(AnomalibDataModule):
-    """MVTec Datamodule."""
+    """MVTec Datamodule.
+
+    Args:
+        root (str): Path to the root of the dataset
+        category (str): Category of the MVTec dataset (e.g. "bottle" or "cable").
+        image_size (Optional[Union[int, Tuple[int, int]]], optional): Size of the input image.
+            Defaults to None.
+        train_batch_size (int, optional): Training batch size. Defaults to 32.
+        eval_batch_size (int, optional): Test batch size. Defaults to 32.
+        num_workers (int, optional): Number of workers. Defaults to 8.
+        task TaskType): Task type, 'classification', 'detection' or 'segmentation'
+        transform_config_train (Optional[Union[str, A.Compose]], optional): Config for pre-processing
+            during training.
+            Defaults to None.
+        transform_config_val (Optional[Union[str, A.Compose]], optional): Config for pre-processing
+            during validation.
+            Defaults to None.
+        test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
+        test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
+        val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
+        val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
+        seed (Optional[int], optional): Seed which may be set to a fixed value for reproducibility.
+    """
 
     def __init__(
         self,
@@ -162,6 +190,8 @@ class MVTec(AnomalibDataModule):
         task: TaskType = TaskType.SEGMENTATION,
         transform_config_train: Optional[Union[str, A.Compose]] = None,
         transform_config_eval: Optional[Union[str, A.Compose]] = None,
+        test_split_mode: TestSplitMode = TestSplitMode.FROM_DIR,
+        test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
         val_split_ratio: float = 0.5,
         seed: Optional[int] = None,
@@ -170,6 +200,8 @@ class MVTec(AnomalibDataModule):
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
             num_workers=num_workers,
+            test_split_mode=test_split_mode,
+            test_split_ratio=test_split_ratio,
             val_split_mode=val_split_mode,
             val_split_ratio=val_split_ratio,
             seed=seed,

@@ -16,7 +16,7 @@ from __future__ import annotations
 import math
 import warnings
 from enum import Enum
-from typing import TYPE_CHECKING, List, Optional, Sequence, Union
+from typing import TYPE_CHECKING, List, Optional, Sequence, Tuple, Union
 
 import torch
 
@@ -30,6 +30,14 @@ class Split(str, Enum):
     TRAIN = "train"
     VAL = "val"
     TEST = "test"
+
+
+class TestSplitMode(str, Enum):
+    """Splitting mode used to obtain subset."""
+
+    NONE = "none"
+    FROM_DIR = "from_dir"
+    SYNTHETIC = "synthetic"
 
 
 class ValSplitMode(str, Enum):
@@ -117,3 +125,14 @@ def random_split(
     # outer list: subsets with the given ratio, inner list: per-label unique
     subsets = list(map(list, zip(*subsets)))
     return [concatenate_datasets(subset) for subset in subsets]
+
+
+def split_normal_and_anomalous(dataset: AnomalibDataset) -> Tuple[AnomalibDataset, AnomalibDataset]:
+    """Splits the dataset into the normal and anomalous subsets."""
+    samples = dataset.samples
+    normal_indices = samples[samples.label_index == 0].index
+    anomalous_indices = samples[samples.label_index == 1].index
+
+    normal_subset = dataset.subsample(list(normal_indices))
+    anomalous_subset = dataset.subsample(list(anomalous_indices))
+    return normal_subset, anomalous_subset

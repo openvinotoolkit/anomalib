@@ -6,9 +6,10 @@ from typing import Callable, Dict, Optional, Union
 import torch
 from torch import Tensor
 
+from anomalib.data.base.datamodule import AnomalibDataModule
 from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.task_type import TaskType
-from anomalib.data.utils import masks_to_boxes
+from anomalib.data.utils import ValSplitMode, masks_to_boxes
 from anomalib.data.utils.video import ClipsIndexer
 from anomalib.pre_processing import PreProcessor
 
@@ -93,3 +94,25 @@ class VideoAnomalibDataset(AnomalibDataset, ABC):
             item.pop("mask")
 
         return item
+
+
+class VideoAnomalibDataModule(AnomalibDataModule):
+    """Base class for video data modules."""
+
+    def _setup(self, _stage: Optional[str] = None) -> None:
+        """Set up the datasets and perform dynamic subset splitting.
+
+        This method may be overridden in subclass for custom splitting behaviour.
+
+        Video datamodules are not compatible with synthetic anomaly generation.
+        """
+        assert self.train_data is not None
+        assert self.test_data is not None
+
+        self.train_data.setup()
+        self.test_data.setup()
+
+        if self.val_split_mode == ValSplitMode.SYNTHETIC:
+            raise ValueError(f"Val split mode {self.test_split_mode} not supported for video datasets.")
+
+        self._create_val_split()
