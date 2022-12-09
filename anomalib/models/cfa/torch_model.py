@@ -1,6 +1,6 @@
 """Torch Model Implementation of the CFA Model."""
 
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -13,6 +13,8 @@ from torch.nn.common_types import _size_2_t
 from torch.utils.data import DataLoader
 from torchvision.models.feature_extraction import create_feature_extractor
 from tqdm import tqdm
+
+from anomalib.models.components import GaussianBlur2d
 
 SUPPORTED_BACKBONES = ("vgg19_bn", "resnet18", "wide_resnet50_2", "efficientnet_b5")
 
@@ -60,6 +62,7 @@ class CfaModel(nn.Module):
         self.gamma_d = gamma_d
         self.device = device
 
+        self.input_size: Tuple[int, int]
         self.scale: int
 
         self.num_nearest_neighbors = 3
@@ -93,7 +96,12 @@ class CfaModel(nn.Module):
                 # TODO: >>> Conversion from dict to list.
                 features = [val for val in features.values()]
                 # TODO <<< Conversion from dict to list.
+
+                # TODO <<< Find a better place for these.
+                self.input_size = (batch.size(2), batch.size(3))
                 self.scale = features[0].size(2)
+                # TODO >>> Find a better place for these.
+
                 oriented_features = self.descriptor(features)
                 memory_bank = ((memory_bank * i) + oriented_features.mean(dim=0, keepdim=True)) / (i + 1)
 
@@ -165,7 +173,22 @@ class CfaModel(nn.Module):
         distance = distance.unsqueeze(-1)
 
         score = rearrange(distance, "b (h w) c -> b c h w", h=self.scale)
-        return score
+        return score.detach()
+
+    def compute_anomaly_map(self, score: Tensor) -> Tensor:
+        """Compute anomaly map based on the score.
+
+        Args:
+            score (Tensor): Score tensor.
+
+        Returns:
+            Tensor: Anomaly map.
+        """
+        anomaly_map = score.mean(dim=1, keepdim=True)
+        anomaly_map = F.interpolate(anomaly_map, size=self.input_size, mode="bilinear", align_corners=False)
+        # TODO: >>> Change gaussian blur function first.
+        # anomaly_map = gaussian_blur(anomaly_map)
+        return anomaly_map
 
     def forward(self, input: Tensor) -> Tensor:
         """Forward pass of the CFA model.
