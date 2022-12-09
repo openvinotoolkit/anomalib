@@ -186,8 +186,9 @@ class CfaModel(nn.Module):
         """
         anomaly_map = score.mean(dim=1, keepdim=True)
         anomaly_map = F.interpolate(anomaly_map, size=self.input_size, mode="bilinear", align_corners=False)
-        # TODO: >>> Change gaussian blur function first.
-        # anomaly_map = gaussian_blur(anomaly_map)
+
+        gaussian_blur = GaussianBlur2d(sigma=4).to(score.device)
+        anomaly_map = gaussian_blur(anomaly_map)
         return anomaly_map
 
     def forward(self, input: Tensor) -> Tensor:
@@ -210,7 +211,8 @@ class CfaModel(nn.Module):
         if self.training:
             output = self.compute_loss(distance)
         else:
-            output = self.compute_score(distance)
+            score = self.compute_score(distance)
+            output = self.compute_anomaly_map(score)
         return output
 
 

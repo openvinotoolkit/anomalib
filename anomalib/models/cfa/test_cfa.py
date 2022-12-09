@@ -15,6 +15,7 @@ from anomalib.models.cfa.torch_model import Descriptor as NewDescriptor
 from anomalib.models.cfa.torch_model import get_feature_extractor
 from anomalib.models.cfa.utils.cfa import DSVDD
 from anomalib.models.cfa.utils.coordconv import CoordConv2d as OldCoordConv2d
+from anomalib.models.cfa.utils.metric import gaussian_smooth, upsample
 
 
 def initialize_weights(m) -> None:
@@ -102,20 +103,27 @@ class TestCfaModel:
         cfa_new.train()
         new_loss = cfa_new(input)
 
-        cfa_new.eval()
-        new_score = cfa_new(input)
-
         assert (old_loss - new_loss).abs() / 1000 < 1e-1, "Old and new losses should match."
-        assert torch.allclose(old_score, new_score, atol=1e-1), "Old and new scores should match."
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-        # # Compute Loss.
-        # features = torch.rand((4, 1792, 56, 56)).cuda()
-        # features = rearrange(features, "b c h w -> b (h w) c")
 
-        # old_loss = cfa_old._soft_boundary(features)
-        # new_loss = cfa_new.compute_loss(features)
-        # # Divide by 1000 because the loss is multiplied by 1000 in the implementation.
-        # assert (old_loss - new_loss).abs()/1000 < 1e-1
-        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+        # Compute Anomaly Map.
+        heatmaps = None
+        old_loss, old_score = cfa_old(old_features)
+        heatmap = old_score.cpu().detach()
+        heatmap = torch.mean(heatmap, dim=1)
+        heatmaps = torch.cat((heatmaps, heatmap), dim=0) if heatmaps != None else heatmap
+
+        heatmaps = upsample(heatmaps, size=input.size(2), mode="bilinear")
+        heatmaps = gaussian_smooth(heatmaps, sigma=4)
+        heatmaps = torch.tensor(heatmaps).cuda().unsqueeze(1)
+
+        cfa_new.train()
+        new_loss = cfa_new(input)
+
+        cfa_new.eval()
+        new_heatmaps = cfa_new(input)
+        assert torch.allclose(heatmaps, new_heatmaps, atol=1e-1), "Old and new heatmaps should match."
+
+        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
