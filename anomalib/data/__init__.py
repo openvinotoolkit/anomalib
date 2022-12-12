@@ -63,7 +63,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
         )
     elif config.dataset.format.lower() == "folder":
         datamodule = Folder(
-            root=config.dataset.path,
+            root=config.dataset.root,
             normal_dir=config.dataset.normal_dir,
             abnormal_dir=config.dataset.abnormal_dir,
             task=config.dataset.task,
