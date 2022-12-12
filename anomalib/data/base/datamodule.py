@@ -20,7 +20,7 @@ from anomalib.data.utils import (
     TestSplitMode,
     ValSplitMode,
     random_split,
-    split_normal_and_anomalous,
+    split_by_label,
 )
 
 logger = logging.getLogger(__name__)
@@ -119,7 +119,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         """Obtain the test set based on the settings in the config."""
         if self.test_data.has_normal:
             # split the test data into normal and anomalous so these can be processed separately
-            normal_test_data, self.test_data = split_normal_and_anomalous(self.test_data)
+            normal_test_data, self.test_data = split_by_label(self.test_data)
         else:
             # when the user did not provide any normal images for testing, we sample some from the training set
             logger.info(

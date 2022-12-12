@@ -19,7 +19,7 @@ from .split import (
     ValSplitMode,
     concatenate_datasets,
     random_split,
-    split_normal_and_anomalous,
+    split_by_label,
 )
 
 __all__ = [
@@ -31,7 +31,7 @@ __all__ = [
     "read_image",
     "DownloadProgressBar",
     "random_split",
-    "split_normal_and_anomalous",
+    "split_by_label",
     "concatenate_datasets",
     "Split",
     "ValSplitMode",
