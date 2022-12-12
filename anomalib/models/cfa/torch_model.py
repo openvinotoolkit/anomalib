@@ -57,7 +57,6 @@ def initialize_weights(m) -> None:
 class CfaModel(nn.Module):
     def __init__(
         self,
-        feature_extractor: nn.Module,
         data_loader: DataLoader,
         backbone: str,
         gamma_c: int,
@@ -75,7 +74,7 @@ class CfaModel(nn.Module):
         self.num_nearest_neighbors = 3
         self.num_hard_negative_features = 3
 
-        self.feature_extractor = feature_extractor
+        self.feature_extractor = get_feature_extractor(backbone, device)
         self.descriptor = Descriptor(self.gamma_d, backbone).to(device)
         self.r = torch.ones(1, requires_grad=True) * 1e-5
 
@@ -99,6 +98,9 @@ class CfaModel(nn.Module):
             for i, (batch, _, _) in enumerate(tqdm(data_loader)):
                 batch = batch.to(self.device)
                 features = self.feature_extractor(batch)
+                # TODO: >>> Conversion from dict to list.
+                features = [val for val in features.values()]
+                # TODO <<< Conversion from dict to list.
 
                 # TODO <<< Find a better place for these.
                 self.input_size = (batch.size(2), batch.size(3))
@@ -193,7 +195,11 @@ class CfaModel(nn.Module):
         anomaly_map = gaussian_blur(anomaly_map)
         return anomaly_map
 
-    def forward(self, features: Tensor):
+    def forward(self, input: Tensor):
+        self.feature_extractor.eval()
+        with torch.no_grad():
+            features = self.feature_extractor(input)
+
         target_features = self.descriptor(features)
         target_features = rearrange(target_features, "b c h w -> b (h w) c")
 

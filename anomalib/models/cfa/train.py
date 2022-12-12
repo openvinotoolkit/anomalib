@@ -10,7 +10,7 @@ from cnn.resnet import resnet18, wide_resnet50_2
 from cnn.vgg import vgg19_bn
 from datasets.mvtec import MVTecDataset
 from torch.utils.data import DataLoader
-from torch_model import CfaModel
+from torch_model import CfaModel, get_feature_extractor
 from utils.cfa import *
 from utils.metric import *
 from utils.visualizer import *
@@ -115,7 +115,7 @@ def run():
         feature_extractor1.eval()
 
         cfa1 = DSVDD(feature_extractor1, train_loader, args.cnn, args.gamma_c, args.gamma_d, device)
-        cfa2 = CfaModel(feature_extractor1, train_loader, args.cnn, args.gamma_c, args.gamma_d, device)
+        cfa2 = CfaModel(train_loader, args.cnn, args.gamma_c, args.gamma_d, device)
 
         cfa1 = cfa1.to(device)
         cfa2 = cfa2.to(device)
@@ -138,12 +138,13 @@ def run():
             cfa1.train()
             cfa2.train()
             for (batch, _, _) in train_loader:
+                batch = batch.to(device)
                 optimizer1.zero_grad()
                 optimizer2.zero_grad()
-                features1 = feature_extractor1(batch.to(device))
+                features1 = feature_extractor1(batch)
 
                 loss1, _ = cfa1(features1)
-                loss2 = cfa2(features1)
+                loss2 = cfa2(batch)
                 loss1.backward(retain_graph=True)
                 loss2.backward(retain_graph=True)
                 optimizer1.step()
@@ -153,15 +154,17 @@ def run():
             cfa1.eval()
             cfa2.eval()
             for batch, y, mask in test_loader:
+                batch = batch.to(device)
                 test_imgs.extend(batch.cpu().detach().numpy())
                 gt_list.extend(y.cpu().detach().numpy())
                 gt_mask_list.extend(mask.cpu().detach().numpy())
 
-                features1 = feature_extractor1(batch.to(device))
+                features1 = feature_extractor1(batch)
+                # features2 = feature_extractor2(batch)
                 _, score1 = cfa1(features1)
                 # score2 = cfa2(features1)
                 heatmap1 = score1.cpu().detach()
-                heatmap2 = cfa2(features1)
+                heatmap2 = cfa2(batch)
                 # heatmap2 = score2.cpu().detach()
                 heatmap1 = torch.mean(heatmap1, dim=1)
                 # heatmap2 = torch.mean(heatmap2, dim=1)
