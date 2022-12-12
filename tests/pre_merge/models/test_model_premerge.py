@@ -17,6 +17,7 @@ class TestModel:
     @pytest.mark.parametrize(
         ["model_name", "nncf"],
         [
+            ("cfa", False),
             ("cflow", False),
             ("dfkde", False),
             ("dfm", False),

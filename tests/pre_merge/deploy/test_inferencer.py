@@ -38,6 +38,7 @@ class TestInferencers:
     @pytest.mark.parametrize(
         "model_name",
         [
+            "cfa",
             "cflow",
             "dfm",
             "dfkde",
