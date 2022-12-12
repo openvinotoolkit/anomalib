@@ -14,7 +14,7 @@ from anomalib.data.utils.video import ClipsIndexer
 from anomalib.pre_processing import PreProcessor
 
 
-class VideoAnomalibDataset(AnomalibDataset, ABC):
+class AnomalibVideoDataset(AnomalibDataset, ABC):
     """Base video anomalib dataset class.
 
     Args:
@@ -49,7 +49,7 @@ class VideoAnomalibDataset(AnomalibDataset, ABC):
     @samples.setter
     def samples(self, samples):
         """Overwrite samples and re-index subvideos."""
-        super(VideoAnomalibDataset, self.__class__).samples.fset(self, samples)
+        super(AnomalibVideoDataset, self.__class__).samples.fset(self, samples)
         self._setup_clips()
 
     def _setup_clips(self) -> None:
@@ -96,7 +96,7 @@ class VideoAnomalibDataset(AnomalibDataset, ABC):
         return item
 
 
-class VideoAnomalibDataModule(AnomalibDataModule):
+class AnomalibVideoDataModule(AnomalibDataModule):
     """Base class for video data modules."""
 
     def _setup(self, _stage: Optional[str] = None) -> None:

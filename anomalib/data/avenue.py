@@ -26,7 +26,7 @@ import scipy.io
 from pandas import DataFrame
 from torch import Tensor
 
-from anomalib.data.base import VideoAnomalibDataModule, VideoAnomalibDataset
+from anomalib.data.base import AnomalibVideoDataModule, AnomalibVideoDataset
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import DownloadProgressBar, Split, ValSplitMode, hash_check
 from anomalib.data.utils.video import ClipsIndexer
@@ -121,7 +121,7 @@ class AvenueClipsIndexer(ClipsIndexer):
         return masks
 
 
-class AvenueDataset(VideoAnomalibDataset):
+class AvenueDataset(AnomalibVideoDataset):
     """Avenue Dataset class.
 
     Args:
@@ -156,7 +156,7 @@ class AvenueDataset(VideoAnomalibDataset):
         self.samples = make_avenue_dataset(self.root, self.gt_dir, self.split)
 
 
-class Avenue(VideoAnomalibDataModule):
+class Avenue(AnomalibVideoDataModule):
     """Avenue DataModule class.
 
     Args:

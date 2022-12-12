@@ -14,7 +14,7 @@ import torch
 from pandas import DataFrame
 from torch import Tensor
 
-from anomalib.data.base import VideoAnomalibDataModule, VideoAnomalibDataset
+from anomalib.data.base import AnomalibVideoDataModule, AnomalibVideoDataset
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
     DownloadProgressBar,
@@ -134,7 +134,7 @@ class UCSDpedClipsIndexer(ClipsIndexer):
         return video, torch.empty((1, 0)), {}, video_idx
 
 
-class UCSDpedDataset(VideoAnomalibDataset):
+class UCSDpedDataset(AnomalibVideoDataset):
     """UCSDped Dataset class.
 
     Args:
@@ -168,7 +168,7 @@ class UCSDpedDataset(VideoAnomalibDataset):
         self.samples = make_ucsd_dataset(self.root_category, self.split)
 
 
-class UCSDped(VideoAnomalibDataModule):
+class UCSDped(AnomalibVideoDataModule):
     """UCSDped DataModule class.
 
     Args:
