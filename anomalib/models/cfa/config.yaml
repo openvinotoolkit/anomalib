@@ -90,7 +90,7 @@ trainer:
   limit_val_batches: 1.0
   log_every_n_steps: 50
   log_gpu_memory: null
-  max_epochs: 1
+  max_epochs: 30
   max_steps: -1
   max_time: null
   min_epochs: null

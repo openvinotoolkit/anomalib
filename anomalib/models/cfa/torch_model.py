@@ -28,6 +28,7 @@ from anomalib.models.components import GaussianBlur2d
 SUPPORTED_BACKBONES = ("vgg19_bn", "resnet18", "wide_resnet50_2", "efficientnet_b5")
 
 
+# TODO: Replace this with the new torchfx feature extractor.
 def get_feature_extractor(backbone: str) -> GraphModule:
     """Get the feature extractor from the backbone CNN.
 
@@ -66,6 +67,8 @@ def initialize_weights(m) -> None:
         nn.init.kaiming_uniform_(m.weight.data, nonlinearity="relu")
         if m.bias is not None:
             nn.init.constant_(m.bias.data, 0)
+
+
 # TODO: <<< This is temporary.
 
 
