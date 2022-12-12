@@ -22,7 +22,7 @@ from torch.utils.data import DataLoader
 from torchvision.models.feature_extraction import create_feature_extractor
 from tqdm import tqdm
 
-from anomalib.models.components import GaussianBlur2d
+from anomalib.models.components import DynamicBufferModule, GaussianBlur2d
 
 SUPPORTED_BACKBONES = ("vgg19_bn", "resnet18", "wide_resnet50_2", "efficientnet_b5")
 
@@ -59,10 +59,11 @@ def get_feature_extractor(backbone: str) -> GraphModule:
     return feature_extractor
 
 
-class CfaModel(nn.Module):
+class CfaModel(DynamicBufferModule):
     """Torch implementation of the CFA Model.
 
     Args:
+        input_size: (Tuple[int, int]): Input size of the image tensor.
         backbone (str): Backbone CNN network.
         gamma_c (int): gamma_c parameter from the paper.
         gamma_d (int): gamma_d parameter from the paper.
@@ -70,22 +71,25 @@ class CfaModel(nn.Module):
 
     def __init__(
         self,
+        input_size: Tuple[int, int],
         backbone: str,
         gamma_c: int,
         gamma_d: int,
     ) -> None:
         super().__init__()
+        self.input_size = torch.Size(input_size)
         self.gamma_c = gamma_c
         self.gamma_d = gamma_d
 
-        self.input_size: Tuple[int, int]
-        self.scale: int
+        self.scale: torch.Size
 
         self.num_nearest_neighbors = 3
         self.num_hard_negative_features = 3
 
+        self.register_buffer("memory_bank", torch.tensor(0.0))
+        self.memory_bank: Tensor
+
         self.feature_extractor = get_feature_extractor(backbone)
-        self.memory_bank = torch.tensor(0, requires_grad=False)
         self.descriptor = Descriptor(self.gamma_d, backbone)
         self.radius = torch.ones(1, requires_grad=True) * 1e-5
 
@@ -105,10 +109,9 @@ class CfaModel(nn.Module):
                 features = self.feature_extractor(batch)
                 features = list(features.values())
 
-                # TODO <<< Find a better place for these.
-                self.input_size = (batch.size(2), batch.size(3))
-                self.scale = features[0].size(2)
-                # TODO >>> Find a better place for these.
+                # Compute the scale once.
+                if hasattr(self, "scale") is False:
+                    self.scale = features[0].size()[-2:]
 
                 target_features = self.descriptor(features)
                 self.memory_bank = ((self.memory_bank * i) + target_features.mean(dim=0, keepdim=True)) / (i + 1)
@@ -117,7 +120,7 @@ class CfaModel(nn.Module):
 
         if self.gamma_c > 1:
             # TODO: Create PyTorch KMeans class.
-            k_means = KMeans(n_clusters=(self.scale**2) // self.gamma_c, max_iter=3000)
+            k_means = KMeans(n_clusters=(self.scale[0] * self.scale[1]) // self.gamma_c, max_iter=3000)
             cluster_centers = k_means.fit(self.memory_bank.cpu()).cluster_centers_
             self.memory_bank = torch.tensor(cluster_centers, requires_grad=False).to(device)
 
@@ -137,8 +140,8 @@ class CfaModel(nn.Module):
             target_oriented_features = rearrange(target_oriented_features, "b c h w -> b (h w) c")
 
         features = target_oriented_features.pow(2).sum(dim=2, keepdim=True)
-        centers = self.memory_bank.pow(2).sum(dim=0, keepdim=True)
-        f_c = 2 * torch.matmul(target_oriented_features, (self.memory_bank))
+        centers = self.memory_bank.pow(2).sum(dim=0, keepdim=True).to(features.device)
+        f_c = 2 * torch.matmul(target_oriented_features, (self.memory_bank.to(features.device)))
         distance = features + centers - f_c
         return distance
 
@@ -182,7 +185,7 @@ class CfaModel(nn.Module):
         distance = (F.softmin(distance, dim=-1)[:, :, 0]) * distance[:, :, 0]
         distance = distance.unsqueeze(-1)
 
-        score = rearrange(distance, "b (h w) c -> b c h w", h=self.scale)
+        score = rearrange(distance, "b (h w) c -> b c h w", h=self.scale[0], w=self.scale[1])
         return score.detach()
 
     def compute_anomaly_map(self, score: Tensor) -> Tensor:
@@ -219,6 +222,10 @@ class CfaModel(nn.Module):
         self.feature_extractor.eval()
         with torch.no_grad():
             features = self.feature_extractor(input_tensor)
+            features = list(features.values())
+
+        if hasattr(self, "scale") is False:
+            self.scale = features[0].size()[-2:]
 
         target_features = self.descriptor(features)
         distance = self.compute_distance(target_features)

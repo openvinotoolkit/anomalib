@@ -22,6 +22,7 @@ data:
 model:
   class_path: anomalib.models.Cfa
   init_args:
+    input_size: [224, 224]
     backbone: wide_resnet50_2
     gamma_c: 1
     gamma_d: 1

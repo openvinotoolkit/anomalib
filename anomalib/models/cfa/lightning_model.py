@@ -9,7 +9,7 @@ Paper https://arxiv.org/abs/2206.04325
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
@@ -33,15 +33,15 @@ class Cfa(AnomalyModule):
     """CFA: Coupled-hypersphere-based Feature Adaptation for Target-Oriented Anomaly Localization.
 
     Args:
-        layers (List[str]): Layers to extract features from the backbone CNN
         input_size (Tuple[int, int]): Size of the model input.
         backbone (str): Backbone CNN network
-        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+        gamma_c (int, optional): gamma_c value from the paper. Defaults to 1.
+        gamma_d (int, optional): gamma_d value from the paper. Defaults to 1.
     """
 
-    def __init__(self, backbone: str, gamma_c: int = 1, gamma_d: int = 1) -> None:
+    def __init__(self, input_size: Tuple[int, int], backbone: str, gamma_c: int = 1, gamma_d: int = 1) -> None:
         super().__init__()
-        self.model: CfaModel = CfaModel(backbone=backbone, gamma_c=gamma_c, gamma_d=gamma_d)
+        self.model: CfaModel = CfaModel(input_size=input_size, backbone=backbone, gamma_c=gamma_c, gamma_d=gamma_d)
 
     def on_train_start(self) -> None:
         """Initialize the centroid for the memory bank computation."""
@@ -95,7 +95,12 @@ class CfaLightning(Cfa):
     """
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
-        super().__init__(backbone=hparams.model.backbone, gamma_c=hparams.model.gamma_c, gamma_d=hparams.model.gamma_d)
+        super().__init__(
+            input_size=hparams.model.input_size,
+            backbone=hparams.model.backbone,
+            gamma_c=hparams.model.gamma_c,
+            gamma_d=hparams.model.gamma_d,
+        )
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(hparams)
 
