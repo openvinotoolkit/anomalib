@@ -10,7 +10,7 @@ import torch.nn.functional as F
 from torch import Tensor, nn
 
 from anomalib.models.components import PCA, DynamicBufferModule, get_feature_extractor
-from anomalib.models.components.feature_extractors import FeatureExtractorParams
+from anomalib.models.components.feature_extractor import FeatureExtractorParams
 
 
 class SingleClassGaussian(DynamicBufferModule):

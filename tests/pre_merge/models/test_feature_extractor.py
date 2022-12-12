@@ -6,7 +6,7 @@ import torch
 from torchvision.models.efficientnet import EfficientNet_B5_Weights
 from torchvision.models.resnet import ResNet18_Weights
 
-from anomalib.models.components.feature_extractors import get_feature_extractor
+from anomalib.models.components.feature_extractor import get_feature_extractor
 from tests.helpers.dummy import DummyModel
 
 

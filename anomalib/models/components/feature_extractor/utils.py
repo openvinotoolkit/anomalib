@@ -55,7 +55,7 @@ def get_feature_extractor(
 
         Using Backbone params
 
-        >>> from anomalib.models.components.feature_extractors import TorchFXFeatureExtractorParams
+        >>> from anomalib.models.components.feature_extractor import TorchFXFeatureExtractorParams
         >>> from torchvision.models.efficientnet import EfficientNet_B5_Weights
         >>> params = TorchFXFeatureExtractorParams(backbone="efficientnet_b5",
         ...                     return_nodes=["features.6.8"],

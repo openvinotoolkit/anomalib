@@ -43,7 +43,7 @@ class TimmFeatureExtractor(BaseFeatureExtractor):
 
     Example:
         >>> import torch
-        >>> from anomalib.models.components.feature_extractors import TimmFeatureExtractor
+        >>> from anomalib.models.components.feature_extractor import TimmFeatureExtractor
 
         >>> model = TimmFeatureExtractor(backbone="resnet18", layers=['layer1', 'layer2', 'layer3'])
         >>> input = torch.rand((32, 3, 256, 256))

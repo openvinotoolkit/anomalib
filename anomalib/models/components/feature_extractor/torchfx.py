@@ -53,7 +53,7 @@ class TorchFXFeatureExtractor(BaseFeatureExtractor):
         With torchvision models:
 
             >>> import torch
-            >>> from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor
+            >>> from anomalib.models.components.feature_extractor import TorchFXFeatureExtractor
             >>> from torchvision.models.efficientnet import EfficientNet_B5_Weights
             >>> feature_extractor = TorchFXFeatureExtractor(
                     backbone="efficientnet_b5",
@@ -69,7 +69,7 @@ class TorchFXFeatureExtractor(BaseFeatureExtractor):
 
         With custom models:
 
-            >>> from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor
+            >>> from anomalib.models.components.feature_extractor import TorchFXFeatureExtractor
             >>> feature_extractor = TorchFXFeatureExtractor(
                     "path.to.CustomModel", ["linear_relu_stack.3"], weights="path/to/weights.pth"
                 )
@@ -153,7 +153,7 @@ class TorchFXFeatureExtractor(BaseFeatureExtractor):
         If only the model name is provided, it will try to load the model from torchvision.
 
         Example:
-            >>> from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor
+            >>> from anomalib.models.components.feature_extractor import TorchFXFeatureExtractor
             >>> TorchFXFeatureExtractor._get_backbone_class("efficientnet_b5")
             <function torchvision.models.efficientnet.efficientnet_b5(
                 *,

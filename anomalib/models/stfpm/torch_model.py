@@ -8,12 +8,12 @@ from typing import Dict, Optional, Tuple
 from torch import Tensor, nn
 
 from anomalib.models.components import get_feature_extractor
-from anomalib.models.components.feature_extractors import (
+from anomalib.models.components.feature_extractor import (
     FeatureExtractorParams,
     TimmFeatureExtractorParams,
     TorchFXFeatureExtractorParams,
 )
-from anomalib.models.components.feature_extractors.utils import _convert_datatype
+from anomalib.models.components.feature_extractor.utils import _convert_datatype
 from anomalib.models.stfpm.anomaly_map import AnomalyMapGenerator
 from anomalib.pre_processing import Tiler
 
