@@ -162,17 +162,13 @@ def get_configurable_parameters(
     config_original: DictConfig = config.copy()
 
     # if the seed value is 0, notify a user that the behavior of the seed value zero has been changed.
-    if config.project.get("seed") == 0:
+    if config.get("seed_everything") == 0:
         warn(
             "The seed value is now fixed to 0. "
             "Up to v0.3.7, the seed was not fixed when the seed value was set to 0. "
             "If you want to use the random seed, please select `None` for the seed value "
             "(`null` in the YAML file) or remove the `seed` key from the YAML file."
         )
-
-    # Dataset Configs
-    if "format" not in config.dataset.keys():
-        config.dataset.format = "mvtec"
 
     config = update_input_size_config(config)
 
