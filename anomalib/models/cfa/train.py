@@ -143,7 +143,7 @@ def run():
                 features1 = feature_extractor1(batch.to(device))
 
                 loss1, _ = cfa1(features1)
-                loss2, _ = cfa2(features1)
+                loss2 = cfa2(features1)
                 loss1.backward(retain_graph=True)
                 loss2.backward(retain_graph=True)
                 optimizer1.step()
@@ -159,22 +159,23 @@ def run():
 
                 features1 = feature_extractor1(batch.to(device))
                 _, score1 = cfa1(features1)
-                _, score2 = cfa2(features1)
+                # score2 = cfa2(features1)
                 heatmap1 = score1.cpu().detach()
-                heatmap2 = score2.cpu().detach()
+                heatmap2 = cfa2(features1)
+                # heatmap2 = score2.cpu().detach()
                 heatmap1 = torch.mean(heatmap1, dim=1)
-                heatmap2 = torch.mean(heatmap2, dim=1)
+                # heatmap2 = torch.mean(heatmap2, dim=1)
                 heatmaps1 = torch.cat((heatmaps1, heatmap1), dim=0) if heatmaps1 != None else heatmap1
                 heatmaps2 = torch.cat((heatmaps2, heatmap2), dim=0) if heatmaps2 != None else heatmap2
 
             heatmaps1 = upsample(heatmaps1, size=batch.size(2), mode="bilinear")
-            heatmaps2 = upsample(heatmaps2, size=batch.size(2), mode="bilinear")
+            # heatmaps2 = upsample(heatmaps2, size=batch.size(2), mode="bilinear")
             heatmaps1 = gaussian_smooth(heatmaps1, sigma=4)
-            heatmaps2 = gaussian_smooth(heatmaps2, sigma=4)
+            # heatmaps2 = gaussian_smooth(heatmaps2, sigma=4)
 
             gt_mask = np.asarray(gt_mask_list)
             scores1 = rescale(heatmaps1)
-            scores2 = rescale(heatmaps2)
+            scores2 = rescale(heatmaps2.squeeze().cpu().numpy())
 
             # threshold1 = get_threshold(gt_mask, scores1)
             # threshold2 = get_threshold(gt_mask, scores2)

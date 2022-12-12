@@ -56,8 +56,14 @@ def initialize_weights(m) -> None:
 
 class CfaModel(nn.Module):
     def __init__(
-        self, model: nn.Module, data_loader: DataLoader, backbone: str, gamma_c: int, gamma_d: int, device: torch.device
-    ):
+        self,
+        feature_extractor: nn.Module,
+        data_loader: DataLoader,
+        backbone: str,
+        gamma_c: int,
+        gamma_d: int,
+        device: torch.device,
+    ) -> None:
         super().__init__()
         self.gamma_c = gamma_c
         self.gamma_d = gamma_d
@@ -69,6 +75,7 @@ class CfaModel(nn.Module):
         self.num_nearest_neighbors = 3
         self.num_hard_negative_features = 3
 
+        self.feature_extractor = feature_extractor
         self.descriptor = Descriptor(self.gamma_d, backbone).to(device)
         self.r = torch.ones(1, requires_grad=True) * 1e-5
 
@@ -76,13 +83,12 @@ class CfaModel(nn.Module):
         self.descriptor.apply(initialize_weights)
         # TODO <<< Temporary.
 
-        self.memory_bank = self._init_centroid(model, data_loader)
+        self.memory_bank = self._init_centroid(data_loader)
 
-    def _init_centroid(self, feature_extractor: nn.Module, data_loader: DataLoader) -> Tensor:
+    def _init_centroid(self, data_loader: DataLoader) -> Tensor:
         """Initialize the Centroid of the Memory Bank.
 
         Args:
-            feature_extractor (nn.Module): Feature extractor module.
             data_loader (DataLoader):  Train Dataloader.
 
         Returns:
@@ -92,7 +98,7 @@ class CfaModel(nn.Module):
         with torch.no_grad():
             for i, (batch, _, _) in enumerate(tqdm(data_loader)):
                 batch = batch.to(self.device)
-                features = feature_extractor(batch)
+                features = self.feature_extractor(batch)
 
                 # TODO <<< Find a better place for these.
                 self.input_size = (batch.size(2), batch.size(3))
@@ -112,47 +118,94 @@ class CfaModel(nn.Module):
         memory_bank = rearrange(memory_bank, "h w -> w h")
         return memory_bank
 
-    def forward(self, p):
-        phi_p = self.descriptor(p)
-        phi_p = rearrange(phi_p, "b c h w -> b (h w) c")
+    def compute_distance(self, target_oriented_features: Tensor) -> Tensor:
+        """Compute distance using target oriented features.
 
-        features = torch.sum(torch.pow(phi_p, 2), 2, keepdim=True)
-        centers = torch.sum(torch.pow(self.memory_bank, 2), 0, keepdim=True)
-        f_c = 2 * torch.matmul(phi_p, (self.memory_bank))
-        dist = features + centers - f_c
-        dist = torch.sqrt(dist)
+        Args:
+            target_oriented_features (Tensor): Target oriented features computed
+                using the descriptor.
 
-        n_neighbors = self.num_nearest_neighbors
-        dist = dist.topk(n_neighbors, largest=False).values
+        Returns:
+            Tensor: Distance tensor.
+        """
+        features = target_oriented_features.pow(2).sum(dim=2, keepdim=True)
+        centers = self.memory_bank.pow(2).sum(dim=0, keepdim=True)
+        f_c = 2 * torch.matmul(target_oriented_features, (self.memory_bank))
+        distance = features + centers - f_c
+        return distance
 
-        dist = (F.softmin(dist, dim=-1)[:, :, 0]) * dist[:, :, 0]
-        dist = dist.unsqueeze(-1)
+    def compute_loss(self, distance: Tensor) -> Tensor:
+        """Compute the CFA loss.
 
-        score = rearrange(dist, "b (h w) c -> b c h w", h=self.scale)
+        Args:
+            distance (Tensor): Distance computed using target oriented features.
 
-        loss = 0
-        if self.training:
-            loss = self._soft_boundary(phi_p)
+        Returns:
+            Tensor: CFA loss.
+        """
+        num_neighbors = self.num_nearest_neighbors + self.num_hard_negative_features
+        distance = distance.topk(num_neighbors, largest=False).values
 
-        return loss, score
-
-    def _soft_boundary(self, phi_p):
-        features = torch.sum(torch.pow(phi_p, 2), 2, keepdim=True)
-        centers = torch.sum(torch.pow(self.memory_bank, 2), 0, keepdim=True)
-        f_c = 2 * torch.matmul(phi_p, (self.memory_bank))
-        dist = features + centers - f_c
-        n_neighbors = self.num_nearest_neighbors + self.num_hard_negative_features
-        dist = dist.topk(n_neighbors, largest=False).values
-
-        score = dist[:, :, : self.num_nearest_neighbors] - (self.r**2).to(self.device)
+        score = distance[:, :, : self.num_nearest_neighbors] - (self.r**2).to(self.device)
         L_att = torch.mean(torch.max(torch.zeros_like(score), score))
 
-        score = (self.r**2).to(self.device) - dist[:, :, self.num_hard_negative_features :]
+        score = (self.r**2).to(self.device) - distance[:, :, self.num_hard_negative_features :]
         L_rep = torch.mean(torch.max(torch.zeros_like(score), score - 0.1))
 
         loss = (L_att + L_rep) * 1000
 
         return loss
+
+    def compute_score(self, distance: Tensor) -> Tensor:
+        """Compute score based on the distance.
+
+        Args:
+            distance (Tensor): Distance tensor computed using target oriented
+                features.
+
+        Returns:
+            Tensor: Score value.
+        """
+        distance = torch.sqrt(distance)
+
+        n_neighbors = self.num_nearest_neighbors
+        distance = distance.topk(n_neighbors, largest=False).values
+
+        distance = (F.softmin(distance, dim=-1)[:, :, 0]) * distance[:, :, 0]
+        distance = distance.unsqueeze(-1)
+
+        score = rearrange(distance, "b (h w) c -> b c h w", h=self.scale)
+        return score.detach()
+
+    def compute_anomaly_map(self, score: Tensor) -> Tensor:
+        """Compute anomaly map based on the score.
+
+        Args:
+            score (Tensor): Score tensor.
+
+        Returns:
+            Tensor: Anomaly map.
+        """
+        anomaly_map = score.mean(dim=1, keepdim=True)
+        anomaly_map = F.interpolate(anomaly_map, size=self.input_size, mode="bilinear", align_corners=False)
+
+        gaussian_blur = GaussianBlur2d(sigma=4).to(score.device)
+        anomaly_map = gaussian_blur(anomaly_map)
+        return anomaly_map
+
+    def forward(self, features: Tensor):
+        target_features = self.descriptor(features)
+        target_features = rearrange(target_features, "b c h w -> b (h w) c")
+
+        distance = self.compute_distance(target_features)
+
+        if self.training:
+            output = self.compute_loss(distance)
+        else:
+            score = self.compute_score(distance)
+            output = self.compute_anomaly_map(score)
+
+        return output
 
 
 class Descriptor(nn.Module):
