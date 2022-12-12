@@ -15,6 +15,9 @@ from utils.cfa import *
 from utils.metric import *
 from utils.visualizer import *
 
+from anomalib.config import get_configurable_parameters
+from anomalib.data import MVTec, get_datamodule
+
 warnings.filterwarnings("ignore", category=UserWarning)
 use_cuda = torch.cuda.is_available()
 device = torch.device("cuda" if use_cuda else "cpu")
@@ -45,6 +48,12 @@ def run():
     args = parse_args()
     class_names = [random.choice(mvtec.CLASS_NAMES)]
     print(f"Class name: {class_names[0]}")
+
+    config = get_configurable_parameters(config_path="/home/sakcay/projects/anomalib/anomalib/models/cfa/config.yaml")
+    config.dataset.path = "/home/sakcay/projects/anomalib/datasets/MVTec/"
+    config.dataset.category = class_names[0]
+    datamodule = get_datamodule(config)
+    datamodule.setup()
 
     seed = 1024
     random.seed(seed)
@@ -115,16 +124,18 @@ def run():
         feature_extractor1.eval()
 
         cfa1 = DSVDD(feature_extractor1, train_loader, args.cnn, args.gamma_c, args.gamma_d, device)
-        cfa2 = CfaModel(train_loader, args.cnn, args.gamma_c, args.gamma_d, device)
+        cfa2 = CfaModel(args.cnn, args.gamma_c, args.gamma_d, device)
 
         cfa1 = cfa1.to(device)
         cfa2 = cfa2.to(device)
+
+        cfa2.initialize_centroid(train_loader)
 
         epochs = 1
         params1 = [{"params": cfa1.parameters()}]
         params2 = [{"params": cfa2.parameters()}]
         optimizer1 = optim.AdamW(params=params1, lr=1e-3, weight_decay=5e-4, amsgrad=True)
-        optimizer2 = optim.AdamW(params=params2, lr=1e-3, weight_decay=5e-4, amsgrad=True)
+        optimizer2 = optim.AdamW(params=cfa2.parameters(), lr=1e-3, weight_decay=5e-4, amsgrad=True)
 
         for epoch in tqdm(range(epochs), "%s -->" % (class_name)):
             r"TEST PHASE"
@@ -137,7 +148,9 @@ def run():
 
             cfa1.train()
             cfa2.train()
-            for (batch, _, _) in train_loader:
+            # for (batch, _, _) in train_loader:
+            for data in datamodule.train_dataloader():
+                batch = data["image"]
                 batch = batch.to(device)
                 optimizer1.zero_grad()
                 optimizer2.zero_grad()
@@ -153,35 +166,29 @@ def run():
 
             cfa1.eval()
             cfa2.eval()
-            for batch, y, mask in test_loader:
+            # for batch, y, mask in test_loader:
+            for data in datamodule.test_dataloader():
+                batch, y, mask = data["image"], data["label"], data["mask"].unsqueeze(1)
+
                 batch = batch.to(device)
                 test_imgs.extend(batch.cpu().detach().numpy())
                 gt_list.extend(y.cpu().detach().numpy())
                 gt_mask_list.extend(mask.cpu().detach().numpy())
 
                 features1 = feature_extractor1(batch)
-                # features2 = feature_extractor2(batch)
                 _, score1 = cfa1(features1)
-                # score2 = cfa2(features1)
                 heatmap1 = score1.cpu().detach()
                 heatmap2 = cfa2(batch)
-                # heatmap2 = score2.cpu().detach()
                 heatmap1 = torch.mean(heatmap1, dim=1)
-                # heatmap2 = torch.mean(heatmap2, dim=1)
                 heatmaps1 = torch.cat((heatmaps1, heatmap1), dim=0) if heatmaps1 != None else heatmap1
                 heatmaps2 = torch.cat((heatmaps2, heatmap2), dim=0) if heatmaps2 != None else heatmap2
 
             heatmaps1 = upsample(heatmaps1, size=batch.size(2), mode="bilinear")
-            # heatmaps2 = upsample(heatmaps2, size=batch.size(2), mode="bilinear")
             heatmaps1 = gaussian_smooth(heatmaps1, sigma=4)
-            # heatmaps2 = gaussian_smooth(heatmaps2, sigma=4)
 
             gt_mask = np.asarray(gt_mask_list)
             scores1 = rescale(heatmaps1)
             scores2 = rescale(heatmaps2.squeeze().cpu().numpy())
-
-            # threshold1 = get_threshold(gt_mask, scores1)
-            # threshold2 = get_threshold(gt_mask, scores2)
 
             r"Image-level AUROC"
             fpr1, tpr1, img_roc_auc1 = cal_img_roc(scores1, gt_list)

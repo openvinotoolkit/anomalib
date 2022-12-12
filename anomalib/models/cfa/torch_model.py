@@ -57,7 +57,6 @@ def initialize_weights(m) -> None:
 class CfaModel(nn.Module):
     def __init__(
         self,
-        data_loader: DataLoader,
         backbone: str,
         gamma_c: int,
         gamma_d: int,
@@ -75,6 +74,7 @@ class CfaModel(nn.Module):
         self.num_hard_negative_features = 3
 
         self.feature_extractor = get_feature_extractor(backbone, device)
+        self.memory_bank = torch.tensor(0, requires_grad=False)
         self.descriptor = Descriptor(self.gamma_d, backbone).to(device)
         self.r = torch.ones(1, requires_grad=True) * 1e-5
 
@@ -82,9 +82,7 @@ class CfaModel(nn.Module):
         self.descriptor.apply(initialize_weights)
         # TODO <<< Temporary.
 
-        self.memory_bank = self._init_centroid(data_loader)
-
-    def _init_centroid(self, data_loader: DataLoader) -> Tensor:
+    def initialize_centroid(self, data_loader: DataLoader) -> None:
         """Initialize the Centroid of the Memory Bank.
 
         Args:
@@ -93,7 +91,6 @@ class CfaModel(nn.Module):
         Returns:
             Tensor: Memory Bank.
         """
-        memory_bank: Tensor = torch.tensor(0, requires_grad=False)
         with torch.no_grad():
             for i, (batch, _, _) in enumerate(tqdm(data_loader)):
                 batch = batch.to(self.device)
@@ -108,17 +105,16 @@ class CfaModel(nn.Module):
                 # TODO >>> Find a better place for these.
 
                 oriented_features = self.descriptor(features)
-                memory_bank = ((memory_bank * i) + oriented_features.mean(dim=0, keepdim=True)) / (i + 1)
+                self.memory_bank = ((self.memory_bank * i) + oriented_features.mean(dim=0, keepdim=True)) / (i + 1)
 
-        memory_bank = rearrange(memory_bank, "b c h w -> (b h w) c")
+        self.memory_bank = rearrange(self.memory_bank, "b c h w -> (b h w) c")
 
         if self.gamma_c > 1:
             k_means = KMeans(n_clusters=(self.scale**2) // self.gamma_c, max_iter=3000)
-            cluster_centers = k_means.fit(memory_bank.cpu()).cluster_centers_
-            memory_bank = torch.tensor(cluster_centers, requires_grad=False).to(self.device)
+            cluster_centers = k_means.fit(self.memory_bank.cpu()).cluster_centers_
+            self.memory_bank = torch.tensor(cluster_centers, requires_grad=False).to(self.device)
 
-        memory_bank = rearrange(memory_bank, "h w -> w h")
-        return memory_bank
+        self.memory_bank = rearrange(self.memory_bank, "h w -> w h")
 
     def compute_distance(self, target_oriented_features: Tensor) -> Tensor:
         """Compute distance using target oriented features.
