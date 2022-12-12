@@ -2,7 +2,7 @@ dataset:
   name: mvtec #options: [mvtec, btech, folder]
   format: mvtec
   path: ./datasets/MVTec
-  category: bottle
+  category: leather
   task: segmentation
   image_size: 224
   train_batch_size: 4
@@ -23,8 +23,10 @@ dataset:
 model:
   name: cfa
   backbone: wide_resnet50_2
+  gamma_c: 1
+  gamma_d: 1
   lr: 1e-3
-  momentum: 5e-4
+  weight_decay: 5e-4
   amsgrad: true
   early_stopping:
     patience: 5
@@ -34,11 +36,10 @@ model:
 
 metrics:
   image:
-    - F1Score
     - AUROC
   pixel:
-    - F1Score
     - AUROC
+    - AUPRO
   threshold:
     image_default: 0
     pixel_default: 0

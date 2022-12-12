@@ -1,4 +1,12 @@
-"""Torch Model Implementation of the CFA Model."""
+"""Torch Implementatation of the CFA Model.
+
+CFA: Coupled-hypersphere-based Feature Adaptation for Target-Oriented Anomaly Localization
+
+Paper https://arxiv.org/abs/2206.04325
+"""
+
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -9,18 +17,30 @@ import torchvision
 from einops import rearrange
 from sklearn.cluster import KMeans
 from torch import Tensor
+from torch.fx.graph_module import GraphModule
 from torch.nn.common_types import _size_2_t
 from torch.utils.data import DataLoader
 from torchvision.models.feature_extraction import create_feature_extractor
 from tqdm import tqdm
 
-from anomalib.models.cfa.utils.metric import *
 from anomalib.models.components import GaussianBlur2d
 
 SUPPORTED_BACKBONES = ("vgg19_bn", "resnet18", "wide_resnet50_2", "efficientnet_b5")
 
 
-def get_feature_extractor(backbone: str, device: Optional[torch.device] = None):
+def get_feature_extractor(backbone: str) -> GraphModule:
+    """Get the feature extractor from the backbone CNN.
+
+    Args:
+        backbone (str): Backbone CNN network
+
+    Raises:
+        NotImplementedError: When the backbone is efficientnet_b5
+        ValueError: When the backbone is not supported
+
+    Returns:
+        GraphModule: Feature extractor.
+    """
     if backbone == "efficientnet_b5":
         raise NotImplementedError("EfficientNet feature extractor has not implemented yet.")
 
@@ -36,9 +56,6 @@ def get_feature_extractor(backbone: str, device: Optional[torch.device] = None):
     feature_extractor = create_feature_extractor(model=model, return_nodes=return_nodes)
     feature_extractor.eval()
 
-    if device is not None:
-        feature_extractor = feature_extractor.to(device)
-
     return feature_extractor
 
 
@@ -49,23 +66,27 @@ def initialize_weights(m) -> None:
         nn.init.kaiming_uniform_(m.weight.data, nonlinearity="relu")
         if m.bias is not None:
             nn.init.constant_(m.bias.data, 0)
-
-
 # TODO: <<< This is temporary.
 
 
 class CfaModel(nn.Module):
+    """Torch implementation of the CFA Model.
+
+    Args:
+        backbone (str): Backbone CNN network.
+        gamma_c (int): gamma_c parameter from the paper.
+        gamma_d (int): gamma_d parameter from the paper.
+    """
+
     def __init__(
         self,
         backbone: str,
         gamma_c: int,
         gamma_d: int,
-        device: torch.device,
     ) -> None:
         super().__init__()
         self.gamma_c = gamma_c
         self.gamma_d = gamma_d
-        self.device = device
 
         self.input_size: Tuple[int, int]
         self.scale: int
@@ -73,9 +94,9 @@ class CfaModel(nn.Module):
         self.num_nearest_neighbors = 3
         self.num_hard_negative_features = 3
 
-        self.feature_extractor = get_feature_extractor(backbone, device)
+        self.feature_extractor = get_feature_extractor(backbone)
         self.memory_bank = torch.tensor(0, requires_grad=False)
-        self.descriptor = Descriptor(self.gamma_d, backbone).to(device)
+        self.descriptor = Descriptor(self.gamma_d, backbone)
         self.r = torch.ones(1, requires_grad=True) * 1e-5
 
         # TODO: >>> Temporary.
@@ -91,9 +112,10 @@ class CfaModel(nn.Module):
         Returns:
             Tensor: Memory Bank.
         """
+        device = next(self.feature_extractor.parameters()).device
         with torch.no_grad():
-            for i, (batch, _, _) in enumerate(tqdm(data_loader)):
-                batch = batch.to(self.device)
+            for i, data in enumerate(tqdm(data_loader)):
+                batch = data["image"].to(device)
                 features = self.feature_extractor(batch)
                 # TODO: >>> Conversion from dict to list.
                 features = [val for val in features.values()]
@@ -104,15 +126,16 @@ class CfaModel(nn.Module):
                 self.scale = features[0].size(2)
                 # TODO >>> Find a better place for these.
 
-                oriented_features = self.descriptor(features)
-                self.memory_bank = ((self.memory_bank * i) + oriented_features.mean(dim=0, keepdim=True)) / (i + 1)
+                target_features = self.descriptor(features)
+                self.memory_bank = ((self.memory_bank * i) + target_features.mean(dim=0, keepdim=True)) / (i + 1)
 
         self.memory_bank = rearrange(self.memory_bank, "b c h w -> (b h w) c")
 
         if self.gamma_c > 1:
+            # TODO: Create PyTorch KMeans class.
             k_means = KMeans(n_clusters=(self.scale**2) // self.gamma_c, max_iter=3000)
             cluster_centers = k_means.fit(self.memory_bank.cpu()).cluster_centers_
-            self.memory_bank = torch.tensor(cluster_centers, requires_grad=False).to(self.device)
+            self.memory_bank = torch.tensor(cluster_centers, requires_grad=False).to(device)
 
         self.memory_bank = rearrange(self.memory_bank, "h w -> w h")
 
@@ -126,6 +149,9 @@ class CfaModel(nn.Module):
         Returns:
             Tensor: Distance tensor.
         """
+        if target_oriented_features.ndim == 4:
+            target_oriented_features = rearrange(target_oriented_features, "b c h w -> b (h w) c")
+
         features = target_oriented_features.pow(2).sum(dim=2, keepdim=True)
         centers = self.memory_bank.pow(2).sum(dim=0, keepdim=True)
         f_c = 2 * torch.matmul(target_oriented_features, (self.memory_bank))
@@ -144,10 +170,10 @@ class CfaModel(nn.Module):
         num_neighbors = self.num_nearest_neighbors + self.num_hard_negative_features
         distance = distance.topk(num_neighbors, largest=False).values
 
-        score = distance[:, :, : self.num_nearest_neighbors] - (self.r**2).to(self.device)
+        score = distance[:, :, : self.num_nearest_neighbors] - (self.r**2).to(distance.device)
         L_att = torch.mean(torch.max(torch.zeros_like(score), score))
 
-        score = (self.r**2).to(self.device) - distance[:, :, self.num_hard_negative_features :]
+        score = (self.r**2).to(distance.device) - distance[:, :, self.num_hard_negative_features :]
         L_rep = torch.mean(torch.max(torch.zeros_like(score), score - 0.1))
 
         loss = (L_att + L_rep) * 1000
@@ -191,14 +217,26 @@ class CfaModel(nn.Module):
         anomaly_map = gaussian_blur(anomaly_map)
         return anomaly_map
 
-    def forward(self, input: Tensor):
+    def forward(self, input: Tensor) -> Tensor:
+        """Forward pass.
+
+        Args:
+            input (Tensor): Input tensor.
+
+        Raises:
+            ValueError: When the memory bank is not initialized.
+
+        Returns:
+            Tensor: Loss or anomaly map depending on the train/eval mode.
+        """
+        if self.memory_bank.ndim == 0:
+            raise ValueError("Memory bank is not initialized. Run `initialize_centroid` method first.")
+
         self.feature_extractor.eval()
         with torch.no_grad():
             features = self.feature_extractor(input)
 
         target_features = self.descriptor(features)
-        target_features = rearrange(target_features, "b c h w -> b (h w) c")
-
         distance = self.compute_distance(target_features)
 
         if self.training:
@@ -211,6 +249,8 @@ class CfaModel(nn.Module):
 
 
 class Descriptor(nn.Module):
+    """Descriptor module."""
+
     def __init__(self, gamma_d: int, backbone: str) -> None:
         super(Descriptor, self).__init__()
 
@@ -218,6 +258,7 @@ class Descriptor(nn.Module):
         if self.backbone not in SUPPORTED_BACKBONES:
             raise ValueError(f"Supported backbones are {SUPPORTED_BACKBONES}. Got {self.backbone} instead.")
 
+        # TODO: Automatically infer the number of dims
         backbone_dims = {"vgg19_bn": 1280, "resnet18": 448, "wide_resnet50_2": 1792, "efficientnet_b5": 568}
         dim = backbone_dims[backbone]
         out_channels = 2 * dim // gamma_d if backbone == "efficientnet_b5" else dim // gamma_d
@@ -304,7 +345,8 @@ class AddCoords(nn.Module):
         self.with_r = with_r
 
     def forward(self, input: Tensor) -> Tensor:
-        # NOTE: This is a modified version of the original implementation, which only supports rank 2 tensors.
+        # NOTE: This is a modified version of the original implementation,
+        #   which only supports rank 2 tensors.
         batch, _, x_dim, y_dim = input.shape
         xx_ones = torch.ones([1, 1, 1, y_dim], dtype=torch.int32)
         yy_ones = torch.ones([1, 1, 1, x_dim], dtype=torch.int32)

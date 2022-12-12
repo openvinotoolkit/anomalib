@@ -72,6 +72,7 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     logger.info("Loading the model.")
 
     model_list: List[str] = [
+        "cfa",
         "cflow",
         "dfkde",
         "dfm",

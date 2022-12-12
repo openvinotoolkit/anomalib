@@ -17,6 +17,7 @@ from utils.visualizer import *
 
 from anomalib.config import get_configurable_parameters
 from anomalib.data import MVTec, get_datamodule
+from anomalib.models import get_model
 
 warnings.filterwarnings("ignore", category=UserWarning)
 use_cuda = torch.cuda.is_available()
@@ -124,18 +125,21 @@ def run():
         feature_extractor1.eval()
 
         cfa1 = DSVDD(feature_extractor1, train_loader, args.cnn, args.gamma_c, args.gamma_d, device)
-        cfa2 = CfaModel(args.cnn, args.gamma_c, args.gamma_d, device)
+        # cfa2 = CfaModel(args.cnn, args.gamma_c, args.gamma_d, device)
+        cfa2 = get_model(config)
 
         cfa1 = cfa1.to(device)
         cfa2 = cfa2.to(device)
+        cfa2.model = cfa2.model.to(device)
 
-        cfa2.initialize_centroid(train_loader)
+        # cfa2.initialize_centroid(train_loader)
+        cfa2.model.initialize_centroid(datamodule.train_dataloader())
 
         epochs = 1
         params1 = [{"params": cfa1.parameters()}]
-        params2 = [{"params": cfa2.parameters()}]
         optimizer1 = optim.AdamW(params=params1, lr=1e-3, weight_decay=5e-4, amsgrad=True)
-        optimizer2 = optim.AdamW(params=cfa2.parameters(), lr=1e-3, weight_decay=5e-4, amsgrad=True)
+        # optimizer2 = optim.AdamW(params=cfa2.parameters(), lr=1e-3, weight_decay=5e-4, amsgrad=True)
+        optimizer2 = cfa2.configure_optimizers()
 
         for epoch in tqdm(range(epochs), "%s -->" % (class_name)):
             r"TEST PHASE"
