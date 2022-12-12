@@ -55,47 +55,74 @@ def initialize_weights(m) -> None:
 
 
 class CfaModel(nn.Module):
-    def __init__(self, model, data_loader, cnn, gamma_c, gamma_d, device):
+    def __init__(
+        self, model: nn.Module, data_loader: DataLoader, backbone: str, gamma_c: int, gamma_d: int, device: torch.device
+    ):
         super().__init__()
-        self.device = device
-
-        self.C = 0
-        self.nu = 1e-3
-        self.scale = None
-
         self.gamma_c = gamma_c
         self.gamma_d = gamma_d
-        self.alpha = 1e-1
-        self.K = 3
-        self.J = 3
+        self.device = device
 
-        self.r = nn.Parameter(1e-5 * torch.ones(1), requires_grad=True)
-        self.Descriptor = Descriptor(self.gamma_d, cnn).to(device)
+        self.input_size: Tuple[int, int]
+        self.scale: int
+
+        self.num_nearest_neighbors = 3
+        self.num_hard_negative_features = 3
+
+        self.descriptor = Descriptor(self.gamma_d, backbone).to(device)
+        self.r = torch.ones(1, requires_grad=True) * 1e-5
+
         # TODO: >>> Temporary.
-        self.Descriptor.apply(initialize_weights)
+        self.descriptor.apply(initialize_weights)
         # TODO <<< Temporary.
-        self._init_centroid(model, data_loader)
-        self.C = rearrange(self.C, "b c h w -> (b h w) c").detach()
+
+        self.memory_bank = self._init_centroid(model, data_loader)
+
+    def _init_centroid(self, feature_extractor: nn.Module, data_loader: DataLoader) -> Tensor:
+        """Initialize the Centroid of the Memory Bank.
+
+        Args:
+            feature_extractor (nn.Module): Feature extractor module.
+            data_loader (DataLoader):  Train Dataloader.
+
+        Returns:
+            Tensor: Memory Bank.
+        """
+        memory_bank: Tensor = torch.tensor(0, requires_grad=False)
+        with torch.no_grad():
+            for i, (batch, _, _) in enumerate(tqdm(data_loader)):
+                batch = batch.to(self.device)
+                features = feature_extractor(batch)
+
+                # TODO <<< Find a better place for these.
+                self.input_size = (batch.size(2), batch.size(3))
+                self.scale = features[0].size(2)
+                # TODO >>> Find a better place for these.
+
+                oriented_features = self.descriptor(features)
+                memory_bank = ((memory_bank * i) + oriented_features.mean(dim=0, keepdim=True)) / (i + 1)
+
+        memory_bank = rearrange(memory_bank, "b c h w -> (b h w) c")
 
         if self.gamma_c > 1:
-            self.C = self.C.cpu().detach().numpy()
-            self.C = KMeans(n_clusters=(self.scale**2) // self.gamma_c, max_iter=3000).fit(self.C).cluster_centers_
-            self.C = torch.Tensor(self.C).to(device)
+            k_means = KMeans(n_clusters=(self.scale**2) // self.gamma_c, max_iter=3000)
+            cluster_centers = k_means.fit(memory_bank.cpu()).cluster_centers_
+            memory_bank = torch.tensor(cluster_centers, requires_grad=False).to(self.device)
 
-        self.C = self.C.transpose(-1, -2).detach()
-        self.C = nn.Parameter(self.C, requires_grad=False)
+        memory_bank = rearrange(memory_bank, "h w -> w h")
+        return memory_bank
 
     def forward(self, p):
-        phi_p = self.Descriptor(p)
+        phi_p = self.descriptor(p)
         phi_p = rearrange(phi_p, "b c h w -> b (h w) c")
 
         features = torch.sum(torch.pow(phi_p, 2), 2, keepdim=True)
-        centers = torch.sum(torch.pow(self.C, 2), 0, keepdim=True)
-        f_c = 2 * torch.matmul(phi_p, (self.C))
+        centers = torch.sum(torch.pow(self.memory_bank, 2), 0, keepdim=True)
+        f_c = 2 * torch.matmul(phi_p, (self.memory_bank))
         dist = features + centers - f_c
         dist = torch.sqrt(dist)
 
-        n_neighbors = self.K
+        n_neighbors = self.num_nearest_neighbors
         dist = dist.topk(n_neighbors, largest=False).values
 
         dist = (F.softmin(dist, dim=-1)[:, :, 0]) * dist[:, :, 0]
@@ -111,29 +138,21 @@ class CfaModel(nn.Module):
 
     def _soft_boundary(self, phi_p):
         features = torch.sum(torch.pow(phi_p, 2), 2, keepdim=True)
-        centers = torch.sum(torch.pow(self.C, 2), 0, keepdim=True)
-        f_c = 2 * torch.matmul(phi_p, (self.C))
+        centers = torch.sum(torch.pow(self.memory_bank, 2), 0, keepdim=True)
+        f_c = 2 * torch.matmul(phi_p, (self.memory_bank))
         dist = features + centers - f_c
-        n_neighbors = self.K + self.J
+        n_neighbors = self.num_nearest_neighbors + self.num_hard_negative_features
         dist = dist.topk(n_neighbors, largest=False).values
 
-        score = dist[:, :, : self.K] - self.r**2
-        L_att = (1 / self.nu) * torch.mean(torch.max(torch.zeros_like(score), score))
+        score = dist[:, :, : self.num_nearest_neighbors] - (self.r**2).to(self.device)
+        L_att = torch.mean(torch.max(torch.zeros_like(score), score))
 
-        score = self.r**2 - dist[:, :, self.J :]
-        L_rep = (1 / self.nu) * torch.mean(torch.max(torch.zeros_like(score), score - self.alpha))
+        score = (self.r**2).to(self.device) - dist[:, :, self.num_hard_negative_features :]
+        L_rep = torch.mean(torch.max(torch.zeros_like(score), score - 0.1))
 
-        loss = L_att + L_rep
+        loss = (L_att + L_rep) * 1000
 
         return loss
-
-    def _init_centroid(self, model, data_loader):
-        for i, (x, _, _) in enumerate(tqdm(data_loader)):
-            x = x.to(self.device)
-            p = model(x)
-            self.scale = p[0].size(2)
-            phi_p = self.Descriptor(p)
-            self.C = ((self.C * i) + torch.mean(phi_p, dim=0, keepdim=True).detach()) / (i + 1)
 
 
 class Descriptor(nn.Module):
