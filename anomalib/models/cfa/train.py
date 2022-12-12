@@ -42,15 +42,15 @@ def parse_args():
 
 
 def run():
+    args = parse_args()
+    class_names = [random.choice(mvtec.CLASS_NAMES)]
+    print(f"Class name: {class_names[0]}")
+
     seed = 1024
     random.seed(seed)
     torch.manual_seed(seed)
     if use_cuda:
         torch.cuda.manual_seed_all(seed)
-
-    args = parse_args()
-    class_names = [random.choice(mvtec.CLASS_NAMES)]
-    print(f"Class name: {class_names[0]}")
 
     total_roc_auc = []
     total_pixel_roc_auc = []

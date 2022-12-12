@@ -13,12 +13,33 @@ from torch.nn.common_types import _size_2_t
 from torch.utils.data import DataLoader
 from torchvision.models.feature_extraction import create_feature_extractor
 from tqdm import tqdm
-from utils.coordconv import CoordConv2d
 
 from anomalib.models.cfa.utils.metric import *
 from anomalib.models.components import GaussianBlur2d
 
 SUPPORTED_BACKBONES = ("vgg19_bn", "resnet18", "wide_resnet50_2", "efficientnet_b5")
+
+
+def get_feature_extractor(backbone: str, device: Optional[torch.device] = None):
+    if backbone == "efficientnet_b5":
+        raise NotImplementedError("EfficientNet feature extractor has not implemented yet.")
+
+    return_nodes: List[str]
+    if backbone in ("resnet18", "wide_resnet50_2"):
+        return_nodes = ["layer1", "layer2", "layer3"]
+    elif backbone == "vgg19_bn":
+        return_nodes = ["features.25", "features.38", "features.52"]
+    else:
+        raise ValueError(f"Backbone {backbone} is not supported. Supported backbones are {SUPPORTED_BACKBONES}.")
+
+    model = getattr(torchvision.models, backbone)(pretrained=True)
+    feature_extractor = create_feature_extractor(model=model, return_nodes=return_nodes)
+    feature_extractor.eval()
+
+    if device is not None:
+        feature_extractor = feature_extractor.to(device)
+
+    return feature_extractor
 
 
 # TODO: >>> This is temporary.
@@ -116,51 +137,128 @@ class CfaModel(nn.Module):
 
 
 class Descriptor(nn.Module):
-    def __init__(self, gamma_d, cnn):
+    def __init__(self, gamma_d: int, backbone: str) -> None:
         super(Descriptor, self).__init__()
-        self.cnn = cnn
-        if cnn == "wide_resnet50_2":
-            dim = 1792
-            self.layer = CoordConv2d(dim, dim // gamma_d, 1)
-        elif cnn == "resnet18":
-            dim = 448
-            self.layer = CoordConv2d(dim, dim // gamma_d, 1)
-        elif cnn == "efficientnet_b5":
-            dim = 568
-            self.layer = CoordConv2d(dim, 2 * dim // gamma_d, 1)
-        elif cnn == "vgg19_bn":
-            dim = 1280
-            self.layer = CoordConv2d(dim, dim // gamma_d, 1)
 
-    def forward(self, p):
-        sample = None
-        for o in p:
-            o = F.avg_pool2d(o, 3, 1, 1) / o.size(1) if self.cnn == "efficientnet_b5" else F.avg_pool2d(o, 3, 1, 1)
-            sample = (
-                o if sample is None else torch.cat((sample, F.interpolate(o, sample.size(2), mode="bilinear")), dim=1)
+        self.backbone = backbone
+        if self.backbone not in SUPPORTED_BACKBONES:
+            raise ValueError(f"Supported backbones are {SUPPORTED_BACKBONES}. Got {self.backbone} instead.")
+
+        backbone_dims = {"vgg19_bn": 1280, "resnet18": 448, "wide_resnet50_2": 1792, "efficientnet_b5": 568}
+        dim = backbone_dims[backbone]
+        out_channels = 2 * dim // gamma_d if backbone == "efficientnet_b5" else dim // gamma_d
+
+        self.layer = CoordConv2d(in_channels=dim, out_channels=out_channels, kernel_size=1)
+
+    def forward(self, features: Union[List[Tensor], Dict[str, Tensor]]) -> Tensor:
+        """Forward pass."""
+        if isinstance(features, dict):
+            features = [values for values in features.values()]
+
+        patch_features: Optional[Tensor] = None
+        for i in features:
+            i = F.avg_pool2d(i, 3, 1, 1) / i.size(1) if self.backbone == "efficientnet_b5" else F.avg_pool2d(i, 3, 1, 1)
+            patch_features = (
+                i
+                if patch_features is None
+                else torch.cat((patch_features, F.interpolate(i, patch_features.size(2), mode="bilinear")), dim=1)
             )
 
-        phi_p = self.layer(sample)
-        return phi_p
+        target_oriented_features = self.layer(patch_features)
+        return target_oriented_features
 
 
-def get_feature_extractor(backbone: str, device: Optional[torch.device] = None):
-    if backbone == "efficientnet_b5":
-        raise NotImplementedError("EfficientNet feature extractor has not implemented yet.")
+class CoordConv2d(nn.Conv2d):
+    """CoordConv layer as in the paper.
 
-    return_nodes: List[str]
-    if backbone in ("resnet18", "wide_resnet50_2"):
-        return_nodes = ["layer1", "layer2", "layer3"]
-    elif backbone == "vgg19_bn":
-        return_nodes = ["features.25", "features.38", "features.52"]
-    else:
-        raise ValueError(f"Backbone {backbone} is not supported. Supported backbones are {SUPPORTED_BACKBONES}.")
+    Link to the paper: https://arxiv.org/abs/1807.03247
+    Link to the PyTorch implementation: https://github.com/walsvid/CoordConv
+    """
 
-    model = getattr(torchvision.models, backbone)(pretrained=True)
-    feature_extractor = create_feature_extractor(model=model, return_nodes=return_nodes)
-    feature_extractor.eval()
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: _size_2_t,
+        stride: _size_2_t = 1,
+        padding: Union[str, _size_2_t] = 0,
+        dilation: _size_2_t = 1,
+        groups: int = 1,
+        bias: bool = True,
+        with_r: bool = False,
+    ) -> None:
+        super().__init__(
+            in_channels=in_channels,
+            out_channels=out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            groups=groups,
+            bias=bias,
+        )
+        # AddCoord layer.
+        self.add_coords = AddCoords(with_r)
 
-    if device is not None:
-        feature_extractor = feature_extractor.to(device)
+        # Create conv layer on top of add_coords layer.
+        self.conv2d = nn.Conv2d(
+            in_channels=in_channels + 2 + int(with_r),  # 2 for rank-2 tensor, 1 for r if with_r
+            out_channels=out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            groups=groups,
+            bias=bias,
+        )
 
-    return feature_extractor
+    def forward(self, input: Tensor) -> Tensor:
+        out = self.add_coords(input)
+        out = self.conv2d(out)
+        return out
+
+
+class AddCoords(nn.Module):
+    """Add coords to a tensor.
+
+    Link to the paper: https://arxiv.org/abs/1807.03247
+    Link to the PyTorch implementation: https://github.com/walsvid/CoordConv
+    """
+
+    def __init__(self, with_r: bool = False) -> None:
+        super().__init__()
+        self.with_r = with_r
+
+    def forward(self, input: Tensor) -> Tensor:
+        # NOTE: This is a modified version of the original implementation, which only supports rank 2 tensors.
+        batch, _, x_dim, y_dim = input.shape
+        xx_ones = torch.ones([1, 1, 1, y_dim], dtype=torch.int32)
+        yy_ones = torch.ones([1, 1, 1, x_dim], dtype=torch.int32)
+
+        xx_range = torch.arange(x_dim, dtype=torch.int32)
+        yy_range = torch.arange(y_dim, dtype=torch.int32)
+        xx_range = xx_range[None, None, :, None]
+        yy_range = yy_range[None, None, :, None]
+
+        xx_channel = torch.matmul(xx_range, xx_ones)
+        yy_channel = torch.matmul(yy_range, yy_ones)
+
+        # Transpose y
+        yy_channel = yy_channel.permute(0, 1, 3, 2)
+
+        xx_channel = xx_channel.float() / (x_dim - 1)
+        yy_channel = yy_channel.float() / (y_dim - 1)
+
+        xx_channel = xx_channel * 2 - 1
+        yy_channel = yy_channel * 2 - 1
+
+        xx_channel = xx_channel.repeat(batch, 1, 1, 1).to(input.device)
+        yy_channel = yy_channel.repeat(batch, 1, 1, 1).to(input.device)
+
+        out = torch.cat([input, xx_channel, yy_channel], dim=1)
+
+        if self.with_r:
+            rr = torch.sqrt(torch.pow(xx_channel - 0.5, 2) + torch.pow(yy_channel - 0.5, 2))
+            out = torch.cat([out, rr], dim=1)
+
+        return out
