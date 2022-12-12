@@ -147,7 +147,7 @@ class DFMModel(nn.Module):
         if self.score_type == "nll":
             output = score
         else:
-            output = score, score_map
+            output = score_map, score
 
         return output
 

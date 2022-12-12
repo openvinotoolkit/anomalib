@@ -1,4 +1,4 @@
-"""DFM: Deep Feature Kernel Density Estimation."""
+"""DFM: Deep Feature Modeling."""
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -58,6 +58,7 @@ class Dfm(AnomalyModule):
             score_type=score_type,
         )
         self.embeddings: List[Tensor] = []
+        self.score_type = score_type
 
     @staticmethod
     def configure_optimizers() -> None:  # pylint: disable=arguments-differ
@@ -106,7 +107,10 @@ class Dfm(AnomalyModule):
         Returns:
           Dictionary containing FRE anomaly scores and anomaly maps.
         """
-        batch["pred_scores"], batch["anomaly_maps"] = self.model(batch["image"])
+        if self.score_type == "fre":
+            batch["anomaly_maps"], batch["pred_scores"] = self.model(batch["image"])
+        elif self.score_type == "nll":
+            batch["pred_scores"] = self.model(batch["image"])
 
         return batch
 
