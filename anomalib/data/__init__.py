@@ -68,7 +68,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             abnormal_dir=config.dataset.abnormal_dir,
             task=config.dataset.task,
             normal_test_dir=config.dataset.normal_test_dir,
-            mask_dir=config.dataset.mask,
+            mask_dir=config.dataset.mask_dir,
             extensions=config.dataset.extensions,
             normal_split_ratio=config.dataset.normal_split_ratio,
             image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),

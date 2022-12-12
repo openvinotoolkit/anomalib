@@ -205,6 +205,14 @@ def get_configurable_parameters(
     # Project Configs
     project_path = Path(config.project.path) / config.model.name / config.dataset.name
 
+    if config.dataset.format == "folder" and "mask" in config.dataset.keys():
+        warn(
+            DeprecationWarning(
+                "mask will be deprecated in favor of mask_dir in config.metrics.threshold in a future " "release."
+            )
+        )
+        config.dataset.mask_dir = config.dataset.mask
+
     # add category subfolder if needed
     if config.dataset.format.lower() in ("btech", "mvtec"):
         project_path = project_path / config.dataset.category
