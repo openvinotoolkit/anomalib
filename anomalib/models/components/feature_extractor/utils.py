@@ -1,4 +1,4 @@
-"""Convenience wrapper for feature extraction methods."""
+"""Utility functions for parsing feature extraction parameters."""
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
