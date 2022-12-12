@@ -11,12 +11,11 @@ Paper https://arxiv.org/abs/2206.04325
 from typing import Dict, List, Optional, Tuple, Union
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
 from einops import rearrange
 from sklearn.cluster import KMeans
-from torch import Tensor
+from torch import Tensor, nn
 from torch.fx.graph_module import GraphModule
 from torch.nn.common_types import _size_2_t
 from torch.utils.data import DataLoader
@@ -60,18 +59,6 @@ def get_feature_extractor(backbone: str) -> GraphModule:
     return feature_extractor
 
 
-# TODO: >>> This is temporary.
-def initialize_weights(m) -> None:
-    torch.manual_seed(0)
-    if isinstance(m, nn.Conv2d):
-        nn.init.kaiming_uniform_(m.weight.data, nonlinearity="relu")
-        if m.bias is not None:
-            nn.init.constant_(m.bias.data, 0)
-
-
-# TODO: <<< This is temporary.
-
-
 class CfaModel(nn.Module):
     """Torch implementation of the CFA Model.
 
@@ -100,11 +87,7 @@ class CfaModel(nn.Module):
         self.feature_extractor = get_feature_extractor(backbone)
         self.memory_bank = torch.tensor(0, requires_grad=False)
         self.descriptor = Descriptor(self.gamma_d, backbone)
-        self.r = torch.ones(1, requires_grad=True) * 1e-5
-
-        # TODO: >>> Temporary.
-        self.descriptor.apply(initialize_weights)
-        # TODO <<< Temporary.
+        self.radius = torch.ones(1, requires_grad=True) * 1e-5
 
     def initialize_centroid(self, data_loader: DataLoader) -> None:
         """Initialize the Centroid of the Memory Bank.
@@ -120,9 +103,7 @@ class CfaModel(nn.Module):
             for i, data in enumerate(tqdm(data_loader)):
                 batch = data["image"].to(device)
                 features = self.feature_extractor(batch)
-                # TODO: >>> Conversion from dict to list.
-                features = [val for val in features.values()]
-                # TODO <<< Conversion from dict to list.
+                features = list(features.values())
 
                 # TODO <<< Find a better place for these.
                 self.input_size = (batch.size(2), batch.size(3))
@@ -173,13 +154,13 @@ class CfaModel(nn.Module):
         num_neighbors = self.num_nearest_neighbors + self.num_hard_negative_features
         distance = distance.topk(num_neighbors, largest=False).values
 
-        score = distance[:, :, : self.num_nearest_neighbors] - (self.r**2).to(distance.device)
-        L_att = torch.mean(torch.max(torch.zeros_like(score), score))
+        score = distance[:, :, : self.num_nearest_neighbors] - (self.radius**2).to(distance.device)
+        l_att = torch.mean(torch.max(torch.zeros_like(score), score))
 
-        score = (self.r**2).to(distance.device) - distance[:, :, self.num_hard_negative_features :]
-        L_rep = torch.mean(torch.max(torch.zeros_like(score), score - 0.1))
+        score = (self.radius**2).to(distance.device) - distance[:, :, self.num_hard_negative_features :]
+        l_rep = torch.mean(torch.max(torch.zeros_like(score), score - 0.1))
 
-        loss = (L_att + L_rep) * 1000
+        loss = (l_att + l_rep) * 1000
 
         return loss
 
@@ -217,14 +198,14 @@ class CfaModel(nn.Module):
         anomaly_map = F.interpolate(anomaly_map, size=self.input_size, mode="bilinear", align_corners=False)
 
         gaussian_blur = GaussianBlur2d(sigma=4).to(score.device)
-        anomaly_map = gaussian_blur(anomaly_map)
+        anomaly_map = gaussian_blur(anomaly_map)  # pylint: disable=not-callable
         return anomaly_map
 
-    def forward(self, input: Tensor) -> Tensor:
+    def forward(self, input_tensor: Tensor) -> Tensor:
         """Forward pass.
 
         Args:
-            input (Tensor): Input tensor.
+            input_tensor (Tensor): Input tensor.
 
         Raises:
             ValueError: When the memory bank is not initialized.
@@ -237,7 +218,7 @@ class CfaModel(nn.Module):
 
         self.feature_extractor.eval()
         with torch.no_grad():
-            features = self.feature_extractor(input)
+            features = self.feature_extractor(input_tensor)
 
         target_features = self.descriptor(features)
         distance = self.compute_distance(target_features)
@@ -255,7 +236,7 @@ class Descriptor(nn.Module):
     """Descriptor module."""
 
     def __init__(self, gamma_d: int, backbone: str) -> None:
-        super(Descriptor, self).__init__()
+        super().__init__()
 
         self.backbone = backbone
         if self.backbone not in SUPPORTED_BACKBONES:
@@ -271,7 +252,7 @@ class Descriptor(nn.Module):
     def forward(self, features: Union[List[Tensor], Dict[str, Tensor]]) -> Tensor:
         """Forward pass."""
         if isinstance(features, dict):
-            features = [values for values in features.values()]
+            features = list(features.values())
 
         patch_features: Optional[Tensor] = None
         for i in features:
@@ -330,8 +311,16 @@ class CoordConv2d(nn.Conv2d):
             bias=bias,
         )
 
-    def forward(self, input: Tensor) -> Tensor:
-        out = self.add_coords(input)
+    def forward(self, input_tensor: Tensor) -> Tensor:  # pylint: disable=arguments-renamed
+        """Forward pass.
+
+        Args:
+            input_tensor (Tensor): Input tensor.
+
+        Returns:
+            Tensor: Output tensor after applying the CoordConv layer.
+        """
+        out = self.add_coords(input_tensor)
         out = self.conv2d(out)
         return out
 
@@ -347,10 +336,18 @@ class AddCoords(nn.Module):
         super().__init__()
         self.with_r = with_r
 
-    def forward(self, input: Tensor) -> Tensor:
+    def forward(self, input_tensor: Tensor) -> Tensor:
+        """Forward pass.
+
+        Args:
+            input_tensor (Tensor): Input tensor
+
+        Returns:
+            Tensor: Output tensor with added coordinates.
+        """
         # NOTE: This is a modified version of the original implementation,
         #   which only supports rank 2 tensors.
-        batch, _, x_dim, y_dim = input.shape
+        batch, _, x_dim, y_dim = input_tensor.shape
         xx_ones = torch.ones([1, 1, 1, y_dim], dtype=torch.int32)
         yy_ones = torch.ones([1, 1, 1, x_dim], dtype=torch.int32)
 
@@ -371,13 +368,13 @@ class AddCoords(nn.Module):
         xx_channel = xx_channel * 2 - 1
         yy_channel = yy_channel * 2 - 1
 
-        xx_channel = xx_channel.repeat(batch, 1, 1, 1).to(input.device)
-        yy_channel = yy_channel.repeat(batch, 1, 1, 1).to(input.device)
+        xx_channel = xx_channel.repeat(batch, 1, 1, 1).to(input_tensor.device)
+        yy_channel = yy_channel.repeat(batch, 1, 1, 1).to(input_tensor.device)
 
-        out = torch.cat([input, xx_channel, yy_channel], dim=1)
+        out = torch.cat([input_tensor, xx_channel, yy_channel], dim=1)
 
         if self.with_r:
-            rr = torch.sqrt(torch.pow(xx_channel - 0.5, 2) + torch.pow(yy_channel - 0.5, 2))
-            out = torch.cat([out, rr], dim=1)
+            rr_channel = torch.sqrt(torch.pow(xx_channel - 0.5, 2) + torch.pow(yy_channel - 0.5, 2))
+            out = torch.cat([out, rr_channel], dim=1)
 
         return out

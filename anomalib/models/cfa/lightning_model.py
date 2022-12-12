@@ -44,24 +44,56 @@ class Cfa(AnomalyModule):
         self.model: CfaModel = CfaModel(backbone=backbone, gamma_c=gamma_c, gamma_d=gamma_d)
 
     def on_train_start(self) -> None:
+        """Initialize the centroid for the memory bank computation."""
         self.model.initialize_centroid(data_loader=self.trainer.datamodule.train_dataloader())  # type: ignore
 
     def training_step(self, batch) -> STEP_OUTPUT:
+        """Training step for the CFA model.
+
+        Args:
+            batch (dict): Batch input.
+
+        Returns:
+            STEP_OUTPUT: Loss value.
+        """
         loss = self.model(batch["image"])
         return {"loss": loss}
 
     def validation_step(self, batch, batch_idx) -> dict:
+        """Validation step for the CFA model.
+
+        Args:
+            batch (dict): Input batch.
+            batch_idx (int): Index of the batch.
+
+        Returns:
+            dict: Anomaly map computed by the model.
+        """
         batch["anomaly_maps"] = self.model(batch["image"])
         return batch
 
+    # pylint: disable=unused-argument
     def backward(
         self, loss: Tensor, optimizer: Optional[Optimizer], optimizer_idx: Optional[int], *args, **kwargs
     ) -> None:
+        """Backward step for the CFA model.
+
+        Args:
+            loss (Tensor): Loss value.
+            optimizer (Optional[Optimizer]): Optimizer.
+            optimizer_idx (Optional[int]): Optimizer index.
+        """
         # TODO: Investigate why retain_graph is needed.
         loss.backward(retain_graph=True)
 
 
 class CfaLightning(Cfa):
+    """PL Lightning Module for the CFA model.
+
+    Args:
+        hparams (Union[DictConfig, ListConfig]): Model params
+    """
+
     def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
         super().__init__(backbone=hparams.model.backbone, gamma_c=hparams.model.gamma_c, gamma_d=hparams.model.gamma_d)
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore

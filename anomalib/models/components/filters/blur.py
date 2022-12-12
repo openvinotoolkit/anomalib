@@ -9,6 +9,18 @@ from torch import Tensor, nn
 from torch.nn import functional as F
 
 
+def compute_kernel_size(sigma_val: float) -> int:
+    """Compute kernel size from sigma value.
+
+    Args:
+        sigma_val (float): Sigma value.
+
+    Returns:
+        int: Kernel size.
+    """
+    return 2 * int(4.0 * sigma_val + 0.5) + 1
+
+
 class GaussianBlur2d(nn.Module):
     """Compute GaussianBlur in 2d.
 
@@ -42,8 +54,7 @@ class GaussianBlur2d(nn.Module):
         self.channels = channels
 
         if kernel_size is None:
-            func = lambda x: 2 * int(4.0 * x + 0.5) + 1
-            kernel_size = tuple(map(func, sigma))
+            kernel_size = (compute_kernel_size(sigma[0]), compute_kernel_size(sigma[1]))
         else:
             kernel_size = kernel_size if isinstance(kernel_size, tuple) else (kernel_size, kernel_size)
 
