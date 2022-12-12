@@ -185,7 +185,7 @@ class FolderDataset(AnomalibDataset):
         split (Optional[Union[Split, str]]): Fixed subset split that follows from folder structure on file system.
             Choose from [Split.FULL, Split.TRAIN, Split.TEST]
 
-        root (Union[str, Path]): Root folder of the dataset.
+        root (Optional[Union[str, Path]]): Root folder of the dataset.
         normal_dir (Union[str, Path]): Path to the directory containing normal images.
         abnormal_dir (Optional[Union[str, Path]], optional): Path to the directory containing abnormal images.
         normal_test_dir (Optional[Union[str, Path]], optional): Path to the directory containing
@@ -206,7 +206,7 @@ class FolderDataset(AnomalibDataset):
         self,
         task: TaskType,
         pre_process: PreProcessor,
-        root: Union[str, Path],
+        root: Optional[Union[str, Path]],
         normal_dir: Union[str, Path],
         abnormal_dir: Optional[Union[str, Path]] = None,
         normal_test_dir: Optional[Union[str, Path]] = None,
@@ -244,7 +244,7 @@ class Folder(AnomalibDataModule):
     """Folder DataModule.
 
     Args:
-        root (Union[str, Path]): Path to the root folder containing normal and abnormal dirs.
+        root (Optional[Union[str, Path]]): Path to the root folder containing normal and abnormal dirs.
         normal_dir (Union[str, Path]): Name of the directory containing normal images.
             Defaults to "normal".
         abnormal_dir (Union[str, Path]): Name of the directory containing abnormal images.
@@ -277,7 +277,7 @@ class Folder(AnomalibDataModule):
 
     def __init__(
         self,
-        root: Union[str, Path],
+        root: Optional[Union[str, Path]],
         normal_dir: Union[str, Path],
         abnormal_dir: Union[str, Path],
         normal_test_dir: Optional[Union[str, Path]] = None,
