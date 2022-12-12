@@ -175,18 +175,22 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         # Don't need to compute weights if num_neighbors is 1
         if self.num_neighbors == 1:
             return patch_scores.amax(1)
+        batch_size, num_patches = patch_scores.shape
         # 1. Find the patch with the largest distance to it's nearest neighbor in each image
-        max_patches = torch.argmax(patch_scores, dim=1)  # (m^test,* in the paper)
+        max_patches = torch.argmax(patch_scores, dim=1)  # indices of m^test,* in the paper
+        # m^test,* in the paper
+        max_patches_features = embedding.reshape(batch_size, num_patches, -1)[torch.arange(batch_size), max_patches]
         # 2. Find the distance of the patch to it's nearest neighbor, and the location of the nn in the membank
-        score = patch_scores[torch.arange(patch_scores.shape[0]), max_patches]  # s in the paper
-        nn_index = locations[torch.arange(patch_scores.shape[0]), max_patches]  # m^* in the paper
+        score = patch_scores[torch.arange(batch_size), max_patches]  # s^* in the paper
+        nn_index = locations[torch.arange(batch_size), max_patches]  # indices of m^* in the paper
         # 3. Find the support samples of the nearest neighbor in the membank
-        nn_sample = self.memory_bank[nn_index, :]
-        _, support_samples = self.nearest_neighbors(nn_sample, n_neighbors=self.num_neighbors)  # N_b(m^*) in the paper
+        nn_sample = self.memory_bank[nn_index, :]  # m^* in the paper
+        # indices of N_b(m^*) in the paper
+        _, support_samples = self.nearest_neighbors(nn_sample, n_neighbors=self.num_neighbors)
         # 4. Find the distance of the patch features to each of the support samples
-        distances = torch.cdist(embedding[max_patches].unsqueeze(1), self.memory_bank[support_samples], p=2.0)
+        distances = torch.cdist(max_patches_features.unsqueeze(1), self.memory_bank[support_samples], p=2.0)
         # 5. Apply softmax to find the weights
         weights = (1 - F.softmax(distances.squeeze(1), 1))[..., 0]
         # 6. Apply the weight factor to the score
-        score = weights * score  # S^* in the paper
+        score = weights * score  # s in the paper
         return score
