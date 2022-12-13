@@ -206,7 +206,7 @@ class FolderDataset(AnomalibDataset):
         task: TaskType,
         pre_process: PreProcessor,
         normal_dir: Union[str, Path],
-        root: Optional[Union[str, Path]],
+        root: Optional[Union[str, Path]] = None,
         abnormal_dir: Optional[Union[str, Path]] = None,
         normal_test_dir: Optional[Union[str, Path]] = None,
         mask_dir: Optional[Union[str, Path]] = None,
