@@ -63,8 +63,33 @@ def _prepare_files_labels(
     return filenames, labels
 
 
+def _resolve_path(folder: Union[Path, str], root: Optional[Union[Path, str]] = None) -> Path:
+    """Combines root and folder and returns the absolute path.
+
+    This allows users to pass either a root directory and relative paths, or absolute paths to each of the
+    image sources. This function makes sure that the samples dataframe always contains absolute paths.
+
+    Args:
+        folder (Optional[Union[Path, str]]): Folder location containing image or mask data.
+        root (Optional[Union[Path, str]]): Root directory for the dataset.
+    """
+    folder = Path(folder)
+    if folder.is_absolute():
+        # path is absolute; return unmodified
+        path = folder
+    # path is relative.
+    elif root is None:
+        # no root provided; return absolute path
+        path = folder.resolve()
+    else:
+        # root provided; prepend root and return absolute path
+        path = (Path(root) / folder).resolve()
+    return path
+
+
 def make_folder_dataset(
     normal_dir: Union[str, Path],
+    root: Optional[Union[str, Path]] = None,
     abnormal_dir: Optional[Union[str, Path]] = None,
     normal_test_dir: Optional[Union[str, Path]] = None,
     mask_dir: Optional[Union[str, Path]] = None,
@@ -75,6 +100,7 @@ def make_folder_dataset(
 
     Args:
         normal_dir (Union[str, Path]): Path to the directory containing normal images.
+        root (Optional[Union[str, Path]]): Path to the root directory of the dataset.
         abnormal_dir (Optional[Union[str, Path]], optional): Path to the directory containing abnormal images.
         normal_test_dir (Optional[Union[str, Path]], optional): Path to the directory containing
             normal images for the test dataset. Normal test images will be a split of `normal_dir`
@@ -89,6 +115,11 @@ def make_folder_dataset(
     Returns:
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
+    normal_dir = _resolve_path(normal_dir, root)
+    abnormal_dir = _resolve_path(abnormal_dir, root) if abnormal_dir is not None else None
+    normal_test_dir = _resolve_path(normal_test_dir, root) if normal_test_dir is not None else None
+    mask_dir = _resolve_path(mask_dir, root) if mask_dir is not None else None
+    assert normal_dir.is_dir(), "A folder location must be provided in normal_dir."
 
     filenames = []
     labels = []
@@ -118,7 +149,8 @@ def make_folder_dataset(
         samples["mask_path"] = ""
         for index, row in samples.iterrows():
             if row.label_index == 1:
-                samples.loc[index, "mask_path"] = str(mask_dir / row.image_path.name)
+                rel_image_path = row.image_path.relative_to(abnormal_dir)
+                samples.loc[index, "mask_path"] = str(mask_dir / rel_image_path)
 
         # make sure all the files exist
         # samples.image_path does NOT need to be checked because we build the df based on that
@@ -152,9 +184,8 @@ class FolderDataset(AnomalibDataset):
         pre_process (PreProcessor): Image Pre-processor to apply transform.
         split (Optional[Union[Split, str]]): Fixed subset split that follows from folder structure on file system.
             Choose from [Split.FULL, Split.TRAIN, Split.TEST]
-
-        root (Union[str, Path]): Root folder of the dataset.
         normal_dir (Union[str, Path]): Path to the directory containing normal images.
+        root (Optional[Union[str, Path]]): Root folder of the dataset.
         abnormal_dir (Optional[Union[str, Path]], optional): Path to the directory containing abnormal images.
         normal_test_dir (Optional[Union[str, Path]], optional): Path to the directory containing
             normal images for the test dataset. Defaults to None.
@@ -174,8 +205,8 @@ class FolderDataset(AnomalibDataset):
         self,
         task: TaskType,
         pre_process: PreProcessor,
-        root: Union[str, Path],
         normal_dir: Union[str, Path],
+        root: Optional[Union[str, Path]] = None,
         abnormal_dir: Optional[Union[str, Path]] = None,
         normal_test_dir: Optional[Union[str, Path]] = None,
         mask_dir: Optional[Union[str, Path]] = None,
@@ -186,9 +217,10 @@ class FolderDataset(AnomalibDataset):
         super().__init__(task, pre_process)
 
         self.split = split
-        self.normal_dir = Path(root) / Path(normal_dir)
-        self.abnormal_dir = Path(root) / Path(abnormal_dir) if abnormal_dir else None
-        self.normal_test_dir = Path(root) / Path(normal_test_dir) if normal_test_dir else None
+        self.root = root
+        self.normal_dir = normal_dir
+        self.abnormal_dir = abnormal_dir
+        self.normal_test_dir = normal_test_dir
         self.mask_dir = mask_dir
         self.extensions = extensions
 
@@ -197,6 +229,7 @@ class FolderDataset(AnomalibDataset):
     def _setup(self):
         """Assign samples."""
         self.samples = make_folder_dataset(
+            root=self.root,
             normal_dir=self.normal_dir,
             abnormal_dir=self.abnormal_dir,
             normal_test_dir=self.normal_test_dir,
@@ -210,10 +243,10 @@ class Folder(AnomalibDataModule):
     """Folder DataModule.
 
     Args:
-        root (Union[str, Path]): Path to the root folder containing normal and abnormal dirs.
         normal_dir (Union[str, Path]): Name of the directory containing normal images.
             Defaults to "normal".
-        abnormal_dir (Union[str, Path]): Name of the directory containing abnormal images.
+        root (Optional[Union[str, Path]]): Path to the root folder containing normal and abnormal dirs.
+        abnormal_dir (Optional[Union[str, Path]]): Name of the directory containing abnormal images.
             Defaults to "abnormal".
         normal_test_dir (Optional[Union[str, Path]], optional): Path to the directory containing
             normal images for the test dataset. Defaults to None.
@@ -243,9 +276,9 @@ class Folder(AnomalibDataModule):
 
     def __init__(
         self,
-        root: Union[str, Path],
         normal_dir: Union[str, Path],
-        abnormal_dir: Union[str, Path],
+        root: Optional[Union[str, Path]] = None,
+        abnormal_dir: Optional[Union[str, Path]] = None,
         normal_test_dir: Optional[Union[str, Path]] = None,
         mask_dir: Optional[Union[str, Path]] = None,
         normal_split_ratio: float = 0.2,
