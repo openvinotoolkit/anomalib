@@ -147,7 +147,16 @@ class CrossConvolutions(nn.Module):
         self.leaky_relu = nn.LeakyReLU(self.leaky_slope)
 
     def forward(self, scale0, scale1, scale2) -> Tuple[Tensor, Tensor, Tensor]:
-        """Applies the cross convolution to the three scales."""
+        """Applies the cross convolution to the three scales.
+
+        This block is represented in figure 4 of the paper.
+
+        Returns:
+            Tuple[Tensor, Tensor, Tensor]: Tensors indicating scale and transform parameters as a single tensor for
+            each scale. The scale parameters are the first part across channel dimension and the transform parameters
+            are the second.
+        """
+        # Increase the number of channels to hidden channel length via convolutions and apply leaky ReLU.
         out0 = self.conv_scale0_0(scale0)
         out1 = self.conv_scale1_0(scale1)
         out2 = self.conv_scale2_0(scale2)
@@ -156,16 +165,20 @@ class CrossConvolutions(nn.Module):
         lr1 = self.leaky_relu(out1)
         lr3 = self.leaky_relu(out2)
 
+        # Decrease the number of channels to scale and transform split length.
         out0 = self.conv_scale0_1(lr0)
         out1 = self.conv_scale1_1(lr1)
         out2 = self.conv_scale2_1(lr3)
 
+        # Upsample the smaller scales.
         y1_up = self.up_conv10(self.upsample(lr1))
         y2_up = self.up_conv21(self.upsample(lr3))
 
+        # Downsample the larger scales.
         y0_down = self.down_conv01(lr0)
         y1_down = self.down_conv12(lr1)
 
+        # Do element-wise sum on cross-scale outputs.
         out0 = out0 + y1_up
         out1 = out1 + y0_down + y2_up
         out2 = out2 + y1_down
@@ -174,6 +187,7 @@ class CrossConvolutions(nn.Module):
             out0 = out0 * self.gamma0
             out1 = out1 * self.gamma1
             out2 = out2 * self.gamma2
+        # even channel split is performed outside this block
         return out0, out1, out2
 
 
