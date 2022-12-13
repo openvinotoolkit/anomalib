@@ -12,7 +12,7 @@
 
 
 from math import exp
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -28,7 +28,17 @@ from .anomaly_map import AnomalyMapGenerator, AnomalyMapMode
 
 
 class CrossConvolutions(nn.Module):
-    """Cross convolution for the three scales."""
+    """Cross convolution for the three scales.
+
+    Args:
+        in_channels (int): Number of input channels.
+        channels (int): Number of output channels in the hidden convolution and the upscaling layers.
+        channels_hidden (int, optional): Number of input channels in the hidden convolution layers. Defaults to 512.
+        kernel_size (int, optional): Kernel size of the convolution layers. Defaults to 3.
+        leaky_slope (float, optional): Slope of the leaky ReLU activation. Defaults to 0.1.
+        batch_norm (bool, optional): Whether to use batch normalization. Defaults to False.
+        use_gamma (bool, optional): Whether to use gamma parameters for the cross convolutions. Defaults to True.
+    """
 
     def __init__(
         self,
@@ -136,7 +146,7 @@ class CrossConvolutions(nn.Module):
 
         self.leaky_relu = nn.LeakyReLU(self.leaky_slope)
 
-    def forward(self, scale0, scale1, scale2):
+    def forward(self, scale0, scale1, scale2) -> Tuple[Tensor, Tensor, Tensor]:
         """Applies the cross convolution to the three scales."""
         out0 = self.conv_scale0_0(scale0)
         out1 = self.conv_scale1_0(scale1)
@@ -235,12 +245,11 @@ class ParallelGlowCouplingLayer(InvertibleModule):
 
     Args:
         dims_in (List[Tuple[int]]): list of dimensions of the input tensors
-        subnet_constructor (Callable): constructor of the subnet
         subnet_args (Dict): arguments of the subnet
         clamp (float): clamp value for the output of the subnet
     """
 
-    def __init__(self, dims_in: List[Tuple[int]], subnet_constructor: Callable, subnet_args: Dict, clamp: float = 5.0):
+    def __init__(self, dims_in: List[Tuple[int]], subnet_args: Dict, clamp: float = 5.0):
         super().__init__(dims_in)
         channels = dims_in[0][0]
         self.ndims = len(dims_in[0])
@@ -253,8 +262,8 @@ class ParallelGlowCouplingLayer(InvertibleModule):
         self.max_s = exp(clamp)
         self.min_s = exp(-clamp)
 
-        self.subnet1 = subnet_constructor(self.split_len1, self.split_len2 * 2, **subnet_args)
-        self.subnet2 = subnet_constructor(self.split_len2, self.split_len1 * 2, **subnet_args)
+        self.cross_convolution1 = CrossConvolutions(self.split_len1, self.split_len2 * 2, **subnet_args)
+        self.cross_convolution2 = CrossConvolutions(self.split_len2, self.split_len1 * 2, **subnet_args)
 
     def exp(self, input_tensor):
         """Exponentiates the input and, optionally, clamps it to avoid numerical issues."""
@@ -272,6 +281,8 @@ class ParallelGlowCouplingLayer(InvertibleModule):
     def forward(self, input_tensor: List[Tensor], rev=False, jac=True):
         """Applies GLOW coupling for the three scales."""
 
+        # Even channel split. The two splits are used by cross-scale convolution to compute scale and transform
+        # parameters.
         x01, x02 = (
             input_tensor[0].narrow(1, 0, self.split_len1),
             input_tensor[0].narrow(1, self.split_len1, self.split_len2),
@@ -286,27 +297,33 @@ class ParallelGlowCouplingLayer(InvertibleModule):
         )
 
         if not rev:
-            r02, r12, r22 = self.subnet2(x02, x12, x22)
+            # Outputs of cross convolutions at three scales
+            r02, r12, r22 = self.cross_convolution2(x02, x12, x22)
 
+            # Scale and transform parameters are obtained by splitting the output of cross convolutions.
             s02, t02 = r02[:, : self.split_len1], r02[:, self.split_len1 :]
             s12, t12 = r12[:, : self.split_len1], r12[:, self.split_len1 :]
             s22, t22 = r22[:, : self.split_len1], r22[:, self.split_len1 :]
 
+            # apply element wise affine transformation on the first part
             y01 = self.exp(s02) * x01 + t02
             y11 = self.exp(s12) * x11 + t12
             y21 = self.exp(s22) * x21 + t22
 
-            r01, r11, r21 = self.subnet1(y01, y11, y21)
+            r01, r11, r21 = self.cross_convolution1(y01, y11, y21)
 
             s01, t01 = r01[:, : self.split_len2], r01[:, self.split_len2 :]
             s11, t11 = r11[:, : self.split_len2], r11[:, self.split_len2 :]
             s21, t21 = r21[:, : self.split_len2], r21[:, self.split_len2 :]
+
+            # apply element wise affine transformation on the second part
             y02 = self.exp(s01) * x02 + t01
             y12 = self.exp(s11) * x12 + t11
             y22 = self.exp(s21) * x22 + t21
 
         else:  # names of x and y are swapped!
-            r01, r11, r21 = self.subnet1(x01, x11, x21)
+            # Inverse affine transformation at three scales.
+            r01, r11, r21 = self.cross_convolution1(x01, x11, x21)
 
             s01, t01 = r01[:, : self.split_len2], r01[:, self.split_len2 :]
             s11, t11 = r11[:, : self.split_len2], r11[:, self.split_len2 :]
@@ -316,7 +333,7 @@ class ParallelGlowCouplingLayer(InvertibleModule):
             y12 = (x12 - t11) / self.exp(s11)
             y22 = (x22 - t21) / self.exp(s21)
 
-            r02, r12, r22 = self.subnet2(y02, y12, y22)
+            r02, r12, r22 = self.cross_convolution2(y02, y12, y22)
 
             s02, t02 = r02[:, : self.split_len2], r01[:, self.split_len2 :]
             s12, t12 = r12[:, : self.split_len2], r11[:, self.split_len2 :]
@@ -326,6 +343,8 @@ class ParallelGlowCouplingLayer(InvertibleModule):
             y11 = (x11 - t12) / self.exp(s12)
             y21 = (x21 - t22) / self.exp(s22)
 
+        # Concatenate the outputs of the three scales to get three transformed outputs that have the same shape as the
+        # inputs.
         z_dist0 = torch.cat((y01, y02), 1)
         z_dist1 = torch.cat((y11, y12), 1)
         z_dist2 = torch.cat((y21, y22), 1)
@@ -389,7 +408,6 @@ class CrossScaleFlow(nn.Module):
                     ParallelGlowCouplingLayer,
                     {
                         "clamp": self.clamp,
-                        "subnet_constructor": CrossConvolutions,
                         "subnet_args": {
                             "channels_hidden": self.cross_conv_hidden_channels,
                             "kernel_size": self.kernel_sizes[coupling_block],

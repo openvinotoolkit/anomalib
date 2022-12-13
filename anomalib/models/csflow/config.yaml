@@ -23,7 +23,6 @@ dataset:
 
 model:
   name: csflow
-  backbone: efficientnet_b5
   clamp: 3
   cross_conv_hidden_channels: 1024
   early_stopping:
