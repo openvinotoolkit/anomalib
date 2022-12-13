@@ -525,12 +525,12 @@ class CsFlowModel(nn.Module):
             output = self.graph(features)
         else:
             z_dist, _ = self.graph(features)  # Ignore Jacobians
-            anomaly_scores = self._get_anomaly_scores(z_dist)
+            anomaly_scores = self._compute_anomaly_scores(z_dist)
             anomaly_maps = self.anomaly_map_generator(z_dist)
             output = anomaly_maps, anomaly_scores
         return output
 
-    def _get_anomaly_scores(self, z_dists: Tensor) -> Tensor:
+    def _compute_anomaly_scores(self, z_dists: Tensor) -> Tensor:
         """Get anomaly scores from the latent distribution.
 
         Args:
