@@ -32,6 +32,7 @@ We actively welcome your pull requests:
 1. If you've changed APIs, update the documentation.
 1. Ensure the test suite passes.
 1. Make sure you own the code you're submitting or that you obtain it from a source with an appropriate license.
+1. Add a summary of the changes to the [CHANGELOG](https://github.com/openvinotoolkit/anomalib/blob/main/CHANGELOG.md) (not for minor changes, docs and tests).
 1. Issue that pull request!
 
 ### Setting up the development environment and using pre-commit
