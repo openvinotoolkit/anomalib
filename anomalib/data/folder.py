@@ -76,15 +76,15 @@ def _resolve_path(folder: Union[Path, str], root: Optional[Union[Path, str]] = N
     folder = Path(folder)
     if folder.is_absolute():
         # path is absolute; return unmodified
-        return folder
-
+        path = folder
     # path is relative.
-    if root is None:
+    elif root is None:
         # no root provided; return absolute path
-        return folder.resolve()
-
-    # root provided; prepend root and return absolute path
-    return (Path(root) / folder).resolve()
+        path = folder.resolve()
+    else:
+        # root provided; prepend root and return absolute path
+        path = (Path(root) / folder).resolve()
+    return path
 
 
 def make_folder_dataset(
