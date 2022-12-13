@@ -9,6 +9,10 @@ PyTorch (Lightning) Inference
 =============================
 The entrypoint script in ``tools/inference/lightning.py`` can be used to run inference with a trained PyTorch model. The script runs inference by loading a previously trained model into a PyTorch Lightning trainer and running the ``predict sequence``. The entrypoint script has several command line arguments that can be used to configure inference:
 
+Like the other PyTorch Lightning entrypoints, the inference script reads the model configuration from a config file. It is generally advisible to use the same config file that was used when training the model, although some inference-related paremeter values may be changed to accommodate your needs. Some settings that you might want to change before inference are the batch size, transform config and number of workers for the dataloader.
+
+It is also possible to run inference with a custom anomaly score threshold that differs from the threshold used/computed during training. To change the threshold for inference, simply set the ``metrics.threshold.method`` to ``manual`` and specify the custom threshold values in ``metrics.threshold.manual_image`` and ``metrics.threshold.manual_pixel``.
+
 +---------------------+----------+---------------------------------------------------------------------------------+
 |      Parameter      | Required |                                   Description                                   |
 +=====================+==========+=================================================================================+
@@ -22,7 +26,7 @@ The entrypoint script in ``tools/inference/lightning.py`` can be used to run inf
 +---------------------+----------+---------------------------------------------------------------------------------+
 | visualization_mode  | False    | Determines how the inference results are visualized. Options: "full", "simple". |
 +---------------------+----------+---------------------------------------------------------------------------------+
-| disable_show_images | False    | When this flag is passed, visualizations will not be shown on the screen.       |
+| show                | False    | When true, the visualized inference results will be displayed on the screen.    |
 +---------------------+----------+---------------------------------------------------------------------------------+
 
 To run inference, call the script from the command line with the with the following parameters, e.g.:
@@ -50,6 +54,8 @@ To run OpenVINO inference, first make sure that your model has been exported to 
 +-----------+----------+--------------------------------------------------------------------------------------+
 | meta_data | True     | Path to the JSON file containing the model's meta data (e.g. normalization           |
 |           |          | parameters and anomaly score threshold).                                             |
++-----------+----------+--------------------------------------------------------------------------------------+
+| device    | False    | Device on which OpenVINO will perform the computations (``CPU``, ``GPU`` or ``VPU``) |
 +-----------+----------+--------------------------------------------------------------------------------------+
 
 For correct inference results, the ``meta_data`` argument should be specified and point to the ``meta_data.json`` file that was generated when exporting the OpenVINO IR model. The file is stored in the same folder as the ``.xml`` and ``.bin`` files of the model.

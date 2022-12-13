@@ -27,35 +27,44 @@ We utilize GitHub issues to track the feature requests as well. If you are certa
 We actively welcome your pull requests:
 
 1. Fork the repo and create your branch from [`main`](https://github.com/openvinotoolkit/anomalib/tree/main).
+1. Set up the development environment by following the instructions below.
 1. If you've added code that should be tested, add tests.
 1. If you've changed APIs, update the documentation.
 1. Ensure the test suite passes.
-1. Make sure your code lints.
 1. Make sure you own the code you're submitting or that you obtain it from a source with an appropriate license.
+1. Add a summary of the changes to the [CHANGELOG](https://github.com/openvinotoolkit/anomalib/blob/main/CHANGELOG.md) (not for minor changes, docs and tests).
 1. Issue that pull request!
 
-To setup the development environment, you will need to install development requirements.
+### Setting up the development environment and using pre-commit
+
+To setup the development environment, you will need to install development requirements, as well as the base requirements of the library.
 
 ```bash
-pip install -r requirements/dev.txt
+conda create -n anomalib_dev python=3.8
+conda activate anomalib_dev
+pip install -r requirements/base.txt -r requirements/dev.txt
+pre-commit install
 ```
 
-To enforce consistency within the repo, we use several formatters, linters, and style- and type checkers:
+The commands above will install pre-commit. Pre-commit hooks will run each of the code quality tools listed above each time you commit some changes to a branch. Some tools like black and isort will automatically format your files to enforce consistent formatting within the repo. Other tools will provide a list of errors and warnings which you will be required to address before being able to make the commit.
 
-| Tool   | Function                   | Documentation                           |
-| ------ | -------------------------- | --------------------------------------- |
-| Black  | Code formatting            | https://black.readthedocs.io/en/stable/ |
-| isort  | Organize import statements | https://pycqa.github.io/isort/          |
-| Flake8 | Code style                 | https://flake8.pycqa.org/en/latest/     |
-| Pylint | Linting                    | http://pylint.pycqa.org/en/latest/      |
-| MyPy   | Type checking              | https://mypy.readthedocs.io/en/stable/  |
+The pre-commit checks can also be triggered manually with the following command:
 
-Instead of running each of these tools manually, we automatically run them before each commit and after each merge request. To achieve this we use pre-commit hooks and tox. Every developer is expected to use pre-commit hooks to make sure that their code remains free of typing and linting issues, and complies with the coding style requirements. When an MR is submitted, tox will be automatically invoked from the CI pipeline in Gitlab to check if the code quality is up to standard. Developers can also run tox locally before making an MR, though this is not strictly necessary since pre-commit hooks should be sufficient to prevent code quality issues. More detailed explanations of how to work with these tools is given in the respective guides:
+```bash
+pre-commit run --all-files
+```
 
-- Pre-commit hooks: [Pre-commit hooks guide](https://openvinotoolkit.github.io/anomalib/guides/using_pre_commit.html#pre-commit-hooks)
-- Tox: [Using Tox](https://openvinotoolkit.github.io/anomalib/guides/using_tox.html#using-tox)
+In some cases it might be desired to commit your changes even though some of the checks are failing. For example when you want to address the pre-commit issues at a later time, or when you want to commit a work-in-progress. In these cases, you can skip the pre-commit hooks by adding the `--no-verify` parameter to the commit command.
 
-In rare cases it might be desired to ignore certain errors or warnings for a particular part of your code. Flake8, Pylint and MyPy allow disabling specific errors for a line or block of code. The instructions for this can be found in the the documentations of each of these tools. Please make sure to only ignore errors/warnings when absolutely necessary, and always add a comment in your code stating why you chose to ignore it.
+```bash
+git commit -m 'WIP commit' --no-verify
+```
+
+When doing so, please make sure to revisit the pre-commit issues before you submit your PR. A good way to confirm if your code passes the checks is by running `pre-commit run --all-files`.
+
+More information on pre-commit and how it is used in Anomalib can be found in our documentation:
+
+- [Pre-commit hooks guide](https://openvinotoolkit.github.io/anomalib/developer_guide/pre_commit_hooks.html)
 
 ## License
 

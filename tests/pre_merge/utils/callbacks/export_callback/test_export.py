@@ -5,6 +5,7 @@ import pytest
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
+from anomalib.deploy import ExportMode
 from anomalib.utils.callbacks.export import ExportCallback
 from tests.helpers.config import get_test_configurable_parameters
 from tests.pre_merge.utils.callbacks.export_callback.dummy_lightning_model import (
@@ -15,7 +16,7 @@ from tests.pre_merge.utils.callbacks.export_callback.dummy_lightning_model impor
 
 @pytest.mark.parametrize(
     "export_mode",
-    ["openvino", "onnx"],
+    [ExportMode.OPENVINO, ExportMode.ONNX],
 )
 def test_export_model_callback(export_mode):
     """Tests if an optimized model is created."""
@@ -47,9 +48,9 @@ def test_export_model_callback(export_mode):
         )
         trainer.fit(model, datamodule=datamodule)
 
-        if "openvino" in export_mode:
+        if export_mode == ExportMode.OPENVINO:
             assert os.path.exists(os.path.join(tmp_dir, "openvino/model.bin")), "Failed to generate OpenVINO model"
-        elif "onnx" in export_mode:
-            assert os.path.exists(os.path.join(tmp_dir, "model.onnx")), "Failed to generate ONNX model"
+        elif export_mode == ExportMode.ONNX:
+            assert os.path.exists(os.path.join(tmp_dir, "onnx/model.onnx")), "Failed to generate ONNX model"
         else:
             raise ValueError(f"Unknown export_mode {export_mode}. Supported modes: onnx or openvino.")

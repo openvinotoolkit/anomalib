@@ -14,7 +14,8 @@ from pytorch_lightning import Trainer
 
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
-from anomalib.deploy import OpenVINOInferencer, TorchInferencer, export_convert
+from anomalib.deploy import OpenVINOInferencer, TorchInferencer, export
+from anomalib.deploy.export import ExportMode
 from anomalib.models import get_model
 from anomalib.utils.callbacks import get_callbacks
 from tests.helpers.dataset import TestDataset, get_dataset_path
@@ -73,11 +74,12 @@ class TestInferencers:
             model.eval()
 
             # Test torch inferencer
-            torch_inferencer = TorchInferencer(model_config, model)
+            torch_inferencer = TorchInferencer(model_config, model, device="cpu")
             torch_dataloader = MockImageLoader(model_config.dataset.image_size, total_count=1)
             with torch.no_grad():
                 for image in torch_dataloader():
-                    torch_inferencer.predict(image)
+                    prediction = torch_inferencer.predict(image)
+                    assert 0.0 <= prediction.pred_score <= 1.0  # confirm if predicted scores are normalized
 
     @pytest.mark.parametrize(
         "model_name",
@@ -103,11 +105,11 @@ class TestInferencers:
 
             trainer.fit(model=model, datamodule=datamodule)
 
-            export_convert(
+            export(
                 model=model,
                 input_size=model_config.dataset.image_size,
-                export_path=export_path,
-                export_mode="openvino",
+                export_root=export_path,
+                export_mode=ExportMode.OPENVINO,
             )
 
             # Test OpenVINO inferencer
@@ -116,4 +118,5 @@ class TestInferencers:
             )
             openvino_dataloader = MockImageLoader(model_config.dataset.image_size, total_count=1)
             for image in openvino_dataloader():
-                openvino_inferencer.predict(image)
+                prediction = openvino_inferencer.predict(image)
+                assert 0.0 <= prediction.pred_score <= 1.0  # confirm if predicted scores are normalized

@@ -1,4 +1,4 @@
-"""Anomalib Traning Script.
+"""Anomalib Training Script.
 
 This script reads the name of the model or config file from command
 line, train/test the anomaly model to get quantitative and qualitative
@@ -47,7 +47,7 @@ def train():
         warnings.filterwarnings("ignore")
 
     config = get_configurable_parameters(model_name=args.model, config_path=args.config)
-    if config.project.seed:
+    if config.project.get("seed") is not None:
         seed_everything(config.project.seed)
 
     datamodule = get_datamodule(config)

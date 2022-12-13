@@ -1,17 +1,139 @@
 # Changelog
 
-## v.0.3.5
+All notable changes to this project will be documented in this file.
 
-## What's Changed
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+## [Unreleased]
+
+### Added
+
+- Add section for community project (<https://github.com/openvinotoolkit/anomalib/pull/768>)
+- ✨ Add torchfx feature extractor (<https://github.com/openvinotoolkit/anomalib/pull/675>)
+- Add tiling notebook (<https://github.com/openvinotoolkit/anomalib/pull/712>)
+- Add posargs to tox to enable testing a single file (https://github.com/openvinotoolkit/anomalib/pull/695)
+- Add option to load metrics with kwargs (https://github.com/openvinotoolkit/anomalib/pull/688)
+- 🐞 Add device flag to TorchInferencer (<https://github.com/openvinotoolkit/anomalib/pull/601>)
+
+### Changed
+
+- Switch to new [changelog format](https://keepachangelog.com/en/1.0.0/). (<https://github.com/openvinotoolkit/anomalib/pull/777>)
+- Rename feature to task (<https://github.com/openvinotoolkit/anomalib/pull/769>)
+- make device configurable in OpenVINO inference (<https://github.com/openvinotoolkit/anomalib/pull/755>)
+- 🚨 Fix torchmetrics version (<https://github.com/openvinotoolkit/anomalib/pull/754>)
+- Improve NNCF initilization (<https://github.com/openvinotoolkit/anomalib/pull/740>)
+- Migrate markdownlint + issue templates (<https://github.com/openvinotoolkit/anomalib/pull/738>)
+- 🐞 Patch Timm Feature Extractor (<https://github.com/openvinotoolkit/anomalib/pull/714>)
+- Padim arguments improvements (<https://github.com/openvinotoolkit/anomalib/pull/664>)
+- 📊 Update DFM results (<https://github.com/openvinotoolkit/anomalib/pull/674>)
+- Optimize anomaly score calculation for PatchCore (<https://github.com/openvinotoolkit/anomalib/pull/633>)
+
+### Fixed
+
+- Fix zero seed (<https://github.com/openvinotoolkit/anomalib/pull/766>)
+- Fix #699 (<https://github.com/openvinotoolkit/anomalib/pull/700>)
+- 🐞 Fix folder dataset for classification tasks (<https://github.com/openvinotoolkit/anomalib/pull/708>)
+- Update torchmetrics to fix compute_on_cpu issue (<https://github.com/openvinotoolkit/anomalib/pull/711>)
+- Correct folder mask path (<https://github.com/openvinotoolkit/anomalib/pull/660>)
+- Fix >100% confidence issue for OpenVINO inference (<https://github.com/openvinotoolkit/anomalib/pull/667>)
+- Update pre-commit links and some other minor fixes (<https://github.com/openvinotoolkit/anomalib/pull/672>)
+- Fix black formatting issues. (<https://github.com/openvinotoolkit/anomalib/pull/674>)
+
+## [v0.3.7] - 2022-10-28
+
+### What's Changed
+
+- Feature/comet logging by @sherpan in <https://github.com/openvinotoolkit/anomalib/pull/517>
+- 🐞 Fix linting issues by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/535>
+- 🐞 Bug Fix: Solve NaN values of anomaly scores for PatchCore model by @bsl546 in <https://github.com/openvinotoolkit/anomalib/pull/549>
+- 🐞 Bug Fix: Help description for argument task by @youngquan in <https://github.com/openvinotoolkit/anomalib/pull/547>
+- reutrn results of load_state_dict func by @zywvvd in <https://github.com/openvinotoolkit/anomalib/pull/546>
+- 🔨 Pass `pre-trained` from config to `ModelLightning` by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/529>
+- Benchmarking tool with Comet by @sherpan in <https://github.com/openvinotoolkit/anomalib/pull/545>
+- Add map_location when loading the weights by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/562>
+- Add patchcore to openvino export test + upgrade lightning by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/565>
+- 🐞 Fix category check for folder dataset in anomalib CLI by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/567>
+- Refactor `PreProcessor` and fix `Visualizer` denormalization issue. by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/570>
+- 🔨 Check for successful openvino conversion by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/571>
+- Comet HPO by @sherpan in <https://github.com/openvinotoolkit/anomalib/pull/563>
+- Fix patchcore image-level score computation by @djdameln in <https://github.com/openvinotoolkit/anomalib/pull/580>
+- Fix anomaly map computation in CFlow when batch size is 1. by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/589>
+- Documentation refactor by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/576>
+- ✨ Add notebook for hpo by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/592>
+- 🐞 Fix comet HPO by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/597>
+- ✨ Replace keys from benchmarking script by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/595>
+- Update README.md by @Owaiskhan9654 in <https://github.com/openvinotoolkit/anomalib/pull/623>
+- 🐳 Containerize CI by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/616>
+- add deprecation warning to denormalize class by @djdameln in <https://github.com/openvinotoolkit/anomalib/pull/629>
+- Anomalib CLI Improvements - Update metrics and create post_processing section in the config file by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/607>
+- Convert adaptive_threshold to Enum in configs by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/637>
+- Create meta_data.json with ONNX export as well as OpenVINO export by @calebmm in <https://github.com/openvinotoolkit/anomalib/pull/636>
+- 🖌 refactor export callback by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/640>
+- 🐞 Address docs build by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/639>
+- Optimized inference with onnx for patchcore. by @acai66 in <https://github.com/openvinotoolkit/anomalib/pull/652>
+
+New Contributors
+
+- @sherpan made their first contribution in <https://github.com/openvinotoolkit/anomalib/pull/517>
+- @bsl546 made their first contribution in <https://github.com/openvinotoolkit/anomalib/pull/549>
+- @youngquan made their first contribution in <https://github.com/openvinotoolkit/anomalib/pull/547>
+- @zywvvd made their first contribution in <https://github.com/openvinotoolkit/anomalib/pull/546>
+- @Owaiskhan9654 made their first contribution in <https://github.com/openvinotoolkit/anomalib/pull/623>
+- @calebmm made their first contribution in <https://github.com/openvinotoolkit/anomalib/pull/636>
+- @acai66 made their first contribution in <https://github.com/openvinotoolkit/anomalib/pull/652>
+
+**Full Changelog**: <https://github.com/openvinotoolkit/anomalib/compare/v0.3.6...v0.3.7>
+
+## [v.0.3.6] - 2022-09-02
+
+### What's Changed
+
+- Add publish workflow + update references to main by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/480>
+- Fix Dockerfile by @ORippler in <https://github.com/openvinotoolkit/anomalib/pull/478>
+- Fix onnx export by rewriting GaussianBlur by @ORippler in <https://github.com/openvinotoolkit/anomalib/pull/476>
+- DFKDE refactor to accept any layer name like other models by @ashishbdatta in <https://github.com/openvinotoolkit/anomalib/pull/482>
+- 🐞 Log benchmarking results in sub folder by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/483>
+- 🐞 Fix Visualization keys in new CLI by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/487>
+- fix Perlin augmenter for non divisible image sizes by @djdameln in <https://github.com/openvinotoolkit/anomalib/pull/490>
+- 📝 Update the license headers by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/491>
+- change default parameter values for DRAEM by @djdameln in <https://github.com/openvinotoolkit/anomalib/pull/495>
+- Add reset methods to metrics by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/488>
+- Feature Extractor Refactor by @ashishbdatta in <https://github.com/openvinotoolkit/anomalib/pull/451>
+- Convert `AnomalyMapGenerator` to `nn.Module` by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/497>
+- Add github pr labeler to automatically label PRs by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/498>
+- Add coverage by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/499>
+- 🐞 Change if check by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/501>
+- SSPCAB implementation by @djdameln in <https://github.com/openvinotoolkit/anomalib/pull/500>
+- 🛠 Refactor Normalization by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/496>
+- Enable generic exporting of a trained model to ONNX or OpenVINO IR by @ashishbdatta in <https://github.com/openvinotoolkit/anomalib/pull/509>
+- Updated documentation to add examples for exporting model by @ashishbdatta in <https://github.com/openvinotoolkit/anomalib/pull/515>
+- Ignore pixel metrics in classification task by @djdameln in <https://github.com/openvinotoolkit/anomalib/pull/516>
+- Update export documentation by @djdameln in <https://github.com/openvinotoolkit/anomalib/pull/521>
+- FIX: PaDiM didn't use config.model.pre_trained. by @jingt2ch in <https://github.com/openvinotoolkit/anomalib/pull/514>
+- Reset adaptive threshold between epochs by @djdameln in <https://github.com/openvinotoolkit/anomalib/pull/527>
+- Add PRO metric by @djdameln in <https://github.com/openvinotoolkit/anomalib/pull/508>
+- Set full_state_update attribute in custom metrics by @djdameln in <https://github.com/openvinotoolkit/anomalib/pull/531>
+- 🐞 Set normalization method from anomaly module by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/530>
+
+New Contributors
+
+- @ashishbdatta made their first contribution in <https://github.com/openvinotoolkit/anomalib/pull/482>
+- @jingt2ch made their first contribution in <https://github.com/openvinotoolkit/anomalib/pull/514>
+
+**Full Changelog**: <https://github.com/openvinotoolkit/anomalib/compare/v0.3.5...v0.3.6>
+
+## [v.0.3.5] - 2022-08-02
+
+### What's Changed
 
 - 🐞 Fix inference for draem by @djdameln in <https://github.com/openvinotoolkit/anomalib/pull/470>
 - 🐞 🛠 Bug fix in the inferencer by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/475>
 
 **Full Changelog**: <https://github.com/openvinotoolkit/anomalib/compare/v0.3.4...v0.3.5>
 
-## v.0.3.4
+## [v.0.3.4] - 2022-08-01
 
-## What's Changed
+### What's Changed
 
 - Add encoding to LONG_DESCRIPTION in setup.py by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/419>
 - Fix visualization by @ORippler in <https://github.com/openvinotoolkit/anomalib/pull/417>
@@ -45,9 +167,9 @@ New Contributors
 
 **Full Changelog**: <https://github.com/openvinotoolkit/anomalib/compare/0.3.3...0.3.4>
 
-## v.0.3.3
+## [v.0.3.3] - 2022-07-05
 
-## What's Changed
+### What's Changed
 
 - 🚚 Move initialization log message to base class by @djdameln in <https://github.com/openvinotoolkit/anomalib/pull/363>
 - 🚚 Move logging from train.py to the getter functions by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/365>
@@ -70,9 +192,9 @@ New Contributors
 
 **Full Changelog**: <https://github.com/openvinotoolkit/anomalib/compare/v.0.3.2...v.0.3.3>
 
-## v.0.3.2
+## [v.0.3.2] - 2022-06-09
 
-## What's Changed
+### What's Changed
 
 - Refactor `AnomalyModule` and `LightningModules` to explicitly define class arguments. by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/315>
 - 🐞 Fix inferencer in Gradio by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/332>
@@ -91,9 +213,9 @@ New Contributors
 
 **Full Changelog**: <https://github.com/openvinotoolkit/anomalib/compare/v.0.3.1...v.0.3.2>
 
-## v.0.3.1
+## [v.0.3.1] - 2022-05-17
 
-## What's Changed
+### What's Changed
 
 - 🔧 Properly assign values to dataframe in folder dataset. by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/272>
 - ➕ Add warnings ⚠️ for inproper task setting in config files. by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/274>
@@ -115,7 +237,7 @@ New Contributors
 
 **Full Changelog**: <https://github.com/openvinotoolkit/anomalib/compare/v0.3.0...v.0.3.1>
 
-## v.0.3.0
+## [v.0.3.0] - 2022-04-25
 
 ### What's Changed
 
@@ -135,7 +257,7 @@ New Contributors
 
 **Full Changelog**: <https://github.com/openvinotoolkit/anomalib/compare/v0.2.6...v0.3.0>
 
-## v.0.2.6
+## [v.0.2.6] - 2022-04-12
 
 ### What's Changed
 
@@ -178,7 +300,7 @@ New Contributors
 
 **Full Changelog**: <https://github.com/openvinotoolkit/anomalib/compare/v.0.2.5...v0.2.6>
 
-## v.0.2.5
+## [v.0.2.5] - 2022-03-25
 
 ### What's Changed
 
@@ -240,7 +362,7 @@ New Contributors
 
 **Full Changelog**: <https://github.com/openvinotoolkit/anomalib/compare/v.0.2.4...v.0.2.5>
 
-## v.0.2.4
+## [v.0.2.4] - 2021-12-22
 
 ### What's Changed
 
@@ -249,7 +371,7 @@ New Contributors
 
 **Full Changelog**: <https://github.com/openvinotoolkit/anomalib/compare/v.0.2.3...v.0.2.4>
 
-## v.0.2.3
+## [v.0.2.3] - 2021-12-23
 
 ### What's Changed
 
@@ -260,7 +382,7 @@ New Contributors
 
 **Full Changelog**: <https://github.com/openvinotoolkit/anomalib/compare/v0.2.2...v.0.2.3>
 
-## v0.2.0 Pre-release (2021-12-15)
+## [v0.2.0 Pre-release] - 2021-12-14
 
 ### What's Changed
 
