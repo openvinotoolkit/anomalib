@@ -206,7 +206,7 @@ def get_configurable_parameters(
     project_path = Path(config.project.path) / config.model.name / config.dataset.name
 
     if config.dataset.format == "folder":
-        if "mask" in config.dataset.keys():
+        if "mask" in config.dataset:
             warn(
                 DeprecationWarning(
                     "mask will be deprecated in favor of mask_dir in config.dataset in a future release."
