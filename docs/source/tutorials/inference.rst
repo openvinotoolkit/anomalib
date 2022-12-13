@@ -11,7 +11,7 @@ The entrypoint script in ``tools/inference/lightning.py`` can be used to run inf
 
 Like the other PyTorch Lightning entrypoints, the inference script reads the model configuration from a config file. It is generally advisible to use the same config file that was used when training the model, although some inference-related paremeter values may be changed to accommodate your needs. Some settings that you might want to change before inference are the batch size, transform config and number of workers for the dataloader.
 
-It is also possible to run inference with a custom anomaly score threshold that differs from the threshold used/computed during training. To change the threshold for inference, simply set the `metrics.threshold.method` to `manual` and specify the custom threshold values in `metrics.threshold.manual_image` and `metrics.threshold.manual_pixel`.
+It is also possible to run inference with a custom anomaly score threshold that differs from the threshold used/computed during training. To change the threshold for inference, simply set the ``metrics.threshold.method`` to ``manual`` and specify the custom threshold values in ``metrics.threshold.manual_image`` and ``metrics.threshold.manual_pixel``.
 
 +---------------------+----------+---------------------------------------------------------------------------------+
 |      Parameter      | Required |                                   Description                                   |
