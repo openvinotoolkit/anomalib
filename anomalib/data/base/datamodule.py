@@ -59,6 +59,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         eval_batch_size: int,
         num_workers: int,
         val_split_mode: ValSplitMode,
+        val_split_ratio: float,
         seed: Optional[int] = None,
     ):
         super().__init__()
@@ -66,6 +67,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self.eval_batch_size = eval_batch_size
         self.num_workers = num_workers
         self.val_split_mode = val_split_mode
+        self.val_split_ratio = val_split_ratio
         self.seed = seed
 
         self.train_data: Optional[AnomalibDataset] = None
@@ -100,7 +102,9 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self.train_data.setup()
         self.test_data.setup()
         if self.val_split_mode == ValSplitMode.FROM_TEST:
-            self.val_data, self.test_data = random_split(self.test_data, [0.5, 0.5], label_aware=True, seed=self.seed)
+            self.test_data, self.val_data = random_split(
+                self.test_data, self.val_split_ratio, label_aware=True, seed=self.seed
+            )
         elif self.val_split_mode == ValSplitMode.SAME_AS_TEST:
             self.val_data = self.test_data
         elif self.val_split_mode != ValSplitMode.NONE:

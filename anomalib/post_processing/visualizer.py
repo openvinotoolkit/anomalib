@@ -171,7 +171,11 @@ class Visualizer:
         """
         if self.task == TaskType.DETECTION:
             # return image with bounding boxes augmented
-            image_with_boxes = draw_boxes(image=image_result.image, boxes=image_result.gt_boxes, is_ground_truth=True)
+            image_with_boxes = draw_boxes(
+                image=image_result.image, boxes=image_result.pred_boxes, is_ground_truth=False
+            )
+            if image_result.gt_boxes is not None:
+                image_with_boxes = draw_boxes(image=image_with_boxes, boxes=image_result.gt_boxes, is_ground_truth=True)
             image_with_boxes = draw_boxes(image=image_with_boxes, boxes=image_result.pred_boxes, is_ground_truth=False)
             return image_with_boxes
         if self.task == TaskType.SEGMENTATION:

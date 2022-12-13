@@ -41,7 +41,7 @@ class TestVisualizer:
             ("ganomaly", False),
         ],
     )
-    @pytest.mark.parametrize("task", (TaskType.CLASSIFICATION, TaskType.SEGMENTATION))
+    @pytest.mark.parametrize("task", (TaskType.CLASSIFICATION, TaskType.SEGMENTATION, TaskType.DETECTION))
     @pytest.mark.parametrize("mode", ("full", "simple"))
     @TestDataset(num_train=20, num_test=10)
     def test_model_visualizer_mode(self, model_name, nncf, task, mode, category="shapes", path=""):

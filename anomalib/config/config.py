@@ -6,11 +6,18 @@
 # TODO: This would require a new design.
 # TODO: https://jira.devtools.intel.com/browse/IAAALD-149
 
+import time
+from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Union
 from warnings import warn
 
 from omegaconf import DictConfig, ListConfig, OmegaConf
+
+
+def _get_now_str(timestamp: float) -> str:
+    """Standard format for datetimes is defined here."""
+    return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d_%H-%M-%S")
 
 
 def update_input_size_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfig, ListConfig]:
@@ -102,6 +109,64 @@ def update_multi_gpu_training_config(config: Union[DictConfig, ListConfig]) -> U
     return config
 
 
+def update_datasets_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfig, ListConfig]:
+    """Updates the dataset section of the config.
+
+    Args:
+        config (Union[DictConfig, ListConfig]): Configurable parameters for the current run.
+
+    Returns:
+        Union[DictConfig, ListConfig]: Updated config
+    """
+    if "format" not in config.dataset.keys():
+        config.dataset.format = "mvtec"
+
+    if "create_validation_set" in config.dataset.keys():
+        warn(
+            DeprecationWarning(
+                "The 'create_validation_set' parameter is deprecated and will be removed in v0.4.0. Please use "
+                "'validation_split_mode' instead."
+            )
+        )
+        config.dataset.val_split_mode = "from_test" if config.dataset.create_validation_set else "same_as_test"
+
+    if "test_batch_size" in config.dataset.keys():
+        warn(
+            DeprecationWarning(
+                "The 'test_batch_size' parameter is deprecated and will be removed in v0.4.0. Please use "
+                "'eval_batch_size' instead."
+            )
+        )
+        config.dataset.eval_batch_size = config.dataset.test_batch_size
+
+    if "transform_config" in config.dataset.keys() and "val" in config.dataset.transform_config.keys():
+        warn(
+            DeprecationWarning(
+                "The 'transform_config.val' parameter is deprecated and will be removed in v0.4.0. Please use "
+                "'transform_config.eval' instead."
+            )
+        )
+        config.dataset.transform_config.eval = config.dataset.transform_config.val
+
+    config = update_input_size_config(config)
+
+    if "clip_length_in_frames" in config.dataset.keys() and config.dataset.clip_length_in_frames > 1:
+        warn(
+            "Anomalib's models and visualizer are currently not compatible with video datasets with a clip length > 1.\
+            Custom changes to these modules will be needed to prevent errors and/or unpredictable behaviour."
+        )
+
+    if config.dataset.format == "folder" and "split_ratio" in config.dataset.keys():
+        warn(
+            DeprecationWarning(
+                "The 'split_ratio' parameter is deprecated and will be removed in v0.4.0. Please use "
+                "'normal_split_ratio' instead."
+            )
+        )
+        config.dataset.normal_split_ratio = config.dataset.split_ratio
+    return config
+
+
 def get_configurable_parameters(
     model_name: Optional[str] = None,
     config_path: Optional[Union[Path, str]] = None,
@@ -132,47 +197,38 @@ def get_configurable_parameters(
 
     config = OmegaConf.load(config_path)
 
-    # Dataset Configs
-    if "format" not in config.dataset.keys():
-        config.dataset.format = "mvtec"
+    # keep track of the original config file because it will be modified
+    config_original: DictConfig = config.copy()
 
-    if "create_validation_set" in config.dataset.keys():
-        warn(
-            "The 'create_validation_set' parameter is deprecated and will be removed in v0.4.0. Please use "
-            "'validation_split_mode' instead."
-        )
-        config.dataset.validation_split_mode = "from_test" if config.dataset.create_validation_set else "same_as_test"
-
-    if "test_batch_size" in config.dataset.keys():
-        warn(
-            "The 'test_batch_size' parameter is deprecated and will be removed in v0.4.0. Please use "
-            "'eval_batch_size' instead."
-        )
-        config.dataset.eval_batch_size = config.dataset.test_batch_size
-
-    if "transform_config" in config.dataset.keys() and "val" in config.dataset.transform_config.keys():
-        warn(
-            "The 'transform_config.val' parameter is deprecated and will be removed in v0.4.0. Please use "
-            "'transform_config.eval' instead."
-        )
-        config.dataset.transform_config.eval = config.dataset.transform_config.val
-
-    config = update_input_size_config(config)
-
-    if "clip_length_in_frames" in config.dataset.keys() and config.dataset.clip_length_in_frames > 1:
-        warn(
-            "Anomalib's models and visualizer are currently not compatible with video datasets with a clip length > 1.\
-            Custom changes to these modules will be needed to prevent errors and/or unpredictable behaviour."
-        )
+    config = update_datasets_config(config)
 
     # Project Configs
     project_path = Path(config.project.path) / config.model.name / config.dataset.name
+
+    # add category subfolder if needed
     if config.dataset.format.lower() in ("btech", "mvtec"):
         project_path = project_path / config.dataset.category
 
+    # set to False by default for backward compatibility
+    config.project.setdefault("unique_dir", False)
+
+    if config.project.unique_dir:
+        project_path = project_path / f"run.{_get_now_str(time.time())}"
+
+    else:
+        project_path = project_path / "run"
+        warn(
+            "config.project.unique_dir is set to False. "
+            "This does not ensure that your results will be written in an empty directory and you may overwrite files."
+        )
+
     (project_path / "weights").mkdir(parents=True, exist_ok=True)
     (project_path / "images").mkdir(parents=True, exist_ok=True)
+    # write the original config for eventual debug (modified config at the end of the function)
+    (project_path / "config_original.yaml").write_text(OmegaConf.to_yaml(config_original))
+
     config.project.path = str(project_path)
+
     # loggers should write to results/model/dataset/category/ folder
     config.trainer.default_root_dir = str(project_path)
 
@@ -197,5 +253,7 @@ def get_configurable_parameters(
             config.metrics.threshold.manual_pixel = (
                 None if config.metrics.threshold.adaptive else config.metrics.threshold.pixel_default
             )
+
+    (project_path / "config.yaml").write_text(OmegaConf.to_yaml(config))
 
     return config

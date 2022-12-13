@@ -182,6 +182,7 @@ class BTech(AnomalibDataModule):
         transform_config_train: Optional[Union[str, A.Compose]] = None,
         transform_config_eval: Optional[Union[str, A.Compose]] = None,
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
+        val_split_ratio: float = 0.5,
         seed: Optional[int] = None,
     ) -> None:
         """Instantiate BTech Lightning Data Module.
@@ -225,7 +226,14 @@ class BTech(AnomalibDataModule):
             >>> data["image"].shape, data["mask"].shape
             (torch.Size([32, 3, 256, 256]), torch.Size([32, 256, 256]))
         """
-        super().__init__(train_batch_size, eval_batch_size, num_workers, val_split_mode, seed)
+        super().__init__(
+            train_batch_size=train_batch_size,
+            eval_batch_size=eval_batch_size,
+            num_workers=num_workers,
+            val_split_mode=val_split_mode,
+            val_split_ratio=val_split_ratio,
+            seed=seed,
+        )
 
         self.root = Path(root)
         self.category = Path(category)

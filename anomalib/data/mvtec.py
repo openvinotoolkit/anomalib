@@ -163,6 +163,7 @@ class MVTec(AnomalibDataModule):
         transform_config_train: Optional[Union[str, A.Compose]] = None,
         transform_config_eval: Optional[Union[str, A.Compose]] = None,
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
+        val_split_ratio: float = 0.5,
         seed: Optional[int] = None,
     ):
         super().__init__(
@@ -170,6 +171,7 @@ class MVTec(AnomalibDataModule):
             eval_batch_size=eval_batch_size,
             num_workers=num_workers,
             val_split_mode=val_split_mode,
+            val_split_ratio=val_split_ratio,
             seed=seed,
         )
 
