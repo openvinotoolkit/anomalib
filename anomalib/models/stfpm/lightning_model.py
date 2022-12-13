@@ -28,7 +28,7 @@ class Stfpm(AnomalyModule):
 
     Args:
         input_size (Tuple[int, int]): Size of the model input.
-        student_teacher_model (FeatureExtractorParams): Teacher model parameters.
+        student_teacher_model (FeatureExtractorParams): Parameters for teacher and student models.
     """
 
     def __init__(

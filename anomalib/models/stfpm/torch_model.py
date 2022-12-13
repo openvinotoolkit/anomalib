@@ -24,7 +24,7 @@ class STFPMModel(nn.Module):
     Args:
         layers (List[str]): Layers used for feature extraction
         input_size (Tuple[int, int]): Input size for the model.
-        student_teacher_model_params (FeatureExtractorParams): Teacher model parameters.
+        student_teacher_model_params (FeatureExtractorParams): Parameters for teacher and student models.
     """
 
     def __init__(self, input_size: Tuple[int, int], student_teacher_model_params: FeatureExtractorParams):
