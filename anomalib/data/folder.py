@@ -184,9 +184,8 @@ class FolderDataset(AnomalibDataset):
         pre_process (PreProcessor): Image Pre-processor to apply transform.
         split (Optional[Union[Split, str]]): Fixed subset split that follows from folder structure on file system.
             Choose from [Split.FULL, Split.TRAIN, Split.TEST]
-
-        root (Optional[Union[str, Path]]): Root folder of the dataset.
         normal_dir (Union[str, Path]): Path to the directory containing normal images.
+        root (Optional[Union[str, Path]]): Root folder of the dataset.
         abnormal_dir (Optional[Union[str, Path]], optional): Path to the directory containing abnormal images.
         normal_test_dir (Optional[Union[str, Path]], optional): Path to the directory containing
             normal images for the test dataset. Defaults to None.
@@ -206,8 +205,8 @@ class FolderDataset(AnomalibDataset):
         self,
         task: TaskType,
         pre_process: PreProcessor,
-        root: Optional[Union[str, Path]],
         normal_dir: Union[str, Path],
+        root: Optional[Union[str, Path]],
         abnormal_dir: Optional[Union[str, Path]] = None,
         normal_test_dir: Optional[Union[str, Path]] = None,
         mask_dir: Optional[Union[str, Path]] = None,
@@ -244,10 +243,10 @@ class Folder(AnomalibDataModule):
     """Folder DataModule.
 
     Args:
-        root (Optional[Union[str, Path]]): Path to the root folder containing normal and abnormal dirs.
         normal_dir (Union[str, Path]): Name of the directory containing normal images.
             Defaults to "normal".
-        abnormal_dir (Union[str, Path]): Name of the directory containing abnormal images.
+        root (Optional[Union[str, Path]]): Path to the root folder containing normal and abnormal dirs.
+        abnormal_dir (Optional[Union[str, Path]]): Name of the directory containing abnormal images.
             Defaults to "abnormal".
         normal_test_dir (Optional[Union[str, Path]], optional): Path to the directory containing
             normal images for the test dataset. Defaults to None.
@@ -277,9 +276,9 @@ class Folder(AnomalibDataModule):
 
     def __init__(
         self,
-        root: Optional[Union[str, Path]],
         normal_dir: Union[str, Path],
-        abnormal_dir: Union[str, Path],
+        root: Optional[Union[str, Path]] = None,
+        abnormal_dir: Optional[Union[str, Path]] = None,
         normal_test_dir: Optional[Union[str, Path]] = None,
         mask_dir: Optional[Union[str, Path]] = None,
         normal_split_ratio: float = 0.2,
