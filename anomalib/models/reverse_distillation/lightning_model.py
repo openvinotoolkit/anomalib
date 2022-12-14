@@ -6,7 +6,7 @@ https://arxiv.org/abs/2201.10703v2
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, List, Tuple, Union
+from typing import Dict, Tuple, Union
 
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
@@ -14,6 +14,7 @@ from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor, optim
 
 from anomalib.models.components import AnomalyModule
+from anomalib.models.components.feature_extraction import FeatureExtractorParams
 
 from .loss import ReverseDistillationLoss
 from .torch_model import ReverseDistillationModel
@@ -25,27 +26,21 @@ class ReverseDistillation(AnomalyModule):
 
     Args:
         input_size (Tuple[int, int]): Size of model input
-        backbone (str): Backbone of CNN network
-        layers (List[str]): Layers to extract features from the backbone CNN
-        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+        feature_extractor (FeatureExtractorParams): Feature extractor params
     """
 
     def __init__(
         self,
         input_size: Tuple[int, int],
-        backbone: str,
-        layers: List[str],
+        feature_extractor: FeatureExtractorParams,
         anomaly_map_mode: str,
         lr: float,
         beta1: float,
         beta2: float,
-        pre_trained: bool = True,
     ):
         super().__init__()
         self.model = ReverseDistillationModel(
-            backbone=backbone,
-            pre_trained=pre_trained,
-            layers=layers,
+            feature_extractor_params=feature_extractor,
             input_size=input_size,
             anomaly_map_mode=anomaly_map_mode,
         )
@@ -119,9 +114,7 @@ class ReverseDistillationLightning(ReverseDistillation):
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         super().__init__(
             input_size=hparams.model.input_size,
-            backbone=hparams.model.backbone,
-            layers=hparams.model.layers,
-            pre_trained=hparams.model.pre_trained,
+            feature_extractor=hparams.model.feature_extractor,
             anomaly_map_mode=hparams.model.anomaly_map_mode,
             lr=hparams.model.lr,
             beta1=hparams.model.beta1,

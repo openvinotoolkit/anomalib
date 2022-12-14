@@ -13,16 +13,28 @@ from torch.fx.graph_module import GraphModule
 from torchvision.models._api import WeightsEnum
 from torchvision.models.feature_extraction import create_feature_extractor
 
+from .base import BaseFeatureExtractor
+
 
 @dataclass
-class BackboneParams:
+class TorchFXBackboneParams:
     """Used for serializing the backbone."""
 
     class_path: Union[str, nn.Module]
     init_args: Dict = field(default_factory=dict)
 
 
-class TorchFXFeatureExtractor:
+@dataclass
+class TorchFXFeatureExtractorParams:
+    """Used for serializing the TorchFX Feature Extractor."""
+
+    backbone: Union[str, TorchFXBackboneParams, Dict, nn.Module]
+    return_nodes: List[str]
+    weights: Optional[Union[WeightsEnum, str]] = None
+    requires_grad: bool = False
+
+
+class TorchFXFeatureExtractor(BaseFeatureExtractor):
     """Extract features from a CNN.
 
     Args:
@@ -41,7 +53,7 @@ class TorchFXFeatureExtractor:
         With torchvision models:
 
             >>> import torch
-            >>> from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor
+            >>> from anomalib.models.components.feature_extractor import TorchFXFeatureExtractor
             >>> from torchvision.models.efficientnet import EfficientNet_B5_Weights
             >>> feature_extractor = TorchFXFeatureExtractor(
                     backbone="efficientnet_b5",
@@ -57,7 +69,7 @@ class TorchFXFeatureExtractor:
 
         With custom models:
 
-            >>> from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor
+            >>> from anomalib.models.components.feature_extractor import TorchFXFeatureExtractor
             >>> feature_extractor = TorchFXFeatureExtractor(
                     "path.to.CustomModel", ["linear_relu_stack.3"], weights="path/to/weights.pth"
                 )
@@ -69,21 +81,24 @@ class TorchFXFeatureExtractor:
 
     def __init__(
         self,
-        backbone: Union[str, BackboneParams, Dict, nn.Module],
+        backbone: Union[str, TorchFXBackboneParams, Dict, nn.Module],
         return_nodes: List[str],
         weights: Optional[Union[WeightsEnum, str]] = None,
         requires_grad: bool = False,
     ):
+        super().__init__()
         if isinstance(backbone, dict):
-            backbone = BackboneParams(**backbone)
-        elif not isinstance(backbone, BackboneParams):  # if str or nn.Module
-            backbone = BackboneParams(class_path=backbone)
+            backbone = TorchFXBackboneParams(**backbone)
+        elif not isinstance(backbone, TorchFXBackboneParams):  # if str or nn.Module
+            backbone = TorchFXBackboneParams(class_path=backbone)
 
         self.feature_extractor = self.initialize_feature_extractor(backbone, return_nodes, weights, requires_grad)
+        self._out_dims: List[int]
+        self.layers = self.return_nodes
 
     def initialize_feature_extractor(
         self,
-        backbone: BackboneParams,
+        backbone: TorchFXBackboneParams,
         return_nodes: List[str],
         weights: Optional[Union[WeightsEnum, str]] = None,
         requires_grad: bool = False,
@@ -105,6 +120,8 @@ class TorchFXFeatureExtractor:
         Returns:
             Feature Extractor based on TorchFX.
         """
+        self.return_nodes = return_nodes
+
         if isinstance(backbone.class_path, str):
             backbone_class = self._get_backbone_class(backbone.class_path)
             backbone_model = backbone_class(weights=weights, **backbone.init_args)
@@ -112,7 +129,7 @@ class TorchFXFeatureExtractor:
             backbone_class = backbone.class_path
             backbone_model = backbone_class(**backbone.init_args)
         if isinstance(weights, WeightsEnum):  # torchvision models
-            feature_extractor = create_feature_extractor(model=backbone_model, return_nodes=return_nodes)
+            feature_extractor = create_feature_extractor(model=backbone_model, return_nodes=self.return_nodes)
         else:
             if weights is not None:
                 assert isinstance(weights, str), "Weights should point to a path"
@@ -120,7 +137,7 @@ class TorchFXFeatureExtractor:
                 if "state_dict" in model_weights:
                     model_weights = model_weights["state_dict"]
                 backbone_model.load_state_dict(model_weights)
-            feature_extractor = create_feature_extractor(backbone_model, return_nodes)
+            feature_extractor = create_feature_extractor(backbone_model, self.return_nodes)
 
         if not requires_grad:
             feature_extractor.eval()
@@ -136,7 +153,7 @@ class TorchFXFeatureExtractor:
         If only the model name is provided, it will try to load the model from torchvision.
 
         Example:
-            >>> from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor
+            >>> from anomalib.models.components.feature_extractor import TorchFXFeatureExtractor
             >>> TorchFXFeatureExtractor._get_backbone_class("efficientnet_b5")
             <function torchvision.models.efficientnet.efficientnet_b5(
                 *,
@@ -169,6 +186,14 @@ class TorchFXFeatureExtractor:
 
         return backbone_class
 
-    def __call__(self, inputs: Tensor) -> Dict[str, Tensor]:
+    def forward(self, inputs: Tensor) -> Dict[str, Tensor]:
         """Extract features from the input."""
         return self.feature_extractor(inputs)
+
+    @property
+    def out_dims(self) -> List[int]:
+        """Get the number of channels in the selected layers of the feature extractor."""
+        if not hasattr(self, "_out_dims"):
+            # run a small tensor through the model to get the output dimensions
+            self._out_dims = [val["num_features"] for val in self.dryrun_find_featuremap_dims((1, 1)).values()]
+        return self._out_dims

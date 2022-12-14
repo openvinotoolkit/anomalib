@@ -7,7 +7,8 @@ from typing import List, Optional, Tuple, Union
 
 from torch import Tensor, nn
 
-from anomalib.models.components import FeatureExtractor
+from anomalib.models.components import get_feature_extractor
+from anomalib.models.components.feature_extraction import FeatureExtractorParams
 from anomalib.models.reverse_distillation.anomaly_map import AnomalyMapGenerator
 from anomalib.models.reverse_distillation.components import (
     get_bottleneck_layer,
@@ -20,28 +21,24 @@ class ReverseDistillationModel(nn.Module):
     """Reverse Distillation Model.
 
     Args:
-        backbone (str): Name of the backbone used for encoder and decoder
         input_size (Tuple[int, int]): Size of input image
-        layers (List[str]): Name of layers from which the features are extracted.
         anomaly_map_mode (str): Mode used to generate anomaly map. Options are between ``multiply`` and ``add``.
-        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+        feature_extractor_params (FeatureExtractorParams): Feature extractor params
     """
 
     def __init__(
         self,
-        backbone: str,
         input_size: Tuple[int, int],
-        layers: List[str],
         anomaly_map_mode: str,
-        pre_trained: bool = True,
+        feature_extractor_params: FeatureExtractorParams,
     ):
         super().__init__()
         self.tiler: Optional[Tiler] = None
 
-        encoder_backbone = backbone
-        self.encoder = FeatureExtractor(backbone=encoder_backbone, pre_trained=pre_trained, layers=layers)
-        self.bottleneck = get_bottleneck_layer(backbone)
-        self.decoder = get_decoder(backbone)
+        encoder_backbone = str(feature_extractor_params.backbone)
+        self.encoder = get_feature_extractor(feature_extractor_params)
+        self.bottleneck = get_bottleneck_layer(encoder_backbone)
+        self.decoder = get_decoder(encoder_backbone)
 
         if self.tiler:
             image_size = (self.tiler.tile_size_h, self.tiler.tile_size_w)

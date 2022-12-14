@@ -11,7 +11,8 @@ from torch import nn
 
 from anomalib.models.cflow.anomaly_map import AnomalyMapGenerator
 from anomalib.models.cflow.utils import cflow_head, get_logp, positional_encoding_2d
-from anomalib.models.components import FeatureExtractor
+from anomalib.models.components import get_feature_extractor
+from anomalib.models.components.feature_extraction import FeatureExtractorParams
 
 
 class CflowModel(nn.Module):
@@ -20,9 +21,7 @@ class CflowModel(nn.Module):
     def __init__(
         self,
         input_size: Tuple[int, int],
-        backbone: str,
-        layers: List[str],
-        pre_trained: bool = True,
+        feature_extractor_params: FeatureExtractorParams,
         fiber_batch_size: int = 64,
         decoder: str = "freia-cflow",
         condition_vector: int = 128,
@@ -32,13 +31,11 @@ class CflowModel(nn.Module):
     ):
         super().__init__()
 
-        self.backbone = backbone
         self.fiber_batch_size = fiber_batch_size
         self.condition_vector: int = condition_vector
         self.dec_arch = decoder
-        self.pool_layers = layers
-
-        self.encoder = FeatureExtractor(backbone=self.backbone, layers=self.pool_layers, pre_trained=pre_trained)
+        self.encoder = get_feature_extractor(feature_extractor_params)
+        self.pool_layers = self.encoder.layers
         self.pool_dims = self.encoder.out_dims
         self.decoders = nn.ModuleList(
             [
