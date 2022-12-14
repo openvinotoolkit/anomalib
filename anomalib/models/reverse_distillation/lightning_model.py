@@ -12,7 +12,7 @@ from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
-from anomalib.models.components.feature_extractor import FeatureExtractorParams
+from anomalib.models.components.feature_extraction import FeatureExtractorParams
 
 from .loss import ReverseDistillationLoss
 from .torch_model import ReverseDistillationModel

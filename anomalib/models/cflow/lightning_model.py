@@ -16,7 +16,7 @@ from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from anomalib.models.cflow.torch_model import CflowModel
 from anomalib.models.cflow.utils import get_logp, positional_encoding_2d
 from anomalib.models.components import AnomalyModule
-from anomalib.models.components.feature_extractor import FeatureExtractorParams
+from anomalib.models.components.feature_extraction import FeatureExtractorParams
 
 __all__ = ["Cflow"]
 

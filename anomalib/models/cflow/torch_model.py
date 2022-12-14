@@ -12,7 +12,7 @@ from torch import nn
 from anomalib.models.cflow.anomaly_map import AnomalyMapGenerator
 from anomalib.models.cflow.utils import cflow_head, get_logp, positional_encoding_2d
 from anomalib.models.components import get_feature_extractor
-from anomalib.models.components.feature_extractor import FeatureExtractorParams
+from anomalib.models.components.feature_extraction import FeatureExtractorParams
 
 
 class CflowModel(nn.Module):

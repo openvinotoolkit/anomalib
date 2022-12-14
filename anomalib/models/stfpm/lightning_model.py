@@ -11,7 +11,7 @@ from typing import Tuple
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 
 from anomalib.models.components import AnomalyModule
-from anomalib.models.components.feature_extractor import FeatureExtractorParams
+from anomalib.models.components.feature_extraction import FeatureExtractorParams
 from anomalib.models.stfpm.loss import STFPMLoss
 from anomalib.models.stfpm.torch_model import STFPMModel
 
@@ -22,7 +22,7 @@ class Stfpm(AnomalyModule):
 
     Args:
         input_size (Tuple[int, int]): Size of the model input.
-        student_teacher_model (FeatureExtractorParams): Teacher model parameters.
+        student_teacher_model (FeatureExtractorParams): Parameters for teacher and student models.
     """
 
     def __init__(

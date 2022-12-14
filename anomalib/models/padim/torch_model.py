@@ -11,7 +11,7 @@ import torch.nn.functional as F
 from torch import Tensor, nn
 
 from anomalib.models.components import MultiVariateGaussian, get_feature_extractor
-from anomalib.models.components.feature_extractor import (
+from anomalib.models.components.feature_extraction import (
     FeatureExtractorParams,
     TimmFeatureExtractor,
     TorchFXFeatureExtractor,

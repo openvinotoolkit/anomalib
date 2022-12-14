@@ -8,12 +8,12 @@ from typing import Dict, Optional, Tuple
 from torch import Tensor, nn
 
 from anomalib.models.components import get_feature_extractor
-from anomalib.models.components.feature_extractor import (
+from anomalib.models.components.feature_extraction import (
     FeatureExtractorParams,
     TimmFeatureExtractorParams,
     TorchFXFeatureExtractorParams,
 )
-from anomalib.models.components.feature_extractor.utils import _convert_datatype
+from anomalib.models.components.feature_extraction.utils import _convert_datatype
 from anomalib.models.stfpm.anomaly_map import AnomalyMapGenerator
 from anomalib.pre_processing import Tiler
 
@@ -24,7 +24,7 @@ class STFPMModel(nn.Module):
     Args:
         layers (List[str]): Layers used for feature extraction
         input_size (Tuple[int, int]): Input size for the model.
-        student_teacher_model_params (FeatureExtractorParams): Teacher model parameters.
+        student_teacher_model_params (FeatureExtractorParams): Parameters for teacher and student models.
     """
 
     def __init__(self, input_size: Tuple[int, int], student_teacher_model_params: FeatureExtractorParams):
