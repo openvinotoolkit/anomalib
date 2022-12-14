@@ -5,16 +5,12 @@
 
 import logging
 import os
-import warnings
 from importlib import import_module
-from typing import List, Union
+from typing import Any, Dict, List, Union
 
-import yaml
 from jsonargparse.namespace import Namespace
 from omegaconf import DictConfig, ListConfig, OmegaConf
-from pytorch_lightning.callbacks import Callback, ModelCheckpoint
-
-from anomalib.deploy import ExportMode
+from pytorch_lightning.callbacks import Callback
 
 from .cdf_normalization import CdfNormalizationCallback
 from .graph import GraphLogger
@@ -43,160 +39,210 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
-    """Return base callbacks for all the lightning models.
+def __update_callback(callbacks: Dict, callback_name: str, update_dict: Dict[str, Any]) -> None:
+    """Updates the callback with the given dictionary.
+
+    If the callback exists in the callbacks dictionary, it will be updated with the passed keys.
+    This ensure that the callback is not overwritten.
+    """
+    if callback_name in callbacks:
+        # TODO check if keys have been replaced from cli and only then update the keys.
+        # basically compare against default keys first
+        callbacks[callback_name].update(update_dict)
+    else:
+        callbacks[callback_name] = update_dict
+
+
+def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Dict]:
+    """Sets the callbacks in trainer key and also returns a list for populating the CLI.
 
     Args:
         config (DictConfig): Model config
 
     Return:
-        (List[Callback]): List of callbacks.
+        (List[Tuple[str, Dict]]): List of callbacks and init arguments.
+          Example:[
+            {"class_path": "ModelCheckpoint", "init_args": {...}},
+            {"class_path": "PostProcessingConfigurationCallback", "init_args": {...}}
+            ]
     """
     logger.info("Loading the callbacks")
 
-    callbacks: List[Callback] = []
+    callbacks: Dict = {}
 
-    monitor_metric = None if "early_stopping" not in config.model.keys() else config.model.early_stopping.metric
-    monitor_mode = "max" if "early_stopping" not in config.model.keys() else config.model.early_stopping.mode
+    # Convert trainer callbacks to a dictionary. It makes it easier to search and update values
+    # {"anomalib.utils.callbacks.ImageVisualizerCallback":{'task':...}}
+    if "callbacks" in config.trainer:
+        for callback in config.trainer.callbacks:
+            callbacks[callback.class_path.split(".")[-1]] = dict(callback.init_args)
 
-    checkpoint = ModelCheckpoint(
-        dirpath=os.path.join(config.project.path, "weights"),
-        filename="model",
-        monitor=monitor_metric,
-        mode=monitor_mode,
-        auto_insert_metric_name=False,
+    monitor = callbacks.get("EarlyStopping", {}).get("monitor", None)
+    mode = callbacks.get("EarlyStopping", {}).get("mode", "max")
+
+    __update_callback(
+        callbacks,
+        "ModelCheckpoint",
+        {
+            "dirpath": os.path.join(config.trainer.default_root_dir, "weights"),
+            "filename": "model",
+            "monitor": monitor,
+            "mode": mode,
+            "auto_insert_metric_name": False,
+        },
     )
 
-    callbacks.extend([checkpoint, TimerCallback()])
-
-    # Add post-processing configurations to AnomalyModule.
-    image_threshold = (
-        config.metrics.threshold.manual_image if "manual_image" in config.metrics.threshold.keys() else None
+    __update_callback(
+        callbacks,
+        "PostProcessingConfigurationCallback",
+        config.post_processing,
     )
-    pixel_threshold = (
-        config.metrics.threshold.manual_pixel if "manual_pixel" in config.metrics.threshold.keys() else None
-    )
-    post_processing_callback = PostProcessingConfigurationCallback(
-        threshold_method=config.metrics.threshold.method,
-        manual_image_threshold=image_threshold,
-        manual_pixel_threshold=pixel_threshold,
-    )
-    callbacks.append(post_processing_callback)
 
     # Add metric configuration to the model via MetricsConfigurationCallback
-    metrics_callback = MetricsConfigurationCallback(
-        config.dataset.task,
-        config.metrics.get("image", None),
-        config.metrics.get("pixel", None),
+    __update_callback(
+        callbacks,
+        "MetricsConfigurationCallback",
+        {
+            "task": config.data.init_args.task,
+            "image_metrics": config.metrics.get("image_metrics", None),
+            "pixel_metrics": config.metrics.get("pixel_metrics", None),
+        },
     )
-    callbacks.append(metrics_callback)
 
-    if "resume_from_checkpoint" in config.trainer.keys() and config.trainer.resume_from_checkpoint is not None:
-        load_model = LoadModelCallback(config.trainer.resume_from_checkpoint)
-        callbacks.append(load_model)
+    # LoadModel from Checkpoint.
+    if config.trainer.resume_from_checkpoint:
+        __update_callback(
+            callbacks,
+            "LoadModelCallback",
+            {
+                "weights_path": config.trainer.resume_from_checkpoint,
+            },
+        )
 
-    if "normalization_method" in config.model.keys() and not config.model.normalization_method == "none":
-        if config.model.normalization_method == "cdf":
-            if config.model.name in ["padim", "stfpm"]:
-                if "nncf" in config.optimization and config.optimization.nncf.apply:
-                    raise NotImplementedError("CDF Score Normalization is currently not compatible with NNCF.")
-                callbacks.append(CdfNormalizationCallback())
-            else:
-                raise NotImplementedError("Score Normalization is currently supported for PADIM and STFPM only.")
-        elif config.model.normalization_method == "min_max":
-            callbacks.append(MinMaxNormalizationCallback())
+    # Add timing to the pipeline.
+    __update_callback(callbacks, "TimerCallback", {})
+
+    #  TODO: This could be set in PostProcessingConfiguration callback
+    #   - https://github.com/openvinotoolkit/anomalib/issues/384
+    # Normalization.
+    normalization = config.post_processing.normalization_method
+    if normalization:
+        if normalization == "MIN_MAX":
+            __update_callback(callbacks, "MinMaxNormalizationCallback", {})
+        elif normalization == "CDF":
+            __update_callback(callbacks, "CDFNormalizationCallback", {})
         else:
-            raise ValueError(f"Normalization method not recognized: {config.model.normalization_method}")
+            raise ValueError(
+                f"Unknown normalization type {normalization}. \n" "Available types are either None, min_max or cdf"
+            )
 
     add_visualizer_callback(callbacks, config)
 
-    if "optimization" in config.keys():
-        if "nncf" in config.optimization and config.optimization.nncf.apply:
-            # NNCF wraps torch's jit which conflicts with kornia's jit calls.
-            # Hence, nncf is imported only when required
-            nncf_module = import_module("anomalib.utils.callbacks.nncf.callback")
-            nncf_callback = getattr(nncf_module, "NNCFCallback")
-            nncf_config = yaml.safe_load(OmegaConf.to_yaml(config.optimization.nncf))
-            callbacks.append(
-                nncf_callback(
-                    config=nncf_config,
-                    export_dir=os.path.join(config.project.path, "compressed"),
-                )
-            )
-        if config.optimization.export_mode is not None:
-            from .export import (  # pylint: disable=import-outside-toplevel
-                ExportCallback,
-            )
+    # Export to OpenVINO
+    if "export_mode" in config is not None:
+        logger.info("Setting model export to %s", config.export_mode)
+        __update_callback(
+            callbacks,
+            "ExportCallback",
+            {
+                "input_size": config.data.init_args.image_size,
+                "dirpath": os.path.join(config.trainer.default_root_dir, "compressed"),
+                "filename": "model",
+                "export_mode": config.export_mode,
+            },
+        )
 
-            logger.info("Setting model export to %s", config.optimization.export_mode)
-            callbacks.append(
-                ExportCallback(
-                    input_size=config.model.input_size,
-                    dirpath=config.project.path,
-                    filename="model",
-                    export_mode=ExportMode(config.optimization.export_mode),
-                )
+    if "nncf" in config:
+        if os.path.isfile(config.nncf) and config.nncf.endswith(".yaml"):
+            __update_callback(
+                callbacks,
+                "anomalib.core.callbacks.nncf_callback.NNCFCallback",
+                {
+                    "config": OmegaConf.load(config.nncf),
+                    "dirpath": os.path.join(config.trainer.default_root_dir, "compressed"),
+                    "filename": "model",
+                },
             )
         else:
-            warnings.warn(f"Export option: {config.optimization.export_mode} not found. Defaulting to no model export")
+            raise ValueError(f"--nncf expects a path to nncf config which is a yaml file, but got {config.nncf}")
 
-    # Add callback to log graph to loggers
-    if config.logging.log_graph not in [None, False]:
-        callbacks.append(GraphLogger())
+    # Convert callbacks to dict format expected by pytorch-lightning.
+    # eg [
+    # {"class_path": "ModelCheckpoint", "init_args": {...}},
+    # {"class_path": "PostProcessingConfigurationCallback", "init_args": {...}}
+    # ]
+    trainer_callbacks = []
+    for class_path, init_args in callbacks.items():
+        trainer_callbacks.append({"class_path": class_path, "init_args": init_args})
 
-    return callbacks
+    return trainer_callbacks
 
 
-def add_visualizer_callback(callbacks: List[Callback], config: Union[DictConfig, ListConfig]):
+def instantiate_callbacks(callbacks: List[Dict]) -> List[Callback]:
+    """Instantiate callbacks.
+
+    Args:
+        callbacks (List[Dict]): List of callbacks and init arguments.
+          Example:[
+            {"class_path": "ModelCheckpoint", "init_args": {...}},
+            {"class_path": "PostProcessingConfigurationCallback", "init_args": {...}}
+            ]
+
+    Return:
+        (List[Callback]): List of instantiated callbacks.
+    """
+    pytorch_callback_module = import_module("pytorch_lightning.callbacks")
+    anomalib_callback_module = import_module("anomalib.utils.callbacks")
+    instantiated_callbacks = []
+    for callback in callbacks:
+        class_path = callback["class_path"]
+        init_args = callback["init_args"]
+        if hasattr(pytorch_callback_module, class_path):
+            callback_class = getattr(pytorch_callback_module, class_path)
+        elif hasattr(anomalib_callback_module, class_path):
+            callback_class = getattr(anomalib_callback_module, class_path)
+        elif len(class_path.split(".")) > 1:
+            module = import_module(".".join(class_path.split(".")[:-1]))
+            callback_class = getattr(module, class_path.split(".")[-1])
+        else:
+            raise ValueError(f"Callback {class_path} not found.")
+
+        try:
+            instantiated_callbacks.append(callback_class(**init_args))
+        except Exception as exception:
+            raise AttributeError(
+                f"Could not instantiate callback {class_path} with arguments {init_args}"
+            ) from exception
+
+    return instantiated_callbacks
+
+
+def add_visualizer_callback(callbacks: Dict[str, Dict], config: Union[DictConfig, ListConfig]):
     """Configure the visualizer callback based on the config and add it to the list of callbacks.
 
     Args:
-        callbacks (List[Callback]): Current list of callbacks.
+        callbacks (Dict[str, Dict]): Current list of callbacks.
         config (Union[DictConfig, ListConfig]): The config object.
     """
     # visualization settings
     assert isinstance(config, (DictConfig, Namespace))
-    # TODO remove this when version is upgraded to 0.4.0
-    if isinstance(config, DictConfig):
-        if (
-            "log_images_to" in config.project.keys()
-            and len(config.project.log_images_to) > 0
-            or "log_images_to" in config.logging.keys()
-            and len(config.logging.log_images_to) > 0
-        ):
-            warnings.warn(
-                "log_images_to parameter is deprecated and will be removed in version 0.4.0 Please use "
-                "the visualization.log_images and visualization.save_images parameters instead."
-            )
-            if "visualization" not in config.keys():
-                config["visualization"] = dict(
-                    log_images=False, save_images=False, show_image=False, image_save_path=None
-                )
-            if "local" in config.project.log_images_to:
-                config.visualization["save_images"] = True
-            if "local" not in config.project.log_images_to or len(config.project.log_images_to) > 1:
-                config.visualization["log_images"] = True
-        config.visualization.task = config.dataset.task
-        config.visualization.inputs_are_normalized = not config.model.normalization_method == "none"
-    else:
-        config.visualization.task = config.data.init_args.task
-        config.visualization.inputs_are_normalized = not config.post_processing.normalization_method == "none"
+    config.visualization.task = (
+        config.data.init_args.task if config.visualization.task is None else config.visualization.task
+    )
+    config.visualization.inputs_are_normalized = config.post_processing.normalization_method is not None
 
     if config.visualization.log_images or config.visualization.save_images or config.visualization.show_images:
         image_save_path = (
             config.visualization.image_save_path
             if config.visualization.image_save_path
-            else config.project.path + "/images"
+            else config.trainer.default_root_dir + "/images"
         )
         for callback in (ImageVisualizerCallback, MetricVisualizerCallback):
-            callbacks.append(
-                callback(
-                    task=config.visualization.task,
-                    mode=config.visualization.mode,
-                    image_save_path=image_save_path,
-                    inputs_are_normalized=config.visualization.inputs_are_normalized,
-                    show_images=config.visualization.show_images,
-                    log_images=config.visualization.log_images,
-                    save_images=config.visualization.save_images,
-                )
-            )
+            callbacks[callback.__name__] = {
+                "task": config.visualization.task,
+                "mode": config.visualization.mode,
+                "image_save_path": image_save_path,
+                "inputs_are_normalized": config.visualization.inputs_are_normalized,
+                "show_images": config.visualization.show_images,
+                "log_images": config.visualization.log_images,
+                "save_images": config.visualization.save_images,
+            }

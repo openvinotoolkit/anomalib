@@ -1,48 +1,51 @@
-dataset:
-  name: mvtec #options: [mvtec, btech, folder]
-  format: mvtec
-  path: ./datasets/MVTec
-  category: bottle
-  task: classification
-  image_size: 256
-  train_batch_size: 32
-  test_batch_size: 32
-  num_workers: 8
-  transform_config:
-    train: null
-    val: null
-  create_validation_set: false
+seed_everything: null
+
+data:
+  class_path: anomalib.data.MVTec
+  init_args:
+    root: ./datasets/MVTec
+    category: bottle
+    image_size: [256, 256]
+    train_batch_size: 32
+    test_batch_size: 32
+    num_workers: 8
+    task: classification
+    transform_config_train: null
+    transform_config_val: null
+    seed: 0
+    create_validation_set: false
 
 model:
-  name: dfm
-  feature_extractor:
-    backbone: resnet18
-    pre_trained: true
-    layers:
-      - layer3
-  pooling_kernel_size: 2
-  pca_level: 0.97
-  score_type: fre # nll: for Gaussian modeling, fre: pca feature reconstruction error
-  project_path: ./results
-  normalization_method: min_max # options: [null, min_max, cdf]
+  class_path: anomalib.models.Dfm
+  init_args:
+    feature_extractor:
+      backbone: resnet18
+      pre_trained: true
+      layers:
+        - layer3
+    pooling_kernel_size: 4
+    pca_level: 0.97
+    score_type: fre
 
 metrics:
-  image:
+  image_metrics:
     - F1Score
     - AUROC
-  pixel:
-    - F1Score
-    - AUROC
-  threshold:
-    method: adaptive #options: [adaptive, manual]
-    manual_image: null
+
+post_processing:
+  normalization_method: MIN_MAX # <null, min_max, cdf>
+  threshold_method: ADAPTIVE # options: [adaptive, manual]
+  manual_image_threshold: null
+  manual_pixel_threshold: null
 
 visualization:
-  show_images: False # show images on the screen
-  save_images: False # save images to the file system
-  log_images: False # log images to the available loggers (if any)
-  image_save_path: null # path to which images will be saved
-  mode: full # options: ["full", "simple"]
+  task: classification
+  mode: full
+  image_save_path: null
+  inputs_are_normalized: true
+  show_images: false
+  log_images: false
+  save_images: true
 
 project:
   seed: 42
@@ -97,6 +100,7 @@ trainer:
   profiler: null
   reload_dataloaders_every_n_epochs: 0
   replace_sampler_ddp: true
+  resume_from_checkpoint: null
   strategy: null
   sync_batchnorm: false
   tpu_cores: null

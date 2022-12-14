@@ -7,10 +7,9 @@ Paper https://arxiv.org/abs/2106.08265.
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import List, Tuple, Union
+from typing import List, Tuple
 
 import torch
-from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor
 
@@ -105,21 +104,3 @@ class Patchcore(AnomalyModule):
         batch["pred_scores"] = anomaly_score
 
         return batch
-
-
-class PatchcoreLightning(Patchcore):
-    """PatchcoreLightning Module to train PatchCore algorithm.
-
-    Args:
-        hparams (Union[DictConfig, ListConfig]): Model params
-    """
-
-    def __init__(self, hparams) -> None:
-        super().__init__(
-            input_size=hparams.model.input_size,
-            feature_extractor=hparams.model.feature_extractor,
-            coreset_sampling_ratio=hparams.model.coreset_sampling_ratio,
-            num_neighbors=hparams.model.num_neighbors,
-        )
-        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
-        self.save_hyperparameters(hparams)

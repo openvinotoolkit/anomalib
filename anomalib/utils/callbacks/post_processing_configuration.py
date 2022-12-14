@@ -40,6 +40,10 @@ class PostProcessingConfigurationCallback(Callback):
         super().__init__()
         self.normalization_method = normalization_method
 
+        # Entry point scripts pass threshold_method as string. Convert to enum.
+        if isinstance(threshold_method, str):
+            threshold_method = ThresholdMethod(threshold_method.lower())
+
         if threshold_method == ThresholdMethod.ADAPTIVE and all(
             i is not None for i in [manual_image_threshold, manual_pixel_threshold]
         ):

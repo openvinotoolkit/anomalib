@@ -26,16 +26,16 @@ def test_export_model_callback(export_mode):
     )
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        config.project.path = tmp_dir
+        config.trainer.default_root_dir = tmp_dir
         model = DummyLightningModule(hparams=config)
         model.callbacks = [
             ExportCallback(
-                input_size=config.model.input_size,
+                input_size=config.data.init_args.image_size,
                 dirpath=os.path.join(tmp_dir),
                 filename="model",
                 export_mode=export_mode,
             ),
-            EarlyStopping(monitor=config.model.metric),
+            EarlyStopping(monitor=config.model.init_args.metric),
         ]
         datamodule = FakeDataModule()
         trainer = pl.Trainer(

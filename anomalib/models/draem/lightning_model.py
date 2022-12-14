@@ -6,11 +6,8 @@ Paper https://arxiv.org/abs/2108.07610
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Callable, Dict, Optional, Union
+from typing import Callable, Dict, Optional
 
-import torch
-from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor, nn
 
@@ -19,7 +16,7 @@ from anomalib.models.draem.loss import DraemLoss
 from anomalib.models.draem.torch_model import DraemModel
 from anomalib.models.draem.utils import Augmenter
 
-__all__ = ["Draem", "DraemLightning"]
+__all__ = ["Draem"]
 
 
 @MODEL_REGISTRY
@@ -104,40 +101,3 @@ class Draem(AnomalyModule):
         prediction = self.model(batch["image"])
         batch["anomaly_maps"] = prediction
         return batch
-
-
-class DraemLightning(Draem):
-    """DRÆM: A discriminatively trained reconstruction embedding for surface anomaly detection.
-
-    Args:
-        hparams (Union[DictConfig, ListConfig]): Model parameters
-    """
-
-    def __init__(self, hparams: Union[DictConfig, ListConfig]):
-        super().__init__(
-            enable_sspcab=hparams.model.enable_sspcab,
-            sspcab_lambda=hparams.model.sspcab_lambda,
-            anomaly_source_path=hparams.model.anomaly_source_path,
-        )
-        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
-        self.save_hyperparameters(hparams)
-
-    def configure_callbacks(self):
-        """Configure model-specific callbacks.
-
-        Note:
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure callback method will be
-                deprecated, and callbacks will be configured from either
-                config.yaml file or from CLI.
-        """
-        early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
-        )
-        return [early_stopping]
-
-    def configure_optimizers(self):  # pylint: disable=arguments-differ
-        """Configure the Adam optimizer."""
-        return torch.optim.Adam(params=self.model.parameters(), lr=self.hparams.model.lr)

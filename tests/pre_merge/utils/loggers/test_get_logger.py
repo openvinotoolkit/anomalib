@@ -21,14 +21,21 @@ from anomalib.utils.loggers import (
 )
 
 
-def test_get_experiment_logger():
+@pytest.fixture(scope="session")
+def temp_dir(tmp_path_factory):
+    """Create a temporary directory for the test."""
+    return tmp_path_factory.mktemp("test_logs")
+
+
+def test_get_experiment_logger(temp_dir):
     """Test whether the right logger is returned."""
 
     config = OmegaConf.create(
         {
-            "project": {"logger": None, "path": "/tmp"},
+            "logging": {"logger": None, "log_graph": False},
             "dataset": {"name": "dummy", "category": "cat1"},
             "model": {"name": "DummyModel"},
+            "trainer": {"default_root_dir": temp_dir},
         }
     )
 
@@ -37,32 +44,32 @@ def test_get_experiment_logger():
         # get no logger
         logger = get_experiment_logger(config=config)
         assert isinstance(logger, bool)
-        config.project.logger = False
+        config.logging.logger = False
         logger = get_experiment_logger(config=config)
         assert isinstance(logger, bool)
 
         # get tensorboard
-        config.project.logger = "tensorboard"
+        config.logging.logger = "tensorboard"
         logger = get_experiment_logger(config=config)
         assert isinstance(logger[0], AnomalibTensorBoardLogger)
 
         # get wandb logger
-        config.project.logger = "wandb"
+        config.logging.logger = "wandb"
         logger = get_experiment_logger(config=config)
         assert isinstance(logger[0], AnomalibWandbLogger)
 
         # get comet logger
-        config.project.logger = "comet"
+        config.logging.logger = "comet"
         logger = get_experiment_logger(config=config)
         assert isinstance(logger[0], AnomalibCometLogger)
 
         # get csv logger.
-        config.project.logger = "csv"
+        config.logging.logger = "csv"
         logger = get_experiment_logger(config=config)
         assert isinstance(logger[0], CSVLogger)
 
         # get multiple loggers
-        config.project.logger = ["tensorboard", "wandb", "csv", "comet"]
+        config.logging.logger = ["tensorboard", "wandb", "csv", "comet"]
         logger = get_experiment_logger(config=config)
         assert isinstance(logger[0], AnomalibTensorBoardLogger)
         assert isinstance(logger[1], AnomalibWandbLogger)
@@ -71,5 +78,5 @@ def test_get_experiment_logger():
 
         # raise unknown
         with pytest.raises(UnknownLogger):
-            config.project.logger = "randomlogger"
+            config.logging.logger = "randomlogger"
             logger = get_experiment_logger(config=config)

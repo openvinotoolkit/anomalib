@@ -3,6 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from .lightning_model import Draem, DraemLightning
+from .lightning_model import Draem
 
-__all__ = ["Draem", "DraemLightning"]
+__all__ = ["Draem"]

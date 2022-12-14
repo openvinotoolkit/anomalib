@@ -1,59 +1,57 @@
-dataset:
-  name: mvtec #options: [mvtec, btech, folder]
-  format: mvtec
-  path: ./datasets/MVTec
-  task: segmentation
-  category: bottle
-  image_size: 224
-  train_batch_size: 32
-  test_batch_size: 32
-  num_workers: 8
-  transform_config:
-    train: null
-    val: null
-  create_validation_set: false
-  tiling:
-    apply: false
-    tile_size: null
-    stride: null
-    remove_border_count: 0
-    use_random_tiling: False
-    random_tile_count: 16
+seed_everything: null
+
+data:
+  class_path: anomalib.data.MVTec
+  init_args:
+    root: ./datasets/MVTec
+    category: bottle
+    image_size: [224, 224]
+    train_batch_size: 32
+    test_batch_size: 1
+    num_workers: 8
+    task: segmentation
+    transform_config_train: null
+    transform_config_val: null
+    seed: 0
+    create_validation_set: false
 
 model:
-  name: patchcore
-  feature_extractor:
-    backbone: wide_resnet50_2
-    pre_trained: true
-    layers:
-      - layer2
-      - layer3
-  coreset_sampling_ratio: 0.1
-  num_neighbors: 9
-  normalization_method: min_max # options: [null, min_max, cdf]
+  class_path: anomalib.models.Patchcore
+  init_args:
+    input_size:
+      - 224 # Height
+      - 224 # Width
+    feature_extractor:
+      backbone: wide_resnet50_2
+      pre_trained: true
+      layers:
+        - layer2
+        - layer3
+    coreset_sampling_ratio: 0.1
+    num_neighbors: 9
+
+post_processing:
+  normalization_method: MIN_MAX # <null, min_max, cdf>
+  threshold_method: ADAPTIVE # options: [adaptive, manual]
+  manual_image_threshold: null
+  manual_pixel_threshold: null
 
 metrics:
-  image:
+  image_metrics:
     - F1Score
     - AUROC
-  pixel:
+  pixel_metrics:
     - F1Score
     - AUROC
-  threshold:
-    method: adaptive #options: [adaptive, manual]
-    manual_image: null
-    manual_pixel: null
 
 visualization:
-  show_images: False # show images on the screen
-  save_images: True # save images to the file system
-  log_images: True # log images to the available loggers (if any)
-  image_save_path: null # path to which images will be saved
-  mode: full # options: ["full", "simple"]
-
-project:
-  seed: 0
-  path: ./results
+  task: segmentation
+  mode: full
+  image_save_path: null
+  inputs_are_normalized: true
+  show_images: false
+  log_images: false
+  save_images: true
 
 logging:
   logger: [] # options: [comet, tensorboard, wandb, csv] or combinations.
@@ -105,6 +103,7 @@ trainer:
   profiler: null
   reload_dataloaders_every_n_epochs: 0
   replace_sampler_ddp: true
+  resume_from_checkpoint: null
   strategy: null
   sync_batchnorm: false
   tpu_cores: null

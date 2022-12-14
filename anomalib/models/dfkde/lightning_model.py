@@ -4,9 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import List, Union
+from typing import List
 
-from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor
 
@@ -102,23 +101,3 @@ class Dfkde(AnomalyModule):
         batch["pred_scores"] = self.model(batch["image"])
 
         return batch
-
-
-class DfkdeLightning(Dfkde):
-    """DFKDE: Deep Feature Kernel Density Estimation.
-
-    Args:
-        hparams (Union[DictConfig, ListConfig]): Model params
-    """
-
-    def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
-        super().__init__(
-            feature_extractor=hparams.model.feature_extractor,
-            max_training_points=hparams.model.max_training_points,
-            pre_processing=hparams.model.pre_processing,
-            n_components=hparams.model.n_components,
-            threshold_steepness=hparams.model.threshold_steepness,
-            threshold_offset=hparams.model.threshold_offset,
-        )
-        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
-        self.save_hyperparameters(hparams)

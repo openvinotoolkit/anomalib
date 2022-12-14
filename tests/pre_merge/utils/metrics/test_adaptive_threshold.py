@@ -10,7 +10,8 @@ from pytorch_lightning import Trainer
 
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
-from anomalib.utils.callbacks import get_callbacks
+from anomalib.utils.callbacks import get_callbacks, instantiate_callbacks
+from anomalib.utils.cli.helpers import configure_optimizer
 from anomalib.utils.metrics import AnomalyScoreThreshold
 from tests.helpers.config import get_test_configurable_parameters
 
@@ -39,20 +40,22 @@ def test_manual_threshold():
     """
     config = get_test_configurable_parameters(config_path="anomalib/models/padim/config.yaml")
 
-    config.model.normalization_method = "none"
-    config.metrics.threshold.method = "manual"
+    config.post_processing.normalization_method = None
+    config.post_processing.threshold_method = "MANUAL"
     config.trainer.fast_dev_run = True
-    config.metrics.image = ["F1Score"]
-    config.metrics.pixel = ["F1Score"]
+    config.metrics.image_metrics = ["F1Score"]
+    config.metrics.pixel_metrics = ["F1Score"]
 
     image_threshold = random.random()
     pixel_threshold = random.random()
-    config.metrics.threshold.manual_image = image_threshold
-    config.metrics.threshold.manual_pixel = pixel_threshold
+    config.post_processing.manual_image_threshold = image_threshold
+    config.post_processing.manual_pixel_threshold = pixel_threshold
 
     model = get_model(config)
     datamodule = get_datamodule(config)
     callbacks = get_callbacks(config)
+    callbacks = instantiate_callbacks(callbacks)
+    configure_optimizer(model, config)
 
     trainer = Trainer(**config.trainer, callbacks=callbacks)
     trainer.fit(model=model, datamodule=datamodule)

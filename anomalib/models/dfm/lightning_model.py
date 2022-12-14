@@ -4,10 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import List, Union
+from typing import List
 
 import torch
-from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor
 
@@ -100,21 +99,3 @@ class Dfm(AnomalyModule):
         batch["pred_scores"] = self.model(batch["image"])
 
         return batch
-
-
-class DfmLightning(Dfm):
-    """DFM: Deep Featured Kernel Density Estimation.
-
-    Args:
-        hparams (Union[DictConfig, ListConfig]): Model params
-    """
-
-    def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
-        super().__init__(
-            feature_extractor=hparams.model.feature_extractor,
-            pooling_kernel_size=hparams.model.pooling_kernel_size,
-            pca_level=hparams.model.pca_level,
-            score_type=hparams.model.score_type,
-        )
-        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
-        self.save_hyperparameters(hparams)
