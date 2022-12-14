@@ -15,7 +15,13 @@ from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADER
 from torch.utils.data import DataLoader, default_collate
 
 from anomalib.data.base.dataset import AnomalibDataset
-from anomalib.data.utils import ValSplitMode, random_split
+from anomalib.data.synthetic import SyntheticAnomalyDataset
+from anomalib.data.utils import (
+    TestSplitMode,
+    ValSplitMode,
+    random_split,
+    split_by_label,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -60,12 +66,16 @@ class AnomalibDataModule(LightningDataModule, ABC):
         num_workers: int,
         val_split_mode: ValSplitMode,
         val_split_ratio: float,
+        test_split_mode: Optional[TestSplitMode] = None,
+        test_split_ratio: Optional[float] = None,
         seed: Optional[int] = None,
     ):
         super().__init__()
         self.train_batch_size = train_batch_size
         self.eval_batch_size = eval_batch_size
         self.num_workers = num_workers
+        self.test_split_mode = test_split_mode
+        self.test_split_ratio = test_split_ratio
         self.val_split_mode = val_split_mode
         self.val_split_ratio = val_split_ratio
         self.seed = seed
@@ -101,12 +111,44 @@ class AnomalibDataModule(LightningDataModule, ABC):
 
         self.train_data.setup()
         self.test_data.setup()
+
+        self._create_test_split()
+        self._create_val_split()
+
+    def _create_test_split(self):
+        """Obtain the test set based on the settings in the config."""
+        if self.test_data.has_normal:
+            # split the test data into normal and anomalous so these can be processed separately
+            normal_test_data, self.test_data = split_by_label(self.test_data)
+        else:
+            # when the user did not provide any normal images for testing, we sample some from the training set
+            logger.info(
+                "No normal test images found. Sampling from training set using a split ratio of %d",
+                self.test_split_ratio,
+            )
+            self.train_data, normal_test_data = random_split(self.train_data, self.test_split_ratio)
+
+        if self.test_split_mode == TestSplitMode.FROM_DIR:
+            self.test_data += normal_test_data
+        elif self.test_split_mode == TestSplitMode.SYNTHETIC:
+            self.test_data = SyntheticAnomalyDataset.from_dataset(normal_test_data)
+        else:
+            raise ValueError(f"Unsupported Test Split Mode: {self.test_split_mode}")
+
+    def _create_val_split(self):
+        """Obtain the validation set based on the settings in the config."""
         if self.val_split_mode == ValSplitMode.FROM_TEST:
+            # randomly sampled from test set
             self.test_data, self.val_data = random_split(
                 self.test_data, self.val_split_ratio, label_aware=True, seed=self.seed
             )
         elif self.val_split_mode == ValSplitMode.SAME_AS_TEST:
+            # equal to test set
             self.val_data = self.test_data
+        elif self.val_split_mode == ValSplitMode.SYNTHETIC:
+            # converted from random training sample
+            self.train_data, normal_val_data = random_split(self.train_data, self.val_split_ratio)
+            self.val_data = SyntheticAnomalyDataset.from_dataset(normal_val_data)
         elif self.val_split_mode != ValSplitMode.NONE:
             raise ValueError(f"Unknown validation split mode: {self.val_split_mode}")
 

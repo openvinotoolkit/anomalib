@@ -15,7 +15,7 @@ from torchvision.datasets.folder import IMG_EXTENSIONS
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.task_type import TaskType
-from anomalib.data.utils import Split, ValSplitMode, random_split
+from anomalib.data.utils import Split, TestSplitMode, ValSplitMode
 from anomalib.pre_processing.pre_process import PreProcessor
 
 
@@ -270,7 +270,10 @@ class Folder(AnomalibDataModule):
         transform_config_val (Optional[Union[str, A.Compose]], optional): Config for pre-processing
             during validation.
             Defaults to None.
+        test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
+        test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
+        val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
         seed (Optional[int], optional): Seed used during random subset splitting.
     """
 
@@ -291,6 +294,8 @@ class Folder(AnomalibDataModule):
         task: TaskType = TaskType.SEGMENTATION,
         transform_config_train: Optional[Union[str, A.Compose]] = None,
         transform_config_eval: Optional[Union[str, A.Compose]] = None,
+        test_split_mode: TestSplitMode = TestSplitMode.FROM_DIR,
+        test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode = ValSplitMode.FROM_TEST,
         val_split_ratio: float = 0.5,
         seed: Optional[int] = None,
@@ -299,6 +304,8 @@ class Folder(AnomalibDataModule):
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
             num_workers=num_workers,
+            test_split_mode=test_split_mode,
+            test_split_ratio=test_split_ratio,
             val_split_mode=val_split_mode,
             val_split_ratio=val_split_ratio,
             seed=seed,
@@ -332,18 +339,3 @@ class Folder(AnomalibDataModule):
             mask_dir=mask_dir,
             extensions=extensions,
         )
-
-    def _setup(self, _stage: Optional[str] = None):
-        """Set up the datasets for the Folder Data Module."""
-        assert self.train_data is not None
-        assert self.test_data is not None
-
-        self.train_data.setup()
-        self.test_data.setup()
-
-        # add some normal images to the test set
-        if not self.test_data.has_normal:
-            self.train_data, normal_test_data = random_split(self.train_data, self.normal_split_ratio, seed=self.seed)
-            self.test_data += normal_test_data
-
-        super()._setup()
