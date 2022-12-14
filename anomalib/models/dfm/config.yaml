@@ -18,9 +18,11 @@ data:
 model:
   class_path: anomalib.models.Dfm
   init_args:
-    backbone: resnet18
-    pre_trained: true
-    layer: layer3
+    feature_extractor:
+      backbone: resnet18
+      pre_trained: true
+      layers:
+        - layer3
     pooling_kernel_size: 4
     pca_level: 0.97
     score_type: fre

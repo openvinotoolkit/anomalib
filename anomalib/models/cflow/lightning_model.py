@@ -6,7 +6,7 @@ https://arxiv.org/pdf/2107.12571v1.pdf
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Tuple
+from typing import Tuple
 
 import einops
 import torch
@@ -16,6 +16,7 @@ from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from anomalib.models.cflow.torch_model import CflowModel
 from anomalib.models.cflow.utils import get_logp, positional_encoding_2d
 from anomalib.models.components import AnomalyModule
+from anomalib.models.components.feature_extraction import FeatureExtractorParams
 
 __all__ = ["Cflow"]
 
@@ -27,9 +28,7 @@ class Cflow(AnomalyModule):
     def __init__(
         self,
         input_size: Tuple[int, int],
-        backbone: str,
-        layers: List[str],
-        pre_trained: bool = True,
+        feature_extractor: FeatureExtractorParams,
         fiber_batch_size: int = 64,
         decoder: str = "freia-cflow",
         condition_vector: int = 128,
@@ -41,9 +40,7 @@ class Cflow(AnomalyModule):
 
         self.model: CflowModel = CflowModel(
             input_size=input_size,
-            backbone=backbone,
-            pre_trained=pre_trained,
-            layers=layers,
+            feature_extractor_params=feature_extractor,
             fiber_batch_size=fiber_batch_size,
             decoder=decoder,
             condition_vector=condition_vector,

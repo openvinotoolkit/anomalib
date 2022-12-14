@@ -19,7 +19,7 @@ model:
   class_path: anomalib.models.Stfpm
   init_args:
     input_size: [256, 256]
-    feature_extractor:
+    student_teacher_model:
       backbone: resnet18
       pre_trained: true
       layers:

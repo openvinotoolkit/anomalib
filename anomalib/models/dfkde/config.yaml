@@ -18,10 +18,11 @@ data:
 model:
   class_path: anomalib.models.Dfkde
   init_args:
-    backbone: resnet18
-    pre_trained: true
-    layers:
-      - layer4
+    feature_extractor:
+      backbone: resnet18
+      pre_trained: true
+      layers:
+        - layer4
     max_training_points: 40000
     pre_processing: scale
     n_components: 16

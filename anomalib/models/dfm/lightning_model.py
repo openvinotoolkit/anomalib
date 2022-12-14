@@ -11,6 +11,7 @@ from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
+from anomalib.models.components.feature_extraction import FeatureExtractorParams
 
 from .torch_model import DFMModel
 
@@ -22,9 +23,7 @@ class Dfm(AnomalyModule):
     """DFM: Deep Featured Kernel Density Estimation.
 
     Args:
-        backbone (str): Backbone CNN network
-        layer (str): Layer to extract features from the backbone CNN
-        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+        feature_extractor (FeatureExtractorParams): Feature extractor params
         pooling_kernel_size (int, optional): Kernel size to pool features extracted from the CNN.
             Defaults to 4.
         pca_level (float, optional): Ratio from which number of components for PCA are calculated.
@@ -35,9 +34,7 @@ class Dfm(AnomalyModule):
 
     def __init__(
         self,
-        backbone: str,
-        layer: str,
-        pre_trained: bool = True,
+        feature_extractor: FeatureExtractorParams,
         pooling_kernel_size: int = 4,
         pca_level: float = 0.97,
         score_type: str = "fre",
@@ -45,9 +42,7 @@ class Dfm(AnomalyModule):
         super().__init__()
 
         self.model: DFMModel = DFMModel(
-            backbone=backbone,
-            pre_trained=pre_trained,
-            layer=layer,
+            feature_extractor_params=feature_extractor,
             pooling_kernel_size=pooling_kernel_size,
             n_comps=pca_level,
             score_type=score_type,

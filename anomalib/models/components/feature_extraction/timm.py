@@ -13,7 +13,9 @@ from typing import Dict, List
 
 import timm
 import torch
-from torch import Tensor, nn
+from torch import Tensor
+
+from .base import BaseFeatureExtractor
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +30,7 @@ class TimmFeatureExtractorParams:
     requires_grad: bool = False
 
 
-class TimmFeatureExtractor(nn.Module):
+class TimmFeatureExtractor(BaseFeatureExtractor):
     """Extract features from a CNN.
 
     Args:
@@ -41,9 +43,9 @@ class TimmFeatureExtractor(nn.Module):
 
     Example:
         >>> import torch
-        >>> from anomalib.models.components.feature_extractors import TimmFeatureExtractor
+        >>> from anomalib.models.components.feature_extractor import TimmFeatureExtractor
 
-        >>> model = TimmFeatureExtractor(model="resnet18", layers=['layer1', 'layer2', 'layer3'])
+        >>> model = TimmFeatureExtractor(backbone="resnet18", layers=['layer1', 'layer2', 'layer3'])
         >>> input = torch.rand((32, 3, 256, 256))
         >>> features = model(input)
 
@@ -55,7 +57,7 @@ class TimmFeatureExtractor(nn.Module):
 
     def __init__(self, backbone: str, layers: List[str], pre_trained: bool = True, requires_grad: bool = False):
         super().__init__()
-        logger.warning("TimmFeatureExtractor will be removed in 2023.1")
+        logger.warning(FutureWarning("TimmFeatureExtractor will be removed in the future version."))
         self.backbone = backbone
         self.layers = layers
         self.idx = self._map_layer_to_idx()
@@ -67,8 +69,6 @@ class TimmFeatureExtractor(nn.Module):
             exportable=True,
             out_indices=self.idx,
         )
-        self.out_dims = self.feature_extractor.feature_info.channels()
-        self._features = {layer: torch.empty(0) for layer in self.layers}
 
     def _map_layer_to_idx(self, offset: int = 3) -> List[int]:
         """Maps set of layer names to indices of model.
@@ -95,6 +95,11 @@ class TimmFeatureExtractor(nn.Module):
                 self.layers.remove(i)
 
         return idx
+
+    @property
+    def out_dims(self) -> List[int]:
+        """Returns the number of channels of the requested layers."""
+        return self.feature_extractor.feature_info.channels()
 
     def forward(self, inputs: Tensor) -> Dict[str, Tensor]:
         """Forward-pass input tensor into the CNN.

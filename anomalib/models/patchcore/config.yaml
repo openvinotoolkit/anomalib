@@ -21,11 +21,12 @@ model:
     input_size:
       - 224 # Height
       - 224 # Width
-    backbone: wide_resnet50_2
-    pre_trained: true
-    layers:
-      - layer2
-      - layer3
+    feature_extractor:
+      backbone: wide_resnet50_2
+      pre_trained: true
+      layers:
+        - layer2
+        - layer3
     coreset_sampling_ratio: 0.1
     num_neighbors: 9
 

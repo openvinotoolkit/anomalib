@@ -7,8 +7,13 @@ from typing import Dict, Optional, Tuple
 
 from torch import Tensor, nn
 
-from anomalib.models.components import FeatureExtractor
-from anomalib.models.components.feature_extractors import TimmFeatureExtractorParams
+from anomalib.models.components import get_feature_extractor
+from anomalib.models.components.feature_extraction import (
+    FeatureExtractorParams,
+    TimmFeatureExtractorParams,
+    TorchFXFeatureExtractorParams,
+)
+from anomalib.models.components.feature_extraction.utils import _convert_datatype
 from anomalib.models.stfpm.anomaly_map import AnomalyMapGenerator
 from anomalib.pre_processing import Tiler
 
@@ -19,23 +24,16 @@ class STFPMModel(nn.Module):
     Args:
         layers (List[str]): Layers used for feature extraction
         input_size (Tuple[int, int]): Input size for the model.
-        backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
+        student_teacher_model_params (FeatureExtractorParams): Parameters for teacher and student models.
     """
 
-    def __init__(
-        self,
-        input_size: Tuple[int, int],
-        feature_extractor: TimmFeatureExtractorParams,
-    ):
+    def __init__(self, input_size: Tuple[int, int], student_teacher_model_params: FeatureExtractorParams):
         super().__init__()
         self.tiler: Optional[Tiler] = None
 
-        self.teacher_model = FeatureExtractor(
-            backbone=feature_extractor.backbone, pre_trained=True, layers=feature_extractor.layers
-        )
-        self.student_model = FeatureExtractor(
-            backbone=feature_extractor.backbone, pre_trained=False, layers=feature_extractor.layers, requires_grad=True
-        )
+        self.teacher_model: nn.Module
+        self.student_model: nn.Module
+        self._initialize_models(student_teacher_model_params)
 
         # teacher model is fixed
         for parameters in self.teacher_model.parameters():
@@ -48,6 +46,45 @@ class STFPMModel(nn.Module):
         else:
             image_size = input_size
         self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(image_size))
+
+    def _initialize_models(self, student_teacher_model_params: FeatureExtractorParams):
+        """Initialize the teacher and student models.
+
+        Args:
+            student_teacher_model_params (FeatureExtractorParams): Model parameters.
+        """
+        # When loading from the entrypoint scripts student_teacher_model_params is DictConfig
+        student_teacher_model_params = _convert_datatype(student_teacher_model_params)
+        teacher_model_params: FeatureExtractorParams
+        student_model_params: FeatureExtractorParams
+        if isinstance(student_teacher_model_params, TimmFeatureExtractorParams):
+            teacher_model_params = TimmFeatureExtractorParams(
+                backbone=student_teacher_model_params.backbone,
+                layers=student_teacher_model_params.layers,
+                pre_trained=True,
+                requires_grad=False,
+            )
+            student_model_params = TimmFeatureExtractorParams(
+                backbone=student_teacher_model_params.backbone,
+                layers=student_teacher_model_params.layers,
+                pre_trained=False,
+                requires_grad=True,
+            )
+        else:
+            teacher_model_params = TorchFXFeatureExtractorParams(
+                backbone=student_teacher_model_params.backbone,
+                return_nodes=student_teacher_model_params.return_nodes,
+                weights=student_teacher_model_params.weights,
+                requires_grad=False,
+            )
+            student_model_params = TorchFXFeatureExtractorParams(
+                backbone=student_teacher_model_params.backbone,
+                return_nodes=student_teacher_model_params.return_nodes,
+                weights=None,
+                requires_grad=True,
+            )
+        self.teacher_model = get_feature_extractor(teacher_model_params)
+        self.student_model = get_feature_extractor(student_model_params)
 
     def forward(self, images):
         """Forward-pass images into the network.
