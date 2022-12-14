@@ -77,11 +77,9 @@ class AnomalibCLI(LightningCLI):
 
     def add_arguments_to_parser(self, parser: LightningArgumentParser) -> None:
         """Add custom arguments to the parser."""
-        # TODO: design for explicit arguments
-        parser.add_argument("--dataset.task", type=str, default="segmentation", required=False)
         # TODO: https://github.com/openvinotoolkit/anomalib/issues/20
         parser.add_class_arguments(ImageVisualizerCallback, "visualization")
-        parser.add_class_arguments(TilerDecorator, "tiling")
+        parser.add_class_arguments(TilerDecorator, "tiling")  # TODO tiler should be added to each model.
         parser.add_class_arguments(MetricsConfigurationCallback, "metrics")
         parser.add_class_arguments(PostProcessingConfigurationCallback, "post_processing")
 
