@@ -39,7 +39,6 @@ metrics:
     - AUROC
   pixel:
     - AUROC
-    - AUPRO
   threshold:
     image_default: 0
     pixel_default: 0
