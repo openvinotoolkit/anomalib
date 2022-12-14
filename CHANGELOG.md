@@ -30,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- Fix PatchCore performance deterioration by reverting changes to Average Pooling layer (<https://github.com/openvinotoolkit/anomalib/pull/791>)
 - Fix zero seed (<https://github.com/openvinotoolkit/anomalib/pull/766>)
 - Fix #699 (<https://github.com/openvinotoolkit/anomalib/pull/700>)
 - 🐞 Fix folder dataset for classification tasks (<https://github.com/openvinotoolkit/anomalib/pull/708>)
