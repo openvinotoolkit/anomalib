@@ -1,5 +1,5 @@
 dataset:
-  name: mvtec #options: [mvtec, btech, folder]
+  name: mvtec
   format: mvtec
   path: ./datasets/MVTec
   category: bottle
