@@ -5,7 +5,7 @@
 
 from .base import AnomalyModule, DynamicBufferModule
 from .dimensionality_reduction import PCA, SparseRandomProjection
-from .feature_extractor import (
+from .feature_extraction import (
     TimmFeatureExtractor,
     TorchFXFeatureExtractor,
     get_feature_extractor,

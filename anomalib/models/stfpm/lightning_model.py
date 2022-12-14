@@ -15,7 +15,7 @@ from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import optim
 
 from anomalib.models.components import AnomalyModule
-from anomalib.models.components.feature_extractor import FeatureExtractorParams
+from anomalib.models.components.feature_extraction import FeatureExtractorParams
 from anomalib.models.stfpm.loss import STFPMLoss
 from anomalib.models.stfpm.torch_model import STFPMModel
 

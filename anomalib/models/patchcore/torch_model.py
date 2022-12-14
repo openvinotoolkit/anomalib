@@ -14,7 +14,7 @@ from anomalib.models.components import (
     KCenterGreedy,
     get_feature_extractor,
 )
-from anomalib.models.components.feature_extractor import FeatureExtractorParams
+from anomalib.models.components.feature_extraction import FeatureExtractorParams
 from anomalib.models.patchcore.anomaly_map import AnomalyMapGenerator
 from anomalib.pre_processing import Tiler
 
