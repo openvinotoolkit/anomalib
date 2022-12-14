@@ -6,6 +6,7 @@
 from .config import (
     get_configurable_parameters,
     get_default_root_directory,
+    update_config,
     update_input_size_config,
     update_nncf_config,
 )
@@ -13,6 +14,7 @@ from .config import (
 __all__ = [
     "get_configurable_parameters",
     "get_default_root_directory",
+    "update_config",
     "update_nncf_config",
     "update_input_size_config",
 ]

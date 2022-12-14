@@ -27,15 +27,16 @@ tiling:
 model:
   class_path: anomalib.models.Padim
   init_args:
-    layers:
-      - layer1
-      - layer2
-      - layer3
     input_size:
       - 256
       - 256
-    backbone: resnet18
-    pre_trained: true
+    feature_extractor:
+      backbone: resnet18
+      pre_trained: true
+      layers:
+        - layer1
+        - layer2
+        - layer3
     n_features: null
 
 post_processing:
@@ -55,18 +56,15 @@ metrics:
 visualization:
   task: segmentation
   mode: full
-  image_save_path: null
+  image_save_path: ""
   inputs_are_normalized: true
   show_images: false
   log_images: false
   save_images: true
 
-logging:
-  logger: [] # options: [comet, tensorboard, wandb, csv] or combinations.
-  log_graph: false # Logs the model graph to respective logger.
-
-optimization:
-  export_mode: null #options: onnx, openvino
+# logging:
+#   logger: [] # options: [comet, tensorboard, wandb, csv] or combinations.
+#   log_graph: false # Logs the model graph to respective logger.
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:

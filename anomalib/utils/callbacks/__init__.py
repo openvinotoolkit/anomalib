@@ -12,6 +12,8 @@ from jsonargparse.namespace import Namespace
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning.callbacks import Callback
 
+from anomalib.post_processing.normalization import NormalizationMethod
+
 from .cdf_normalization import CdfNormalizationCallback
 from .graph import GraphLogger
 from .metrics_configuration import MetricsConfigurationCallback
@@ -72,7 +74,7 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Dict]:
 
     # Convert trainer callbacks to a dictionary. It makes it easier to search and update values
     # {"anomalib.utils.callbacks.ImageVisualizerCallback":{'task':...}}
-    if "callbacks" in config.trainer:
+    if "callbacks" in config.trainer and config.trainer.callbacks is not None:
         for callback in config.trainer.callbacks:
             callbacks[callback.class_path.split(".")[-1]] = dict(callback.init_args)
 
@@ -126,9 +128,9 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Dict]:
     # Normalization.
     normalization = config.post_processing.normalization_method
     if normalization:
-        if normalization == "MIN_MAX":
+        if normalization in (NormalizationMethod.MIN_MAX, NormalizationMethod.MIN_MAX.name):
             __update_callback(callbacks, "MinMaxNormalizationCallback", {})
-        elif normalization == "CDF":
+        elif normalization in (NormalizationMethod.CDF, NormalizationMethod.CDF.name):
             __update_callback(callbacks, "CDFNormalizationCallback", {})
         else:
             raise ValueError(

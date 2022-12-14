@@ -3,20 +3,18 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Type, Union
 
 from omegaconf import DictConfig
 
 from .timm import TimmFeatureExtractor, TimmFeatureExtractorParams
 from .torchfx import TorchFXFeatureExtractor, TorchFXFeatureExtractorParams
 
-FeatureExtractorParams = Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams]
+FeatureExtractorParams = Union[Type[TimmFeatureExtractorParams], Type[TorchFXFeatureExtractorParams], Dict, DictConfig]
 
 
 def get_feature_extractor(
-    feature_extractor_params: Optional[
-        Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams, DictConfig]
-    ] = None,
+    feature_extractor_params: Optional[FeatureExtractorParams] = None,
     **kwargs,
 ) -> Union[TorchFXFeatureExtractor, TimmFeatureExtractor]:
     """Convenience wrapper for feature extractors.
@@ -75,9 +73,7 @@ def get_feature_extractor(
 
 
 def _get_feature_extractor_params(
-    feature_extractor_params: Optional[
-        Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams, DictConfig]
-    ] = None,
+    feature_extractor_params: Optional[FeatureExtractorParams] = None,
     **kwargs,
 ):
     """Performs validation checks and converts the arguments to the correct data type.
@@ -106,15 +102,16 @@ def _get_feature_extractor_params(
 
 
 def _convert_datatype(
-    feature_extractor_params: Union[TimmFeatureExtractorParams, TorchFXFeatureExtractorParams, DictConfig, Dict],
-) -> FeatureExtractorParams:
+    feature_extractor_params: FeatureExtractorParams,
+) -> Union[TorchFXFeatureExtractorParams, TimmFeatureExtractorParams]:
     """When config is loaded from entry point scripts, the data type of the arguments is DictConfig.
 
     Args:
         feature_extractor_params: Feature extractor parameters to convert.
 
     Returns:
-        FeatureExtractorParams: Converted feature extractor parameters.
+        Union[Type[TorchFXFeatureExtractorParams], Type[TimmFeatureExtractorParams]]: Converted feature extractor
+        parameters.
     """
     if isinstance(feature_extractor_params, (DictConfig, dict)):
         if "layers" in feature_extractor_params:

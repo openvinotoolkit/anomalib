@@ -14,11 +14,6 @@ from warnings import warn
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
 
-def _get_now_str(timestamp: float) -> str:
-    """Standard format for datetimes is defined here."""
-    return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d_%H-%M-%S")
-
-
 def update_input_size_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfig, ListConfig]:
     """Update config with image size as tuple, effective input size and tiling stride.
 
@@ -158,8 +153,13 @@ def get_configurable_parameters(
 
     config = OmegaConf.load(config_path)
 
+    project_path = get_default_root_directory(config)
+
     # keep track of the original config file because it will be modified
     config_original: DictConfig = config.copy()
+    # write the original config for eventual debug (modified config at the end of the function)
+    project_path.mkdir(parents=True, exist_ok=True)
+    (project_path / "config_original.yaml").write_text(OmegaConf.to_yaml(config_original))
 
     # if the seed value is 0, notify a user that the behavior of the seed value zero has been changed.
     if config.get("seed_everything") == 0:
@@ -170,6 +170,25 @@ def get_configurable_parameters(
             "(`null` in the YAML file) or remove the `seed` key from the YAML file."
         )
 
+    config = update_config(config)
+
+    if weight_file:
+        config.trainer.resume_from_checkpoint = weight_file
+
+    (project_path / "config.yaml").write_text(OmegaConf.to_yaml(config))
+
+    return config
+
+
+def update_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfig, ListConfig]:
+    """Update config.
+
+    Args:
+        config: Configurable parameters.
+
+    Returns:
+        Union[DictConfig, ListConfig]: Updated config.
+    """
     config = update_input_size_config(config)
 
     # Project Configs
@@ -177,17 +196,13 @@ def get_configurable_parameters(
 
     (project_path / "weights").mkdir(parents=True, exist_ok=True)
     (project_path / "images").mkdir(parents=True, exist_ok=True)
-    # write the original config for eventual debug (modified config at the end of the function)
-    (project_path / "config_original.yaml").write_text(OmegaConf.to_yaml(config_original))
+
+    # set visualizer path
+    if config.visualization.image_save_path == "" or config.visualization.image_save_path is None:
+        config.visualization.image_save_path = str(project_path / "images")
 
     # loggers should write to results/model/dataset/category/ folder
     config.trainer.default_root_dir = str(project_path)
 
-    if weight_file:
-        config.trainer.resume_from_checkpoint = weight_file
-
     config = update_nncf_config(config)
-
-    (project_path / "config.yaml").write_text(OmegaConf.to_yaml(config))
-
     return config

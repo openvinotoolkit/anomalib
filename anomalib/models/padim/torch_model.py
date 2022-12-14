@@ -70,7 +70,11 @@ class PadimModel(nn.Module):
         super().__init__()
         self.tiler: Optional[Tiler] = None
 
-        self.backbone = str(feature_extractor_params.backbone)
+        self.backbone = (
+            feature_extractor_params["backbone"]
+            if isinstance(feature_extractor_params, dict)
+            else str(feature_extractor_params.backbone)
+        )
         self.feature_extractor = get_feature_extractor(feature_extractor_params)
         self.layers = self.feature_extractor.layers
         self.n_features_original, self.n_patches = _deduce_dims(self.feature_extractor, input_size, self.layers)

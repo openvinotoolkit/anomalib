@@ -35,7 +35,11 @@ class ReverseDistillationModel(nn.Module):
         super().__init__()
         self.tiler: Optional[Tiler] = None
 
-        encoder_backbone = str(feature_extractor_params.backbone)
+        encoder_backbone = (
+            feature_extractor_params["backbone"]
+            if isinstance(feature_extractor_params, dict)
+            else str(feature_extractor_params.backbone)
+        )
         self.encoder = get_feature_extractor(feature_extractor_params)
         self.bottleneck = get_bottleneck_layer(encoder_backbone)
         self.decoder = get_decoder(encoder_backbone)
