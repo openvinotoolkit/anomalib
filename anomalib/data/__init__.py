@@ -32,9 +32,9 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> LightningDataModule
     datamodule: LightningDataModule
 
     # Since in the new config based on LightningCLI, seed_everything is a separate parameter, we set the one in dataset
-    # to point to it.
-    if config.data.init_args.seed == 0:
-        config.data.init_args.seed = config.seed_everything
+    # to point to it. TODO: revisit this once we merge datamodule branch and see if we still need this.
+    if config.data.init_args.seed is None:
+        config.data.init_args.seed = config.seed_everything  # assume that seed_everything is set
 
     # store init_args separately as is is immutable in OmegaConf
     init_args = config.data.init_args

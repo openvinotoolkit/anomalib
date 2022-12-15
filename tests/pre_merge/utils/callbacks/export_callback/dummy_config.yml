@@ -18,7 +18,7 @@ model:
       image_default: 0.0
       pixel_default: 0.0
 
-optimization:
+export:
   export_mode: "openvino"
 
 trainer:
