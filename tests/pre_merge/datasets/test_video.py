@@ -10,8 +10,8 @@ from anomalib.data.ucsd_ped import (
     UCSDpedDataset,
     make_ucsd_dataset,
 )
+from anomalib.data.utils import get_transforms
 from anomalib.data.utils.split import Split, random_split
-from anomalib.pre_processing import get_transforms
 from tests.helpers.dataset import get_dataset_path
 
 

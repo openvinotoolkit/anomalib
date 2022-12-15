@@ -8,7 +8,7 @@ import pytest
 from anomalib.data import TaskType
 from anomalib.data.folder import FolderDataset
 from anomalib.data.synthetic import SyntheticAnomalyDataset
-from anomalib.pre_processing import get_transforms
+from anomalib.data.utils import get_transforms
 from tests.helpers.dataset import get_dataset_path
 
 
