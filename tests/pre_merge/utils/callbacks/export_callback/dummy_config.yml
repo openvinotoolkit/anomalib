@@ -1,5 +1,6 @@
 results_dir:
   path: null
+  unique: false
 data:
   class_path: FakeData
   init_args:

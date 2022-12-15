@@ -146,7 +146,7 @@ def get_callbacks_dict(config: Union[ListConfig, DictConfig]) -> List[Dict]:
     # Normalization.
     normalization = config.post_processing.normalization_method
     if isinstance(normalization, str):
-        normalization = NormalizationMethod(normalization)
+        normalization = NormalizationMethod(normalization.lower())
 
     if normalization:
         if normalization == NormalizationMethod.MIN_MAX:

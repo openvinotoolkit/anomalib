@@ -14,11 +14,6 @@ from warnings import warn
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
 
-def _get_now_str(timestamp: float) -> str:
-    """Standard format for datetimes is defined here."""
-    return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d_%H-%M-%S")
-
-
 def update_input_size_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfig, ListConfig]:
     """Update config with image size as tuple, effective input size and tiling stride.
 
@@ -111,7 +106,7 @@ def update_multi_gpu_training_config(config: Union[DictConfig, ListConfig]) -> U
 
 def get_default_root_directory(config: Union[DictConfig, ListConfig]) -> Path:
     """Sets the default root directory."""
-    root_dir = config.results_dir if config.results_dir else "./results"
+    root_dir = config.results_dir.path if config.results_dir.path else "./results"
     model_name = config.model.class_path.split(".")[-1].lower()
     data_name = config.data.class_path.split(".")[-1].lower()
     category = config.data.init_args.category if "category" in config.data.init_args else ""
