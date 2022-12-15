@@ -70,7 +70,12 @@ def get_transforms(
         >>> output["image"].shape
         torch.Size([3, 1024, 1024])
     """
-    assert config is not None or image_size is not None
+    if config is None and image_size is None:
+        raise ValueError(
+            "Both config and image_size cannot be `None`. "
+            "Provide either config file to de-serialize transforms "
+            "or image_size to get the default transformations"
+        )
 
     transforms: A.Compose
 
@@ -87,9 +92,8 @@ def get_transforms(
     else:
         logger.info("No config file has been provided. Using default transforms.")
         transforms_list = []
-        if image_size is not None:
-            height, width = get_image_height_and_width(image_size)
-            transforms_list.append(A.Resize(height=height, width=width, always_apply=True))
+        height, width = get_image_height_and_width(image_size)
+        transforms_list.append(A.Resize(height=height, width=width, always_apply=True))
         if center_crop is not None:
             height, width = get_image_height_and_width(center_crop)
             transforms_list.append(A.CenterCrop(height=height, width=width, always_apply=True))
