@@ -56,7 +56,7 @@ def __update_callback(callbacks: Dict, callback_name: str, update_dict: Dict[str
 
 
 def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Dict]:
-    """Sets the callbacks in trainer key and also returns a list for populating the CLI.
+    """Returns a list for populating the CLI.
 
     Args:
         config (DictConfig): Model config
