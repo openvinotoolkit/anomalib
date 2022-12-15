@@ -13,6 +13,8 @@ from jsonargparse.namespace import Namespace
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning.callbacks import Callback
 
+from anomalib.post_processing.normalization import NormalizationMethod
+
 from .cdf_normalization import CdfNormalizationCallback
 from .graph import GraphLogger
 from .metrics_configuration import MetricsConfigurationCallback
@@ -143,14 +145,18 @@ def get_callbacks_dict(config: Union[ListConfig, DictConfig]) -> List[Dict]:
     #   - https://github.com/openvinotoolkit/anomalib/issues/384
     # Normalization.
     normalization = config.post_processing.normalization_method
+    if isinstance(normalization, str):
+        normalization = NormalizationMethod(normalization)
+
     if normalization:
-        if normalization == "MIN_MAX":
+        if normalization == NormalizationMethod.MIN_MAX:
             __update_callback(callbacks, "MinMaxNormalizationCallback", {})
-        elif normalization == "CDF":
+        elif normalization == NormalizationMethod.CDF:
             __update_callback(callbacks, "CDFNormalizationCallback", {})
         else:
             raise ValueError(
-                f"Unknown normalization type {normalization}. \n" "Available types are either None, min_max or cdf"
+                f"Unknown normalization type {normalization}. \n"
+                f"Available types are either {[member.name for member in NormalizationMethod]}"
             )
 
     add_visualizer_callback(callbacks, config)

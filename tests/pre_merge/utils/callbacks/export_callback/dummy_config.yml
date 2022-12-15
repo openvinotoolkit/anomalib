@@ -1,4 +1,5 @@
-results_dir: null
+results_dir:
+  path: null
 data:
   class_path: FakeData
   init_args:

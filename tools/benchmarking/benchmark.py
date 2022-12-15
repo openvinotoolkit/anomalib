@@ -86,7 +86,7 @@ def get_single_model_metrics(model_config: Union[DictConfig, ListConfig], openvi
     """
 
     with TemporaryDirectory() as project_path:
-        model_config.results_dir = project_path
+        model_config.results_dir.path = project_path
         datamodule = get_datamodule(model_config)
         model = get_model(model_config)
 

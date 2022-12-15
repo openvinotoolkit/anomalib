@@ -115,7 +115,7 @@ def get_default_root_directory(config: Union[DictConfig, ListConfig]) -> Path:
     model_name = config.model.class_path.split(".")[-1].lower()
     data_name = config.data.class_path.split(".")[-1].lower()
     category = config.data.init_args.category if "category" in config.data.init_args else ""
-    time_stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    time_stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S") if config.results_dir.unique else ""
     default_root_dir = Path(root_dir, model_name, data_name, category, time_stamp)
 
     return default_root_dir

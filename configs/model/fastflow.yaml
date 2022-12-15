@@ -3,7 +3,9 @@
 # anomalib fit --config ./config/model/fastflow.yaml
 ckpt_path: null
 seed_everything: null
-results_dir: ./results
+results_dir:
+  path: ./results
+  unique: false
 
 data:
   class_path: anomalib.data.MVTec
