@@ -8,7 +8,7 @@ import pytest
 from anomalib.data import TaskType
 from anomalib.data.folder import FolderDataset
 from anomalib.data.utils.split import concatenate_datasets, random_split
-from anomalib.pre_processing import PreProcessor
+from anomalib.pre_processing import get_transforms
 from tests.helpers.dataset import get_dataset_path
 
 
@@ -16,10 +16,10 @@ from tests.helpers.dataset import get_dataset_path
 def folder_dataset():
     """Create Folder Dataset."""
     root = get_dataset_path(dataset="bottle")
-    pre_process = PreProcessor(image_size=(256, 256))
+    transform = get_transforms(image_size=(256, 256))
     dataset = FolderDataset(
         task=TaskType.CLASSIFICATION,
-        pre_process=pre_process,
+        transform=transform,
         root=root,
         normal_dir="good",
         abnormal_dir="broken_large",

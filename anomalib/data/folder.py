@@ -16,7 +16,7 @@ from torchvision.datasets.folder import IMG_EXTENSIONS
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import Split, TestSplitMode, ValSplitMode
-from anomalib.pre_processing.pre_process import PreProcessor
+from anomalib.pre_processing import get_transforms
 
 
 def _check_and_convert_path(path: Union[str, Path]) -> Path:
@@ -181,7 +181,7 @@ class FolderDataset(AnomalibDataset):
 
     Args:
         task (TaskType): Task type. (``classification``, ``detection`` or ``segmentation``).
-        pre_process (PreProcessor): Image Pre-processor to apply transform.
+        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (Optional[Union[Split, str]]): Fixed subset split that follows from folder structure on file system.
             Choose from [Split.FULL, Split.TRAIN, Split.TEST]
         normal_dir (Union[str, Path]): Path to the directory containing normal images.
@@ -204,7 +204,7 @@ class FolderDataset(AnomalibDataset):
     def __init__(
         self,
         task: TaskType,
-        pre_process: PreProcessor,
+        transform: A.Compose,
         normal_dir: Union[str, Path],
         root: Optional[Union[str, Path]] = None,
         abnormal_dir: Optional[Union[str, Path]] = None,
@@ -214,7 +214,7 @@ class FolderDataset(AnomalibDataset):
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
         extensions: Optional[Tuple[str, ...]] = None,
     ) -> None:
-        super().__init__(task, pre_process)
+        super().__init__(task, transform)
 
         self.split = split
         self.root = root
@@ -259,6 +259,9 @@ class Folder(AnomalibDataModule):
             directory. Defaults to None.
         image_size (Optional[Union[int, Tuple[int, int]]], optional): Size of the input image.
             Defaults to None.
+        center_crop (Optional[Union[int, Tuple[int, int]]], optional): When provided, the images will be center-cropped
+            to the provided dimensions.
+        normalize (bool): When True, the images will be normalized to the ImageNet statistics.
         train_batch_size (int, optional): Training batch size. Defaults to 32.
         test_batch_size (int, optional): Test batch size. Defaults to 32.
         num_workers (int, optional): Number of workers. Defaults to 8.
@@ -288,6 +291,8 @@ class Folder(AnomalibDataModule):
         extensions: Optional[Tuple[str]] = None,
         #
         image_size: Optional[Union[int, Tuple[int, int]]] = None,
+        center_crop: Optional[Union[int, Tuple[int, int]]] = None,
+        normalize: bool = True,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
@@ -313,12 +318,16 @@ class Folder(AnomalibDataModule):
 
         self.normal_split_ratio = normal_split_ratio
 
-        pre_process_train = PreProcessor(config=transform_config_train, image_size=image_size)
-        pre_process_eval = PreProcessor(config=transform_config_eval, image_size=image_size)
+        transform_train = get_transforms(
+            config=transform_config_train, image_size=image_size, center_crop=center_crop, normalize=normalize
+        )
+        transform_eval = get_transforms(
+            config=transform_config_eval, image_size=image_size, center_crop=center_crop, normalize=normalize
+        )
 
         self.train_data = FolderDataset(
             task=task,
-            pre_process=pre_process_train,
+            transform=transform_train,
             split=Split.TRAIN,
             root=root,
             normal_dir=normal_dir,
@@ -330,7 +339,7 @@ class Folder(AnomalibDataModule):
 
         self.test_data = FolderDataset(
             task=task,
-            pre_process=pre_process_eval,
+            transform=transform_eval,
             split=Split.TEST,
             root=root,
             normal_dir=normal_dir,

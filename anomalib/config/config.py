@@ -36,7 +36,17 @@ def update_input_size_config(config: Union[DictConfig, ListConfig]) -> Union[Dic
     if isinstance(config.dataset.image_size, int):
         config.dataset.image_size = (config.dataset.image_size,) * 2
 
-    config.model.input_size = config.dataset.image_size
+    # handle center crop
+    center_crop = config.dataset.get("center_crop")
+    if center_crop is None:
+        config.model.input_size = config.dataset.image_size
+    elif isinstance(center_crop, int):
+        config.dataset.center_crop = (config.dataset.center_crop,) * 2
+        config.model.input_size = config.dataset.center_crop
+    elif isinstance(center_crop, tuple):
+        config.model.input_size = config.dataset.center_crop
+    else:
+        raise ValueError(f"center_crop must be either int or tuple, got {type(center_crop)}")
 
     if "tiling" in config.dataset.keys() and config.dataset.tiling.apply:
         if isinstance(config.dataset.tiling.tile_size, int):

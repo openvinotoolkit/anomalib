@@ -41,7 +41,7 @@ from anomalib.data.utils import (
     ValSplitMode,
     hash_check,
 )
-from anomalib.pre_processing import PreProcessor
+from anomalib.pre_processing import get_transforms
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +131,7 @@ class MVTecDataset(AnomalibDataset):
 
     Args:
         task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
-        pre_process (PreProcessor): Pre-processor object
+        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (Optional[Union[Split, str]]): Split of the dataset, usually Split.TRAIN or Split.TEST
         root (str): Path to the root of the dataset
         category (str): Sub-category of the dataset, e.g. 'bottle'
@@ -140,12 +140,12 @@ class MVTecDataset(AnomalibDataset):
     def __init__(
         self,
         task: TaskType,
-        pre_process: PreProcessor,
+        transform: A.Compose,
         root: str,
         category: str,
         split: Optional[Union[Split, str]] = None,
     ) -> None:
-        super().__init__(task=task, pre_process=pre_process)
+        super().__init__(task=task, transform=transform)
 
         self.root_category = Path(root) / Path(category)
         self.split = split
@@ -162,6 +162,9 @@ class MVTec(AnomalibDataModule):
         category (str): Category of the MVTec dataset (e.g. "bottle" or "cable").
         image_size (Optional[Union[int, Tuple[int, int]]], optional): Size of the input image.
             Defaults to None.
+        center_crop (Optional[Union[int, Tuple[int, int]]], optional): When provided, the images will be center-cropped
+            to the provided dimensions.
+        normalize (bool): When True, the images will be normalized to the ImageNet statistics.
         train_batch_size (int, optional): Training batch size. Defaults to 32.
         eval_batch_size (int, optional): Test batch size. Defaults to 32.
         num_workers (int, optional): Number of workers. Defaults to 8.
@@ -184,6 +187,8 @@ class MVTec(AnomalibDataModule):
         root: str,
         category: str,
         image_size: Optional[Union[int, Tuple[int, int]]] = None,
+        center_crop: Optional[Union[int, Tuple[int, int]]] = None,
+        normalize: bool = True,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
@@ -210,15 +215,18 @@ class MVTec(AnomalibDataModule):
         self.root = Path(root)
         self.category = Path(category)
 
-        # TODO: Get rid of PreProcessor by passing transform directly
-        pre_process_train = PreProcessor(config=transform_config_train, image_size=image_size)
-        pre_process_eval = PreProcessor(config=transform_config_eval, image_size=image_size)
+        transform_train = get_transforms(
+            config=transform_config_train, image_size=image_size, center_crop=center_crop, normalize=normalize
+        )
+        transform_eval = get_transforms(
+            config=transform_config_eval, image_size=image_size, center_crop=center_crop, normalize=normalize
+        )
 
         self.train_data = MVTecDataset(
-            task=task, pre_process=pre_process_train, split=Split.TRAIN, root=root, category=category
+            task=task, transform=transform_train, split=Split.TRAIN, root=root, category=category
         )
         self.test_data = MVTecDataset(
-            task=task, pre_process=pre_process_eval, split=Split.TEST, root=root, category=category
+            task=task, transform=transform_eval, split=Split.TEST, root=root, category=category
         )
 
     def prepare_data(self) -> None:

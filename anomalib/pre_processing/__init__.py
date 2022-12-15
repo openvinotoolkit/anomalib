@@ -5,5 +5,6 @@
 
 from .pre_process import PreProcessor
 from .tiler import Tiler
+from .transform import get_transforms
 
-__all__ = ["PreProcessor", "Tiler"]
+__all__ = ["PreProcessor", "Tiler", "get_transforms"]

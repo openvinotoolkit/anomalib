@@ -8,6 +8,7 @@ to an input image before the forward-pass stage.
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+import warnings
 from typing import Optional, Tuple, Union
 
 import albumentations as A
@@ -72,6 +73,13 @@ def get_transforms(
         >>> output["image"].shape
         torch.Size([3, 1024, 1024])
     """
+    warnings.warn(
+        DeprecationWarning(
+            "The PreProcessor class is deprecated and will be removed in a future release. You can now directly pass "
+            "an Albumentations Compose object to your Anomalib models."
+        )
+    )
+
     if config is None and image_size is None:
         raise ValueError(
             "Both config and image_size cannot be `None`. "
