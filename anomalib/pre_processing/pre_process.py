@@ -76,7 +76,7 @@ def get_transforms(
     warnings.warn(
         DeprecationWarning(
             "The function anomalib.pre_processing.pre_process.get_transforms is deprecated and will be removed in a "
-            "future release. Please use anomalib.pre_processing.transform.get_transforms instead."
+            "future release. Please use anomalib.data.utils.transform.get_transforms instead."
         )
     )
 

@@ -20,11 +20,11 @@ from anomalib.data.utils import (
     DownloadProgressBar,
     Split,
     ValSplitMode,
+    get_transforms,
     hash_check,
     read_image,
 )
 from anomalib.data.utils.video import ClipsIndexer
-from anomalib.pre_processing import get_transforms
 
 logger = logging.getLogger(__name__)
 

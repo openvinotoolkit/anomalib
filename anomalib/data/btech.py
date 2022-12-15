@@ -30,9 +30,9 @@ from anomalib.data.utils import (
     Split,
     TestSplitMode,
     ValSplitMode,
+    get_transforms,
     hash_check,
 )
-from anomalib.pre_processing import get_transforms
 
 logger = logging.getLogger(__name__)
 

@@ -92,11 +92,11 @@ def get_transforms(
     else:
         logger.info("No config file has been provided. Using default transforms.")
         transforms_list = []
-        height, width = get_image_height_and_width(image_size)
-        transforms_list.append(A.Resize(height=height, width=width, always_apply=True))
+        resize_height, resize_width = get_image_height_and_width(image_size)
+        transforms_list.append(A.Resize(height=resize_height, width=resize_width, always_apply=True))
         if center_crop is not None:
-            height, width = get_image_height_and_width(center_crop)
-            transforms_list.append(A.CenterCrop(height=height, width=width, always_apply=True))
+            crop_height, crop_width = get_image_height_and_width(center_crop)
+            transforms_list.append(A.CenterCrop(height=crop_height, width=crop_width, always_apply=True))
         if normalize:
             transforms_list.append(A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)))
         else:

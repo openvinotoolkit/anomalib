@@ -28,9 +28,14 @@ from torch import Tensor
 
 from anomalib.data.base import AnomalibVideoDataModule, AnomalibVideoDataset
 from anomalib.data.task_type import TaskType
-from anomalib.data.utils import DownloadProgressBar, Split, ValSplitMode, hash_check
+from anomalib.data.utils import (
+    DownloadProgressBar,
+    Split,
+    ValSplitMode,
+    get_transforms,
+    hash_check,
+)
 from anomalib.data.utils.video import ClipsIndexer
-from anomalib.pre_processing import get_transforms
 
 logger = logging.getLogger(__name__)
 

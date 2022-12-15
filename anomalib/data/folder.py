@@ -15,8 +15,7 @@ from torchvision.datasets.folder import IMG_EXTENSIONS
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.task_type import TaskType
-from anomalib.data.utils import Split, TestSplitMode, ValSplitMode
-from anomalib.pre_processing import get_transforms
+from anomalib.data.utils import Split, TestSplitMode, ValSplitMode, get_transforms
 
 
 def _check_and_convert_path(path: Union[str, Path]) -> Path:
