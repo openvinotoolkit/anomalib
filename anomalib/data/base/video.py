@@ -3,6 +3,7 @@
 from abc import ABC
 from typing import Callable, Dict, Optional, Union
 
+import albumentations as A
 import torch
 from torch import Tensor
 
@@ -11,7 +12,6 @@ from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import ValSplitMode, masks_to_boxes
 from anomalib.data.utils.video import ClipsIndexer
-from anomalib.pre_processing import PreProcessor
 
 
 class AnomalibVideoDataset(AnomalibDataset, ABC):
@@ -24,14 +24,12 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         frames_between_clips (int): Number of frames between each consecutive video clip.
     """
 
-    def __init__(
-        self, task: TaskType, pre_process: PreProcessor, clip_length_in_frames: int, frames_between_clips: int
-    ):
-        super().__init__(task, pre_process)
+    def __init__(self, task: TaskType, transform: A.Compose, clip_length_in_frames: int, frames_between_clips: int):
+        super().__init__(task, transform)
 
         self.clip_length_in_frames = clip_length_in_frames
         self.frames_between_clips = frames_between_clips
-        self.pre_process = pre_process
+        self.transform = transform
 
         self.indexer: Optional[ClipsIndexer] = None
         self.indexer_cls: Optional[Callable] = None
@@ -76,7 +74,7 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         # apply transforms
         if "mask" in item and item["mask"] is not None:
             processed_frames = [
-                self.pre_process(image=frame.numpy(), mask=mask) for frame, mask in zip(item["image"], item["mask"])
+                self.transform(image=frame.numpy(), mask=mask) for frame, mask in zip(item["image"], item["mask"])
             ]
             item["image"] = torch.stack([item["image"] for item in processed_frames]).squeeze(0)
             mask = torch.as_tensor(item["mask"])
@@ -87,7 +85,7 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
                 item["boxes"] = item["boxes"][0] if len(item["boxes"]) == 1 else item["boxes"]
         else:
             item["image"] = torch.stack(
-                [self.pre_process(image=frame.numpy())["image"] for frame in item["image"]]
+                [self.transform(image=frame.numpy())["image"] for frame in item["image"]]
             ).squeeze(0)
 
         if item["mask"] is None:
