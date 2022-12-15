@@ -1,4 +1,5 @@
-seed_everything: 42
+seed_everything: null
+results_dir: ./results
 
 data:
   class_path: anomalib.data.MVTec

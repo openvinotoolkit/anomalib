@@ -1,12 +1,11 @@
 seed_everything: null
+results_dir: ./results
 data:
   class_path: anomalib.data.MVTec
   init_args:
     root: ./datasets/MVTec
     category: bottle
-    image_size:
-      - 256
-      - 256
+    image_size: [256, 256]
     train_batch_size: 32
     test_batch_size: 32
     num_workers: 8

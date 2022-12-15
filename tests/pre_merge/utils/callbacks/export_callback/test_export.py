@@ -26,7 +26,7 @@ def test_export_model_callback(export_mode):
     )
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        config.trainer.default_root_dir = tmp_dir
+        config.trainer.results_dir = tmp_dir
         model = DummyLightningModule(hparams=config)
         model.callbacks = [
             ExportCallback(

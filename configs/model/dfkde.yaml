@@ -3,6 +3,7 @@
 # anomalib fit --config ./config/model/dfkde.yaml
 ckpt_path: null
 seed_everything: null
+results_dir: ./results
 
 data:
   class_path: anomalib.data.MVTec

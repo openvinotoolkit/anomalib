@@ -3,7 +3,7 @@ from pytorch_lightning import Trainer, seed_everything
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
-from anomalib.utils.callbacks import get_callbacks, instantiate_callbacks
+from anomalib.utils.callbacks import get_callbacks
 from anomalib.utils.cli.helpers import configure_optimizer
 from tests.helpers.dataset import TestDataset, get_dataset_path
 
@@ -12,10 +12,6 @@ def run_train_test(config):
     model = get_model(config)
     datamodule = get_datamodule(config)
     callbacks = get_callbacks(config)
-    callbacks = instantiate_callbacks(callbacks)
-    # Remove callbacks from trainer as it is passed separately
-    if "callbacks" in config.trainer:
-        config.trainer.pop("callbacks")
     configure_optimizer(model, config)
     trainer = Trainer(**config.trainer, callbacks=callbacks)
     trainer.fit(model=model, datamodule=datamodule)

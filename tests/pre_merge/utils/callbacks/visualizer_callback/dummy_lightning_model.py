@@ -37,7 +37,7 @@ class DummyModule(AnomalyModule):
             ImageVisualizerCallback(
                 task=self.task,
                 mode=self.mode,
-                image_save_path=hparams.project.path + "/images",
+                image_save_path=hparams.results_dir + "/images",
                 log_images=True,
                 save_images=True,
             )

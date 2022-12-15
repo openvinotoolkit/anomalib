@@ -5,6 +5,7 @@
 
 import logging
 import os
+import warnings
 from importlib import import_module
 from typing import Any, Dict, List, Union
 
@@ -53,8 +54,25 @@ def __update_callback(callbacks: Dict, callback_name: str, update_dict: Dict[str
         callbacks[callback_name] = update_dict
 
 
-def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Dict]:
-    """Sets the callbacks in trainer key and also returns a list for populating the CLI.
+def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
+    """Returns a list of callback objects.
+
+    Args:
+        config (DictConfig): Model config
+
+    Return:
+        (List[Callback]): List of callbacks
+    """
+    callbacks_dict = get_callbacks_dict(config)
+    callbacks = instantiate_callbacks(callbacks_dict)
+    # Remove callbacks from trainer as it is passed separately
+    if "callbacks" in config.trainer:
+        config.trainer.pop("callbacks")
+    return callbacks
+
+
+def get_callbacks_dict(config: Union[ListConfig, DictConfig]) -> List[Dict]:
+    """Returns a list for populating the CLI.
 
     Args:
         config (DictConfig): Model config
@@ -225,9 +243,13 @@ def add_visualizer_callback(callbacks: Dict[str, Dict], config: Union[DictConfig
     """
     # visualization settings
     assert isinstance(config, (DictConfig, Namespace))
-    config.visualization.task = (
-        config.data.init_args.task if config.visualization.task is None else config.visualization.task
-    )
+    if config.visualization.task is not None and config.visualization.task != config.data.init_args.task:
+        warnings.warn(
+            f"Visualization task {config.visualization.task} does not match data task {config.data.init_args.task}"
+            f" Setting visualization task to {config.data.init_args.task}."
+        )
+    config.visualization.task = config.data.init_args.task
+
     config.visualization.inputs_are_normalized = config.post_processing.normalization_method is not None
 
     if config.visualization.log_images or config.visualization.save_images or config.visualization.show_images:

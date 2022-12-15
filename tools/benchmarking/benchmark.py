@@ -86,7 +86,7 @@ def get_single_model_metrics(model_config: Union[DictConfig, ListConfig], openvi
     """
 
     with TemporaryDirectory() as project_path:
-        model_config.project.path = project_path
+        model_config.results_dir = project_path
         datamodule = get_datamodule(model_config)
         model = get_model(model_config)
 
@@ -247,7 +247,7 @@ def sweep(
     seed_everything(seed, workers=True)
     # This assumes that `model_name` is always present in the sweep config.
     model_config = get_configurable_parameters(model_name=run_config.model_name)
-    model_config.project.seed = seed
+    model_config.seed_everything = seed
 
     model_config = cast(DictConfig, model_config)  # placate mypy
     for param in run_config.keys():

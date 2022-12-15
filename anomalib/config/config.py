@@ -111,23 +111,12 @@ def update_multi_gpu_training_config(config: Union[DictConfig, ListConfig]) -> U
 
 def get_default_root_directory(config: Union[DictConfig, ListConfig]) -> Path:
     """Sets the default root directory."""
-    # If `resume_from_checkpoint` is not specified, it means that the project has not been created before.
-    # Therefore, we need to create the project directory first.
-    if config.trainer.resume_from_checkpoint is None:
-        root_dir = config.trainer.default_root_dir if config.trainer.default_root_dir else "./results"
-        model_name = config.model.class_path.split(".")[-1].lower()
-        data_name = config.data.class_path.split(".")[-1].lower()
-        category = config.data.init_args.category if "category" in config.data.init_args else ""
-        time_stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        default_root_dir = Path(root_dir, model_name, data_name, category, time_stamp)
-
-    # Otherwise, the assumption is that the project directory has alrady been created.
-    else:
-        # By default, train subcommand saves the weights to
-        #   ./results/<model>/<data>/time_stamp/weights/model.ckpt.
-        # For this reason, we set the project directory to the parent directory
-        #   that is two-level up.
-        default_root_dir = Path(config.trainer.resume_from_checkpoint).parent.parent
+    root_dir = config.results_dir if config.results_dir else "./results"
+    model_name = config.model.class_path.split(".")[-1].lower()
+    data_name = config.data.class_path.split(".")[-1].lower()
+    category = config.data.init_args.category if "category" in config.data.init_args else ""
+    time_stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    default_root_dir = Path(root_dir, model_name, data_name, category, time_stamp)
 
     return default_root_dir
 
