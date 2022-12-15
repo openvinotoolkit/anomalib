@@ -75,8 +75,8 @@ def get_transforms(
     """
     warnings.warn(
         DeprecationWarning(
-            "The PreProcessor class is deprecated and will be removed in a future release. You can now directly pass "
-            "an Albumentations Compose object to your Anomalib models."
+            "The function anomalib.pre_processing.pre_process.get_transforms is deprecated and will be removed in a "
+            "future release. Please use anomalib.pre_processing.transform.get_transforms instead."
         )
     )
 
@@ -178,6 +178,12 @@ class PreProcessor:
         image_size: Optional[Union[int, Tuple]] = None,
         to_tensor: bool = True,
     ) -> None:
+        warnings.warn(
+            DeprecationWarning(
+                "The PreProcessor class is deprecated and will be removed in a future release. You can now directly "
+                "pass the A.Compose object to your Anomalib datasets using the 'transform' keyword argument."
+            )
+        )
         self.config = config
         self.image_size = image_size
         self.to_tensor = to_tensor
