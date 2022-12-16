@@ -89,3 +89,4 @@ repos:
       - id: hadolint
         name: Lint Dockerfiles
         description: Runs hadolint to lint Dockerfiles
+        args: ["--ignore", "DL3008"]
