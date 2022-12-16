@@ -21,7 +21,7 @@ from .split import (
     random_split,
     split_by_label,
 )
-from .transform import get_transforms
+from .transform import InputNormalizationMethod, get_transforms
 
 __all__ = [
     "generate_output_image_filename",
@@ -42,4 +42,5 @@ __all__ = [
     "boxes_to_masks",
     "boxes_to_anomaly_maps",
     "get_transforms",
+    "InputNormalizationMethod",
 ]

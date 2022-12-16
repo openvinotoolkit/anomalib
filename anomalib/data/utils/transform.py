@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+from enum import Enum
 from typing import Optional, Tuple, Union
 
 import albumentations as A
@@ -14,11 +15,18 @@ from anomalib.data.utils.image import get_image_height_and_width
 logger = logging.getLogger(__name__)
 
 
+class InputNormalizationMethod(str, Enum):
+    """Normalization method for the input images."""
+
+    NONE = "none"  # no normalization applied
+    IMAGENET = "imagenet"  # normalization to ImageNet statistics
+
+
 def get_transforms(
     config: Optional[Union[str, A.Compose]] = None,
     image_size: Optional[Union[int, Tuple[int, int]]] = None,
     center_crop: Optional[Union[int, Tuple[int, int]]] = None,
-    normalize: bool = True,
+    normalization: InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
     to_tensor: bool = True,
 ) -> A.Compose:
     """Get transforms from config or image size.
@@ -104,10 +112,12 @@ def get_transforms(
             transforms_list.append(A.CenterCrop(height=crop_height, width=crop_width, always_apply=True))
 
         # add normalize transform
-        if normalize:
+        if normalization == InputNormalizationMethod.IMAGENET:
             transforms_list.append(A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)))
-        else:
+        elif normalization == InputNormalizationMethod.NONE:
             transforms_list.append(A.ToFloat())
+        else:
+            raise ValueError(f"Unknown normalization method: {normalization}")
 
         # add tensor conversion
         if to_tensor:

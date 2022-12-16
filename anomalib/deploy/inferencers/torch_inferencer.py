@@ -14,7 +14,7 @@ from torch import Tensor
 
 from anomalib.config import get_configurable_parameters
 from anomalib.data import TaskType
-from anomalib.data.utils import get_transforms
+from anomalib.data.utils import InputNormalizationMethod, get_transforms
 from anomalib.data.utils.boxes import masks_to_boxes
 from anomalib.deploy.export import get_model_metadata
 from anomalib.models import get_model
@@ -128,9 +128,9 @@ class TorchInferencer(Inferencer):
         center_crop = self.config.dataset.get("center_crop")
         if center_crop is not None:
             center_crop = tuple(center_crop)
-        normalize = self.config.dataset.normalize
+        normalization = InputNormalizationMethod(self.config.dataset.normalization)
         transform = get_transforms(
-            config=transform_config, image_size=image_size, center_crop=center_crop, normalize=normalize
+            config=transform_config, image_size=image_size, center_crop=center_crop, normalization=normalization
         )
         processed_image = transform(image=image)["image"]
 

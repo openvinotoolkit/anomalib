@@ -27,6 +27,7 @@ from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
     DownloadProgressBar,
+    InputNormalizationMethod,
     Split,
     TestSplitMode,
     ValSplitMode,
@@ -229,7 +230,7 @@ class BTech(AnomalibDataModule):
         category: str,
         image_size: Optional[Union[int, Tuple[int, int]]] = None,
         center_crop: Optional[Union[int, Tuple[int, int]]] = None,
-        normalize: bool = True,
+        normalization: Union[InputNormalizationMethod, str] = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
@@ -257,10 +258,16 @@ class BTech(AnomalibDataModule):
         self.category = Path(category)
 
         transform_train = get_transforms(
-            config=transform_config_train, image_size=image_size, center_crop=center_crop, normalize=normalize
+            config=transform_config_train,
+            image_size=image_size,
+            center_crop=center_crop,
+            normalization=InputNormalizationMethod(normalization),
         )
         transform_eval = get_transforms(
-            config=transform_config_eval, image_size=image_size, center_crop=center_crop, normalize=normalize
+            config=transform_config_eval,
+            image_size=image_size,
+            center_crop=center_crop,
+            normalization=InputNormalizationMethod(normalization),
         )
 
         self.train_data = BTechDataset(
