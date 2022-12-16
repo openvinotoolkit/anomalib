@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 
 def get_transforms(
     config: Optional[Union[str, A.Compose]] = None,
-    image_size: Optional[Union[int, Tuple]] = None,
-    center_crop: Optional[Union[int, Tuple]] = None,
+    image_size: Optional[Union[int, Tuple[int, int]]] = None,
+    center_crop: Optional[Union[int, Tuple[int, int]]] = None,
     normalize: bool = True,
     to_tensor: bool = True,
 ) -> A.Compose:
@@ -70,13 +70,6 @@ def get_transforms(
         >>> output["image"].shape
         torch.Size([3, 1024, 1024])
     """
-    if config is None and image_size is None:
-        raise ValueError(
-            "Both config and image_size cannot be `None`. "
-            "Provide either config file to de-serialize transforms "
-            "or image_size to get the default transformations"
-        )
-
     transforms: A.Compose
 
     if config is not None:
@@ -92,10 +85,19 @@ def get_transforms(
     else:
         logger.info("No config file has been provided. Using default transforms.")
         transforms_list = []
+
+        if image_size is None:
+            raise ValueError(
+                "Both config and image_size cannot be `None`. "
+                "Provide either config file to de-serialize transforms "
+                "or image_size to get the default transformations"
+            )
         resize_height, resize_width = get_image_height_and_width(image_size)
         transforms_list.append(A.Resize(height=resize_height, width=resize_width, always_apply=True))
         if center_crop is not None:
             crop_height, crop_width = get_image_height_and_width(center_crop)
+            if crop_height > resize_height or crop_width > resize_width:
+                raise ValueError(f"Crop size may not be larger than image size. Found {image_size} and {center_crop}")
             transforms_list.append(A.CenterCrop(height=crop_height, width=crop_width, always_apply=True))
         if normalize:
             transforms_list.append(A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)))
