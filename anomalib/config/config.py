@@ -52,7 +52,7 @@ def update_input_size_config(config: Union[DictConfig, ListConfig]) -> Union[Dic
         assert len(center_crop) == 2, "center_crop must be a single integer or tuple of length 2 for width and height."
         config.model.input_size = center_crop
     else:
-        raise ValueError(f"center_crop must be either int or tuple, got {type(center_crop)}")
+        raise ValueError(f"center_crop must be either int or ListConfig, got {type(center_crop)}")
 
     if "tiling" in config.dataset.keys() and config.dataset.tiling.apply:
         if isinstance(config.dataset.tiling.tile_size, int):
