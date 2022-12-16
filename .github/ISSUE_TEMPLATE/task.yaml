@@ -1,7 +1,7 @@
-name: Feature Request
-description: Suggest an idea for this project
-title: "[Feature Request]: "
-labels: ["Feature Request"]
+name: Tasks
+description: This is used to capture tasks being implemented/to implement such as features, maintenance, refactor, etc.
+title: "[Task]: "
+labels: ["Task"]
 body:
   - type: markdown
     attributes:
@@ -9,9 +9,9 @@ body:
         We encourage our users to submit feature requests in our [Discussion forum](https://github.com/openvinotoolkit/anomalib/discussions/categories/ideas-feature-requests). You can use this template for consistency.
 
   - type: textarea
-    id: concern
+    id: motivation
     attributes:
-      label: Is your feature request related to a problem?
+      label: What is the motivation for this task?
       description: A clear and concise description of what the problem is.
       placeholder: |
         1. I'm always frustrated when [...]. It would be better if we could [...]
