@@ -89,3 +89,4 @@ repos:
       - id: hadolint
         name: Lint Dockerfiles
         description: Runs hadolint to lint Dockerfiles
+        exclude: ".ci"
