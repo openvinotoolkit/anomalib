@@ -123,7 +123,8 @@ class TorchInferencer(Inferencer):
         transform_config = (
             self.config.dataset.transform_config.eval if "transform_config" in self.config.dataset.keys() else None
         )
-        image_size = tuple(self.config.dataset.image_size)
+
+        image_size = (self.config.dataset.image_size[0], self.config.dataset.image_size[1])
         center_crop = self.config.dataset.get("center_crop")
         if center_crop is not None:
             center_crop = tuple(center_crop)
