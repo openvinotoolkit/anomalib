@@ -28,6 +28,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - 📊 Update DFM results (<https://github.com/openvinotoolkit/anomalib/pull/674>)
 - Optimize anomaly score calculation for PatchCore (<https://github.com/openvinotoolkit/anomalib/pull/633>)
 
+### Deprecated
+
+- Deprecate OptimalF1 metric in favor of AnomalyScoreThreshold and F1Score (<https://github.com/openvinotoolkit/anomalib/pull/796>)
+
 ### Fixed
 
 - Fix PatchCore performance deterioration by reverting changes to Average Pooling layer (<https://github.com/openvinotoolkit/anomalib/pull/791>)
