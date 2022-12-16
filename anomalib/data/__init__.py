@@ -33,12 +33,17 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
 
     datamodule: AnomalibDataModule
 
+    # convert center crop to tuple
+    center_crop = config.dataset.get("center_crop")
+    if center_crop is not None:
+        center_crop = (center_crop[0], center_crop[1])
+
     if config.dataset.format.lower() == "mvtec":
         datamodule = MVTec(
             root=config.dataset.path,
             category=config.dataset.category,
             image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
-            center_crop=(config.dataset.center_crop[0], config.dataset.center_crop[1]),
+            center_crop=center_crop,
             normalize=config.dataset.get("normalize"),
             train_batch_size=config.dataset.train_batch_size,
             eval_batch_size=config.dataset.eval_batch_size,
@@ -56,7 +61,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             root=config.dataset.path,
             category=config.dataset.category,
             image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
-            center_crop=(config.dataset.center_crop[0], config.dataset.center_crop[1]),
+            center_crop=center_crop,
             normalize=config.dataset.get("normalize"),
             train_batch_size=config.dataset.train_batch_size,
             eval_batch_size=config.dataset.eval_batch_size,
@@ -79,7 +84,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             mask_dir=config.dataset.mask_dir,
             extensions=config.dataset.extensions,
             image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
-            center_crop=(config.dataset.center_crop[0], config.dataset.center_crop[1]),
+            center_crop=center_crop,
             normalize=config.dataset.get("normalize"),
             train_batch_size=config.dataset.train_batch_size,
             eval_batch_size=config.dataset.eval_batch_size,
@@ -99,7 +104,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             clip_length_in_frames=config.dataset.clip_length_in_frames,
             frames_between_clips=config.dataset.frames_between_clips,
             image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
-            center_crop=(config.dataset.center_crop[0], config.dataset.center_crop[1]),
+            center_crop=center_crop,
             normalize=config.dataset.get("normalize"),
             transform_config_train=config.dataset.transform_config.train,
             transform_config_eval=config.dataset.transform_config.eval,
@@ -117,7 +122,7 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             clip_length_in_frames=config.dataset.clip_length_in_frames,
             frames_between_clips=config.dataset.frames_between_clips,
             image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
-            center_crop=(config.dataset.center_crop[0], config.dataset.center_crop[1]),
+            center_crop=center_crop,
             normalize=config.dataset.get("normalize"),
             transform_config_train=config.dataset.transform_config.train,
             transform_config_eval=config.dataset.transform_config.eval,
