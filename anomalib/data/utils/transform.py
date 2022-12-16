@@ -86,6 +86,7 @@ def get_transforms(
         logger.info("No config file has been provided. Using default transforms.")
         transforms_list = []
 
+        # add resize transform
         if image_size is None:
             raise ValueError(
                 "Both config and image_size cannot be `None`. "
@@ -94,15 +95,21 @@ def get_transforms(
             )
         resize_height, resize_width = get_image_height_and_width(image_size)
         transforms_list.append(A.Resize(height=resize_height, width=resize_width, always_apply=True))
+
+        # add center crop transform
         if center_crop is not None:
             crop_height, crop_width = get_image_height_and_width(center_crop)
             if crop_height > resize_height or crop_width > resize_width:
                 raise ValueError(f"Crop size may not be larger than image size. Found {image_size} and {center_crop}")
             transforms_list.append(A.CenterCrop(height=crop_height, width=crop_width, always_apply=True))
+
+        # add normalize transform
         if normalize:
             transforms_list.append(A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)))
         else:
             transforms_list.append(A.ToFloat())
+
+        # add tensor conversion
         if to_tensor:
             transforms_list.append(ToTensorV2())
 
