@@ -14,6 +14,8 @@ from warnings import warn
 
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
+from anomalib.data.utils import TestSplitMode, ValSplitMode
+
 
 def _get_now_str(timestamp: float) -> str:
     """Standard format for datetimes is defined here."""
@@ -180,6 +182,20 @@ def update_datasets_config(config: Union[DictConfig, ListConfig]) -> Union[DictC
             )
         )
         config.dataset.normal_split_ratio = config.dataset.split_ratio
+
+    if config.dataset.test_split_mode == TestSplitMode.NONE and config.dataset.val_split_mode in [
+        ValSplitMode.SAME_AS_TEST,
+        ValSplitMode.FROM_TEST,
+    ]:
+        warn(
+            f"val_split_mode {config.dataset.val_split_mode} not allowed for test_split_mode = 'none'. "
+            "Setting val_split_mode to 'none'."
+        )
+        config.dataset.val_split_mode = ValSplitMode.NONE
+
+    if config.dataset.val_split_mode == ValSplitMode.NONE and config.trainer.limit_val_batches != 0.0:
+        warn("Running without validation set. Setting trainer.limit_val_batches to 0.")
+        config.trainer.limit_val_batches = 0.0
     return config
 
 
