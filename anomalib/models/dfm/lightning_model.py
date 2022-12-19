@@ -1,10 +1,10 @@
-"""DFM: Deep Feature Kernel Density Estimation."""
+"""DFM: Deep Feature Modeling."""
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import List, Union
+from typing import List, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
@@ -25,19 +25,22 @@ class Dfm(AnomalyModule):
     Args:
         backbone (str): Backbone CNN network
         layer (str): Layer to extract features from the backbone CNN
+        input_size (Tuple[int, int]): Input size for the model.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         pooling_kernel_size (int, optional): Kernel size to pool features extracted from the CNN.
             Defaults to 4.
         pca_level (float, optional): Ratio from which number of components for PCA are calculated.
             Defaults to 0.97.
         score_type (str, optional): Scoring type. Options are `fre` and `nll`. Defaults to "fre".
-        nll: for Gaussian modeling, fre: pca feature reconstruction error
+        nll: for Gaussian modeling, fre: pca feature-reconstruction error. Anomaly segmentation is
+        supported with `fre` only. If using `nll`, set `task` in config.yaml to classification
     """
 
     def __init__(
         self,
         backbone: str,
         layer: str,
+        input_size: Tuple[int, int],
         pre_trained: bool = True,
         pooling_kernel_size: int = 4,
         pca_level: float = 0.97,
@@ -49,11 +52,13 @@ class Dfm(AnomalyModule):
             backbone=backbone,
             pre_trained=pre_trained,
             layer=layer,
+            input_size=input_size,
             pooling_kernel_size=pooling_kernel_size,
             n_comps=pca_level,
             score_type=score_type,
         )
         self.embeddings: List[Tensor] = []
+        self.score_type = score_type
 
     @staticmethod
     def configure_optimizers() -> None:  # pylint: disable=arguments-differ
@@ -100,9 +105,12 @@ class Dfm(AnomalyModule):
           batch (List[Dict[str, Any]]): Input batch
 
         Returns:
-          Dictionary containing FRE anomaly scores and ground-truth.
+          Dictionary containing FRE anomaly scores and anomaly maps.
         """
-        batch["pred_scores"] = self.model(batch["image"])
+        if self.score_type == "fre":
+            batch["anomaly_maps"], batch["pred_scores"] = self.model(batch["image"])
+        elif self.score_type == "nll":
+            batch["pred_scores"] = self.model(batch["image"])
 
         return batch
 
@@ -116,6 +124,7 @@ class DfmLightning(Dfm):
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
         super().__init__(
+            input_size=hparams.model.input_size,
             backbone=hparams.model.backbone,
             layer=hparams.model.layer,
             pre_trained=hparams.model.pre_trained,
