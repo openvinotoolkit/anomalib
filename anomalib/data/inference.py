@@ -20,8 +20,7 @@ class InferenceDataset(Dataset):
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         image_size (Optional[Union[int, Tuple[int, int]]], optional): Target image size
             to resize the original image. Defaults to None.
-        transform_config (Optional[Union[str, A.Compose]], optional): Configuration file
-            parse the albumentation transforms. Defaults to None.
+        transform (Optional[A.Compose], optional): Transforms to apply to the input images.
     """
 
     def __init__(
@@ -29,14 +28,13 @@ class InferenceDataset(Dataset):
         path: Union[str, Path],
         transform: Optional[A.Compose] = None,
         image_size: Optional[Union[int, Tuple[int, int]]] = None,
-        transform_config: Optional[Union[str, A.Compose]] = None,
     ) -> None:
         super().__init__()
 
         self.image_filenames = get_image_filenames(path)
 
         if transform is None:
-            self.transform = get_transforms(transform_config, image_size)
+            self.transform = get_transforms(image_size=image_size)
         else:
             self.transform = transform
 
