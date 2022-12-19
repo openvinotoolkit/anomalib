@@ -80,6 +80,7 @@ def make_folder_data_module(
     normal_dir="good",
     abnormal_dir="broken_large",
     normal_test_dir="good_test",
+    mask_dir="ground_truth/broken_large",
 ):
     """Create Folder Data Module."""
     root = get_dataset_path(dataset="bottle")
@@ -88,7 +89,7 @@ def make_folder_data_module(
         normal_dir=normal_dir,
         abnormal_dir=abnormal_dir,
         normal_test_dir=normal_test_dir,
-        mask_dir="ground_truth/broken_large",
+        mask_dir=mask_dir,
         normal_split_ratio=0.2,
         image_size=(256, 256),
         train_batch_size=batch_size,
@@ -313,16 +314,39 @@ class TestSubsetSplitting:
 
     @pytest.mark.parametrize("test_split_mode", ("from_dir", "synthetic"))
     def test_normal_test_dir_omitted(self, make_data_module, test_split_mode):
-        """The test set should always contain normal samples even when no normal_test_dir ir provided."""
+        """Tests if the data module functions properly when no normal_test_dir is provided."""
         data_module = make_data_module(dataset="folder", test_split_mode=test_split_mode, normal_test_dir=None)
+        # check if we can retrieve a sample from every subset
+        next(iter(data_module.train_dataloader()))
+        next(iter(data_module.test_dataloader()))
+        next(iter(data_module.val_dataloader()))
+        # the test set should contain normal samples which are sampled from the train set
         assert data_module.test_data.has_normal
 
     def test_abnormal_dir_omitted_from_dir(self, make_data_module):
         """The test set should not contain anomalous samples if no abnormal_dir provided and split mode is from_dir."""
         data_module = make_data_module(dataset="folder", test_split_mode="from_dir", abnormal_dir=None)
+        # check if we can retrieve a sample from every subset
+        next(iter(data_module.train_dataloader()))
+        next(iter(data_module.test_dataloader()))
+        next(iter(data_module.val_dataloader()))
+        # the test set should not contain anomalous samples, because there aren't any available
         assert not data_module.test_data.has_anomalous
 
     def test_abnormal_dir_omitted_synthetic(self, make_data_module):
         """The test set should contain anomalous samples if no abnormal_dir provided and split mode is synthetic."""
         data_module = make_data_module(dataset="folder", test_split_mode="synthetic", abnormal_dir=None)
+        # check if we can retrieve a sample from every subset
+        next(iter(data_module.train_dataloader()))
+        next(iter(data_module.test_dataloader()))
+        next(iter(data_module.val_dataloader()))
+        # the test set should contain anomalous samples, which have been converted from normals
         assert data_module.test_data.has_anomalous
+
+    def test_masks_dir_omitted(self, make_data_module):
+        """Tests if the data module can be set up in classification mode when no masks are passed."""
+        data_module = make_data_module(dataset="folder", task="classification", mask_dir=None)
+        # check if we can retrieve a sample from every subset
+        next(iter(data_module.train_dataloader()))
+        next(iter(data_module.test_dataloader()))
+        next(iter(data_module.val_dataloader()))
