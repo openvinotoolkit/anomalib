@@ -13,7 +13,7 @@ from omegaconf import DictConfig, ListConfig
 
 from anomalib.config import get_configurable_parameters
 from anomalib.data import TaskType
-from anomalib.pre_processing import PreProcessor
+from anomalib.data.utils import InputNormalizationMethod, get_transforms
 
 from .base_inferencer import Inferencer
 
@@ -99,9 +99,16 @@ class OpenVINOInferencer(Inferencer):
         transform_config = (
             self.config.dataset.transform_config.eval if "transform_config" in self.config.dataset.keys() else None
         )
-        image_size = tuple(self.config.dataset.image_size)
-        pre_processor = PreProcessor(transform_config, image_size)
-        processed_image = pre_processor(image=image)["image"]
+
+        image_size = (self.config.dataset.image_size[0], self.config.dataset.image_size[1])
+        center_crop = self.config.dataset.get("center_crop")
+        if center_crop is not None:
+            center_crop = tuple(center_crop)
+        normalization = InputNormalizationMethod(self.config.dataset.normalization)
+        transform = get_transforms(
+            config=transform_config, image_size=image_size, center_crop=center_crop, normalization=normalization
+        )
+        processed_image = transform(image=image)["image"]
 
         if len(processed_image.shape) == 3:
             processed_image = np.expand_dims(processed_image, axis=0)

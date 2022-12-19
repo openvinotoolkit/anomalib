@@ -14,11 +14,11 @@ from torch import Tensor
 
 from anomalib.config import get_configurable_parameters
 from anomalib.data import TaskType
+from anomalib.data.utils import InputNormalizationMethod, get_transforms
 from anomalib.data.utils.boxes import masks_to_boxes
 from anomalib.deploy.export import get_model_metadata
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
-from anomalib.pre_processing import PreProcessor
 
 from .base_inferencer import Inferencer
 
@@ -61,7 +61,8 @@ class TorchInferencer(Inferencer):
 
         self.meta_data = self._load_meta_data(meta_data_path)
 
-    def _get_device(self, device: str) -> torch.device:
+    @staticmethod
+    def _get_device(device: str) -> torch.device:
         """Get the device to use for inference.
 
         Args:
@@ -122,9 +123,16 @@ class TorchInferencer(Inferencer):
         transform_config = (
             self.config.dataset.transform_config.eval if "transform_config" in self.config.dataset.keys() else None
         )
-        image_size = tuple(self.config.dataset.image_size)
-        pre_processor = PreProcessor(transform_config, image_size)
-        processed_image = pre_processor(image=image)["image"]
+
+        image_size = (self.config.dataset.image_size[0], self.config.dataset.image_size[1])
+        center_crop = self.config.dataset.get("center_crop")
+        if center_crop is not None:
+            center_crop = tuple(center_crop)
+        normalization = InputNormalizationMethod(self.config.dataset.normalization)
+        transform = get_transforms(
+            config=transform_config, image_size=image_size, center_crop=center_crop, normalization=normalization
+        )
+        processed_image = transform(image=image)["image"]
 
         if len(processed_image) == 3:
             processed_image = processed_image.unsqueeze(0)

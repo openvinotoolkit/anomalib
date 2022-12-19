@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- Make normalization and center cropping configurable through config (<https://github.com/openvinotoolkit/anomalib/pull/795>)
 - Switch to new [changelog format](https://keepachangelog.com/en/1.0.0/). (<https://github.com/openvinotoolkit/anomalib/pull/777>)
 - Rename feature to task (<https://github.com/openvinotoolkit/anomalib/pull/769>)
 - make device configurable in OpenVINO inference (<https://github.com/openvinotoolkit/anomalib/pull/755>)
@@ -27,6 +28,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Padim arguments improvements (<https://github.com/openvinotoolkit/anomalib/pull/664>)
 - 📊 Update DFM results (<https://github.com/openvinotoolkit/anomalib/pull/674>)
 - Optimize anomaly score calculation for PatchCore (<https://github.com/openvinotoolkit/anomalib/pull/633>)
+
+### Deprecated
+
+- Deprecated PreProcessor class (<https://github.com/openvinotoolkit/anomalib/pull/795>)
 
 ### Fixed
 

@@ -8,21 +8,21 @@ import pytest
 from anomalib.data import TaskType
 from anomalib.data.folder import FolderDataset
 from anomalib.data.synthetic import SyntheticAnomalyDataset
-from anomalib.pre_processing import PreProcessor
+from anomalib.data.utils import get_transforms
 from tests.helpers.dataset import get_dataset_path
 
 
 def get_folder_dataset():
     """Create Folder Dataset."""
     root = get_dataset_path(dataset="bottle")
-    pre_process = PreProcessor(image_size=(256, 256))
+    transform = get_transforms(image_size=(256, 256))
     dataset = FolderDataset(
         task="segmentation",
-        pre_process=pre_process,
+        transform=transform,
         root=root,
         normal_dir="good",
         abnormal_dir="broken_large",
-        mask_dir=os.path.join(root, "ground_truth/broken_large"),
+        mask_dir="ground_truth/broken_large",
         split="train",
     )
     dataset.setup()
@@ -46,9 +46,9 @@ def make_synthetic_dataset():
 def synthetic_dataset_from_samples():
     """Create synthetic anomaly dataset by passing a samples dataframe."""
     folder_dataset = get_folder_dataset()
-    pre_process = PreProcessor(image_size=(256, 256))
+    transform = get_transforms(image_size=(256, 256))
     synthetic_dataset = SyntheticAnomalyDataset(
-        task=folder_dataset.task, pre_process=pre_process, source_samples=folder_dataset.samples
+        task=folder_dataset.task, transform=transform, source_samples=folder_dataset.samples
     )
     return synthetic_dataset
 

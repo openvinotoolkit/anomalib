@@ -4,10 +4,12 @@ dataset:
   path: ./datasets/MVTec
   task: segmentation
   category: bottle
-  image_size: 256 # options: [256, 256, 448, 384] - for each supported backbone
   train_batch_size: 32
   eval_batch_size: 32
   num_workers: 8
+  image_size: 256 # dimensions to which images are resized (mandatory) options: [256, 256, 448, 384]
+  center_crop: null # dimensions to which images are center-cropped after resizing (optional)
+  normalization: imagenet # data distribution to which the images will be normalized: [none, imagenet]
   transform_config:
     train: null
     eval: null

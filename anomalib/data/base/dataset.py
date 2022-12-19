@@ -11,6 +11,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Dict, Sequence, Union
 
+import albumentations as A
 import cv2
 import numpy as np
 import pandas as pd
@@ -20,7 +21,6 @@ from torch.utils.data import Dataset
 
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import masks_to_boxes, read_image
-from anomalib.pre_processing import PreProcessor
 
 _EXPECTED_COLS_CLASSIFICATION = ["image_path", "split"]
 _EXPECTED_COLS_SEGMENTATION = _EXPECTED_COLS_CLASSIFICATION + ["mask_path"]
@@ -36,10 +36,10 @@ logger = logging.getLogger(__name__)
 class AnomalibDataset(Dataset, ABC):
     """Anomalib dataset."""
 
-    def __init__(self, task: TaskType, pre_process: PreProcessor):
+    def __init__(self, task: TaskType, transform: A.Compose):
         super().__init__()
         self.task = task
-        self.pre_process = pre_process
+        self.transform = transform
         self._samples: DataFrame = None
 
     def __len__(self) -> int:
@@ -116,7 +116,7 @@ class AnomalibDataset(Dataset, ABC):
         item = dict(image_path=image_path, label=label_index)
 
         if self.task == TaskType.CLASSIFICATION:
-            pre_processed = self.pre_process(image=image)
+            pre_processed = self.transform(image=image)
             item["image"] = pre_processed["image"]
         elif self.task in [TaskType.DETECTION, TaskType.SEGMENTATION]:
             # Only Anomalous (1) images have masks in anomaly datasets
@@ -126,7 +126,7 @@ class AnomalibDataset(Dataset, ABC):
             else:
                 mask = cv2.imread(mask_path, flags=0) / 255.0
 
-            pre_processed = self.pre_process(image=image, mask=mask)
+            pre_processed = self.transform(image=image, mask=mask)
 
             item["image"] = pre_processed["image"]
             item["mask_path"] = mask_path

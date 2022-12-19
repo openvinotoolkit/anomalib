@@ -27,12 +27,13 @@ from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
     DownloadProgressBar,
+    InputNormalizationMethod,
     Split,
     TestSplitMode,
     ValSplitMode,
+    get_transforms,
     hash_check,
 )
-from anomalib.pre_processing import PreProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -113,57 +114,56 @@ def make_btech_dataset(path: Path, split: Optional[Union[Split, str]] = None) ->
 
 
 class BTechDataset(AnomalibDataset):
-    """BTech PyTorch Dataset."""
+    """Btech Dataset class.
+
+    Args:
+        root: Path to the BTech dataset
+        category: Name of the BTech category.
+        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
+        split: 'train', 'val' or 'test'
+        task: ``classification``, ``detection`` or ``segmentation``
+        create_validation_set: Create a validation subset in addition to the train and test subsets
+
+    Examples:
+        >>> from anomalib.data.btech import BTechDataset
+        >>> from anomalib.pre_processing import get_transforms
+        >>> transform = get_transforms(image_size=256)
+        >>> dataset = BTechDataset(
+        ...     root='./datasets/BTech',
+        ...     category='leather',
+        ...     transform=transform,
+        ...     task="classification",
+        ...     is_train=True,
+        ... )
+        >>> dataset[0].keys()
+        dict_keys(['image'])
+
+        >>> dataset.split = "test"
+        >>> dataset[0].keys()
+        dict_keys(['image', 'image_path', 'label'])
+
+        >>> dataset.task = "segmentation"
+        >>> dataset.split = "train"
+        >>> dataset[0].keys()
+        dict_keys(['image'])
+
+        >>> dataset.split = "test"
+        >>> dataset[0].keys()
+        dict_keys(['image_path', 'label', 'mask_path', 'image', 'mask'])
+
+        >>> dataset[0]["image"].shape, dataset[0]["mask"].shape
+        (torch.Size([3, 256, 256]), torch.Size([256, 256]))
+    """
 
     def __init__(
         self,
         root: Union[Path, str],
         category: str,
-        pre_process: PreProcessor,
+        transform: A.Compose,
         split: Optional[Union[Split, str]] = None,
         task: TaskType = TaskType.SEGMENTATION,
     ) -> None:
-        """Btech Dataset class.
-
-        Args:
-            root: Path to the BTech dataset
-            category: Name of the BTech category.
-            pre_process: List of pre_processing object containing albumentation compose.
-            split: 'train', 'val' or 'test'
-            task: ``classification``, ``detection`` or ``segmentation``
-            create_validation_set: Create a validation subset in addition to the train and test subsets
-
-        Examples:
-            >>> from anomalib.data.btech import BTechDataset
-            >>> from anomalib.data.transforms import PreProcessor
-            >>> pre_process = PreProcessor(image_size=256)
-            >>> dataset = BTechDataset(
-            ...     root='./datasets/BTech',
-            ...     category='leather',
-            ...     pre_process=pre_process,
-            ...     task="classification",
-            ...     is_train=True,
-            ... )
-            >>> dataset[0].keys()
-            dict_keys(['image'])
-
-            >>> dataset.split = "test"
-            >>> dataset[0].keys()
-            dict_keys(['image', 'image_path', 'label'])
-
-            >>> dataset.task = "segmentation"
-            >>> dataset.split = "train"
-            >>> dataset[0].keys()
-            dict_keys(['image'])
-
-            >>> dataset.split = "test"
-            >>> dataset[0].keys()
-            dict_keys(['image_path', 'label', 'mask_path', 'image', 'mask'])
-
-            >>> dataset[0]["image"].shape, dataset[0]["mask"].shape
-            (torch.Size([3, 256, 256]), torch.Size([256, 256]))
-        """
-        super().__init__(task, pre_process)
+        super().__init__(task, transform)
 
         self.root_category = Path(root) / category
         self.split = split
@@ -174,13 +174,63 @@ class BTechDataset(AnomalibDataset):
 
 @DATAMODULE_REGISTRY
 class BTech(AnomalibDataModule):
-    """BTechDataModule Lightning Data Module."""
+    """BTech Lightning Data Module.
+
+    Args:
+        root: Path to the BTech dataset
+        category: Name of the BTech category.
+        image_size: Variable to which image is resized.
+        center_crop (Optional[Union[int, Tuple[int, int]]], optional): When provided, the images will be center-cropped
+            to the provided dimensions.
+        normalize (bool): When True, the images will be normalized to the ImageNet statistics.
+        train_batch_size: Training batch size.
+        test_batch_size: Testing batch size.
+        num_workers: Number of workers.
+        task: ``classification``, ``detection`` or ``segmentation``
+        transform_config_train: Config for pre-processing during training.
+        transform_config_val: Config for pre-processing during validation.
+        create_validation_set: Create a validation subset in addition to the train and test subsets
+        seed (Optional[int], optional): Seed used during random subset splitting.
+        test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
+        test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
+        val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
+        val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
+        seed (Optional[int], optional): Seed which may be set to a fixed value for reproducibility.
+
+    Examples:
+        >>> from anomalib.data import BTech
+        >>> datamodule = BTech(
+        ...     root="./datasets/BTech",
+        ...     category="leather",
+        ...     image_size=256,
+        ...     train_batch_size=32,
+        ...     test_batch_size=32,
+        ...     num_workers=8,
+        ...     transform_config_train=None,
+        ...     transform_config_val=None,
+        ... )
+        >>> datamodule.setup()
+
+        >>> i, data = next(enumerate(datamodule.train_dataloader()))
+        >>> data.keys()
+        dict_keys(['image'])
+        >>> data["image"].shape
+        torch.Size([32, 3, 256, 256])
+
+        >>> i, data = next(enumerate(datamodule.val_dataloader()))
+        >>> data.keys()
+        dict_keys(['image_path', 'label', 'mask_path', 'image', 'mask'])
+        >>> data["image"].shape, data["mask"].shape
+        (torch.Size([32, 3, 256, 256]), torch.Size([32, 256, 256]))
+    """
 
     def __init__(
         self,
         root: str,
         category: str,
         image_size: Optional[Union[int, Tuple[int, int]]] = None,
+        center_crop: Optional[Union[int, Tuple[int, int]]] = None,
+        normalization: Union[InputNormalizationMethod, str] = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
@@ -193,52 +243,6 @@ class BTech(AnomalibDataModule):
         val_split_ratio: float = 0.5,
         seed: Optional[int] = None,
     ) -> None:
-        """Instantiate BTech Lightning Data Module.
-
-        Args:
-            root: Path to the BTech dataset
-            category: Name of the BTech category.
-            image_size: Variable to which image is resized.
-            train_batch_size: Training batch size.
-            test_batch_size: Testing batch size.
-            num_workers: Number of workers.
-            task: ``classification``, ``detection`` or ``segmentation``
-            transform_config_train: Config for pre-processing during training.
-            transform_config_val: Config for pre-processing during validation.
-            create_validation_set: Create a validation subset in addition to the train and test subsets
-            seed (Optional[int], optional): Seed used during random subset splitting.
-            test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
-            test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
-            val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
-            val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
-            seed (Optional[int], optional): Seed which may be set to a fixed value for reproducibility.
-
-        Examples:
-            >>> from anomalib.data import BTech
-            >>> datamodule = BTech(
-            ...     root="./datasets/BTech",
-            ...     category="leather",
-            ...     image_size=256,
-            ...     train_batch_size=32,
-            ...     test_batch_size=32,
-            ...     num_workers=8,
-            ...     transform_config_train=None,
-            ...     transform_config_val=None,
-            ... )
-            >>> datamodule.setup()
-
-            >>> i, data = next(enumerate(datamodule.train_dataloader()))
-            >>> data.keys()
-            dict_keys(['image'])
-            >>> data["image"].shape
-            torch.Size([32, 3, 256, 256])
-
-            >>> i, data = next(enumerate(datamodule.val_dataloader()))
-            >>> data.keys()
-            dict_keys(['image_path', 'label', 'mask_path', 'image', 'mask'])
-            >>> data["image"].shape, data["mask"].shape
-            (torch.Size([32, 3, 256, 256]), torch.Size([32, 256, 256]))
-        """
         super().__init__(
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
@@ -253,14 +257,24 @@ class BTech(AnomalibDataModule):
         self.root = Path(root)
         self.category = Path(category)
 
-        pre_process_train = PreProcessor(config=transform_config_train, image_size=image_size)
-        pre_process_eval = PreProcessor(config=transform_config_eval, image_size=image_size)
+        transform_train = get_transforms(
+            config=transform_config_train,
+            image_size=image_size,
+            center_crop=center_crop,
+            normalization=InputNormalizationMethod(normalization),
+        )
+        transform_eval = get_transforms(
+            config=transform_config_eval,
+            image_size=image_size,
+            center_crop=center_crop,
+            normalization=InputNormalizationMethod(normalization),
+        )
 
         self.train_data = BTechDataset(
-            task=task, pre_process=pre_process_train, split=Split.TRAIN, root=root, category=category
+            task=task, transform=transform_train, split=Split.TRAIN, root=root, category=category
         )
         self.test_data = BTechDataset(
-            task=task, pre_process=pre_process_eval, split=Split.TEST, root=root, category=category
+            task=task, transform=transform_eval, split=Split.TEST, root=root, category=category
         )
 
     def prepare_data(self) -> None:

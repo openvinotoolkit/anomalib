@@ -23,7 +23,6 @@ from pandas import DataFrame, Series
 from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import Augmenter, Split, read_image
-from anomalib.pre_processing import PreProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -106,12 +105,12 @@ class SyntheticAnomalyDataset(AnomalibDataset):
 
     Args:
         task (str): Task type, either "classification" or "segmentation".
-        pre_process (PreProcessor): Preprocessor object used to transform the input images.
+        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         source_samples (DataFrame): Normal samples to which the anomalous augmentations will be applied.
     """
 
-    def __init__(self, task: TaskType, pre_process: PreProcessor, source_samples: DataFrame):
-        super().__init__(task, pre_process)
+    def __init__(self, task: TaskType, transform: A.Compose, source_samples: DataFrame):
+        super().__init__(task, transform)
 
         self.source_samples = source_samples
 
@@ -133,7 +132,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
     @classmethod
     def from_dataset(cls, dataset):
         """Create a synthetic anomaly dataset from an existing dataset of normal images."""
-        return cls(task=dataset.task, pre_process=dataset.pre_process, source_samples=dataset.samples)
+        return cls(task=dataset.task, transform=dataset.transform, source_samples=dataset.samples)
 
     def __copy__(self) -> "SyntheticAnomalyDataset":
         """Returns a shallow copy of the dataset object and prevents cleanup when original object is deleted."""
