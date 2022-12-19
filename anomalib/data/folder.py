@@ -141,7 +141,7 @@ def make_folder_dataset(
         filenames += filename
         labels += label
 
-    samples = DataFrame({"image_path": filenames, "label": labels})
+    samples = DataFrame({"image_path": filenames, "label": labels, "mask_path": ""})
 
     # Create label index for normal (0) and abnormal (1) images.
     samples.loc[(samples.label == "normal") | (samples.label == "normal_test"), "label_index"] = 0
@@ -151,7 +151,6 @@ def make_folder_dataset(
     # If a path to mask is provided, add it to the sample dataframe.
     if mask_dir is not None:
         mask_dir = _check_and_convert_path(mask_dir)
-        samples["mask_path"] = ""
         for index, row in samples.iterrows():
             if row.label_index == 1:
                 rel_image_path = row.image_path.relative_to(abnormal_dir)
