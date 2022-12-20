@@ -16,6 +16,7 @@ from pytorch_lightning import Trainer, seed_everything
 
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
+from anomalib.data.utils import TestSplitMode
 from anomalib.models import get_model
 from anomalib.utils.callbacks import LoadModelCallback, get_callbacks
 from anomalib.utils.loggers import configure_logger, get_experiment_logger
@@ -63,11 +64,11 @@ def train():
     load_model_callback = LoadModelCallback(weights_path=trainer.checkpoint_callback.best_model_path)
     trainer.callbacks.insert(0, load_model_callback)
 
-    if len(datamodule.test_data) != 0:
+    if config.dataset.test_split_mode == TestSplitMode.NONE:
+        logger.info("No test set provided. Skipping test stage.")
+    else:
         logger.info("Testing the model.")
         trainer.test(model=model, datamodule=datamodule)
-    else:
-        logger.info("No anomalous images found in dataset. Skipping test stage.")
 
 
 if __name__ == "__main__":

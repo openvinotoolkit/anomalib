@@ -120,8 +120,9 @@ class AnomalibDataModule(LightningDataModule, ABC):
         if self.test_data.has_normal:
             # split the test data into normal and anomalous so these can be processed separately
             normal_test_data, self.test_data = split_by_label(self.test_data)
-        else:
-            # when the user did not provide any normal images for testing, we sample some from the training set
+        elif self.test_split_mode != TestSplitMode.NONE:
+            # when the user did not provide any normal images for testing, we sample some from the training set,
+            # except when the user explicitly requested no test splitting.
             logger.info(
                 "No normal test images found. Sampling from training set using a split ratio of %d",
                 self.test_split_ratio,
@@ -132,7 +133,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
             self.test_data += normal_test_data
         elif self.test_split_mode == TestSplitMode.SYNTHETIC:
             self.test_data = SyntheticAnomalyDataset.from_dataset(normal_test_data)
-        else:
+        elif self.test_split_mode != TestSplitMode.NONE:
             raise ValueError(f"Unsupported Test Split Mode: {self.test_split_mode}")
 
     def _create_val_split(self):
