@@ -130,6 +130,7 @@ class Ganomaly(AnomalyModule):
             pred_fake, _ = self.model.discriminator(fake)
             loss = self.generator_loss(latent_i, latent_o, padded, fake, pred_real, pred_fake)
 
+        self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
     def on_validation_start(self) -> None:
