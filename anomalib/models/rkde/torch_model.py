@@ -182,7 +182,7 @@ class RkdeModel(nn.Module):
 
         return rois, probabilities
 
-    def forward(self, input: Tensor) -> Tensor:
+    def forward(self, batch: Tensor) -> Tensor:
         """Prediction by normality model.
 
         Args:
@@ -194,17 +194,17 @@ class RkdeModel(nn.Module):
         self.region_extractor.eval()
         self.feature_extractor.eval()
 
-        rois = self.region_extractor(input)
+        rois = self.region_extractor(batch)
 
         if rois.shape[0] == 0:
-            features = torch.empty((0, 4096)).to(input.device)
+            features = torch.empty((0, 4096)).to(batch.device)
         else:
-            features = self.feature_extractor(input, rois.clone())
+            features = self.feature_extractor(batch, rois.clone())
 
         if self.training:
             return features
 
-        batch_size = input.shape[0]
+        batch_size = batch.shape[0]
         rois, scores = self.predict(features, rois)
         indices = rois[:, 0]
         rois = [rois[indices == i, 1:] for i in range(batch_size)]
