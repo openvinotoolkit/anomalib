@@ -7,6 +7,7 @@ dataset:
   clip_length_in_frames: 1
   frames_between_clips: 10
   image_size: 256
+  normalization: imagenet
   train_batch_size: 32
   eval_batch_size: 32
   num_workers: 8
@@ -26,24 +27,26 @@ dataset:
 model:
   name: rkde
   region_extractor_stage: rcnn
+  box_likelihood: 0.8
   min_box_size: 25
   iou_threshold: 0.3
   n_pca_components: 16
   max_training_points: 40000
-  confidence_threshold: 0.5
+  confidence_threshold: 0.5 # anomaly score confidence threshold
   pre_processing: scale
   n_components: 16
   threshold_steepness: 0.05
   threshold_offset: 12
-  normalization_method: min_max # options: [null, min_max, cdf]
+  normalization_method: none # options: [null, min_max, cdf]
 
 metrics:
   image:
     - F1Score
     - AUROC
   threshold:
-    method: adaptive #options: [adaptive, manual]
-    manual_image: null
+    method: manual #options: [adaptive, manual]
+    manual_image: -1000
+    manual_pixel: -1000
 
 visualization:
   show_images: False # show images on the screen
