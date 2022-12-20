@@ -56,10 +56,12 @@ def test_output_shapes() -> None:
     torch_model = RkdeModel(region_extractor_stage=stage).eval().cuda()
     # anomalib_rois, anomalib_features = torch_model.get_rois_and_features(data["image"].cuda())
     anomalib_rois = torch_model.region_extractor(data["image"].cuda())
-    anomalib_features = torch_model.feature_extractor(data["image"].cuda(), anomalib_rois)
 
     assert nous_boxes[0].shape[0] == anomalib_rois.shape[0], "Number of boxes should be the same."
-    assert np.allclose(nous_boxes, anomalib_rois[0].cpu().numpy(), atol=1e-02), "Boxes should be the same."
+    assert np.allclose(nous_boxes[0], anomalib_rois[:, 1:].cpu().numpy(), atol=1e-02), "Boxes should be the same."
+
+    anomalib_features = torch_model.feature_extractor(data["image"].cuda(), anomalib_rois)
+
     assert nous_features.shape == anomalib_features.shape, "Feature shapes do not match."
     assert np.allclose(nous_features, anomalib_features.cpu().numpy(), atol=1e-02), "Features do not match."
 
