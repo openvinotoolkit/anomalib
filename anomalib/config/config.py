@@ -178,10 +178,10 @@ def update_datasets_config(config: Union[DictConfig, ListConfig]) -> Union[DictC
         warn(
             DeprecationWarning(
                 "The 'split_ratio' parameter is deprecated and will be removed in a future release. Please use "
-                "'normal_split_ratio' instead."
+                "'test_split_ratio' instead."
             )
         )
-        config.dataset.normal_split_ratio = config.dataset.split_ratio
+        config.dataset.test_split_ratio = config.dataset.split_ratio
 
     if config.dataset.get("test_split_mode") == TestSplitMode.NONE and config.dataset.get("val_split_mode") in [
         ValSplitMode.SAME_AS_TEST,
