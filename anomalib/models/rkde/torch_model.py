@@ -34,7 +34,6 @@ class RkdeModel(nn.Module):
         self,
         region_extractor_stage: str = "rcnn",
         min_box_size: int = 25,
-        confidence_threshold: float = 0.3,
         iou_threshold: float = 0.3,
         box_likelihood: float = 0.8,
         n_pca_components: int = 16,
@@ -44,7 +43,6 @@ class RkdeModel(nn.Module):
         threshold_offset: float = 12.0,
     ):
         super().__init__()
-        self.confidence_threshold = confidence_threshold
         self.n_pca_components = n_pca_components
         self.pre_processing = pre_processing
         self.filter_count = filter_count
@@ -180,9 +178,9 @@ class RkdeModel(nn.Module):
         # batch_rois = [rois[keep] for rois, keep in zip(batch_rois, batch_keep)]
         # batch_scores = [scores[keep] for scores, keep in zip(batch_scores, batch_keep)]
 
-        keep = probabilities > self.confidence_threshold
-        rois = rois[keep]
-        probabilities = probabilities[keep]
+        # keep = probabilities > self.confidence_threshold
+        # rois = rois[keep]
+        # probabilities = probabilities[keep]
 
         # TODO: Here we need to sort out how to handle box detections.
 
