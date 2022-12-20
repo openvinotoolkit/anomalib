@@ -4,10 +4,10 @@ dataset:
   path: ./datasets/MVTec
   category: bottle
   task: segmentation
-  image_size: 256
-  train_batch_size: 32
-  test_batch_size: 32
-  inference_batch_size: 32
+  image_size: 768 # 768 is the dimensions used in the official implementation
+  train_batch_size: 16
+  test_batch_size: 16
+  inference_batch_size: 16
   num_workers: 8
   transform_config:
     train: null
@@ -22,20 +22,21 @@ dataset:
     random_tile_count: 16
 
 model:
-  name: stfpm
-  backbone: resnet18
-  layers:
-    - layer1
-    - layer2
-    - layer3
-  lr: 0.4
-  momentum: 0.9
-  weight_decay: 0.0001
+  name: csflow
+  clamp: 3
+  cross_conv_hidden_channels: 1024
   early_stopping:
     patience: 3
     metric: pixel_AUROC
     mode: max
+  eps: 1e-04 # Adam epsilon
+  layers:
+    - 6.8
+  lr: 2e-4
+  n_coupling_blocks: 4
+  n_scales: 3
   normalization_method: min_max # options: [null, min_max, cdf]
+  weight_decay: 1e-5 # Adam weight decay
 
 metrics:
   image:
@@ -85,7 +86,7 @@ trainer:
   enable_progress_bar: true
   fast_dev_run: false
   gpus: null # Set automatically
-  gradient_clip_val: 0
+  gradient_clip_val: 1 # Grad clip value set based on the official implementation
   ipus: null
   limit_predict_batches: 1.0
   limit_test_batches: 1.0
@@ -93,7 +94,7 @@ trainer:
   limit_val_batches: 1.0
   log_every_n_steps: 50
   log_gpu_memory: null
-  max_epochs: 100
+  max_epochs: 240
   max_steps: -1
   max_time: null
   min_epochs: null

@@ -13,6 +13,7 @@ from torch import load
 
 from anomalib.models.cflow import Cflow
 from anomalib.models.components import AnomalyModule
+from anomalib.models.csflow import Csflow
 from anomalib.models.dfkde import Dfkde
 from anomalib.models.dfm import Dfm
 from anomalib.models.draem import Draem
@@ -25,6 +26,7 @@ from anomalib.models.stfpm import Stfpm
 
 __all__ = [
     "Cflow",
+    "Csflow",
     "Dfkde",
     "Dfm",
     "Draem",
@@ -73,6 +75,7 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
 
     model_list: List[str] = [
         "cflow",
+        "csflow",
         "dfkde",
         "dfm",
         "draem",

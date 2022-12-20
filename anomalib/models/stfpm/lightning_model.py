@@ -56,7 +56,7 @@ class Stfpm(AnomalyModule):
           _: Index of the batch.
 
         Returns:
-          Hierarchical feature map
+          Loss value
         """
         self.model.teacher_model.eval()
         teacher_features, student_features = self.model.forward(batch["image"])
@@ -116,7 +116,7 @@ class StfpmLightning(Stfpm):
         return [early_stopping]
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configures optimizers for each decoder.
+        """Configures optimizers.
 
         Note:
             This method is used for the existing CLI.
@@ -125,7 +125,7 @@ class StfpmLightning(Stfpm):
                 config.yaml file or from CLI.
 
         Returns:
-            Optimizer: Adam optimizer for each decoder
+            Optimizer: SGD optimizer
         """
         return optim.SGD(
             params=self.model.student_model.parameters(),

@@ -31,7 +31,7 @@ repos:
     hooks:
       - id: flake8
         args: ["--max-line-length=120", "--ignore=E203,W503"]
-        exclude: "tests|anomalib/models/components/freia"
+        exclude: "tests"
 
   # python linting
   - repo: https://github.com/PyCQA/pylint
@@ -42,7 +42,7 @@ repos:
         entry: pylint --score=no
         language: system
         types: [python]
-        exclude: "tests|docs|anomalib/models/components/freia"
+        exclude: "tests|docs"
 
   # python static type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
@@ -50,7 +50,7 @@ repos:
     hooks:
       - id: mypy
         additional_dependencies: [types-PyYAML]
-        exclude: "tests|anomalib/models/components/freia"
+        exclude: "tests"
 
   - repo: https://github.com/PyCQA/pydocstyle
     rev: 6.1.1
@@ -61,7 +61,7 @@ repos:
         entry: pydocstyle
         language: python
         types: [python]
-        exclude: "tests|docs|anomalib/models/components/freia"
+        exclude: "tests|docs"
 
   # notebooks.
   - repo: https://github.com/nbQA-dev/nbQA
