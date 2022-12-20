@@ -34,8 +34,6 @@ model:
   max_training_points: 40000
   pre_processing: scale
   n_components: 16
-  # threshold_steepness: 0.05
-  # threshold_offset: 12
   normalization_method: none # options: [null, min_max, cdf]
 
 metrics:
