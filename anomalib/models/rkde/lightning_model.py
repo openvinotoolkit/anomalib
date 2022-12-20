@@ -45,8 +45,6 @@ class Rkde(AnomalyModule):
         n_pca_components: int = 16,
         max_training_points: int = 40000,
         pre_processing: str = "scale",
-        threshold_steepness: float = 0.05,
-        threshold_offset: int = 12,
     ):
         super().__init__()
 
@@ -58,8 +56,6 @@ class Rkde(AnomalyModule):
             n_pca_components=n_pca_components,
             pre_processing=pre_processing,
             filter_count=max_training_points,
-            threshold_steepness=threshold_steepness,
-            threshold_offset=threshold_offset,
         )
         self.embeddings: List[Tensor] = []
 
@@ -119,8 +115,6 @@ class RkdeLightning(Rkde):
             max_training_points=hparams.model.max_training_points,
             pre_processing=hparams.model.pre_processing,
             n_pca_components=hparams.model.n_pca_components,
-            threshold_steepness=hparams.model.threshold_steepness,
-            threshold_offset=hparams.model.threshold_offset,
         )
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(hparams)

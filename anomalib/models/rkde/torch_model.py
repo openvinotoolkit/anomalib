@@ -39,15 +39,11 @@ class RkdeModel(nn.Module):
         n_pca_components: int = 16,
         pre_processing: str = "scale",
         filter_count: int = 40000,
-        threshold_steepness: float = 0.05,
-        threshold_offset: float = 12.0,
     ):
         super().__init__()
         self.n_pca_components = n_pca_components
         self.pre_processing = pre_processing
         self.filter_count = filter_count
-        self.threshold_steepness = threshold_steepness
-        self.threshold_offset = threshold_offset
 
         self.region_extractor = RegionExtractor(
             stage=region_extractor_stage, min_size=min_box_size, iou_threshold=iou_threshold, likelihood=box_likelihood
@@ -156,7 +152,7 @@ class RkdeModel(nn.Module):
         Returns:
           probability that image with {density} is anomalous
         """
-        return 1 / (1 + torch.exp(self.threshold_steepness * (scores - self.threshold_offset)))
+        return 1 / (1 + torch.exp(0.05 * (scores - 12)))
 
     def predict(self, features: Tensor, rois: List[Tensor]) -> Tensor:
         """Predicts the probability that the features belong to the anomalous class.
