@@ -36,6 +36,7 @@ class RkdeModel(nn.Module):
         min_box_size: int = 25,
         confidence_threshold: float = 0.3,
         iou_threshold: float = 0.3,
+        box_likelihood: float = 0.8,
         n_pca_components: int = 16,
         pre_processing: str = "scale",
         filter_count: int = 40000,
@@ -51,7 +52,7 @@ class RkdeModel(nn.Module):
         self.threshold_offset = threshold_offset
 
         self.region_extractor = RegionExtractor(
-            stage=region_extractor_stage, min_size=min_box_size, iou_threshold=iou_threshold
+            stage=region_extractor_stage, min_size=min_box_size, iou_threshold=iou_threshold, likelihood=box_likelihood
         ).eval()
 
         self.feature_extractor = FeatureExtractor().eval()
@@ -157,7 +158,6 @@ class RkdeModel(nn.Module):
         Returns:
           probability that image with {density} is anomalous
         """
-
         return 1 / (1 + torch.exp(self.threshold_steepness * (scores - self.threshold_offset)))
 
     def predict(self, features: Tensor, rois: List[Tensor]) -> Tensor:
@@ -210,9 +210,9 @@ class RkdeModel(nn.Module):
         if self.training:
             return features
 
+        batch_size = input.shape[0]
         rois, scores = self.predict(features, rois)
         indices = rois[:, 0]
-        unique = torch.unique(indices)
-        rois = [rois[indices == i, 1:] for i in unique]
-        scores = [scores[indices == i] for i in unique]
+        rois = [rois[indices == i, 1:] for i in range(batch_size)]
+        scores = [scores[indices == i] for i in range(batch_size)]
         return rois, scores
