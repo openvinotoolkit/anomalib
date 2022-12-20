@@ -34,8 +34,15 @@ from pandas import DataFrame
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.task_type import TaskType
-from anomalib.data.utils import DownloadProgressBar, Split, ValSplitMode, hash_check
-from anomalib.pre_processing import PreProcessor
+from anomalib.data.utils import (
+    DownloadProgressBar,
+    InputNormalizationMethod,
+    Split,
+    TestSplitMode,
+    ValSplitMode,
+    get_transforms,
+    hash_check,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -125,7 +132,7 @@ class MVTecDataset(AnomalibDataset):
 
     Args:
         task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
-        pre_process (PreProcessor): Pre-processor object
+        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (Optional[Union[Split, str]]): Split of the dataset, usually Split.TRAIN or Split.TEST
         root (str): Path to the root of the dataset
         category (str): Sub-category of the dataset, e.g. 'bottle'
@@ -134,12 +141,12 @@ class MVTecDataset(AnomalibDataset):
     def __init__(
         self,
         task: TaskType,
-        pre_process: PreProcessor,
+        transform: A.Compose,
         root: str,
         category: str,
         split: Optional[Union[Split, str]] = None,
     ) -> None:
-        super().__init__(task=task, pre_process=pre_process)
+        super().__init__(task=task, transform=transform)
 
         self.root_category = Path(root) / Path(category)
         self.split = split
@@ -149,19 +156,48 @@ class MVTecDataset(AnomalibDataset):
 
 
 class MVTec(AnomalibDataModule):
-    """MVTec Datamodule."""
+    """MVTec Datamodule.
+
+    Args:
+        root (str): Path to the root of the dataset
+        category (str): Category of the MVTec dataset (e.g. "bottle" or "cable").
+        image_size (Optional[Union[int, Tuple[int, int]]], optional): Size of the input image.
+            Defaults to None.
+        center_crop (Optional[Union[int, Tuple[int, int]]], optional): When provided, the images will be center-cropped
+            to the provided dimensions.
+        normalize (bool): When True, the images will be normalized to the ImageNet statistics.
+        train_batch_size (int, optional): Training batch size. Defaults to 32.
+        eval_batch_size (int, optional): Test batch size. Defaults to 32.
+        num_workers (int, optional): Number of workers. Defaults to 8.
+        task TaskType): Task type, 'classification', 'detection' or 'segmentation'
+        transform_config_train (Optional[Union[str, A.Compose]], optional): Config for pre-processing
+            during training.
+            Defaults to None.
+        transform_config_val (Optional[Union[str, A.Compose]], optional): Config for pre-processing
+            during validation.
+            Defaults to None.
+        test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
+        test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
+        val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
+        val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
+        seed (Optional[int], optional): Seed which may be set to a fixed value for reproducibility.
+    """
 
     def __init__(
         self,
         root: str,
         category: str,
         image_size: Optional[Union[int, Tuple[int, int]]] = None,
+        center_crop: Optional[Union[int, Tuple[int, int]]] = None,
+        normalization: Union[InputNormalizationMethod, str] = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
         task: TaskType = TaskType.SEGMENTATION,
         transform_config_train: Optional[Union[str, A.Compose]] = None,
         transform_config_eval: Optional[Union[str, A.Compose]] = None,
+        test_split_mode: TestSplitMode = TestSplitMode.FROM_DIR,
+        test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
         val_split_ratio: float = 0.5,
         seed: Optional[int] = None,
@@ -170,6 +206,8 @@ class MVTec(AnomalibDataModule):
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
             num_workers=num_workers,
+            test_split_mode=test_split_mode,
+            test_split_ratio=test_split_ratio,
             val_split_mode=val_split_mode,
             val_split_ratio=val_split_ratio,
             seed=seed,
@@ -178,15 +216,24 @@ class MVTec(AnomalibDataModule):
         self.root = Path(root)
         self.category = Path(category)
 
-        # TODO: Get rid of PreProcessor by passing transform directly
-        pre_process_train = PreProcessor(config=transform_config_train, image_size=image_size)
-        pre_process_eval = PreProcessor(config=transform_config_eval, image_size=image_size)
+        transform_train = get_transforms(
+            config=transform_config_train,
+            image_size=image_size,
+            center_crop=center_crop,
+            normalization=InputNormalizationMethod(normalization),
+        )
+        transform_eval = get_transforms(
+            config=transform_config_eval,
+            image_size=image_size,
+            center_crop=center_crop,
+            normalization=InputNormalizationMethod(normalization),
+        )
 
         self.train_data = MVTecDataset(
-            task=task, pre_process=pre_process_train, split=Split.TRAIN, root=root, category=category
+            task=task, transform=transform_train, split=Split.TRAIN, root=root, category=category
         )
         self.test_data = MVTecDataset(
-            task=task, pre_process=pre_process_eval, split=Split.TEST, root=root, category=category
+            task=task, transform=transform_eval, split=Split.TEST, root=root, category=category
         )
 
     def prepare_data(self) -> None:

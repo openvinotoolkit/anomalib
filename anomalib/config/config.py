@@ -32,11 +32,27 @@ def update_input_size_config(config: Union[DictConfig, ListConfig]) -> Union[Dic
     Returns:
         Union[DictConfig, ListConfig]: Configurable parameters with updated values
     """
-    # handle image size
-    if isinstance(config.dataset.image_size, int):
-        config.dataset.image_size = (config.dataset.image_size,) * 2
+    # Image size: Ensure value is in the form [height, width]
+    image_size = config.dataset.get("image_size")
+    if isinstance(image_size, int):
+        config.dataset.image_size = (image_size,) * 2
+    elif isinstance(image_size, ListConfig):
+        assert len(image_size) == 2, "image_size must be a single integer or tuple of length 2 for width and height."
+    else:
+        raise ValueError(f"image_size must be either int or ListConfig, got {type(image_size)}")
 
-    config.model.input_size = config.dataset.image_size
+    # Center crop: Ensure value is in the form [height, width], and update input_size
+    center_crop = config.dataset.get("center_crop")
+    if center_crop is None:
+        config.model.input_size = config.dataset.image_size
+    elif isinstance(center_crop, int):
+        config.dataset.center_crop = (center_crop,) * 2
+        config.model.input_size = config.dataset.center_crop
+    elif isinstance(center_crop, ListConfig):
+        assert len(center_crop) == 2, "center_crop must be a single integer or tuple of length 2 for width and height."
+        config.model.input_size = center_crop
+    else:
+        raise ValueError(f"center_crop must be either int or ListConfig, got {type(center_crop)}")
 
     if "tiling" in config.dataset.keys() and config.dataset.tiling.apply:
         if isinstance(config.dataset.tiling.tile_size, int):
@@ -200,10 +216,32 @@ def get_configurable_parameters(
     # keep track of the original config file because it will be modified
     config_original: DictConfig = config.copy()
 
+    # if the seed value is 0, notify a user that the behavior of the seed value zero has been changed.
+    if config.project.get("seed") == 0:
+        warn(
+            "The seed value is now fixed to 0. "
+            "Up to v0.3.7, the seed was not fixed when the seed value was set to 0. "
+            "If you want to use the random seed, please select `None` for the seed value "
+            "(`null` in the YAML file) or remove the `seed` key from the YAML file."
+        )
+
     config = update_datasets_config(config)
+    config = update_input_size_config(config)
 
     # Project Configs
     project_path = Path(config.project.path) / config.model.name / config.dataset.name
+
+    if config.dataset.format == "folder":
+        if "mask" in config.dataset:
+            warn(
+                DeprecationWarning(
+                    "mask will be deprecated in favor of mask_dir in config.dataset in a future release."
+                )
+            )
+            config.dataset.mask_dir = config.dataset.mask
+        if "path" in config.dataset:
+            warn(DeprecationWarning("path will be deprecated in favor of root in config.dataset in a future release."))
+            config.dataset.root = config.dataset.path
 
     # add category subfolder if needed
     if config.dataset.format.lower() in ("btech", "mvtec"):

@@ -37,7 +37,7 @@ def make_avenue_data_module(task="classification", batch_size=1, val_split_mode=
     return data_module
 
 
-def make_mvtec_data_module(task="classification", batch_size=1, val_split_mode="from_test"):
+def make_mvtec_data_module(task="classification", batch_size=1, test_split_mode="from_dir", val_split_mode="from_test"):
     data_module = MVTec(
         root=get_dataset_path(dataset="MVTec"),
         category="leather",
@@ -46,6 +46,7 @@ def make_mvtec_data_module(task="classification", batch_size=1, val_split_mode="
         eval_batch_size=batch_size,
         num_workers=0,
         task=task,
+        test_split_mode=test_split_mode,
         val_split_mode=val_split_mode,
     )
     data_module.prepare_data()
@@ -53,7 +54,7 @@ def make_mvtec_data_module(task="classification", batch_size=1, val_split_mode="
     return data_module
 
 
-def make_btech_data_module(task="classification", batch_size=1, val_split_mode="from_test"):
+def make_btech_data_module(task="classification", batch_size=1, test_split_mode="from_dir", val_split_mode="from_test"):
     """Create BTech Data Module."""
     data_module = BTech(
         root=get_dataset_path(dataset="BTech"),
@@ -63,6 +64,7 @@ def make_btech_data_module(task="classification", batch_size=1, val_split_mode="
         eval_batch_size=batch_size,
         num_workers=0,
         task=task,
+        test_split_mode=test_split_mode,
         val_split_mode=val_split_mode,
     )
     data_module.prepare_data()
@@ -70,20 +72,31 @@ def make_btech_data_module(task="classification", batch_size=1, val_split_mode="
     return data_module
 
 
-def make_folder_data_module(task="classification", batch_size=1, val_split_mode="from_test"):
+def make_folder_data_module(
+    task="classification",
+    batch_size=1,
+    test_split_mode="from_dir",
+    val_split_mode="from_test",
+    normal_dir="good",
+    abnormal_dir="broken_large",
+    normal_test_dir="good_test",
+    mask_dir="ground_truth/broken_large",
+):
     """Create Folder Data Module."""
     root = get_dataset_path(dataset="bottle")
     data_module = Folder(
         root=root,
-        normal_dir="good",
-        abnormal_dir="broken_large",
-        mask_dir=os.path.join(root, "ground_truth/broken_large"),
+        normal_dir=normal_dir,
+        abnormal_dir=abnormal_dir,
+        normal_test_dir=normal_test_dir,
+        mask_dir=mask_dir,
         normal_split_ratio=0.2,
         image_size=(256, 256),
         train_batch_size=batch_size,
         eval_batch_size=batch_size,
         num_workers=8,
         task=task,
+        test_split_mode=test_split_mode,
         val_split_mode=val_split_mode,
     )
     data_module.setup()
@@ -116,8 +129,8 @@ DATASETS = {
 
 @pytest.fixture(autouse=True)
 def make_data_module():
-    def make(dataset="folder", task="classification", batch_size=1, val_split_mode="from_test"):
-        return DATASETS[dataset](task=task, batch_size=batch_size, val_split_mode=val_split_mode)
+    def make(dataset="folder", **kwargs):
+        return DATASETS[dataset](**kwargs)
 
     return make
 
@@ -129,7 +142,7 @@ def data_sample():
         root=root,
         normal_dir="good",
         abnormal_dir="broken_large",
-        mask_dir=os.path.join(root, "ground_truth/broken_large"),
+        mask_dir="ground_truth/broken_large",
         normal_split_ratio=0.2,
         image_size=(256, 256),
         train_batch_size=1,
@@ -271,3 +284,69 @@ class TestConfigToDataModule:
         data_module = get_datamodule(configurable_parameters)
         data_module.setup()
         assert next(iter(data_module.train_dataloader()))["image"].shape[-2:] == effective_image_size
+
+
+class TestSubsetSplitting:
+    @pytest.mark.parametrize("dataset", ["folder", "mvtec", "btech"])
+    # @pytest.mark.parametrize("dataset", ["folder"])
+    @pytest.mark.parametrize("test_split_mode", ("from_dir", "synthetic"))
+    @pytest.mark.parametrize("val_split_mode", ("from_test", "synthetic"))
+    def test_non_overlapping_splits(self, make_data_module, dataset, test_split_mode, val_split_mode):
+        """Tests if train, test and val splits are non-overlapping."""
+        data_module = make_data_module(dataset, test_split_mode=test_split_mode, val_split_mode=val_split_mode)
+        train_samples = data_module.train_data.samples
+        val_samples = data_module.val_data.samples
+        test_samples = data_module.test_data.samples
+        assert len(set(train_samples.image_path).intersection(set(test_samples.image_path))) == 0
+        assert len(set(val_samples.image_path).intersection(set(test_samples.image_path))) == 0
+
+    @pytest.mark.parametrize("dataset", ["folder", "mvtec", "btech"])
+    # @pytest.mark.parametrize("dataset", ["folder"])
+    @pytest.mark.parametrize("test_split_mode", ("from_dir", "synthetic"))
+    def test_equal_splits(self, make_data_module, dataset, test_split_mode):
+        """Tests if test and and val splits are equal and non-overlapping with train when val_split_mode == same_as_test."""
+        data_module = make_data_module(dataset, test_split_mode=test_split_mode, val_split_mode="same_as_test")
+        train_samples = data_module.train_data.samples
+        val_samples = data_module.val_data.samples
+        test_samples = data_module.test_data.samples
+        assert len(set(train_samples.image_path).intersection(set(test_samples.image_path))) == 0
+        assert len(set(val_samples.image_path).intersection(set(test_samples.image_path))) == len(val_samples)
+
+    @pytest.mark.parametrize("test_split_mode", ("from_dir", "synthetic"))
+    def test_normal_test_dir_omitted(self, make_data_module, test_split_mode):
+        """Tests if the data module functions properly when no normal_test_dir is provided."""
+        data_module = make_data_module(dataset="folder", test_split_mode=test_split_mode, normal_test_dir=None)
+        # check if we can retrieve a sample from every subset
+        next(iter(data_module.train_dataloader()))
+        next(iter(data_module.test_dataloader()))
+        next(iter(data_module.val_dataloader()))
+        # the test set should contain normal samples which are sampled from the train set
+        assert data_module.test_data.has_normal
+
+    def test_abnormal_dir_omitted_from_dir(self, make_data_module):
+        """The test set should not contain anomalous samples if no abnormal_dir provided and split mode is from_dir."""
+        data_module = make_data_module(dataset="folder", test_split_mode="from_dir", abnormal_dir=None)
+        # check if we can retrieve a sample from every subset
+        next(iter(data_module.train_dataloader()))
+        next(iter(data_module.test_dataloader()))
+        next(iter(data_module.val_dataloader()))
+        # the test set should not contain anomalous samples, because there aren't any available
+        assert not data_module.test_data.has_anomalous
+
+    def test_abnormal_dir_omitted_synthetic(self, make_data_module):
+        """The test set should contain anomalous samples if no abnormal_dir provided and split mode is synthetic."""
+        data_module = make_data_module(dataset="folder", test_split_mode="synthetic", abnormal_dir=None)
+        # check if we can retrieve a sample from every subset
+        next(iter(data_module.train_dataloader()))
+        next(iter(data_module.test_dataloader()))
+        next(iter(data_module.val_dataloader()))
+        # the test set should contain anomalous samples, which have been converted from normals
+        assert data_module.test_data.has_anomalous
+
+    def test_masks_dir_omitted(self, make_data_module):
+        """Tests if the data module can be set up in classification mode when no masks are passed."""
+        data_module = make_data_module(dataset="folder", task="classification", mask_dir=None)
+        # check if we can retrieve a sample from every subset
+        next(iter(data_module.train_dataloader()))
+        next(iter(data_module.test_dataloader()))
+        next(iter(data_module.val_dataloader()))

@@ -26,11 +26,17 @@ import scipy.io
 from pandas import DataFrame
 from torch import Tensor
 
-from anomalib.data.base import AnomalibDataModule, VideoAnomalibDataset
+from anomalib.data.base import AnomalibVideoDataModule, AnomalibVideoDataset
 from anomalib.data.task_type import TaskType
-from anomalib.data.utils import DownloadProgressBar, Split, ValSplitMode, hash_check
+from anomalib.data.utils import (
+    DownloadProgressBar,
+    InputNormalizationMethod,
+    Split,
+    ValSplitMode,
+    get_transforms,
+    hash_check,
+)
 from anomalib.data.utils.video import ClipsIndexer
-from anomalib.pre_processing import PreProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -121,14 +127,14 @@ class AvenueClipsIndexer(ClipsIndexer):
         return masks
 
 
-class AvenueDataset(VideoAnomalibDataset):
+class AvenueDataset(AnomalibVideoDataset):
     """Avenue Dataset class.
 
     Args:
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
         root (str): Path to the root of the dataset
         gt_dir (str): Path to the ground truth files
-        pre_process (PreProcessor): Pre-processor object
+        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (Optional[Union[Split, str]]): Split of the dataset, usually Split.TRAIN or Split.TEST
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
@@ -139,12 +145,12 @@ class AvenueDataset(VideoAnomalibDataset):
         task: TaskType,
         root: Union[Path, str],
         gt_dir: str,
-        pre_process: PreProcessor,
+        transform: A.Compose,
         split: Split,
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
     ):
-        super().__init__(task, pre_process, clip_length_in_frames, frames_between_clips)
+        super().__init__(task, transform, clip_length_in_frames, frames_between_clips)
 
         self.root = root
         self.gt_dir = gt_dir
@@ -156,7 +162,7 @@ class AvenueDataset(VideoAnomalibDataset):
         self.samples = make_avenue_dataset(self.root, self.gt_dir, self.split)
 
 
-class Avenue(AnomalibDataModule):
+class Avenue(AnomalibVideoDataModule):
     """Avenue DataModule class.
 
     Args:
@@ -167,6 +173,9 @@ class Avenue(AnomalibDataModule):
         task TaskType): Task type, 'classification', 'detection' or 'segmentation'
         image_size (Optional[Union[int, Tuple[int, int]]], optional): Size of the input image.
             Defaults to None.
+        center_crop (Optional[Union[int, Tuple[int, int]]], optional): When provided, the images will be center-cropped
+            to the provided dimensions.
+        normalize (bool): When True, the images will be normalized to the ImageNet statistics.
         train_batch_size (int, optional): Training batch size. Defaults to 32.
         eval_batch_size (int, optional): Test batch size. Defaults to 32.
         num_workers (int, optional): Number of workers. Defaults to 8.
@@ -177,6 +186,8 @@ class Avenue(AnomalibDataModule):
             during validation.
             Defaults to None.
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
+        val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
+        seed (Optional[int], optional): Seed which may be set to a fixed value for reproducibility.
     """
 
     def __init__(
@@ -187,6 +198,8 @@ class Avenue(AnomalibDataModule):
         frames_between_clips: int = 1,
         task: TaskType = TaskType.SEGMENTATION,
         image_size: Optional[Union[int, Tuple[int, int]]] = None,
+        center_crop: Optional[Union[int, Tuple[int, int]]] = None,
+        normalization: Union[InputNormalizationMethod, str] = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
@@ -208,12 +221,22 @@ class Avenue(AnomalibDataModule):
         self.root = Path(root)
         self.gt_dir = Path(gt_dir)
 
-        pre_process_train = PreProcessor(config=transform_config_train, image_size=image_size)
-        pre_process_eval = PreProcessor(config=transform_config_eval, image_size=image_size)
+        transform_train = get_transforms(
+            config=transform_config_train,
+            image_size=image_size,
+            center_crop=center_crop,
+            normalization=InputNormalizationMethod(normalization),
+        )
+        transform_eval = get_transforms(
+            config=transform_config_eval,
+            image_size=image_size,
+            center_crop=center_crop,
+            normalization=InputNormalizationMethod(normalization),
+        )
 
         self.train_data = AvenueDataset(
             task=task,
-            pre_process=pre_process_train,
+            transform=transform_train,
             clip_length_in_frames=clip_length_in_frames,
             frames_between_clips=frames_between_clips,
             root=root,
@@ -223,7 +246,7 @@ class Avenue(AnomalibDataModule):
 
         self.test_data = AvenueDataset(
             task=task,
-            pre_process=pre_process_eval,
+            transform=transform_eval,
             clip_length_in_frames=clip_length_in_frames,
             frames_between_clips=frames_between_clips,
             root=root,

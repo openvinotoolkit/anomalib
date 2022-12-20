@@ -33,17 +33,26 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
 
     datamodule: AnomalibDataModule
 
+    # convert center crop to tuple
+    center_crop = config.dataset.get("center_crop")
+    if center_crop is not None:
+        center_crop = (center_crop[0], center_crop[1])
+
     if config.dataset.format.lower() == "mvtec":
         datamodule = MVTec(
             root=config.dataset.path,
             category=config.dataset.category,
             image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
+            center_crop=center_crop,
+            normalization=config.dataset.normalization,
             train_batch_size=config.dataset.train_batch_size,
             eval_batch_size=config.dataset.eval_batch_size,
             num_workers=config.dataset.num_workers,
             task=config.dataset.task,
             transform_config_train=config.dataset.transform_config.train,
             transform_config_eval=config.dataset.transform_config.eval,
+            test_split_mode=config.dataset.test_split_mode,
+            test_split_ratio=config.dataset.test_split_ratio,
             val_split_mode=config.dataset.val_split_mode,
             val_split_ratio=config.dataset.val_split_ratio,
         )
@@ -52,31 +61,38 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             root=config.dataset.path,
             category=config.dataset.category,
             image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
+            center_crop=center_crop,
+            normalization=config.dataset.normalization,
             train_batch_size=config.dataset.train_batch_size,
             eval_batch_size=config.dataset.eval_batch_size,
             num_workers=config.dataset.num_workers,
             task=config.dataset.task,
             transform_config_train=config.dataset.transform_config.train,
             transform_config_eval=config.dataset.transform_config.eval,
+            test_split_mode=config.dataset.test_split_mode,
+            test_split_ratio=config.dataset.test_split_ratio,
             val_split_mode=config.dataset.val_split_mode,
             val_split_ratio=config.dataset.val_split_ratio,
         )
     elif config.dataset.format.lower() == "folder":
         datamodule = Folder(
-            root=config.dataset.path,
+            root=config.dataset.root,
             normal_dir=config.dataset.normal_dir,
             abnormal_dir=config.dataset.abnormal_dir,
             task=config.dataset.task,
             normal_test_dir=config.dataset.normal_test_dir,
-            mask_dir=config.dataset.mask,
+            mask_dir=config.dataset.mask_dir,
             extensions=config.dataset.extensions,
-            normal_split_ratio=config.dataset.normal_split_ratio,
             image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
+            center_crop=center_crop,
+            normalization=config.dataset.normalization,
             train_batch_size=config.dataset.train_batch_size,
             eval_batch_size=config.dataset.eval_batch_size,
             num_workers=config.dataset.num_workers,
             transform_config_train=config.dataset.transform_config.train,
             transform_config_eval=config.dataset.transform_config.eval,
+            test_split_mode=config.dataset.test_split_mode,
+            test_split_ratio=config.dataset.test_split_ratio,
             val_split_mode=config.dataset.val_split_mode,
             val_split_ratio=config.dataset.val_split_ratio,
         )
@@ -88,6 +104,8 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             clip_length_in_frames=config.dataset.clip_length_in_frames,
             frames_between_clips=config.dataset.frames_between_clips,
             image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
+            center_crop=center_crop,
+            normalization=config.dataset.normalization,
             transform_config_train=config.dataset.transform_config.train,
             transform_config_eval=config.dataset.transform_config.eval,
             train_batch_size=config.dataset.train_batch_size,
@@ -104,6 +122,8 @@ def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
             clip_length_in_frames=config.dataset.clip_length_in_frames,
             frames_between_clips=config.dataset.frames_between_clips,
             image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
+            center_crop=center_crop,
+            normalization=config.dataset.normalization,
             transform_config_train=config.dataset.transform_config.train,
             transform_config_eval=config.dataset.transform_config.eval,
             train_batch_size=config.dataset.train_batch_size,

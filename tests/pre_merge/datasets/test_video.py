@@ -10,8 +10,8 @@ from anomalib.data.ucsd_ped import (
     UCSDpedDataset,
     make_ucsd_dataset,
 )
+from anomalib.data.utils import get_transforms
 from anomalib.data.utils.split import Split, random_split
-from anomalib.pre_processing import PreProcessor
 from tests.helpers.dataset import get_dataset_path
 
 
@@ -33,11 +33,12 @@ def ucsd_clips(n_frames, stride, split=Split.TEST):
 @pytest.fixture
 def ucsd_dataset(split):
     root = get_dataset_path(dataset="ucsd")
+    transform = get_transforms(image_size=(256, 256))
     dataset = UCSDpedDataset(
         task=TaskType.CLASSIFICATION,
         root=Path(root),
         category="UCSDped2",
-        pre_process=PreProcessor(image_size=(256, 256)),
+        transform=transform,
         clip_length_in_frames=16,
         frames_between_clips=1,
         split=split,
