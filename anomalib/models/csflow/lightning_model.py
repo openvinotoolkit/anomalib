@@ -67,6 +67,7 @@ class Csflow(AnomalyModule):
         self.model.feature_extractor.eval()
         z_dist, jacobians = self.model(batch["image"])
         loss = self.loss(z_dist, jacobians)
+        self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
     def validation_step(self, batch, _) -> Dict[str, Tensor]:
