@@ -61,6 +61,7 @@ class Stfpm(AnomalyModule):
         self.model.teacher_model.eval()
         teacher_features, student_features = self.model.forward(batch["image"])
         loss = self.loss(teacher_features, student_features)
+        self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
