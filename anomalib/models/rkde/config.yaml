@@ -14,6 +14,8 @@ dataset:
   transform_config:
     train: null
     eval: null
+  test_split_mode: from_dir
+  test_split_ratio: 0.2
   val_split_mode: same_as_test # options: [same_as_test, from_test]
   val_split_ratio: 0.5
   tiling:
