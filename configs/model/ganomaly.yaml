@@ -50,15 +50,15 @@ post_processing:
 
 visualization:
   mode: full
-  image_save_path: null
+  image_save_path: ""
   inputs_are_normalized: true
   show_images: false
   log_images: false
   save_images: true
 
-logging:
-  logger: [] # options: [comet, tensorboard, wandb, csv] or combinations.
-  log_graph: false # Logs the model graph to respective logger.
+# logging:
+#   logger: [] # options: [comet, tensorboard, wandb, csv] or combinations.
+#   log_graph: false # Logs the model graph to respective logger.
 
 trainer:
   callbacks:

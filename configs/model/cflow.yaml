@@ -25,12 +25,13 @@ data:
 model:
   class_path: anomalib.models.Cflow
   init_args:
-    backbone: wide_resnet50_2
-    pre_trained: true
-    layers:
-      - layer2
-      - layer3
-      - layer4
+    feature_extractor:
+      backbone: wide_resnet50_2
+      pre_trained: true
+      layers:
+        - layer2
+        - layer3
+        - layer4
     fiber_batch_size: 64
     decoder: freia-cflow
     condition_vector: 128
@@ -59,7 +60,7 @@ metrics:
 
 visualization:
   mode: full
-  image_save_path: null
+  image_save_path: ""
   inputs_are_normalized: true
   show_images: false
   log_images: false

@@ -25,12 +25,13 @@ data:
 model:
   class_path: anomalib.models.ReverseDistillation
   init_args:
-    backbone: wide_resnet50_2
-    pre_trained: true
-    layers:
-      - layer1
-      - layer2
-      - layer3
+    feature_extractor:
+      backbone: wide_resnet50_2
+      pre_trained: true
+      layers:
+        - layer1
+        - layer2
+        - layer3
     anomaly_map_mode: multiply
 
 optimizer:
@@ -55,7 +56,7 @@ post_processing:
 
 visualization:
   mode: full
-  image_save_path: null
+  image_save_path: ""
   inputs_are_normalized: true
   show_images: false
   log_images: false

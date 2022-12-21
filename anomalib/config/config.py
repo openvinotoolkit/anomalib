@@ -6,7 +6,9 @@
 # TODO: This would require a new design.
 # TODO: https://jira.devtools.intel.com/browse/IAAALD-149
 
+import inspect
 from datetime import datetime
+from importlib import import_module
 from pathlib import Path
 from typing import List, Optional, Union
 from warnings import warn
@@ -30,13 +32,21 @@ def update_input_size_config(config: Union[DictConfig, ListConfig]) -> Union[Dic
     if isinstance(config.data.init_args.image_size, int):
         config.data.init_args.image_size = (config.data.init_args.image_size,) * 2
 
-    # Use input size from data to model input
-    if "input_size" in config.model.init_args:
-        warn(
-            "Model input size should not be configured explicitly. Use the image size from the data instead."
-            f" Overriding model input size {config.model.init_args.input_size} with {config.data.init_args.image_size}."
-        )
-    config.model.init_args.input_size = config.data.init_args.image_size
+    # Use input size from data to model input. If model input size is defined, warn and override.
+    # If input_size is not part of the model parameters, remove it from the config. This is required due to argument
+    # linking from the cli.
+    model_module = import_module(".".join(config.model.class_path.split(".")[:-1]))
+    model_class = getattr(model_module, config.model.class_path.split(".")[-1])
+    if "input_size" in inspect.signature(model_class).parameters:
+        if "input_size" in config.model.init_args:
+            warn(
+                "Model input size should not be configured explicitly. Use the image size from the data instead."
+                f" Overriding model input size {config.model.init_args.input_size} with"
+                f" {config.data.init_args.image_size}."
+            )
+        config.model.init_args.input_size = config.data.init_args.image_size
+    elif "input_size" in config.model.init_args:
+        del config.model.init_args.input_size
 
     if "tiling" in config.keys() and config.tiling.apply:
         if isinstance(config.tiling.tile_size, int):

@@ -179,6 +179,8 @@ class AnomalibCLI(LightningCLI):
         parser.add_class_arguments(PostProcessingConfigurationCallback, "post_processing")
         parser.link_arguments("data.init_args.task", "visualization.task")
         parser.link_arguments("data.init_args.image_size", "model.init_args.input_size")
+        parser.add_argument("results_dir.path", type=Path, help="Path to save the results.")
+        parser.add_argument("results_dir.unique", type=bool, help="Whether to create a unique folder.")
 
         # parser.set_defaults("visualization.image_save_path",)
 

@@ -26,7 +26,7 @@ data:
 model:
   class_path: anomalib.models.Stfpm
   init_args:
-    feature_extractor:
+    student_teacher_model:
       backbone: resnet18
       pre_trained: true
       layers:

@@ -24,11 +24,12 @@ data:
 model:
   class_path: anomalib.models.Patchcore
   init_args:
-    backbone: wide_resnet50_2
-    pre_trained: true
-    layers:
-      - layer2
-      - layer3
+    feature_extractor:
+      backbone: wide_resnet50_2
+      pre_trained: true
+      layers:
+        - layer2
+        - layer3
     coreset_sampling_ratio: 0.1
     num_neighbors: 9
 
@@ -48,7 +49,7 @@ metrics:
 
 visualization:
   mode: full
-  image_save_path: null
+  image_save_path: ""
   inputs_are_normalized: true
   show_images: false
   log_images: false
