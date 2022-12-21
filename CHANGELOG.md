@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- ✨ Add CSFlow model (<https://github.com/openvinotoolkit/anomalib/pull/657>)
 - Log loss for existing trainable models (<https://github.com/openvinotoolkit/anomalib/pull/804>)
 - Add section for community project (<https://github.com/openvinotoolkit/anomalib/pull/768>)
 - ✨ Add torchfx feature extractor (<https://github.com/openvinotoolkit/anomalib/pull/675>)
