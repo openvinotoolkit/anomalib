@@ -1,4 +1,7 @@
 seed_everything: null
+results_dir:
+  path: ./results
+  unique: false
 
 data:
   class_path: anomalib.data.MVTec
@@ -41,7 +44,6 @@ post_processing:
   manual_pixel_threshold: null
 
 visualization:
-  task: classification
   mode: full
   image_save_path: null
   inputs_are_normalized: true

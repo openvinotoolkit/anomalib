@@ -3,6 +3,9 @@
 # anomalib fit --config ./config/model/dfkde.yaml
 ckpt_path: null
 seed_everything: null
+results_dir:
+  path: ./results
+  unique: false
 
 data:
   class_path: anomalib.data.MVTec
@@ -44,7 +47,6 @@ metrics:
     - AUROC
 
 visualization:
-  task: classification
   mode: full
   image_save_path: null
   inputs_are_normalized: true

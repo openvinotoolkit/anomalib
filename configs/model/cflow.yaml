@@ -3,6 +3,9 @@
 # anomalib fit --config ./config/model.cflow.yaml
 ckpt_path: null
 seed_everything: null
+results_dir:
+  path: ./results
+  unique: false
 
 data:
   class_path: anomalib.data.MVTec
@@ -22,7 +25,6 @@ data:
 model:
   class_path: anomalib.models.Cflow
   init_args:
-    input_size: [256, 256]
     backbone: wide_resnet50_2
     pre_trained: true
     layers:
@@ -56,7 +58,6 @@ metrics:
     - AUROC
 
 visualization:
-  task: segmentation
   mode: full
   image_save_path: null
   inputs_are_normalized: true

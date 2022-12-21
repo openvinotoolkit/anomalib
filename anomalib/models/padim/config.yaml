@@ -1,12 +1,14 @@
 seed_everything: null
+results_dir:
+  path: ./results
+  unique: false
+
 data:
   class_path: anomalib.data.MVTec
   init_args:
     root: ./datasets/MVTec
     category: bottle
-    image_size:
-      - 256
-      - 256
+    image_size: [256, 256]
     train_batch_size: 32
     test_batch_size: 32
     num_workers: 8
@@ -19,16 +21,13 @@ data:
 model:
   class_path: anomalib.models.Padim
   init_args:
-    input_size:
-      - 256
-      - 256
     feature_extractor:
-      backbone: resnet18
-      pre_trained: true
       layers:
         - layer1
         - layer2
         - layer3
+      backbone: resnet18
+      pre_trained: true
     n_features: null
 
 post_processing:
@@ -46,7 +45,6 @@ metrics:
     - AUROC
 
 visualization:
-  task: segmentation
   mode: full
   image_save_path: null
   inputs_are_normalized: true
@@ -58,8 +56,8 @@ logging:
   logger: [] # options: [comet, tensorboard, wandb, csv] or combinations.
   log_graph: false # Logs the model graph to respective logger.
 
-optimization:
-  export_mode: null #options: onnx, openvino
+export:
+  format: null #options: onnx, openvino
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:

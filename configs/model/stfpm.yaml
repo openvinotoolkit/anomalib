@@ -2,7 +2,11 @@
 # To use this, run the following command:
 # anomalib fit --config ./config/model/stfpm.yaml
 ckpt_path: null
-seed_everything: 42
+seed_everything: null
+
+results_dir:
+  path: ./results
+  unique: false
 
 data:
   class_path: anomalib.data.MVTec
@@ -22,8 +26,7 @@ data:
 model:
   class_path: anomalib.models.Stfpm
   init_args:
-    input_size: [256, 256]
-    student_teacher_model:
+    feature_extractor:
       backbone: resnet18
       pre_trained: true
       layers:
@@ -53,7 +56,6 @@ metrics:
     - AUROC
 
 visualization:
-  task: segmentation
   mode: full
   image_save_path: ""
   inputs_are_normalized: true

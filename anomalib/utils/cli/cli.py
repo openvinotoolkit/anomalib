@@ -178,6 +178,7 @@ class AnomalibCLI(LightningCLI):
         parser.add_class_arguments(MetricsConfigurationCallback, "metrics")
         parser.add_class_arguments(PostProcessingConfigurationCallback, "post_processing")
         parser.link_arguments("data.init_args.task", "visualization.task")
+        parser.link_arguments("data.init_args.image_size", "model.init_args.input_size")
 
         # parser.set_defaults("visualization.image_save_path",)
 

@@ -15,7 +15,7 @@ from anomalib.config import get_configurable_parameters, update_nncf_config
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
-from anomalib.utils.callbacks import get_callbacks, instantiate_callbacks
+from anomalib.utils.callbacks import get_callbacks
 from anomalib.utils.callbacks.visualizer import BaseVisualizerCallback
 from anomalib.utils.cli.helpers import configure_optimizer
 
@@ -86,10 +86,6 @@ def setup_model_train(
     model = get_model(config)
 
     callbacks = get_callbacks(config)
-    callbacks = instantiate_callbacks(callbacks)
-    # Remove callbacks from trainer as it is passed separately
-    if "callbacks" in config.trainer:
-        config.trainer.pop("callbacks")
 
     configure_optimizer(model, config)
 
@@ -139,10 +135,6 @@ def model_load_test(config: Union[DictConfig, ListConfig], datamodule: Lightning
     config.trainer.resume_from_checkpoint = os.path.join(config.trainer.default_root_dir, "weights/last.ckpt")
 
     callbacks = get_callbacks(config)
-    callbacks = instantiate_callbacks(callbacks)
-    # Remove callbacks from trainer as it is passed separately
-    if "callbacks" in config.trainer:
-        config.trainer.pop("callbacks")
 
     for index, callback in enumerate(callbacks):
         # Remove visualizer callback as saving results takes time
@@ -157,7 +149,7 @@ def model_load_test(config: Union[DictConfig, ListConfig], datamodule: Lightning
     assert np.isclose(
         results["image_AUROC"], new_results["image_AUROC"]
     ), f"Loaded model does not yield close performance results. {results['image_AUROC']} : {new_results['image_AUROC']}"
-    if config.data.init_args == "segmentation":
+    if config.data.init_args.task == "segmentation":
         assert np.isclose(
             results["pixel_AUROC"], new_results["pixel_AUROC"]
         ), "Loaded model does not yield close performance results"

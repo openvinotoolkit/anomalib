@@ -17,11 +17,7 @@ from pytorch_lightning import Trainer, seed_everything
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
-from anomalib.utils.callbacks import (
-    LoadModelCallback,
-    get_callbacks,
-    instantiate_callbacks,
-)
+from anomalib.utils.callbacks import LoadModelCallback, get_callbacks
 from anomalib.utils.cli.helpers import configure_optimizer
 from anomalib.utils.loggers import configure_logger, get_experiment_logger
 
@@ -62,11 +58,7 @@ def train():
     experiment_logger = get_experiment_logger(config)
 
     # Set callbacks
-    callbacks_dict = get_callbacks(config)
-    callbacks = instantiate_callbacks(callbacks_dict)
-    # Remove callbacks from trainer as it is passed separately
-    if "callbacks" in config.trainer:
-        config.trainer.pop("callbacks")
+    callbacks = get_callbacks(config)
 
     trainer = Trainer(**config.trainer, logger=experiment_logger, callbacks=callbacks)
     logger.info("Training the model.")

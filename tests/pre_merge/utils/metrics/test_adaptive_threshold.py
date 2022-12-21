@@ -10,7 +10,7 @@ from pytorch_lightning import Trainer
 
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
-from anomalib.utils.callbacks import get_callbacks, instantiate_callbacks
+from anomalib.utils.callbacks import get_callbacks_dict, instantiate_callbacks
 from anomalib.utils.cli.helpers import configure_optimizer
 from anomalib.utils.metrics import AnomalyScoreThreshold
 from tests.helpers.config import get_test_configurable_parameters
@@ -53,7 +53,7 @@ def test_manual_threshold():
 
     model = get_model(config)
     datamodule = get_datamodule(config)
-    callbacks = get_callbacks(config)
+    callbacks = get_callbacks_dict(config)
     callbacks = instantiate_callbacks(callbacks)
     configure_optimizer(model, config)
 

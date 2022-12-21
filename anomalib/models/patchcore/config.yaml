@@ -1,4 +1,7 @@
 seed_everything: null
+results_dir:
+  path: ./results
+  unique: false
 
 data:
   class_path: anomalib.data.MVTec
@@ -18,9 +21,6 @@ data:
 model:
   class_path: anomalib.models.Patchcore
   init_args:
-    input_size:
-      - 224 # Height
-      - 224 # Width
     feature_extractor:
       backbone: wide_resnet50_2
       pre_trained: true
@@ -45,7 +45,6 @@ metrics:
     - AUROC
 
 visualization:
-  task: segmentation
   mode: full
   image_save_path: null
   inputs_are_normalized: true
@@ -57,8 +56,8 @@ logging:
   logger: [] # options: [comet, tensorboard, wandb, csv] or combinations.
   log_graph: false # Logs the model graph to respective logger.
 
-optimization:
-  export_mode: null # options: onnx, openvino
+export:
+  format: null # options: onnx, openvino
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:

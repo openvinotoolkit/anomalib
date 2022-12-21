@@ -1,3 +1,6 @@
+results_dir:
+  path: null
+  unique: false
 data:
   class_path: FakeData
   init_args:
@@ -16,8 +19,8 @@ model:
       image_default: 0.0
       pixel_default: 0.0
 
-optimization:
-  export_mode: "openvino"
+export:
+  format: "openvino"
 
 trainer:
   accelerator: auto # <"cpu", "gpu", "tpu", "ipu", "hpu", "auto">

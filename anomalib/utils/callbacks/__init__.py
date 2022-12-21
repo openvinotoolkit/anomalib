@@ -5,6 +5,7 @@
 
 import logging
 import os
+import warnings
 from importlib import import_module
 from typing import Any, Dict, List, Union
 
@@ -55,7 +56,24 @@ def __update_callback(callbacks: Dict, callback_name: str, update_dict: Dict[str
         callbacks[callback_name] = update_dict
 
 
-def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Dict]:
+def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
+    """Returns a list of callback objects.
+
+    Args:
+        config (DictConfig): Model config
+
+    Return:
+        (List[Callback]): List of callbacks
+    """
+    callbacks_dict = get_callbacks_dict(config)
+    callbacks = instantiate_callbacks(callbacks_dict)
+    # Remove callbacks from trainer as it is passed separately
+    if "callbacks" in config.trainer:
+        config.trainer.pop("callbacks")
+    return callbacks
+
+
+def get_callbacks_dict(config: Union[ListConfig, DictConfig]) -> List[Dict]:
     """Returns a list for populating the CLI.
 
     Args:
@@ -127,21 +145,25 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Dict]:
     #   - https://github.com/openvinotoolkit/anomalib/issues/384
     # Normalization.
     normalization = config.post_processing.normalization_method
+    if isinstance(normalization, str):
+        normalization = NormalizationMethod(normalization.lower())
+
     if normalization:
-        if normalization in (NormalizationMethod.MIN_MAX, NormalizationMethod.MIN_MAX.name):
+        if normalization == NormalizationMethod.MIN_MAX:
             __update_callback(callbacks, "MinMaxNormalizationCallback", {})
-        elif normalization in (NormalizationMethod.CDF, NormalizationMethod.CDF.name):
+        elif normalization == NormalizationMethod.CDF:
             __update_callback(callbacks, "CDFNormalizationCallback", {})
         else:
             raise ValueError(
-                f"Unknown normalization type {normalization}. \n" "Available types are either None, min_max or cdf"
+                f"Unknown normalization type {normalization}. \n"
+                f"Available types are either {[member.name for member in NormalizationMethod]}"
             )
 
     add_visualizer_callback(callbacks, config)
 
     # Export to OpenVINO
-    if "export_mode" in config is not None:
-        logger.info("Setting model export to %s", config.export_mode)
+    if "format" in config is not None:
+        logger.info("Setting model export to %s", config.format)
         __update_callback(
             callbacks,
             "ExportCallback",
@@ -149,7 +171,7 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Dict]:
                 "input_size": config.data.init_args.image_size,
                 "dirpath": os.path.join(config.trainer.default_root_dir, "compressed"),
                 "filename": "model",
-                "export_mode": config.export_mode,
+                "export_mode": config.format,
             },
         )
 
@@ -227,9 +249,13 @@ def add_visualizer_callback(callbacks: Dict[str, Dict], config: Union[DictConfig
     """
     # visualization settings
     assert isinstance(config, (DictConfig, Namespace))
-    config.visualization.task = (
-        config.data.init_args.task if config.visualization.task is None else config.visualization.task
-    )
+    if "task" in config.visualization:
+        warnings.warn(
+            "task type should not be configured from visualization explicitly. User data.init_args.task instead."
+            f" Setting visualization task to {config.data.init_args.task}."
+        )
+    config.visualization.task = config.data.init_args.task
+
     config.visualization.inputs_are_normalized = config.post_processing.normalization_method is not None
 
     if config.visualization.log_images or config.visualization.save_images or config.visualization.show_images:

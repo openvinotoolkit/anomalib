@@ -30,7 +30,7 @@ def test_add_images(dataset):
             {
                 "dataset": {"task": dataset},
                 "model": {"threshold": {"image_default": 0.5, "pixel_default": 0.5, "adaptive": True}},
-                "project": {"path": dir_loc},
+                "results_dir": {"path": dir_loc},
                 "logging": {"logger": ["tensorboard"]},
                 "visualization": {"log_images": True, "save_images": True},
                 "metrics": {},
@@ -39,7 +39,10 @@ def test_add_images(dataset):
         logger = get_dummy_logger(config, dir_loc)
         model = get_dummy_module(config)
         trainer = pl.Trainer(
-            callbacks=model.callbacks, logger=logger, checkpoint_callback=False, default_root_dir=config.project.path
+            callbacks=model.callbacks,
+            logger=logger,
+            checkpoint_callback=False,
+            default_root_dir=config.results_dir.path,
         )
         trainer.test(model=model, datamodule=DummyDataModule())
         # test if images are logged

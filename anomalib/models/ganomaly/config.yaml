@@ -1,4 +1,7 @@
 seed_everything: null
+results_dir:
+  path: ./results
+  unique: false
 
 data:
   class_path: anomalib.data.MVTec
@@ -19,7 +22,6 @@ model:
   class_path: anomalib.models.Ganomaly
   init_args:
     batch_size: 32
-    input_size: [256, 256]
     n_features: 64
     latent_vec_size: 100
     extra_layers: 0
@@ -43,7 +45,6 @@ post_processing:
   manual_pixel_threshold: null
 
 visualization:
-  task: classification
   mode: full
   image_save_path: null
   inputs_are_normalized: true
@@ -55,8 +56,8 @@ logging:
   logger: [] # options: [comet, tensorboard, wandb, csv] or combinations.
   log_graph: false # Logs the model graph to respective logger.
 
-optimization:
-  export_mode: null
+export:
+  format: null
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
