@@ -206,7 +206,7 @@ class RegionExtractor(nn.Module):
                     keep = box_ops.remove_small_boxes(boxes, min_size=self.min_size)
                     boxes = boxes[keep]
 
-                    keep = box_ops.nms(boxes, self.pseudo_scores[: boxes.shape[0]], self.iou_threshold)
+                    keep = box_ops.nms(boxes, self.pseudo_scores[: boxes.shape[0]].to(boxes.device), self.iou_threshold)
                     boxes = boxes[keep]
 
                     boxes = update_box_sizes_following_image_resize(boxes, transformed_image_size, original_image_size)
