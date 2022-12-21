@@ -11,7 +11,8 @@ import torch
 from torch import Tensor, nn
 
 from anomalib.models.components import PCA, GaussianKDE
-from anomalib.models.rkde.feature_extractor import FeatureExtractor, RegionExtractor
+from anomalib.models.rkde.feature_extractor import FeatureExtractor
+from anomalib.models.rkde.region_extractor import RegionExtractor
 
 logger = logging.getLogger(__name__)
 
