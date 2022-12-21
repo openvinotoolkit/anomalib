@@ -5,7 +5,7 @@
 
 import logging
 import random
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import torch
 from torch import Tensor, nn
@@ -48,20 +48,13 @@ class RkdeModel(nn.Module):
         self.region_extractor = RegionExtractor(
             stage=region_extractor_stage, min_size=min_box_size, iou_threshold=iou_threshold, likelihood=box_likelihood
         ).eval()
-
         self.feature_extractor = FeatureExtractor().eval()
-
-        # self.feature_extractor = FeatureExtractor(
-        # region_extractor_stage=region_extractor_stage,
-        # min_box_size=min_box_size,
-        # iou_threshold=iou_threshold,
-        # )
 
         self.pca_model = PCA(n_components=self.n_pca_components)
         self.kde_model = GaussianKDE()
 
-        self.register_buffer("max_length", Tensor(torch.Size([])))
-        self.max_length = Tensor(torch.Size([]))
+        self.register_buffer("max_length", torch.tensor([]))
+        self.max_length = Tensor(torch.tensor([]))
 
     def pre_process(self, feature_stack: Tensor, max_length: Optional[Tensor] = None) -> Tuple[Tensor, Tensor]:
         """Pre-process the CNN features.
@@ -182,7 +175,7 @@ class RkdeModel(nn.Module):
 
         return rois, probabilities
 
-    def forward(self, batch: Tensor) -> Tensor:
+    def forward(self, batch: Tensor) -> Union[Tensor, Tuple[Tensor, Tensor]]:
         """Prediction by normality model.
 
         Args:
@@ -204,9 +197,6 @@ class RkdeModel(nn.Module):
         if self.training:
             return features
 
-        batch_size = batch.shape[0]
         rois, scores = self.predict(features, rois)
-        indices = rois[:, 0]
-        rois = [rois[indices == i, 1:] for i in range(batch_size)]
-        scores = [scores[indices == i] for i in range(batch_size)]
+
         return rois, scores
