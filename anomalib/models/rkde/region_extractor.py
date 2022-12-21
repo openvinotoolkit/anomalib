@@ -22,7 +22,7 @@ class RegionExtractor(nn.Module):
     def __init__(
         self,
         stage: str = "rcnn",
-        use_original: bool = False,
+        use_original: bool = True,
         min_size: int = 25,
         iou_threshold: float = 0.3,
         likelihood: Optional[float] = None,
@@ -47,7 +47,12 @@ class RegionExtractor(nn.Module):
         self.tile_iou_threshold = 0.3
 
         # Model and model components
-        self.faster_rcnn = detection.fasterrcnn_resnet50_fpn(pretrained=True)
+        self.faster_rcnn = detection.fasterrcnn_resnet50_fpn(
+            pretrained=True,
+            box_head=RKDERoiHeads(),
+            box_score_thresh=self.rcnn_score_thresh,
+            box_nms_thresh=self.iou_threshold,
+        )
 
     @torch.no_grad()
     def forward(self, batch: Tensor) -> Tensor:
@@ -70,7 +75,12 @@ class RegionExtractor(nn.Module):
 
         if self.use_original:
             predictions = self.faster_rcnn(batch)
-            regions = [prediction["boxes"] for prediction in predictions]
+            all_regions = [prediction["boxes"] for prediction in predictions]
+            all_scores = [prediction["scores"] for prediction in predictions]
+            # for boxes, scores in zip(all_regions, all_scores):
+            #     regions.append(self.post_process_box_predictions(boxes, scores, (256, 256)))
+            regions = all_regions
+            # regions = self.post_process_box_predictions(all_regions, all_scores, (256, 256))
         else:
             original_image_sizes = [image.shape[-2:] for image in batch]
             images, targets = self.faster_rcnn.transform(batch)
@@ -104,7 +114,7 @@ class RegionExtractor(nn.Module):
                 box_features = self.faster_rcnn.roi_heads.box_roi_pool(features, proposals, transformed_image_sizes)  # type: ignore
                 box_features = self.faster_rcnn.roi_heads.box_head(box_features)  # type: ignore
                 class_logits, box_regression = self.faster_rcnn.roi_heads.box_predictor(box_features)  # type: ignore
-                box_predictions = self.post_process_box_predictions(
+                box_predictions = self.post_process_box_predictions_old(
                     class_logits, box_regression, proposals, transformed_image_sizes
                 )
 
@@ -128,6 +138,52 @@ class RegionExtractor(nn.Module):
         return regions
 
     def post_process_box_predictions(
+        self, pred_boxes: Tensor, pred_scores: Tensor, image_shape: Tuple[int, int]
+    ) -> List[Tensor]:
+        """Post-processes the box predictions.
+
+        Args:
+            class_logits (Tensor): Class logits.
+            box_regression (Tensor): Box predictions of shape (N, 4).
+            proposals (List[Tensor]): Proposals from the RPN.
+            image_shapes (List[Tuple[int, int]]): Shapes of the transformed images.
+
+        Returns:
+            List[Tensor]: Post-processed box predictions of shape (N, 4).
+        """
+
+        post_processed_boxes: List[Tensor] = []
+        for boxes, scores in zip(pred_boxes, pred_scores):
+            # boxes = box_ops.clip_boxes_to_image(boxes, image_shape)
+
+            # # remove predictions with the background label
+            # boxes = boxes[:, 1:]
+            # scores = scores[:, 1:]
+
+            # # batch everything, by making every class prediction be a separate instance
+            # boxes = boxes.reshape(-1, 4)
+            # scores = scores.flatten()
+
+            # remove low scoring boxes
+            keep = torch.nonzero(scores > self.rcnn_score_thresh).squeeze(1)
+            boxes, scores = boxes[keep], scores[keep]
+
+            # remove small boxes
+            keep = box_ops.remove_small_boxes(boxes, min_size=self.min_size)
+            boxes, scores = boxes[keep], scores[keep]
+
+            # non-maximum suppression, all boxes together
+            keep = box_ops.nms(boxes, scores, self.iou_threshold)
+
+            # keep only top-k scoring predictions
+            keep = keep[: self.rcnn_detections_per_img]
+            boxes = boxes[keep]
+
+            post_processed_boxes.append(boxes)
+
+        return post_processed_boxes
+
+    def post_process_box_predictions_old(
         self, class_logits: Tensor, box_regression: Tensor, proposals: List[Tensor], image_shapes: List[Tuple[int, int]]
     ) -> List[Tensor]:
         """Post-processes the box predictions.
@@ -279,3 +335,62 @@ def likelihood_to_class_threshold(likelihood: float) -> float:
     """
     threshold = (torch.cos(torch.tensor(likelihood) * torch.pi / 2.0) ** 4.0).item()
     return threshold
+
+
+from torchvision.models.detection.faster_rcnn import RoIHeads
+
+
+class RKDERoiHeads(RoIHeads):
+    def post_process_box_predictions(
+        self, class_logits: Tensor, box_regression: Tensor, proposals: List[Tensor], image_shapes: List[Tuple[int, int]]
+    ) -> List[Tensor]:
+        """Post-processes the box predictions.
+
+        Args:
+            class_logits (Tensor): Class logits.
+            box_regression (Tensor): Box predictions of shape (N, 4).
+            proposals (List[Tensor]): Proposals from the RPN.
+            image_shapes (List[Tuple[int, int]]): Shapes of the transformed images.
+
+        Returns:
+            List[Tensor]: Post-processed box predictions of shape (N, 4).
+        """
+        boxes_per_image = [len(boxes_in_image) for boxes_in_image in proposals]
+        pred_boxes = self.faster_rcnn.roi_heads.box_coder.decode(box_regression, proposals)  # type: ignore
+
+        pred_scores = F.softmax(class_logits, -1)
+
+        # split boxes and scores per image
+        pred_boxes = pred_boxes.split(boxes_per_image, 0)
+        pred_scores = pred_scores.split(boxes_per_image, 0)
+
+        post_processed_boxes: List[Tensor] = []
+        for boxes, scores, image_shape in zip(pred_boxes, pred_scores, image_shapes):
+            boxes = box_ops.clip_boxes_to_image(boxes, image_shape)
+
+            # remove predictions with the background label
+            boxes = boxes[:, 1:]
+            scores = scores[:, 1:]
+
+            # batch everything, by making every class prediction be a separate instance
+            boxes = boxes.reshape(-1, 4)
+            scores = scores.flatten()
+
+            # remove low scoring boxes
+            keep = torch.nonzero(scores > self.rcnn_score_thresh).squeeze(1)
+            boxes, scores = boxes[keep], scores[keep]
+
+            # remove small boxes
+            keep = box_ops.remove_small_boxes(boxes, min_size=self.min_size)
+            boxes, scores = boxes[keep], scores[keep]
+
+            # non-maximum suppression, all boxes together
+            keep = box_ops.nms(boxes, scores, self.iou_threshold)
+
+            # keep only top-k scoring predictions
+            keep = keep[: self.rcnn_detections_per_img]
+            boxes = boxes[keep]
+
+            post_processed_boxes.append(boxes)
+
+        return post_processed_boxes
