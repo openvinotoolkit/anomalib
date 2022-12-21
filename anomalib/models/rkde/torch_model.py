@@ -160,18 +160,6 @@ class RkdeModel(nn.Module):
 
         scores = self.compute_kde_scores(features, as_log_likelihood=True)
         probabilities = self.compute_probabilities(scores)
-        # batch_scores = torch.split(scores, [len(rois) for rois in batch_rois])
-
-        # remove items with low probability
-        # batch_keep = [scores > self.confidence_threshold for scores in batch_scores]
-        # batch_rois = [rois[keep] for rois, keep in zip(batch_rois, batch_keep)]
-        # batch_scores = [scores[keep] for scores, keep in zip(batch_scores, batch_keep)]
-
-        # keep = probabilities > self.confidence_threshold
-        # rois = rois[keep]
-        # probabilities = probabilities[keep]
-
-        # TODO: Here we need to sort out how to handle box detections.
 
         return rois, probabilities
 
@@ -190,6 +178,7 @@ class RkdeModel(nn.Module):
         rois = self.region_extractor(batch)
 
         if rois.shape[0] == 0:
+            # cannot extract features when no rois are retrieved
             features = torch.empty((0, 4096)).to(batch.device)
         else:
             features = self.feature_extractor(batch, rois.clone())
