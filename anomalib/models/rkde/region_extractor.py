@@ -29,9 +29,7 @@ class RegionExtractor(nn.Module):
         tiling: bool = False,
         tile_size: int = 32,
     ) -> None:
-        super(RegionExtractor, self).__init__()
-
-        self.pseudo_scores = torch.arange(1000, 0, -1, dtype=torch.float32)
+        super().__init__()
 
         # Affects global behaviour of the extractor
         self.stage = stage
@@ -49,12 +47,10 @@ class RegionExtractor(nn.Module):
         self.tile_iou_threshold = 0.3
 
         # Model and model components
-        self.faster_rcnn = detection.fasterrcnn_resnet50_fpn(
-            pretrained=True, rpn_pre_nms_top_n_test=1000, rpn_nms_thresh=0.7, rpn_post_nms_top_n_test=1000
-        )
+        self.faster_rcnn = detection.fasterrcnn_resnet50_fpn(pretrained=True)
 
     @torch.no_grad()
-    def forward(self, input: Union[Tensor, List[Tensor]]) -> Tensor:
+    def forward(self, batch: Tensor) -> Tensor:
         """Forward pass of the model.
 
         Args:
@@ -73,11 +69,11 @@ class RegionExtractor(nn.Module):
         regions: List[Tensor] = []
 
         if self.use_original:
-            predictions = self.faster_rcnn(input)
+            predictions = self.faster_rcnn(batch)
             regions = [prediction["boxes"] for prediction in predictions]
         else:
-            original_image_sizes = [image.shape[-2:] for image in input]
-            images, targets = self.faster_rcnn.transform(input)
+            original_image_sizes = [image.shape[-2:] for image in batch]
+            images, targets = self.faster_rcnn.transform(batch)
             transformed_image_sizes = images.image_sizes
 
             features = self.faster_rcnn.backbone(images.tensors)
@@ -92,7 +88,7 @@ class RegionExtractor(nn.Module):
                     keep = box_ops.remove_small_boxes(boxes, min_size=self.min_size)
                     boxes = boxes[keep]
 
-                    keep = box_ops.nms(boxes, self.pseudo_scores[: boxes.shape[0]].to(boxes.device), self.iou_threshold)
+                    keep = box_ops.nms(boxes, torch.ones(boxes.shape[0]).to(boxes.device), self.iou_threshold)
                     boxes = boxes[keep]
 
                     boxes = update_box_sizes_following_image_resize(boxes, transformed_image_size, original_image_size)
@@ -100,7 +96,7 @@ class RegionExtractor(nn.Module):
                     if self.tiling:
                         boxes = tile_boxes(boxes, original_image_size, self.tile_size)
 
-                        keep = box_ops.nms(boxes, self.pseudo_scores[: boxes.shape[0]], self.tile_iou_threshold)
+                        keep = box_ops.nms(boxes, torch.ones(boxes.shape[0]).to(boxes.device), self.tile_iou_threshold)
                         boxes = boxes[keep]
 
                     regions.append(boxes)
@@ -120,7 +116,7 @@ class RegionExtractor(nn.Module):
                     if self.tiling:
                         boxes = tile_boxes(boxes, original_image_size, self.tile_size)
 
-                        keep = box_ops.nms(boxes, self.pseudo_scores[: boxes.shape[0]], self.tile_iou_threshold)
+                        keep = box_ops.nms(boxes, torch.ones(boxes.shape[0]).to(boxes.device), self.tile_iou_threshold)
                         boxes = boxes[keep]
 
                     regions.append(boxes)
@@ -128,7 +124,7 @@ class RegionExtractor(nn.Module):
                 raise ValueError("Unknown stage {}".format(self.stage))
 
         indices = torch.repeat_interleave(torch.arange(len(regions)), Tensor([rois.shape[0] for rois in regions]).int())
-        regions = torch.cat([indices.unsqueeze(1).to(input.device), torch.cat(regions)], dim=1)
+        regions = torch.cat([indices.unsqueeze(1).to(batch.device), torch.cat(regions)], dim=1)
         return regions
 
     def post_process_box_predictions(
