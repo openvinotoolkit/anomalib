@@ -35,9 +35,12 @@ class ImageResult:
     pred_mask: Optional[np.ndarray] = None
     gt_boxes: Optional[np.ndarray] = None
     pred_boxes: Optional[np.ndarray] = None
+    box_labels: Optional[np.ndarray] = None
 
     heat_map: np.ndarray = field(init=False)
     segmentations: np.ndarray = field(init=False)
+    normal_boxes: np.ndarray = field(init=False)
+    anomalous_boxes: np.ndarray = field(init=False)
 
     def __post_init__(self) -> None:
         """Generate heatmap overlay and segmentations, convert masks to images."""
@@ -50,6 +53,10 @@ class ImageResult:
                 self.segmentations = (self.segmentations * 255).astype(np.uint8)
         if self.gt_mask is not None and self.gt_mask.max() <= 1.0:
             self.gt_mask *= 255
+        if self.pred_boxes is not None:
+            assert self.box_labels is not None, "Box labels must be provided when box locations are provided."
+            self.normal_boxes = self.pred_boxes[~self.box_labels.astype(np.bool)]
+            self.anomalous_boxes = self.pred_boxes[self.box_labels.astype(np.bool)]
 
 
 class Visualizer:
@@ -98,6 +105,7 @@ class Visualizer:
                 gt_mask=batch["mask"][i].squeeze().int().cpu().numpy() if "mask" in batch else None,
                 gt_boxes=batch["boxes"][i].cpu().numpy() if "boxes" in batch else None,
                 pred_boxes=batch["pred_boxes"][i].cpu().numpy() if "pred_boxes" in batch else None,
+                box_labels=batch["box_labels"][i].cpu().numpy() if "box_labels" in batch else None,
             )
             yield self.visualize_image(image_result)
 
@@ -134,11 +142,12 @@ class Visualizer:
             assert image_result.pred_boxes is not None
             visualization.add_image(image_result.image, "Image")
             if image_result.gt_boxes is not None:
-                gt_image = draw_boxes(np.copy(image_result.image), image_result.gt_boxes, is_ground_truth=True)
+                gt_image = draw_boxes(np.copy(image_result.image), image_result.gt_boxes, color=(255, 0, 0))
                 visualization.add_image(image=gt_image, color_map="gray", title="Ground Truth")
             else:
                 visualization.add_image(image_result.image, "Image")
-            pred_image = draw_boxes(np.copy(image_result.image), image_result.pred_boxes, is_ground_truth=False)
+            pred_image = draw_boxes(np.copy(image_result.image), image_result.normal_boxes, color=(0, 255, 0))
+            pred_image = draw_boxes(pred_image, image_result.anomalous_boxes, color=(255, 0, 0))
             visualization.add_image(pred_image, "Predictions")
         if self.task == TaskType.SEGMENTATION:
             assert image_result.pred_mask is not None
@@ -172,11 +181,10 @@ class Visualizer:
         if self.task == TaskType.DETECTION:
             # return image with bounding boxes augmented
             image_with_boxes = draw_boxes(
-                image=image_result.image, boxes=image_result.pred_boxes, is_ground_truth=False
+                image=np.copy(image_result.image), boxes=image_result.anomalous_boxes, color=(0, 0, 255)
             )
             if image_result.gt_boxes is not None:
-                image_with_boxes = draw_boxes(image=image_with_boxes, boxes=image_result.gt_boxes, is_ground_truth=True)
-            image_with_boxes = draw_boxes(image=image_with_boxes, boxes=image_result.pred_boxes, is_ground_truth=False)
+                image_with_boxes = draw_boxes(image=image_with_boxes, boxes=image_result.gt_boxes, color=(255, 0, 0))
             return image_with_boxes
         if self.task == TaskType.SEGMENTATION:
             visualization = mark_boundaries(

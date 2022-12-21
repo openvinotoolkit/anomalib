@@ -88,10 +88,9 @@ class AnomalyModule(pl.LightningModule, ABC):
                 outputs["pred_boxes"] = masks_to_boxes(outputs["pred_masks"])
         # apply thresholding to boxes
         if "pred_boxes" in outputs:
-            # apply threshold to keep only anomalous boxes
+            # apply threshold to assign normal/anomalous label to boxes
             keep = [scores > self.pixel_threshold.value for scores in outputs["boxes_scores"]]
-            outputs["boxes_scores"] = [scores[indices] for scores, indices in zip(outputs["boxes_scores"], keep)]
-            outputs["pred_boxes"] = [boxes[indices] for boxes, indices in zip(outputs["pred_boxes"], keep)]
+            outputs["box_labels"] = [labels.int() for labels in keep]
         return outputs
 
     def test_step(self, batch, _):  # pylint: disable=arguments-differ

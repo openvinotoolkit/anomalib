@@ -153,19 +153,17 @@ def compute_mask(anomaly_map: np.ndarray, threshold: float, kernel_size: int = 4
     return mask
 
 
-def draw_boxes(image: np.ndarray, boxes: np.ndarray, is_ground_truth: bool = False) -> np.ndarray:
+def draw_boxes(image: np.ndarray, boxes: np.ndarray, color: Tuple[int, int, int]) -> np.ndarray:
     """Draw bounding boxes on an image.
 
     Args:
         image (np.ndarray): Source image.
         boxes (np.nparray): 2D array of shape (N, 4) where each row contains the xyxy coordinates of a bounding box.
-        is_ground_truth (bool): Flag indicating if the boxes are ground truth. When true, boxes will be drawn in red,
-            otherwise in blue.
+        color (Tuple[int, int, int]): Color of the drawn boxes in RGB format.
 
     Returns:
         np.ndarray: Image showing the bounding boxes drawn on top of the source image.
     """
-    color = (255, 0, 0) if is_ground_truth else (0, 0, 255)
     for box in boxes:
         x_1, y_1, x_2, y_2 = box.astype(np.int)
         image = cv2.rectangle(image, (x_1, y_1), (x_2, y_2), color=color, thickness=2)
