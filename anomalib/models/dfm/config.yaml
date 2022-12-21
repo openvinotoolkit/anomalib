@@ -42,7 +42,6 @@ post_processing:
   manual_pixel_threshold: null
 
 visualization:
-  task: classification
   mode: full
   image_save_path: null
   inputs_are_normalized: true
@@ -59,7 +58,7 @@ logging:
   log_graph: false # Logs the model graph to respective logger.
 
 export:
-  export_mode: null #options: onnx, openvino
+  format: null #options: onnx, openvino
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
   accelerator: auto # <"cpu", "gpu", "tpu", "ipu", "hpu", "auto">

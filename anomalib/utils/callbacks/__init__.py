@@ -162,8 +162,8 @@ def get_callbacks_dict(config: Union[ListConfig, DictConfig]) -> List[Dict]:
     add_visualizer_callback(callbacks, config)
 
     # Export to OpenVINO
-    if "export_mode" in config is not None:
-        logger.info("Setting model export to %s", config.export_mode)
+    if "format" in config is not None:
+        logger.info("Setting model export to %s", config.format)
         __update_callback(
             callbacks,
             "ExportCallback",
@@ -171,7 +171,7 @@ def get_callbacks_dict(config: Union[ListConfig, DictConfig]) -> List[Dict]:
                 "input_size": config.data.init_args.image_size,
                 "dirpath": os.path.join(config.trainer.default_root_dir, "compressed"),
                 "filename": "model",
-                "export_mode": config.export_mode,
+                "export_mode": config.format,
             },
         )
 
@@ -249,9 +249,9 @@ def add_visualizer_callback(callbacks: Dict[str, Dict], config: Union[DictConfig
     """
     # visualization settings
     assert isinstance(config, (DictConfig, Namespace))
-    if config.visualization.task is not None and config.visualization.task != config.data.init_args.task:
+    if "task" in config.visualization:
         warnings.warn(
-            f"Visualization task {config.visualization.task} does not match data task {config.data.init_args.task}"
+            "task type should not be configured from visualization explicitly. User data.init_args.task instead."
             f" Setting visualization task to {config.data.init_args.task}."
         )
     config.visualization.task = config.data.init_args.task

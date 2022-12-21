@@ -25,7 +25,6 @@ data:
 model:
   class_path: anomalib.models.Fastflow
   init_args:
-    input_size: [256, 256]
     backbone: resnet18 # options: [resnet18, wide_resnet50_2, cait_m48_448, deit_base_distilled_patch16_384]
     pre_trained: true
     flow_steps: 8 # options: [8, 8, 20, 20] - for each supported backbone
@@ -53,7 +52,6 @@ post_processing:
   manual_pixel_threshold: null
 
 visualization:
-  task: segmentation
   mode: full
   image_save_path: null
   inputs_are_normalized: true

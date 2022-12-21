@@ -3,6 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import inspect
 import logging
 from importlib import import_module
 from typing import Union
@@ -61,7 +62,11 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
 
     try:
         module = import_module(".".join(config.model.class_path.split(".")[:-1]))
-        model = getattr(module, config.model.class_path.split(".")[-1])(**config.model.init_args)
+        model = getattr(module, config.model.class_path.split(".")[-1])
+        # remove input_size from config if not present in model's __init__ as it is set by data
+        if "input_size" not in inspect.signature(model).parameters and "input_size" in config.model.init_args:
+            del config.model.init_args.input_size
+        model = model(**config.model.init_args)
     except ModuleNotFoundError as exception:
         logger.error("Could not find the model class: %s", config.model.class_path)
         raise exception

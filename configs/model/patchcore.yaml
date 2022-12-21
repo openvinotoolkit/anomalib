@@ -24,9 +24,6 @@ data:
 model:
   class_path: anomalib.models.Patchcore
   init_args:
-    input_size:
-      - 224 # Height
-      - 224 # Width
     backbone: wide_resnet50_2
     pre_trained: true
     layers:
@@ -50,7 +47,6 @@ metrics:
     - AUROC
 
 visualization:
-  task: segmentation
   mode: full
   image_save_path: null
   inputs_are_normalized: true

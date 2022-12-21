@@ -47,7 +47,6 @@ metrics:
     - AUROC
 
 visualization:
-  task: classification
   mode: full
   image_save_path: null
   inputs_are_normalized: true

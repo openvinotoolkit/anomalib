@@ -15,10 +15,10 @@ from tests.pre_merge.utils.callbacks.export_callback.dummy_lightning_model impor
 
 
 @pytest.mark.parametrize(
-    "export_mode",
+    "format",
     [ExportMode.OPENVINO, ExportMode.ONNX],
 )
-def test_export_model_callback(export_mode):
+def test_formatl_callback(format):
     """Tests if an optimized model is created."""
 
     config = get_test_configurable_parameters(
@@ -33,7 +33,7 @@ def test_export_model_callback(export_mode):
                 input_size=config.data.init_args.image_size,
                 dirpath=os.path.join(tmp_dir),
                 filename="model",
-                export_mode=export_mode,
+                export_mode=format,
             ),
             EarlyStopping(monitor=config.model.init_args.metric),
         ]
@@ -48,9 +48,9 @@ def test_export_model_callback(export_mode):
         )
         trainer.fit(model, datamodule=datamodule)
 
-        if export_mode == ExportMode.OPENVINO:
+        if format == ExportMode.OPENVINO:
             assert os.path.exists(os.path.join(tmp_dir, "openvino/model.bin")), "Failed to generate OpenVINO model"
-        elif export_mode == ExportMode.ONNX:
+        elif format == ExportMode.ONNX:
             assert os.path.exists(os.path.join(tmp_dir, "onnx/model.onnx")), "Failed to generate ONNX model"
         else:
-            raise ValueError(f"Unknown export_mode {export_mode}. Supported modes: onnx or openvino.")
+            raise ValueError(f"Unknown format {format}. Supported modes: onnx or openvino.")

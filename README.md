@@ -249,11 +249,11 @@ python tools/inference/gradio_inference.py \
 
 It is possible to export your model to ONNX or OpenVINO IR
 
-If you want to export your PyTorch model to an OpenVINO model, ensure that `export_mode` is set to `"openvino"` in the respective model `config.yaml`.
+If you want to export your PyTorch model to an OpenVINO model, ensure that `format` is set to `"openvino"` in the respective model `config.yaml`.
 
 ```yaml
 export:
-  export_mode: "openvino" # options: openvino, onnx
+  format: "openvino" # options: openvino, onnx
 ```
 
 # Hyperparameter Optimization

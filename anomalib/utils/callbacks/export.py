@@ -26,6 +26,7 @@ class ExportCallback(Callback):
         input_size (Tuple[int, int]): Tuple of image height, width
         dirpath (str): Path for model output
         filename (str): Name of output model
+        export_mode (ExportMode): Export mode
     """
 
     def __init__(self, input_size: Tuple[int, int], dirpath: str, filename: str, export_mode: ExportMode):

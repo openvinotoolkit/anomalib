@@ -32,9 +32,6 @@ model:
       - layer1
       - layer2
       - layer3
-    input_size:
-      - 256
-      - 256
     backbone: resnet18
     pre_trained: true
     n_features: null
@@ -54,7 +51,6 @@ metrics:
     - AUROC
 
 visualization:
-  task: segmentation
   mode: full
   image_save_path: null
   inputs_are_normalized: true
@@ -67,7 +63,7 @@ logging:
   log_graph: false # Logs the model graph to respective logger.
 
 export:
-  export_mode: null #options: onnx, openvino
+  format: null #options: onnx, openvino
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:

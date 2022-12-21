@@ -17,7 +17,7 @@ from anomalib.data import get_datamodule
 from anomalib.deploy import OpenVINOInferencer, TorchInferencer, export
 from anomalib.deploy.export import ExportMode
 from anomalib.models import get_model
-from anomalib.utils.callbacks import get_callbacks_dict, instantiate_callbacks
+from anomalib.utils.callbacks import get_callbacks
 from anomalib.utils.cli.helpers import configure_optimizer
 from tests.helpers.dataset import TestDataset, get_dataset_path
 from tests.helpers.inference import MockImageLoader
@@ -66,11 +66,7 @@ class TestInferencers:
 
             model = get_model(model_config)
             datamodule = get_datamodule(model_config)
-            callbacks = get_callbacks_dict(model_config)
-            callbacks = instantiate_callbacks(callbacks)
-            # Remove callbacks from trainer as it is passed separately
-            if "callbacks" in model_config.trainer:
-                model_config.trainer.pop("callbacks")
+            callbacks = get_callbacks(model_config)
 
             configure_optimizer(model, model_config)
             trainer = Trainer(**model_config.trainer, logger=False, callbacks=callbacks)
@@ -106,11 +102,7 @@ class TestInferencers:
 
             model = get_model(model_config)
             datamodule = get_datamodule(model_config)
-            callbacks = get_callbacks_dict(model_config)
-            callbacks = instantiate_callbacks(callbacks)
-            # Remove callbacks from trainer as it is passed separately
-            if "callbacks" in model_config.trainer:
-                model_config.trainer.pop("callbacks")
+            callbacks = get_callbacks(model_config)
             configure_optimizer(model, model_config)
             trainer = Trainer(**model_config.trainer, logger=False, callbacks=callbacks)
 

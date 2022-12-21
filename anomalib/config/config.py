@@ -30,8 +30,13 @@ def update_input_size_config(config: Union[DictConfig, ListConfig]) -> Union[Dic
     if isinstance(config.data.init_args.image_size, int):
         config.data.init_args.image_size = (config.data.init_args.image_size,) * 2
 
+    # Use input size from data to model input
     if "input_size" in config.model.init_args:
-        config.model.init_args.input_size = config.data.init_args.image_size
+        warn(
+            "Model input size should not be configured explicitly. Use the image size from the data instead."
+            f" Overriding model input size {config.model.init_args.input_size} with {config.data.init_args.image_size}."
+        )
+    config.model.init_args.input_size = config.data.init_args.image_size
 
     if "tiling" in config.keys() and config.tiling.apply:
         if isinstance(config.tiling.tile_size, int):
@@ -43,7 +48,7 @@ def update_input_size_config(config: Union[DictConfig, ListConfig]) -> Union[Dic
 
 
 def update_nncf_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfig, ListConfig]:
-    """Set the NNCF input size based on the value of the crop_size parameter in the configurable parameters object.
+    """Set the NNCF input size based on the value of the image_size parameter in the configurable parameters object.
 
     Args:
         config (Union[DictConfig, ListConfig]): Configurable parameters of the current run.
@@ -51,8 +56,8 @@ def update_nncf_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfi
     Returns:
         Union[DictConfig, ListConfig]: Updated configurable parameters in DictConfig object.
     """
-    crop_size = config.data.init_args.image_size
-    sample_size = (crop_size, crop_size) if isinstance(crop_size, int) else crop_size
+    image_size = config.data.init_args.image_size
+    sample_size = (image_size, image_size) if isinstance(image_size, int) else image_size
     if "optimization" in config.keys():
         if "nncf" in config.optimization.keys():
             if "input_info" not in config.optimization.nncf.keys():

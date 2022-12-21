@@ -20,7 +20,7 @@ model:
       pixel_default: 0.0
 
 export:
-  export_mode: "openvino"
+  format: "openvino"
 
 trainer:
   accelerator: auto # <"cpu", "gpu", "tpu", "ipu", "hpu", "auto">

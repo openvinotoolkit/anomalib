@@ -26,7 +26,6 @@ data:
 model:
   class_path: anomalib.models.Stfpm
   init_args:
-    input_size: [256, 256]
     feature_extractor:
       backbone: resnet18
       pre_trained: true
@@ -57,7 +56,6 @@ metrics:
     - AUROC
 
 visualization:
-  task: segmentation
   mode: full
   image_save_path: null
   inputs_are_normalized: true
