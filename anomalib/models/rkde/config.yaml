@@ -35,7 +35,6 @@ model:
   n_pca_components: 16
   max_training_points: 40000
   pre_processing: scale
-  n_components: 16
   normalization_method: none # options: [null, min_max, cdf]
 
 metrics:
