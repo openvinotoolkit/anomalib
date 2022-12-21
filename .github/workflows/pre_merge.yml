@@ -4,12 +4,12 @@ on:
   push:
     branches: [main]
   pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
   workflow_dispatch: # run on request (no need for PR)
-  types:
-    - opened
-    - reopened
-    - synchronize
-    - ready_for_review
 
 # This is what will cancel the workflow concurrency
 concurrency:
