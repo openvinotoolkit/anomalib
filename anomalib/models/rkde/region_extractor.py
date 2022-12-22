@@ -6,7 +6,7 @@ Region Extractor.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 import torch
 from torch import Tensor, nn
@@ -51,7 +51,7 @@ class RegionExtractor(nn.Module):
             self.faster_rcnn.transform.register_forward_hook(self.get_transform_shape_hook())
             self.faster_rcnn.rpn.register_forward_hook(self.get_proposals_hook())
 
-    def get_proposals_hook(self):
+    def get_proposals_hook(self) -> Callable:
         """Forward hook that retrieves the outputs of the Region Proposal Network."""
 
         def hook(_, __, output):
@@ -59,7 +59,7 @@ class RegionExtractor(nn.Module):
 
         return hook
 
-    def get_transform_shape_hook(self):
+    def get_transform_shape_hook(self) -> Callable:
         """Forward hook that retrieves the size of the input images after the RCNN transform is applied."""
 
         def hook(_, __, output):
