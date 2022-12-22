@@ -45,6 +45,7 @@ class Rkde(AnomalyModule):
         n_pca_components: int = 16,
         max_training_points: int = 40000,
         pre_processing: str = "scale",
+        rcnn_detections_per_image: int = 100,
     ):
         super().__init__()
 
@@ -56,6 +57,7 @@ class Rkde(AnomalyModule):
             n_pca_components=n_pca_components,
             pre_processing=pre_processing,
             filter_count=max_training_points,
+            rcnn_detections_per_image=rcnn_detections_per_image,
         )
         self.embeddings: List[Tensor] = []
 
@@ -123,6 +125,7 @@ class RkdeLightning(Rkde):
             max_training_points=hparams.model.max_training_points,
             pre_processing=hparams.model.pre_processing,
             n_pca_components=hparams.model.n_pca_components,
+            rcnn_detections_per_image=hparams.model.rcnn_detections_per_image,
         )
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(hparams)

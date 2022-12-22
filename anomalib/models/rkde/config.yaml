@@ -35,6 +35,7 @@ model:
   n_pca_components: 16
   max_training_points: 40000
   pre_processing: scale
+  rcnn_detections_per_image: 100 # only used when stage is 'rcnn'
   normalization_method: none # options: [null, min_max, cdf]
 
 metrics:

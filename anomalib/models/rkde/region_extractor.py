@@ -24,6 +24,7 @@ class RegionExtractor(nn.Module):
         min_size: int = 25,
         iou_threshold: float = 0.3,
         likelihood: Optional[float] = None,
+        rcnn_detections_per_image: int = 100,
     ) -> None:
         super().__init__()
 
@@ -35,7 +36,7 @@ class RegionExtractor(nn.Module):
 
         # Affects operation only when stage='rcnn'
         self.rcnn_score_thresh = 0.2 if likelihood is None else self.likelihood_to_class_threshold(likelihood)
-        self.rcnn_detections_per_img = 100
+        self.max_detections_per_image = rcnn_detections_per_image
 
         # Model and model components
         self.faster_rcnn = fasterrcnn_resnet50_fpn(
@@ -50,6 +51,7 @@ class RegionExtractor(nn.Module):
             self.proposals = Tensor([])
             self.faster_rcnn.transform.register_forward_hook(self.get_transform_shape_hook())
             self.faster_rcnn.rpn.register_forward_hook(self.get_proposals_hook())
+            self.max_detections_per_image = 1000  # disable score-based filtering when in rpn mode
 
     def get_proposals_hook(self) -> Callable:
         """Forward hook that retrieves the outputs of the Region Proposal Network."""
@@ -131,7 +133,7 @@ class RegionExtractor(nn.Module):
             keep = box_ops.nms(boxes, scores, self.iou_threshold)
 
             # keep only top-k scoring predictions
-            keep = keep[: self.rcnn_detections_per_img]
+            keep = keep[: self.max_detections_per_image]
             boxes = boxes[keep]
 
             processed_boxes.append(boxes)

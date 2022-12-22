@@ -40,6 +40,7 @@ class RkdeModel(nn.Module):
         n_pca_components: int = 16,
         pre_processing: str = "scale",
         filter_count: int = 40000,
+        rcnn_detections_per_image: int = 100,
     ):
         super().__init__()
         self.n_pca_components = n_pca_components
@@ -47,7 +48,11 @@ class RkdeModel(nn.Module):
         self.filter_count = filter_count
 
         self.region_extractor = RegionExtractor(
-            stage=region_extractor_stage, min_size=min_box_size, iou_threshold=iou_threshold, likelihood=box_likelihood
+            stage=region_extractor_stage,
+            min_size=min_box_size,
+            iou_threshold=iou_threshold,
+            likelihood=box_likelihood,
+            rcnn_detections_per_image=rcnn_detections_per_image,
         ).eval()
         self.feature_extractor = FeatureExtractor().eval()
 
