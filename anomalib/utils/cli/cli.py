@@ -22,7 +22,6 @@ from pytorch_lightning.utilities.cli import (
 from anomalib.utils.callbacks import (
     CdfNormalizationCallback,
     ImageVisualizerCallback,
-    LoadModelCallback,
     MetricsConfigurationCallback,
     MinMaxNormalizationCallback,
     ModelCheckpoint,
@@ -197,11 +196,6 @@ class AnomalibCLI(LightningCLI):
             auto_insert_metric_name=False,
         )
         callbacks.append(checkpoint)
-
-        # LoadModel from Checkpoint.
-        if config.trainer.resume_from_checkpoint:
-            load_model = LoadModelCallback(config.trainer.resume_from_checkpoint)
-            callbacks.append(load_model)
 
         # Add timing to the pipeline.
         callbacks.append(TimerCallback())
