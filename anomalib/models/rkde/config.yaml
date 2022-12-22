@@ -36,7 +36,7 @@ model:
   max_training_points: 40000
   pre_processing: scale # options: [scale, norm]
   rcnn_detections_per_image: 100 # max detections per image, only used when stage is 'rcnn'
-  normalization_method: null # options: [null, min_max, cdf]
+  normalization_method: none # options: [null, min_max, cdf]
 
 metrics:
   image:
