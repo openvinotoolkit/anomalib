@@ -6,12 +6,11 @@ Region Extractor.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 import torch
-import torch.nn as nn
-import torchvision.models.detection as detection
-from torch import Size, Tensor
+from torch import Tensor, nn
+from torchvision.models.detection import fasterrcnn_resnet50_fpn
 from torchvision.ops import boxes as box_ops
 
 
@@ -25,8 +24,6 @@ class RegionExtractor(nn.Module):
         min_size: int = 25,
         iou_threshold: float = 0.3,
         likelihood: Optional[float] = None,
-        tiling: bool = False,
-        tile_size: int = 32,
     ) -> None:
         super().__init__()
 
@@ -40,32 +37,30 @@ class RegionExtractor(nn.Module):
         self.rcnn_score_thresh = 0.2 if likelihood is None else self.likelihood_to_class_threshold(likelihood)
         self.rcnn_detections_per_img = 100
 
-        # Affects operation only when tiling is enabled
-        self.tiling = tiling
-        self.tile_size = tile_size
-        self.tile_iou_threshold = 0.3
-
         # Model and model components
-        self.faster_rcnn = detection.fasterrcnn_resnet50_fpn(
+        self.faster_rcnn = fasterrcnn_resnet50_fpn(
             pretrained=True,
             box_score_thresh=self.rcnn_score_thresh,
-            box_nms_thresh=1.0,  # do not apply nms
-            box_detections_per_img=1000,  # unlimited
+            box_nms_thresh=1.0,  # this disables nms (we apply our own label-agnostic nms during post-processing)
+            box_detections_per_img=1000,  # this disables filtering top k predictions (again, we apply our own version)
         )
 
-        self.faster_rcnn.transform.register_forward_hook(self.get_transformed_image_size())
-        self.faster_rcnn.rpn.register_forward_hook(self.get_proposals())
-        self.transform_shape = Tensor([])
-        self.proposals = Tensor([])
+        if self.stage == "rpn":
+            self.transform_shape = Tensor([])
+            self.proposals = Tensor([])
+            self.faster_rcnn.transform.register_forward_hook(self.get_transform_shape_hook())
+            self.faster_rcnn.rpn.register_forward_hook(self.get_proposals_hook())
 
-    def get_proposals(self):
+    def get_proposals_hook(self):
+        """Forward hook that retrieves the outputs of the Region Proposal Network."""
 
         def hook(_, __, output):
             self.proposals = output[0]
 
         return hook
 
-    def get_transformed_image_size(self):
+    def get_transform_shape_hook(self):
+        """Forward hook that retrieves the size of the input images after the RCNN transform is applied."""
 
         def hook(_, __, output):
             self.transform_shape = output[0].tensors.shape[-2:]
@@ -80,7 +75,6 @@ class RegionExtractor(nn.Module):
             input (Union[Tensor, List[Tensor]]): Input tensor or list of tensors.
 
         Raises:
-            ValueError: When the model is not in the correct mode.
             ValueError: When ``stage`` is not one of ``rcnn`` or ``rpn``.
 
         Returns:
@@ -103,6 +97,8 @@ class RegionExtractor(nn.Module):
             all_regions = [box_ops.clip_boxes_to_image(boxes, self.transform_shape) for boxes in self.proposals]
             all_regions = [self.scale_boxes(boxes, self.transform_shape, batch.shape[-2:]) for boxes in all_regions]
             all_scores = [torch.ones(boxes.shape[0]).to(boxes.device) for boxes in all_regions]
+        else:
+            raise ValueError(f"Unknown region extractor stage: {self.stage}")
 
         regions = self.post_process_box_predictions(all_regions, all_scores)
 
@@ -110,22 +106,21 @@ class RegionExtractor(nn.Module):
         regions = torch.cat([indices.unsqueeze(1).to(batch.device), torch.cat(regions)], dim=1)
         return regions
 
-    def post_process_box_predictions(
-        self, pred_boxes: Tensor, pred_scores: Tensor
-    ) -> List[Tensor]:
+    def post_process_box_predictions(self, pred_boxes: Tensor, pred_scores: Tensor) -> List[Tensor]:
         """Post-processes the box predictions.
 
+        The post-processing consists of removing small boxes, applying nms, and
+        keeping only the k boxes with the highest confidence score.
+
         Args:
-            class_logits (Tensor): Class logits.
-            box_regression (Tensor): Box predictions of shape (N, 4).
-            proposals (List[Tensor]): Proposals from the RPN.
-            image_shapes (List[Tuple[int, int]]): Shapes of the transformed images.
+            pred_boxes (Tensor): Box predictions of shape (N, 4).
+            pred_scores (Tensor): Tensor of shape () with a confidence score for each box prediction.
 
         Returns:
             List[Tensor]: Post-processed box predictions of shape (N, 4).
         """
 
-        post_processed_boxes: List[Tensor] = []
+        processed_boxes: List[Tensor] = []
         for boxes, scores in zip(pred_boxes, pred_scores):
 
             # remove small boxes
@@ -139,9 +134,9 @@ class RegionExtractor(nn.Module):
             keep = keep[: self.rcnn_detections_per_img]
             boxes = boxes[keep]
 
-            post_processed_boxes.append(boxes)
+            processed_boxes.append(boxes)
 
-        return post_processed_boxes
+        return processed_boxes
 
     @staticmethod
     def likelihood_to_class_threshold(likelihood: float) -> float:
@@ -157,16 +152,16 @@ class RegionExtractor(nn.Module):
         return threshold
 
     @staticmethod
-    def scale_boxes(boxes: Tensor, original_size: Size, new_size: Size) -> Tensor:
-        """Update box sizes following image resize.
+    def scale_boxes(boxes: Tensor, image_size: torch.Size, new_size: torch.Size) -> Tensor:
+        """Scale bbox coordinates to a new image size.
 
         Args:
             boxes (Tensor): Boxes of shape (N, 4) - (x1, y1, x2, y2).
-            original_size (Size): Size of the original image.
-            new_size (Size): Size of the transformed image.
+            image_size (Size): Size of the original image in which the bbox coordinates were retrieved.
+            new_size (Size): New image size to which the bbox coordinates will be scaled.
 
         Returns:
             Tensor: Updated boxes of shape (N, 4) - (x1, y1, x2, y2).
         """
-        scale = Tensor([*new_size]) / Tensor([*original_size])
+        scale = Tensor([*new_size]) / Tensor([*image_size])
         return boxes * scale.repeat(2).to(boxes.device)
