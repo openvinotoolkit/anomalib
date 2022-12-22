@@ -112,7 +112,6 @@ def update_multi_gpu_training_config(config: Union[DictConfig, ListConfig]) -> U
 def get_configurable_parameters(
     model_name: Optional[str] = None,
     config_path: Optional[Union[Path, str]] = None,
-    weight_file: Optional[str] = None,
     config_filename: Optional[str] = "config",
     config_file_extension: Optional[str] = "yaml",
 ) -> Union[DictConfig, ListConfig]:
@@ -121,7 +120,6 @@ def get_configurable_parameters(
     Args:
         model_name: Optional[str]:  (Default value = None)
         config_path: Optional[Union[Path, str]]:  (Default value = None)
-        weight_file: Path to the weight file
         config_filename: Optional[str]:  (Default value = "config")
         config_file_extension: Optional[str]:  (Default value = "yaml")
 
@@ -186,9 +184,6 @@ def get_configurable_parameters(
 
     # loggers should write to results/model/dataset/category/ folder
     config.trainer.default_root_dir = str(project_path)
-
-    if weight_file:
-        config.trainer.resume_from_checkpoint = weight_file
 
     config = update_nncf_config(config)
 

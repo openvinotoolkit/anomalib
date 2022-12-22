@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-import os
 from importlib import import_module
 from typing import List, Union
 
@@ -95,7 +94,7 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     else:
         raise ValueError(f"Unknown model {config.model.name}!")
 
-    if "init_weights" in config.keys() and config.init_weights:
-        model.load_state_dict(load(os.path.join(config.project.path, config.init_weights))["state_dict"], strict=False)
+    if "ckpt_path" in config.keys() and config.ckpt_path:  # This is needed for nncf
+        model.load_state_dict(load(config.ckpt_path)["state_dict"], strict=False)
 
     return model

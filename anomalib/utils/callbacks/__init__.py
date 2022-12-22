@@ -20,7 +20,6 @@ from .cdf_normalization import CdfNormalizationCallback
 from .graph import GraphLogger
 from .metrics_configuration import MetricsConfigurationCallback
 from .min_max_normalization import MinMaxNormalizationCallback
-from .model_loader import LoadModelCallback
 from .post_processing_configuration import PostProcessingConfigurationCallback
 from .tiler_configuration import TilerConfigurationCallback
 from .timer import TimerCallback
@@ -30,7 +29,6 @@ __all__ = [
     "CdfNormalizationCallback",
     "GraphLogger",
     "ImageVisualizerCallback",
-    "LoadModelCallback",
     "MetricsConfigurationCallback",
     "MetricVisualizerCallback",
     "MinMaxNormalizationCallback",
@@ -68,10 +66,6 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
     )
 
     callbacks.extend([checkpoint, TimerCallback()])
-
-    if "resume_from_checkpoint" in config.trainer.keys() and config.trainer.resume_from_checkpoint is not None:
-        load_model = LoadModelCallback(config.trainer.resume_from_checkpoint)
-        callbacks.append(load_model)
 
     # Add post-processing configurations to AnomalyModule.
     image_threshold = (
