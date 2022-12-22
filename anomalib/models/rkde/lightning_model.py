@@ -63,7 +63,7 @@ class Rkde(AnomalyModule):
 
     @staticmethod
     def configure_optimizers():  # pylint: disable=arguments-differ
-        """RKde doesn't require optimization, therefore returns no optimizers."""
+        """RKDE doesn't require optimization, therefore returns no optimizers."""
         return None
 
     def training_step(self, batch, _batch_idx):  # pylint: disable=arguments-differ
@@ -77,8 +77,7 @@ class Rkde(AnomalyModule):
           Deep CNN features.
         """
         features = self.model(batch["image"])
-        # TODO: Check if squeeze() is really needed.
-        self.embeddings.append(features.squeeze())
+        self.embeddings.append(features)
 
     def on_validation_start(self) -> None:
         """Fit a KDE Model to the embedding collected from the training set."""
