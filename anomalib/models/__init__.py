@@ -94,7 +94,8 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     else:
         raise ValueError(f"Unknown model {config.model.name}!")
 
-    if "ckpt_path" in config.keys() and config.ckpt_path:  # This is needed for nncf
+    # This is needed for nncf. Might possibly break nncf but are tests don't cover nncf.
+    if "ckpt_path" in config.keys() and config.ckpt_path:
         model.load_state_dict(load(config.ckpt_path)["state_dict"], strict=False)
 
     return model

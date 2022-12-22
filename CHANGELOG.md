@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- `resume_from_checkpoint` in trainer is now `ckpt_path` in config. (<https://github.com/openvinotoolkit/anomalib/pull/811>)
 - Switch to new [changelog format](https://keepachangelog.com/en/1.0.0/). (<https://github.com/openvinotoolkit/anomalib/pull/777>)
 - Rename feature to task (<https://github.com/openvinotoolkit/anomalib/pull/769>)
 - make device configurable in OpenVINO inference (<https://github.com/openvinotoolkit/anomalib/pull/755>)
