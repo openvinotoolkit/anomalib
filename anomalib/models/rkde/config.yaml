@@ -6,7 +6,7 @@ dataset:
   task: detection
   clip_length_in_frames: 1
   frames_between_clips: 10
-  image_size: [800, 1200]
+  image_size: 256
   normalization: imagenet
   train_batch_size: 32
   eval_batch_size: 32
@@ -30,7 +30,7 @@ model:
   name: rkde
   region_extractor_stage: rcnn
   box_likelihood: 0.8
-  min_box_size: 5
+  min_box_size: 8
   iou_threshold: 0.3
   n_pca_components: 16
   max_training_points: 40000
