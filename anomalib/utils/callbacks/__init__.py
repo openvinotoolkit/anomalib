@@ -128,16 +128,6 @@ def get_callbacks_dict(config: Union[ListConfig, DictConfig]) -> List[Dict]:
         },
     )
 
-    # LoadModel from Checkpoint.
-    if config.trainer.resume_from_checkpoint:
-        __update_callback(
-            callbacks,
-            "LoadModelCallback",
-            {
-                "weights_path": config.trainer.resume_from_checkpoint,
-            },
-        )
-
     # Add timing to the pipeline.
     __update_callback(callbacks, "TimerCallback", {})
 

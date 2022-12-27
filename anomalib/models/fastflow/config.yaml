@@ -1,3 +1,4 @@
+ckpt_path: null
 seed_everything: null
 results_dir:
   path: ./results

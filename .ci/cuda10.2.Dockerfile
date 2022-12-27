@@ -18,28 +18,28 @@ ENV DEBIAN_FRONTEND="noninteractive"
 # Update system and install wget
 RUN apt-get update && \
     apt-get install --no-install-recommends -y \
-        curl=7.58.0-2ubuntu3.20 \
-        wget=1.19.4-1ubuntu2 \
-        ffmpeg=7:3.4.2-2 \
-        libpython3.8=3.8.0-3ubuntu1~18.04.2 \
-        npm=3.5.2-0ubuntu4 \
-        pandoc=1.19.2.4~dfsg-1build4 \
-        ruby=1:2.5.1 \
-        software-properties-common=0.96.24.32.18 && \
+        curl \
+        wget \
+        ffmpeg \
+        libpython3.8 \
+        npm \
+        pandoc \
+        ruby \
+        software-properties-common && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 # Install latest git for github actions
 RUN add-apt-repository ppa:git-core/ppa &&\
     apt-get update && \
-    apt-get install --no-install-recommends -y git=1:2.38.1-0ppa1~ubuntu18.04.1 &&\
+    apt-get install --no-install-recommends -y git &&\
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 # Prettier requires atleast nodejs 10
 RUN curl -sL https://deb.nodesource.com/setup_14.x > nodesetup.sh && \
     bash - nodesetup.sh && \
-    apt-get install --no-install-recommends -y nodejs=14.20.1-1nodesource1 && \
+    apt-get install --no-install-recommends -y nodejs && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

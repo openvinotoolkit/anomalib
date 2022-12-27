@@ -1,4 +1,4 @@
-"""DFM: Deep Feature Kernel Density Estimation."""
+"""DFM: Deep Feature Modeling."""
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -29,7 +29,8 @@ class Dfm(AnomalyModule):
         pca_level (float, optional): Ratio from which number of components for PCA are calculated.
             Defaults to 0.97.
         score_type (str, optional): Scoring type. Options are `fre` and `nll`. Defaults to "fre".
-        nll: for Gaussian modeling, fre: pca feature reconstruction error
+        nll: for Gaussian modeling, fre: pca feature-reconstruction error. Anomaly segmentation is
+        supported with `fre` only. If using `nll`, set `task` in config.yaml to classification
     """
 
     def __init__(
@@ -48,6 +49,7 @@ class Dfm(AnomalyModule):
             score_type=score_type,
         )
         self.embeddings: List[Tensor] = []
+        self.score_type = score_type
 
     @staticmethod
     def configure_optimizers() -> None:  # pylint: disable=arguments-differ
@@ -94,8 +96,11 @@ class Dfm(AnomalyModule):
           batch (List[Dict[str, Any]]): Input batch
 
         Returns:
-          Dictionary containing FRE anomaly scores and ground-truth.
+          Dictionary containing FRE anomaly scores and anomaly maps.
         """
-        batch["pred_scores"] = self.model(batch["image"])
+        if self.score_type == "fre":
+            batch["anomaly_maps"], batch["pred_scores"] = self.model(batch["image"])
+        elif self.score_type == "nll":
+            batch["pred_scores"] = self.model(batch["image"])
 
         return batch
