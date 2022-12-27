@@ -27,7 +27,7 @@ max-line-length = 120
 # PYLINT CONFIGURATION                                                        #
 [tool.pylint.main]
 extension-pkg-whitelist = "cv2"
-ignore = ["tests", "docs", "anomalib/models/components/freia"]
+ignore = ["tests", "docs"]
 ignored-modules = "cv2"
 
 [tool.pylint.messages_control]
@@ -64,12 +64,7 @@ min-similarity-lines = 5
 [tool.mypy]
 ignore_missing_imports = true
 show_error_codes = true
-exclude = ["anomalib/models/components/freia/"]
 
-# mypy per-module options:
-[[tool.mypy.overrides]]
-module = "anomalib.models.components.freia.*"
-follow_imports = "skip"
 
 [[tool.mypy.overrides]]
 module = "torch.*"

@@ -21,7 +21,6 @@ model:
     layers:
       - layer4
   max_training_points: 40000
-  confidence_threshold: 0.5
   pre_processing: scale
   n_components: 16
   threshold_steepness: 0.05

@@ -8,10 +8,9 @@ import math
 
 import numpy as np
 import torch
+from FrEIA.framework import SequenceINN
+from FrEIA.modules import AllInOneBlock
 from torch import nn
-
-from anomalib.models.components.freia.framework import SequenceINN
-from anomalib.models.components.freia.modules import AllInOneBlock
 
 logger = logging.getLogger(__name__)
 

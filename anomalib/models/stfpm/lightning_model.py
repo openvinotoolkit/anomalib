@@ -54,11 +54,12 @@ class Stfpm(AnomalyModule):
           _: Index of the batch.
 
         Returns:
-          Hierarchical feature map
+          Loss value
         """
         self.model.teacher_model.eval()
         teacher_features, student_features = self.model.forward(batch["image"])
         loss = self.loss(teacher_features, student_features)
+        self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
@@ -112,7 +113,7 @@ class StfpmLightning(Stfpm):
         return [early_stopping]
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configures optimizers for each decoder.
+        """Configures optimizers.
 
         Note:
             This method is used for the existing CLI.
@@ -121,7 +122,7 @@ class StfpmLightning(Stfpm):
                 config.yaml file or from CLI.
 
         Returns:
-            Optimizer: Adam optimizer for each decoder
+            Optimizer: SGD optimizer
         """
         return optim.SGD(
             params=self.model.student_model.parameters(),
