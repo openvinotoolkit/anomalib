@@ -6,7 +6,7 @@ https://arxiv.org/abs/2103.04257
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Tuple, Union
+from typing import Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
@@ -15,6 +15,7 @@ from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import optim
 
 from anomalib.models.components import AnomalyModule
+from anomalib.models.components.feature_extraction import FeatureExtractorParams
 from anomalib.models.stfpm.loss import STFPMLoss
 from anomalib.models.stfpm.torch_model import STFPMModel
 
@@ -27,22 +28,19 @@ class Stfpm(AnomalyModule):
 
     Args:
         input_size (Tuple[int, int]): Size of the model input.
-        backbone (str): Backbone CNN network
-        layers (List[str]): Layers to extract features from the backbone CNN
+        student_teacher_model (FeatureExtractorParams): Parameters for teacher and student models.
     """
 
     def __init__(
         self,
         input_size: Tuple[int, int],
-        backbone: str,
-        layers: List[str],
+        student_teacher_model: FeatureExtractorParams,
     ):
         super().__init__()
 
         self.model = STFPMModel(
             input_size=input_size,
-            backbone=backbone,
-            layers=layers,
+            student_teacher_model_params=student_teacher_model,
         )
         self.loss = STFPMLoss()
 
@@ -93,8 +91,7 @@ class StfpmLightning(Stfpm):
     def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
         super().__init__(
             input_size=hparams.model.input_size,
-            backbone=hparams.model.backbone,
-            layers=hparams.model.layers,
+            student_teacher_model=hparams.model.student_teacher_model,
         )
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(hparams)

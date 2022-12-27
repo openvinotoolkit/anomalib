@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import List, Tuple, Union
+from typing import List, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
@@ -12,6 +12,7 @@ from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
+from anomalib.models.components.feature_extraction import FeatureExtractorParams
 
 from .torch_model import DFMModel
 
@@ -23,10 +24,7 @@ class Dfm(AnomalyModule):
     """DFM: Deep Featured Kernel Density Estimation.
 
     Args:
-        backbone (str): Backbone CNN network
-        layer (str): Layer to extract features from the backbone CNN
-        input_size (Tuple[int, int]): Input size for the model.
-        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+        feature_extractor (FeatureExtractorParams): Feature extractor params
         pooling_kernel_size (int, optional): Kernel size to pool features extracted from the CNN.
             Defaults to 4.
         pca_level (float, optional): Ratio from which number of components for PCA are calculated.
@@ -38,10 +36,7 @@ class Dfm(AnomalyModule):
 
     def __init__(
         self,
-        backbone: str,
-        layer: str,
-        input_size: Tuple[int, int],
-        pre_trained: bool = True,
+        feature_extractor: FeatureExtractorParams,
         pooling_kernel_size: int = 4,
         pca_level: float = 0.97,
         score_type: str = "fre",
@@ -49,10 +44,7 @@ class Dfm(AnomalyModule):
         super().__init__()
 
         self.model: DFMModel = DFMModel(
-            backbone=backbone,
-            pre_trained=pre_trained,
-            layer=layer,
-            input_size=input_size,
+            feature_extractor_params=feature_extractor,
             pooling_kernel_size=pooling_kernel_size,
             n_comps=pca_level,
             score_type=score_type,
@@ -124,10 +116,7 @@ class DfmLightning(Dfm):
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
         super().__init__(
-            input_size=hparams.model.input_size,
-            backbone=hparams.model.backbone,
-            layer=hparams.model.layer,
-            pre_trained=hparams.model.pre_trained,
+            feature_extractor=hparams.model.feature_extractor,
             pooling_kernel_size=hparams.model.pooling_kernel_size,
             pca_level=hparams.model.pca_level,
             score_type=hparams.model.score_type,

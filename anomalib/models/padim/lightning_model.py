@@ -15,6 +15,7 @@ from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
+from anomalib.models.components.feature_extraction import FeatureExtractorParams
 from anomalib.models.padim.torch_model import PadimModel
 
 logger = logging.getLogger(__name__)
@@ -27,30 +28,23 @@ class Padim(AnomalyModule):
     """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
 
     Args:
-        layers (List[str]): Layers to extract features from the backbone CNN
         input_size (Tuple[int, int]): Size of the model input.
-        backbone (str): Backbone CNN network
-        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+        feature_extractor (FeatureExtractorParams): Feature extractor params
         n_features (int, optional): Number of features to retain in the dimension reduction step.
                                 Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
     """
 
     def __init__(
         self,
-        layers: List[str],
         input_size: Tuple[int, int],
-        backbone: str,
-        pre_trained: bool = True,
+        feature_extractor: FeatureExtractorParams,
         n_features: Optional[int] = None,
     ):
         super().__init__()
 
-        self.layers = layers
         self.model: PadimModel = PadimModel(
             input_size=input_size,
-            backbone=backbone,
-            pre_trained=pre_trained,
-            layers=layers,
+            feature_extractor_params=feature_extractor,
             n_features=n_features,
         ).eval()
 
@@ -120,9 +114,7 @@ class PadimLightning(Padim):
     def __init__(self, hparams: Union[DictConfig, ListConfig]):
         super().__init__(
             input_size=hparams.model.input_size,
-            layers=hparams.model.layers,
-            backbone=hparams.model.backbone,
-            pre_trained=hparams.model.pre_trained,
+            feature_extractor=hparams.model.feature_extractor,
             n_features=hparams.model.n_features if "n_features" in hparams.model else None,
         )
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore

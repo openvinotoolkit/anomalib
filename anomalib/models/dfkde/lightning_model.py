@@ -11,6 +11,7 @@ from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
+from anomalib.models.components.feature_extraction import FeatureExtractorParams
 
 from .torch_model import DfkdeModel
 
@@ -22,8 +23,7 @@ class Dfkde(AnomalyModule):
     """DFKDE: Deep Feature Kernel Density Estimation.
 
     Args:
-        backbone (str): Pre-trained model backbone.
-        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+        feature_extractor (FeatureExtractorParams): Feature extractor params
         max_training_points (int, optional): Number of training points to fit the KDE model.
             Defaults to 40000.
         pre_processing (str, optional): Preprocess features before passing to KDE.
@@ -36,9 +36,7 @@ class Dfkde(AnomalyModule):
 
     def __init__(
         self,
-        layers: List[str],
-        backbone: str,
-        pre_trained: bool = True,
+        feature_extractor: FeatureExtractorParams,
         max_training_points: int = 40000,
         pre_processing: str = "scale",
         n_components: int = 16,
@@ -48,9 +46,7 @@ class Dfkde(AnomalyModule):
         super().__init__()
 
         self.model = DfkdeModel(
-            layers=layers,
-            backbone=backbone,
-            pre_trained=pre_trained,
+            feature_extractor_params=feature_extractor,
             n_comps=n_components,
             pre_processing=pre_processing,
             filter_count=max_training_points,
@@ -117,9 +113,7 @@ class DfkdeLightning(Dfkde):
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
         super().__init__(
-            layers=hparams.model.layers,
-            backbone=hparams.model.backbone,
-            pre_trained=hparams.model.pre_trained,
+            feature_extractor=hparams.model.feature_extractor,
             max_training_points=hparams.model.max_training_points,
             pre_processing=hparams.model.pre_processing,
             n_components=hparams.model.n_components,

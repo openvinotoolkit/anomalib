@@ -15,6 +15,7 @@ from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
+from anomalib.models.components.feature_extraction import FeatureExtractorParams
 from anomalib.models.patchcore.torch_model import PatchcoreModel
 
 logger = logging.getLogger(__name__)
@@ -26,9 +27,7 @@ class Patchcore(AnomalyModule):
 
     Args:
         input_size (Tuple[int, int]): Size of the model input.
-        backbone (str): Backbone CNN network
-        layers (List[str]): Layers to extract features from the backbone CNN
-        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+        feature_extractor (FeatureExtractorParams): Feature extractor params
         coreset_sampling_ratio (float, optional): Coreset sampling ratio to subsample embedding.
             Defaults to 0.1.
         num_neighbors (int, optional): Number of nearest neighbors. Defaults to 9.
@@ -37,9 +36,7 @@ class Patchcore(AnomalyModule):
     def __init__(
         self,
         input_size: Tuple[int, int],
-        backbone: str,
-        layers: List[str],
-        pre_trained: bool = True,
+        feature_extractor: FeatureExtractorParams,
         coreset_sampling_ratio: float = 0.1,
         num_neighbors: int = 9,
     ) -> None:
@@ -47,9 +44,7 @@ class Patchcore(AnomalyModule):
 
         self.model: PatchcoreModel = PatchcoreModel(
             input_size=input_size,
-            backbone=backbone,
-            pre_trained=pre_trained,
-            layers=layers,
+            feature_extractor_params=feature_extractor,
             num_neighbors=num_neighbors,
         )
         self.coreset_sampling_ratio = coreset_sampling_ratio
@@ -122,9 +117,7 @@ class PatchcoreLightning(Patchcore):
     def __init__(self, hparams) -> None:
         super().__init__(
             input_size=hparams.model.input_size,
-            backbone=hparams.model.backbone,
-            layers=hparams.model.layers,
-            pre_trained=hparams.model.pre_trained,
+            feature_extractor=hparams.model.feature_extractor,
             coreset_sampling_ratio=hparams.model.coreset_sampling_ratio,
             num_neighbors=hparams.model.num_neighbors,
         )
