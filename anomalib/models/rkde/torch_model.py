@@ -1,16 +1,15 @@
-"""Normality model of DFKDE."""
+"""Torch model for region-based anomaly detection."""
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-import random
-from typing import List, Optional, Tuple, Union
+from typing import Tuple, Union
 
 import torch
 from torch import Tensor, nn
 
-from anomalib.models.components import PCA, GaussianKDE
+from anomalib.models.rkde.density_estimator import DensityEstimator
 from anomalib.models.rkde.feature_extractor import FeatureExtractor
 from anomalib.models.rkde.region_extractor import RegionExtractor
 
@@ -38,14 +37,11 @@ class RkdeModel(nn.Module):
         iou_threshold: float = 0.3,
         n_pca_components: int = 16,
         pre_processing: str = "scale",
-        filter_count: int = 40000,
+        max_training_points: int = 40000,
         rcnn_box_threshold: float = 0.001,
         rcnn_detections_per_image: int = 100,
     ):
         super().__init__()
-        self.n_pca_components = n_pca_components
-        self.pre_processing = pre_processing
-        self.filter_count = filter_count
 
         self.region_extractor = RegionExtractor(
             stage=region_extractor_stage,
@@ -54,121 +50,14 @@ class RkdeModel(nn.Module):
             rcnn_box_threshold=rcnn_box_threshold,
             rcnn_detections_per_image=rcnn_detections_per_image,
         ).eval()
+
         self.feature_extractor = FeatureExtractor().eval()
 
-        self.pca_model = PCA(n_components=self.n_pca_components)
-        self.kde_model = GaussianKDE()
-
-        self.register_buffer("max_length", torch.tensor([]))
-        self.max_length = Tensor(torch.tensor([]))
-
-    def pre_process(self, feature_stack: Tensor, max_length: Optional[Tensor] = None) -> Tuple[Tensor, Tensor]:
-        """Pre-process the CNN features.
-
-        Args:
-          feature_stack (Tensor): Features extracted from CNN
-          max_length (Optional[Tensor]): Used to unit normalize the feature_stack vector. If ``max_len`` is not
-            provided, the length is calculated from the ``feature_stack``. Defaults to None.
-
-        Returns:
-            (Tuple): Stacked features and length
-        """
-
-        if max_length is None:
-            max_length = torch.max(torch.linalg.norm(feature_stack, ord=2, dim=1))
-
-        if self.pre_processing == "norm":
-            feature_stack /= torch.linalg.norm(feature_stack, ord=2, dim=1)[:, None]
-        elif self.pre_processing == "scale":
-            feature_stack /= max_length
-        else:
-            raise RuntimeError("Unknown pre-processing mode. Available modes are: Normalized and Scale.")
-        return feature_stack, max_length
-
-    def fit(self, embeddings: List[Tensor]) -> bool:
-        """Fit a kde model to embeddings.
-
-        Args:
-            embeddings (Tensor): Input embeddings to fit the model.
-
-        Returns:
-            Boolean confirming whether the training is successful.
-        """
-        _embeddings = torch.vstack(embeddings)
-
-        if _embeddings.shape[0] < self.n_pca_components:
-            logger.info("Not enough features to commit. Not making a model.")
-            return False
-
-        # if max training points is non-zero and smaller than number of staged features, select random subset
-        if self.filter_count and _embeddings.shape[0] > self.filter_count:
-            # pylint: disable=not-callable
-            selected_idx = torch.tensor(random.sample(range(_embeddings.shape[0]), self.filter_count))
-            selected_features = _embeddings[selected_idx]
-        else:
-            selected_features = _embeddings
-
-        feature_stack = self.pca_model.fit_transform(selected_features)
-        feature_stack, max_length = self.pre_process(feature_stack)
-        self.max_length = max_length
-        self.kde_model.fit(feature_stack)
-
-        return True
-
-    def compute_kde_scores(self, features: Tensor, as_log_likelihood: Optional[bool] = False) -> Tensor:
-        """Compute the KDE scores.
-
-        The scores calculated from the KDE model are converted to densities. If `as_log_likelihood` is set to true then
-            the log of the scores are calculated.
-
-        Args:
-            features (Tensor): Features to which the PCA model is fit.
-            as_log_likelihood (Optional[bool], optional): If true, gets log likelihood scores. Defaults to False.
-
-        Returns:
-            (Tensor): Score
-        """
-
-        features = self.pca_model.transform(features)
-        features, _ = self.pre_process(features, self.max_length)
-        # Scores are always assumed to be passed as a density
-        kde_scores = self.kde_model(features)
-
-        # add small constant to avoid zero division in log computation
-        kde_scores += 1e-300
-
-        if as_log_likelihood:
-            kde_scores = torch.log(kde_scores)
-
-        return kde_scores
-
-    @staticmethod
-    def compute_probabilities(scores: Tensor) -> Tensor:
-        """Converts density scores to anomaly probabilities (see https://www.desmos.com/calculator/ifju7eesg7).
-
-        Args:
-          scores (Tensor): density of an image.
-
-        Returns:
-          probability that image with {density} is anomalous
-        """
-        return 1 / (1 + torch.exp(0.05 * (scores - 12)))
-
-    def predict(self, features: Tensor, rois: List[Tensor]) -> Tensor:
-        """Predicts the probability that the features belong to the anomalous class.
-
-        Args:
-          features (Tensor): Feature from which the output probabilities are detected.
-          rois (Tensor): RoIs from which the features are extracted.
-
-        Returns:
-          Detection probabilities
-        """
-
-        scores = self.compute_kde_scores(features, as_log_likelihood=True)
-        probabilities = self.compute_probabilities(scores)
-
-        return rois, probabilities
+        self.density_estimator = DensityEstimator(
+            n_pca_components=n_pca_components,
+            pre_processing=pre_processing,
+            max_training_points=max_training_points,
+        )
 
     def forward(self, batch: Tensor) -> Union[Tensor, Tuple[Tensor, Tensor]]:
         """Prediction by normality model.
@@ -182,8 +71,10 @@ class RkdeModel(nn.Module):
         self.region_extractor.eval()
         self.feature_extractor.eval()
 
+        # 1. apply region extraction
         rois = self.region_extractor(batch)
 
+        # 2. apply feature extraction
         if rois.shape[0] == 0:
             # cannot extract features when no rois are retrieved
             features = torch.empty((0, 4096)).to(batch.device)
@@ -193,6 +84,7 @@ class RkdeModel(nn.Module):
         if self.training:
             return features
 
-        rois, scores = self.predict(features, rois)
+        # 3. apply density estimation
+        scores = self.density_estimator(features)
 
         return rois, scores

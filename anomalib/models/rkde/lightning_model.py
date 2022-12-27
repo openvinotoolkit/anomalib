@@ -6,6 +6,7 @@
 import logging
 from typing import List, Union
 
+import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor
@@ -55,7 +56,7 @@ class Rkde(AnomalyModule):
             iou_threshold=iou_threshold,
             n_pca_components=n_pca_components,
             pre_processing=pre_processing,
-            filter_count=max_training_points,
+            max_training_points=max_training_points,
             rcnn_box_threshold=rcnn_box_threshold,
             rcnn_detections_per_image=rcnn_detections_per_image,
         )
@@ -82,7 +83,7 @@ class Rkde(AnomalyModule):
     def on_validation_start(self) -> None:
         """Fit a KDE Model to the embedding collected from the training set."""
         logger.info("Fitting a KDE model to the embedding collected from the training set.")
-        self.model.fit(self.embeddings)
+        self.model.density_estimator.fit(torch.vstack(self.embeddings))
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Validation Step of RKde.
