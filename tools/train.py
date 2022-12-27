@@ -17,7 +17,7 @@ from pytorch_lightning import Trainer, seed_everything
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
-from anomalib.utils.callbacks import LoadModelCallback, get_callbacks
+from anomalib.utils.callbacks import get_callbacks
 from anomalib.utils.cli.helpers import configure_optimizer
 from anomalib.utils.loggers import configure_logger, get_experiment_logger
 
@@ -62,14 +62,12 @@ def train():
 
     trainer = Trainer(**config.trainer, logger=experiment_logger, callbacks=callbacks)
     logger.info("Training the model.")
-    trainer.fit(model=model, datamodule=datamodule)
 
-    logger.info("Loading the best model weights.")
-    load_model_callback = LoadModelCallback(weights_path=trainer.checkpoint_callback.best_model_path)
-    trainer.callbacks.insert(0, load_model_callback)
+    ckpt_path = config.trainer.get("ckpt_path", None)
+    trainer.fit(model=model, datamodule=datamodule, ckpt_path=ckpt_path)
 
     logger.info("Testing the model.")
-    trainer.test(model=model, datamodule=datamodule)
+    trainer.test(model=model, datamodule=datamodule, ckpt_path=trainer.checkpoint_callback.best_model_path)
 
 
 if __name__ == "__main__":

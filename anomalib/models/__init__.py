@@ -9,7 +9,6 @@ from importlib import import_module
 from typing import Union
 
 from omegaconf import DictConfig, ListConfig
-from torch import load
 
 from anomalib.models.cflow import Cflow
 from anomalib.models.components import AnomalyModule
@@ -72,8 +71,5 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     except ModuleNotFoundError as exception:
         logger.error("Could not find the model class: %s", config.model.class_path)
         raise exception
-
-    if config.trainer.resume_from_checkpoint is not None:
-        model.load_state_dict(load(config.trainer.resume_from_checkpoint)["state_dict"], strict=False)
 
     return model

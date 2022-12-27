@@ -19,7 +19,6 @@ from .cdf_normalization import CdfNormalizationCallback
 from .graph import GraphLogger
 from .metrics_configuration import MetricsConfigurationCallback
 from .min_max_normalization import MinMaxNormalizationCallback
-from .model_loader import LoadModelCallback
 from .post_processing_configuration import PostProcessingConfigurationCallback
 from .tiler_configuration import TilerConfigurationCallback
 from .timer import TimerCallback
@@ -29,7 +28,6 @@ __all__ = [
     "CdfNormalizationCallback",
     "GraphLogger",
     "ImageVisualizerCallback",
-    "LoadModelCallback",
     "MetricsConfigurationCallback",
     "MetricVisualizerCallback",
     "MinMaxNormalizationCallback",
