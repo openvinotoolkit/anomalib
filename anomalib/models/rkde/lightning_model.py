@@ -41,10 +41,10 @@ class Rkde(AnomalyModule):
         region_extractor_stage: str = "rcnn",
         min_box_size: int = 25,
         iou_threshold: float = 0.3,
-        box_likelihood: float = 0.8,
         n_pca_components: int = 16,
         max_training_points: int = 40000,
         pre_processing: str = "scale",
+        rcnn_box_threshold: float = 0.001,
         rcnn_detections_per_image: int = 100,
     ):
         super().__init__()
@@ -53,10 +53,10 @@ class Rkde(AnomalyModule):
             region_extractor_stage=region_extractor_stage,
             min_box_size=min_box_size,
             iou_threshold=iou_threshold,
-            box_likelihood=box_likelihood,
             n_pca_components=n_pca_components,
             pre_processing=pre_processing,
             filter_count=max_training_points,
+            rcnn_box_threshold=rcnn_box_threshold,
             rcnn_detections_per_image=rcnn_detections_per_image,
         )
         self.embeddings: List[Tensor] = []
@@ -120,10 +120,10 @@ class RkdeLightning(Rkde):
             region_extractor_stage=hparams.model.region_extractor_stage,
             min_box_size=hparams.model.min_box_size,
             iou_threshold=hparams.model.iou_threshold,
-            box_likelihood=hparams.model.box_likelihood,
             max_training_points=hparams.model.max_training_points,
             pre_processing=hparams.model.pre_processing,
             n_pca_components=hparams.model.n_pca_components,
+            rcnn_box_threshold=hparams.model.rcnn_box_threshold,
             rcnn_detections_per_image=hparams.model.rcnn_detections_per_image,
         )
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore

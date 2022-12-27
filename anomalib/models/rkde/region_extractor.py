@@ -6,7 +6,7 @@ Region Extractor.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Callable, List, Optional
+from typing import Callable, List
 
 import torch
 from torch import Tensor, nn
@@ -23,7 +23,7 @@ class RegionExtractor(nn.Module):
         use_original: bool = True,
         min_size: int = 25,
         iou_threshold: float = 0.3,
-        likelihood: Optional[float] = None,
+        rcnn_box_threshold: float = 0.001,
         rcnn_detections_per_image: int = 100,
     ) -> None:
         super().__init__()
@@ -35,13 +35,12 @@ class RegionExtractor(nn.Module):
         self.iou_threshold = iou_threshold
 
         # Affects operation only when stage='rcnn'
-        self.rcnn_score_thresh = 0.2 if likelihood is None else self.likelihood_to_class_threshold(likelihood)
         self.max_detections_per_image = rcnn_detections_per_image
 
         # Model and model components
         self.faster_rcnn = fasterrcnn_resnet50_fpn(
             pretrained=True,
-            box_score_thresh=self.rcnn_score_thresh,
+            box_score_thresh=rcnn_box_threshold,
             box_nms_thresh=1.0,  # this disables nms (we apply our own label-agnostic nms during post-processing)
             box_detections_per_img=1000,  # this disables filtering top k predictions (again, we apply our own version)
         )
@@ -139,19 +138,6 @@ class RegionExtractor(nn.Module):
             processed_boxes.append(boxes)
 
         return processed_boxes
-
-    @staticmethod
-    def likelihood_to_class_threshold(likelihood: float) -> float:
-        """Convert likelihood to class threshold.
-
-        Args:
-            likelihood (float): Input likelihood.
-
-        Returns:
-            float: Class threshold.
-        """
-        threshold = (torch.cos(torch.tensor(likelihood) * torch.pi / 2.0) ** 4.0).item()
-        return threshold
 
     @staticmethod
     def scale_boxes(boxes: Tensor, image_size: torch.Size, new_size: torch.Size) -> Tensor:

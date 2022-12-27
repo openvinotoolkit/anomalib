@@ -36,10 +36,10 @@ class RkdeModel(nn.Module):
         region_extractor_stage: str = "rcnn",
         min_box_size: int = 25,
         iou_threshold: float = 0.3,
-        box_likelihood: float = 0.8,
         n_pca_components: int = 16,
         pre_processing: str = "scale",
         filter_count: int = 40000,
+        rcnn_box_threshold: float = 0.001,
         rcnn_detections_per_image: int = 100,
     ):
         super().__init__()
@@ -51,7 +51,7 @@ class RkdeModel(nn.Module):
             stage=region_extractor_stage,
             min_size=min_box_size,
             iou_threshold=iou_threshold,
-            likelihood=box_likelihood,
+            rcnn_box_threshold=rcnn_box_threshold,
             rcnn_detections_per_image=rcnn_detections_per_image,
         ).eval()
         self.feature_extractor = FeatureExtractor().eval()
@@ -142,7 +142,8 @@ class RkdeModel(nn.Module):
 
         return kde_scores
 
-    def compute_probabilities(self, scores: Tensor) -> Tensor:
+    @staticmethod
+    def compute_probabilities(scores: Tensor) -> Tensor:
         """Converts density scores to anomaly probabilities (see https://www.desmos.com/calculator/ifju7eesg7).
 
         Args:
