@@ -8,7 +8,6 @@ from importlib import import_module
 from typing import List, Union
 
 from omegaconf import DictConfig, ListConfig
-from torch import load
 
 from anomalib.models.cflow import Cflow
 from anomalib.models.components import AnomalyModule
@@ -93,9 +92,5 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
 
     else:
         raise ValueError(f"Unknown model {config.model.name}!")
-
-    # This is needed for nncf. Might possibly break nncf but are tests don't cover nncf.
-    if "ckpt_path" in config.keys() and config.ckpt_path:
-        model.load_state_dict(load(config.ckpt_path)["state_dict"], strict=False)
 
     return model
