@@ -41,8 +41,8 @@ class RegionExtractor(nn.Module):
         self.faster_rcnn = fasterrcnn_resnet50_fpn(
             pretrained=True,
             box_score_thresh=rcnn_box_threshold,
-            box_nms_thresh=1.0,  # this disables nms (we apply our own label-agnostic nms during post-processing)
-            box_detections_per_img=1000,  # this disables filtering top k predictions (again, we apply our own version)
+            box_nms_thresh=1.0,  # this disables nms (we apply custom label-agnostic nms during post-processing)
+            box_detections_per_img=1000,  # this disables filtering top-k predictions (we apply our own after nms)
         )
 
         if self.stage == "rpn":
@@ -103,6 +103,7 @@ class RegionExtractor(nn.Module):
 
         regions = self.post_process_box_predictions(all_regions, all_scores)
 
+        # convert from list of [N, 4] tensors to single [N, 5] tensor where each row is [index-in-batch, x1, y1, x2, y2]
         indices = torch.repeat_interleave(torch.arange(len(regions)), Tensor([rois.shape[0] for rois in regions]).int())
         regions = torch.cat([indices.unsqueeze(1).to(batch.device), torch.cat(regions)], dim=1)
         return regions
