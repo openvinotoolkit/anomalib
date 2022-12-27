@@ -84,8 +84,6 @@ class RegionExtractor(nn.Module):
         if self.training:
             raise ValueError("Should not be in training mode")
 
-        regions: List[Tensor] = []
-
         # forward pass through faster rcnn
         predictions = self.faster_rcnn(batch)
 
