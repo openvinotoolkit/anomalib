@@ -6,8 +6,8 @@ dataset:
   task: detection
   clip_length_in_frames: 1
   frames_between_clips: 10
-  image_size: 256
-  normalization: imagenet
+  image_size: [240, 360]
+  normalization: none
   train_batch_size: 32
   eval_batch_size: 32
   num_workers: 8
