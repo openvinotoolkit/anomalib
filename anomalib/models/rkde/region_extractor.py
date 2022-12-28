@@ -6,7 +6,7 @@ Region Extractor.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Callable, List
+from typing import List
 
 import torch
 from torch import Tensor, nn
@@ -37,7 +37,7 @@ class RegionExtractor(nn.Module):
         self.iou_threshold = iou_threshold
 
         # Affects operation only when stage='rcnn'
-        self.max_detections_per_image = rcnn_detections_per_image
+        self.max_detections_per_image = rcnn_detections_per_image if self.stage == "rcnn" else 1000
 
         # Model and model components
         self.faster_rcnn = fasterrcnn_resnet50_fpn(
@@ -46,29 +46,6 @@ class RegionExtractor(nn.Module):
             box_nms_thresh=1.0,  # this disables nms (we apply custom label-agnostic nms during post-processing)
             box_detections_per_img=1000,  # this disables filtering top-k predictions (we apply our own after nms)
         )
-
-        if self.stage == "rpn":
-            self.transform_shape = Tensor([])
-            self.proposals = Tensor([])
-            self.faster_rcnn.transform.register_forward_hook(self.get_transform_shape_hook())
-            self.faster_rcnn.rpn.register_forward_hook(self.get_proposals_hook())
-            self.max_detections_per_image = 1000  # disable score-based filtering when in rpn mode
-
-    def get_proposals_hook(self) -> Callable:
-        """Forward hook that retrieves the outputs of the Region Proposal Network."""
-
-        def hook(_, __, output):
-            self.proposals = output[0]
-
-        return hook
-
-    def get_transform_shape_hook(self) -> Callable:
-        """Forward hook that retrieves the size of the input images after the RCNN transform is applied."""
-
-        def hook(_, __, output):
-            self.transform_shape = output[0].tensors.shape[-2:]
-
-        return hook
 
     @torch.no_grad()
     def forward(self, batch: Tensor) -> Tensor:
@@ -86,17 +63,19 @@ class RegionExtractor(nn.Module):
         if self.training:
             raise ValueError("Should not be in training mode")
 
-        # forward pass through faster rcnn
-        predictions = self.faster_rcnn(batch)
-
         if self.stage == "rcnn":
-            # get boxes from model predictions
+            # get rois from rcnn output
+            predictions = self.faster_rcnn(batch)
             all_regions = [prediction["boxes"] for prediction in predictions]
             all_scores = [prediction["scores"] for prediction in predictions]
         elif self.stage == "rpn":
-            # get boxes from region proposals
-            all_regions = [box_ops.clip_boxes_to_image(boxes, self.transform_shape) for boxes in self.proposals]
-            all_regions = [scale_boxes(boxes, self.transform_shape, batch.shape[-2:]) for boxes in all_regions]
+            # get rois from region proposal network
+            images, _ = self.faster_rcnn.transform(batch)
+            features = self.faster_rcnn.backbone(images.tensors)
+            proposals, _ = self.faster_rcnn.rpn(images, features)
+            # post-process rois
+            all_regions = [box_ops.clip_boxes_to_image(boxes, images.tensors.shape[-2:]) for boxes in proposals]
+            all_regions = [scale_boxes(boxes, images.tensors.shape[-2:], batch.shape[-2:]) for boxes in all_regions]
             all_scores = [torch.ones(boxes.shape[0]).to(boxes.device) for boxes in all_regions]
         else:
             raise ValueError(f"Unknown region extractor stage: {self.stage}")
