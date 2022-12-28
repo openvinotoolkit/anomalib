@@ -53,6 +53,7 @@ def setup_model_train(
         Tuple[DictConfig, LightningDataModule, AnomalyModule, Trainer]: config, datamodule, trained model, trainer
     """
     config = get_configurable_parameters(model_name=model_name)
+    config.results_dir.path = project_path
     if score_type is not None:
         config.model.score_type = score_type
     config.seed_everything = 42
@@ -96,7 +97,7 @@ def setup_model_train(
                 callbacks.pop(index)
                 break
         model_checkpoint = ModelCheckpoint(
-            dirpath=os.path.join(config.trainer.default_root_dir, "weights"),
+            dirpath=os.path.join(config.results_dir.path, "weights"),
             filename="last",
             monitor=None,
             mode="max",
@@ -130,7 +131,7 @@ def model_load_test(config: Union[DictConfig, ListConfig], datamodule: Lightning
 
     """
     loaded_model = get_model(config)  # get new model
-    ckpt_path = os.path.join(config.project.path, "weights/last.ckpt")
+    ckpt_path = os.path.join(config.results_dir.path, "weights/last.ckpt")
 
     callbacks = get_callbacks(config)
 
