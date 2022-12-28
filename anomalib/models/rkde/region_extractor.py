@@ -73,7 +73,7 @@ class RegionExtractor(nn.Module):
             images, _ = self.faster_rcnn.transform(batch)
             features = self.faster_rcnn.backbone(images.tensors)
             proposals, _ = self.faster_rcnn.rpn(images, features)
-            # post-process rois
+            # post-process raw rpn predictions
             all_regions = [box_ops.clip_boxes_to_image(boxes, images.tensors.shape[-2:]) for boxes in proposals]
             all_regions = [scale_boxes(boxes, images.tensors.shape[-2:], batch.shape[-2:]) for boxes in all_regions]
             all_scores = [torch.ones(boxes.shape[0]).to(boxes.device) for boxes in all_regions]
