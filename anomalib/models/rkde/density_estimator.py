@@ -28,8 +28,9 @@ class DensityEstimator(nn.Module):
 
     Args:
         n_pca_components (int, optional): Number of PCA components. Defaults to 16.
-        pre_processing (str, optional): Preprocess features before passing to KDE.
-            Options are between `norm` and `scale`. Defaults to "scale".
+        feature_scaling_method (FeatureScalingMethod, optional): Scaling method applied to features before passing to
+            KDE. Options are `norm` (normalize to unit vector length) and `scale` (scale to max length observed in
+            training).
         max_training_points (int, optional): Maximum number of training points to fit the KDE model. Defaults to 40000.
     """
 

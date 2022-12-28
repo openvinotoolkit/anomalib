@@ -23,23 +23,27 @@ class RkdeModel(nn.Module):
     """Torch Model for the Region-based Anomaly Detection Model.
 
     Args:
-        backbone (str): Pre-trained model backbone.
-        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
-        n_comps (int, optional): Number of PCA components. Defaults to 16.
-        pre_processing (str, optional): Preprocess features before passing to KDE.
-            Options are between `norm` and `scale`. Defaults to "scale".
-        filter_count (int, optional): Number of training points to fit the KDE model. Defaults to 40000.
-        threshold_steepness (float, optional): Controls how quickly the value saturates around zero. Defaults to 0.05.
-        threshold_offset (float, optional): Offset of the density function from 0. Defaults to 12.0.
+        roi_stage (RoiStage, optional): Processing stage from which rois are extracted.
+        roi_score_threshold (float, optional): Mimumum confidence score for the region proposals.
+        min_size (int, optional): Minimum size in pixels for the region proposals.
+        iou_threshold (float, optional): Intersection-Over-Union threshold used during NMS.
+        max_detections_per_image (int, optional): Maximum number of region proposals per image.
+        n_pca_components (int, optional): Number of PCA components. Defaults to 16.
+        feature_scaling_method (FeatureScalingMethod, optional): Scaling method applied to features before passing to
+            KDE. Options are `norm` (normalize to unit vector length) and `scale` (scale to max length observed in
+            training).
+        max_training_points (int, optional): Maximum number of training points to fit the KDE model. Defaults to 40000.
     """
 
     def __init__(
         self,
+        # roi params
         roi_stage: RoiStage = RoiStage.RCNN,
         roi_score_threshold: float = 0.001,
-        max_detections_per_image: int = 100,
         min_box_size: int = 25,
         iou_threshold: float = 0.3,
+        max_detections_per_image: int = 100,
+        # kde params
         n_pca_components: int = 16,
         feature_scaling_method: FeatureScalingMethod = FeatureScalingMethod.SCALE,
         max_training_points: int = 40000,
@@ -49,9 +53,9 @@ class RkdeModel(nn.Module):
         self.region_extractor = RegionExtractor(
             stage=roi_stage,
             score_threshold=roi_score_threshold,
-            max_detections_per_image=max_detections_per_image,
             min_size=min_box_size,
             iou_threshold=iou_threshold,
+            max_detections_per_image=max_detections_per_image,
         ).eval()
 
         self.feature_extractor = FeatureExtractor().eval()
