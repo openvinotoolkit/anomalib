@@ -38,14 +38,13 @@ class RegionExtractor(nn.Module):
         # Affects behaviour depending on roi stage
         rpn_top_n = max_detections_per_image if self.stage == "rpn" else 1000
         rpn_score_thresh = score_threshold if self.stage == "rpn" else 0.0
-        box_score_thresh = 0.0 if self.stage == "rpn" else score_threshold
 
         # Create the model
         self.faster_rcnn = fasterrcnn_resnet50_fpn(
             pretrained=True,
             rpn_post_nms_top_n_test=rpn_top_n,
             rpn_score_thresh=rpn_score_thresh,
-            box_score_thresh=box_score_thresh,
+            box_score_thresh=score_threshold,
             box_nms_thresh=1.0,  # this disables nms (we apply custom label-agnostic nms during post-processing)
             box_detections_per_img=1000,  # this disables filtering top-k predictions (we apply our own after nms)
         )
