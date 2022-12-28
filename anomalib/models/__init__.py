@@ -4,12 +4,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-import os
 from importlib import import_module
 from typing import List, Union
 
 from omegaconf import DictConfig, ListConfig
-from torch import load
 
 from anomalib.models.cflow import Cflow
 from anomalib.models.components import AnomalyModule
@@ -94,8 +92,5 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
 
     else:
         raise ValueError(f"Unknown model {config.model.name}!")
-
-    if "init_weights" in config.keys() and config.init_weights:
-        model.load_state_dict(load(os.path.join(config.project.path, config.init_weights))["state_dict"], strict=False)
 
     return model

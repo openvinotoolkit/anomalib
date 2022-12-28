@@ -49,7 +49,6 @@ def infer():
     """Run inference."""
     args = get_args()
     config = get_configurable_parameters(config_path=args.config)
-    config.trainer.resume_from_checkpoint = str(args.weights)
     config.visualization.show_images = args.show
     config.visualization.mode = args.visualization_mode
     if args.output:  # overwrite save path
@@ -68,7 +67,7 @@ def infer():
         args.input, image_size=tuple(config.dataset.image_size), transform_config=transform_config
     )
     dataloader = DataLoader(dataset)
-    trainer.predict(model=model, dataloaders=[dataloader])
+    trainer.predict(model=model, dataloaders=[dataloader], ckpt_path=args.weights)
 
 
 if __name__ == "__main__":

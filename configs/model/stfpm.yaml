@@ -105,7 +105,6 @@ trainer:
   profiler: null
   reload_dataloaders_every_n_epochs: 0
   replace_sampler_ddp: true
-  resume_from_checkpoint: null
   strategy: null
   sync_batchnorm: false
   tpu_cores: null
