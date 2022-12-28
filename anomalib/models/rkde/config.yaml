@@ -28,7 +28,7 @@ dataset:
 
 model:
   name: rkde
-  roi_stage: rcnn # options: [rpn, rcnn]
+  roi_stage: rcnn # Processing stage of the region extractor that yields the box proposals. Options: [rpn, rcnn]
   roi_score_threshold: 0.009 # confidence score threshold for box proposals, (rpn: objectness, rcnn: class score)
   max_detections_per_image: 100
   min_box_size: 8

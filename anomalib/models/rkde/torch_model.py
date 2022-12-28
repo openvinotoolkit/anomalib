@@ -11,7 +11,7 @@ from torch import Tensor, nn
 
 from anomalib.models.rkde.density_estimator import DensityEstimator
 from anomalib.models.rkde.feature_extractor import FeatureExtractor
-from anomalib.models.rkde.region_extractor import RegionExtractor
+from anomalib.models.rkde.region_extractor import RegionExtractor, RoiStage
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class RkdeModel(nn.Module):
 
     def __init__(
         self,
-        roi_stage: str = "rcnn",
+        roi_stage: RoiStage = RoiStage.RCNN,
         roi_score_threshold: float = 0.001,
         max_detections_per_image: int = 100,
         min_box_size: int = 25,

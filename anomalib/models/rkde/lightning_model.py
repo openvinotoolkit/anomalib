@@ -13,6 +13,7 @@ from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
 
+from .region_extractor import RoiStage
 from .torch_model import RkdeModel
 
 logger = logging.getLogger(__name__)
@@ -39,7 +40,7 @@ class Rkde(AnomalyModule):
 
     def __init__(
         self,
-        roi_stage: str = "rcnn",
+        roi_stage: RoiStage = RoiStage.RCNN,
         roi_score_threshold: float = 0.001,
         max_detections_per_image: int = 100,
         min_box_size: int = 25,
@@ -120,7 +121,7 @@ class RkdeLightning(Rkde):
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
         super().__init__(
-            roi_stage=hparams.model.roi_stage,
+            roi_stage=RoiStage(hparams.model.roi_stage),
             roi_score_threshold=hparams.model.roi_score_threshold,
             max_detections_per_image=hparams.model.max_detections_per_image,
             min_box_size=hparams.model.min_box_size,

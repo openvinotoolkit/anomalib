@@ -6,6 +6,7 @@ Region Extractor.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from enum import Enum
 from typing import List
 
 import torch
@@ -16,12 +17,19 @@ from torchvision.ops import boxes as box_ops
 from anomalib.data.utils.boxes import scale_boxes
 
 
+class RoiStage(str, Enum):
+    """Processing stage from which rois are extracted."""
+
+    RCNN = "rcnn"
+    RPN = "rpn"
+
+
 class RegionExtractor(nn.Module):
     """Extracts regions from the image."""
 
     def __init__(
         self,
-        stage: str = "rcnn",
+        stage: RoiStage = RoiStage.RCNN,
         score_threshold: float = 0.001,
         max_detections_per_image: int = 100,
         min_size: int = 25,
@@ -36,8 +44,8 @@ class RegionExtractor(nn.Module):
         self.max_detections_per_image = max_detections_per_image
 
         # Affects behaviour depending on roi stage
-        rpn_top_n = max_detections_per_image if self.stage == "rpn" else 1000
-        rpn_score_thresh = score_threshold if self.stage == "rpn" else 0.0
+        rpn_top_n = max_detections_per_image if self.stage == RoiStage.RPN else 1000
+        rpn_score_thresh = score_threshold if self.stage == RoiStage.RPN else 0.0
 
         # Create the model
         self.faster_rcnn = fasterrcnn_resnet50_fpn(
