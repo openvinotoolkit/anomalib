@@ -28,14 +28,14 @@ dataset:
 
 model:
   name: rkde
-  region_extractor_stage: rcnn # options: [rpn, rcnn]
+  roi_stage: rcnn # options: [rpn, rcnn]
+  roi_score_threshold: 0.009 # confidence score threshold for box proposals, (rpn: objectness, rcnn: class score)
+  max_detections_per_image: 100
   min_box_size: 8
   iou_threshold: 0.3
   n_pca_components: 16
   max_training_points: 40000
   pre_processing: scale # options: [scale, norm]
-  rcnn_box_threshold: 0.009 # confidence score threshold for box proposals, only used when stage is 'rcnn'
-  rcnn_detections_per_image: 100 # max detections per image, only used when stage is 'rcnn'
   normalization_method: none # options: [null, min_max, cdf]
 
 metrics:

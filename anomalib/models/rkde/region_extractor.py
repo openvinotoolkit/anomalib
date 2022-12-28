@@ -22,27 +22,30 @@ class RegionExtractor(nn.Module):
     def __init__(
         self,
         stage: str = "rcnn",
-        use_original: bool = True,
+        score_threshold: float = 0.001,
+        max_detections_per_image: int = 100,
         min_size: int = 25,
         iou_threshold: float = 0.3,
-        rcnn_box_threshold: float = 0.001,
-        rcnn_detections_per_image: int = 100,
     ) -> None:
         super().__init__()
 
-        # Affects global behaviour of the extractor
+        # Affects global behaviour of the region extractor
         self.stage = stage
-        self.use_original = use_original
         self.min_size = min_size
         self.iou_threshold = iou_threshold
+        self.max_detections_per_image = max_detections_per_image
 
-        # Affects operation only when stage='rcnn'
-        self.max_detections_per_image = rcnn_detections_per_image if self.stage == "rcnn" else 1000
+        # Affects behaviour depending on roi stage
+        rpn_top_n = max_detections_per_image if self.stage == "rpn" else 1000
+        rpn_score_thresh = score_threshold if self.stage == "rpn" else 0.0
+        box_score_thresh = 0.0 if self.stage == "rpn" else score_threshold
 
-        # Model and model components
+        # Create the model
         self.faster_rcnn = fasterrcnn_resnet50_fpn(
             pretrained=True,
-            box_score_thresh=rcnn_box_threshold,
+            rpn_post_nms_top_n_test=rpn_top_n,
+            rpn_score_thresh=rpn_score_thresh,
+            box_score_thresh=box_score_thresh,
             box_nms_thresh=1.0,  # this disables nms (we apply custom label-agnostic nms during post-processing)
             box_detections_per_img=1000,  # this disables filtering top-k predictions (we apply our own after nms)
         )

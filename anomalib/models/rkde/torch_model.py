@@ -32,23 +32,23 @@ class RkdeModel(nn.Module):
 
     def __init__(
         self,
-        region_extractor_stage: str = "rcnn",
+        roi_stage: str = "rcnn",
+        roi_score_threshold: float = 0.001,
+        max_detections_per_image: int = 100,
         min_box_size: int = 25,
         iou_threshold: float = 0.3,
         n_pca_components: int = 16,
         pre_processing: str = "scale",
         max_training_points: int = 40000,
-        rcnn_box_threshold: float = 0.001,
-        rcnn_detections_per_image: int = 100,
     ):
         super().__init__()
 
         self.region_extractor = RegionExtractor(
-            stage=region_extractor_stage,
+            stage=roi_stage,
+            score_threshold=roi_score_threshold,
+            max_detections_per_image=max_detections_per_image,
             min_size=min_box_size,
             iou_threshold=iou_threshold,
-            rcnn_box_threshold=rcnn_box_threshold,
-            rcnn_detections_per_image=rcnn_detections_per_image,
         ).eval()
 
         self.feature_extractor = FeatureExtractor().eval()

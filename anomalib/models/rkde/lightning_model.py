@@ -39,26 +39,26 @@ class Rkde(AnomalyModule):
 
     def __init__(
         self,
-        region_extractor_stage: str = "rcnn",
+        roi_stage: str = "rcnn",
+        roi_score_threshold: float = 0.001,
+        max_detections_per_image: int = 100,
         min_box_size: int = 25,
         iou_threshold: float = 0.3,
         n_pca_components: int = 16,
         max_training_points: int = 40000,
         pre_processing: str = "scale",
-        rcnn_box_threshold: float = 0.001,
-        rcnn_detections_per_image: int = 100,
     ):
         super().__init__()
 
         self.model: RkdeModel = RkdeModel(
-            region_extractor_stage=region_extractor_stage,
+            roi_stage=roi_stage,
+            roi_score_threshold=roi_score_threshold,
+            max_detections_per_image=max_detections_per_image,
             min_box_size=min_box_size,
             iou_threshold=iou_threshold,
             n_pca_components=n_pca_components,
             pre_processing=pre_processing,
             max_training_points=max_training_points,
-            rcnn_box_threshold=rcnn_box_threshold,
-            rcnn_detections_per_image=rcnn_detections_per_image,
         )
         self.embeddings: List[Tensor] = []
 
@@ -120,14 +120,14 @@ class RkdeLightning(Rkde):
 
     def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
         super().__init__(
-            region_extractor_stage=hparams.model.region_extractor_stage,
+            roi_stage=hparams.model.roi_stage,
+            roi_score_threshold=hparams.model.roi_score_threshold,
+            max_detections_per_image=hparams.model.max_detections_per_image,
             min_box_size=hparams.model.min_box_size,
             iou_threshold=hparams.model.iou_threshold,
             max_training_points=hparams.model.max_training_points,
             pre_processing=hparams.model.pre_processing,
             n_pca_components=hparams.model.n_pca_components,
-            rcnn_box_threshold=hparams.model.rcnn_box_threshold,
-            rcnn_detections_per_image=hparams.model.rcnn_detections_per_image,
         )
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(hparams)
