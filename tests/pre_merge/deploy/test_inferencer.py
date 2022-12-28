@@ -112,7 +112,7 @@ class TestInferencers:
                 model=model,
                 input_size=model_config.data.init_args.image_size,
                 export_root=export_path,
-                export_mode=ExportMode.OPENVINO,
+                output_format=ExportMode.OPENVINO,
             )
 
             # Test OpenVINO inferencer

@@ -99,13 +99,13 @@ def update_multi_gpu_training_config(config: Union[DictConfig, ListConfig]) -> U
     # Increase learning rate
     # since pytorch averages the gradient over devices, the idea is to
     # increase the learning rate by the number of devices
-    if "lr" in config.model:
+    if "optimizer" in config and "lr" in config.optimizer.init_args:
         # Number of GPUs can either be passed as gpus: 2 or gpus: [0,1]
         n_gpus: Union[int, List] = 1
         if "trainer" in config and "gpus" in config.trainer:
             n_gpus = config.trainer.gpus
         lr_scaler = n_gpus if isinstance(n_gpus, int) else len(n_gpus)
-        config.model.lr = config.model.lr * lr_scaler
+        config.optimizer.init_args.lr = config.optimizer.init_args.lr * lr_scaler
     return config
 
 

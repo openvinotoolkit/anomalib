@@ -55,8 +55,7 @@ logging:
   logger: [] # options: [comet, tensorboard, wandb, csv] or combinations.
   log_graph: false # Logs the model graph to respective logger.
 
-export:
-  format: null #options: onnx, openvino
+export: output_format null #options: onnx, openvino
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
