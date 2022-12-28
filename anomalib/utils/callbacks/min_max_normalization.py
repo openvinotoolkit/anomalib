@@ -83,11 +83,13 @@ class MinMaxNormalizationCallback(Callback):
     @staticmethod
     def _normalize_batch(outputs, pl_module):
         """Normalize a batch of predictions."""
+        image_threshold = pl_module.image_threshold.value.cpu()
+        pixel_threshold = pl_module.pixel_threshold.value.cpu()
         stats = pl_module.normalization_metrics.cpu()
-        outputs["pred_scores"] = normalize(
-            outputs["pred_scores"], pl_module.image_threshold.value.cpu(), stats.min, stats.max
-        )
-        if "anomaly_maps" in outputs.keys():
-            outputs["anomaly_maps"] = normalize(
-                outputs["anomaly_maps"], pl_module.pixel_threshold.value.cpu(), stats.min, stats.max
-            )
+        outputs["pred_scores"] = normalize(outputs["pred_scores"], image_threshold, stats.min, stats.max)
+        if "anomaly_maps" in outputs:
+            outputs["anomaly_maps"] = normalize(outputs["anomaly_maps"], pixel_threshold, stats.min, stats.max)
+        if "boxes_scores" in outputs:
+            outputs["boxes_scores"] = [
+                normalize(scores, pixel_threshold, stats.min, stats.max) for scores in outputs["boxes_scores"]
+            ]
