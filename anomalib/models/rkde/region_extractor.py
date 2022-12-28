@@ -13,6 +13,8 @@ from torch import Tensor, nn
 from torchvision.models.detection import fasterrcnn_resnet50_fpn
 from torchvision.ops import boxes as box_ops
 
+from anomalib.data.utils.boxes import scale_boxes
+
 
 class RegionExtractor(nn.Module):
     """Extracts regions from the image."""
@@ -94,7 +96,7 @@ class RegionExtractor(nn.Module):
         elif self.stage == "rpn":
             # get boxes from region proposals
             all_regions = [box_ops.clip_boxes_to_image(boxes, self.transform_shape) for boxes in self.proposals]
-            all_regions = [self.scale_boxes(boxes, self.transform_shape, batch.shape[-2:]) for boxes in all_regions]
+            all_regions = [scale_boxes(boxes, self.transform_shape, batch.shape[-2:]) for boxes in all_regions]
             all_scores = [torch.ones(boxes.shape[0]).to(boxes.device) for boxes in all_regions]
         else:
             raise ValueError(f"Unknown region extractor stage: {self.stage}")
@@ -137,18 +139,3 @@ class RegionExtractor(nn.Module):
             processed_boxes.append(boxes)
 
         return processed_boxes
-
-    @staticmethod
-    def scale_boxes(boxes: Tensor, image_size: torch.Size, new_size: torch.Size) -> Tensor:
-        """Scale bbox coordinates to a new image size.
-
-        Args:
-            boxes (Tensor): Boxes of shape (N, 4) - (x1, y1, x2, y2).
-            image_size (Size): Size of the original image in which the bbox coordinates were retrieved.
-            new_size (Size): New image size to which the bbox coordinates will be scaled.
-
-        Returns:
-            Tensor: Updated boxes of shape (N, 4) - (x1, y1, x2, y2).
-        """
-        scale = Tensor([*new_size]) / Tensor([*image_size])
-        return boxes * scale.repeat(2).to(boxes.device)

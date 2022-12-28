@@ -82,3 +82,18 @@ def boxes_to_anomaly_maps(boxes: Tensor, scores: Tensor, image_size: Tuple[int, 
             im_map[box_idx, y_1 : y_2 + 1, x_1 : x_2 + 1] = score
             anomaly_maps[im_idx], _ = im_map.max(dim=0)
     return anomaly_maps
+
+
+def scale_boxes(boxes: Tensor, image_size: torch.Size, new_size: torch.Size) -> Tensor:
+    """Scale bbox coordinates to a new image size.
+
+    Args:
+        boxes (Tensor): Boxes of shape (N, 4) - (x1, y1, x2, y2).
+        image_size (Size): Size of the original image in which the bbox coordinates were retrieved.
+        new_size (Size): New image size to which the bbox coordinates will be scaled.
+
+    Returns:
+        Tensor: Updated boxes of shape (N, 4) - (x1, y1, x2, y2).
+    """
+    scale = Tensor([*new_size]) / Tensor([*image_size])
+    return boxes * scale.repeat(2).to(boxes.device)
