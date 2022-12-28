@@ -9,7 +9,10 @@ from typing import Tuple, Union
 import torch
 from torch import Tensor, nn
 
-from anomalib.models.rkde.density_estimator import DensityEstimator
+from anomalib.models.rkde.density_estimator import (
+    DensityEstimator,
+    FeatureScalingMethod,
+)
 from anomalib.models.rkde.feature_extractor import FeatureExtractor
 from anomalib.models.rkde.region_extractor import RegionExtractor, RoiStage
 
@@ -38,7 +41,7 @@ class RkdeModel(nn.Module):
         min_box_size: int = 25,
         iou_threshold: float = 0.3,
         n_pca_components: int = 16,
-        pre_processing: str = "scale",
+        feature_scaling_method: FeatureScalingMethod = FeatureScalingMethod.SCALE,
         max_training_points: int = 40000,
     ):
         super().__init__()
@@ -55,7 +58,7 @@ class RkdeModel(nn.Module):
 
         self.density_estimator = DensityEstimator(
             n_pca_components=n_pca_components,
-            pre_processing=pre_processing,
+            feature_scaling_method=feature_scaling_method,
             max_training_points=max_training_points,
         )
 

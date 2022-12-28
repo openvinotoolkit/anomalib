@@ -13,6 +13,7 @@ from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
 
+from .density_estimator import FeatureScalingMethod
 from .region_extractor import RoiStage
 from .torch_model import RkdeModel
 
@@ -47,7 +48,7 @@ class Rkde(AnomalyModule):
         iou_threshold: float = 0.3,
         n_pca_components: int = 16,
         max_training_points: int = 40000,
-        pre_processing: str = "scale",
+        feature_scaling_method: FeatureScalingMethod = FeatureScalingMethod.SCALE,
     ):
         super().__init__()
 
@@ -58,7 +59,7 @@ class Rkde(AnomalyModule):
             min_box_size=min_box_size,
             iou_threshold=iou_threshold,
             n_pca_components=n_pca_components,
-            pre_processing=pre_processing,
+            feature_scaling_method=feature_scaling_method,
             max_training_points=max_training_points,
         )
         self.embeddings: List[Tensor] = []
@@ -127,7 +128,7 @@ class RkdeLightning(Rkde):
             min_box_size=hparams.model.min_box_size,
             iou_threshold=hparams.model.iou_threshold,
             max_training_points=hparams.model.max_training_points,
-            pre_processing=hparams.model.pre_processing,
+            feature_scaling_method=FeatureScalingMethod(hparams.model.feature_scaling_method),
             n_pca_components=hparams.model.n_pca_components,
         )
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore

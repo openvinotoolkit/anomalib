@@ -35,7 +35,7 @@ model:
   iou_threshold: 0.3
   n_pca_components: 16
   max_training_points: 40000
-  pre_processing: scale # options: [scale, norm]
+  feature_scaling_method: scale # Determines how the feature embeddings are scaled. Options: [scale, norm]
   normalization_method: none # options: [null, min_max, cdf]
 
 metrics:

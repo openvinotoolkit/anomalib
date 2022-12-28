@@ -5,6 +5,7 @@
 
 import logging
 import random
+from enum import Enum
 from typing import Optional, Tuple
 
 import torch
@@ -13,6 +14,13 @@ from torch import Tensor, nn
 from anomalib.models.components import PCA, GaussianKDE
 
 logger = logging.getLogger(__name__)
+
+
+class FeatureScalingMethod(str, Enum):
+    """Determines how the feature embeddings are scaled."""
+
+    NORM = "norm"  # scale to unit vector length
+    SCALE = "scale"  # scale to max length observed in training (preserve relative magnitude)
 
 
 class DensityEstimator(nn.Module):
@@ -26,12 +34,15 @@ class DensityEstimator(nn.Module):
     """
 
     def __init__(
-        self, n_pca_components: int = 16, pre_processing: str = "scale", max_training_points: int = 40000
+        self,
+        n_pca_components: int = 16,
+        feature_scaling_method: FeatureScalingMethod = FeatureScalingMethod.SCALE,
+        max_training_points: int = 40000,
     ) -> None:
         super().__init__()
 
         self.n_pca_components = n_pca_components
-        self.pre_processing = pre_processing
+        self.feature_scaling_method = feature_scaling_method
         self.max_training_points = max_training_points
 
         self.pca_model = PCA(n_components=self.n_pca_components)
@@ -55,9 +66,9 @@ class DensityEstimator(nn.Module):
         if max_length is None:
             max_length = torch.max(torch.linalg.norm(feature_stack, ord=2, dim=1))
 
-        if self.pre_processing == "norm":
+        if self.feature_scaling_method == FeatureScalingMethod.NORM:
             feature_stack /= torch.linalg.norm(feature_stack, ord=2, dim=1)[:, None]
-        elif self.pre_processing == "scale":
+        elif self.feature_scaling_method == FeatureScalingMethod.SCALE:
             feature_stack /= max_length
         else:
             raise RuntimeError("Unknown pre-processing mode. Available modes are: Normalized and Scale.")
