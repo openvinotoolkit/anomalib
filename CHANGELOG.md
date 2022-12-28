@@ -36,6 +36,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- Add early stopping to CS-Flow model (<https://github.com/openvinotoolkit/anomalib/pull/817>)
 - Fix remote container by removing version pinning in Docker files (<https://github.com/openvinotoolkit/anomalib/pull/797>)
 - Fix PatchCore performance deterioration by reverting changes to Average Pooling layer (<https://github.com/openvinotoolkit/anomalib/pull/791>)
 - Fix zero seed (<https://github.com/openvinotoolkit/anomalib/pull/766>)
