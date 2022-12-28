@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import math
+from typing import Tuple
 
 import torch
 import torch.nn.functional as F
@@ -75,6 +76,7 @@ class DFMModel(nn.Module):
 
     Args:
         feature_extractor_params (FeatureExtractorParams): Feature extractor params
+        input_size (Tuple[int, int]): Input size for the model.
         pooling_kernel_size (int, optional): Kernel size to pool features extracted from the CNN.
         n_comps (float, optional): Ratio from which number of components for PCA are calculated. Defaults to 0.97.
         score_type (str, optional): Scoring type. Options are `fre` and `nll`. Defaults to "fre". Anomaly
@@ -84,6 +86,7 @@ class DFMModel(nn.Module):
     def __init__(
         self,
         feature_extractor_params: FeatureExtractorParams,
+        input_size: Tuple[int, int],
         pooling_kernel_size: int = 4,
         n_comps: float = 0.97,
         score_type: str = "fre",
@@ -94,6 +97,7 @@ class DFMModel(nn.Module):
         self.pca_model = PCA(n_components=self.n_components)
         self.gaussian_model = SingleClassGaussian()
         self.score_type = score_type
+        self.input_size = tuple(input_size)
         self.feature_extractor = get_feature_extractor(feature_extractor_params).eval()
 
     def fit(self, dataset: Tensor) -> None:
@@ -150,7 +154,7 @@ class DFMModel(nn.Module):
             Tensor: Tensor containing extracted features.
         """
         self.feature_extractor.eval()
-        features = self.feature_extractor(batch)[self.layer]
+        features = self.feature_extractor(batch)[self.feature_extractor.layers[-1]]  # assumes only one layer is used
         batch_size = len(features)
         if self.pooling_kernel_size > 1:
             features = F.avg_pool2d(input=features, kernel_size=self.pooling_kernel_size)
