@@ -11,6 +11,7 @@ from typing import Dict, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
+from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor
 
@@ -102,6 +103,22 @@ class CsflowLightning(Csflow):
         )
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(hparams)
+
+    def configure_callbacks(self):
+        """Configure model-specific callbacks.
+
+        Note:
+            This method is used for the existing CLI.
+            When PL CLI is introduced, configure callback method will be
+                deprecated, and callbacks will be configured from either
+                config.yaml file or from CLI.
+        """
+        early_stopping = EarlyStopping(
+            monitor=self.hparams.model.early_stopping.metric,
+            patience=self.hparams.model.early_stopping.patience,
+            mode=self.hparams.model.early_stopping.mode,
+        )
+        return [early_stopping]
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """Configures optimizers.
