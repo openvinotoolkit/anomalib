@@ -58,7 +58,7 @@ def train():
     trainer = Trainer(**config.trainer, logger=experiment_logger, callbacks=callbacks)
     logger.info("Training the model.")
 
-    ckpt_path = config.trainer.get("ckpt_path", None)
+    ckpt_path = config.get("ckpt_path", None)
     trainer.fit(model=model, datamodule=datamodule, ckpt_path=ckpt_path)
 
     logger.info("Testing the model.")
