@@ -1,4 +1,4 @@
-"""Density estimator for region-based anomaly detection."""
+"""Kernel Density Estimation Classifier."""
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -23,8 +23,8 @@ class FeatureScalingMethod(str, Enum):
     SCALE = "scale"  # scale to max length observed in training (preserve relative magnitude)
 
 
-class DensityEstimator(nn.Module):
-    """Density estimator for KDE-based anomaly detection.
+class KDEClassifier(nn.Module):
+    """Classification module for KDE-based anomaly detection.
 
     Args:
         n_pca_components (int, optional): Number of PCA components. Defaults to 16.

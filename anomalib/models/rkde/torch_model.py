@@ -9,9 +9,13 @@ from typing import Tuple, Union
 import torch
 from torch import Tensor, nn
 
-from anomalib.models.rkde.density_estimator import (
-    DensityEstimator,
+# from anomalib.models.rkde.density_estimator import (
+#     DensityEstimator,
+#     FeatureScalingMethod,
+# )
+from anomalib.models.components.classification import (
     FeatureScalingMethod,
+    KDEClassifier,
 )
 from anomalib.models.rkde.feature_extractor import FeatureExtractor
 from anomalib.models.rkde.region_extractor import RegionExtractor, RoiStage
@@ -60,7 +64,7 @@ class RkdeModel(nn.Module):
 
         self.feature_extractor = FeatureExtractor().eval()
 
-        self.density_estimator = DensityEstimator(
+        self.classifier = KDEClassifier(
             n_pca_components=n_pca_components,
             feature_scaling_method=feature_scaling_method,
             max_training_points=max_training_points,
@@ -92,6 +96,6 @@ class RkdeModel(nn.Module):
             return features
 
         # 3. apply density estimation
-        scores = self.density_estimator(features)
+        scores = self.classifier(features)
 
         return rois, scores

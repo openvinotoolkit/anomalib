@@ -85,7 +85,7 @@ class Rkde(AnomalyModule):
         embeddings = torch.vstack(self.embeddings)
 
         logger.info("Fitting a KDE model to the embedding collected from the training set.")
-        self.model.density_estimator.fit(embeddings)
+        self.model.classifier.fit(embeddings)
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Validation Step of RKde.
