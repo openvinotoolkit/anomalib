@@ -6,11 +6,13 @@
 import logging
 from typing import List, Union
 
+import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
+from anomalib.models.components.classification import FeatureScalingMethod
 
 from .torch_model import DfkdeModel
 
@@ -39,11 +41,9 @@ class Dfkde(AnomalyModule):
         layers: List[str],
         backbone: str,
         pre_trained: bool = True,
+        n_pca_components: int = 16,
+        feature_scaling_method: FeatureScalingMethod = FeatureScalingMethod.SCALE,
         max_training_points: int = 40000,
-        pre_processing: str = "scale",
-        n_components: int = 16,
-        threshold_steepness: float = 0.05,
-        threshold_offset: int = 12,
     ):
         super().__init__()
 
@@ -51,11 +51,9 @@ class Dfkde(AnomalyModule):
             layers=layers,
             backbone=backbone,
             pre_trained=pre_trained,
-            n_comps=n_components,
-            pre_processing=pre_processing,
-            filter_count=max_training_points,
-            threshold_steepness=threshold_steepness,
-            threshold_offset=threshold_offset,
+            n_pca_components=n_pca_components,
+            feature_scaling_method=feature_scaling_method,
+            max_training_points=max_training_points,
         )
 
         self.embeddings: List[Tensor] = []
@@ -76,7 +74,7 @@ class Dfkde(AnomalyModule):
           Deep CNN features.
         """
 
-        embedding = self.model.get_features(batch["image"]).squeeze()
+        embedding = self.model(batch["image"])
 
         # NOTE: `self.embedding` appends each batch embedding to
         #   store the training set embedding. We manually append these
@@ -89,8 +87,10 @@ class Dfkde(AnomalyModule):
         # NOTE: Previous anomalib versions fit Gaussian at the end of the epoch.
         #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
         #   is run within train epoch.
+        embeddings = torch.vstack(self.embeddings)
+
         logger.info("Fitting a KDE model to the embedding collected from the training set.")
-        self.model.fit(self.embeddings)
+        self.model.classifier.fit(embeddings)
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ
         """Validation Step of DFKDE.
@@ -120,11 +120,9 @@ class DfkdeLightning(Dfkde):
             layers=hparams.model.layers,
             backbone=hparams.model.backbone,
             pre_trained=hparams.model.pre_trained,
+            n_pca_components=hparams.model.n_pca_components,
+            feature_scaling_method=FeatureScalingMethod(hparams.model.feature_scaling_method),
             max_training_points=hparams.model.max_training_points,
-            pre_processing=hparams.model.pre_processing,
-            n_components=hparams.model.n_components,
-            threshold_steepness=hparams.model.threshold_steepness,
-            threshold_offset=hparams.model.threshold_offset,
         )
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(hparams)

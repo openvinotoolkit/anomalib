@@ -20,16 +20,17 @@ dataset:
 
 model:
   name: dfkde
+  # feature extraction params
   backbone: resnet18
-  pre_trained: true
-  max_training_points: 40000
-  pre_processing: scale
-  n_components: 16
-  threshold_steepness: 0.05
-  threshold_offset: 12
-  normalization_method: min_max # options: [null, min_max, cdf]
   layers:
     - layer4
+  pre_trained: true
+  # density estimation params
+  n_pca_components: 16
+  max_training_points: 40000
+  feature_scaling_method: scale # Determines how the feature embeddings are scaled. Options: [scale, norm]
+  # generic params
+  normalization_method: min_max # options: [null, min_max, cdf]
 
 metrics:
   image:
