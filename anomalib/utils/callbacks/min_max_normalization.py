@@ -49,8 +49,8 @@ class MinMaxNormalizationCallback(Callback):
         """Called when the validation batch ends, update the min and max observed values."""
         if "anomaly_maps" in outputs:
             pl_module.normalization_metrics(outputs["anomaly_maps"])
-        elif "boxes_scores" in outputs:
-            pl_module.normalization_metrics(torch.cat(outputs["boxes_scores"]))
+        elif "box_scores" in outputs:
+            pl_module.normalization_metrics(torch.cat(outputs["box_scores"]))
         elif "pred_scores" in outputs:
             pl_module.normalization_metrics(outputs["pred_scores"])
         else:
@@ -83,11 +83,13 @@ class MinMaxNormalizationCallback(Callback):
     @staticmethod
     def _normalize_batch(outputs, pl_module):
         """Normalize a batch of predictions."""
+        image_threshold = pl_module.image_threshold.value.cpu()
+        pixel_threshold = pl_module.pixel_threshold.value.cpu()
         stats = pl_module.normalization_metrics.cpu()
-        outputs["pred_scores"] = normalize(
-            outputs["pred_scores"], pl_module.image_threshold.value.cpu(), stats.min, stats.max
-        )
-        if "anomaly_maps" in outputs.keys():
-            outputs["anomaly_maps"] = normalize(
-                outputs["anomaly_maps"], pl_module.pixel_threshold.value.cpu(), stats.min, stats.max
-            )
+        outputs["pred_scores"] = normalize(outputs["pred_scores"], image_threshold, stats.min, stats.max)
+        if "anomaly_maps" in outputs:
+            outputs["anomaly_maps"] = normalize(outputs["anomaly_maps"], pixel_threshold, stats.min, stats.max)
+        if "box_scores" in outputs:
+            outputs["box_scores"] = [
+                normalize(scores, pixel_threshold, stats.min, stats.max) for scores in outputs["box_scores"]
+            ]

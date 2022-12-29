@@ -209,8 +209,10 @@ class TorchInferencer(Inferencer):
 
         if self.config.dataset.task == TaskType.DETECTION:
             pred_boxes = masks_to_boxes(torch.from_numpy(pred_mask))[0].numpy()
+            box_labels = np.ones(pred_boxes.shape[0])
         else:
             pred_boxes = None
+            box_labels = None
 
         return {
             "anomaly_map": anomaly_map,
@@ -218,4 +220,5 @@ class TorchInferencer(Inferencer):
             "pred_score": pred_score,
             "pred_mask": pred_mask,
             "pred_boxes": pred_boxes,
+            "box_labels": box_labels,
         }
