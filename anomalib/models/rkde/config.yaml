@@ -6,8 +6,8 @@ dataset:
   task: detection
   clip_length_in_frames: 1
   frames_between_clips: 10
-  image_size: [240, 360]
-  normalization: none
+  image_size: [240, 360] # RKDE region- and feature extractor apply custom resizing
+  normalization: none # RKDE region- and feature extractor apply custom normalization
   train_batch_size: 32
   eval_batch_size: 32
   num_workers: 8
@@ -28,15 +28,18 @@ dataset:
 
 model:
   name: rkde
+  # region extraction params
   roi_stage: rcnn # Processing stage of the region extractor that yields the box proposals. Options: [rpn, rcnn]
   roi_score_threshold: 0.009 # confidence score threshold for box proposals, (rpn: objectness, rcnn: class score)
   min_box_size: 8
   iou_threshold: 0.3
   max_detections_per_image: 100
+  # density estimation params
   n_pca_components: 16
   max_training_points: 40000
   feature_scaling_method: scale # Determines how the feature embeddings are scaled. Options: [scale, norm]
-  normalization_method: none # options: [null, min_max, cdf]
+  # generic params
+  normalization_method: min_max # options: [null, min_max, cdf]
 
 metrics:
   image:

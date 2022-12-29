@@ -49,6 +49,7 @@ class FeatureExtractor(nn.Module):
             nn.ReLU(inplace=True),
         )
 
+        # TODO: Load state dict from url
         self.load_state_dict(torch.load("anomalib/models/rkde/feature_extractor.pth"))
 
     @torch.no_grad()
