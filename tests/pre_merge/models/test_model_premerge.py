@@ -27,6 +27,7 @@ class TestModel:
             ("padim", False),
             ("patchcore", False),
             ("reverse_distillation", False),
+            ("rkde", False),
             ("stfpm", False),
         ],
     )

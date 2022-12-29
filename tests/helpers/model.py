@@ -55,6 +55,7 @@ def setup_model_train(
     if score_type is not None:
         config.model.score_type = score_type
     config.project.seed = 42
+    config.dataset.format = "mvtec"
     config.dataset.category = category
     config.dataset.path = dataset_path
     config.project.log_images_to = []
