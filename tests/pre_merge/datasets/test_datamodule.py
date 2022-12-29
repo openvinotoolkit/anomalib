@@ -304,7 +304,7 @@ class TestSubsetSplitting:
     # @pytest.mark.parametrize("dataset", ["folder"])
     @pytest.mark.parametrize("test_split_mode", ("from_dir", "synthetic"))
     def test_equal_splits(self, make_data_module, dataset, test_split_mode):
-        """Tests if test and and val splits are equal and non-overlapping with train when val_split_mode == same_as_test."""
+        """Tests if test and and val splits are equal and non-overlapping with train."""
         data_module = make_data_module(dataset, test_split_mode=test_split_mode, val_split_mode="same_as_test")
         train_samples = data_module.train_data.samples
         val_samples = data_module.val_data.samples
