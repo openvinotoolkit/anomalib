@@ -12,8 +12,8 @@ from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
+from anomalib.models.components.classification import FeatureScalingMethod
 
-from .density_estimator import FeatureScalingMethod
 from .region_extractor import RoiStage
 from .torch_model import RkdeModel
 
