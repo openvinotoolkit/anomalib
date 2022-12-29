@@ -8,7 +8,7 @@ data:
     image_size: 32
 
 model:
-  class_path: DummyModel
+  class_path: tests.pre_merge.utils.callbacks.export_callback.dummy_lightning_model.DummyLightningModule
   init_args:
     dropout: 0
     lr: 1e-3
@@ -19,7 +19,8 @@ model:
       image_default: 0.0
       pixel_default: 0.0
 
-export: output_format "openvino"
+export:
+  output_format: "openvino"
 
 trainer:
   accelerator: auto # <"cpu", "gpu", "tpu", "ipu", "hpu", "auto">

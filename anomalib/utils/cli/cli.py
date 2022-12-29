@@ -4,10 +4,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+import sys
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, Optional, Type, Union
 
 import torch
+from jsonargparse import ArgumentParser
 from openvino.tools.mo.utils.cli_parser import get_common_cli_parser
 from pytorch_lightning import LightningDataModule, LightningModule, Trainer
 from pytorch_lightning.utilities.cli import (
@@ -16,14 +18,15 @@ from pytorch_lightning.utilities.cli import (
     SaveConfigCallback,
 )
 
-from anomalib.config import update_config
+from anomalib.config import get_configurable_parameters, update_config
 from anomalib.deploy.export import _export_to_onnx
+from anomalib.models import get_model
 from anomalib.pre_processing.tiler import TilerDecorator
 from anomalib.utils.callbacks import (
     ImageVisualizerCallback,
     MetricsConfigurationCallback,
     PostProcessingConfigurationCallback,
-    get_callbacks,
+    get_callbacks_dict,
 )
 from anomalib.utils.loggers import configure_logger
 
@@ -83,6 +86,15 @@ class AnomalibCLI(LightningCLI):
         if self.config["subcommand"] not in self.anomalib_subcommands():
             return super().instantiate_classes()
 
+    def parse_arguments(self, parser: LightningArgumentParser) -> None:
+        """Parse arguments depending on the subcommand."""
+        if len(sys.argv) > 1 and sys.argv[1] in self.anomalib_subcommands().keys():
+            parser._choices.clear()  # this ensures that lightning parameters are not checked in the parser
+            arguments = super().parse_arguments(parser)
+        else:
+            arguments = super().parse_arguments(parser)
+        return arguments
+
     def _run_subcommand(self, subcommand: str) -> None:
         if self.config["subcommand"] not in self.anomalib_subcommands():
             return super()._run_subcommand(subcommand)
@@ -93,13 +105,14 @@ class AnomalibCLI(LightningCLI):
         """Run export subcommand."""
         config = self.config["export"]
         # load model
-        model = torch.load(config["model_path"])
-        _export_to_onnx(model, config.input_size, config.export_path)
-
-    def run_openvino(self) -> None:
-        """Run openvino subcommand."""
-        # config = self.config["export"]
-        raise NotImplementedError("Export to OpenVINO is not implemented yet.")
+        if config.export_mode == "onnx":
+            config = config["onnx"]
+            model_config = get_configurable_parameters(config_path=config.model_config)
+            model = get_model(model_config)
+            model.load_state_dict(torch.load(config.weights)["state_dict"])
+            export_path = config.weights.parent if config.export_path is None else config.export_path
+            onnx_path = _export_to_onnx(model, model_config.model.init_args.input_size, export_path)
+            print(f"Model exported to {onnx_path}")
 
     def run_hpo(self) -> None:
         raise NotImplementedError("Hyperparameter Optimization is not implemented yet.")
@@ -110,9 +123,9 @@ class AnomalibCLI(LightningCLI):
     @staticmethod
     def anomalib_subcommands() -> Dict[str, Dict[str, Any]]:
         return {
-            "export": {"entrypoint": "", "description": "Export the model to ONNX or OpenVINO format."},
-            "benchmark": {"entrypoint": "", "description": "Run benchmarking script"},
-            "hpo": {"entrypoint": "", "description": "Run Hyperparameter Optimization"},
+            "export": {"description": "Export the model to ONNX or OpenVINO format."},
+            "benchmark": {"description": "Run benchmarking script"},
+            "hpo": {"description": "Run Hyperparameter Optimization"},
         }
 
     def _add_subcommands(self, parser: LightningArgumentParser, **kwargs: Any) -> None:
@@ -121,7 +134,7 @@ class AnomalibCLI(LightningCLI):
         super()._add_subcommands(parser, **kwargs)
         # Add  export, benchmark and hpo
         for subcommand in self.anomalib_subcommands().keys():
-            sub_parser = self.init_parser(**kwargs.get(subcommand, {}))
+            sub_parser = ArgumentParser()
             self.parser._subcommands_action.add_subcommand(
                 subcommand, sub_parser, help=self.anomalib_subcommands()[subcommand]["description"]
             )
@@ -134,10 +147,8 @@ class AnomalibCLI(LightningCLI):
         # Add export mode sub parsers
         onnx_parser = LightningArgumentParser(description="Export to ONNX format")
         subcommands.add_subcommand("onnx", onnx_parser)
-        onnx_parser.add_argument("--model", type=Path, help="Path to the torch model.")
-        onnx_parser.add_argument(
-            "--input_size", type=Union[List[int], Tuple[int, int]], help="Input size of the model."
-        )
+        onnx_parser.add_argument("--weights", type=Path, help="Path to the torch model weights.", required=True)
+        onnx_parser.add_argument("--model_config", type=Path, help="Path to the model config.", required=True)
         onnx_parser.add_argument("--export_path", type=Path, help="Path to save the exported model.")
 
         openvino_parser = LightningArgumentParser(description="Export to OpenVINO format")
@@ -180,7 +191,7 @@ class AnomalibCLI(LightningCLI):
         parser.link_arguments("data.init_args.task", "visualization.task")
         parser.link_arguments("data.init_args.image_size", "model.init_args.input_size")
         parser.add_argument("results_dir.path", type=Path, help="Path to save the results.")
-        parser.add_argument("results_dir.unique", type=bool, help="Whether to create a unique folder.")
+        parser.add_argument("results_dir.unique", type=bool, help="Whether to create a unique folder.", default=False)
 
         # parser.set_defaults("visualization.image_save_path",)
 
@@ -190,7 +201,7 @@ class AnomalibCLI(LightningCLI):
         if subcommand not in self.anomalib_subcommands():
             self.config[subcommand] = update_config(self.config[subcommand])
             TilerDecorator(**vars(self.config[subcommand].tiling))
-            self.config[subcommand].trainer.callbacks = get_callbacks(self.config[subcommand])
+            self.config[subcommand].trainer.callbacks = get_callbacks_dict(self.config[subcommand])
 
 
 def main() -> None:
