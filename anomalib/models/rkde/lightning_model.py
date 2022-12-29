@@ -106,7 +106,7 @@ class Rkde(AnomalyModule):
         batch_size = batch["image"].shape[0]
         indices = boxes[:, 0]
         batch["pred_boxes"] = [boxes[indices == i, 1:] for i in range(batch_size)]
-        batch["boxes_scores"] = [scores[indices == i] for i in range(batch_size)]
+        batch["box_scores"] = [scores[indices == i] for i in range(batch_size)]
 
         return batch
 
