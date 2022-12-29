@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- ✨ Add CSFlow model (<https://github.com/openvinotoolkit/anomalib/pull/657>)
+- Log loss for existing trainable models (<https://github.com/openvinotoolkit/anomalib/pull/804>)
 - Add section for community project (<https://github.com/openvinotoolkit/anomalib/pull/768>)
 - ✨ Add torchfx feature extractor (<https://github.com/openvinotoolkit/anomalib/pull/675>)
 - Add tiling notebook (<https://github.com/openvinotoolkit/anomalib/pull/712>)
@@ -32,9 +34,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Deprecated
 
 - Deprecated PreProcessor class (<https://github.com/openvinotoolkit/anomalib/pull/795>)
+- Deprecate OptimalF1 metric in favor of AnomalyScoreThreshold and F1Score (<https://github.com/openvinotoolkit/anomalib/pull/796>)
 
 ### Fixed
 
+- Add early stopping to CS-Flow model (<https://github.com/openvinotoolkit/anomalib/pull/817>)
+- Fix remote container by removing version pinning in Docker files (<https://github.com/openvinotoolkit/anomalib/pull/797>)
 - Fix PatchCore performance deterioration by reverting changes to Average Pooling layer (<https://github.com/openvinotoolkit/anomalib/pull/791>)
 - Fix zero seed (<https://github.com/openvinotoolkit/anomalib/pull/766>)
 - Fix #699 (<https://github.com/openvinotoolkit/anomalib/pull/700>)

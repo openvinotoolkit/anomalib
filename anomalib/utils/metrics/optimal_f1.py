@@ -3,6 +3,8 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import warnings
+
 import torch
 from torchmetrics import Metric, PrecisionRecallCurve
 
@@ -17,6 +19,13 @@ class OptimalF1(Metric):
     full_state_update: bool = False
 
     def __init__(self, num_classes: int, **kwargs):
+        warnings.warn(
+            DeprecationWarning(
+                "OptimalF1 metric is deprecated and will be removed in a future release. The optimal F1 score for "
+                "Anomalib predictions can be obtained by computing the adaptive threshold with the "
+                "AnomalyScoreThreshold metric and setting the computed threshold value in TorchMetrics F1Score metric."
+            )
+        )
         super().__init__(**kwargs)
 
         self.precision_recall_curve = PrecisionRecallCurve(num_classes=num_classes)

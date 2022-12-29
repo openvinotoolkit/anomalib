@@ -4,7 +4,17 @@ on:
   push:
     branches: [main]
   pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
   workflow_dispatch: # run on request (no need for PR)
+
+# This is what will cancel the workflow concurrency
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   Code-Quality-Checks:
@@ -19,6 +29,7 @@ jobs:
   Tox:
     runs-on: [self-hosted, linux, x64]
     needs: Code-Quality-Checks
+    if: github.event.pull_request.draft == false
     strategy:
       max-parallel: 1
     steps:

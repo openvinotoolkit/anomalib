@@ -3,7 +3,7 @@ dataset:
   format: mvtec
   path: ./datasets/MVTec
   category: bottle
-  task: classification
+  task: segmentation
   train_batch_size: 32
   eval_batch_size: 32
   num_workers: 8
@@ -20,7 +20,7 @@ dataset:
 
 model:
   name: dfm
-  backbone: resnet18
+  backbone: resnet50
   pre_trained: true
   layer: layer3
   pooling_kernel_size: 2
@@ -39,6 +39,7 @@ metrics:
   threshold:
     method: adaptive #options: [adaptive, manual]
     manual_image: null
+    manual_pixel: null
 
 visualization:
   show_images: False # show images on the screen
