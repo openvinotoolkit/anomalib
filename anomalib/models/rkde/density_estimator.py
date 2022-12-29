@@ -49,8 +49,8 @@ class DensityEstimator(nn.Module):
         self.pca_model = PCA(n_components=self.n_pca_components)
         self.kde_model = GaussianKDE()
 
-        self.register_buffer("max_length", torch.tensor([]))
-        self.max_length = Tensor(torch.tensor([]))
+        self.register_buffer("max_length", torch.empty([]))
+        self.max_length = torch.empty([])
 
     def pre_process(self, feature_stack: Tensor, max_length: Optional[Tensor] = None) -> Tuple[Tensor, Tensor]:
         """Pre-process the CNN features.
