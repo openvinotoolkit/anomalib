@@ -150,6 +150,7 @@ class Cflow(AnomalyModule):
                 opt.step()
                 avg_loss += loss.sum()
 
+        self.log("train_loss", avg_loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": avg_loss}
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ

@@ -32,6 +32,7 @@ def get_model_nncf_cat() -> List:
     """
     model_support = [
         ("cflow", False),
+        ("csflow", False),
         ("dfkde", False),
         ("dfm", False),
         ("ganomaly", False),

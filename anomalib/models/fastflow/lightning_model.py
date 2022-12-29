@@ -62,6 +62,7 @@ class Fastflow(AnomalyModule):
         """
         hidden_variables, jacobians = self.model(batch["image"])
         loss = self.loss(hidden_variables, jacobians)
+        self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ

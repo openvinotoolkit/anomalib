@@ -22,7 +22,7 @@ class BackboneParams:
     init_args: Dict = field(default_factory=dict)
 
 
-class TorchFXFeatureExtractor:
+class TorchFXFeatureExtractor(nn.Module):
     """Extract features from a CNN.
 
     Args:
@@ -74,6 +74,7 @@ class TorchFXFeatureExtractor:
         weights: Optional[Union[WeightsEnum, str]] = None,
         requires_grad: bool = False,
     ):
+        super().__init__()
         if isinstance(backbone, dict):
             backbone = BackboneParams(**backbone)
         elif not isinstance(backbone, BackboneParams):  # if str or nn.Module
@@ -169,6 +170,6 @@ class TorchFXFeatureExtractor:
 
         return backbone_class
 
-    def __call__(self, inputs: Tensor) -> Dict[str, Tensor]:
+    def forward(self, inputs: Tensor) -> Dict[str, Tensor]:
         """Extract features from the input."""
         return self.feature_extractor(inputs)
