@@ -91,6 +91,7 @@ class Inferencer(ABC):
             anomaly_map=output["anomaly_map"],
             pred_mask=output["pred_mask"],
             pred_boxes=output["pred_boxes"],
+            box_labels=output["box_labels"],
         )
 
     @staticmethod
