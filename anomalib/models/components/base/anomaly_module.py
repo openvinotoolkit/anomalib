@@ -86,11 +86,12 @@ class AnomalyModule(pl.LightningModule, ABC):
             outputs["pred_masks"] = outputs["anomaly_maps"] >= self.pixel_threshold.value
             if "pred_boxes" not in outputs.keys():
                 outputs["pred_boxes"] = masks_to_boxes(outputs["pred_masks"])
+                outputs["box_labels"] = [torch.ones(boxes.shape[0]) for boxes in outputs["pred_boxes"]]
         # apply thresholding to boxes
-        if "pred_boxes" in outputs:
+        if "boxes_scores" in outputs:
             # apply threshold to assign normal/anomalous label to boxes
-            keep = [scores > self.pixel_threshold.value for scores in outputs["boxes_scores"]]
-            outputs["box_labels"] = [labels.int() for labels in keep]
+            is_anomalous = [scores > self.pixel_threshold.value for scores in outputs["boxes_scores"]]
+            outputs["box_labels"] = [labels.int() for labels in is_anomalous]
         return outputs
 
     def test_step(self, batch, _):  # pylint: disable=arguments-differ
