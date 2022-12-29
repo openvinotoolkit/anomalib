@@ -1,10 +1,10 @@
-"""DFM: Deep Feature Kernel Density Estimation."""
+"""DFM: Deep Feature Modeling."""
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import List
+from typing import List, Tuple
 
 import torch
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
@@ -24,17 +24,20 @@ class Dfm(AnomalyModule):
 
     Args:
         feature_extractor (FeatureExtractorParams): Feature extractor params
+        input_size (Tuple[int, int]): Input size for the model.
         pooling_kernel_size (int, optional): Kernel size to pool features extracted from the CNN.
             Defaults to 4.
         pca_level (float, optional): Ratio from which number of components for PCA are calculated.
             Defaults to 0.97.
         score_type (str, optional): Scoring type. Options are `fre` and `nll`. Defaults to "fre".
-        nll: for Gaussian modeling, fre: pca feature reconstruction error
+        nll: for Gaussian modeling, fre: pca feature-reconstruction error. Anomaly segmentation is
+        supported with `fre` only. If using `nll`, set `task` in config.yaml to classification
     """
 
     def __init__(
         self,
         feature_extractor: FeatureExtractorParams,
+        input_size: Tuple[int, int],
         pooling_kernel_size: int = 4,
         pca_level: float = 0.97,
         score_type: str = "fre",
@@ -43,11 +46,13 @@ class Dfm(AnomalyModule):
 
         self.model: DFMModel = DFMModel(
             feature_extractor_params=feature_extractor,
+            input_size=input_size,
             pooling_kernel_size=pooling_kernel_size,
             n_comps=pca_level,
             score_type=score_type,
         )
         self.embeddings: List[Tensor] = []
+        self.score_type = score_type
 
     @staticmethod
     def configure_optimizers() -> None:  # pylint: disable=arguments-differ
@@ -94,8 +99,11 @@ class Dfm(AnomalyModule):
           batch (List[Dict[str, Any]]): Input batch
 
         Returns:
-          Dictionary containing FRE anomaly scores and ground-truth.
+          Dictionary containing FRE anomaly scores and anomaly maps.
         """
-        batch["pred_scores"] = self.model(batch["image"])
+        if self.score_type == "fre":
+            batch["anomaly_maps"], batch["pred_scores"] = self.model(batch["image"])
+        elif self.score_type == "nll":
+            batch["pred_scores"] = self.model(batch["image"])
 
         return batch

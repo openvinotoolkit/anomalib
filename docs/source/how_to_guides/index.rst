@@ -14,3 +14,4 @@ How to Guides
    notebooks/200_models/201_fastflow.ipynb
    notebooks/300_benchmarking/301_benchmarking.ipynb
    notebooks/300_benchmarking/302_hpo_wandb.ipynb
+   notebooks/400_openvino/nncf.ipynb

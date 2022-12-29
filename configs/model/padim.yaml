@@ -1,3 +1,7 @@
+# This is the config file for the new Anomalib CLI.
+# To use this, run the following command:
+# anomalib fit --config ./config/model/padim.yaml
+ckpt_path: null
 seed_everything: null
 results_dir:
   path: ./results
@@ -105,7 +109,6 @@ trainer:
   profiler: null
   reload_dataloaders_every_n_epochs: 0
   replace_sampler_ddp: true
-  resume_from_checkpoint: null
   sync_batchnorm: false
   tpu_cores: null
   track_grad_norm: -1

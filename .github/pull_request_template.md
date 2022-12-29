@@ -21,3 +21,4 @@
 - [ ] My changes generate no new warnings
 - [ ] I have added tests that prove my fix is effective or that my feature works
 - [ ] New and existing tests pass locally with my changes
+- [ ] I have added a summary of my changes to the [CHANGELOG](https://github.com/openvinotoolkit/anomalib/blob/main/CHANGELOG.md) (not for minor changes, docs and tests).

@@ -8,10 +8,10 @@ from importlib import import_module
 from typing import Union
 
 from omegaconf import DictConfig, ListConfig
-from torch import load
 
 from anomalib.models.cflow import Cflow
 from anomalib.models.components import AnomalyModule
+from anomalib.models.csflow import Csflow
 from anomalib.models.dfkde import Dfkde
 from anomalib.models.dfm import Dfm
 from anomalib.models.draem import Draem
@@ -24,6 +24,7 @@ from anomalib.models.stfpm import Stfpm
 
 __all__ = [
     "Cflow",
+    "Csflow",
     "Dfkde",
     "Dfm",
     "Draem",
@@ -66,8 +67,5 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     except ModuleNotFoundError as exception:
         logger.error("Could not find the model class: %s", config.model.class_path)
         raise exception
-
-    if config.trainer.resume_from_checkpoint is not None:
-        model.load_state_dict(load(config.trainer.resume_from_checkpoint)["state_dict"], strict=False)
 
     return model

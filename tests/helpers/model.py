@@ -53,6 +53,7 @@ def setup_model_train(
         Tuple[DictConfig, LightningDataModule, AnomalyModule, Trainer]: config, datamodule, trained model, trainer
     """
     config = get_configurable_parameters(model_name=model_name)
+    config.results_dir.path = project_path
     if score_type is not None:
         config.model.score_type = score_type
     config.seed_everything = 42
@@ -77,7 +78,7 @@ def setup_model_train(
     if nncf:
         config.optimization["nncf"] = {"apply": True, "input_info": {"sample_size": None}}
         config = update_nncf_config(config)
-        config.init_weights = None
+        config.ckpt_path = None
 
     # reassign project path as config is updated in `update_config_for_nncf`
     config.trainer.default_root_dir = project_path
@@ -96,7 +97,7 @@ def setup_model_train(
                 callbacks.pop(index)
                 break
         model_checkpoint = ModelCheckpoint(
-            dirpath=os.path.join(config.trainer.default_root_dir, "weights"),
+            dirpath=os.path.join(config.results_dir.path, "weights"),
             filename="last",
             monitor=None,
             mode="max",
@@ -130,9 +131,7 @@ def model_load_test(config: Union[DictConfig, ListConfig], datamodule: Lightning
 
     """
     loaded_model = get_model(config)  # get new model
-    # Assing the weight file to resume_from_checkpoint. When trainer is initialized, Trainer
-    # object will automatically load the weights.
-    config.trainer.resume_from_checkpoint = os.path.join(config.trainer.default_root_dir, "weights/last.ckpt")
+    ckpt_path = os.path.join(config.results_dir.path, "weights/last.ckpt")
 
     callbacks = get_callbacks(config)
 
@@ -145,7 +144,7 @@ def model_load_test(config: Union[DictConfig, ListConfig], datamodule: Lightning
     # create new trainer object with LoadModel callback (assumes it is present)
     trainer = Trainer(callbacks=callbacks, **config.trainer)
     # Assumes the new model has LoadModel callback and the old one had ModelCheckpoint callback
-    new_results = trainer.test(model=loaded_model, datamodule=datamodule)[0]
+    new_results = trainer.test(model=loaded_model, datamodule=datamodule, ckpt_path=ckpt_path)[0]
     assert np.isclose(
         results["image_AUROC"], new_results["image_AUROC"]
     ), f"Loaded model does not yield close performance results. {results['image_AUROC']} : {new_results['image_AUROC']}"

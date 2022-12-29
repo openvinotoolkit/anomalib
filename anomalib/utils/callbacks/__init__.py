@@ -19,7 +19,6 @@ from .cdf_normalization import CdfNormalizationCallback
 from .graph import GraphLogger
 from .metrics_configuration import MetricsConfigurationCallback
 from .min_max_normalization import MinMaxNormalizationCallback
-from .model_loader import LoadModelCallback
 from .post_processing_configuration import PostProcessingConfigurationCallback
 from .tiler_configuration import TilerConfigurationCallback
 from .timer import TimerCallback
@@ -29,7 +28,6 @@ __all__ = [
     "CdfNormalizationCallback",
     "GraphLogger",
     "ImageVisualizerCallback",
-    "LoadModelCallback",
     "MetricsConfigurationCallback",
     "MetricVisualizerCallback",
     "MinMaxNormalizationCallback",
@@ -127,16 +125,6 @@ def get_callbacks_dict(config: Union[ListConfig, DictConfig]) -> List[Dict]:
             "pixel_metrics": config.metrics.get("pixel_metrics", None),
         },
     )
-
-    # LoadModel from Checkpoint.
-    if config.trainer.resume_from_checkpoint:
-        __update_callback(
-            callbacks,
-            "LoadModelCallback",
-            {
-                "weights_path": config.trainer.resume_from_checkpoint,
-            },
-        )
 
     # Add timing to the pipeline.
     __update_callback(callbacks, "TimerCallback", {})

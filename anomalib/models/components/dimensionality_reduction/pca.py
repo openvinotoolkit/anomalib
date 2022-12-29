@@ -41,7 +41,7 @@ class PCA(DynamicBufferModule):
         mean = dataset.mean(dim=0)
         dataset -= mean
 
-        _, sig, v_h = torch.linalg.svd(dataset.double())
+        _, sig, v_h = torch.linalg.svd(dataset.double(), full_matrices=False)
         num_components: int
         if self.n_components <= 1:
             variance_ratios = torch.cumsum(sig * sig, dim=0) / torch.sum(sig * sig)
