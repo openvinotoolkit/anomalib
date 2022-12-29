@@ -192,8 +192,10 @@ class OpenVINOInferencer(Inferencer):
 
         if self.config.dataset.task == TaskType.DETECTION:
             pred_boxes = self._get_boxes(pred_mask)
+            box_labels = np.ones(pred_boxes.shape[0])
         else:
             pred_boxes = None
+            box_labels = None
 
         return {
             "anomaly_map": anomaly_map,
@@ -201,6 +203,7 @@ class OpenVINOInferencer(Inferencer):
             "pred_score": pred_score,
             "pred_mask": pred_mask,
             "pred_boxes": pred_boxes,
+            "box_labels": box_labels,
         }
 
     @staticmethod
