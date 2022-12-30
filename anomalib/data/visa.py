@@ -172,69 +172,70 @@ class Visa(AnomalibDataModule):
         else:
             download_and_extract(self.root, DOWNLOAD_INFO)
 
-        # apply fixes test split
-        self.apply_split()
-
-    def apply_split(self):
-        """Apply the subset splitting using the fixed split in the csv file."""
+        # check if the split from the csv file has been applied yet
         if self.category not in [category.name for category in self.split_root.glob("*")]:
-            # perform splitting
-            # adapted from https://github.com/amazon-science/spot-diff
-            logger.info("preparing data")
-            categories = [
-                "candle",
-                "capsules",
-                "cashew",
-                "chewinggum",
-                "fryum",
-                "macaroni1",
-                "macaroni2",
-                "pcb1",
-                "pcb2",
-                "pcb3",
-                "pcb4",
-                "pipe_fryum",
-            ]
+            self.apply_cls1_split()
 
-            split_file = self.root / "split_csv" / "1cls.csv"
+    def apply_cls1_split(self):
+        """Apply the 1-class subset splitting using the fixed split in the csv file.
 
-            for category in categories:
-                train_folder = self.split_root / category / "train"
-                test_folder = self.split_root / category / "test"
-                mask_folder = self.split_root / category / "ground_truth"
+        adapted from https://github.com/amazon-science/spot-diff
+        """
+        logger.info("preparing data")
+        categories = [
+            "candle",
+            "capsules",
+            "cashew",
+            "chewinggum",
+            "fryum",
+            "macaroni1",
+            "macaroni2",
+            "pcb1",
+            "pcb2",
+            "pcb3",
+            "pcb4",
+            "pipe_fryum",
+        ]
 
-                train_img_good_folder = train_folder / "good"
-                test_img_good_folder = test_folder / "good"
-                test_img_bad_folder = test_folder / "bad"
-                test_mask_bad_folder = mask_folder / "bad"
+        split_file = self.root / "split_csv" / "1cls.csv"
 
-                train_img_good_folder.mkdir(parents=True, exist_ok=True)
-                test_img_good_folder.mkdir(parents=True, exist_ok=True)
-                test_img_bad_folder.mkdir(parents=True, exist_ok=True)
-                test_mask_bad_folder.mkdir(parents=True, exist_ok=True)
+        for category in categories:
+            train_folder = self.split_root / category / "train"
+            test_folder = self.split_root / category / "test"
+            mask_folder = self.split_root / category / "ground_truth"
 
-            with open(split_file, "r", encoding="utf-8") as file:
-                csvreader = csv.reader(file)
-                next(csvreader)
-                for row in csvreader:
-                    category, split, label, image_path, mask_path = row
-                    if label == "normal":
-                        label = "good"
-                    else:
-                        label = "bad"
-                    image_name = image_path.split("/")[-1]
-                    mask_name = mask_path.split("/")[-1]
+            train_img_good_folder = train_folder / "good"
+            test_img_good_folder = test_folder / "good"
+            test_img_bad_folder = test_folder / "bad"
+            test_mask_bad_folder = mask_folder / "bad"
 
-                    img_src_path = self.root / image_path
-                    msk_src_path = self.root / mask_path
-                    img_dst_path = self.split_root / category / split / label / image_name
-                    msk_dst_path = self.split_root / category / "ground_truth" / label / mask_name
+            train_img_good_folder.mkdir(parents=True, exist_ok=True)
+            test_img_good_folder.mkdir(parents=True, exist_ok=True)
+            test_img_bad_folder.mkdir(parents=True, exist_ok=True)
+            test_mask_bad_folder.mkdir(parents=True, exist_ok=True)
 
-                    shutil.copyfile(img_src_path, img_dst_path)
-                    if split == "test" and label == "bad":
-                        mask = cv2.imread(str(msk_src_path))
+        with open(split_file, "r", encoding="utf-8") as file:
+            csvreader = csv.reader(file)
+            next(csvreader)
+            for row in csvreader:
+                category, split, label, image_path, mask_path = row
+                if label == "normal":
+                    label = "good"
+                else:
+                    label = "bad"
+                image_name = image_path.split("/")[-1]
+                mask_name = mask_path.split("/")[-1]
 
-                        # binarize mask
-                        mask[mask != 0] = 255
+                img_src_path = self.root / image_path
+                msk_src_path = self.root / mask_path
+                img_dst_path = self.split_root / category / split / label / image_name
+                msk_dst_path = self.split_root / category / "ground_truth" / label / mask_name
 
-                        cv2.imwrite(str(msk_dst_path), mask)
+                shutil.copyfile(img_src_path, img_dst_path)
+                if split == "test" and label == "bad":
+                    mask = cv2.imread(str(msk_src_path))
+
+                    # binarize mask
+                    mask[mask != 0] = 255
+
+                    cv2.imwrite(str(msk_dst_path), mask)
