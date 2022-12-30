@@ -26,7 +26,7 @@ Reference:
 import logging
 import tarfile
 from pathlib import Path
-from typing import Optional, Tuple, Union
+from typing import Optional, Sequence, Tuple, Union
 from urllib.request import urlretrieve
 
 import albumentations as A
@@ -47,7 +47,12 @@ from anomalib.data.utils import (
 logger = logging.getLogger(__name__)
 
 
-def make_mvtec_dataset(root: Union[str, Path], split: Optional[Union[Split, str]] = None) -> DataFrame:
+IMG_EXTENSIONS = [".png", ".PNG"]
+
+
+def make_mvtec_dataset(
+    root: Union[str, Path], split: Optional[Union[Split, str]] = None, extensions: Sequence[str] = (".png")
+) -> DataFrame:
     """Create MVTec AD samples by parsing the MVTec AD data file structure.
 
     The files are expected to follow the structure:
@@ -93,33 +98,36 @@ def make_mvtec_dataset(root: Union[str, Path], split: Optional[Union[Split, str]
     Returns:
         DataFrame: an output dataframe containing the samples of the dataset.
     """
-    samples_list = [(str(root),) + filename.parts[-3:] for filename in Path(root).glob("**/*.png")]
+    root = Path(root)
+    samples_list = [(str(root),) + f.parts[-3:] for f in root.glob(r"**/*") if f.suffix in extensions]
     if len(samples_list) == 0:
         raise RuntimeError(f"Found 0 images in {root}")
 
     samples = DataFrame(samples_list, columns=["path", "split", "label", "image_path"])
-    samples = samples[samples.split != "ground_truth"]
-
-    # Create mask_path column
-    samples["mask_path"] = (
-        samples.path
-        + "/ground_truth/"
-        + samples.label
-        + "/"
-        + samples.image_path.str.rstrip("png").str.rstrip(".")
-        + "_mask.png"
-    )
 
     # Modify image_path column by converting to absolute path
     samples["image_path"] = samples.path + "/" + samples.split + "/" + samples.label + "/" + samples.image_path
-
-    # Good images don't have mask
-    samples.loc[(samples.split == "test") & (samples.label == "good"), "mask_path"] = ""
 
     # Create label index for normal (0) and anomalous (1) images.
     samples.loc[(samples.label == "good"), "label_index"] = 0
     samples.loc[(samples.label != "good"), "label_index"] = 1
     samples.label_index = samples.label_index.astype(int)
+
+    # separate masks from samples
+    mask_samples = samples.loc[samples.split == "ground_truth"].sort_values(by="image_path", ignore_index=True)
+    samples = samples[samples.split != "ground_truth"].sort_values(by="image_path", ignore_index=True)
+
+    # assign mask paths to anomalous test images
+    samples.loc[(samples.split == "test") & (samples.label_index == 1), "mask_path"] = mask_samples.image_path.values
+
+    # assert that the right mask files are associated with the right test images
+    assert (
+        samples.loc[samples.label_index == 1]
+        .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
+        .all()
+    ), "Mismatch between anomalous images and ground truth masks. Make sure the mask files in 'ground_truth' \
+              folder follow the same naming convention as the anomalous images in the dataset (e.g. image: '000.png', \
+              mask: '000.png' or '000_mask.png')."
 
     if split:
         samples = samples[samples.split == split].reset_index(drop=True)
@@ -152,7 +160,7 @@ class MVTecDataset(AnomalibDataset):
         self.split = split
 
     def _setup(self):
-        self.samples = make_mvtec_dataset(self.root_category, split=self.split)
+        self.samples = make_mvtec_dataset(self.root_category, split=self.split, extensions=IMG_EXTENSIONS)
 
 
 class MVTec(AnomalibDataModule):
