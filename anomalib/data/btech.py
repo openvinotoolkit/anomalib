@@ -11,10 +11,8 @@ extracts the dataset and create PyTorch data objects.
 
 import logging
 import shutil
-import zipfile
 from pathlib import Path
 from typing import Optional, Tuple, Union
-from urllib.request import urlretrieve
 
 import albumentations as A
 import cv2
@@ -26,16 +24,20 @@ from tqdm import tqdm
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
-    DownloadProgressBar,
+    DownloadInfo,
     InputNormalizationMethod,
     Split,
     TestSplitMode,
     ValSplitMode,
+    download_and_extract,
     get_transforms,
-    hash_check,
 )
 
 logger = logging.getLogger(__name__)
+
+DOWNLOAD_INFO = DownloadInfo(
+    name="btech", url="https://avires.dimi.uniud.it/papers/btad/btad.zip", hash="c1fa4d56ac50dd50908ce04e81037a8e"
+)
 
 
 def make_btech_dataset(path: Path, split: Optional[Union[Split, str]] = None) -> DataFrame:
@@ -282,38 +284,13 @@ class BTech(AnomalibDataModule):
         if (self.root / self.category).is_dir():
             logger.info("Found the dataset.")
         else:
-            zip_filename = self.root.parent / "btad.zip"
+            download_and_extract(self.root.parent, DOWNLOAD_INFO)
 
-            logger.info("Downloading the BTech dataset.")
-            with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc="BTech") as progress_bar:
-                urlretrieve(
-                    url="https://avires.dimi.uniud.it/papers/btad/btad.zip",
-                    filename=zip_filename,
-                    reporthook=progress_bar.update_to,
-                )  # nosec
-            logger.info("Checking hash")
-            hash_check(zip_filename, "c1fa4d56ac50dd50908ce04e81037a8e")
-            logger.info("Extracting the dataset.")
-            with zipfile.ZipFile(zip_filename, "r") as zip_file:
-                zip_file.extractall(self.root.parent)
-
+            # rename folder and convert images
             logger.info("Renaming the dataset directory")
             shutil.move(src=str(self.root.parent / "BTech_Dataset_transformed"), dst=str(self.root))
-
-            # NOTE: Each BTech category has different image extension as follows
-            #       | Category | Image | Mask |
-            #       |----------|-------|------|
-            #       | 01       | bmp   | png  |
-            #       | 02       | png   | png  |
-            #       | 03       | bmp   | bmp  |
-            # To avoid any conflict, the following script converts all the extensions to png.
-            # This solution works fine, but it's also possible to properly ready the bmp and
-            # png filenames from categories in `make_btech_dataset` function.
             logger.info("Convert the bmp formats to png to have consistent image extensions")
             for filename in tqdm(self.root.glob("**/*.bmp"), desc="Converting bmp to png"):
                 image = cv2.imread(str(filename))
                 cv2.imwrite(str(filename.with_suffix(".png")), image)
                 filename.unlink()
-
-            logger.info("Cleaning the tar file")
-            zip_filename.unlink()

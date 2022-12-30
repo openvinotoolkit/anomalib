@@ -24,10 +24,8 @@ Reference:
 import csv
 import logging
 import shutil
-import tarfile
 from pathlib import Path
 from typing import Optional, Tuple, Union
-from urllib.request import urlretrieve
 
 import albumentations as A
 import cv2
@@ -35,13 +33,13 @@ import cv2
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
-    DownloadProgressBar,
+    DownloadInfo,
     InputNormalizationMethod,
     Split,
     TestSplitMode,
     ValSplitMode,
+    download_and_extract,
     get_transforms,
-    hash_check,
 )
 
 from .mvtec import make_mvtec_dataset
@@ -49,6 +47,12 @@ from .mvtec import make_mvtec_dataset
 logger = logging.getLogger(__name__)
 
 EXTENSIONS = [".png", ".jpg", ".JPG"]
+
+DOWNLOAD_INFO = DownloadInfo(
+    name="VisA",
+    url="https://amazon-visual-anomaly.s3.us-west-2.amazonaws.com/VisA_20220922.tar",
+    hash="ef908989b6dc701fc218f643c127a4de",
+)
 
 
 class VisaDataset(AnomalibDataset):
@@ -166,28 +170,9 @@ class Visa(AnomalibDataModule):
         if (self.root / self.category).is_dir():
             logger.info("Found the dataset.")
         else:
-            self.root.mkdir(parents=True, exist_ok=True)
+            download_and_extract(self.root, DOWNLOAD_INFO)
 
-            logger.info("Downloading the VisA dataset.")
-            url = "https://amazon-visual-anomaly.s3.us-west-2.amazonaws.com"
-            dataset_name = "VisA_20220922.tar"
-            zip_filename = self.root / dataset_name
-            with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc="VisA") as progress_bar:
-                urlretrieve(
-                    url=f"{url}/{dataset_name}",
-                    filename=zip_filename,
-                    reporthook=progress_bar.update_to,
-                )
-            logger.info("Checking hash")
-            hash_check(zip_filename, "ef908989b6dc701fc218f643c127a4de")
-
-            logger.info("Extracting the dataset.")
-            with tarfile.open(zip_filename) as tar_file:
-                tar_file.extractall(self.root)
-
-            logger.info("Cleaning the tar file")
-            (zip_filename).unlink()
-
+        # apply fixes test split
         self.apply_split()
 
     def apply_split(self):

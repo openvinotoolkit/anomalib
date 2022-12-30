@@ -1,11 +1,9 @@
 """UCSD Pedestrian dataset."""
 
 import logging
-import tarfile
 from pathlib import Path
 from shutil import move
 from typing import Any, Callable, Dict, Optional, Tuple, Union
-from urllib.request import urlretrieve
 
 import albumentations as A
 import cv2
@@ -17,17 +15,23 @@ from torch import Tensor
 from anomalib.data.base import AnomalibVideoDataModule, AnomalibVideoDataset
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
-    DownloadProgressBar,
+    DownloadInfo,
     InputNormalizationMethod,
     Split,
     ValSplitMode,
+    download_and_extract,
     get_transforms,
-    hash_check,
     read_image,
 )
 from anomalib.data.utils.video import ClipsIndexer
 
 logger = logging.getLogger(__name__)
+
+DOWNLOAD_INFO = DownloadInfo(
+    name="UCSD Pedestrian",
+    url="http://www.svcl.ucsd.edu/projects/anomaly/UCSD_Anomaly_Dataset.tar.gz",
+    hash="5006421b89885f45a6f93b041145f2eb",
+)
 
 
 def make_ucsd_dataset(path: Path, split: Optional[Union[Split, str]] = None):
@@ -269,29 +273,10 @@ class UCSDped(AnomalibVideoDataModule):
         if (self.root / self.category).is_dir():
             logger.info("Found the dataset.")
         else:
-            self.root.mkdir(parents=True, exist_ok=True)
+            download_and_extract(self.root, DOWNLOAD_INFO)
 
-            logger.info("Downloading the UCSD Pedestrian dataset.")
-            url = "http://www.svcl.ucsd.edu/projects/anomaly/"
-            dataset_name = "UCSD_Anomaly_Dataset.tar.gz"
-            zip_filename = self.root / dataset_name
-            with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc="UCSDped") as progress_bar:
-                urlretrieve(
-                    url=f"{url}/{dataset_name}",
-                    filename=zip_filename,
-                    reporthook=progress_bar.update_to,
-                )
-            logger.info("Checking hash")
-            hash_check(zip_filename, "5006421b89885f45a6f93b041145f2eb")
-
-            logger.info("Extracting the dataset.")
-            with tarfile.open(zip_filename) as tar_file:
-                tar_file.extractall(self.root)
             # move contents to root
             extracted_folder = self.root / "UCSD_Anomaly_Dataset.v1p2"
             for filename in extracted_folder.glob("*"):
                 move(str(filename), str(self.root / filename.name))
             extracted_folder.rmdir()
-
-            logger.info("Cleaning the tar file")
-            (zip_filename).unlink()
