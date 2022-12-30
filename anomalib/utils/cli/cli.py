@@ -19,7 +19,7 @@ from pytorch_lightning.utilities.cli import (
 )
 
 from anomalib.config import get_configurable_parameters, update_config
-from anomalib.deploy.export import _export_to_onnx
+from anomalib.deploy.export import _export_to_onnx, _export_to_openvino
 from anomalib.models import get_model
 from anomalib.pre_processing.tiler import TilerDecorator
 from anomalib.utils.callbacks import (
@@ -84,11 +84,11 @@ class AnomalibCLI(LightningCLI):
 
     def instantiate_classes(self) -> None:
         if self.config["subcommand"] not in self.anomalib_subcommands():
-            return super().instantiate_classes()
+            super().instantiate_classes()
 
     def parse_arguments(self, parser: LightningArgumentParser) -> None:
         """Parse arguments depending on the subcommand."""
-        if len(sys.argv) > 1 and sys.argv[1] in self.anomalib_subcommands().keys():
+        if len(sys.argv) > 1 and sys.argv[1] in self.anomalib_subcommands():
             parser._choices.clear()  # this ensures that lightning parameters are not checked in the parser
             arguments = super().parse_arguments(parser)
         else:
@@ -97,7 +97,7 @@ class AnomalibCLI(LightningCLI):
 
     def _run_subcommand(self, subcommand: str) -> None:
         if self.config["subcommand"] not in self.anomalib_subcommands():
-            return super()._run_subcommand(subcommand)
+            super()._run_subcommand(subcommand)
         else:
             getattr(self, f"run_{subcommand}")()
 
@@ -113,6 +113,18 @@ class AnomalibCLI(LightningCLI):
             export_path = config.weights.parent if config.export_path is None else config.export_path
             onnx_path = _export_to_onnx(model, model_config.model.init_args.input_size, export_path)
             print(f"Model exported to {onnx_path}")
+        elif config.export_mode == "openvino":
+            config = config["openvino"]
+            mo_parser = get_common_cli_parser()
+            mo_config = {"framework": "onnx"}
+            # Get default parameters from the openvino subcommand of the export sub parser of self.parser
+            for key, value in config.mo.items():
+                if mo_parser.get_default(key) != value:
+                    mo_config[key] = value
+            openvino_path = _export_to_openvino(
+                export_path=config.export_path, input_model=config.input_model, **mo_config
+            )
+            print(f"Model exported to {openvino_path}")
 
     def run_hpo(self) -> None:
         raise NotImplementedError("Hyperparameter Optimization is not implemented yet.")
@@ -153,16 +165,18 @@ class AnomalibCLI(LightningCLI):
 
         openvino_parser = LightningArgumentParser(description="Export to OpenVINO format")
         subcommands.add_subcommand("openvino", openvino_parser)
-        # parser.add_argument(
-        #     "--output_path",
-        #     type=str,
-        #     default=".",
-        #     help="Path to save the exported model.",
-        # )
+        openvino_parser.add_argument(
+            "--export_path",
+            type=str,
+            help="Path to save the exported model.",
+        )
+        openvino_parser.add_argument("--input_model", type=Path, help="Path to the torch model weights.", required=True)
         group = openvino_parser.add_argument_group("OpenVINO Model Optimizer arguments (optional)")
         mo_parser = get_common_cli_parser()
+
+        # remove redundant keys from mo keys
         for arg in mo_parser._actions:
-            if arg.dest in ("help", "output_dir"):
+            if arg.dest in ("help", "input_model", "output_dir"):
                 continue
             group.add_argument(f"--mo.{arg.dest}", type=arg.type, default=arg.default, help=arg.help)
 
