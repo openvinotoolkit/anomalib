@@ -15,7 +15,7 @@ from pytorch_lightning import Trainer
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
 from anomalib.deploy import OpenVINOInferencer, TorchInferencer, export
-from anomalib.deploy.export import ExportMode
+from anomalib.deploy.export import OutputFormat
 from anomalib.models import get_model
 from anomalib.utils.callbacks import get_callbacks
 from anomalib.utils.cli.helpers import configure_optimizer
@@ -112,7 +112,7 @@ class TestInferencers:
                 model=model,
                 input_size=model_config.data.init_args.image_size,
                 export_root=export_path,
-                output_format=ExportMode.OPENVINO,
+                output_format=OutputFormat.OPENVINO,
             )
 
             # Test OpenVINO inferencer
