@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from anomalib.config import update_input_size_config
-from anomalib.data import Avenue, BTech, Folder, MVTec, UCSDped, get_datamodule
+from anomalib.data import Avenue, BTech, Folder, MVTec, UCSDped, Visa, get_datamodule
 from anomalib.pre_processing.transforms import Denormalize, ToNumpy
 from tests.helpers.config import get_test_configurable_parameters
 from tests.helpers.dataset import TestDataset, get_dataset_path
@@ -118,12 +118,30 @@ def make_ucsdped_data_module(task="classification", batch_size=1, val_split_mode
     return data_module
 
 
+def make_visa_data_module(task="classification", batch_size=1, test_split_mode="from_dir", val_split_mode="from_test"):
+    data_module = Visa(
+        root=get_dataset_path(dataset="Visa"),
+        category="candle",
+        image_size=(256, 256),
+        train_batch_size=batch_size,
+        eval_batch_size=batch_size,
+        num_workers=0,
+        task=task,
+        test_split_mode=test_split_mode,
+        val_split_mode=val_split_mode,
+    )
+    data_module.prepare_data()
+    data_module.setup()
+    return data_module
+
+
 DATASETS = {
     "avenue": make_avenue_data_module,
     "btech": make_btech_data_module,
     "folder": make_folder_data_module,
     "mvtec": make_mvtec_data_module,
     "ucsdped": make_ucsdped_data_module,
+    "visa": make_visa_data_module,
 }
 
 
@@ -156,7 +174,7 @@ def data_sample():
     return data
 
 
-@pytest.mark.parametrize("dataset", ["avenue", "btech", "folder", "mvtec", "ucsdped"])
+@pytest.mark.parametrize("dataset", ["avenue", "btech", "folder", "mvtec", "ucsdped", "visa"])
 class TestDataModule:
     """Test MVTec AD Data Module."""
 
