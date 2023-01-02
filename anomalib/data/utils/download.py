@@ -228,7 +228,7 @@ def download_and_extract(root: Path, info: DownloadInfo):
     else:
         logger.info("Downloading the %s dataset.", info.name)
         with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc=info.name) as progress_bar:
-            urlretrieve(
+            urlretrieve(  # nosec - suppress bandit warning (urls are hardcoded)
                 url=f"{info.url}",
                 filename=downloaded_file_path,
                 reporthook=progress_bar.update_to,
