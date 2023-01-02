@@ -120,7 +120,7 @@ def make_ucsdped_data_module(task="classification", batch_size=1, val_split_mode
 
 def make_visa_data_module(task="classification", batch_size=1, test_split_mode="from_dir", val_split_mode="from_test"):
     data_module = Visa(
-        root=get_dataset_path(dataset="Visa"),
+        root=get_dataset_path(dataset="visa"),
         category="candle",
         image_size=(256, 256),
         train_batch_size=batch_size,
