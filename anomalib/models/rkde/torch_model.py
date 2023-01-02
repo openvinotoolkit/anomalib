@@ -73,7 +73,8 @@ class RkdeModel(nn.Module):
             input (Tensor): Input images.
 
         Returns:
-            Tensor: Predictions
+            Union[Tensor, Tuple[Tensor, Tensor]]: The extracted features (when in training mode), or the predicted rois
+                and corresponding anomaly scores.
         """
         self.region_extractor.eval()
         self.feature_extractor.eval()

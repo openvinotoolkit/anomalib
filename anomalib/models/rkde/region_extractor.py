@@ -70,13 +70,14 @@ class RegionExtractor(nn.Module):
         """Forward pass of the model.
 
         Args:
-            input (Union[Tensor, List[Tensor]]): Input tensor or list of tensors.
+            input (Tensor): Batch of input images of shape [B, C, H, W].
 
         Raises:
             ValueError: When ``stage`` is not one of ``rcnn`` or ``rpn``.
 
         Returns:
-            List[Tensor]: Regions, comprising ``List`` of boxes for each image.
+            Tensor: Predicted regions, tensor of shape [N, 5] where N is the number of predicted regions in the batch,
+                 and where each row describes the index of the image in the batch and the 4 bounding box coordinates.
         """
         if self.training:
             raise ValueError("Should not be in training mode")
