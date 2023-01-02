@@ -91,7 +91,6 @@ class KDEClassifier(nn.Module):
 
         # if max training points is non-zero and smaller than number of staged features, select random subset
         if embeddings.shape[0] > self.max_training_points:
-            # pylint: disable=not-callable
             selected_idx = torch.tensor(random.sample(range(embeddings.shape[0]), self.max_training_points))
             selected_features = embeddings[selected_idx]
         else:

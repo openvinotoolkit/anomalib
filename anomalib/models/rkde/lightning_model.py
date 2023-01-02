@@ -63,11 +63,11 @@ class Rkde(AnomalyModule):
         self.embeddings: List[Tensor] = []
 
     @staticmethod
-    def configure_optimizers():  # pylint: disable=arguments-differ
+    def configure_optimizers():
         """RKDE doesn't require optimization, therefore returns no optimizers."""
         return None
 
-    def training_step(self, batch, _batch_idx):  # pylint: disable=arguments-differ
+    def training_step(self, batch, _batch_idx):
         """Training Step of RKde. For each batch, features are extracted from the CNN.
 
         Args:
@@ -87,7 +87,7 @@ class Rkde(AnomalyModule):
         logger.info("Fitting a KDE model to the embedding collected from the training set.")
         self.model.classifier.fit(embeddings)
 
-    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
+    def validation_step(self, batch, _):
         """Validation Step of RKde.
 
         Similar to the training step, features are extracted from the CNN for each batch.
