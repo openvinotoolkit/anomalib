@@ -167,13 +167,17 @@ class Visa(AnomalibDataModule):
 
     def prepare_data(self) -> None:
         """Download the dataset if not available."""
-        if (self.root / self.category).is_dir():
-            logger.info("Found the dataset.")
+        if (self.split_root / self.category).is_dir():
+            # dataset is available, and split has been applied
+            logger.info("Found the dataset and train/test split.")
+        elif (self.root / self.category).is_dir():
+            # dataset is available, but split has not yet been applied
+            logger.info("Found the dataset. Applying train/test split.")
+            self.apply_cls1_split()
         else:
+            # dataset is not available
             download_and_extract(self.root, DOWNLOAD_INFO)
-
-        # check if the split from the csv file has been applied yet
-        if self.category not in [category.name for category in self.split_root.glob("*")]:
+            logger.info("Downloaded the dataset. Applying train/test split.")
             self.apply_cls1_split()
 
     def apply_cls1_split(self):
