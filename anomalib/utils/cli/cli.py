@@ -28,6 +28,7 @@ from anomalib.utils.callbacks import (
     PostProcessingConfigurationCallback,
     get_callbacks_dict,
 )
+from anomalib.utils.cli.benchmark import distribute
 from anomalib.utils.loggers import configure_logger
 
 logger = logging.getLogger("anomalib.cli")
@@ -90,10 +91,7 @@ class AnomalibCLI(LightningCLI):
         """Parse arguments depending on the subcommand."""
         if len(sys.argv) > 1 and sys.argv[1] in self.anomalib_subcommands():
             parser._choices.clear()  # this ensures that lightning parameters are not checked in the parser
-            arguments = super().parse_arguments(parser)
-        else:
-            arguments = super().parse_arguments(parser)
-        return arguments
+        super().parse_arguments(parser)
 
     def _run_subcommand(self, subcommand: str) -> None:
         if self.config["subcommand"] not in self.anomalib_subcommands():
@@ -130,7 +128,8 @@ class AnomalibCLI(LightningCLI):
         raise NotImplementedError("Hyperparameter Optimization is not implemented yet.")
 
     def run_benchmark(self) -> None:
-        raise NotImplementedError("Benchmarking is not implemented yet.")
+        config = self.config["benchmark"]
+        distribute(config.config)
 
     @staticmethod
     def anomalib_subcommands() -> Dict[str, Dict[str, Any]]:
@@ -145,7 +144,7 @@ class AnomalibCLI(LightningCLI):
         # Initializes fit, validate, test, predict and tune
         super()._add_subcommands(parser, **kwargs)
         # Add  export, benchmark and hpo
-        for subcommand in self.anomalib_subcommands().keys():
+        for subcommand in self.anomalib_subcommands():
             sub_parser = ArgumentParser()
             self.parser._subcommands_action.add_subcommand(
                 subcommand, sub_parser, help=self.anomalib_subcommands()[subcommand]["description"]
@@ -189,11 +188,10 @@ class AnomalibCLI(LightningCLI):
             help="Select which backend to use for running HPO.",
             choices=["wandb", "comet"],
         )
-        pass
 
     def add_benchmark_arguments(self, parser: LightningArgumentParser) -> None:
         """Adds benchmark arguments to the parser."""
-        pass
+        parser.add_argument("--config", type=Path, help="Path to the benchmark config.", required=True)
 
     def add_arguments_to_parser(self, parser: LightningArgumentParser) -> None:
         """Add custom arguments to the parser."""
