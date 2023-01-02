@@ -13,6 +13,8 @@ from torchvision.transforms import Normalize, Resize
 
 from anomalib.data.utils.boxes import scale_boxes
 
+WEIGHTS_URL = "https://github.com/openvinotoolkit/anomalib/releases/download/rkde-weights/rkde_feature_extractor.pth"
+
 
 class FeatureExtractor(nn.Module):
     """Feature Extractor module for Region-based anomaly detection."""
@@ -49,8 +51,8 @@ class FeatureExtractor(nn.Module):
             nn.ReLU(inplace=True),
         )
 
-        # TODO: Load state dict from url
-        self.load_state_dict(torch.load("anomalib/models/rkde/feature_extractor.pth"))
+        # load the pre-trained weights from url
+        self.load_state_dict(torch.hub.load_state_dict_from_url(WEIGHTS_URL, progress=False))
 
     @torch.no_grad()
     def forward(self, batch: Tensor, rois: Tensor) -> Tensor:
