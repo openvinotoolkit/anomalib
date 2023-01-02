@@ -62,7 +62,7 @@ class VisaDataset(AnomalibDataset):
         task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (Optional[Union[Split, str]]): Split of the dataset, usually Split.TRAIN or Split.TEST
-        root (str): Path to the root of the dataset
+        root (Union[str, Path]): Path to the root of the dataset
         category (str): Sub-category of the dataset, e.g. 'bottle'
     """
 
@@ -97,7 +97,7 @@ class Visa(AnomalibDataModule):
         train_batch_size (int, optional): Training batch size. Defaults to 32.
         eval_batch_size (int, optional): Test batch size. Defaults to 32.
         num_workers (int, optional): Number of workers. Defaults to 8.
-        task TaskType): Task type, 'classification', 'detection' or 'segmentation'
+        task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
         transform_config_train (Optional[Union[str, A.Compose]], optional): Config for pre-processing
             during training.
             Defaults to None.
