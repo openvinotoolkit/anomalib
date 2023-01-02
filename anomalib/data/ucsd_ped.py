@@ -276,7 +276,7 @@ class UCSDped(AnomalibVideoDataModule):
             dataset_name = "UCSD_Anomaly_Dataset.tar.gz"
             zip_filename = self.root / dataset_name
             with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc="UCSDped") as progress_bar:
-                urlretrieve(
+                urlretrieve(  # nosec - suppress bandit warning (urls are hardcoded)
                     url=f"{url}/{dataset_name}",
                     filename=zip_filename,
                     reporthook=progress_bar.update_to,

@@ -306,7 +306,7 @@ class Avenue(AnomalibVideoDataModule):
             url = "http://www.cse.cuhk.edu.hk/leojia/projects/detectabnormal"
             zip_filepath = root / info.zip_filename
             with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc=info.description) as progress_bar:
-                urlretrieve(
+                urlretrieve(  # nosec - suppress bandit warning (urls are hardcoded)
                     url=f"{url}/{info.zip_filename}",
                     filename=zip_filepath,
                     reporthook=progress_bar.update_to,
