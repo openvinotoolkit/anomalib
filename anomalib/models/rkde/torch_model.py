@@ -9,10 +9,6 @@ from typing import Tuple, Union
 import torch
 from torch import Tensor, nn
 
-# from anomalib.models.rkde.density_estimator import (
-#     DensityEstimator,
-#     FeatureScalingMethod,
-# )
 from anomalib.models.components.classification import (
     FeatureScalingMethod,
     KDEClassifier,
