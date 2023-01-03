@@ -22,13 +22,13 @@ from anomalib.config import get_configurable_parameters, update_config
 from anomalib.deploy.export import _export_to_onnx, _export_to_openvino
 from anomalib.models import get_model
 from anomalib.pre_processing.tiler import TilerDecorator
+from anomalib.utils.benchmark import distribute
 from anomalib.utils.callbacks import (
     ImageVisualizerCallback,
     MetricsConfigurationCallback,
     PostProcessingConfigurationCallback,
     get_callbacks_dict,
 )
-from anomalib.utils.cli.benchmark import distribute
 from anomalib.utils.hpo import Sweep, get_hpo_parser
 from anomalib.utils.loggers import configure_logger
 

@@ -1,4 +1,4 @@
-"""Benchmarking helper functions."""
+"""Benchmarking runners and utilities."""
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -34,7 +34,7 @@ from anomalib.utils.sweep import (
     set_in_nested_config,
 )
 
-from .helpers import upload_to_comet, upload_to_wandb, write_metrics
+from .metrics import upload_to_comet, upload_to_wandb, write_metrics
 
 logger = logging.getLogger(__name__)
 warnings.filterwarnings("ignore")
