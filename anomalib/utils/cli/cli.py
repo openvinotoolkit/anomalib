@@ -29,6 +29,7 @@ from anomalib.utils.callbacks import (
     get_callbacks_dict,
 )
 from anomalib.utils.cli.benchmark import distribute
+from anomalib.utils.hpo import Sweep, get_hpo_parser
 from anomalib.utils.loggers import configure_logger
 
 logger = logging.getLogger("anomalib.cli")
@@ -125,7 +126,14 @@ class AnomalibCLI(LightningCLI):
             print(f"Model exported to {openvino_path}")
 
     def run_hpo(self) -> None:
-        raise NotImplementedError("Hyperparameter Optimization is not implemented yet.")
+        config = self.config["hpo"]
+        sweep = Sweep(
+            model=config.model,
+            model_config=config.model_config,
+            sweep_config=config.sweep_config,
+            backend=config.backend,
+        )
+        sweep.run()
 
     def run_benchmark(self) -> None:
         config = self.config["benchmark"]
@@ -181,13 +189,7 @@ class AnomalibCLI(LightningCLI):
 
     def add_hpo_arguments(self, parser: LightningArgumentParser) -> None:
         """Add hyperparameter optimization arguments."""
-        parser.add_argument(
-            "--backend",
-            type=str,
-            default="wandb",
-            help="Select which backend to use for running HPO.",
-            choices=["wandb", "comet"],
-        )
+        parser = get_hpo_parser(parser)
 
     def add_benchmark_arguments(self, parser: LightningArgumentParser) -> None:
         """Adds benchmark arguments to the parser."""
