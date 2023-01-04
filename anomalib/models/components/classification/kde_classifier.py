@@ -157,6 +157,6 @@ class KDEClassifier(nn.Module):
 
         return probabilities
 
-    def forward(self, features):
+    def forward(self, features: Tensor) -> Tensor:
         """Make predictions on extracted features."""
         return self.predict(features)
