@@ -43,10 +43,7 @@ def masks_to_boxes(masks: Tensor, anomaly_maps: Optional[Tensor] = None) -> Tupl
         for label in labels[labels != 0]:
             y_loc, x_loc = torch.where(im_comps == label)
             # add box
-            box = Tensor([torch.min(x_loc), torch.min(y_loc), torch.max(x_loc), torch.max(y_loc)])
-            if box[1] >= box[3] or box[0] >= box[2]:  # skip boxes with a width or height of 1 pixel
-                continue
-            im_boxes.append(box)
+            im_boxes.append(Tensor([torch.min(x_loc), torch.min(y_loc), torch.max(x_loc), torch.max(y_loc)]))
             if anomaly_maps is not None:
                 im_scores.append(torch.max(anomaly_maps[im_idx, y_loc, x_loc]))
         batch_boxes.append(torch.stack(im_boxes) if len(im_boxes) > 0 else torch.empty((0, 4)))
