@@ -66,6 +66,17 @@ class RkdeModel(nn.Module):
             max_training_points=max_training_points,
         )
 
+    def fit(self, embeddings: Tensor) -> bool:
+        """Fit the model using a set of collected embeddings.
+
+        Args:
+            embeddings (Tensor): Input embeddings to fit the model.
+
+        Returns:
+            Boolean confirming whether the training is successful.
+        """
+        return self.classifier.fit(embeddings)
+
     def forward(self, batch: Tensor) -> Union[Tensor, Tuple[Tensor, Tensor]]:
         """Prediction by normality model.
 
