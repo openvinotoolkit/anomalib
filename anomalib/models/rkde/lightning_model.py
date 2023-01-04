@@ -68,7 +68,7 @@ class Rkde(AnomalyModule):
         return None
 
     def training_step(self, batch, _batch_idx):
-        """Training Step of RKde. For each batch, features are extracted from the CNN.
+        """Training Step of RKDE. For each batch, features are extracted from the CNN.
 
         Args:
             batch (Dict[str, Any]): Batch containing image filename, image, label and mask
