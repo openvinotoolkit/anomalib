@@ -46,7 +46,7 @@ from .mvtec import make_mvtec_dataset
 
 logger = logging.getLogger(__name__)
 
-EXTENSIONS = [".png", ".jpg", ".JPG"]
+EXTENSIONS = (".png", ".jpg", ".JPG")
 
 DOWNLOAD_INFO = DownloadInfo(
     name="VisA",
@@ -63,7 +63,7 @@ class VisaDataset(AnomalibDataset):
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (Optional[Union[Split, str]]): Split of the dataset, usually Split.TRAIN or Split.TEST
         root (Union[str, Path]): Path to the root of the dataset
-        category (str): Sub-category of the dataset, e.g. 'bottle'
+        category (str): Sub-category of the dataset, e.g. 'candle'
     """
 
     def __init__(
