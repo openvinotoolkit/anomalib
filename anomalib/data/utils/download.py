@@ -7,11 +7,11 @@ import hashlib
 import io
 import logging
 import tarfile
-import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, Optional, Union
 from urllib.request import urlretrieve
+from zipfile import ZipFile
 
 from tqdm import tqdm
 
@@ -239,7 +239,7 @@ def download_and_extract(root: Path, info: DownloadInfo):
 
     logger.info("Extracting dataset into root folder.")
     if downloaded_file_path.suffix == ".zip":
-        with zipfile.ZipFile(downloaded_file_path, "r") as zip_file:
+        with ZipFile(downloaded_file_path, "r") as zip_file:
             zip_file.extractall(root)
     elif downloaded_file_path.suffix in [".tar", ".gz"]:
         with tarfile.open(downloaded_file_path) as tar_file:
