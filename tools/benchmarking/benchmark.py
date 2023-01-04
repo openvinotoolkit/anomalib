@@ -5,7 +5,7 @@
 from argparse import ArgumentParser
 from pathlib import Path
 
-from anomalib.utils.cli import distribute
+from anomalib.utils.benchmark import distribute
 
 
 def run(config_path: Path):

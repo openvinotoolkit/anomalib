@@ -141,9 +141,8 @@ def model_load_test(config: Union[DictConfig, ListConfig], datamodule: Lightning
             callbacks.pop(index)
             break
 
-    # create new trainer object with LoadModel callback (assumes it is present)
     trainer = Trainer(callbacks=callbacks, **config.trainer)
-    # Assumes the new model has LoadModel callback and the old one had ModelCheckpoint callback
+
     new_results = trainer.test(model=loaded_model, datamodule=datamodule, ckpt_path=ckpt_path)[0]
     assert np.isclose(
         results["image_AUROC"], new_results["image_AUROC"]

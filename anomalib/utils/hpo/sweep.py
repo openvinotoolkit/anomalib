@@ -24,6 +24,7 @@ class HPOBackend(str, Enum):
     WANDB = "wandb"
 
     def __str__(self):
+        """Return the string representation of the enum value."""
         return self.value
 
 

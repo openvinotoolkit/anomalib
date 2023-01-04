@@ -85,16 +85,26 @@ class AnomalibCLI(LightningCLI):
         )
 
     def instantiate_classes(self) -> None:
+        """Instantiate classes depending on the subcommand.
+
+        For trainer related commands it instantiates all the model, datamodule and trainer classes.
+        But for export and hpo we do not want to instantiate any classes.
+        """
         if self.config["subcommand"] not in self.anomalib_subcommands():
             super().instantiate_classes()
 
     def parse_arguments(self, parser: LightningArgumentParser) -> None:
-        """Parse arguments depending on the subcommand."""
+        """Parse arguments depending on the subcommand.
+
+        For export and hpo we do not want to check parameters such as model, datamodule, trainer, etc.
+        """
         if len(sys.argv) > 1 and sys.argv[1] in self.anomalib_subcommands():
-            parser._choices.clear()  # this ensures that lightning parameters are not checked in the parser
+            # this ensures that lightning parameters are not checked in the parser
+            parser._choices.clear()  # pylint: disable=protected-access
         super().parse_arguments(parser)
 
     def _run_subcommand(self, subcommand: str) -> None:
+        """Run subcommand depending on the subcommand."""
         if self.config["subcommand"] not in self.anomalib_subcommands():
             super()._run_subcommand(subcommand)
         else:
@@ -103,8 +113,8 @@ class AnomalibCLI(LightningCLI):
     def run_export(self) -> None:
         """Run export subcommand."""
         config = self.config["export"]
-        # load model
         if config.export_mode == "onnx":
+            # load model
             config = config["onnx"]
             model_config = get_configurable_parameters(config_path=config.model_config)
             model = get_model(model_config)
@@ -120,12 +130,11 @@ class AnomalibCLI(LightningCLI):
             for key, value in config.mo.items():
                 if mo_parser.get_default(key) != value:
                     mo_config[key] = value
-            openvino_path = _export_to_openvino(
-                export_path=config.export_path, input_model=config.input_model, **mo_config
-            )
-            print(f"Model exported to {openvino_path}")
+            _export_to_openvino(export_path=config.export_path, input_model=config.input_model, **mo_config)
+            print(f"Model exported to {config.export_path}")
 
     def run_hpo(self) -> None:
+        """Run hpo subcommand."""
         config = self.config["hpo"]
         sweep = Sweep(
             model=config.model,
@@ -136,11 +145,13 @@ class AnomalibCLI(LightningCLI):
         sweep.run()
 
     def run_benchmark(self) -> None:
+        """Run benchmark subcommand."""
         config = self.config["benchmark"]
         distribute(config.config)
 
     @staticmethod
     def anomalib_subcommands() -> Dict[str, Dict[str, Any]]:
+        """Returns a dictionary of subcommands and their description."""
         return {
             "export": {"description": "Export the model to ONNX or OpenVINO format."},
             "benchmark": {"description": "Run benchmarking script"},
@@ -204,10 +215,8 @@ class AnomalibCLI(LightningCLI):
         parser.add_class_arguments(PostProcessingConfigurationCallback, "post_processing")
         parser.link_arguments("data.init_args.task", "visualization.task")
         parser.link_arguments("data.init_args.image_size", "model.init_args.input_size")
-        parser.add_argument("results_dir.path", type=Path, help="Path to save the results.")
-        parser.add_argument("results_dir.unique", type=bool, help="Whether to create a unique folder.", default=False)
-
-        # parser.set_defaults("visualization.image_save_path",)
+        parser.add_argument("--results_dir.path", type=Path, help="Path to save the results.")
+        parser.add_argument("--results_dir.unique", type=bool, help="Whether to create a unique folder.", default=False)
 
     def before_instantiate_classes(self) -> None:
         """Modify the configuration to properly instantiate classes and sets up tiler."""
