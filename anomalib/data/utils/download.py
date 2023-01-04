@@ -222,6 +222,7 @@ def download_and_extract(root: Path, info: DownloadInfo):
     """
     root.mkdir(parents=True, exist_ok=True)
 
+    # save the compressed file in the specified root directory, using the same file name as on the server
     downloaded_file_path = root / info.url.split("/")[-1]
     if downloaded_file_path.exists():
         logger.info("Existing dataset archive found. Skipping download stage.")
