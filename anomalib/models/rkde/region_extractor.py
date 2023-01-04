@@ -82,12 +82,12 @@ class RegionExtractor(nn.Module):
         if self.training:
             raise ValueError("Should not be in training mode")
 
-        if self.stage == "rcnn":
+        if self.stage == RoiStage.RCNN:
             # get rois from rcnn output
             predictions = self.faster_rcnn(batch)
             all_regions = [prediction["boxes"] for prediction in predictions]
             all_scores = [prediction["scores"] for prediction in predictions]
-        elif self.stage == "rpn":
+        elif self.stage == RoiStage.RPN:
             # get rois from region proposal network
             images, _ = self.faster_rcnn.transform(batch)
             features = self.faster_rcnn.backbone(images.tensors)
