@@ -84,7 +84,9 @@ class AnomalibCLI(LightningCLI):
             parser (LightningArgumentParser): Lightning Argument Parser.
         """
         # TODO: https://github.com/openvinotoolkit/anomalib/issues/20
-        parser.add_argument("--format", type=str, default="", help="Select export mode to ONNX or OpenVINO IR format.")
+        parser.add_argument(
+            "--export_format", type=str, default="", help="Select export mode to ONNX or OpenVINO IR format."
+        )
         parser.add_argument("--nncf", type=str, help="Path to NNCF config to enable quantized training.")
 
         # ADD CUSTOM CALLBACKS TO CONFIG

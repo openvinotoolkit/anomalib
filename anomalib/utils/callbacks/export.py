@@ -10,7 +10,7 @@ from typing import Tuple
 from pytorch_lightning import Callback
 from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 
-from anomalib.deploy import OutputFormat, export
+from anomalib.deploy import ExportFormat, export
 from anomalib.models.components import AnomalyModule
 
 logger = logging.getLogger(__name__)
@@ -26,14 +26,14 @@ class ExportCallback(Callback):
         input_size (Tuple[int, int]): Tuple of image height, width
         dirpath (str): Path for model output
         filename (str): Name of output model
-        output_format (OutputFormat): Export mode
+        export_format (ExportFormat): Export mode
     """
 
-    def __init__(self, input_size: Tuple[int, int], dirpath: str, filename: str, output_format: OutputFormat):
+    def __init__(self, input_size: Tuple[int, int], dirpath: str, filename: str, export_format: ExportFormat):
         self.input_size = input_size
         self.dirpath = dirpath
         self.filename = filename
-        self.output_format = output_format
+        self.export_format = export_format
 
     def on_train_end(self, trainer, pl_module: AnomalyModule) -> None:  # pylint: disable=W0613
         """Call when the train ends.
@@ -47,5 +47,5 @@ class ExportCallback(Callback):
             model=pl_module,
             input_size=self.input_size,
             export_root=self.dirpath,
-            output_format=self.output_format,
+            export_format=self.export_format,
         )

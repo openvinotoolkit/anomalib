@@ -26,7 +26,7 @@ from utils import upload_to_comet, upload_to_wandb, write_metrics
 from anomalib.config import get_configurable_parameters, update_input_size_config
 from anomalib.data import get_datamodule
 from anomalib.deploy import export
-from anomalib.deploy.export import OutputFormat
+from anomalib.deploy.export import ExportFormat
 from anomalib.models import get_model
 from anomalib.utils.loggers import configure_logger
 from anomalib.utils.sweep import (
@@ -117,7 +117,7 @@ def get_single_model_metrics(model_config: Union[DictConfig, ListConfig], openvi
             # Create dirs for openvino model export
             openvino_export_path = project_path / Path("exported_models")
             openvino_export_path.mkdir(parents=True, exist_ok=True)
-            export(model, model_config.model.input_size, OutputFormat.OPENVINO, openvino_export_path)
+            export(model, model_config.model.input_size, ExportFormat.OPENVINO, openvino_export_path)
             openvino_throughput = get_openvino_throughput(
                 model_config, openvino_export_path, datamodule.test_dataloader().dataset
             )

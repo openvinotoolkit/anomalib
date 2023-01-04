@@ -15,7 +15,7 @@ from pytorch_lightning import Trainer
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
 from anomalib.deploy import OpenVINOInferencer, TorchInferencer, export
-from anomalib.deploy.export import OutputFormat
+from anomalib.deploy.export import ExportFormat
 from anomalib.models import get_model
 from anomalib.utils.callbacks import get_callbacks
 from anomalib.utils.cli.helpers import configure_optimizer
@@ -90,7 +90,7 @@ class TestInferencers:
     @TestDataset(num_train=20, num_test=1, path=get_dataset_path(), use_mvtec=False)
     def test_openvino_inference(self, model_name: str, category: str = "shapes", path: str = "./datasets/MVTec"):
         """Tests OpenVINO inference.
-        Model is not trained as this checks that the inferencers are working.image
+        Model is not trained as this checks that the inferencers are working.
         Args:
             model_name (str): Name of the model
         """
@@ -112,7 +112,7 @@ class TestInferencers:
                 model=model,
                 input_size=model_config.data.init_args.image_size,
                 export_root=export_path,
-                output_format=OutputFormat.OPENVINO,
+                export_format=ExportFormat.OPENVINO,
             )
 
             # Test OpenVINO inferencer

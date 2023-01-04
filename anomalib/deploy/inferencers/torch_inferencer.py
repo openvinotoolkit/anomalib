@@ -106,9 +106,6 @@ class TorchInferencer(Inferencer):
         model = get_model(self.config)
         model.load_state_dict(torch.load(path, map_location=self.device)["state_dict"])
         model.eval()
-        # Turn off gradient calculation
-        for param in model.parameters():
-            param.requires_grad = False
         return model.to(self.device)
 
     def pre_process(self, image: np.ndarray) -> Tensor:
@@ -134,6 +131,7 @@ class TorchInferencer(Inferencer):
 
         return processed_image.to(self.device)
 
+    @torch.no_grad()
     def forward(self, image: Tensor) -> Tensor:
         """Forward-Pass input tensor to the model.
 

@@ -17,7 +17,7 @@ from torch.types import Number
 from anomalib.models.components import AnomalyModule
 
 
-class OutputFormat(str, Enum):
+class ExportFormat(str, Enum):
     """Model export mode."""
 
     ONNX = "onnx"
@@ -52,10 +52,10 @@ def get_model_metadata(model: AnomalyModule) -> Dict[str, Tensor]:
 def export(
     model: AnomalyModule,
     input_size: Union[List[int], Tuple[int, int]],
-    output_format: OutputFormat,
+    export_format: ExportFormat,
     export_root: Union[str, Path],
 ):
-    """Export the model to onnx output_format and (optionally) convert to OpenVINO IR if export mode is set to OpenVINO.
+    """Export the model to onnx export_format and (optionally) convert to OpenVINO IR if export mode is set to OpenVINO.
 
     Metadata.json is generated regardless of export mode.
 
@@ -63,10 +63,10 @@ def export(
         model (AnomalyModule): Model to convert.
         input_size (Union[List[int], Tuple[int, int]]): Image size used as the input for onnx converter.
         export_root (Union[str, Path]): Path to exported ONNX/OpenVINO IR.
-        output_format (OutputFormat): Mode to export the model. ONNX or OpenVINO.
+        export_format (ExportFormat): Mode to export the model. ONNX or OpenVINO.
     """
     # Write metadata to json file. The file is written in the same directory as the target model.
-    export_path: Path = Path(str(export_root)) / output_format.value
+    export_path: Path = Path(str(export_root)) / export_format.value
     export_path.mkdir(parents=True, exist_ok=True)
     with open(Path(export_path) / "meta_data.json", "w", encoding="utf-8") as metadata_file:
         meta_data = get_model_metadata(model)
@@ -77,7 +77,7 @@ def export(
         json.dump(meta_data, metadata_file, ensure_ascii=False, indent=4)
 
     onnx_path = _export_to_onnx(model, input_size, export_path)
-    if output_format == OutputFormat.OPENVINO:
+    if export_format == ExportFormat.OPENVINO:
         _export_to_openvino(export_path, onnx_path)
 
 

@@ -26,7 +26,7 @@ def test_normalizer(path=get_dataset_path(), category="shapes"):
     config.data.init_args.category = category
     config.post_processing.threshold_method = "ADAPTIVE"
     config.logging.log_images_to = []
-    config.metrics.image_metrics = ["F1Score", "AUROC"]
+    config.metrics.image_metrics = ["torchmetrics.F1Score", "anomalib.utils.metrics.AUROC"]
 
     # run without normalization
     config.model.normalization_method = "none"
