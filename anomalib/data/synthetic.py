@@ -130,8 +130,13 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         self.setup()
 
     @classmethod
-    def from_dataset(cls, dataset):
-        """Create a synthetic anomaly dataset from an existing dataset of normal images."""
+    def from_dataset(cls, dataset: AnomalibDataset) -> "SyntheticAnomalyDataset":
+        """Create a synthetic anomaly dataset from an existing dataset of normal images.
+
+        Args:
+            dataset (AnomalibDataset): Dataset consisting of only normal images that will be converrted to a synthetic
+                anomalous dataset with a 50/50 normal anomalous split.
+        """
         return cls(task=dataset.task, transform=dataset.transform, source_samples=dataset.samples)
 
     def __copy__(self) -> "SyntheticAnomalyDataset":
