@@ -46,7 +46,7 @@ class AnomalibDataset(Dataset, ABC):
         """Get length of the dataset."""
         return len(self.samples)
 
-    def subsample(self, indices: Sequence[int], inplace=False) -> AnomalibDataset:
+    def subsample(self, indices: Sequence[int], inplace: bool = False) -> AnomalibDataset:
         """Subsamples the dataset at the provided indices.
 
         Args:
@@ -116,9 +116,9 @@ class AnomalibDataset(Dataset, ABC):
         item = dict(image_path=image_path, label=label_index)
 
         if self.task == TaskType.CLASSIFICATION:
-            pre_processed = self.transform(image=image)
-            item["image"] = pre_processed["image"]
-        elif self.task in [TaskType.DETECTION, TaskType.SEGMENTATION]:
+            transformed = self.transform(image=image)
+            item["image"] = transformed["image"]
+        elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
             if label_index == 0:
@@ -126,11 +126,11 @@ class AnomalibDataset(Dataset, ABC):
             else:
                 mask = cv2.imread(mask_path, flags=0) / 255.0
 
-            pre_processed = self.transform(image=image, mask=mask)
+            transformed = self.transform(image=image, mask=mask)
 
-            item["image"] = pre_processed["image"]
+            item["image"] = transformed["image"]
             item["mask_path"] = mask_path
-            item["mask"] = pre_processed["mask"]
+            item["mask"] = transformed["mask"]
 
             if self.task == TaskType.DETECTION:
                 # create boxes from masks for detection task
