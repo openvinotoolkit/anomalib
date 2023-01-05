@@ -31,7 +31,7 @@ ROOT = "./.tmp/synthetic_anomaly"
 
 
 def make_synthetic_dataset(
-    source_samples: DataFrame, im_dir: Path, mask_dir: Path, anomalous_ratio: float = 0.5
+    source_samples: DataFrame, image_dir: Path, mask_dir: Path, anomalous_ratio: float = 0.5
 ) -> DataFrame:
     """Convert a set of normal samples into a mixed set of normal and synthetic anomalous samples.
 
@@ -40,12 +40,12 @@ def make_synthetic_dataset(
 
     Args:
         source_samples (DataFrame): Normal images that will be used as source for the synthetic anomalous images.
-        im_dir (Path): Directory to which the synthetic anomalous image files will be written.
+        image_dir (Path): Directory to which the synthetic anomalous image files will be written.
         mask_dir (Path): Directory to which the ground truth anomaly masks will be written.
         anomalous_ratio (float): Fraction of source samples that will be converted into anomalous samples.
     """
     assert 1 not in source_samples.label_index.values, "All source images must be normal."
-    assert im_dir.is_dir(), f"{im_dir} is not a folder."
+    assert image_dir.is_dir(), f"{image_dir} is not a folder."
     assert mask_dir.is_dir(), f"{mask_dir} is not a folder"
 
     # filter relevant columns
@@ -84,7 +84,7 @@ def make_synthetic_dataset(
         # write image
         aug_im = (aug_im.squeeze().permute((1, 2, 0)) * 255).numpy()
         aug_im = cv2.cvtColor(aug_im, cv2.COLOR_RGB2BGR)
-        im_path = im_dir / file_name
+        im_path = image_dir / file_name
         cv2.imwrite(str(im_path), aug_im)
         # write mask
         mask = (mask.squeeze() * 255).numpy()
