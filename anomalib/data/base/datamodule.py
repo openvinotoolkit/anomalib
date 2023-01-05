@@ -18,7 +18,7 @@ from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.synthetic import SyntheticAnomalyDataset
 from anomalib.data.utils import (
     TestSplitMode,
-    ValSplitMode,
+    ValidationSplitMode,
     random_split,
     split_by_label,
 )
@@ -70,7 +70,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         train_batch_size: int,
         eval_batch_size: int,
         num_workers: int,
-        val_split_mode: ValSplitMode,
+        val_split_mode: ValidationSplitMode,
         val_split_ratio: float,
         test_split_mode: Optional[TestSplitMode] = None,
         test_split_ratio: Optional[float] = None,
@@ -144,19 +144,19 @@ class AnomalibDataModule(LightningDataModule, ABC):
 
     def _create_val_split(self):
         """Obtain the validation set based on the settings in the config."""
-        if self.val_split_mode == ValSplitMode.FROM_TEST:
+        if self.val_split_mode == ValidationSplitMode.FROM_TEST:
             # randomly sampled from test set
             self.test_data, self.val_data = random_split(
                 self.test_data, self.val_split_ratio, label_aware=True, seed=self.seed
             )
-        elif self.val_split_mode == ValSplitMode.SAME_AS_TEST:
+        elif self.val_split_mode == ValidationSplitMode.SAME_AS_TEST:
             # equal to test set
             self.val_data = self.test_data
-        elif self.val_split_mode == ValSplitMode.SYNTHETIC:
+        elif self.val_split_mode == ValidationSplitMode.SYNTHETIC:
             # converted from random training sample
             self.train_data, normal_val_data = random_split(self.train_data, self.val_split_ratio)
             self.val_data = SyntheticAnomalyDataset.from_dataset(normal_val_data)
-        elif self.val_split_mode != ValSplitMode.NONE:
+        elif self.val_split_mode != ValidationSplitMode.NONE:
             raise ValueError(f"Unknown validation split mode: {self.val_split_mode}")
 
     @property

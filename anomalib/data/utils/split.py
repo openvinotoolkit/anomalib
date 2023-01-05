@@ -40,7 +40,7 @@ class TestSplitMode(str, Enum):
     SYNTHETIC = "synthetic"
 
 
-class ValSplitMode(str, Enum):
+class ValidationSplitMode(str, Enum):
     """Splitting mode used to obtain validation subset."""
 
     NONE = "none"

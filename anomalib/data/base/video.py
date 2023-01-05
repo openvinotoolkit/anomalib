@@ -11,7 +11,7 @@ from torch import Tensor
 from anomalib.data.base.datamodule import AnomalibDataModule
 from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.task_type import TaskType
-from anomalib.data.utils import ValSplitMode, masks_to_boxes
+from anomalib.data.utils import ValidationSplitMode, masks_to_boxes
 from anomalib.data.utils.video import ClipsIndexer
 
 
@@ -111,7 +111,7 @@ class AnomalibVideoDataModule(AnomalibDataModule):
         self.train_data.setup()
         self.test_data.setup()
 
-        if self.val_split_mode == ValSplitMode.SYNTHETIC:
+        if self.val_split_mode == ValidationSplitMode.SYNTHETIC:
             raise ValueError(f"Val split mode {self.test_split_mode} not supported for video datasets.")
 
         self._create_val_split()
