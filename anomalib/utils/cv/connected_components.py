@@ -10,17 +10,17 @@ from kornia.contrib import connected_components
 from torch import Tensor
 
 
-def connected_components_gpu(binary_input: Tensor, num_iterations: int = 1000) -> Tensor:
+def connected_components_gpu(image: Tensor, num_iterations: int = 1000) -> Tensor:
     """Perform connected component labeling on GPU and remap the labels from 0 to N.
 
     Args:
-        binary_input (Tensor): Binary input data from which we want to extract connected components (Bx1xHxW)
+        image (Tensor): Binary input image from which we want to extract connected components (Bx1xHxW)
         num_iterations (int): Number of iterations used in the connected component computation.
 
     Returns:
         Tensor: Components labeled from 0 to N.
     """
-    components = connected_components(binary_input, num_iterations=num_iterations)
+    components = connected_components(image, num_iterations=num_iterations)
 
     # remap component values from 0 to N
     labels = components.unique()
