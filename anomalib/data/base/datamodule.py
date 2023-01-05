@@ -56,6 +56,12 @@ class AnomalibDataModule(LightningDataModule, ABC):
         train_batch_size (int): Batch size used by the train dataloader.
         test_batch_size (int): Batch size used by the val and test dataloaders.
         num_workers (int): Number of workers used by the train, val and test dataloaders.
+        test_split_mode (Optional[TestSplitMode], optional): Determines how the test split is obtained.
+            Options: [none, from_dir, synthetic]
+        test_split_ratio (float): Fraction of the train images held out for testing.
+        val_split_mode (ValSplitMode): Determines how the validation split is obtained. Options: [none, same_as_test,
+            from_test, synthetic]
+        val_split_ratio (float): Fraction of the train or test images held our for validation.
         seed (Optional[int], optional): Seed used during random subset splitting.
     """
 
