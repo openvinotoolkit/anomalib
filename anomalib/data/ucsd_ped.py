@@ -1,5 +1,8 @@
 """UCSD Pedestrian dataset."""
 
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import logging
 import tarfile
 from pathlib import Path

@@ -10,6 +10,9 @@ Reference:
     Proceedings of the IEEE international conference on computer vision. 2013.
 """
 
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import logging
 import math
 import zipfile
