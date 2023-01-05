@@ -20,6 +20,7 @@ from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 from torch.optim.optimizer import Optimizer
 
+from anomalib.models.cfa.loss import CfaLoss
 from anomalib.models.cfa.torch_model import CfaModel
 from anomalib.models.components import AnomalyModule
 
@@ -37,11 +38,36 @@ class Cfa(AnomalyModule):
         backbone (str): Backbone CNN network
         gamma_c (int, optional): gamma_c value from the paper. Defaults to 1.
         gamma_d (int, optional): gamma_d value from the paper. Defaults to 1.
+        num_nearest_neighbors (int): Number of nearest neighbors.
+        num_hard_negative_features (int): Number of hard negative features.
+        radius (float): Radius of the hypersphere to search the soft boundary.
     """
 
-    def __init__(self, input_size: Tuple[int, int], backbone: str, gamma_c: int = 1, gamma_d: int = 1) -> None:
+    def __init__(
+        self,
+        input_size: Tuple[int, int],
+        backbone: str,
+        gamma_c: int = 1,
+        gamma_d: int = 1,
+        num_nearest_neighbors: int = 3,
+        num_hard_negative_features: int = 3,
+        radius: float = 1e-5,
+    ) -> None:
         super().__init__()
-        self.model: CfaModel = CfaModel(input_size=input_size, backbone=backbone, gamma_c=gamma_c, gamma_d=gamma_d)
+        self.model: CfaModel = CfaModel(
+            input_size=input_size,
+            backbone=backbone,
+            gamma_c=gamma_c,
+            gamma_d=gamma_d,
+            num_nearest_neighbors=num_nearest_neighbors,
+            num_hard_negative_features=num_hard_negative_features,
+            radius=radius,
+        )
+        self.loss_func = CfaLoss(
+            num_nearest_neighbors=num_nearest_neighbors,
+            num_hard_negative_features=num_hard_negative_features,
+            radius=radius,
+        )
 
     def on_train_start(self) -> None:
         """Initialize the centroid for the memory bank computation."""
@@ -56,7 +82,8 @@ class Cfa(AnomalyModule):
         Returns:
             STEP_OUTPUT: Loss value.
         """
-        loss = self.model(batch["image"])
+        distance = self.model(batch["image"])
+        loss = self.loss_func(distance)
         return {"loss": loss}
 
     def validation_step(self, batch, batch_idx) -> dict:

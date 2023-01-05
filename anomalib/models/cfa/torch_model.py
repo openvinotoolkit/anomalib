@@ -22,7 +22,8 @@ from torch.utils.data import DataLoader
 from torchvision.models.feature_extraction import create_feature_extractor
 from tqdm import tqdm
 
-from anomalib.models.components import DynamicBufferModule, GaussianBlur2d
+from anomalib.models.cfa.anomaly_map import AnomalyMapGenerator
+from anomalib.models.components import DynamicBufferModule
 
 SUPPORTED_BACKBONES = ("vgg19_bn", "resnet18", "wide_resnet50_2", "efficientnet_b5")
 
@@ -67,6 +68,9 @@ class CfaModel(DynamicBufferModule):
         backbone (str): Backbone CNN network.
         gamma_c (int): gamma_c parameter from the paper.
         gamma_d (int): gamma_d parameter from the paper.
+        num_nearest_neighbors (int): Number of nearest neighbors.
+        num_hard_negative_features (int): Number of hard negative features.
+        radius (float): Radius of the hypersphere to search the soft boundary.
     """
 
     def __init__(
@@ -75,6 +79,9 @@ class CfaModel(DynamicBufferModule):
         backbone: str,
         gamma_c: int,
         gamma_d: int,
+        num_nearest_neighbors: int,
+        num_hard_negative_features: int,
+        radius: float,
     ) -> None:
         super().__init__()
         self.input_size = torch.Size(input_size)
@@ -83,15 +90,19 @@ class CfaModel(DynamicBufferModule):
 
         self.scale: torch.Size
 
-        self.num_nearest_neighbors = 3
-        self.num_hard_negative_features = 3
+        self.num_nearest_neighbors = num_nearest_neighbors
+        self.num_hard_negative_features = num_hard_negative_features
 
         self.register_buffer("memory_bank", torch.tensor(0.0))
         self.memory_bank: Tensor
 
         self.feature_extractor = get_feature_extractor(backbone)
         self.descriptor = Descriptor(self.gamma_d, backbone)
-        self.radius = torch.ones(1, requires_grad=True) * 1e-5
+        self.radius = torch.ones(1, requires_grad=True) * radius
+
+        self.anomaly_map_generator = AnomalyMapGenerator(
+            image_size=input_size, num_nearest_neighbors=num_nearest_neighbors
+        )
 
     def initialize_centroid(self, data_loader: DataLoader) -> None:
         """Initialize the Centroid of the Memory Bank.
@@ -145,65 +156,6 @@ class CfaModel(DynamicBufferModule):
         distance = features + centers - f_c
         return distance
 
-    def compute_loss(self, distance: Tensor) -> Tensor:
-        """Compute the CFA loss.
-
-        Args:
-            distance (Tensor): Distance computed using target oriented features.
-
-        Returns:
-            Tensor: CFA loss.
-        """
-        num_neighbors = self.num_nearest_neighbors + self.num_hard_negative_features
-        distance = distance.topk(num_neighbors, largest=False).values
-
-        score = distance[:, :, : self.num_nearest_neighbors] - (self.radius**2).to(distance.device)
-        l_att = torch.mean(torch.max(torch.zeros_like(score), score))
-
-        score = (self.radius**2).to(distance.device) - distance[:, :, self.num_hard_negative_features :]
-        l_rep = torch.mean(torch.max(torch.zeros_like(score), score - 0.1))
-
-        loss = (l_att + l_rep) * 1000
-
-        return loss
-
-    def compute_score(self, distance: Tensor) -> Tensor:
-        """Compute score based on the distance.
-
-        Args:
-            distance (Tensor): Distance tensor computed using target oriented
-                features.
-
-        Returns:
-            Tensor: Score value.
-        """
-        distance = torch.sqrt(distance)
-
-        n_neighbors = self.num_nearest_neighbors
-        distance = distance.topk(n_neighbors, largest=False).values
-
-        distance = (F.softmin(distance, dim=-1)[:, :, 0]) * distance[:, :, 0]
-        distance = distance.unsqueeze(-1)
-
-        score = rearrange(distance, "b (h w) c -> b c h w", h=self.scale[0], w=self.scale[1])
-        return score.detach()
-
-    def compute_anomaly_map(self, score: Tensor) -> Tensor:
-        """Compute anomaly map based on the score.
-
-        Args:
-            score (Tensor): Score tensor.
-
-        Returns:
-            Tensor: Anomaly map.
-        """
-        anomaly_map = score.mean(dim=1, keepdim=True)
-        anomaly_map = F.interpolate(anomaly_map, size=self.input_size, mode="bilinear", align_corners=False)
-
-        gaussian_blur = GaussianBlur2d(sigma=4).to(score.device)
-        anomaly_map = gaussian_blur(anomaly_map)  # pylint: disable=not-callable
-        return anomaly_map
-
     def forward(self, input_tensor: Tensor) -> Tensor:
         """Forward pass.
 
@@ -231,10 +183,9 @@ class CfaModel(DynamicBufferModule):
         distance = self.compute_distance(target_features)
 
         if self.training:
-            output = self.compute_loss(distance)
+            output = distance
         else:
-            score = self.compute_score(distance)
-            output = self.compute_anomaly_map(score)
+            output = self.anomaly_map_generator(distance=distance, scale=self.scale)
 
         return output
 
