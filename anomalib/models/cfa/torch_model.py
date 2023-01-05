@@ -228,6 +228,9 @@ class Descriptor(nn.Module):
 class CoordConv2d(nn.Conv2d):
     """CoordConv layer as in the paper.
 
+    MIT License
+    Copyright (c) 2018 Walsvid
+
     Link to the paper: https://arxiv.org/abs/1807.03247
     Link to the PyTorch implementation: https://github.com/walsvid/CoordConv
     """
@@ -285,6 +288,9 @@ class CoordConv2d(nn.Conv2d):
 
 class AddCoords(nn.Module):
     """Add coords to a tensor.
+
+    MIT License
+    Copyright (c) 2018 Walsvid
 
     Link to the paper: https://arxiv.org/abs/1807.03247
     Link to the PyTorch implementation: https://github.com/walsvid/CoordConv
