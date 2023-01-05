@@ -246,7 +246,7 @@ If you want to export your PyTorch model to an OpenVINO model, ensure that `form
 
 ```yaml
 export:
-  format: "openvino" # options: openvino, onnx
+  export_format: "openvino" # options: openvino, onnx
 ```
 
 # Hyperparameter Optimization

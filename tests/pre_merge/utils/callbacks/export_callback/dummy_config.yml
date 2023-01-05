@@ -24,5 +24,4 @@ export:
 
 trainer:
   accelerator: auto # <"cpu", "gpu", "tpu", "ipu", "hpu", "auto">
-  resume_from_checkpoint: null
   default_root_dir: null
