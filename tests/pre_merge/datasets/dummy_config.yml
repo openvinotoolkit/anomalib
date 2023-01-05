@@ -1,7 +1,8 @@
-dataset:
-  name: FakeData
-  category: fakedata
-  image_size: 256
+data:
+  class_path: FakeData
+  init_args:
+    category: fakedata
+    image_size: 256
 
 model:
   name: DummyModel

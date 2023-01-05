@@ -4,10 +4,12 @@ metric:
   name: pixel_AUROC
   goal: maximize
 parameters:
-  dataset:
-    category: capsule
-    image_size:
-      values: [128, 256]
+  data:
+    init_args:
+      category: capsule
+      image_size:
+        values: [128, 256]
   model:
-    backbone:
-      values: [resnet18, wide_resnet50_2]
+    init_args:
+      backbone:
+        values: [resnet18, wide_resnet50_2]

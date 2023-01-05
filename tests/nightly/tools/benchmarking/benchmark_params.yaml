@@ -6,9 +6,10 @@ hardware:
 writer:
   - tensorboard
 grid_search:
-  dataset:
-    category:
-      - bottle
-      - cable
+  data:
+    init_args:
+      category:
+        - bottle
+        - cable
   model_name:
     - padim

@@ -156,32 +156,25 @@ model:
 It is also possible to train on a custom folder dataset. To do so, `data` section in `config.yaml` is to be modified as follows:
 
 ```yaml
-dataset:
-  name: <name-of-the-dataset>
-  format: folder
-  path: <path/to/folder/dataset>
-  normal_dir: normal # name of the folder containing normal images.
-  abnormal_dir: abnormal # name of the folder containing abnormal images.
-  normal_test_dir: null # name of the folder containing normal test images.
-  task: segmentation # classification or segmentation
-  mask: <path/to/mask/annotations> #optional
-  extensions: null
-  split_ratio: 0.2 # ratio of the normal images that will be used to create a test split
-  image_size: 256
-  train_batch_size: 32
-  test_batch_size: 32
-  num_workers: 8
-  transform_config:
-    train: null
-    val: null
-  create_validation_set: true
-  tiling:
-    apply: false
-    tile_size: null
-    stride: null
-    remove_border_count: 0
-    use_random_tiling: False
-    random_tile_count: 16
+data:
+  class_path: anomalib.data.Folder
+  init_args:
+    root: ./datasets/hazelnut_toy
+    normal_dir: good # name of the folder containing normal images.
+    abnormal_dir: colour # name of the folder containing abnormal images.
+    normal_test_dir: null # name of the folder containing normal test images.
+    task: segmentation # classification or segmentation
+    mask_dir: mask/colour # optional
+    extensions: null
+    split_ratio: 0.2 # ratio of the normal images that will be used to create a test split
+    seed: 42
+    image_size: 256
+    train_batch_size: 32
+    test_batch_size: 32
+    num_workers: 8
+    transform_config_train: null
+    transform_config_val: null
+    create_validation_set: false
 ```
 
 ## ⚠️ Anomalib > v.0.4.0 Beta - Subject to Change
