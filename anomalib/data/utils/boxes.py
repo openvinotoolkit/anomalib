@@ -25,7 +25,8 @@ def masks_to_boxes(masks: Tensor, anomaly_maps: Optional[Tensor] = None) -> Tupl
         List[Tensor]: A list of length B where each element is a tensor of length (N) containing an anomaly score for
             each of the converted boxes.
     """
-    masks = masks.view((-1, 1) + masks.shape[-2:]).float()  # reshape to (B, 1, H, W)
+    height, width = masks.shape[-2:]
+    masks = masks.view((-1, 1, height, width)).float()  # reshape to (B, 1, H, W) and cast to float
     if anomaly_maps is not None:
         anomaly_maps = anomaly_maps.view((-1,) + masks.shape[-2:])
 
