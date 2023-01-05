@@ -293,7 +293,6 @@ class Folder(AnomalibDataModule):
         mask_dir: Optional[Union[str, Path]] = None,
         normal_split_ratio: float = 0.2,
         extensions: Optional[Tuple[str]] = None,
-        #
         image_size: Optional[Union[int, Tuple[int, int]]] = None,
         center_crop: Optional[Union[int, Tuple[int, int]]] = None,
         normalization: Union[InputNormalizationMethod, str] = InputNormalizationMethod.IMAGENET,
