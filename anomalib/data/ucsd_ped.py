@@ -33,7 +33,7 @@ from anomalib.data.utils.video import ClipsIndexer
 logger = logging.getLogger(__name__)
 
 
-def make_ucsd_dataset(path: Path, split: Optional[Union[Split, str]] = None):
+def make_ucsd_dataset(path: Path, split: Optional[Union[Split, str]] = None) -> DataFrame:
     """Create UCSD Pedestrian dataset by parsing the file structure.
 
     The files are expected to follow the structure:
