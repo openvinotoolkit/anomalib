@@ -17,10 +17,10 @@ class InferenceDataset(Dataset):
 
     Args:
         path (Union[str, Path]): Path to an image or image-folder.
-        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
+        transform (Optional[A.Compose], optional): Albumentations Compose object describing the transforms that are
+            applied to the inputs.
         image_size (Optional[Union[int, Tuple[int, int]]], optional): Target image size
             to resize the original image. Defaults to None.
-        transform (Optional[A.Compose], optional): Transforms to apply to the input images.
     """
 
     def __init__(

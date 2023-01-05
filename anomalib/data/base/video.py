@@ -5,6 +5,7 @@ from typing import Callable, Dict, Optional, Union
 
 import albumentations as A
 import torch
+from pandas import DataFrame
 from torch import Tensor
 
 from anomalib.data.base.datamodule import AnomalibDataModule
@@ -19,7 +20,7 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
 
     Args:
         task (str): Task type, either 'classification' or 'segmentation'
-        pre_process (PreProcessor): Pre-processor object
+        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         clip_length_in_frames (int): Number of video frames in each clip.
         frames_between_clips (int): Number of frames between each consecutive video clip.
     """
@@ -40,7 +41,7 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         return self.indexer.num_clips()
 
     @property
-    def samples(self):
+    def samples(self) -> DataFrame:
         """Get the samples dataframe."""
         return super().samples
 

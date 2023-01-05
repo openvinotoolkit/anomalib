@@ -34,7 +34,12 @@ logger = logging.getLogger(__name__)
 
 
 class AnomalibDataset(Dataset, ABC):
-    """Anomalib dataset."""
+    """Anomalib dataset.
+
+    Args:
+        task (str): Task type, either 'classification' or 'segmentation'
+        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
+    """
 
     def __init__(self, task: TaskType, transform: A.Compose):
         super().__init__()
