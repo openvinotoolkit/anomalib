@@ -43,9 +43,9 @@ metrics:
   pixel:
     - AUROC
   threshold:
-    image_default: 0
-    pixel_default: 0
     adaptive: true
+    image_default: null
+    pixel_default: null
 
 visualization:
   show_images: False # show images on the screen
