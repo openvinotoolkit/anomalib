@@ -215,7 +215,6 @@ class FolderDataset(AnomalibDataset):
         normal_test_dir: Optional[Union[str, Path]] = None,
         mask_dir: Optional[Union[str, Path]] = None,
         split: Optional[Union[Split, str]] = None,
-        val_split_mode: ValidationSplitMode = ValidationSplitMode.SAME_AS_TEST,
         extensions: Optional[Tuple[str, ...]] = None,
     ) -> None:
         super().__init__(task, transform)
@@ -227,8 +226,6 @@ class FolderDataset(AnomalibDataset):
         self.normal_test_dir = normal_test_dir
         self.mask_dir = mask_dir
         self.extensions = extensions
-
-        self.val_split_mode = val_split_mode
 
     def _setup(self):
         """Assign samples."""
