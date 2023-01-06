@@ -15,12 +15,9 @@ Reference:
 
 import logging
 import math
-import zipfile
-from collections import namedtuple
 from pathlib import Path
 from shutil import move
 from typing import Callable, Optional, Tuple, Union
-from urllib.request import urlretrieve
 
 import albumentations as A
 import cv2
@@ -32,25 +29,26 @@ from torch import Tensor
 from anomalib.data.base import AnomalibVideoDataModule, AnomalibVideoDataset
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
-    DownloadProgressBar,
+    DownloadInfo,
     InputNormalizationMethod,
     Split,
     ValSplitMode,
+    download_and_extract,
     get_transforms,
-    hash_check,
 )
 from anomalib.data.utils.video import ClipsIndexer
 
 logger = logging.getLogger(__name__)
 
-
-# define some info used for downloading the dataset
-DownloadInfo = namedtuple("DownloadInfo", "description zip_filename expected_hash extracted_folder_name")
 DATASET_DOWNLOAD_INFO = DownloadInfo(
-    "dataset", "Avenue_Dataset.zip", "b7a34b212ecdd30efbd989a6dcb1aceb", "Avenue Dataset"
+    name="Avenue Dataset",
+    url="http://www.cse.cuhk.edu.hk/leojia/projects/detectabnormal/Avenue_Dataset.zip",
+    hash="b7a34b212ecdd30efbd989a6dcb1aceb",
 )
 ANNOTATIONS_DOWNLOAD_INFO = DownloadInfo(
-    "annotations", "ground_truth_demo.zip", "e8e3bff99195b6b511534083b9dbe1f5", "ground_truth_demo"
+    name="Avenue Annotations",
+    url="http://www.cse.cuhk.edu.hk/leojia/projects/detectabnormal/ground_truth_demo.zip",
+    hash="e8e3bff99195b6b511534083b9dbe1f5",
 )
 
 
@@ -259,12 +257,22 @@ class Avenue(AnomalibVideoDataModule):
 
     def prepare_data(self) -> None:
         """Download the dataset and ground truth if not available, and convert mask files to a more usable format."""
-        # download dataset
-        self._download_and_extract(self.root, DATASET_DOWNLOAD_INFO)
-        # download annotations
-        self._download_and_extract(self.gt_dir, ANNOTATIONS_DOWNLOAD_INFO)
-        # convert masks
-        self._convert_masks(self.gt_dir)
+        if self.root.is_dir():
+            logger.info("Found the dataset.")
+        else:
+            download_and_extract(self.root, DATASET_DOWNLOAD_INFO)
+            download_and_extract(self.gt_dir, ANNOTATIONS_DOWNLOAD_INFO)
+
+            # move contents to root
+            folder_names = ["Avenue Dataset", "ground_truth_demo"]
+            for root, folder_name in zip([self.root, self.gt_dir], folder_names):
+                extracted_folder = root / folder_name
+                for filename in extracted_folder.glob("*"):
+                    move(str(filename), str(root / filename.name))
+                extracted_folder.rmdir()
+
+            # convert masks
+            self._convert_masks(self.gt_dir)
 
     @staticmethod
     def _convert_masks(gt_dir: Path):
@@ -291,39 +299,3 @@ class Avenue(AnomalibVideoDataModule):
                 for idx, mask in enumerate(masks):
                     filename = (mask_folder / str(idx).zfill(int(math.log10(len(masks)) + 1))).with_suffix(".png")
                     cv2.imwrite(str(filename), mask)
-
-    @staticmethod
-    def _download_and_extract(root: Path, info: DownloadInfo):
-        """Download and extract the dataset or the annotations.
-
-        Args:
-            root (Path): File system location where to search for or install the dataset.
-            info (DownloadInfo): Contains download information specific to either dataset or ground truth annotations.
-        """
-        if root.is_dir():
-            logger.info("Found the %s folder.", info.description)
-        else:
-            root.mkdir(parents=True, exist_ok=True)
-
-            logger.info("Downloading %s.", info.description)
-            url = "http://www.cse.cuhk.edu.hk/leojia/projects/detectabnormal"
-            zip_filepath = root / info.zip_filename
-            with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc=info.description) as progress_bar:
-                urlretrieve(  # nosec - suppress bandit warning (urls are hardcoded)
-                    url=f"{url}/{info.zip_filename}",
-                    filename=zip_filepath,
-                    reporthook=progress_bar.update_to,
-                )
-            logger.info("Checking hash")
-            hash_check(zip_filepath, info.expected_hash)
-
-            logger.info("Extracting the %s.", info.description)
-            with zipfile.ZipFile(zip_filepath, "r") as zip_file:
-                zip_file.extractall(root)
-            # move contents to root
-            for filename in (root / info.extracted_folder_name).glob("*"):
-                move(str(filename), str(root / filename.name))
-            (root / info.extracted_folder_name).rmdir()
-
-            logger.info("Cleaning the zip file")
-            (zip_filepath).unlink()

@@ -5,10 +5,26 @@
 
 import hashlib
 import io
+import logging
+import tarfile
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, Optional, Union
+from urllib.request import urlretrieve
+from zipfile import ZipFile
 
 from tqdm import tqdm
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class DownloadInfo:
+    """Info needed to download a dataset from a url."""
+
+    name: str
+    url: str
+    hash: str
 
 
 class DownloadProgressBar(tqdm):
@@ -195,3 +211,41 @@ def hash_check(file_path: Path, expected_hash: str):
         assert (
             hashlib.md5(hash_file.read()).hexdigest() == expected_hash
         ), f"Downloaded file {file_path} does not match the required hash."
+
+
+def download_and_extract(root: Path, info: DownloadInfo):
+    """Download and extract a dataset.
+
+    Args:
+        root (Path): Root directory where the dataset will be stored.
+        info (DownloadInfo): Info needed to download the dataset.
+    """
+    root.mkdir(parents=True, exist_ok=True)
+
+    # save the compressed file in the specified root directory, using the same file name as on the server
+    downloaded_file_path = root / info.url.split("/")[-1]
+    if downloaded_file_path.exists():
+        logger.info("Existing dataset archive found. Skipping download stage.")
+    else:
+        logger.info("Downloading the %s dataset.", info.name)
+        with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc=info.name) as progress_bar:
+            urlretrieve(  # nosec - suppress bandit warning (urls are hardcoded)
+                url=f"{info.url}",
+                filename=downloaded_file_path,
+                reporthook=progress_bar.update_to,
+            )
+        logger.info("Checking the hash of the downloaded file.")
+        hash_check(downloaded_file_path, info.hash)
+
+    logger.info("Extracting dataset into root folder.")
+    if downloaded_file_path.suffix == ".zip":
+        with ZipFile(downloaded_file_path, "r") as zip_file:
+            zip_file.extractall(root)
+    elif downloaded_file_path.suffix in [".tar", ".gz"]:
+        with tarfile.open(downloaded_file_path) as tar_file:
+            tar_file.extractall(root)
+    else:
+        raise ValueError(f"Unrecognized file format: {downloaded_file_path}")
+
+    logger.info("Cleaning up files.")
+    (downloaded_file_path).unlink()
