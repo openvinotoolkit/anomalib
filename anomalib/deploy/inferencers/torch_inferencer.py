@@ -208,7 +208,7 @@ class TorchInferencer(Inferencer):
                 pred_mask = cv2.resize(pred_mask, (image_width, image_height))
 
         if self.config.dataset.task == TaskType.DETECTION:
-            pred_boxes = masks_to_boxes(torch.from_numpy(pred_mask))[0].numpy()
+            pred_boxes = masks_to_boxes(torch.from_numpy(pred_mask))[0][0].numpy()
             box_labels = np.ones(pred_boxes.shape[0])
         else:
             pred_boxes = None

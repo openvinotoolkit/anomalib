@@ -183,10 +183,10 @@ def update_datasets_config(config: Union[DictConfig, ListConfig]) -> Union[DictC
         )
         config.dataset.test_split_ratio = config.dataset.split_ratio
 
-    if config.dataset.get("test_split_mode") == TestSplitMode.NONE and config.dataset.get("val_split_mode") in [
+    if config.dataset.get("test_split_mode") == TestSplitMode.NONE and config.dataset.get("val_split_mode") in (
         ValSplitMode.SAME_AS_TEST,
         ValSplitMode.FROM_TEST,
-    ]:
+    ):
         warn(
             f"val_split_mode {config.dataset.val_split_mode} not allowed for test_split_mode = 'none'. "
             "Setting val_split_mode to 'none'."

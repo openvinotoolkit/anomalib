@@ -1,5 +1,8 @@
 """UCSD Pedestrian dataset."""
 
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import logging
 from pathlib import Path
 from shutil import move
@@ -34,7 +37,7 @@ DOWNLOAD_INFO = DownloadInfo(
 )
 
 
-def make_ucsd_dataset(path: Path, split: Optional[Union[Split, str]] = None):
+def make_ucsd_dataset(path: Path, split: Optional[Union[Split, str]] = None) -> DataFrame:
     """Create UCSD Pedestrian dataset by parsing the file structure.
 
     The files are expected to follow the structure:
