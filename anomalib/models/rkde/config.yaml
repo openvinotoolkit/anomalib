@@ -1,30 +1,39 @@
 dataset:
-  name: mvtec
-  format: mvtec
-  path: ./datasets/MVTec
-  category: bottle
-  task: classification
+  name: ucsd #options: [mvtec, btech, folder]
+  format: ucsdped
+  path: ./datasets/ucsd
+  category: UCSDped2
+  task: detection
+  clip_length_in_frames: 1
+  frames_between_clips: 10
+  image_size: [240, 360] # RKDE region- and feature extractor apply custom resizing
+  normalization: none # RKDE region- and feature extractor apply custom normalization
   train_batch_size: 32
   eval_batch_size: 32
   num_workers: 8
-  image_size: 256 # dimensions to which images are resized (mandatory)
-  center_crop: null # dimensions to which images are center-cropped after resizing (optional)
-  normalization: imagenet # data distribution to which the images will be normalized: [none, imagenet]
   transform_config:
     train: null
     eval: null
-  test_split_mode: from_dir # options: [from_dir, synthetic]
-  test_split_ratio: 0.2 # fraction of train images held out testing (usage depends on test_split_mode)
-  val_split_mode: same_as_test # options: [same_as_test, from_test, synthetic]
-  val_split_ratio: 0.5 # fraction of train/test images held out for validation (usage depends on val_split_mode)
+  test_split_mode: from_dir
+  test_split_ratio: 0.2
+  val_split_mode: same_as_test # options: [same_as_test, from_test]
+  val_split_ratio: 0.5
+  tiling:
+    apply: false
+    tile_size: null
+    stride: null
+    remove_border_count: 0
+    use_random_tiling: False
+    random_tile_count: 16
 
 model:
-  name: dfkde
-  # feature extraction params
-  backbone: resnet18
-  layers:
-    - layer4
-  pre_trained: true
+  name: rkde
+  # region extraction params
+  roi_stage: rcnn # Processing stage of the region extractor that yields the box proposals. Options: [rpn, rcnn]
+  roi_score_threshold: 0.009 # confidence score threshold for box proposals, (rpn: objectness, rcnn: class score)
+  min_box_size: 8
+  iou_threshold: 0.3
+  max_detections_per_image: 100
   # density estimation params
   n_pca_components: 16
   max_training_points: 40000
@@ -39,10 +48,11 @@ metrics:
   threshold:
     method: adaptive #options: [adaptive, manual]
     manual_image: null
+    manual_pixel: null
 
 visualization:
   show_images: False # show images on the screen
-  save_images: False # save images to the file system
+  save_images: True # save images to the file system
   log_images: False # log images to the available loggers (if any)
   image_save_path: null # path to which images will be saved
   mode: full # options: ["full", "simple"]

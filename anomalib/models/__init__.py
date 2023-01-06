@@ -22,6 +22,7 @@ from anomalib.models.ganomaly import Ganomaly
 from anomalib.models.padim import Padim
 from anomalib.models.patchcore import Patchcore
 from anomalib.models.reverse_distillation import ReverseDistillation
+from anomalib.models.rkde import Rkde
 from anomalib.models.stfpm import Stfpm
 
 __all__ = [
@@ -35,6 +36,7 @@ __all__ = [
     "Padim",
     "Patchcore",
     "ReverseDistillation",
+    "Rkde",
     "Stfpm",
 ]
 
@@ -84,6 +86,7 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
         "padim",
         "patchcore",
         "reverse_distillation",
+        "rkde",
         "stfpm",
     ]
     model: AnomalyModule
