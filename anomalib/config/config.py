@@ -260,7 +260,7 @@ def get_configurable_parameters(
             config.dataset.root = config.dataset.path
 
     # add category subfolder if needed
-    if config.dataset.format.lower() in ("btech", "mvtec"):
+    if config.dataset.format.lower() in ("btech", "mvtec", "visa"):
         project_path = project_path / config.dataset.category
 
     # set to False by default for backward compatibility

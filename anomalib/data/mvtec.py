@@ -24,10 +24,8 @@ Reference:
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-import tarfile
 from pathlib import Path
-from typing import Optional, Tuple, Union
-from urllib.request import urlretrieve
+from typing import Optional, Sequence, Tuple, Union
 
 import albumentations as A
 from pandas import DataFrame
@@ -35,19 +33,30 @@ from pandas import DataFrame
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
-    DownloadProgressBar,
+    DownloadInfo,
     InputNormalizationMethod,
     Split,
     TestSplitMode,
     ValSplitMode,
+    download_and_extract,
     get_transforms,
-    hash_check,
 )
 
 logger = logging.getLogger(__name__)
 
 
-def make_mvtec_dataset(root: Union[str, Path], split: Optional[Union[Split, str]] = None) -> DataFrame:
+IMG_EXTENSIONS = [".png", ".PNG"]
+
+DOWNLOAD_INFO = DownloadInfo(
+    name="mvtec",
+    url="https://www.mydrive.ch/shares/38536/3830184030e49fe74747669442f0f282/download/420938113-1629952094",
+    hash="eefca59f2cede9c3fc5b6befbfec275e",
+)
+
+
+def make_mvtec_dataset(
+    root: Union[str, Path], split: Optional[Union[Split, str]] = None, extensions: Optional[Sequence[str]] = None
+) -> DataFrame:
     """Create MVTec AD samples by parsing the MVTec AD data file structure.
 
     The files are expected to follow the structure:
@@ -93,33 +102,40 @@ def make_mvtec_dataset(root: Union[str, Path], split: Optional[Union[Split, str]
     Returns:
         DataFrame: an output dataframe containing the samples of the dataset.
     """
-    samples_list = [(str(root),) + filename.parts[-3:] for filename in Path(root).glob("**/*.png")]
+    if extensions is None:
+        extensions = IMG_EXTENSIONS
+
+    root = Path(root)
+    samples_list = [(str(root),) + f.parts[-3:] for f in root.glob(r"**/*") if f.suffix in extensions]
     if len(samples_list) == 0:
         raise RuntimeError(f"Found 0 images in {root}")
 
     samples = DataFrame(samples_list, columns=["path", "split", "label", "image_path"])
-    samples = samples[samples.split != "ground_truth"]
-
-    # Create mask_path column
-    samples["mask_path"] = (
-        samples.path
-        + "/ground_truth/"
-        + samples.label
-        + "/"
-        + samples.image_path.str.rstrip("png").str.rstrip(".")
-        + "_mask.png"
-    )
 
     # Modify image_path column by converting to absolute path
     samples["image_path"] = samples.path + "/" + samples.split + "/" + samples.label + "/" + samples.image_path
-
-    # Good images don't have mask
-    samples.loc[(samples.split == "test") & (samples.label == "good"), "mask_path"] = ""
 
     # Create label index for normal (0) and anomalous (1) images.
     samples.loc[(samples.label == "good"), "label_index"] = 0
     samples.loc[(samples.label != "good"), "label_index"] = 1
     samples.label_index = samples.label_index.astype(int)
+
+    # separate masks from samples
+    mask_samples = samples.loc[samples.split == "ground_truth"].sort_values(by="image_path", ignore_index=True)
+    samples = samples[samples.split != "ground_truth"].sort_values(by="image_path", ignore_index=True)
+
+    # assign mask paths to anomalous test images
+    samples["mask_path"] = ""
+    samples.loc[(samples.split == "test") & (samples.label_index == 1), "mask_path"] = mask_samples.image_path.values
+
+    # assert that the right mask files are associated with the right test images
+    assert (
+        samples.loc[samples.label_index == 1]
+        .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
+        .all()
+    ), "Mismatch between anomalous images and ground truth masks. Make sure the mask files in 'ground_truth' \
+              folder follow the same naming convention as the anomalous images in the dataset (e.g. image: '000.png', \
+              mask: '000.png' or '000_mask.png')."
 
     if split:
         samples = samples[samples.split == split].reset_index(drop=True)
@@ -152,7 +168,7 @@ class MVTecDataset(AnomalibDataset):
         self.split = split
 
     def _setup(self):
-        self.samples = make_mvtec_dataset(self.root_category, split=self.split)
+        self.samples = make_mvtec_dataset(self.root_category, split=self.split, extensions=IMG_EXTENSIONS)
 
 
 class MVTec(AnomalibDataModule):
@@ -241,24 +257,4 @@ class MVTec(AnomalibDataModule):
         if (self.root / self.category).is_dir():
             logger.info("Found the dataset.")
         else:
-            self.root.mkdir(parents=True, exist_ok=True)
-
-            logger.info("Downloading the Mvtec AD dataset.")
-            url = "https://www.mydrive.ch/shares/38536/3830184030e49fe74747669442f0f282/download/420938113-1629952094"
-            dataset_name = "mvtec_anomaly_detection.tar.xz"
-            zip_filename = self.root / dataset_name
-            with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc="MVTec AD") as progress_bar:
-                urlretrieve(
-                    url=f"{url}/{dataset_name}",
-                    filename=zip_filename,
-                    reporthook=progress_bar.update_to,
-                )
-            logger.info("Checking hash")
-            hash_check(zip_filename, "eefca59f2cede9c3fc5b6befbfec275e")
-
-            logger.info("Extracting the dataset.")
-            with tarfile.open(zip_filename) as tar_file:
-                tar_file.extractall(self.root)
-
-            logger.info("Cleaning the tar file")
-            (zip_filename).unlink()
+            download_and_extract(self.root, DOWNLOAD_INFO)
