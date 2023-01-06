@@ -19,7 +19,7 @@ from anomalib.data.utils import (
     InputNormalizationMethod,
     Split,
     TestSplitMode,
-    ValidationSplitMode,
+    ValSplitMode,
     get_transforms,
 )
 
@@ -301,7 +301,7 @@ class Folder(AnomalibDataModule):
         transform_config_eval: Optional[Union[str, A.Compose]] = None,
         test_split_mode: TestSplitMode = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
-        val_split_mode: ValidationSplitMode = ValidationSplitMode.FROM_TEST,
+        val_split_mode: ValSplitMode = ValSplitMode.FROM_TEST,
         val_split_ratio: float = 0.5,
         seed: Optional[int] = None,
     ):
