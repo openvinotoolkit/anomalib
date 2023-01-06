@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
+from anomalib.data import TaskType
 from anomalib.post_processing.visualizer import ImageGrid
 from tests.helpers.dataset import TestDataset
 from tests.helpers.model import setup_model_train
@@ -40,7 +41,7 @@ class TestVisualizer:
             ("ganomaly", False),
         ],
     )
-    @pytest.mark.parametrize("task", ("classification", "segmentation"))
+    @pytest.mark.parametrize("task", (TaskType.CLASSIFICATION, TaskType.SEGMENTATION, TaskType.DETECTION))
     @pytest.mark.parametrize("mode", ("full", "simple"))
     @TestDataset(num_train=20, num_test=10)
     def test_model_visualizer_mode(self, model_name, nncf, task, mode, category="shapes", path=""):

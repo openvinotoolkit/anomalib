@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- Add Synthetic anomalous dataset for validation and testing (https://github.com/openvinotoolkit/anomalib/pull/822)
+- Add Detection task type support (https://github.com/openvinotoolkit/anomalib/pull/822)
+- Add UCSDped and Avenue dataset implementation (https://github.com/openvinotoolkit/anomalib/pull/822)
+- Add base classes for video dataset and video datamodule (https://github.com/openvinotoolkit/anomalib/pull/822)
+- Add base classes for image dataset and image dataModule (https://github.com/openvinotoolkit/anomalib/pull/822)
 - ✨ Add CSFlow model (<https://github.com/openvinotoolkit/anomalib/pull/657>)
 - Log loss for existing trainable models (<https://github.com/openvinotoolkit/anomalib/pull/804>)
 - Add section for community project (<https://github.com/openvinotoolkit/anomalib/pull/768>)
@@ -19,6 +24,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- Make input image normalization and center cropping configurable from config (https://github.com/openvinotoolkit/anomalib/pull/822)
+- Improve flexibility and configurability of subset splitting (https://github.com/openvinotoolkit/anomalib/pull/822)
+- Switch to new datamodules design (https://github.com/openvinotoolkit/anomalib/pull/822)
+- Make normalization and center cropping configurable through config (<https://github.com/openvinotoolkit/anomalib/pull/795>)
 - Switch to new [changelog format](https://keepachangelog.com/en/1.0.0/). (<https://github.com/openvinotoolkit/anomalib/pull/777>)
 - Rename feature to task (<https://github.com/openvinotoolkit/anomalib/pull/769>)
 - make device configurable in OpenVINO inference (<https://github.com/openvinotoolkit/anomalib/pull/755>)
@@ -32,6 +41,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Deprecated
 
+- Deprecated PreProcessor class (<https://github.com/openvinotoolkit/anomalib/pull/795>)
 - Deprecate OptimalF1 metric in favor of AnomalyScoreThreshold and F1Score (<https://github.com/openvinotoolkit/anomalib/pull/796>)
 
 ### Fixed

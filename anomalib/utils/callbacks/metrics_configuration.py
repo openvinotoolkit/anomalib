@@ -11,6 +11,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 
+from anomalib.data import TaskType
 from anomalib.models.components.base.anomaly_module import AnomalyModule
 from anomalib.utils.metrics import create_metric_collection
 
@@ -25,7 +26,7 @@ class MetricsConfigurationCallback(Callback):
 
     def __init__(
         self,
-        task: str = "segmentation",
+        task: TaskType = TaskType.SEGMENTATION,
         image_metrics: Optional[List[str]] = None,
         pixel_metrics: Optional[List[str]] = None,
     ):
@@ -37,7 +38,7 @@ class MetricsConfigurationCallback(Callback):
         these to the lightning module.
 
         Args:
-            task (str): Task type of the current run.
+            task (TaskType): Task type of the current run.
             image_metrics (Optional[List[str]]): List of image-level metrics.
             pixel_metrics (Optional[List[str]]): List of pixel-level metrics.
         """
@@ -63,7 +64,7 @@ class MetricsConfigurationCallback(Callback):
         pixel_metric_names: List[str]
         if self.pixel_metric_names is None:
             pixel_metric_names = []
-        elif self.task == "classification":
+        elif self.task == TaskType.CLASSIFICATION:
             pixel_metric_names = []
             logger.warning(
                 "Cannot perform pixel-level evaluation when task type is classification. "

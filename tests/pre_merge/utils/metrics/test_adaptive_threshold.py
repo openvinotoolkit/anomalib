@@ -39,6 +39,7 @@ def test_manual_threshold():
     """
     config = get_test_configurable_parameters(config_path="anomalib/models/padim/config.yaml")
 
+    config.dataset.num_workers = 0
     config.model.normalization_method = "none"
     config.metrics.threshold.method = "manual"
     config.trainer.fast_dev_run = True

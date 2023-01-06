@@ -13,7 +13,7 @@
 import glob
 import math
 import random
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 import cv2
 import imgaug.augmenters as iaa
@@ -22,7 +22,7 @@ import torch
 from torch import Tensor
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
-from anomalib.data.utils import random_2d_perlin
+from anomalib.data.utils.generators.perlin import random_2d_perlin
 
 
 def nextpow2(value):
@@ -36,9 +36,19 @@ class Augmenter:
     Args:
         anomaly_source_path (Optional[str]): Path to a folder of images that will be used as source of the anomalous
         noise. If not specified, random noise will be used instead.
+        p_anomalous (float): Probability that the anomalous perturbation will be applied to a given image.
+        beta (float): Parameter that determines the opacity of the noise mask.
     """
 
-    def __init__(self, anomaly_source_path: Optional[str] = None):
+    def __init__(
+        self,
+        anomaly_source_path: Optional[str] = None,
+        p_anomalous: float = 0.5,
+        beta: Union[float, Tuple[float, float]] = (0.2, 1.0),
+    ):
+
+        self.p_anomalous = p_anomalous
+        self.beta = beta
 
         self.anomaly_source_paths = []
         if anomaly_source_path is not None:
@@ -132,7 +142,7 @@ class Augmenter:
         perturbations_list = []
         masks_list = []
         for _ in range(batch_size):
-            if random.random() > 0.5:  # include 50% normal samples
+            if torch.rand(1) > self.p_anomalous:  # include normal samples
                 perturbations_list.append(torch.zeros((channels, height, width)))
                 masks_list.append(torch.zeros((1, height, width)))
             else:
@@ -147,9 +157,14 @@ class Augmenter:
         masks = torch.stack(masks_list).to(batch.device)
 
         # Apply perturbations batch wise
-        beta = torch.rand(batch_size) * 0.8
-        beta = beta.view(batch_size, 1, 1, 1).expand_as(batch).to(batch.device)
+        if isinstance(self.beta, float):
+            beta = self.beta
+        elif isinstance(self.beta, tuple):
+            beta = torch.rand(batch_size) * (self.beta[1] - self.beta[0]) + self.beta[0]
+            beta = beta.view(batch_size, 1, 1, 1).expand_as(batch).to(batch.device)  # type: ignore
+        else:
+            raise ValueError("Beta must be either float or tuple of floats")
 
-        augmented_batch = batch * (1 - masks) + (1 - beta) * perturbations + beta * batch * (masks)
+        augmented_batch = batch * (1 - masks) + (beta) * perturbations + (1 - beta) * batch * (masks)
 
         return augmented_batch, masks

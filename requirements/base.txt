@@ -1,4 +1,5 @@
 albumentations>=1.1.0
+av>=10.0.0
 comet-ml>=3.31.7
 einops>=0.3.2
 freia>=0.2

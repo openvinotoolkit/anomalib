@@ -9,39 +9,34 @@ from typing import Any, Optional, Tuple, Union
 import albumentations as A
 from torch.utils.data.dataset import Dataset
 
-from anomalib.data.utils import get_image_filenames, read_image
-from anomalib.pre_processing import PreProcessor
+from anomalib.data.utils import get_image_filenames, get_transforms, read_image
 
 
 class InferenceDataset(Dataset):
-    """Inference Dataset to perform prediction."""
+    """Inference Dataset to perform prediction.
+
+    Args:
+        path (Union[str, Path]): Path to an image or image-folder.
+        transform (Optional[A.Compose], optional): Albumentations Compose object describing the transforms that are
+            applied to the inputs.
+        image_size (Optional[Union[int, Tuple[int, int]]], optional): Target image size
+            to resize the original image. Defaults to None.
+    """
 
     def __init__(
         self,
         path: Union[str, Path],
-        pre_process: Optional[PreProcessor] = None,
+        transform: Optional[A.Compose] = None,
         image_size: Optional[Union[int, Tuple[int, int]]] = None,
-        transform_config: Optional[Union[str, A.Compose]] = None,
     ) -> None:
-        """Inference Dataset to perform prediction.
-
-        Args:
-            path (Union[str, Path]): Path to an image or image-folder.
-            pre_process (Optional[PreProcessor], optional): Pre-Processing transforms to
-                pre-process the input dataset. Defaults to None.
-            image_size (Optional[Union[int, Tuple[int, int]]], optional): Target image size
-                to resize the original image. Defaults to None.
-            transform_config (Optional[Union[str, A.Compose]], optional): Configuration file
-                parse the albumentation transforms. Defaults to None.
-        """
         super().__init__()
 
         self.image_filenames = get_image_filenames(path)
 
-        if pre_process is None:
-            self.pre_process = PreProcessor(transform_config, image_size)
+        if transform is None:
+            self.transform = get_transforms(image_size=image_size)
         else:
-            self.pre_process = pre_process
+            self.transform = transform
 
     def __len__(self) -> int:
         """Get the number of images in the given path."""
@@ -51,7 +46,7 @@ class InferenceDataset(Dataset):
         """Get the image based on the `index`."""
         image_filename = self.image_filenames[index]
         image = read_image(path=image_filename)
-        pre_processed = self.pre_process(image=image)
+        pre_processed = self.transform(image=image)
         pre_processed["image_path"] = str(image_filename)
 
         return pre_processed

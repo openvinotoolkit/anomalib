@@ -5,14 +5,16 @@
 
 import logging
 from abc import ABC
-from typing import Any, List, Optional, OrderedDict
+from typing import Any, Dict, List, Optional, OrderedDict
 from warnings import warn
 
 import pytorch_lightning as pl
+import torch
 from pytorch_lightning.callbacks.base import Callback
 from torch import Tensor, nn
 from torchmetrics import Metric
 
+from anomalib.data.utils import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
 from anomalib.post_processing import ThresholdMethod
 from anomalib.utils.metrics import (
     AnomalibMetricCollection,
@@ -82,6 +84,16 @@ class AnomalyModule(pl.LightningModule, ABC):
         outputs["pred_labels"] = outputs["pred_scores"] >= self.image_threshold.value
         if "anomaly_maps" in outputs.keys():
             outputs["pred_masks"] = outputs["anomaly_maps"] >= self.pixel_threshold.value
+            if "pred_boxes" not in outputs.keys():
+                outputs["pred_boxes"], outputs["box_scores"] = masks_to_boxes(
+                    outputs["pred_masks"], outputs["anomaly_maps"]
+                )
+                outputs["box_labels"] = [torch.ones(boxes.shape[0]) for boxes in outputs["pred_boxes"]]
+        # apply thresholding to boxes
+        if "box_scores" in outputs and "box_labels" not in outputs:
+            # apply threshold to assign normal/anomalous label to boxes
+            is_anomalous = [scores > self.pixel_threshold.value for scores in outputs["box_scores"]]
+            outputs["box_labels"] = [labels.int() for labels in is_anomalous]
         return outputs
 
     def test_step(self, batch, _):  # pylint: disable=arguments-differ
@@ -155,15 +167,32 @@ class AnomalyModule(pl.LightningModule, ABC):
     def _post_process(outputs):
         """Compute labels based on model predictions."""
         if "pred_scores" not in outputs and "anomaly_maps" in outputs:
+            # infer image scores from anomaly maps
             outputs["pred_scores"] = (
                 outputs["anomaly_maps"].reshape(outputs["anomaly_maps"].shape[0], -1).max(dim=1).values
             )
+        elif "pred_scores" not in outputs and "box_scores" in outputs:
+            # infer image score from bbox confidence scores
+            outputs["pred_scores"] = torch.zeros_like(outputs["label"]).float()
+            for idx, (boxes, scores) in enumerate(zip(outputs["pred_boxes"], outputs["box_scores"])):
+                if boxes.numel():
+                    outputs["pred_scores"][idx] = scores.max().item()
 
-    @staticmethod
-    def _outputs_to_cpu(output):
-        for key, value in output.items():
-            if isinstance(value, Tensor):
-                output[key] = value.cpu()
+        if "pred_boxes" in outputs and "anomaly_maps" not in outputs:
+            # create anomaly maps from bbox predictions for thresholding and evaluation
+            image_size = tuple(outputs["image"].shape[-2:])
+            outputs["anomaly_maps"] = boxes_to_anomaly_maps(outputs["pred_boxes"], outputs["box_scores"], image_size)
+            outputs["mask"] = boxes_to_masks(outputs["boxes"], image_size)
+
+    def _outputs_to_cpu(self, output):
+        if isinstance(output, Dict):
+            for key, value in output.items():
+                output[key] = self._outputs_to_cpu(value)
+        elif isinstance(output, List):
+            output = [self._outputs_to_cpu(item) for item in output]
+        elif isinstance(output, Tensor):
+            output = output.cpu()
+        return output
 
     def _log_metrics(self):
         """Log computed performance metrics."""

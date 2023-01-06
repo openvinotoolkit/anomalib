@@ -5,7 +5,7 @@
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Union
+from typing import Optional, Union
 
 import pytest
 import torch
@@ -14,8 +14,7 @@ from pytorch_lightning import Trainer
 
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
-from anomalib.deploy import OpenVINOInferencer, TorchInferencer, export
-from anomalib.deploy.export import ExportMode
+from anomalib.deploy import OpenVINOInferencer, TorchInferencer
 from anomalib.models import get_model
 from anomalib.utils.callbacks import get_callbacks
 from tests.helpers.dataset import TestDataset, get_dataset_path
@@ -23,99 +22,129 @@ from tests.helpers.inference import MockImageLoader
 
 
 def get_model_config(
-    model_name: str, project_path: str, dataset_path: str, category: str
-) -> Union[DictConfig, ListConfig]:
+    project_path: str,
+    model_name: str,
+    dataset_path: str,
+    category: str,
+    task: str = "classification",
+    export_mode: Optional[str] = None,
+):
     model_config = get_configurable_parameters(model_name=model_name)
     model_config.project.path = project_path
+    model_config.dataset.task = task
     model_config.dataset.path = dataset_path
     model_config.dataset.category = category
+    model_config.trainer.fast_dev_run = True
     model_config.trainer.max_epochs = 1
     model_config.trainer.devices = 1
     model_config.trainer.accelerator = "gpu"
+    model_config.optimization.export_mode = export_mode
     return model_config
 
 
-class TestInferencers:
-    @pytest.mark.parametrize(
-        "model_name",
-        [
-            "cflow",
-            "dfm",
-            "dfkde",
-            "draem",
-            "fastflow",
-            "ganomaly",
-            "padim",
-            "patchcore",
-            "reverse_distillation",
-            "stfpm",
-        ],
-    )
-    @TestDataset(num_train=20, num_test=1, path=get_dataset_path(), use_mvtec=False)
-    def test_torch_inference(self, model_name: str, category: str = "shapes", path: str = "./datasets/MVTec"):
-        """Tests Torch inference.
-        Model is not trained as this checks that the inferencers are working.
-        Args:
-            model_name (str): Name of the model
-        """
-        with TemporaryDirectory() as project_path:
-            model_config = get_model_config(
-                model_name=model_name, dataset_path=path, category=category, project_path=project_path
-            )
+@pytest.fixture(autouse=True)
+def generate_results_dir():
+    with TemporaryDirectory() as project_path:
 
+        def make(
+            model_name: str,
+            dataset_path: str,
+            category: str,
+            task: str = "classification",
+            export_mode: Optional[str] = None,
+        ) -> Union[DictConfig, ListConfig]:
+            # then train the model
+            model_config = get_model_config(
+                project_path=project_path,
+                model_name=model_name,
+                dataset_path=dataset_path,
+                category=category,
+                task=task,
+                export_mode=export_mode,
+            )
             model = get_model(model_config)
             datamodule = get_datamodule(model_config)
             callbacks = get_callbacks(model_config)
             trainer = Trainer(**model_config.trainer, logger=False, callbacks=callbacks)
-
             trainer.fit(model=model, datamodule=datamodule)
 
-            model.eval()
+            return model_config, model
 
-            # Test torch inferencer
-            torch_inferencer = TorchInferencer(model_config, model, device="cpu")
-            torch_dataloader = MockImageLoader(model_config.dataset.image_size, total_count=1)
-            with torch.no_grad():
-                for image in torch_dataloader():
-                    prediction = torch_inferencer.predict(image)
-                    assert 0.0 <= prediction.pred_score <= 1.0  # confirm if predicted scores are normalized
+        yield make
 
-    @pytest.mark.parametrize(
-        "model_name",
-        ["dfm", "draem", "ganomaly", "padim", "patchcore", "stfpm"],
+
+@pytest.mark.parametrize(
+    "model_name, task",
+    [
+        ("cflow", "segmentation"),
+        ("dfm", "segmentation"),
+        ("dfkde", "segmentation"),
+        ("draem", "segmentation"),
+        ("fastflow", "segmentation"),
+        ("ganomaly", "segmentation"),
+        ("padim", "segmentation"),
+        ("patchcore", "segmentation"),
+        ("reverse_distillation", "segmentation"),
+        ("stfpm", "segmentation"),
+        # also test different task types for a single model
+        ("padim", "classification"),
+        ("padim", "detection"),
+    ],
+)
+@TestDataset(num_train=20, num_test=1, path=get_dataset_path(), use_mvtec=False)
+def test_torch_inference(
+    model_name: str, generate_results_dir, task: str, category: str = "shapes", path: str = "./datasets/MVTec"
+):
+    """Tests Torch inference.
+    Model is not trained as this checks that the inferencers are working.
+    Args:
+        model_name (str): Name of the model
+    """
+    model_config, model = generate_results_dir(model_name=model_name, dataset_path=path, task=task, category=category)
+    model.eval()
+
+    # Test torch inferencer
+    torch_inferencer = TorchInferencer(model_config, model, device="cpu")
+    torch_dataloader = MockImageLoader(model_config.dataset.image_size, total_count=1)
+    with torch.no_grad():
+        for image in torch_dataloader():
+            prediction = torch_inferencer.predict(image)
+            assert 0.0 <= prediction.pred_score <= 1.0  # confirm if predicted scores are normalized
+
+
+@pytest.mark.parametrize(
+    "model_name, task",
+    [
+        ("dfm", "classification"),
+        ("draem", "segmentation"),
+        ("ganomaly", "segmentation"),
+        ("padim", "segmentation"),
+        ("patchcore", "segmentation"),
+        ("stfpm", "segmentation"),
+        # task types
+        ("padim", "classification"),
+        ("padim", "detection"),
+    ],
+)
+@TestDataset(num_train=20, num_test=1, path=get_dataset_path(), use_mvtec=False)
+def test_openvino_inference(
+    model_name: str, generate_results_dir, task: str, category: str = "shapes", path: str = "./datasets/MVTec"
+):
+    """Tests OpenVINO inference.
+    Model is not trained as this checks that the inferencers are working.
+    Args:
+        model_name (str): Name of the model
+    """
+    model_config, _model = generate_results_dir(
+        model_name=model_name, dataset_path=path, task=task, category=category, export_mode="openvino"
     )
-    @TestDataset(num_train=20, num_test=1, path=get_dataset_path(), use_mvtec=False)
-    def test_openvino_inference(self, model_name: str, category: str = "shapes", path: str = "./datasets/MVTec"):
-        """Tests OpenVINO inference.
-        Model is not trained as this checks that the inferencers are working.
-        Args:
-            model_name (str): Name of the model
-        """
-        with TemporaryDirectory() as project_path:
-            model_config = get_model_config(
-                model_name=model_name, dataset_path=path, category=category, project_path=project_path
-            )
-            export_path = Path(project_path)
+    export_path = Path(model_config.project.path)
 
-            model = get_model(model_config)
-            datamodule = get_datamodule(model_config)
-            callbacks = get_callbacks(model_config)
-            trainer = Trainer(**model_config.trainer, logger=False, callbacks=callbacks)
-
-            trainer.fit(model=model, datamodule=datamodule)
-
-            export(
-                model=model,
-                input_size=model_config.dataset.image_size,
-                export_root=export_path,
-                export_mode=ExportMode.OPENVINO,
-            )
-
-            # Test OpenVINO inferencer
-            openvino_inferencer = OpenVINOInferencer(
-                model_config, export_path / "openvino/model.xml", export_path / "openvino/meta_data.json"
-            )
-            openvino_dataloader = MockImageLoader(model_config.dataset.image_size, total_count=1)
-            for image in openvino_dataloader():
-                prediction = openvino_inferencer.predict(image)
-                assert 0.0 <= prediction.pred_score <= 1.0  # confirm if predicted scores are normalized
+    # Test OpenVINO inferencer
+    openvino_inferencer = OpenVINOInferencer(
+        model_config, export_path / "openvino/model.xml", export_path / "openvino/meta_data.json"
+    )
+    openvino_dataloader = MockImageLoader(model_config.dataset.image_size, total_count=1)
+    for image in openvino_dataloader():
+        prediction = openvino_inferencer.predict(image)
+        assert 0.0 <= prediction.pred_score <= 1.0  # confirm if predicted scores are normalized
