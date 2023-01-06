@@ -22,19 +22,24 @@ from torch.utils.data import Dataset
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import masks_to_boxes, read_image
 
-_EXPECTED_COLS_CLASSIFICATION = ["image_path", "split"]
-_EXPECTED_COLS_SEGMENTATION = _EXPECTED_COLS_CLASSIFICATION + ["mask_path"]
-_EXPECTED_COLS_PERTASK = {
-    "classification": _EXPECTED_COLS_CLASSIFICATION,
-    "segmentation": _EXPECTED_COLS_SEGMENTATION,
-    "detection": _EXPECTED_COLS_SEGMENTATION,
+_EXPECTED_COLUMNS_CLASSIFICATION = ["image_path", "split"]
+_EXPECTED_COLUMNS_SEGMENTATION = _EXPECTED_COLUMNS_CLASSIFICATION + ["mask_path"]
+_EXPECTED_COLUMNS_PERTASK = {
+    "classification": _EXPECTED_COLUMNS_CLASSIFICATION,
+    "segmentation": _EXPECTED_COLUMNS_SEGMENTATION,
+    "detection": _EXPECTED_COLUMNS_SEGMENTATION,
 }
 
 logger = logging.getLogger(__name__)
 
 
 class AnomalibDataset(Dataset, ABC):
-    """Anomalib dataset."""
+    """Anomalib dataset.
+
+    Args:
+        task (str): Task type, either 'classification' or 'segmentation'
+        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
+    """
 
     def __init__(self, task: TaskType, transform: A.Compose):
         super().__init__()
@@ -46,7 +51,7 @@ class AnomalibDataset(Dataset, ABC):
         """Get length of the dataset."""
         return len(self.samples)
 
-    def subsample(self, indices: Sequence[int], inplace=False) -> AnomalibDataset:
+    def subsample(self, indices: Sequence[int], inplace: bool = False) -> AnomalibDataset:
         """Subsamples the dataset at the provided indices.
 
         Args:
@@ -79,7 +84,7 @@ class AnomalibDataset(Dataset, ABC):
         """
         # validate the passed samples by checking the
         assert isinstance(samples, DataFrame), f"samples must be a pandas.DataFrame, found {type(samples)}"
-        expected_columns = _EXPECTED_COLS_PERTASK[self.task]
+        expected_columns = _EXPECTED_COLUMNS_PERTASK[self.task]
         assert all(
             col in samples.columns for col in expected_columns
         ), f"samples must have (at least) columns {expected_columns}, found {samples.columns}"
@@ -116,9 +121,9 @@ class AnomalibDataset(Dataset, ABC):
         item = dict(image_path=image_path, label=label_index)
 
         if self.task == TaskType.CLASSIFICATION:
-            pre_processed = self.transform(image=image)
-            item["image"] = pre_processed["image"]
-        elif self.task in [TaskType.DETECTION, TaskType.SEGMENTATION]:
+            transformed = self.transform(image=image)
+            item["image"] = transformed["image"]
+        elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
             if label_index == 0:
@@ -126,15 +131,16 @@ class AnomalibDataset(Dataset, ABC):
             else:
                 mask = cv2.imread(mask_path, flags=0) / 255.0
 
-            pre_processed = self.transform(image=image, mask=mask)
+            transformed = self.transform(image=image, mask=mask)
 
-            item["image"] = pre_processed["image"]
+            item["image"] = transformed["image"]
             item["mask_path"] = mask_path
-            item["mask"] = pre_processed["mask"]
+            item["mask"] = transformed["mask"]
 
             if self.task == TaskType.DETECTION:
                 # create boxes from masks for detection task
-                item["boxes"] = masks_to_boxes(item["mask"])[0]
+                boxes, _ = masks_to_boxes(item["mask"])
+                item["boxes"] = boxes[0]
         else:
             raise ValueError(f"Unknown task type: {self.task}")
 

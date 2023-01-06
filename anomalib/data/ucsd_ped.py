@@ -1,5 +1,8 @@
 """UCSD Pedestrian dataset."""
 
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import logging
 import tarfile
 from pathlib import Path
@@ -20,7 +23,7 @@ from anomalib.data.utils import (
     DownloadProgressBar,
     InputNormalizationMethod,
     Split,
-    ValSplitMode,
+    ValidationSplitMode,
     get_transforms,
     hash_check,
     read_image,
@@ -30,7 +33,7 @@ from anomalib.data.utils.video import ClipsIndexer
 logger = logging.getLogger(__name__)
 
 
-def make_ucsd_dataset(path: Path, split: Optional[Union[Split, str]] = None):
+def make_ucsd_dataset(path: Path, split: Optional[Union[Split, str]] = None) -> DataFrame:
     """Create UCSD Pedestrian dataset by parsing the file structure.
 
     The files are expected to follow the structure:
@@ -215,7 +218,7 @@ class UCSDped(AnomalibVideoDataModule):
         num_workers: int = 8,
         transform_config_train: Optional[Union[str, A.Compose]] = None,
         transform_config_eval: Optional[Union[str, A.Compose]] = None,
-        val_split_mode: ValSplitMode = ValSplitMode.FROM_TEST,
+        val_split_mode: ValidationSplitMode = ValidationSplitMode.FROM_TEST,
         val_split_ratio: float = 0.5,
         seed: Optional[int] = None,
     ):
@@ -276,7 +279,7 @@ class UCSDped(AnomalibVideoDataModule):
             dataset_name = "UCSD_Anomaly_Dataset.tar.gz"
             zip_filename = self.root / dataset_name
             with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc="UCSDped") as progress_bar:
-                urlretrieve(
+                urlretrieve(  # nosec - suppress bandit warning (urls are hardcoded)
                     url=f"{url}/{dataset_name}",
                     filename=zip_filename,
                     reporthook=progress_bar.update_to,

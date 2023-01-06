@@ -19,7 +19,7 @@ from anomalib.data.utils import (
     InputNormalizationMethod,
     Split,
     TestSplitMode,
-    ValSplitMode,
+    ValidationSplitMode,
     get_transforms,
 )
 
@@ -215,7 +215,6 @@ class FolderDataset(AnomalibDataset):
         normal_test_dir: Optional[Union[str, Path]] = None,
         mask_dir: Optional[Union[str, Path]] = None,
         split: Optional[Union[Split, str]] = None,
-        val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
         extensions: Optional[Tuple[str, ...]] = None,
     ) -> None:
         super().__init__(task, transform)
@@ -227,8 +226,6 @@ class FolderDataset(AnomalibDataset):
         self.normal_test_dir = normal_test_dir
         self.mask_dir = mask_dir
         self.extensions = extensions
-
-        self.val_split_mode = val_split_mode
 
     def _setup(self):
         """Assign samples."""
@@ -293,7 +290,6 @@ class Folder(AnomalibDataModule):
         mask_dir: Optional[Union[str, Path]] = None,
         normal_split_ratio: float = 0.2,
         extensions: Optional[Tuple[str]] = None,
-        #
         image_size: Optional[Union[int, Tuple[int, int]]] = None,
         center_crop: Optional[Union[int, Tuple[int, int]]] = None,
         normalization: Union[InputNormalizationMethod, str] = InputNormalizationMethod.IMAGENET,
@@ -305,7 +301,7 @@ class Folder(AnomalibDataModule):
         transform_config_eval: Optional[Union[str, A.Compose]] = None,
         test_split_mode: TestSplitMode = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
-        val_split_mode: ValSplitMode = ValSplitMode.FROM_TEST,
+        val_split_mode: ValidationSplitMode = ValidationSplitMode.FROM_TEST,
         val_split_ratio: float = 0.5,
         seed: Optional[int] = None,
     ):

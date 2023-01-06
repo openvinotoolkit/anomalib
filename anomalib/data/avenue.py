@@ -10,6 +10,9 @@ Reference:
     Proceedings of the IEEE international conference on computer vision. 2013.
 """
 
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import logging
 import math
 import zipfile
@@ -32,7 +35,7 @@ from anomalib.data.utils import (
     DownloadProgressBar,
     InputNormalizationMethod,
     Split,
-    ValSplitMode,
+    ValidationSplitMode,
     get_transforms,
     hash_check,
 )
@@ -205,7 +208,7 @@ class Avenue(AnomalibVideoDataModule):
         num_workers: int = 8,
         transform_config_train: Optional[Union[str, A.Compose]] = None,
         transform_config_eval: Optional[Union[str, A.Compose]] = None,
-        val_split_mode: ValSplitMode = ValSplitMode.FROM_TEST,
+        val_split_mode: ValidationSplitMode = ValidationSplitMode.FROM_TEST,
         val_split_ratio: float = 0.5,
         seed: Optional[int] = None,
     ):
@@ -306,7 +309,7 @@ class Avenue(AnomalibVideoDataModule):
             url = "http://www.cse.cuhk.edu.hk/leojia/projects/detectabnormal"
             zip_filepath = root / info.zip_filename
             with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc=info.description) as progress_bar:
-                urlretrieve(
+                urlretrieve(  # nosec - suppress bandit warning (urls are hardcoded)
                     url=f"{url}/{info.zip_filename}",
                     filename=zip_filepath,
                     reporthook=progress_bar.update_to,
