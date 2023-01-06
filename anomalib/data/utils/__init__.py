@@ -16,7 +16,7 @@ from .image import (
 from .split import (
     Split,
     TestSplitMode,
-    ValidationSplitMode,
+    ValSplitMode,
     concatenate_datasets,
     random_split,
     split_by_label,
@@ -35,7 +35,7 @@ __all__ = [
     "split_by_label",
     "concatenate_datasets",
     "Split",
-    "ValidationSplitMode",
+    "ValSplitMode",
     "TestSplitMode",
     "Augmenter",
     "masks_to_boxes",
