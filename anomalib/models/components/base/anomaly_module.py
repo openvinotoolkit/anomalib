@@ -85,10 +85,12 @@ class AnomalyModule(pl.LightningModule, ABC):
         if "anomaly_maps" in outputs.keys():
             outputs["pred_masks"] = outputs["anomaly_maps"] >= self.pixel_threshold.value
             if "pred_boxes" not in outputs.keys():
-                outputs["pred_boxes"] = masks_to_boxes(outputs["pred_masks"])
+                outputs["pred_boxes"], outputs["box_scores"] = masks_to_boxes(
+                    outputs["pred_masks"], outputs["anomaly_maps"]
+                )
                 outputs["box_labels"] = [torch.ones(boxes.shape[0]) for boxes in outputs["pred_boxes"]]
         # apply thresholding to boxes
-        if "box_scores" in outputs:
+        if "box_scores" in outputs and "box_labels" not in outputs:
             # apply threshold to assign normal/anomalous label to boxes
             is_anomalous = [scores > self.pixel_threshold.value for scores in outputs["box_scores"]]
             outputs["box_labels"] = [labels.int() for labels in is_anomalous]

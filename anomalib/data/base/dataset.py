@@ -139,7 +139,8 @@ class AnomalibDataset(Dataset, ABC):
 
             if self.task == TaskType.DETECTION:
                 # create boxes from masks for detection task
-                item["boxes"] = masks_to_boxes(item["mask"])[0]
+                boxes, _ = masks_to_boxes(item["mask"])
+                item["boxes"] = boxes[0]
         else:
             raise ValueError(f"Unknown task type: {self.task}")
 

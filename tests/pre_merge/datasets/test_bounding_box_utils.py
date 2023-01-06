@@ -67,6 +67,71 @@ def input_masks():
 
 
 @pytest.fixture
+def input_maps():
+    masks = []
+    masks.append(  # normal and tiny shapes
+        Tensor(
+            [
+                [0, 0, 1, 0, 0, 0, 0, 1, 0, 0],
+                [1, 1, 2, 0, 0, 1, 2, 2, 1, 0],
+                [1, 2, 4, 0, 0, 2, 3, 4, 2, 0],
+                [1, 2, 3, 0, 3, 4, 6, 5, 3, 0],
+                [1, 1, 2, 3, 4, 4, 5, 3, 1, 0],
+                [0, 1, 1, 2, 3, 4, 4, 3, 1, 1],
+                [0, 1, 2, 2, 2, 3, 3, 2, 1, 0],
+                [1, 2, 3, 3, 3, 2, 2, 1, 0, 0],
+                [2, 3, 5, 4, 2, 1, 1, 0, 0, 0],
+                [1, 2, 3, 3, 2, 1, 0, 0, 0, 0],
+            ]
+        )
+    )
+    masks.append(  # shapes at edge of image
+        Tensor(
+            [
+                [0.4, 0.2, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0.3, 0.1, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 99999],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            ]
+        )
+    )
+    masks.append(  # diagonally touching shapes
+        Tensor(
+            [
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 1, 1, 0, 0, 0, 0, 0, 0],
+                [0, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+                [0, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1, 1, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            ]
+        )
+    )
+    masks.append(torch.zeros((10, 10)))  # empty mask
+    return torch.stack(masks)
+
+
+@pytest.fixture
+def target_scores():
+    return [
+        Tensor([4, 6, 5]),
+        Tensor([0.4, 99999]),
+        Tensor([1]),
+        Tensor(),
+    ]
+
+
+@pytest.fixture
 def target_boxes():
     boxes = []
     boxes.append(Tensor([[2, 2, 2, 2], [4, 2, 7, 5], [2, 8, 3, 8]]))
@@ -241,7 +306,7 @@ def target_anomaly_maps():
 
 class TestMasksToBoxes:
     def test_output(self, input_masks, target_boxes):
-        out_boxes = masks_to_boxes(input_masks)
+        out_boxes, _ = masks_to_boxes(input_masks)
         assert [out_box == target_box for out_box, target_box in zip(out_boxes, target_boxes)]
 
     @pytest.mark.parametrize(
@@ -255,10 +320,14 @@ class TestMasksToBoxes:
         ),
     )  # (B, 1, H, W)
     def test_input_shapes(self, masks):
-        out_boxes = masks_to_boxes(masks)
+        out_boxes, _ = masks_to_boxes(masks)
         target_length = 1 if masks.dim() == 2 else masks.shape[0]
         assert len(out_boxes) == target_length
         assert out_boxes[0].shape == torch.Size((5, 4))
+
+    def test_box_scores(self, input_masks, input_maps, target_scores):
+        _, out_scores = masks_to_boxes(input_masks, input_maps)
+        assert all(torch.all(out == target) for out, target in zip(out_scores, target_scores))
 
 
 class TestBoxesToMasks:
