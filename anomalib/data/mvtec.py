@@ -55,7 +55,7 @@ DOWNLOAD_INFO = DownloadInfo(
 
 
 def make_mvtec_dataset(
-    root: Union[str, Path], split: Optional[Union[Split, str]] = None, extensions: Sequence[str] = (".png")
+    root: Union[str, Path], split: Optional[Union[Split, str]] = None, extensions: Optional[Sequence[str]] = None
 ) -> DataFrame:
     """Create MVTec AD samples by parsing the MVTec AD data file structure.
 
@@ -102,6 +102,9 @@ def make_mvtec_dataset(
     Returns:
         DataFrame: an output dataframe containing the samples of the dataset.
     """
+    if extensions is None:
+        extensions = IMG_EXTENSIONS
+
     root = Path(root)
     samples_list = [(str(root),) + f.parts[-3:] for f in root.glob(r"**/*") if f.suffix in extensions]
     if len(samples_list) == 0:
