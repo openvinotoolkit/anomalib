@@ -89,6 +89,7 @@ class ReverseDistillation(AnomalyModule):
           Feature Map
         """
         loss = self.loss(*self.model(batch["image"]))
+        self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
     def validation_step(self, batch, _):  # pylint: disable=arguments-differ

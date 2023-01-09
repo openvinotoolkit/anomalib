@@ -5,7 +5,7 @@
 
 from argparse import ArgumentParser, Namespace
 
-from pytorch_lightning import Trainer
+from pytorch_lightning import Trainer, seed_everything
 
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
@@ -39,6 +39,9 @@ def test():
         config_path=args.config,
         weight_file=args.weight_file,
     )
+
+    if config.project.seed:
+        seed_everything(config.project.seed)
 
     datamodule = get_datamodule(config)
     model = get_model(config)

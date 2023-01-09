@@ -14,6 +14,8 @@ from warnings import warn
 
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
+from anomalib.data.utils import TestSplitMode, ValSplitMode
+
 
 def _get_now_str(timestamp: float) -> str:
     """Standard format for datetimes is defined here."""
@@ -32,11 +34,27 @@ def update_input_size_config(config: Union[DictConfig, ListConfig]) -> Union[Dic
     Returns:
         Union[DictConfig, ListConfig]: Configurable parameters with updated values
     """
-    # handle image size
-    if isinstance(config.dataset.image_size, int):
-        config.dataset.image_size = (config.dataset.image_size,) * 2
+    # Image size: Ensure value is in the form [height, width]
+    image_size = config.dataset.get("image_size")
+    if isinstance(image_size, int):
+        config.dataset.image_size = (image_size,) * 2
+    elif isinstance(image_size, ListConfig):
+        assert len(image_size) == 2, "image_size must be a single integer or tuple of length 2 for width and height."
+    else:
+        raise ValueError(f"image_size must be either int or ListConfig, got {type(image_size)}")
 
-    config.model.input_size = config.dataset.image_size
+    # Center crop: Ensure value is in the form [height, width], and update input_size
+    center_crop = config.dataset.get("center_crop")
+    if center_crop is None:
+        config.model.input_size = config.dataset.image_size
+    elif isinstance(center_crop, int):
+        config.dataset.center_crop = (center_crop,) * 2
+        config.model.input_size = config.dataset.center_crop
+    elif isinstance(center_crop, ListConfig):
+        assert len(center_crop) == 2, "center_crop must be a single integer or tuple of length 2 for width and height."
+        config.model.input_size = center_crop
+    else:
+        raise ValueError(f"center_crop must be either int or ListConfig, got {type(center_crop)}")
 
     if "tiling" in config.dataset.keys() and config.dataset.tiling.apply:
         if isinstance(config.dataset.tiling.tile_size, int):
@@ -109,6 +127,78 @@ def update_multi_gpu_training_config(config: Union[DictConfig, ListConfig]) -> U
     return config
 
 
+def update_datasets_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfig, ListConfig]:
+    """Updates the dataset section of the config.
+
+    Args:
+        config (Union[DictConfig, ListConfig]): Configurable parameters for the current run.
+
+    Returns:
+        Union[DictConfig, ListConfig]: Updated config
+    """
+    if "format" not in config.dataset.keys():
+        config.dataset.format = "mvtec"
+
+    if "create_validation_set" in config.dataset.keys():
+        warn(
+            DeprecationWarning(
+                "The 'create_validation_set' parameter is deprecated and will be removed in a future release. Please "
+                "use 'validation_split_mode' instead."
+            )
+        )
+        config.dataset.val_split_mode = "from_test" if config.dataset.create_validation_set else "same_as_test"
+
+    if "test_batch_size" in config.dataset.keys():
+        warn(
+            DeprecationWarning(
+                "The 'test_batch_size' parameter is deprecated and will be removed in a future release. Please use "
+                "'eval_batch_size' instead."
+            )
+        )
+        config.dataset.eval_batch_size = config.dataset.test_batch_size
+
+    if "transform_config" in config.dataset.keys() and "val" in config.dataset.transform_config.keys():
+        warn(
+            DeprecationWarning(
+                "The 'transform_config.val' parameter is deprecated and will be removed in a future release. Please "
+                "use 'transform_config.eval' instead."
+            )
+        )
+        config.dataset.transform_config.eval = config.dataset.transform_config.val
+
+    config = update_input_size_config(config)
+
+    if "clip_length_in_frames" in config.dataset.keys() and config.dataset.clip_length_in_frames > 1:
+        warn(
+            "Anomalib's models and visualizer are currently not compatible with video datasets with a clip length > 1. "
+            "Custom changes to these modules will be needed to prevent errors and/or unpredictable behaviour."
+        )
+
+    if config.dataset.format == "folder" and "split_ratio" in config.dataset.keys():
+        warn(
+            DeprecationWarning(
+                "The 'split_ratio' parameter is deprecated and will be removed in a future release. Please use "
+                "'test_split_ratio' instead."
+            )
+        )
+        config.dataset.test_split_ratio = config.dataset.split_ratio
+
+    if config.dataset.get("test_split_mode") == TestSplitMode.NONE and config.dataset.get("val_split_mode") in (
+        ValSplitMode.SAME_AS_TEST,
+        ValSplitMode.FROM_TEST,
+    ):
+        warn(
+            f"val_split_mode {config.dataset.val_split_mode} not allowed for test_split_mode = 'none'. "
+            "Setting val_split_mode to 'none'."
+        )
+        config.dataset.val_split_mode = ValSplitMode.NONE
+
+    if config.dataset.get("val_split_mode") == ValSplitMode.NONE and config.trainer.limit_val_batches != 0.0:
+        warn("Running without validation set. Setting trainer.limit_val_batches to 0.")
+        config.trainer.limit_val_batches = 0.0
+    return config
+
+
 def get_configurable_parameters(
     model_name: Optional[str] = None,
     config_path: Optional[Union[Path, str]] = None,
@@ -151,17 +241,26 @@ def get_configurable_parameters(
             "(`null` in the YAML file) or remove the `seed` key from the YAML file."
         )
 
-    # Dataset Configs
-    if "format" not in config.dataset.keys():
-        config.dataset.format = "mvtec"
-
+    config = update_datasets_config(config)
     config = update_input_size_config(config)
 
     # Project Configs
     project_path = Path(config.project.path) / config.model.name / config.dataset.name
 
+    if config.dataset.format == "folder":
+        if "mask" in config.dataset:
+            warn(
+                DeprecationWarning(
+                    "mask will be deprecated in favor of mask_dir in config.dataset in a future release."
+                )
+            )
+            config.dataset.mask_dir = config.dataset.mask
+        if "path" in config.dataset:
+            warn(DeprecationWarning("path will be deprecated in favor of root in config.dataset in a future release."))
+            config.dataset.root = config.dataset.path
+
     # add category subfolder if needed
-    if config.dataset.format.lower() in ("btech", "mvtec"):
+    if config.dataset.format.lower() in ("btech", "mvtec", "visa"):
         project_path = project_path / config.dataset.category
 
     # set to False by default for backward compatibility
@@ -196,15 +295,29 @@ def get_configurable_parameters(
     if "metrics" in config.keys():
         # NOTE: Deprecate this after v0.4.0.
         if "adaptive" in config.metrics.threshold.keys():
-            warn("adaptive will be deprecated in favor of method in config.metrics.threshold in v0.4.0.")
+            warn(
+                DeprecationWarning(
+                    "adaptive will be deprecated in favor of method in config.metrics.threshold in a future release"
+                )
+            )
             config.metrics.threshold.method = "adaptive" if config.metrics.threshold.adaptive else "manual"
         if "image_default" in config.metrics.threshold.keys():
-            warn("image_default will be deprecated in favor of manual_image in config.metrics.threshold in v0.4.0.")
+            warn(
+                DeprecationWarning(
+                    "image_default will be deprecated in favor of manual_image in config.metrics.threshold in a future "
+                    "release."
+                )
+            )
             config.metrics.threshold.manual_image = (
                 None if config.metrics.threshold.adaptive else config.metrics.threshold.image_default
             )
         if "pixel_default" in config.metrics.threshold.keys():
-            warn("pixel_default will be deprecated in favor of manual_pixel in config.metrics.threshold in v0.4.0.")
+            warn(
+                DeprecationWarning(
+                    "pixel_default will be deprecated in favor of manual_pixel in config.metrics.threshold in a future "
+                    "release."
+                )
+            )
             config.metrics.threshold.manual_pixel = (
                 None if config.metrics.threshold.adaptive else config.metrics.threshold.pixel_default
             )

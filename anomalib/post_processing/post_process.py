@@ -151,3 +151,20 @@ def compute_mask(anomaly_map: np.ndarray, threshold: float, kernel_size: int = 4
     mask *= 255
 
     return mask
+
+
+def draw_boxes(image: np.ndarray, boxes: np.ndarray, color: Tuple[int, int, int]) -> np.ndarray:
+    """Draw bounding boxes on an image.
+
+    Args:
+        image (np.ndarray): Source image.
+        boxes (np.nparray): 2D array of shape (N, 4) where each row contains the xyxy coordinates of a bounding box.
+        color (Tuple[int, int, int]): Color of the drawn boxes in RGB format.
+
+    Returns:
+        np.ndarray: Image showing the bounding boxes drawn on top of the source image.
+    """
+    for box in boxes:
+        x_1, y_1, x_2, y_2 = box.astype(np.int)
+        image = cv2.rectangle(image, (x_1, y_1), (x_2, y_2), color=color, thickness=2)
+    return image

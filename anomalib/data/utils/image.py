@@ -141,7 +141,7 @@ def generate_output_image_filename(input_path: Union[str, Path], output_path: Un
     return file_path
 
 
-def get_image_height_and_width(image_size: Optional[Union[int, Tuple]] = None) -> Tuple[Optional[int], Optional[int]]:
+def get_image_height_and_width(image_size: Union[int, Tuple[int, int]]) -> Tuple[int, int]:
     """Get image height and width from ``image_size`` variable.
 
     Args:
@@ -169,20 +169,17 @@ def get_image_height_and_width(image_size: Optional[Union[int, Tuple]] = None) -
     Returns:
         Tuple[Optional[int], Optional[int]]: A tuple containing image height and width values.
     """
-    height_and_width: Tuple[Optional[int], Optional[int]]
     if isinstance(image_size, int):
         height_and_width = (image_size, image_size)
     elif isinstance(image_size, tuple):
         height_and_width = int(image_size[0]), int(image_size[1])
-    elif image_size is None:
-        height_and_width = (None, None)
     else:
         raise ValueError("``image_size`` could be either int or Tuple[int, int]")
 
     return height_and_width
 
 
-def read_image(path: Union[str, Path], image_size: Optional[Union[int, Tuple]] = None) -> np.ndarray:
+def read_image(path: Union[str, Path], image_size: Optional[Union[int, Tuple[int, int]]] = None) -> np.ndarray:
     """Read image from disk in RGB format.
 
     Args:
