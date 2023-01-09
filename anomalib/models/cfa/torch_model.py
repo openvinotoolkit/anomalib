@@ -24,23 +24,24 @@ from tqdm import tqdm
 
 from anomalib.models.cfa.anomaly_map import AnomalyMapGenerator
 from anomalib.models.components import DynamicBufferModule
+from anomalib.models.components.feature_extractors import dryrun_find_featuremap_dims
 
 SUPPORTED_BACKBONES = ("vgg19_bn", "resnet18", "wide_resnet50_2", "efficientnet_b5")
 
 
-# TODO: Replace this with the new torchfx feature extractor.
-def get_feature_extractor(backbone: str) -> GraphModule:
-    """Get the feature extractor from the backbone CNN.
+def get_return_nodes(backbone: str) -> List[str]:
+    """Get the return nodes for a given backbone.
 
     Args:
-        backbone (str): Backbone CNN network
+        backbone (str): The name of the backbone. Must be one of
+            {"resnet18", "wide_resnet50_2", "vgg19_bn", "efficientnet_b5"}.
 
     Raises:
-        NotImplementedError: When the backbone is efficientnet_b5
-        ValueError: When the backbone is not supported
+        NotImplementedError: If the backbone is "efficientnet_b5".
+        ValueError: If the backbone is not one of the supported backbones.
 
     Returns:
-        GraphModule: Feature extractor.
+        List[str]: A list of return nodes for the given backbone.
     """
     if backbone == "efficientnet_b5":
         raise NotImplementedError("EfficientNet feature extractor has not implemented yet.")
@@ -52,7 +53,24 @@ def get_feature_extractor(backbone: str) -> GraphModule:
         return_nodes = ["features.25", "features.38", "features.52"]
     else:
         raise ValueError(f"Backbone {backbone} is not supported. Supported backbones are {SUPPORTED_BACKBONES}.")
+    return return_nodes
 
+
+# TODO: Replace this with the new torchfx feature extractor.
+def get_feature_extractor(backbone: str, return_nodes: List[str]) -> GraphModule:
+    """Get the feature extractor from the backbone CNN.
+
+    Args:
+        backbone (str): Backbone CNN network
+        return_nodes (List[str]): A list of return nodes for the given backbone.
+
+    Raises:
+        NotImplementedError: When the backbone is efficientnet_b5
+        ValueError: When the backbone is not supported
+
+    Returns:
+        GraphModule: Feature extractor.
+    """
     model = getattr(torchvision.models, backbone)(pretrained=True)
     feature_extractor = create_feature_extractor(model=model, return_nodes=return_nodes)
     feature_extractor.eval()
@@ -88,15 +106,20 @@ class CfaModel(DynamicBufferModule):
         self.gamma_c = gamma_c
         self.gamma_d = gamma_d
 
-        self.scale: torch.Size
-
         self.num_nearest_neighbors = num_nearest_neighbors
         self.num_hard_negative_features = num_hard_negative_features
 
         self.register_buffer("memory_bank", torch.tensor(0.0))
         self.memory_bank: Tensor
 
-        self.feature_extractor = get_feature_extractor(backbone)
+        return_nodes = get_return_nodes(backbone)
+        self.feature_extractor = get_feature_extractor(backbone, return_nodes)
+        feature_map_meta_data = dryrun_find_featuremap_dims(
+            feature_extractor=self.feature_extractor,
+            input_size=input_size,
+            layers=return_nodes,
+        )
+        self.scale = max([meta_data["resolution"] for meta_data in feature_map_meta_data.values()])
         self.descriptor = Descriptor(self.gamma_d, backbone)
         self.radius = torch.ones(1, requires_grad=True) * radius
 
@@ -119,11 +142,6 @@ class CfaModel(DynamicBufferModule):
                 batch = data["image"].to(device)
                 features = self.feature_extractor(batch)
                 features = list(features.values())
-
-                # Compute the scale once.
-                if hasattr(self, "scale") is False:
-                    self.scale = features[0].size()[-2:]
-
                 target_features = self.descriptor(features)
                 self.memory_bank = ((self.memory_bank * i) + target_features.mean(dim=0, keepdim=True)) / (i + 1)
 
@@ -175,9 +193,6 @@ class CfaModel(DynamicBufferModule):
         with torch.no_grad():
             features = self.feature_extractor(input_tensor)
             features = list(features.values())
-
-        if hasattr(self, "scale") is False:
-            self.scale = features[0].size()[-2:]
 
         target_features = self.descriptor(features)
         distance = self.compute_distance(target_features)
