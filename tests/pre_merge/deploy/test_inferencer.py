@@ -76,6 +76,7 @@ def generate_results_dir():
 @pytest.mark.parametrize(
     "model_name, task",
     [
+        ("cfa", "segmentation"),
         ("cflow", "segmentation"),
         ("dfm", "segmentation"),
         ("dfkde", "segmentation"),

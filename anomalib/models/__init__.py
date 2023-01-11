@@ -11,6 +11,7 @@ from typing import List, Union
 from omegaconf import DictConfig, ListConfig
 from torch import load
 
+from anomalib.models.cfa import Cfa
 from anomalib.models.cflow import Cflow
 from anomalib.models.components import AnomalyModule
 from anomalib.models.csflow import Csflow
@@ -26,6 +27,7 @@ from anomalib.models.rkde import Rkde
 from anomalib.models.stfpm import Stfpm
 
 __all__ = [
+    "Cfa",
     "Cflow",
     "Csflow",
     "Dfkde",
@@ -76,6 +78,7 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     logger.info("Loading the model.")
 
     model_list: List[str] = [
+        "cfa",
         "cflow",
         "csflow",
         "dfkde",

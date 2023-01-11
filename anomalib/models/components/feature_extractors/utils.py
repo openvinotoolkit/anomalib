@@ -3,12 +3,13 @@
 from typing import Dict, List, Tuple, Union
 
 import torch
+from torch.fx.graph_module import GraphModule
 
 from .timm import FeatureExtractor
 
 
 def dryrun_find_featuremap_dims(
-    feature_extractor: FeatureExtractor,
+    feature_extractor: Union[FeatureExtractor, GraphModule],
     input_size: Tuple[int, int],
     layers: List[str],
 ) -> Dict[str, Dict[str, Union[int, Tuple[int, int]]]]:

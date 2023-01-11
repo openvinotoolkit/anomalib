@@ -1,12 +1,24 @@
 """Gaussian blurring via pytorch."""
 
-from typing import Tuple, Union
+from typing import Optional, Tuple, Union
 
 from kornia.filters import get_gaussian_kernel2d
 from kornia.filters.filter import _compute_padding
 from kornia.filters.kernels import normalize_kernel2d
 from torch import Tensor, nn
 from torch.nn import functional as F
+
+
+def compute_kernel_size(sigma_val: float) -> int:
+    """Compute kernel size from sigma value.
+
+    Args:
+        sigma_val (float): Sigma value.
+
+    Returns:
+        int: Kernel size.
+    """
+    return 2 * int(4.0 * sigma_val + 0.5) + 1
 
 
 class GaussianBlur2d(nn.Module):
@@ -19,9 +31,9 @@ class GaussianBlur2d(nn.Module):
 
     def __init__(
         self,
-        kernel_size: Union[Tuple[int, int], int],
         sigma: Union[Tuple[float, float], float],
-        channels: int,
+        channels: int = 1,
+        kernel_size: Optional[Union[Tuple[int, int], int]] = None,
         normalize: bool = True,
         border_type: str = "reflect",
         padding: str = "same",
@@ -29,22 +41,27 @@ class GaussianBlur2d(nn.Module):
         """Initialize model, setup kernel etc..
 
         Args:
-            kernel_size (Union[Tuple[int, int], int]): size of the Gaussian kernel to use.
             sigma (Union[Tuple[float, float], float]): standard deviation to use for constructing the Gaussian kernel.
-            channels (int): channels of the input
+            channels (int): channels of the input. Defaults to 1.
+            kernel_size (Optional[Union[Tuple[int, int], int]]): size of the Gaussian kernel to use. Defaults to None.
             normalize (bool, optional): Whether to normalize the kernel or not (i.e. all elements sum to 1).
                 Defaults to True.
             border_type (str, optional): Border type to use for padding of the input. Defaults to "reflect".
             padding (str, optional): Type of padding to apply. Defaults to "same".
         """
         super().__init__()
-        kernel_size = kernel_size if isinstance(kernel_size, tuple) else (kernel_size, kernel_size)
         sigma = sigma if isinstance(sigma, tuple) else (sigma, sigma)
+        self.channels = channels
+
+        if kernel_size is None:
+            kernel_size = (compute_kernel_size(sigma[0]), compute_kernel_size(sigma[1]))
+        else:
+            kernel_size = kernel_size if isinstance(kernel_size, tuple) else (kernel_size, kernel_size)
+
         self.kernel: Tensor
         self.register_buffer("kernel", get_gaussian_kernel2d(kernel_size=kernel_size, sigma=sigma))
         if normalize:
             self.kernel = normalize_kernel2d(self.kernel)
-        self.channels = channels
         self.kernel.unsqueeze_(0).unsqueeze_(0)
         self.kernel = self.kernel.expand(self.channels, -1, -1, -1)
         self.border_type = border_type
