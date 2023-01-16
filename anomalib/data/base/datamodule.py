@@ -75,7 +75,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         test_split_mode: Optional[TestSplitMode] = None,
         test_split_ratio: Optional[float] = None,
         seed: Optional[int] = None,
-    ):
+    ) -> None:
         super().__init__()
         self.train_batch_size = train_batch_size
         self.eval_batch_size = eval_batch_size
@@ -86,13 +86,13 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self.val_split_ratio = val_split_ratio
         self.seed = seed
 
-        self.train_data: Optional[AnomalibDataset] = None
-        self.val_data: Optional[AnomalibDataset] = None
-        self.test_data: Optional[AnomalibDataset] = None
+        self.train_data: AnomalibDataset
+        self.val_data: AnomalibDataset
+        self.test_data: AnomalibDataset
 
         self._samples: Optional[DataFrame] = None
 
-    def setup(self, stage: Optional[str] = None):
+    def setup(self, stage: Optional[str] = None) -> None:
         """Setup train, validation and test data.
 
         Args:
@@ -121,7 +121,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self._create_test_split()
         self._create_val_split()
 
-    def _create_test_split(self):
+    def _create_test_split(self) -> None:
         """Obtain the test set based on the settings in the config."""
         if self.test_data.has_normal:
             # split the test data into normal and anomalous so these can be processed separately
@@ -133,7 +133,8 @@ class AnomalibDataModule(LightningDataModule, ABC):
                 "No normal test images found. Sampling from training set using a split ratio of %d",
                 self.test_split_ratio,
             )
-            self.train_data, normal_test_data = random_split(self.train_data, self.test_split_ratio)
+            if self.test_split_ratio is not None:
+                self.train_data, normal_test_data = random_split(self.train_data, self.test_split_ratio)
 
         if self.test_split_mode == TestSplitMode.FROM_DIR:
             self.test_data += normal_test_data
@@ -142,7 +143,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         elif self.test_split_mode != TestSplitMode.NONE:
             raise ValueError(f"Unsupported Test Split Mode: {self.test_split_mode}")
 
-    def _create_val_split(self):
+    def _create_val_split(self) -> None:
         """Obtain the validation set based on the settings in the config."""
         if self.val_split_mode == ValSplitMode.FROM_TEST:
             # randomly sampled from test set
@@ -160,16 +161,18 @@ class AnomalibDataModule(LightningDataModule, ABC):
             raise ValueError(f"Unknown validation split mode: {self.val_split_mode}")
 
     @property
-    def is_setup(self):
-        """Checks if setup() has been called."""
-        # at least one of [train_data, val_data, test_data] should be setup
-        if self.train_data is not None and self.train_data.is_setup:
-            return True
-        if self.val_data is not None and self.val_data.is_setup:
-            return True
-        if self.test_data is not None and self.test_data.is_setup:
-            return True
-        return False
+    def is_setup(self) -> bool:
+        """Checks if setup() has been called.
+
+        At least one of [train_data, val_data, test_data] should be setup.
+        """
+        _is_setup: bool = False
+        for data in ("train_data", "val_data", "test_data"):
+            if hasattr(self, data):
+                if getattr(self, data).is_setup:
+                    _is_setup = True
+
+        return _is_setup
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:
         """Get train dataloader."""
