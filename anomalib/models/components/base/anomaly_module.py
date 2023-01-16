@@ -5,7 +5,7 @@
 
 import logging
 from abc import ABC
-from typing import Any, Dict, List, Optional, OrderedDict
+from typing import Any, Dict, List, Optional, OrderedDict, Union
 from warnings import warn
 
 import pytorch_lightning as pl
@@ -50,11 +50,11 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.image_metrics: AnomalibMetricCollection
         self.pixel_metrics: AnomalibMetricCollection
 
-    def forward(self, batch):  # pylint: disable=arguments-differ
+    def forward(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Any:
         """Forward-pass input tensor to the module.
 
         Args:
-            batch (Tensor): Input Tensor
+            batch (Dict[str, Union[str, Tensor]]): Input batch.
 
         Returns:
             Tensor: Output tensor from the model.
