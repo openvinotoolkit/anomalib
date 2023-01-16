@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
@@ -99,7 +99,7 @@ class FastflowLightning(Fastflow):
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(hparams)
 
-    def configure_callbacks(self):
+    def configure_callbacks(self) -> List[EarlyStopping]:
         """Configure model-specific callbacks.
 
         Note:

@@ -6,11 +6,12 @@ https://arxiv.org/abs/2201.10703v2
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
+from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor, optim
 
 from anomalib.models.components import AnomalyModule
@@ -40,7 +41,7 @@ class ReverseDistillation(AnomalyModule):
         beta1: float,
         beta2: float,
         pre_trained: bool = True,
-    ):
+    ) -> None:
         super().__init__()
         self.model = ReverseDistillationModel(
             backbone=backbone,
@@ -56,7 +57,7 @@ class ReverseDistillation(AnomalyModule):
         self.beta1 = beta1
         self.beta2 = beta2
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> optim.Adam:
         """Configures optimizers for decoder and bottleneck.
 
         Note:
@@ -74,7 +75,7 @@ class ReverseDistillation(AnomalyModule):
             betas=(self.beta1, self.beta2),
         )
 
-    def training_step(self, batch, _) -> Dict[str, Tensor]:  # type: ignore
+    def training_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
         """Training Step of Reverse Distillation Model.
 
         Features are extracted from three layers of the Encoder model. These are passed to the bottleneck layer
@@ -82,7 +83,7 @@ class ReverseDistillation(AnomalyModule):
         encoder and decoder features.
 
         Args:
-          batch (Tensor): Input batch
+          batch (batch: Dict[str, Union[str, Tensor]]): Input batch
           _: Index of the batch.
 
         Returns:
@@ -92,7 +93,7 @@ class ReverseDistillation(AnomalyModule):
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
+    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Optional[STEP_OUTPUT]:
         """Validation Step of Reverse Distillation Model.
 
         Similar to the training step, encoder/decoder features are extracted from the CNN for each batch, and
@@ -117,7 +118,7 @@ class ReverseDistillationLightning(ReverseDistillation):
         hparams(Union[DictConfig, ListConfig]): Model parameters
     """
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]):
+    def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
         super().__init__(
             input_size=hparams.model.input_size,
             backbone=hparams.model.backbone,
@@ -131,7 +132,7 @@ class ReverseDistillationLightning(ReverseDistillation):
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(hparams)
 
-    def configure_callbacks(self):
+    def configure_callbacks(self) -> List[EarlyStopping]:
         """Configure model-specific callbacks.
 
         Note:

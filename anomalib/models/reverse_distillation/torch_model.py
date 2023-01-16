@@ -34,7 +34,7 @@ class ReverseDistillationModel(nn.Module):
         layers: List[str],
         anomaly_map_mode: str,
         pre_trained: bool = True,
-    ):
+    ) -> None:
         super().__init__()
         self.tiler: Optional[Tiler] = None
 

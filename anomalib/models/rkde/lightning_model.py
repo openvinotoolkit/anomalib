@@ -4,11 +4,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import List, Union
+from typing import Dict, List, Optional, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
+from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -47,7 +48,7 @@ class Rkde(AnomalyModule):
         n_pca_components: int = 16,
         feature_scaling_method: FeatureScalingMethod = FeatureScalingMethod.SCALE,
         max_training_points: int = 40000,
-    ):
+    ) -> None:
         super().__init__()
 
         self.model: RkdeModel = RkdeModel(
@@ -63,15 +64,15 @@ class Rkde(AnomalyModule):
         self.embeddings: List[Tensor] = []
 
     @staticmethod
-    def configure_optimizers():
+    def configure_optimizers() -> None:
         """RKDE doesn't require optimization, therefore returns no optimizers."""
         return None
 
-    def training_step(self, batch, _batch_idx):
+    def training_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> None:
         """Training Step of RKDE. For each batch, features are extracted from the CNN.
 
         Args:
-            batch (Dict[str, Any]): Batch containing image filename, image, label and mask
+            batch (Dict[str, Union[str, Tensor]]): Batch containing image filename, image, label and mask
             _batch_idx: Index of the batch.
 
         Returns:
@@ -87,7 +88,7 @@ class Rkde(AnomalyModule):
         logger.info("Fitting a KDE model to the embedding collected from the training set.")
         self.model.fit(embeddings)
 
-    def validation_step(self, batch, _):
+    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Optional[STEP_OUTPUT]:
         """Validation Step of RKde.
 
         Similar to the training step, features are extracted from the CNN for each batch.
@@ -103,7 +104,8 @@ class Rkde(AnomalyModule):
         boxes, scores = self.model(batch["image"])
 
         # convert batched predictions to list format
-        batch_size = batch["image"].shape[0]
+        image: Tensor = batch["image"]
+        batch_size = image.shape[0]
         indices = boxes[:, 0]
         batch["pred_boxes"] = [boxes[indices == i, 1:] for i in range(batch_size)]
         batch["box_scores"] = [scores[indices == i] for i in range(batch_size)]

@@ -31,7 +31,7 @@ class AnomalyMapGenerator(nn.Module):
         ValueError: In case modes other than multiply and add are passed.
     """
 
-    def __init__(self, image_size: Union[ListConfig, Tuple], sigma: int = 4, mode: str = "multiply"):
+    def __init__(self, image_size: Union[ListConfig, Tuple], sigma: int = 4, mode: str = "multiply") -> None:
         super().__init__()
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
         self.sigma = sigma
