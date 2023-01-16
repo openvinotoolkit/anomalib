@@ -41,7 +41,7 @@ class AnomalibDataset(Dataset, ABC):
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
     """
 
-    def __init__(self, task: TaskType, transform: A.Compose):
+    def __init__(self, task: TaskType, transform: A.Compose) -> None:
         super().__init__()
         self.task = task
         self.transform = transform
@@ -76,7 +76,7 @@ class AnomalibDataset(Dataset, ABC):
         return self._samples
 
     @samples.setter
-    def samples(self, samples: DataFrame):
+    def samples(self, samples: DataFrame) -> None:
         """Overwrite the samples with a new dataframe.
 
         Args:
