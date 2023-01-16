@@ -168,7 +168,7 @@ class MVTecDataset(AnomalibDataset):
         self.root_category = Path(root) / Path(category)
         self.split = split
 
-    def _setup(self):
+    def _setup(self) -> None:
         self.samples = make_mvtec_dataset(self.root_category, split=self.split, extensions=IMG_EXTENSIONS)
 
 
@@ -218,7 +218,7 @@ class MVTec(AnomalibDataModule):
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
         val_split_ratio: float = 0.5,
         seed: Optional[int] = None,
-    ):
+    ) -> None:
         super().__init__(
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
