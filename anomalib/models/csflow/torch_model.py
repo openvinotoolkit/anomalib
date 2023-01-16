@@ -49,7 +49,7 @@ class CrossConvolutions(nn.Module):
         leaky_slope: float = 0.1,
         batch_norm: bool = False,
         use_gamma: bool = True,
-    ):
+    ) -> None:
         super().__init__()
 
         pad = kernel_size // 2
@@ -199,7 +199,7 @@ class ParallelPermute(InvertibleModule):
         seed (Optional[float]=None): Seed for the random permutation.
     """
 
-    def __init__(self, dims_in: List[Tuple[int]], seed: Optional[float] = None):
+    def __init__(self, dims_in: List[Tuple[int]], seed: Optional[float] = None) -> None:
         super().__init__(dims_in)
         self.n_inputs: int = len(dims_in)
         self.in_channels = [dims_in[i][0] for i in range(self.n_inputs)]
@@ -263,7 +263,7 @@ class ParallelGlowCouplingLayer(InvertibleModule):
         clamp (float): clamp value for the output of the subnet
     """
 
-    def __init__(self, dims_in: List[Tuple[int]], subnet_args: Dict, clamp: float = 5.0):
+    def __init__(self, dims_in: List[Tuple[int]], subnet_args: Dict, clamp: float = 5.0) -> None:
         super().__init__(dims_in)
         channels = dims_in[0][0]
         self.ndims = len(dims_in[0])
@@ -279,20 +279,19 @@ class ParallelGlowCouplingLayer(InvertibleModule):
         self.cross_convolution1 = CrossConvolutions(self.split_len1, self.split_len2 * 2, **subnet_args)
         self.cross_convolution2 = CrossConvolutions(self.split_len2, self.split_len1 * 2, **subnet_args)
 
-    def exp(self, input_tensor):
+    def exp(self, input_tensor: Tensor) -> Tensor:
         """Exponentiates the input and, optionally, clamps it to avoid numerical issues."""
         if self.clamp > 0:
             return torch.exp(self.log_e(input_tensor))
         return torch.exp(input_tensor)
 
-    def log_e(self, input_tensor):
+    def log_e(self, input_tensor: Tensor) -> Tensor:
         """Returns log of input. And optionally clamped to avoid numerical issues."""
         if self.clamp > 0:
             return self.clamp * 0.636 * torch.atan(input_tensor / self.clamp)
         return input_tensor
 
-    # pylint: disable=unused-argument
-    def forward(self, input_tensor: List[Tensor], rev=False, jac=True):
+    def forward(self, input_tensor: List[Tensor], rev=False, jac=True) -> Tuple[List[Tensor], Tensor]:
         """Applies GLOW coupling for the three scales."""
 
         # Even channel split. The two splits are used by cross-scale convolution to compute scale and transform
@@ -374,7 +373,7 @@ class ParallelGlowCouplingLayer(InvertibleModule):
         # Since Jacobians are only used for computing loss and summed in the loss, the idea is to sum them here
         return [z_dist0, z_dist1, z_dist2], torch.stack([jac0, jac1, jac2], dim=1).sum()
 
-    def output_dims(self, input_dims: List[Tuple[int]]):
+    def output_dims(self, input_dims: List[Tuple[int]]) -> List[Tuple[int]]:
         """Output dimensions of the module."""
         return input_dims
 
@@ -391,7 +390,7 @@ class CrossScaleFlow(nn.Module):
 
     def __init__(
         self, input_dims: Tuple[int, int, int], n_coupling_blocks: int, clamp: float, cross_conv_hidden_channels: int
-    ):
+    ) -> None:
         super().__init__()
         self.input_dims = input_dims
         self.n_coupling_blocks = n_coupling_blocks
@@ -400,7 +399,7 @@ class CrossScaleFlow(nn.Module):
         self.cross_conv_hidden_channels = cross_conv_hidden_channels
         self.graph = self._create_graph()
 
-    def _create_graph(self):
+    def _create_graph(self) -> GraphINN:
         nodes = []
         # 304 is the number of features extracted from EfficientNet-B5 feature extractor
         nodes.append(InputNode(304, (self.input_dims[1] // 32), (self.input_dims[2] // 32), name="input"))
@@ -458,7 +457,7 @@ class MultiScaleFeatureExtractor(nn.Module):
         input_size (Tuple[int, int]): Size of input image.
     """
 
-    def __init__(self, n_scales: int, input_size: Tuple[int, int]):
+    def __init__(self, n_scales: int, input_size: Tuple[int, int]) -> None:
         super().__init__()
 
         self.n_scales = n_scales
@@ -509,7 +508,7 @@ class CsFlowModel(nn.Module):
         n_coupling_blocks: int = 4,
         clamp: int = 3,
         num_channels: int = 3,
-    ):
+    ) -> None:
 
         super().__init__()
         self.input_dims = (num_channels, *input_size)
@@ -524,7 +523,7 @@ class CsFlowModel(nn.Module):
         )
         self.anomaly_map_generator = AnomalyMapGenerator(input_dims=self.input_dims, mode=AnomalyMapMode.ALL)
 
-    def forward(self, images) -> Tuple[Tensor, Tensor]:
+    def forward(self, images: Tensor) -> Tuple[Tensor, Tensor]:
         """Forward method of the model.
 
         Args:
