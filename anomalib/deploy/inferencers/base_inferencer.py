@@ -30,7 +30,7 @@ class Inferencer(ABC):
     """
 
     @abstractmethod
-    def load_model(self, path: Union[str, Path]):
+    def load_model(self, path: Union[str, Path]) -> Any:
         """Load Model."""
         raise NotImplementedError
 
@@ -95,7 +95,7 @@ class Inferencer(ABC):
         )
 
     @staticmethod
-    def _superimpose_segmentation_mask(meta_data: dict, anomaly_map: np.ndarray, image: np.ndarray):
+    def _superimpose_segmentation_mask(meta_data: dict, anomaly_map: np.ndarray, image: np.ndarray) -> np.ndarray:
         """Superimpose segmentation mask on top of image.
 
         Args:

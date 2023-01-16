@@ -37,9 +37,9 @@ class OpenVINOInferencer(Inferencer):
         self,
         config: Union[str, Path, DictConfig, ListConfig],
         path: Union[str, Path, Tuple[bytes, bytes]],
-        meta_data_path: Union[str, Path] = None,
+        meta_data_path: Optional[Union[str, Path]] = None,
         device: Optional[str] = "CPU",
-    ):
+    ) -> None:
         # Check and load the configuration
         if isinstance(config, (str, Path)):
             self.config = get_configurable_parameters(config_path=config)

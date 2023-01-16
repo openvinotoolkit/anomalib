@@ -41,7 +41,7 @@ class TorchInferencer(Inferencer):
         model_source: Union[str, Path, AnomalyModule],
         meta_data_path: Optional[Union[str, Path]] = None,
         device: str = "auto",
-    ):
+    ) -> None:
 
         self.device = self._get_device(device)
 
