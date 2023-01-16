@@ -49,7 +49,8 @@ IMG_EXTENSIONS = [".png", ".PNG"]
 
 DOWNLOAD_INFO = DownloadInfo(
     name="mvtec",
-    url="https://www.mydrive.ch/shares/38536/3830184030e49fe74747669442f0f282/download/420938113-1629952094",
+    url="https://www.mydrive.ch/shares/38536/3830184030e49fe74747669442f0f282/download/420938113-1629952094"
+    "/mvtec_anomaly_detection.tar.xz",
     hash="eefca59f2cede9c3fc5b6befbfec275e",
 )
 
