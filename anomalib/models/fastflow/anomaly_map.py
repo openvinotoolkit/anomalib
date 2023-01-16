@@ -14,7 +14,7 @@ from torch import Tensor, nn
 class AnomalyMapGenerator(nn.Module):
     """Generate Anomaly Heatmap."""
 
-    def __init__(self, input_size: Union[ListConfig, Tuple]):
+    def __init__(self, input_size: Union[ListConfig, Tuple]) -> None:
         super().__init__()
         self.input_size = input_size if isinstance(input_size, tuple) else tuple(input_size)
 

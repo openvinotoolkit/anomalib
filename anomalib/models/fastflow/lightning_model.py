@@ -3,13 +3,14 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
-from torch import optim
+from pytorch_lightning.utilities.types import STEP_OUTPUT
+from torch import Tensor, optim
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.fastflow.loss import FastflowLoss
@@ -37,7 +38,7 @@ class Fastflow(AnomalyModule):
         flow_steps: int = 8,
         conv3x3_only: bool = False,
         hidden_ratio: float = 1.0,
-    ):
+    ) -> None:
         super().__init__()
 
         self.model = FastflowModel(
@@ -50,11 +51,11 @@ class Fastflow(AnomalyModule):
         )
         self.loss = FastflowLoss()
 
-    def training_step(self, batch, _):  # pylint: disable=arguments-differ
+    def training_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
         """Forward-pass input and return the loss.
 
         Args:
-            batch (Tensor): Input batch
+            batch (batch: Dict[str, Union[str, Tensor]]): Input batch
             _batch_idx: Index of the batch.
 
         Returns:
@@ -65,15 +66,14 @@ class Fastflow(AnomalyModule):
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
+    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Optional[STEP_OUTPUT]:
         """Forward-pass the input and return the anomaly map.
 
         Args:
-            batch (Tensor): Input batch
-            _batch_idx: Index of the batch.
+            batch (Dict[str, Union[str, Tensor]]): Input batch
 
         Returns:
-            dict: batch dictionary containing anomaly-maps.
+            Optional[STEP_OUTPUT]: batch dictionary containing anomaly-maps.
         """
         anomaly_maps = self.model(batch["image"])
         batch["anomaly_maps"] = anomaly_maps
