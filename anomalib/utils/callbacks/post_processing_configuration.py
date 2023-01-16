@@ -60,7 +60,6 @@ class PostProcessingConfigurationCallback(Callback):
         self.manual_image_threshold = manual_image_threshold
         self.manual_pixel_threshold = manual_pixel_threshold
 
-    # pylint: disable=unused-argument
     def setup(self, trainer: Trainer, pl_module: LightningModule, stage: Optional[str] = None) -> None:
         """Setup post-processing configuration within Anomalib Model.
 
@@ -69,6 +68,8 @@ class PostProcessingConfigurationCallback(Callback):
             pl_module (LightningModule): Anomalib Model that inherits pl LightningModule.
             stage (Optional[str], optional): fit, validate, test or predict. Defaults to None.
         """
+        del trainer, stage  # These variables are not used.
+
         if isinstance(pl_module, AnomalyModule):
             pl_module.threshold_method = self.threshold_method
             if pl_module.threshold_method == ThresholdMethod.MANUAL:
