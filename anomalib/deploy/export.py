@@ -54,7 +54,7 @@ def export(
     input_size: Union[List[int], Tuple[int, int]],
     export_mode: ExportMode,
     export_root: Union[str, Path],
-):
+) -> None:
     """Export the model to onnx format and (optionally) convert to OpenVINO IR if export mode is set to OpenVINO.
 
     Metadata.json is generated regardless of export mode.
@@ -105,7 +105,7 @@ def _export_to_onnx(model: AnomalyModule, input_size: Union[List[int], Tuple[int
     return onnx_path
 
 
-def _export_to_openvino(export_path: Union[str, Path], onnx_path: Path):
+def _export_to_openvino(export_path: Union[str, Path], onnx_path: Path) -> None:
     """Convert onnx model to OpenVINO IR.
 
     Args:
