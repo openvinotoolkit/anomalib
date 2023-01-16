@@ -41,7 +41,7 @@ class DfkdeModel(nn.Module):
         n_pca_components: int = 16,
         feature_scaling_method: FeatureScalingMethod = FeatureScalingMethod.SCALE,
         max_training_points: int = 40000,
-    ):
+    ) -> None:
         super().__init__()
 
         self.feature_extractor = FeatureExtractor(backbone=backbone, pre_trained=pre_trained, layers=layers).eval()

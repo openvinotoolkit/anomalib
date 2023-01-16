@@ -4,11 +4,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import List, Union
+from typing import Dict, List, Optional, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
+from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -44,7 +45,7 @@ class Dfkde(AnomalyModule):
         n_pca_components: int = 16,
         feature_scaling_method: FeatureScalingMethod = FeatureScalingMethod.SCALE,
         max_training_points: int = 40000,
-    ):
+    ) -> None:
         super().__init__()
 
         self.model = DfkdeModel(
@@ -59,16 +60,15 @@ class Dfkde(AnomalyModule):
         self.embeddings: List[Tensor] = []
 
     @staticmethod
-    def configure_optimizers():  # pylint: disable=arguments-differ
+    def configure_optimizers() -> None:  # pylint: disable=arguments-differ
         """DFKDE doesn't require optimization, therefore returns no optimizers."""
         return None
 
-    def training_step(self, batch, _batch_idx):  # pylint: disable=arguments-differ
+    def training_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
         """Training Step of DFKDE. For each batch, features are extracted from the CNN.
 
         Args:
-            batch (Dict[str, Any]): Batch containing image filename, image, label and mask
-            _batch_idx: Index of the batch.
+            batch (batch: Dict[str, Union[str, Tensor]]): Batch containing image filename, image, label and mask
 
         Returns:
           Deep CNN features.
@@ -92,7 +92,7 @@ class Dfkde(AnomalyModule):
         logger.info("Fitting a KDE model to the embedding collected from the training set.")
         self.model.classifier.fit(embeddings)
 
-    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
+    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Optional[STEP_OUTPUT]:
         """Validation Step of DFKDE.
 
         Similar to the training step, features are extracted from the CNN for each batch.
