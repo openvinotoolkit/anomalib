@@ -147,7 +147,7 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
     return callbacks
 
 
-def add_visualizer_callback(callbacks: List[Callback], config: Union[DictConfig, ListConfig]):
+def add_visualizer_callback(callbacks: List[Callback], config: Union[DictConfig, ListConfig]) -> None:
     """Configure the visualizer callback based on the config and add it to the list of callbacks.
 
     Args:
