@@ -4,11 +4,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
+from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -45,7 +46,7 @@ class Dfm(AnomalyModule):
         pooling_kernel_size: int = 4,
         pca_level: float = 0.97,
         score_type: str = "fre",
-    ):
+    ) -> None:
         super().__init__()
 
         self.model: DFMModel = DFMModel(
@@ -65,7 +66,7 @@ class Dfm(AnomalyModule):
         """DFM doesn't require optimization, therefore returns no optimizers."""
         return None
 
-    def training_step(self, batch, _):  # pylint: disable=arguments-differ
+    def training_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> None:
         """Training Step of DFM.
 
         For each batch, features are extracted from the CNN.
@@ -96,13 +97,13 @@ class Dfm(AnomalyModule):
         logger.info("Fitting a PCA and a Gaussian model to dataset.")
         self.model.fit(embeddings)
 
-    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
+    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Optional[STEP_OUTPUT]:
         """Validation Step of DFM.
 
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
-          batch (List[Dict[str, Any]]): Input batch
+          batch (Dict[str, Union[str, Tensor]]): Input batch
 
         Returns:
           Dictionary containing FRE anomaly scores and anomaly maps.
