@@ -20,7 +20,7 @@ from anomalib.models.components.layers import SSPCAB
 class DraemModel(nn.Module):
     """DRAEM PyTorch model consisting of the reconstructive and discriminative sub networks."""
 
-    def __init__(self, sspcab: bool = False):
+    def __init__(self, sspcab: bool = False) -> None:
         super().__init__()
         self.reconstructive_subnetwork = ReconstructiveSubNetwork(sspcab=sspcab)
         self.discriminative_subnetwork = DiscriminativeSubNetwork(in_channels=6, out_channels=2)
@@ -52,7 +52,7 @@ class ReconstructiveSubNetwork(nn.Module):
         base_width (int): Base dimensionality of the layers of the autoencoder.
     """
 
-    def __init__(self, in_channels: int = 3, out_channels: int = 3, base_width=128, sspcab: bool = False):
+    def __init__(self, in_channels: int = 3, out_channels: int = 3, base_width=128, sspcab: bool = False) -> None:
         super().__init__()
         self.encoder = EncoderReconstructive(in_channels, base_width, sspcab=sspcab)
         self.decoder = DecoderReconstructive(base_width, out_channels=out_channels)
@@ -80,7 +80,7 @@ class DiscriminativeSubNetwork(nn.Module):
         base_width (int): Base dimensionality of the layers of the autoencoder.
     """
 
-    def __init__(self, in_channels: int = 3, out_channels: int = 3, base_width: int = 64):
+    def __init__(self, in_channels: int = 3, out_channels: int = 3, base_width: int = 64) -> None:
         super().__init__()
         self.encoder_segment = EncoderDiscriminative(in_channels, base_width)
         self.decoder_segment = DecoderDiscriminative(base_width, out_channels=out_channels)
@@ -108,7 +108,7 @@ class EncoderDiscriminative(nn.Module):
         base_width (int): Base dimensionality of the layers of the autoencoder.
     """
 
-    def __init__(self, in_channels: int, base_width: int):
+    def __init__(self, in_channels: int, base_width: int) -> None:
         super().__init__()
         self.block1 = nn.Sequential(
             nn.Conv2d(in_channels, base_width, kernel_size=3, padding=1),
@@ -197,7 +197,7 @@ class DecoderDiscriminative(nn.Module):
         out_channels (int): Number of output channels.
     """
 
-    def __init__(self, base_width: int, out_channels: int = 1):
+    def __init__(self, base_width: int, out_channels: int = 1) -> None:
         super().__init__()
 
         self.up_b = nn.Sequential(
@@ -323,7 +323,7 @@ class EncoderReconstructive(nn.Module):
         base_width (int): Base dimensionality of the layers of the autoencoder.
     """
 
-    def __init__(self, in_channels: int, base_width: int, sspcab: bool = False):
+    def __init__(self, in_channels: int, base_width: int, sspcab: bool = False) -> None:
         super().__init__()
         self.block1 = nn.Sequential(
             nn.Conv2d(in_channels, base_width, kernel_size=3, padding=1),
@@ -402,7 +402,7 @@ class DecoderReconstructive(nn.Module):
         out_channels (int): Number of output channels.
     """
 
-    def __init__(self, base_width: int, out_channels: int = 1):
+    def __init__(self, base_width: int, out_channels: int = 1) -> None:
         super().__init__()
 
         self.up1 = nn.Sequential(

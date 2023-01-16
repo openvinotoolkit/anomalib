@@ -6,12 +6,13 @@ Paper https://arxiv.org/abs/2108.07610
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Callable, Dict, Optional, Union
+from typing import Callable, Dict, List, Optional, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
+from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor, nn
 
 from anomalib.data.utils import Augmenter
@@ -33,7 +34,7 @@ class Draem(AnomalyModule):
 
     def __init__(
         self, enable_sspcab: bool = False, sspcab_lambda: float = 0.1, anomaly_source_path: Optional[str] = None
-    ):
+    ) -> None:
         super().__init__()
 
         self.augmenter = Augmenter(anomaly_source_path)
@@ -47,7 +48,7 @@ class Draem(AnomalyModule):
             self.sspcab_loss = nn.MSELoss()
             self.sspcab_lambda = sspcab_lambda
 
-    def setup_sspcab(self):
+    def setup_sspcab(self) -> None:
         """Prepare the model for the SSPCAB training step by adding forward hooks for the SSPCAB layer activations."""
 
         def get_activation(name: str) -> Callable:
@@ -57,7 +58,7 @@ class Draem(AnomalyModule):
                 name (str): Identifier for the retrieved activations.
             """
 
-            def hook(_, __, output: Tensor):
+            def hook(_, __, output: Tensor) -> None:
                 """Hook for retrieving the activations."""
                 self.sspcab_activations[name] = output
 
@@ -66,14 +67,14 @@ class Draem(AnomalyModule):
         self.model.reconstructive_subnetwork.encoder.mp4.register_forward_hook(get_activation("input"))
         self.model.reconstructive_subnetwork.encoder.block5.register_forward_hook(get_activation("output"))
 
-    def training_step(self, batch, _):  # pylint: disable=arguments-differ
+    def training_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
         """Training Step of DRAEM.
 
         Feeds the original image and the simulated anomaly
         image through the network and computes the training loss.
 
         Args:
-            batch (Dict[str, Any]): Batch containing image filename, image, label and mask
+            batch (batch: Dict[str, Union[str, Tensor]]): Batch containing image filename, image, label and mask
 
         Returns:
             Loss dictionary
@@ -94,7 +95,7 @@ class Draem(AnomalyModule):
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch, _):
+    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Optional[STEP_OUTPUT]:
         """Validation step of DRAEM. The Softmax predictions of the anomalous class are used as anomaly map.
 
         Args:
@@ -115,7 +116,7 @@ class DraemLightning(Draem):
         hparams (Union[DictConfig, ListConfig]): Model parameters
     """
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]):
+    def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
         super().__init__(
             enable_sspcab=hparams.model.enable_sspcab,
             sspcab_lambda=hparams.model.sspcab_lambda,
@@ -124,7 +125,7 @@ class DraemLightning(Draem):
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(hparams)
 
-    def configure_callbacks(self):
+    def configure_callbacks(self) -> List[EarlyStopping]:
         """Configure model-specific callbacks.
 
         Note:
@@ -140,6 +141,6 @@ class DraemLightning(Draem):
         )
         return [early_stopping]
 
-    def configure_optimizers(self):  # pylint: disable=arguments-differ
+    def configure_optimizers(self):
         """Configure the Adam optimizer."""
         return torch.optim.Adam(params=self.model.parameters(), lr=self.hparams.model.lr)
