@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Tuple
+from typing import Any, List, Tuple
 
 import einops
 import torch
@@ -29,7 +29,7 @@ class CflowModel(nn.Module):
         coupling_blocks: int = 8,
         clamp_alpha: float = 1.9,
         permute_soft: bool = False,
-    ):
+    ) -> None:
         super().__init__()
 
         self.backbone = backbone
@@ -59,7 +59,7 @@ class CflowModel(nn.Module):
 
         self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(input_size), pool_layers=self.pool_layers)
 
-    def forward(self, images):
+    def forward(self, images) -> Any:
         """Forward-pass images into the network to extract encoder features and compute probability.
 
         Args:

@@ -18,7 +18,7 @@ class AnomalyMapGenerator(nn.Module):
         self,
         image_size: Union[ListConfig, Tuple],
         pool_layers: List[str],
-    ):
+    ) -> None:
         super().__init__()
         self.distance = torch.nn.PairwiseDistance(p=2, keepdim=True)
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
