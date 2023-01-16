@@ -11,6 +11,7 @@ from warnings import warn
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning.callbacks.base import Callback
+from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor, nn
 from torchmetrics import Metric
 
@@ -32,7 +33,7 @@ class AnomalyModule(pl.LightningModule, ABC):
     Acts as a base class for all the Anomaly Modules in the library.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         logger.info("Initializing %s model.", self.__class__.__name__)
 
@@ -61,53 +62,56 @@ class AnomalyModule(pl.LightningModule, ABC):
         """
         return self.model(batch)
 
-    def validation_step(self, batch, batch_idx) -> dict:  # type: ignore  # pylint: disable=arguments-differ
+    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Optional[STEP_OUTPUT]:
         """To be implemented in the subclasses."""
         raise NotImplementedError
 
-    def predict_step(self, batch: Any, batch_idx: int, _dataloader_idx: Optional[int] = None) -> Any:
+    def predict_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> Any:
         """Step function called during :meth:`~pytorch_lightning.trainer.trainer.Trainer.predict`.
 
         By default, it calls :meth:`~pytorch_lightning.core.lightning.LightningModule.forward`.
         Override to add any processing logic.
 
         Args:
-            batch (Tensor): Current batch
+            batch (Any): Current batch
             batch_idx (int): Index of current batch
-            _dataloader_idx (int): Index of the current dataloader
+            dataloader_idx (int): Index of the current dataloader
 
         Return:
             Predicted output
         """
-        outputs = self.validation_step(batch, batch_idx)
+        del batch_idx, dataloader_idx  # These variables are not used.
+
+        outputs = self.validation_step(batch)
         self._post_process(outputs)
-        outputs["pred_labels"] = outputs["pred_scores"] >= self.image_threshold.value
-        if "anomaly_maps" in outputs.keys():
-            outputs["pred_masks"] = outputs["anomaly_maps"] >= self.pixel_threshold.value
-            if "pred_boxes" not in outputs.keys():
-                outputs["pred_boxes"], outputs["box_scores"] = masks_to_boxes(
-                    outputs["pred_masks"], outputs["anomaly_maps"]
-                )
-                outputs["box_labels"] = [torch.ones(boxes.shape[0]) for boxes in outputs["pred_boxes"]]
-        # apply thresholding to boxes
-        if "box_scores" in outputs and "box_labels" not in outputs:
-            # apply threshold to assign normal/anomalous label to boxes
-            is_anomalous = [scores > self.pixel_threshold.value for scores in outputs["box_scores"]]
-            outputs["box_labels"] = [labels.int() for labels in is_anomalous]
+        if outputs is not None:
+            outputs["pred_labels"] = outputs["pred_scores"] >= self.image_threshold.value
+            if "anomaly_maps" in outputs.keys():
+                outputs["pred_masks"] = outputs["anomaly_maps"] >= self.pixel_threshold.value
+                if "pred_boxes" not in outputs.keys():
+                    outputs["pred_boxes"], outputs["box_scores"] = masks_to_boxes(
+                        outputs["pred_masks"], outputs["anomaly_maps"]
+                    )
+                    outputs["box_labels"] = [torch.ones(boxes.shape[0]) for boxes in outputs["pred_boxes"]]
+            # apply thresholding to boxes
+            if "box_scores" in outputs and "box_labels" not in outputs:
+                # apply threshold to assign normal/anomalous label to boxes
+                is_anomalous = [scores > self.pixel_threshold.value for scores in outputs["box_scores"]]
+                outputs["box_labels"] = [labels.int() for labels in is_anomalous]
         return outputs
 
-    def test_step(self, batch, _):  # pylint: disable=arguments-differ
+    def test_step(self, batch: Dict[str, Union[str, Tensor]], batch_idx: int, *args, **kwargs) -> Optional[STEP_OUTPUT]:
         """Calls validation_step for anomaly map/score calculation.
 
         Args:
           batch (Tensor): Input batch
-          _: Index of the batch.
+          batch_idx (int): Batch index
 
         Returns:
           Dictionary containing images, features, true labels and masks.
           These are required in `validation_epoch_end` for feature concatenation.
         """
-        return self.predict_step(batch, _)
+        return self.predict_step(batch, batch_idx)
 
     def validation_step_end(self, val_step_outputs):  # pylint: disable=arguments-differ
         """Called at the end of each validation step."""

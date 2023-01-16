@@ -7,12 +7,13 @@ https://arxiv.org/pdf/2110.02855.pdf
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import Dict, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
+from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -44,7 +45,7 @@ class Csflow(AnomalyModule):
         n_coupling_blocks: int,
         clamp: int,
         num_channels: int,
-    ):
+    ) -> None:
         super().__init__()
         self.model: CsFlowModel = CsFlowModel(
             input_size=input_size,
@@ -71,7 +72,7 @@ class Csflow(AnomalyModule):
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch, _) -> Dict[str, Tensor]:
+    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Optional[STEP_OUTPUT]:
         """Validation step for CS Flow.
 
         Args:
@@ -93,7 +94,7 @@ class CsflowLightning(Csflow):
         hprams (Union[DictConfig, ListConfig]): Model params
     """
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]):
+    def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
         super().__init__(
             input_size=hparams.model.input_size,
             n_coupling_blocks=hparams.model.n_coupling_blocks,
@@ -104,7 +105,7 @@ class CsflowLightning(Csflow):
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(hparams)
 
-    def configure_callbacks(self):
+    def configure_callbacks(self) -> List[EarlyStopping]:
         """Configure model-specific callbacks.
 
         Note:

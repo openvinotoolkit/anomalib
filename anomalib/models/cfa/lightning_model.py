@@ -9,7 +9,7 @@ Paper https://arxiv.org/abs/2206.04325
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
@@ -86,7 +86,7 @@ class Cfa(AnomalyModule):
         loss = self.loss_func(distance)
         return {"loss": loss}
 
-    def validation_step(self, batch, batch_idx) -> dict:
+    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Optional[STEP_OUTPUT]:
         """Validation step for the CFA model.
 
         Args:
@@ -99,7 +99,6 @@ class Cfa(AnomalyModule):
         batch["anomaly_maps"] = self.model(batch["image"])
         return batch
 
-    # pylint: disable=unused-argument
     def backward(
         self, loss: Tensor, optimizer: Optional[Optimizer], optimizer_idx: Optional[int], *args, **kwargs
     ) -> None:
@@ -110,6 +109,7 @@ class Cfa(AnomalyModule):
             optimizer (Optional[Optimizer]): Optimizer.
             optimizer_idx (Optional[int]): Optimizer index.
         """
+        del optimizer, optimizer_idx  # These variables are not used.
         # TODO: Investigate why retain_graph is needed.
         loss.backward(retain_graph=True)
 
