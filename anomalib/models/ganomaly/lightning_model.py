@@ -7,12 +7,13 @@ https://arxiv.org/abs/1805.06725
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
+from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor, optim
 
 from anomalib.models.components import AnomalyModule
@@ -53,7 +54,7 @@ class Ganomaly(AnomalyModule):
         lr: float = 0.0002,
         beta1: float = 0.5,
         beta2: float = 0.999,
-    ):
+    ) -> None:
         super().__init__()
 
         self.model: GanomalyModel = GanomalyModel(
@@ -80,7 +81,7 @@ class Ganomaly(AnomalyModule):
         self.beta1 = beta1
         self.beta2 = beta2
 
-    def _reset_min_max(self):
+    def _reset_min_max(self) -> None:
         """Resets min_max scores."""
         self.min_scores = torch.tensor(float("inf"), dtype=torch.float32)  # pylint: disable=not-callable
         self.max_scores = torch.tensor(float("-inf"), dtype=torch.float32)  # pylint: disable=not-callable
@@ -109,15 +110,14 @@ class Ganomaly(AnomalyModule):
         )
         return [optimizer_d, optimizer_g]
 
-    def training_step(self, batch, _, optimizer_idx):  # pylint: disable=arguments-differ
+    def training_step(self, batch: Dict[str, Union[str, Tensor]], optimizer_idx: int, *args, **kwargs) -> STEP_OUTPUT:
         """Training step.
 
         Args:
-            batch (Dict): Input batch containing images.
-            optimizer_idx (int): Optimizer which is being called for current training step.
+            batch (Dict[str, Union[str, Tensor]]): Input batch containing images.
 
         Returns:
-            Dict[str, Tensor]: Loss
+            STEP_OUTPUT: Loss
         """
         # forward pass
         padded, fake, latent_i, latent_o = self.model(batch["image"])
@@ -138,7 +138,7 @@ class Ganomaly(AnomalyModule):
         self._reset_min_max()
         return super().on_validation_start()
 
-    def validation_step(self, batch, _) -> Dict[str, Tensor]:  # type: ignore # pylint: disable=arguments-differ
+    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Optional[STEP_OUTPUT]:
         """Update min and max scores from the current step.
 
         Args:
@@ -165,9 +165,9 @@ class Ganomaly(AnomalyModule):
         self._reset_min_max()
         return super().on_test_start()
 
-    def test_step(self, batch, _):
+    def test_step(self, batch: Dict[str, Union[str, Tensor]], batch_idx: int, *args, **kwargs) -> Optional[STEP_OUTPUT]:
         """Update min and max scores from the current step."""
-        super().test_step(batch, _)
+        super().test_step(batch, batch_idx)
         self.max_scores = max(self.max_scores, torch.max(batch["pred_scores"]))
         self.min_scores = min(self.min_scores, torch.min(batch["pred_scores"]))
         return batch
@@ -221,7 +221,7 @@ class GanomalyLightning(Ganomaly):
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(hparams)
 
-    def configure_callbacks(self):
+    def configure_callbacks(self) -> List[EarlyStopping]:
         """Configure model-specific callbacks.
 
         Note:
