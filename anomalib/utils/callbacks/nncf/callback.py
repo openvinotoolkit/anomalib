@@ -29,18 +29,19 @@ class NNCFCallback(Callback):
                           If None model will not be exported.
     """
 
-    def __init__(self, config: Dict, export_dir: str = None):
+    def __init__(self, config: Dict, export_dir: Optional[str] = None) -> None:
         self.export_dir = export_dir
         self.config = NNCFConfig(config)
         self.nncf_ctrl: Optional[CompressionAlgorithmController] = None
 
-    # pylint: disable=unused-argument
     def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: Optional[str] = None) -> None:
         """Call when fit or test begins.
 
         Takes the pytorch model and wraps it using the compression controller
         so that it is ready for nncf fine-tuning.
         """
+        del stage  # `stage` variable is not used.
+
         if self.nncf_ctrl is not None:
             return
 
@@ -54,33 +55,34 @@ class NNCFCallback(Callback):
         )
 
     def on_train_batch_start(
-        self,
-        trainer: pl.Trainer,
-        _pl_module: pl.LightningModule,
-        _batch: Any,
-        _batch_idx: int,
-        _unused: Optional[int] = 0,
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule, batch: Any, batch_idx: int, unused: int = 0
     ) -> None:
         """Call when the train batch begins.
 
         Prepare compression method to continue training the model in the next step.
         """
+        del trainer, pl_module, batch, batch_idx, unused  # These variables are not used.
+
         if self.nncf_ctrl:
             self.nncf_ctrl.scheduler.step()
 
-    def on_train_epoch_start(self, _trainer: pl.Trainer, _pl_module: pl.LightningModule) -> None:
+    def on_train_epoch_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
         """Call when the train epoch starts.
 
         Prepare compression method to continue training the model in the next epoch.
         """
+        del trainer, pl_module  # `trainer` and `pl_module` variables are not used.
+
         if self.nncf_ctrl:
             self.nncf_ctrl.scheduler.epoch_step()
 
-    def on_train_end(self, _trainer: pl.Trainer, _pl_module: pl.LightningModule) -> None:
+    def on_train_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
         """Call when the train ends.
 
         Exports onnx model and if compression controller is not None, uses the onnx model to generate the OpenVINO IR.
         """
+        del trainer, pl_module  # `trainer` and `pl_module` variables are not used.
+
         if self.export_dir is None or self.nncf_ctrl is None:
             return
 
