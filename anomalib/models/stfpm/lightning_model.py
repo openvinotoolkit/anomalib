@@ -6,13 +6,14 @@ https://arxiv.org/abs/2103.04257
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
-from torch import optim
+from pytorch_lightning.utilities.types import STEP_OUTPUT
+from torch import Tensor, optim
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.stfpm.loss import STFPMLoss
@@ -36,7 +37,7 @@ class Stfpm(AnomalyModule):
         input_size: Tuple[int, int],
         backbone: str,
         layers: List[str],
-    ):
+    ) -> None:
         super().__init__()
 
         self.model = STFPMModel(
@@ -46,7 +47,7 @@ class Stfpm(AnomalyModule):
         )
         self.loss = STFPMLoss()
 
-    def training_step(self, batch, _):  # pylint: disable=arguments-differ
+    def training_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
         """Training Step of STFPM.
 
         For each batch, teacher and student and teacher features are extracted from the CNN.
@@ -64,15 +65,14 @@ class Stfpm(AnomalyModule):
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
+    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Optional[STEP_OUTPUT]:
         """Validation Step of STFPM.
 
         Similar to the training step, student/teacher features are extracted from the CNN for each batch, and
         anomaly map is computed.
 
         Args:
-          batch (Tensor): Input batch
-          _: Index of the batch.
+          batch (Dict[str, Union[str, Tensor]]): Input batch
 
         Returns:
           Dictionary containing images, anomaly maps, true labels and masks.
@@ -99,7 +99,7 @@ class StfpmLightning(Stfpm):
         self.hparams: Union[DictConfig, ListConfig]  # type: ignore
         self.save_hyperparameters(hparams)
 
-    def configure_callbacks(self):
+    def configure_callbacks(self) -> List[EarlyStopping]:
         """Configure model-specific callbacks.
 
         Note:

@@ -30,7 +30,7 @@ class STFPMLoss(nn.Module):
             tensor(51.2015, grad_fn=<SumBackward0>)
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.mse_loss = nn.MSELoss(reduction="sum")
 

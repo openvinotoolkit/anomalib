@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 from torch import Tensor, nn
 
@@ -26,7 +26,7 @@ class STFPMModel(nn.Module):
         layers: List[str],
         input_size: Tuple[int, int],
         backbone: str = "resnet18",
-    ):
+    ) -> None:
         super().__init__()
         self.tiler: Optional[Tiler] = None
 
@@ -48,7 +48,7 @@ class STFPMModel(nn.Module):
             image_size = input_size
         self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(image_size))
 
-    def forward(self, images):
+    def forward(self, images: Tensor) -> Union[Tuple[Dict[str, Tensor], Dict[str, Tensor]], Tensor]:
         """Forward-pass images into the network.
 
         During the training mode the model extracts the features from the teacher and student networks.
