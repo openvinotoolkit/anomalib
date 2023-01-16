@@ -21,7 +21,7 @@ class AnomalyMapGenerator(nn.Module):
         sigma (int, optional): Standard deviation for Gaussian Kernel. Defaults to 4.
     """
 
-    def __init__(self, image_size: Union[ListConfig, Tuple], sigma: int = 4):
+    def __init__(self, image_size: Union[ListConfig, Tuple], sigma: int = 4) -> None:
         super().__init__()
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
         kernel_size = 2 * int(4.0 * sigma + 0.5) + 1
@@ -109,7 +109,7 @@ class AnomalyMapGenerator(nn.Module):
 
         return smoothed_anomaly_map
 
-    def forward(self, **kwargs):
+    def forward(self, **kwargs) -> Tensor:
         """Returns anomaly_map.
 
         Expects `embedding`, `mean` and `covariance` keywords to be passed explicitly.

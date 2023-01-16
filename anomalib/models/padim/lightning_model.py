@@ -7,11 +7,12 @@ Paper https://arxiv.org/abs/2011.08785
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
+from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -42,7 +43,7 @@ class Padim(AnomalyModule):
         backbone: str,
         pre_trained: bool = True,
         n_features: Optional[int] = None,
-    ):
+    ) -> None:
         super().__init__()
 
         self.layers = layers
@@ -58,11 +59,11 @@ class Padim(AnomalyModule):
         self.embeddings: List[Tensor] = []
 
     @staticmethod
-    def configure_optimizers():  # pylint: disable=arguments-differ
+    def configure_optimizers() -> None:  # pylint: disable=arguments-differ
         """PADIM doesn't require optimization, therefore returns no optimizers."""
         return None
 
-    def training_step(self, batch, _batch_idx):  # pylint: disable=arguments-differ
+    def training_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> None:
         """Training Step of PADIM. For each batch, hierarchical features are extracted from the CNN.
 
         Args:
@@ -92,14 +93,13 @@ class Padim(AnomalyModule):
         logger.info("Fitting a Gaussian to the embedding collected from the training set.")
         self.stats = self.model.gaussian.fit(embeddings)
 
-    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
+    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Optional[STEP_OUTPUT]:
         """Validation Step of PADIM.
 
         Similar to the training step, hierarchical features are extracted from the CNN for each batch.
 
         Args:
             batch: Input batch
-            _: Index of the batch.
 
         Returns:
             Dictionary containing images, features, true labels and masks.

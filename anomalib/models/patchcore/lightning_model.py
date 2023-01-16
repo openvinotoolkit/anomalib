@@ -7,11 +7,12 @@ Paper https://arxiv.org/abs/2106.08265.
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
+from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -63,11 +64,11 @@ class Patchcore(AnomalyModule):
         """
         return None
 
-    def training_step(self, batch, _batch_idx):  # pylint: disable=arguments-differ
+    def training_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> None:
         """Generate feature embedding of the batch.
 
         Args:
-            batch (Dict[str, Any]): Batch containing image filename, image, label and mask
+            batch (Dict[str, Union[str, Tensor]]): Batch containing image filename, image, label and mask
             _batch_idx (int): Batch Index
 
         Returns:
@@ -93,13 +94,12 @@ class Patchcore(AnomalyModule):
         logger.info("Applying core-set subsampling to get the embedding.")
         self.model.subsample_embedding(embeddings, self.coreset_sampling_ratio)
 
-    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
+    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Optional[STEP_OUTPUT]:
         """Get batch of anomaly maps from input image batch.
 
         Args:
-            batch (Dict[str, Any]): Batch containing image filename,
-                                    image, label and mask
-            _ (int): Batch Index
+            batch (Dict[str, Union[str, Tensor]]): Batch containing image filename,
+                image, label and mask
 
         Returns:
             Dict[str, Any]: Image filenames, test images, GT and predicted label/masks

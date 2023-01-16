@@ -64,7 +64,7 @@ class PadimModel(nn.Module):
         backbone: str = "resnet18",
         pre_trained: bool = True,
         n_features: Optional[int] = None,
-    ):
+    ) -> None:
         super().__init__()
         self.tiler: Optional[Tiler] = None
 
