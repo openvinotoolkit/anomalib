@@ -241,7 +241,7 @@ def download_and_extract(root: Path, info: DownloadInfo):
     if downloaded_file_path.suffix == ".zip":
         with ZipFile(downloaded_file_path, "r") as zip_file:
             zip_file.extractall(root)
-    elif downloaded_file_path.suffix in [".tar", ".gz"]:
+    elif downloaded_file_path.suffix in [".tar", ".gz", ".xz"]:
         with tarfile.open(downloaded_file_path) as tar_file:
             tar_file.extractall(root)
     else:
