@@ -170,7 +170,7 @@ class BTechDataset(AnomalibDataset):
         self.root_category = Path(root) / category
         self.split = split
 
-    def _setup(self):
+    def _setup(self) -> None:
         self.samples = make_btech_dataset(path=self.root_category, split=self.split)
 
 

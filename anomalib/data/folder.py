@@ -100,7 +100,7 @@ def make_folder_dataset(
     mask_dir: Optional[Union[str, Path]] = None,
     split: Optional[Union[Split, str]] = None,
     extensions: Optional[Tuple[str, ...]] = None,
-):
+) -> DataFrame:
     """Make Folder Dataset.
 
     Args:
@@ -227,7 +227,7 @@ class FolderDataset(AnomalibDataset):
         self.mask_dir = mask_dir
         self.extensions = extensions
 
-    def _setup(self):
+    def _setup(self) -> None:
         """Assign samples."""
         self.samples = make_folder_dataset(
             root=self.root,
@@ -304,7 +304,7 @@ class Folder(AnomalibDataModule):
         val_split_mode: ValSplitMode = ValSplitMode.FROM_TEST,
         val_split_ratio: float = 0.5,
         seed: Optional[int] = None,
-    ):
+    ) -> None:
         super().__init__(
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,

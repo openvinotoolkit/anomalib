@@ -150,15 +150,15 @@ class AvenueDataset(AnomalibVideoDataset):
         split: Split,
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
-    ):
+    ) -> None:
         super().__init__(task, transform, clip_length_in_frames, frames_between_clips)
 
-        self.root = root
-        self.gt_dir = gt_dir
+        self.root = root if isinstance(root, Path) else Path(root)
+        self.gt_dir = Path(gt_dir)
         self.split = split
         self.indexer_cls: Callable = AvenueClipsIndexer
 
-    def _setup(self):
+    def _setup(self) -> None:
         """Create and assign samples."""
         self.samples = make_avenue_dataset(self.root, self.gt_dir, self.split)
 
@@ -209,7 +209,7 @@ class Avenue(AnomalibVideoDataModule):
         val_split_mode: ValSplitMode = ValSplitMode.FROM_TEST,
         val_split_ratio: float = 0.5,
         seed: Optional[int] = None,
-    ):
+    ) -> None:
         super().__init__(
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
@@ -275,7 +275,7 @@ class Avenue(AnomalibVideoDataModule):
             self._convert_masks(self.gt_dir)
 
     @staticmethod
-    def _convert_masks(gt_dir: Path):
+    def _convert_masks(gt_dir: Path) -> None:
         """Convert mask files to .png.
 
         The masks in the Avenue datasets are provided as matlab (.mat) files. To speed up data loading, we convert the
