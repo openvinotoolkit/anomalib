@@ -109,7 +109,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         source_samples (DataFrame): Normal samples to which the anomalous augmentations will be applied.
     """
 
-    def __init__(self, task: TaskType, transform: A.Compose, source_samples: DataFrame):
+    def __init__(self, task: TaskType, transform: A.Compose, source_samples: DataFrame) -> None:
         super().__init__(task, transform)
 
         self.source_samples = source_samples
@@ -161,7 +161,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         logger.info("Generating synthetic anomalous images for validation set")
         self.samples = make_synthetic_dataset(self.source_samples, self.im_dir, self.mask_dir, 0.5)
 
-    def __del__(self):
+    def __del__(self) -> None:
         """Make sure the temporary directory is cleaned up when the dataset object is deleted."""
         if self._cleanup:
             shutil.rmtree(self.root)

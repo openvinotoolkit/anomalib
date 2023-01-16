@@ -164,14 +164,14 @@ class UCSDpedDataset(AnomalibVideoDataset):
         split: Split,
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
-    ):
+    ) -> None:
         super().__init__(task, transform, clip_length_in_frames, frames_between_clips)
 
         self.root_category = Path(root) / category
         self.split = split
         self.indexer_cls: Callable = UCSDpedClipsIndexer
 
-    def _setup(self):
+    def _setup(self) -> None:
         """Create and assign samples."""
         self.samples = make_ucsd_dataset(self.root_category, self.split)
 
@@ -225,7 +225,7 @@ class UCSDped(AnomalibVideoDataModule):
         val_split_mode: ValSplitMode = ValSplitMode.FROM_TEST,
         val_split_ratio: float = 0.5,
         seed: Optional[int] = None,
-    ):
+    ) -> None:
         super().__init__(
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,
