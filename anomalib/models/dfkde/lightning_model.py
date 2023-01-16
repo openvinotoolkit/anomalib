@@ -64,7 +64,7 @@ class Dfkde(AnomalyModule):
         """DFKDE doesn't require optimization, therefore returns no optimizers."""
         return None
 
-    def training_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
+    def training_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> None:
         """Training Step of DFKDE. For each batch, features are extracted from the CNN.
 
         Args:
