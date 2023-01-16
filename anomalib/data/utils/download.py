@@ -183,7 +183,7 @@ class DownloadProgressBar(tqdm):
         )
         self.total: Optional[Union[int, float]]
 
-    def update_to(self, chunk_number: int = 1, max_chunk_size: int = 1, total_size=None):
+    def update_to(self, chunk_number: int = 1, max_chunk_size: int = 1, total_size=None) -> None:
         """Progress bar hook for tqdm.
 
         Based on https://stackoverflow.com/a/53877507
@@ -200,7 +200,7 @@ class DownloadProgressBar(tqdm):
         self.update(chunk_number * max_chunk_size - self.n)
 
 
-def hash_check(file_path: Path, expected_hash: str):
+def hash_check(file_path: Path, expected_hash: str) -> None:
     """Raise assert error if hash does not match the calculated hash of the file.
 
     Args:
@@ -213,7 +213,7 @@ def hash_check(file_path: Path, expected_hash: str):
         ), f"Downloaded file {file_path} does not match the required hash."
 
 
-def download_and_extract(root: Path, info: DownloadInfo):
+def download_and_extract(root: Path, info: DownloadInfo) -> None:
     """Download and extract a dataset.
 
     Args:
