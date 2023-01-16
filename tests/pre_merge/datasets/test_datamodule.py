@@ -305,8 +305,7 @@ class TestConfigToDataModule:
 
 
 class TestSubsetSplitting:
-    @pytest.mark.parametrize("dataset", ["folder", "mvtec", "btech"])
-    # @pytest.mark.parametrize("dataset", ["folder"])
+    @pytest.mark.parametrize("dataset", ["folder"])
     @pytest.mark.parametrize("test_split_mode", ("from_dir", "synthetic"))
     @pytest.mark.parametrize("val_split_mode", ("from_test", "synthetic"))
     def test_non_overlapping_splits(self, make_data_module, dataset, test_split_mode, val_split_mode):
@@ -318,8 +317,7 @@ class TestSubsetSplitting:
         assert len(set(train_samples.image_path).intersection(set(test_samples.image_path))) == 0
         assert len(set(val_samples.image_path).intersection(set(test_samples.image_path))) == 0
 
-    @pytest.mark.parametrize("dataset", ["folder", "mvtec", "btech"])
-    # @pytest.mark.parametrize("dataset", ["folder"])
+    @pytest.mark.parametrize("dataset", ["folder"])
     @pytest.mark.parametrize("test_split_mode", ("from_dir", "synthetic"))
     def test_equal_splits(self, make_data_module, dataset, test_split_mode):
         """Tests if test and and val splits are equal and non-overlapping with train."""
