@@ -63,7 +63,7 @@ def flatten_sweep_params(params_dict: DictConfig) -> DictConfig:
         flattened version of the parameter dictionary.
     """
 
-    def flatten_nested_dict(nested_params: DictConfig, keys: List[str], flattened_params: DictConfig):
+    def flatten_nested_dict(nested_params: DictConfig, keys: List[str], flattened_params: DictConfig) -> None:
         """Flatten nested dictionary.
 
         Recursive helper function that traverses the nested config object and stores the leaf nodes in a flattened
@@ -133,7 +133,7 @@ def get_from_nested_config(config: DictConfig, keymap: List) -> Any:
     return reduce(operator.getitem, keymap, config)
 
 
-def set_in_nested_config(config: DictConfig, keymap: List, value: Any):
+def set_in_nested_config(config: DictConfig, keymap: List, value: Any) -> None:
     """Set an item in a nested config object using a list of keys.
 
     Args:

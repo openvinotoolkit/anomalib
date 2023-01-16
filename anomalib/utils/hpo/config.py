@@ -18,7 +18,7 @@ def flatten_hpo_params(params_dict: DictConfig) -> DictConfig:
         flattened version of the parameter dictionary.
     """
 
-    def process_params(nested_params: DictConfig, keys: List[str], flattened_params: DictConfig):
+    def process_params(nested_params: DictConfig, keys: List[str], flattened_params: DictConfig) -> None:
         """Flatten nested dictionary till the time it reaches the hpo params.
 
         Recursive helper function that traverses the nested config object and stores the leaf nodes in a flattened

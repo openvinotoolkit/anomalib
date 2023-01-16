@@ -93,7 +93,7 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
         self.experiment.log_other("Created from", "Anomalib")
 
     @rank_zero_only
-    def add_image(self, image: Union[np.ndarray, Figure], name: Optional[str] = None, **kwargs: Any):
+    def add_image(self, image: Union[np.ndarray, Figure], name: Optional[str] = None, **kwargs: Any) -> None:
         """Interface to add image to comet logger.
 
         Args:

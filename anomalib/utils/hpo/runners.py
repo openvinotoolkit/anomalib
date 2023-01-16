@@ -47,7 +47,7 @@ class WandbSweep:
             if isinstance(self.sweep_config, DictConfig):
                 self.sweep_config.pop("observation_budget")
 
-    def run(self):
+    def run(self) -> None:
         """Run the sweep."""
         flattened_hpo_params = flatten_hpo_params(self.sweep_config.parameters)
         self.sweep_config.parameters = flattened_hpo_params
@@ -58,7 +58,7 @@ class WandbSweep:
         )
         wandb.agent(sweep_id, function=self.sweep, count=self.observation_budget)
 
-    def sweep(self):
+    def sweep(self) -> None:
         """Method to load the model, update config and call fit. The metrics are logged to ```wandb``` dashboard."""
         wandb_logger = WandbLogger(config=flatten_sweep_params(self.sweep_config), log_model=False)
         sweep_config = wandb_logger.experiment.config
@@ -97,7 +97,7 @@ class CometSweep:
         self.sweep_config = sweep_config
         self.entity = entity
 
-    def run(self):
+    def run(self) -> None:
         """Run the sweep."""
         flattened_hpo_params = flatten_hpo_params(self.sweep_config.parameters)
         self.sweep_config.parameters = flattened_hpo_params

@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import torch
 from torch import Tensor
@@ -13,10 +13,10 @@ from torchmetrics import Metric
 class AnomalyScoreDistribution(Metric):
     """Mean and standard deviation of the anomaly scores of normal training data."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.anomaly_maps = []
-        self.anomaly_scores = []
+        self.anomaly_maps: List[Tensor] = []
+        self.anomaly_scores: List[Tensor] = []
 
         self.add_state("image_mean", torch.empty(0), persistent=True)
         self.add_state("image_std", torch.empty(0), persistent=True)

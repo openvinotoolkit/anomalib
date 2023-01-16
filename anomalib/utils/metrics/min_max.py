@@ -15,7 +15,7 @@ class MinMax(Metric):
 
     full_state_update: bool = True
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.add_state("min", torch.tensor(float("inf")), persistent=True)  # pylint: disable=not-callable
         self.add_state("max", torch.tensor(float("-inf")), persistent=True)  # pylint: disable=not-callable

@@ -35,7 +35,7 @@ class UnknownLogger(Exception):
     """This is raised when the logger option in `config.yaml` file is set incorrectly."""
 
 
-def configure_logger(level: Union[int, str] = logging.INFO):
+def configure_logger(level: Union[int, str] = logging.INFO) -> None:
     """Get console logger by name.
 
     Args:
