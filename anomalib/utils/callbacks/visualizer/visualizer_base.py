@@ -33,7 +33,7 @@ class BaseVisualizerCallback(Callback):
         show_images: bool = False,
         log_images: bool = True,
         save_images: bool = True,
-    ):
+    ) -> None:
         """Visualizer callback."""
         if mode not in ["full", "simple"]:
             raise ValueError(f"Unknown visualization mode: {mode}. Please choose one of ['full', 'simple']")
@@ -57,7 +57,7 @@ class BaseVisualizerCallback(Callback):
         module: AnomalyModule,
         trainer: pl.Trainer,
         filename: Union[Path, str],
-    ):
+    ) -> None:
         """Log image from a visualizer to each of the available loggers in the project.
 
         Args:
@@ -96,6 +96,8 @@ class BaseVisualizerCallback(Callback):
             trainer (pl.Trainer): Pytorch Lightning trainer
             pl_module (AnomalyModule): Anomaly module (unused)
         """
+        del pl_module  # `pl_module` is not used.
+
         for logger in trainer.loggers:
             if isinstance(logger, AnomalibWandbLogger):
                 logger.save()
