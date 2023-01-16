@@ -7,6 +7,7 @@ import logging
 import os
 from typing import Tuple
 
+import pytorch_lightning as pl
 from pytorch_lightning import Callback
 from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 
@@ -28,18 +29,20 @@ class ExportCallback(Callback):
         filename (str): Name of output model
     """
 
-    def __init__(self, input_size: Tuple[int, int], dirpath: str, filename: str, export_mode: ExportMode):
+    def __init__(self, input_size: Tuple[int, int], dirpath: str, filename: str, export_mode: ExportMode) -> None:
         self.input_size = input_size
         self.dirpath = dirpath
         self.filename = filename
         self.export_mode = export_mode
 
-    def on_train_end(self, trainer, pl_module: AnomalyModule) -> None:  # pylint: disable=W0613
+    def on_train_end(self, trainer: pl.Trainer, pl_module: AnomalyModule) -> None:
         """Call when the train ends.
 
         Converts the model to ``onnx`` format and then calls OpenVINO's model optimizer to get the
         ``.xml`` and ``.bin`` IR files.
         """
+        del trainer  # `trainer` variable is not used.
+
         logger.info("Exporting the model")
         os.makedirs(self.dirpath, exist_ok=True)
         export(
