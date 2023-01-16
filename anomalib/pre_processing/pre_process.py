@@ -9,7 +9,7 @@ to an input image before the forward-pass stage.
 
 import logging
 import warnings
-from typing import Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
@@ -229,6 +229,6 @@ class PreProcessor:
 
         self.transforms = get_transforms(config, image_size, to_tensor)
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> Dict[str, Any]:
         """Return transformed arguments."""
         return self.transforms(*args, **kwargs)

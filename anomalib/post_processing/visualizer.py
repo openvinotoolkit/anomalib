@@ -233,7 +233,7 @@ class ImageGrid:
     must be called to compile the image grid and obtain the final visualization.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.images: List[Dict] = []
         self.figure: matplotlib.figure.Figure
         self.axis: np.ndarray
