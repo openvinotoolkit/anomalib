@@ -13,7 +13,7 @@ from torch import Tensor
 class Denormalize:
     """Denormalize Torch Tensor into np image format."""
 
-    def __init__(self, mean: Optional[List[float]] = None, std: Optional[List[float]] = None):
+    def __init__(self, mean: Optional[List[float]] = None, std: Optional[List[float]] = None) -> None:
         """Denormalize Torch Tensor into np image format.
 
         Args:
@@ -52,7 +52,7 @@ class Denormalize:
         array = (tensor * 255).permute(1, 2, 0).cpu().numpy().astype(np.uint8)
         return array
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Representational string."""
         return self.__class__.__name__ + "()"
 
