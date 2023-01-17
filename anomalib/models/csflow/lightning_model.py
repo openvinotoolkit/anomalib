@@ -57,11 +57,11 @@ class Csflow(AnomalyModule):
         )
         self.loss = CsFlowLoss()
 
-    def training_step(self, batch, _) -> dict[str, Tensor]:
+    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Training Step of CS-Flow.
 
         Args:
-            batch (Tensor): Input batch
+            batch (dict[str, str | Tensor]): Input batch
             _: Index of the batch.
 
         Returns:
