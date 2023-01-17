@@ -33,9 +33,10 @@ class OptimalF1(Metric):
 
         self.threshold: Tensor
 
-    # pylint: disable=arguments-differ
-    def update(self, preds: Tensor, target: Tensor) -> None:  # type: ignore
+    def update(self, preds: Tensor, target: Tensor, *args, **kwargs) -> None:
         """Update the precision-recall curve metric."""
+        del args, kwargs  # These variables are not used.
+
         self.precision_recall_curve.update(preds, target)
 
     def compute(self) -> Tensor:
