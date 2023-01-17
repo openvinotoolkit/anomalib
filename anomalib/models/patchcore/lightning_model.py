@@ -6,8 +6,9 @@ Paper https://arxiv.org/abs/2106.08265.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
-from typing import Dict, List, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
@@ -26,9 +27,9 @@ class Patchcore(AnomalyModule):
     """PatchcoreLightning Module to train PatchCore algorithm.
 
     Args:
-        input_size (Tuple[int, int]): Size of the model input.
+        input_size (tuple[int, int]): Size of the model input.
         backbone (str): Backbone CNN network
-        layers (List[str]): Layers to extract features from the backbone CNN
+        layers (list[str]): Layers to extract features from the backbone CNN
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         coreset_sampling_ratio (float, optional): Coreset sampling ratio to subsample embedding.
             Defaults to 0.1.
@@ -37,9 +38,9 @@ class Patchcore(AnomalyModule):
 
     def __init__(
         self,
-        input_size: Tuple[int, int],
+        input_size: tuple[int, int],
         backbone: str,
-        layers: List[str],
+        layers: list[str],
         pre_trained: bool = True,
         coreset_sampling_ratio: float = 0.1,
         num_neighbors: int = 9,
@@ -54,7 +55,7 @@ class Patchcore(AnomalyModule):
             num_neighbors=num_neighbors,
         )
         self.coreset_sampling_ratio = coreset_sampling_ratio
-        self.embeddings: List[Tensor] = []
+        self.embeddings: list[Tensor] = []
 
     def configure_optimizers(self) -> None:
         """Configure optimizers.
@@ -64,14 +65,14 @@ class Patchcore(AnomalyModule):
         """
         return None
 
-    def training_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> None:
+    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
         """Generate feature embedding of the batch.
 
         Args:
-            batch (Dict[str, Union[str, Tensor]]): Batch containing image filename, image, label and mask
+            batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
 
         Returns:
-            Dict[str, np.ndarray]: Embedding Vector
+            dict[str, np.ndarray]: Embedding Vector
         """
         self.model.feature_extractor.eval()
         embedding = self.model(batch["image"])
@@ -93,15 +94,15 @@ class Patchcore(AnomalyModule):
         logger.info("Applying core-set subsampling to get the embedding.")
         self.model.subsample_embedding(embeddings, self.coreset_sampling_ratio)
 
-    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Get batch of anomaly maps from input image batch.
 
         Args:
-            batch (Dict[str, Union[str, Tensor]]): Batch containing image filename,
+            batch (dict[str, str | Tensor]): Batch containing image filename,
                 image, label and mask
 
         Returns:
-            Dict[str, Any]: Image filenames, test images, GT and predicted label/masks
+            dict[str, Any]: Image filenames, test images, GT and predicted label/masks
         """
 
         anomaly_maps, anomaly_score = self.model(batch["image"])
@@ -115,7 +116,7 @@ class PatchcoreLightning(Patchcore):
     """PatchcoreLightning Module to train PatchCore algorithm.
 
     Args:
-        hparams (Union[DictConfig, ListConfig]): Model params
+        hparams (DictConfig | ListConfig): Model params
     """
 
     def __init__(self, hparams) -> None:
@@ -127,5 +128,5 @@ class PatchcoreLightning(Patchcore):
             coreset_sampling_ratio=hparams.model.coreset_sampling_ratio,
             num_neighbors=hparams.model.num_neighbors,
         )
-        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
+        self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)

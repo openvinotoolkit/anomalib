@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, List, Optional, Tuple, Union
+from __future__ import annotations
 
 import torch
 import torch.nn.functional as F
@@ -23,14 +23,14 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
 
     def __init__(
         self,
-        input_size: Tuple[int, int],
-        layers: List[str],
+        input_size: tuple[int, int],
+        layers: list[str],
         backbone: str = "wide_resnet50_2",
         pre_trained: bool = True,
         num_neighbors: int = 9,
     ) -> None:
         super().__init__()
-        self.tiler: Optional[Tiler] = None
+        self.tiler: Tiler | None = None
 
         self.backbone = backbone
         self.layers = layers
@@ -44,7 +44,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         self.register_buffer("memory_bank", Tensor())
         self.memory_bank: Tensor
 
-    def forward(self, input_tensor: Tensor) -> Union[Tensor, Tuple[Tensor, Tensor]]:
+    def forward(self, input_tensor: Tensor) -> Tensor | tuple[Tensor, Tensor]:
         """Return Embedding during training, or a tuple of anomaly map and anomaly score during testing.
 
         Steps performed:
@@ -56,7 +56,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             input_tensor (Tensor): Input tensor
 
         Returns:
-            Union[Tensor, Tuple[Tensor, Tensor]]: Embedding for training,
+            Tensor | tuple[Tensor, Tensor]: Embedding for training,
                 anomaly map and anomaly score for testing.
         """
         if self.tiler:
@@ -93,12 +93,12 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
 
         return output
 
-    def generate_embedding(self, features: Dict[str, Tensor]) -> Tensor:
+    def generate_embedding(self, features: dict[str, Tensor]) -> Tensor:
         """Generate embedding from hierarchical feature map.
 
         Args:
             features: Hierarchical feature map from a CNN (ResNet18 or WideResnet)
-            features: Dict[str:Tensor]:
+            features: dict[str:Tensor]:
 
         Returns:
             Embedding vector
@@ -142,7 +142,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         coreset = sampler.sample_coreset()
         self.memory_bank = coreset
 
-    def nearest_neighbors(self, embedding: Tensor, n_neighbors: int) -> Tuple[Tensor, Tensor]:
+    def nearest_neighbors(self, embedding: Tensor, n_neighbors: int) -> tuple[Tensor, Tensor]:
         """Nearest Neighbours using brute force method and euclidean norm.
 
         Args:

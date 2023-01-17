@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Tuple, Union
+from __future__ import annotations
 
 import torch.nn.functional as F
 from omegaconf import ListConfig
@@ -17,7 +17,7 @@ class AnomalyMapGenerator(nn.Module):
 
     def __init__(
         self,
-        input_size: Union[ListConfig, Tuple],
+        input_size: ListConfig | tuple,
         sigma: int = 4,
     ) -> None:
         super().__init__()
