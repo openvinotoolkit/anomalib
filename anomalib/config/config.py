@@ -6,10 +6,11 @@
 # TODO: This would require a new design.
 # TODO: https://jira.devtools.intel.com/browse/IAAALD-149
 
+from __future__ import annotations
+
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Union
 from warnings import warn
 
 from omegaconf import DictConfig, ListConfig, OmegaConf
@@ -22,17 +23,17 @@ def _get_now_str(timestamp: float) -> str:
     return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d_%H-%M-%S")
 
 
-def update_input_size_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfig, ListConfig]:
+def update_input_size_config(config: DictConfig | ListConfig) -> DictConfig | ListConfig:
     """Update config with image size as tuple, effective input size and tiling stride.
 
     Convert integer image size parameters into tuples, calculate the effective input size based on image size
     and crop size, and set tiling stride if undefined.
 
     Args:
-        config (Union[DictConfig, ListConfig]): Configurable parameters object
+        config (DictConfig | ListConfig): Configurable parameters object
 
     Returns:
-        Union[DictConfig, ListConfig]: Configurable parameters with updated values
+        DictConfig | ListConfig: Configurable parameters with updated values
     """
     # Image size: Ensure value is in the form [height, width]
     image_size = config.dataset.get("image_size")
@@ -65,14 +66,14 @@ def update_input_size_config(config: Union[DictConfig, ListConfig]) -> Union[Dic
     return config
 
 
-def update_nncf_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfig, ListConfig]:
+def update_nncf_config(config: DictConfig | ListConfig) -> DictConfig | ListConfig:
     """Set the NNCF input size based on the value of the crop_size parameter in the configurable parameters object.
 
-    Args:
-        config (Union[DictConfig, ListConfig]): Configurable parameters of the current run.
+    Args
+        config (DictConfig | ListConfig): Configurable parameters of the current run.
 
     Returns:
-        Union[DictConfig, ListConfig]: Updated configurable parameters in DictConfig object.
+        DictConfig | ListConfig: Updated configurable parameters in DictConfig object.
     """
     crop_size = config.dataset.image_size
     sample_size = (crop_size, crop_size) if isinstance(crop_size, int) else crop_size
@@ -87,19 +88,19 @@ def update_nncf_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfi
     return config
 
 
-def update_multi_gpu_training_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfig, ListConfig]:
+def update_multi_gpu_training_config(config: DictConfig | ListConfig) -> DictConfig | ListConfig:
     """Updates the config to change learning rate based on number of gpus assigned.
 
     Current behaviour is to ensure only ddp accelerator is used.
 
     Args:
-        config (Union[DictConfig, ListConfig]): Configurable parameters for the current run
+        config (DictConfig | ListConfig): Configurable parameters for the current run
 
     Raises:
         ValueError: If unsupported accelerator is passed
 
     Returns:
-        Union[DictConfig, ListConfig]: Updated config
+        DictConfig | ListConfig: Updated config
     """
     # validate accelerator
     if config.trainer.accelerator is not None:
@@ -119,7 +120,7 @@ def update_multi_gpu_training_config(config: Union[DictConfig, ListConfig]) -> U
     # increase the learning rate by the number of devices
     if "lr" in config.model:
         # Number of GPUs can either be passed as gpus: 2 or gpus: [0,1]
-        n_gpus: Union[int, List] = 1
+        n_gpus: int | list = 1
         if "trainer" in config and "gpus" in config.trainer:
             n_gpus = config.trainer.gpus
         lr_scaler = n_gpus if isinstance(n_gpus, int) else len(n_gpus)
@@ -127,14 +128,14 @@ def update_multi_gpu_training_config(config: Union[DictConfig, ListConfig]) -> U
     return config
 
 
-def update_datasets_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfig, ListConfig]:
+def update_datasets_config(config: DictConfig | ListConfig) -> DictConfig | ListConfig:
     """Updates the dataset section of the config.
 
     Args:
-        config (Union[DictConfig, ListConfig]): Configurable parameters for the current run.
+        config (DictConfig | ListConfig): Configurable parameters for the current run.
 
     Returns:
-        Union[DictConfig, ListConfig]: Updated config
+        DictConfig | ListConfig: Updated config
     """
     if "format" not in config.dataset.keys():
         config.dataset.format = "mvtec"
@@ -200,23 +201,23 @@ def update_datasets_config(config: Union[DictConfig, ListConfig]) -> Union[DictC
 
 
 def get_configurable_parameters(
-    model_name: Optional[str] = None,
-    config_path: Optional[Union[Path, str]] = None,
-    weight_file: Optional[str] = None,
-    config_filename: Optional[str] = "config",
-    config_file_extension: Optional[str] = "yaml",
-) -> Union[DictConfig, ListConfig]:
+    model_name: str | None = None,
+    config_path: Path | str | None = None,
+    weight_file: str | None = None,
+    config_filename: str | None = "config",
+    config_file_extension: str | None = "yaml",
+) -> DictConfig | ListConfig:
     """Get configurable parameters.
 
     Args:
-        model_name: Optional[str]:  (Default value = None)
-        config_path: Optional[Union[Path, str]]:  (Default value = None)
+        model_name: str | None:  (Default value = None)
+        config_path: Path | str | None:  (Default value = None)
         weight_file: Path to the weight file
-        config_filename: Optional[str]:  (Default value = "config")
-        config_file_extension: Optional[str]:  (Default value = "yaml")
+        config_filename: str | None:  (Default value = "config")
+        config_file_extension: str | None:  (Default value = "yaml")
 
     Returns:
-        Union[DictConfig, ListConfig]: Configurable parameters in DictConfig object.
+        DictConfig | ListConfig: Configurable parameters in DictConfig object.
     """
     if model_name is None and config_path is None:
         raise ValueError(
