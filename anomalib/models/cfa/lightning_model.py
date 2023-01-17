@@ -63,7 +63,7 @@ class Cfa(AnomalyModule):
             num_hard_negative_features=num_hard_negative_features,
             radius=radius,
         )
-        self.loss_func = CfaLoss(
+        self.loss = CfaLoss(
             num_nearest_neighbors=num_nearest_neighbors,
             num_hard_negative_features=num_hard_negative_features,
             radius=radius,
@@ -83,7 +83,7 @@ class Cfa(AnomalyModule):
             STEP_OUTPUT: Loss value.
         """
         distance = self.model(batch["image"])
-        loss = self.loss_func(distance)
+        loss = self.loss(distance)
         return {"loss": loss}
 
     def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:

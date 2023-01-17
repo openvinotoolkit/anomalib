@@ -39,7 +39,7 @@ class AnomalyModule(pl.LightningModule, ABC):
 
         self.save_hyperparameters()
         self.model: nn.Module
-        self.loss: Tensor
+        self.loss: nn.Module
         self.callbacks: List[Callback]
 
         self.threshold_method: ThresholdMethod
