@@ -16,7 +16,7 @@ from __future__ import annotations
 import math
 import warnings
 from enum import Enum
-from typing import TYPE_CHECKING, List, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Sequence
 
 import torch
 
@@ -66,10 +66,10 @@ def concatenate_datasets(datasets: Sequence[AnomalibDataset]) -> AnomalibDataset
 
 def random_split(
     dataset: AnomalibDataset,
-    split_ratio: Union[float, Sequence[float]],
+    split_ratio: float | Sequence[float],
     label_aware: bool = False,
-    seed: Optional[int] = None,
-) -> List[AnomalibDataset]:
+    seed: int | None = None,
+) -> list[AnomalibDataset]:
     """Perform a random split of a dataset.
 
     Args:
@@ -98,7 +98,7 @@ def random_split(
         per_label_datasets = [dataset]
 
     # outer list: per-label unique, inner list: random subsets with the given ratio
-    subsets: List[List[AnomalibDataset]] = []
+    subsets: list[list[AnomalibDataset]] = []
     # split each (label-aware) subset of source data
     for label_dataset in per_label_datasets:
         # get subset lengths
@@ -127,7 +127,7 @@ def random_split(
     return [concatenate_datasets(subset) for subset in subsets]
 
 
-def split_by_label(dataset: AnomalibDataset) -> Tuple[AnomalibDataset, AnomalibDataset]:
+def split_by_label(dataset: AnomalibDataset) -> tuple[AnomalibDataset, AnomalibDataset]:
     """Splits the dataset into the normal and anomalous subsets."""
     samples = dataset.samples
     normal_indices = samples[samples.label_index == 0].index

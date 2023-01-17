@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABC
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pandas import DataFrame
 from pytorch_lightning import LightningDataModule
@@ -26,7 +26,7 @@ from anomalib.data.utils import (
 logger = logging.getLogger(__name__)
 
 
-def collate_fn(batch: List) -> Dict[str, Any]:
+def collate_fn(batch: list) -> dict[str, Any]:
     """Custom collate function that collates bounding boxes as lists.
 
     Bounding boxes are collated as a list of tensors, while the default collate function is used for all other entries.
@@ -72,9 +72,9 @@ class AnomalibDataModule(LightningDataModule, ABC):
         num_workers: int,
         val_split_mode: ValSplitMode,
         val_split_ratio: float,
-        test_split_mode: Optional[TestSplitMode] = None,
-        test_split_ratio: Optional[float] = None,
-        seed: Optional[int] = None,
+        test_split_mode: TestSplitMode | None = None,
+        test_split_ratio: float | None = None,
+        seed: int | None = None,
     ) -> None:
         super().__init__()
         self.train_batch_size = train_batch_size
@@ -90,9 +90,9 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self.val_data: AnomalibDataset
         self.test_data: AnomalibDataset
 
-        self._samples: Optional[DataFrame] = None
+        self._samples: DataFrame | None = None
 
-    def setup(self, stage: Optional[str] = None) -> None:
+    def setup(self, stage: str | None = None) -> None:
         """Setup train, validation and test data.
 
         Args:
@@ -102,7 +102,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
             self._setup(stage)
         assert self.is_setup
 
-    def _setup(self, _stage: Optional[str] = None) -> None:
+    def _setup(self, _stage: str | None = None) -> None:
         """Set up the datasets and perform dynamic subset splitting.
 
         This method may be overridden in subclass for custom splitting behaviour.

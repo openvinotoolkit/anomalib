@@ -9,7 +9,7 @@ import copy
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Dict, Sequence, Union
+from typing import Sequence
 
 import albumentations as A
 import cv2
@@ -102,7 +102,7 @@ class AnomalibDataset(Dataset, ABC):
         """Check if the dataset contains any anomalous samples."""
         return 1 in list(self.samples.label_index)
 
-    def __getitem__(self, index: int) -> Dict[str, Union[str, Tensor]]:
+    def __getitem__(self, index: int) -> dict[str, str | Tensor]:
         """Get dataset item for the index ``index``.
 
         Args:

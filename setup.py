@@ -5,12 +5,13 @@
 
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
+from types import ModuleType
 from typing import List
 
 from setuptools import find_packages, setup
 
 
-def load_module(name: str = "anomalib/__init__.py"):
+def load_module(name: str = "anomalib/__init__.py") -> ModuleType:
     """Load Python Module.
 
     Args:
@@ -68,7 +69,7 @@ def get_required_packages(requirement_files: List[str]) -> List[str]:
     required_packages: List[str] = []
 
     for requirement_file in requirement_files:
-        with open(f"requirements/{requirement_file}.txt", "r", encoding="utf8") as file:
+        with open(f"requirements/{requirement_file}.txt", encoding="utf8") as file:
             for line in file:
                 package = line.strip()
                 if package and not package.startswith(("#", "-f")):
