@@ -3,9 +3,11 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple, Union, cast
+from typing import Any, cast
 
 import cv2
 import numpy as np
@@ -30,31 +32,29 @@ class Inferencer(ABC):
     """
 
     @abstractmethod
-    def load_model(self, path: Union[str, Path]) -> Any:
+    def load_model(self, path: str | Path) -> Any:
         """Load Model."""
         raise NotImplementedError
 
     @abstractmethod
-    def pre_process(self, image: np.ndarray) -> Union[np.ndarray, Tensor]:
+    def pre_process(self, image: np.ndarray) -> np.ndarray | Tensor:
         """Pre-process."""
         raise NotImplementedError
 
     @abstractmethod
-    def forward(self, image: Union[np.ndarray, Tensor]) -> Union[np.ndarray, Tensor]:
+    def forward(self, image: np.ndarray | Tensor) -> np.ndarray | Tensor:
         """Forward-Pass input to model."""
         raise NotImplementedError
 
     @abstractmethod
-    def post_process(
-        self, predictions: Union[np.ndarray, Tensor], meta_data: Optional[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+    def post_process(self, predictions: np.ndarray | Tensor, meta_data: dict[str, Any] | None) -> dict[str, Any]:
         """Post-Process."""
         raise NotImplementedError
 
     def predict(
         self,
-        image: Union[str, np.ndarray, Path],
-        meta_data: Optional[Dict[str, Any]] = None,
+        image: str | Path | np.ndarray,
+        meta_data: dict[str, Any] | None = None,
     ) -> ImageResult:
         """Perform a prediction for a given input image.
 
@@ -128,20 +128,20 @@ class Inferencer(ABC):
 
     @staticmethod
     def _normalize(
-        pred_scores: Union[Tensor, np.float32],
-        meta_data: Union[Dict, DictConfig],
-        anomaly_maps: Optional[Union[Tensor, np.ndarray]] = None,
-    ) -> Tuple[Optional[Union[np.ndarray, Tensor]], float]:
+        pred_scores: Tensor | np.float32,
+        meta_data: dict | DictConfig,
+        anomaly_maps: Tensor | np.ndarray | None = None,
+    ) -> tuple[np.ndarray | Tensor | None, float]:
         """Applies normalization and resizes the image.
 
         Args:
-            pred_scores (Union[Tensor, np.float32]): Predicted anomaly score
-            meta_data (Dict): Meta data. Post-processing step sometimes requires
+            pred_scores (Tensor | np.float32): Predicted anomaly score
+            meta_data (dict | DictConfig): Meta data. Post-processing step sometimes requires
                 additional meta data such as image shape. This variable comprises such info.
-            anomaly_maps (Optional[Union[Tensor, np.ndarray]]): Predicted raw anomaly map.
+            anomaly_maps (Tensor | np.ndarray | None): Predicted raw anomaly map.
 
         Returns:
-            Tuple[Optional[Union[np.ndarray, Tensor], float]]: Post processed predictions that are ready to be
+            tuple[np.ndarray | Tensor | None, float]: Post processed predictions that are ready to be
                 visualized and predicted scores.
         """
 
@@ -170,17 +170,17 @@ class Inferencer(ABC):
 
         return anomaly_maps, float(pred_scores)
 
-    def _load_meta_data(self, path: Optional[Union[str, Path]] = None) -> Union[DictConfig, Dict]:
+    def _load_meta_data(self, path: str | Path | None = None) -> dict | DictConfig:
         """Loads the meta data from the given path.
 
         Args:
-            path (Optional[Union[str, Path]], optional): Path to JSON file containing the metadata.
+            path (str | Path | None, optional): Path to JSON file containing the metadata.
                 If no path is provided, it returns an empty dict. Defaults to None.
 
         Returns:
-            Union[DictConfig, Dict]: Dictionary containing the metadata.
+            dict | DictConfig: Dictionary containing the metadata.
         """
-        meta_data: Union[DictConfig, Dict[str, Union[float, np.ndarray, Tensor]]] = {}
+        meta_data: dict[str, float | np.ndarray | Tensor] | DictConfig = {}
         if path is not None:
             config = OmegaConf.load(path)
             meta_data = cast(DictConfig, config)
