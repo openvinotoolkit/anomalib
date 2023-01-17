@@ -5,7 +5,7 @@
 
 import logging
 from abc import ABC
-from typing import Any, Dict, List, Optional, OrderedDict, Tuple, Union
+from typing import Any, Dict, List, OrderedDict, Tuple, Union
 from warnings import warn
 
 import pytorch_lightning as pl
@@ -100,7 +100,7 @@ class AnomalyModule(pl.LightningModule, ABC):
                 outputs["box_labels"] = [labels.int() for labels in is_anomalous]
         return outputs
 
-    def test_step(self, batch: Dict[str, Union[str, Tensor]], batch_idx: int, *args, **kwargs) -> Optional[STEP_OUTPUT]:
+    def test_step(self, batch: Dict[str, Union[str, Tensor]], batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
         """Calls validation_step for anomaly map/score calculation.
 
         Args:
