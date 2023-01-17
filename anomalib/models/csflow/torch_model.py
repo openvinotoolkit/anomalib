@@ -11,8 +11,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from __future__ import annotations
+
 from math import exp
-from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -146,13 +147,13 @@ class CrossConvolutions(nn.Module):
 
         self.leaky_relu = nn.LeakyReLU(self.leaky_slope)
 
-    def forward(self, scale0, scale1, scale2) -> Tuple[Tensor, Tensor, Tensor]:
+    def forward(self, scale0, scale1, scale2) -> tuple[Tensor, Tensor, Tensor]:
         """Applies the cross convolution to the three scales.
 
         This block is represented in figure 4 of the paper.
 
         Returns:
-            Tuple[Tensor, Tensor, Tensor]: Tensors indicating scale and transform parameters as a single tensor for
+            tuple[Tensor, Tensor, Tensor]: Tensors indicating scale and transform parameters as a single tensor for
             each scale. The scale parameters are the first part across channel dimension and the transform parameters
             are the second.
         """
@@ -195,11 +196,11 @@ class ParallelPermute(InvertibleModule):
     """Permutes input vector in a random but fixed way.
 
     Args:
-        dim (List[Tuple[int]]): Dimension of the input vector.
-        seed (Optional[float]=None): Seed for the random permutation.
+        dim (list[tuple[int]]): Dimension of the input vector.
+        seed (float | None=None): Seed for the random permutation.
     """
 
-    def __init__(self, dims_in: List[Tuple[int]], seed: Optional[float] = None) -> None:
+    def __init__(self, dims_in: list[tuple[int]], seed: float | None = None) -> None:
         super().__init__(dims_in)
         self.n_inputs: int = len(dims_in)
         self.in_channels = [dims_in[i][0] for i in range(self.n_inputs)]
@@ -214,14 +215,14 @@ class ParallelPermute(InvertibleModule):
             self.perm.append(perm)
             self.perm_inv.append(perm_inv)
 
-    def get_random_perm(self, index: int) -> Tuple[Tensor, Tensor]:
+    def get_random_perm(self, index: int) -> tuple[Tensor, Tensor]:
         """Returns a random permutation of the channels for each input.
 
         Args:
             i: index of the input
 
         Returns:
-            Tuple[Tensor, Tensor]: permutation and inverse permutation
+            tuple[Tensor, Tensor]: permutation and inverse permutation
         """
         perm = np.random.permutation(self.in_channels[index])
         perm_inv = np.zeros_like(perm)
@@ -233,7 +234,7 @@ class ParallelPermute(InvertibleModule):
         return perm, perm_inv
 
     # pylint: disable=unused-argument
-    def forward(self, input_tensor: List[Tensor], rev=False, jac=True) -> Tuple[List[Tensor], float]:
+    def forward(self, input_tensor: list[Tensor], rev=False, jac=True) -> tuple[list[Tensor], float]:
         """Applies the permutation to the input.
 
         Args:
@@ -242,14 +243,14 @@ class ParallelPermute(InvertibleModule):
             jac: (unused) if True, computes the log determinant of the Jacobian
 
         Returns:
-            Tuple[Tensor, Tensor]: output tensor and log determinant of the Jacobian
+            tuple[Tensor, Tensor]: output tensor and log determinant of the Jacobian
         """
         if not rev:
             return [input_tensor[i][:, self.perm[i]] for i in range(self.n_inputs)], 0.0
 
         return [input_tensor[i][:, self.perm_inv[i]] for i in range(self.n_inputs)], 0.0
 
-    def output_dims(self, input_dims: List[Tuple[int]]) -> List[Tuple[int]]:
+    def output_dims(self, input_dims: list[tuple[int]]) -> list[tuple[int]]:
         """Returns the output dimensions of the module."""
         return input_dims
 
@@ -258,12 +259,12 @@ class ParallelGlowCouplingLayer(InvertibleModule):
     """Coupling block that follows the GLOW design but is applied to all the scales in parallel.
 
     Args:
-        dims_in (List[Tuple[int]]): list of dimensions of the input tensors
-        subnet_args (Dict): arguments of the subnet
+        dims_in (list[tuple[int]]): list of dimensions of the input tensors
+        subnet_args (dict): arguments of the subnet
         clamp (float): clamp value for the output of the subnet
     """
 
-    def __init__(self, dims_in: List[Tuple[int]], subnet_args: Dict, clamp: float = 5.0) -> None:
+    def __init__(self, dims_in: list[tuple[int]], subnet_args: dict, clamp: float = 5.0) -> None:
         super().__init__(dims_in)
         channels = dims_in[0][0]
         self.ndims = len(dims_in[0])
@@ -291,7 +292,7 @@ class ParallelGlowCouplingLayer(InvertibleModule):
             return self.clamp * 0.636 * torch.atan(input_tensor / self.clamp)
         return input_tensor
 
-    def forward(self, input_tensor: List[Tensor], rev=False, jac=True) -> Tuple[List[Tensor], Tensor]:
+    def forward(self, input_tensor: list[Tensor], rev=False, jac=True) -> tuple[list[Tensor], Tensor]:
         """Applies GLOW coupling for the three scales."""
 
         # Even channel split. The two splits are used by cross-scale convolution to compute scale and transform
@@ -373,7 +374,7 @@ class ParallelGlowCouplingLayer(InvertibleModule):
         # Since Jacobians are only used for computing loss and summed in the loss, the idea is to sum them here
         return [z_dist0, z_dist1, z_dist2], torch.stack([jac0, jac1, jac2], dim=1).sum()
 
-    def output_dims(self, input_dims: List[Tuple[int]]) -> List[Tuple[int]]:
+    def output_dims(self, input_dims: list[tuple[int]]) -> list[tuple[int]]:
         """Output dimensions of the module."""
         return input_dims
 
@@ -382,14 +383,14 @@ class CrossScaleFlow(nn.Module):
     """Cross scale coupling layer.
 
     Args:
-        input_dims (Tuple[int, int, int]): Input dimensions of the module.
+        input_dims (tuple[int, int, int]): Input dimensions of the module.
         n_coupling_blocks (int): Number of coupling blocks.
         clamp (float): Clamp value for the inputs.
         corss_conv_hidden_channels (int): Number of hidden channels in the cross convolution.
     """
 
     def __init__(
-        self, input_dims: Tuple[int, int, int], n_coupling_blocks: int, clamp: float, cross_conv_hidden_channels: int
+        self, input_dims: tuple[int, int, int], n_coupling_blocks: int, clamp: float, cross_conv_hidden_channels: int
     ) -> None:
         super().__init__()
         self.input_dims = input_dims
@@ -435,14 +436,14 @@ class CrossScaleFlow(nn.Module):
         nodes.append(OutputNode([nodes[-3].out2], name="output_end2"))
         return GraphINN(nodes)
 
-    def forward(self, inputs: Tensor) -> Tuple[Tensor, Tensor]:
+    def forward(self, inputs: Tensor) -> tuple[Tensor, Tensor]:
         """Forward pass.
 
         Args:
             inputs (Tensor): Input tensor.
 
         Returns:
-            Tuple[Tensor, Tensor]: Output tensor and log determinant of Jacobian.
+            tuple[Tensor, Tensor]: Output tensor and log determinant of Jacobian.
         """
         return self.graph(inputs)
 
@@ -454,10 +455,10 @@ class MultiScaleFeatureExtractor(nn.Module):
 
     Args:
         n_scales (int): Number of scales for input image.
-        input_size (Tuple[int, int]): Size of input image.
+        input_size (tuple[int, int]): Size of input image.
     """
 
-    def __init__(self, n_scales: int, input_size: Tuple[int, int]) -> None:
+    def __init__(self, n_scales: int, input_size: tuple[int, int]) -> None:
         super().__init__()
 
         self.n_scales = n_scales
@@ -466,14 +467,14 @@ class MultiScaleFeatureExtractor(nn.Module):
             backbone="efficientnet_b5", weights=EfficientNet_B5_Weights.DEFAULT, return_nodes=["features.6.8"]
         )
 
-    def forward(self, input_tensor: Tensor) -> List[Tensor]:
+    def forward(self, input_tensor: Tensor) -> list[Tensor]:
         """Extracts features at three scales.
 
         Args:
             input_tensor (Tensor): Input images.
 
         Returns:
-            List[Tensor]: List of tensors containing features at three scales.
+            list[Tensor]: List of tensors containing features at three scales.
         """
         output = []
         for scale in range(self.n_scales):
@@ -494,7 +495,7 @@ class CsFlowModel(nn.Module):
     """CS Flow Module.
 
     Args:
-        input_size (Tuple[int, int]): Input image size.
+        input_size (tuple[int, int]): Input image size.
         cross_conv_hidden_channels (int): Number of hidden channels in the cross convolution.
         n_coupling_blocks (int): Number of coupling blocks.
         clamp (float): Clamp value for the coupling blocks.
@@ -503,7 +504,7 @@ class CsFlowModel(nn.Module):
 
     def __init__(
         self,
-        input_size: Tuple[int, int],
+        input_size: tuple[int, int],
         cross_conv_hidden_channels: int,
         n_coupling_blocks: int = 4,
         clamp: int = 3,
@@ -523,15 +524,15 @@ class CsFlowModel(nn.Module):
         )
         self.anomaly_map_generator = AnomalyMapGenerator(input_dims=self.input_dims, mode=AnomalyMapMode.ALL)
 
-    def forward(self, images: Tensor) -> Tuple[Tensor, Tensor]:
+    def forward(self, images: Tensor) -> tuple[Tensor, Tensor]:
         """Forward method of the model.
 
         Args:
             images (Tensor): Input images.
 
         Returns:
-            Tuple[Tensor, Tensor]: During training: Tuple containing the z_distribution for three scales and the sum
-                of log determinant of the Jacobian. During evaluation: Tuple containing anomaly maps and anomaly scores
+            tuple[Tensor, Tensor]: During training: tuple containing the z_distribution for three scales and the sum
+                of log determinant of the Jacobian. During evaluation: tuple containing anomaly maps and anomaly scores
         """
         features = self.feature_extractor(images)
         if self.training:
@@ -553,7 +554,7 @@ class CsFlowModel(nn.Module):
             Tensor: Anomaly scores.
         """
         # z_dist is a 3 length list of tensors with shape b x 304 x fx x fy
-        flat_maps: List[Tensor] = []
+        flat_maps: list[Tensor] = []
         for z_dist in z_dists:
             flat_maps.append(z_dist.reshape(z_dist.shape[0], -1))
         flat_maps_tensor = torch.cat(flat_maps, dim=1)
