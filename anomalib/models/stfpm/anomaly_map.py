@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, Tuple, Union
+from __future__ import annotations
 
 import torch
 import torch.nn.functional as F
@@ -14,10 +14,7 @@ from torch import Tensor, nn
 class AnomalyMapGenerator(nn.Module):
     """Generate Anomaly Heatmap."""
 
-    def __init__(
-        self,
-        image_size: Union[ListConfig, Tuple],
-    ):
+    def __init__(self, image_size: ListConfig | tuple) -> None:
         super().__init__()
         self.distance = torch.nn.PairwiseDistance(p=2, keepdim=True)
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
@@ -40,13 +37,13 @@ class AnomalyMapGenerator(nn.Module):
         return layer_map
 
     def compute_anomaly_map(
-        self, teacher_features: Dict[str, Tensor], student_features: Dict[str, Tensor]
+        self, teacher_features: dict[str, Tensor], student_features: dict[str, Tensor]
     ) -> torch.Tensor:
         """Compute the overall anomaly map via element-wise production the interpolated anomaly maps.
 
         Args:
-          teacher_features (Dict[str, Tensor]): Teacher features
-          student_features (Dict[str, Tensor]): Student features
+          teacher_features (dict[str, Tensor]): Teacher features
+          student_features (dict[str, Tensor]): Student features
 
         Returns:
           Final anomaly map
@@ -60,7 +57,7 @@ class AnomalyMapGenerator(nn.Module):
 
         return anomaly_map
 
-    def forward(self, **kwargs: Dict[str, Tensor]) -> torch.Tensor:
+    def forward(self, **kwargs: dict[str, Tensor]) -> torch.Tensor:
         """Returns anomaly map.
 
         Expects `teach_features` and `student_features` keywords to be passed explicitly.
@@ -82,7 +79,7 @@ class AnomalyMapGenerator(nn.Module):
         if not ("teacher_features" in kwargs and "student_features" in kwargs):
             raise ValueError(f"Expected keys `teacher_features` and `student_features. Found {kwargs.keys()}")
 
-        teacher_features: Dict[str, Tensor] = kwargs["teacher_features"]
-        student_features: Dict[str, Tensor] = kwargs["student_features"]
+        teacher_features: dict[str, Tensor] = kwargs["teacher_features"]
+        student_features: dict[str, Tensor] = kwargs["student_features"]
 
         return self.compute_anomaly_map(teacher_features, student_features)
