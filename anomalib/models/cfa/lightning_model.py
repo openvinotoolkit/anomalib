@@ -8,8 +8,9 @@ Paper https://arxiv.org/abs/2206.04325
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
-from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
@@ -34,7 +35,7 @@ class Cfa(AnomalyModule):
     """CFA: Coupled-hypersphere-based Feature Adaptation for Target-Oriented Anomaly Localization.
 
     Args:
-        input_size (Tuple[int, int]): Size of the model input.
+        input_size (tuple[int, int]): Size of the model input.
         backbone (str): Backbone CNN network
         gamma_c (int, optional): gamma_c value from the paper. Defaults to 1.
         gamma_d (int, optional): gamma_d value from the paper. Defaults to 1.
@@ -45,7 +46,7 @@ class Cfa(AnomalyModule):
 
     def __init__(
         self,
-        input_size: Tuple[int, int],
+        input_size: tuple[int, int],
         backbone: str,
         gamma_c: int = 1,
         gamma_d: int = 1,
@@ -73,11 +74,11 @@ class Cfa(AnomalyModule):
         """Initialize the centroid for the memory bank computation."""
         self.model.initialize_centroid(data_loader=self.trainer.datamodule.train_dataloader())  # type: ignore
 
-    def training_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
+    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Training step for the CFA model.
 
         Args:
-            batch (Dict[str, Union[str, Tensor]]): Batch input.
+            batch (dict[str, str | Tensor]): Batch input.
 
         Returns:
             STEP_OUTPUT: Loss value.
@@ -86,11 +87,11 @@ class Cfa(AnomalyModule):
         loss = self.loss(distance)
         return {"loss": loss}
 
-    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Validation step for the CFA model.
 
         Args:
-            batch (Dict[str, Union[str, Tensor]]): Input batch.
+            batch (dict[str, str | Tensor]): Input batch.
 
         Returns:
             dict: Anomaly map computed by the model.
@@ -98,15 +99,13 @@ class Cfa(AnomalyModule):
         batch["anomaly_maps"] = self.model(batch["image"])
         return batch
 
-    def backward(
-        self, loss: Tensor, optimizer: Optional[Optimizer], optimizer_idx: Optional[int], *args, **kwargs
-    ) -> None:
+    def backward(self, loss: Tensor, optimizer: Optimizer | None, optimizer_idx: int | None, *args, **kwargs) -> None:
         """Backward step for the CFA model.
 
         Args:
             loss (Tensor): Loss value.
-            optimizer (Optional[Optimizer]): Optimizer.
-            optimizer_idx (Optional[int]): Optimizer index.
+            optimizer (Optimizer | None): Optimizer.
+            optimizer_idx (int | None): Optimizer index.
         """
         del optimizer, optimizer_idx  # These variables are not used.
         # TODO: Investigate why retain_graph is needed.
@@ -117,20 +116,20 @@ class CfaLightning(Cfa):
     """PL Lightning Module for the CFA model.
 
     Args:
-        hparams (Union[DictConfig, ListConfig]): Model params
+        hparams (DictConfig | ListConfig): Model params
     """
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
+    def __init__(self, hparams: DictConfig | ListConfig) -> None:
         super().__init__(
             input_size=hparams.model.input_size,
             backbone=hparams.model.backbone,
             gamma_c=hparams.model.gamma_c,
             gamma_d=hparams.model.gamma_d,
         )
-        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
+        self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
 
-    def configure_callbacks(self) -> List[Callback]:
+    def configure_callbacks(self) -> list[Callback]:
         """Configure model-specific callbacks.
 
         Note:
