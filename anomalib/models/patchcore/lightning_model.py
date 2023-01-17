@@ -7,7 +7,7 @@ Paper https://arxiv.org/abs/2106.08265.
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
@@ -69,7 +69,6 @@ class Patchcore(AnomalyModule):
 
         Args:
             batch (Dict[str, Union[str, Tensor]]): Batch containing image filename, image, label and mask
-            _batch_idx (int): Batch Index
 
         Returns:
             Dict[str, np.ndarray]: Embedding Vector
@@ -94,7 +93,7 @@ class Patchcore(AnomalyModule):
         logger.info("Applying core-set subsampling to get the embedding.")
         self.model.subsample_embedding(embeddings, self.coreset_sampling_ratio)
 
-    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Optional[STEP_OUTPUT]:
+    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
         """Get batch of anomaly maps from input image batch.
 
         Args:

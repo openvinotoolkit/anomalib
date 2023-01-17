@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
@@ -72,7 +72,7 @@ class Dfm(AnomalyModule):
         For each batch, features are extracted from the CNN.
 
         Args:
-          batch (Dict[str, Tensor]): Input batch
+          batch (Dict[str, Union[str, Tensor]]): Input batch
           _: Index of the batch.
 
         Returns:
@@ -97,7 +97,7 @@ class Dfm(AnomalyModule):
         logger.info("Fitting a PCA and a Gaussian model to dataset.")
         self.model.fit(embeddings)
 
-    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Optional[STEP_OUTPUT]:
+    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
         """Validation Step of DFM.
 
         Similar to the training step, features are extracted from the CNN for each batch.

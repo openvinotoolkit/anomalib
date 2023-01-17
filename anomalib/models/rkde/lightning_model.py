@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
@@ -73,7 +73,6 @@ class Rkde(AnomalyModule):
 
         Args:
             batch (Dict[str, Union[str, Tensor]]): Batch containing image filename, image, label and mask
-            _batch_idx: Index of the batch.
 
         Returns:
           Deep CNN features.
@@ -88,13 +87,13 @@ class Rkde(AnomalyModule):
         logger.info("Fitting a KDE model to the embedding collected from the training set.")
         self.model.fit(embeddings)
 
-    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Optional[STEP_OUTPUT]:
+    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
         """Validation Step of RKde.
 
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
-          batch: Input batch
+            batch (Dict[str, Union[str, Tensor]]): Batch containing image filename, image, label and mask
 
         Returns:
           Dictionary containing probability, prediction and ground truth values.

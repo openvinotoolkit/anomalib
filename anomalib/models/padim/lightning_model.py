@@ -67,7 +67,7 @@ class Padim(AnomalyModule):
         """Training Step of PADIM. For each batch, hierarchical features are extracted from the CNN.
 
         Args:
-            batch (Dict[str, Any]): Batch containing image filename, image, label and mask
+            batch (Dict[str, Union[str, Tensor]]): Batch containing image filename, image, label and mask
             _batch_idx: Index of the batch.
 
         Returns:
@@ -93,13 +93,13 @@ class Padim(AnomalyModule):
         logger.info("Fitting a Gaussian to the embedding collected from the training set.")
         self.stats = self.model.gaussian.fit(embeddings)
 
-    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Optional[STEP_OUTPUT]:
+    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
         """Validation Step of PADIM.
 
         Similar to the training step, hierarchical features are extracted from the CNN for each batch.
 
         Args:
-            batch: Input batch
+            batch (Dict[str, Union[str, Tensor]]): Input batch
 
         Returns:
             Dictionary containing images, features, true labels and masks.
@@ -117,7 +117,7 @@ class PadimLightning(Padim):
         hparams (Union[DictConfig, ListConfig]): Model params
     """
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]):
+    def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
         super().__init__(
             input_size=hparams.model.input_size,
             layers=hparams.model.layers,

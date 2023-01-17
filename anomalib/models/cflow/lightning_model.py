@@ -6,7 +6,7 @@ https://arxiv.org/pdf/2107.12571v1.pdf
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import einops
 import torch
@@ -154,7 +154,7 @@ class Cflow(AnomalyModule):
         self.log("train_loss", avg_loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": avg_loss}
 
-    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Optional[STEP_OUTPUT]:
+    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
         """Validation Step of CFLOW.
 
             Similar to the training step, encoder features

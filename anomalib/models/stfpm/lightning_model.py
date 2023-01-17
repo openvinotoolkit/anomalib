@@ -6,7 +6,7 @@ https://arxiv.org/abs/2103.04257
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
@@ -53,8 +53,7 @@ class Stfpm(AnomalyModule):
         For each batch, teacher and student and teacher features are extracted from the CNN.
 
         Args:
-          batch (Tensor): Input batch
-          _: Index of the batch.
+          batch (Dict[str, Union[str, Tensor]]): Input batch
 
         Returns:
           Loss value
@@ -65,7 +64,7 @@ class Stfpm(AnomalyModule):
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Optional[STEP_OUTPUT]:
+    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
         """Validation Step of STFPM.
 
         Similar to the training step, student/teacher features are extracted from the CNN for each batch, and

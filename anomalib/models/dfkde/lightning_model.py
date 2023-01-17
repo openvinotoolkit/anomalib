@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
@@ -92,13 +92,13 @@ class Dfkde(AnomalyModule):
         logger.info("Fitting a KDE model to the embedding collected from the training set.")
         self.model.classifier.fit(embeddings)
 
-    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Optional[STEP_OUTPUT]:
+    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
         """Validation Step of DFKDE.
 
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
-          batch: Input batch
+          batch (Dict[str, Union[str, Tensor]]): Input batch
 
         Returns:
           Dictionary containing probability, prediction and ground truth values.

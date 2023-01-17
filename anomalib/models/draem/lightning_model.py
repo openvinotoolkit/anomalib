@@ -74,7 +74,7 @@ class Draem(AnomalyModule):
         image through the network and computes the training loss.
 
         Args:
-            batch (batch: Dict[str, Union[str, Tensor]]): Batch containing image filename, image, label and mask
+            batch (Dict[str, Union[str, Tensor]]): Batch containing image filename, image, label and mask
 
         Returns:
             Loss dictionary
@@ -95,11 +95,11 @@ class Draem(AnomalyModule):
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Optional[STEP_OUTPUT]:
+    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
         """Validation step of DRAEM. The Softmax predictions of the anomalous class are used as anomaly map.
 
         Args:
-            batch: Batch of input images
+            batch (Dict[str, Union[str, Tensor]]): Batch of input images
 
         Returns:
             Dictionary to which predicted anomaly maps have been added.
@@ -141,6 +141,6 @@ class DraemLightning(Draem):
         )
         return [early_stopping]
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> torch.optim.Optimizer:
         """Configure the Adam optimizer."""
         return torch.optim.Adam(params=self.model.parameters(), lr=self.hparams.model.lr)

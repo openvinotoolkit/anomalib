@@ -6,7 +6,7 @@ https://arxiv.org/abs/2201.10703v2
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
@@ -84,7 +84,6 @@ class ReverseDistillation(AnomalyModule):
 
         Args:
           batch (batch: Dict[str, Union[str, Tensor]]): Input batch
-          _: Index of the batch.
 
         Returns:
           Feature Map
@@ -93,15 +92,14 @@ class ReverseDistillation(AnomalyModule):
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Optional[STEP_OUTPUT]:
+    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
         """Validation Step of Reverse Distillation Model.
 
         Similar to the training step, encoder/decoder features are extracted from the CNN for each batch, and
         anomaly map is computed.
 
         Args:
-          batch (Tensor): Input batch
-          _: Index of the batch.
+          batch (Dict[str, Union[str, Tensor]]): Input batch
 
         Returns:
           Dictionary containing images, anomaly maps, true labels and masks.

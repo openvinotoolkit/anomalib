@@ -138,11 +138,11 @@ class Ganomaly(AnomalyModule):
         self._reset_min_max()
         return super().on_validation_start()
 
-    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Optional[STEP_OUTPUT]:
+    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
         """Update min and max scores from the current step.
 
         Args:
-            batch (Dict[str, Tensor]): Predicted difference between z and z_hat.
+            batch (Dict[str, Union[str, Tensor]]): Predicted difference between z and z_hat.
 
         Returns:
             Dict[str, Tensor]: batch
