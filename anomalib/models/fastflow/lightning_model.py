@@ -73,7 +73,7 @@ class Fastflow(AnomalyModule):
             batch (dict[str, str | Tensor]): Input batch
 
         Returns:
-            Optional[STEP_OUTPUT]: batch dictionary containing anomaly-maps.
+            STEP_OUTPUT | None: batch dictionary containing anomaly-maps.
         """
         anomaly_maps = self.model(batch["image"])
         batch["anomaly_maps"] = anomaly_maps
