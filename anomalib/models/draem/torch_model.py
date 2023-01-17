@@ -9,7 +9,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Tuple, Union
+from __future__ import annotations
 
 import torch
 from torch import Tensor, nn
@@ -25,7 +25,7 @@ class DraemModel(nn.Module):
         self.reconstructive_subnetwork = ReconstructiveSubNetwork(sspcab=sspcab)
         self.discriminative_subnetwork = DiscriminativeSubNetwork(in_channels=6, out_channels=2)
 
-    def forward(self, batch: Tensor) -> Union[Tensor, Tuple[Tensor, Tensor]]:
+    def forward(self, batch: Tensor) -> Tensor | tuple[Tensor, Tensor]:
         """Compute the reconstruction and anomaly mask from an input image.
 
         Args:
@@ -165,7 +165,7 @@ class EncoderDiscriminative(nn.Module):
             nn.ReLU(inplace=True),
         )
 
-    def forward(self, batch: Tensor) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
+    def forward(self, batch: Tensor) -> tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
         """Convert the inputs to the salient space by running them through the encoder network.
 
         Args:

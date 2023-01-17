@@ -6,7 +6,9 @@ Paper https://arxiv.org/abs/2108.07610
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Callable, Dict, List, Optional, Union
+from __future__ import annotations
+
+from typing import Callable
 
 import torch
 from omegaconf import DictConfig, ListConfig
@@ -28,12 +30,12 @@ class Draem(AnomalyModule):
     """DRÆM: A discriminatively trained reconstruction embedding for surface anomaly detection.
 
     Args:
-        anomaly_source_path (Optional[str]): Path to folder that contains the anomaly source images. Random noise will
+        anomaly_source_path (str | None): Path to folder that contains the anomaly source images. Random noise will
             be used if left empty.
     """
 
     def __init__(
-        self, enable_sspcab: bool = False, sspcab_lambda: float = 0.1, anomaly_source_path: Optional[str] = None
+        self, enable_sspcab: bool = False, sspcab_lambda: float = 0.1, anomaly_source_path: str | None = None
     ) -> None:
         super().__init__()
 
@@ -43,7 +45,7 @@ class Draem(AnomalyModule):
         self.sspcab = enable_sspcab
 
         if self.sspcab:
-            self.sspcab_activations: Dict = {}
+            self.sspcab_activations: dict = {}
             self.setup_sspcab()
             self.sspcab_loss = nn.MSELoss()
             self.sspcab_lambda = sspcab_lambda
@@ -67,14 +69,14 @@ class Draem(AnomalyModule):
         self.model.reconstructive_subnetwork.encoder.mp4.register_forward_hook(get_activation("input"))
         self.model.reconstructive_subnetwork.encoder.block5.register_forward_hook(get_activation("output"))
 
-    def training_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
+    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Training Step of DRAEM.
 
         Feeds the original image and the simulated anomaly
         image through the network and computes the training loss.
 
         Args:
-            batch (Dict[str, Union[str, Tensor]]): Batch containing image filename, image, label and mask
+            batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
 
         Returns:
             Loss dictionary
@@ -95,11 +97,11 @@ class Draem(AnomalyModule):
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Validation step of DRAEM. The Softmax predictions of the anomalous class are used as anomaly map.
 
         Args:
-            batch (Dict[str, Union[str, Tensor]]): Batch of input images
+            batch (dict[str, str | Tensor]): Batch of input images
 
         Returns:
             Dictionary to which predicted anomaly maps have been added.
@@ -113,19 +115,19 @@ class DraemLightning(Draem):
     """DRÆM: A discriminatively trained reconstruction embedding for surface anomaly detection.
 
     Args:
-        hparams (Union[DictConfig, ListConfig]): Model parameters
+        hparams (DictConfig | ListConfig): Model parameters
     """
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
+    def __init__(self, hparams: DictConfig | ListConfig) -> None:
         super().__init__(
             enable_sspcab=hparams.model.enable_sspcab,
             sspcab_lambda=hparams.model.sspcab_lambda,
             anomaly_source_path=hparams.model.anomaly_source_path,
         )
-        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
+        self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
 
-    def configure_callbacks(self) -> List[EarlyStopping]:
+    def configure_callbacks(self) -> list[EarlyStopping]:
         """Configure model-specific callbacks.
 
         Note:
