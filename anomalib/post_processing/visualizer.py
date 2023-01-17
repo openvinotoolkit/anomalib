@@ -3,9 +3,11 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Iterator, List, Optional
+from typing import Iterator
 
 import cv2
 import matplotlib.figure
@@ -30,12 +32,12 @@ class ImageResult:
     image: np.ndarray
     pred_score: float
     pred_label: str
-    anomaly_map: Optional[np.ndarray] = None
-    gt_mask: Optional[np.ndarray] = None
-    pred_mask: Optional[np.ndarray] = None
-    gt_boxes: Optional[np.ndarray] = None
-    pred_boxes: Optional[np.ndarray] = None
-    box_labels: Optional[np.ndarray] = None
+    anomaly_map: np.ndarray | None = None
+    gt_mask: np.ndarray | None = None
+    pred_mask: np.ndarray | None = None
+    gt_boxes: np.ndarray | None = None
+    pred_boxes: np.ndarray | None = None
+    box_labels: np.ndarray | None = None
 
     heat_map: np.ndarray = field(init=False)
     segmentations: np.ndarray = field(init=False)
@@ -77,11 +79,11 @@ class Visualizer:
             )
         self.task = task
 
-    def visualize_batch(self, batch: Dict) -> Iterator[np.ndarray]:
+    def visualize_batch(self, batch: dict) -> Iterator[np.ndarray]:
         """Generator that yields a visualization result for each item in the batch.
 
         Args:
-            batch (Dict): Dictionary containing the ground truth and predictions of a batch of images.
+            batch (dict): Dictionary containing the ground truth and predictions of a batch of images.
 
         Returns:
             Generator that yields a display-ready visualization for each image.
@@ -234,17 +236,17 @@ class ImageGrid:
     """
 
     def __init__(self) -> None:
-        self.images: List[Dict] = []
+        self.images: list[dict] = []
         self.figure: matplotlib.figure.Figure
         self.axis: np.ndarray
 
-    def add_image(self, image: np.ndarray, title: Optional[str] = None, color_map: Optional[str] = None) -> None:
+    def add_image(self, image: np.ndarray, title: str | None = None, color_map: str | None = None) -> None:
         """Add an image to the grid.
 
         Args:
           image (np.ndarray): Image which should be added to the figure.
           title (str): Image title shown on the plot.
-          color_map (Optional[str]): Name of matplotlib color map used to map scalar data to colours. Defaults to None.
+          color_map (str | None): Name of matplotlib color map used to map scalar data to colours. Defaults to None.
         """
         image_data = dict(image=image, title=title, color_map=color_map)
         self.images.append(image_data)

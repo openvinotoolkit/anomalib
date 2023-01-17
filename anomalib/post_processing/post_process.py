@@ -4,9 +4,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from __future__ import annotations
+
 import math
 from enum import Enum
-from typing import Optional, Tuple
 
 import cv2
 import numpy as np
@@ -23,8 +24,8 @@ class ThresholdMethod(str, Enum):
 def add_label(
     image: np.ndarray,
     label_name: str,
-    color: Tuple[int, int, int],
-    confidence: Optional[float] = None,
+    color: tuple[int, int, int],
+    confidence: float | None = None,
     font_scale: float = 5e-3,
     thickness_scale=1e-3,
 ) -> np.ndarray:
@@ -33,8 +34,8 @@ def add_label(
     Args:
         image (np.ndarray): Input image.
         label_name (str): Name of the label that will be displayed on the image.
-        color (Tuple[int, int, int]): RGB values for background color of label.
-        confidence (Optional[float]): confidence score of the label.
+        color (tuple[int, int, int]): RGB values for background color of label.
+        confidence (float | None): confidence score of the label.
         font_scale (float): scale of the font size relative to image size. Increase for bigger font.
         thickness_scale (float): scale of the font thickness. Increase for thicker font.
 
@@ -71,12 +72,12 @@ def add_label(
     return image
 
 
-def add_normal_label(image: np.ndarray, confidence: Optional[float] = None) -> np.ndarray:
+def add_normal_label(image: np.ndarray, confidence: float | None = None) -> np.ndarray:
     """Adds the normal label to the image."""
     return add_label(image, "normal", (225, 252, 134), confidence)
 
 
-def add_anomalous_label(image: np.ndarray, confidence: Optional[float] = None) -> np.ndarray:
+def add_anomalous_label(image: np.ndarray, confidence: float | None = None) -> np.ndarray:
     """Adds the anomalous label to the image."""
     return add_label(image, "anomalous", (255, 100, 100), confidence)
 
@@ -153,13 +154,13 @@ def compute_mask(anomaly_map: np.ndarray, threshold: float, kernel_size: int = 4
     return mask
 
 
-def draw_boxes(image: np.ndarray, boxes: np.ndarray, color: Tuple[int, int, int]) -> np.ndarray:
+def draw_boxes(image: np.ndarray, boxes: np.ndarray, color: tuple[int, int, int]) -> np.ndarray:
     """Draw bounding boxes on an image.
 
     Args:
         image (np.ndarray): Source image.
         boxes (np.nparray): 2D array of shape (N, 4) where each row contains the xyxy coordinates of a bounding box.
-        color (Tuple[int, int, int]): Color of the drawn boxes in RGB format.
+        color (tuple[int, int, int]): Color of the drawn boxes in RGB format.
 
     Returns:
         np.ndarray: Image showing the bounding boxes drawn on top of the source image.
