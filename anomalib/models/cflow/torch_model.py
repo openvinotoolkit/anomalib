@@ -3,7 +3,9 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any, List, Tuple
+from __future__ import annotations
+
+from typing import Any
 
 import einops
 import torch
@@ -19,9 +21,9 @@ class CflowModel(nn.Module):
 
     def __init__(
         self,
-        input_size: Tuple[int, int],
+        input_size: tuple[int, int],
         backbone: str,
-        layers: List[str],
+        layers: list[str],
         pre_trained: bool = True,
         fiber_batch_size: int = 64,
         decoder: str = "freia-cflow",
@@ -77,8 +79,8 @@ class CflowModel(nn.Module):
 
         distribution = [torch.Tensor(0).to(images.device) for _ in self.pool_layers]
 
-        height: List[int] = []
-        width: List[int] = []
+        height: list[int] = []
+        width: list[int] = []
         for layer_idx, layer in enumerate(self.pool_layers):
             encoder_activations = activation[layer]  # BxCxHxW
 
