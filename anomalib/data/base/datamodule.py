@@ -35,7 +35,7 @@ def collate_fn(batch: list) -> dict[str, Any]:
         batch (List): list of items in the batch where len(batch) is equal to the batch size.
 
     Returns:
-        Dict[str, Any]: Dictionary containing the collated batch information.
+        dict[str, Any]: Dictionary containing the collated batch information.
     """
     elem = batch[0]  # sample an element from the batch to check the type.
     out_dict = {}
@@ -62,7 +62,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         val_split_mode (ValSplitMode): Determines how the validation split is obtained. Options: [none, same_as_test,
             from_test, synthetic]
         val_split_ratio (float): Fraction of the train or test images held our for validation.
-        seed (Optional[int], optional): Seed used during random subset splitting.
+        seed (int | None, optional): Seed used during random subset splitting.
     """
 
     def __init__(
@@ -96,7 +96,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         """Setup train, validation and test data.
 
         Args:
-          stage: Optional[str]:  Train/Val/Test stages. (Default value = None)
+          stage: str | None:  Train/Val/Test stages. (Default value = None)
         """
         if not self.is_setup:
             self._setup(stage)

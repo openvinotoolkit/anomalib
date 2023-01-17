@@ -3,10 +3,11 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from types import ModuleType
-from typing import List
 
 from setuptools import find_packages, setup
 
@@ -49,13 +50,13 @@ def get_version() -> str:
     return version
 
 
-def get_required_packages(requirement_files: List[str]) -> List[str]:
+def get_required_packages(requirement_files: list[str]) -> list[str]:
     """Get packages from requirements.txt file.
 
     This function returns list of required packages from requirement files.
 
     Args:
-        requirement_files (List[str]): txt files that contains list of required
+        requirement_files (list[str]): txt files that contains list of required
             packages.
 
     Example:
@@ -63,10 +64,10 @@ def get_required_packages(requirement_files: List[str]) -> List[str]:
         ['onnx>=1.8.1', 'networkx~=2.5', 'openvino-dev==2021.4.1', ...]
 
     Returns:
-        List[str]: List of required packages
+        list[str]: List of required packages
     """
 
-    required_packages: List[str] = []
+    required_packages: list[str] = []
 
     for requirement_file in requirement_files:
         with open(f"requirements/{requirement_file}.txt", encoding="utf8") as file:

@@ -10,10 +10,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from __future__ import annotations
+
 import glob
 import math
 import random
-from typing import Optional, Tuple, Union
 
 import cv2
 import imgaug.augmenters as iaa
@@ -34,7 +35,7 @@ class Augmenter:
     """Class that generates noisy augmentations of input images.
 
     Args:
-        anomaly_source_path (Optional[str]): Path to a folder of images that will be used as source of the anomalous
+        anomaly_source_path (str | None): Path to a folder of images that will be used as source of the anomalous
         noise. If not specified, random noise will be used instead.
         p_anomalous (float): Probability that the anomalous perturbation will be applied to a given image.
         beta (float): Parameter that determines the opacity of the noise mask.
@@ -42,9 +43,9 @@ class Augmenter:
 
     def __init__(
         self,
-        anomaly_source_path: Optional[str] = None,
+        anomaly_source_path: str | None = None,
         p_anomalous: float = 0.5,
-        beta: Union[float, Tuple[float, float]] = (0.2, 1.0),
+        beta: float | tuple[float, float] = (0.2, 1.0),
     ):
 
         self.p_anomalous = p_anomalous
@@ -80,14 +81,14 @@ class Augmenter:
         return aug
 
     def generate_perturbation(
-        self, height: int, width: int, anomaly_source_path: Optional[str]
-    ) -> Tuple[np.ndarray, np.ndarray]:
+        self, height: int, width: int, anomaly_source_path: str | None
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Generate an image containing a random anomalous perturbation using a source image.
 
         Args:
             height (int): height of the generated image.
             width: (int): width of the generated image.
-            anomaly_source_path (Optional[str]): Path to an image file. If not provided, random noise will be used
+            anomaly_source_path (str | None): Path to an image file. If not provided, random noise will be used
             instead.
 
         Returns:
@@ -126,7 +127,7 @@ class Augmenter:
 
         return perturbation, mask
 
-    def augment_batch(self, batch: Tensor) -> Tuple[Tensor, Tensor]:
+    def augment_batch(self, batch: Tensor) -> tuple[Tensor, Tensor]:
         """Generate anomalous augmentations for a batch of input images.
 
         Args:

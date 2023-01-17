@@ -79,7 +79,7 @@ def random_split(
             [1-split_ratio, split_ratio].
         label_aware (bool): When True, the relative occurrence of the different class labels of the source dataset will
             be maintained in each of the subsets.
-        seed (Optional[int], optional): Seed that can be passed if results need to be reproducible
+        seed (int | None, optional): Seed that can be passed if results need to be reproducible
     """
 
     if isinstance(split_ratio, float):

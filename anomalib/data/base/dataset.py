@@ -109,7 +109,7 @@ class AnomalibDataset(Dataset, ABC):
             index (int): Index to get the item.
 
         Returns:
-            Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]: Dict of image tensor during training.
+            Union[dict[str, Tensor], dict[str, str | Tensor]]: Dict of image tensor during training.
                 Otherwise, Dict containing image path, target path, image tensor, label and transformed bounding box.
         """
 
