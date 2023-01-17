@@ -3,9 +3,11 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
 from abc import ABC
-from typing import Any, Dict, List, OrderedDict, Tuple, Union
+from typing import Any, OrderedDict
 from warnings import warn
 
 import pytorch_lightning as pl
@@ -40,7 +42,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.save_hyperparameters()
         self.model: nn.Module
         self.loss: nn.Module
-        self.callbacks: List[Callback]
+        self.callbacks: list[Callback]
 
         self.threshold_method: ThresholdMethod
         self.image_threshold = AnomalyScoreThreshold().cpu()
@@ -51,18 +53,18 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.image_metrics: AnomalibMetricCollection
         self.pixel_metrics: AnomalibMetricCollection
 
-    def forward(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Any:
+    def forward(self, batch: dict[str, str | Tensor], *args, **kwargs) -> Any:
         """Forward-pass input tensor to the module.
 
         Args:
-            batch (Dict[str, Union[str, Tensor]]): Input batch.
+            batch (dict[str, str | Tensor]): Input batch.
 
         Returns:
             Tensor: Output tensor from the model.
         """
         return self.model(batch)
 
-    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """To be implemented in the subclasses."""
         raise NotImplementedError
 
@@ -82,7 +84,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         """
         del batch_idx, dataloader_idx  # These variables are not used.
 
-        outputs: Union[torch.Tensor, Dict[str, Any]] = self.validation_step(batch)
+        outputs: Tensor | dict[str, Any] = self.validation_step(batch)
         self._post_process(outputs)
         if outputs is not None and isinstance(outputs, dict):
             outputs["pred_labels"] = outputs["pred_scores"] >= self.image_threshold.value
@@ -100,11 +102,11 @@ class AnomalyModule(pl.LightningModule, ABC):
                 outputs["box_labels"] = [labels.int() for labels in is_anomalous]
         return outputs
 
-    def test_step(self, batch: Dict[str, Union[str, Tensor]], batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
+    def test_step(self, batch: dict[str, str | Tensor], batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
         """Calls validation_step for anomaly map/score calculation.
 
         Args:
-          batch (Dict[str, Union[str, Tensor]]): Input batch
+          batch (dict[str, str | Tensor]): Input batch
           batch_idx (int): Batch index
 
         Returns:
@@ -189,8 +191,8 @@ class AnomalyModule(pl.LightningModule, ABC):
 
             if "pred_boxes" in outputs and "anomaly_maps" not in outputs:
                 # create anomaly maps from bbox predictions for thresholding and evaluation
-                image_size: Tuple[int, int] = outputs["image"].shape[-2:]
-                true_boxes: List[Tensor] = outputs["boxes"]
+                image_size: tuple[int, int] = outputs["image"].shape[-2:]
+                true_boxes: list[Tensor] = outputs["boxes"]
                 pred_boxes: Tensor = outputs["pred_boxes"]
                 box_scores: Tensor = outputs["box_scores"]
 
@@ -198,10 +200,10 @@ class AnomalyModule(pl.LightningModule, ABC):
                 outputs["mask"] = boxes_to_masks(true_boxes, image_size)
 
     def _outputs_to_cpu(self, output):
-        if isinstance(output, Dict):
+        if isinstance(output, dict):
             for key, value in output.items():
                 output[key] = self._outputs_to_cpu(value)
-        elif isinstance(output, List):
+        elif isinstance(output, list):
             output = [self._outputs_to_cpu(item) for item in output]
         elif isinstance(output, Tensor):
             output = output.cpu()

@@ -3,10 +3,11 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
 import random
 from enum import Enum
-from typing import Optional, Tuple
 
 import torch
 from torch import Tensor, nn
@@ -52,12 +53,12 @@ class KDEClassifier(nn.Module):
         self.register_buffer("max_length", torch.empty([]))
         self.max_length = torch.empty([])
 
-    def pre_process(self, feature_stack: Tensor, max_length: Optional[Tensor] = None) -> Tuple[Tensor, Tensor]:
+    def pre_process(self, feature_stack: Tensor, max_length: Tensor | None = None) -> tuple[Tensor, Tensor]:
         """Pre-process the CNN features.
 
         Args:
           feature_stack (Tensor): Features extracted from CNN
-          max_length (Optional[Tensor]): Used to unit normalize the feature_stack vector. If ``max_len`` is not
+          max_length (Tensor | None): Used to unit normalize the feature_stack vector. If ``max_len`` is not
             provided, the length is calculated from the ``feature_stack``. Defaults to None.
 
         Returns:
@@ -103,7 +104,7 @@ class KDEClassifier(nn.Module):
 
         return True
 
-    def compute_kde_scores(self, features: Tensor, as_log_likelihood: Optional[bool] = False) -> Tensor:
+    def compute_kde_scores(self, features: Tensor, as_log_likelihood: bool | None = False) -> Tensor:
         """Compute the KDE scores.
 
         The scores calculated from the KDE model are converted to densities. If `as_log_likelihood` is set to true then
@@ -111,7 +112,7 @@ class KDEClassifier(nn.Module):
 
         Args:
             features (Tensor): Features to which the PCA model is fit.
-            as_log_likelihood (Optional[bool], optional): If true, gets log likelihood scores. Defaults to False.
+            as_log_likelihood (bool | None, optional): If true, gets log likelihood scores. Defaults to False.
 
         Returns:
             (Tensor): Score

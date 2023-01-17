@@ -7,7 +7,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Optional
+from __future__ import annotations
 
 import numpy as np
 import torch
@@ -25,11 +25,11 @@ class SparseRandomProjection:
     Args:
         eps (float, optional): Minimum distortion rate parameter for calculating
             Johnson-Lindenstrauss minimum dimensions. Defaults to 0.1.
-        random_state (Optional[int], optional): Uses the seed to set the random
+        random_state (int | None, optional): Uses the seed to set the random
             state for sample_without_replacement function. Defaults to None.
     """
 
-    def __init__(self, eps: float = 0.1, random_state: Optional[int] = None) -> None:
+    def __init__(self, eps: float = 0.1, random_state: int | None = None) -> None:
         self.n_components: int
         self.sparse_random_matrix: Tensor
         self.eps = eps
@@ -91,7 +91,7 @@ class SparseRandomProjection:
         denominator = (eps**2 / 2) - (eps**3 / 3)
         return (4 * np.log(n_samples) / denominator).astype(np.int64)
 
-    def fit(self, embedding: Tensor) -> "SparseRandomProjection":
+    def fit(self, embedding: Tensor) -> SparseRandomProjection:
         """Generates sparse matrix from the embedding tensor.
 
         Args:

@@ -3,9 +3,11 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import importlib
 from dataclasses import dataclass, field
-from typing import Callable, Dict, List, Optional, Union
+from typing import Callable
 
 import torch
 from torch import Tensor, nn
@@ -18,20 +20,20 @@ from torchvision.models.feature_extraction import create_feature_extractor
 class BackboneParams:
     """Used for serializing the backbone."""
 
-    class_path: Union[str, nn.Module]
-    init_args: Dict = field(default_factory=dict)
+    class_path: str | nn.Module
+    init_args: dict = field(default_factory=dict)
 
 
 class TorchFXFeatureExtractor(nn.Module):
     """Extract features from a CNN.
 
     Args:
-        backbone (Union[str, BackboneParams, Dict, nn.Module]): The backbone to which the feature extraction hooks are
+        backbone (str | BackboneParams | dict | nn.Module): The backbone to which the feature extraction hooks are
             attached. If the name is provided, the model is loaded from torchvision. Otherwise, the model class can be
             provided and it will try to load the weights from the provided weights file.
         return_nodes (Iterable[str]): List of layer names of the backbone to which the hooks are attached.
             You can find the names of these nodes by using ``get_graph_node_names`` function.
-        weights (Optional[Union[WeightsEnum,str]]): Weights enum to use for the model. Torchvision models require
+        weights (str | WeightsEnum | None): Weights enum to use for the model. Torchvision models require
             ``WeightsEnum``. These enums are defined in ``torchvision.models.<model>``. You can pass the weights
             path for custom models.
         requires_grad (bool): Models like ``stfpm`` use the feature extractor for training. In such cases we should
@@ -69,9 +71,9 @@ class TorchFXFeatureExtractor(nn.Module):
 
     def __init__(
         self,
-        backbone: Union[str, BackboneParams, Dict, nn.Module],
-        return_nodes: List[str],
-        weights: Optional[Union[WeightsEnum, str]] = None,
+        backbone: str | BackboneParams | dict | nn.Module,
+        return_nodes: list[str],
+        weights: str | WeightsEnum | None = None,
         requires_grad: bool = False,
     ):
         super().__init__()
@@ -85,19 +87,19 @@ class TorchFXFeatureExtractor(nn.Module):
     def initialize_feature_extractor(
         self,
         backbone: BackboneParams,
-        return_nodes: List[str],
-        weights: Optional[Union[WeightsEnum, str]] = None,
+        return_nodes: list[str],
+        weights: str | WeightsEnum | None = None,
         requires_grad: bool = False,
-    ) -> Union[GraphModule, nn.Module]:
+    ) -> GraphModule | nn.Module:
         """Extract features from a CNN.
 
         Args:
-            backbone (Union[str, BackboneParams]): The backbone to which the feature extraction hooks are attached.
+            backbone (BackboneParams): The backbone to which the feature extraction hooks are attached.
                 If the name is provided, the model is loaded from torchvision. Otherwise, the model class can be
                 provided and it will try to load the weights from the provided weights file.
             return_nodes (Iterable[str]): List of layer names of the backbone to which the hooks are attached.
                 You can find the names of these nodes by using ``get_graph_node_names`` function.
-            weights (Optional[Union[WeightsEnum,str]]): Weights enum to use for the model. Torchvision models require
+            weights (str | WeightsEnum | None): Weights enum to use for the model. Torchvision models require
                 ``WeightsEnum``. These enums are defined in ``torchvision.models.<model>``. You can pass the weights
                 path for custom models.
             requires_grad (bool): Models like ``stfpm`` use the feature extractor for training. In such cases we should
@@ -141,7 +143,7 @@ class TorchFXFeatureExtractor(nn.Module):
             >>> TorchFXFeatureExtractor._get_backbone_class("efficientnet_b5")
             <function torchvision.models.efficientnet.efficientnet_b5(
                 *,
-                weights: Union[torchvision.models.efficientnet.EfficientNet_B5_Weights, NoneType] = None,
+                weights: torchvision.models.efficientnet.EfficientNet_B5_Weights | NoneType = None,
                 progress: bool = True,
                 **kwargs: Any
                 ) -> torchvision.models.efficientnet.EfficientNet>
@@ -170,6 +172,6 @@ class TorchFXFeatureExtractor(nn.Module):
 
         return backbone_class
 
-    def forward(self, inputs: Tensor) -> Dict[str, Tensor]:
+    def forward(self, inputs: Tensor) -> dict[str, Tensor]:
         """Extract features from the input."""
         return self.feature_extractor(inputs)
