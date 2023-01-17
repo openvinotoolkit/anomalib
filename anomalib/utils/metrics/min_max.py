@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Tuple
+from __future__ import annotations
 
 import torch
 from torch import Tensor
@@ -30,6 +30,6 @@ class MinMax(Metric):
         self.max = torch.max(self.max, torch.max(predictions))
         self.min = torch.min(self.min, torch.min(predictions))
 
-    def compute(self) -> Tuple[Tensor, Tensor]:
+    def compute(self) -> tuple[Tensor, Tensor]:
         """Return min and max values."""
         return self.min, self.max

@@ -3,9 +3,10 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import Union
 
 from omegaconf import OmegaConf
 from pytorch_lightning import seed_everything
@@ -39,7 +40,7 @@ if __name__ == "__main__":
         seed_everything(model_config.project.seed)
 
     # check hpo config structure to see whether it adheres to comet or wandb format
-    sweep: Union[CometSweep, WandbSweep]
+    sweep: CometSweep | WandbSweep
     if "spec" in hpo_config.keys():
         sweep = CometSweep(model_config, hpo_config, entity=args.entity)
     else:

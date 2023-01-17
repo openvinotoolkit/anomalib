@@ -6,10 +6,11 @@ This script provide a gradio web interface
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 from argparse import ArgumentParser, Namespace
 from importlib import import_module
 from pathlib import Path
-from typing import Optional, Tuple
 
 import gradio as gr
 import gradio.inputs
@@ -41,13 +42,13 @@ def get_args() -> Namespace:
     return parser.parse_args()
 
 
-def get_inferencer(config_path: Path, weight_path: Path, meta_data_path: Optional[Path] = None) -> Inferencer:
+def get_inferencer(config_path: Path, weight_path: Path, meta_data_path: Path | None = None) -> Inferencer:
     """Parse args and open inferencer.
 
     Args:
         config_path (Path): Path to model configuration file or the name of the model.
         weight_path (Path): Path to model weights.
-        meta_data_path (Optional[Path], optional): Metadata is required for OpenVINO models. Defaults to None.
+        meta_data_path (Path | None, optional): Metadata is required for OpenVINO models. Defaults to None.
 
     Raises:
         ValueError: If unsupported model weight is passed.
@@ -78,7 +79,7 @@ def get_inferencer(config_path: Path, weight_path: Path, meta_data_path: Optiona
     return inferencer
 
 
-def infer(image: np.ndarray, inferencer: Inferencer) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def infer(image: np.ndarray, inferencer: Inferencer) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Inference function, return anomaly map, score, heat map, prediction mask ans visualisation.
 
     Args:
@@ -86,7 +87,7 @@ def infer(image: np.ndarray, inferencer: Inferencer) -> Tuple[np.ndarray, np.nda
         inferencer (Inferencer): model inferencer
 
     Returns:
-        Tuple[np.ndarray, float, np.ndarray, np.ndarray, np.ndarray]:
+        tuple[np.ndarray, float, np.ndarray, np.ndarray, np.ndarray]:
         heat_map, pred_mask, segmentation result.
     """
     # Perform inference for the given image.

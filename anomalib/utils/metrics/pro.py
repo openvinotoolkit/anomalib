@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List
+from __future__ import annotations
 
 import torch
 from torch import Tensor
@@ -17,8 +17,8 @@ from anomalib.utils.cv import connected_components_cpu, connected_components_gpu
 class PRO(Metric):
     """Per-Region Overlap (PRO) Score."""
 
-    target: List[Tensor]
-    preds: List[Tensor]
+    target: list[Tensor]
+    preds: list[Tensor]
 
     def __init__(self, threshold: float = 0.5, **kwargs) -> None:
         super().__init__(**kwargs)

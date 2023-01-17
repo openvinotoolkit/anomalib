@@ -29,7 +29,7 @@ class MetricVisualizerCallback(BaseVisualizerCallback):
         """Log images of the metrics contained in pl_module.
 
         In order to also plot custom metrics, they need to have implemented a `generate_figure` function that returns
-        Tuple[matplotlib.figure.Figure, str].
+        tuple[matplotlib.figure.Figure, str].
 
         Args:
             trainer (pl.Trainer): pytorch lightning trainer.

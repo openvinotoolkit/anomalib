@@ -168,7 +168,7 @@ def get_image_height_and_width(image_size: int | tuple[int, int]) -> tuple[int, 
         ValueError: ``image_size`` could be either int or tuple[int, int]
 
     Returns:
-        Tuple[int | None, int | None]: A tuple containing image height and width values.
+        tuple[int | None, int | None]: A tuple containing image height and width values.
     """
     if isinstance(image_size, int):
         height_and_width = (image_size, image_size)

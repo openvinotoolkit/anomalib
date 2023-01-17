@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Optional, Union
+from __future__ import annotations
 
 import pytorch_lightning as pl
 from comet_ml import Optimizer
@@ -34,9 +34,9 @@ class WandbSweep:
 
     def __init__(
         self,
-        config: Union[DictConfig, ListConfig],
-        sweep_config: Union[DictConfig, ListConfig],
-        entity: Optional[str] = None,
+        config: DictConfig | ListConfig,
+        sweep_config: DictConfig | ListConfig,
+        entity: str | None = None,
     ) -> None:
         self.config = config
         self.sweep_config = sweep_config
@@ -89,9 +89,9 @@ class CometSweep:
 
     def __init__(
         self,
-        config: Union[DictConfig, ListConfig],
-        sweep_config: Union[DictConfig, ListConfig],
-        entity: Optional[str] = None,
+        config: DictConfig | ListConfig,
+        sweep_config: DictConfig | ListConfig,
+        entity: str | None = None,
     ) -> None:
         self.config = config
         self.sweep_config = sweep_config
