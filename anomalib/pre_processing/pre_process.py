@@ -7,9 +7,11 @@ to an input image before the forward-pass stage.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
 import warnings
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
@@ -17,11 +19,11 @@ from albumentations.pytorch import ToTensorV2
 logger = logging.getLogger(__name__)
 
 
-def get_image_height_and_width(image_size: Optional[Union[int, Tuple]] = None) -> Tuple[Optional[int], Optional[int]]:
+def get_image_height_and_width(image_size: int | tuple | None = None) -> tuple[int | None, int | None]:
     """Get image height and width from ``image_size`` variable.
 
     Args:
-        image_size (Optional[Union[int, Tuple[int, int]]], optional): Input image size.
+        image_size (int | tuple | None, optional): Input image size.
 
     Raises:
         ValueError: Image size not None, int or tuple.
@@ -40,12 +42,12 @@ def get_image_height_and_width(image_size: Optional[Union[int, Tuple]] = None) -
         Traceback (most recent call last):
         File "<string>", line 1, in <module>
         File "<string>", line 18, in get_image_height_and_width
-        ValueError: ``image_size`` could be either int or Tuple[int, int]
+        ValueError: ``image_size`` could be either int or tuple[int, int]
 
     Returns:
-        Tuple[Optional[int], Optional[int]]: A tuple containing image height and width values.
+        tuple[int | None, int | None]: A tuple containing image height and width values.
     """
-    height_and_width: Tuple[Optional[int], Optional[int]]
+    height_and_width: tuple[int | None, int | None]
     if isinstance(image_size, int):
         height_and_width = (image_size, image_size)
     elif isinstance(image_size, tuple):
@@ -53,22 +55,22 @@ def get_image_height_and_width(image_size: Optional[Union[int, Tuple]] = None) -
     elif image_size is None:
         height_and_width = (None, None)
     else:
-        raise ValueError("``image_size`` could be either int or Tuple[int, int]")
+        raise ValueError("``image_size`` could be either int or tuple[int, int]")
 
     return height_and_width
 
 
 def get_transforms(
-    config: Optional[Union[str, A.Compose]] = None,
-    image_size: Optional[Union[int, Tuple]] = None,
+    config: str | A.Compose | None = None,
+    image_size: int | tuple | None = None,
     to_tensor: bool = True,
 ) -> A.Compose:
     """Get transforms from config or image size.
 
     Args:
-        config (Optional[Union[str, A.Compose]], optional): Albumentations transforms.
+        config (str | A.Compose | None, optional): Albumentations transforms.
             Either config or albumentations ``Compose`` object. Defaults to None.
-        image_size (Optional[Union[int, Tuple]], optional): Image size to transform. Defaults to None.
+        image_size (int | tuple | None, optional): Image size to transform. Defaults to None.
         to_tensor (bool, optional): Boolean to convert the final transforms into Torch tensor. Defaults to True.
 
     Raises:
@@ -168,10 +170,10 @@ class PreProcessor:
     For the inference it returns a numpy array.
 
     Args:
-        config (Optional[Union[str, A.Compose]], optional): Transformation configurations.
+        config (str | A.Compose | None, optional): Transformation configurations.
             When it is ``None``, ``PreProcessor`` only applies resizing. When it is ``str``
             it loads the config via ``albumentations`` deserialisation methos . Defaults to None.
-        image_size (Optional[Union[int, Tuple[int, int]]], optional): When there is no config,
+        image_size (int | tuple | None, optional): When there is no config,
         ``image_size`` resizes the image. Defaults to None.
         to_tensor (bool, optional): Boolean to check whether the augmented image is transformed
             into a tensor or not. Defaults to True.
@@ -213,8 +215,8 @@ class PreProcessor:
 
     def __init__(
         self,
-        config: Optional[Union[str, A.Compose]] = None,
-        image_size: Optional[Union[int, Tuple]] = None,
+        config: str | A.Compose | None = None,
+        image_size: int | tuple | None = None,
         to_tensor: bool = True,
     ) -> None:
         warnings.warn(
@@ -229,6 +231,6 @@ class PreProcessor:
 
         self.transforms = get_transforms(config, image_size, to_tensor)
 
-    def __call__(self, *args, **kwargs) -> Dict[str, Any]:
+    def __call__(self, *args, **kwargs) -> dict[str, Any]:
         """Return transformed arguments."""
         return self.transforms(*args, **kwargs)
