@@ -3,9 +3,10 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
 import os
-from typing import Tuple
 
 import pytorch_lightning as pl
 from pytorch_lightning import Callback
@@ -24,12 +25,12 @@ class ExportCallback(Callback):
     Model is first exported to ``.onnx`` format, and then converted to OpenVINO IR.
 
     Args:
-        input_size (Tuple[int, int]): Tuple of image height, width
+        input_size (tuple[int, int]): Tuple of image height, width
         dirpath (str): Path for model output
         filename (str): Name of output model
     """
 
-    def __init__(self, input_size: Tuple[int, int], dirpath: str, filename: str, export_mode: ExportMode) -> None:
+    def __init__(self, input_size: tuple[int, int], dirpath: str, filename: str, export_mode: ExportMode) -> None:
         self.input_size = input_size
         self.dirpath = dirpath
         self.filename = filename

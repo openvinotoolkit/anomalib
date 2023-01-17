@@ -3,8 +3,10 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import os
-from typing import Any, Dict, Optional
+from typing import Any
 
 import pytorch_lightning as pl
 from nncf import NNCFConfig
@@ -24,17 +26,17 @@ class NNCFCallback(Callback):
     the PyTorch module that must be compressed.
 
     Args:
-        config (Dict): NNCF Configuration
+        config (dict): NNCF Configuration
         export_dir (Str): Path where the export `onnx` and the OpenVINO `xml` and `bin` IR are saved.
                           If None model will not be exported.
     """
 
-    def __init__(self, config: Dict, export_dir: Optional[str] = None) -> None:
+    def __init__(self, config: dict, export_dir: str | None = None) -> None:
         self.export_dir = export_dir
         self.config = NNCFConfig(config)
-        self.nncf_ctrl: Optional[CompressionAlgorithmController] = None
+        self.nncf_ctrl: CompressionAlgorithmController | None = None
 
-    def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: Optional[str] = None) -> None:
+    def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str | None = None) -> None:
         """Call when fit or test begins.
 
         Takes the pytorch model and wraps it using the compression controller

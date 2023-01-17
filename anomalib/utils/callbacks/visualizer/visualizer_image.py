@@ -3,9 +3,11 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import math
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import pytorch_lightning as pl
 from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
@@ -31,7 +33,7 @@ class ImageVisualizerCallback(BaseVisualizerCallback):
         self,
         trainer: pl.Trainer,
         pl_module: AnomalyModule,
-        outputs: Optional[STEP_OUTPUT],
+        outputs: STEP_OUTPUT | None,
         batch: Any,
         batch_idx: int,
         dataloader_idx: int,
@@ -42,7 +44,7 @@ class ImageVisualizerCallback(BaseVisualizerCallback):
             trainer (Trainer): Pytorch lightning trainer object (unused).
             pl_module (AnomalyModule): Lightning modules derived from BaseAnomalyLightning object as
             currently only they support logging images.
-            outputs (Optional[STEP_OUTPUT]): Outputs of the current test step.
+            outputs (STEP_OUTPUT | None): Outputs of the current test step.
             batch (Any): Input batch of the current test step (unused).
             batch_idx (int): Index of the current test batch (unused).
             dataloader_idx (int): Index of the dataloader that yielded the current batch (unused).
@@ -62,7 +64,7 @@ class ImageVisualizerCallback(BaseVisualizerCallback):
         self,
         trainer: pl.Trainer,
         pl_module: AnomalyModule,
-        outputs: Optional[STEP_OUTPUT],
+        outputs: STEP_OUTPUT | None,
         batch: Any,
         batch_idx: int,
         dataloader_idx: int,
@@ -73,7 +75,7 @@ class ImageVisualizerCallback(BaseVisualizerCallback):
             trainer (Trainer): Pytorch lightning trainer object (unused).
             pl_module (AnomalyModule): Lightning modules derived from BaseAnomalyLightning object as
                 currently only they support logging images.
-            outputs (Optional[STEP_OUTPUT]): Outputs of the current test step.
+            outputs (STEP_OUTPUT | None): Outputs of the current test step.
             batch (Any): Input batch of the current test step (unused).
             batch_idx (int): Index of the current test batch (unused).
             dataloader_idx (int): Index of the dataloader that yielded the current batch (unused).

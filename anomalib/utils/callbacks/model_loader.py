@@ -3,8 +3,9 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
-from typing import Optional
 
 import torch
 from pytorch_lightning import Callback, Trainer
@@ -22,7 +23,7 @@ class LoadModelCallback(Callback):
     def __init__(self, weights_path) -> None:
         self.weights_path = weights_path
 
-    def setup(self, trainer: Trainer, pl_module: AnomalyModule, stage: Optional[str] = None) -> None:
+    def setup(self, trainer: Trainer, pl_module: AnomalyModule, stage: str | None = None) -> None:
         """Call when inference begins.
 
         Loads the model weights from ``weights_path`` into the PyTorch module.

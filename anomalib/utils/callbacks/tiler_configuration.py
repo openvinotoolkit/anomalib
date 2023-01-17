@@ -4,7 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import Optional, Sequence, Union
+from __future__ import annotations
+
+from typing import Sequence
 
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import Callback
@@ -23,8 +25,8 @@ class TilerConfigurationCallback(Callback):
     def __init__(
         self,
         enable: bool = False,
-        tile_size: Union[int, Sequence] = 256,
-        stride: Optional[Union[int, Sequence]] = None,
+        tile_size: int | Sequence = 256,
+        stride: int | Sequence | None = None,
         remove_border_count: int = 0,
         mode: str = "padding",
         tile_count: int = 4,
@@ -34,9 +36,9 @@ class TilerConfigurationCallback(Callback):
         Args:
             enable (bool): Boolean to enable tiling operation.
                 Defaults to False.
-            tile_size ([Union[int, Sequence]]): Tile size.
+            tile_size ([int | Sequence]): Tile size.
                 Defaults to 256.
-            stride ([Union[int, Sequence]]): Stride to move tiles on the image.
+            stride ([int | Sequence]): Stride to move tiles on the image.
             remove_border_count (int, optional): Number of pixels to remove from the image before
                 tiling. Defaults to 0.
             mode (str, optional): Up-scaling mode when untiling overlapping tiles.
@@ -51,13 +53,13 @@ class TilerConfigurationCallback(Callback):
         self.mode = mode
         self.tile_count = tile_count
 
-    def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: Optional[str] = None) -> None:
+    def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str | None = None) -> None:
         """Setup Tiler object within Anomalib Model.
 
         Args:
             trainer (pl.Trainer): PyTorch Lightning Trainer
             pl_module (pl.LightningModule): Anomalib Model that inherits pl LightningModule.
-            stage (Optional[str], optional): fit, validate, test or predict. Defaults to None.
+            stage (str | None, optional): fit, validate, test or predict. Defaults to None.
 
         Raises:
             ValueError: When Anomalib Model doesn't contain ``Tiler`` object, it means the model

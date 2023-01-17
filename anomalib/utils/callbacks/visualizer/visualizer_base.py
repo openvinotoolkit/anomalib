@@ -3,8 +3,10 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 from pathlib import Path
-from typing import Union, cast
+from typing import cast
 
 import numpy as np
 import pytorch_lightning as pl
@@ -56,7 +58,7 @@ class BaseVisualizerCallback(Callback):
         image: np.ndarray,
         module: AnomalyModule,
         trainer: pl.Trainer,
-        filename: Union[Path, str],
+        filename: str | Path,
     ) -> None:
         """Log image from a visualizer to each of the available loggers in the project.
 

@@ -3,8 +3,10 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 import pytorch_lightning as pl
 from pytorch_lightning import Callback, Trainer
@@ -25,10 +27,10 @@ class CdfNormalizationCallback(Callback):
     """Callback that standardizes the image-level and pixel-level anomaly scores."""
 
     def __init__(self) -> None:
-        self.image_dist: Optional[LogNormal] = None
-        self.pixel_dist: Optional[LogNormal] = None
+        self.image_dist: LogNormal | None = None
+        self.pixel_dist: LogNormal | None = None
 
-    def setup(self, trainer: pl.Trainer, pl_module: AnomalyModule, stage: Optional[str] = None) -> None:
+    def setup(self, trainer: pl.Trainer, pl_module: AnomalyModule, stage: str | None = None) -> None:
         """Adds training_distribution metrics to normalization metrics."""
         del trainer, stage  # These variabels are not used.
 
@@ -63,7 +65,7 @@ class CdfNormalizationCallback(Callback):
         self,
         trainer: pl.Trainer,
         pl_module: AnomalyModule,
-        outputs: Optional[STEP_OUTPUT],
+        outputs: STEP_OUTPUT | None,
         batch: Any,
         batch_idx: int,
         dataloader_idx: int,
@@ -77,7 +79,7 @@ class CdfNormalizationCallback(Callback):
         self,
         trainer: pl.Trainer,
         pl_module: AnomalyModule,
-        outputs: Optional[STEP_OUTPUT],
+        outputs: STEP_OUTPUT | None,
         batch: Any,
         batch_idx: int,
         dataloader_idx: int,
@@ -92,7 +94,7 @@ class CdfNormalizationCallback(Callback):
         self,
         trainer: pl.Trainer,
         pl_module: AnomalyModule,
-        outputs: Dict,
+        outputs: dict,
         batch: Any,
         batch_idx: int,
         dataloader_idx: int,

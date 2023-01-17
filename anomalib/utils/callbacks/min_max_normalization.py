@@ -3,7 +3,9 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any, Optional
+from __future__ import annotations
+
+from typing import Any
 
 import pytorch_lightning as pl
 import torch
@@ -20,7 +22,7 @@ from anomalib.utils.metrics import MinMax
 class MinMaxNormalizationCallback(Callback):
     """Callback that normalizes the image-level and pixel-level anomaly scores using min-max normalization."""
 
-    def setup(self, trainer: pl.Trainer, pl_module: AnomalyModule, stage: Optional[str] = None) -> None:
+    def setup(self, trainer: pl.Trainer, pl_module: AnomalyModule, stage: str | None = None) -> None:
         """Adds min_max metrics to normalization metrics."""
         del trainer, stage  # These variables are not used.
 
@@ -62,9 +64,9 @@ class MinMaxNormalizationCallback(Callback):
 
     def on_test_batch_end(
         self,
-        trainer: "pl.Trainer",
+        trainer: pl.Trainer,
         pl_module: AnomalyModule,
-        outputs: Optional[STEP_OUTPUT],
+        outputs: STEP_OUTPUT | None,
         batch: Any,
         batch_idx: int,
         dataloader_idx: int,
