@@ -6,8 +6,9 @@ https://arxiv.org/abs/1805.06725
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
-from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
@@ -30,7 +31,7 @@ class Ganomaly(AnomalyModule):
 
     Args:
         batch_size (int): Batch size.
-        input_size (Tuple[int,int]): Input dimension.
+        input_size (tuple[int,int]): Input dimension.
         n_features (int): Number of features layers in the CNNs.
         latent_vec_size (int): Size of autoencoder latent vector.
         extra_layers (int, optional): Number of extra layers for encoder/decoder. Defaults to 0.
@@ -43,7 +44,7 @@ class Ganomaly(AnomalyModule):
     def __init__(
         self,
         batch_size: int,
-        input_size: Tuple[int, int],
+        input_size: tuple[int, int],
         n_features: int,
         latent_vec_size: int,
         extra_layers: int = 0,
@@ -86,7 +87,7 @@ class Ganomaly(AnomalyModule):
         self.min_scores = torch.tensor(float("inf"), dtype=torch.float32)  # pylint: disable=not-callable
         self.max_scores = torch.tensor(float("-inf"), dtype=torch.float32)  # pylint: disable=not-callable
 
-    def configure_optimizers(self) -> List[optim.Optimizer]:
+    def configure_optimizers(self) -> list[optim.Optimizer]:
         """Configures optimizers for each decoder.
 
         Note:
@@ -110,11 +111,11 @@ class Ganomaly(AnomalyModule):
         )
         return [optimizer_d, optimizer_g]
 
-    def training_step(self, batch: Dict[str, Union[str, Tensor]], optimizer_idx: int, *args, **kwargs) -> STEP_OUTPUT:
+    def training_step(self, batch: dict[str, str | Tensor], optimizer_idx: int, *args, **kwargs) -> STEP_OUTPUT:
         """Training step.
 
         Args:
-            batch (Dict[str, Union[str, Tensor]]): Input batch containing images.
+            batch (dict[str, str | Tensor]): Input batch containing images.
 
         Returns:
             STEP_OUTPUT: Loss
@@ -138,14 +139,14 @@ class Ganomaly(AnomalyModule):
         self._reset_min_max()
         return super().on_validation_start()
 
-    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Update min and max scores from the current step.
 
         Args:
-            batch (Dict[str, Union[str, Tensor]]): Predicted difference between z and z_hat.
+            batch (dict[str, str | Tensor]): Predicted difference between z and z_hat.
 
         Returns:
-            Dict[str, Tensor]: batch
+            dict[str, Tensor]: batch
         """
         batch["pred_scores"] = self.model(batch["image"])
         self.max_scores = max(self.max_scores, torch.max(batch["pred_scores"]))
@@ -165,7 +166,7 @@ class Ganomaly(AnomalyModule):
         self._reset_min_max()
         return super().on_test_start()
 
-    def test_step(self, batch: Dict[str, Union[str, Tensor]], batch_idx: int, *args, **kwargs) -> Optional[STEP_OUTPUT]:
+    def test_step(self, batch: dict[str, str | Tensor], batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
         """Update min and max scores from the current step."""
         super().test_step(batch, batch_idx)
         self.max_scores = max(self.max_scores, torch.max(batch["pred_scores"]))
@@ -199,10 +200,10 @@ class GanomalyLightning(Ganomaly):
     """PL Lightning Module for the GANomaly Algorithm.
 
     Args:
-        hparams (Union[DictConfig, ListConfig]): Model params
+        hparams (DictConfig | ListConfig): Model params
     """
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
+    def __init__(self, hparams: DictConfig | ListConfig) -> None:
 
         super().__init__(
             batch_size=hparams.dataset.train_batch_size,
@@ -218,10 +219,10 @@ class GanomalyLightning(Ganomaly):
             beta1=hparams.model.beta1,
             beta2=hparams.model.beta2,
         )
-        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
+        self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
 
-    def configure_callbacks(self) -> List[EarlyStopping]:
+    def configure_callbacks(self) -> list[EarlyStopping]:
         """Configure model-specific callbacks.
 
         Note:
