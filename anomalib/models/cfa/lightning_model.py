@@ -73,11 +73,11 @@ class Cfa(AnomalyModule):
         """Initialize the centroid for the memory bank computation."""
         self.model.initialize_centroid(data_loader=self.trainer.datamodule.train_dataloader())  # type: ignore
 
-    def training_step(self, batch) -> STEP_OUTPUT:
+    def training_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
         """Training step for the CFA model.
 
         Args:
-            batch (dict): Batch input.
+            batch (Dict[str, Union[str, Tensor]]): Batch input.
 
         Returns:
             STEP_OUTPUT: Loss value.
@@ -86,12 +86,11 @@ class Cfa(AnomalyModule):
         loss = self.loss_func(distance)
         return {"loss": loss}
 
-    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> Optional[STEP_OUTPUT]:
+    def validation_step(self, batch: Dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
         """Validation step for the CFA model.
 
         Args:
-            batch (dict): Input batch.
-            batch_idx (int): Index of the batch.
+            batch (Dict[str, Union[str, Tensor]]): Input batch.
 
         Returns:
             dict: Anomaly map computed by the model.
