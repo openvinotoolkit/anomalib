@@ -207,7 +207,7 @@ class Discriminator(nn.Module):
         Made of only one encoder layer which takes x and x_hat to produce a score.
 
     Args:
-        input_size (tuple[int,int]): Input image size.
+        input_size (tuple[int, int]): Input image size.
         num_input_channels (int): Number of image channels.
         n_features (int): Number of feature maps in each convolution layer.
         extra_layers (int, optional): Add extra intermediate layers. Defaults to 0.
@@ -243,7 +243,7 @@ class Generator(nn.Module):
     Made of an encoder-decoder-encoder architecture.
 
     Args:
-        input_size (tuple[int,int]): Size of input data.
+        input_size (tuple[int, int]): Size of input data.
         latent_vec_size (int): Dimension of latent vector produced between the first encoder-decoder.
         num_input_channels (int): Number of channels in input image.
         n_features (int): Number of feature maps in each convolution layer.
@@ -281,7 +281,7 @@ class GanomalyModel(nn.Module):
     """Ganomaly Model.
 
     Args:
-        input_size (tuple[int,int]): Input dimension.
+        input_size (tuple[int, int]): Input dimension.
         num_input_channels (int): Number of input channels.
         n_features (int): Number of features layers in the CNNs.
         latent_vec_size (int): Size of autoencoder latent vector.
@@ -330,7 +330,7 @@ class GanomalyModel(nn.Module):
             nn.init.normal_(module.weight.data, 1.0, 0.02)
             nn.init.constant_(module.bias.data, 0)
 
-    def forward(self, batch: Tensor) -> Tensor | tuple[Tensor, Tensor, Tensor, Tensor]:
+    def forward(self, batch: Tensor) -> tuple[Tensor, Tensor, Tensor, Tensor] | Tensor:
         """Get scores for batch.
 
         Args:

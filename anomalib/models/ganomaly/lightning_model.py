@@ -12,9 +12,9 @@ import logging
 
 import torch
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.callbacks import EarlyStopping
+from pytorch_lightning.callbacks import Callback, EarlyStopping
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
-from pytorch_lightning.utilities.types import STEP_OUTPUT
+from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 from torch import Tensor, optim
 
 from anomalib.models.components import AnomalyModule
@@ -31,7 +31,7 @@ class Ganomaly(AnomalyModule):
 
     Args:
         batch_size (int): Batch size.
-        input_size (tuple[int,int]): Input dimension.
+        input_size (tuple[int, int]): Input dimension.
         n_features (int): Number of features layers in the CNNs.
         latent_vec_size (int): Size of autoencoder latent vector.
         extra_layers (int, optional): Number of extra layers for encoder/decoder. Defaults to 0.
@@ -111,15 +111,21 @@ class Ganomaly(AnomalyModule):
         )
         return [optimizer_d, optimizer_g]
 
-    def training_step(self, batch: dict[str, str | Tensor], optimizer_idx: int, *args, **kwargs) -> STEP_OUTPUT:
+    def training_step(
+        self, batch: dict[str, str | Tensor], batch_idx: int, optimizer_idx: int
+    ) -> STEP_OUTPUT:  # pylint: disable=arguments-differ
         """Training step.
 
         Args:
             batch (dict[str, str | Tensor]): Input batch containing images.
+            batch_idx (int): Batch index.
+            optimizer_idx (int): Optimizer which is being called for current training step.
 
         Returns:
             STEP_OUTPUT: Loss
         """
+        del batch_idx  # `batch_idx` variables is not used.
+
         # forward pass
         padded, fake, latent_i, latent_o = self.model(batch["image"])
         pred_real, _ = self.model.discriminator(padded)
@@ -146,14 +152,14 @@ class Ganomaly(AnomalyModule):
             batch (dict[str, str | Tensor]): Predicted difference between z and z_hat.
 
         Returns:
-            dict[str, Tensor]: batch
+            (STEP_OUTPUT): Output predictions.
         """
         batch["pred_scores"] = self.model(batch["image"])
         self.max_scores = max(self.max_scores, torch.max(batch["pred_scores"]))
         self.min_scores = min(self.min_scores, torch.min(batch["pred_scores"]))
         return batch
 
-    def validation_epoch_end(self, outputs):
+    def validation_epoch_end(self, outputs: EPOCH_OUTPUT) -> EPOCH_OUTPUT:
         """Normalize outputs based on min/max values."""
         logger.info("Normalizing validation outputs based on min/max values.")
         for prediction in outputs:
@@ -173,7 +179,7 @@ class Ganomaly(AnomalyModule):
         self.min_scores = min(self.min_scores, torch.min(batch["pred_scores"]))
         return batch
 
-    def test_epoch_end(self, outputs):
+    def test_epoch_end(self, outputs: EPOCH_OUTPUT) -> EPOCH_OUTPUT:
         """Normalize outputs based on min/max values."""
         logger.info("Normalizing test outputs based on min/max values.")
         for prediction in outputs:
@@ -222,7 +228,7 @@ class GanomalyLightning(Ganomaly):
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
 
-    def configure_callbacks(self) -> list[EarlyStopping]:
+    def configure_callbacks(self) -> list[Callback]:
         """Configure model-specific callbacks.
 
         Note:
