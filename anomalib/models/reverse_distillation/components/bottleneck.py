@@ -52,7 +52,7 @@ class OCBE(nn.Module):
 
     def __init__(
         self,
-        block: type[Bottleneck | BasicBlock],
+        block: Bottleneck | BasicBlock,
         layers: int,
         groups: int = 1,
         width_per_group: int = 64,
