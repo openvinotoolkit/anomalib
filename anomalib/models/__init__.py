@@ -11,6 +11,7 @@ from typing import List, Union
 from omegaconf import DictConfig, ListConfig
 from torch import load
 
+from anomalib.models.cfa import Cfa
 from anomalib.models.cflow import Cflow
 from anomalib.models.components import AnomalyModule
 from anomalib.models.csflow import Csflow
@@ -22,9 +23,11 @@ from anomalib.models.ganomaly import Ganomaly
 from anomalib.models.padim import Padim
 from anomalib.models.patchcore import Patchcore
 from anomalib.models.reverse_distillation import ReverseDistillation
+from anomalib.models.rkde import Rkde
 from anomalib.models.stfpm import Stfpm
 
 __all__ = [
+    "Cfa",
     "Cflow",
     "Csflow",
     "Dfkde",
@@ -35,6 +38,7 @@ __all__ = [
     "Padim",
     "Patchcore",
     "ReverseDistillation",
+    "Rkde",
     "Stfpm",
 ]
 
@@ -74,6 +78,7 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     logger.info("Loading the model.")
 
     model_list: List[str] = [
+        "cfa",
         "cflow",
         "csflow",
         "dfkde",
@@ -84,6 +89,7 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
         "padim",
         "patchcore",
         "reverse_distillation",
+        "rkde",
         "stfpm",
     ]
     model: AnomalyModule

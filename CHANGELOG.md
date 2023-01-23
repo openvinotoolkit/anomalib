@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- Add [CFA](https://arxiv.org/abs/2206.04325) model implementation (<https://github.com/openvinotoolkit/anomalib/pull/783>)
+- Add RKDE model implementation (<https://github.com/openvinotoolkit/anomalib/pull/821>)
+- Add Visual Anomaly (VisA) dataset adapter (<https://github.com/openvinotoolkit/anomalib/pull/824>)
+- Add Synthetic anomalous dataset for validation and testing (https://github.com/openvinotoolkit/anomalib/pull/822)
+- Add Detection task type support (https://github.com/openvinotoolkit/anomalib/pull/822)
+- Add UCSDped and Avenue dataset implementation (https://github.com/openvinotoolkit/anomalib/pull/822)
+- Add base classes for video dataset and video datamodule (https://github.com/openvinotoolkit/anomalib/pull/822)
+- Add base classes for image dataset and image dataModule (https://github.com/openvinotoolkit/anomalib/pull/822)
+- ✨ Add CSFlow model (<https://github.com/openvinotoolkit/anomalib/pull/657>)
 - Log loss for existing trainable models (<https://github.com/openvinotoolkit/anomalib/pull/804>)
 - Add section for community project (<https://github.com/openvinotoolkit/anomalib/pull/768>)
 - ✨ Add torchfx feature extractor (<https://github.com/openvinotoolkit/anomalib/pull/675>)
@@ -18,6 +27,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- Make input image normalization and center cropping configurable from config (https://github.com/openvinotoolkit/anomalib/pull/822)
+- Improve flexibility and configurability of subset splitting (https://github.com/openvinotoolkit/anomalib/pull/822)
+- Switch to new datamodules design (https://github.com/openvinotoolkit/anomalib/pull/822)
+- Make normalization and center cropping configurable through config (<https://github.com/openvinotoolkit/anomalib/pull/795>)
 - Switch to new [changelog format](https://keepachangelog.com/en/1.0.0/). (<https://github.com/openvinotoolkit/anomalib/pull/777>)
 - Rename feature to task (<https://github.com/openvinotoolkit/anomalib/pull/769>)
 - make device configurable in OpenVINO inference (<https://github.com/openvinotoolkit/anomalib/pull/755>)
@@ -31,10 +44,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Deprecated
 
+- Deprecated PreProcessor class (<https://github.com/openvinotoolkit/anomalib/pull/795>)
 - Deprecate OptimalF1 metric in favor of AnomalyScoreThreshold and F1Score (<https://github.com/openvinotoolkit/anomalib/pull/796>)
 
 ### Fixed
 
+- Fix bug in MVTec dataset download (<https://github.com/openvinotoolkit/anomalib/pull/842>)
+- Add early stopping to CS-Flow model (<https://github.com/openvinotoolkit/anomalib/pull/817>)
 - Fix remote container by removing version pinning in Docker files (<https://github.com/openvinotoolkit/anomalib/pull/797>)
 - Fix PatchCore performance deterioration by reverting changes to Average Pooling layer (<https://github.com/openvinotoolkit/anomalib/pull/791>)
 - Fix zero seed (<https://github.com/openvinotoolkit/anomalib/pull/766>)

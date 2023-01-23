@@ -8,14 +8,54 @@ to an input image before the forward-pass stage.
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+import warnings
 from typing import Optional, Tuple, Union
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
-from anomalib.data.utils import get_image_height_and_width
-
 logger = logging.getLogger(__name__)
+
+
+def get_image_height_and_width(image_size: Optional[Union[int, Tuple]] = None) -> Tuple[Optional[int], Optional[int]]:
+    """Get image height and width from ``image_size`` variable.
+
+    Args:
+        image_size (Optional[Union[int, Tuple[int, int]]], optional): Input image size.
+
+    Raises:
+        ValueError: Image size not None, int or tuple.
+
+    Examples:
+        >>> get_image_height_and_width(image_size=256)
+        (256, 256)
+
+        >>> get_image_height_and_width(image_size=(256, 256))
+        (256, 256)
+
+        >>> get_image_height_and_width(image_size=(256, 256, 3))
+        (256, 256)
+
+        >>> get_image_height_and_width(image_size=256.)
+        Traceback (most recent call last):
+        File "<string>", line 1, in <module>
+        File "<string>", line 18, in get_image_height_and_width
+        ValueError: ``image_size`` could be either int or Tuple[int, int]
+
+    Returns:
+        Tuple[Optional[int], Optional[int]]: A tuple containing image height and width values.
+    """
+    height_and_width: Tuple[Optional[int], Optional[int]]
+    if isinstance(image_size, int):
+        height_and_width = (image_size, image_size)
+    elif isinstance(image_size, tuple):
+        height_and_width = int(image_size[0]), int(image_size[1])
+    elif image_size is None:
+        height_and_width = (None, None)
+    else:
+        raise ValueError("``image_size`` could be either int or Tuple[int, int]")
+
+    return height_and_width
 
 
 def get_transforms(
@@ -72,6 +112,13 @@ def get_transforms(
         >>> output["image"].shape
         torch.Size([3, 1024, 1024])
     """
+    warnings.warn(
+        DeprecationWarning(
+            "The function anomalib.pre_processing.pre_process.get_transforms is deprecated and will be removed in a "
+            "future release. Please use anomalib.data.utils.transform.get_transforms instead."
+        )
+    )
+
     if config is None and image_size is None:
         raise ValueError(
             "Both config and image_size cannot be `None`. "
@@ -170,6 +217,12 @@ class PreProcessor:
         image_size: Optional[Union[int, Tuple]] = None,
         to_tensor: bool = True,
     ) -> None:
+        warnings.warn(
+            DeprecationWarning(
+                "The PreProcessor class is deprecated and will be removed in a future release. You can now directly "
+                "pass the A.Compose object to your Anomalib datasets using the 'transform' keyword argument."
+            )
+        )
         self.config = config
         self.image_size = image_size
         self.to_tensor = to_tensor

@@ -15,7 +15,7 @@ import pytest
 import skimage
 from torch import Tensor
 
-from anomalib.pre_processing import PreProcessor
+from anomalib.data.utils import get_transforms
 
 
 def test_transforms_and_image_size_cannot_be_none():
@@ -23,17 +23,37 @@ def test_transforms_and_image_size_cannot_be_none():
     ``PreProcessor`` class should raise a ``ValueError``."""
 
     with pytest.raises(ValueError):
-        PreProcessor(config=None, image_size=None)
+        get_transforms(config=None, image_size=None)
 
 
-def test_image_size_could_be_int_or_tuple():
+@pytest.mark.parametrize("image_size, center_crop", [(256, None), ((256, 256), None), (256, 224), (256, (224, 224))])
+def test_dimensions_can_be_int_or_tuple(image_size, center_crop):
     """When ``config`` is None, ``image_size`` could be either ``int`` or
     ``Tuple[int, int]``."""
 
-    PreProcessor(config=None, image_size=256)
-    PreProcessor(config=None, image_size=(256, 512))
+    get_transforms(config=None, image_size=image_size, center_crop=center_crop)
+    get_transforms(config=None, image_size=image_size, center_crop=center_crop)
+
+
+@pytest.mark.parametrize("image_size, center_crop", [(256.0, 224), (256, 224.0)])
+def test_dimensions_cannot_be_float(image_size, center_crop):
     with pytest.raises(ValueError):
-        PreProcessor(config=None, image_size=0.0)
+        get_transforms(config=None, image_size=image_size, center_crop=center_crop)
+
+
+def test_crop_size_larger_than_image_size():
+    with pytest.raises(ValueError):
+        get_transforms(config=None, image_size=224, center_crop=256)
+
+
+def test_center_crop_could_be_int_or_tuple():
+    """When ``config`` is None, ``image_size`` could be either ``int`` or
+    ``Tuple[int, int]``."""
+
+    get_transforms(image_size=256)
+    get_transforms(image_size=(256, 512))
+    with pytest.raises(ValueError):
+        get_transforms(config=None, image_size=0.0)
 
 
 def test_load_transforms_from_string():
@@ -54,16 +74,16 @@ def test_load_transforms_from_string():
     A.save(transform=transforms, filepath=config_path, data_format="yaml")
 
     # Pass a path to config
-    pre_processor = PreProcessor(config=config_path)
-    assert isinstance(pre_processor.transforms, A.Compose)
+    transform = get_transforms(config=config_path)
+    assert isinstance(transform, A.Compose)
 
     # Pass a config of type A.Compose
-    pre_processor = PreProcessor(config=transforms)
-    assert isinstance(pre_processor.transforms, A.Compose)
+    transform = get_transforms(config=transforms)
+    assert isinstance(transform, A.Compose)
 
     # Anything else should raise an error
     with pytest.raises(ValueError):
-        PreProcessor(config=0)
+        get_transforms(config=0)
 
 
 def test_to_tensor_returns_correct_type():
@@ -71,10 +91,10 @@ def test_to_tensor_returns_correct_type():
     type."""
     image = skimage.data.astronaut()
 
-    pre_processor = PreProcessor(config=None, image_size=256, to_tensor=True)
+    pre_processor = get_transforms(config=None, image_size=256, to_tensor=True)
     transformed = pre_processor(image=image)["image"]
     assert isinstance(transformed, Tensor)
 
-    pre_processor = PreProcessor(config=None, image_size=256, to_tensor=False)
+    pre_processor = get_transforms(config=None, image_size=256, to_tensor=False)
     transformed = pre_processor(image=image)["image"]
     assert isinstance(transformed, np.ndarray)

@@ -11,76 +11,128 @@ These function are useful
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import random
-from typing import Optional
+from __future__ import annotations
 
-from pandas.core.frame import DataFrame
+import math
+import warnings
+from enum import Enum
+from typing import TYPE_CHECKING, List, Optional, Sequence, Tuple, Union
+
+import torch
+
+if TYPE_CHECKING:
+    from anomalib.data import AnomalibDataset
 
 
-def split_normal_images_in_train_set(
-    samples: DataFrame, split_ratio: float = 0.1, seed: Optional[int] = None, normal_label: str = "good"
-) -> DataFrame:
-    """Split normal images in train set.
+class Split(str, Enum):
+    """Split of a subset."""
 
-        This function splits the normal images in training set and assigns the
-        values to the test set. This is particularly useful especially when the
-        test set does not contain any normal images.
+    TRAIN = "train"
+    VAL = "val"
+    TEST = "test"
 
-        This is important because when the test set doesn't have any normal images,
-        AUC computation fails due to having single class.
+
+class TestSplitMode(str, Enum):
+    """Splitting mode used to obtain subset."""
+
+    NONE = "none"
+    FROM_DIR = "from_dir"
+    SYNTHETIC = "synthetic"
+
+
+class ValSplitMode(str, Enum):
+    """Splitting mode used to obtain validation subset."""
+
+    NONE = "none"
+    SAME_AS_TEST = "same_as_test"
+    FROM_TEST = "from_test"
+    SYNTHETIC = "synthetic"
+
+
+def concatenate_datasets(datasets: Sequence[AnomalibDataset]) -> AnomalibDataset:
+    """Concatenate multiple datasets into a single dataset object.
 
     Args:
-        samples (DataFrame): Dataframe containing dataset info such as filenames, splits etc.
-        split_ratio (float, optional): Train-Test normal image split ratio. Defaults to 0.1.
-        seed (int, optional): Random seed to ensure reproducibility. Defaults to 0.
-        normal_label (str): Name of the normal label. For MVTec AD, for instance, this is normal_label.
+        datasets (Sequence[AnomalibDataset]): Sequence of at least two datasets.
 
     Returns:
-        DataFrame: Output dataframe where the part of the training set is assigned to test set.
+        AnomalibDataset: Dataset that contains the combined samples of all input datasets.
     """
-
-    if seed is not None:
-        random.seed(seed)
-
-    normal_train_image_indices = samples.index[(samples.split == "train") & (samples.label == normal_label)].to_list()
-    num_normal_train_images = len(normal_train_image_indices)
-    num_normal_valid_images = int(num_normal_train_images * split_ratio)
-
-    indices_to_split_from_train_set = random.sample(population=normal_train_image_indices, k=num_normal_valid_images)
-    samples.loc[indices_to_split_from_train_set, "split"] = "test"
-
-    return samples
+    concat_dataset = datasets[0]
+    for dataset in datasets[1:]:
+        concat_dataset += dataset
+    return concat_dataset
 
 
-def create_validation_set_from_test_set(
-    samples: DataFrame, seed: Optional[int] = None, normal_label: str = "good"
-) -> DataFrame:
-    """Craete Validation Set from Test Set.
-
-    This function creates a validation set from test set by splitting both
-    normal and abnormal samples to two.
+def random_split(
+    dataset: AnomalibDataset,
+    split_ratio: Union[float, Sequence[float]],
+    label_aware: bool = False,
+    seed: Optional[int] = None,
+) -> List[AnomalibDataset]:
+    """Perform a random split of a dataset.
 
     Args:
-        samples (DataFrame): Dataframe containing dataset info such as filenames, splits etc.
-        seed (int, optional): Random seed to ensure reproducibility. Defaults to 0.
-        normal_label (str): Name of the normal label. For MVTec AD, for instance, this is normal_label.
+        dataset (AnomalibDataset): Source dataset
+        split_ratio (Union[float, Sequence[float]]): Fractions of the splits that will be produced. The values in the
+            sequence must sum to 1. If a single value is passed, the ratio will be converted to
+            [1-split_ratio, split_ratio].
+        label_aware (bool): When True, the relative occurrence of the different class labels of the source dataset will
+            be maintained in each of the subsets.
+        seed (Optional[int], optional): Seed that can be passed if results need to be reproducible
     """
 
-    if seed is not None:
-        random.seed(seed)
+    if isinstance(split_ratio, float):
+        split_ratio = [1 - split_ratio, split_ratio]
 
-    # Split normal images.
-    normal_test_image_indices = samples.index[(samples.split == "test") & (samples.label == normal_label)].to_list()
-    num_normal_valid_images = len(normal_test_image_indices) // 2
+    assert (
+        math.isclose(sum(split_ratio), 1) and sum(split_ratio) <= 1
+    ), f"split ratios must sum to 1, found {sum(split_ratio)}"
+    assert all(0 < ratio < 1 for ratio in split_ratio), f"all split ratios must be between 0 and 1, found {split_ratio}"
 
-    indices_to_sample = random.sample(population=normal_test_image_indices, k=num_normal_valid_images)
-    samples.loc[indices_to_sample, "split"] = "val"
+    # create list of source data
+    if label_aware and "label_index" in dataset.samples.keys():
+        indices_per_label = [group.index for _, group in dataset.samples.groupby("label_index")]
+        per_label_datasets = [dataset.subsample(indices) for indices in indices_per_label]
+    else:
+        per_label_datasets = [dataset]
 
-    # Split abnormal images.
-    abnormal_test_image_indices = samples.index[(samples.split == "test") & (samples.label != normal_label)].to_list()
-    num_abnormal_valid_images = len(abnormal_test_image_indices) // 2
+    # outer list: per-label unique, inner list: random subsets with the given ratio
+    subsets: List[List[AnomalibDataset]] = []
+    # split each (label-aware) subset of source data
+    for label_dataset in per_label_datasets:
+        # get subset lengths
+        subset_lengths = []
+        for ratio in split_ratio:
+            subset_lengths.append(int(math.floor(len(label_dataset.samples) * ratio)))
+        for i in range(len(label_dataset.samples) - sum(subset_lengths)):
+            subset_idx = i % sum(subset_lengths)
+            subset_lengths[subset_idx] += 1
+        if 0 in subset_lengths:
+            warnings.warn(
+                "Zero subset length encountered during splitting. This means one of your subsets might be"
+                " empty or devoid of either normal or anomalous images."
+            )
 
-    indices_to_sample = random.sample(population=abnormal_test_image_indices, k=num_abnormal_valid_images)
-    samples.loc[indices_to_sample, "split"] = "val"
+        # perform random subsampling
+        random_state = torch.Generator().manual_seed(seed) if seed else None
+        indices = torch.randperm(len(label_dataset.samples), generator=random_state)
+        subsets.append(
+            [label_dataset.subsample(subset_indices) for subset_indices in torch.split(indices, subset_lengths)]
+        )
 
-    return samples
+    # invert outer/inner lists
+    # outer list: subsets with the given ratio, inner list: per-label unique
+    subsets = list(map(list, zip(*subsets)))
+    return [concatenate_datasets(subset) for subset in subsets]
+
+
+def split_by_label(dataset: AnomalibDataset) -> Tuple[AnomalibDataset, AnomalibDataset]:
+    """Splits the dataset into the normal and anomalous subsets."""
+    samples = dataset.samples
+    normal_indices = samples[samples.label_index == 0].index
+    anomalous_indices = samples[samples.label_index == 1].index
+
+    normal_subset = dataset.subsample(list(normal_indices))
+    anomalous_subset = dataset.subsample(list(anomalous_indices))
+    return normal_subset, anomalous_subset

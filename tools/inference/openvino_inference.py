@@ -38,7 +38,7 @@ def get_args() -> Namespace:
         required=False,
         help="Task type.",
         default="classification",
-        choices=["classification", "segmentation"],
+        choices=["classification", "detection", "segmentation"],
     )
     parser.add_argument(
         "--device",

@@ -14,10 +14,10 @@ from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from torch import Tensor, nn
 
+from anomalib.data.utils import Augmenter
 from anomalib.models.components import AnomalyModule
 from anomalib.models.draem.loss import DraemLoss
 from anomalib.models.draem.torch_model import DraemModel
-from anomalib.models.draem.utils import Augmenter
 
 __all__ = ["Draem", "DraemLightning"]
 

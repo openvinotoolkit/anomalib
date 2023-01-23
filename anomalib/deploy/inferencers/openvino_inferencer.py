@@ -12,7 +12,8 @@ import numpy as np
 from omegaconf import DictConfig, ListConfig
 
 from anomalib.config import get_configurable_parameters
-from anomalib.pre_processing import PreProcessor
+from anomalib.data import TaskType
+from anomalib.data.utils import InputNormalizationMethod, get_transforms
 
 from .base_inferencer import Inferencer
 
@@ -96,11 +97,18 @@ class OpenVINOInferencer(Inferencer):
             np.ndarray: pre-processed image.
         """
         transform_config = (
-            self.config.dataset.transform_config.val if "transform_config" in self.config.dataset.keys() else None
+            self.config.dataset.transform_config.eval if "transform_config" in self.config.dataset.keys() else None
         )
-        image_size = tuple(self.config.dataset.image_size)
-        pre_processor = PreProcessor(transform_config, image_size)
-        processed_image = pre_processor(image=image)["image"]
+
+        image_size = (self.config.dataset.image_size[0], self.config.dataset.image_size[1])
+        center_crop = self.config.dataset.get("center_crop")
+        if center_crop is not None:
+            center_crop = tuple(center_crop)
+        normalization = InputNormalizationMethod(self.config.dataset.normalization)
+        transform = get_transforms(
+            config=transform_config, image_size=image_size, center_crop=center_crop, normalization=normalization
+        )
+        processed_image = transform(image=image)["image"]
 
         if len(processed_image.shape) == 3:
             processed_image = np.expand_dims(processed_image, axis=0)
@@ -148,10 +156,10 @@ class OpenVINOInferencer(Inferencer):
         # If predictions returns a single value, this means that the task is
         # classification, and the value is the classification prediction score.
         if len(predictions.shape) == 1:
-            task = "classification"
+            task = TaskType.CLASSIFICATION
             pred_score = predictions
         else:
-            task = "segmentation"
+            task = TaskType.SEGMENTATION
             anomaly_map = predictions.squeeze()
             pred_score = anomaly_map.reshape(-1).max()
 
@@ -161,9 +169,9 @@ class OpenVINOInferencer(Inferencer):
         if "image_threshold" in meta_data:
             pred_label = pred_score >= meta_data["image_threshold"]
 
-        if task == "classification":
+        if task == TaskType.CLASSIFICATION:
             _, pred_score = self._normalize(pred_scores=pred_score, meta_data=meta_data)
-        elif task == "segmentation":
+        elif task in [TaskType.SEGMENTATION, TaskType.DETECTION]:
             if "pixel_threshold" in meta_data:
                 pred_mask = (anomaly_map >= meta_data["pixel_threshold"]).astype(np.uint8)
 
@@ -182,9 +190,39 @@ class OpenVINOInferencer(Inferencer):
         else:
             raise ValueError(f"Unknown task type: {task}")
 
+        if self.config.dataset.task == TaskType.DETECTION:
+            pred_boxes = self._get_boxes(pred_mask)
+            box_labels = np.ones(pred_boxes.shape[0])
+        else:
+            pred_boxes = None
+            box_labels = None
+
         return {
             "anomaly_map": anomaly_map,
             "pred_label": pred_label,
             "pred_score": pred_score,
             "pred_mask": pred_mask,
+            "pred_boxes": pred_boxes,
+            "box_labels": box_labels,
         }
+
+    @staticmethod
+    def _get_boxes(mask: np.ndarray) -> np.ndarray:
+        """Get bounding boxes from masks.
+
+        Args:
+            masks (np.ndarray): Input mask of shape (H, W)
+
+        Returns:
+            np.ndarray: array of shape (N, 4) containing the bounding box coordinates of the objects in the masks
+            in xyxy format.
+        """
+        _, comps = cv2.connectedComponents(mask)
+
+        labels = np.unique(comps)
+        boxes = []
+        for label in labels[labels != 0]:
+            y_loc, x_loc = np.where(comps == label)
+            boxes.append([np.min(x_loc), np.min(y_loc), np.max(x_loc), np.max(y_loc)])
+        boxes = np.stack(boxes) if len(boxes) > 0 else np.empty((0, 4))
+        return boxes

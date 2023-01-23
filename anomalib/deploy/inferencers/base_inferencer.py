@@ -90,9 +90,12 @@ class Inferencer(ABC):
             pred_label=output["pred_label"],
             anomaly_map=output["anomaly_map"],
             pred_mask=output["pred_mask"],
+            pred_boxes=output["pred_boxes"],
+            box_labels=output["box_labels"],
         )
 
-    def _superimpose_segmentation_mask(self, meta_data: dict, anomaly_map: np.ndarray, image: np.ndarray):
+    @staticmethod
+    def _superimpose_segmentation_mask(meta_data: dict, anomaly_map: np.ndarray, image: np.ndarray):
         """Superimpose segmentation mask on top of image.
 
         Args:
@@ -123,8 +126,8 @@ class Inferencer(ABC):
         """
         return self.predict(image)
 
+    @staticmethod
     def _normalize(
-        self,
         pred_scores: Union[Tensor, np.float32],
         meta_data: Union[Dict, DictConfig],
         anomaly_maps: Optional[Union[Tensor, np.ndarray]] = None,
