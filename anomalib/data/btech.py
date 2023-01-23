@@ -180,25 +180,36 @@ class BTech(AnomalibDataModule):
     """BTech Lightning Data Module.
 
     Args:
-        root: Path to the BTech dataset
-        category: Name of the BTech category.
-        image_size: Variable to which image is resized.
-        center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped
-            to the provided dimensions.
-        normalize (bool): When True, the images will be normalized to the ImageNet statistics.
-        train_batch_size: Training batch size.
-        test_batch_size: Testing batch size.
-        num_workers: Number of workers.
-        task: ``classification``, ``detection`` or ``segmentation``
-        transform_config_train: Config for pre-processing during training.
-        transform_config_val: Config for pre-processing during validation.
-        create_validation_set: Create a validation subset in addition to the train and test subsets
-        seed (int | None, optional): Seed used during random subset splitting.
-        test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
-        test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
-        val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
-        val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
-        seed (int | None, optional): Seed which may be set to a fixed value for reproducibility.
+
+        root (str): Path to the BTech dataset.
+        category (str): Name of the BTech category.
+        image_size (int | tuple[int, int] | None, optional): Variable to which image is resized. Defaults to None.
+        center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped to the
+            provided dimensions.
+            Defaults to None.
+        normalization (str | InputNormalizationMethod, optional): When True, the images will be normalized to the
+            ImageNet statistics.
+            Defaults to InputNormalizationMethod.IMAGENET.
+        train_batch_size (int, optional): Training batch size.
+            Defaults to 32.
+        eval_batch_size (int, optional): Eval batch size.
+            Defaults to 32.
+        num_workers (int, optional): Number of workers. Defaults to 8.
+        task (TaskType, optional): Task type.
+            Defaults to TaskType.SEGMENTATION.
+        transform_config_train (str | A.Compose | None, optional): Config for pre-processing during training.
+            Defaults to None.
+        transform_config_eval (str | A.Compose | None, optional): Config for pre-processing during validation.
+            Defaults to None.
+        test_split_mode (TestSplitMode, optional): Setting that determines how the testing subset is obtained.
+            Defaults to TestSplitMode.FROM_DIR.
+        test_split_ratio (float, optional): Fraction of images from the train set that will be reserved for testing.
+            Defaults to 0.2.
+        val_split_mode (ValSplitMode, optional): Setting that determines how the validation subset is obtained.
+            Defaults to ValSplitMode.SAME_AS_TEST.
+        val_split_ratio (float, optional): Fraction of train or test images that will be reserved for validation.
+            Defaults to 0.5.
+        seed (int | None, optional): Seed which may be set to a fixed value for reproducibility. Defaults to None.
 
     Examples:
         >>> from anomalib.data import BTech

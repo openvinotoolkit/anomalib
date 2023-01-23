@@ -23,7 +23,7 @@ class TimmFeatureExtractor(nn.Module):
 
     Args:
         backbone (nn.Module): The backbone to which the feature extraction hooks are attached.
-        layers (Iterable[str]): list of layer names of the backbone to which the hooks are attached.
+        layers (Iterable[str]): List of layer names of the backbone to which the hooks are attached.
         pre_trained (bool): Whether to use a pre-trained backbone. Defaults to True.
         requires_grad (bool): Whether to require gradients for the backbone. Defaults to False.
             Models like ``stfpm`` use the feature extractor model as a trainable network. In such cases gradient
