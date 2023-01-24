@@ -45,7 +45,7 @@ class ExportCallback(Callback):
         del trainer  # `trainer` variable is not used.
 
         logger.info("Exporting the model")
-        Path(self.dirpath).mkdir(parents=True)
+        Path(self.dirpath).mkdir(parents=True, exist_ok=True)
         export(
             model=pl_module,
             input_size=self.input_size,

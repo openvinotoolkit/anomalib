@@ -89,7 +89,7 @@ class NNCFCallback(Callback):
         if self.export_dir is None or self.nncf_ctrl is None:
             return
 
-        Path(self.export_dir).mkdir(parents=True)
+        Path(self.export_dir).mkdir(parents=True, exist_ok=True)
         onnx_path = os.path.join(self.export_dir, "model_nncf.onnx")
         self.nncf_ctrl.export_model(onnx_path)
         optimize_command = "mo --input_model " + onnx_path + " --output_dir " + self.export_dir

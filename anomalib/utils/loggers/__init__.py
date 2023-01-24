@@ -106,7 +106,7 @@ def get_experiment_logger(
             )
         elif experiment_logger == "wandb":
             wandb_logdir = os.path.join(config.project.path, "logs")
-            Path(wandb_logdir).mkdir(parents=True)
+            Path(wandb_logdir).mkdir(parents=True, exist_ok=True)
             name = (
                 config.model.name
                 if "category" not in config.dataset.keys()
@@ -121,7 +121,7 @@ def get_experiment_logger(
             )
         elif experiment_logger == "comet":
             comet_logdir = os.path.join(config.project.path, "logs")
-            Path(comet_logdir).mkdir(parents=True)
+            Path(comet_logdir).mkdir(parents=True, exist_ok=True)
             run_name = (
                 config.model.name
                 if "category" not in config.dataset.keys()
