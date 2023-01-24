@@ -401,11 +401,14 @@ class CrossScaleFlow(nn.Module):
         self.graph = self._create_graph()
 
     def _create_graph(self) -> GraphINN:
-        nodes = []
+        nodes: list[Node] = []
         # 304 is the number of features extracted from EfficientNet-B5 feature extractor
-        nodes.append(InputNode(304, (self.input_dims[1] // 32), (self.input_dims[2] // 32), name="input"))
-        nodes.append(InputNode(304, (self.input_dims[1] // 64), (self.input_dims[2] // 64), name="input2"))
-        nodes.append(InputNode(304, (self.input_dims[1] // 128), (self.input_dims[2] // 128), name="input3"))
+        input_nodes = [
+            InputNode(304, (self.input_dims[1] // 32), (self.input_dims[2] // 32), name="input"),
+            InputNode(304, (self.input_dims[1] // 64), (self.input_dims[2] // 64), name="input2"),
+            InputNode(304, (self.input_dims[1] // 128), (self.input_dims[2] // 128), name="input3"),
+        ]
+        nodes.extend(input_nodes)
 
         for coupling_block in range(self.n_coupling_blocks):
             if coupling_block == 0:
@@ -413,27 +416,33 @@ class CrossScaleFlow(nn.Module):
             else:
                 node_to_permute = [nodes[-1].out0, nodes[-1].out1, nodes[-1].out2]
 
-            nodes.append(
-                Node(node_to_permute, ParallelPermute, {"seed": coupling_block}, name=f"permute_{coupling_block}")
+            permute_node = Node(
+                inputs=node_to_permute,
+                module_type=ParallelPermute,
+                module_args={"seed": coupling_block},
+                name=f"permute_{coupling_block}",
             )
-            nodes.append(
-                Node(
-                    [nodes[-1].out0, nodes[-1].out1, nodes[-1].out2],
-                    ParallelGlowCouplingLayer,
-                    {
-                        "clamp": self.clamp,
-                        "subnet_args": {
-                            "channels_hidden": self.cross_conv_hidden_channels,
-                            "kernel_size": self.kernel_sizes[coupling_block],
-                        },
+            nodes.extend([permute_node])
+            coupling_layer_node = Node(
+                inputs=[nodes[-1].out0, nodes[-1].out1, nodes[-1].out2],
+                module_type=ParallelGlowCouplingLayer,
+                module_args={
+                    "clamp": self.clamp,
+                    "subnet_args": {
+                        "channels_hidden": self.cross_conv_hidden_channels,
+                        "kernel_size": self.kernel_sizes[coupling_block],
                     },
-                    name=f"fc1_{coupling_block}",
-                )
+                },
+                name=f"fc1_{coupling_block}",
             )
+            nodes.extend([coupling_layer_node])
 
-        nodes.append(OutputNode([nodes[-1].out0], name="output_end0"))
-        nodes.append(OutputNode([nodes[-2].out1], name="output_end1"))
-        nodes.append(OutputNode([nodes[-3].out2], name="output_end2"))
+        output_nodes = [
+            OutputNode([nodes[-1].out0], name="output_end0"),
+            OutputNode([nodes[-1].out1], name="output_end1"),
+            OutputNode([nodes[-1].out2], name="output_end2"),
+        ]
+        nodes.extend(output_nodes)
         return GraphINN(nodes)
 
     def forward(self, inputs: Tensor) -> tuple[Tensor, Tensor]:
@@ -554,9 +563,7 @@ class CsFlowModel(nn.Module):
             Tensor: Anomaly scores.
         """
         # z_dist is a 3 length list of tensors with shape b x 304 x fx x fy
-        flat_maps: list[Tensor] = []
-        for z_dist in z_dists:
-            flat_maps.append(z_dist.reshape(z_dist.shape[0], -1))
+        flat_maps = [z_dist.reshape(z_dist.shape[0], -1) for z_dist in z_dists]
         flat_maps_tensor = torch.cat(flat_maps, dim=1)
         anomaly_scores = torch.mean(flat_maps_tensor**2 / 2, dim=1)
         return anomaly_scores
