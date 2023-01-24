@@ -121,7 +121,7 @@ def get_transforms(
         )
     )
 
-    if config is None and image_size is None:
+    if config is None is image_size:
         raise ValueError(
             "Both config and image_size cannot be `None`. "
             "Provide either config file to de-serialize transforms "

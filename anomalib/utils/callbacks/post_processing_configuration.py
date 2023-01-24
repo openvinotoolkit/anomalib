@@ -42,7 +42,7 @@ class PostProcessingConfigurationCallback(Callback):
         self.normalization_method = normalization_method
 
         if threshold_method == ThresholdMethod.ADAPTIVE and all(
-            i is not None for i in [manual_image_threshold, manual_pixel_threshold]
+            i is not None for i in (manual_image_threshold, manual_pixel_threshold)
         ):
             raise ValueError(
                 "When `threshold_method` is set to `adaptive`, `manual_image_threshold` and `manual_pixel_threshold` "
@@ -50,7 +50,7 @@ class PostProcessingConfigurationCallback(Callback):
             )
 
         if threshold_method == ThresholdMethod.MANUAL and all(
-            i is None for i in [manual_image_threshold, manual_pixel_threshold]
+            i is None for i in (manual_image_threshold, manual_pixel_threshold)
         ):
             raise ValueError(
                 "When `threshold_method` is set to `manual`, `manual_image_threshold` and `manual_pixel_threshold` "

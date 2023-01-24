@@ -149,7 +149,7 @@ class AnomalibCLI(LightningCLI):
         # If `resume_from_checkpoint` is not specified, it means that the project has not been created before.
         # Therefore, we need to create the project directory first.
         if config.trainer.resume_from_checkpoint is None:
-            root_dir = config.trainer.default_root_dir if config.trainer.default_root_dir else "./results"
+            root_dir = config.trainer.default_root_dir or "./results"
             model_name = config.model.class_path.split(".")[-1].lower()
             data_name = config.data.class_path.split(".")[-1].lower()
             category = config.data.init_args.category if "category" in config.data.init_args else ""

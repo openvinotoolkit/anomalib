@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import logging
-import os
+from pathlib import Path
 
 import pytorch_lightning as pl
 from pytorch_lightning import Callback
@@ -45,7 +45,7 @@ class ExportCallback(Callback):
         del trainer  # `trainer` variable is not used.
 
         logger.info("Exporting the model")
-        os.makedirs(self.dirpath, exist_ok=True)
+        Path(self.dirpath).mkdir(parents=True)
         export(
             model=pl_module,
             input_size=self.input_size,

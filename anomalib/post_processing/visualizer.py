@@ -70,10 +70,10 @@ class Visualizer:
     """
 
     def __init__(self, mode: str, task: TaskType) -> None:
-        if mode not in ["full", "simple"]:
+        if mode not in ("full", "simple"):
             raise ValueError(f"Unknown visualization mode: {mode}. Please choose one of ['full', 'simple']")
         self.mode = mode
-        if task not in [TaskType.CLASSIFICATION, TaskType.DETECTION, TaskType.SEGMENTATION]:
+        if task not in (TaskType.CLASSIFICATION, TaskType.DETECTION, TaskType.SEGMENTATION):
             raise ValueError(
                 f"Unknown task type: {mode}. Please choose one of ['classification', 'detection', 'segmentation']"
             )
@@ -90,9 +90,9 @@ class Visualizer:
         """
         batch_size, _num_channels, height, width = batch["image"].size()
         for i in range(batch_size):
-            if "image_path" in batch.keys():
+            if "image_path" in batch:
                 image = read_image(path=batch["image_path"][i], image_size=(height, width))
-            elif "video_path" in batch.keys():
+            elif "video_path" in batch:
                 image = batch["original_image"][i].squeeze().numpy()
                 image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
             else:

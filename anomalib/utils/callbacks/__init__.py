@@ -98,7 +98,7 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
 
     if "normalization_method" in config.model.keys() and not config.model.normalization_method == "none":
         if config.model.normalization_method == "cdf":
-            if config.model.name in ["padim", "stfpm"]:
+            if config.model.name in ("padim", "stfpm"):
                 if "nncf" in config.optimization and config.optimization.nncf.apply:
                     raise NotImplementedError("CDF Score Normalization is currently not compatible with NNCF.")
                 callbacks.append(CdfNormalizationCallback())
@@ -142,7 +142,7 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
             warnings.warn(f"Export option: {config.optimization.export_mode} not found. Defaulting to no model export")
 
     # Add callback to log graph to loggers
-    if config.logging.log_graph not in [None, False]:
+    if config.logging.log_graph not in (None, False):
         callbacks.append(GraphLogger())
 
     return callbacks
@@ -184,11 +184,7 @@ def add_visualizer_callback(callbacks: list[Callback], config: DictConfig | List
         config.visualization.inputs_are_normalized = not config.post_processing.normalization_method == "none"
 
     if config.visualization.log_images or config.visualization.save_images or config.visualization.show_images:
-        image_save_path = (
-            config.visualization.image_save_path
-            if config.visualization.image_save_path
-            else config.project.path + "/images"
-        )
+        image_save_path = config.visualization.image_save_path or config.project.path + "/images"
         for callback in (ImageVisualizerCallback, MetricVisualizerCallback):
             callbacks.append(
                 callback(

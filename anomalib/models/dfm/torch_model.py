@@ -103,7 +103,7 @@ class DFMModel(nn.Module):
         self.gaussian_model = SingleClassGaussian()
         self.score_type = score_type
         self.layer = layer
-        self.input_size = tuple(input_size)
+        self.input_size = input_size
         self.feature_extractor = FeatureExtractor(
             backbone=self.backbone, pre_trained=pre_trained, layers=[layer]
         ).eval()

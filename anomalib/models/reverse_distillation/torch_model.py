@@ -48,7 +48,7 @@ class ReverseDistillationModel(nn.Module):
         else:
             image_size = input_size
 
-        self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(image_size), mode=anomaly_map_mode)
+        self.anomaly_map_generator = AnomalyMapGenerator(image_size=image_size, mode=anomaly_map_mode)
 
     def forward(self, images: Tensor) -> Tensor | list[Tensor] | tuple[list[Tensor]]:
         """Forward-pass images to the network.

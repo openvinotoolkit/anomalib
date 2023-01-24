@@ -70,7 +70,7 @@ def make_ucsd_dataset(path: Path, split: str | Split | None = None) -> DataFrame
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
     folders = [filename for filename in sorted(path.glob("*/*")) if filename.is_dir()]
-    folders = [folder for folder in folders if len(list(folder.glob("*.tif"))) > 0]
+    folders = [folder for folder in folders if list(folder.glob("*.tif"))]
 
     samples_list = [(str(path),) + folder.parts[-2:] for folder in folders]
     samples = DataFrame(samples_list, columns=["root", "folder", "image_path"])

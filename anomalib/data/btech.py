@@ -81,7 +81,7 @@ def make_btech_dataset(path: Path, split: str | Split | None = None) -> DataFram
     samples_list = [
         (str(path),) + filename.parts[-3:] for filename in path.glob("**/*") if filename.suffix in (".bmp", ".png")
     ]
-    if len(samples_list) == 0:
+    if not samples_list:
         raise RuntimeError(f"Found 0 images in {path}")
 
     samples = pd.DataFrame(samples_list, columns=["path", "split", "label", "image_path"])

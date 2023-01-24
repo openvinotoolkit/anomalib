@@ -161,7 +161,7 @@ class Tiler:
         if stride is not None:
             self.stride_h, self.stride_w = self.__validate_size_type(stride)
 
-        self.remove_border_count = int(remove_border_count)
+        self.remove_border_count = remove_border_count
         self.overlapping = not (self.stride_h == self.tile_size_h and self.stride_w == self.tile_size_w)
         self.mode = mode
 
@@ -171,7 +171,7 @@ class Tiler:
                 "Please ensure stride size is less than or equal than tiling size."
             )
 
-        if self.mode not in ["padding", "interpolation"]:
+        if self.mode not in ("padding", "interpolation"):
             raise ValueError(f"Unknown tiling mode {self.mode}. Available modes are padding and interpolation")
 
         self.batch_size: int

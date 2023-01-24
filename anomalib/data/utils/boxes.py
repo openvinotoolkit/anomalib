@@ -47,8 +47,8 @@ def masks_to_boxes(masks: Tensor, anomaly_maps: Tensor | None = None) -> tuple[l
             im_boxes.append(Tensor([torch.min(x_loc), torch.min(y_loc), torch.max(x_loc), torch.max(y_loc)]))
             if anomaly_maps is not None:
                 im_scores.append(torch.max(anomaly_maps[im_idx, y_loc, x_loc]))
-        batch_boxes.append(torch.stack(im_boxes) if len(im_boxes) > 0 else torch.empty((0, 4)))
-        batch_scores.append(torch.stack(im_scores) if len(im_scores) > 0 else torch.empty(0))
+        batch_boxes.append(torch.stack(im_boxes) if im_boxes else torch.empty((0, 4)))
+        batch_scores.append(torch.stack(im_scores) if im_scores else torch.empty(0))
 
     return batch_boxes, batch_scores
 

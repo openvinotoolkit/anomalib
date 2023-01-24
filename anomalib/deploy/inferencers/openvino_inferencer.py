@@ -171,7 +171,7 @@ class OpenVINOInferencer(Inferencer):
 
         if task == TaskType.CLASSIFICATION:
             _, pred_score = self._normalize(pred_scores=pred_score, meta_data=meta_data)
-        elif task in [TaskType.SEGMENTATION, TaskType.DETECTION]:
+        elif task in (TaskType.SEGMENTATION, TaskType.DETECTION):
             if "pixel_threshold" in meta_data:
                 pred_mask = (anomaly_map >= meta_data["pixel_threshold"]).astype(np.uint8)
 
@@ -224,5 +224,5 @@ class OpenVINOInferencer(Inferencer):
         for label in labels[labels != 0]:
             y_loc, x_loc = np.where(comps == label)
             boxes.append([np.min(x_loc), np.min(y_loc), np.max(x_loc), np.max(y_loc)])
-        boxes = np.stack(boxes) if len(boxes) > 0 else np.empty((0, 4))
+        boxes = np.stack(boxes) if boxes else np.empty((0, 4))
         return boxes

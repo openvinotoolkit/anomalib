@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 import os
 import warnings
+from pathlib import Path
 from typing import Iterable
 
 from omegaconf.dictconfig import DictConfig
@@ -87,7 +88,7 @@ def get_experiment_logger(
         else:
             config.logging.logger = config.project.logger
 
-    if config.logging.logger in [None, False]:
+    if config.logging.logger in (None, False):
         return False
 
     logger_list: list[LightningLoggerBase] = []
@@ -105,7 +106,7 @@ def get_experiment_logger(
             )
         elif experiment_logger == "wandb":
             wandb_logdir = os.path.join(config.project.path, "logs")
-            os.makedirs(wandb_logdir, exist_ok=True)
+            Path(wandb_logdir).mkdir(parents=True)
             name = (
                 config.model.name
                 if "category" not in config.dataset.keys()
@@ -120,7 +121,7 @@ def get_experiment_logger(
             )
         elif experiment_logger == "comet":
             comet_logdir = os.path.join(config.project.path, "logs")
-            os.makedirs(comet_logdir, exist_ok=True)
+            Path(comet_logdir).mkdir(parents=True)
             run_name = (
                 config.model.name
                 if "category" not in config.dataset.keys()

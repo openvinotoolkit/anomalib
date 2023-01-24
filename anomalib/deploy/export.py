@@ -69,7 +69,7 @@ def export(
     # Write metadata to json file. The file is written in the same directory as the target model.
     export_path: Path = Path(str(export_root)) / export_mode.value
     export_path.mkdir(parents=True, exist_ok=True)
-    with open(Path(export_path) / "meta_data.json", "w", encoding="utf-8") as metadata_file:
+    with (Path(export_path) / "meta_data.json").open("w", encoding="utf-8") as metadata_file:
         meta_data = get_model_metadata(model)
         # Convert metadata from torch
         for key, value in meta_data.items():

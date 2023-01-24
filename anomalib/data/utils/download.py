@@ -209,7 +209,7 @@ def hash_check(file_path: Path, expected_hash: str) -> None:
         file_path (Path): Path to file.
         expected_hash (str): Expected hash of the file.
     """
-    with open(file_path, "rb") as hash_file:
+    with file_path.open("rb") as hash_file:
         assert (
             hashlib.md5(hash_file.read()).hexdigest() == expected_hash
         ), f"Downloaded file {file_path} does not match the required hash."
@@ -243,7 +243,7 @@ def download_and_extract(root: Path, info: DownloadInfo) -> None:
     if downloaded_file_path.suffix == ".zip":
         with ZipFile(downloaded_file_path, "r") as zip_file:
             zip_file.extractall(root)
-    elif downloaded_file_path.suffix in [".tar", ".gz", ".xz"]:
+    elif downloaded_file_path.suffix in (".tar", ".gz", ".xz"):
         with tarfile.open(downloaded_file_path) as tar_file:
             tar_file.extractall(root)
     else:

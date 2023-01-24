@@ -46,7 +46,7 @@ class STFPMModel(nn.Module):
             image_size = (self.tiler.tile_size_h, self.tiler.tile_size_w)
         else:
             image_size = input_size
-        self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(image_size))
+        self.anomaly_map_generator = AnomalyMapGenerator(image_size=image_size)
 
     def forward(self, images: Tensor) -> Tensor | dict[str, Tensor] | tuple[dict[str, Tensor]]:
         """Forward-pass images into the network.

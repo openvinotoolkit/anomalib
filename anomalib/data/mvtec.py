@@ -110,7 +110,7 @@ def make_mvtec_dataset(
 
     root = Path(root)
     samples_list = [(str(root),) + f.parts[-3:] for f in root.glob(r"**/*") if f.suffix in extensions]
-    if len(samples_list) == 0:
+    if not samples_list:
         raise RuntimeError(f"Found 0 images in {root}")
 
     samples = DataFrame(samples_list, columns=["path", "split", "label", "image_path"])

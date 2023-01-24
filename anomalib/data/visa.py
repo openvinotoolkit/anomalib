@@ -219,7 +219,7 @@ class Visa(AnomalibDataModule):
             test_img_bad_folder.mkdir(parents=True, exist_ok=True)
             test_mask_bad_folder.mkdir(parents=True, exist_ok=True)
 
-        with open(split_file, encoding="utf-8") as file:
+        with split_file.open(encoding="utf-8") as file:
             csvreader = csv.reader(file)
             next(csvreader)
             for row in csvreader:

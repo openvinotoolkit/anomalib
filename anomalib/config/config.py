@@ -219,7 +219,7 @@ def get_configurable_parameters(
     Returns:
         DictConfig | ListConfig: Configurable parameters in DictConfig object.
     """
-    if model_name is None and config_path is None:
+    if model_name is None is config_path:
         raise ValueError(
             "Both model_name and model config path cannot be None! "
             "Please provide a model name or path to a config file!"

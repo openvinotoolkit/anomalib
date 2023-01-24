@@ -102,9 +102,7 @@ def random_split(
     # split each (label-aware) subset of source data
     for label_dataset in per_label_datasets:
         # get subset lengths
-        subset_lengths = []
-        for ratio in split_ratio:
-            subset_lengths.append(int(math.floor(len(label_dataset.samples) * ratio)))
+        subset_lengths = [math.floor(len(label_dataset.samples) * ratio) for ratio in split_ratio]
         for i in range(len(label_dataset.samples) - sum(subset_lengths)):
             subset_idx = i % sum(subset_lengths)
             subset_lengths[subset_idx] += 1

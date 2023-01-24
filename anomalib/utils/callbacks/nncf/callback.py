@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import Any
 
 import pytorch_lightning as pl
@@ -88,7 +89,7 @@ class NNCFCallback(Callback):
         if self.export_dir is None or self.nncf_ctrl is None:
             return
 
-        os.makedirs(self.export_dir, exist_ok=True)
+        Path(self.export_dir).mkdir(parents=True)
         onnx_path = os.path.join(self.export_dir, "model_nncf.onnx")
         self.nncf_ctrl.export_model(onnx_path)
         optimize_command = "mo --input_model " + onnx_path + " --output_dir " + self.export_dir
