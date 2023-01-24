@@ -5,3 +5,4 @@ flake8==4.0.1
 pytest
 pre-commit>=2.15.0
 tox>=3.24.3
+nbmake>=1.3.5
