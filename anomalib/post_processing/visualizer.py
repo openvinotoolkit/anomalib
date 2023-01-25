@@ -55,8 +55,8 @@ class ImageResult:
             self.gt_mask *= 255
         if self.pred_boxes is not None:
             assert self.box_labels is not None, "Box labels must be provided when box locations are provided."
-            self.normal_boxes = self.pred_boxes[~self.box_labels.astype(np.bool)]
-            self.anomalous_boxes = self.pred_boxes[self.box_labels.astype(np.bool)]
+            self.normal_boxes = self.pred_boxes[~self.box_labels.astype(bool)]
+            self.anomalous_boxes = self.pred_boxes[self.box_labels.astype(bool)]
 
 
 class Visualizer:
