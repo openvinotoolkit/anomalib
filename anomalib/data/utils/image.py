@@ -3,10 +3,11 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import math
 import warnings
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
 
 import cv2
 import numpy as np
@@ -15,17 +16,17 @@ from torch import Tensor
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
 
-def get_image_filenames(path: Union[str, Path]) -> List[Path]:
+def get_image_filenames(path: str | Path) -> list[Path]:
     """Get image filenames.
 
     Args:
-        path (Union[str, Path]): Path to image or image-folder.
+        path (str | Path): Path to image or image-folder.
 
     Returns:
-        List[Path]: List of image filenames
+        list[Path]: List of image filenames
 
     """
-    image_filenames: List[Path]
+    image_filenames: list[Path]
 
     if isinstance(path, str):
         path = Path(path)
@@ -36,19 +37,19 @@ def get_image_filenames(path: Union[str, Path]) -> List[Path]:
     if path.is_dir():
         image_filenames = [p for p in path.glob("**/*") if p.suffix in IMG_EXTENSIONS]
 
-    if len(image_filenames) == 0:
+    if image_filenames:
         raise ValueError(f"Found 0 images in {path}")
 
     return image_filenames
 
 
-def duplicate_filename(path: Union[str, Path]) -> Path:
+def duplicate_filename(path: str | Path) -> Path:
     """Check and duplicate filename.
 
     This function checks the path and adds a suffix if it already exists on the file system.
 
     Args:
-        path (Union[str, Path]): Input Path
+        path (str | Path): Input Path
 
     Examples:
         >>> path = Path("datasets/MVTec/bottle/test/broken_large/000.png")
@@ -76,7 +77,7 @@ def duplicate_filename(path: Union[str, Path]) -> Path:
     return duplicated_path
 
 
-def generate_output_image_filename(input_path: Union[str, Path], output_path: Union[str, Path]) -> Path:
+def generate_output_image_filename(input_path: str | Path, output_path: str | Path) -> Path:
     """Generate an output filename to save the inference image.
 
     This function generates an output filaname by checking the input and output filenames. Input path is
@@ -89,8 +90,8 @@ def generate_output_image_filename(input_path: Union[str, Path], output_path: Un
     filenames of ``input_path`` to ``output_path``.
 
     Args:
-        input_path (Union[str, Path]): Path to the input image to infer.
-        output_path (Union[str, Path]): Path to output to save the predictions.
+        input_path (str | Path): Path to the input image to infer.
+        output_path (str | Path): Path to output to save the predictions.
             Could be a filename or a directory.
 
     Examples:
@@ -141,11 +142,11 @@ def generate_output_image_filename(input_path: Union[str, Path], output_path: Un
     return file_path
 
 
-def get_image_height_and_width(image_size: Union[int, Tuple[int, int]]) -> Tuple[int, int]:
+def get_image_height_and_width(image_size: int | tuple[int, int]) -> tuple[int, int]:
     """Get image height and width from ``image_size`` variable.
 
     Args:
-        image_size (Optional[Union[int, Tuple[int, int]]], optional): Input image size.
+        image_size (int | tuple[int, int] | None, optional): Input image size.
 
     Raises:
         ValueError: Image size not None, int or tuple.
@@ -164,22 +165,22 @@ def get_image_height_and_width(image_size: Union[int, Tuple[int, int]]) -> Tuple
         Traceback (most recent call last):
         File "<string>", line 1, in <module>
         File "<string>", line 18, in get_image_height_and_width
-        ValueError: ``image_size`` could be either int or Tuple[int, int]
+        ValueError: ``image_size`` could be either int or tuple[int, int]
 
     Returns:
-        Tuple[Optional[int], Optional[int]]: A tuple containing image height and width values.
+        tuple[int | None, int | None]: A tuple containing image height and width values.
     """
     if isinstance(image_size, int):
         height_and_width = (image_size, image_size)
     elif isinstance(image_size, tuple):
         height_and_width = int(image_size[0]), int(image_size[1])
     else:
-        raise ValueError("``image_size`` could be either int or Tuple[int, int]")
+        raise ValueError("``image_size`` could be either int or tuple[int, int]")
 
     return height_and_width
 
 
-def read_image(path: Union[str, Path], image_size: Optional[Union[int, Tuple[int, int]]] = None) -> np.ndarray:
+def read_image(path: str | Path, image_size: int | tuple[int, int] | None = None) -> np.ndarray:
     """Read image from disk in RGB format.
 
     Args:

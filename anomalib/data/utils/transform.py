@@ -3,9 +3,10 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
 from enum import Enum
-from typing import Optional, Tuple, Union
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
@@ -23,18 +24,18 @@ class InputNormalizationMethod(str, Enum):
 
 
 def get_transforms(
-    config: Optional[Union[str, A.Compose]] = None,
-    image_size: Optional[Union[int, Tuple[int, int]]] = None,
-    center_crop: Optional[Union[int, Tuple[int, int]]] = None,
+    config: str | A.Compose | None = None,
+    image_size: int | tuple[int, int] | None = None,
+    center_crop: int | tuple[int, int] | None = None,
     normalization: InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
     to_tensor: bool = True,
 ) -> A.Compose:
     """Get transforms from config or image size.
 
     Args:
-        config (Optional[Union[str, A.Compose]], optional): Albumentations transforms.
+        config (str | A.Compose | None, optional): Albumentations transforms.
             Either config or albumentations ``Compose`` object. Defaults to None.
-        image_size (Optional[Union[int, Tuple]], optional): Image size to transform. Defaults to None.
+        image_size (int | tuple | None, optional): Image size to transform. Defaults to None.
         to_tensor (bool, optional): Boolean to convert the final transforms into Torch tensor. Defaults to True.
 
     Raises:

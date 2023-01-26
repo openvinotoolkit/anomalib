@@ -9,10 +9,11 @@ extracts the dataset and create PyTorch data objects.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
 import shutil
 from pathlib import Path
-from typing import Optional, Tuple, Union
 
 import albumentations as A
 import cv2
@@ -40,7 +41,7 @@ DOWNLOAD_INFO = DownloadInfo(
 )
 
 
-def make_btech_dataset(path: Path, split: Optional[Union[Split, str]] = None) -> DataFrame:
+def make_btech_dataset(path: Path, split: str | Split | None = None) -> DataFrame:
     """Create BTech samples by parsing the BTech data file structure.
 
     The files are expected to follow the structure:
@@ -49,7 +50,7 @@ def make_btech_dataset(path: Path, split: Optional[Union[Split, str]] = None) ->
 
     Args:
         path (Path): Path to dataset
-        split (Optional[Union[Split, str]], optional): Dataset split (ie., either train or test). Defaults to None.
+        split (str | Split | None, optional): Dataset split (ie., either train or test). Defaults to None.
         split_ratio (float, optional): Ratio to split normal training images and add to the
             test set in case test set doesn't contain any normal images.
             Defaults to 0.1.
@@ -80,7 +81,7 @@ def make_btech_dataset(path: Path, split: Optional[Union[Split, str]] = None) ->
     samples_list = [
         (str(path),) + filename.parts[-3:] for filename in path.glob("**/*") if filename.suffix in (".bmp", ".png")
     ]
-    if len(samples_list) == 0:
+    if not samples_list:
         raise RuntimeError(f"Found 0 images in {path}")
 
     samples = pd.DataFrame(samples_list, columns=["path", "split", "label", "image_path"])
@@ -159,10 +160,10 @@ class BTechDataset(AnomalibDataset):
 
     def __init__(
         self,
-        root: Union[Path, str],
+        root: str | Path,
         category: str,
         transform: A.Compose,
-        split: Optional[Union[Split, str]] = None,
+        split: str | Split | None = None,
         task: TaskType = TaskType.SEGMENTATION,
     ) -> None:
         super().__init__(task, transform)
@@ -170,7 +171,7 @@ class BTechDataset(AnomalibDataset):
         self.root_category = Path(root) / category
         self.split = split
 
-    def _setup(self):
+    def _setup(self) -> None:
         self.samples = make_btech_dataset(path=self.root_category, split=self.split)
 
 
@@ -179,25 +180,36 @@ class BTech(AnomalibDataModule):
     """BTech Lightning Data Module.
 
     Args:
-        root: Path to the BTech dataset
-        category: Name of the BTech category.
-        image_size: Variable to which image is resized.
-        center_crop (Optional[Union[int, Tuple[int, int]]], optional): When provided, the images will be center-cropped
-            to the provided dimensions.
-        normalize (bool): When True, the images will be normalized to the ImageNet statistics.
-        train_batch_size: Training batch size.
-        test_batch_size: Testing batch size.
-        num_workers: Number of workers.
-        task: ``classification``, ``detection`` or ``segmentation``
-        transform_config_train: Config for pre-processing during training.
-        transform_config_val: Config for pre-processing during validation.
-        create_validation_set: Create a validation subset in addition to the train and test subsets
-        seed (Optional[int], optional): Seed used during random subset splitting.
-        test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
-        test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
-        val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
-        val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
-        seed (Optional[int], optional): Seed which may be set to a fixed value for reproducibility.
+
+        root (str): Path to the BTech dataset.
+        category (str): Name of the BTech category.
+        image_size (int | tuple[int, int] | None, optional): Variable to which image is resized. Defaults to None.
+        center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped to the
+            provided dimensions.
+            Defaults to None.
+        normalization (str | InputNormalizationMethod, optional): When True, the images will be normalized to the
+            ImageNet statistics.
+            Defaults to InputNormalizationMethod.IMAGENET.
+        train_batch_size (int, optional): Training batch size.
+            Defaults to 32.
+        eval_batch_size (int, optional): Eval batch size.
+            Defaults to 32.
+        num_workers (int, optional): Number of workers. Defaults to 8.
+        task (TaskType, optional): Task type.
+            Defaults to TaskType.SEGMENTATION.
+        transform_config_train (str | A.Compose | None, optional): Config for pre-processing during training.
+            Defaults to None.
+        transform_config_eval (str | A.Compose | None, optional): Config for pre-processing during validation.
+            Defaults to None.
+        test_split_mode (TestSplitMode, optional): Setting that determines how the testing subset is obtained.
+            Defaults to TestSplitMode.FROM_DIR.
+        test_split_ratio (float, optional): Fraction of images from the train set that will be reserved for testing.
+            Defaults to 0.2.
+        val_split_mode (ValSplitMode, optional): Setting that determines how the validation subset is obtained.
+            Defaults to ValSplitMode.SAME_AS_TEST.
+        val_split_ratio (float, optional): Fraction of train or test images that will be reserved for validation.
+            Defaults to 0.5.
+        seed (int | None, optional): Seed which may be set to a fixed value for reproducibility. Defaults to None.
 
     Examples:
         >>> from anomalib.data import BTech
@@ -230,20 +242,20 @@ class BTech(AnomalibDataModule):
         self,
         root: str,
         category: str,
-        image_size: Optional[Union[int, Tuple[int, int]]] = None,
-        center_crop: Optional[Union[int, Tuple[int, int]]] = None,
-        normalization: Union[InputNormalizationMethod, str] = InputNormalizationMethod.IMAGENET,
+        image_size: int | tuple[int, int] | None = None,
+        center_crop: int | tuple[int, int] | None = None,
+        normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
         task: TaskType = TaskType.SEGMENTATION,
-        transform_config_train: Optional[Union[str, A.Compose]] = None,
-        transform_config_eval: Optional[Union[str, A.Compose]] = None,
+        transform_config_train: str | A.Compose | None = None,
+        transform_config_eval: str | A.Compose | None = None,
         test_split_mode: TestSplitMode = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
         val_split_ratio: float = 0.5,
-        seed: Optional[int] = None,
+        seed: int | None = None,
     ) -> None:
         super().__init__(
             train_batch_size=train_batch_size,

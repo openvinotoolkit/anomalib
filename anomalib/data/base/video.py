@@ -1,7 +1,9 @@
 """Base Video Dataset."""
 
+from __future__ import annotations
+
 from abc import ABC
-from typing import Callable, Dict, Optional, Union
+from typing import Callable
 
 import albumentations as A
 import torch
@@ -25,15 +27,17 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         frames_between_clips (int): Number of frames between each consecutive video clip.
     """
 
-    def __init__(self, task: TaskType, transform: A.Compose, clip_length_in_frames: int, frames_between_clips: int):
+    def __init__(
+        self, task: TaskType, transform: A.Compose, clip_length_in_frames: int, frames_between_clips: int
+    ) -> None:
         super().__init__(task, transform)
 
         self.clip_length_in_frames = clip_length_in_frames
         self.frames_between_clips = frames_between_clips
         self.transform = transform
 
-        self.indexer: Optional[ClipsIndexer] = None
-        self.indexer_cls: Optional[Callable] = None
+        self.indexer: ClipsIndexer | None = None
+        self.indexer_cls: Callable | None = None
 
     def __len__(self) -> int:
         """Get length of the dataset."""
@@ -64,7 +68,7 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
             frames_between_clips=self.frames_between_clips,
         )
 
-    def __getitem__(self, index: int) -> Dict[str, Union[str, Tensor]]:
+    def __getitem__(self, index: int) -> dict[str, str | Tensor]:
         """Return mask, clip and file system information."""
         assert isinstance(self.indexer, ClipsIndexer)
 
@@ -98,7 +102,7 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
 class AnomalibVideoDataModule(AnomalibDataModule):
     """Base class for video data modules."""
 
-    def _setup(self, _stage: Optional[str] = None) -> None:
+    def _setup(self, _stage: str | None = None) -> None:
         """Set up the datasets and perform dynamic subset splitting.
 
         This method may be overridden in subclass for custom splitting behaviour.

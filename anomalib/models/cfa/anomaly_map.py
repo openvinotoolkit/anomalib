@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import Tuple, Union
+from __future__ import annotations
 
 import torch
 import torch.nn.functional as F
@@ -20,7 +20,7 @@ class AnomalyMapGenerator(nn.Module):
 
     def __init__(
         self,
-        image_size: Union[ListConfig, Tuple],
+        image_size: ListConfig | tuple,
         num_nearest_neighbors: int,
         sigma: int = 4,
     ) -> None:
@@ -29,13 +29,13 @@ class AnomalyMapGenerator(nn.Module):
         self.num_nearest_neighbors = num_nearest_neighbors
         self.sigma = sigma
 
-    def compute_score(self, distance: Tensor, scale: Tuple[int, int]) -> Tensor:
+    def compute_score(self, distance: Tensor, scale: tuple[int, int]) -> Tensor:
         """Compute score based on the distance.
 
         Args:
             distance (Tensor): Distance tensor computed using target oriented
                 features.
-            scale (Tuple[int, int]): Height and width of the largest feature
+            scale (tuple[int, int]): Height and width of the largest feature
                 map.
 
         Returns:
@@ -78,7 +78,7 @@ class AnomalyMapGenerator(nn.Module):
             raise ValueError(f"Expected keys `distance` and `scale. Found {kwargs.keys()}")
 
         distance: Tensor = kwargs["distance"]
-        scale: Tuple[int, int] = kwargs["scale"]
+        scale: tuple[int, int] = kwargs["scale"]
 
         score = self.compute_score(distance=distance, scale=scale)
         anomaly_map = self.compute_anomaly_map(score)

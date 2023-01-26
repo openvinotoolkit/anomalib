@@ -9,7 +9,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Tuple, Union
+from __future__ import annotations
 
 import torch
 import torch.nn.functional as F
@@ -22,7 +22,7 @@ class AnomalyMapGenerator(nn.Module):
     """Generate Anomaly Heatmap.
 
     Args:
-        image_size (Union[ListConfig, Tuple]): Size of original image used for upscaling the anomaly map.
+        image_size (ListConfig, tuple): Size of original image used for upscaling the anomaly map.
         sigma (int): Standard deviation of the gaussian kernel used to smooth anomaly map.
         mode (str, optional): Operation used to generate anomaly map. Options are `add` and `multiply`.
                 Defaults to "multiply".
@@ -31,7 +31,7 @@ class AnomalyMapGenerator(nn.Module):
         ValueError: In case modes other than multiply and add are passed.
     """
 
-    def __init__(self, image_size: Union[ListConfig, Tuple], sigma: int = 4, mode: str = "multiply"):
+    def __init__(self, image_size: ListConfig | tuple, sigma: int = 4, mode: str = "multiply") -> None:
         super().__init__()
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
         self.sigma = sigma
@@ -41,12 +41,12 @@ class AnomalyMapGenerator(nn.Module):
             raise ValueError(f"Found mode {mode}. Only multiply and add are supported.")
         self.mode = mode
 
-    def forward(self, student_features: List[Tensor], teacher_features: List[Tensor]) -> Tensor:
+    def forward(self, student_features: list[Tensor], teacher_features: list[Tensor]) -> Tensor:
         """Computes anomaly map given encoder and decoder features.
 
         Args:
-            student_features (List[Tensor]): List of encoder features
-            teacher_features (List[Tensor]): List of decoder features
+            student_features (list[Tensor]): List of encoder features
+            teacher_features (list[Tensor]): List of decoder features
 
         Returns:
             Tensor: Anomaly maps of length batch.

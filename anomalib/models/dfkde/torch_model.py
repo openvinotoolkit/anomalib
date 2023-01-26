@@ -3,8 +3,9 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
-from typing import List
 
 import torch
 import torch.nn.functional as F
@@ -35,13 +36,13 @@ class DfkdeModel(nn.Module):
 
     def __init__(
         self,
-        layers: List[str],
+        layers: list[str],
         backbone: str,
         pre_trained: bool = True,
         n_pca_components: int = 16,
         feature_scaling_method: FeatureScalingMethod = FeatureScalingMethod.SCALE,
         max_training_points: int = 40000,
-    ):
+    ) -> None:
         super().__init__()
 
         self.feature_extractor = FeatureExtractor(backbone=backbone, pre_trained=pre_trained, layers=layers).eval()

@@ -3,8 +3,9 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 from enum import Enum
-from typing import Tuple
 
 import torch
 import torch.nn.functional as F
@@ -22,11 +23,11 @@ class AnomalyMapGenerator(nn.Module):
     """Anomaly Map Generator for CS-Flow model.
 
     Args:
-        input_dims (Tuple[int, int, int]): Input dimensions.
+        input_dims (tuple[int, int, int]): Input dimensions.
         mode (AnomalyMapMode): Anomaly map mode. Defaults to AnomalyMapMode.ALL.
     """
 
-    def __init__(self, input_dims: Tuple[int, int, int], mode: AnomalyMapMode = AnomalyMapMode.ALL):
+    def __init__(self, input_dims: tuple[int, int, int], mode: AnomalyMapMode = AnomalyMapMode.ALL) -> None:
         super().__init__()
         self.mode = mode
         self.input_dims = input_dims

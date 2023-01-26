@@ -3,7 +3,9 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any, List, Optional, Union
+from __future__ import annotations
+
+from typing import Any
 
 import numpy as np
 from matplotlib.figure import Figure
@@ -68,17 +70,17 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
 
     def __init__(
         self,
-        name: Optional[str] = None,
-        save_dir: Optional[str] = None,
-        offline: Optional[bool] = False,
-        id: Optional[str] = None,  # kept to match wandb init pylint: disable=redefined-builtin
-        anonymous: Optional[bool] = None,
-        version: Optional[str] = None,
-        project: Optional[str] = None,
-        log_model: Union[str, bool] = False,
+        name: str | None = None,
+        save_dir: str | None = None,
+        offline: bool | None = False,
+        id: str | None = None,  # kept to match wandb init pylint: disable=redefined-builtin
+        anonymous: bool | None = None,
+        version: str | None = None,
+        project: str | None = None,
+        log_model: str | bool = False,
         experiment=None,
-        prefix: Optional[str] = "",
-        **kwargs
+        prefix: str | None = "",
+        **kwargs,
     ) -> None:
         super().__init__(
             name=name,
@@ -91,17 +93,17 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
             log_model=log_model,
             experiment=experiment,
             prefix=prefix,
-            **kwargs
+            **kwargs,
         )
-        self.image_list: List[wandb.Image] = []  # Cache images
+        self.image_list: list[wandb.Image] = []  # Cache images
 
     @rank_zero_only
-    def add_image(self, image: Union[np.ndarray, Figure], name: Optional[str] = None, **kwargs: Any):
+    def add_image(self, image: np.ndarray | Figure, name: str | None = None, **kwargs: Any):
         """Interface to add image to wandb logger.
 
         Args:
-            image (Union[np.ndarray, Figure]): Image to log
-            name (Optional[str]): The tag of the image
+            image (np.ndarray | Figure): Image to log
+            name (str | None): The tag of the image
         """
         image = wandb.Image(image, caption=name)
         self.image_list.append(image)

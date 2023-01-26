@@ -3,9 +3,12 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import warnings
 
 import torch
+from torch import Tensor
 from torchmetrics import PrecisionRecallCurve
 
 
@@ -21,13 +24,13 @@ class AnomalyScoreThreshold(PrecisionRecallCurve):
     adaptive threshold value.
     """
 
-    def __init__(self, default_value: float = 0.5, **kwargs):
+    def __init__(self, default_value: float = 0.5, **kwargs) -> None:
         super().__init__(num_classes=1, **kwargs)
 
         self.add_state("value", default=torch.tensor(default_value), persistent=True)  # pylint: disable=not-callable
         self.value = torch.tensor(default_value)  # pylint: disable=not-callable
 
-    def compute(self) -> torch.Tensor:
+    def compute(self) -> Tensor:
         """Compute the threshold that yields the optimal F1 score.
 
         Compute the F1 scores while varying the threshold. Store the optimal
@@ -36,9 +39,9 @@ class AnomalyScoreThreshold(PrecisionRecallCurve):
         Returns:
             Value of the F1 score at the optimal threshold.
         """
-        precision: torch.Tensor
-        recall: torch.Tensor
-        thresholds: torch.Tensor
+        precision: Tensor
+        recall: Tensor
+        thresholds: Tensor
 
         if not any(1 in batch for batch in self.target):
             warnings.warn(

@@ -3,6 +3,8 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 from pathlib import Path
 
 import numpy as np
@@ -27,7 +29,7 @@ class MetricVisualizerCallback(BaseVisualizerCallback):
         """Log images of the metrics contained in pl_module.
 
         In order to also plot custom metrics, they need to have implemented a `generate_figure` function that returns
-        Tuple[matplotlib.figure.Figure, str].
+        tuple[matplotlib.figure.Figure, str].
 
         Args:
             trainer (pl.Trainer): pytorch lightning trainer.

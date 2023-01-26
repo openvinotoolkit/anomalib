@@ -3,13 +3,15 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
 import os
 import warnings
 from datetime import datetime
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Type, Union
+from typing import Any, Callable
 
 from omegaconf.omegaconf import OmegaConf
 from pytorch_lightning import LightningDataModule, LightningModule, Trainer
@@ -47,19 +49,19 @@ class AnomalibCLI(LightningCLI):
 
     def __init__(  # pylint: disable=too-many-function-args
         self,
-        model_class: Optional[Union[Type[LightningModule], Callable[..., LightningModule]]] = None,
-        datamodule_class: Optional[Union[Type[LightningDataModule], Callable[..., LightningDataModule]]] = None,
-        save_config_callback: Optional[Type[SaveConfigCallback]] = SaveConfigCallback,
+        model_class: type[LightningModule] | Callable[..., LightningModule] | None = None,
+        datamodule_class: type[LightningDataModule] | Callable[..., LightningDataModule] | None = None,
+        save_config_callback: type[SaveConfigCallback] | None = SaveConfigCallback,
         save_config_filename: str = "config.yaml",
         save_config_overwrite: bool = False,
         save_config_multifile: bool = False,
-        trainer_class: Union[Type[Trainer], Callable[..., Trainer]] = Trainer,
-        trainer_defaults: Optional[Dict[str, Any]] = None,
-        seed_everything_default: Optional[int] = None,
+        trainer_class: type[Trainer] | Callable[..., Trainer] = Trainer,
+        trainer_defaults: dict[str, Any] | None = None,
+        seed_everything_default: int | None = None,
         description: str = "Anomalib trainer command line tool",
         env_prefix: str = "Anomalib",
         env_parse: bool = False,
-        parser_kwargs: Optional[Union[Dict[str, Any], Dict[str, Dict[str, Any]]]] = None,
+        parser_kwargs: dict[str, Any] | dict[str, dict[str, Any]] | None = None,
         subclass_mode_model: bool = False,
         subclass_mode_data: bool = False,
         run: bool = True,
@@ -147,7 +149,7 @@ class AnomalibCLI(LightningCLI):
         # If `resume_from_checkpoint` is not specified, it means that the project has not been created before.
         # Therefore, we need to create the project directory first.
         if config.trainer.resume_from_checkpoint is None:
-            root_dir = config.trainer.default_root_dir if config.trainer.default_root_dir else "./results"
+            root_dir = config.trainer.default_root_dir or "./results"
             model_name = config.model.class_path.split(".")[-1].lower()
             data_name = config.data.class_path.split(".")[-1].lower()
             category = config.data.init_args.category if "category" in config.data.init_args else ""

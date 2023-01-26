@@ -6,13 +6,14 @@ This dataset can be used when there is a lack of real anomalous data.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
 import math
 import shutil
 from copy import deepcopy
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import Dict
 
 import albumentations as A
 import cv2
@@ -109,7 +110,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         source_samples (DataFrame): Normal samples to which the anomalous augmentations will be applied.
     """
 
-    def __init__(self, task: TaskType, transform: A.Compose, source_samples: DataFrame):
+    def __init__(self, task: TaskType, transform: A.Compose, source_samples: DataFrame) -> None:
         super().__init__(task, transform)
 
         self.source_samples = source_samples
@@ -130,7 +131,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         self.setup()
 
     @classmethod
-    def from_dataset(cls, dataset: AnomalibDataset) -> "SyntheticAnomalyDataset":
+    def from_dataset(cls, dataset: AnomalibDataset) -> SyntheticAnomalyDataset:
         """Create a synthetic anomaly dataset from an existing dataset of normal images.
 
         Args:
@@ -139,7 +140,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         """
         return cls(task=dataset.task, transform=dataset.transform, source_samples=dataset.samples)
 
-    def __copy__(self) -> "SyntheticAnomalyDataset":
+    def __copy__(self) -> SyntheticAnomalyDataset:
         """Returns a shallow copy of the dataset object and prevents cleanup when original object is deleted."""
         cls = self.__class__
         new = cls.__new__(cls)
@@ -147,7 +148,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         self._cleanup = False
         return new
 
-    def __deepcopy__(self, _memo: Dict) -> "SyntheticAnomalyDataset":
+    def __deepcopy__(self, _memo: dict) -> SyntheticAnomalyDataset:
         """Returns a deep copy of the dataset object and prevents cleanup when original object is deleted."""
         cls = self.__class__
         new = cls.__new__(cls)
@@ -161,7 +162,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         logger.info("Generating synthetic anomalous images for validation set")
         self.samples = make_synthetic_dataset(self.source_samples, self.im_dir, self.mask_dir, 0.5)
 
-    def __del__(self):
+    def __del__(self) -> None:
         """Make sure the temporary directory is cleaned up when the dataset object is deleted."""
         if self._cleanup:
             shutil.rmtree(self.root)

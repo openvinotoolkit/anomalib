@@ -6,7 +6,7 @@ https://arxiv.org/pdf/2107.12571v1.pdf
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Tuple, Union
+from __future__ import annotations
 
 import einops
 import torch
@@ -14,7 +14,9 @@ import torch.nn.functional as F
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
-from torch import optim
+from pytorch_lightning.utilities.types import STEP_OUTPUT
+from torch import Tensor, optim
+from torch.optim import Optimizer
 
 from anomalib.models.cflow.torch_model import CflowModel
 from anomalib.models.cflow.utils import get_logp, positional_encoding_2d
@@ -29,9 +31,9 @@ class Cflow(AnomalyModule):
 
     def __init__(
         self,
-        input_size: Tuple[int, int],
+        input_size: tuple[int, int],
         backbone: str,
-        layers: List[str],
+        layers: list[str],
         pre_trained: bool = True,
         fiber_batch_size: int = 64,
         decoder: str = "freia-cflow",
@@ -40,7 +42,7 @@ class Cflow(AnomalyModule):
         clamp_alpha: float = 1.9,
         permute_soft: bool = False,
         lr: float = 0.0001,
-    ):
+    ) -> None:
         super().__init__()
 
         self.model: CflowModel = CflowModel(
@@ -60,7 +62,7 @@ class Cflow(AnomalyModule):
         #   optimizer this is to be addressed later.
         self.learning_rate = lr
 
-    def configure_optimizers(self) -> torch.optim.Optimizer:
+    def configure_optimizers(self) -> Optimizer:
         """Configures optimizers for each decoder.
 
         Note:
@@ -82,7 +84,7 @@ class Cflow(AnomalyModule):
         )
         return optimizer
 
-    def training_step(self, batch, _):  # pylint: disable=arguments-differ
+    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Training Step of CFLOW.
 
         For each batch, decoder layers are trained with a dynamic fiber batch size.
@@ -90,8 +92,7 @@ class Cflow(AnomalyModule):
             per batch of input images
 
         Args:
-          batch: Input batch
-          _: Index of the batch.
+          batch (dict[str, str | Tensor]): Input batch
 
         Returns:
           Loss value for the batch
@@ -100,7 +101,7 @@ class Cflow(AnomalyModule):
         opt = self.optimizers()
         self.model.encoder.eval()
 
-        images = batch["image"]
+        images: Tensor = batch["image"]
         activation = self.model.encoder(images)
         avg_loss = torch.zeros([1], dtype=torch.float64).to(images.device)
 
@@ -153,7 +154,7 @@ class Cflow(AnomalyModule):
         self.log("train_loss", avg_loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": avg_loss}
 
-    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
+    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Validation Step of CFLOW.
 
             Similar to the training step, encoder features
@@ -161,12 +162,11 @@ class Cflow(AnomalyModule):
             map is computed.
 
         Args:
-          batch: Input batch
-          _: Index of the batch.
+            batch (dict[str, str | Tensor]): Input batch
 
         Returns:
-          Dictionary containing images, anomaly maps, true labels and masks.
-          These are required in `validation_epoch_end` for feature concatenation.
+            Dictionary containing images, anomaly maps, true labels and masks.
+            These are required in `validation_epoch_end` for feature concatenation.
 
         """
         batch["anomaly_maps"] = self.model(batch["image"])
@@ -178,10 +178,10 @@ class CflowLightning(Cflow):
     """PL Lightning Module for the CFLOW algorithm.
 
     Args:
-        hparams (Union[DictConfig, ListConfig]): Model params
+        hparams (DictConfig | ListConfig): Model params
     """
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
+    def __init__(self, hparams: DictConfig | ListConfig) -> None:
         super().__init__(
             input_size=hparams.model.input_size,
             backbone=hparams.model.backbone,
@@ -194,10 +194,10 @@ class CflowLightning(Cflow):
             clamp_alpha=hparams.model.clamp_alpha,
             permute_soft=hparams.model.permute_soft,
         )
-        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
+        self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
 
-    def configure_callbacks(self):
+    def configure_callbacks(self) -> list[EarlyStopping]:
         """Configure model-specific callbacks.
 
         Note:

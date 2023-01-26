@@ -3,6 +3,8 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import functools
 import io
 import logging
@@ -16,7 +18,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Dict, List, Optional, Union, cast
+from typing import cast
 
 import torch
 from omegaconf import DictConfig, ListConfig, OmegaConf
@@ -74,7 +76,7 @@ def hide_output(func):
 
 
 @hide_output
-def get_single_model_metrics(model_config: Union[DictConfig, ListConfig], openvino_metrics: bool = False) -> Dict:
+def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_metrics: bool = False) -> dict:
     """Collects metrics for `model_name` and returns a dict of results.
 
     Args:
@@ -82,7 +84,7 @@ def get_single_model_metrics(model_config: Union[DictConfig, ListConfig], openvi
         openvino_metrics (bool): If True, converts the model to OpenVINO format and gathers inference metrics.
 
     Returns:
-        Dict: Collection of all the metrics such as time taken, throughput and performance scores.
+        dict: Collection of all the metrics such as time taken, throughput and performance scores.
     """
 
     with TemporaryDirectory() as project_path:
@@ -135,7 +137,7 @@ def get_single_model_metrics(model_config: Union[DictConfig, ListConfig], openvi
     return data
 
 
-def compute_on_cpu(sweep_config: Union[DictConfig, ListConfig], folder: Optional[str] = None):
+def compute_on_cpu(sweep_config: DictConfig | ListConfig, folder: str | None = None):
     """Compute all run configurations over a sigle CPU."""
     for run_config in get_run_config(sweep_config.grid_search):
         model_metrics = sweep(run_config, 0, sweep_config.seed, False)
@@ -143,20 +145,20 @@ def compute_on_cpu(sweep_config: Union[DictConfig, ListConfig], folder: Optional
 
 
 def compute_on_gpu(
-    run_configs: List[DictConfig],
+    run_configs: list[DictConfig],
     device: int,
     seed: int,
-    writers: List[str],
-    folder: Optional[str] = None,
+    writers: list[str],
+    folder: str | None = None,
     compute_openvino: bool = False,
 ):
     """Go over each run config and collect the result.
 
     Args:
-        run_configs (Union[DictConfig, ListConfig]): List of run configurations.
+        run_configs (DictConfig | ListConfig): List of run configurations.
         device (int): The GPU id used for running the sweep.
         seed (int): Fix a seed.
-        writers (List[str]): Destinations to write to.
+        writers (list[str]): Destinations to write to.
         folder (optional, str): Sub-directory to which runs are written to. Defaults to None. If none writes to root.
         compute_openvino (bool, optional): Compute OpenVINO throughput. Defaults to False.
     """
@@ -170,7 +172,7 @@ def compute_on_gpu(
             )
 
 
-def distribute_over_gpus(sweep_config: Union[DictConfig, ListConfig], folder: Optional[str] = None):
+def distribute_over_gpus(sweep_config: DictConfig | ListConfig, folder: str | None = None):
     """Distribute metric collection over all available GPUs. This is done by splitting the list of configurations."""
     with ProcessPoolExecutor(
         max_workers=torch.cuda.device_count(), mp_context=multiprocessing.get_context("spawn")
@@ -198,11 +200,11 @@ def distribute_over_gpus(sweep_config: Union[DictConfig, ListConfig], folder: Op
                 raise Exception(f"Error occurred while computing benchmark on GPU {job}") from exc
 
 
-def distribute(config: Union[DictConfig, ListConfig]):
+def distribute(config: DictConfig | ListConfig):
     """Run all cpu experiments on a single process. Distribute gpu experiments over all available gpus.
 
     Args:
-        config: (Union[DictConfig, ListConfig]): Sweep configuration.
+        config: (DictConfig | ListConfig): Sweep configuration.
     """
 
     runs_folder = datetime.strftime(datetime.now(), "%Y_%m_%d-%H_%M_%S")
@@ -232,17 +234,17 @@ def distribute(config: Union[DictConfig, ListConfig]):
 
 
 def sweep(
-    run_config: Union[DictConfig, ListConfig], device: int = 0, seed: int = 42, convert_openvino: bool = False
-) -> Dict[str, Union[float, str]]:
+    run_config: DictConfig | ListConfig, device: int = 0, seed: int = 42, convert_openvino: bool = False
+) -> dict[str, str | float]:
     """Go over all the values mentioned in `grid_search` parameter of the benchmarking config.
 
     Args:
-        run_config: (Union[DictConfig, ListConfig], optional): Configuration for current run.
+        run_config: (DictConfig | ListConfig, optional): Configuration for current run.
         device (int, optional): Name of the device on which the model is trained. Defaults to 0 "cpu".
         convert_openvino (bool, optional): Whether to convert the model to openvino format. Defaults to False.
 
     Returns:
-        Dict[str, Union[float, str]]: Dictionary containing the metrics gathered from the sweep.
+        dict[str, str | float]: Dictionary containing the metrics gathered from the sweep.
     """
     seed_everything(seed, workers=True)
     # This assumes that `model_name` is always present in the sweep config.

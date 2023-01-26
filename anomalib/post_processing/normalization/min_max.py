@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Union
+from __future__ import annotations
 
 import numpy as np
 import torch
@@ -11,11 +11,11 @@ from torch import Tensor
 
 
 def normalize(
-    targets: Union[np.ndarray, Tensor, np.float32],
-    threshold: Union[np.ndarray, Tensor, float],
-    min_val: Union[np.ndarray, Tensor, float],
-    max_val: Union[np.ndarray, Tensor, float],
-) -> Union[np.ndarray, Tensor]:
+    targets: np.ndarray | np.float32 | Tensor,
+    threshold: float | np.ndarray | Tensor,
+    min_val: float | np.ndarray | Tensor,
+    max_val: float | np.ndarray | Tensor,
+) -> np.ndarray | Tensor:
     """Apply min-max normalization and shift the values such that the threshold value is centered at 0.5."""
     normalized = ((targets - threshold) / (max_val - min_val)) + 0.5
     if isinstance(targets, (np.ndarray, np.float32, np.float64)):

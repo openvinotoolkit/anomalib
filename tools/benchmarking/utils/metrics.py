@@ -3,11 +3,12 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import random
 import string
 from glob import glob
 from pathlib import Path
-from typing import Dict, List, Optional, Union
 
 import pandas as pd
 from comet_ml import Experiment
@@ -17,15 +18,15 @@ import wandb
 
 
 def write_metrics(
-    model_metrics: Dict[str, Union[str, float]],
-    writers: List[str],
-    folder: Optional[str] = None,
+    model_metrics: dict[str, str | float],
+    writers: list[str],
+    folder: str | None = None,
 ):
     """Writes metrics to destination provided in the sweep config.
 
     Args:
-        model_metrics (Dict): Dictionary to be written
-        writers (List[str]): List of destinations.
+        model_metrics (dict): Dictionary to be written
+        writers (list[str]): List of destinations.
         folder (optional, str): Sub-directory to which runs are written to. Defaults to None. If none writes to root.
     """
     # Write to file as each run is computed
@@ -47,15 +48,15 @@ def write_metrics(
 
 
 def write_to_tensorboard(
-    model_metrics: Dict[str, Union[str, float]],
+    model_metrics: dict[str, str | float],
 ):
     """Write model_metrics to tensorboard.
 
     Args:
-        model_metrics (Dict[str, Union[str, float]]): Dictionary containing collected results.
+        model_metrics (dict[str, str | float]): Dictionary containing collected results.
     """
     scalar_metrics = {}
-    scalar_prefixes: List[str] = []
+    scalar_prefixes: list[str] = []
     string_metrics = {}
     for key, metric in model_metrics.items():
         if isinstance(metric, (int, float, bool)):
@@ -92,7 +93,7 @@ def get_unique_key(str_len: int) -> str:
 
 def upload_to_wandb(
     team: str = "anomalib",
-    folder: Optional[str] = None,
+    folder: str | None = None,
 ):
     """Upload the data in csv files to wandb.
 
@@ -120,7 +121,7 @@ def upload_to_wandb(
 
 
 def upload_to_comet(
-    folder: Optional[str] = None,
+    folder: str | None = None,
 ):
     """Upload the data in csv files to comet.
 

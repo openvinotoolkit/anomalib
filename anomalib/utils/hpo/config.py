@@ -3,7 +3,8 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List
+
+from __future__ import annotations
 
 from omegaconf import DictConfig
 
@@ -18,7 +19,7 @@ def flatten_hpo_params(params_dict: DictConfig) -> DictConfig:
         flattened version of the parameter dictionary.
     """
 
-    def process_params(nested_params: DictConfig, keys: List[str], flattened_params: DictConfig):
+    def process_params(nested_params: DictConfig, keys: list[str], flattened_params: DictConfig) -> None:
         """Flatten nested dictionary till the time it reaches the hpo params.
 
         Recursive helper function that traverses the nested config object and stores the leaf nodes in a flattened
@@ -26,7 +27,7 @@ def flatten_hpo_params(params_dict: DictConfig) -> DictConfig:
 
         Args:
             nested_params: DictConfig: config object containing the original parameters.
-            keys: List[str]: list of keys leading to the current location in the config.
+            keys: list[str]: list of keys leading to the current location in the config.
             flattened_params: DictConfig: Dictionary in which the flattened parameters are stored.
         """
         if len({"values", "min", "max"}.intersection(nested_params.keys())) > 0:

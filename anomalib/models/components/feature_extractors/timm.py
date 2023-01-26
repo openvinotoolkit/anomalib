@@ -6,9 +6,10 @@ This script extracts features from a CNN network
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
 import warnings
-from typing import Dict, List
 
 import timm
 import torch
@@ -42,7 +43,7 @@ class TimmFeatureExtractor(nn.Module):
             [torch.Size([32, 64, 64, 64]), torch.Size([32, 128, 32, 32]), torch.Size([32, 256, 16, 16])]
     """
 
-    def __init__(self, backbone: str, layers: List[str], pre_trained: bool = True, requires_grad: bool = False):
+    def __init__(self, backbone: str, layers: list[str], pre_trained: bool = True, requires_grad: bool = False):
         super().__init__()
         self.backbone = backbone
         self.layers = layers
@@ -58,7 +59,7 @@ class TimmFeatureExtractor(nn.Module):
         self.out_dims = self.feature_extractor.feature_info.channels()
         self._features = {layer: torch.empty(0) for layer in self.layers}
 
-    def _map_layer_to_idx(self, offset: int = 3) -> List[int]:
+    def _map_layer_to_idx(self, offset: int = 3) -> list[int]:
         """Maps set of layer names to indices of model.
 
         Args:
@@ -84,7 +85,7 @@ class TimmFeatureExtractor(nn.Module):
 
         return idx
 
-    def forward(self, inputs: Tensor) -> Dict[str, Tensor]:
+    def forward(self, inputs: Tensor) -> dict[str, Tensor]:
         """Forward-pass input tensor into the CNN.
 
         Args:

@@ -3,8 +3,9 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import math
-from typing import Optional
 
 import torch
 from torch import Tensor
@@ -16,10 +17,10 @@ class GaussianKDE(DynamicBufferModule):
     """Gaussian Kernel Density Estimation.
 
     Args:
-        dataset (Optional[Tensor], optional): Dataset on which to fit the KDE model. Defaults to None.
+        dataset (Tensor | None, optional): Dataset on which to fit the KDE model. Defaults to None.
     """
 
-    def __init__(self, dataset: Optional[Tensor] = None):
+    def __init__(self, dataset: Tensor | None = None):
         super().__init__()
 
         if dataset is not None:

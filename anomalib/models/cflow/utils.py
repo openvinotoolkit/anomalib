@@ -3,6 +3,8 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
 import math
 
@@ -10,28 +12,28 @@ import numpy as np
 import torch
 from FrEIA.framework import SequenceINN
 from FrEIA.modules import AllInOneBlock
-from torch import nn
+from torch import Tensor, nn
 
 logger = logging.getLogger(__name__)
 
 
-def get_logp(dim_feature_vector: int, p_u: torch.Tensor, logdet_j: torch.Tensor) -> torch.Tensor:
+def get_logp(dim_feature_vector: int, p_u: Tensor, logdet_j: Tensor) -> Tensor:
     """Returns the log likelihood estimation.
 
     Args:
         dim_feature_vector (int): Dimensions of the condition vector
-        p_u (torch.Tensor): Random variable u
-        logdet_j (torch.Tensor): log of determinant of jacobian returned from the invertable decoder
+        p_u (Tensor): Random variable u
+        logdet_j (Tensor): log of determinant of jacobian returned from the invertable decoder
 
     Returns:
-        torch.Tensor: Log probability
+        Tensor: Log probability
     """
     ln_sqrt_2pi = -np.log(np.sqrt(2 * np.pi))  # ln(sqrt(2*pi))
     logp = dim_feature_vector * ln_sqrt_2pi - 0.5 * torch.sum(p_u**2, 1) + logdet_j
     return logp
 
 
-def positional_encoding_2d(condition_vector: int, height: int, width: int) -> torch.Tensor:
+def positional_encoding_2d(condition_vector: int, height: int, width: int) -> Tensor:
     """Creates embedding to store relative position of the feature vector using sine and cosine functions.
 
     Args:
@@ -43,7 +45,7 @@ def positional_encoding_2d(condition_vector: int, height: int, width: int) -> to
         ValueError: Cannot generate encoding with conditional vector length not as multiple of 4
 
     Returns:
-        torch.Tensor: condition_vector x HEIGHT x WIDTH position matrix
+        Tensor: condition_vector x HEIGHT x WIDTH position matrix
     """
     if condition_vector % 4 != 0:
         raise ValueError(f"Cannot use sin/cos positional encoding with odd dimension (got dim={condition_vector})")
@@ -68,7 +70,7 @@ def positional_encoding_2d(condition_vector: int, height: int, width: int) -> to
     return pos_encoding
 
 
-def subnet_fc(dims_in: int, dims_out: int):
+def subnet_fc(dims_in: int, dims_out: int) -> nn.Sequential:
     """Subnetwork which predicts the affine coefficients.
 
     Args:

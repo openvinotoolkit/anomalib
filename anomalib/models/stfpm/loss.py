@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, List
+from __future__ import annotations
 
 import torch
 import torch.nn.functional as F
@@ -30,7 +30,7 @@ class STFPMLoss(nn.Module):
             tensor(51.2015, grad_fn=<SumBackward0>)
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.mse_loss = nn.MSELoss(reduction="sum")
 
@@ -53,18 +53,18 @@ class STFPMLoss(nn.Module):
 
         return layer_loss
 
-    def forward(self, teacher_features: Dict[str, Tensor], student_features: Dict[str, Tensor]) -> Tensor:
+    def forward(self, teacher_features: dict[str, Tensor], student_features: dict[str, Tensor]) -> Tensor:
         """Compute the overall loss via the weighted average of the layer losses computed by the cosine similarity.
 
         Args:
-          teacher_features (Dict[str, Tensor]): Teacher features
-          student_features (Dict[str, Tensor]): Student features
+          teacher_features (dict[str, Tensor]): Teacher features
+          student_features (dict[str, Tensor]): Student features
 
         Returns:
           Total loss, which is the weighted average of the layer losses.
         """
 
-        layer_losses: List[Tensor] = []
+        layer_losses: list[Tensor] = []
         for layer in teacher_features.keys():
             loss = self.compute_layer_loss(teacher_features[layer], student_features[layer])
             layer_losses.append(loss)

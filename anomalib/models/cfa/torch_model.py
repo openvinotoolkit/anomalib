@@ -8,7 +8,7 @@ Paper https://arxiv.org/abs/2206.04325
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, List, Optional, Tuple, Union
+from __future__ import annotations
 
 import torch
 import torch.nn.functional as F
@@ -29,7 +29,7 @@ from anomalib.models.components.feature_extractors import dryrun_find_featuremap
 SUPPORTED_BACKBONES = ("vgg19_bn", "resnet18", "wide_resnet50_2", "efficientnet_b5")
 
 
-def get_return_nodes(backbone: str) -> List[str]:
+def get_return_nodes(backbone: str) -> list[str]:
     """Get the return nodes for a given backbone.
 
     Args:
@@ -41,12 +41,12 @@ def get_return_nodes(backbone: str) -> List[str]:
         ValueError: If the backbone is not one of the supported backbones.
 
     Returns:
-        List[str]: A list of return nodes for the given backbone.
+        list[str]: A list of return nodes for the given backbone.
     """
     if backbone == "efficientnet_b5":
         raise NotImplementedError("EfficientNet feature extractor has not implemented yet.")
 
-    return_nodes: List[str]
+    return_nodes: list[str]
     if backbone in ("resnet18", "wide_resnet50_2"):
         return_nodes = ["layer1", "layer2", "layer3"]
     elif backbone == "vgg19_bn":
@@ -57,12 +57,12 @@ def get_return_nodes(backbone: str) -> List[str]:
 
 
 # TODO: Replace this with the new torchfx feature extractor.
-def get_feature_extractor(backbone: str, return_nodes: List[str]) -> GraphModule:
+def get_feature_extractor(backbone: str, return_nodes: list[str]) -> GraphModule:
     """Get the feature extractor from the backbone CNN.
 
     Args:
         backbone (str): Backbone CNN network
-        return_nodes (List[str]): A list of return nodes for the given backbone.
+        return_nodes (list[str]): A list of return nodes for the given backbone.
 
     Raises:
         NotImplementedError: When the backbone is efficientnet_b5
@@ -82,7 +82,7 @@ class CfaModel(DynamicBufferModule):
     """Torch implementation of the CFA Model.
 
     Args:
-        input_size: (Tuple[int, int]): Input size of the image tensor.
+        input_size: (tuple[int, int]): Input size of the image tensor.
         backbone (str): Backbone CNN network.
         gamma_c (int): gamma_c parameter from the paper.
         gamma_d (int): gamma_d parameter from the paper.
@@ -93,7 +93,7 @@ class CfaModel(DynamicBufferModule):
 
     def __init__(
         self,
-        input_size: Tuple[int, int],
+        input_size: tuple[int, int],
         backbone: str,
         gamma_c: int,
         gamma_d: int,
@@ -129,7 +129,7 @@ class CfaModel(DynamicBufferModule):
             self.scale = resolution
         else:
             raise ValueError(
-                f"Unknown type {type(resolution)} for `resolution`. Expected types are either int or Tuple[int, int]."
+                f"Unknown type {type(resolution)} for `resolution`. Expected types are either int or tuple[int, int]."
             )
 
         self.descriptor = Descriptor(self.gamma_d, backbone)
@@ -234,12 +234,12 @@ class Descriptor(nn.Module):
 
         self.layer = CoordConv2d(in_channels=dim, out_channels=out_channels, kernel_size=1)
 
-    def forward(self, features: Union[List[Tensor], Dict[str, Tensor]]) -> Tensor:
+    def forward(self, features: list[Tensor] | dict[str, Tensor]) -> Tensor:
         """Forward pass."""
         if isinstance(features, dict):
             features = list(features.values())
 
-        patch_features: Optional[Tensor] = None
+        patch_features: Tensor | None = None
         for i in features:
             i = F.avg_pool2d(i, 3, 1, 1) / i.size(1) if self.backbone == "efficientnet_b5" else F.avg_pool2d(i, 3, 1, 1)
             patch_features = (
@@ -268,7 +268,7 @@ class CoordConv2d(nn.Conv2d):
         out_channels: int,
         kernel_size: _size_2_t,
         stride: _size_2_t = 1,
-        padding: Union[str, _size_2_t] = 0,
+        padding: str | _size_2_t = 0,
         dilation: _size_2_t = 1,
         groups: int = 1,
         bias: bool = True,

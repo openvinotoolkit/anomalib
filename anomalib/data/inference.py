@@ -3,8 +3,10 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 from pathlib import Path
-from typing import Any, Optional, Tuple, Union
+from typing import Any
 
 import albumentations as A
 from torch.utils.data.dataset import Dataset
@@ -16,18 +18,18 @@ class InferenceDataset(Dataset):
     """Inference Dataset to perform prediction.
 
     Args:
-        path (Union[str, Path]): Path to an image or image-folder.
-        transform (Optional[A.Compose], optional): Albumentations Compose object describing the transforms that are
+        path (str | Path): Path to an image or image-folder.
+        transform (A.Compose | None, optional): Albumentations Compose object describing the transforms that are
             applied to the inputs.
-        image_size (Optional[Union[int, Tuple[int, int]]], optional): Target image size
+        image_size (int | tuple[int, int] | None, optional): Target image size
             to resize the original image. Defaults to None.
     """
 
     def __init__(
         self,
-        path: Union[str, Path],
-        transform: Optional[A.Compose] = None,
-        image_size: Optional[Union[int, Tuple[int, int]]] = None,
+        path: str | Path,
+        transform: A.Compose | None = None,
+        image_size: int | tuple[int, int] | None = None,
     ) -> None:
         super().__init__()
 
