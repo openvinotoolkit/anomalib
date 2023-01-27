@@ -16,7 +16,7 @@ Reference:
 import logging
 from pathlib import Path
 from shutil import move
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import albumentations as A
 import numpy as np
@@ -107,29 +107,24 @@ def make_shanghaitech_dataset(root: Path, scene: int, split: Optional[Union[Spli
     return samples
 
 
-class ShanghaiTechClipsIndexer(ClipsIndexer):
-    """Clips indexer for ShanghaiTech dataset."""
+class ShanghaiTechTrainClipsIndexer(ClipsIndexer):
+    """Clips indexer for ShanghaiTech dataset.
 
-    def __init__(
-        self,
-        video_paths: List[str],
-        mask_paths: List[str],
-        clip_length_in_frames: int = 1,
-        frames_between_clips: int = 1,
-    ) -> None:
-        # assert that all videos in dataset are of same time (video file or folder of images)
-        file_extension = Path(video_paths[0]).suffix
-        assert all(file_extension == Path(video_path).suffix for video_path in video_paths)
+    The train and test subsets of the ShanghaiTech dataset use different file formats, so separate
+    clips indexer implementations are needed.
+    """
 
-        # set mode
-        if file_extension == ".avi":
-            self.mode = "video"
-        elif file_extension == "":
-            self.mode = "frames"
-        else:
-            raise ValueError(f"Video file extension not supported: {file_extension}")
+    def get_mask(self, idx: int) -> Optional[Tensor]:
+        """No masks available for training set."""
+        return None
 
-        super().__init__(video_paths, mask_paths, clip_length_in_frames, frames_between_clips)
+
+class ShanghaiTechTestClipsIndexer(ClipsIndexer):
+    """Clips indexer for the test set of the ShanghaiTech Campus dataset.
+
+    The train and test subsets of the ShanghaiTech dataset use different file formats, so separate
+    clips indexer implementations are needed.
+    """
 
     def get_mask(self, idx) -> Optional[Tensor]:
         """Retrieve the masks from the file system."""
@@ -146,18 +141,12 @@ class ShanghaiTechClipsIndexer(ClipsIndexer):
 
     def _compute_frame_pts(self) -> None:
         """Retrieve the number of frames in each video."""
-        if self.mode == "video":
-            # files in video format. Use default methods
-            super()._compute_frame_pts()
-        elif self.mode == "frames":
-            self.video_pts = []
-            for video_path in self.video_paths:
-                n_frames = len(list(Path(video_path).glob("*.jpg")))
-                self.video_pts.append(Tensor(range(n_frames)))
+        self.video_pts = []
+        for video_path in self.video_paths:
+            n_frames = len(list(Path(video_path).glob("*.jpg")))
+            self.video_pts.append(Tensor(range(n_frames)))
 
-            self.video_fps = [None] * len(self.video_paths)  # fps information cannot be inferred from folder structure
-        else:
-            raise ValueError(f"Unknown processing mode: {self.mode}")
+        self.video_fps = [None] * len(self.video_paths)  # fps information cannot be inferred from folder structure
 
     def get_clip(self, idx: int) -> Tuple[Tensor, Tensor, Dict[str, Any], int]:
         """Gets a subclip from a list of videos.
@@ -171,9 +160,6 @@ class ShanghaiTechClipsIndexer(ClipsIndexer):
             info (Dict)
             video_idx (int): index of the video in `video_paths`
         """
-        if self.mode == "video":
-            return super().get_clip(idx)
-
         if idx >= self.num_clips():
             raise IndexError(f"Index {idx} out of range ({self.num_clips()} number of clips)")
         video_idx, clip_idx = self.get_clip_location(idx)
@@ -216,7 +202,7 @@ class ShanghaiTechDataset(AnomalibVideoDataset):
         self.root = root
         self.scene = scene
         self.split = split
-        self.indexer_cls: Callable = ShanghaiTechClipsIndexer
+        self.indexer_cls = ShanghaiTechTrainClipsIndexer if self.split == Split.TRAIN else ShanghaiTechTestClipsIndexer
 
     def _setup(self):
         """Create and assign samples."""
