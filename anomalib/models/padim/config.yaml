@@ -70,7 +70,7 @@ trainer:
   enable_checkpointing: true
   default_root_dir: null
   gradient_clip_val: 0
-  gradient_clip_algorithm: null,
+  gradient_clip_algorithm: norm
   num_nodes: 1
   devices: 1
   enable_progress_bar: true
@@ -96,7 +96,6 @@ trainer:
   precision: 32
   enable_model_summary: true
   num_sanity_val_steps: 0
-  resume_from_checkpoint: null,
   profiler: null
   benchmark: false
   deterministic: false
