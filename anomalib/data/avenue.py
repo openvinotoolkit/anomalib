@@ -104,7 +104,7 @@ def make_avenue_dataset(root: Path, gt_dir: Path, split: Optional[Union[Split, s
 
 
 class AvenueClipsIndexer(ClipsIndexer):
-    """Clips class for UCSDped dataset."""
+    """Clips class for Avenue dataset."""
 
     def get_mask(self, idx) -> Optional[Tensor]:
         """Retrieve the masks from the file system."""
