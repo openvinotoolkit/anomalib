@@ -12,7 +12,6 @@ import logging
 
 import torch
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
@@ -22,7 +21,6 @@ from anomalib.models.patchcore.torch_model import PatchcoreModel
 logger = logging.getLogger(__name__)
 
 
-@MODEL_REGISTRY
 class Patchcore(AnomalyModule):
     """PatchcoreLightning Module to train PatchCore algorithm.
 

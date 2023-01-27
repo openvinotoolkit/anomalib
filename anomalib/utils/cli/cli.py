@@ -15,7 +15,7 @@ from typing import Any, Callable
 
 from omegaconf.omegaconf import OmegaConf
 from pytorch_lightning import LightningDataModule, LightningModule, Trainer
-from pytorch_lightning.utilities.cli import (
+from pytorch_lightning.cli import (
     LightningArgumentParser,
     LightningCLI,
     SaveConfigCallback,

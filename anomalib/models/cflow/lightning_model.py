@@ -13,7 +13,6 @@ import torch
 import torch.nn.functional as F
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
-from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor, optim
 from torch.optim import Optimizer
@@ -25,7 +24,6 @@ from anomalib.models.components import AnomalyModule
 __all__ = ["Cflow", "CflowLightning"]
 
 
-@MODEL_REGISTRY
 class Cflow(AnomalyModule):
     """PL Lightning Module for the CFLOW algorithm."""
 

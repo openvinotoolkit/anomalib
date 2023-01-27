@@ -16,7 +16,6 @@ import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning import Callback
 from pytorch_lightning.callbacks import EarlyStopping
-from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 from torch.optim.optimizer import Optimizer
@@ -30,7 +29,6 @@ logger = logging.getLogger(__name__)
 __all__ = ["Cfa", "CfaLightning"]
 
 
-@MODEL_REGISTRY
 class Cfa(AnomalyModule):
     """CFA: Coupled-hypersphere-based Feature Adaptation for Target-Oriented Anomaly Localization.
 

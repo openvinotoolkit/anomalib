@@ -13,7 +13,6 @@ import logging
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import Callback, EarlyStopping
-from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
@@ -27,7 +26,6 @@ logger = logging.getLogger(__name__)
 __all__ = ["Csflow", "CsflowLightning"]
 
 
-@MODEL_REGISTRY
 class Csflow(AnomalyModule):
     """Fully Convolutional Cross-Scale-Flows for Image-based Defect Detection.
 

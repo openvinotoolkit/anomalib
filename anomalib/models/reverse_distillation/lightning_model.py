@@ -10,7 +10,6 @@ from __future__ import annotations
 
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
-from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor, optim
 
@@ -20,7 +19,6 @@ from .loss import ReverseDistillationLoss
 from .torch_model import ReverseDistillationModel
 
 
-@MODEL_REGISTRY
 class ReverseDistillation(AnomalyModule):
     """PL Lightning Module for Reverse Distillation Algorithm.
 

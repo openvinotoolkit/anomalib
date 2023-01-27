@@ -11,7 +11,6 @@ from __future__ import annotations
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
-from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor, optim
 
@@ -22,7 +21,6 @@ from anomalib.models.stfpm.torch_model import STFPMModel
 __all__ = ["StfpmLightning"]
 
 
-@MODEL_REGISTRY
 class Stfpm(AnomalyModule):
     """PL Lightning Module for the STFPM algorithm.
 

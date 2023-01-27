@@ -13,7 +13,6 @@ from typing import Callable
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
-from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor, nn
 
@@ -25,7 +24,6 @@ from anomalib.models.draem.torch_model import DraemModel
 __all__ = ["Draem", "DraemLightning"]
 
 
-@MODEL_REGISTRY
 class Draem(AnomalyModule):
     """DRÆM: A discriminatively trained reconstruction embedding for surface anomaly detection.
 

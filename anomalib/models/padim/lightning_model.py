@@ -12,7 +12,6 @@ import logging
 
 import torch
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
@@ -24,7 +23,6 @@ logger = logging.getLogger(__name__)
 __all__ = ["Padim", "PadimLightning"]
 
 
-@MODEL_REGISTRY
 class Padim(AnomalyModule):
     """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
 

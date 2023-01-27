@@ -8,7 +8,6 @@ from __future__ import annotations
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
-from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor, optim
 
@@ -17,7 +16,6 @@ from anomalib.models.fastflow.loss import FastflowLoss
 from anomalib.models.fastflow.torch_model import FastflowModel
 
 
-@MODEL_REGISTRY
 class Fastflow(AnomalyModule):
     """PL Lightning Module for the FastFlow algorithm.
 

@@ -9,7 +9,6 @@ import logging
 
 import torch
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
@@ -22,7 +21,6 @@ from .torch_model import RkdeModel
 logger = logging.getLogger(__name__)
 
 
-@MODEL_REGISTRY
 class Rkde(AnomalyModule):
     """Region Based Anomaly Detection With Real-Time Training and Analysis.
 

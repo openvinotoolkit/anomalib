@@ -9,7 +9,6 @@ import logging
 
 import torch
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
@@ -21,7 +20,6 @@ from .torch_model import DfkdeModel
 logger = logging.getLogger(__name__)
 
 
-@MODEL_REGISTRY
 class Dfkde(AnomalyModule):
     """DFKDE: Deep Feature Kernel Density Estimation.
 

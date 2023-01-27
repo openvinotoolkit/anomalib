@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Any
 
 import pytorch_lightning as pl
-from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 
 from anomalib.models.components import AnomalyModule
@@ -18,7 +17,6 @@ from anomalib.models.components import AnomalyModule
 from .visualizer_base import BaseVisualizerCallback
 
 
-@CALLBACK_REGISTRY
 class ImageVisualizerCallback(BaseVisualizerCallback):
     """Callback that visualizes the inference results of a model.
 
