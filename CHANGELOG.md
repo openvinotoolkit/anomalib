@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- Add ShanghaiTech Campus video anomaly detection dataset (<https://github.com/openvinotoolkit/anomalib/pull/869>)
 - Add `pyupgrade` to `pre-commit` configs, and refactor based on `pyupgrade` and `refurb` (<https://github.com/openvinotoolkit/anomalib/pull/845>)
 - Add [CFA](https://arxiv.org/abs/2206.04325) model implementation (<https://github.com/openvinotoolkit/anomalib/pull/783>)
 - Add RKDE model implementation (<https://github.com/openvinotoolkit/anomalib/pull/821>)
