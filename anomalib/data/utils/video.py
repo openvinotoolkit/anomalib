@@ -5,8 +5,10 @@
 
 import warnings
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import cv2
 from torch import Tensor
 from torchvision.datasets.video_utils import VideoClips
 
@@ -66,3 +68,34 @@ class ClipsIndexer(VideoClips, ABC):
         )
 
         return item
+
+
+def convert_video(input_path: Path, output_path: Path, codec: str = "MP4V"):
+    """Convert video file to a different codec.
+
+    Args:
+        input_path (Path): Path to the input video.
+        output_path (Path): Path to the target output video.
+        codec (str): fourcc code of the codec that will be used for compression of the output file.
+    """
+    if not output_path.parent.exists():
+        output_path.parent.mkdir(parents=True)
+
+    # create video reader for input file
+    video_reader = cv2.VideoCapture(str(input_path))
+
+    # create video writer for output file
+    fourcc = cv2.VideoWriter_fourcc(*codec)
+    frame_width = int(video_reader.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(video_reader.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = int(video_reader.get(cv2.CAP_PROP_FPS))
+    video_writer = cv2.VideoWriter(str(output_path), fourcc, fps, (frame_width, frame_height))
+
+    # read frames
+    success, frame = video_reader.read()
+    while success:
+        video_writer.write(frame)
+        success, frame = video_reader.read()
+
+    video_reader.release()
+    video_writer.release()
