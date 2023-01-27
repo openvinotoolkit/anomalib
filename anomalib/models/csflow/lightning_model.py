@@ -6,13 +6,15 @@ https://arxiv.org/pdf/2110.02855.pdf
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
-from typing import Dict, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.callbacks import EarlyStopping
+from pytorch_lightning.callbacks import Callback, EarlyStopping
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
+from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -30,7 +32,7 @@ class Csflow(AnomalyModule):
     """Fully Convolutional Cross-Scale-Flows for Image-based Defect Detection.
 
     Args:
-        input_size (Tuple[int, int]): Size of the model input.
+        input_size (tuple[int, int]): Size of the model input.
         n_coupling_blocks (int): Number of coupling blocks in the model.
         cross_conv_hidden_channels (int): Number of hidden channels in the cross convolution.
         clamp (int): Clamp value for glow layer.
@@ -39,12 +41,12 @@ class Csflow(AnomalyModule):
 
     def __init__(
         self,
-        input_size: Tuple[int, int],
+        input_size: tuple[int, int],
         cross_conv_hidden_channels: int,
         n_coupling_blocks: int,
         clamp: int,
         num_channels: int,
-    ):
+    ) -> None:
         super().__init__()
         self.model: CsFlowModel = CsFlowModel(
             input_size=input_size,
@@ -55,11 +57,11 @@ class Csflow(AnomalyModule):
         )
         self.loss = CsFlowLoss()
 
-    def training_step(self, batch, _) -> Dict[str, Tensor]:
+    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Training Step of CS-Flow.
 
         Args:
-            batch (Tensor): Input batch
+            batch (dict[str, str | Tensor]): Input batch
             _: Index of the batch.
 
         Returns:
@@ -71,14 +73,14 @@ class Csflow(AnomalyModule):
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch, _) -> Dict[str, Tensor]:
+    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Validation step for CS Flow.
 
         Args:
             batch (Tensor): Input batch
 
         Returns:
-            Dict[str, Tensor]: Dictionary containing the anomaly map, scores, etc.
+            dict[str, Tensor]: Dictionary containing the anomaly map, scores, etc.
         """
         anomaly_maps, anomaly_scores = self.model(batch["image"])
         batch["anomaly_maps"] = anomaly_maps
@@ -90,10 +92,10 @@ class CsflowLightning(Csflow):
     """Fully Convolutional Cross-Scale-Flows for Image-based Defect Detection.
 
     Args:
-        hprams (Union[DictConfig, ListConfig]): Model params
+        hprams (DictConfig | ListConfig): Model params
     """
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]):
+    def __init__(self, hparams: DictConfig | ListConfig) -> None:
         super().__init__(
             input_size=hparams.model.input_size,
             n_coupling_blocks=hparams.model.n_coupling_blocks,
@@ -101,10 +103,10 @@ class CsflowLightning(Csflow):
             clamp=hparams.model.clamp,
             num_channels=3,
         )
-        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
+        self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
 
-    def configure_callbacks(self):
+    def configure_callbacks(self) -> list[Callback]:
         """Configure model-specific callbacks.
 
         Note:

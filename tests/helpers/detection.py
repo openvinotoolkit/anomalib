@@ -1,6 +1,6 @@
 """Helpers for detection tests."""
 import os
-import xml.etree.cElementTree as ET  # nosec
+import xml.etree.ElementTree as ET  # nosec
 from glob import glob
 from typing import List, Tuple
 

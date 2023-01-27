@@ -16,12 +16,11 @@ logger = logging.getLogger(__name__)
 class TimerCallback(Callback):
     """Callback that measures the training and testing time of a PyTorch Lightning module."""
 
-    # pylint: disable=unused-argument
-    def __init__(self):
+    def __init__(self) -> None:
         self.start: float
         self.num_images: int = 0
 
-    def on_fit_start(self, trainer: Trainer, pl_module: LightningModule) -> None:  # pylint: disable=W0613
+    def on_fit_start(self, trainer: Trainer, pl_module: LightningModule) -> None:
         """Call when fit begins.
 
         Sets the start time to the time training started.
@@ -33,6 +32,8 @@ class TimerCallback(Callback):
         Returns:
             None
         """
+        del trainer, pl_module  # These variables are not used.
+
         self.start = time.time()
 
     def on_fit_end(self, trainer: Trainer, pl_module: LightningModule) -> None:  # pylint: disable=W0613

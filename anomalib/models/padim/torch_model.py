@@ -3,8 +3,9 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 from random import sample
-from typing import Dict, List, Optional, Tuple
 
 import torch
 import torch.nn.functional as F
@@ -23,15 +24,15 @@ _N_FEATURES_DEFAULTS = {
 
 
 def _deduce_dims(
-    feature_extractor: FeatureExtractor, input_size: Tuple[int, int], layers: List[str]
-) -> Tuple[int, int]:
+    feature_extractor: FeatureExtractor, input_size: tuple[int, int], layers: list[str]
+) -> tuple[int, int]:
     """Run a dry run to deduce the dimensions of the extracted features.
 
     Important: `layers` is assumed to be ordered and the first (layers[0])
                 is assumed to be the layer with largest resolution.
 
     Returns:
-        Tuple[int, int]: Dimensions of the extracted features: (n_dims_original, n_patches)
+        tuple[int, int]: Dimensions of the extracted features: (n_dims_original, n_patches)
     """
     dimensions_mapping = dryrun_find_featuremap_dims(feature_extractor, input_size, layers)
 
@@ -49,8 +50,8 @@ class PadimModel(nn.Module):
     """Padim Module.
 
     Args:
-        input_size (Tuple[int, int]): Input size for the model.
-        layers (List[str]): Layers used for feature extraction
+        input_size (tuple[int, int]): Input size for the model.
+        layers (list[str]): Layers used for feature extraction
         backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         n_features (int, optional): Number of features to retain in the dimension reduction step.
@@ -59,14 +60,14 @@ class PadimModel(nn.Module):
 
     def __init__(
         self,
-        input_size: Tuple[int, int],
-        layers: List[str],
+        input_size: tuple[int, int],
+        layers: list[str],
         backbone: str = "resnet18",
         pre_trained: bool = True,
-        n_features: Optional[int] = None,
-    ):
+        n_features: int | None = None,
+    ) -> None:
         super().__init__()
-        self.tiler: Optional[Tiler] = None
+        self.tiler: Tiler | None = None
 
         self.backbone = backbone
         self.layers = layers
@@ -139,11 +140,11 @@ class PadimModel(nn.Module):
             )
         return output
 
-    def generate_embedding(self, features: Dict[str, Tensor]) -> Tensor:
+    def generate_embedding(self, features: dict[str, Tensor]) -> Tensor:
         """Generate embedding from hierarchical feature map.
 
         Args:
-            features (Dict[str, Tensor]): Hierarchical feature map from a CNN (ResNet18 or WideResnet)
+            features (dict[str, Tensor]): Hierarchical feature map from a CNN (ResNet18 or WideResnet)
 
         Returns:
             Embedding vector

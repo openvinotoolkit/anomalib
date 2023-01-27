@@ -3,8 +3,10 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 from pathlib import Path
-from typing import Union, cast
+from typing import cast
 
 import numpy as np
 import pytorch_lightning as pl
@@ -33,12 +35,12 @@ class BaseVisualizerCallback(Callback):
         show_images: bool = False,
         log_images: bool = True,
         save_images: bool = True,
-    ):
+    ) -> None:
         """Visualizer callback."""
-        if mode not in ["full", "simple"]:
+        if mode not in ("full", "simple"):
             raise ValueError(f"Unknown visualization mode: {mode}. Please choose one of ['full', 'simple']")
         self.mode = mode
-        if task not in [TaskType.CLASSIFICATION, TaskType.DETECTION, TaskType.SEGMENTATION]:
+        if task not in (TaskType.CLASSIFICATION, TaskType.DETECTION, TaskType.SEGMENTATION):
             raise ValueError(
                 f"Unknown task type: {mode}. Please choose one of ['classification', 'detection', 'segmentation']"
             )
@@ -56,8 +58,8 @@ class BaseVisualizerCallback(Callback):
         image: np.ndarray,
         module: AnomalyModule,
         trainer: pl.Trainer,
-        filename: Union[Path, str],
-    ):
+        filename: str | Path,
+    ) -> None:
         """Log image from a visualizer to each of the available loggers in the project.
 
         Args:
@@ -96,6 +98,8 @@ class BaseVisualizerCallback(Callback):
             trainer (pl.Trainer): Pytorch Lightning trainer
             pl_module (AnomalyModule): Anomaly module (unused)
         """
+        del pl_module  # `pl_module` is not used.
+
         for logger in trainer.loggers:
             if isinstance(logger, AnomalibWandbLogger):
                 logger.save()

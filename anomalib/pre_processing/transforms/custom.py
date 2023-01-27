@@ -3,8 +3,9 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import warnings
-from typing import List, Optional, Tuple
 
 import numpy as np
 from torch import Tensor
@@ -13,7 +14,7 @@ from torch import Tensor
 class Denormalize:
     """Denormalize Torch Tensor into np image format."""
 
-    def __init__(self, mean: Optional[List[float]] = None, std: Optional[List[float]] = None):
+    def __init__(self, mean: list[float] | None = None, std: list[float] | None = None) -> None:
         """Denormalize Torch Tensor into np image format.
 
         Args:
@@ -52,7 +53,7 @@ class Denormalize:
         array = (tensor * 255).permute(1, 2, 0).cpu().numpy().astype(np.uint8)
         return array
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Representational string."""
         return self.__class__.__name__ + "()"
 
@@ -60,12 +61,12 @@ class Denormalize:
 class ToNumpy:
     """Convert Tensor into Numpy Array."""
 
-    def __call__(self, tensor: Tensor, dims: Optional[Tuple[int, ...]] = None) -> np.ndarray:
+    def __call__(self, tensor: Tensor, dims: tuple[int, ...] | None = None) -> np.ndarray:
         """Convert Tensor into Numpy Array.
 
         Args:
            tensor (Tensor): Tensor to convert. Input tensor in range 0-1.
-           dims (Optional[Tuple[int, ...]], optional): Convert dimensions from torch to numpy format.
+           dims (tuple[int, ...] | None, optional): Convert dimensions from torch to numpy format.
                 Tuple corresponding to axis permutation from torch tensor to numpy array. Defaults to None.
 
         Returns:

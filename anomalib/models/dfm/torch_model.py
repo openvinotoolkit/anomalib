@@ -3,8 +3,9 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import math
-from typing import Tuple
 
 import torch
 import torch.nn.functional as F
@@ -76,7 +77,7 @@ class DFMModel(nn.Module):
     Args:
         backbone (str): Pre-trained model backbone.
         layer (str): Layer from which to extract features.
-        input_size (Tuple[int, int]): Input size for the model.
+        input_size (tuple[int, int]): Input size for the model.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         pooling_kernel_size (int, optional): Kernel size to pool features extracted from the CNN.
         n_comps (float, optional): Ratio from which number of components for PCA are calculated. Defaults to 0.97.
@@ -88,7 +89,7 @@ class DFMModel(nn.Module):
         self,
         backbone: str,
         layer: str,
-        input_size: Tuple[int, int],
+        input_size: tuple[int, int],
         pre_trained: bool = True,
         pooling_kernel_size: int = 4,
         n_comps: float = 0.97,
@@ -102,7 +103,7 @@ class DFMModel(nn.Module):
         self.gaussian_model = SingleClassGaussian()
         self.score_type = score_type
         self.layer = layer
-        self.input_size = tuple(input_size)
+        self.input_size = input_size if isinstance(input_size, tuple) else tuple(input_size)
         self.feature_extractor = FeatureExtractor(
             backbone=self.backbone, pre_trained=pre_trained, layers=[layer]
         ).eval()

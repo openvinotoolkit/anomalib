@@ -3,7 +3,9 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Tuple
+from __future__ import annotations
+
+from typing import Any
 
 import einops
 import torch
@@ -19,9 +21,9 @@ class CflowModel(nn.Module):
 
     def __init__(
         self,
-        input_size: Tuple[int, int],
+        input_size: tuple[int, int],
         backbone: str,
-        layers: List[str],
+        layers: list[str],
         pre_trained: bool = True,
         fiber_batch_size: int = 64,
         decoder: str = "freia-cflow",
@@ -29,7 +31,7 @@ class CflowModel(nn.Module):
         coupling_blocks: int = 8,
         clamp_alpha: float = 1.9,
         permute_soft: bool = False,
-    ):
+    ) -> None:
         super().__init__()
 
         self.backbone = backbone
@@ -57,9 +59,9 @@ class CflowModel(nn.Module):
         for parameters in self.encoder.parameters():
             parameters.requires_grad = False
 
-        self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(input_size), pool_layers=self.pool_layers)
+        self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size, pool_layers=self.pool_layers)
 
-    def forward(self, images):
+    def forward(self, images) -> Any:
         """Forward-pass images into the network to extract encoder features and compute probability.
 
         Args:
@@ -77,8 +79,8 @@ class CflowModel(nn.Module):
 
         distribution = [torch.Tensor(0).to(images.device) for _ in self.pool_layers]
 
-        height: List[int] = []
-        width: List[int] = []
+        height: list[int] = []
+        width: list[int] = []
         for layer_idx, layer in enumerate(self.pool_layers):
             encoder_activations = activation[layer]  # BxCxHxW
 

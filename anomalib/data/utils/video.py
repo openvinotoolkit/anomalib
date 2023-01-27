@@ -3,10 +3,12 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import warnings
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import cv2
 from torch import Tensor
@@ -21,14 +23,14 @@ class ClipsIndexer(VideoClips, ABC):
     of folders with single-frame images), the subclass should implement at least get_clip and _compute_frame_pts.
 
     Args:
-        video_paths (List[str]): List of video paths that make up the dataset.
-        mask_paths (List[str]): List of paths to the masks for each video in the dataset.
+        video_paths (list[str]): List of video paths that make up the dataset.
+        mask_paths (list[str]): List of paths to the masks for each video in the dataset.
     """
 
     def __init__(
         self,
-        video_paths: List[str],
-        mask_paths: List[str],
+        video_paths: list[str],
+        mask_paths: list[str],
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
     ) -> None:
@@ -44,11 +46,11 @@ class ClipsIndexer(VideoClips, ABC):
         return self.clips[video_idx][-1][-1].item()
 
     @abstractmethod
-    def get_mask(self, idx: int) -> Optional[Tensor]:
+    def get_mask(self, idx: int) -> Tensor | None:
         """Return the masks for the given index."""
         raise NotImplementedError
 
-    def get_item(self, idx: int) -> Dict[str, Any]:
+    def get_item(self, idx: int) -> dict[str, Any]:
         """Return a dictionary containing the clip, mask, video path and frame indices."""
         with warnings.catch_warnings():
             # silence warning caused by bug in torchvision, see https://github.com/pytorch/vision/issues/5787

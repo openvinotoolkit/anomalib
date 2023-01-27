@@ -6,8 +6,9 @@ Region Extractor.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 from enum import Enum
-from typing import List
 
 import torch
 from torch import Tensor, nn
@@ -106,7 +107,7 @@ class RegionExtractor(nn.Module):
         regions = torch.cat([indices.unsqueeze(1).to(batch.device), torch.cat(regions)], dim=1)
         return regions
 
-    def post_process_box_predictions(self, pred_boxes: Tensor, pred_scores: Tensor) -> List[Tensor]:
+    def post_process_box_predictions(self, pred_boxes: Tensor, pred_scores: Tensor) -> list[Tensor]:
         """Post-processes the box predictions.
 
         The post-processing consists of removing small boxes, applying nms, and
@@ -117,10 +118,10 @@ class RegionExtractor(nn.Module):
             pred_scores (Tensor): Tensor of shape () with a confidence score for each box prediction.
 
         Returns:
-            List[Tensor]: Post-processed box predictions of shape (N, 4).
+            list[Tensor]: Post-processed box predictions of shape (N, 4).
         """
 
-        processed_boxes: List[Tensor] = []
+        processed_boxes: list[Tensor] = []
         for boxes, scores in zip(pred_boxes, pred_scores):
 
             # remove small boxes

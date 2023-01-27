@@ -6,12 +6,14 @@ Paper https://arxiv.org/abs/2011.08785
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
-from typing import List, Optional, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
+from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -27,8 +29,8 @@ class Padim(AnomalyModule):
     """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
 
     Args:
-        layers (List[str]): Layers to extract features from the backbone CNN
-        input_size (Tuple[int, int]): Size of the model input.
+        layers (list[str]): Layers to extract features from the backbone CNN
+        input_size (tuple[int, int]): Size of the model input.
         backbone (str): Backbone CNN network
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         n_features (int, optional): Number of features to retain in the dimension reduction step.
@@ -37,12 +39,12 @@ class Padim(AnomalyModule):
 
     def __init__(
         self,
-        layers: List[str],
-        input_size: Tuple[int, int],
+        layers: list[str],
+        input_size: tuple[int, int],
         backbone: str,
         pre_trained: bool = True,
-        n_features: Optional[int] = None,
-    ):
+        n_features: int | None = None,
+    ) -> None:
         super().__init__()
 
         self.layers = layers
@@ -54,19 +56,19 @@ class Padim(AnomalyModule):
             n_features=n_features,
         ).eval()
 
-        self.stats: List[Tensor] = []
-        self.embeddings: List[Tensor] = []
+        self.stats: list[Tensor] = []
+        self.embeddings: list[Tensor] = []
 
     @staticmethod
-    def configure_optimizers():  # pylint: disable=arguments-differ
+    def configure_optimizers() -> None:  # pylint: disable=arguments-differ
         """PADIM doesn't require optimization, therefore returns no optimizers."""
         return None
 
-    def training_step(self, batch, _batch_idx):  # pylint: disable=arguments-differ
+    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
         """Training Step of PADIM. For each batch, hierarchical features are extracted from the CNN.
 
         Args:
-            batch (Dict[str, Any]): Batch containing image filename, image, label and mask
+            batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
             _batch_idx: Index of the batch.
 
         Returns:
@@ -92,14 +94,13 @@ class Padim(AnomalyModule):
         logger.info("Fitting a Gaussian to the embedding collected from the training set.")
         self.stats = self.model.gaussian.fit(embeddings)
 
-    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
+    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Validation Step of PADIM.
 
         Similar to the training step, hierarchical features are extracted from the CNN for each batch.
 
         Args:
-            batch: Input batch
-            _: Index of the batch.
+            batch (dict[str, str | Tensor]): Input batch
 
         Returns:
             Dictionary containing images, features, true labels and masks.
@@ -114,10 +115,10 @@ class PadimLightning(Padim):
     """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
 
     Args:
-        hparams (Union[DictConfig, ListConfig]): Model params
+        hparams (DictConfig | ListConfig): Model params
     """
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]):
+    def __init__(self, hparams: DictConfig | ListConfig) -> None:
         super().__init__(
             input_size=hparams.model.input_size,
             layers=hparams.model.layers,
@@ -125,5 +126,5 @@ class PadimLightning(Padim):
             pre_trained=hparams.model.pre_trained,
             n_features=hparams.model.n_features if "n_features" in hparams.model else None,
         )
-        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
+        self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)

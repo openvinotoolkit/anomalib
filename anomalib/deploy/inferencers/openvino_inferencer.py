@@ -3,9 +3,11 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 from importlib.util import find_spec
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any
 
 import cv2
 import numpy as np
@@ -27,19 +29,19 @@ class OpenVINOInferencer(Inferencer):
     """OpenVINO implementation for the inference.
 
     Args:
-        config (Union[str, Path, DictConfig, ListConfig]): Configurable parameters that are used
+        config (str | Path | DictConfig | ListConfig): Configurable parameters that are used
             during the training stage.
-        path (Union[str, Path]): Path to the openvino onnx, xml or bin file.
-        meta_data_path (Union[str, Path], optional): Path to metadata file. Defaults to None.
+        path (str | Path): Path to the openvino onnx, xml or bin file.
+        meta_data_path (str | Path, optional): Path to metadata file. Defaults to None.
     """
 
     def __init__(
         self,
-        config: Union[str, Path, DictConfig, ListConfig],
-        path: Union[str, Path, Tuple[bytes, bytes]],
-        meta_data_path: Union[str, Path] = None,
-        device: Optional[str] = "CPU",
-    ):
+        config: str | Path | DictConfig | ListConfig,
+        path: str | Path | tuple[bytes, bytes],
+        meta_data_path: str | Path | None = None,
+        device: str | None = "CPU",
+    ) -> None:
         # Check and load the configuration
         if isinstance(config, (str, Path)):
             self.config = get_configurable_parameters(config_path=config)
@@ -52,15 +54,15 @@ class OpenVINOInferencer(Inferencer):
         self.input_blob, self.output_blob, self.network = self.load_model(path)
         self.meta_data = super()._load_meta_data(meta_data_path)
 
-    def load_model(self, path: Union[str, Path, Tuple[bytes, bytes]]):
+    def load_model(self, path: str | Path | tuple[bytes, bytes]):
         """Load the OpenVINO model.
 
         Args:
-            path (Union[str, Path, Tuple[bytes, bytes]]): Path to the onnx or xml and bin files
+            path (str | Path | tuple[bytes, bytes]): Path to the onnx or xml and bin files
                                                         or tuple of .xml and .bin data as bytes.
 
         Returns:
-            [Tuple[str, str, ExecutableNetwork]]: Input and Output blob names
+            [tuple[str, str, ExecutableNetwork]]: Input and Output blob names
                 together with the Executable network.
         """
         ie_core = IECore()
@@ -129,9 +131,7 @@ class OpenVINOInferencer(Inferencer):
         """
         return self.network.infer(inputs={self.input_blob: image})
 
-    def post_process(
-        self, predictions: np.ndarray, meta_data: Optional[Union[Dict, DictConfig]] = None
-    ) -> Dict[str, Any]:
+    def post_process(self, predictions: np.ndarray, meta_data: dict | DictConfig | None = None) -> dict[str, Any]:
         """Post process the output predictions.
 
         Args:
@@ -141,7 +141,7 @@ class OpenVINOInferencer(Inferencer):
                 Defaults to None.
 
         Returns:
-            Dict[str, Any]: Post processed prediction results.
+            dict[str, Any]: Post processed prediction results.
         """
         if meta_data is None:
             meta_data = self.meta_data
@@ -149,9 +149,9 @@ class OpenVINOInferencer(Inferencer):
         predictions = predictions[self.output_blob]
 
         # Initialize the result variables.
-        anomaly_map: Optional[np.ndarray] = None
-        pred_label: Optional[float] = None
-        pred_mask: Optional[float] = None
+        anomaly_map: np.ndarray | None = None
+        pred_label: float | None = None
+        pred_mask: float | None = None
 
         # If predictions returns a single value, this means that the task is
         # classification, and the value is the classification prediction score.
@@ -171,7 +171,7 @@ class OpenVINOInferencer(Inferencer):
 
         if task == TaskType.CLASSIFICATION:
             _, pred_score = self._normalize(pred_scores=pred_score, meta_data=meta_data)
-        elif task in [TaskType.SEGMENTATION, TaskType.DETECTION]:
+        elif task in (TaskType.SEGMENTATION, TaskType.DETECTION):
             if "pixel_threshold" in meta_data:
                 pred_mask = (anomaly_map >= meta_data["pixel_threshold"]).astype(np.uint8)
 
@@ -224,5 +224,5 @@ class OpenVINOInferencer(Inferencer):
         for label in labels[labels != 0]:
             y_loc, x_loc = np.where(comps == label)
             boxes.append([np.min(x_loc), np.min(y_loc), np.max(x_loc), np.max(y_loc)])
-        boxes = np.stack(boxes) if len(boxes) > 0 else np.empty((0, 4))
+        boxes = np.stack(boxes) if boxes else np.empty((0, 4))
         return boxes

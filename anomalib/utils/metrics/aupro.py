@@ -3,7 +3,9 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any, Callable, List, Optional, Tuple
+from __future__ import annotations
+
+from typing import Any, Callable
 
 import torch
 from matplotlib.figure import Figure
@@ -24,16 +26,16 @@ class AUPRO(Metric):
     """Area under per region overlap (AUPRO) Metric."""
 
     is_differentiable: bool = False
-    higher_is_better: Optional[bool] = None
+    higher_is_better: bool | None = None
     full_state_update: bool = False
-    preds: List[Tensor]
-    target: List[Tensor]
+    preds: list[Tensor]
+    target: list[Tensor]
 
     def __init__(
         self,
         compute_on_step: bool = True,
         dist_sync_on_step: bool = False,
-        process_group: Optional[Any] = None,
+        process_group: Any | None = None,
         dist_sync_fn: Callable = None,
         fpr_limit: float = 0.3,
     ) -> None:
@@ -58,7 +60,7 @@ class AUPRO(Metric):
         self.target.append(target)
         self.preds.append(preds)
 
-    def _compute(self) -> Tuple[Tensor, Tensor]:
+    def _compute(self) -> tuple[Tensor, Tensor]:
         """Compute the pro/fpr value-pairs until the fpr specified by self.fpr_limit.
 
         It leverages the fact that the overlap corresponds to the tpr, and thus computes the overall
@@ -69,7 +71,7 @@ class AUPRO(Metric):
                         connected component analysis.
 
         Returns:
-            Tuple[Tensor, Tensor]: tuple containing final fpr and tpr values.
+            tuple[Tensor, Tensor]: tuple containing final fpr and tpr values.
         """
         target = dim_zero_cat(self.target)
         preds = dim_zero_cat(self.preds)
@@ -77,10 +79,8 @@ class AUPRO(Metric):
         # check and prepare target for labeling via kornia
         if target.min() < 0 or target.max() > 1:
             raise ValueError(
-                (
-                    f"kornia.contrib.connected_components expects input to lie in the interval [0, 1], but found "
-                    f"interval was [{target.min()}, {target.max()}]."
-                )
+                f"kornia.contrib.connected_components expects input to lie in the interval [0, 1], but found "
+                f"interval was [{target.min()}, {target.max()}]."
             )
         target = target.unsqueeze(1)  # kornia expects N1HW format
         target = target.type(torch.float)  # kornia expects FloatTensor
@@ -167,11 +167,11 @@ class AUPRO(Metric):
 
         return aupro
 
-    def generate_figure(self) -> Tuple[Figure, str]:
+    def generate_figure(self) -> tuple[Figure, str]:
         """Generate a figure containing the PRO curve and the AUPRO.
 
         Returns:
-            Tuple[Figure, str]: Tuple containing both the figure and the figure title to be used for logging
+            tuple[Figure, str]: Tuple containing both the figure and the figure title to be used for logging
         """
         fpr, tpr = self._compute()
         aupro = self.compute()

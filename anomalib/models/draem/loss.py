@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from kornia.losses import FocalLoss, SSIMLoss
-from torch import nn
+from torch import Tensor, nn
 
 
 class DraemLoss(nn.Module):
@@ -14,14 +14,14 @@ class DraemLoss(nn.Module):
     image, and the Structural Similarity loss between the predicted and GT anomaly masks.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
         self.l2_loss = nn.modules.loss.MSELoss()
         self.focal_loss = FocalLoss(alpha=1, reduction="mean")
         self.ssim_loss = SSIMLoss(window_size=11)
 
-    def forward(self, input_image, reconstruction, anomaly_mask, prediction):
+    def forward(self, input_image: Tensor, reconstruction: Tensor, anomaly_mask: Tensor, prediction: Tensor) -> Tensor:
         """Compute the loss over a batch for the DRAEM model."""
         l2_loss_val = self.l2_loss(reconstruction, input_image)
         focal_loss_val = self.focal_loss(prediction, anomaly_mask.squeeze(1).long())

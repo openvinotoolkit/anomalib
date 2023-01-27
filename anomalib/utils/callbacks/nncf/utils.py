@@ -3,9 +3,11 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
 from copy import copy
-from typing import Any, Dict, Iterator, List, Tuple
+from typing import Any, Iterator
 
 from nncf import NNCFConfig
 from nncf.api.compression import CompressionAlgorithmController
@@ -35,11 +37,11 @@ class InitLoader(PTInitializingDataLoader):
         loaded_item = next(self._data_loader_iter)
         return loaded_item["image"]
 
-    def get_inputs(self, dataloader_output) -> Tuple[Tuple, Dict]:
+    def get_inputs(self, dataloader_output) -> tuple[tuple, dict]:
         """Get input to model.
 
         Returns:
-            (dataloader_output,), {}: Tuple[Tuple, Dict]: The current model call to be made during
+            (dataloader_output,), {}: tuple[tuple, dict]: The current model call to be made during
             the initialization process
         """
         return (dataloader_output,), {}
@@ -56,8 +58,8 @@ class InitLoader(PTInitializingDataLoader):
 
 
 def wrap_nncf_model(
-    model: nn.Module, config: Dict, dataloader: DataLoader = None, init_state_dict: Dict = None
-) -> Tuple[CompressionAlgorithmController, NNCFNetwork]:
+    model: nn.Module, config: dict, dataloader: DataLoader = None, init_state_dict: dict = None
+) -> tuple[CompressionAlgorithmController, NNCFNetwork]:
     """Wrap model by NNCF.
 
     :param model: Anomalib model.
@@ -95,12 +97,12 @@ def wrap_nncf_model(
     return nncf_ctrl, nncf_model
 
 
-def is_state_nncf(state: Dict) -> bool:
+def is_state_nncf(state: dict) -> bool:
     """The function to check if sate is the result of NNCF-compressed model."""
     return bool(state.get("meta", {}).get("nncf_enable_compression", False))
 
 
-def compose_nncf_config(nncf_config: Dict, enabled_options: List[str]) -> Dict:
+def compose_nncf_config(nncf_config: dict, enabled_options: list[str]) -> dict:
     """Compose NNCf config by selected options.
 
     :param nncf_config:

@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Tuple
+from __future__ import annotations
 
 import torch
 from matplotlib import pyplot as plt
@@ -16,14 +16,14 @@ def plot_figure(
     x_vals: Tensor,
     y_vals: Tensor,
     auc: Tensor,
-    xlim: Tuple[float, float],
-    ylim: Tuple[float, float],
+    xlim: tuple[float, float],
+    ylim: tuple[float, float],
     xlabel: str,
     ylabel: str,
     loc: str,
     title: str,
     sample_points: int = 1000,
-) -> Tuple[Figure, Axis]:
+) -> tuple[Figure, Axis]:
     """Generate a simple, ROC-style plot, where x_vals is plotted against y_vals.
 
     Note that a subsampling is applied if > sample_points are present in x/y, as matplotlib plotting draws
@@ -33,8 +33,8 @@ def plot_figure(
         x_vals (Tensor): x values to plot
         y_vals (Tensor): y values to plot
         auc (Tensor): normalized area under the curve spanned by x_vals, y_vals
-        xlim (Tuple[float, float]): displayed range for x-axis
-        ylim (Tuple[float, float]): displayed range for y-axis
+        xlim (tuple[float, float]): displayed range for x-axis
+        ylim (tuple[float, float]): displayed range for y-axis
         xlabel (str): label of x axis
         ylabel (str): label of y axis
         loc (str): string-based legend location, for details see
@@ -43,7 +43,7 @@ def plot_figure(
         sample_points (int): number of sampling points to subsample x_vals/y_vals with
 
     Returns:
-        Tuple[Figure, Axis]: Figure and the contained Axis
+        tuple[Figure, Axis]: Figure and the contained Axis
     """
     fig, axis = plt.subplots()
 

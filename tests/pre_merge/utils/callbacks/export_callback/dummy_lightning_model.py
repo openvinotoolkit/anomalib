@@ -18,7 +18,7 @@ from tests.helpers.dummy import DummyModel
 
 class FakeDataModule(pl.LightningDataModule):
     def __init__(self, batch_size: int = 32):
-        super(FakeDataModule, self).__init__()
+        super().__init__()
         self.batch_size = batch_size
         self.pre_process = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
 

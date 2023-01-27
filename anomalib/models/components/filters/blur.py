@@ -1,6 +1,6 @@
 """Gaussian blurring via pytorch."""
 
-from typing import Optional, Tuple, Union
+from __future__ import annotations
 
 from kornia.filters import get_gaussian_kernel2d
 from kornia.filters.filter import _compute_padding
@@ -31,9 +31,9 @@ class GaussianBlur2d(nn.Module):
 
     def __init__(
         self,
-        sigma: Union[Tuple[float, float], float],
+        sigma: float | tuple[float, float],
         channels: int = 1,
-        kernel_size: Optional[Union[Tuple[int, int], int]] = None,
+        kernel_size: int | tuple[int, int] | None = None,
         normalize: bool = True,
         border_type: str = "reflect",
         padding: str = "same",
@@ -41,9 +41,9 @@ class GaussianBlur2d(nn.Module):
         """Initialize model, setup kernel etc..
 
         Args:
-            sigma (Union[Tuple[float, float], float]): standard deviation to use for constructing the Gaussian kernel.
+            sigma (float | tuple[float, float]): standard deviation to use for constructing the Gaussian kernel.
             channels (int): channels of the input. Defaults to 1.
-            kernel_size (Optional[Union[Tuple[int, int], int]]): size of the Gaussian kernel to use. Defaults to None.
+            kernel_size (int | tuple[int, int] | None): size of the Gaussian kernel to use. Defaults to None.
             normalize (bool, optional): Whether to normalize the kernel or not (i.e. all elements sum to 1).
                 Defaults to True.
             border_type (str, optional): Border type to use for padding of the input. Defaults to "reflect".

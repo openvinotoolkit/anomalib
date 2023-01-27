@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Optional, Union
+from __future__ import annotations
 
 import numpy as np
 import torch
@@ -13,11 +13,11 @@ from torch.distributions import Normal
 
 
 def standardize(
-    targets: Union[np.ndarray, Tensor],
-    mean: Union[np.ndarray, Tensor, float],
-    std: Union[np.ndarray, Tensor, float],
-    center_at: Optional[float] = None,
-) -> Union[np.ndarray, Tensor]:
+    targets: np.ndarray | Tensor,
+    mean: float | np.ndarray | Tensor,
+    std: float | np.ndarray | Tensor,
+    center_at: float | None = None,
+) -> np.ndarray | Tensor:
     """Standardize the targets to the z-domain."""
     if isinstance(targets, np.ndarray):
         targets = np.log(targets)
@@ -31,9 +31,7 @@ def standardize(
     return standardized
 
 
-def normalize(
-    targets: Union[np.ndarray, Tensor], threshold: Union[np.ndarray, Tensor, float]
-) -> Union[np.ndarray, Tensor]:
+def normalize(targets: np.ndarray | Tensor, threshold: float | np.ndarray | Tensor) -> np.ndarray | Tensor:
     """Normalize the targets by using the cumulative density function."""
     if isinstance(targets, Tensor):
         return normalize_torch(targets, threshold)
@@ -52,6 +50,6 @@ def normalize_torch(targets: Tensor, threshold: Tensor) -> Tensor:
     return normalized
 
 
-def normalize_numpy(targets: np.ndarray, threshold: Union[np.ndarray, float]) -> np.ndarray:
+def normalize_numpy(targets: np.ndarray, threshold: float | np.ndarray) -> np.ndarray:
     """Normalize the targets by using the cumulative density function, Numpy version."""
     return norm.cdf(targets - threshold)

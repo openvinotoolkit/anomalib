@@ -5,7 +5,7 @@
     . https://arxiv.org/abs/1708.00489
 """
 
-from typing import List, Optional
+from __future__ import annotations
 
 import torch
 import torch.nn.functional as F
@@ -44,11 +44,11 @@ class KCenterGreedy:
         """Reset minimum distances."""
         self.min_distances = None
 
-    def update_distances(self, cluster_centers: List[int]) -> None:
+    def update_distances(self, cluster_centers: list[int]) -> None:
         """Update min distances given cluster centers.
 
         Args:
-            cluster_centers (List[int]): indices of cluster centers
+            cluster_centers (list[int]): indices of cluster centers
         """
 
         if cluster_centers:
@@ -77,7 +77,7 @@ class KCenterGreedy:
 
         return idx
 
-    def select_coreset_idxs(self, selected_idxs: Optional[List[int]] = None) -> List[int]:
+    def select_coreset_idxs(self, selected_idxs: list[int] | None = None) -> list[int]:
         """Greedily form a coreset to minimize the maximum distance of a cluster.
 
         Args:
@@ -98,7 +98,7 @@ class KCenterGreedy:
             self.features = self.embedding.reshape(self.embedding.shape[0], -1)
             self.update_distances(cluster_centers=selected_idxs)
 
-        selected_coreset_idxs: List[int] = []
+        selected_coreset_idxs: list[int] = []
         idx = int(torch.randint(high=self.n_observations, size=(1,)).item())
         for _ in range(self.coreset_size):
             self.update_distances(cluster_centers=[idx])
@@ -110,7 +110,7 @@ class KCenterGreedy:
 
         return selected_coreset_idxs
 
-    def sample_coreset(self, selected_idxs: Optional[List[int]] = None) -> Tensor:
+    def sample_coreset(self, selected_idxs: list[int] | None = None) -> Tensor:
         """Select coreset from the embedding.
 
         Args:
