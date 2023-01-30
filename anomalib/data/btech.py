@@ -88,12 +88,13 @@ def make_btech_dataset(path: Path, split: str | Split | None = None) -> DataFram
     samples = samples[samples.split != "ground_truth"]
 
     # Create mask_path column
+    # (safely handles cases where non-mask image_paths end with either .png or .bmp)
     samples["mask_path"] = (
         samples.path
         + "/ground_truth/"
         + samples.label
         + "/"
-        + samples.image_path.str.rstrip("png").str.rstrip(".")
+        + samples.image_path.str.rstrip("png").str.rstrip(".").str.rstrip("bmp").str.rstrip(".")
         + ".png"
     )
 
