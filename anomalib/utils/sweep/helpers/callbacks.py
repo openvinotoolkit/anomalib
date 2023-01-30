@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import List, Union
+from __future__ import annotations
 
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning import Callback
@@ -16,16 +16,16 @@ from anomalib.utils.callbacks import (
 from anomalib.utils.callbacks.timer import TimerCallback
 
 
-def get_sweep_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
+def get_sweep_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
     """Gets callbacks relevant to sweep.
 
     Args:
-        config (Union[DictConfig, ListConfig]): Model config loaded from anomalib
+        config (DictConfig | ListConfig): Model config loaded from anomalib
 
     Returns:
-        List[Callback]: List of callbacks
+        list[Callback]: List of callbacks
     """
-    callbacks: List[Callback] = [TimerCallback()]
+    callbacks: list[Callback] = [TimerCallback()]
     # Add metric configuration to the model via MetricsConfigurationCallback
 
     # TODO: Remove this once the old CLI is deprecated.

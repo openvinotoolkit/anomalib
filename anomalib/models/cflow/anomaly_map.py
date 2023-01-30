@@ -3,7 +3,9 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Tuple, Union, cast
+from __future__ import annotations
+
+from typing import List, cast
 
 import torch
 import torch.nn.functional as F
@@ -16,15 +18,15 @@ class AnomalyMapGenerator(nn.Module):
 
     def __init__(
         self,
-        image_size: Union[ListConfig, Tuple],
-        pool_layers: List[str],
-    ):
+        image_size: ListConfig | tuple,
+        pool_layers: list[str],
+    ) -> None:
         super().__init__()
         self.distance = torch.nn.PairwiseDistance(p=2, keepdim=True)
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
-        self.pool_layers: List[str] = pool_layers
+        self.pool_layers: list[str] = pool_layers
 
-    def compute_anomaly_map(self, distribution: List[Tensor], height: List[int], width: List[int]) -> Tensor:
+    def compute_anomaly_map(self, distribution: list[Tensor], height: list[int], width: list[int]) -> Tensor:
         """Compute the layer map based on likelihood estimation.
 
         Args:
@@ -36,7 +38,7 @@ class AnomalyMapGenerator(nn.Module):
           Final Anomaly Map
 
         """
-        layer_maps: List[Tensor] = []
+        layer_maps: list[Tensor] = []
         for layer_idx in range(len(self.pool_layers)):
             layer_distribution = distribution[layer_idx].clone().detach()
             # Normalize the likelihoods to (-Inf:0] and convert to probs in range [0:1]
@@ -58,7 +60,7 @@ class AnomalyMapGenerator(nn.Module):
 
         return anomaly_map
 
-    def forward(self, **kwargs: Union[List[Tensor], List[int], List[List]]) -> Tensor:
+    def forward(self, **kwargs: list[Tensor] | list[int] | list[list]) -> Tensor:
         """Returns anomaly_map.
 
         Expects `distribution`, `height` and 'width' keywords to be passed explicitly
@@ -78,7 +80,7 @@ class AnomalyMapGenerator(nn.Module):
             raise KeyError(f"Expected keys `distribution`, `height` and `width`. Found {kwargs.keys()}")
 
         # placate mypy
-        distribution: List[Tensor] = cast(List[Tensor], kwargs["distribution"])
-        height: List[int] = cast(List[int], kwargs["height"])
-        width: List[int] = cast(List[int], kwargs["width"])
+        distribution: list[Tensor] = cast(List[Tensor], kwargs["distribution"])
+        height: list[int] = cast(List[int], kwargs["height"])
+        width: list[int] = cast(List[int], kwargs["width"])
         return self.compute_anomaly_map(distribution, height, width)

@@ -16,7 +16,7 @@ from __future__ import annotations
 import math
 import warnings
 from enum import Enum
-from typing import TYPE_CHECKING, List, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Sequence
 
 import torch
 
@@ -66,10 +66,10 @@ def concatenate_datasets(datasets: Sequence[AnomalibDataset]) -> AnomalibDataset
 
 def random_split(
     dataset: AnomalibDataset,
-    split_ratio: Union[float, Sequence[float]],
+    split_ratio: float | Sequence[float],
     label_aware: bool = False,
-    seed: Optional[int] = None,
-) -> List[AnomalibDataset]:
+    seed: int | None = None,
+) -> list[AnomalibDataset]:
     """Perform a random split of a dataset.
 
     Args:
@@ -79,7 +79,7 @@ def random_split(
             [1-split_ratio, split_ratio].
         label_aware (bool): When True, the relative occurrence of the different class labels of the source dataset will
             be maintained in each of the subsets.
-        seed (Optional[int], optional): Seed that can be passed if results need to be reproducible
+        seed (int | None, optional): Seed that can be passed if results need to be reproducible
     """
 
     if isinstance(split_ratio, float):
@@ -98,13 +98,11 @@ def random_split(
         per_label_datasets = [dataset]
 
     # outer list: per-label unique, inner list: random subsets with the given ratio
-    subsets: List[List[AnomalibDataset]] = []
+    subsets: list[list[AnomalibDataset]] = []
     # split each (label-aware) subset of source data
     for label_dataset in per_label_datasets:
         # get subset lengths
-        subset_lengths = []
-        for ratio in split_ratio:
-            subset_lengths.append(int(math.floor(len(label_dataset.samples) * ratio)))
+        subset_lengths = [math.floor(len(label_dataset.samples) * ratio) for ratio in split_ratio]
         for i in range(len(label_dataset.samples) - sum(subset_lengths)):
             subset_idx = i % sum(subset_lengths)
             subset_lengths[subset_idx] += 1
@@ -127,7 +125,7 @@ def random_split(
     return [concatenate_datasets(subset) for subset in subsets]
 
 
-def split_by_label(dataset: AnomalibDataset) -> Tuple[AnomalibDataset, AnomalibDataset]:
+def split_by_label(dataset: AnomalibDataset) -> tuple[AnomalibDataset, AnomalibDataset]:
     """Splits the dataset into the normal and anomalous subsets."""
     samples = dataset.samples
     normal_indices = samples[samples.label_index == 0].index

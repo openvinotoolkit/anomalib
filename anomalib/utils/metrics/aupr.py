@@ -3,7 +3,8 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Tuple
+
+from __future__ import annotations
 
 import torch
 from matplotlib.figure import Figure
@@ -44,7 +45,7 @@ class AUPR(PrecisionRecallCurve):
         """
         super().update(preds.flatten(), target.flatten())
 
-    def _compute(self) -> Tuple[Tensor, Tensor]:
+    def _compute(self) -> tuple[Tensor, Tensor]:
         """Compute prec/rec value pairs.
 
         Returns:
@@ -55,11 +56,11 @@ class AUPR(PrecisionRecallCurve):
         prec, rec, _ = super().compute()
         return (prec, rec)
 
-    def generate_figure(self) -> Tuple[Figure, str]:
+    def generate_figure(self) -> tuple[Figure, str]:
         """Generate a figure containing the PR curve as well as the random baseline and the AUC.
 
         Returns:
-            Tuple[Figure, str]: Tuple containing both the PR curve and the figure title to be used for logging
+            tuple[Figure, str]: Tuple containing both the PR curve and the figure title to be used for logging
         """
         prec, rec = self._compute()
         aupr = self.compute()

@@ -6,8 +6,9 @@ This script creates a custom dataset from a folder.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 from pathlib import Path
-from typing import Optional, Tuple, Union
 
 import albumentations as A
 from pandas import DataFrame
@@ -24,11 +25,11 @@ from anomalib.data.utils import (
 )
 
 
-def _check_and_convert_path(path: Union[str, Path]) -> Path:
+def _check_and_convert_path(path: str | Path) -> Path:
     """Check an input path, and convert to Pathlib object.
 
     Args:
-        path (Union[str, Path]): Input path.
+        path (str | Path): Input path.
 
     Returns:
         Path: Output path converted to pathlib object.
@@ -39,14 +40,14 @@ def _check_and_convert_path(path: Union[str, Path]) -> Path:
 
 
 def _prepare_files_labels(
-    path: Union[str, Path], path_type: str, extensions: Optional[Tuple[str, ...]] = None
-) -> Tuple[list, list]:
+    path: str | Path, path_type: str, extensions: tuple[str, ...] | None = None
+) -> tuple[list, list]:
     """Return a list of filenames and list corresponding labels.
 
     Args:
-        path (Union[str, Path]): Path to the directory containing images.
+        path (str | Path): Path to the directory containing images.
         path_type (str): Type of images in the provided path ("normal", "abnormal", "normal_test")
-        extensions (Optional[Tuple[str, ...]], optional): Type of the image extensions to read from the
+        extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
             directory.
 
     Returns:
@@ -60,7 +61,7 @@ def _prepare_files_labels(
         extensions = (extensions,)
 
     filenames = [f for f in path.glob(r"**/*") if f.suffix in extensions and not f.is_dir()]
-    if len(filenames) == 0:
+    if not filenames:
         raise RuntimeError(f"Found 0 {path_type} images in {path}")
 
     labels = [path_type] * len(filenames)
@@ -68,15 +69,15 @@ def _prepare_files_labels(
     return filenames, labels
 
 
-def _resolve_path(folder: Union[Path, str], root: Optional[Union[Path, str]] = None) -> Path:
+def _resolve_path(folder: str | Path, root: str | Path | None = None) -> Path:
     """Combines root and folder and returns the absolute path.
 
     This allows users to pass either a root directory and relative paths, or absolute paths to each of the
     image sources. This function makes sure that the samples dataframe always contains absolute paths.
 
     Args:
-        folder (Optional[Union[Path, str]]): Folder location containing image or mask data.
-        root (Optional[Union[Path, str]]): Root directory for the dataset.
+        folder (str | Path | None): Folder location containing image or mask data.
+        root (str | Path | None): Root directory for the dataset.
     """
     folder = Path(folder)
     if folder.is_absolute():
@@ -93,28 +94,28 @@ def _resolve_path(folder: Union[Path, str], root: Optional[Union[Path, str]] = N
 
 
 def make_folder_dataset(
-    normal_dir: Union[str, Path],
-    root: Optional[Union[str, Path]] = None,
-    abnormal_dir: Optional[Union[str, Path]] = None,
-    normal_test_dir: Optional[Union[str, Path]] = None,
-    mask_dir: Optional[Union[str, Path]] = None,
-    split: Optional[Union[Split, str]] = None,
-    extensions: Optional[Tuple[str, ...]] = None,
-):
+    normal_dir: str | Path,
+    root: str | Path | None = None,
+    abnormal_dir: str | Path | None = None,
+    normal_test_dir: str | Path | None = None,
+    mask_dir: str | Path | None = None,
+    split: str | Split | None = None,
+    extensions: tuple[str, ...] | None = None,
+) -> DataFrame:
     """Make Folder Dataset.
 
     Args:
-        normal_dir (Union[str, Path]): Path to the directory containing normal images.
-        root (Optional[Union[str, Path]]): Path to the root directory of the dataset.
-        abnormal_dir (Optional[Union[str, Path]], optional): Path to the directory containing abnormal images.
-        normal_test_dir (Optional[Union[str, Path]], optional): Path to the directory containing
+        normal_dir (str | Path): Path to the directory containing normal images.
+        root (str | Path | None): Path to the root directory of the dataset.
+        abnormal_dir (str | Path | None, optional): Path to the directory containing abnormal images.
+        normal_test_dir (str | Path | None, optional): Path to the directory containing
             normal images for the test dataset. Normal test images will be a split of `normal_dir`
             if `None`. Defaults to None.
-        mask_dir (Optional[Union[str, Path]], optional): Path to the directory containing
+        mask_dir (str | Path | None, optional): Path to the directory containing
             the mask annotations. Defaults to None.
-        split (Optional[Union[Split, str]], optional): Dataset split (ie., Split.FULL, Split.TRAIN or Split.TEST).
+        split (str | Split | None, optional): Dataset split (ie., Split.FULL, Split.TRAIN or Split.TEST).
             Defaults to None.
-        extensions (Optional[Tuple[str, ...]], optional): Type of the image extensions to read from the
+        extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
             directory.
 
     Returns:
@@ -186,17 +187,17 @@ class FolderDataset(AnomalibDataset):
     Args:
         task (TaskType): Task type. (``classification``, ``detection`` or ``segmentation``).
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
-        split (Optional[Union[Split, str]]): Fixed subset split that follows from folder structure on file system.
+        split (str | Split | None): Fixed subset split that follows from folder structure on file system.
             Choose from [Split.FULL, Split.TRAIN, Split.TEST]
-        normal_dir (Union[str, Path]): Path to the directory containing normal images.
-        root (Optional[Union[str, Path]]): Root folder of the dataset.
-        abnormal_dir (Optional[Union[str, Path]], optional): Path to the directory containing abnormal images.
-        normal_test_dir (Optional[Union[str, Path]], optional): Path to the directory containing
+        normal_dir (str | Path): Path to the directory containing normal images.
+        root (str | Path | None): Root folder of the dataset.
+        abnormal_dir (str | Path | None, optional): Path to the directory containing abnormal images.
+        normal_test_dir (str | Path | None, optional): Path to the directory containing
             normal images for the test dataset. Defaults to None.
-        mask_dir (Optional[Union[str, Path]], optional): Path to the directory containing
+        mask_dir (str | Path | None, optional): Path to the directory containing
             the mask annotations. Defaults to None.
 
-        extensions (Optional[Tuple[str, ...]], optional): Type of the image extensions to read from the
+        extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
             directory.
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
 
@@ -209,13 +210,13 @@ class FolderDataset(AnomalibDataset):
         self,
         task: TaskType,
         transform: A.Compose,
-        normal_dir: Union[str, Path],
-        root: Optional[Union[str, Path]] = None,
-        abnormal_dir: Optional[Union[str, Path]] = None,
-        normal_test_dir: Optional[Union[str, Path]] = None,
-        mask_dir: Optional[Union[str, Path]] = None,
-        split: Optional[Union[Split, str]] = None,
-        extensions: Optional[Tuple[str, ...]] = None,
+        normal_dir: str | Path,
+        root: str | Path | None = None,
+        abnormal_dir: str | Path | None = None,
+        normal_test_dir: str | Path | None = None,
+        mask_dir: str | Path | None = None,
+        split: str | Split | None = None,
+        extensions: tuple[str, ...] | None = None,
     ) -> None:
         super().__init__(task, transform)
 
@@ -227,7 +228,7 @@ class FolderDataset(AnomalibDataset):
         self.mask_dir = mask_dir
         self.extensions = extensions
 
-    def _setup(self):
+    def _setup(self) -> None:
         """Assign samples."""
         self.samples = make_folder_dataset(
             root=self.root,
@@ -244,23 +245,23 @@ class Folder(AnomalibDataModule):
     """Folder DataModule.
 
     Args:
-        normal_dir (Union[str, Path]): Name of the directory containing normal images.
+        normal_dir (str | Path): Name of the directory containing normal images.
             Defaults to "normal".
-        root (Optional[Union[str, Path]]): Path to the root folder containing normal and abnormal dirs.
-        abnormal_dir (Optional[Union[str, Path]]): Name of the directory containing abnormal images.
+        root (str | Path | None): Path to the root folder containing normal and abnormal dirs.
+        abnormal_dir (str | Path | None): Name of the directory containing abnormal images.
             Defaults to "abnormal".
-        normal_test_dir (Optional[Union[str, Path]], optional): Path to the directory containing
+        normal_test_dir (str | Path | None, optional): Path to the directory containing
             normal images for the test dataset. Defaults to None.
-        mask_dir (Optional[Union[str, Path]], optional): Path to the directory containing
+        mask_dir (str | Path | None, optional): Path to the directory containing
             the mask annotations. Defaults to None.
         normal_split_ratio (float, optional): Ratio to split normal training images and add to the
             test set in case test set doesn't contain any normal images.
             Defaults to 0.2.
-        extensions (Optional[Tuple[str, ...]], optional): Type of the image extensions to read from the
+        extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
             directory. Defaults to None.
-        image_size (Optional[Union[int, Tuple[int, int]]], optional): Size of the input image.
+        image_size (int | tuple[int, int] | None, optional): Size of the input image.
             Defaults to None.
-        center_crop (Optional[Union[int, Tuple[int, int]]], optional): When provided, the images will be center-cropped
+        center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped
             to the provided dimensions.
         normalize (bool): When True, the images will be normalized to the ImageNet statistics.
         train_batch_size (int, optional): Training batch size. Defaults to 32.
@@ -268,43 +269,43 @@ class Folder(AnomalibDataModule):
         num_workers (int, optional): Number of workers. Defaults to 8.
         task (TaskType, optional): Task type. Could be ``classification``, ``detection`` or ``segmentation``.
             Defaults to segmentation.
-        transform_config_train (Optional[Union[str, A.Compose]], optional): Config for pre-processing
+        transform_config_train (str | A.Compose | None, optional): Config for pre-processing
             during training.
             Defaults to None.
-        transform_config_val (Optional[Union[str, A.Compose]], optional): Config for pre-processing
+        transform_config_val (str | A.Compose | None, optional): Config for pre-processing
             during validation.
             Defaults to None.
         test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
         test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
         val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
-        seed (Optional[int], optional): Seed used during random subset splitting.
+        seed (int | None, optional): Seed used during random subset splitting.
     """
 
     def __init__(
         self,
-        normal_dir: Union[str, Path],
-        root: Optional[Union[str, Path]] = None,
-        abnormal_dir: Optional[Union[str, Path]] = None,
-        normal_test_dir: Optional[Union[str, Path]] = None,
-        mask_dir: Optional[Union[str, Path]] = None,
+        normal_dir: str | Path,
+        root: str | Path | None = None,
+        abnormal_dir: str | Path | None = None,
+        normal_test_dir: str | Path | None = None,
+        mask_dir: str | Path | None = None,
         normal_split_ratio: float = 0.2,
-        extensions: Optional[Tuple[str]] = None,
-        image_size: Optional[Union[int, Tuple[int, int]]] = None,
-        center_crop: Optional[Union[int, Tuple[int, int]]] = None,
-        normalization: Union[InputNormalizationMethod, str] = InputNormalizationMethod.IMAGENET,
+        extensions: tuple[str] | None = None,
+        image_size: int | tuple[int, int] | None = None,
+        center_crop: int | tuple[int, int] | None = None,
+        normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
         task: TaskType = TaskType.SEGMENTATION,
-        transform_config_train: Optional[Union[str, A.Compose]] = None,
-        transform_config_eval: Optional[Union[str, A.Compose]] = None,
+        transform_config_train: str | A.Compose | None = None,
+        transform_config_eval: str | A.Compose | None = None,
         test_split_mode: TestSplitMode = TestSplitMode.FROM_DIR,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode = ValSplitMode.FROM_TEST,
         val_split_ratio: float = 0.5,
-        seed: Optional[int] = None,
-    ):
+        seed: int | None = None,
+    ) -> None:
         super().__init__(
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,

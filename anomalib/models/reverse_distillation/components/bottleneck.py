@@ -10,7 +10,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import Callable, List, Optional, Type, Union
+from __future__ import annotations
+
+from typing import Callable
 
 import torch
 from torch import Tensor, nn
@@ -45,17 +47,17 @@ class OCBE(nn.Module):
         groups (int, optional): Number of blocked connections from input channels to output channels.
             Defaults to 1.
         width_per_group (int, optional): Number of layers in each intermediate convolution layer. Defaults to 64.
-        norm_layer (Optional[Callable[..., nn.Module]], optional): Batch norm layer to use. Defaults to None.
+        norm_layer (Callable[..., nn.Module] | None, optional): Batch norm layer to use. Defaults to None.
     """
 
     def __init__(
         self,
-        block: Type[Union[Bottleneck, BasicBlock]],
+        block: Bottleneck | BasicBlock,
         layers: int,
         groups: int = 1,
         width_per_group: int = 64,
-        norm_layer: Optional[Callable[..., nn.Module]] = None,
-    ):
+        norm_layer: Callable[..., nn.Module] | None = None,
+    ) -> None:
         super().__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
@@ -88,7 +90,7 @@ class OCBE(nn.Module):
 
     def _make_layer(
         self,
-        block: Type[Union[Bottleneck, BasicBlock]],
+        block: type[Bottleneck | BasicBlock],
         planes: int,
         blocks: int,
         stride: int = 1,
@@ -134,11 +136,11 @@ class OCBE(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def forward(self, features: List[Tensor]) -> Tensor:
+    def forward(self, features: list[Tensor]) -> Tensor:
         """Forward-pass of Bottleneck layer.
 
         Args:
-            features (List[Tensor]): List of features extracted from the encoder.
+            features (list[Tensor]): List of features extracted from the encoder.
 
         Returns:
             Tensor: Output of the bottleneck layer

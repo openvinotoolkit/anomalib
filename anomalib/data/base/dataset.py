@@ -9,7 +9,7 @@ import copy
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Dict, Sequence, Union
+from typing import Sequence
 
 import albumentations as A
 import cv2
@@ -41,7 +41,7 @@ class AnomalibDataset(Dataset, ABC):
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
     """
 
-    def __init__(self, task: TaskType, transform: A.Compose):
+    def __init__(self, task: TaskType, transform: A.Compose) -> None:
         super().__init__()
         self.task = task
         self.transform = transform
@@ -76,7 +76,7 @@ class AnomalibDataset(Dataset, ABC):
         return self._samples
 
     @samples.setter
-    def samples(self, samples: DataFrame):
+    def samples(self, samples: DataFrame) -> None:
         """Overwrite the samples with a new dataframe.
 
         Args:
@@ -102,14 +102,14 @@ class AnomalibDataset(Dataset, ABC):
         """Check if the dataset contains any anomalous samples."""
         return 1 in list(self.samples.label_index)
 
-    def __getitem__(self, index: int) -> Dict[str, Union[str, Tensor]]:
+    def __getitem__(self, index: int) -> dict[str, str | Tensor]:
         """Get dataset item for the index ``index``.
 
         Args:
             index (int): Index to get the item.
 
         Returns:
-            Union[Dict[str, Tensor], Dict[str, Union[str, Tensor]]]: Dict of image tensor during training.
+            Union[dict[str, Tensor], dict[str, str | Tensor]]: Dict of image tensor during training.
                 Otherwise, Dict containing image path, target path, image tensor, label and transformed bounding box.
         """
 

@@ -3,11 +3,12 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
 import os
 import warnings
 from importlib import import_module
-from typing import List, Union
 
 import yaml
 from jsonargparse.namespace import Namespace
@@ -43,18 +44,18 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
+def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
     """Return base callbacks for all the lightning models.
 
     Args:
         config (DictConfig): Model config
 
     Return:
-        (List[Callback]): List of callbacks.
+        (list[Callback]): List of callbacks.
     """
     logger.info("Loading the callbacks")
 
-    callbacks: List[Callback] = []
+    callbacks: list[Callback] = []
 
     monitor_metric = None if "early_stopping" not in config.model.keys() else config.model.early_stopping.metric
     monitor_mode = "max" if "early_stopping" not in config.model.keys() else config.model.early_stopping.mode
@@ -97,7 +98,7 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
 
     if "normalization_method" in config.model.keys() and not config.model.normalization_method == "none":
         if config.model.normalization_method == "cdf":
-            if config.model.name in ["padim", "stfpm"]:
+            if config.model.name in ("padim", "stfpm"):
                 if "nncf" in config.optimization and config.optimization.nncf.apply:
                     raise NotImplementedError("CDF Score Normalization is currently not compatible with NNCF.")
                 callbacks.append(CdfNormalizationCallback())
@@ -141,18 +142,18 @@ def get_callbacks(config: Union[ListConfig, DictConfig]) -> List[Callback]:
             warnings.warn(f"Export option: {config.optimization.export_mode} not found. Defaulting to no model export")
 
     # Add callback to log graph to loggers
-    if config.logging.log_graph not in [None, False]:
+    if config.logging.log_graph not in (None, False):
         callbacks.append(GraphLogger())
 
     return callbacks
 
 
-def add_visualizer_callback(callbacks: List[Callback], config: Union[DictConfig, ListConfig]):
+def add_visualizer_callback(callbacks: list[Callback], config: DictConfig | ListConfig) -> None:
     """Configure the visualizer callback based on the config and add it to the list of callbacks.
 
     Args:
-        callbacks (List[Callback]): Current list of callbacks.
-        config (Union[DictConfig, ListConfig]): The config object.
+        callbacks (list[Callback]): Current list of callbacks.
+        config (DictConfig | ListConfig): The config object.
     """
     # visualization settings
     assert isinstance(config, (DictConfig, Namespace))
@@ -183,11 +184,7 @@ def add_visualizer_callback(callbacks: List[Callback], config: Union[DictConfig,
         config.visualization.inputs_are_normalized = not config.post_processing.normalization_method == "none"
 
     if config.visualization.log_images or config.visualization.save_images or config.visualization.show_images:
-        image_save_path = (
-            config.visualization.image_save_path
-            if config.visualization.image_save_path
-            else config.project.path + "/images"
-        )
+        image_save_path = config.visualization.image_save_path or config.project.path + "/images"
         for callback in (ImageVisualizerCallback, MetricVisualizerCallback):
             callbacks.append(
                 callback(

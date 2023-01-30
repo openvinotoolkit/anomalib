@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Optional, Tuple, Union
+from __future__ import annotations
 
 from torch import Tensor, nn
 
@@ -21,8 +21,8 @@ class ReverseDistillationModel(nn.Module):
 
     Args:
         backbone (str): Name of the backbone used for encoder and decoder
-        input_size (Tuple[int, int]): Size of input image
-        layers (List[str]): Name of layers from which the features are extracted.
+        input_size (tuple[int, int]): Size of input image
+        layers (list[str]): Name of layers from which the features are extracted.
         anomaly_map_mode (str): Mode used to generate anomaly map. Options are between ``multiply`` and ``add``.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
     """
@@ -30,13 +30,13 @@ class ReverseDistillationModel(nn.Module):
     def __init__(
         self,
         backbone: str,
-        input_size: Tuple[int, int],
-        layers: List[str],
+        input_size: tuple[int, int],
+        layers: list[str],
         anomaly_map_mode: str,
         pre_trained: bool = True,
-    ):
+    ) -> None:
         super().__init__()
-        self.tiler: Optional[Tiler] = None
+        self.tiler: Tiler | None = None
 
         encoder_backbone = backbone
         self.encoder = FeatureExtractor(backbone=encoder_backbone, pre_trained=pre_trained, layers=layers)
@@ -48,9 +48,9 @@ class ReverseDistillationModel(nn.Module):
         else:
             image_size = input_size
 
-        self.anomaly_map_generator = AnomalyMapGenerator(image_size=tuple(image_size), mode=anomaly_map_mode)
+        self.anomaly_map_generator = AnomalyMapGenerator(image_size=image_size, mode=anomaly_map_mode)
 
-    def forward(self, images: Tensor) -> Union[Tensor, Tuple[List[Tensor], List[Tensor]]]:
+    def forward(self, images: Tensor) -> Tensor | list[Tensor] | tuple[list[Tensor]]:
         """Forward-pass images to the network.
 
         During the training mode the model extracts features from encoder and decoder networks.
@@ -60,7 +60,7 @@ class ReverseDistillationModel(nn.Module):
             images (Tensor): Batch of images
 
         Returns:
-            Union[Tensor, Tuple[List[Tensor],List[Tensor]]]: Encoder and decoder features in training mode,
+            Tensor | list[Tensor] | tuple[list[Tensor]]: Encoder and decoder features in training mode,
                 else anomaly maps.
         """
         self.encoder.eval()

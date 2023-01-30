@@ -6,13 +6,14 @@ https://arxiv.org/abs/2103.04257
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Tuple, Union
+from __future__ import annotations
 
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
-from torch import optim
+from pytorch_lightning.utilities.types import STEP_OUTPUT
+from torch import Tensor, optim
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.stfpm.loss import STFPMLoss
@@ -26,17 +27,17 @@ class Stfpm(AnomalyModule):
     """PL Lightning Module for the STFPM algorithm.
 
     Args:
-        input_size (Tuple[int, int]): Size of the model input.
+        input_size (tuple[int, int]): Size of the model input.
         backbone (str): Backbone CNN network
-        layers (List[str]): Layers to extract features from the backbone CNN
+        layers (list[str]): Layers to extract features from the backbone CNN
     """
 
     def __init__(
         self,
-        input_size: Tuple[int, int],
+        input_size: tuple[int, int],
         backbone: str,
-        layers: List[str],
-    ):
+        layers: list[str],
+    ) -> None:
         super().__init__()
 
         self.model = STFPMModel(
@@ -46,14 +47,13 @@ class Stfpm(AnomalyModule):
         )
         self.loss = STFPMLoss()
 
-    def training_step(self, batch, _):  # pylint: disable=arguments-differ
+    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Training Step of STFPM.
 
         For each batch, teacher and student and teacher features are extracted from the CNN.
 
         Args:
-          batch (Tensor): Input batch
-          _: Index of the batch.
+          batch (dict[str, str | Tensor]): Input batch
 
         Returns:
           Loss value
@@ -64,15 +64,14 @@ class Stfpm(AnomalyModule):
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
+    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Validation Step of STFPM.
 
         Similar to the training step, student/teacher features are extracted from the CNN for each batch, and
         anomaly map is computed.
 
         Args:
-          batch (Tensor): Input batch
-          _: Index of the batch.
+          batch (dict[str, str | Tensor]): Input batch
 
         Returns:
           Dictionary containing images, anomaly maps, true labels and masks.
@@ -87,19 +86,19 @@ class StfpmLightning(Stfpm):
     """PL Lightning Module for the STFPM algorithm.
 
     Args:
-        hparams (Union[DictConfig, ListConfig]): Model params
+        hparams (DictConfig | ListConfig): Model params
     """
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
+    def __init__(self, hparams: DictConfig | ListConfig) -> None:
         super().__init__(
             input_size=hparams.model.input_size,
             backbone=hparams.model.backbone,
             layers=hparams.model.layers,
         )
-        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
+        self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
 
-    def configure_callbacks(self):
+    def configure_callbacks(self) -> list[EarlyStopping]:
         """Configure model-specific callbacks.
 
         Note:

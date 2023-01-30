@@ -9,7 +9,9 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any, Callable, List, Optional, Type, Union
+from __future__ import annotations
+
+from typing import Any, Callable
 
 from torch import Tensor, nn
 from torchvision.models.resnet import conv1x1, conv3x3
@@ -22,12 +24,12 @@ class DecoderBasicBlock(nn.Module):
         inplanes (int): Number of input channels.
         planes (int): Number of output channels.
         stride (int, optional): Stride for convolution and de-convolution layers. Defaults to 1.
-        upsample (Optional[nn.Module], optional): Module used for upsampling output. Defaults to None.
+        upsample (nn.Module | None, optional): Module used for upsampling output. Defaults to None.
         groups (int, optional): Number of blocked connections from input channels to output channels.
             Defaults to 1.
         base_width (int, optional): Number of layers in each intermediate convolution layer. Defaults to 64.
         dilation (int, optional): Spacing between kernel elements. Defaults to 1.
-        norm_layer (Optional[Callable[..., nn.Module]], optional): Batch norm layer to use.Defaults to None.
+        norm_layer (Callable[..., nn.Module] | None, optional): Batch norm layer to use.Defaults to None.
 
     Raises:
         ValueError: If groups are not equal to 1 and base width is not 64.
@@ -41,11 +43,11 @@ class DecoderBasicBlock(nn.Module):
         inplanes: int,
         planes: int,
         stride: int = 1,
-        upsample: Optional[nn.Module] = None,
+        upsample: nn.Module | None = None,
         groups: int = 1,
         base_width: int = 64,
         dilation: int = 1,
-        norm_layer: Optional[Callable[..., nn.Module]] = None,
+        norm_layer: Callable[..., nn.Module] | None = None,
     ) -> None:
         super().__init__()
         if norm_layer is None:
@@ -95,12 +97,12 @@ class DecoderBottleneck(nn.Module):
         inplanes (int): Number of input channels.
         planes (int): Number of output channels.
         stride (int, optional): Stride for convolution and de-convolution layers. Defaults to 1.
-        upsample (Optional[nn.Module], optional): Module used for upsampling output. Defaults to None.
+        upsample (nn.Module | None, optional): Module used for upsampling output. Defaults to None.
         groups (int, optional): Number of blocked connections from input channels to output channels.
             Defaults to 1.
         base_width (int, optional): Number of layers in each intermediate convolution layer. Defaults to 64.
         dilation (int, optional): Spacing between kernel elements. Defaults to 1.
-        norm_layer (Optional[Callable[..., nn.Module]], optional): Batch norm layer to use.Defaults to None.
+        norm_layer (Callable[..., nn.Module] | None, optional): Batch norm layer to use.Defaults to None.
     """
 
     expansion: int = 4
@@ -110,11 +112,11 @@ class DecoderBottleneck(nn.Module):
         inplanes: int,
         planes: int,
         stride: int = 1,
-        upsample: Optional[nn.Module] = None,
+        upsample: nn.Module | None = None,
         groups: int = 1,
         base_width: int = 64,
         dilation: int = 1,
-        norm_layer: Optional[Callable[..., nn.Module]] = None,
+        norm_layer: Callable[..., nn.Module] | None = None,
     ) -> None:
         super().__init__()
         if norm_layer is None:
@@ -164,24 +166,24 @@ class ResNet(nn.Module):
     """ResNet model for decoder.
 
     Args:
-        block (Type[Union[DecoderBasicBlock, DecoderBottleneck]]): Type of block to use in a layer.
-        layers (List[int]): List to specify number for blocks per layer.
+        block (Type[DecoderBasicBlock | DecoderBottleneck]): Type of block to use in a layer.
+        layers (list[int]): List to specify number for blocks per layer.
         zero_init_residual (bool, optional): If true, initializes the last batch norm in each layer to zero.
             Defaults to False.
         groups (int, optional): Number of blocked connections per layer from input channels to output channels.
             Defaults to 1.
         width_per_group (int, optional): Number of layers in each intermediate convolution layer.. Defaults to 64.
-        norm_layer (Optional[Callable[..., nn.Module]], optional): Batch norm layer to use. Defaults to None.
+        norm_layer (Callable[..., nn.Module] | None, optional): Batch norm layer to use. Defaults to None.
     """
 
     def __init__(
         self,
-        block: Type[Union[DecoderBasicBlock, DecoderBottleneck]],
-        layers: List[int],
+        block: type[DecoderBasicBlock | DecoderBottleneck],
+        layers: list[int],
         zero_init_residual: bool = False,
         groups: int = 1,
         width_per_group: int = 64,
-        norm_layer: Optional[Callable[..., nn.Module]] = None,
+        norm_layer: Callable[..., nn.Module] | None = None,
     ) -> None:
         super().__init__()
         if norm_layer is None:
@@ -215,7 +217,7 @@ class ResNet(nn.Module):
 
     def _make_layer(
         self,
-        block: Type[Union[DecoderBasicBlock, DecoderBottleneck]],
+        block: type[DecoderBasicBlock | DecoderBottleneck],
         planes: int,
         blocks: int,
         stride: int = 1,
@@ -256,7 +258,7 @@ class ResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def forward(self, batch: Tensor) -> List[Tensor]:
+    def forward(self, batch: Tensor) -> list[Tensor]:
         """Forward pass for Decoder ResNet. Returns list of features."""
         feature_a = self.layer1(batch)  # 512*8*8->256*16*16
         feature_b = self.layer2(feature_a)  # 256*16*16->128*32*32
@@ -265,7 +267,7 @@ class ResNet(nn.Module):
         return [feature_c, feature_b, feature_a]
 
 
-def _resnet(block: Type[Union[DecoderBasicBlock, DecoderBottleneck]], layers: List[int], **kwargs: Any) -> ResNet:
+def _resnet(block: type[DecoderBasicBlock | DecoderBottleneck], layers: list[int], **kwargs: Any) -> ResNet:
     model = ResNet(block, layers, **kwargs)
     return model
 

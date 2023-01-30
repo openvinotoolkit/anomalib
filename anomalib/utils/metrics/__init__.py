@@ -3,9 +3,11 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import importlib
 import warnings
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import torchmetrics
 from omegaconf import DictConfig, ListConfig
@@ -23,15 +25,15 @@ from .pro import PRO
 __all__ = ["AUROC", "AUPR", "AUPRO", "OptimalF1", "AnomalyScoreThreshold", "AnomalyScoreDistribution", "MinMax", "PRO"]
 
 
-def metric_collection_from_names(metric_names: List[str], prefix: Optional[str]) -> AnomalibMetricCollection:
+def metric_collection_from_names(metric_names: list[str], prefix: str | None) -> AnomalibMetricCollection:
     """Create a metric collection from a list of metric names.
 
     The function will first try to retrieve the metric from the metrics defined in Anomalib metrics module,
     then in TorchMetrics package.
 
     Args:
-        metric_names (List[str]): List of metric names to be included in the collection.
-        prefix (Optional[str]): prefix to assign to the metrics in the collection.
+        metric_names (list[str]): List of metric names to be included in the collection.
+        prefix (str | None): prefix to assign to the metrics in the collection.
 
     Returns:
         AnomalibMetricCollection: Collection of metrics.
@@ -53,7 +55,7 @@ def metric_collection_from_names(metric_names: List[str], prefix: Optional[str])
     return metrics
 
 
-def _validate_metrics_dict(metrics: Dict[str, Dict[str, Any]]) -> None:
+def _validate_metrics_dict(metrics: dict[str, dict[str, Any]]) -> None:
     """Check the assumptions about metrics config dict.
 
     - Keys are metric names
@@ -90,7 +92,7 @@ def _get_class_from_path(class_path: str) -> Any:
     return cls
 
 
-def metric_collection_from_dicts(metrics: Dict[str, Dict[str, Any]], prefix: Optional[str]) -> AnomalibMetricCollection:
+def metric_collection_from_dicts(metrics: dict[str, dict[str, Any]], prefix: str | None) -> AnomalibMetricCollection:
     """Create a metric collection from a dict of "metric name" -> "metric specifications".
 
     Example:
@@ -123,11 +125,11 @@ def metric_collection_from_dicts(metrics: Dict[str, Dict[str, Any]], prefix: Opt
         ```
 
     Args:
-        metrics (Dict[str, Dict[str, Any]]): keys are metric names, values are dictionaries.
-            Internal Dict[str, Any] keys are "class_path" (value is string) and "init_args" (value is dict),
+        metrics (dict[str, dict[str, Any]]): keys are metric names, values are dictionaries.
+            Internal dict[str, Any] keys are "class_path" (value is string) and "init_args" (value is dict),
             following the convention in Pytorch Lightning CLI.
 
-        prefix (Optional[str]): prefix to assign to the metrics in the collection.
+        prefix (str | None): prefix to assign to the metrics in the collection.
 
     Returns:
         AnomalibMetricCollection: Collection of metrics.
@@ -143,21 +145,21 @@ def metric_collection_from_dicts(metrics: Dict[str, Dict[str, Any]], prefix: Opt
 
 
 def create_metric_collection(
-    metrics: Union[List[str], Dict[str, Dict[str, Any]]], prefix: Optional[str]
+    metrics: list[str] | dict[str, dict[str, Any]], prefix: str | None
 ) -> AnomalibMetricCollection:
     """Create a metric collection from a list of metric names or dictionaries.
 
     This function will dispatch the actual creation to the appropriate function depending on the input type:
 
-        - if List[str] (names of metrics): see `metric_collection_from_names`
-        - if Dict[str, Dict[str, Any]] (path and init args of a class): see `metric_collection_from_dicts`
+        - if list[str] (names of metrics): see `metric_collection_from_names`
+        - if dict[str, dict[str, Any]] (path and init args of a class): see `metric_collection_from_dicts`
 
     The function will first try to retrieve the metric from the metrics defined in Anomalib metrics module,
     then in TorchMetrics package.
 
     Args:
-        metrics (Union[List[str], Dict[str, Dict[str, Any]]]).
-        prefix (Optional[str]): prefix to assign to the metrics in the collection.
+        metrics (list[str] | dict[str, dict[str, Any]]).
+        prefix (str | None): prefix to assign to the metrics in the collection.
 
     Returns:
         AnomalibMetricCollection: Collection of metrics.

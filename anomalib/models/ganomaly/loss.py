@@ -3,6 +3,8 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import torch
 from torch import Tensor, nn
 
@@ -16,7 +18,7 @@ class GeneratorLoss(nn.Module):
         wenc (int, optional): Latent vector encoder weight. Defaults to 1.
     """
 
-    def __init__(self, wadv=1, wcon=50, wenc=1):
+    def __init__(self, wadv=1, wcon=50, wenc=1) -> None:
         super().__init__()
 
         self.loss_enc = nn.SmoothL1Loss()
@@ -54,13 +56,13 @@ class GeneratorLoss(nn.Module):
 class DiscriminatorLoss(nn.Module):
     """Discriminator loss for the GANomaly model."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
         self.loss_bce = nn.BCELoss()
 
-    def forward(self, pred_real, pred_fake):
-        """Compye the loss for a predicted batch.
+    def forward(self, pred_real: Tensor, pred_fake: Tensor) -> Tensor:
+        """Compute the loss for a predicted batch.
 
         Args:
             pred_real (Tensor): Discriminator predictions for the real image.

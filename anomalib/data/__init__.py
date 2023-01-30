@@ -3,8 +3,9 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
-from typing import Union
 
 from omegaconf import DictConfig, ListConfig
 
@@ -21,11 +22,11 @@ from .visa import Visa
 logger = logging.getLogger(__name__)
 
 
-def get_datamodule(config: Union[DictConfig, ListConfig]) -> AnomalibDataModule:
+def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
     """Get Anomaly Datamodule.
 
     Args:
-        config (Union[DictConfig, ListConfig]): Configuration of the anomaly model.
+        config (DictConfig | ListConfig): Configuration of the anomaly model.
 
     Returns:
         PyTorch Lightning DataModule

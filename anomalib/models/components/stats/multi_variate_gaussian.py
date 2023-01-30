@@ -3,7 +3,9 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any, List, Optional
+from __future__ import annotations
+
+from typing import Any
 
 import torch
 from torch import Tensor, nn
@@ -26,7 +28,7 @@ class MultiVariateGaussian(nn.Module):
         observations: Tensor,
         rowvar: bool = False,
         bias: bool = False,
-        ddof: Optional[int] = None,
+        ddof: int | None = None,
         aweights: Tensor = None,
     ) -> Tensor:
         """Estimates covariance matrix like numpy.cov.
@@ -43,7 +45,7 @@ class MultiVariateGaussian(nn.Module):
                 number of observations given (unbiased estimate). If `bias` is True,
                 then normalization is by ``N``. These values can be overridden by using
                 the keyword ``ddof`` in numpy versions >= 1.5. Defaults to False
-            ddof (Optional, int): If not ``None`` the default value implied by `bias` is overridden.
+            ddof (int | None): If not ``None`` the default value implied by `bias` is overridden.
                 Note that ``ddof=1`` will return the unbiased estimate, even if both
                 `fweights` and `aweights` are specified, and ``ddof=0`` will return
                 the simple average. See the notes for the details. The default value
@@ -104,7 +106,7 @@ class MultiVariateGaussian(nn.Module):
 
         return covariance.squeeze()
 
-    def forward(self, embedding: Tensor) -> List[Tensor]:
+    def forward(self, embedding: Tensor) -> list[Tensor]:
         """Calculate multivariate Gaussian distribution.
 
         Args:
@@ -128,7 +130,7 @@ class MultiVariateGaussian(nn.Module):
 
         return [self.mean, self.inv_covariance]
 
-    def fit(self, embedding: Tensor) -> List[Tensor]:
+    def fit(self, embedding: Tensor) -> list[Tensor]:
         """Fit multi-variate gaussian distribution to the input embedding.
 
         Args:

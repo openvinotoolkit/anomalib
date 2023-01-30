@@ -3,8 +3,9 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
-from typing import Tuple, Union
 
 import torch
 from torch import Tensor, nn
@@ -47,7 +48,7 @@ class RkdeModel(nn.Module):
         n_pca_components: int = 16,
         feature_scaling_method: FeatureScalingMethod = FeatureScalingMethod.SCALE,
         max_training_points: int = 40000,
-    ):
+    ) -> None:
         super().__init__()
 
         self.region_extractor = RegionExtractor(
@@ -77,14 +78,14 @@ class RkdeModel(nn.Module):
         """
         return self.classifier.fit(embeddings)
 
-    def forward(self, batch: Tensor) -> Union[Tensor, Tuple[Tensor, Tensor]]:
+    def forward(self, batch: Tensor) -> Tensor | tuple[Tensor, Tensor]:
         """Prediction by normality model.
 
         Args:
             input (Tensor): Input images.
 
         Returns:
-            Union[Tensor, Tuple[Tensor, Tensor]]: The extracted features (when in training mode), or the predicted rois
+            Tensor | tuple[Tensor, Tensor]: The extracted features (when in training mode), or the predicted rois
                 and corresponding anomaly scores.
         """
         self.region_extractor.eval()
