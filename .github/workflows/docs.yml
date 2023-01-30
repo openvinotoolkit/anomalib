@@ -8,7 +8,7 @@ on:
   workflow_dispatch: # run on request (no need for PR)
 
 permissions:
-  pull-requests: write
+  contents: write
 
 jobs:
   Build-and-Publish-Documentation:
