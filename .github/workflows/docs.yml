@@ -16,6 +16,8 @@ jobs:
       - name: Install requirements
         run: |
           pip install .[full]
+      - name: Link dataset path to local directory
+        run: ln -s $ANOMALIB_DATASET_PATH ./datasets
       - name: Build and Commit Docs
         run: |
           cd docs
