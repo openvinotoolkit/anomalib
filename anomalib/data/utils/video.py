@@ -72,7 +72,7 @@ class ClipsIndexer(VideoClips, ABC):
         return item
 
 
-def convert_video(input_path: Path, output_path: Path, codec: str = "MP4V"):
+def convert_video(input_path: Path, output_path: Path, codec: str = "MP4V") -> None:
     """Convert video file to a different codec.
 
     Args:
