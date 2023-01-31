@@ -168,7 +168,7 @@ class Avenue(AnomalibVideoDataModule):
     """Avenue DataModule class.
 
     Args:
-        root (str): Path to the root of the dataset
+        root (Path | str): Path to the root of the dataset
         gt_dir (str): Path to the ground truth files
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
@@ -194,7 +194,7 @@ class Avenue(AnomalibVideoDataModule):
 
     def __init__(
         self,
-        root: str,
+        root: Path | str,
         gt_dir: str,
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
@@ -220,7 +220,7 @@ class Avenue(AnomalibVideoDataModule):
             seed=seed,
         )
 
-        self.root = Path(root)
+        self.root = Path(root) if isinstance(root, str) else root
         self.gt_dir = Path(gt_dir)
 
         transform_train = get_transforms(
