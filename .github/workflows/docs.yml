@@ -7,6 +7,9 @@ on:
       - ".github/**" # Ignore changes towards the .github directory
   workflow_dispatch: # run on request (no need for PR)
 
+permissions:
+  contents: write
+
 jobs:
   Build-and-Publish-Documentation:
     runs-on: [docs]
@@ -16,6 +19,8 @@ jobs:
       - name: Install requirements
         run: |
           pip install .[full]
+      - name: Link dataset path to local directory as nbsphinx runs the notebook
+        run: ln -s $ANOMALIB_DATASET_PATH ./datasets
       - name: Build and Commit Docs
         run: |
           cd docs
