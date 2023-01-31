@@ -45,7 +45,7 @@ class AnomalibDataset(Dataset, ABC):
         super().__init__()
         self.task = task
         self.transform = transform
-        self._samples: DataFrame
+        self._samples: DataFrame = None
 
     def __len__(self) -> int:
         """Get length of the dataset."""
