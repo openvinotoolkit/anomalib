@@ -15,6 +15,7 @@ from .btech import BTech
 from .folder import Folder
 from .inference import InferenceDataset
 from .mvtec import MVTec
+from .shanghaitech import ShanghaiTech
 from .task_type import TaskType
 from .ucsd_ped import UCSDped
 from .visa import Visa
@@ -152,6 +153,24 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             val_split_mode=config.dataset.val_split_mode,
             val_split_ratio=config.dataset.val_split_ratio,
         )
+    elif config.dataset.format.lower() == "shanghaitech":
+        datamodule = ShanghaiTech(
+            root=config.dataset.path,
+            scene=config.dataset.scene,
+            task=config.dataset.task,
+            clip_length_in_frames=config.dataset.clip_length_in_frames,
+            frames_between_clips=config.dataset.frames_between_clips,
+            image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
+            center_crop=center_crop,
+            normalization=config.dataset.normalization,
+            transform_config_train=config.dataset.transform_config.train,
+            transform_config_eval=config.dataset.transform_config.eval,
+            train_batch_size=config.dataset.train_batch_size,
+            eval_batch_size=config.dataset.eval_batch_size,
+            num_workers=config.dataset.num_workers,
+            val_split_mode=config.dataset.val_split_mode,
+            val_split_ratio=config.dataset.val_split_ratio,
+        )
     else:
         raise ValueError(
             "Unknown dataset! \n"
@@ -173,4 +192,5 @@ __all__ = [
     "Avenue",
     "UCSDped",
     "TaskType",
+    "ShanghaiTech",
 ]

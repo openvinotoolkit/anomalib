@@ -105,7 +105,7 @@ def make_avenue_dataset(root: Path, gt_dir: Path, split: Split | str | None = No
 
 
 class AvenueClipsIndexer(ClipsIndexer):
-    """Clips class for UCSDped dataset."""
+    """Clips class for Avenue dataset."""
 
     def get_mask(self, idx) -> np.ndarray | None:
         """Retrieve the masks from the file system."""
