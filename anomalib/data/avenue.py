@@ -220,8 +220,8 @@ class Avenue(AnomalibVideoDataModule):
             seed=seed,
         )
 
-        self.root = Path(root) if isinstance(root, str) else root
-        self.gt_dir = Path(gt_dir) if isinstance(gt_dir, str) else gt_dir
+        self.root = Path(root)
+        self.gt_dir = Path(gt_dir)
 
         transform_train = get_transforms(
             config=transform_config_train,

@@ -237,7 +237,7 @@ class UCSDped(AnomalibVideoDataModule):
             seed=seed,
         )
 
-        self.root = Path(root) if isinstance(root, str) else root
+        self.root = Path(root)
         self.category = category
 
         transform_train = get_transforms(

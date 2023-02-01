@@ -142,7 +142,7 @@ class Visa(AnomalibDataModule):
             seed=seed,
         )
 
-        self.root = Path(root) if isinstance(root, str) else root
+        self.root = Path(root)
         self.split_root = self.root / "visa_pytorch"
         self.category = category
 

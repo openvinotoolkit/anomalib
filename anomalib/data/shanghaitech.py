@@ -267,7 +267,7 @@ class ShanghaiTech(AnomalibVideoDataModule):
             seed=seed,
         )
 
-        self.root = Path(root) if isinstance(root, str) else root
+        self.root = Path(root)
         self.scene = scene
 
         transform_train = get_transforms(
