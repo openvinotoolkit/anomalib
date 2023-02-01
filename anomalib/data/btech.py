@@ -182,7 +182,7 @@ class BTech(AnomalibDataModule):
 
     Args:
 
-        root (str): Path to the BTech dataset.
+        root (Path | str): Path to the BTech dataset.
         category (str): Name of the BTech category.
         image_size (int | tuple[int, int] | None, optional): Variable to which image is resized. Defaults to None.
         center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped to the
@@ -241,7 +241,7 @@ class BTech(AnomalibDataModule):
 
     def __init__(
         self,
-        root: str,
+        root: Path | str,
         category: str,
         image_size: int | tuple[int, int] | None = None,
         center_crop: int | tuple[int, int] | None = None,
