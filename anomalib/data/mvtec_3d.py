@@ -262,4 +262,7 @@ class MVTec3D(AnomalibDataModule):
 
 if __name__ == "__main__":
     print("TEST")
+    mvtec_3d = MVTec3D(root="./MVTec3D", category="bagel", image_size=256)
+    
+    mvtec_3d.setup()
 
