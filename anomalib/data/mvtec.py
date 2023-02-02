@@ -153,7 +153,7 @@ class MVTecDataset(AnomalibDataset):
         task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
-        root (str): Path to the root of the dataset
+        root (Path | str): Path to the root of the dataset
         category (str): Sub-category of the dataset, e.g. 'bottle'
     """
 
@@ -161,7 +161,7 @@ class MVTecDataset(AnomalibDataset):
         self,
         task: TaskType,
         transform: A.Compose,
-        root: str,
+        root: Path | str,
         category: str,
         split: str | Split | None = None,
     ) -> None:
@@ -178,7 +178,7 @@ class MVTec(AnomalibDataModule):
     """MVTec Datamodule.
 
     Args:
-        root (str): Path to the root of the dataset
+        root (Path | str): Path to the root of the dataset
         category (str): Category of the MVTec dataset (e.g. "bottle" or "cable").
         image_size (int | tuple[int, int] | None, optional): Size of the input image.
             Defaults to None.
@@ -204,7 +204,7 @@ class MVTec(AnomalibDataModule):
 
     def __init__(
         self,
-        root: str,
+        root: Path | str,
         category: str,
         image_size: int | tuple[int, int] | None = None,
         center_crop: int | tuple[int, int] | None = None,
