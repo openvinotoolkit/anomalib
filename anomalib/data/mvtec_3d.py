@@ -50,7 +50,7 @@ DOWNLOAD_INFO = DownloadInfo(
     name="mvtec_3d",
     url="https://www.mydrive.ch/shares/45920/dd1eb345346df066c63b5c95676b961b/download/428824485-1643285832"
     "/mvtec_3d_anomaly_detection.tar.xz",
-    hash="eefca59f2cede9c3fc5b6befbfec275e",
+    hash="",
 )
 
 
@@ -106,15 +106,15 @@ def make_mvtec_3d_dataset(
         extensions = IMG_EXTENSIONS
 
     root = Path(root)
-    samples_list = [(str(root),) + f.parts[-3:] for f in root.glob(r"**/*") if f.suffix in extensions]
+    samples_list = [(str(root),) + f.parts[-4:] for f in root.glob(r"**/*") if f.suffix in extensions]
     if not samples_list:
         raise RuntimeError(f"Found 0 images in {root}")
 
-    samples = DataFrame(samples_list, columns=["path", "split", "label", "rgb_image_path", "gt_mask_path", "depth_image_path"])
-
+    samples = DataFrame(samples_list, columns=["path", "split", "label", "type", "file_name"])
+    
     # Modify image_path column by converting to absolute path
-    samples["rgb_image_path"] = samples.path + "/" + samples.split + "/" + samples.label + "/" + samples.rgb_image_path
-
+    samples["rgb_image_path"] = samples.path + "/" + samples.split + "/" + samples.label + "/" + samples.file_name
+    print(samples_list)
     # Create label index for normal (0) and anomalous (1) images.
     samples.loc[(samples.label == "good"), "label_index"] = 0
     samples.loc[(samples.label != "good"), "label_index"] = 1
@@ -263,6 +263,5 @@ class MVTec3D(AnomalibDataModule):
 if __name__ == "__main__":
     print("TEST")
     mvtec_3d = MVTec3D(root="./MVTec3D", category="bagel", image_size=256)
-    
     mvtec_3d.setup()
 
