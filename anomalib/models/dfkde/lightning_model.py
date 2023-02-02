@@ -3,14 +3,18 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import logging
-from typing import List, Union
+from __future__ import annotations
 
+import logging
+
+import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
+from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
+from anomalib.models.components.classification import FeatureScalingMethod
 
 from .torch_model import DfkdeModel
 
@@ -36,47 +40,42 @@ class Dfkde(AnomalyModule):
 
     def __init__(
         self,
-        layers: List[str],
+        layers: list[str],
         backbone: str,
         pre_trained: bool = True,
+        n_pca_components: int = 16,
+        feature_scaling_method: FeatureScalingMethod = FeatureScalingMethod.SCALE,
         max_training_points: int = 40000,
-        pre_processing: str = "scale",
-        n_components: int = 16,
-        threshold_steepness: float = 0.05,
-        threshold_offset: int = 12,
-    ):
+    ) -> None:
         super().__init__()
 
         self.model = DfkdeModel(
             layers=layers,
             backbone=backbone,
             pre_trained=pre_trained,
-            n_comps=n_components,
-            pre_processing=pre_processing,
-            filter_count=max_training_points,
-            threshold_steepness=threshold_steepness,
-            threshold_offset=threshold_offset,
+            n_pca_components=n_pca_components,
+            feature_scaling_method=feature_scaling_method,
+            max_training_points=max_training_points,
         )
 
-        self.embeddings: List[Tensor] = []
+        self.embeddings: list[Tensor] = []
 
     @staticmethod
-    def configure_optimizers():  # pylint: disable=arguments-differ
+    def configure_optimizers() -> None:  # pylint: disable=arguments-differ
         """DFKDE doesn't require optimization, therefore returns no optimizers."""
         return None
 
-    def training_step(self, batch, _batch_idx):  # pylint: disable=arguments-differ
+    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
         """Training Step of DFKDE. For each batch, features are extracted from the CNN.
 
         Args:
-            batch (Dict[str, Any]): Batch containing image filename, image, label and mask
-            _batch_idx: Index of the batch.
+            batch (batch: dict[str, str | Tensor]): Batch containing image filename, image, label and mask
 
         Returns:
           Deep CNN features.
         """
 
-        embedding = self.model.get_features(batch["image"]).squeeze()
+        embedding = self.model(batch["image"])
 
         # NOTE: `self.embedding` appends each batch embedding to
         #   store the training set embedding. We manually append these
@@ -89,16 +88,18 @@ class Dfkde(AnomalyModule):
         # NOTE: Previous anomalib versions fit Gaussian at the end of the epoch.
         #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
         #   is run within train epoch.
-        logger.info("Fitting a KDE model to the embedding collected from the training set.")
-        self.model.fit(self.embeddings)
+        embeddings = torch.vstack(self.embeddings)
 
-    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
+        logger.info("Fitting a KDE model to the embedding collected from the training set.")
+        self.model.classifier.fit(embeddings)
+
+    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Validation Step of DFKDE.
 
         Similar to the training step, features are extracted from the CNN for each batch.
 
         Args:
-          batch: Input batch
+          batch (dict[str, str | Tensor]): Input batch
 
         Returns:
           Dictionary containing probability, prediction and ground truth values.
@@ -112,19 +113,17 @@ class DfkdeLightning(Dfkde):
     """DFKDE: Deep Feature Kernel Density Estimation.
 
     Args:
-        hparams (Union[DictConfig, ListConfig]): Model params
+        hparams (DictConfig | ListConfig): Model params
     """
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]) -> None:
+    def __init__(self, hparams: DictConfig | ListConfig) -> None:
         super().__init__(
             layers=hparams.model.layers,
             backbone=hparams.model.backbone,
             pre_trained=hparams.model.pre_trained,
+            n_pca_components=hparams.model.n_pca_components,
+            feature_scaling_method=FeatureScalingMethod(hparams.model.feature_scaling_method),
             max_training_points=hparams.model.max_training_points,
-            pre_processing=hparams.model.pre_processing,
-            n_components=hparams.model.n_components,
-            threshold_steepness=hparams.model.threshold_steepness,
-            threshold_offset=hparams.model.threshold_offset,
         )
-        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
+        self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)

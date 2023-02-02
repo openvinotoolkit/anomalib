@@ -1,4 +1,4 @@
-"""Anomalib Traning Script.
+"""Anomalib Training Script.
 
 This script reads the name of the model or config file from command
 line, train/test the anomaly model to get quantitative and qualitative
@@ -16,6 +16,7 @@ from pytorch_lightning import Trainer, seed_everything
 
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
+from anomalib.data.utils import TestSplitMode
 from anomalib.models import get_model
 from anomalib.utils.callbacks import LoadModelCallback, get_callbacks
 from anomalib.utils.loggers import configure_logger, get_experiment_logger
@@ -47,7 +48,7 @@ def train():
         warnings.filterwarnings("ignore")
 
     config = get_configurable_parameters(model_name=args.model, config_path=args.config)
-    if config.project.seed:
+    if config.project.get("seed") is not None:
         seed_everything(config.project.seed)
 
     datamodule = get_datamodule(config)
@@ -63,8 +64,11 @@ def train():
     load_model_callback = LoadModelCallback(weights_path=trainer.checkpoint_callback.best_model_path)
     trainer.callbacks.insert(0, load_model_callback)
 
-    logger.info("Testing the model.")
-    trainer.test(model=model, datamodule=datamodule)
+    if config.dataset.test_split_mode == TestSplitMode.NONE:
+        logger.info("No test set provided. Skipping test stage.")
+    else:
+        logger.info("Testing the model.")
+        trainer.test(model=model, datamodule=datamodule)
 
 
 if __name__ == "__main__":

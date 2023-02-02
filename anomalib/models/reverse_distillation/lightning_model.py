@@ -6,11 +6,12 @@ https://arxiv.org/abs/2201.10703v2
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, List, Tuple, Union
+from __future__ import annotations
 
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.utilities.cli import MODEL_REGISTRY
+from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor, optim
 
 from anomalib.models.components import AnomalyModule
@@ -24,23 +25,23 @@ class ReverseDistillation(AnomalyModule):
     """PL Lightning Module for Reverse Distillation Algorithm.
 
     Args:
-        input_size (Tuple[int, int]): Size of model input
+        input_size (tuple[int, int]): Size of model input
         backbone (str): Backbone of CNN network
-        layers (List[str]): Layers to extract features from the backbone CNN
+        layers (list[str]): Layers to extract features from the backbone CNN
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
     """
 
     def __init__(
         self,
-        input_size: Tuple[int, int],
+        input_size: tuple[int, int],
         backbone: str,
-        layers: List[str],
+        layers: list[str],
         anomaly_map_mode: str,
         lr: float,
         beta1: float,
         beta2: float,
         pre_trained: bool = True,
-    ):
+    ) -> None:
         super().__init__()
         self.model = ReverseDistillationModel(
             backbone=backbone,
@@ -56,7 +57,7 @@ class ReverseDistillation(AnomalyModule):
         self.beta1 = beta1
         self.beta2 = beta2
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> optim.Adam:
         """Configures optimizers for decoder and bottleneck.
 
         Note:
@@ -74,7 +75,7 @@ class ReverseDistillation(AnomalyModule):
             betas=(self.beta1, self.beta2),
         )
 
-    def training_step(self, batch, _) -> Dict[str, Tensor]:  # type: ignore
+    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Training Step of Reverse Distillation Model.
 
         Features are extracted from three layers of the Encoder model. These are passed to the bottleneck layer
@@ -82,24 +83,23 @@ class ReverseDistillation(AnomalyModule):
         encoder and decoder features.
 
         Args:
-          batch (Tensor): Input batch
-          _: Index of the batch.
+          batch (batch: dict[str, str | Tensor]): Input batch
 
         Returns:
           Feature Map
         """
         loss = self.loss(*self.model(batch["image"]))
+        self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def validation_step(self, batch, _):  # pylint: disable=arguments-differ
+    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Validation Step of Reverse Distillation Model.
 
         Similar to the training step, encoder/decoder features are extracted from the CNN for each batch, and
         anomaly map is computed.
 
         Args:
-          batch (Tensor): Input batch
-          _: Index of the batch.
+          batch (dict[str, str | Tensor]): Input batch
 
         Returns:
           Dictionary containing images, anomaly maps, true labels and masks.
@@ -113,10 +113,10 @@ class ReverseDistillationLightning(ReverseDistillation):
     """PL Lightning Module for Reverse Distillation Algorithm.
 
     Args:
-        hparams(Union[DictConfig, ListConfig]): Model parameters
+        hparams(DictConfig | ListConfig): Model parameters
     """
 
-    def __init__(self, hparams: Union[DictConfig, ListConfig]):
+    def __init__(self, hparams: DictConfig | ListConfig) -> None:
         super().__init__(
             input_size=hparams.model.input_size,
             backbone=hparams.model.backbone,
@@ -127,10 +127,10 @@ class ReverseDistillationLightning(ReverseDistillation):
             beta1=hparams.model.beta1,
             beta2=hparams.model.beta2,
         )
-        self.hparams: Union[DictConfig, ListConfig]  # type: ignore
+        self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
 
-    def configure_callbacks(self):
+    def configure_callbacks(self) -> list[EarlyStopping]:
         """Configure model-specific callbacks.
 
         Note:

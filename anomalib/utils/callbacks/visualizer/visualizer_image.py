@@ -3,8 +3,11 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
+import math
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import pytorch_lightning as pl
 from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
@@ -28,25 +31,27 @@ class ImageVisualizerCallback(BaseVisualizerCallback):
 
     def on_predict_batch_end(
         self,
-        _trainer: pl.Trainer,
-        _pl_module: AnomalyModule,
-        outputs: Optional[STEP_OUTPUT],
-        _batch: Any,
-        _batch_idx: int,
-        _dataloader_idx: int,
+        trainer: pl.Trainer,
+        pl_module: AnomalyModule,
+        outputs: STEP_OUTPUT | None,
+        batch: Any,
+        batch_idx: int,
+        dataloader_idx: int,
     ) -> None:
         """Show images at the end of every batch.
 
         Args:
-            _trainer (Trainer): Pytorch lightning trainer object (unused).
-            _pl_module (LightningModule): Lightning modules derived from BaseAnomalyLightning object as
+            trainer (Trainer): Pytorch lightning trainer object (unused).
+            pl_module (AnomalyModule): Lightning modules derived from BaseAnomalyLightning object as
             currently only they support logging images.
-            outputs (Dict[str, Any]): Outputs of the current test step.
-            _batch (Any): Input batch of the current test step (unused).
-            _batch_idx (int): Index of the current test batch (unused).
-            _dataloader_idx (int): Index of the dataloader that yielded the current batch (unused).
+            outputs (STEP_OUTPUT | None): Outputs of the current test step.
+            batch (Any): Input batch of the current test step (unused).
+            batch_idx (int): Index of the current test batch (unused).
+            dataloader_idx (int): Index of the dataloader that yielded the current batch (unused).
         """
+        del trainer, pl_module, batch, batch_idx, dataloader_idx  # These variables are not used.
         assert outputs is not None
+
         for i, image in enumerate(self.visualizer.visualize_batch(outputs)):
             filename = Path(outputs["image_path"][i])
             if self.save_images:
@@ -59,25 +64,35 @@ class ImageVisualizerCallback(BaseVisualizerCallback):
         self,
         trainer: pl.Trainer,
         pl_module: AnomalyModule,
-        outputs: Optional[STEP_OUTPUT],
-        _batch: Any,
-        _batch_idx: int,
-        _dataloader_idx: int,
+        outputs: STEP_OUTPUT | None,
+        batch: Any,
+        batch_idx: int,
+        dataloader_idx: int,
     ) -> None:
         """Log images at the end of every batch.
 
         Args:
             trainer (Trainer): Pytorch lightning trainer object (unused).
-            pl_module (LightningModule): Lightning modules derived from BaseAnomalyLightning object as
-            currently only they support logging images.
-            outputs (Dict[str, Any]): Outputs of the current test step.
-            _batch (Any): Input batch of the current test step (unused).
-            _batch_idx (int): Index of the current test batch (unused).
-            _dataloader_idx (int): Index of the dataloader that yielded the current batch (unused).
+            pl_module (AnomalyModule): Lightning modules derived from BaseAnomalyLightning object as
+                currently only they support logging images.
+            outputs (STEP_OUTPUT | None): Outputs of the current test step.
+            batch (Any): Input batch of the current test step (unused).
+            batch_idx (int): Index of the current test batch (unused).
+            dataloader_idx (int): Index of the dataloader that yielded the current batch (unused).
         """
+        del batch, batch_idx, dataloader_idx  # These variables are not used.
         assert outputs is not None
+
         for i, image in enumerate(self.visualizer.visualize_batch(outputs)):
-            filename = Path(outputs["image_path"][i])
+            if "image_path" in outputs.keys():
+                filename = Path(outputs["image_path"][i])
+            elif "video_path" in outputs.keys():
+                zero_fill = int(math.log10(outputs["last_frame"][i])) + 1
+                suffix = f"{str(outputs['frames'][i].int().item()).zfill(zero_fill)}.png"
+                filename = Path(outputs["video_path"][i]) / suffix
+            else:
+                raise KeyError("Batch must have either 'image_path' or 'video_path' defined.")
+
             if self.save_images:
                 file_path = self.image_save_path / filename.parent.name / filename.name
                 self.visualizer.save(file_path, image)

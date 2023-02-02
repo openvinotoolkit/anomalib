@@ -3,10 +3,13 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
 import os
 import warnings
-from typing import Iterable, List, Union
+from pathlib import Path
+from typing import Iterable
 
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
@@ -35,11 +38,11 @@ class UnknownLogger(Exception):
     """This is raised when the logger option in `config.yaml` file is set incorrectly."""
 
 
-def configure_logger(level: Union[int, str] = logging.INFO):
+def configure_logger(level: int | str = logging.INFO) -> None:
     """Get console logger by name.
 
     Args:
-        level (Union[int, str], optional): Logger Level. Defaults to logging.INFO.
+        level (int | str, optional): Logger Level. Defaults to logging.INFO.
 
     Returns:
         Logger: The expected logger.
@@ -58,8 +61,8 @@ def configure_logger(level: Union[int, str] = logging.INFO):
 
 
 def get_experiment_logger(
-    config: Union[DictConfig, ListConfig]
-) -> Union[LightningLoggerBase, Iterable[LightningLoggerBase], bool]:
+    config: DictConfig | ListConfig,
+) -> LightningLoggerBase | Iterable[LightningLoggerBase] | bool:
     """Return a logger based on the choice of logger in the config file.
 
     Args:
@@ -69,7 +72,7 @@ def get_experiment_logger(
         ValueError: for any logger types apart from false and tensorboard
 
     Returns:
-        Union[LightningLoggerBase, Iterable[LightningLoggerBase], bool]: Logger
+        LightningLoggerBase | Iterable[LightningLoggerBase] | bool]: Logger
     """
     logger.info("Loading the experiment logger(s)")
 
@@ -85,10 +88,10 @@ def get_experiment_logger(
         else:
             config.logging.logger = config.project.logger
 
-    if config.logging.logger in [None, False]:
+    if config.logging.logger in (None, False):
         return False
 
-    logger_list: List[LightningLoggerBase] = []
+    logger_list: list[LightningLoggerBase] = []
     if isinstance(config.logging.logger, str):
         config.logging.logger = [config.logging.logger]
 
@@ -103,7 +106,7 @@ def get_experiment_logger(
             )
         elif experiment_logger == "wandb":
             wandb_logdir = os.path.join(config.project.path, "logs")
-            os.makedirs(wandb_logdir, exist_ok=True)
+            Path(wandb_logdir).mkdir(parents=True, exist_ok=True)
             name = (
                 config.model.name
                 if "category" not in config.dataset.keys()
@@ -118,7 +121,7 @@ def get_experiment_logger(
             )
         elif experiment_logger == "comet":
             comet_logdir = os.path.join(config.project.path, "logs")
-            os.makedirs(comet_logdir, exist_ok=True)
+            Path(comet_logdir).mkdir(parents=True, exist_ok=True)
             run_name = (
                 config.model.name
                 if "category" not in config.dataset.keys()

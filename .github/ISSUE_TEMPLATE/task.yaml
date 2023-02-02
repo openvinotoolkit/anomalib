@@ -1,0 +1,35 @@
+name: Tasks
+description: This is used to capture tasks being implemented/to implement such as features, maintenance, refactor, etc.
+title: "[Task]: "
+labels: ["Task"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We encourage our users to submit feature requests in our [Discussion forum](https://github.com/openvinotoolkit/anomalib/discussions/categories/ideas-feature-requests). You can use this template for consistency.
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: What is the motivation for this task?
+      description: A clear and concise description of what the problem is.
+      placeholder: |
+        1. I'm always frustrated when [...]. It would be better if we could [...]
+        2. I would like to have [...] model/dataset to be supported in Anomalib.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Describe the solution you'd like
+      description: A clear and concise description of what you want to happen. Add screenshots or code-blocks if necessary.
+      placeholder: |
+        I would like to have [...] to do this we would need to [...]
+        Here is what I would like to see [...]
+    validations:
+      required: true
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add any other context or screenshots about the feature request here.

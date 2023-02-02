@@ -3,16 +3,19 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
 import os
 from importlib import import_module
-from typing import List, Union
 
 from omegaconf import DictConfig, ListConfig
 from torch import load
 
+from anomalib.models.cfa import Cfa
 from anomalib.models.cflow import Cflow
 from anomalib.models.components import AnomalyModule
+from anomalib.models.csflow import Csflow
 from anomalib.models.dfkde import Dfkde
 from anomalib.models.dfm import Dfm
 from anomalib.models.draem import Draem
@@ -21,10 +24,13 @@ from anomalib.models.ganomaly import Ganomaly
 from anomalib.models.padim import Padim
 from anomalib.models.patchcore import Patchcore
 from anomalib.models.reverse_distillation import ReverseDistillation
+from anomalib.models.rkde import Rkde
 from anomalib.models.stfpm import Stfpm
 
 __all__ = [
+    "Cfa",
     "Cflow",
+    "Csflow",
     "Dfkde",
     "Dfm",
     "Draem",
@@ -33,6 +39,7 @@ __all__ = [
     "Padim",
     "Patchcore",
     "ReverseDistillation",
+    "Rkde",
     "Stfpm",
 ]
 
@@ -51,7 +58,7 @@ def _snake_to_pascal_case(model_name: str) -> str:
     return "".join([split.capitalize() for split in model_name.split("_")])
 
 
-def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
+def get_model(config: DictConfig | ListConfig) -> AnomalyModule:
     """Load model from the configuration file.
 
     Works only when the convention for model naming is followed.
@@ -61,7 +68,7 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     `anomalib.models.stfpm.lightning_model.StfpmLightning`
 
     Args:
-        config (Union[DictConfig, ListConfig]): Config.yaml loaded using OmegaConf
+        config (DictConfig | ListConfig): Config.yaml loaded using OmegaConf
 
     Raises:
         ValueError: If unsupported model is passed
@@ -71,8 +78,10 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
     """
     logger.info("Loading the model.")
 
-    model_list: List[str] = [
+    model_list: list[str] = [
+        "cfa",
         "cflow",
+        "csflow",
         "dfkde",
         "dfm",
         "draem",
@@ -81,6 +90,7 @@ def get_model(config: Union[DictConfig, ListConfig]) -> AnomalyModule:
         "padim",
         "patchcore",
         "reverse_distillation",
+        "rkde",
         "stfpm",
     ]
     model: AnomalyModule

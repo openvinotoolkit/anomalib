@@ -22,13 +22,7 @@ All results gathered with seed `0`.
 
 ## [MVTec AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 
----
-
-**NOTE**
-
-When the numbers are produced, early stopping callback (patience: 3) is used. It might be possible to achieve higher-metrics by increasing the patience.
-
----
+> **_NOTE:_** When the numbers are produced, early stopping callback (patience: 3) is used. It might be possible to achieve higher-metrics by increasing the patience.
 
 ### Image-Level AUC
 

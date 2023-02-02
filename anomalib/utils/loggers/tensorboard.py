@@ -3,7 +3,9 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any, Optional, Union
+from __future__ import annotations
+
+from typing import Any
 
 import numpy as np
 from matplotlib.figure import Figure
@@ -52,12 +54,12 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
     def __init__(
         self,
         save_dir: str,
-        name: Optional[str] = "default",
-        version: Optional[Union[int, str]] = None,
+        name: str | None = "default",
+        version: int | str | None = None,
         log_graph: bool = False,
         default_hp_metric: bool = True,
         prefix: str = "",
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             save_dir,
@@ -66,16 +68,16 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
             log_graph=log_graph,
             default_hp_metric=default_hp_metric,
             prefix=prefix,
-            **kwargs
+            **kwargs,
         )
 
     @rank_zero_only
-    def add_image(self, image: Union[np.ndarray, Figure], name: Optional[str] = None, **kwargs: Any):
+    def add_image(self, image: np.ndarray | Figure, name: str | None = None, **kwargs: Any):
         """Interface to add image to tensorboard logger.
 
         Args:
-            image (Union[np.ndarray, Figure]): Image to log
-            name (Optional[str]): The tag of the image
+            image (np.ndarray | Figure): Image to log
+            name (str | None): The tag of the image
             kwargs: Accepts only `global_step` (int). The step at which to log the image.
         """
         if "global_step" not in kwargs:

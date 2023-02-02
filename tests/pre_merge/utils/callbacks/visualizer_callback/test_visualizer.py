@@ -22,13 +22,13 @@ def get_dummy_logger(config, tempdir):
     return logger
 
 
-@pytest.mark.parametrize("dataset", ["segmentation"])
-def test_add_images(dataset):
+@pytest.mark.parametrize("task", ["classification", "detection", "segmentation"])
+def test_add_images(task):
     """Tests if tensorboard logs are generated."""
     with tempfile.TemporaryDirectory() as dir_loc:
         config = OmegaConf.create(
             {
-                "dataset": {"task": dataset},
+                "dataset": {"task": task},
                 "model": {"threshold": {"image_default": 0.5, "pixel_default": 0.5, "adaptive": True}},
                 "project": {"path": dir_loc},
                 "logging": {"logger": ["tensorboard"]},

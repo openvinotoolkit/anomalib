@@ -3,9 +3,12 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any, Dict, Optional
+from __future__ import annotations
+
+from typing import Any
 
 import pytorch_lightning as pl
+import torch
 from pytorch_lightning import Callback
 from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
@@ -19,9 +22,10 @@ from anomalib.utils.metrics import MinMax
 class MinMaxNormalizationCallback(Callback):
     """Callback that normalizes the image-level and pixel-level anomaly scores using min-max normalization."""
 
-    # pylint: disable=unused-argument
-    def setup(self, trainer: pl.Trainer, pl_module: AnomalyModule, stage: Optional[str] = None) -> None:
+    def setup(self, trainer: pl.Trainer, pl_module: AnomalyModule, stage: str | None = None) -> None:
         """Adds min_max metrics to normalization metrics."""
+        del trainer, stage  # These variables are not used.
+
         if not hasattr(pl_module, "normalization_metrics"):
             pl_module.normalization_metrics = MinMax().cpu()
         elif not isinstance(pl_module.normalization_metrics, MinMax):
@@ -29,60 +33,73 @@ class MinMaxNormalizationCallback(Callback):
                 f"Expected normalization_metrics to be of type MinMax, got {type(pl_module.normalization_metrics)}"
             )
 
-    # pylint: disable=unused-argument
     def on_test_start(self, trainer: pl.Trainer, pl_module: AnomalyModule) -> None:
         """Called when the test begins."""
+        del trainer  # `trainer` variable is not used.
+
         for metric in (pl_module.image_metrics, pl_module.pixel_metrics):
             if metric is not None:
                 metric.set_threshold(0.5)
 
     def on_validation_batch_end(
         self,
-        _trainer: pl.Trainer,
+        trainer: pl.Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT,
-        _batch: Any,
-        _batch_idx: int,
-        _dataloader_idx: int,
+        batch: Any,
+        batch_idx: int,
+        dataloader_idx: int,
     ) -> None:
         """Called when the validation batch ends, update the min and max observed values."""
-        if "anomaly_maps" in outputs.keys():
+        del trainer, batch, batch_idx, dataloader_idx  # These variables are not used.
+
+        if "anomaly_maps" in outputs:
             pl_module.normalization_metrics(outputs["anomaly_maps"])
-        else:
+        elif "box_scores" in outputs:
+            pl_module.normalization_metrics(torch.cat(outputs["box_scores"]))
+        elif "pred_scores" in outputs:
             pl_module.normalization_metrics(outputs["pred_scores"])
+        else:
+            raise ValueError("No values found for normalization, provide anomaly maps, bbox scores, or image scores")
 
     def on_test_batch_end(
         self,
-        _trainer: pl.Trainer,
+        trainer: pl.Trainer,
         pl_module: AnomalyModule,
-        outputs: STEP_OUTPUT,
-        _batch: Any,
-        _batch_idx: int,
-        _dataloader_idx: int,
+        outputs: STEP_OUTPUT | None,
+        batch: Any,
+        batch_idx: int,
+        dataloader_idx: int,
     ) -> None:
         """Called when the test batch ends, normalizes the predicted scores and anomaly maps."""
+        del trainer, batch, batch_idx, dataloader_idx  # These variables are not used.
+
         self._normalize_batch(outputs, pl_module)
 
     def on_predict_batch_end(
         self,
-        _trainer: pl.Trainer,
+        trainer: pl.Trainer,
         pl_module: AnomalyModule,
-        outputs: Dict,
-        _batch: Any,
-        _batch_idx: int,
-        _dataloader_idx: int,
+        outputs: Any,
+        batch: Any,
+        batch_idx: int,
+        dataloader_idx: int,
     ) -> None:
         """Called when the predict batch ends, normalizes the predicted scores and anomaly maps."""
+        del trainer, batch, batch_idx, dataloader_idx  # These variables are not used.
+
         self._normalize_batch(outputs, pl_module)
 
     @staticmethod
-    def _normalize_batch(outputs, pl_module):
+    def _normalize_batch(outputs, pl_module) -> None:
         """Normalize a batch of predictions."""
+        image_threshold = pl_module.image_threshold.value.cpu()
+        pixel_threshold = pl_module.pixel_threshold.value.cpu()
         stats = pl_module.normalization_metrics.cpu()
-        outputs["pred_scores"] = normalize(
-            outputs["pred_scores"], pl_module.image_threshold.value.cpu(), stats.min, stats.max
-        )
-        if "anomaly_maps" in outputs.keys():
-            outputs["anomaly_maps"] = normalize(
-                outputs["anomaly_maps"], pl_module.pixel_threshold.value.cpu(), stats.min, stats.max
-            )
+        outputs["pred_scores"] = normalize(outputs["pred_scores"], image_threshold, stats.min, stats.max)
+        if "anomaly_maps" in outputs:
+            outputs["anomaly_maps"] = normalize(outputs["anomaly_maps"], pixel_threshold, stats.min, stats.max)
+        if "box_scores" in outputs:
+            outputs["box_scores"] = [
+                normalize(scores, pixel_threshold, stats.min, stats.max) for scores in outputs["box_scores"]
+            ]

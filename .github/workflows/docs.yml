@@ -7,6 +7,9 @@ on:
       - ".github/**" # Ignore changes towards the .github directory
   workflow_dispatch: # run on request (no need for PR)
 
+permissions:
+  contents: write
+
 jobs:
   Build-and-Publish-Documentation:
     runs-on: [docs]
@@ -15,11 +18,11 @@ jobs:
         uses: actions/checkout@v2
       - name: Install requirements
         run: |
-          pip install -r requirements/base.txt
-          pip install -r requirements/openvino.txt
+          pip install .[full]
+      - name: Link dataset path to local directory as nbsphinx runs the notebook
+        run: ln -s $ANOMALIB_DATASET_PATH ./datasets
       - name: Build and Commit Docs
         run: |
-          pip install -r requirements/docs.txt
           cd docs
           make html
       - name: Create gh-pages branch

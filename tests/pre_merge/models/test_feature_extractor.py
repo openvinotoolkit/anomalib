@@ -1,12 +1,17 @@
+from tempfile import TemporaryDirectory
 from typing import Tuple
 
 import pytest
 import torch
+from torchvision.models.efficientnet import EfficientNet_B5_Weights
+from torchvision.models.resnet import ResNet18_Weights
 
 from anomalib.models.components.feature_extractors import (
     FeatureExtractor,
+    TorchFXFeatureExtractor,
     dryrun_find_featuremap_dims,
 )
+from tests.helpers.dummy import DummyModel
 
 
 class TestFeatureExtractor:
@@ -18,7 +23,7 @@ class TestFeatureExtractor:
         "pretrained",
         [True, False],
     )
-    def test_feature_extraction(self, backbone, pretrained):
+    def test_timm_feature_extraction(self, backbone, pretrained):
         layers = ["layer1", "layer2", "layer3"]
         model = FeatureExtractor(backbone=backbone, layers=layers, pre_trained=pretrained)
         test_input = torch.rand((32, 3, 256, 256))
@@ -38,6 +43,43 @@ class TestFeatureExtractor:
             assert model.idx == [1, 2, 3]
         else:
             pass
+
+    def test_torchfx_feature_extraction(self):
+        model = TorchFXFeatureExtractor("resnet18", ["layer1", "layer2", "layer3"])
+        test_input = torch.rand((32, 3, 256, 256))
+        features = model(test_input)
+        assert features["layer1"].shape == torch.Size((32, 64, 64, 64))
+        assert features["layer2"].shape == torch.Size((32, 128, 32, 32))
+        assert features["layer3"].shape == torch.Size((32, 256, 16, 16))
+
+        # Test if model can be loaded by using just its name
+        model = TorchFXFeatureExtractor(
+            backbone="efficientnet_b5", return_nodes=["features.6.8"], weights=EfficientNet_B5_Weights.DEFAULT
+        )
+        features = model(test_input)
+        assert features["features.6.8"].shape == torch.Size((32, 304, 8, 8))
+
+        # Test if model can be loaded by using entire class path
+        model = TorchFXFeatureExtractor(
+            backbone="torchvision.models.resnet18",
+            return_nodes=["layer1", "layer2", "layer3"],
+            weights=ResNet18_Weights.DEFAULT,
+        )
+        features = model(test_input)
+        assert features["layer1"].shape == torch.Size((32, 64, 64, 64))
+        assert features["layer2"].shape == torch.Size((32, 128, 32, 32))
+        assert features["layer3"].shape == torch.Size((32, 256, 16, 16))
+
+        # Test if local model can be loaded using string of weights path
+        with TemporaryDirectory() as tmpdir:
+            torch.save(DummyModel().state_dict(), tmpdir + "/dummy_model.pt")
+            model = TorchFXFeatureExtractor(
+                backbone=DummyModel,
+                weights=tmpdir + "/dummy_model.pt",
+                return_nodes=["conv3"],
+            )
+            features = model(test_input)
+            assert features["conv3"].shape == torch.Size((32, 1, 244, 244))
 
 
 @pytest.mark.parametrize(

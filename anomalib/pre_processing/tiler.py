@@ -3,9 +3,11 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 from itertools import product
 from math import ceil
-from typing import Optional, Sequence, Tuple, Union
+from typing import Sequence
 
 import torch
 import torchvision.transforms as T
@@ -17,15 +19,15 @@ class StrideSizeError(Exception):
     """StrideSizeError to raise exception when stride size is greater than the tile size."""
 
 
-def compute_new_image_size(image_size: Tuple, tile_size: Tuple, stride: Tuple) -> Tuple:
+def compute_new_image_size(image_size: tuple, tile_size: tuple, stride: tuple) -> tuple:
     """This function checks if image size is divisible by tile size and stride.
 
     If not divisible, it resizes the image size to make it divisible.
 
     Args:
-        image_size (Tuple): Original image size
-        tile_size (Tuple): Tile size
-        stride (Tuple): Stride
+        image_size (tuple): Original image size
+        tile_size (tuple): Tile size
+        stride (tuple): Stride
 
     Examples:
         >>> compute_new_image_size(image_size=(512, 512), tile_size=(256, 256), stride=(128, 128))
@@ -35,7 +37,7 @@ def compute_new_image_size(image_size: Tuple, tile_size: Tuple, stride: Tuple) -
         (555, 555)
 
     Returns:
-        Tuple: Updated image size that is divisible by tile size and stride.
+        tuple: Updated image size that is divisible by tile size and stride.
     """
 
     def __compute_new_edge_size(edge_size: int, tile_size: int, stride: int) -> int:
@@ -51,12 +53,12 @@ def compute_new_image_size(image_size: Tuple, tile_size: Tuple, stride: Tuple) -
     return resized_h, resized_w
 
 
-def upscale_image(image: Tensor, size: Tuple, mode: str = "padding") -> Tensor:
+def upscale_image(image: Tensor, size: tuple, mode: str = "padding") -> Tensor:
     """Upscale image to the desired size via either padding or interpolation.
 
     Args:
         image (Tensor): Image
-        size (Tuple): Tuple to which image is upscaled.
+        size (tuple): tuple to which image is upscaled.
         mode (str, optional): Upscaling mode. Defaults to "padding".
 
     Examples:
@@ -90,12 +92,12 @@ def upscale_image(image: Tensor, size: Tuple, mode: str = "padding") -> Tensor:
     return image
 
 
-def downscale_image(image: Tensor, size: Tuple, mode: str = "padding") -> Tensor:
+def downscale_image(image: Tensor, size: tuple, mode: str = "padding") -> Tensor:
     """Opposite of upscaling. This image downscales image to a desired size.
 
     Args:
         image (Tensor): Input image
-        size (Tuple): Size to which image is down scaled.
+        size (tuple): Size to which image is down scaled.
         mode (str, optional): Downscaling mode. Defaults to "padding".
 
     Examples:
@@ -146,8 +148,8 @@ class Tiler:
 
     def __init__(
         self,
-        tile_size: Union[int, Sequence],
-        stride: Optional[Union[int, Sequence]] = None,
+        tile_size: int | Sequence,
+        stride: int | Sequence | None = None,
         remove_border_count: int = 0,
         mode: str = "padding",
         tile_count: int = 4,
@@ -159,7 +161,7 @@ class Tiler:
         if stride is not None:
             self.stride_h, self.stride_w = self.__validate_size_type(stride)
 
-        self.remove_border_count = int(remove_border_count)
+        self.remove_border_count = remove_border_count
         self.overlapping = not (self.stride_h == self.tile_size_h and self.stride_w == self.tile_size_w)
         self.mode = mode
 
@@ -169,7 +171,7 @@ class Tiler:
                 "Please ensure stride size is less than or equal than tiling size."
             )
 
-        if self.mode not in ["padding", "interpolation"]:
+        if self.mode not in ("padding", "interpolation"):
             raise ValueError(f"Unknown tiling mode {self.mode}. Available modes are padding and interpolation")
 
         self.batch_size: int
@@ -188,7 +190,7 @@ class Tiler:
         self.num_patches_w: int
 
     @staticmethod
-    def __validate_size_type(parameter: Union[int, Sequence]) -> Tuple[int, ...]:
+    def __validate_size_type(parameter: int | Sequence) -> tuple[int, ...]:
         if isinstance(parameter, int):
             output = (parameter, parameter)
         elif isinstance(parameter, Sequence):
@@ -330,7 +332,7 @@ class Tiler:
 
         return img
 
-    def tile(self, image: Tensor, use_random_tiling: Optional[bool] = False) -> Tensor:
+    def tile(self, image: Tensor, use_random_tiling: bool | None = False) -> Tensor:
         """Tiles an input image to either overlapping, non-overlapping or random patches.
 
         Args:

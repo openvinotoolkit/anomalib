@@ -3,7 +3,9 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any, Optional, Union
+from __future__ import annotations
+
+from typing import Any
 
 import numpy as np
 from matplotlib.figure import Figure
@@ -69,15 +71,15 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        save_dir: Optional[str] = None,
-        project_name: Optional[str] = None,
-        rest_api_key: Optional[str] = None,
-        experiment_name: Optional[str] = None,
-        experiment_key: Optional[str] = None,
+        api_key: str | None = None,
+        save_dir: str | None = None,
+        project_name: str | None = None,
+        rest_api_key: str | None = None,
+        experiment_name: str | None = None,
+        experiment_key: str | None = None,
         offline: bool = False,
         prefix: str = "",
-        **kwargs
+        **kwargs,
     ) -> None:
         super().__init__(
             api_key=api_key,
@@ -88,17 +90,17 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
             experiment_key=experiment_key,
             offline=offline,
             prefix=prefix,
-            **kwargs
+            **kwargs,
         )
         self.experiment.log_other("Created from", "Anomalib")
 
     @rank_zero_only
-    def add_image(self, image: Union[np.ndarray, Figure], name: Optional[str] = None, **kwargs: Any):
+    def add_image(self, image: np.ndarray | Figure, name: str | None = None, **kwargs: Any) -> None:
         """Interface to add image to comet logger.
 
         Args:
-            image (Union[np.ndarray, Figure]): Image to log
-            name (Optional[str]): The tag of the image
+            image (np.ndarray | Figure): Image to log
+            name (str | None): The tag of the image
             kwargs: Accepts only `global_step` (int). The step at which to log the image.
         """
         if "global_step" not in kwargs:

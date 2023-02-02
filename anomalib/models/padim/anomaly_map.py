@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Tuple, Union
+from __future__ import annotations
 
 import torch
 import torch.nn.functional as F
@@ -17,25 +17,25 @@ class AnomalyMapGenerator(nn.Module):
     """Generate Anomaly Heatmap.
 
     Args:
-        image_size (Union[ListConfig, Tuple]): Size of the input image. The anomaly map is upsampled to this dimension.
+        image_size (ListConfig, tuple): Size of the input image. The anomaly map is upsampled to this dimension.
         sigma (int, optional): Standard deviation for Gaussian Kernel. Defaults to 4.
     """
 
-    def __init__(self, image_size: Union[ListConfig, Tuple], sigma: int = 4):
+    def __init__(self, image_size: ListConfig | tuple, sigma: int = 4) -> None:
         super().__init__()
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
         kernel_size = 2 * int(4.0 * sigma + 0.5) + 1
         self.blur = GaussianBlur2d(kernel_size=(kernel_size, kernel_size), sigma=(sigma, sigma), channels=1)
 
     @staticmethod
-    def compute_distance(embedding: Tensor, stats: List[Tensor]) -> Tensor:
+    def compute_distance(embedding: Tensor, stats: list[Tensor]) -> Tensor:
         """Compute anomaly score to the patch in position(i,j) of a test image.
 
         Ref: Equation (2), Section III-C of the paper.
 
         Args:
             embedding (Tensor): Embedding Vector
-            stats (List[Tensor]): Mean and Covariance Matrix of the multivariate Gaussian distribution
+            stats (list[Tensor]): Mean and Covariance Matrix of the multivariate Gaussian distribution
 
         Returns:
             Anomaly score of a test image via mahalanobis distance.
@@ -109,7 +109,7 @@ class AnomalyMapGenerator(nn.Module):
 
         return smoothed_anomaly_map
 
-    def forward(self, **kwargs):
+    def forward(self, **kwargs) -> Tensor:
         """Returns anomaly_map.
 
         Expects `embedding`, `mean` and `covariance` keywords to be passed explicitly.

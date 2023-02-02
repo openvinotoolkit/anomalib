@@ -10,6 +10,8 @@ How to Guides
    notebooks/100_datamodules/101_btech.ipynb
    notebooks/100_datamodules/102_mvtec.ipynb
    notebooks/100_datamodules/103_folder.ipynb
+   notebooks/100_datamodules/104_tiling.ipynb
    notebooks/200_models/201_fastflow.ipynb
    notebooks/300_benchmarking/301_benchmarking.ipynb
    notebooks/300_benchmarking/302_hpo_wandb.ipynb
+   notebooks/400_openvino/nncf.ipynb

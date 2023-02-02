@@ -9,16 +9,18 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Callable, List, Tuple, Union
+from __future__ import annotations
+
+from typing import Callable
 
 import timm
 import torch
+from FrEIA.framework import SequenceINN
+from FrEIA.modules import AllInOneBlock
 from timm.models.cait import Cait
 from timm.models.vision_transformer import VisionTransformer
 from torch import Tensor, nn
 
-from anomalib.models.components.freia.framework import SequenceINN
-from anomalib.models.components.freia.modules import AllInOneBlock
 from anomalib.models.fastflow.anomaly_map import AnomalyMapGenerator
 
 
@@ -49,7 +51,7 @@ def subnet_conv_func(kernel_size: int, hidden_ratio: float) -> Callable:
 
 
 def create_fast_flow_block(
-    input_dimensions: List[int],
+    input_dimensions: list[int],
     conv3x3_only: bool,
     hidden_ratio: float,
     flow_steps: int,
@@ -61,7 +63,7 @@ def create_fast_flow_block(
     Figure 2 and Section 3.3 in the paper.
 
     Args:
-        input_dimensions (List[int]): Input dimensions (Channel, Height, Width)
+        input_dimensions (list[int]): Input dimensions (Channel, Height, Width)
         conv3x3_only (bool): Boolean whether to use conv3x3 only or conv3x3 and conv1x1.
         hidden_ratio (float): Ratio for the hidden layer channels.
         flow_steps (int): Flow steps.
@@ -91,7 +93,7 @@ class FastflowModel(nn.Module):
     Unsupervised Anomaly Detection and Localization via 2D Normalizing Flows.
 
     Args:
-        input_size (Tuple[int, int]): Model input size.
+        input_size (tuple[int, int]): Model input size.
         backbone (str): Backbone CNN network
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         flow_steps (int, optional): Flow steps.
@@ -104,7 +106,7 @@ class FastflowModel(nn.Module):
 
     def __init__(
         self,
-        input_size: Tuple[int, int],
+        input_size: tuple[int, int],
         backbone: str,
         pre_trained: bool = True,
         flow_steps: int = 8,
@@ -115,11 +117,11 @@ class FastflowModel(nn.Module):
 
         self.input_size = input_size
 
-        if backbone in ["cait_m48_448", "deit_base_distilled_patch16_384"]:
+        if backbone in ("cait_m48_448", "deit_base_distilled_patch16_384"):
             self.feature_extractor = timm.create_model(backbone, pretrained=pre_trained)
             channels = [768]
             scales = [16]
-        elif backbone in ["resnet18", "wide_resnet50_2"]:
+        elif backbone in ("resnet18", "wide_resnet50_2"):
             self.feature_extractor = timm.create_model(
                 backbone,
                 pretrained=pre_trained,
@@ -160,19 +162,19 @@ class FastflowModel(nn.Module):
             )
         self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
 
-    def forward(self, input_tensor: Tensor) -> Union[Tuple[List[Tensor], List[Tensor]], Tensor]:
+    def forward(self, input_tensor: Tensor) -> Tensor | list[Tensor] | tuple[list[Tensor]]:
         """Forward-Pass the input to the FastFlow Model.
 
         Args:
             input_tensor (Tensor): Input tensor.
 
         Returns:
-            Union[Tuple[Tensor, Tensor], Tensor]: During training, return
+            Tensor | list[Tensor] | tuple[list[Tensor]]: During training, return
                 (hidden_variables, log-of-the-jacobian-determinants).
                 During the validation/test, return the anomaly map.
         """
 
-        return_val: Union[Tuple[List[Tensor], List[Tensor]], Tensor]
+        return_val: Tensor | list[Tensor] | tuple[list[Tensor]]
 
         self.feature_extractor.eval()
         if isinstance(self.feature_extractor, VisionTransformer):
@@ -185,8 +187,8 @@ class FastflowModel(nn.Module):
         # Compute the hidden variable f: X -> Z and log-likelihood of the jacobian
         # (See Section 3.3 in the paper.)
         # NOTE: output variable has z, and jacobian tuple for each fast-flow blocks.
-        hidden_variables: List[Tensor] = []
-        log_jacobians: List[Tensor] = []
+        hidden_variables: list[Tensor] = []
+        log_jacobians: list[Tensor] = []
         for fast_flow_block, feature in zip(self.fast_flow_blocks, features):
             hidden_variable, log_jacobian = fast_flow_block(feature)
             hidden_variables.append(hidden_variable)
@@ -199,27 +201,27 @@ class FastflowModel(nn.Module):
 
         return return_val
 
-    def _get_cnn_features(self, input_tensor: Tensor) -> List[Tensor]:
+    def _get_cnn_features(self, input_tensor: Tensor) -> list[Tensor]:
         """Get CNN-based features.
 
         Args:
             input_tensor (Tensor): Input Tensor.
 
         Returns:
-            List[Tensor]: List of features.
+            list[Tensor]: List of features.
         """
         features = self.feature_extractor(input_tensor)
         features = [self.norms[i](feature) for i, feature in enumerate(features)]
         return features
 
-    def _get_cait_features(self, input_tensor: Tensor) -> List[Tensor]:
+    def _get_cait_features(self, input_tensor: Tensor) -> list[Tensor]:
         """Get Class-Attention-Image-Transformers (CaiT) features.
 
         Args:
             input_tensor (Tensor): Input Tensor.
 
         Returns:
-            List[Tensor]: List of features.
+            list[Tensor]: List of features.
         """
         feature = self.feature_extractor.patch_embed(input_tensor)
         feature = feature + self.feature_extractor.pos_embed
@@ -233,14 +235,14 @@ class FastflowModel(nn.Module):
         features = [feature]
         return features
 
-    def _get_vit_features(self, input_tensor: Tensor) -> List[Tensor]:
+    def _get_vit_features(self, input_tensor: Tensor) -> list[Tensor]:
         """Get Vision Transformers (ViT) features.
 
         Args:
             input_tensor (Tensor): Input Tensor.
 
         Returns:
-            List[Tensor]: List of features.
+            list[Tensor]: List of features.
         """
         feature = self.feature_extractor.patch_embed(input_tensor)
         cls_token = self.feature_extractor.cls_token.expand(feature.shape[0], -1, -1)

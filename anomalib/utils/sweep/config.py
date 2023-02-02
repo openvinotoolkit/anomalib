@@ -3,16 +3,18 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import itertools
 import operator
 from collections.abc import Iterable, ValuesView
 from functools import reduce
-from typing import Any, Generator, List, Tuple
+from typing import Any, Generator
 
 from omegaconf import DictConfig
 
 
-def convert_to_tuple(values: ValuesView) -> List[Tuple]:
+def convert_to_tuple(values: ValuesView) -> list[tuple]:
     """Converts a ValuesView object to a list of tuples.
 
     This is useful to get list of possible values for each parameter in the config and a tuple for values that are
@@ -36,7 +38,7 @@ def convert_to_tuple(values: ValuesView) -> List[Tuple]:
         values: ValuesView: ValuesView object to be converted to a list of tuples.
 
     Returns:
-        List[Tuple]: List of tuples.
+        list[Tuple]: List of tuples.
     """
     return_list = []
     for value in values:
@@ -63,7 +65,7 @@ def flatten_sweep_params(params_dict: DictConfig) -> DictConfig:
         flattened version of the parameter dictionary.
     """
 
-    def flatten_nested_dict(nested_params: DictConfig, keys: List[str], flattened_params: DictConfig):
+    def flatten_nested_dict(nested_params: DictConfig, keys: list[str], flattened_params: DictConfig) -> None:
         """Flatten nested dictionary.
 
         Recursive helper function that traverses the nested config object and stores the leaf nodes in a flattened
@@ -71,7 +73,7 @@ def flatten_sweep_params(params_dict: DictConfig) -> DictConfig:
 
         Args:
             nested_params: DictConfig: config object containing the original parameters.
-            keys: List[str]: list of keys leading to the current location in the config.
+            keys: list[str]: list of keys leading to the current location in the config.
             flattened_params: DictConfig: Dictionary in which the flattened parameters are stored.
         """
         for name, cfg in nested_params.items():
@@ -123,22 +125,22 @@ def get_run_config(params_dict: DictConfig) -> Generator[DictConfig, None, None]
         yield run_config
 
 
-def get_from_nested_config(config: DictConfig, keymap: List) -> Any:
+def get_from_nested_config(config: DictConfig, keymap: list) -> Any:
     """Retrieves an item from a nested config object using a list of keys.
 
     Args:
         config: DictConfig: nested DictConfig object
-        keymap: List[str]: list of keys corresponding to item that should be retrieved.
+        keymap: list[str]: list of keys corresponding to item that should be retrieved.
     """
     return reduce(operator.getitem, keymap, config)
 
 
-def set_in_nested_config(config: DictConfig, keymap: List, value: Any):
+def set_in_nested_config(config: DictConfig, keymap: list, value: Any) -> None:
     """Set an item in a nested config object using a list of keys.
 
     Args:
         config: DictConfig: nested DictConfig object
-        keymap: List[str]: list of keys corresponding to item that should be set.
+        keymap: list[str]: list of keys corresponding to item that should be set.
         value: Any: Value that should be assigned to the dictionary item at the specified location.
 
     Example:

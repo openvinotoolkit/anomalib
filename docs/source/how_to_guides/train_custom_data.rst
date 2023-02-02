@@ -71,23 +71,23 @@ Let's choose `Padim algorithm <https://arxiv.org/pdf/2011.08785.pdf>`_, copy the
     dataset:
     name: hazelnut
     format: folder
-    path: ./datasets/Hazelnut_toy
+    root: ./datasets/Hazelnut_toy
     normal_dir: good # name of the folder containing normal images.
     abnormal_dir: colour # name of the folder containing abnormal images.
     task: classification # classification or segmentation
-    mask: null #optional
+    mask_dir: null #optional
     normal_test_dir: null # optional
     extensions: null
     split_ratio: 0.2  # normal images ratio to create a test split
     seed: 0
     image_size: 256
     train_batch_size: 32
-    test_batch_size: 32
+    eval_batch_size: 32
     num_workers: 8
     transform_config:
         train: null
-        val: null
-    create_validation_set: true
+        eval: null
+    val_split_mode: from_test # determines how the validation set is created, options [same_as_test, from_test]
     tiling:
         apply: false
         tile_size: null

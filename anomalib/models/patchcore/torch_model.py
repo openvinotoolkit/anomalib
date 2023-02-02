@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, List, Optional, Tuple, Union
+from __future__ import annotations
 
 import torch
 import torch.nn.functional as F
@@ -23,14 +23,14 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
 
     def __init__(
         self,
-        input_size: Tuple[int, int],
-        layers: List[str],
+        input_size: tuple[int, int],
+        layers: list[str],
         backbone: str = "wide_resnet50_2",
         pre_trained: bool = True,
         num_neighbors: int = 9,
     ) -> None:
         super().__init__()
-        self.tiler: Optional[Tiler] = None
+        self.tiler: Tiler | None = None
 
         self.backbone = backbone
         self.layers = layers
@@ -38,13 +38,13 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         self.num_neighbors = num_neighbors
 
         self.feature_extractor = FeatureExtractor(backbone=self.backbone, pre_trained=pre_trained, layers=self.layers)
-        self.feature_pooler = torch.nn.AvgPool2d(3, 1, 1, count_include_pad=False)
+        self.feature_pooler = torch.nn.AvgPool2d(3, 1, 1)
         self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
 
         self.register_buffer("memory_bank", Tensor())
         self.memory_bank: Tensor
 
-    def forward(self, input_tensor: Tensor) -> Union[Tensor, Tuple[Tensor, Tensor]]:
+    def forward(self, input_tensor: Tensor) -> Tensor | tuple[Tensor, Tensor]:
         """Return Embedding during training, or a tuple of anomaly map and anomaly score during testing.
 
         Steps performed:
@@ -56,7 +56,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             input_tensor (Tensor): Input tensor
 
         Returns:
-            Union[Tensor, Tuple[Tensor, Tensor]]: Embedding for training,
+            Tensor | tuple[Tensor, Tensor]: Embedding for training,
                 anomaly map and anomaly score for testing.
         """
         if self.tiler:
@@ -93,12 +93,12 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
 
         return output
 
-    def generate_embedding(self, features: Dict[str, Tensor]) -> Tensor:
+    def generate_embedding(self, features: dict[str, Tensor]) -> Tensor:
         """Generate embedding from hierarchical feature map.
 
         Args:
             features: Hierarchical feature map from a CNN (ResNet18 or WideResnet)
-            features: Dict[str:Tensor]:
+            features: dict[str:Tensor]:
 
         Returns:
             Embedding vector
@@ -142,7 +142,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         coreset = sampler.sample_coreset()
         self.memory_bank = coreset
 
-    def nearest_neighbors(self, embedding: Tensor, n_neighbors: int) -> Tuple[Tensor, Tensor]:
+    def nearest_neighbors(self, embedding: Tensor, n_neighbors: int) -> tuple[Tensor, Tensor]:
         """Nearest Neighbours using brute force method and euclidean norm.
 
         Args:
@@ -175,18 +175,22 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         # Don't need to compute weights if num_neighbors is 1
         if self.num_neighbors == 1:
             return patch_scores.amax(1)
+        batch_size, num_patches = patch_scores.shape
         # 1. Find the patch with the largest distance to it's nearest neighbor in each image
-        max_patches = torch.argmax(patch_scores, dim=1)  # (m^test,* in the paper)
+        max_patches = torch.argmax(patch_scores, dim=1)  # indices of m^test,* in the paper
+        # m^test,* in the paper
+        max_patches_features = embedding.reshape(batch_size, num_patches, -1)[torch.arange(batch_size), max_patches]
         # 2. Find the distance of the patch to it's nearest neighbor, and the location of the nn in the membank
-        score = patch_scores[torch.arange(patch_scores.shape[0]), max_patches]  # s in the paper
-        nn_index = locations[torch.arange(patch_scores.shape[0]), max_patches]  # m^* in the paper
+        score = patch_scores[torch.arange(batch_size), max_patches]  # s^* in the paper
+        nn_index = locations[torch.arange(batch_size), max_patches]  # indices of m^* in the paper
         # 3. Find the support samples of the nearest neighbor in the membank
-        nn_sample = self.memory_bank[nn_index, :]
-        _, support_samples = self.nearest_neighbors(nn_sample, n_neighbors=self.num_neighbors)  # N_b(m^*) in the paper
+        nn_sample = self.memory_bank[nn_index, :]  # m^* in the paper
+        # indices of N_b(m^*) in the paper
+        _, support_samples = self.nearest_neighbors(nn_sample, n_neighbors=self.num_neighbors)
         # 4. Find the distance of the patch features to each of the support samples
-        distances = torch.cdist(embedding[max_patches].unsqueeze(1), self.memory_bank[support_samples], p=2.0)
+        distances = torch.cdist(max_patches_features.unsqueeze(1), self.memory_bank[support_samples], p=2.0)
         # 5. Apply softmax to find the weights
         weights = (1 - F.softmax(distances.squeeze(1), 1))[..., 0]
         # 6. Apply the weight factor to the score
-        score = weights * score  # S^* in the paper
+        score = weights * score  # s in the paper
         return score

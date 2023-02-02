@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Union
+from __future__ import annotations
 
 import torch
 from torch import Tensor
@@ -19,7 +19,7 @@ class PCA(DynamicBufferModule):
           or a ratio between 0-1.
     """
 
-    def __init__(self, n_components: Union[float, int]):
+    def __init__(self, n_components: int | float):
         super().__init__()
         self.n_components = n_components
 
@@ -41,7 +41,7 @@ class PCA(DynamicBufferModule):
         mean = dataset.mean(dim=0)
         dataset -= mean
 
-        _, sig, v_h = torch.linalg.svd(dataset.double())
+        _, sig, v_h = torch.linalg.svd(dataset.double(), full_matrices=False)
         num_components: int
         if self.n_components <= 1:
             variance_ratios = torch.cumsum(sig * sig, dim=0) / torch.sum(sig * sig)
