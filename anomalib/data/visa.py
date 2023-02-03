@@ -88,7 +88,7 @@ class Visa(AnomalibDataModule):
     """VisA Datamodule.
 
     Args:
-        root (str): Path to the root of the dataset
+        root (Path | str): Path to the root of the dataset
         category (str): Category of the MVTec dataset (e.g. "bottle" or "cable").
         image_size (int | tuple[int, int] | None, optional): Size of the input image.
             Defaults to None.
@@ -114,7 +114,7 @@ class Visa(AnomalibDataModule):
 
     def __init__(
         self,
-        root: str,
+        root: Path | str,
         category: str,
         image_size: int | tuple[int, int] | None = None,
         center_crop: int | tuple[int, int] | None = None,

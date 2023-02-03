@@ -215,7 +215,7 @@ class ShanghaiTech(AnomalibVideoDataModule):
     """ShanghaiTech DataModule class.
 
     Args:
-        root (str): Path to the root of the dataset
+        root (Path | str): Path to the root of the dataset
         scene (int): Index of the dataset scene (category) in range [1, 13]
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
@@ -241,7 +241,7 @@ class ShanghaiTech(AnomalibVideoDataModule):
 
     def __init__(
         self,
-        root: str,
+        root: Path | str,
         scene: int,
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,

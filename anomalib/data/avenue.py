@@ -135,7 +135,7 @@ class AvenueDataset(AnomalibVideoDataset):
     Args:
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
         root (Path | str): Path to the root of the dataset
-        gt_dir (str): Path to the ground truth files
+        gt_dir (Path | str): Path to the ground truth files
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (Split): Split of the dataset, usually Split.TRAIN or Split.TEST
         clip_length_in_frames (int, optional): Number of video frames in each clip.
@@ -146,7 +146,7 @@ class AvenueDataset(AnomalibVideoDataset):
         self,
         task: TaskType,
         root: Path | str,
-        gt_dir: str,
+        gt_dir: Path | str,
         transform: A.Compose,
         split: Split,
         clip_length_in_frames: int = 1,
@@ -155,7 +155,7 @@ class AvenueDataset(AnomalibVideoDataset):
         super().__init__(task, transform, clip_length_in_frames, frames_between_clips)
 
         self.root = root if isinstance(root, Path) else Path(root)
-        self.gt_dir = Path(gt_dir)
+        self.gt_dir = gt_dir if isinstance(gt_dir, Path) else Path(gt_dir)
         self.split = split
         self.indexer_cls: Callable = AvenueClipsIndexer
 
@@ -168,8 +168,8 @@ class Avenue(AnomalibVideoDataModule):
     """Avenue DataModule class.
 
     Args:
-        root (str): Path to the root of the dataset
-        gt_dir (str): Path to the ground truth files
+        root (Path | str): Path to the root of the dataset
+        gt_dir (Path | str): Path to the ground truth files
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
         task TaskType): Task type, 'classification', 'detection' or 'segmentation'
@@ -194,8 +194,8 @@ class Avenue(AnomalibVideoDataModule):
 
     def __init__(
         self,
-        root: str,
-        gt_dir: str,
+        root: Path | str,
+        gt_dir: Path | str,
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
         task: TaskType = TaskType.SEGMENTATION,

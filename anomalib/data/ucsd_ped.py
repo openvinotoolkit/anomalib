@@ -149,7 +149,7 @@ class UCSDpedDataset(AnomalibVideoDataset):
 
     Args:
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
-        root (str): Path to the root of the dataset
+        root (Path | str): Path to the root of the dataset
         category (str): Sub-category of the dataset, e.g. 'bottle'
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
@@ -182,7 +182,7 @@ class UCSDped(AnomalibVideoDataModule):
     """UCSDped DataModule class.
 
     Args:
-        root (str): Path to the root of the dataset
+        root (Path | str): Path to the root of the dataset
         category (str): Sub-category of the dataset, e.g. 'bottle'
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
@@ -211,7 +211,7 @@ class UCSDped(AnomalibVideoDataModule):
 
     def __init__(
         self,
-        root: str,
+        root: Path | str,
         category: str,
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
