@@ -12,7 +12,7 @@ from warnings import warn
 
 import pytorch_lightning as pl
 import torch
-from pytorch_lightning.callbacks.base import Callback
+from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 from torch import Tensor, nn
 from torchmetrics import Metric
