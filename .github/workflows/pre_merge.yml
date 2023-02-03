@@ -50,5 +50,8 @@ jobs:
           else
             COMMIT_ID=${{ github.sha }}
           fi
-          pip install codacy-coverage
-          python-codacy-coverage -r .tox/coverage.xml -t ${{ secrets.CODACY }} -c $COMMIT_ID
+          # current version of codecov-action does not support uploading reports through the proxy
+          # so we use the latest version of codecov uploader binary
+          curl -Os https://uploader.codecov.io/latest/linux/codecov
+          chmod +x codecov
+          ./codecov --sha $COMMIT_ID -Z true -U $HTTP_PROXY -f .tox/coverage.xml
