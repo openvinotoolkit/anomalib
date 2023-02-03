@@ -76,6 +76,8 @@ class Rkde(AnomalyModule):
         Returns:
           Deep CNN features.
         """
+        del args, kwargs  # These variables are not used.
+
         features = self.model(batch["image"])
         self.embeddings.append(features)
 
@@ -97,6 +99,7 @@ class Rkde(AnomalyModule):
         Returns:
           Dictionary containing probability, prediction and ground truth values.
         """
+        del args, kwargs  # These variables are not used.
 
         # get batched model predictions
         boxes, scores = self.model(batch["image"])

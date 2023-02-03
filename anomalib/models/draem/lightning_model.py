@@ -79,6 +79,8 @@ class Draem(AnomalyModule):
         Returns:
             Loss dictionary
         """
+        del args, kwargs  # These variables are not used.
+
         input_image = batch["image"]
         # Apply corruption to input image
         augmented_image, anomaly_mask = self.augmenter.augment_batch(input_image)
@@ -104,6 +106,8 @@ class Draem(AnomalyModule):
         Returns:
             Dictionary to which predicted anomaly maps have been added.
         """
+        del args, kwargs  # These variables are not used.
+
         prediction = self.model(batch["image"])
         batch["anomaly_maps"] = prediction
         return batch

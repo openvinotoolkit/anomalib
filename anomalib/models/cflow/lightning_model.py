@@ -96,6 +96,8 @@ class Cflow(AnomalyModule):
           Loss value for the batch
 
         """
+        del args, kwargs  # These variables are not used.
+
         opt = self.optimizers()
         self.model.encoder.eval()
 
@@ -167,8 +169,9 @@ class Cflow(AnomalyModule):
             These are required in `validation_epoch_end` for feature concatenation.
 
         """
-        batch["anomaly_maps"] = self.model(batch["image"])
+        del args, kwargs  # These variables are not used.
 
+        batch["anomaly_maps"] = self.model(batch["image"])
         return batch
 
 

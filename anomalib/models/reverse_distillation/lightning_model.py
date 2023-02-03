@@ -86,6 +86,8 @@ class ReverseDistillation(AnomalyModule):
         Returns:
           Feature Map
         """
+        del args, kwargs  # These variables are not used.
+
         loss = self.loss(*self.model(batch["image"]))
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
@@ -103,6 +105,8 @@ class ReverseDistillation(AnomalyModule):
           Dictionary containing images, anomaly maps, true labels and masks.
           These are required in `validation_epoch_end` for feature concatenation.
         """
+        del args, kwargs  # These variables are not used.
+
         batch["anomaly_maps"] = self.model(batch["image"])
         return batch
 

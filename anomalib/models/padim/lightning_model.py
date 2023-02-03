@@ -72,6 +72,8 @@ class Padim(AnomalyModule):
         Returns:
             Hierarchical feature map
         """
+        del args, kwargs  # These variables are not used.
+
         self.model.feature_extractor.eval()
         embedding = self.model(batch["image"])
 
@@ -104,6 +106,7 @@ class Padim(AnomalyModule):
             Dictionary containing images, features, true labels and masks.
             These are required in `validation_epoch_end` for feature concatenation.
         """
+        del args, kwargs  # These variables are not used.
 
         batch["anomaly_maps"] = self.model(batch["image"])
         return batch

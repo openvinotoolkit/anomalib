@@ -72,6 +72,7 @@ class Dfkde(AnomalyModule):
         Returns:
           Deep CNN features.
         """
+        del args, kwargs  # These variables are not used.
 
         embedding = self.model(batch["image"])
 
@@ -102,8 +103,9 @@ class Dfkde(AnomalyModule):
         Returns:
           Dictionary containing probability, prediction and ground truth values.
         """
-        batch["pred_scores"] = self.model(batch["image"])
+        del args, kwargs  # These variables are not used.
 
+        batch["pred_scores"] = self.model(batch["image"])
         return batch
 
 

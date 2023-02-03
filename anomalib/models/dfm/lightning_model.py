@@ -77,6 +77,8 @@ class Dfm(AnomalyModule):
         Returns:
           Deep CNN features.
         """
+        del args, kwargs  # These variables are not used.
+
         embedding = self.model.get_features(batch["image"]).squeeze()
 
         # NOTE: `self.embedding` appends each batch embedding to
@@ -107,6 +109,8 @@ class Dfm(AnomalyModule):
         Returns:
           Dictionary containing FRE anomaly scores and anomaly maps.
         """
+        del args, kwargs  # These variables are not used.
+
         if self.score_type == "fre":
             batch["anomaly_maps"], batch["pred_scores"] = self.model(batch["image"])
         elif self.score_type == "nll":

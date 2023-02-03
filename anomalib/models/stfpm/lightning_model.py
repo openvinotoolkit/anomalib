@@ -56,6 +56,8 @@ class Stfpm(AnomalyModule):
         Returns:
           Loss value
         """
+        del args, kwargs  # These variables are not used.
+
         self.model.teacher_model.eval()
         teacher_features, student_features = self.model.forward(batch["image"])
         loss = self.loss(teacher_features, student_features)
@@ -75,8 +77,9 @@ class Stfpm(AnomalyModule):
           Dictionary containing images, anomaly maps, true labels and masks.
           These are required in `validation_epoch_end` for feature concatenation.
         """
-        batch["anomaly_maps"] = self.model(batch["image"])
+        del args, kwargs  # These variables are not used.
 
+        batch["anomaly_maps"] = self.model(batch["image"])
         return batch
 
 

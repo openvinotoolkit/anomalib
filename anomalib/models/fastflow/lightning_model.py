@@ -59,6 +59,8 @@ class Fastflow(AnomalyModule):
         Returns:
             STEP_OUTPUT: Dictionary containing the loss value.
         """
+        del args, kwargs  # These variables are not used.
+
         hidden_variables, jacobians = self.model(batch["image"])
         loss = self.loss(hidden_variables, jacobians)
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
@@ -73,6 +75,8 @@ class Fastflow(AnomalyModule):
         Returns:
             STEP_OUTPUT | None: batch dictionary containing anomaly-maps.
         """
+        del args, kwargs  # These variables are not used.
+
         anomaly_maps = self.model(batch["image"])
         batch["anomaly_maps"] = anomaly_maps
         return batch

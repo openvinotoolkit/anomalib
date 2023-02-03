@@ -81,6 +81,8 @@ class Cfa(AnomalyModule):
         Returns:
             STEP_OUTPUT: Loss value.
         """
+        del args, kwargs  # These variables are not used.
+
         distance = self.model(batch["image"])
         loss = self.loss(distance)
         return {"loss": loss}
@@ -94,6 +96,8 @@ class Cfa(AnomalyModule):
         Returns:
             dict: Anomaly map computed by the model.
         """
+        del args, kwargs  # These variables are not used.
+
         batch["anomaly_maps"] = self.model(batch["image"])
         return batch
 

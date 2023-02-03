@@ -65,6 +65,8 @@ class Csflow(AnomalyModule):
         Returns:
             Loss value
         """
+        del args, kwargs  # These variables are not used.
+
         self.model.feature_extractor.eval()
         z_dist, jacobians = self.model(batch["image"])
         loss = self.loss(z_dist, jacobians)
@@ -80,6 +82,8 @@ class Csflow(AnomalyModule):
         Returns:
             dict[str, Tensor]: Dictionary containing the anomaly map, scores, etc.
         """
+        del args, kwargs  # These variables are not used.
+
         anomaly_maps, anomaly_scores = self.model(batch["image"])
         batch["anomaly_maps"] = anomaly_maps
         batch["pred_scores"] = anomaly_scores
