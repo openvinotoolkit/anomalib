@@ -62,6 +62,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         Returns:
             Tensor: Output tensor from the model.
         """
+        del args, kwargs  # These variables are not used.
+
         return self.model(batch)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
@@ -113,16 +115,22 @@ class AnomalyModule(pl.LightningModule, ABC):
           Dictionary containing images, features, true labels and masks.
           These are required in `validation_epoch_end` for feature concatenation.
         """
+        del args, kwargs  # These variables are not used.
+
         return self.predict_step(batch, batch_idx)
 
     def validation_step_end(self, val_step_outputs: STEP_OUTPUT, *args, **kwargs) -> STEP_OUTPUT:
         """Called at the end of each validation step."""
+        del args, kwargs  # These variables are not used.
+
         self._outputs_to_cpu(val_step_outputs)
         self._post_process(val_step_outputs)
         return val_step_outputs
 
     def test_step_end(self, test_step_outputs: STEP_OUTPUT, *args, **kwargs) -> STEP_OUTPUT:
         """Called at the end of each test step."""
+        del args, kwargs  # These variables are not used.
+
         self._outputs_to_cpu(test_step_outputs)
         self._post_process(test_step_outputs)
         return test_step_outputs
