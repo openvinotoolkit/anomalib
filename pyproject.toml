@@ -101,4 +101,5 @@ ignore = [
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # NBQA CONFIGURATION                                                          #
 [tool.nbqa.addopts]
-pylint = ["--disable=C0103,C0114,C0116,E0401,R0801,W0106"]
+pylint = ["--disable=C0103,C0114,C0116,C0413,E0401,R0801,W0106"]
+flake8 = ["--ignore=E203,W503,E402", "--max-line-length=120"]
