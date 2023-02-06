@@ -25,7 +25,7 @@ jobs:
       - name: Install Tox
         run: pip install tox
       - name: Code quality checks
-        run: tox -e pre-commit
+        run: tox -re pre-commit
   Tox:
     runs-on: [self-hosted, linux, x64]
     needs: Code-Quality-Checks
@@ -38,7 +38,7 @@ jobs:
       - name: Install Tox
         run: pip install tox
       - name: Coverage
-        run: tox -e pre_merge
+        run: tox -re pre_merge
       - name: Upload coverage report
         run: |
           # If the workflow is triggered from PR then it gets the commit id from the PR.
