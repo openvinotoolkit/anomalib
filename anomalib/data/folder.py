@@ -99,6 +99,9 @@ def make_folder_dataset(
     abnormal_dir: str | Path | None = None,
     normal_test_dir: str | Path | None = None,
     mask_dir: str | Path | None = None,
+    normal_depth_dir: str | Path | None = None,
+    abnormal_depth_dir: str | Path | None = None,
+    normal_test_depth_dir: str | Path | None = None,
     split: str | Split | None = None,
     extensions: tuple[str, ...] | None = None,
 ) -> DataFrame:
@@ -136,6 +139,15 @@ def make_folder_dataset(
 
     if normal_test_dir:
         dirs = {**dirs, **{"normal_test": normal_test_dir}}
+    
+    if normal_depth_dir:
+        dirs = {**dirs, **{"normal_depth": normal_depth_dir}}
+
+    if abnormal_depth_dir:
+        dirs = {**dirs, **{"abnormal_depth": abnormal_depth_dir}}
+    
+    if normal_test_depth_dir:
+        dirs = {**dirs, **{"normal_test_depth": abnormal_depth_dir}}
 
     for dir_type, path in dirs.items():
         filename, label = _prepare_files_labels(path, dir_type, extensions)
