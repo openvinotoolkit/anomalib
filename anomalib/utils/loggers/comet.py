@@ -9,7 +9,11 @@ from typing import Any
 
 import numpy as np
 from matplotlib.figure import Figure
-from pytorch_lightning.loggers.comet import CometLogger
+
+try:
+    from pytorch_lightning.loggers.comet import CometLogger
+except ModuleNotFoundError:
+    print("To use comet logger install it using `pip install comet-ml`")
 from pytorch_lightning.utilities import rank_zero_only
 
 from .base import ImageLoggerBase

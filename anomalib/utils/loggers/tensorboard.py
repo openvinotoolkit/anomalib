@@ -9,7 +9,11 @@ from typing import Any
 
 import numpy as np
 from matplotlib.figure import Figure
-from pytorch_lightning.loggers.tensorboard import TensorBoardLogger
+
+try:
+    from pytorch_lightning.loggers.tensorboard import TensorBoardLogger
+except ModuleNotFoundError:
+    print("To use tensorboard logger install it using `pip install tensorboard`")
 from pytorch_lightning.utilities import rank_zero_only
 
 from .base import ImageLoggerBase
