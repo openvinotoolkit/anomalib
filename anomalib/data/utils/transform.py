@@ -124,6 +124,6 @@ def get_transforms(
         if to_tensor:
             transforms_list.append(ToTensorV2())
 
-        transforms = A.Compose(transforms_list)
+        transforms = A.Compose(transforms_list, additional_targets={'image': 'image', 'depth_image': 'image'})
 
     return transforms

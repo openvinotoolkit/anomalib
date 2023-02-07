@@ -12,6 +12,7 @@ from .image import (
     get_image_filenames,
     get_image_height_and_width,
     read_image,
+    read_depth_image
 )
 from .split import (
     Split,
@@ -29,6 +30,7 @@ __all__ = [
     "get_image_height_and_width",
     "random_2d_perlin",
     "read_image",
+    "read_depth_image",
     "random_split",
     "split_by_label",
     "concatenate_datasets",
