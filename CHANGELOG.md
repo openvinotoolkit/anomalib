@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v0.4.0rc1] - 2023-02-07
 
 ### Added
 
@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- Bump PyTorch Lightning version to v.1.9.\* (<https://github.com/openvinotoolkit/anomalib/pull/870>)
 - Make input image normalization and center cropping configurable from config (https://github.com/openvinotoolkit/anomalib/pull/822)
 - Improve flexibility and configurability of subset splitting (https://github.com/openvinotoolkit/anomalib/pull/822)
 - Switch to new datamodules design (https://github.com/openvinotoolkit/anomalib/pull/822)

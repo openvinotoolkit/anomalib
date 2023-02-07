@@ -19,7 +19,6 @@ import albumentations as A
 import cv2
 import pandas as pd
 from pandas.core.frame import DataFrame
-from pytorch_lightning.utilities.cli import DATAMODULE_REGISTRY
 from tqdm import tqdm
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
@@ -176,7 +175,6 @@ class BTechDataset(AnomalibDataset):
         self.samples = make_btech_dataset(path=self.root_category, split=self.split)
 
 
-@DATAMODULE_REGISTRY
 class BTech(AnomalibDataModule):
     """BTech Lightning Data Module.
 

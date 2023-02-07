@@ -42,7 +42,7 @@ def test_export_model_callback(export_mode):
             gpus=1,
             callbacks=model.callbacks,
             logger=False,
-            checkpoint_callback=False,
+            enable_checkpointing=False,
             max_epochs=1,
             val_check_interval=3,
         )

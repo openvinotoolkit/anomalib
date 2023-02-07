@@ -9,7 +9,6 @@ import logging
 
 import torch
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
@@ -22,7 +21,6 @@ from .torch_model import RkdeModel
 logger = logging.getLogger(__name__)
 
 
-@MODEL_REGISTRY
 class Rkde(AnomalyModule):
     """Region Based Anomaly Detection With Real-Time Training and Analysis.
 
@@ -78,6 +76,8 @@ class Rkde(AnomalyModule):
         Returns:
           Deep CNN features.
         """
+        del args, kwargs  # These variables are not used.
+
         features = self.model(batch["image"])
         self.embeddings.append(features)
 
@@ -99,6 +99,7 @@ class Rkde(AnomalyModule):
         Returns:
           Dictionary containing probability, prediction and ground truth values.
         """
+        del args, kwargs  # These variables are not used.
 
         # get batched model predictions
         boxes, scores = self.model(batch["image"])

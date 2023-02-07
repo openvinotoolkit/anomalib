@@ -72,7 +72,7 @@ class WandbSweep:
         callbacks = get_sweep_callbacks(config)
 
         # Disable saving checkpoints as all checkpoints from the sweep will get uploaded
-        config.trainer.checkpoint_callback = False
+        config.trainer.enable_checkpointing = False
 
         trainer = pl.Trainer(**config.trainer, logger=wandb_logger, callbacks=callbacks)
         trainer.fit(model, datamodule=datamodule)
@@ -126,7 +126,7 @@ class CometSweep:
             callbacks = get_sweep_callbacks(config)
 
             # Disable saving checkpoints as all checkpoints from the sweep will get uploaded
-            config.trainer.checkpoint_callback = False
+            config.trainer.enable_checkpointing = False
 
             trainer = pl.Trainer(**config.trainer, logger=comet_logger, callbacks=callbacks)
             trainer.fit(model, datamodule=datamodule)

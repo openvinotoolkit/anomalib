@@ -9,7 +9,6 @@ import logging
 
 import torch
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
@@ -21,7 +20,6 @@ from .torch_model import DfkdeModel
 logger = logging.getLogger(__name__)
 
 
-@MODEL_REGISTRY
 class Dfkde(AnomalyModule):
     """DFKDE: Deep Feature Kernel Density Estimation.
 
@@ -74,6 +72,7 @@ class Dfkde(AnomalyModule):
         Returns:
           Deep CNN features.
         """
+        del args, kwargs  # These variables are not used.
 
         embedding = self.model(batch["image"])
 
@@ -104,8 +103,9 @@ class Dfkde(AnomalyModule):
         Returns:
           Dictionary containing probability, prediction and ground truth values.
         """
-        batch["pred_scores"] = self.model(batch["image"])
+        del args, kwargs  # These variables are not used.
 
+        batch["pred_scores"] = self.model(batch["image"])
         return batch
 
 
