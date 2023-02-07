@@ -12,7 +12,6 @@ import logging
 
 import torch
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
@@ -22,7 +21,6 @@ from anomalib.models.patchcore.torch_model import PatchcoreModel
 logger = logging.getLogger(__name__)
 
 
-@MODEL_REGISTRY
 class Patchcore(AnomalyModule):
     """PatchcoreLightning Module to train PatchCore algorithm.
 
@@ -74,6 +72,8 @@ class Patchcore(AnomalyModule):
         Returns:
             dict[str, np.ndarray]: Embedding Vector
         """
+        del args, kwargs  # These variables are not used.
+
         self.model.feature_extractor.eval()
         embedding = self.model(batch["image"])
 
@@ -104,6 +104,7 @@ class Patchcore(AnomalyModule):
         Returns:
             dict[str, Any]: Image filenames, test images, GT and predicted label/masks
         """
+        del args, kwargs  # These variables are not used.
 
         anomaly_maps, anomaly_score = self.model(batch["image"])
         batch["anomaly_maps"] = anomaly_maps

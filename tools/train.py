@@ -62,7 +62,7 @@ def train():
 
     logger.info("Loading the best model weights.")
     load_model_callback = LoadModelCallback(weights_path=trainer.checkpoint_callback.best_model_path)
-    trainer.callbacks.insert(0, load_model_callback)
+    trainer.callbacks.insert(0, load_model_callback)  # pylint: disable=no-member
 
     if config.dataset.test_split_mode == TestSplitMode.NONE:
         logger.info("No test set provided. Skipping test stage.")

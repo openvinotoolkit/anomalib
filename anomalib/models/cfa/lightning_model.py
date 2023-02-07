@@ -16,7 +16,6 @@ import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning import Callback
 from pytorch_lightning.callbacks import EarlyStopping
-from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 from torch.optim.optimizer import Optimizer
@@ -30,7 +29,6 @@ logger = logging.getLogger(__name__)
 __all__ = ["Cfa", "CfaLightning"]
 
 
-@MODEL_REGISTRY
 class Cfa(AnomalyModule):
     """CFA: Coupled-hypersphere-based Feature Adaptation for Target-Oriented Anomaly Localization.
 
@@ -83,6 +81,8 @@ class Cfa(AnomalyModule):
         Returns:
             STEP_OUTPUT: Loss value.
         """
+        del args, kwargs  # These variables are not used.
+
         distance = self.model(batch["image"])
         loss = self.loss(distance)
         return {"loss": loss}
@@ -96,6 +96,8 @@ class Cfa(AnomalyModule):
         Returns:
             dict: Anomaly map computed by the model.
         """
+        del args, kwargs  # These variables are not used.
+
         batch["anomaly_maps"] = self.model(batch["image"])
         return batch
 
@@ -107,7 +109,8 @@ class Cfa(AnomalyModule):
             optimizer (Optimizer | None): Optimizer.
             optimizer_idx (int | None): Optimizer index.
         """
-        del optimizer, optimizer_idx  # These variables are not used.
+        del optimizer, optimizer_idx, args, kwargs  # These variables are not used.
+
         # TODO: Investigate why retain_graph is needed.
         loss.backward(retain_graph=True)
 

@@ -9,7 +9,6 @@ import logging
 
 import torch
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
@@ -20,7 +19,6 @@ from .torch_model import DFMModel
 logger = logging.getLogger(__name__)
 
 
-@MODEL_REGISTRY
 class Dfm(AnomalyModule):
     """DFM: Deep Featured Kernel Density Estimation.
 
@@ -79,6 +77,8 @@ class Dfm(AnomalyModule):
         Returns:
           Deep CNN features.
         """
+        del args, kwargs  # These variables are not used.
+
         embedding = self.model.get_features(batch["image"]).squeeze()
 
         # NOTE: `self.embedding` appends each batch embedding to
@@ -109,6 +109,8 @@ class Dfm(AnomalyModule):
         Returns:
           Dictionary containing FRE anomaly scores and anomaly maps.
         """
+        del args, kwargs  # These variables are not used.
+
         if self.score_type == "fre":
             batch["anomaly_maps"], batch["pred_scores"] = self.model(batch["image"])
         elif self.score_type == "nll":
