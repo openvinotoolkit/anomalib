@@ -11,15 +11,9 @@ import warnings
 from datetime import datetime
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Callable
 
 from omegaconf.omegaconf import OmegaConf
-from pytorch_lightning import LightningDataModule, LightningModule, Trainer
-from pytorch_lightning.utilities.cli import (
-    LightningArgumentParser,
-    LightningCLI,
-    SaveConfigCallback,
-)
+from pytorch_lightning.cli import LightningArgumentParser, LightningCLI
 
 from anomalib.utils.callbacks import (
     CdfNormalizationCallback,
@@ -46,46 +40,6 @@ class AnomalibCLI(LightningCLI):
     possible to use both the CLI and a configuration file simultaneously.
     For more details, the reader could refer to PyTorch Lightning CLI documentation.
     """
-
-    def __init__(  # pylint: disable=too-many-function-args
-        self,
-        model_class: type[LightningModule] | Callable[..., LightningModule] | None = None,
-        datamodule_class: type[LightningDataModule] | Callable[..., LightningDataModule] | None = None,
-        save_config_callback: type[SaveConfigCallback] | None = SaveConfigCallback,
-        save_config_filename: str = "config.yaml",
-        save_config_overwrite: bool = False,
-        save_config_multifile: bool = False,
-        trainer_class: type[Trainer] | Callable[..., Trainer] = Trainer,
-        trainer_defaults: dict[str, Any] | None = None,
-        seed_everything_default: int | None = None,
-        description: str = "Anomalib trainer command line tool",
-        env_prefix: str = "Anomalib",
-        env_parse: bool = False,
-        parser_kwargs: dict[str, Any] | dict[str, dict[str, Any]] | None = None,
-        subclass_mode_model: bool = False,
-        subclass_mode_data: bool = False,
-        run: bool = True,
-        auto_registry: bool = True,
-    ) -> None:
-        super().__init__(
-            model_class,
-            datamodule_class,
-            save_config_callback,
-            save_config_filename,
-            save_config_overwrite,
-            save_config_multifile,
-            trainer_class,
-            trainer_defaults,
-            seed_everything_default,
-            description,
-            env_prefix,
-            env_parse,
-            parser_kwargs,
-            subclass_mode_model,
-            subclass_mode_data,
-            run,
-            auto_registry,
-        )
 
     def add_arguments_to_parser(self, parser: LightningArgumentParser) -> None:
         """Add default arguments.

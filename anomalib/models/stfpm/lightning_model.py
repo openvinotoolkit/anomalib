@@ -11,7 +11,6 @@ from __future__ import annotations
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
-from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor, optim
 
@@ -22,7 +21,6 @@ from anomalib.models.stfpm.torch_model import STFPMModel
 __all__ = ["StfpmLightning"]
 
 
-@MODEL_REGISTRY
 class Stfpm(AnomalyModule):
     """PL Lightning Module for the STFPM algorithm.
 
@@ -58,6 +56,8 @@ class Stfpm(AnomalyModule):
         Returns:
           Loss value
         """
+        del args, kwargs  # These variables are not used.
+
         self.model.teacher_model.eval()
         teacher_features, student_features = self.model.forward(batch["image"])
         loss = self.loss(teacher_features, student_features)
@@ -77,8 +77,9 @@ class Stfpm(AnomalyModule):
           Dictionary containing images, anomaly maps, true labels and masks.
           These are required in `validation_epoch_end` for feature concatenation.
         """
-        batch["anomaly_maps"] = self.model(batch["image"])
+        del args, kwargs  # These variables are not used.
 
+        batch["anomaly_maps"] = self.model(batch["image"])
         return batch
 
 

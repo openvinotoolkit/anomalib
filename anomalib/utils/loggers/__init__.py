@@ -13,7 +13,7 @@ from typing import Iterable
 
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
-from pytorch_lightning.loggers import CSVLogger, LightningLoggerBase
+from pytorch_lightning.loggers import CSVLogger, Logger
 
 from .comet import AnomalibCometLogger
 from .tensorboard import AnomalibTensorBoardLogger
@@ -62,7 +62,7 @@ def configure_logger(level: int | str = logging.INFO) -> None:
 
 def get_experiment_logger(
     config: DictConfig | ListConfig,
-) -> LightningLoggerBase | Iterable[LightningLoggerBase] | bool:
+) -> Logger | Iterable[Logger] | bool:
     """Return a logger based on the choice of logger in the config file.
 
     Args:
@@ -72,7 +72,7 @@ def get_experiment_logger(
         ValueError: for any logger types apart from false and tensorboard
 
     Returns:
-        LightningLoggerBase | Iterable[LightningLoggerBase] | bool]: Logger
+        Logger | Iterable[Logger] | bool]: Logger
     """
     logger.info("Loading the experiment logger(s)")
 
@@ -91,7 +91,7 @@ def get_experiment_logger(
     if config.logging.logger in (None, False):
         return False
 
-    logger_list: list[LightningLoggerBase] = []
+    logger_list: list[Logger] = []
     if isinstance(config.logging.logger, str):
         config.logging.logger = [config.logging.logger]
 
