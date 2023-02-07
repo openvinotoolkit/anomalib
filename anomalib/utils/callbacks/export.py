@@ -10,7 +10,6 @@ from pathlib import Path
 
 import pytorch_lightning as pl
 from pytorch_lightning import Callback
-from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 
 from anomalib.deploy import ExportMode, export
 from anomalib.models.components import AnomalyModule
@@ -18,7 +17,6 @@ from anomalib.models.components import AnomalyModule
 logger = logging.getLogger(__name__)
 
 
-@CALLBACK_REGISTRY
 class ExportCallback(Callback):
     """Callback to compresses a trained model.
 

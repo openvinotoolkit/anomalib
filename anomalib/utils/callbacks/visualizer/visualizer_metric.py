@@ -10,14 +10,12 @@ from pathlib import Path
 import numpy as np
 import pytorch_lightning as pl
 from matplotlib import pyplot as plt
-from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 
 from anomalib.models.components import AnomalyModule
 
 from .visualizer_base import BaseVisualizerCallback
 
 
-@CALLBACK_REGISTRY
 class MetricVisualizerCallback(BaseVisualizerCallback):
     """Callback that visualizes the metric results of a model by plotting the corresponding curves.
 

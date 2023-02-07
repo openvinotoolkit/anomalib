@@ -10,7 +10,6 @@ import logging
 
 import torch
 from pytorch_lightning import Callback, LightningModule, Trainer
-from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 
 from anomalib.models.components.base.anomaly_module import AnomalyModule
 from anomalib.post_processing import NormalizationMethod, ThresholdMethod
@@ -20,7 +19,6 @@ logger = logging.getLogger(__name__)
 __all__ = ["PostProcessingConfigurationCallback"]
 
 
-@CALLBACK_REGISTRY
 class PostProcessingConfigurationCallback(Callback):
     """Post-Processing Configuration Callback.
 

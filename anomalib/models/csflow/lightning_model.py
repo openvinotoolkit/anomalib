@@ -13,7 +13,6 @@ import logging
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import Callback, EarlyStopping
-from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
@@ -27,7 +26,6 @@ logger = logging.getLogger(__name__)
 __all__ = ["Csflow", "CsflowLightning"]
 
 
-@MODEL_REGISTRY
 class Csflow(AnomalyModule):
     """Fully Convolutional Cross-Scale-Flows for Image-based Defect Detection.
 
@@ -67,6 +65,8 @@ class Csflow(AnomalyModule):
         Returns:
             Loss value
         """
+        del args, kwargs  # These variables are not used.
+
         self.model.feature_extractor.eval()
         z_dist, jacobians = self.model(batch["image"])
         loss = self.loss(z_dist, jacobians)
@@ -82,6 +82,8 @@ class Csflow(AnomalyModule):
         Returns:
             dict[str, Tensor]: Dictionary containing the anomaly map, scores, etc.
         """
+        del args, kwargs  # These variables are not used.
+
         anomaly_maps, anomaly_scores = self.model(batch["image"])
         batch["anomaly_maps"] = anomaly_maps
         batch["pred_scores"] = anomaly_scores
