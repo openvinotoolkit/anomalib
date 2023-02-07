@@ -294,7 +294,7 @@ def get_configurable_parameters(
 
     # thresholding
     if "metrics" in config.keys():
-        # NOTE: Deprecate this after v0.4.0.
+        # NOTE: Deprecate this once the new CLI is implemented.
         if "adaptive" in config.metrics.threshold.keys():
             warn(
                 DeprecationWarning(
