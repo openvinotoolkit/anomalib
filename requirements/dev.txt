@@ -1,7 +1,8 @@
 black==22.6.0
-isort==5.10.1
-pylint==2.14.5
-flake8==4.0.1
+isort==5.11.5
+pylint>=2.14.5
+flake8>=4.0.1
 pytest
 pre-commit>=2.15.0
 tox>=3.24.3
+nbmake>=1.3.5
