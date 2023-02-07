@@ -8,6 +8,7 @@ from __future__ import annotations
 import warnings
 
 import numpy as np
+import torch
 from torch import Tensor
 
 
@@ -47,11 +48,11 @@ class Denormalize:
             else:
                 raise ValueError(f"Tensor has batch size of {tensor.size(0)}. Only single batch is supported.")
 
-        for tnsr, mean, std in zip(tensor, self.mean, self.std):
-            tnsr.mul_(std).add_(mean)
+        denormalized_per_channel = [(tnsr * std) + mean for tnsr, mean, std in zip(tensor, self.mean, self.std)]
+        denormalized_tensor = torch.stack(denormalized_per_channel)
 
-        array = (tensor * 255).permute(1, 2, 0).cpu().numpy().astype(np.uint8)
-        return array
+        denormalized_array = (denormalized_tensor * 255).permute(1, 2, 0).cpu().numpy().astype(np.uint8)
+        return denormalized_array
 
     def __repr__(self) -> str:
         """Representational string."""
