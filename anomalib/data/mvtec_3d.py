@@ -10,10 +10,10 @@ License:
     Attribution-NonCommercial-ShareAlike 4.0 International License
     (CC BY-NC-SA 4.0)(https://creativecommons.org/licenses/by-nc-sa/4.0/).
 Reference:
-    - Paul Bergmann, Xin Jin, David Sattlegger, Carsten Steger: 
+    - Paul Bergmann, Xin Jin, David Sattlegger, Carsten Steger:
     The MVTec 3D-AD Dataset for Unsupervised 3D Anomaly Detection and Localization
-    in: Proceedings of the 17th International Joint Conference on Computer Vision, Imaging 
-    and Computer Graphics Theory and Applications - Volume 5: VISAPP, 202-213, 2022, 
+    in: Proceedings of the 17th International Joint Conference on Computer Vision, Imaging
+    and Computer Graphics Theory and Applications - Volume 5: VISAPP, 202-213, 2022,
     DOI: 10.5220/0010865000003124.
 """
 
@@ -29,7 +29,7 @@ from typing import Sequence
 import albumentations as A
 from pandas import DataFrame
 
-from anomalib.data.base import AnomalibDataModule, AnomalibDataset, AnomalibDepthDataset
+from anomalib.data.base import AnomalibDataModule, AnomalibDepthDataset
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
     DownloadInfo,
@@ -92,12 +92,18 @@ def make_mvtec_3d_dataset(
 
         >>> samples = make_mvtec_3d_dataset(path, split='train', split_ratio=0.1, seed=0)
         >>> samples.head()
-           path         split label image_path                           mask_path                                  depth_path                                   label_index
-        0  MVTec3D/bagel train good MVTec3D/bagel/train/good/rgb/105.png MVTec3D/bagel/ground_truth/good/gt/105.png MVTec3D/bagel/ground_truth/good/xyz/105.tiff 0
-        1  MVTec3D/bagel train good MVTec3D/bagel/train/good/rgb/017.png MVTec3D/bagel/ground_truth/good/gt/017.png MVTec3D/bagel/ground_truth/good/xyz/017.tiff 0
-        2  MVTec3D/bagel train good MVTec3D/bagel/train/good/rgb/137.png MVTec3D/bagel/ground_truth/good/gt/137.png MVTec3D/bagel/ground_truth/good/xyz/137.tiff 0
-        3  MVTec3D/bagel train good MVTec3D/bagel/train/good/rgb/152.png MVTec3D/bagel/ground_truth/good/gt/152.png MVTec3D/bagel/ground_truth/good/xyz/152.tiff 0
-        4  MVTec3D/bagel train good MVTec3D/bagel/train/good/rgb/109.png MVTec3D/bagel/ground_truth/good/gt/109.png MVTec3D/bagel/ground_truth/good/xyz/109.tiff 0
+           path         split label image_path                           mask_path
+        0  MVTec3D/bagel train good MVTec3D/bagel/train/good/rgb/105.png MVTec3D/bagel/ground_truth/good/gt/105.png
+        1  MVTec3D/bagel train good MVTec3D/bagel/train/good/rgb/017.png MVTec3D/bagel/ground_truth/good/gt/017.png
+        2  MVTec3D/bagel train good MVTec3D/bagel/train/good/rgb/137.png MVTec3D/bagel/ground_truth/good/gt/137.png
+        3  MVTec3D/bagel train good MVTec3D/bagel/train/good/rgb/152.png MVTec3D/bagel/ground_truth/good/gt/152.png
+        4  MVTec3D/bagel train good MVTec3D/bagel/train/good/rgb/109.png MVTec3D/bagel/ground_truth/good/gt/109.png
+           depth_path                                   label_index
+           MVTec3D/bagel/ground_truth/good/xyz/105.tiff 0
+           MVTec3D/bagel/ground_truth/good/xyz/017.tiff 0
+           MVTec3D/bagel/ground_truth/good/xyz/137.tiff 0
+           MVTec3D/bagel/ground_truth/good/xyz/152.tiff 0
+           MVTec3D/bagel/ground_truth/good/xyz/109.tiff 0
 
     Returns:
         DataFrame: an output dataframe containing the samples of the dataset.
@@ -111,23 +117,39 @@ def make_mvtec_3d_dataset(
         raise RuntimeError(f"Found 0 images in {root}")
 
     samples = DataFrame(samples_list, columns=["path", "split", "label", "type", "file_name"])
-    
+
     # Modify image_path column by converting to absolute path
-    samples.loc[(samples.type == "rgb"), "image_path"]  = samples.path + "/" + samples.split + "/" + samples.label + "/" + "rgb/" + samples.file_name
-    samples.loc[(samples.type == "rgb"), "depth_path"] = samples.path + "/" + samples.split + "/" + samples.label + "/" + "xyz/"+ samples.file_name.str.split('.').str[0] + ".tiff"
+    samples.loc[(samples.type == "rgb"), "image_path"] = (
+        samples.path + "/" + samples.split + "/" + samples.label + "/" + "rgb/" + samples.file_name
+    )
+    samples.loc[(samples.type == "rgb"), "depth_path"] = (
+        samples.path
+        + "/"
+        + samples.split
+        + "/"
+        + samples.label
+        + "/"
+        + "xyz/"
+        + samples.file_name.str.split(".").str[0]
+        + ".tiff"
+    )
 
     # Create label index for normal (0) and anomalous (1) images.
     samples.loc[(samples.label == "good"), "label_index"] = 0
     samples.loc[(samples.label != "good"), "label_index"] = 1
     samples.label_index = samples.label_index.astype(int)
-   
+
     # separate masks from samples
-    mask_samples = samples.loc[((samples.split == "test") & (samples.type == "rgb"))].sort_values(by="image_path", ignore_index=True)
+    mask_samples = samples.loc[((samples.split == "test") & (samples.type == "rgb"))].sort_values(
+        by="image_path", ignore_index=True
+    )
     samples = samples.sort_values(by="image_path", ignore_index=True)
 
     # assign mask paths to all test images
-    samples.loc[((samples.split == "test") & (samples.type == "rgb")), "mask_path"] = mask_samples.path + "/" + samples.split + "/" + samples.label + "/" + "gt/"+ samples.file_name
-    samples.dropna(subset=['image_path'],inplace=True)
+    samples.loc[((samples.split == "test") & (samples.type == "rgb")), "mask_path"] = (
+        mask_samples.path + "/" + samples.split + "/" + samples.label + "/" + "gt/" + samples.file_name
+    )
+    samples.dropna(subset=["image_path"], inplace=True)
 
     # assert that the right mask files are associated with the right test images
     assert (
@@ -137,10 +159,19 @@ def make_mvtec_3d_dataset(
     ), "Mismatch between anomalous images and ground truth masks. Make sure the mask files in 'ground_truth' \
               folder follow the same naming convention as the anomalous images in the dataset (e.g. image: '000.png', \
               mask: '000.png' or '000_mask.png')."
+    
+    # assert that the right depth image files are associated with the right test images
+    assert (
+        samples.loc[samples.label_index == 1]
+        .apply(lambda x: Path(x.image_path).stem in Path(x.depth_path).stem, axis=1)
+        .all()
+    ), "Mismatch between anomalous images and depth images. Make sure the mask files in 'xyz' \
+              folder follow the same naming convention as the anomalous images in the dataset (e.g. image: '000.png', \
+              depth: '000.tiff')."
 
     if split:
         samples = samples[samples.split == split].reset_index(drop=True)
-    
+
     return samples
 
 
@@ -152,7 +183,7 @@ class MVTec3DDataset(AnomalibDepthDataset):
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
         root (Path | str): Path to the root of the dataset
-        category (str): Sub-category of the dataset, e.g. 'bottle'
+        category (str): Sub-category of the dataset, e.g. 'bagel'
     """
 
     def __init__(
@@ -263,39 +294,49 @@ class MVTec3D(AnomalibDataModule):
 
 if __name__ == "__main__":
     import pandas as pd
-    pd.set_option('display.max_rows', 500)
-    pd.set_option('display.max_columns', 20)
-    pd.set_option('display.width', 1000)
+
+    pd.set_option("display.max_rows", 500)
+    pd.set_option("display.max_columns", 20)
+    pd.set_option("display.width", 1000)
     from albumentations.pytorch import ToTensorV2
 
-    augment = A.to_dict(A.Compose(
-                    [
-                        A.Resize(height=256, width=256, always_apply=True),
-                        #A.HorizontalFlip(p=0.5),
-                        A.VerticalFlip(p=0.5),
-                        A.ElasticTransform(alpha =1.3, sigma=17, alpha_affine =12, p=0.2),
-                        A.ShiftScaleRotate(p=0.9),
-                        #A.ToGray(always_apply=True),
-                        A.RandomBrightnessContrast(p=0.3),
-                        A.Blur(blur_limit=[5,5], always_apply=True),
-                        #A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
-                        ToTensorV2(),
-                    ], additional_targets={'image': 'image', 'depth_image': 'image'}), )
-    mvtec_3d = MVTec3D(root="./datasets/mvtec3d", category="bagel", image_size=256, transform_config_train=A.from_dict(augment), transform_config_eval=A.from_dict(augment))
+    augment = A.to_dict(
+        A.Compose(
+            [
+                A.Resize(height=256, width=256, always_apply=True),
+                # A.HorizontalFlip(p=0.5),
+                A.VerticalFlip(p=0.5),
+                A.ElasticTransform(alpha=1.3, sigma=17, alpha_affine=12, p=0.2),
+                A.ShiftScaleRotate(p=0.9),
+                # A.ToGray(always_apply=True),
+                A.RandomBrightnessContrast(p=0.3),
+                A.Blur(blur_limit=[5, 5], always_apply=True),
+                # A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+                ToTensorV2(),
+            ],
+            additional_targets={"image": "image", "depth_image": "image"},
+        ),
+    )
+    mvtec_3d = MVTec3D(
+        root="./datasets/mvtec3d",
+        category="bagel",
+        image_size=256,
+        transform_config_train=A.from_dict(augment),
+        transform_config_eval=A.from_dict(augment),
+    )
     mvtec_3d.setup()
-    #print(mvtec_3d.train_data.samples)
+    # print(mvtec_3d.train_data.samples)
     data = mvtec_3d.test_data[3]
+    print(len(mvtec_3d.train_data))
+    print(len(mvtec_3d.test_data))
     print(f'Image Shape: {data["image"].shape} Mask Shape: {data["mask"].shape}')
     print(data["depth_image"].shape)
 
     import matplotlib.pyplot as plt
 
-
-
-    f, axarr = plt.subplots(3,1) 
+    f, axarr = plt.subplots(3, 1)
     axarr[0].imshow(data["depth_image"].permute(1, 2, 0)[:, :, 2])
     axarr[1].imshow(data["image"].permute(1, 2, 0))
     axarr[2].imshow(data["mask"])
 
     plt.show()
-

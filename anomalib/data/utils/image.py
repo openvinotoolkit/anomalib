@@ -11,11 +11,10 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+import tifffile as tiff
 import torch.nn.functional as F
 from torch import Tensor
 from torchvision.datasets.folder import IMG_EXTENSIONS
-
-import tifffile as tiff
 
 
 def get_image_filenames(path: str | Path) -> list[Path]:
@@ -207,6 +206,7 @@ def read_image(path: str | Path, image_size: int | tuple[int, int] | None = None
 
     return image
 
+
 def read_depth_image(path: str | Path) -> np.ndarray:
     """Read tiff depth image from disk.
 
@@ -223,6 +223,7 @@ def read_depth_image(path: str | Path) -> np.ndarray:
     image = tiff.imread(path)
 
     return image
+
 
 def pad_nextpow2(batch: Tensor) -> Tensor:
     """Compute required padding from input size and return padded images.

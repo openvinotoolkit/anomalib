@@ -3,21 +3,15 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import Callable
 
 import albumentations as A
 import cv2
 import numpy as np
-import pandas as pd
-import torch
-from pandas import DataFrame
 from torch import Tensor
 
-from anomalib.data.base.datamodule import AnomalibDataModule
 from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.task_type import TaskType
-from anomalib.data.utils import masks_to_boxes, read_image, read_depth_image
-
+from anomalib.data.utils import masks_to_boxes, read_depth_image, read_image
 
 
 class AnomalibDepthDataset(AnomalibDataset, ABC):
@@ -28,12 +22,10 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
     """
 
-    def __init__(
-        self, task: TaskType, transform: A.Compose) -> None:
+    def __init__(self, task: TaskType, transform: A.Compose) -> None:
         super().__init__(task, transform)
 
         self.transform = transform
-
 
     def __getitem__(self, index: int) -> dict[str, str | Tensor]:
         """Return rgb image, depth image and mask."""

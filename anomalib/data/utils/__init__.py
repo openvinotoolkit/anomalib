@@ -11,8 +11,8 @@ from .image import (
     generate_output_image_filename,
     get_image_filenames,
     get_image_height_and_width,
+    read_depth_image,
     read_image,
-    read_depth_image
 )
 from .split import (
     Split,

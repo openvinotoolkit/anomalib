@@ -14,7 +14,7 @@ import albumentations as A
 from pandas import DataFrame
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
-from anomalib.data.base import AnomalibDataModule, AnomalibDataset
+from anomalib.data.base import AnomalibDataModule, AnomalibDataset, AnomalibDepthDataset
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
     InputNormalizationMethod,
@@ -116,6 +116,13 @@ def make_folder_dataset(
             if `None`. Defaults to None.
         mask_dir (str | Path | None, optional): Path to the directory containing
             the mask annotations. Defaults to None.
+        normal_depth_dir (str | Path | None, optional): Path to the directory containing
+            normal depth images for the test dataset. Normal test depth images will be a split of `normal_dir`
+        abnormal_depth_dir (str | Path | None, optional): Path to the directory containing
+            abnormal depth images for the test dataset.
+        normal_test_depth_dir (str | Path | None, optional): Path to the directory containing
+            normal depth images for the test dataset. Normal test images will be a split of `normal_dir`
+            if `None`. Defaults to None.
         split (str | Split | None, optional): Dataset split (ie., Split.FULL, Split.TRAIN or Split.TEST).
             Defaults to None.
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
@@ -128,6 +135,10 @@ def make_folder_dataset(
     abnormal_dir = _resolve_path(abnormal_dir, root) if abnormal_dir is not None else None
     normal_test_dir = _resolve_path(normal_test_dir, root) if normal_test_dir is not None else None
     mask_dir = _resolve_path(mask_dir, root) if mask_dir is not None else None
+    normal_depth_dir = _resolve_path(normal_depth_dir, root) if normal_depth_dir is not None else None
+    abnormal_depth_dir = _resolve_path(abnormal_depth_dir, root) if abnormal_depth_dir is not None else None
+    normal_test_depth_dir = _resolve_path(normal_test_depth_dir, root) if normal_test_depth_dir is not None else None
+
     assert normal_dir.is_dir(), "A folder location must be provided in normal_dir."
 
     filenames = []
@@ -139,33 +150,39 @@ def make_folder_dataset(
 
     if normal_test_dir:
         dirs = {**dirs, **{"normal_test": normal_test_dir}}
-    
+
     if normal_depth_dir:
         dirs = {**dirs, **{"normal_depth": normal_depth_dir}}
 
     if abnormal_depth_dir:
         dirs = {**dirs, **{"abnormal_depth": abnormal_depth_dir}}
-    
+
     if normal_test_depth_dir:
-        dirs = {**dirs, **{"normal_test_depth": abnormal_depth_dir}}
+        dirs = {**dirs, **{"normal_test_depth": normal_test_depth_dir}}
 
     for dir_type, path in dirs.items():
         filename, label = _prepare_files_labels(path, dir_type, extensions)
         filenames += filename
         labels += label
-
+    
     samples = DataFrame({"image_path": filenames, "label": labels, "mask_path": ""})
-
+    samples = samples.sort_values(by="image_path", ignore_index=True)
+    
     # Create label index for normal (0) and abnormal (1) images.
-    samples.loc[(samples.label == "normal") | (samples.label == "normal_test"), "label_index"] = 0
-    samples.loc[(samples.label == "abnormal"), "label_index"] = 1
+    samples.loc[(samples.label == "normal") | 
+                (samples.label == "normal_test") | 
+                (samples.label == "normal_depth") | 
+                (samples.label == "normal_test_depth"), "label_index"] = 0
+    samples.loc[(samples.label == "abnormal") | 
+                (samples.label == "abnormal_depth"), "label_index"] = 1
     samples.label_index = samples.label_index.astype(int)
 
+    #
     # If a path to mask is provided, add it to the sample dataframe.
     if mask_dir is not None:
         mask_dir = _check_and_convert_path(mask_dir)
         for index, row in samples.iterrows():
-            if row.label_index == 1:
+            if row.label_index == 1 and not "depth" in row.label:
                 rel_image_path = row.image_path.relative_to(abnormal_dir)
                 samples.loc[index, "mask_path"] = str(mask_dir / rel_image_path)
 
@@ -174,6 +191,30 @@ def make_folder_dataset(
         assert samples.mask_path.apply(
             lambda x: Path(x).exists() if x != "" else True
         ).all(), f"missing mask files, mask_dir={mask_dir}"
+
+
+    if normal_depth_dir is not None:
+        samples.loc[samples.label == "normal", "depth_path"] = samples.loc[samples.label == "normal_depth"].image_path.values
+        samples.loc[samples.label == "abnormal", "depth_path"] = samples.loc[samples.label == "abnormal_depth"].image_path.values
+
+        if normal_test_dir is not None:
+            samples.loc[samples.label == "normal_test", "depth_path"] = samples.loc[samples.label == "normal_test_depth"].image_path.values
+
+        samples = samples.loc[(samples.label == "normal") | (samples.label == "abnormal") | (samples.label == "normal_test")]
+
+        # make sure all every rgb image has a corresponding depth image and that the file exists
+        assert (
+            samples.loc[samples.label_index == 1]
+            .apply(lambda x: Path(x.image_path).stem in Path(x.depth_path).stem, axis=1)
+            .all()
+        ), "Mismatch between anomalous images and depth images. Make sure the mask files in 'xyz' \
+                folder follow the same naming convention as the anomalous images in the dataset (e.g. image: '000.png', \
+                depth: '000.tiff')."
+
+        assert samples.depth_path.apply(
+            lambda x: Path(x).exists() if x != "" else True
+        ).all(), f"missing depth image files"
+        
 
     # Ensure the pathlib objects are converted to str.
     # This is because torch dataloader doesn't like pathlib.
@@ -193,7 +234,7 @@ def make_folder_dataset(
     return samples
 
 
-class FolderDataset(AnomalibDataset):
+class FolderDataset(AnomalibDepthDataset):
     """Folder dataset.
 
     Args:
@@ -208,7 +249,13 @@ class FolderDataset(AnomalibDataset):
             normal images for the test dataset. Defaults to None.
         mask_dir (str | Path | None, optional): Path to the directory containing
             the mask annotations. Defaults to None.
-
+        normal_depth_dir (str | Path | None, optional): Path to the directory containing
+            normal depth images for the test dataset. Normal test depth images will be a split of `normal_dir`
+        abnormal_depth_dir (str | Path | None, optional): Path to the directory containing
+            abnormal depth images for the test dataset.
+        normal_test_depth_dir (str | Path | None, optional): Path to the directory containing
+            normal depth images for the test dataset. Normal test images will be a split of `normal_dir`
+            if `None`. Defaults to None.
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
             directory.
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
@@ -227,9 +274,13 @@ class FolderDataset(AnomalibDataset):
         abnormal_dir: str | Path | None = None,
         normal_test_dir: str | Path | None = None,
         mask_dir: str | Path | None = None,
+        normal_depth_dir: str | Path | None = None,
+        abnormal_depth_dir: str | Path | None = None,
+        normal_test_depth_dir: str | Path | None = None,
         split: str | Split | None = None,
         extensions: tuple[str, ...] | None = None,
     ) -> None:
+        
         super().__init__(task, transform)
 
         self.split = split
@@ -238,6 +289,9 @@ class FolderDataset(AnomalibDataset):
         self.abnormal_dir = abnormal_dir
         self.normal_test_dir = normal_test_dir
         self.mask_dir = mask_dir
+        self.normal_depth_dir = normal_depth_dir
+        self.abnormal_depth_dir = abnormal_depth_dir
+        self.normal_test_depth_dir = normal_test_depth_dir
         self.extensions = extensions
 
     def _setup(self) -> None:
@@ -248,6 +302,9 @@ class FolderDataset(AnomalibDataset):
             abnormal_dir=self.abnormal_dir,
             normal_test_dir=self.normal_test_dir,
             mask_dir=self.mask_dir,
+            normal_depth_dir=self.normal_depth_dir,
+            abnormal_depth_dir=self.abnormal_depth_dir,
+            normal_test_depth_dir=self.normal_test_depth_dir,
             split=self.split,
             extensions=self.extensions,
         )
@@ -266,6 +323,13 @@ class Folder(AnomalibDataModule):
             normal images for the test dataset. Defaults to None.
         mask_dir (str | Path | None, optional): Path to the directory containing
             the mask annotations. Defaults to None.
+        normal_depth_dir (str | Path | None, optional): Path to the directory containing
+            normal depth images for the test dataset. Normal test depth images will be a split of `normal_dir`
+        abnormal_depth_dir (str | Path | None, optional): Path to the directory containing
+            abnormal depth images for the test dataset.
+        normal_test_depth_dir (str | Path | None, optional): Path to the directory containing
+            normal depth images for the test dataset. Normal test images will be a split of `normal_dir`
+            if `None`. Defaults to None.
         normal_split_ratio (float, optional): Ratio to split normal training images and add to the
             test set in case test set doesn't contain any normal images.
             Defaults to 0.2.
@@ -301,6 +365,9 @@ class Folder(AnomalibDataModule):
         abnormal_dir: str | Path | None = None,
         normal_test_dir: str | Path | None = None,
         mask_dir: str | Path | None = None,
+        normal_depth_dir: str | Path | None = None,
+        abnormal_depth_dir: str | Path | None = None,
+        normal_test_depth_dir: str | Path | None = None,
         normal_split_ratio: float = 0.2,
         extensions: tuple[str] | None = None,
         image_size: int | tuple[int, int] | None = None,
@@ -343,7 +410,7 @@ class Folder(AnomalibDataModule):
             center_crop=center_crop,
             normalization=InputNormalizationMethod(normalization),
         )
-
+        
         self.train_data = FolderDataset(
             task=task,
             transform=transform_train,
@@ -353,6 +420,9 @@ class Folder(AnomalibDataModule):
             abnormal_dir=abnormal_dir,
             normal_test_dir=normal_test_dir,
             mask_dir=mask_dir,
+            normal_depth_dir=normal_depth_dir,
+            abnormal_depth_dir=abnormal_depth_dir,
+            normal_test_depth_dir=normal_test_depth_dir,
             extensions=extensions,
         )
 
@@ -364,6 +434,65 @@ class Folder(AnomalibDataModule):
             normal_dir=normal_dir,
             abnormal_dir=abnormal_dir,
             normal_test_dir=normal_test_dir,
+            normal_depth_dir=normal_depth_dir,
+            abnormal_depth_dir=abnormal_depth_dir,
+            normal_test_depth_dir=normal_test_depth_dir,
             mask_dir=mask_dir,
             extensions=extensions,
         )
+
+if __name__ == "__main__":
+    import pandas as pd
+
+    pd.set_option('display.max_columns', None)
+    pd.set_option('display.max_rows', None)
+    pd.set_option("display.width", 2000)
+    pd.set_option('display.max_colwidth', None)
+    from albumentations.pytorch import ToTensorV2
+
+    augment = A.to_dict(
+        A.Compose(
+            [
+                A.Resize(height=256, width=256, always_apply=True),
+                # A.HorizontalFlip(p=0.5),
+                A.VerticalFlip(p=0.5),
+                A.ElasticTransform(alpha=1.3, sigma=17, alpha_affine=12, p=0.2),
+                A.ShiftScaleRotate(p=0.9),
+                # A.ToGray(always_apply=True),
+                A.RandomBrightnessContrast(p=0.3),
+                A.Blur(blur_limit=[5, 5], always_apply=True),
+                # A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+                ToTensorV2(),
+            ],
+            additional_targets={"image": "image", "depth_image": "image"},
+        ),
+    )
+    folder_dataset_root = Path("C:/Users/REH/anomalib/datasets/mvtec3d")
+
+    mvtec_3d = Folder(
+        root=folder_dataset_root ,
+        normal_dir=folder_dataset_root / "bagel/train/good/rgb",
+        abnormal_dir= folder_dataset_root / "bagel/test/combined/rgb",
+        normal_test_dir=folder_dataset_root / "bagel/test/good/rgb",
+        mask_dir=folder_dataset_root / "bagel/test/combined/gt",
+        normal_depth_dir=folder_dataset_root / "bagel/train/good/xyz",
+        abnormal_depth_dir=folder_dataset_root / "bagel/test/combined/xyz",#
+        normal_test_depth_dir=folder_dataset_root /"bagel/test/good/xyz",
+        image_size=256,
+        transform_config_train=A.from_dict(augment),
+        transform_config_eval=A.from_dict(augment),
+    )
+    mvtec_3d.setup()
+    # print(mvtec_3d.train_data.samples)
+    data = mvtec_3d.test_data[3]
+    print(f'Image Shape: {data["image"].shape} Mask Shape: {data["mask"].shape}')
+    print(data["depth_image"].shape)
+
+    import matplotlib.pyplot as plt
+
+    f, axarr = plt.subplots(3, 1)
+    axarr[0].imshow(data["depth_image"].permute(1, 2, 0)[:, :, 2])
+    axarr[1].imshow(data["image"].permute(1, 2, 0))
+    axarr[2].imshow(data["mask"])
+
+    plt.show()
