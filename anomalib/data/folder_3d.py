@@ -11,7 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import albumentations as A
-from pandas import DataFrame
+from pandas import DataFrame, isna
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDepthDataset
@@ -159,7 +159,7 @@ def make_folder_dataset(
 
     if normal_test_depth_dir:
         dirs = {**dirs, **{"normal_test_depth": normal_test_depth_dir}}
-    
+
     if mask_dir:
         dirs = {**dirs, **{"mask_dir": mask_dir}}
 
@@ -167,7 +167,7 @@ def make_folder_dataset(
         filename, label = _prepare_files_labels(path, dir_type, extensions)
         filenames += filename
         labels += label
-    
+
     samples = DataFrame({"image_path": filenames, "label": labels, "mask_path": ""})
     samples = samples.sort_values(by="image_path", ignore_index=True)
 
@@ -178,33 +178,38 @@ def make_folder_dataset(
 
     # If a path to mask is provided, add it to the sample dataframe.
     if normal_depth_dir is not None:
-        samples.loc[samples.label == "normal", "depth_path"] = samples.loc[samples.label == "normal_depth"].image_path.values
-        samples.loc[samples.label == "abnormal", "depth_path"] = samples.loc[samples.label == "abnormal_depth"].image_path.values
+        samples.loc[samples.label == "normal", "depth_path"] = samples.loc[
+            samples.label == "normal_depth"
+        ].image_path.values
+        samples.loc[samples.label == "abnormal", "depth_path"] = samples.loc[
+            samples.label == "abnormal_depth"
+        ].image_path.values
 
         if normal_test_dir is not None:
-            samples.loc[samples.label == "normal_test", "depth_path"] = samples.loc[samples.label == "normal_test_depth"].image_path.values
-        
-        #samples = samples.loc[(samples.label == "normal") | (samples.label == "abnormal") | (samples.label == "normal_test")]
-        
-        #samples = samples[pd.isnull(samples['label'])]
+            samples.loc[samples.label == "normal_test", "depth_path"] = samples.loc[
+                samples.label == "normal_test_depth"
+            ].image_path.values
+
         # make sure all every rgb image has a corresponding depth image and that the file exists
         assert (
             samples.loc[samples.label_index == 1]
             .apply(lambda x: Path(x.image_path).stem in Path(x.depth_path).stem, axis=1)
             .all()
         ), "Mismatch between anomalous images and depth images. Make sure the mask files in 'xyz' \
-                folder follow the same naming convention as the anomalous images in the dataset (e.g. image: '000.png', \
-                depth: '000.tiff')."
+            folder follow the same naming convention as the anomalous images in the dataset \
+            (e.g. image: '000.png', depth: '000.tiff')."
 
         assert samples.depth_path.apply(
-            lambda x: Path(x).exists() if not pd.isna(x) else True
-        ).all(), f"missing depth image files"
+            lambda x: Path(x).exists() if not isna(x) else True
+        ).all(), "missing depth image files"
 
         samples = samples.astype({"depth_path": "str"})
-    
+
     # If a path to mask is provided, add it to the sample dataframe.
     if mask_dir is not None:
-        samples.loc[samples.label == "abnormal", "mask_path"] = samples.loc[samples.label == "mask_dir"].image_path.values
+        samples.loc[samples.label == "abnormal", "mask_path"] = samples.loc[
+            samples.label == "mask_dir"
+        ].image_path.values
         samples = samples.astype({"mask_path": "str"})
 
         # make sure all the files exist
@@ -212,8 +217,10 @@ def make_folder_dataset(
             lambda x: Path(x).exists() if x != "" else True
         ).all(), f"missing mask files, mask_dir={mask_dir}"
 
-    #remove all the rows with temporal image samples that have already been assigned
-    samples = samples.loc[(samples.label == "normal") | (samples.label == "abnormal") | (samples.label == "normal_test")]
+    # remove all the rows with temporal image samples that have already been assigned
+    samples = samples.loc[
+        (samples.label == "normal") | (samples.label == "abnormal") | (samples.label == "normal_test")
+    ]
 
     # Ensure the pathlib objects are converted to str.
     # This is because torch dataloader doesn't like pathlib.
@@ -279,7 +286,7 @@ class Folder3DDataset(AnomalibDepthDataset):
         split: str | Split | None = None,
         extensions: tuple[str, ...] | None = None,
     ) -> None:
-        
+
         super().__init__(task, transform)
 
         self.split = split
@@ -409,7 +416,7 @@ class Folder3D(AnomalibDataModule):
             center_crop=center_crop,
             normalization=InputNormalizationMethod(normalization),
         )
-        
+
         self.train_data = Folder3DDataset(
             task=task,
             transform=transform_train,

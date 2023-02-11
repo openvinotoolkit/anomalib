@@ -13,8 +13,10 @@ from .avenue import Avenue
 from .base import AnomalibDataModule, AnomalibDataset
 from .btech import BTech
 from .folder import Folder
+from .folder_3d import Folder3D
 from .inference import InferenceDataset
 from .mvtec import MVTec
+from .mvtec_3d import MVTec3D
 from .shanghaitech import ShanghaiTech
 from .task_type import TaskType
 from .ucsd_ped import UCSDped
@@ -187,8 +189,10 @@ __all__ = [
     "get_datamodule",
     "BTech",
     "Folder",
+    "Folder3D",
     "InferenceDataset",
     "MVTec",
+    "MVTec3D",
     "Avenue",
     "UCSDped",
     "TaskType",

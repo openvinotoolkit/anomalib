@@ -160,7 +160,7 @@ def make_mvtec_3d_dataset(
     ), "Mismatch between anomalous images and ground truth masks. Make sure the mask files in 'ground_truth' \
               folder follow the same naming convention as the anomalous images in the dataset (e.g. image: '000.png', \
               mask: '000.png' or '000_mask.png')."
-    
+
     # assert that the right depth image files are associated with the right test images
     assert (
         samples.loc[samples.label_index == 1]
