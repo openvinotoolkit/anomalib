@@ -119,13 +119,14 @@ class AnomalibDataset(Dataset, ABC):
 
         image = read_image(image_path)
         item = dict(image_path=image_path, label=label_index)
-
+        print(mask_path, label_index)
         if self.task == TaskType.CLASSIFICATION:
             transformed = self.transform(image=image)
             item["image"] = transformed["image"]
         elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
+            
             if label_index == 0:
                 mask = np.zeros(shape=image.shape[:2])
             else:

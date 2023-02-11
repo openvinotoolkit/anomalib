@@ -14,7 +14,7 @@ import albumentations as A
 from pandas import DataFrame
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
-from anomalib.data.base import AnomalibDataModule, AnomalibDataset, AnomalibDepthDataset
+from anomalib.data.base import AnomalibDataModule, AnomalibDepthDataset
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
     InputNormalizationMethod,
@@ -233,7 +233,7 @@ def make_folder_dataset(
     return samples
 
 
-class FolderDataset(AnomalibDataset): #AnomalibDepthDataset
+class Folder3DDataset(AnomalibDepthDataset):
     """Folder dataset.
 
     Args:
@@ -309,7 +309,7 @@ class FolderDataset(AnomalibDataset): #AnomalibDepthDataset
         )
 
 
-class Folder(AnomalibDataModule):
+class Folder3D(AnomalibDataModule):
     """Folder DataModule.
 
     Args:
@@ -410,7 +410,7 @@ class Folder(AnomalibDataModule):
             normalization=InputNormalizationMethod(normalization),
         )
         
-        self.train_data = FolderDataset(
+        self.train_data = Folder3DDataset(
             task=task,
             transform=transform_train,
             split=Split.TRAIN,
@@ -425,7 +425,7 @@ class Folder(AnomalibDataModule):
             extensions=extensions,
         )
 
-        self.test_data = FolderDataset(
+        self.test_data = Folder3DDataset(
             task=task,
             transform=transform_eval,
             split=Split.TEST,
@@ -468,7 +468,7 @@ if __name__ == "__main__":
     )
     folder_dataset_root = Path("C:/Users/REH/anomalib/datasets/mvtec3d")
 
-    mvtec_3d = Folder(
+    mvtec_3d = Folder3D(
         root=folder_dataset_root ,
         normal_dir=folder_dataset_root / "bagel/train/good/rgb",
         abnormal_dir= folder_dataset_root / "bagel/test/combined/rgb",
