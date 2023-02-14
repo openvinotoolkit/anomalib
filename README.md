@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/source/images/logos/anomalib-wide-blue.png" width="600px">
+<img src="https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/logos/anomalib-wide-blue.png" width="600px">
 
 **A library for benchmarking, developing and deploying deep learning anomaly detection algorithms**
 
@@ -19,7 +19,7 @@
 [![black](https://img.shields.io/badge/code%20style-black-000000.svg)]()
 [![Nightly-Regression Test](https://github.com/openvinotoolkit/anomalib/actions/workflows/nightly.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/nightly.yml)
 [![Pre-Merge Checks](https://github.com/openvinotoolkit/anomalib/actions/workflows/pre_merge.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/pre_merge.yml)
-[![Codacy Badge](https://app.codacy.com/project/badge/Coverage/684927c1c76c4c5e94bb53480812fbbb)](https://www.codacy.com/gh/openvinotoolkit/anomalib/dashboard?utm_source=github.com&utm_medium=referral&utm_content=openvinotoolkit/anomalib&utm_campaign=Badge_Coverage)
+[![codecov](https://codecov.io/gh/openvinotoolkit/anomalib/branch/main/graph/badge.svg?token=Z6A07N1BZK)](https://codecov.io/gh/openvinotoolkit/anomalib)
 [![Docs](https://github.com/openvinotoolkit/anomalib/actions/workflows/docs.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/docs.yml)
 [![Downloads](https://static.pepy.tech/personalized-badge/anomalib?period=total&units=international_system&left_color=grey&right_color=green&left_text=PyPI%20Downloads)](https://pepy.tech/project/anomalib)
 
@@ -31,7 +31,7 @@
 
 Anomalib is a deep learning library that aims to collect state-of-the-art anomaly detection algorithms for benchmarking on both public and private datasets. Anomalib provides several ready-to-use implementations of anomaly detection algorithms described in the recent literature, as well as a set of tools that facilitate the development and implementation of custom models. The library has a strong focus on image-based anomaly detection, where the goal of the algorithm is to identify anomalous images, or anomalous pixel regions within images in a dataset. Anomalib is constantly updated with new algorithms and training/inference extensions, so keep checking!
 
-![Sample Image](./docs/source/images/readme.png)
+![Sample Image](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/readme.png)
 
 ## Key features
 
@@ -75,8 +75,6 @@ pip install -e .
 ```
 
 # Training
-
-## ⚠️ Anomalib < v.0.4.0
 
 By default [`python tools/train.py`](https://github.com/openvinotoolkit/anomalib/blob/main/tools/train.py)
 runs [PADIM](https://arxiv.org/abs/2011.08785) model on `leather` category from the [MVTec AD](https://www.mvtec.com/company/research/datasets/mvtec-ad) [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/) dataset.
@@ -134,24 +132,11 @@ Tips:
 
 The backbone can be set in the config file, two examples below.
 
-Anomalib < v.0.4.0
-
 ```yaml
 model:
   name: cflow
   backbone: wide_resnet50_2
   pre_trained: true
-Anomalib > v.0.4.0 Beta - Subject to Change
-```
-
-Anomalib >= v.0.4.0
-
-```yaml
-model:
-  class_path: anomalib.models.Cflow
-  init_args:
-    backbone: wide_resnet50_2
-    pre_trained: true
 ```
 
 ## Custom Dataset
@@ -187,25 +172,7 @@ dataset:
     random_tile_count: 16
 ```
 
-## ⚠️ Anomalib > v.0.4.0 Beta - Subject to Change
-
-We introduce a new CLI approach that uses [PyTorch Lightning CLI](https://pytorch-lightning.readthedocs.io/en/stable/common/lightning_cli.html). To train a model using the new CLI, one would call the following:
-
-```bash
-anomalib fit --config <path/to/new/config/file>
-```
-
-For instance, to train a [PatchCore](https://github.com/openvinotoolkit/anomalib/tree/main/anomalib/models/patchcore) model, the following command would be run:
-
-```bash
-anomalib fit --config ./configs/model/patchcore.yaml
-```
-
-The new CLI approach offers a lot more flexibility, details of which are explained in the [documentation](https://pytorch-lightning.readthedocs.io/en/stable/common/lightning_cli.html).
-
 # Inference
-
-## ⚠️ Anomalib < v.0.4.0
 
 Anomalib includes multiple tools, including Lightning, Gradio, and OpenVINO inferencers, for performing inference with a trained model.
 

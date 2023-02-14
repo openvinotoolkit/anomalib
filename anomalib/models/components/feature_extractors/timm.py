@@ -112,6 +112,6 @@ class FeatureExtractor(TimmFeatureExtractor):
     def __init__(self, *args, **kwargs):
         logger.warning(
             "FeatureExtractor is deprecated. Use TimmFeatureExtractor instead."
-            " Both FeatureExtractor and TimmFeatureExtractor will be removed in version 2023.1"
+            " Both FeatureExtractor and TimmFeatureExtractor will be removed in a future release."
         )
         super().__init__(*args, **kwargs)

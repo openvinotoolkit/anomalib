@@ -21,7 +21,7 @@ repos:
 
   # python import sorting
   - repo: https://github.com/PyCQA/isort
-    rev: 5.10.1
+    rev: 5.11.5
     hooks:
       - id: isort
 
@@ -75,7 +75,6 @@ repos:
       - id: nbqa-black
       - id: nbqa-isort
       - id: nbqa-flake8
-        args: ["--max-line-length=120", "--ignore=E203,W503"]
       - id: nbqa-pylint
 
   - repo: https://github.com/pre-commit/mirrors-prettier

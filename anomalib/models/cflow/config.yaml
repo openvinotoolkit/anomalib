@@ -72,49 +72,43 @@ optimization:
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
-  accelerator: auto # <"cpu", "gpu", "tpu", "ipu", "hpu", "auto">
-  accumulate_grad_batches: 1
-  amp_backend: native
-  auto_lr_find: false
-  auto_scale_batch_size: false
-  auto_select_gpus: false
-  benchmark: false
-  check_val_every_n_epoch: 1
-  default_root_dir: null
-  detect_anomaly: false
-  deterministic: false
-  devices: 1
   enable_checkpointing: true
-  enable_model_summary: true
-  enable_progress_bar: true
-  fast_dev_run: false
-  gpus: null # Set automatically
+  default_root_dir: null
   gradient_clip_val: 0
-  ipus: null
-  limit_predict_batches: 1.0
-  limit_test_batches: 1.0
+  gradient_clip_algorithm: norm
+  num_nodes: 1
+  devices: 1
+  enable_progress_bar: true
+  overfit_batches: 0.0
+  track_grad_norm: -1
+  check_val_every_n_epoch: 1 # Don't validate before extracting features.
+  fast_dev_run: false
+  accumulate_grad_batches: 1
+  max_epochs: 50
+  min_epochs: null
+  max_steps: -1
+  min_steps: null
+  max_time: null
   limit_train_batches: 1.0
   limit_val_batches: 1.0
+  limit_test_batches: 1.0
+  limit_predict_batches: 1.0
+  val_check_interval: 1.0 # Don't validate before extracting features.
   log_every_n_steps: 50
-  log_gpu_memory: null
-  max_epochs: 50
-  max_steps: -1
-  max_time: null
-  min_epochs: null
-  min_steps: null
-  move_metrics_to_cpu: false
-  multiple_trainloader_mode: max_size_cycle
-  num_nodes: 1
-  num_processes: null
-  num_sanity_val_steps: 0
-  overfit_batches: 0.0
-  plugins: null
-  precision: 32
-  profiler: null
-  reload_dataloaders_every_n_epochs: 0
-  replace_sampler_ddp: true
+  accelerator: auto # <"cpu", "gpu", "tpu", "ipu", "hpu", "auto">
   strategy: null
   sync_batchnorm: false
-  tpu_cores: null
-  track_grad_norm: -1
-  val_check_interval: 1.0
+  precision: 32
+  enable_model_summary: true
+  num_sanity_val_steps: 0
+  profiler: null
+  benchmark: false
+  deterministic: false
+  reload_dataloaders_every_n_epochs: 0
+  auto_lr_find: false
+  replace_sampler_ddp: true
+  detect_anomaly: false
+  auto_scale_batch_size: false
+  plugins: null
+  move_metrics_to_cpu: false
+  multiple_trainloader_mode: max_size_cycle

@@ -10,7 +10,6 @@ from __future__ import annotations
 
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
-from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor, optim
 
@@ -20,7 +19,6 @@ from .loss import ReverseDistillationLoss
 from .torch_model import ReverseDistillationModel
 
 
-@MODEL_REGISTRY
 class ReverseDistillation(AnomalyModule):
     """PL Lightning Module for Reverse Distillation Algorithm.
 
@@ -88,6 +86,8 @@ class ReverseDistillation(AnomalyModule):
         Returns:
           Feature Map
         """
+        del args, kwargs  # These variables are not used.
+
         loss = self.loss(*self.model(batch["image"]))
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
@@ -105,6 +105,8 @@ class ReverseDistillation(AnomalyModule):
           Dictionary containing images, anomaly maps, true labels and masks.
           These are required in `validation_epoch_end` for feature concatenation.
         """
+        del args, kwargs  # These variables are not used.
+
         batch["anomaly_maps"] = self.model(batch["image"])
         return batch
 

@@ -8,7 +8,6 @@ from __future__ import annotations
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
-from pytorch_lightning.utilities.cli import MODEL_REGISTRY
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor, optim
 
@@ -17,7 +16,6 @@ from anomalib.models.fastflow.loss import FastflowLoss
 from anomalib.models.fastflow.torch_model import FastflowModel
 
 
-@MODEL_REGISTRY
 class Fastflow(AnomalyModule):
     """PL Lightning Module for the FastFlow algorithm.
 
@@ -61,6 +59,8 @@ class Fastflow(AnomalyModule):
         Returns:
             STEP_OUTPUT: Dictionary containing the loss value.
         """
+        del args, kwargs  # These variables are not used.
+
         hidden_variables, jacobians = self.model(batch["image"])
         loss = self.loss(hidden_variables, jacobians)
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
@@ -75,6 +75,8 @@ class Fastflow(AnomalyModule):
         Returns:
             STEP_OUTPUT | None: batch dictionary containing anomaly-maps.
         """
+        del args, kwargs  # These variables are not used.
+
         anomaly_maps = self.model(batch["image"])
         batch["anomaly_maps"] = anomaly_maps
         return batch

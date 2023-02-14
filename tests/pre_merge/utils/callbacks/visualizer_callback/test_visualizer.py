@@ -39,7 +39,7 @@ def test_add_images(task):
         logger = get_dummy_logger(config, dir_loc)
         model = get_dummy_module(config)
         trainer = pl.Trainer(
-            callbacks=model.callbacks, logger=logger, checkpoint_callback=False, default_root_dir=config.project.path
+            callbacks=model.callbacks, logger=logger, enable_checkpointing=False, default_root_dir=config.project.path
         )
         trainer.test(model=model, datamodule=DummyDataModule())
         # test if images are logged

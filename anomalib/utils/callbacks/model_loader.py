@@ -9,14 +9,12 @@ import logging
 
 import torch
 from pytorch_lightning import Callback, Trainer
-from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 
 from anomalib.models.components import AnomalyModule
 
 logger = logging.getLogger(__name__)
 
 
-@CALLBACK_REGISTRY
 class LoadModelCallback(Callback):
     """Callback that loads the model weights from the state dict."""
 

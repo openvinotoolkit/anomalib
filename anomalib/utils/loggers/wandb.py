@@ -12,7 +12,10 @@ from matplotlib.figure import Figure
 from pytorch_lightning.loggers.wandb import WandbLogger
 from pytorch_lightning.utilities import rank_zero_only
 
-import wandb
+try:
+    import wandb
+except ModuleNotFoundError:
+    print("To use wandb logger install it using `pip install wandb`")
 
 from .base import ImageLoggerBase
 

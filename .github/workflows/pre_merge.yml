@@ -37,6 +37,8 @@ jobs:
         uses: actions/checkout@v2
       - name: Install Tox
         run: pip install tox
+      - name: Link the dataset path to the dataset directory in the repository root.
+        run: ln -s $ANOMALIB_DATASET_PATH ./datasets
       - name: Coverage
         run: tox -e pre_merge
       - name: Upload coverage report
@@ -50,5 +52,8 @@ jobs:
           else
             COMMIT_ID=${{ github.sha }}
           fi
-          pip install codacy-coverage
-          python-codacy-coverage -r .tox/coverage.xml -t ${{ secrets.CODACY }} -c $COMMIT_ID
+          # current version of codecov-action does not support uploading reports through the proxy
+          # so we use the latest version of codecov uploader binary
+          curl -Os https://uploader.codecov.io/latest/linux/codecov
+          chmod +x codecov
+          ./codecov -t ${{ secrets.CODECOV_TOKEN }} --sha $COMMIT_ID -Z true -U $HTTP_PROXY -f .tox/coverage.xml

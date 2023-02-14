@@ -10,7 +10,6 @@ import logging
 
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import Callback
-from pytorch_lightning.utilities.cli import CALLBACK_REGISTRY
 
 from anomalib.data import TaskType
 from anomalib.models.components.base.anomaly_module import AnomalyModule
@@ -21,7 +20,6 @@ logger = logging.getLogger(__name__)
 __all__ = ["MetricsConfigurationCallback"]
 
 
-@CALLBACK_REGISTRY
 class MetricsConfigurationCallback(Callback):
     """Metrics Configuration Callback."""
 
