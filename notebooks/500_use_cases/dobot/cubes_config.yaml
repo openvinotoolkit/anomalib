@@ -4,21 +4,26 @@ dataset:
   format: folder
   path: ./datasets/cubes
   normal_dir: normal # name of the folder containing normal images.
-  abnormal_dir: anormal # name of the folder containing abnormal images.
+  abnormal_dir: abnormal # name of the folder containing abnormal images.
   task: classification # classification or segmentation
-  mask: null #optional
+  mask: null
+  extension: null
+  seed: 0
   normal_test_dir: null # optional
   extensions: null
-  split_ratio: 0.2  # normal images ratio to create a test split
-  seed: 0
-  image_size: 256
   train_batch_size: 32
-  test_batch_size: 32
+  eval_batch_size: 32
   num_workers: 8
+  image_size: 256 # dimensions to which images are resized (mandatory)
+  center_crop: null # dimensions to which images are center-cropped after resizing (optional)
+  normalization: none # data distribution to which the images will be normalized: [none, imagenet]
   transform_config:
     train: null
-    val: null
-  create_validation_set: true
+    eval: null
+  test_split_mode: from_dir # options: [from_dir, synthetic]
+  test_split_ratio: 0.2 # fraction of train images held out testing (usage depends on test_split_mode)
+  val_split_mode: same_as_test # options: [same_as_test, from_test, synthetic]
+  val_split_ratio: 0.5 # fraction of train/test images held out for validation (usage depends on val_split_mode)
   tiling:
     apply: false
     tile_size: null
@@ -30,6 +35,7 @@ dataset:
 model:
   name: padim
   backbone: resnet18
+  pre_trained: true
   layers:
     - layer1
     - layer2
@@ -40,20 +46,31 @@ metrics:
   image:
     - F1Score
     - AUROC
+  pixel:
+    - F1Score
+    - AUROC
   threshold:
-    image_default: 3
-    pixel_default: 3
-    adaptive: true
+    method: adaptive #options: [adaptive, manual]
+    manual_image: null
+    manual_pixel: null
+
+visualization:
+  show_images: False # show images on the screen
+  save_images: True # save images to the file system
+  log_images: True # log images to the available loggers (if any)
+  image_save_path: null # path to which images will be saved
+  mode: full # options: ["full", "simple"]
 
 project:
   seed: 42
   path: ./results
-  log_images_to: ["local"]
-  logger: false # options: [tensorboard, wandb, csv] or combinations.
+
+logging:
+  logger: [] # options: [comet, tensorboard, wandb, csv] or combinations.
+  log_graph: false # Logs the model graph to respective logger.
 
 optimization:
-  openvino:
-    apply: true
+  export_mode: openvino #options: null, onnx, openvino
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
