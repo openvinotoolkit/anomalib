@@ -119,7 +119,7 @@ class AnomalibDataset(Dataset, ABC):
 
         image = read_image(image_path)
         item = dict(image_path=image_path, label=label_index)
-        print(mask_path, label_index)
+
         if self.task == TaskType.CLASSIFICATION:
             transformed = self.transform(image=image)
             item["image"] = transformed["image"]
