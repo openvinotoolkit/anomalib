@@ -38,8 +38,11 @@ Step 5 (Optional): If you have the Dobot robot please make the following.
 ![image](https://user-images.githubusercontent.com/10940214/219142393-c589f275-e01a-44bb-b499-65ebeb83a3dd.png)
 
    a.   Calibration coordinates: Initial position upper-left corner of cubes array.
+   
    b.	Place coordinates: Position where the arm should leave the cubic over the conveyor belt.
+   
    c.	Anomaly coordinates: Where you want to release the abnormal cube. 
+   
    d.	Then, replace those coordinates in the notebook 
 
 ### Data acquisition and inferencing
