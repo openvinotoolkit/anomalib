@@ -6,8 +6,8 @@ Step 1:
 
     a.	For Windows, use the following:
     
-       ```python -m venv anomalib_env
-       anomalib_env\Scripts\activate```
+       ```python -m venv anomalib_env```
+       ```anomalib_env\Scripts\activate```
        
     b.	For Ubuntu:
     
