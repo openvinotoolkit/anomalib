@@ -1,21 +1,37 @@
 ## Steps to use these notebooks
+These notebooks will help you to use a Dobot robot and Anomalib Library, for showcasing different kind of Industrial solutions
 
+Step 1: 
+1.	Create an environment to run Anomalib + Dobot DLL  using Python version 3.8
+    a.	For Windows, use the following:
+       ```python -m venv anomalib_env
+       anomalib_env\Scripts\activate```
+    b.	For Ubuntu:
+       ```Python3 -m venv anomalib_env
+        Source anomalib_env/bin/activate```
+2.	Install Anomalib from the GitHub repo and als the OpenVINO requirements (For this post, we will not be using the pip install command):
+       ```python –m pip install –upgrade pip wheel setuptools
+       git clone https://github.com/openvinotoolkit/anomalib.git
+       cd anomalib
+       pip install -e . [openvino]```
+3.	Install Jupyter Lab or Jupyter Notebook through: https://jupyter.org/install
+       ```pip install notebook
+       pip install ipywidgets```
+4.	Then connect your USB Camera and verify it works using a simple camera application. Once it is verified, close the application. 
 
-1. Create an environment to run Anomalib + Dobot DLL (Python version 3.8)
-2. Install Anomalib. Follow the instructions here: https://github.com/openvinotoolkit/anomalib.
- ![image](https://user-images.githubusercontent.com/10940214/215845710-a7acaf6e-c4ed-4840-8bed-455674151a5d.png)
+If you have the Dobot robot please make the following:
+1. Install Dobot requirements (See Dobot documentation here: https://en.dobot.cn/products/education/magician.html).
+2.	Check all connections to the Dobot and verify it is working using the Dobot Studio.
+3.	Install the vent accessory on the Dobot and verify it is working using Dobot Studio.
+4.	In the Dobot Studio, hit the "Home" button, and locate the: 
+![image](https://user-images.githubusercontent.com/10940214/219142393-c589f275-e01a-44bb-b499-65ebeb83a3dd.png)
+   a. Calibration coordinates: Initial position upper-left corner of cubes array.
+   ![image](https://user-images.githubusercontent.com/10940214/198703796-3979d37d-ad9e-4e93-92b4-c575b1bde4b2.png)
+   b.	Place coordinates: Position where the arm should leave the cubic over the conveyor belt.
+   ![image](https://user-images.githubusercontent.com/10940214/198698536-9a1c403d-c7e3-4186-955b-4ceefb8fb379.png)
+   c.	Anomaly coordinates: Where you want to release the abnormal cube. 
+   d.	Then, replace those coordinates in the notebook 
 
-    a. Install Jupyter Lab or Jupyter Notebook: https://jupyter.org/install
-    
-    b. Install OpenVINO in your actual enviroment using this ```pip install -r requirements\openvino.txt``` 
-3. Install Dobot requirements (See Dobot documentation here: https://en.dobot.cn/products/education/magician.html)
-4. Check all connections of the Dobot, and verify if it is working using Dobot Studio.
-5. Connect the WebCam and verify it works using a simple camera application. Close this app after the verification.
-6. Install the vent on the dobot and verify if this is working using Dobot Studio.
-7. In Dobot Studio, find "Home" by hitting the "Home" Button. Then, find the Calibration Coordinates (Initial position upper-left corner of cubes array), Place Coordinates (Position where the arm should leave the cubic over the conveyor belt), and Anomaly Coordinates (Where you want to release the abnormal cube. Replace those coordinates in the notebook. ![image](https://user-images.githubusercontent.com/10940214/198703796-3979d37d-ad9e-4e93-92b4-c575b1bde4b2.png)
-Camera stop will be the same position that Place Coordinates with +90 in Z. See image below ![image](https://user-images.githubusercontent.com/10940214/198698536-9a1c403d-c7e3-4186-955b-4ceefb8fb379.png)
-8. In the same environment where you have Dobot and Anomalib installed, verify you have jupyter notebooks, or Jupyter Lab installed.
-9. Open [the main notebook](https://github.com/paularamo/cvpr-2022/blob/gh-pages/dobot/notebooks_control/Anomalib_Dobot_cubics_FINAL.ipynb) ![image](https://user-images.githubusercontent.com/10940214/198696689-1be3583d-0356-4305-a2cd-f51e4ff62409.png)
 ### Data acquisition
 10. Verify the path folder of the dataset.
 11. In cell #3, change the flag status to "True"![image](https://user-images.githubusercontent.com/10940214/198696596-459c97be-8789-4878-a038-1fa417a0b4c8.png)
