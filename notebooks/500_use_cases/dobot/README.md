@@ -8,17 +8,17 @@ a.	For Windows, use the following:
        python -m venv anomalib_env
        anomalib_env\Scripts\activate
        
-b.	For Ubuntu:
+b.	For Linux and MacOS:
     
        python3 -m venv anomalib_env
        source anomalib_env/bin/activate
         
-Step 2: Install Anomalib from the GitHub repo and als the OpenVINO requirements (For this post, we will not be using the pip install command):
+Step 2: Install Anomalib from the GitHub repo and also the OpenVINO requirements (For this post, we will not be using the pip install command):
 
        python –m pip install –upgrade pip wheel setuptools
        git clone https://github.com/openvinotoolkit/anomalib.git
        cd anomalib
-       pip install -e . [openvino]
+       pip install -e ".[full]"
        
 Step 3: Install Jupyter Lab or Jupyter Notebook through: https://jupyter.org/install
 
