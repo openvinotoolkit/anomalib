@@ -1,34 +1,44 @@
 ## Steps to use these notebooks
 These notebooks will help you to use a Dobot robot and Anomalib Library, for showcasing different kind of Industrial solutions
 
-Step 1: 
-1.	Create an environment to run Anomalib + Dobot DLL  using Python version 3.8
+Step 1: Create an environment to run Anomalib + Dobot DLL  using Python version 3.8
 
     a.	For Windows, use the following:
     
        ```python -m venv anomalib_env```
+       
        ```anomalib_env\Scripts\activate```
        
     b.	For Ubuntu:
     
-       ```Python3 -m venv anomalib_env
-        Source anomalib_env/bin/activate```
+       ```Python3 -m venv anomalib_env```
+       
+        ```Source anomalib_env/bin/activate```
         
-2.	Install Anomalib from the GitHub repo and als the OpenVINO requirements (For this post, we will not be using the pip install command):
-       ```python –m pip install –upgrade pip wheel setuptools
-       git clone https://github.com/openvinotoolkit/anomalib.git
-       cd anomalib
-       pip install -e . [openvino]```
-3.	Install Jupyter Lab or Jupyter Notebook through: https://jupyter.org/install
-       ```pip install notebook
-       pip install ipywidgets```
-4.	Then connect your USB Camera and verify it works using a simple camera application. Once it is verified, close the application. 
+Step 2: Install Anomalib from the GitHub repo and als the OpenVINO requirements (For this post, we will not be using the pip install command):
 
-If you have the Dobot robot please make the following:
-1. Install Dobot requirements (See Dobot documentation here: https://en.dobot.cn/products/education/magician.html).
-2.	Check all connections to the Dobot and verify it is working using the Dobot Studio.
-3.	Install the vent accessory on the Dobot and verify it is working using Dobot Studio.
-4.	In the Dobot Studio, hit the "Home" button, and locate the: 
+       ```python –m pip install –upgrade pip wheel setuptools```
+       
+       ```git clone https://github.com/openvinotoolkit/anomalib.git```
+       
+       ```cd anomalib```
+       
+       ```pip install -e . [openvino]```
+       
+Step 3: Install Jupyter Lab or Jupyter Notebook through: https://jupyter.org/install
+
+       ```pip install notebook```
+       ```pip install ipywidgets```
+       
+Step 4: Then connect your USB Camera and verify it works using a simple camera application. Once it is verified, close the application. 
+
+
+Step 5 (Optinal): If you have the Dobot robot please make the following.
+
+1.  Install Dobot requirements (See Dobot documentation here: https://en.dobot.cn/products/education/magician.html).
+2.  Check all connections to the Dobot and verify it is working using the Dobot Studio.
+3.  Install the vent accessory on the Dobot and verify it is working using Dobot Studio.
+4.  In the Dobot Studio, hit the "Home" button, and locate the: 
 ![image](https://user-images.githubusercontent.com/10940214/219142393-c589f275-e01a-44bb-b499-65ebeb83a3dd.png)
    a. Calibration coordinates: Initial position upper-left corner of cubes array.
    ![image](https://user-images.githubusercontent.com/10940214/198703796-3979d37d-ad9e-4e93-92b4-c575b1bde4b2.png)
