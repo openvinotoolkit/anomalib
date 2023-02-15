@@ -5,8 +5,9 @@ datasets
 results
 !anomalib/core/results
 
-backup.py
-train.ipynb
+# Jupyter Notebooks
+notebooks/500_use_cases/dobot/dobot_api
+notebooks/500_use_cases/dobot/cubes
 
 # VENV
 .python-version
