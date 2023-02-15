@@ -3,13 +3,13 @@ These notebooks will help you to use a Dobot robot and Anomalib Library, for sho
 
 Step 1: Create an environment to run Anomalib + Dobot DLL  using Python version 3.8
 
-    a.	For Windows, use the following:
+a.	For Windows, use the following:
     
        ```python -m venv anomalib_env```
        
        ```anomalib_env\Scripts\activate```
        
-    b.	For Ubuntu:
+b.	For Ubuntu:
     
        ```Python3 -m venv anomalib_env```
        
