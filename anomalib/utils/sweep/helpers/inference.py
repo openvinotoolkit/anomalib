@@ -47,12 +47,12 @@ def get_torch_throughput(config: DictConfig | ListConfig, model: AnomalyModule, 
     return throughput
 
 
-def get_openvino_throughput(model_path: Path, test_dataset: DataLoader) -> float:
+def get_openvino_throughput(model_path: Path, test_dataset: Dataset) -> float:
     """Runs the generated OpenVINO model on a dummy dataset to get throughput.
 
     Args:
         model_path (Path): Path to folder containing the OpenVINO models. It then searches `model.xml` in the folder.
-        test_dataset (DataLoader): The test dataset used as a reference for the mock dataset.
+        test_dataset (Dataset): The test dataset used as a reference for the mock dataset.
 
     Returns:
         float: Inference throughput
