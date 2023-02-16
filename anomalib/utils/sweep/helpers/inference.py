@@ -10,19 +10,19 @@ from pathlib import Path
 
 import torch
 from omegaconf import DictConfig, ListConfig
-from torch.utils.data import DataLoader
+from torch.utils.data import Dataset
 
 from anomalib.deploy import OpenVINOInferencer, TorchInferencer
 from anomalib.models.components import AnomalyModule
 
 
-def get_torch_throughput(config: DictConfig | ListConfig, model: AnomalyModule, test_dataset: DataLoader) -> float:
+def get_torch_throughput(config: DictConfig | ListConfig, model: AnomalyModule, test_dataset: Dataset) -> float:
     """Tests the model on dummy data. Images are passed sequentially to make the comparision with OpenVINO model fair.
 
     Args:
         config (DictConfig | ListConfig): Model config.
         model (Path): Model on which inference is called.
-        test_dataset (DataLoader): The test dataset used as a reference for the mock dataset.
+        test_dataset (Dataset): The test dataset used as a reference for the mock dataset.
 
     Returns:
         float: Inference throughput
@@ -47,11 +47,10 @@ def get_torch_throughput(config: DictConfig | ListConfig, model: AnomalyModule, 
     return throughput
 
 
-def get_openvino_throughput(config: DictConfig | ListConfig, model_path: Path, test_dataset: DataLoader) -> float:
+def get_openvino_throughput(model_path: Path, test_dataset: DataLoader) -> float:
     """Runs the generated OpenVINO model on a dummy dataset to get throughput.
 
     Args:
-        config (DictConfig | ListConfig): Model config.
         model_path (Path): Path to folder containing the OpenVINO models. It then searches `model.xml` in the folder.
         test_dataset (DataLoader): The test dataset used as a reference for the mock dataset.
 
