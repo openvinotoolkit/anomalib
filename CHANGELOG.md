@@ -94,7 +94,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - add deprecation warning to denormalize class by @djdameln in <https://github.com/openvinotoolkit/anomalib/pull/629>
 - Anomalib CLI Improvements - Update metrics and create post_processing section in the config file by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/607>
 - Convert adaptive_threshold to Enum in configs by @samet-akcay in <https://github.com/openvinotoolkit/anomalib/pull/637>
-- Create meta_data.json with ONNX export as well as OpenVINO export by @calebmm in <https://github.com/openvinotoolkit/anomalib/pull/636>
+- Create metadata.json with ONNX export as well as OpenVINO export by @calebmm in <https://github.com/openvinotoolkit/anomalib/pull/636>
 - 🖌 refactor export callback by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/640>
 - 🐞 Address docs build by @ashwinvaidya17 in <https://github.com/openvinotoolkit/anomalib/pull/639>
 - Optimized inference with onnx for patchcore. by @acai66 in <https://github.com/openvinotoolkit/anomalib/pull/652>

@@ -120,9 +120,7 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_met
             openvino_export_path = project_path / Path("exported_models")
             openvino_export_path.mkdir(parents=True, exist_ok=True)
             export(model, model_config.model.input_size, ExportMode.OPENVINO, openvino_export_path)
-            openvino_throughput = get_openvino_throughput(
-                model_config, openvino_export_path, datamodule.test_dataloader().dataset
-            )
+            openvino_throughput = get_openvino_throughput(openvino_export_path, datamodule.test_dataloader().dataset)
 
         # arrange the data
         data = {

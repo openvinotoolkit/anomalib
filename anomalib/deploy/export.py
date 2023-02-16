@@ -109,7 +109,7 @@ def export(
 
     export_path = Path(export_root) / export_mode.value
     export_path.mkdir(parents=True, exist_ok=True)
-    with (Path(export_path) / "meta_data.json").open("w", encoding="utf-8") as metadata_file:
+    with (Path(export_path) / "metadata.json").open("w", encoding="utf-8") as metadata_file:
         meta_data = get_metadata_from_trainer(trainer)
         # Convert metadata from torch
         for key, value in meta_data.items():
