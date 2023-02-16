@@ -18,7 +18,7 @@ from anomalib.config import get_configurable_parameters
 from anomalib.data import TaskType
 from anomalib.data.utils import InputNormalizationMethod, get_transforms
 from anomalib.data.utils.boxes import masks_to_boxes
-from anomalib.deploy.export import get_model_metadata
+from anomalib.deploy.export import get_metadata_from_model
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
 
@@ -32,7 +32,7 @@ class TorchInferencer(Inferencer):
         config (str | Path | DictConfig | ListConfig): Configurable parameters that are used
             during the training stage.
         model_source (str | Path | AnomalyModule): Path to the model ckpt file or the Anomaly model.
-        meta_data_path (str | Path, optional): Path to metadata file. If none, it tries to load the params
+        metadata_path (str | Path, optional): Path to metadata file. If none, it tries to load the params
                 from the model state_dict. Defaults to None.
         device (str | None, optional): Device to use for inference. Options are auto, cpu, cuda. Defaults to "auto".
     """
@@ -41,7 +41,7 @@ class TorchInferencer(Inferencer):
         self,
         config: str | Path | DictConfig | ListConfig,
         model_source: str | Path | AnomalyModule,
-        meta_data_path: str | Path | None = None,
+        metadata_path: str | Path | None = None,
         device: str = "auto",
     ) -> None:
 
@@ -61,7 +61,7 @@ class TorchInferencer(Inferencer):
         else:
             self.model = self.load_model(model_source)
 
-        self.meta_data = self._load_meta_data(meta_data_path)
+        self.metadata = self._load_metadata(metadata_path)
 
     @staticmethod
     def _get_device(device: str) -> torch.device:
@@ -82,7 +82,7 @@ class TorchInferencer(Inferencer):
             device = "cuda"
         return torch.device(device)
 
-    def _load_meta_data(self, path: str | Path | None = None) -> dict | DictConfig:
+    def _load_metadata(self, path: str | Path | None = None) -> dict | DictConfig:
         """Load metadata from file or from model state dict.
 
         Args:
@@ -90,14 +90,15 @@ class TorchInferencer(Inferencer):
                 from the model state_dict. Defaults to None.
 
         Returns:
-            dict: Dictionary containing the meta_data.
+            dict: Dictionary containing the metadata.
         """
-        meta_data: dict[str, float | np.ndarray | Tensor] | DictConfig
+        metadata: dict[str, float | np.ndarray | Tensor] | DictConfig
         if path is None:
-            meta_data = get_model_metadata(self.model)
+            # Torch inferencer still reads metadata from the model.
+            metadata = get_metadata_from_model(self.model)
         else:
-            meta_data = super()._load_meta_data(path)
-        return meta_data
+            metadata = super()._load_metadata(path)
+        return metadata
 
     def load_model(self, path: str | Path) -> AnomalyModule:
         """Load the PyTorch model.
@@ -152,20 +153,20 @@ class TorchInferencer(Inferencer):
         """
         return self.model(image)
 
-    def post_process(self, predictions: Tensor, meta_data: dict | DictConfig | None = None) -> dict[str, Any]:
+    def post_process(self, predictions: Tensor, metadata: dict | DictConfig | None = None) -> dict[str, Any]:
         """Post process the output predictions.
 
         Args:
             predictions (Tensor): Raw output predicted by the model.
-            meta_data (dict, optional): Meta data. Post-processing step sometimes requires
+            metadata (dict, optional): Meta data. Post-processing step sometimes requires
                 additional meta data such as image shape. This variable comprises such info.
                 Defaults to None.
 
         Returns:
             dict[str, str | float | np.ndarray]: Post processed prediction results.
         """
-        if meta_data is None:
-            meta_data = self.meta_data
+        if metadata is None:
+            metadata = self.metadata
 
         if isinstance(predictions, Tensor):
             anomaly_map = predictions.detach().cpu().numpy()
@@ -187,23 +188,23 @@ class TorchInferencer(Inferencer):
         # label to the prediction if the prediction score is greater
         # than the image threshold.
         pred_label: str | None = None
-        if "image_threshold" in meta_data:
-            pred_idx = pred_score >= meta_data["image_threshold"]
+        if "image_threshold" in metadata:
+            pred_idx = pred_score >= metadata["image_threshold"]
             pred_label = "Anomalous" if pred_idx else "Normal"
 
         pred_mask: np.ndarray | None = None
-        if "pixel_threshold" in meta_data:
-            pred_mask = (anomaly_map >= meta_data["pixel_threshold"]).squeeze().astype(np.uint8)
+        if "pixel_threshold" in metadata:
+            pred_mask = (anomaly_map >= metadata["pixel_threshold"]).squeeze().astype(np.uint8)
 
         anomaly_map = anomaly_map.squeeze()
-        anomaly_map, pred_score = self._normalize(anomaly_maps=anomaly_map, pred_scores=pred_score, meta_data=meta_data)
+        anomaly_map, pred_score = self._normalize(anomaly_maps=anomaly_map, pred_scores=pred_score, metadata=metadata)
 
         if isinstance(anomaly_map, Tensor):
             anomaly_map = anomaly_map.detach().cpu().numpy()
 
-        if "image_shape" in meta_data and anomaly_map.shape != meta_data["image_shape"]:
-            image_height = meta_data["image_shape"][0]
-            image_width = meta_data["image_shape"][1]
+        if "image_shape" in metadata and anomaly_map.shape != metadata["image_shape"]:
+            image_height = metadata["image_shape"][0]
+            image_width = metadata["image_shape"][1]
             anomaly_map = cv2.resize(anomaly_map, (image_width, image_height))
 
             if pred_mask is not None:

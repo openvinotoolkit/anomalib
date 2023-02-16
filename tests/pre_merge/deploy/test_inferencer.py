@@ -142,9 +142,7 @@ def test_openvino_inference(
     export_path = Path(model_config.project.path)
 
     # Test OpenVINO inferencer
-    openvino_inferencer = OpenVINOInferencer(
-        model_config, export_path / "openvino/model.xml", export_path / "openvino/meta_data.json"
-    )
+    openvino_inferencer = OpenVINOInferencer(export_path / "openvino/model.xml", export_path / "openvino/metadata.json")
     openvino_dataloader = MockImageLoader(model_config.dataset.image_size, total_count=1)
     for image in openvino_dataloader():
         prediction = openvino_inferencer.predict(image)

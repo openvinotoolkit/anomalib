@@ -36,19 +36,19 @@ def get_args() -> Namespace:
     parser = ArgumentParser()
     parser.add_argument("--config", type=Path, required=True, help="Path to a config file")
     parser.add_argument("--weights", type=Path, required=True, help="Path to model weights")
-    parser.add_argument("--meta_data", type=Path, required=False, help="Path to a JSON file containing the metadata.")
+    parser.add_argument("--metadata", type=Path, required=False, help="Path to a JSON file containing the metadata.")
     parser.add_argument("--share", type=bool, required=False, default=False, help="Share Gradio `share_url`")
 
     return parser.parse_args()
 
 
-def get_inferencer(config_path: Path, weight_path: Path, meta_data_path: Path | None = None) -> Inferencer:
+def get_inferencer(config_path: Path, weight_path: Path, metadata_path: Path | None = None) -> Inferencer:
     """Parse args and open inferencer.
 
     Args:
         config_path (Path): Path to model configuration file or the name of the model.
         weight_path (Path): Path to model weights.
-        meta_data_path (Path | None, optional): Metadata is required for OpenVINO models. Defaults to None.
+        metadata_path (Path | None, optional): Metadata is required for OpenVINO models. Defaults to None.
 
     Raises:
         ValueError: If unsupported model weight is passed.
@@ -64,11 +64,11 @@ def get_inferencer(config_path: Path, weight_path: Path, meta_data_path: Path | 
     module = import_module("anomalib.deploy")
     if extension in (".ckpt"):
         torch_inferencer = getattr(module, "TorchInferencer")
-        inferencer = torch_inferencer(config=config_path, model_source=weight_path, meta_data_path=meta_data_path)
+        inferencer = torch_inferencer(config=config_path, model_source=weight_path, metadata_path=metadata_path)
 
     elif extension in (".onnx", ".bin", ".xml"):
         openvino_inferencer = getattr(module, "OpenVINOInferencer")
-        inferencer = openvino_inferencer(config=config_path, path=weight_path, meta_data_path=meta_data_path)
+        inferencer = openvino_inferencer(config=config_path, path=weight_path, metadata_path=metadata_path)
 
     else:
         raise ValueError(
@@ -97,7 +97,7 @@ def infer(image: np.ndarray, inferencer: Inferencer) -> tuple[np.ndarray, np.nda
 
 if __name__ == "__main__":
     args = get_args()
-    gradio_inferencer = get_inferencer(args.config, args.weights, args.meta_data)
+    gradio_inferencer = get_inferencer(args.config, args.weights, args.metadata)
 
     interface = gr.Interface(
         fn=lambda image: infer(image, gradio_inferencer),
