@@ -32,6 +32,7 @@ def get_metadata_from_model(model: AnomalyModule) -> dict[str, Tensor]:
 
     Args:
         model (AnomalyModule): Anomaly model which contains metadata related to normalization.
+
     Returns:
         dict[str, Tensor]: metadata
     """
