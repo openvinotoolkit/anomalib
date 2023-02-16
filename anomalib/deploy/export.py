@@ -29,6 +29,7 @@ class ExportMode(str, Enum):
 
 def get_metadata_from_model(model: AnomalyModule) -> dict[str, Tensor]:
     """Get meta data related to normalization from model.
+
     Args:
         model (AnomalyModule): Anomaly model which contains metadata related to normalization.
     Returns:
