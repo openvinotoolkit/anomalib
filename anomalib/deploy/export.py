@@ -53,7 +53,7 @@ def get_metadata_from_model(model: AnomalyModule) -> dict[str, Tensor]:
 
 
 def get_metadata_from_trainer(trainer: pl.Trainer) -> dict[str, Any]:
-    """Get meta data related to normalization from PL Trainer.
+    """Get meta data information from PL Trainer.
 
     Args:
         trainer (pl.Trainer): Pytorch Lightning trainer object containing model, datamodule and the rest of the hparams.
