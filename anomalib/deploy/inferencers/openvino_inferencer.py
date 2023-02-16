@@ -12,11 +12,8 @@ from typing import Any
 import albumentations as A
 import cv2
 import numpy as np
-from omegaconf import DictConfig, ListConfig
 
-from anomalib.config import get_configurable_parameters
 from anomalib.data import TaskType
-from anomalib.data.utils import InputNormalizationMethod, get_transforms
 
 from .base_inferencer import Inferencer
 

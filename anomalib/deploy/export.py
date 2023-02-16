@@ -79,7 +79,7 @@ def get_metadata_from_trainer(trainer: pl.Trainer) -> dict[str, Any]:
 
 def export(
     trainer: pl.Trainer,
-    input_size: list[int] | tuple[int, int] | None = None,
+    input_size: tuple[int, int] | None = None,
     export_mode: ExportMode | None = None,
     export_root: str | Path | None = None,
 ) -> None:
@@ -119,7 +119,7 @@ def export(
         _export_to_openvino(export_path, onnx_path)
 
 
-def _export_to_onnx(model: AnomalyModule, input_size: list[int] | tuple[int, int], export_path: Path) -> Path:
+def _export_to_onnx(model: AnomalyModule, input_size: tuple[int, int], export_path: Path) -> Path:
     """Export model to onnx.
 
     Args:
