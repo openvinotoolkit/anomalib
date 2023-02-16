@@ -98,7 +98,8 @@ def export(
     # Write metadata to json file. The file is written in the same directory as the target model.
 
     if input_size is None:
-        input_size: tuple[int, int] = tuple(trainer.model.hparams["dataset"]["image_size"])
+        image_size: tuple[int, int] = trainer.model.hparams["dataset"]["image_size"]
+        input_size = image_size
 
     if export_mode is None:
         export_mode = ExportMode(trainer.model.hparams["optimization"]["export_mode"])

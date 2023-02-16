@@ -58,9 +58,7 @@ def get_openvino_throughput(config: DictConfig | ListConfig, model_path: Path, t
     Returns:
         float: Inference throughput
     """
-    inferencer = OpenVINOInferencer(
-        config, model_path / "openvino" / "model.xml", model_path / "openvino" / "metadata.json"
-    )
+    inferencer = OpenVINOInferencer(model_path / "openvino" / "model.xml", model_path / "openvino" / "metadata.json")
     start_time = time.time()
     for image_path in test_dataset.samples.image_path:
         inferencer.predict(image_path)
