@@ -11,7 +11,8 @@ import torch
 from matplotlib.figure import Figure
 from torch import Tensor
 from torchmetrics import Metric
-from torchmetrics.functional import auc, roc
+from torchmetrics.functional import roc
+from torchmetrics.utilities.compute import auc
 from torchmetrics.utilities.data import dim_zero_cat
 
 from anomalib.utils.metrics.pro import (
@@ -94,7 +95,7 @@ class AUPRO(Metric):
         target = target.flatten()
 
         # compute the global fpr-size
-        fpr: Tensor = roc(preds, target)[0]  # only need fpr
+        fpr: Tensor = roc(preds, target.int(), task="binary")[0]  # only need fpr
         output_size = torch.where(fpr <= self.fpr_limit)[0].size(0)
 
         # compute the PRO curve by aggregating per-region tpr/fpr curves/values.
@@ -116,7 +117,7 @@ class AUPRO(Metric):
             mask = cca == label
             # Need to calculate label-wise roc on union of background & mask, as otherwise we wrongly consider other
             # label in labels as FPs. We also don't need to return the thresholds
-            _fpr, _tpr = roc(preds[background | mask], mask[background | mask])[:-1]
+            _fpr, _tpr = roc(preds[background | mask], mask[background | mask], task="binary")[:-1]
 
             # catch edge-case where ROC only has fpr vals > self.fpr_limit
             if _fpr[_fpr <= self.fpr_limit].max() == 0:

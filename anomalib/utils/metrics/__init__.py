@@ -47,7 +47,7 @@ def metric_collection_from_names(metric_names: list[str], prefix: str | None) ->
         elif hasattr(torchmetrics, metric_name):
             try:
                 metric_cls = getattr(torchmetrics, metric_name)
-                metrics.add_metrics(metric_cls())
+                metrics.add_metrics(metric_cls(task="binary"))
             except TypeError:
                 warnings.warn(f"Incorrect constructor arguments for {metric_name} metric from TorchMetrics package.")
         else:

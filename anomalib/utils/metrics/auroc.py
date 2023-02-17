@@ -8,13 +8,13 @@ from __future__ import annotations
 import torch
 from matplotlib.figure import Figure
 from torch import Tensor
-from torchmetrics import ROC
-from torchmetrics.functional import auc
+from torchmetrics.classification import BinaryROC
+from torchmetrics.utilities.compute import auc
 
 from .plotting_utils import plot_figure
 
 
-class AUROC(ROC):
+class AUROC(BinaryROC):
     """Area under the ROC curve."""
 
     def compute(self) -> Tensor:

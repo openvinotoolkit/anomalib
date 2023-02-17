@@ -9,10 +9,10 @@ import warnings
 
 import torch
 from torch import Tensor
-from torchmetrics import PrecisionRecallCurve
+from torchmetrics.classification import BinaryPrecisionRecallCurve
 
 
-class AnomalyScoreThreshold(PrecisionRecallCurve):
+class AnomalyScoreThreshold(BinaryPrecisionRecallCurve):
     """Anomaly Score Threshold.
 
     This class computes/stores the threshold that determines the anomalous label
