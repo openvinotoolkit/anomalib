@@ -1,18 +1,18 @@
 from typing import Union
 
 import pytorch_lightning as pl
-from omegaconf import DictConfig, ListConfig
-from torch import nn, optim
-from torch.utils.data import DataLoader
-from torchvision import transforms
-from torchvision.datasets import FakeData
-
 from anomalib.utils.callbacks import ImageVisualizerCallback
 from anomalib.utils.metrics import (
     AnomalyScoreDistribution,
     AnomalyScoreThreshold,
     MinMax,
 )
+from omegaconf import DictConfig, ListConfig
+from torch import nn, optim
+from torch.utils.data import DataLoader
+from torchvision import transforms
+from torchvision.datasets import FakeData
+
 from tests.helpers.dummy import DummyModel
 
 
@@ -70,13 +70,13 @@ class DummyLightningModule(pl.LightningModule):
         self.model = DummyModel()
 
     def training_step(self, batch, _):
-        x, y = batch
+        x, y = batch["image"], batch["label"]
         y_hat = self.model(x)
         loss = self.loss_fn(y_hat, y)
         return {"loss": loss}
 
     def validation_step(self, batch, _):
-        x, y = batch
+        x, y = batch["image"], batch["label"]
         y_hat = self.model(x)
         loss = self.loss_fn(y_hat, y)
         self.log(name="loss", value=loss.item(), prog_bar=True)
