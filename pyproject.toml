@@ -73,6 +73,18 @@ follow_imports_for_stubs = true
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# PYTEST CONFIGURATION                                                        #
+[tool.pytest.ini_options]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--ra"
+]
+
+testpaths = "tests"
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # COVERAGE CONFIGURATION                                                      #
 [tool.coverage.report]
 exclude_lines = [
