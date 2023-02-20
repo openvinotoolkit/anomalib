@@ -78,7 +78,8 @@ follow_imports_for_stubs = true
 addopts = [
     "--strict-markers",
     "--strict-config",
-    "--ra"
+    "--ra",
+    "--showlocals",
 ]
 
 testpaths = "tests"
@@ -95,6 +96,15 @@ exclude_lines = [
     "raise ValueError",
 ]
 
+[tool.coverage.paths]
+source = [
+    "src",
+    ".tox/*/site-packages",
+]
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# PYDOCSTYLE CONFIGURATION                                                    #
 [tool.pydocstyle]
 inherit = false
 ignore = [
