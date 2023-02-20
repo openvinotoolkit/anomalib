@@ -3,11 +3,12 @@ import tempfile
 
 import pytest
 import pytorch_lightning as pl
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+
 from anomalib.data.mvtec import MVTec
 from anomalib.data.utils import random_split
 from anomalib.deploy import ExportMode
 from anomalib.utils.callbacks.export import ExportCallback
-from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 from tests.helpers.config import get_test_configurable_parameters
 from tests.helpers.dataset import get_dataset_path

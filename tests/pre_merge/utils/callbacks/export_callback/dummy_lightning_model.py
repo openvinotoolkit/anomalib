@@ -1,18 +1,18 @@
 from typing import Union
 
 import pytorch_lightning as pl
-from anomalib.utils.callbacks import ImageVisualizerCallback
-from anomalib.utils.metrics import (
-    AnomalyScoreDistribution,
-    AnomalyScoreThreshold,
-    MinMax,
-)
 from omegaconf import DictConfig, ListConfig
 from torch import nn, optim
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.datasets import FakeData
 
+from anomalib.utils.callbacks import ImageVisualizerCallback
+from anomalib.utils.metrics import (
+    AnomalyScoreDistribution,
+    AnomalyScoreThreshold,
+    MinMax,
+)
 from tests.helpers.dummy import DummyModel
 
 
