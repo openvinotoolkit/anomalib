@@ -18,7 +18,7 @@ from anomalib.config import get_configurable_parameters
 from anomalib.data import TaskType
 from anomalib.data.utils import InputNormalizationMethod, get_transforms
 from anomalib.data.utils.boxes import masks_to_boxes
-from anomalib.deploy.export import get_metadata_from_model
+from anomalib.deploy.export import get_model_metadata
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
 
@@ -95,7 +95,7 @@ class TorchInferencer(Inferencer):
         metadata: dict[str, float | np.ndarray | Tensor] | DictConfig
         if path is None:
             # Torch inferencer still reads metadata from the model.
-            metadata = get_metadata_from_model(self.model)
+            metadata = get_model_metadata(self.model)
         else:
             metadata = super()._load_metadata(path)
         return metadata
