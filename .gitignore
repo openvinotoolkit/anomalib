@@ -6,8 +6,8 @@ results
 !anomalib/core/results
 
 # Jupyter Notebooks
-notebooks/500_use_cases/dobot/
-!notebooks/500_use_cases/dobot/*.ipynb
+# notebooks/500_use_cases/dobot/
+# !notebooks/500_use_cases/dobot/*.ipynb
 
 # VENV
 .python-version
