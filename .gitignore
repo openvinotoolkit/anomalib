@@ -5,7 +5,6 @@ datasets
 results
 !anomalib/core/results
 
-# Jupyter Notebooks
 
 # VENV
 .python-version
