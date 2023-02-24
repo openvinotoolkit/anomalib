@@ -5,7 +5,6 @@ datasets
 results
 !anomalib/core/results
 
-
 # VENV
 .python-version
 .anomalib
