@@ -30,10 +30,10 @@ Step 4: Then connect your USB Camera and verify it works using a simple camera a
 
 Step 5 (Optional): If you have the Dobot robot please make the following.
 
-1.  Install Dobot requirements (See Dobot documentation here: https://en.dobot.cn/products/education/magician.html).
-2.  Check all connections to the Dobot and verify it is working using the Dobot Studio.
-3.  Install the vent accessory on the Dobot and verify it is working using Dobot Studio.
-4.  In the Dobot Studio, hit the "Home" button, and locate the:
+1. Install Dobot requirements (See Dobot documentation here: https://en.dobot.cn/products/education/magician.html).
+2. Check all connections to the Dobot and verify it is working using the Dobot Studio.
+3. Install the vent accessory on the Dobot and verify it is working using Dobot Studio.
+4. In the Dobot Studio, hit the "Home" button, and locate the:
 
 ![image](https://user-images.githubusercontent.com/10940214/219142393-c589f275-e01a-44bb-b499-65ebeb83a3dd.png)
 
