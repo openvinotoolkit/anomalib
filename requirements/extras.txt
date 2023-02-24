@@ -3,4 +3,3 @@ gradio>=2.9.4
 tensorboard
 wandb==0.12.17
 GitPython
-ipykernel

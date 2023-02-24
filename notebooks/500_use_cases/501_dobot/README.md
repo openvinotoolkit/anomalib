@@ -24,6 +24,7 @@ Step 2: Install Anomalib from the GitHub repo and also the OpenVINO requirements
 Step 3: Install Jupyter Lab or Jupyter Notebook through: https://jupyter.org/install
 
        pip install notebook
+       pip install ipykernel
        pip install ipywidgets
 
 Step 4: Then connect your USB Camera and verify it works using a simple camera application. Once it is verified, close the application.
