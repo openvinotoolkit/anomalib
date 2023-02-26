@@ -77,15 +77,15 @@ repos:
       - id: nbqa-flake8
       - id: nbqa-pylint
 
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v2.7.1
-    hooks:
-      - id: prettier
+  #- repo: https://github.com/pre-commit/mirrors-prettier
+  #  rev: v2.7.1
+  #  hooks:
+  #    - id: prettier
 
-  - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.32.2
-    hooks:
-      - id: markdownlint
+  #- repo: https://github.com/igorshubovych/markdownlint-cli
+  #  rev: v0.32.2
+  #  hooks:
+  #    - id: markdownlint
 
   - repo: https://github.com/AleksaC/hadolint-py
     rev: v2.10.0

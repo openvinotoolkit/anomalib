@@ -137,31 +137,42 @@ def make_folder_dataset(
     if normal_test_dir:
         dirs = {**dirs, **{"normal_test": normal_test_dir}}
 
+    if mask_dir:
+        dirs = {**dirs, **{"mask_dir": mask_dir}}
+
     for dir_type, path in dirs.items():
         filename, label = _prepare_files_labels(path, dir_type, extensions)
         filenames += filename
         labels += label
 
-    samples = DataFrame({"image_path": filenames, "label": labels, "mask_path": ""})
+    samples = DataFrame({"image_path": filenames, "label": labels})
+    samples = samples.sort_values(by="image_path", ignore_index=True)
 
     # Create label index for normal (0) and abnormal (1) images.
     samples.loc[(samples.label == "normal") | (samples.label == "normal_test"), "label_index"] = 0
     samples.loc[(samples.label == "abnormal"), "label_index"] = 1
-    samples.label_index = samples.label_index.astype(int)
+    samples.label_index = samples.label_index.astype("Int64")
 
     # If a path to mask is provided, add it to the sample dataframe.
     if mask_dir is not None:
-        mask_dir = _check_and_convert_path(mask_dir)
-        for index, row in samples.iterrows():
-            if row.label_index == 1:
-                rel_image_path = row.image_path.relative_to(abnormal_dir)
-                samples.loc[index, "mask_path"] = str(mask_dir / rel_image_path)
+        samples.loc[samples.label == "abnormal", "mask_path"] = samples.loc[
+            samples.label == "mask_dir"
+        ].image_path.values
+        samples = samples.astype({"mask_path": "str"})
 
-        # make sure all the files exist
-        # samples.image_path does NOT need to be checked because we build the df based on that
-        assert samples.mask_path.apply(
-            lambda x: Path(x).exists() if x != "" else True
-        ).all(), f"missing mask files, mask_dir={mask_dir}"
+        # make sure all every rgb image has a corresponding mask image.
+        assert (
+            samples.loc[samples.label_index == 1]
+            .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
+            .all()
+        ), "Mismatch between anomalous images and mask images. Make sure the mask files \
+            folder follow the same naming convention as the anomalous images in the dataset \
+            (e.g. image: '000.png', mask: '000.png')."
+
+    # remove all the rows with temporal image samples that have already been assigned
+    samples = samples.loc[
+        (samples.label == "normal") | (samples.label == "abnormal") | (samples.label == "normal_test")
+    ]
 
     # Ensure the pathlib objects are converted to str.
     # This is because torch dataloader doesn't like pathlib.

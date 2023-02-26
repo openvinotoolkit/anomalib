@@ -168,7 +168,7 @@ def make_folder_dataset(
         filenames += filename
         labels += label
 
-    samples = DataFrame({"image_path": filenames, "label": labels, "mask_path": ""})
+    samples = DataFrame({"image_path": filenames, "label": labels})
     samples = samples.sort_values(by="image_path", ignore_index=True)
 
     # Create label index for normal (0) and abnormal (1) images.
