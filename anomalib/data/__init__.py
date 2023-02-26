@@ -119,6 +119,31 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             val_split_mode=config.dataset.val_split_mode,
             val_split_ratio=config.dataset.val_split_ratio,
         )
+    elif config.dataset.format.lower() == "folder_3d":
+        datamodule = Folder3D(
+            root=config.dataset.root,
+            normal_dir=config.dataset.normal_dir,
+            normal_depth_dir=config.dataset.normal_depth_dir,
+            abnormal_dir=config.dataset.abnormal_dir,
+            abnormal_depth_dir=config.dataset.abnormal_depth_dir,
+            task=config.dataset.task,
+            normal_test_dir=config.dataset.normal_test_dir,
+            normal_test_depth_dir=config.dataset.normal_test_depth_dir,
+            mask_dir=config.dataset.mask_dir,
+            extensions=config.dataset.extensions,
+            image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
+            center_crop=center_crop,
+            normalization=config.dataset.normalization,
+            train_batch_size=config.dataset.train_batch_size,
+            eval_batch_size=config.dataset.eval_batch_size,
+            num_workers=config.dataset.num_workers,
+            transform_config_train=config.dataset.transform_config.train,
+            transform_config_eval=config.dataset.transform_config.eval,
+            test_split_mode=config.dataset.test_split_mode,
+            test_split_ratio=config.dataset.test_split_ratio,
+            val_split_mode=config.dataset.val_split_mode,
+            val_split_ratio=config.dataset.val_split_ratio,
+        )
     elif config.dataset.format.lower() == "ucsdped":
         datamodule = UCSDped(
             root=config.dataset.path,

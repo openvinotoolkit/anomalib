@@ -374,7 +374,6 @@ class Folder3D(AnomalibDataModule):
         normal_depth_dir: str | Path | None = None,
         abnormal_depth_dir: str | Path | None = None,
         normal_test_depth_dir: str | Path | None = None,
-        normal_split_ratio: float = 0.2,
         extensions: tuple[str] | None = None,
         image_size: int | tuple[int, int] | None = None,
         center_crop: int | tuple[int, int] | None = None,
@@ -401,8 +400,6 @@ class Folder3D(AnomalibDataModule):
             val_split_ratio=val_split_ratio,
             seed=seed,
         )
-
-        self.normal_split_ratio = normal_split_ratio
 
         transform_train = get_transforms(
             config=transform_config_train,
