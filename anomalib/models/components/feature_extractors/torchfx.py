@@ -114,9 +114,10 @@ class TorchFXFeatureExtractor(nn.Module):
         """Extract features from a CNN.
 
         Args:
-            backbone (BackboneParams): The backbone to which the feature extraction hooks are attached.
-                If the name is provided, the model is loaded from torchvision. Otherwise, the model class can be
-                provided and it will try to load the weights from the provided weights file.
+            backbone (BackboneParams | nn.Module): The backbone to which the feature extraction hooks are attached.
+                If the name is provided for BackboneParams, the model is loaded from torchvision. Otherwise, the model
+                class can be provided and it will try to load the weights from the provided weights file. Last, an
+                instance of the model can be provided as well, which will be used as-is.
             return_nodes (Iterable[str]): List of layer names of the backbone to which the hooks are attached.
                 You can find the names of these nodes by using ``get_graph_node_names`` function.
             weights (str | WeightsEnum | None): Weights enum to use for the model. Torchvision models require
