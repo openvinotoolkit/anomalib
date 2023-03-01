@@ -1,6 +1,6 @@
-black==22.6.0
+black
 ruff
 pytest
-pre-commit>=2.15.0
-tox>=3.24.3
-nbmake>=1.3.5
+pre-commit
+tox
+nbmake

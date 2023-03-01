@@ -47,7 +47,6 @@ class Augmenter:
         p_anomalous: float = 0.5,
         beta: float | tuple[float, float] = (0.2, 1.0),
     ):
-
         self.p_anomalous = p_anomalous
         self.beta = beta
 
