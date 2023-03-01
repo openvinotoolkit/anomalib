@@ -11,8 +11,10 @@ from .image import (
     generate_output_image_filename,
     get_image_filenames,
     get_image_height_and_width,
+    read_depth_image,
     read_image,
 )
+from .path import _check_and_convert_path, _prepare_files_labels, _resolve_path
 from .split import (
     Split,
     TestSplitMode,
@@ -29,6 +31,7 @@ __all__ = [
     "get_image_height_and_width",
     "random_2d_perlin",
     "read_image",
+    "read_depth_image",
     "random_split",
     "split_by_label",
     "concatenate_datasets",
@@ -43,4 +46,7 @@ __all__ = [
     "InputNormalizationMethod",
     "download_and_extract",
     "DownloadInfo",
+    "_check_and_convert_path",
+    "_prepare_files_labels",
+    "_resolve_path",
 ]
