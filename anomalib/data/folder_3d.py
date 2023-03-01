@@ -218,7 +218,6 @@ class Folder3DDataset(AnomalibDepthDataset):
         split: str | Split | None = None,
         extensions: tuple[str, ...] | None = None,
     ) -> None:
-
         super().__init__(task, transform)
 
         self.split = split
