@@ -28,8 +28,6 @@ class OpenVINOInferencer(Inferencer):
     """OpenVINO implementation for the inference.
 
     Args:
-        config (str | Path | DictConfig | ListConfig): Configurable parameters that are used
-            during the training stage.
         path (str | Path): Path to the openvino onnx, xml or bin file.
         metadata_path (str | Path, optional): Path to metadata file. Defaults to None.
         device (str | None, optional): Device to run the inference on. Defaults to "CPU".
