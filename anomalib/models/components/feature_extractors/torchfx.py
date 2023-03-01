@@ -20,7 +20,7 @@ from torchvision.models.feature_extraction import create_feature_extractor
 class BackboneParams:
     """Used for serializing the backbone."""
 
-    class_path: str | nn.Module
+    class_path: str | type[nn.Module]
     init_args: dict = field(default_factory=dict)
 
 
