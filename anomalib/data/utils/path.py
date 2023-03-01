@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
 
