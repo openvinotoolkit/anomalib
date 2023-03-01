@@ -95,9 +95,9 @@ class TorchFXFeatureExtractor(nn.Module):
         super().__init__()
         if isinstance(backbone, dict):
             backbone = BackboneParams(**backbone)
-        elif isinstance(backbone, str):  # if str
+        elif isinstance(backbone, str):
             backbone = BackboneParams(class_path=backbone)
-        elif not isinstance(backbone, nn.Module):
+        elif not isinstance(backbone, nn.Module) and not isinstance(backbone, BackboneParams):
             raise ValueError(
                 f"backbone needs to be of type str | BackboneParams | dict | nn.Module, but was type {type(backbone)}"
             )
