@@ -3,6 +3,7 @@ from typing import Tuple
 
 import pytest
 import torch
+from torchvision.models import ResNet18_Weights, resnet18
 from torchvision.models.efficientnet import EfficientNet_B5_Weights
 from torchvision.models.resnet import ResNet18_Weights
 
@@ -81,6 +82,15 @@ class TestFeatureExtractor:
             )
             features = model(test_input)
             assert features["conv3"].shape == torch.Size((32, 1, 244, 244))
+
+        # Test if nn.Module instance can be passed directly
+        resnet = resnet18(weights=ResNet18_Weights)
+        model = TorchFXFeatureExtractor(resnet, ["layer1", "layer2", "layer3"])
+        test_input = torch.rand((32, 3, 256, 256))
+        features = model(test_input)
+        assert features["layer1"].shape == torch.Size((32, 64, 64, 64))
+        assert features["layer2"].shape == torch.Size((32, 128, 32, 32))
+        assert features["layer3"].shape == torch.Size((32, 256, 16, 16))
 
 
 @pytest.mark.parametrize(
