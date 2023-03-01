@@ -19,30 +19,12 @@ repos:
     hooks:
       - id: black
 
-  # python import sorting
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.11.5
+  # Ruff version.
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: "v0.0.253"
     hooks:
-      - id: isort
-
-  # python code analysis
-  - repo: https://github.com/PyCQA/flake8
-    rev: 4.0.1
-    hooks:
-      - id: flake8
-        args: ["--max-line-length=120", "--ignore=E203,W503"]
+      - id: ruff
         exclude: "tests"
-
-  # python linting
-  - repo: https://github.com/PyCQA/pylint
-    rev: v2.14.5
-    hooks:
-      - id: pylint
-        name: pylint
-        entry: pylint --score=no
-        language: system
-        types: [python]
-        exclude: "tests|docs"
 
   # python static type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
@@ -51,22 +33,6 @@ repos:
       - id: mypy
         additional_dependencies: [types-PyYAML]
         exclude: "tests"
-
-  - repo: https://github.com/PyCQA/pydocstyle
-    rev: 6.1.1
-    hooks:
-      - id: pydocstyle
-        additional_dependencies: [toml]
-        name: pydocstyle
-        entry: pydocstyle
-        language: python
-        types: [python]
-        exclude: "tests|docs"
-
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v3.3.1
-    hooks:
-      - id: pyupgrade
 
   # notebooks.
   - repo: https://github.com/nbQA-dev/nbQA
