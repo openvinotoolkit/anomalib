@@ -110,7 +110,7 @@ class TorchFXFeatureExtractor(nn.Module):
         return_nodes: list[str],
         weights: str | WeightsEnum | None = None,
         requires_grad: bool = False,
-    ) -> GraphModule | nn.Module:
+    ) -> GraphModule:
         """Extract features from a CNN.
 
         Args:
