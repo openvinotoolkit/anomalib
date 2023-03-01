@@ -60,6 +60,7 @@ class TorchFXFeatureExtractor(nn.Module):
 
         With custom models:
 
+            >>> import torch
             >>> from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor
             >>> feature_extractor = TorchFXFeatureExtractor(
                     "path.to.CustomModel", ["linear_relu_stack.3"], weights="path/to/weights.pth"
