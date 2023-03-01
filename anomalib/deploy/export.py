@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-import pytorch_lightning as pl
 import torch
 from anomalib.data.task_type import TaskType
 from anomalib.models.components import AnomalyModule
@@ -90,8 +89,8 @@ def export(
         transform (dict[str, Any]): Data transforms (augmentatiions) used for the model.
         input_size (tuple[int, int]): Input size of the model.
         model (AnomalyModule): Anomaly model to export.
-        export_mode (ExportMode): Path to exported ONNX/OpenVINO IR.
-        export_root (str | Path): Mode to export the model. ONNX or OpenVINO.
+        export_mode (ExportMode): Mode to export the model. ONNX or OpenVINO.
+        export_root (str | Path): Path to exported ONNX/OpenVINO IR.
     """
     # Write metadata to json file. The file is written in the same directory as the target model.
     export_path = Path(export_root) / export_mode.value

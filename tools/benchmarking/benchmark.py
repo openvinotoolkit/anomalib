@@ -119,7 +119,14 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_met
             # Create dirs for openvino model export
             openvino_export_path = project_path / Path("exported_models")
             openvino_export_path.mkdir(parents=True, exist_ok=True)
-            export(model, model_config.model.input_size, ExportMode.OPENVINO, openvino_export_path)
+            export(
+                task=model_config.dataset.task,
+                transform=trainer.datamodule.test_data.transform.to_dict(),
+                input_size=model_config.model.input_size,
+                model=model,
+                export_mode=ExportMode.OPENVINO,
+                export_root=openvino_export_path,
+            )
             openvino_throughput = get_openvino_throughput(
                 model_path=openvino_export_path, test_dataset=datamodule.test_data
             )
