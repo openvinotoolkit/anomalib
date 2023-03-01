@@ -154,7 +154,6 @@ class Tiler:
         mode: str = "padding",
         tile_count: int = 4,
     ) -> None:
-
         self.tile_size_h, self.tile_size_w = self.__validate_size_type(tile_size)
         self.tile_count = tile_count
 

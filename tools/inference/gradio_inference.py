@@ -26,9 +26,9 @@ def get_args() -> Namespace:
     Example:
 
         Example for Torch Inference.
-        >>> python tools/inference/gradio_inference.py  \                                                                                     ─╯
+        >>> python tools/inference/gradio_inference.py  \
         ...     --config ./anomalib/models/padim/config.yaml    \
-        ...     --weights ./results/padim/mvtec/bottle/weights/model.ckpt   # noqa: E501    #pylint: disable=line-too-long
+        ...     --weights ./results/padim/mvtec/bottle/weights/model.ckpt
 
     Returns:
         Namespace: List of arguments.

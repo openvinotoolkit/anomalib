@@ -36,7 +36,7 @@ class AUPRO(Metric):
         compute_on_step: bool = True,
         dist_sync_on_step: bool = False,
         process_group: Any | None = None,
-        dist_sync_fn: Callable = None,
+        dist_sync_fn: Callable | None = None,
         fpr_limit: float = 0.3,
     ) -> None:
         super().__init__(
