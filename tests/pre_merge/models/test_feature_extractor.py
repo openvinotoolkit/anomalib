@@ -7,6 +7,7 @@ from torchvision.models.efficientnet import EfficientNet_B5_Weights
 from torchvision.models.resnet import ResNet18_Weights
 
 from anomalib.models.components.feature_extractors import (
+    BackboneParams,
     FeatureExtractor,
     TorchFXFeatureExtractor,
     dryrun_find_featuremap_dims,
@@ -70,11 +71,11 @@ class TestFeatureExtractor:
         assert features["layer2"].shape == torch.Size((32, 128, 32, 32))
         assert features["layer3"].shape == torch.Size((32, 256, 16, 16))
 
-        # Test if local model can be loaded using string of weights path
+        # Test if local model can be instantiated from class and weights can be loaded using string of weights path
         with TemporaryDirectory() as tmpdir:
             torch.save(DummyModel().state_dict(), tmpdir + "/dummy_model.pt")
             model = TorchFXFeatureExtractor(
-                backbone=DummyModel,
+                backbone=BackboneParams(class_path=DummyModel),
                 weights=tmpdir + "/dummy_model.pt",
                 return_nodes=["conv3"],
             )
