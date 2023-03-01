@@ -14,6 +14,7 @@ from .image import (
     read_depth_image,
     read_image,
 )
+from .path import _check_and_convert_path, _prepare_files_labels, _resolve_path
 from .split import (
     Split,
     TestSplitMode,
@@ -45,4 +46,7 @@ __all__ = [
     "InputNormalizationMethod",
     "download_and_extract",
     "DownloadInfo",
+    "_check_and_convert_path",
+    "_prepare_files_labels",
+    "_resolve_path",
 ]
