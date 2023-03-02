@@ -138,10 +138,11 @@ def make_folder3d_dataset(
         samples = samples.astype({"depth_path": "str"})
 
     # If a path to mask is provided, add it to the sample dataframe.
-    if mask_dir is not None:
+    if mask_dir is not None and abnormal_dir is not None:
         samples.loc[samples.label == "abnormal", "mask_path"] = samples.loc[
             samples.label == "mask_dir"
         ].image_path.values
+        samples["mask_path"].fillna("", inplace=True)
         samples = samples.astype({"mask_path": "str"})
 
         # make sure all the files exist

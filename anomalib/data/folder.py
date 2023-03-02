@@ -1,5 +1,4 @@
 """Custom Folder Dataset.
-
 This script creates a custom dataset from a folder.
 """
 
@@ -35,7 +34,6 @@ def make_folder_dataset(
     extensions: tuple[str, ...] | None = None,
 ) -> DataFrame:
     """Make Folder Dataset.
-
     Args:
         normal_dir (str | Path): Path to the directory containing normal images.
         root (str | Path | None): Path to the root directory of the dataset.
@@ -49,7 +47,6 @@ def make_folder_dataset(
             Defaults to None.
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
             directory.
-
     Returns:
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
@@ -87,10 +84,11 @@ def make_folder_dataset(
 
     # If a path to mask is provided, add it to the sample dataframe.
 
-    if mask_dir is not None:
+    if mask_dir is not None and abnormal_dir is not None:
         samples.loc[samples.label == "abnormal", "mask_path"] = samples.loc[
             samples.label == "mask_dir"
         ].image_path.values
+        samples["mask_path"].fillna("", inplace=True)
         samples = samples.astype({"mask_path": "str"})
 
         # make sure all every rgb image has a corresponding mask image.
@@ -129,7 +127,6 @@ def make_folder_dataset(
 
 class FolderDataset(AnomalibDataset):
     """Folder dataset.
-
     Args:
         task (TaskType): Task type. (``classification``, ``detection`` or ``segmentation``).
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
@@ -142,11 +139,9 @@ class FolderDataset(AnomalibDataset):
             normal images for the test dataset. Defaults to None.
         mask_dir (str | Path | None, optional): Path to the directory containing
             the mask annotations. Defaults to None.
-
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
             directory.
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
-
     Raises:
         ValueError: When task is set to classification and `mask_dir` is provided. When `mask_dir` is
             provided, `task` should be set to `segmentation`.
@@ -189,7 +184,6 @@ class FolderDataset(AnomalibDataset):
 
 class Folder(AnomalibDataModule):
     """Folder DataModule.
-
     Args:
         normal_dir (str | Path): Name of the directory containing normal images.
             Defaults to "normal".
