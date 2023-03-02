@@ -208,7 +208,6 @@ class GanomalyLightning(Ganomaly):
     """
 
     def __init__(self, hparams: DictConfig | ListConfig) -> None:
-
         super().__init__(
             batch_size=hparams.dataset.train_batch_size,
             input_size=hparams.model.input_size,
