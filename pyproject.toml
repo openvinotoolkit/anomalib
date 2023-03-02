@@ -79,10 +79,9 @@ follow_imports_for_stubs = true
 addopts = [
     "--strict-markers",
     "--strict-config",
-    "--ra",
     "--showlocals",
+    "-ra",
 ]
-
 testpaths = "tests"
 
 
