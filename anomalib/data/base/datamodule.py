@@ -12,7 +12,7 @@ from typing import Any
 from pandas import DataFrame
 from pytorch_lightning import LightningDataModule
 from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
-from torch.utils.data.dataloader import DataLoader, default_collate
+from torch.utils.data import DataLoader, default_collate
 
 from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.synthetic import SyntheticAnomalyDataset
