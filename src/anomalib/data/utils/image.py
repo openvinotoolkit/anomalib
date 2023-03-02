@@ -123,7 +123,7 @@ def generate_output_image_filename(input_path: str | Path, output_path: str | Pa
         raise ValueError("input_path is expected to be a file to generate a proper output filename.")
 
     file_path: Path
-    if output_path.suffix == "":
+    if output_path.is_dir():
         # If the output is a directory, then add parent directory name
         # and filename to the path. This is to ensure we do not overwrite
         # images and organize based on the categories.

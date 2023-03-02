@@ -44,7 +44,6 @@ class TorchInferencer(Inferencer):
         meta_data_path: str | Path | None = None,
         device: str = "auto",
     ) -> None:
-
         self.device = self._get_device(device)
 
         # Check and load the configuration

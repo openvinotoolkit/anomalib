@@ -134,7 +134,6 @@ def collect_anomaly_scores(anomaly_maps, ground_truth_maps):
     # Collect anomaly scores within each ground truth region and for all potential fp pixels.
     ok_index = 0
     for gt_map, prediction in zip(ground_truth_maps, anomaly_maps):
-
         # Compute the connected components in the ground truth map.
         labeled, n_components = label(gt_map, structure)
 

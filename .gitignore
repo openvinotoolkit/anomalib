@@ -5,9 +5,6 @@ datasets
 results
 !anomalib/core/results
 
-backup.py
-train.ipynb
-
 # VENV
 .python-version
 .anomalib

@@ -58,7 +58,7 @@ class InitLoader(PTInitializingDataLoader):
 
 
 def wrap_nncf_model(
-    model: nn.Module, config: dict, dataloader: DataLoader = None, init_state_dict: dict = None
+    model: nn.Module, config: dict, dataloader: DataLoader, init_state_dict: dict
 ) -> tuple[CompressionAlgorithmController, NNCFNetwork]:
     """Wrap model by NNCF.
 
