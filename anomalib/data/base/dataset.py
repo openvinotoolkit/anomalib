@@ -126,7 +126,6 @@ class AnomalibDataset(Dataset, ABC):
         elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
             # Only Anomalous (1) images have masks in anomaly datasets
             # Therefore, create empty mask for Normal (0) images.
-
             if label_index == 0:
                 mask = np.zeros(shape=image.shape[:2])
             else:
