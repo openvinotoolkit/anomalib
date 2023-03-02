@@ -148,6 +148,8 @@ def make_folder3d_dataset(
         assert samples.mask_path.apply(
             lambda x: Path(x).exists() if x != "" else True
         ).all(), f"missing mask files, mask_dir={mask_dir}"
+    else:
+        samples["mask_path"] = ""
 
     # remove all the rows with temporal image samples that have already been assigned
     samples = samples.loc[

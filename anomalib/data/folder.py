@@ -86,6 +86,7 @@ def make_folder_dataset(
     samples.label_index = samples.label_index.astype("Int64")
 
     # If a path to mask is provided, add it to the sample dataframe.
+
     if mask_dir is not None:
         samples.loc[samples.label == "abnormal", "mask_path"] = samples.loc[
             samples.label == "mask_dir"
@@ -100,6 +101,8 @@ def make_folder_dataset(
         ), "Mismatch between anomalous images and mask images. Make sure the mask files \
             folder follow the same naming convention as the anomalous images in the dataset \
             (e.g. image: '000.png', mask: '000.png')."
+    else:
+        samples["mask_path"] = ""
 
     # remove all the rows with temporal image samples that have already been assigned
     samples = samples.loc[
