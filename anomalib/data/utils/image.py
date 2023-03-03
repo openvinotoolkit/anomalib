@@ -11,6 +11,7 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+import tifffile as tiff
 import torch.nn.functional as F
 from torch import Tensor
 from torchvision.datasets.folder import IMG_EXTENSIONS
@@ -123,7 +124,7 @@ def generate_output_image_filename(input_path: str | Path, output_path: str | Pa
         raise ValueError("input_path is expected to be a file to generate a proper output filename.")
 
     file_path: Path
-    if output_path.suffix == "":
+    if output_path.is_dir():
         # If the output is a directory, then add parent directory name
         # and filename to the path. This is to ensure we do not overwrite
         # images and organize based on the categories.
@@ -202,6 +203,24 @@ def read_image(path: str | Path, image_size: int | tuple[int, int] | None = None
         # prototyping new ideas.
         height, width = get_image_height_and_width(image_size)
         image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
+
+    return image
+
+
+def read_depth_image(path: str | Path) -> np.ndarray:
+    """Read tiff depth image from disk.
+
+    Args:
+        path (str, Path): path to the image file
+
+    Example:
+        >>> image = read_depth_image("test_image.tiff")
+
+    Returns:
+        image as numpy array
+    """
+    path = path if isinstance(path, str) else str(path)
+    image = tiff.imread(path)
 
     return image
 

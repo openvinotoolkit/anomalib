@@ -13,8 +13,10 @@ from .avenue import Avenue
 from .base import AnomalibDataModule, AnomalibDataset
 from .btech import BTech
 from .folder import Folder
+from .folder_3d import Folder3D
 from .inference import InferenceDataset
 from .mvtec import MVTec
+from .mvtec_3d import MVTec3D
 from .shanghaitech import ShanghaiTech
 from .task_type import TaskType
 from .ucsd_ped import UCSDped
@@ -59,6 +61,24 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             val_split_mode=config.dataset.val_split_mode,
             val_split_ratio=config.dataset.val_split_ratio,
         )
+    elif config.dataset.format.lower() == "mvtec_3d":
+        datamodule = MVTec3D(
+            root=config.dataset.path,
+            category=config.dataset.category,
+            image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
+            center_crop=center_crop,
+            normalization=config.dataset.normalization,
+            train_batch_size=config.dataset.train_batch_size,
+            eval_batch_size=config.dataset.eval_batch_size,
+            num_workers=config.dataset.num_workers,
+            task=config.dataset.task,
+            transform_config_train=config.dataset.transform_config.train,
+            transform_config_eval=config.dataset.transform_config.eval,
+            test_split_mode=config.dataset.test_split_mode,
+            test_split_ratio=config.dataset.test_split_ratio,
+            val_split_mode=config.dataset.val_split_mode,
+            val_split_ratio=config.dataset.val_split_ratio,
+        )
     elif config.dataset.format.lower() == "btech":
         datamodule = BTech(
             root=config.dataset.path,
@@ -84,6 +104,31 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             abnormal_dir=config.dataset.abnormal_dir,
             task=config.dataset.task,
             normal_test_dir=config.dataset.normal_test_dir,
+            mask_dir=config.dataset.mask_dir,
+            extensions=config.dataset.extensions,
+            image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
+            center_crop=center_crop,
+            normalization=config.dataset.normalization,
+            train_batch_size=config.dataset.train_batch_size,
+            eval_batch_size=config.dataset.eval_batch_size,
+            num_workers=config.dataset.num_workers,
+            transform_config_train=config.dataset.transform_config.train,
+            transform_config_eval=config.dataset.transform_config.eval,
+            test_split_mode=config.dataset.test_split_mode,
+            test_split_ratio=config.dataset.test_split_ratio,
+            val_split_mode=config.dataset.val_split_mode,
+            val_split_ratio=config.dataset.val_split_ratio,
+        )
+    elif config.dataset.format.lower() == "folder_3d":
+        datamodule = Folder3D(
+            root=config.dataset.root,
+            normal_dir=config.dataset.normal_dir,
+            normal_depth_dir=config.dataset.normal_depth_dir,
+            abnormal_dir=config.dataset.abnormal_dir,
+            abnormal_depth_dir=config.dataset.abnormal_depth_dir,
+            task=config.dataset.task,
+            normal_test_dir=config.dataset.normal_test_dir,
+            normal_test_depth_dir=config.dataset.normal_test_depth_dir,
             mask_dir=config.dataset.mask_dir,
             extensions=config.dataset.extensions,
             image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
@@ -187,8 +232,10 @@ __all__ = [
     "get_datamodule",
     "BTech",
     "Folder",
+    "Folder3D",
     "InferenceDataset",
     "MVTec",
+    "MVTec3D",
     "Avenue",
     "UCSDped",
     "TaskType",

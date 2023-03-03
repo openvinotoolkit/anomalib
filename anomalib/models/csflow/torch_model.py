@@ -519,7 +519,6 @@ class CsFlowModel(nn.Module):
         clamp: int = 3,
         num_channels: int = 3,
     ) -> None:
-
         super().__init__()
         self.input_dims = (num_channels, *input_size)
         self.clamp = clamp
