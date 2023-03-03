@@ -7,7 +7,9 @@ from omegaconf import OmegaConf
 from anomalib.models.components import AnomalyModule
 from anomalib.utils.callbacks.metrics_configuration import MetricsConfigurationCallback
 from anomalib.utils.metrics.collection import AnomalibMetricCollection
-from tests.helpers.dummy import DummyDataModule, DummyLogger, DummyModel
+from tests.helpers.dataloaders.numeric import DummyNumericDataModule
+from tests.helpers.logger import DummyLogger
+from tests.helpers.models.dummy_model import DummyModel
 
 
 class _DummyAnomalyModule(AnomalyModule):
@@ -53,7 +55,7 @@ def test_metric_collection_configuration_callback(config_from_yaml):
     trainer = pl.Trainer(
         callbacks=[callback], logger=dummy_logger, enable_checkpointing=False, default_root_dir=dummy_logger.tempdir
     )
-    callback.setup(trainer, dummy_anomaly_module, DummyDataModule())
+    callback.setup(trainer, dummy_anomaly_module, DummyNumericDataModule())
 
     assert isinstance(
         dummy_anomaly_module.image_metrics, AnomalibMetricCollection
