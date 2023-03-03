@@ -31,7 +31,7 @@ class TestAnomalibTrainer:
         elif stage == "test":
             outputs = trainer.test(model, datamodule)
 
-        if stage =="predict":
+        if stage == "predict":
             output = outputs[0]
             anomaly_map = torch.zeros((1, 1, 32, 32), dtype=torch.float32)
             anomaly_map[:, :, 5:15, 5:15] = 3.0
@@ -50,4 +50,3 @@ class TestAnomalibTrainer:
             assert model.image_threshold.value == 3.0
             assert model.pixel_threshold.value == 3.0
             assert isinstance(model.normalization_metrics, MinMax)
- 

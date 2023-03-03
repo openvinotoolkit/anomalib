@@ -14,7 +14,10 @@ from pytorch_lightning.loggers import Logger
 from pytorch_lightning.plugins import PLUGIN_INPUT
 from pytorch_lightning.profilers import Profiler
 from pytorch_lightning.strategies import Strategy
-from pytorch_lightning.trainer.connectors.accelerator_connector import _LITERAL_WARN, _PRECISION_INPUT
+from pytorch_lightning.trainer.connectors.accelerator_connector import (
+    _LITERAL_WARN,
+    _PRECISION_INPUT,
+)
 
 from anomalib.core.hooks import PostProcessingHooks
 from anomalib.core.loops.fit import AnomalibFitLoop

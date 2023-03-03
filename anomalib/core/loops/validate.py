@@ -16,7 +16,7 @@ class AnomalibValidationEpochLoop(EvaluationEpochLoop):
     def __init__(self):
         super().__init__()
 
-    def _evaluation_step_end(self, *args, **kwargs) -> Optional[STEP_OUTPUT]:
+    def _evaluation_step_end(self, *args, **kwargs) -> STEP_OUTPUT | None:
         """Runs ``validation_step`` after the end of one validation step."""
         outputs = super()._evaluation_step_end(*args, **kwargs)
         self.trainer._call_custom_hooks("validation_step", outputs)
@@ -52,7 +52,7 @@ class AnomalibValidationLoop(EvaluationLoop):
         self.replace(epoch_loop=AnomalibValidationEpochLoop)
         return super().on_run_start(*args, **kwargs)
 
-    def _evaluation_epoch_end(self, outputs: List[EPOCH_OUTPUT]):
+    def _evaluation_epoch_end(self, outputs: list[EPOCH_OUTPUT]):
         """Runs ``validation_epoch_end``
 
         Adds on top of methods copied from the base class.
@@ -60,7 +60,7 @@ class AnomalibValidationLoop(EvaluationLoop):
         super()._evaluation_epoch_end(outputs)
 
         # with a single dataloader don't pass a 2D list | Taken from base method
-        output_or_outputs: Union[EPOCH_OUTPUT, List[EPOCH_OUTPUT]] = (
+        output_or_outputs: EPOCH_OUTPUT | list[EPOCH_OUTPUT] = (
             outputs[0] if len(outputs) > 0 and self.num_dataloaders == 1 else outputs
         )
         self.trainer._call_custom_hooks("validation_epoch_end", output_or_outputs)

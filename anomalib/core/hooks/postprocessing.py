@@ -11,7 +11,11 @@ from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 from torch import Tensor
 from torchmetrics import Metric
 
-from anomalib.data.utils.boxes import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
+from anomalib.data.utils.boxes import (
+    boxes_to_anomaly_maps,
+    boxes_to_masks,
+    masks_to_boxes,
+)
 from anomalib.models import AnomalyModule
 from anomalib.post_processing import NormalizationMethod, ThresholdMethod
 from anomalib.utils.metrics.min_max import MinMax
@@ -95,7 +99,7 @@ class PostProcessingHooks(TrainerHooks):
     def test_epoch_end(self, pl_module: AnomalyModule, outputs: EPOCH_OUTPUT) -> None:
         pl_module._collect_outputs(pl_module.image_metrics, pl_module.pixel_metrics, outputs)
 
-    def predict_step(self, lightning_module: AnomalyModule, outputs: List[STEP_OUTPUT]) -> None:
+    def predict_step(self, lightning_module: AnomalyModule, outputs: list[STEP_OUTPUT]) -> None:
         """Predicted outputs.
 
         Args:

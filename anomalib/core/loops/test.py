@@ -9,7 +9,7 @@ from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 
 
 class AnomalibTestEpochLoop(EvaluationEpochLoop):
-    def _evaluation_step_end(self, *args, **kwargs) -> Optional[STEP_OUTPUT]:
+    def _evaluation_step_end(self, *args, **kwargs) -> STEP_OUTPUT | None:
         """Runs ``test_step`` after the end of one test step."""
         outputs = super()._evaluation_step_end(*args, **kwargs)
         self.trainer._call_custom_hooks("test_step", outputs)
@@ -42,7 +42,7 @@ class AnomalibTestLoop(EvaluationLoop):
         self.replace(epoch_loop=AnomalibTestEpochLoop)
         return super().on_run_start(*args, **kwargs)
 
-    def _evaluation_epoch_end(self, outputs: List[EPOCH_OUTPUT]):
+    def _evaluation_epoch_end(self, outputs: list[EPOCH_OUTPUT]):
         """Runs ``test_epoch_end``
 
         Adds on top of methods copied from the base class.
@@ -50,7 +50,7 @@ class AnomalibTestLoop(EvaluationLoop):
         super()._evaluation_epoch_end(outputs)
 
         # with a single dataloader don't pass a 2D list | Taken from base method
-        output_or_outputs: Union[EPOCH_OUTPUT, List[EPOCH_OUTPUT]] = (
+        output_or_outputs: EPOCH_OUTPUT | list[EPOCH_OUTPUT] = (
             outputs[0] if len(outputs) > 0 and self.num_dataloaders == 1 else outputs
         )
         self.trainer._call_custom_hooks("test_epoch_end", output_or_outputs)

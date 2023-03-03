@@ -8,7 +8,11 @@ from torchvision import transforms
 from torchvision.datasets import FakeData
 
 from anomalib.utils.callbacks import ImageVisualizerCallback
-from anomalib.utils.metrics import AnomalyScoreDistribution, AnomalyScoreThreshold, MinMax
+from anomalib.utils.metrics import (
+    AnomalyScoreDistribution,
+    AnomalyScoreThreshold,
+    MinMax,
+)
 from tests.helpers.models.dummy_model import DummyModel
 
 
