@@ -11,41 +11,6 @@ class AnomalibPredictionEpochLoop(PredictionEpochLoop):
         """Runs at the end of ``predict_step``."""
         self.trainer._call_custom_hooks("predict_step", self.predictions)
 
-    # def _predict_step(self, batch: Any, batch_idx: int, dataloader_idx: int) -> None:
-    #     """Override the predict step as we need to post_process the outputs.
-
-    #     This method is same as the base class except for one additional line that calls custom callbacks.
-    #     """
-    #     # configure step_kwargs
-    #     step_kwargs = self._build_kwargs(batch, batch_idx, dataloader_idx)
-
-    #     # extract batch_indices and store them
-    #     batch_indices = self._get_batch_indices(dataloader_idx)
-    #     self.current_batch_indices = batch_indices[batch_idx] if batch_indices else []
-
-    #     self.trainer._call_callback_hooks("on_predict_batch_start", batch, batch_idx, dataloader_idx)
-    #     self.trainer._call_lightning_module_hook("on_predict_batch_start", batch, batch_idx, dataloader_idx)
-
-    #     self.batch_progress.increment_started()
-
-    #     predictions = self.trainer._call_strategy_hook("predict_step", *step_kwargs.values())
-
-    #     self.batch_progress.increment_processed()
-
-    #     if predictions is None:
-    #         self._warning_cache.warn("predict returned None if it was on purpose, ignore this warning...")
-
-    #     self.trainer._call_callback_hooks("on_predict_batch_end", predictions, batch, batch_idx, dataloader_idx)
-    #     self.trainer._call_lightning_module_hook("on_predict_batch_end", predictions, batch, batch_idx, dataloader_idx)
-
-    #     # Call custom loops.
-    #     self.trainer._call_custom_hooks("predict_step", predictions)
-
-    #     self.batch_progress.increment_completed()
-
-    #     if self.should_store_predictions:
-    #         self.predictions.append(move_data_to_device(predictions, torch.device("cpu")))
-
 
 class AnomalibPredictionLoop(PredictionLoop):
     def on_run_start(self) -> None:
