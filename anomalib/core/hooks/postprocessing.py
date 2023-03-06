@@ -4,18 +4,12 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
-from typing import List
-
 import torch
 from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 from torch import Tensor
 from torchmetrics import Metric
 
-from anomalib.data.utils.boxes import (
-    boxes_to_anomaly_maps,
-    boxes_to_masks,
-    masks_to_boxes,
-)
+from anomalib.data.utils.boxes import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
 from anomalib.models import AnomalyModule
 from anomalib.post_processing import NormalizationMethod, ThresholdMethod
 from anomalib.utils.metrics.min_max import MinMax
@@ -71,13 +65,13 @@ class PostProcessingHooks(TrainerHooks):
                 outputs["anomaly_maps"] = boxes_to_anomaly_maps(pred_boxes, box_scores, image_size)
                 outputs["mask"] = boxes_to_masks(true_boxes, image_size)
 
-    def on_run_start(self, lightning_module: AnomalyModule):
+    def on_run_start(self, pl_module: AnomalyModule):
         """Setup thresholding method and the thresholds.
 
         Adds these attributes to the lightning module
         """
-        setattr(lightning_module, "threshold_method", self.threshold_method)
-        setattr(lightning_module, "normalization_metrics", self.normalization_metrics)
+        setattr(pl_module, "threshold_method", self.threshold_method)
+        setattr(pl_module, "normalization_metrics", self.normalization_metrics)
 
     def test_step(self, pl_module: AnomalyModule, outputs: STEP_OUTPUT) -> None:
         self.validation_step(pl_module, outputs)
@@ -113,17 +107,20 @@ class PostProcessingHooks(TrainerHooks):
         self._outputs_to_cpu(outputs)
         self._post_process(outputs)
 
-    def validation_batch_end(self, pl_module: AnomalyModule, outputs):
-        if "anomaly_maps" in outputs:
-            pl_module.normalization_metrics(outputs["anomaly_maps"])
-        elif "box_scores" in outputs:
-            pl_module.normalization_metrics(torch.cat(outputs["box_scores"]))
-        elif "pred_scores" in outputs:
-            pl_module.normalization_metrics(outputs["pred_scores"])
-        else:
-            raise ValueError("No values found for normalization, provide anomaly maps, bbox scores, or image scores")
+    def validation_batch_end(self, pl_module: AnomalyModule, outputs: STEP_OUTPUT):
+        if isinstance(outputs, dict):
+            if "anomaly_maps" in outputs:
+                pl_module.normalization_metrics(outputs["anomaly_maps"])
+            elif "box_scores" in outputs:
+                pl_module.normalization_metrics(torch.cat(outputs["box_scores"]))
+            elif "pred_scores" in outputs:
+                pl_module.normalization_metrics(outputs["pred_scores"])
+            else:
+                raise ValueError(
+                    "No values found for normalization, provide anomaly maps, bbox scores, or image scores"
+                )
 
-    def validation_epoch_end(self, pl_module: AnomalyModule, outputs):
+    def validation_epoch_end(self, pl_module: AnomalyModule, outputs: EPOCH_OUTPUT):
         if pl_module.threshold_method == ThresholdMethod.ADAPTIVE:
             pl_module._compute_adaptive_threshold(outputs)
         pl_module._collect_outputs(pl_module.image_metrics, pl_module.pixel_metrics, outputs)

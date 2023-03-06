@@ -5,6 +5,9 @@
 
 
 from abc import ABC
+from typing import List
+
+from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 
 from anomalib.models import AnomalyModule
 
@@ -18,7 +21,7 @@ class TrainerHooks(ABC):
     Override any relevant hooks.
     """
 
-    def on_run_start(self, pl_module: AnomalyModule, *args, **kwargs):
+    def on_run_start(self, pl_module: AnomalyModule):
         """Called at the beginning of the loop."""
 
     def on_run_end(self, pl_module: AnomalyModule, *args, **kwargs):
@@ -27,20 +30,23 @@ class TrainerHooks(ABC):
     def teardown(self) -> None:
         """Use to release memory etc."""
 
-    def predict_step(self, pl_module: AnomalyModule, *args, **kwargs):
+    def predict_step(self, lightning_module: AnomalyModule, outputs: List[STEP_OUTPUT]):
         """Called at the end of the predict step."""
 
     def train_step(self, pl_module: AnomalyModule, *args, **kwargs):
         """Called at the end of the train step."""
 
-    def test_step(self, pl_module: AnomalyModule, *args, **kwargs):
+    def test_step(self, pl_module: AnomalyModule, outputs: STEP_OUTPUT):
         """Called at the end of the test step."""
 
-    def validation_step(self, pl_module: AnomalyModule, *args, **kwargs):
+    def test_epoch_end(self, pl_module: AnomalyModule, outputs: EPOCH_OUTPUT):
+        """Called at the end of the test epoch."""
+
+    def validation_step(self, pl_module: AnomalyModule, outputs: STEP_OUTPUT):
         """Called at the end of the validation step."""
 
-    def validation_epoch_end(self, pl_module: AnomalyModule, *args, **kwargs):
+    def validation_epoch_end(self, pl_module: AnomalyModule, outputs: EPOCH_OUTPUT):
         """Called at the end of the validation epoch."""
 
-    def validation_batch_end(self, pl_module: AnomalyModule, *args, **kwargs):
+    def validation_batch_end(self, pl_module: AnomalyModule, outputs: STEP_OUTPUT):
         """Called at the end of the validation batch."""

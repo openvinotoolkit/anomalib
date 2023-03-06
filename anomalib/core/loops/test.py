@@ -1,14 +1,20 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Any, List, Optional, Union
+from typing import Any
 
 from pytorch_lightning.loops.dataloader.evaluation_loop import EvaluationLoop
 from pytorch_lightning.loops.epoch.evaluation_epoch_loop import EvaluationEpochLoop
 from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 
+import anomalib.core as core
+
 
 class AnomalibTestEpochLoop(EvaluationEpochLoop):
+    def __init__(self) -> None:
+        super().__init__()
+        self.trainer: "core.AnomalibTrainer"
+
     def _evaluation_step_end(self, *args, **kwargs) -> STEP_OUTPUT | None:
         """Runs ``test_step`` after the end of one test step."""
         outputs = super()._evaluation_step_end(*args, **kwargs)
@@ -38,6 +44,10 @@ class AnomalibTestEpochLoop(EvaluationEpochLoop):
 
 
 class AnomalibTestLoop(EvaluationLoop):
+    def __init__(self) -> None:
+        super().__init__()
+        self.trainer: "core.AnomalibTrainer"
+
     def on_run_start(self, *args, **kwargs) -> None:
         self.replace(epoch_loop=AnomalibTestEpochLoop)
         return super().on_run_start(*args, **kwargs)
