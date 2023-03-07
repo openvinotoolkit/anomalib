@@ -1,4 +1,5 @@
 """Custom Folder Dataset.
+
 This script creates a custom dataset from a folder.
 """
 
@@ -10,9 +11,9 @@ from __future__ import annotations
 from pathlib import Path
 
 import albumentations as A
-from pandas import DataFrame
+from pandas import DataFrame, isna
 
-from anomalib.data.base import AnomalibDataModule, AnomalibDataset
+from anomalib.data.base import AnomalibDataModule, AnomalibDepthDataset
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
     InputNormalizationMethod,
@@ -24,16 +25,20 @@ from anomalib.data.utils import (
 from anomalib.data.utils.path import _prepare_files_labels, _resolve_path
 
 
-def make_folder_dataset(
+def make_folder3d_dataset(
     normal_dir: str | Path,
     root: str | Path | None = None,
     abnormal_dir: str | Path | None = None,
     normal_test_dir: str | Path | None = None,
     mask_dir: str | Path | None = None,
+    normal_depth_dir: str | Path | None = None,
+    abnormal_depth_dir: str | Path | None = None,
+    normal_test_depth_dir: str | Path | None = None,
     split: str | Split | None = None,
     extensions: tuple[str, ...] | None = None,
 ) -> DataFrame:
     """Make Folder Dataset.
+
     Args:
         normal_dir (str | Path): Path to the directory containing normal images.
         root (str | Path | None): Path to the root directory of the dataset.
@@ -43,10 +48,18 @@ def make_folder_dataset(
             if `None`. Defaults to None.
         mask_dir (str | Path | None, optional): Path to the directory containing
             the mask annotations. Defaults to None.
+        normal_depth_dir (str | Path | None, optional): Path to the directory containing
+            normal depth images for the test dataset. Normal test depth images will be a split of `normal_dir`
+        abnormal_depth_dir (str | Path | None, optional): Path to the directory containing
+            abnormal depth images for the test dataset.
+        normal_test_depth_dir (str | Path | None, optional): Path to the directory containing
+            normal depth images for the test dataset. Normal test images will be a split of `normal_dir`
+            if `None`. Defaults to None.
         split (str | Split | None, optional): Dataset split (ie., Split.FULL, Split.TRAIN or Split.TEST).
             Defaults to None.
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
             directory.
+
     Returns:
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
@@ -54,6 +67,10 @@ def make_folder_dataset(
     abnormal_dir = _resolve_path(abnormal_dir, root) if abnormal_dir is not None else None
     normal_test_dir = _resolve_path(normal_test_dir, root) if normal_test_dir is not None else None
     mask_dir = _resolve_path(mask_dir, root) if mask_dir is not None else None
+    normal_depth_dir = _resolve_path(normal_depth_dir, root) if normal_depth_dir is not None else None
+    abnormal_depth_dir = _resolve_path(abnormal_depth_dir, root) if abnormal_depth_dir is not None else None
+    normal_test_depth_dir = _resolve_path(normal_test_depth_dir, root) if normal_test_depth_dir is not None else None
+
     assert normal_dir.is_dir(), "A folder location must be provided in normal_dir."
 
     filenames = []
@@ -65,6 +82,15 @@ def make_folder_dataset(
 
     if normal_test_dir:
         dirs = {**dirs, **{"normal_test": normal_test_dir}}
+
+    if normal_depth_dir:
+        dirs = {**dirs, **{"normal_depth": normal_depth_dir}}
+
+    if abnormal_depth_dir:
+        dirs = {**dirs, **{"abnormal_depth": abnormal_depth_dir}}
+
+    if normal_test_depth_dir:
+        dirs = {**dirs, **{"normal_test_depth": normal_test_depth_dir}}
 
     if mask_dir:
         dirs = {**dirs, **{"mask_dir": mask_dir}}
@@ -83,7 +109,35 @@ def make_folder_dataset(
     samples.label_index = samples.label_index.astype("Int64")
 
     # If a path to mask is provided, add it to the sample dataframe.
+    if normal_depth_dir is not None:
+        samples.loc[samples.label == "normal", "depth_path"] = samples.loc[
+            samples.label == "normal_depth"
+        ].image_path.values
+        samples.loc[samples.label == "abnormal", "depth_path"] = samples.loc[
+            samples.label == "abnormal_depth"
+        ].image_path.values
 
+        if normal_test_dir is not None:
+            samples.loc[samples.label == "normal_test", "depth_path"] = samples.loc[
+                samples.label == "normal_test_depth"
+            ].image_path.values
+
+        # make sure every rgb image has a corresponding depth image and that the file exists
+        assert (
+            samples.loc[samples.label_index == 1]
+            .apply(lambda x: Path(x.image_path).stem in Path(x.depth_path).stem, axis=1)
+            .all()
+        ), "Mismatch between anomalous images and depth images. Make sure the mask files in 'xyz' \
+            folder follow the same naming convention as the anomalous images in the dataset \
+            (e.g. image: '000.png', depth: '000.tiff')."
+
+        assert samples.depth_path.apply(
+            lambda x: Path(x).exists() if not isna(x) else True
+        ).all(), "missing depth image files"
+
+        samples = samples.astype({"depth_path": "str"})
+
+    # If a path to mask is provided, add it to the sample dataframe.
     if mask_dir is not None and abnormal_dir is not None:
         samples.loc[samples.label == "abnormal", "mask_path"] = samples.loc[
             samples.label == "mask_dir"
@@ -91,14 +145,10 @@ def make_folder_dataset(
         samples["mask_path"].fillna("", inplace=True)
         samples = samples.astype({"mask_path": "str"})
 
-        # make sure all every rgb image has a corresponding mask image.
-        assert (
-            samples.loc[samples.label_index == 1]
-            .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
-            .all()
-        ), "Mismatch between anomalous images and mask images. Make sure the mask files \
-            folder follow the same naming convention as the anomalous images in the dataset \
-            (e.g. image: '000.png', mask: '000.png')."
+        # make sure all the files exist
+        assert samples.mask_path.apply(
+            lambda x: Path(x).exists() if x != "" else True
+        ).all(), f"missing mask files, mask_dir={mask_dir}"
     else:
         samples["mask_path"] = ""
 
@@ -125,8 +175,9 @@ def make_folder_dataset(
     return samples
 
 
-class FolderDataset(AnomalibDataset):
+class Folder3DDataset(AnomalibDepthDataset):
     """Folder dataset.
+
     Args:
         task (TaskType): Task type. (``classification``, ``detection`` or ``segmentation``).
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
@@ -139,9 +190,17 @@ class FolderDataset(AnomalibDataset):
             normal images for the test dataset. Defaults to None.
         mask_dir (str | Path | None, optional): Path to the directory containing
             the mask annotations. Defaults to None.
+        normal_depth_dir (str | Path | None, optional): Path to the directory containing
+            normal depth images for the test dataset. Normal test depth images will be a split of `normal_dir`
+        abnormal_depth_dir (str | Path | None, optional): Path to the directory containing
+            abnormal depth images for the test dataset.
+        normal_test_depth_dir (str | Path | None, optional): Path to the directory containing
+            normal depth images for the test dataset. Normal test images will be a split of `normal_dir`
+            if `None`. Defaults to None.
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
             directory.
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
+
     Raises:
         ValueError: When task is set to classification and `mask_dir` is provided. When `mask_dir` is
             provided, `task` should be set to `segmentation`.
@@ -156,6 +215,9 @@ class FolderDataset(AnomalibDataset):
         abnormal_dir: str | Path | None = None,
         normal_test_dir: str | Path | None = None,
         mask_dir: str | Path | None = None,
+        normal_depth_dir: str | Path | None = None,
+        abnormal_depth_dir: str | Path | None = None,
+        normal_test_depth_dir: str | Path | None = None,
         split: str | Split | None = None,
         extensions: tuple[str, ...] | None = None,
     ) -> None:
@@ -167,23 +229,30 @@ class FolderDataset(AnomalibDataset):
         self.abnormal_dir = abnormal_dir
         self.normal_test_dir = normal_test_dir
         self.mask_dir = mask_dir
+        self.normal_depth_dir = normal_depth_dir
+        self.abnormal_depth_dir = abnormal_depth_dir
+        self.normal_test_depth_dir = normal_test_depth_dir
         self.extensions = extensions
 
     def _setup(self) -> None:
         """Assign samples."""
-        self.samples = make_folder_dataset(
+        self.samples = make_folder3d_dataset(
             root=self.root,
             normal_dir=self.normal_dir,
             abnormal_dir=self.abnormal_dir,
             normal_test_dir=self.normal_test_dir,
             mask_dir=self.mask_dir,
+            normal_depth_dir=self.normal_depth_dir,
+            abnormal_depth_dir=self.abnormal_depth_dir,
+            normal_test_depth_dir=self.normal_test_depth_dir,
             split=self.split,
             extensions=self.extensions,
         )
 
 
-class Folder(AnomalibDataModule):
+class Folder3D(AnomalibDataModule):
     """Folder DataModule.
+
     Args:
         normal_dir (str | Path): Name of the directory containing normal images.
             Defaults to "normal".
@@ -194,6 +263,13 @@ class Folder(AnomalibDataModule):
             normal images for the test dataset. Defaults to None.
         mask_dir (str | Path | None, optional): Path to the directory containing
             the mask annotations. Defaults to None.
+        normal_depth_dir (str | Path | None, optional): Path to the directory containing
+            normal depth images for the test dataset. Normal test depth images will be a split of `normal_dir`
+        abnormal_depth_dir (str | Path | None, optional): Path to the directory containing
+            abnormal depth images for the test dataset.
+        normal_test_depth_dir (str | Path | None, optional): Path to the directory containing
+            normal depth images for the test dataset. Normal test images will be a split of `normal_dir`
+            if `None`. Defaults to None.
         normal_split_ratio (float, optional): Ratio to split normal training images and add to the
             test set in case test set doesn't contain any normal images.
             Defaults to 0.2.
@@ -229,7 +305,9 @@ class Folder(AnomalibDataModule):
         abnormal_dir: str | Path | None = None,
         normal_test_dir: str | Path | None = None,
         mask_dir: str | Path | None = None,
-        normal_split_ratio: float = 0.2,
+        normal_depth_dir: str | Path | None = None,
+        abnormal_depth_dir: str | Path | None = None,
+        normal_test_depth_dir: str | Path | None = None,
         extensions: tuple[str] | None = None,
         image_size: int | tuple[int, int] | None = None,
         center_crop: int | tuple[int, int] | None = None,
@@ -257,8 +335,6 @@ class Folder(AnomalibDataModule):
             seed=seed,
         )
 
-        self.normal_split_ratio = normal_split_ratio
-
         transform_train = get_transforms(
             config=transform_config_train,
             image_size=image_size,
@@ -272,7 +348,7 @@ class Folder(AnomalibDataModule):
             normalization=InputNormalizationMethod(normalization),
         )
 
-        self.train_data = FolderDataset(
+        self.train_data = Folder3DDataset(
             task=task,
             transform=transform_train,
             split=Split.TRAIN,
@@ -281,10 +357,13 @@ class Folder(AnomalibDataModule):
             abnormal_dir=abnormal_dir,
             normal_test_dir=normal_test_dir,
             mask_dir=mask_dir,
+            normal_depth_dir=normal_depth_dir,
+            abnormal_depth_dir=abnormal_depth_dir,
+            normal_test_depth_dir=normal_test_depth_dir,
             extensions=extensions,
         )
 
-        self.test_data = FolderDataset(
+        self.test_data = Folder3DDataset(
             task=task,
             transform=transform_eval,
             split=Split.TEST,
@@ -292,6 +371,9 @@ class Folder(AnomalibDataModule):
             normal_dir=normal_dir,
             abnormal_dir=abnormal_dir,
             normal_test_dir=normal_test_dir,
+            normal_depth_dir=normal_depth_dir,
+            abnormal_depth_dir=abnormal_depth_dir,
+            normal_test_depth_dir=normal_test_depth_dir,
             mask_dir=mask_dir,
             extensions=extensions,
         )
