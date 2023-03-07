@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Any
+from typing import Any, List
 
 from pytorch_lightning.loops.dataloader.evaluation_loop import EvaluationLoop
 from pytorch_lightning.loops.epoch.evaluation_epoch_loop import EvaluationEpochLoop
@@ -53,7 +53,7 @@ class AnomalibValidationLoop(EvaluationLoop):
         self.replace(epoch_loop=AnomalibValidationEpochLoop)
         return super().on_run_start(*args, **kwargs)
 
-    def _evaluation_epoch_end(self, outputs: list[EPOCH_OUTPUT]):
+    def _evaluation_epoch_end(self, outputs: List[EPOCH_OUTPUT]):
         """Runs ``validation_epoch_end``
 
         Adds on top of methods copied from the base class.
@@ -61,7 +61,7 @@ class AnomalibValidationLoop(EvaluationLoop):
         super()._evaluation_epoch_end(outputs)
 
         # with a single dataloader don't pass a 2D list | Taken from base method
-        output_or_outputs: EPOCH_OUTPUT | list[EPOCH_OUTPUT] = (
+        output_or_outputs: EPOCH_OUTPUT | List[EPOCH_OUTPUT] = (
             outputs[0] if len(outputs) > 0 and self.num_dataloaders == 1 else outputs
         )
         self.trainer._call_custom_hooks("validation_epoch_end", output_or_outputs)

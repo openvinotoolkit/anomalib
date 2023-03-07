@@ -4,8 +4,6 @@ import pytest
 import torch
 
 from anomalib.core import AnomalibTrainer
-from anomalib.data import TaskType
-from anomalib.post_processing import Visualizer
 from anomalib.utils.metrics.min_max import MinMax
 from tests.helpers.dataloaders.tensor import DummyTensorDataModule
 

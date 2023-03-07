@@ -33,11 +33,20 @@ class TrainerHooks(ABC):
     def predict_step(self, lightning_module: AnomalyModule, outputs: List[STEP_OUTPUT]):
         """Called at the end of the predict step."""
 
-    def train_step(self, pl_module: AnomalyModule, *args, **kwargs):
+    def train_step(self, pl_module: AnomalyModule, outputs: STEP_OUTPUT):
         """Called at the end of the train step."""
+
+    def train_batch_end(self, pl_module: AnomalyModule, outputs: STEP_OUTPUT):
+        """Called at the end of the train batch."""
+
+    def train_epoch_end(self, pl_module: AnomalyModule, outputs: EPOCH_OUTPUT):
+        """Called at the end of the train epoch."""
 
     def test_step(self, pl_module: AnomalyModule, outputs: STEP_OUTPUT):
         """Called at the end of the test step."""
+
+    def test_batch_end(self, pl_module: AnomalyModule, outputs: STEP_OUTPUT):
+        """Called at the end of the test batch."""
 
     def test_epoch_end(self, pl_module: AnomalyModule, outputs: EPOCH_OUTPUT):
         """Called at the end of the test epoch."""
@@ -45,8 +54,8 @@ class TrainerHooks(ABC):
     def validation_step(self, pl_module: AnomalyModule, outputs: STEP_OUTPUT):
         """Called at the end of the validation step."""
 
-    def validation_epoch_end(self, pl_module: AnomalyModule, outputs: EPOCH_OUTPUT):
-        """Called at the end of the validation epoch."""
-
     def validation_batch_end(self, pl_module: AnomalyModule, outputs: STEP_OUTPUT):
         """Called at the end of the validation batch."""
+
+    def validation_epoch_end(self, pl_module: AnomalyModule, outputs: EPOCH_OUTPUT):
+        """Called at the end of the validation epoch."""
