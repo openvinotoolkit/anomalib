@@ -1,3 +1,7 @@
 pre-commit
 pytest
+pytest-cov
+pytest-sugar
+pytest-xdist
+coverage[toml]
 tox

@@ -37,7 +37,7 @@ RUN add-apt-repository ppa:git-core/ppa &&\
     rm -rf /var/lib/apt/lists/*
 
 # Prettier requires atleast nodejs 10
-RUN curl -sL https://deb.nodesource.com/setup_14.x > nodesetup.sh && \
+RUN curl -sL https://deb.nodesource.com/setup_current.x > nodesetup.sh && \
     bash - nodesetup.sh && \
     apt-get install --no-install-recommends -y nodejs && \
     apt-get clean && \
