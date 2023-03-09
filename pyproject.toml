@@ -74,6 +74,19 @@ follow_imports_for_stubs = true
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# PYTEST CONFIGURATION                                                        #
+[tool.pytest.ini_options]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--showlocals",
+    "-ra",
+]
+testpaths = "tests"
+pythonpath = "src"
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # COVERAGE CONFIGURATION                                                      #
 [tool.coverage.report]
 exclude_lines = [
@@ -84,6 +97,11 @@ exclude_lines = [
     "raise ValueError",
 ]
 
+[tool.coverage.paths]
+source = [
+    "src",
+    ".tox/*/site-packages",
+]
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # NBQA CONFIGURATION                                                          #
