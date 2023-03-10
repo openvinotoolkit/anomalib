@@ -198,12 +198,12 @@ Example OpenVINO Inference:
 python tools/inference/openvino_inference.py \
     --config anomalib/models/padim/config.yaml \
     --weights results/padim/mvtec/bottle/openvino/openvino_model.bin \
-    --meta_data results/padim/mvtec/bottle/openvino/meta_data.json \
+    --meta_data results/padim/mvtec/bottle/openvino/metadata.json \
     --input datasets/MVTec/bottle/test/broken_large/000.png \
     --output results/padim/mvtec/bottle/images
 ```
 
-> Ensure that you provide path to `meta_data.json` if you want the normalization to be applied correctly.
+> Ensure that you provide path to `metadata.json` if you want the normalization to be applied correctly.
 
 You can also use Gradio Inference to interact with the trained models using a UI. Refer to our [guide](https://openvinotoolkit.github.io/anomalib/guides/inference.html#gradio-inference) for more details.
 
