@@ -17,7 +17,7 @@
 
    ```bash
    sudo docker run --gpus all \
-   --shm-size=256M\
+   --shm-size=2G\
     -i -t --mount type=bind,source=<path-to-datasets>,target=/home/user/datasets,readonly\
     -d --name anomalib-ci-container anomalib-ci
    ```
@@ -51,3 +51,11 @@
    Follow the instructions on the screen to complete the installation.
 
 1. Now the container is ready. Type `exit` to leave the container.
+
+1. Start github actions runner in detached mode in the container and set the
+   the anomalib dataset environment variables.
+
+   ```bash
+   sudo docker exec -d anomalib-ci-container /bin/bash -c \
+   "export ANOMALIB_DATASET_PATH=/home/user/datasets && /home/user/actions-runner/run.sh"
+   ```
