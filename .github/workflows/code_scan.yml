@@ -7,6 +7,26 @@ on:
     - cron: "0 18 * * 1-5"
 
 jobs:
+  Bandit:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: CHECKOUT REPOSITORY
+        uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        run: python -m pip install tox
+      - name: Bandit Scanning
+        run: tox -e bandit-scan
+      - name: UPLOAD BANDIT REPORT
+        uses: actions/upload-artifact@v3
+        with:
+          name: bandit-report
+          path: .tox/bandit-report.txt
+        # Use always() to always run this step to publish scan results when there are test failures
+        if: ${{ always() }}
   Snyk-scan:
     runs-on: [self-hosted, linux, x64]
     permissions:
@@ -26,9 +46,10 @@ jobs:
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: .tox/snyk.sarif
-      - name: UPLOAD REPORT
+      - name: UPLOAD SNYK REPORT
         uses: actions/upload-artifact@v3
         with:
+          name: snyk-report
           path: .tox/snyk.html
         # Use always() to always run this step to publish scan results when there are test failures
         if: ${{ always() }}
