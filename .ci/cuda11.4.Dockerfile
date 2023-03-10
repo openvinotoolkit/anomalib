@@ -22,7 +22,6 @@ RUN apt-get update && \
         wget \
         ffmpeg \
         libpython3.8 \
-        nodejs \
         npm \
         pandoc \
         ruby \
@@ -47,6 +46,13 @@ RUN curl https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh >
     rm ~/miniconda.sh
 ENV PATH "/home/user/conda/bin:${PATH}"
 RUN conda install python=3.8
+
+# Prettier requires atleast nodejs 10 and actions/checkout requires nodejs 16
+RUN curl -sL https://deb.nodesource.com/setup_current.x > nodesetup.sh && \
+    bash - nodesetup.sh && \
+    apt-get install --no-install-recommends -y nodejs && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 
 #########################################################
