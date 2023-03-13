@@ -205,7 +205,7 @@ python tools/inference/openvino_inference.py \
 
 > Ensure that you provide path to `metadata.json` if you want the normalization to be applied correctly.
 
-You can also use Gradio Inference to interact with the trained models using a UI. Refer to our [guide](https://openvinotoolkit.github.io/anomalib/guides/inference.html#gradio-inference) for more details.
+You can also use Gradio Inference to interact with the trained models using a UI. Refer to our [guide](https://openvinotoolkit.github.io/anomalib/tutorials/inference.html#gradio-inference) for more details.
 
 A quick example:
 
@@ -236,7 +236,7 @@ python tools/hpo/sweep.py \
     --sweep_config tools/hpo/sweep.yaml
 ```
 
-For more details refer the [HPO Documentation](https://openvinotoolkit.github.io/anomalib/guides/hyperparameter_optimization.html)
+For more details refer the [HPO Documentation](https://openvinotoolkit.github.io/anomalib/tutorials/hyperparameter_optimization.html)
 
 # Benchmarking
 
@@ -247,7 +247,7 @@ python tools/benchmarking/benchmark.py \
     --config <relative/absolute path>/<paramfile>.yaml
 ```
 
-Refer to the [Benchmarking Documentation](https://openvinotoolkit.github.io/anomalib/guides/benchmarking.html) for more details.
+Refer to the [Benchmarking Documentation](https://openvinotoolkit.github.io/anomalib/tutorials/benchmarking.html) for more details.
 
 # Experiment Management
 
@@ -265,7 +265,7 @@ visualization:
   log_graph: True
 ```
 
-For more information, refer to the [Logging Documentation](https://openvinotoolkit.github.io/anomalib/guides/logging.html)
+For more information, refer to the [Logging Documentation](https://openvinotoolkit.github.io/anomalib/tutorials/logging.html)
 
 Note: Set your API Key for [Comet.ml](https://www.comet.com/signup?utm_source=anomalib&utm_medium=referral) via `comet_ml.init()` in interactive python or simply run `export COMET_API_KEY=<Your API Key>`
 
