@@ -1,27 +1,42 @@
+"""Test loop."""
+
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Any
+from typing import Any, Optional
 
 from pytorch_lightning.loops.dataloader.evaluation_loop import EvaluationLoop
 from pytorch_lightning.loops.epoch.evaluation_epoch_loop import EvaluationEpochLoop
 from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 
-import anomalib.core as core
+import anomalib.training as core
 
 
 class AnomalibTestEpochLoop(EvaluationEpochLoop):
     def __init__(self) -> None:
         super().__init__()
-        self.trainer: "core.AnomalibTrainer"
+        self.trainer: core.AnomalibTrainer
 
-    def _evaluation_step_end(self, *args, **kwargs) -> STEP_OUTPUT | None:
-        """Runs ``test_step`` after the end of one test step."""
-        outputs = super()._evaluation_step_end(*args, **kwargs)
-        self.trainer._call_custom_hooks("test_step", outputs)
+    def _evaluation_step(self, **kwargs: Any) -> Optional[STEP_OUTPUT]:
+        """Runs the ``test_step``."""
+        outputs = super()._evaluation_step(**kwargs)
+        if outputs is not None:
+            self.trainer.post_processor.outputs_to_cpu(outputs)
+            self.trainer.post_processor.post_process(outputs)
+            self.trainer.post_processor.apply_thresholding(self.trainer.lightning_module, outputs)
+            self.trainer.normalizer.post_process(self.trainer.lightning_module, outputs)
         return outputs
 
-    def _on_evaluation_batch_end(self, output: STEP_OUTPUT, **kwargs: Any) -> None:
+    def _evaluation_step_end(self, *args, **kwargs) -> STEP_OUTPUT | None:
+        """Runs ``test_step_end`` after the end of one test step."""
+        outputs = super()._evaluation_step_end(*args, **kwargs)
+        # Add your code here
+        return outputs
+
+    def _on_evaluation_batch_end(self, output: Optional[STEP_OUTPUT], **kwargs: Any) -> None:
         """The ``on_test_batch_end`` hook.
 
         Args:
@@ -31,7 +46,6 @@ class AnomalibTestEpochLoop(EvaluationEpochLoop):
             dataloader_idx: Index of the dataloader producing the current batch
         """
         super()._on_evaluation_batch_end(output, **kwargs)
-        self.trainer._call_custom_hooks("test_batch_end", output)
 
     @lru_cache(1)
     def _should_track_batch_outputs_for_epoch_end(self) -> bool:
@@ -50,6 +64,7 @@ class AnomalibTestLoop(EvaluationLoop):
 
     def on_run_start(self, *args, **kwargs) -> None:
         self.replace(epoch_loop=AnomalibTestEpochLoop)
+        self.trainer.normalizer.set_threshold(self.trainer.lightning_module)
         return super().on_run_start(*args, **kwargs)
 
     def _evaluation_epoch_end(self, outputs: list[EPOCH_OUTPUT]):
@@ -57,10 +72,14 @@ class AnomalibTestLoop(EvaluationLoop):
 
         Adds on top of methods copied from the base class.
         """
-        super()._evaluation_epoch_end(outputs)
 
         # with a single dataloader don't pass a 2D list | Taken from base method
         output_or_outputs: EPOCH_OUTPUT | list[EPOCH_OUTPUT] = (
             outputs[0] if len(outputs) > 0 and self.num_dataloaders == 1 else outputs
         )
-        self.trainer._call_custom_hooks("test_epoch_end", output_or_outputs)
+        self.trainer.post_processor.update_metrics(
+            self.trainer.lightning_module.image_metrics,
+            self.trainer.lightning_module.pixel_metrics,
+            output_or_outputs,
+        )
+        super()._evaluation_epoch_end(outputs)

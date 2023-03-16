@@ -5,7 +5,7 @@ import logging
 import warnings
 from datetime import timedelta
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Union, cast
+from typing import Dict, Iterable, List, Optional, Union
 
 from lightning_fabric.utilities.types import _PATH
 from pytorch_lightning import Callback, Trainer
@@ -14,19 +14,16 @@ from pytorch_lightning.loggers import Logger
 from pytorch_lightning.plugins import PLUGIN_INPUT
 from pytorch_lightning.profilers import Profiler
 from pytorch_lightning.strategies import Strategy
-from pytorch_lightning.trainer.connectors.accelerator_connector import (
-    _LITERAL_WARN,
-    _PRECISION_INPUT,
-)
+from pytorch_lightning.trainer.connectors.accelerator_connector import _LITERAL_WARN, _PRECISION_INPUT
 
-from anomalib.core.hooks import PostProcessingHooks
-from anomalib.core.loops.fit import AnomalibFitLoop
-from anomalib.core.loops.predict import AnomalibPredictionLoop
-from anomalib.core.loops.test import AnomalibTestLoop
-from anomalib.core.loops.validate import AnomalibValidationLoop
 from anomalib.models.components.base.anomaly_module import AnomalyModule
 from anomalib.post_processing import NormalizationMethod, ThresholdMethod
-from anomalib.utils.metrics.min_max import MinMax
+from anomalib.post_processing.normalization.normalizer import Normalizer
+from anomalib.post_processing.post_processor import PostProcessor
+from anomalib.training.strategies.default.fit import AnomalibFitLoop
+from anomalib.training.strategies.default.predict import AnomalibPredictionLoop
+from anomalib.training.strategies.default.test import AnomalibTestLoop
+from anomalib.training.strategies.default.validate import AnomalibValidationLoop
 
 log = logging.getLogger(__name__)
 # warnings to ignore in trainer
@@ -144,21 +141,36 @@ class AnomalibTrainer(Trainer):
             inference_mode,
         )
 
+        self.lightning_module: AnomalyModule  # for mypy
+
         self.fit_loop = AnomalibFitLoop(min_epochs=min_epochs, max_epochs=max_epochs)
         self.validate_loop = AnomalibValidationLoop()
         self.test_loop = AnomalibTestLoop()
         self.predict_loop = AnomalibPredictionLoop()
 
         # TODO: configure these from the config
-        self._postprocessing_hooks = PostProcessingHooks(
-            normalization_method=NormalizationMethod.MIN_MAX,
-            threshold_method=ThresholdMethod.ADAPTIVE,
-            normalization_metrics=MinMax(),
-        )
+        self.post_processor = PostProcessor(threshold_method=ThresholdMethod.ADAPTIVE)
+        self.normalizer = Normalizer(normalization_method=NormalizationMethod.MIN_MAX)
 
-    def _call_custom_hooks(self, hook_stage: str, *args, **kwargs) -> None:
-        """Call custom hooks."""
-        pl_module = cast(AnomalyModule, self.lightning_module)
-        if hasattr(self._postprocessing_hooks, hook_stage):
-            fn = getattr(self._postprocessing_hooks, hook_stage)
-            fn(pl_module, *args, **kwargs)
+    def _call_setup_hook(self) -> None:
+        """Override the setup hook to call setup for required anomalib classes.
+
+        Ensures that the necessary attributes are added to the model before callbacks are called. The majority of the
+        code is same as the base class. Add custom setup only between the commented block.
+        """
+        assert self.state.fn is not None
+        fn = self.state.fn
+
+        self.strategy.barrier("pre_setup")
+
+        if self.datamodule is not None:
+            self._call_lightning_datamodule_hook("setup", stage=fn)
+
+        # Setup required classes before callbacks and lightning module
+        self.post_processor.setup(self.lightning_module)
+        self.normalizer.setup()
+        # ------------------------------------------------------------
+        self._call_callback_hooks("setup", stage=fn)
+        self._call_lightning_module_hook("setup", stage=fn)
+
+        self.strategy.barrier("post_setup")

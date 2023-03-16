@@ -83,11 +83,8 @@ class Padim(AnomalyModule):
         #   https://github.com/PyTorchLightning/pytorch-lightning/pull/7357
         self.embeddings.append(embedding.cpu())
 
-    def on_validation_start(self) -> None:
+    def on_train_epoch_end(self) -> None:
         """Fit a Gaussian to the embedding collected from the training set."""
-        # NOTE: Previous anomalib versions fit Gaussian at the end of the epoch.
-        #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
-        #   is run within train epoch.
         logger.info("Aggregating the embedding extracted from the training set.")
         embeddings = torch.vstack(self.embeddings)
 

@@ -1,4 +1,4 @@
-"""Contains utilities that are necessary to train the models and ensure that the results produced are correct."""
+"""Classes and utilities for training Anomalib models."""
 
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0

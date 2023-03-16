@@ -3,7 +3,7 @@
 import pytest
 import torch
 
-from anomalib.core import AnomalibTrainer
+from anomalib.training import AnomalibTrainer
 from anomalib.utils.metrics.min_max import MinMax
 from tests.helpers.dataloaders.tensor import DummyTensorDataModule
 
@@ -11,11 +11,12 @@ from .dummy_model import DummyAnomalibModule
 
 
 class TestAnomalibTrainer:
+    # TODO test both min max and cdf
     @pytest.fixture(scope="class")
     def trained_model(self):
         model = DummyAnomalibModule()
         datamodule = DummyTensorDataModule()
-        trainer = AnomalibTrainer(logger=False, max_epochs=2, check_val_every_n_epoch=1, num_sanity_val_steps=0)
+        trainer = AnomalibTrainer(logger=False, max_epochs=2)
         trainer.fit(model, datamodule)
         return trainer, model, datamodule
 
