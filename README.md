@@ -186,8 +186,8 @@ As a quick example:
 
 ```bash
 python tools/inference/lightning_inference.py \
-    --config anomalib/models/padim/config.yaml \
-    --weights results/padim/mvtec/bottle/weights/model.ckpt \
+    --config src/anomalib/models/padim/config.yaml \
+    --weights results/padim/mvtec/bottle/run/weights/model.ckpt \
     --input datasets/MVTec/bottle/test/broken_large/000.png \
     --output results/padim/mvtec/bottle/images
 ```
@@ -196,9 +196,9 @@ Example OpenVINO Inference:
 
 ```bash
 python tools/inference/openvino_inference.py \
-    --config anomalib/models/padim/config.yaml \
-    --weights results/padim/mvtec/bottle/openvino/openvino_model.bin \
-    --meta_data results/padim/mvtec/bottle/openvino/metadata.json \
+    --config src/anomalib/models/padim/config.yaml \
+    --weights results/padim/mvtec/bottle/run/openvino/model.bin \
+    --metadata results/padim/mvtec/bottle/run/openvino/metadata.json \
     --input datasets/MVTec/bottle/test/broken_large/000.png \
     --output results/padim/mvtec/bottle/images
 ```
@@ -211,8 +211,8 @@ A quick example:
 
 ```bash
 python tools/inference/gradio_inference.py \
-        --config ./anomalib/models/padim/config.yaml \
-        --weights ./results/padim/mvtec/bottle/weights/model.ckpt
+        --config src/anomalib/models/padim/config.yaml \
+        --weights results/padim/mvtec/bottle/run/weights/model.ckpt
 ```
 
 ## Exporting Model to ONNX or OpenVINO IR
