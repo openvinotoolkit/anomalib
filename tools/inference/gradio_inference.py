@@ -68,7 +68,7 @@ def get_inferencer(config_path: Path, weight_path: Path, metadata_path: Path | N
 
     elif extension in (".onnx", ".bin", ".xml"):
         openvino_inferencer = getattr(module, "OpenVINOInferencer")
-        inferencer = openvino_inferencer(config=config_path, path=weight_path, metadata_path=metadata_path)
+        inferencer = openvino_inferencer(path=weight_path, metadata_path=metadata_path)
 
     else:
         raise ValueError(
