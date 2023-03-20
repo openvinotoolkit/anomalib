@@ -9,13 +9,11 @@ from importlib.util import find_spec
 from pathlib import Path
 from typing import Any
 
+import albumentations as A
 import cv2
 import numpy as np
-from omegaconf import DictConfig, ListConfig
-
-from anomalib.config import get_configurable_parameters
 from anomalib.data import TaskType
-from anomalib.data.utils import InputNormalizationMethod, get_transforms
+from omegaconf import DictConfig
 
 from .base_inferencer import Inferencer
 
@@ -29,30 +27,23 @@ class OpenVINOInferencer(Inferencer):
     """OpenVINO implementation for the inference.
 
     Args:
-        config (str | Path | DictConfig | ListConfig): Configurable parameters that are used
-            during the training stage.
         path (str | Path): Path to the openvino onnx, xml or bin file.
-        meta_data_path (str | Path, optional): Path to metadata file. Defaults to None.
+        metadata_path (str | Path, optional): Path to metadata file. Defaults to None.
+        device (str | None, optional): Device to run the inference on. Defaults to "CPU".
+        task (TaskType | None, optional): Task type. Defaults to None.
     """
 
     def __init__(
         self,
-        config: str | Path | DictConfig | ListConfig,
         path: str | Path | tuple[bytes, bytes],
-        meta_data_path: str | Path | None = None,
+        metadata_path: str | Path | None = None,
         device: str | None = "CPU",
+        task: str | None = None,
     ) -> None:
-        # Check and load the configuration
-        if isinstance(config, (str, Path)):
-            self.config = get_configurable_parameters(config_path=config)
-        elif isinstance(config, (DictConfig, ListConfig)):
-            self.config = config
-        else:
-            raise ValueError(f"Unknown config type {type(config)}")
-
         self.device = device
         self.input_blob, self.output_blob, self.network = self.load_model(path)
-        self.meta_data = super()._load_meta_data(meta_data_path)
+        self.metadata = super()._load_metadata(metadata_path)
+        self.task = TaskType(task) if task else TaskType(self.metadata["task"])
 
     def load_model(self, path: str | Path | tuple[bytes, bytes]):
         """Load the OpenVINO model.
@@ -98,18 +89,7 @@ class OpenVINOInferencer(Inferencer):
         Returns:
             np.ndarray: pre-processed image.
         """
-        transform_config = (
-            self.config.dataset.transform_config.eval if "transform_config" in self.config.dataset.keys() else None
-        )
-
-        image_size = (self.config.dataset.image_size[0], self.config.dataset.image_size[1])
-        center_crop = self.config.dataset.get("center_crop")
-        if center_crop is not None:
-            center_crop = tuple(center_crop)
-        normalization = InputNormalizationMethod(self.config.dataset.normalization)
-        transform = get_transforms(
-            config=transform_config, image_size=image_size, center_crop=center_crop, normalization=normalization
-        )
+        transform = A.from_dict(self.metadata["transform"])
         processed_image = transform(image=image)["image"]
 
         if len(processed_image.shape) == 3:
@@ -131,20 +111,20 @@ class OpenVINOInferencer(Inferencer):
         """
         return self.network.infer(inputs={self.input_blob: image})
 
-    def post_process(self, predictions: np.ndarray, meta_data: dict | DictConfig | None = None) -> dict[str, Any]:
+    def post_process(self, predictions: np.ndarray, metadata: dict | DictConfig | None = None) -> dict[str, Any]:
         """Post process the output predictions.
 
         Args:
             predictions (np.ndarray): Raw output predicted by the model.
-            meta_data (Dict, optional): Meta data. Post-processing step sometimes requires
+            metadata (Dict, optional): Meta data. Post-processing step sometimes requires
                 additional meta data such as image shape. This variable comprises such info.
                 Defaults to None.
 
         Returns:
             dict[str, Any]: Post processed prediction results.
         """
-        if meta_data is None:
-            meta_data = self.meta_data
+        if metadata is None:
+            metadata = self.metadata
 
         predictions = predictions[self.output_blob]
 
@@ -166,23 +146,23 @@ class OpenVINOInferencer(Inferencer):
         # Common practice in anomaly detection is to assign anomalous
         # label to the prediction if the prediction score is greater
         # than the image threshold.
-        if "image_threshold" in meta_data:
-            pred_label = pred_score >= meta_data["image_threshold"]
+        if "image_threshold" in metadata:
+            pred_label = pred_score >= metadata["image_threshold"]
 
         if task == TaskType.CLASSIFICATION:
-            _, pred_score = self._normalize(pred_scores=pred_score, meta_data=meta_data)
+            _, pred_score = self._normalize(pred_scores=pred_score, metadata=metadata)
         elif task in (TaskType.SEGMENTATION, TaskType.DETECTION):
-            if "pixel_threshold" in meta_data:
-                pred_mask = (anomaly_map >= meta_data["pixel_threshold"]).astype(np.uint8)
+            if "pixel_threshold" in metadata:
+                pred_mask = (anomaly_map >= metadata["pixel_threshold"]).astype(np.uint8)
 
             anomaly_map, pred_score = self._normalize(
-                pred_scores=pred_score, anomaly_maps=anomaly_map, meta_data=meta_data
+                pred_scores=pred_score, anomaly_maps=anomaly_map, metadata=metadata
             )
             assert anomaly_map is not None
 
-            if "image_shape" in meta_data and anomaly_map.shape != meta_data["image_shape"]:
-                image_height = meta_data["image_shape"][0]
-                image_width = meta_data["image_shape"][1]
+            if "image_shape" in metadata and anomaly_map.shape != metadata["image_shape"]:
+                image_height = metadata["image_shape"][0]
+                image_width = metadata["image_shape"][1]
                 anomaly_map = cv2.resize(anomaly_map, (image_width, image_height))
 
                 if pred_mask is not None:
@@ -190,7 +170,7 @@ class OpenVINOInferencer(Inferencer):
         else:
             raise ValueError(f"Unknown task type: {task}")
 
-        if self.config.dataset.task == TaskType.DETECTION:
+        if self.task == TaskType.DETECTION:
             pred_boxes = self._get_boxes(pred_mask)
             box_labels = np.ones(pred_boxes.shape[0])
         else:

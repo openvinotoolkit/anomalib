@@ -162,7 +162,7 @@ class AUPRO(Metric):
         """
         fpr, tpr = self._compute()
 
-        aupro = auc(fpr, tpr)
+        aupro = auc(fpr, tpr, reorder=True)
         aupro = aupro / fpr[-1]  # normalize the area
 
         return aupro
