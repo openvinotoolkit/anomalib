@@ -30,15 +30,6 @@ class _TestAnomalibDepthDatamodule(_TestAnomalibDataModule):
 
             if dataloader.dataset.task == "detection":
                 expected_keys |= {"boxes"}
-        # expected_eval_keys = expected_train_keys | {"mask_path", "mask"}
-
-        # if random_subset == "train":
-        #     expected_keys = expected_train_keys
-        # else:
-        #     if dataloader.dataset.task == "detection":
-        #         expected_keys = expected_eval_keys | {"boxes"}
-        #     else:
-        #         expected_keys = expected_eval_keys
 
         assert batch.keys() == expected_keys
 
