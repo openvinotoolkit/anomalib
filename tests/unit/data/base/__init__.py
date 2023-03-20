@@ -5,6 +5,7 @@
 
 from .test_datamodule import _TestAnomalibDataModule
 from .test_image import _TestAnomalibImageDatamodule
+from .test_video import _TestAnomalibVideoDatamodule
 
 
-__all__ = ["_TestAnomalibDataModule", "_TestAnomalibImageDatamodule"]
+__all__ = ["_TestAnomalibDataModule", "_TestAnomalibImageDatamodule", "_TestAnomalibVideoDatamodule"]
