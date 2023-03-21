@@ -18,7 +18,7 @@ from torch import Tensor
 from anomalib.data.utils import get_transforms
 
 
-def test_transforms_and_image_size_cannot_be_none():
+def test_transforms_and_image_size_cannot_be_none() -> None:
     """When transformations ``config`` and ``image_size`` are ``None``
     ``PreProcessor`` class should raise a ``ValueError``."""
 
@@ -41,12 +41,12 @@ def test_dimensions_cannot_be_float(image_size, center_crop):
         get_transforms(config=None, image_size=image_size, center_crop=center_crop)
 
 
-def test_crop_size_larger_than_image_size():
+def test_crop_size_larger_than_image_size() -> None:
     with pytest.raises(ValueError):
         get_transforms(config=None, image_size=224, center_crop=256)
 
 
-def test_center_crop_could_be_int_or_tuple():
+def test_center_crop_could_be_int_or_tuple() -> None:
     """When ``config`` is None, ``image_size`` could be either ``int`` or
     ``Tuple[int, int]``."""
 
@@ -56,7 +56,7 @@ def test_center_crop_could_be_int_or_tuple():
         get_transforms(config=None, image_size=0.0)
 
 
-def test_load_transforms_from_string():
+def test_load_transforms_from_string() -> None:
     """When the pre-processor is instantiated via a transform config file, it
     should work with either string or A.Compose and return a ValueError
     otherwise."""
@@ -86,7 +86,7 @@ def test_load_transforms_from_string():
         get_transforms(config=0)
 
 
-def test_to_tensor_returns_correct_type():
+def test_to_tensor_returns_correct_type() -> None:
     """`to_tensor` flag should ensure that pre-processor returns the expected
     type."""
     image = skimage.data.astronaut()

@@ -9,11 +9,12 @@ from anomalib.data import TaskType
 from anomalib.data.folder import FolderDataset
 from anomalib.data.utils import get_transforms
 from anomalib.data.utils.split import concatenate_datasets, random_split
+
 from tests.helpers.dataset import get_dataset_path
 
 
 @pytest.fixture(autouse=True)
-def folder_dataset():
+def folder_dataset() -> FolderDataset:
     """Create Folder Dataset."""
     root = get_dataset_path(dataset="bottle")
     transform = get_transforms(image_size=(256, 256))

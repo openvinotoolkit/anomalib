@@ -33,6 +33,7 @@ def test_visualize_fully_defected_masks():
     assert np.all(plotted_img[0][..., 0] == 255)
 
 
+@pytest.mark.skip(reason="This test should be moved to the integration tests.")
 class TestVisualizer:
     @pytest.mark.parametrize(
         ["model_name", "nncf"],

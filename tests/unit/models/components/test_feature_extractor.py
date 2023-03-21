@@ -17,15 +17,9 @@ from tests.helpers.dummy import DummyModel
 
 
 class TestFeatureExtractor:
-    @pytest.mark.parametrize(
-        "backbone",
-        ["resnet18", "wide_resnet50_2"],
-    )
-    @pytest.mark.parametrize(
-        "pretrained",
-        [True, False],
-    )
-    def test_timm_feature_extraction(self, backbone, pretrained):
+    @pytest.mark.parametrize("backbone", ["resnet18", "wide_resnet50_2"])
+    @pytest.mark.parametrize("pretrained", [True, False])
+    def test_timm_feature_extraction(self, backbone: str, pretrained: bool) -> None:
         layers = ["layer1", "layer2", "layer3"]
         model = FeatureExtractor(backbone=backbone, layers=layers, pre_trained=pretrained)
         test_input = torch.rand((32, 3, 256, 256))
@@ -46,7 +40,7 @@ class TestFeatureExtractor:
         else:
             pass
 
-    def test_torchfx_feature_extraction(self):
+    def test_torchfx_feature_extraction(self) -> None:
         model = TorchFXFeatureExtractor("resnet18", ["layer1", "layer2", "layer3"])
         test_input = torch.rand((32, 3, 256, 256))
         features = model(test_input)
