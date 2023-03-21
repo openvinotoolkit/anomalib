@@ -17,7 +17,6 @@ from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 
 from anomalib.deploy import ExportMode
 
-from .cdf_normalization import CdfNormalizationCallback
 from .graph import GraphLogger
 from .metrics_configuration import MetricsConfigurationCallback
 from .model_loader import LoadModelCallback
@@ -26,7 +25,6 @@ from .timer import TimerCallback
 from .visualizer import ImageVisualizerCallback, MetricVisualizerCallback
 
 __all__ = [
-    "CdfNormalizationCallback",
     "GraphLogger",
     "ImageVisualizerCallback",
     "LoadModelCallback",

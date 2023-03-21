@@ -18,6 +18,14 @@ from anomalib.utils.metrics.collection import AnomalibMetricCollection
 
 
 class PostProcessor:
+    """Post-processor used in AnomalibTrainer.
+
+    Args:
+        threshold_method (ThresholdMethod): Thresholding method to use.
+        manual_image_threshold (Optional[float]): Image threshold in case manual threshold is used. Defaults to None.
+        manual_pixel_threshold (Optional[float]) = Pixel threshold in case manual threshold is used. Defaults to None.
+    """
+
     def __init__(
         self,
         threshold_method: ThresholdMethod,
@@ -76,9 +84,13 @@ class PostProcessor:
         anomalib_module.image_metrics.set_threshold(anomalib_module.image_threshold.value.item())
         anomalib_module.pixel_metrics.set_threshold(anomalib_module.pixel_threshold.value.item())
 
-    def compute_adaptive_threshold(
-        self, anomalib_module: AnomalyModule, outputs: EPOCH_OUTPUT | List[EPOCH_OUTPUT]
-    ) -> None:
+    def compute_threshold(self, anomalib_module: AnomalyModule, outputs: EPOCH_OUTPUT | List[EPOCH_OUTPUT]) -> None:
+        """Computes adaptive threshold in case thresholding type is ADAPTIVE.
+
+        Args:
+            anomalib_module (AnomalyModule): Anomaly module.
+            outputs (EPOCH_OUTPUT | List[EPOCH_OUTPUT]): Epoch end outputs.
+        """
         if self.threshold_method == ThresholdMethod.ADAPTIVE:
             self._compute_adaptive_threshold(anomalib_module, outputs)
 

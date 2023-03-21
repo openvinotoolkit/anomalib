@@ -42,6 +42,3 @@ class AnomalibFitLoop(FitLoop):
         self.trainer.validating = True
         self.epoch_loop._run_validation()
         # custom code should be placed below this line
-
-    def on_run_start(self) -> None:
-        return super().on_run_start()

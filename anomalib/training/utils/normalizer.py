@@ -18,6 +18,14 @@ from anomalib.utils.metrics import AnomalyScoreDistribution, MinMax
 
 
 class Normalizer:
+    """The normalizer class is instantiated by the trainer.
+
+    This is responsible for updating the normalization values and normalizing the outputs.
+
+    Args:
+        normalization_method (NormalizationMethod): Normalization method
+    """
+
     def __init__(self, normalization_method: NormalizationMethod):
         self.normalization_method = normalization_method
         self.normalization_metrics: Metric
@@ -35,8 +43,12 @@ class Normalizer:
             else:
                 raise ValueError(f"Normalization method {self.normalization_method} is not supported.")
 
-    def update_metrics(self, anomaly_module: AnomalyModule, outputs: STEP_OUTPUT):
-        """Update values"""
+    def update_metrics(self, outputs: STEP_OUTPUT):
+        """Update values
+
+        Args:
+            outputs (STEP_OUTPUT): Outputs used for gathering normalization metrics.
+        """
         if self.normalization_method == NormalizationMethod.MIN_MAX:
             if "anomaly_maps" in outputs:
                 self.normalization_metrics(outputs["anomaly_maps"])
@@ -49,9 +61,9 @@ class Normalizer:
                     "No values found for normalization, provide anomaly maps, bbox scores, or image scores"
                 )
         elif self.normalization_method == NormalizationMethod.CDF:
-            self._standardize_batch(outputs, anomaly_module)
+            self._standardize_batch(outputs)
 
-    def _standardize_batch(self, outputs: STEP_OUTPUT, pl_module) -> None:
+    def _standardize_batch(self, outputs: STEP_OUTPUT) -> None:
         """Only used by CDF normalization"""
         stats = self.normalization_metrics.to(outputs["pred_scores"].device)
         outputs["pred_scores"] = cdf.standardize(outputs["pred_scores"], stats.image_mean, stats.image_std)
@@ -75,7 +87,7 @@ class Normalizer:
 
         Args:
             outputs (STEP_OUTPUT): Output of the batch.
-            anomalib_trainer (AnomalyModule): Anomaly module.
+            anomaly_module (AnomalyModule): Anomaly module.
         """
         image_threshold = anomaly_module.image_threshold.value.cpu()
         pixel_threshold = anomaly_module.pixel_threshold.value.cpu()
@@ -102,9 +114,15 @@ class Normalizer:
             if "anomaly_maps" in outputs.keys():
                 outputs["anomaly_maps"] = cdf.normalize(outputs["anomaly_maps"], anomaly_module.pixel_threshold.value)
 
-    def post_process(self, anomaly_module: AnomalyModule, outputs: STEP_OUTPUT):
+    def normalize(self, anomaly_module: AnomalyModule, outputs: STEP_OUTPUT) -> None:
+        """Normalize the outputs.
+
+        Args:
+            anomaly_module (AnomalyModule): Anomaly Module
+            outputs (STEP_OUTPUT): outputs to normalize
+        """
         if self.normalization_method == NormalizationMethod.MIN_MAX:
             self._normalize_batch(outputs, anomaly_module)
         elif self.normalization_method == NormalizationMethod.CDF:
-            self._standardize_batch(outputs, anomaly_module)
+            self._standardize_batch(outputs)
             self._normalize_batch(outputs, anomaly_module)

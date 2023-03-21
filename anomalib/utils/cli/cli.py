@@ -16,13 +16,10 @@ from omegaconf.omegaconf import OmegaConf
 from pytorch_lightning.cli import LightningArgumentParser, LightningCLI
 
 from anomalib.utils.callbacks import (
-    CdfNormalizationCallback,
     ImageVisualizerCallback,
     LoadModelCallback,
     MetricsConfigurationCallback,
-    MinMaxNormalizationCallback,
     ModelCheckpoint,
-    PostProcessingConfigurationCallback,
     TilerConfigurationCallback,
     TimerCallback,
     add_visualizer_callback,
@@ -61,7 +58,7 @@ class AnomalibCLI(LightningCLI):
         parser.add_lightning_class_args(TilerConfigurationCallback, "tiling")  # type: ignore
         parser.set_defaults({"tiling.enable": False})
 
-        parser.add_lightning_class_args(PostProcessingConfigurationCallback, "post_processing")  # type: ignore
+        # parser.add_lightning_class_args(PostProcessingConfigurationCallback, "post_processing")  # type: ignore
         parser.set_defaults(
             {
                 "post_processing.normalization_method": "min_max",
@@ -165,25 +162,24 @@ class AnomalibCLI(LightningCLI):
         #  TODO: This could be set in PostProcessingConfiguration callback
         #   - https://github.com/openvinotoolkit/anomalib/issues/384
         # Normalization.
-        normalization = config.post_processing.normalization_method
-        if normalization:
-            if normalization == "min_max":
-                callbacks.append(MinMaxNormalizationCallback())
-            elif normalization == "cdf":
-                callbacks.append(CdfNormalizationCallback())
-            else:
-                raise ValueError(
-                    f"Unknown normalization type {normalization}. \n" "Available types are either None, min_max or cdf"
-                )
+        # normalization = config.post_processing.normalization_method
+        # if normalization:
+        #     if normalization == "min_max":
+        #         callbacks.append(MinMaxNormalizationCallback())
+        #     elif normalization == "cdf":
+        #         callbacks.append(CdfNormalizationCallback())
+        #     else:
+        #         raise ValueError(
+        #             f"Unknown normalization type {normalization}.
+        #  \n" "Available types are either None, min_max or cdf"
+        #         )
 
         add_visualizer_callback(callbacks, config)
         self.config[subcommand].visualization = config.visualization
 
         # Export to OpenVINO
         if config.export_mode is not None:
-            from anomalib.utils.callbacks.export import (  # pylint: disable=import-outside-toplevel
-                ExportCallback,
-            )
+            from anomalib.utils.callbacks.export import ExportCallback  # pylint: disable=import-outside-toplevel
 
             logger.info("Setting model export to %s", config.export_mode)
             callbacks.append(

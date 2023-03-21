@@ -14,6 +14,8 @@ import anomalib.training as core
 
 
 class AnomalibPredictionEpochLoop(PredictionEpochLoop):
+    """Predict epoch loop."""
+
     def __init__(self) -> None:
         super().__init__()
         self.trainer: core.AnomalibTrainer
@@ -65,7 +67,7 @@ class AnomalibPredictionEpochLoop(PredictionEpochLoop):
         # Call custom methods on the predictions
         self.trainer.post_processor.post_process(predictions)
         self.trainer.post_processor.apply_thresholding(self.trainer.lightning_module, predictions)
-        self.trainer.normalizer.post_process(self.trainer.lightning_module, predictions)
+        self.trainer.normalizer.normalize(self.trainer.lightning_module, predictions)
         # --------------------------------------
 
         self.trainer._call_callback_hooks("on_predict_batch_end", predictions, batch, batch_idx, dataloader_idx)
@@ -77,11 +79,14 @@ class AnomalibPredictionEpochLoop(PredictionEpochLoop):
 
 
 class AnomalibPredictionLoop(PredictionLoop):
+    """Prediction loop."""
+
     def __init__(self) -> None:
         super().__init__()
         self.trainer: core.AnomalibTrainer
 
     def on_run_start(self) -> None:
+        """Setup epoch loop."""
         epoch_loop = AnomalibPredictionEpochLoop()
         epoch_loop.trainer = self.trainer
         epoch_loop.return_predictions = self._return_predictions

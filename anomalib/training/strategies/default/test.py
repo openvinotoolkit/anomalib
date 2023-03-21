@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 from pytorch_lightning.loops.dataloader.evaluation_loop import EvaluationLoop
 from pytorch_lightning.loops.epoch.evaluation_epoch_loop import EvaluationEpochLoop
@@ -27,7 +27,7 @@ class AnomalibTestEpochLoop(EvaluationEpochLoop):
             self.trainer.post_processor.outputs_to_cpu(outputs)
             self.trainer.post_processor.post_process(outputs)
             self.trainer.post_processor.apply_thresholding(self.trainer.lightning_module, outputs)
-            self.trainer.normalizer.post_process(self.trainer.lightning_module, outputs)
+            self.trainer.normalizer.normalize(self.trainer.lightning_module, outputs)
         return outputs
 
     def _evaluation_step_end(self, *args, **kwargs) -> STEP_OUTPUT | None:
@@ -63,14 +63,16 @@ class AnomalibTestLoop(EvaluationLoop):
         self.trainer: "core.AnomalibTrainer"
 
     def on_run_start(self, *args, **kwargs) -> None:
+        """Can be used to call setup."""
         self.replace(epoch_loop=AnomalibTestEpochLoop)
         self.trainer.normalizer.set_threshold(self.trainer.lightning_module)
         return super().on_run_start(*args, **kwargs)
 
-    def _evaluation_epoch_end(self, outputs: list[EPOCH_OUTPUT]):
-        """Runs ``test_epoch_end``
+    def _evaluation_epoch_end(self, outputs: List[EPOCH_OUTPUT]) -> None:
+        """Runs ``test_epoch_end``.
 
-        Adds on top of methods copied from the base class.
+        Args:
+            outputs (List[EPOCH_OUTPUT])
         """
 
         # with a single dataloader don't pass a 2D list | Taken from base method
