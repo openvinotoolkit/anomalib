@@ -57,7 +57,7 @@ def train():
     experiment_logger = get_experiment_logger(config)
     callbacks = get_callbacks(config)
 
-    trainer = AnomalibTrainer(**config.trainer, logger=experiment_logger, callbacks=callbacks)
+    trainer = AnomalibTrainer(**config.trainer, **config.post_processing, logger=experiment_logger, callbacks=callbacks)
     logger.info("Training the model.")
     trainer.fit(model=model, datamodule=datamodule)
 

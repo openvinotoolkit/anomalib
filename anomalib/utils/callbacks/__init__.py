@@ -144,7 +144,7 @@ def add_visualizer_callback(callbacks: list[Callback], config: DictConfig | List
             if "local" not in config.project.log_images_to or len(config.project.log_images_to) > 1:
                 config.visualization["log_images"] = True
         config.visualization.task = config.dataset.task
-        config.visualization.inputs_are_normalized = not config.model.normalization_method == "none"
+        config.visualization.inputs_are_normalized = not config.post_processing.normalization_method == "none"
     else:
         config.visualization.task = config.data.init_args.task
         config.visualization.inputs_are_normalized = not config.post_processing.normalization_method == "none"
