@@ -3,21 +3,18 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import pytest
 from anomalib.data import AnomalibDataModule
-import random
 from .test_datamodule import _TestAnomalibDataModule
 
 
 class _TestAnomalibVideoDatamodule(_TestAnomalibDataModule):
-    def test_get_item_returns_correct_keys_and_shapes(self, datamodule: AnomalibDataModule) -> None:
+    @pytest.mark.parametrize("subset", ["train", "val", "test"])
+    def test_get_item_returns_correct_keys_and_shapes(self, datamodule: AnomalibDataModule, subset: str) -> None:
         """Test that the datamodule __getitem__ returns image, mask, label and boxes."""
 
-        # Randomly select a subset of the dataset.
-        subsets = ["train", "val", "test"]
-        random_subset = random.choice(subsets)
-
         # Get the dataloader.
-        dataloader = getattr(datamodule, f"{random_subset}_dataloader")()
+        dataloader = getattr(datamodule, f"{subset}_dataloader")()
 
         # Get the first batch.
         batch = next(iter(dataloader))
@@ -27,7 +24,7 @@ class _TestAnomalibVideoDatamodule(_TestAnomalibDataModule):
         expected_eval_keys = expected_train_keys | {"label", "mask"}
         expected_eval_detection_keys = expected_eval_keys | {"boxes"}
 
-        if random_subset == "train":
+        if subset == "train":
             expected_keys = expected_train_keys
         else:
             if dataloader.dataset.task == "detection":
@@ -45,6 +42,6 @@ class _TestAnomalibVideoDatamodule(_TestAnomalibDataModule):
         # We don't know the shape of the original image, so we only check that it is a list of 4 images.
         assert batch["original_image"].shape[0] == 4
 
-        if random_subset in ("val", "test"):
+        if subset in ("val", "test"):
             assert len(batch["label"]) == 4
             assert batch["mask"].shape == (4, 256, 256)
