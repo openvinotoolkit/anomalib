@@ -9,8 +9,6 @@ import pytest
 from omegaconf import OmegaConf
 
 try:
-    from wandb import init
-
     wandb_installed = True
 except ImportError:
     wandb_installed = False
