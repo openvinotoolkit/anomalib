@@ -3,12 +3,11 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import pytest
-
 from anomalib.data import MVTec3D, TaskType
-from tests.helpers.dataset import get_dataset_path
-
+import pytest
 from .base import _TestAnomalibDepthDatamodule
+
+from tests.helpers.dataset import get_dataset_path
 
 
 class TestMVTec3D(_TestAnomalibDepthDatamodule):

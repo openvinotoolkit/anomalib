@@ -3,10 +3,8 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import pytest
-
 from anomalib.data import AnomalibDataModule
-
+import pytest
 from .test_datamodule import _TestAnomalibDataModule
 
 

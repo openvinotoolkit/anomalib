@@ -3,12 +3,12 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from anomalib.data import UCSDped, TaskType
 import pytest
-
-from anomalib.data import TaskType, UCSDped
-from tests.helpers.dataset import get_dataset_path
-
 from .base import _TestAnomalibVideoDatamodule
+
+
+from tests.helpers.dataset import get_dataset_path
 
 
 class TestUCSDped(_TestAnomalibVideoDatamodule):

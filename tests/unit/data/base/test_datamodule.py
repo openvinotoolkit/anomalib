@@ -4,10 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from anomalib.data import AnomalibDataModule
 import pytest
 from torch.utils.data import DataLoader
-
-from anomalib.data import AnomalibDataModule
 
 
 class _TestAnomalibDataModule:
