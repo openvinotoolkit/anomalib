@@ -3,7 +3,7 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import random
+import pytest
 
 from anomalib.data import AnomalibDataModule
 
@@ -11,15 +11,12 @@ from .test_datamodule import _TestAnomalibDataModule
 
 
 class _TestAnomalibDepthDatamodule(_TestAnomalibDataModule):
-    def test_get_item_returns_correct_keys_and_shapes(self, datamodule: AnomalibDataModule) -> None:
+    @pytest.mark.parametrize("subset", ["train", "val", "test"])
+    def test_get_item_returns_correct_keys_and_shapes(self, datamodule: AnomalibDataModule, subset: str) -> None:
         """Test that the datamodule __getitem__ returns the correct keys and shapes."""
 
-        # Randomly select a subset of the dataset.
-        subsets = ["train", "val", "test"]
-        random_subset = random.choice(subsets)
-
         # Get the dataloader.
-        dataloader = getattr(datamodule, f"{random_subset}_dataloader")()
+        dataloader = getattr(datamodule, f"{subset}_dataloader")()
 
         # Get the first batch.
         batch = next(iter(dataloader))

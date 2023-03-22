@@ -6,6 +6,7 @@
 import pytest
 
 from anomalib.data import TaskType, UCSDped
+from tests.helpers.data import get_dataset_path
 
 from .base import _TestAnomalibVideoDatamodule
 
@@ -17,7 +18,7 @@ class TestUCSDped(_TestAnomalibVideoDatamodule):
     def datamodule(self, task_type: TaskType) -> UCSDped:
         # Create and prepare the dataset
         _datamodule = UCSDped(
-            root="./datasets/ucsd",
+            root=get_dataset_path("ucsd"),
             category="UCSDped2",
             clip_length_in_frames=1,
             frames_between_clips=1,

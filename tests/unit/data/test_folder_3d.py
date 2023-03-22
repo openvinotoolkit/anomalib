@@ -6,6 +6,7 @@
 import pytest
 
 from anomalib.data import Folder3D, TaskType
+from tests.helpers.data import get_dataset_path
 
 from .base import _TestAnomalibDepthDatamodule
 
@@ -17,14 +18,14 @@ class TestFolder3D(_TestAnomalibDepthDatamodule):
     def datamodule(self, task_type: TaskType) -> Folder3D:
         # Create and prepare the dataset
         _datamodule = Folder3D(
-            normal_dir="./train/good/rgb",
-            root="./datasets/MVTec3D/bagel",
-            abnormal_dir="./test/combined/rgb",
-            normal_test_dir="./test/good/rgb",
-            mask_dir="./test/combined/gt",
-            normal_depth_dir="./train/good/xyz",
-            abnormal_depth_dir="./test/combined/xyz",
-            normal_test_depth_dir="./test/good/xyz",
+            root=get_dataset_path("MVTec3D/bagel"),
+            normal_dir="train/good/rgb",
+            abnormal_dir="test/combined/rgb",
+            normal_test_dir="test/good/rgb",
+            mask_dir="test/combined/gt",
+            normal_depth_dir="train/good/xyz",
+            abnormal_depth_dir="test/combined/xyz",
+            normal_test_depth_dir="test/good/xyz",
             image_size=256,
             train_batch_size=4,
             eval_batch_size=4,

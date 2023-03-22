@@ -6,6 +6,7 @@
 import pytest
 
 from anomalib.data import MVTec, TaskType
+from tests.helpers.data import get_dataset_path
 
 from .base import _TestAnomalibImageDatamodule
 
@@ -17,7 +18,7 @@ class TestMVTec(_TestAnomalibImageDatamodule):
     def datamodule(self, task_type: TaskType) -> MVTec:
         # Create and prepare the dataset
         _datamodule = MVTec(
-            root="./datasets/MVTec",
+            root=get_dataset_path("MVTec"),
             category="bottle",
             task=task_type,
             image_size=256,
