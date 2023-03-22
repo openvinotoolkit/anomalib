@@ -172,7 +172,7 @@ class Avenue(AnomalibVideoDataModule):
         gt_dir (Path | str): Path to the ground truth files
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
-        task TaskType): Task type, 'classification', 'detection' or 'segmentation'
+        task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
         image_size (int | tuple[int, int] | None, optional): Size of the input image.
             Defaults to None.
         center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped
