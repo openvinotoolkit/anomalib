@@ -8,11 +8,11 @@ import tempfile
 import numpy as np
 import pytest
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from tests.helpers.dataset import TestDataset
+from tests.helpers.model import setup_model_train
 
 from anomalib.data import TaskType
 from anomalib.post_processing.visualizer import ImageGrid
-from tests.helpers.dataset import TestDataset
-from tests.helpers.model import setup_model_train
 
 
 def test_visualize_fully_defected_masks():

@@ -4,10 +4,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import random
-from anomalib.data import ShanghaiTech, TaskType
+
 import pytest
 
+from anomalib.data import ShanghaiTech, TaskType
 from anomalib.data.utils.split import ValSplitMode
+
 from .base import _TestAnomalibVideoDatamodule
 
 

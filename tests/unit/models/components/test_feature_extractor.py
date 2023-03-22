@@ -3,6 +3,7 @@ from typing import Tuple
 
 import pytest
 import torch
+from tests.helpers.dummy import DummyModel
 from torchvision.models import ResNet18_Weights, resnet18
 from torchvision.models.efficientnet import EfficientNet_B5_Weights
 
@@ -12,7 +13,6 @@ from anomalib.models.components.feature_extractors import (
     TorchFXFeatureExtractor,
     dryrun_find_featuremap_dims,
 )
-from tests.helpers.dummy import DummyModel
 
 
 class TestFeatureExtractor:

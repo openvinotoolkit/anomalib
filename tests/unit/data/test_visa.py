@@ -3,8 +3,10 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from anomalib.data import Visa, TaskType
 import pytest
+
+from anomalib.data import TaskType, Visa
+
 from .base import _TestAnomalibImageDatamodule
 
 

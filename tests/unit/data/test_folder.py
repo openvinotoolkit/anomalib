@@ -3,9 +3,11 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from anomalib.data import Folder, TaskType
-from .base import _TestAnomalibImageDatamodule
 import pytest
+
+from anomalib.data import Folder, TaskType
+
+from .base import _TestAnomalibImageDatamodule
 
 
 class TestFolder(_TestAnomalibImageDatamodule):

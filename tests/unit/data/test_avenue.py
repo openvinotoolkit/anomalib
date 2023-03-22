@@ -3,8 +3,10 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from anomalib.data import Avenue, TaskType
 import pytest
+
+from anomalib.data import Avenue, TaskType
+
 from .base import _TestAnomalibVideoDatamodule
 
 
