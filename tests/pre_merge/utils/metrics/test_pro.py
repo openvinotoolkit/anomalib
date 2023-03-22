@@ -1,13 +1,12 @@
 import torch
-from torch import Tensor
-from torchvision.transforms import RandomAffine
-
 from anomalib.data.utils import random_2d_perlin
 from anomalib.utils.metrics.pro import (
     PRO,
     connected_components_cpu,
     connected_components_gpu,
 )
+from torch import Tensor
+from torchvision.transforms import RandomAffine
 
 
 def test_pro():

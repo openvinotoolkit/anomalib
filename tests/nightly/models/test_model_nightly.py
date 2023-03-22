@@ -16,10 +16,10 @@ from typing import Dict, List, Union
 import numpy as np
 import pandas as pd
 import torch
+from anomalib.utils.sweep.config import flatten_sweep_params
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning import seed_everything
 
-from anomalib.utils.sweep.config import flatten_sweep_params
 from tests.helpers.dataset import get_dataset_path
 from tests.helpers.model import model_load_test, setup_model_train
 

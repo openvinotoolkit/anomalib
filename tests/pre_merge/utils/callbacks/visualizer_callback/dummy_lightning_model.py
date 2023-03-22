@@ -2,12 +2,12 @@ from pathlib import Path
 from typing import Union
 
 import torch
+from anomalib.models.components import AnomalyModule
+from anomalib.utils.callbacks import ImageVisualizerCallback
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
 from torch import nn
 
-from anomalib.models.components import AnomalyModule
-from anomalib.utils.callbacks import ImageVisualizerCallback
 from tests.helpers.dataset import get_dataset_path
 from tests.helpers.metrics import get_metrics
 

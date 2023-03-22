@@ -6,14 +6,13 @@
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
-from pytorch_lightning import Trainer
-from torch.utils.data import DataLoader
-
 from anomalib.config import get_configurable_parameters
 from anomalib.data.inference import InferenceDataset
 from anomalib.data.utils import InputNormalizationMethod, get_transforms
 from anomalib.models import get_model
 from anomalib.utils.callbacks import get_callbacks
+from pytorch_lightning import Trainer
+from torch.utils.data import DataLoader
 
 
 def get_args() -> Namespace:

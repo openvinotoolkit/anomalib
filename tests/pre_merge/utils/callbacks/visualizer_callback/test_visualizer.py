@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 import pytorch_lightning as pl
+from anomalib.utils.loggers import AnomalibTensorBoardLogger
 from omegaconf.omegaconf import OmegaConf
 
-from anomalib.utils.loggers import AnomalibTensorBoardLogger
 from tests.helpers.dummy import DummyDataModule
 
 from .dummy_lightning_model import DummyModule
@@ -18,7 +18,7 @@ def get_dummy_module(config):
 
 
 def get_dummy_logger(config, tempdir):
-    logger = AnomalibTensorBoardLogger(name=f"tensorboard_logs", save_dir=tempdir)
+    logger = AnomalibTensorBoardLogger(name="tensorboard_logs", save_dir=tempdir)
     return logger
 
 

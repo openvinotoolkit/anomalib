@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import pytest
-
 from anomalib.config import get_configurable_parameters
 
 

@@ -3,7 +3,6 @@
 from pathlib import Path
 
 import pytest
-
 from anomalib.data import TaskType
 from anomalib.data.ucsd_ped import (
     UCSDpedClipsIndexer,
@@ -12,6 +11,7 @@ from anomalib.data.ucsd_ped import (
 )
 from anomalib.data.utils import get_transforms
 from anomalib.data.utils.split import Split, random_split
+
 from tests.helpers.dataset import get_dataset_path
 
 

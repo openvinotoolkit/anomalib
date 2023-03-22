@@ -1,9 +1,8 @@
 from pathlib import Path
-from typing import List, Optional, Union
-
-from omegaconf import DictConfig, ListConfig
+from typing import Optional, Union
 
 from anomalib.config import get_configurable_parameters
+from omegaconf import DictConfig, ListConfig
 
 from .dataset import get_dataset_path
 

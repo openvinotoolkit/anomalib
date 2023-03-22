@@ -16,7 +16,6 @@ import gradio as gr
 import gradio.inputs
 import gradio.outputs
 import numpy as np
-
 from anomalib.deploy import Inferencer
 
 

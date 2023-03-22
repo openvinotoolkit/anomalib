@@ -3,9 +3,8 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from omegaconf import DictConfig
-
 from anomalib.utils.sweep.config import get_run_config, set_in_nested_config
+from omegaconf import DictConfig
 
 
 class TestSweepConfig:
