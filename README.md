@@ -44,11 +44,11 @@ Anomalib is a deep learning library that aims to collect state-of-the-art anomal
 
 # Getting Started
 
-To get an overview of all the devices where `anomalib` as been tested thoroughly, look at the [Supported Hardware](https://openvinotoolkit.github.io/anomalib/#supported-hardware) section in the documentation.
+Following is a guide on how to get started with `anomalib`. For more details, look at the [Documentation](https://openvinotoolkit.github.io/anomalib).
 
 ## Jupyter Notebooks
 
-For getting started with a Jupyter Notebook, please refer to the [Notebooks](./notebooks) folder of this repository. Additionally, you can refer to a few created by the community:
+For getting started with a Jupyter Notebook, please refer to the [Notebooks](notebooks) folder of this repository. Additionally, you can refer to a few created by the community:
 
 <a href="https://colab.research.google.com/drive/1K4a4z2iZGBNhWdmt9Aqdld7kTAxBfAmi?usp=sharing" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> by [@bth5](https://github.com/bth5)
 
@@ -76,7 +76,7 @@ pip install -e .
 
 # Training
 
-By default [`python tools/train.py`](https://github.com/openvinotoolkit/anomalib/blob/main/tools/train.py)
+By default [`python tools/train.py`](tools/train.py)
 runs [PADIM](https://arxiv.org/abs/2011.08785) model on `leather` category from the [MVTec AD](https://www.mvtec.com/company/research/datasets/mvtec-ad) [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/) dataset.
 
 ```bash
@@ -84,7 +84,7 @@ python tools/train.py    # Train PADIM on MVTec AD leather
 ```
 
 Training a model on a specific dataset and category requires further configuration. Each model has its own configuration
-file, [`config.yaml`](https://github.com/openvinotoolkit/anomalib/blob/main/configs/model/padim.yaml)
+file, [`config.yaml`](src/anomalib/models/padim/config.yaml)
 , which contains data, model and training configurable parameters. To train a specific model on a specific dataset and
 category, the config file is to be provided:
 
@@ -92,10 +92,10 @@ category, the config file is to be provided:
 python tools/train.py --config <path/to/model/config.yaml>
 ```
 
-For example, to train [PADIM](anomalib/models/padim) you can use
+For example, to train [PADIM](src/anomalib/models/padim) you can use
 
 ```bash
-python tools/train.py --config anomalib/models/padim/config.yaml
+python tools/train.py --config src/anomalib/models/padim/config.yaml
 ```
 
 Alternatively, a model name could also be provided as an argument, where the scripts automatically finds the corresponding config file.
@@ -106,17 +106,17 @@ python tools/train.py --model padim
 
 where the currently available models are:
 
-- [CFA](anomalib/models/cfa)
-- [CFlow](anomalib/models/cflow)
-- [DFKDE](anomalib/models/dfkde)
-- [DFM](anomalib/models/dfm)
-- [DRAEM](anomalib/models/draem)
-- [FastFlow](anomalib/models/fastflow)
-- [GANomaly](anomalib/models/ganomaly)
-- [PADIM](anomalib/models/padim)
-- [PatchCore](anomalib/models/patchcore)
-- [Reverse Distillation](anomalib/models/reverse_distillation)
-- [STFPM](anomalib/models/stfpm)
+- [CFA](src/anomalib/models/cfa)
+- [CFlow](src/anomalib/models/cflow)
+- [DFKDE](src/anomalib/models/dfkde)
+- [DFM](src/anomalib/models/dfm)
+- [DRAEM](src/anomalib/models/draem)
+- [FastFlow](src/anomalib/models/fastflow)
+- [GANomaly](src/anomalib/models/ganomaly)
+- [PADIM](src/anomalib/models/padim)
+- [PatchCore](src/anomalib/models/patchcore)
+- [Reverse Distillation](src/anomalib/models/reverse_distillation)
+- [STFPM](src/anomalib/models/stfpm)
 
 ## Feature extraction & (pre-trained) backbones
 
@@ -186,8 +186,8 @@ As a quick example:
 
 ```bash
 python tools/inference/lightning_inference.py \
-    --config anomalib/models/padim/config.yaml \
-    --weights results/padim/mvtec/bottle/weights/model.ckpt \
+    --config src/anomalib/models/padim/config.yaml \
+    --weights results/padim/mvtec/bottle/run/weights/model.ckpt \
     --input datasets/MVTec/bottle/test/broken_large/000.png \
     --output results/padim/mvtec/bottle/images
 ```
@@ -196,9 +196,9 @@ Example OpenVINO Inference:
 
 ```bash
 python tools/inference/openvino_inference.py \
-    --config anomalib/models/padim/config.yaml \
-    --weights results/padim/mvtec/bottle/openvino/openvino_model.bin \
-    --meta_data results/padim/mvtec/bottle/openvino/metadata.json \
+    --config src/anomalib/models/padim/config.yaml \
+    --weights results/padim/mvtec/bottle/run/openvino/model.bin \
+    --metadata results/padim/mvtec/bottle/run/openvino/metadata.json \
     --input datasets/MVTec/bottle/test/broken_large/000.png \
     --output results/padim/mvtec/bottle/images
 ```
@@ -211,8 +211,8 @@ A quick example:
 
 ```bash
 python tools/inference/gradio_inference.py \
-        --config ./anomalib/models/padim/config.yaml \
-        --weights ./results/padim/mvtec/bottle/weights/model.ckpt
+        --config src/anomalib/models/padim/config.yaml \
+        --weights results/padim/mvtec/bottle/run/weights/model.ckpt
 ```
 
 ## Exporting Model to ONNX or OpenVINO IR
