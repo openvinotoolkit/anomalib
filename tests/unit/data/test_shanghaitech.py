@@ -3,13 +3,13 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from anomalib.data import ShanghaiTech, TaskType
 import pytest
 
+from anomalib.data import ShanghaiTech, TaskType
 from anomalib.data.utils.split import ValSplitMode
-from .base import _TestAnomalibVideoDatamodule
-
 from tests.helpers.dataset import get_dataset_path
+
+from .base import _TestAnomalibVideoDatamodule
 
 
 class TestShanghaiTech(_TestAnomalibVideoDatamodule):

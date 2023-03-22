@@ -4,7 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import pytest
+
 from anomalib.data import AnomalibDataModule
+
 from .test_datamodule import _TestAnomalibDataModule
 
 

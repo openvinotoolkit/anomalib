@@ -3,11 +3,12 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from anomalib.data import BTech, TaskType
 import pytest
-from .base import _TestAnomalibImageDatamodule
 
+from anomalib.data import BTech, TaskType
 from tests.helpers.dataset import get_dataset_path
+
+from .base import _TestAnomalibImageDatamodule
 
 
 class TestBTech(_TestAnomalibImageDatamodule):

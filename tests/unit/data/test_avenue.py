@@ -4,11 +4,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
-from anomalib.data import Avenue, TaskType
-import pytest
-from .base import _TestAnomalibVideoDatamodule
 
+import pytest
+
+from anomalib.data import Avenue, TaskType
 from tests.helpers.dataset import get_dataset_path
+
+from .base import _TestAnomalibVideoDatamodule
 
 
 class TestAvenue(_TestAnomalibVideoDatamodule):
