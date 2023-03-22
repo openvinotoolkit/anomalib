@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 
-import torch
 from matplotlib.figure import Figure
 from torch import Tensor
 from torchmetrics import PrecisionRecallCurve
