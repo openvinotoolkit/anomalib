@@ -1,7 +1,8 @@
 import pytest
 import torch
-from anomalib.models.components import GaussianBlur2d
 from kornia.filters import GaussianBlur2d as korniaGaussianBlur2d
+
+from anomalib.models.components import GaussianBlur2d
 
 
 @pytest.mark.parametrize("sigma", [(4.0, 4.0), (1.9, 3.0), (2.0, 1.5)])

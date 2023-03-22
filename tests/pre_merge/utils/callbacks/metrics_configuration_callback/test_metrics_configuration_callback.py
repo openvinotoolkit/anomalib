@@ -2,11 +2,11 @@ from pathlib import Path
 
 import pytest
 import pytorch_lightning as pl
+from omegaconf import OmegaConf
+
 from anomalib.models.components import AnomalyModule
 from anomalib.utils.callbacks.metrics_configuration import MetricsConfigurationCallback
 from anomalib.utils.metrics.collection import AnomalibMetricCollection
-from omegaconf import OmegaConf
-
 from tests.helpers.dummy import DummyDataModule, DummyLogger, DummyModel
 
 

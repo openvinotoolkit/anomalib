@@ -6,12 +6,12 @@ import random
 
 import pytest
 import torch
+from pytorch_lightning import Trainer
+
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
 from anomalib.utils.callbacks import get_callbacks
 from anomalib.utils.metrics import AnomalyScoreThreshold
-from pytorch_lightning import Trainer
-
 from tests.helpers.config import get_test_configurable_parameters
 
 

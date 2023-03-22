@@ -4,6 +4,7 @@ import os
 
 import numpy as np
 import pytest
+
 from anomalib.config import update_input_size_config
 from anomalib.data import (
     Avenue,
@@ -16,7 +17,6 @@ from anomalib.data import (
     get_datamodule,
 )
 from anomalib.pre_processing.transforms import Denormalize, ToNumpy
-
 from tests.helpers.config import get_test_configurable_parameters
 from tests.helpers.dataset import TestDataset, get_dataset_path
 

@@ -15,6 +15,8 @@ except ImportError:
 
 if wandb_installed:
     with patch("wandb.init"):
+        from pytorch_lightning.loggers import CSVLogger
+
         from anomalib.utils.loggers import (
             AnomalibCometLogger,
             AnomalibTensorBoardLogger,
@@ -22,8 +24,9 @@ if wandb_installed:
             UnknownLogger,
             get_experiment_logger,
         )
-        from pytorch_lightning.loggers import CSVLogger
 else:
+    from pytorch_lightning.loggers import CSVLogger
+
     from anomalib.utils.loggers import (
         AnomalibCometLogger,
         AnomalibTensorBoardLogger,
@@ -31,7 +34,6 @@ else:
         UnknownLogger,
         get_experiment_logger,
     )
-    from pytorch_lightning.loggers import CSVLogger
 
 
 def test_get_experiment_logger():

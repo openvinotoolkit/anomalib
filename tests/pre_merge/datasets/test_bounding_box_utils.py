@@ -2,12 +2,13 @@
 
 import pytest
 import torch
+from torch import Tensor
+
 from anomalib.data.utils.boxes import (
     boxes_to_anomaly_maps,
     boxes_to_masks,
     masks_to_boxes,
 )
-from torch import Tensor
 
 
 @pytest.fixture

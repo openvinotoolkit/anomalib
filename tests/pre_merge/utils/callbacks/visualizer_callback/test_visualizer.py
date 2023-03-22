@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 import pytorch_lightning as pl
-from anomalib.utils.loggers import AnomalibTensorBoardLogger
 from omegaconf.omegaconf import OmegaConf
 
+from anomalib.utils.loggers import AnomalibTensorBoardLogger
 from tests.helpers.dummy import DummyDataModule
 
 from .dummy_lightning_model import DummyModule

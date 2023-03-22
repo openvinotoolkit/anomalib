@@ -13,8 +13,9 @@ import albumentations as A
 import numpy as np
 import pytest
 import skimage
-from anomalib.data.utils import get_transforms
 from torch import Tensor
+
+from anomalib.data.utils import get_transforms
 
 
 def test_transforms_and_image_size_cannot_be_none():

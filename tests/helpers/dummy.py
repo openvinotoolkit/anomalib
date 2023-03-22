@@ -5,9 +5,10 @@ from pathlib import Path
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
-from anomalib.utils.loggers.tensorboard import AnomalibTensorBoardLogger
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
+
+from anomalib.utils.loggers.tensorboard import AnomalibTensorBoardLogger
 
 
 class DummyDataset(Dataset):

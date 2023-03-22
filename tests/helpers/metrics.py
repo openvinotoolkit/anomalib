@@ -2,11 +2,12 @@
 
 from typing import Tuple, Union
 
+from omegaconf import DictConfig, ListConfig
+
 from anomalib.utils.metrics import (
     AnomalibMetricCollection,
     metric_collection_from_names,
 )
-from omegaconf import DictConfig, ListConfig
 
 
 def get_metrics(config: Union[ListConfig, DictConfig]) -> Tuple[AnomalibMetricCollection, AnomalibMetricCollection]:

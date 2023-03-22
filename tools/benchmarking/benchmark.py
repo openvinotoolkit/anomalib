@@ -21,6 +21,10 @@ from tempfile import TemporaryDirectory
 from typing import cast
 
 import torch
+from omegaconf import DictConfig, ListConfig, OmegaConf
+from pytorch_lightning import Trainer, seed_everything
+from utils import upload_to_comet, upload_to_wandb, write_metrics
+
 from anomalib.config import get_configurable_parameters, update_input_size_config
 from anomalib.data import get_datamodule
 from anomalib.deploy import export
@@ -34,9 +38,6 @@ from anomalib.utils.sweep import (
     get_torch_throughput,
     set_in_nested_config,
 )
-from omegaconf import DictConfig, ListConfig, OmegaConf
-from pytorch_lightning import Trainer, seed_everything
-from utils import upload_to_comet, upload_to_wandb, write_metrics
 
 warnings.filterwarnings("ignore")
 

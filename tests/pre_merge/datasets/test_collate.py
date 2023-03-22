@@ -4,8 +4,9 @@ from typing import List
 
 import pytest
 import torch
-from anomalib.data.base.datamodule import collate_fn
 from torch import Tensor
+
+from anomalib.data.base.datamodule import collate_fn
 
 
 @pytest.fixture

@@ -12,6 +12,7 @@ from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
 import torch
+
 from anomalib.data.utils import (
     generate_output_image_filename,
     get_image_filenames,
