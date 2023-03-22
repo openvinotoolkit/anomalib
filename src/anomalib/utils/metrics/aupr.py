@@ -29,10 +29,7 @@ class AUPR(PrecisionRecallCurve):
         rec: Tensor
 
         prec, rec = self._compute()
-        # TODO: use stable sort after upgrading to pytorch 1.9.x (https://github.com/openvinotoolkit/anomalib/issues/92)
-        if not (torch.all(prec.diff() <= 0) or torch.all(prec.diff() >= 0)):
-            return auc(rec, prec, reorder=True)  # only reorder if rec is not increasing or decreasing
-        return auc(rec, prec)
+        return auc(rec, prec, reorder=True)
 
     def update(self, preds: Tensor, target: Tensor) -> None:  # type: ignore
         """Update state with new values.
