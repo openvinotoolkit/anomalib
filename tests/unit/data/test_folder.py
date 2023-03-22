@@ -7,6 +7,8 @@ from anomalib.data import Folder, TaskType
 from .base import _TestAnomalibImageDatamodule
 import pytest
 
+from tests.helpers.dataset import get_dataset_path
+
 
 class TestFolder(_TestAnomalibImageDatamodule):
     """Folder Datamodule Unit Tests.
@@ -31,7 +33,7 @@ class TestFolder(_TestAnomalibImageDatamodule):
 
         # Create and prepare the dataset
         _datamodule = Folder(
-            root="./datasets/bottle",
+            root=get_dataset_path("bottle"),
             normal_dir="good",
             abnormal_dir="broken_large",
             normal_test_dir=normal_test_dir,

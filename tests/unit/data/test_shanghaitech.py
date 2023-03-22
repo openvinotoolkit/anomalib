@@ -9,6 +9,8 @@ import pytest
 from anomalib.data.utils.split import ValSplitMode
 from .base import _TestAnomalibVideoDatamodule
 
+from tests.helpers.dataset import get_dataset_path
+
 
 class TestShanghaiTech(_TestAnomalibVideoDatamodule):
     """ShanghaiTech Datamodule Unit Tests."""
@@ -17,7 +19,7 @@ class TestShanghaiTech(_TestAnomalibVideoDatamodule):
     def datamodule(self, task_type: TaskType) -> ShanghaiTech:
         # Create and prepare the dataset
         _datamodule = ShanghaiTech(
-            root="./datasets/shanghaitech",
+            root=get_dataset_path("shanghaitech"),
             scene=1,
             image_size=(256, 256),
             train_batch_size=4,

@@ -8,6 +8,9 @@ import pytest
 from .base import _TestAnomalibImageDatamodule
 
 
+from tests.helpers.dataset import get_dataset_path
+
+
 class TestVisa(_TestAnomalibImageDatamodule):
     """Visa Datamodule Unit Tests."""
 
@@ -15,7 +18,7 @@ class TestVisa(_TestAnomalibImageDatamodule):
     def datamodule(self, task_type: TaskType) -> Visa:
         # Create and prepare the dataset
         _datamodule = Visa(
-            root="./datasets/visa",
+            root=get_dataset_path("visa"),
             category="candle",
             image_size=256,
             train_batch_size=4,

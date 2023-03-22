@@ -7,6 +7,8 @@ from anomalib.data import MVTec3D, TaskType
 import pytest
 from .base import _TestAnomalibDepthDatamodule
 
+from tests.helpers.dataset import get_dataset_path
+
 
 class TestMVTec3D(_TestAnomalibDepthDatamodule):
     """MVTec Datamodule Unit Tests."""
@@ -15,7 +17,7 @@ class TestMVTec3D(_TestAnomalibDepthDatamodule):
     def datamodule(self, task_type: TaskType) -> MVTec3D:
         # Create and prepare the dataset
         _datamodule = MVTec3D(
-            root="./datasets/MVTec3D",
+            root=get_dataset_path("MVTec3D"),
             category="bagel",
             task=task_type,
             image_size=256,
