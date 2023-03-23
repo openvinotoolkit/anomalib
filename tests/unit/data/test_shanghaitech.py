@@ -7,7 +7,6 @@
 import pytest
 
 from anomalib.data import ShanghaiTech, TaskType
-from anomalib.data.utils.split import ValSplitMode
 from tests.helpers.data import get_dataset_path
 
 from .base import _TestAnomalibVideoDatamodule
@@ -27,7 +26,6 @@ class TestShanghaiTech(_TestAnomalibVideoDatamodule):
             eval_batch_size=4,
             num_workers=0,
             task=task_type,
-            val_split_mode=ValSplitMode.FROM_TEST,
         )
 
         _datamodule.prepare_data()

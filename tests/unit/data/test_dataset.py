@@ -9,7 +9,7 @@ from anomalib.data import TaskType
 from anomalib.data.folder import FolderDataset
 from anomalib.data.utils import get_transforms
 from anomalib.data.utils.split import concatenate_datasets, random_split
-from tests.helpers.dataset import get_dataset_path
+from tests.helpers.data import get_dataset_path
 
 
 @pytest.fixture(autouse=True)
