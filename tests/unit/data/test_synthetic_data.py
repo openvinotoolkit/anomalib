@@ -1,5 +1,8 @@
 """Tests for synthetic anomalous dataset."""
 
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from copy import copy, deepcopy
 from pathlib import Path
 
@@ -8,7 +11,7 @@ import pytest
 from anomalib.data.folder import FolderDataset
 from anomalib.data.synthetic import SyntheticAnomalyDataset
 from anomalib.data.utils import get_transforms
-from tests.helpers.dataset import get_dataset_path
+from tests.helpers.data import get_dataset_path
 
 
 def get_folder_dataset():
