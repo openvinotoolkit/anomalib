@@ -7,7 +7,8 @@ Contains classes that enable the anomaly training pipeline.
 # SPDX-License-Identifier: Apache-2.0
 
 
+from .metrics_manager import MetricsManager
 from .normalizer import Normalizer
 from .post_processor import PostProcessor
 
-__all__ = ["Normalizer", "PostProcessor"]
+__all__ = ["MetricsManager", "Normalizer", "PostProcessor"]

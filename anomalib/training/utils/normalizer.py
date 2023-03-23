@@ -23,10 +23,10 @@ class Normalizer:
     This is responsible for updating the normalization values and normalizing the outputs.
 
     Args:
-        normalization_method (NormalizationMethod): Normalization method
+        normalization_method (NormalizationMethod): Normalization method. Defaults to None
     """
 
-    def __init__(self, normalization_method: NormalizationMethod):
+    def __init__(self, normalization_method: NormalizationMethod = NormalizationMethod.NONE):
         self.normalization_method = normalization_method
         self.normalization_metrics: Metric
 

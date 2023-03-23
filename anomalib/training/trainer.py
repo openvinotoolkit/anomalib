@@ -1,5 +1,6 @@
 """Implements custom trainer for Anomalib."""
 
+from __future__ import annotations
 
 import logging
 import warnings
@@ -7,13 +8,14 @@ from typing import Optional
 
 from pytorch_lightning import Trainer
 
+from anomalib.data import TaskType
 from anomalib.models.components.base.anomaly_module import AnomalyModule
 from anomalib.post_processing import NormalizationMethod, ThresholdMethod
 from anomalib.training.strategies.default.fit import AnomalibFitLoop
 from anomalib.training.strategies.default.predict import AnomalibPredictionLoop
 from anomalib.training.strategies.default.test import AnomalibTestLoop
 from anomalib.training.strategies.default.validate import AnomalibValidationLoop
-from anomalib.training.utils import Normalizer, PostProcessor
+from anomalib.training.utils import MetricsManager, Normalizer, PostProcessor
 
 log = logging.getLogger(__name__)
 # warnings to ignore in trainer
@@ -38,11 +40,14 @@ class AnomalibTrainer(Trainer):
 
     def __init__(
         self,
-        threshold_method: ThresholdMethod,
-        normalization_method: NormalizationMethod,
+        threshold_method: ThresholdMethod = ThresholdMethod.ADAPTIVE,
+        normalization_method: NormalizationMethod = NormalizationMethod.MIN_MAX,
         manual_image_threshold: Optional[float] = None,
         manual_pixel_threshold: Optional[float] = None,
-        **kwargs
+        image_metrics: list[str] | None = None,
+        pixel_metrics: list[str] | None = None,
+        task_type: TaskType = TaskType.SEGMENTATION,
+        **kwargs,
     ) -> None:
         super().__init__(**kwargs)
 
@@ -55,6 +60,8 @@ class AnomalibTrainer(Trainer):
         self.test_loop = AnomalibTestLoop()
         self.predict_loop = AnomalibPredictionLoop()
 
+        self.task_type = task_type
+
         # TODO: configure these from the config
         self.post_processor = PostProcessor(
             threshold_method=threshold_method,
@@ -62,6 +69,7 @@ class AnomalibTrainer(Trainer):
             manual_pixel_threshold=manual_pixel_threshold,
         )
         self.normalizer = Normalizer(normalization_method=normalization_method)
+        self.metrics_manager = MetricsManager(image_metrics=image_metrics, pixel_metrics=pixel_metrics)
 
     def _call_setup_hook(self) -> None:
         """Override the setup hook to call setup for required anomalib classes.
@@ -80,6 +88,7 @@ class AnomalibTrainer(Trainer):
         # Setup required classes before callbacks and lightning module
         self.post_processor.setup(self.lightning_module)
         self.normalizer.setup()
+        self.metrics_manager.setup(self.lightning_module, self.task_type)
         # ------------------------------------------------------------
         self._call_callback_hooks("setup", stage=fn)
         self._call_lightning_module_hook("setup", stage=fn)

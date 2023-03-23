@@ -25,7 +25,7 @@ class AnomalibTestEpochLoop(EvaluationEpochLoop):
         outputs = super()._evaluation_step(**kwargs)
         if outputs is not None:
             self.trainer.post_processor.outputs_to_cpu(outputs)
-            self.trainer.post_processor.post_process(outputs)
+            self.trainer.post_processor.compute_labels(outputs)
             self.trainer.post_processor.apply_thresholding(self.trainer.lightning_module, outputs)
             self.trainer.normalizer.normalize(self.trainer.lightning_module, outputs)
         return outputs

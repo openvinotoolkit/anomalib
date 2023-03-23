@@ -21,14 +21,14 @@ class PostProcessor:
     """Post-processor used in AnomalibTrainer.
 
     Args:
-        threshold_method (ThresholdMethod): Thresholding method to use.
+        threshold_method (ThresholdMethod): Thresholding method to use. Defaults to ``ThresholdMethod.ADAPTIVE``.
         manual_image_threshold (Optional[float]): Image threshold in case manual threshold is used. Defaults to None.
         manual_pixel_threshold (Optional[float]) = Pixel threshold in case manual threshold is used. Defaults to None.
     """
 
     def __init__(
         self,
-        threshold_method: ThresholdMethod,
+        threshold_method: ThresholdMethod = ThresholdMethod.ADAPTIVE,
         manual_image_threshold: float | None = None,
         manual_pixel_threshold: float | None = None,
     ):
@@ -111,7 +111,7 @@ class PostProcessor:
                 pixel_metric.update(outputs["anomaly_maps"], outputs["mask"].int())
 
     @staticmethod
-    def post_process(outputs: STEP_OUTPUT) -> None:
+    def compute_labels(outputs: STEP_OUTPUT) -> None:
         """Compute labels based on model predictions."""
         if isinstance(outputs, dict):
             if "pred_scores" not in outputs and "anomaly_maps" in outputs:

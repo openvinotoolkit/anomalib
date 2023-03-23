@@ -20,7 +20,11 @@ class AnomalibTrainingEpochLoop(TrainingEpochLoop):
         self.val_loop = AnomalibValidationLoop()
 
     def _should_check_val_epoch(self) -> bool:
-        """Don't run validation before the training epoch ends."""
+        """Don't run validation before the training epoch ends.
+
+        This is because in some models we need to compute embeddings or fit the normality model from all the collected
+        training data. By default lightning starts the validation loop before ``train_epoch_end`` is called.
+        """
         return False
 
 

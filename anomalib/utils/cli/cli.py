@@ -11,19 +11,17 @@ import warnings
 from datetime import datetime
 from importlib import import_module
 from pathlib import Path
+from typing import Any, Callable, Dict, Optional, Type, Union
+from warnings import warn
 
 from omegaconf.omegaconf import OmegaConf
-from pytorch_lightning.cli import LightningArgumentParser, LightningCLI
+from pytorch_lightning import LightningDataModule, LightningModule, Trainer
+from pytorch_lightning.cli import ArgsType, LightningArgumentParser, LightningCLI, SaveConfigCallback
 
-from anomalib.utils.callbacks import (
-    ImageVisualizerCallback,
-    LoadModelCallback,
-    MetricsConfigurationCallback,
-    ModelCheckpoint,
-    TilerConfigurationCallback,
-    TimerCallback,
-    add_visualizer_callback,
-)
+from anomalib.post_processing.normalization import NormalizationMethod
+from anomalib.post_processing.post_process import ThresholdMethod
+from anomalib.training.trainer import AnomalibTrainer
+from anomalib.utils.callbacks import LoadModelCallback, ModelCheckpoint, TimerCallback, add_visualizer_callback
 from anomalib.utils.loggers import configure_logger
 
 logger = logging.getLogger("anomalib.cli")
@@ -38,58 +36,60 @@ class AnomalibCLI(LightningCLI):
     For more details, the reader could refer to PyTorch Lightning CLI documentation.
     """
 
+    def __init__(
+        self,
+        model_class: Optional[Union[Type[LightningModule], Callable[..., LightningModule]]] = None,
+        datamodule_class: Optional[Union[Type[LightningDataModule], Callable[..., LightningDataModule]]] = None,
+        save_config_callback: Optional[Type[SaveConfigCallback]] = SaveConfigCallback,
+        save_config_kwargs: Optional[Dict[str, Any]] = None,
+        trainer_class: Union[Type[Trainer], Callable[..., Trainer]] = AnomalibTrainer,
+        trainer_defaults: Optional[Dict[str, Any]] = None,
+        seed_everything_default: Union[bool, int] = True,
+        parser_kwargs: Optional[Union[Dict[str, Any], Dict[str, Dict[str, Any]]]] = None,
+        subclass_mode_model: bool = False,
+        subclass_mode_data: bool = False,
+        args: ArgsType = None,
+        run: bool = True,
+        auto_configure_optimizers: bool = True,
+        **kwargs: Any,  # Remove with deprecations of v2.0.0
+    ) -> None:
+        if trainer_class != AnomalibTrainer:
+            warn(f"trainer_class {type(trainer_class)} is not AnomalibTrainer. Setting it to AnomalibTrainer.")
+            trainer_class = AnomalibTrainer
+        super().__init__(
+            model_class,
+            datamodule_class,
+            save_config_callback,
+            save_config_kwargs,
+            trainer_class,
+            trainer_defaults,
+            seed_everything_default,
+            parser_kwargs,
+            subclass_mode_model,
+            subclass_mode_data,
+            args,
+            run,
+            auto_configure_optimizers,
+            **kwargs,
+        )
+
     def add_arguments_to_parser(self, parser: LightningArgumentParser) -> None:
         """Add default arguments.
 
         Args:
             parser (LightningArgumentParser): Lightning Argument Parser.
         """
-        # TODO: https://github.com/openvinotoolkit/anomalib/issues/20
-        parser.add_argument(
-            "--export_mode", type=str, default="", help="Select export mode to ONNX or OpenVINO IR format."
+        group = parser.add_argument_group("Post Processing", description="Normalization and thresholding parameters.")
+        group.add_argument(
+            "--post_processing.normalization_method", type=NormalizationMethod, default=NormalizationMethod.MIN_MAX
         )
-        parser.add_argument("--nncf", type=str, help="Path to NNCF config to enable quantized training.")
-
-        # ADD CUSTOM CALLBACKS TO CONFIG
-        # NOTE: MyPy gives the following error:
-        # Argument 1 to "add_lightning_class_args" of "LightningArgumentParser"
-        # has incompatible type "Type[TilerCallback]"; expected "Union[Type[Trainer],
-        # Type[LightningModule], Type[LightningDataModule]]"  [arg-type]
-        parser.add_lightning_class_args(TilerConfigurationCallback, "tiling")  # type: ignore
-        parser.set_defaults({"tiling.enable": False})
-
-        # parser.add_lightning_class_args(PostProcessingConfigurationCallback, "post_processing")  # type: ignore
-        parser.set_defaults(
-            {
-                "post_processing.normalization_method": "min_max",
-                "post_processing.threshold_method": "adaptive",
-                "post_processing.manual_image_threshold": None,
-                "post_processing.manual_pixel_threshold": None,
-            }
-        )
-
-        # TODO: Assign these default values within the MetricsConfigurationCallback
-        #   - https://github.com/openvinotoolkit/anomalib/issues/384
-        parser.add_lightning_class_args(MetricsConfigurationCallback, "metrics")  # type: ignore
-        parser.set_defaults(
-            {
-                "metrics.task": "segmentation",
-                "metrics.image_metrics": ["F1Score", "AUROC"],
-                "metrics.pixel_metrics": ["F1Score", "AUROC"],
-            }
-        )
-
-        parser.add_lightning_class_args(ImageVisualizerCallback, "visualization")  # type: ignore
-        parser.set_defaults(
-            {
-                "visualization.mode": "full",
-                "visualization.task": "segmentation",
-                "visualization.image_save_path": "",
-                "visualization.save_images": False,
-                "visualization.show_images": False,
-                "visualization.log_images": False,
-            }
-        )
+        group.add_argument("--post_processing.threshold_method", type=ThresholdMethod, default=ThresholdMethod.ADAPTIVE)
+        group.add_argument("--post_processing.manual_image_threshold", type=Optional[float], default=None)
+        group.add_argument("--post_processing.manual_pixel_threshold", type=Optional[float], default=None)
+        parser.link_arguments("post_processing.normalization_method", "trainer.normalization_method")
+        parser.link_arguments("post_processing.threshold_method", "trainer.threshold_method")
+        parser.link_arguments("post_processing.manual_image_threshold", "trainer.manual_image_threshold")
+        parser.link_arguments("post_processing.manual_pixel_threshold", "trainer.manual_pixel_threshold")
 
     def __set_default_root_dir(self) -> None:
         """Sets the default root directory depending on the subcommand type. <train, fit, predict, tune.>."""
@@ -159,21 +159,6 @@ class AnomalibCLI(LightningCLI):
         # Add timing to the pipeline.
         callbacks.append(TimerCallback())
 
-        #  TODO: This could be set in PostProcessingConfiguration callback
-        #   - https://github.com/openvinotoolkit/anomalib/issues/384
-        # Normalization.
-        # normalization = config.post_processing.normalization_method
-        # if normalization:
-        #     if normalization == "min_max":
-        #         callbacks.append(MinMaxNormalizationCallback())
-        #     elif normalization == "cdf":
-        #         callbacks.append(CdfNormalizationCallback())
-        #     else:
-        #         raise ValueError(
-        #             f"Unknown normalization type {normalization}.
-        #  \n" "Available types are either None, min_max or cdf"
-        #         )
-
         add_visualizer_callback(callbacks, config)
         self.config[subcommand].visualization = config.visualization
 
@@ -211,7 +196,6 @@ class AnomalibCLI(LightningCLI):
     def before_instantiate_classes(self) -> None:
         """Modify the configuration to properly instantiate classes."""
         self.__set_default_root_dir()
-        self.__set_callbacks()
         print("done.")
 
 

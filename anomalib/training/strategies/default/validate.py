@@ -25,7 +25,7 @@ class AnomalibValidationEpochLoop(EvaluationEpochLoop):
         outputs = super()._evaluation_step_end(*args, **kwargs)
         if outputs is not None:
             self.trainer.post_processor.outputs_to_cpu(outputs)
-            self.trainer.post_processor.post_process(outputs)
+            self.trainer.post_processor.compute_labels(outputs)
         return outputs
 
     def _on_evaluation_batch_end(self, output: STEP_OUTPUT, **kwargs: Any) -> None:
@@ -71,7 +71,6 @@ class AnomalibValidationLoop(EvaluationLoop):
             outputs[0] if len(outputs) > 0 and self.num_dataloaders == 1 else outputs
         )
         self.trainer.post_processor.compute_threshold(self.trainer.lightning_module, output_or_outputs)
-        self.trainer.post_processor.update_metrics(
-            self.trainer.lightning_module.image_metrics, self.trainer.lightning_module.pixel_metrics, output_or_outputs
-        )
+        self.trainer.metrics_manager.update_metrics(self.trainer.lightning_module, output_or_outputs)
+
         super()._evaluation_epoch_end(outputs)
