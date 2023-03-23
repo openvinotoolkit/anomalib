@@ -7,7 +7,7 @@ import pytest
 
 from anomalib.data import AnomalibDataModule
 
-from .test_datamodule import _TestAnomalibDataModule
+from .datamodule import _TestAnomalibDataModule
 
 
 class _TestAnomalibVideoDatamodule(_TestAnomalibDataModule):
