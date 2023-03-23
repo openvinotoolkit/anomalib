@@ -11,10 +11,10 @@ from pytorch_lightning import Trainer
 from anomalib.data import TaskType
 from anomalib.models.components.base.anomaly_module import AnomalyModule
 from anomalib.post_processing import NormalizationMethod, ThresholdMethod
-from anomalib.training.strategies.default.fit import AnomalibFitLoop
-from anomalib.training.strategies.default.predict import AnomalibPredictionLoop
-from anomalib.training.strategies.default.test import AnomalibTestLoop
-from anomalib.training.strategies.default.validate import AnomalibValidationLoop
+from anomalib.training.learning_strategies.default.fit import AnomalibFitLoop
+from anomalib.training.learning_strategies.default.predict import AnomalibPredictionLoop
+from anomalib.training.learning_strategies.default.test import AnomalibTestLoop
+from anomalib.training.learning_strategies.default.validate import AnomalibValidationLoop
 from anomalib.training.utils import MetricsManager, Normalizer, PostProcessor
 
 log = logging.getLogger(__name__)
