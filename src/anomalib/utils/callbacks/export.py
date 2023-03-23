@@ -9,9 +9,10 @@ import logging
 from pathlib import Path
 
 import pytorch_lightning as pl
+from pytorch_lightning import Callback
+
 from anomalib.deploy import ExportMode, export
 from anomalib.models.components import AnomalyModule
-from pytorch_lightning import Callback
 
 logger = logging.getLogger(__name__)
 

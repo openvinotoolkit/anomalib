@@ -20,9 +20,7 @@ from anomalib.data.utils import read_image
 from anomalib.post_processing import ImageResult, compute_mask
 from anomalib.post_processing.normalization.cdf import normalize as normalize_cdf
 from anomalib.post_processing.normalization.cdf import standardize
-from anomalib.post_processing.normalization.min_max import (
-    normalize as normalize_min_max,
-)
+from anomalib.post_processing.normalization.min_max import normalize as normalize_min_max
 
 
 class Inferencer(ABC):
