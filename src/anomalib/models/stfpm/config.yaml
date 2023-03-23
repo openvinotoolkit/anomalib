@@ -40,7 +40,12 @@ model:
     patience: 5
     metric: pixel_AUROC
     mode: max
-  normalization_method: min_max # options: [null, min_max, cdf]
+
+post_processing:
+  normalization_method: min_max # <null, min_max, cdf>
+  threshold_method: adaptive # options: [adaptive, manual]
+  manual_image_threshold: null
+  manual_pixel_threshold: null
 
 metrics:
   image:
@@ -49,10 +54,6 @@ metrics:
   pixel:
     - F1Score
     - AUROC
-  threshold:
-    method: adaptive #options: [adaptive, manual]
-    manual_image: null
-    manual_pixel: null
 
 visualization:
   show_images: False # show images on the screen

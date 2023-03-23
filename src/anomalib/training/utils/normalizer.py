@@ -33,7 +33,7 @@ class Normalizer:
     def setup(self):
         """Setup normalization metrics."""
         # TODO change logic here
-        if not hasattr(self, "normalization_metrics"):
+        if not hasattr(self, "normalization_metrics") and self.normalization_method != NormalizationMethod.NONE:
             if self.normalization_method == NormalizationMethod.MIN_MAX:
                 self.normalization_metrics = MinMax().cpu()
             elif self.normalization_method == NormalizationMethod.CDF:

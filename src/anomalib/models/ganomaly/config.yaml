@@ -42,15 +42,17 @@ model:
   wadv: 1
   wcon: 50
   wenc: 1
-  normalization_method: none
+
+post_processing:
+  normalization_method: none # <null, min_max, cdf>
+  threshold_method: adaptive # options: [adaptive, manual]
+  manual_image_threshold: null
+  manual_pixel_threshold: null
 
 metrics:
   image:
     - F1Score
     - AUROC
-  threshold:
-    method: adaptive #options: [adaptive, manual]
-    manual_image: null
 
 visualization:
   show_images: False # show images on the screen
