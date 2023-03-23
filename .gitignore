@@ -5,6 +5,10 @@ datasets
 results
 !anomalib/core/results
 
+# Jupyter Notebooks
+notebooks/500_use_cases/501_dobot/
+!notebooks/500_use_cases/501_dobot/*.ipynb
+
 # VENV
 .python-version
 .anomalib

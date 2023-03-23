@@ -9,13 +9,14 @@ import json
 import subprocess  # nosec
 from enum import Enum
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import torch
+from anomalib.data.task_type import TaskType
+from anomalib.models.components import AnomalyModule
 from torch import Tensor
 from torch.types import Number
-
-from anomalib.models.components import AnomalyModule
 
 
 class ExportMode(str, Enum):
@@ -32,57 +33,79 @@ def get_model_metadata(model: AnomalyModule) -> dict[str, Tensor]:
         model (AnomalyModule): Anomaly model which contains metadata related to normalization.
 
     Returns:
-        dict[str, Tensor]: metadata
+        dict[str, Tensor]: Model metadata
     """
-    meta_data = {}
-    cached_meta_data: dict[str, Number | Tensor] = {
+    metadata = {}
+    cached_metadata: dict[str, Number | Tensor] = {
         "image_threshold": model.image_threshold.cpu().value.item(),
         "pixel_threshold": model.pixel_threshold.cpu().value.item(),
     }
     if hasattr(model, "normalization_metrics") and model.normalization_metrics.state_dict() is not None:
         for key, value in model.normalization_metrics.state_dict().items():
-            cached_meta_data[key] = value.cpu()
+            cached_metadata[key] = value.cpu()
     # Remove undefined values by copying in a new dict
-    for key, val in cached_meta_data.items():
+    for key, val in cached_metadata.items():
         if not np.isinf(val).all():
-            meta_data[key] = val
-    del cached_meta_data
-    return meta_data
+            metadata[key] = val
+    del cached_metadata
+    return metadata
+
+
+def get_metadata(task: TaskType, transform: dict[str, Any], model: AnomalyModule) -> dict[str, Any]:
+    """Get metadata for the exported model.
+
+    Args:
+        task (TaskType): Task type.
+        transform (dict[str, Any]): Transform used for the model.
+        model (AnomalyModule): Model to export.
+
+    Returns:
+        dict[str, Any]: Metadata for the exported model.
+    """
+    data_metadata = {"task": task, "transform": transform}
+    model_metadata = get_model_metadata(model)
+    metadata = {**data_metadata, **model_metadata}
+
+    # Convert torch tensors to python lists or values for json serialization.
+    for key, value in metadata.items():
+        if isinstance(value, Tensor):
+            metadata[key] = value.numpy().tolist()
+
+    return metadata
 
 
 def export(
+    task: TaskType,
+    transform: dict[str, Any],
+    input_size: tuple[int, int],
     model: AnomalyModule,
-    input_size: list[int] | tuple[int, int],
     export_mode: ExportMode,
     export_root: str | Path,
 ) -> None:
     """Export the model to onnx format and (optionally) convert to OpenVINO IR if export mode is set to OpenVINO.
 
-    Metadata.json is generated regardless of export mode.
-
     Args:
-        model (AnomalyModule): Model to convert.
-        input_size (list[int] | tuple[int, int]): Image size used as the input for onnx converter.
-        export_root (str | Path): Path to exported ONNX/OpenVINO IR.
+        task (TaskType): Task type.
+        transform (dict[str, Any]): Data transforms (augmentatiions) used for the model.
+        input_size (tuple[int, int]): Input size of the model.
+        model (AnomalyModule): Anomaly model to export.
         export_mode (ExportMode): Mode to export the model. ONNX or OpenVINO.
+        export_root (str | Path): Path to exported ONNX/OpenVINO IR.
     """
     # Write metadata to json file. The file is written in the same directory as the target model.
-    export_path: Path = Path(str(export_root)) / export_mode.value
+    export_path = Path(export_root) / export_mode.value
     export_path.mkdir(parents=True, exist_ok=True)
-    with (Path(export_path) / "meta_data.json").open("w", encoding="utf-8") as metadata_file:
-        meta_data = get_model_metadata(model)
-        # Convert metadata from torch
-        for key, value in meta_data.items():
-            if isinstance(value, Tensor):
-                meta_data[key] = value.numpy().tolist()
-        json.dump(meta_data, metadata_file, ensure_ascii=False, indent=4)
+    with (Path(export_path) / "metadata.json").open("w", encoding="utf-8") as metadata_file:
+        metadata = get_metadata(task, transform, model)
+        json.dump(metadata, metadata_file, ensure_ascii=False, indent=4)
 
-    onnx_path = _export_to_onnx(model, input_size, export_path)
+    # Export model to onnx and convert to OpenVINO IR if export mode is set to OpenVINO.
+    onnx_path = export_to_onnx(model, input_size, export_path)
     if export_mode == ExportMode.OPENVINO:
-        _export_to_openvino(export_path, onnx_path)
+        export_to_openvino(export_path, onnx_path)
 
 
-def _export_to_onnx(model: AnomalyModule, input_size: list[int] | tuple[int, int], export_path: Path) -> Path:
+def export_to_onnx(model: AnomalyModule, input_size: tuple[int, int], export_path: Path) -> Path:
     """Export model to onnx.
 
     Args:
@@ -106,7 +129,7 @@ def _export_to_onnx(model: AnomalyModule, input_size: list[int] | tuple[int, int
     return onnx_path
 
 
-def _export_to_openvino(export_path: str | Path, onnx_path: Path) -> None:
+def export_to_openvino(export_path: str | Path, onnx_path: Path) -> None:
     """Convert onnx model to OpenVINO IR.
 
     Args:

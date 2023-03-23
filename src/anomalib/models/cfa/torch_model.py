@@ -114,7 +114,7 @@ class CfaModel(DynamicBufferModule):
 
         return_nodes = get_return_nodes(backbone)
         self.feature_extractor = get_feature_extractor(backbone, return_nodes)
-        feature_map_meta_data = dryrun_find_featuremap_dims(
+        feature_map_metadata = dryrun_find_featuremap_dims(
             feature_extractor=self.feature_extractor,
             input_size=input_size,
             layers=return_nodes,
@@ -122,7 +122,7 @@ class CfaModel(DynamicBufferModule):
         # Scale is to get the largest feature map dimensions of different layers
         # of the feature extractor. In a typical feature extractor, the first
         # layer has the highest resolution.
-        resolution = list(feature_map_meta_data.values())[0]["resolution"]
+        resolution = list(feature_map_metadata.values())[0]["resolution"]
         if isinstance(resolution, int):
             self.scale = (resolution,) * 2
         elif isinstance(resolution, tuple):

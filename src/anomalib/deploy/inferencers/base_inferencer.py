@@ -47,14 +47,14 @@ class Inferencer(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def post_process(self, predictions: np.ndarray | Tensor, meta_data: dict[str, Any] | None) -> dict[str, Any]:
+    def post_process(self, predictions: np.ndarray | Tensor, metadata: dict[str, Any] | None) -> dict[str, Any]:
         """Post-Process."""
         raise NotImplementedError
 
     def predict(
         self,
         image: str | Path | np.ndarray,
-        meta_data: dict[str, Any] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> ImageResult:
         """Perform a prediction for a given input image.
 
@@ -64,25 +64,25 @@ class Inferencer(ABC):
             image (Union[str, np.ndarray]): Input image whose output is to be predicted.
                 It could be either a path to image or numpy array itself.
 
-            meta_data: Meta-data information such as shape, threshold.
+            metadata: Metadata information such as shape, threshold.
 
         Returns:
             ImageResult: Prediction results to be visualized.
         """
-        if meta_data is None:
-            if hasattr(self, "meta_data"):
-                meta_data = getattr(self, "meta_data")
+        if metadata is None:
+            if hasattr(self, "metadata"):
+                metadata = getattr(self, "metadata")
             else:
-                meta_data = {}
+                metadata = {}
         if isinstance(image, (str, Path)):
             image_arr: np.ndarray = read_image(image)
         else:  # image is already a numpy array. Kept for mypy compatibility.
             image_arr = image
-        meta_data["image_shape"] = image_arr.shape[:2]
+        metadata["image_shape"] = image_arr.shape[:2]
 
         processed_image = self.pre_process(image_arr)
         predictions = self.forward(processed_image)
-        output = self.post_process(predictions, meta_data=meta_data)
+        output = self.post_process(predictions, metadata=metadata)
 
         return ImageResult(
             image=image_arr,
@@ -95,11 +95,11 @@ class Inferencer(ABC):
         )
 
     @staticmethod
-    def _superimpose_segmentation_mask(meta_data: dict, anomaly_map: np.ndarray, image: np.ndarray) -> np.ndarray:
+    def _superimpose_segmentation_mask(metadata: dict, anomaly_map: np.ndarray, image: np.ndarray) -> np.ndarray:
         """Superimpose segmentation mask on top of image.
 
         Args:
-            meta_data (dict): Metadata of the image which contains the image size.
+            metadata (dict): Metadata of the image which contains the image size.
             anomaly_map (np.ndarray): Anomaly map which is used to extract segmentation mask.
             image (np.ndarray): Image on which segmentation mask is to be superimposed.
 
@@ -107,8 +107,8 @@ class Inferencer(ABC):
             np.ndarray: Image with segmentation mask superimposed.
         """
         pred_mask = compute_mask(anomaly_map, 0.5)  # assumes predictions are normalized.
-        image_height = meta_data["image_shape"][0]
-        image_width = meta_data["image_shape"][1]
+        image_height = metadata["image_shape"][0]
+        image_width = metadata["image_shape"][1]
         pred_mask = cv2.resize(pred_mask, (image_width, image_height))
         boundaries = find_boundaries(pred_mask)
         outlines = dilation(boundaries, np.ones((7, 7)))
@@ -129,14 +129,14 @@ class Inferencer(ABC):
     @staticmethod
     def _normalize(
         pred_scores: Tensor | np.float32,
-        meta_data: dict | DictConfig,
+        metadata: dict | DictConfig,
         anomaly_maps: Tensor | np.ndarray | None = None,
     ) -> tuple[np.ndarray | Tensor | None, float]:
         """Applies normalization and resizes the image.
 
         Args:
             pred_scores (Tensor | np.float32): Predicted anomaly score
-            meta_data (dict | DictConfig): Meta data. Post-processing step sometimes requires
+            metadata (dict | DictConfig): Meta data. Post-processing step sometimes requires
                 additional meta data such as image shape. This variable comprises such info.
             anomaly_maps (Tensor | np.ndarray | None): Predicted raw anomaly map.
 
@@ -146,31 +146,37 @@ class Inferencer(ABC):
         """
 
         # min max normalization
-        if "min" in meta_data and "max" in meta_data:
+        if "min" in metadata and "max" in metadata:
             if anomaly_maps is not None:
                 anomaly_maps = normalize_min_max(
-                    anomaly_maps, meta_data["pixel_threshold"], meta_data["min"], meta_data["max"]
+                    anomaly_maps,
+                    metadata["pixel_threshold"],
+                    metadata["min"],
+                    metadata["max"],
                 )
             pred_scores = normalize_min_max(
-                pred_scores, meta_data["image_threshold"], meta_data["min"], meta_data["max"]
+                pred_scores,
+                metadata["image_threshold"],
+                metadata["min"],
+                metadata["max"],
             )
 
         # standardize pixel scores
-        if "pixel_mean" in meta_data.keys() and "pixel_std" in meta_data.keys():
+        if "pixel_mean" in metadata.keys() and "pixel_std" in metadata.keys():
             if anomaly_maps is not None:
                 anomaly_maps = standardize(
-                    anomaly_maps, meta_data["pixel_mean"], meta_data["pixel_std"], center_at=meta_data["image_mean"]
+                    anomaly_maps, metadata["pixel_mean"], metadata["pixel_std"], center_at=metadata["image_mean"]
                 )
-                anomaly_maps = normalize_cdf(anomaly_maps, meta_data["pixel_threshold"])
+                anomaly_maps = normalize_cdf(anomaly_maps, metadata["pixel_threshold"])
 
         # standardize image scores
-        if "image_mean" in meta_data.keys() and "image_std" in meta_data.keys():
-            pred_scores = standardize(pred_scores, meta_data["image_mean"], meta_data["image_std"])
-            pred_scores = normalize_cdf(pred_scores, meta_data["image_threshold"])
+        if "image_mean" in metadata.keys() and "image_std" in metadata.keys():
+            pred_scores = standardize(pred_scores, metadata["image_mean"], metadata["image_std"])
+            pred_scores = normalize_cdf(pred_scores, metadata["image_threshold"])
 
         return anomaly_maps, float(pred_scores)
 
-    def _load_meta_data(self, path: str | Path | None = None) -> dict | DictConfig:
+    def _load_metadata(self, path: str | Path | None = None) -> dict | DictConfig:
         """Loads the meta data from the given path.
 
         Args:
@@ -180,8 +186,8 @@ class Inferencer(ABC):
         Returns:
             dict | DictConfig: Dictionary containing the metadata.
         """
-        meta_data: dict[str, float | np.ndarray | Tensor] | DictConfig = {}
+        metadata: dict[str, float | np.ndarray | Tensor] | DictConfig = {}
         if path is not None:
             config = OmegaConf.load(path)
-            meta_data = cast(DictConfig, config)
-        return meta_data
+            metadata = cast(DictConfig, config)
+        return metadata
