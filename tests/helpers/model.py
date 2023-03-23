@@ -88,7 +88,7 @@ def setup_model_train(
     callbacks = get_callbacks(config)
 
     # Force model checkpoint to create checkpoint after first epoch
-    if fast_run == True:
+    if fast_run is True:
         for index, callback in enumerate(callbacks):
             if isinstance(callback, ModelCheckpoint):
                 callbacks.pop(index)
