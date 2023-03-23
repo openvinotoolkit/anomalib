@@ -1,7 +1,0 @@
-dataset:
-  name: FakeData
-  category: fakedata
-  image_size: 256
-
-model:
-  name: DummyModel
