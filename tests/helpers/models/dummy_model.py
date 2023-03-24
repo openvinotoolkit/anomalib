@@ -1,3 +1,8 @@
+"""Tests - Model Helpers."""
+
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import torch.nn.functional as F
 from einops import reduce
 from torch import nn
