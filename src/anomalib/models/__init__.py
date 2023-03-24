@@ -26,6 +26,7 @@ from anomalib.models.patchcore import Patchcore
 from anomalib.models.reverse_distillation import ReverseDistillation
 from anomalib.models.rkde import Rkde
 from anomalib.models.stfpm import Stfpm
+from anomalib.models.ai_vad import AiVad
 
 __all__ = [
     "Cfa",
@@ -41,6 +42,7 @@ __all__ = [
     "ReverseDistillation",
     "Rkde",
     "Stfpm",
+    "AiVad",
 ]
 
 logger = logging.getLogger(__name__)
@@ -92,6 +94,7 @@ def get_model(config: DictConfig | ListConfig) -> AnomalyModule:
         "reverse_distillation",
         "rkde",
         "stfpm",
+        "ai_vad",
     ]
     model: AnomalyModule
 
