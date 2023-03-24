@@ -18,10 +18,10 @@ from tests.helpers.dummy import DummyModel
 class TestFeatureExtractor:
     @pytest.mark.parametrize("backbone", ["resnet18", "wide_resnet50_2"])
     @pytest.mark.parametrize("pretrained", [True, False])
-    def test_timm_feature_extraction(self, backbone: str, pretrained: bool) -> None:
+    def test_timm_feature_extraction(self, backbone: str, pretrained: bool, device: torch.device) -> None:
         layers = ["layer1", "layer2", "layer3"]
-        model = FeatureExtractor(backbone=backbone, layers=layers, pre_trained=pretrained)
-        test_input = torch.rand((32, 3, 256, 256))
+        model = FeatureExtractor(backbone=backbone, layers=layers, pre_trained=pretrained).to(device)
+        test_input = torch.rand((32, 3, 256, 256)).to(device)
         features = model(test_input)
 
         if backbone == "resnet18":
@@ -39,9 +39,9 @@ class TestFeatureExtractor:
         else:
             pass
 
-    def test_torchfx_feature_extraction(self) -> None:
-        model = TorchFXFeatureExtractor("resnet18", ["layer1", "layer2", "layer3"])
-        test_input = torch.rand((32, 3, 256, 256))
+    def test_torchfx_feature_extraction(self, device: torch.device) -> None:
+        model = TorchFXFeatureExtractor("resnet18", ["layer1", "layer2", "layer3"]).to(device)
+        test_input = torch.rand((32, 3, 256, 256)).to(device)
         features = model(test_input)
         assert features["layer1"].shape == torch.Size((32, 64, 64, 64))
         assert features["layer2"].shape == torch.Size((32, 128, 32, 32))
@@ -50,7 +50,7 @@ class TestFeatureExtractor:
         # Test if model can be loaded by using just its name
         model = TorchFXFeatureExtractor(
             backbone="efficientnet_b5", return_nodes=["features.6.8"], weights=EfficientNet_B5_Weights.DEFAULT
-        )
+        ).to(device)
         features = model(test_input)
         assert features["features.6.8"].shape == torch.Size((32, 304, 8, 8))
 
@@ -59,7 +59,7 @@ class TestFeatureExtractor:
             backbone="torchvision.models.resnet18",
             return_nodes=["layer1", "layer2", "layer3"],
             weights=ResNet18_Weights.DEFAULT,
-        )
+        ).to(device)
         features = model(test_input)
         assert features["layer1"].shape == torch.Size((32, 64, 64, 64))
         assert features["layer2"].shape == torch.Size((32, 128, 32, 32))
@@ -72,14 +72,14 @@ class TestFeatureExtractor:
                 backbone=BackboneParams(class_path=DummyModel),
                 weights=tmpdir + "/dummy_model.pt",
                 return_nodes=["conv3"],
-            )
+            ).to(device)
             features = model(test_input)
             assert features["conv3"].shape == torch.Size((32, 1, 244, 244))
 
         # Test if nn.Module instance can be passed directly
-        resnet = resnet18(weights=ResNet18_Weights)
-        model = TorchFXFeatureExtractor(resnet, ["layer1", "layer2", "layer3"])
-        test_input = torch.rand((32, 3, 256, 256))
+        resnet = resnet18(weights=ResNet18_Weights).to(device)
+        model = TorchFXFeatureExtractor(resnet, ["layer1", "layer2", "layer3"]).to(device)
+        test_input = torch.rand((32, 3, 256, 256)).to(device)
         features = model(test_input)
         assert features["layer1"].shape == torch.Size((32, 64, 64, 64))
         assert features["layer2"].shape == torch.Size((32, 128, 32, 32))
@@ -94,10 +94,10 @@ class TestFeatureExtractor:
     "input_size",
     [(256, 256), (224, 224), (128, 128)],
 )
-def test_dryrun_find_featuremap_dims(backbone: str, input_size: Tuple[int, int]):
+def test_dryrun_find_featuremap_dims(backbone: str, input_size: Tuple[int, int], device: torch.device) -> None:
     """Use the function and check the expected output format."""
     layers = ["layer1", "layer2", "layer3"]
-    model = FeatureExtractor(backbone=backbone, layers=layers, pre_trained=True)
+    model = FeatureExtractor(backbone=backbone, layers=layers, pre_trained=True).to(device)
     mapping = dryrun_find_featuremap_dims(model, input_size, layers)
     for lay in layers:
         layer_mapping = mapping[lay]
