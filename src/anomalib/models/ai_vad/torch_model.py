@@ -18,6 +18,10 @@ class AiVadModel(nn.Module):
         # initialize feature extractor
         self.encoder, _ = clip.load("ViT-B/16")
 
+        # define mem banks
+        self.pose_embeddings: Tensor
+        self.feature_embeddings: Tensor
+
     def forward(self, batch):
         self.flow_extractor.eval()
         self.region_extractor.eval()
@@ -25,15 +29,14 @@ class AiVadModel(nn.Module):
 
         batch_size = batch.shape[0]
 
-        # 1. compute optical flow
+        # 1. compute optical flow and extract regions
         first_frame = batch[:, 0, ...]
         last_frame = batch[:, -1, ...]
-        flow = self.flow_extractor(first_frame, last_frame)[
-            -1
-        ]  # only interested in output of last iteration of flow estimation
-
-        # 2. extract regions
-        regions = self.region_extractor(last_frame)
+        with torch.no_grad():
+            flow = self.flow_extractor(first_frame, last_frame)[
+                -1
+            ]  # only interested in output of last iteration of flow estimation
+            regions = self.region_extractor(last_frame)
         # convert from list of [N, 4] tensors to single [N, 5] tensor where each row is [index-in-batch, x1, y1, x2, y2]
         boxes_list = [batch_item["boxes"] for batch_item in regions]
         indices = torch.repeat_interleave(
@@ -44,16 +47,19 @@ class AiVadModel(nn.Module):
         flow_regions = roi_align(flow, boxes, output_size=[224, 224])
         rgb_regions = roi_align(last_frame, boxes, output_size=[224, 224])
 
-        # 3. extract velocity
+        # 2. extract velocity
         velocity = extract_velocity(flow_regions)
         velocity = [velocity[indices == i] for i in range(batch_size)]  # convert back to list
 
-        # 4. extract pose
+        # 3. extract pose
         poses = extract_poses(regions)
 
-        # 5. CLIP
+        # 4. CLIP
         rgb_regions = [rgb_regions[indices == i] for i in range(batch_size)]  # convert back to list
-        features = [self.encoder.encode_image(regions) for regions in rgb_regions]
+        for regions in rgb_regions:
+            batched_regions = torch.split(regions, batch_size)
+            with torch.no_grad():
+                features = torch.vstack([self.encoder.encode_image(batch) for batch in batched_regions])
 
         if self.training:
             # return features

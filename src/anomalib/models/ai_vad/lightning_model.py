@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import logging
 
+from typing import List
+import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
@@ -39,16 +41,31 @@ class AiVad(AnomalyModule):
 
         self.model = AiVadModel()
 
+        self.pose_embeddings: List[Tensor] = []
+        self.feature_embeddings: List[Tensor] = []
+
     @staticmethod
     def configure_optimizers() -> None:  # pylint: disable=arguments-differ
         return None
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
-        self.model(batch["image"])
+        velocity, poses, features = self.model(batch["image"])
+        # add velocity
+
+        # # add poses and features to membanks
+        for pose_embeddings, feature_embeddings in zip(poses, features):
+            self.pose_embeddings.append(pose_embeddings.cpu())
+            self.feature_embeddings.append(feature_embeddings.cpu())
 
     def on_validation_start(self) -> None:
-        """Fit a Gaussian to the embedding collected from the training set."""
-        pass
+        # stack pose embeddings
+        pose_embeddings = torch.vstack(self.pose_embeddings)
+        # pass to torch model
+        self.model.pose_embeddings = pose_embeddings
+        # stack feature embeddings
+        feature_embeddings = torch.vstack(self.feature_embeddings)
+        # pass to torch model
+        self.model.feature_embeddings = feature_embeddings
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         return batch
