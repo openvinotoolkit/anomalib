@@ -8,7 +8,7 @@ from torch import nn
 
 from anomalib.models.components import AnomalyModule
 from anomalib.utils.callbacks import ImageVisualizerCallback
-from tests.helpers.dataset import get_dataset_path
+from tests.helpers.data import get_dataset_path
 from tests.helpers.metrics import get_metrics
 
 

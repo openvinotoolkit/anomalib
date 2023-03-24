@@ -30,7 +30,7 @@ from pathlib import Path
 
 from omegaconf import OmegaConf
 
-from tests.helpers.dataset import get_dataset_path
+from tests.helpers.data import get_dataset_path
 
 
 def check_tb_logs(model: str):

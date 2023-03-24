@@ -17,7 +17,8 @@ from anomalib.data import get_datamodule
 from anomalib.deploy import OpenVINOInferencer, TorchInferencer
 from anomalib.models import get_model
 from anomalib.utils.callbacks import get_callbacks
-from tests.helpers.dataset import TestDataset, get_dataset_path
+from tests.helpers.data import get_dataset_path
+from tests.helpers.dataset import TestDataset
 from tests.helpers.inference import MockImageLoader
 
 
