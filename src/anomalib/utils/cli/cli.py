@@ -20,7 +20,7 @@ from pytorch_lightning.cli import ArgsType, LightningArgumentParser, LightningCL
 
 from anomalib.post_processing.normalization import NormalizationMethod
 from anomalib.post_processing.post_process import ThresholdMethod
-from anomalib.training.trainer import AnomalibTrainer
+from anomalib.trainer.trainer import AnomalibTrainer
 from anomalib.utils.callbacks import LoadModelCallback, ModelCheckpoint, TimerCallback, add_visualizer_callback
 from anomalib.utils.loggers import configure_logger
 

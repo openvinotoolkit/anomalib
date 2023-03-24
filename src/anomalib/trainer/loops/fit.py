@@ -8,7 +8,7 @@ from __future__ import annotations
 from pytorch_lightning.loops.epoch.training_epoch_loop import TrainingEpochLoop
 from pytorch_lightning.loops.fit_loop import FitLoop
 
-import anomalib.training as core
+import anomalib.trainer as core
 
 from .validate import AnomalibValidationLoop
 

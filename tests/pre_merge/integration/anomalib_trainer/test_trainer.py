@@ -3,7 +3,7 @@
 import pytest
 import torch
 
-from anomalib.training import AnomalibTrainer
+from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.metrics.min_max import MinMax
 from tests.helpers.dataloaders.tensor import DummyTensorDataModule
 

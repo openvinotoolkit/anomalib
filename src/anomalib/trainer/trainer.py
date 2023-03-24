@@ -11,11 +11,8 @@ from pytorch_lightning import Trainer
 from anomalib.data import TaskType
 from anomalib.models.components.base.anomaly_module import AnomalyModule
 from anomalib.post_processing import NormalizationMethod, ThresholdMethod
-from anomalib.training.learning_strategies.default.fit import AnomalibFitLoop
-from anomalib.training.learning_strategies.default.predict import AnomalibPredictionLoop
-from anomalib.training.learning_strategies.default.test import AnomalibTestLoop
-from anomalib.training.learning_strategies.default.validate import AnomalibValidationLoop
-from anomalib.training.utils import MetricsManager, Normalizer, PostProcessor
+from anomalib.trainer.loops import AnomalibFitLoop, AnomalibPredictionLoop, AnomalibTestLoop, AnomalibValidationLoop
+from anomalib.trainer.utils import MetricsManager, Normalizer, PostProcessor
 
 log = logging.getLogger(__name__)
 # warnings to ignore in trainer
