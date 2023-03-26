@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
+
 from pandas import DataFrame
 from imageio import imread
 from sklearn.model_selection import train_test_split
+
+from anomalib.data.task_type import TaskType
 from anomalib.data.utils import Split
 import numpy as np
 
@@ -80,3 +83,20 @@ def make_kolektor_dataset(
         samples = samples[samples.split == split].reset_index(drop=True)
 
     return samples
+
+
+class KolektorDataset(AnomalibDataset):
+    def __init__(
+        self,
+        task: TaskType,
+        transform: A.Compose,
+        root: Path | str,
+        split: str | Split | None = None,
+    ) -> None:
+        super().__init__(task=task, transform=transform)
+
+        self.root = root
+        self.split = split
+
+    def _setup(self) -> None:
+        self.samples = make_kolektor_dataset(self.root, split=self.split)
