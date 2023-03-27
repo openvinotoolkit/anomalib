@@ -8,6 +8,8 @@ from torchvision.models.detection import keypointrcnn_resnet50_fpn, KeypointRCNN
 from torchvision.ops import roi_align
 from sklearn.mixture import GaussianMixture
 
+from anomalib.utils.metrics.min_max import MinMax
+
 
 class AiVadModel(nn.Module):
     def __init__(self):
@@ -22,6 +24,7 @@ class AiVadModel(nn.Module):
         self.encoder, _ = clip.load("ViT-B/16")
 
         # define mem banks
+        self.velocity_embeddings: Tensor
         self.pose_embeddings: Tensor
         self.feature_embeddings: Tensor
 
@@ -29,6 +32,9 @@ class AiVadModel(nn.Module):
         self.velocity_estimator = GaussianMixture(n_components=2, random_state=0)
 
         # norm stats
+        self.pose_norm = MinMax()
+        self.feature_norm = MinMax()
+        self.velocity_norm = MinMax()
 
     def forward(self, batch):
         self.flow_extractor.eval()
@@ -77,12 +83,55 @@ class AiVadModel(nn.Module):
 
         # infer
         velocity_scores = [self.velocity_estimator.score_samples(vel) for vel in velocity]
-        pose_scores = [nearest_neighbors(self.pose_embeddings, pos.reshape(pos.shape[0], -1).cpu(), 9) for pos in poses]
+        pose_scores = [
+            nearest_neighbors(torch.vstack(self.pose_embeddings), pos.reshape(pos.shape[0], -1).cpu(), 9)
+            for pos in poses
+        ]
         appearance_scores = [
-            nearest_neighbors(self.feature_embeddings.float(), feat.float().cpu(), 9) for feat in features
+            nearest_neighbors(torch.vstack(self.feature_embeddings).float(), feat.float().cpu(), 9) for feat in features
         ]
 
-        return velocity_scores, pose_scores, appearance_scores
+        # normalize scores
+        self.velocity_norm.cpu()
+        velocity_scores = [
+            (Tensor(vel) - self.velocity_norm.min) / (self.velocity_norm.max - self.velocity_norm.min)
+            for vel in velocity_scores
+        ]
+
+        self.pose_norm.cpu()
+        pose_scores = [(pos - self.pose_norm.min) / (self.pose_norm.max - self.pose_norm.min) for pos in pose_scores]
+
+        self.feature_norm.cpu()
+        appearance_scores = [
+            (Tensor(feat) - self.feature_norm.min) / (self.feature_norm.max - self.feature_norm.min)
+            for feat in appearance_scores
+        ]
+
+        anomaly_scores = []
+        for velocity, pose, appearance in zip(velocity_scores, pose_scores, appearance_scores):
+            anomaly_scores.append(torch.vstack([velocity, pose, appearance]).max(axis=0).values)
+
+        return boxes_list, anomaly_scores
+
+    def compute_normalization_statistics(self):
+        for i in range(len(self.pose_embeddings)):
+            pose_bank = torch.vstack(self.pose_embeddings[:i] + self.pose_embeddings[i + 1 :])
+            pose_embedding = self.pose_embeddings[i]
+            nns = nearest_neighbors(pose_bank, pose_embedding, 9)
+            self.pose_norm.update(nns)
+
+        for i in range(len(self.feature_embeddings)):
+            feature_bank = torch.vstack(self.feature_embeddings[:i] + self.feature_embeddings[i + 1 :]).float()
+            feature_embedding = self.feature_embeddings[i].float()
+            nns = nearest_neighbors(feature_bank, feature_embedding, 9)
+            self.feature_norm.update(nns)
+
+        velocity_training_scores = self.velocity_estimator.score_samples(self.velocity_embeddings)
+        self.velocity_norm.update(Tensor(velocity_training_scores))
+
+        self.pose_norm.compute()
+        self.feature_norm.compute()
+        self.velocity_norm.compute()
 
 
 def nearest_neighbors(memory_bank, embedding: Tensor, n_neighbors: int) -> Tensor:
