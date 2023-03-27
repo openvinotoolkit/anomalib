@@ -41,6 +41,7 @@ class AiVad(AnomalyModule):
 
         self.model = AiVadModel()
 
+        self.velocity_embeddings: List[Tensor] = []
         self.pose_embeddings: List[Tensor] = []
         self.feature_embeddings: List[Tensor] = []
 
@@ -53,11 +54,16 @@ class AiVad(AnomalyModule):
         # add velocity
 
         # # add poses and features to membanks
-        for pose_embeddings, feature_embeddings in zip(poses, features):
+        for velocity_embeddings, pose_embeddings, feature_embeddings in zip(velocity, poses, features):
+            self.velocity_embeddings.append(velocity_embeddings.cpu())
             self.pose_embeddings.append(pose_embeddings.cpu())
             self.feature_embeddings.append(feature_embeddings.cpu())
 
     def on_validation_start(self) -> None:
+        # stack velocity embeddings
+        velocity_embeddings = torch.vstack(self.velocity_embeddings)
+        # pass to torch model
+        self.model.velocity_estimator.fit(velocity_embeddings)
         # stack pose embeddings
         pose_embeddings = torch.vstack(self.pose_embeddings)
         # pass to torch model
@@ -68,7 +74,7 @@ class AiVad(AnomalyModule):
         self.model.feature_embeddings = feature_embeddings
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        return batch
+        velocity_score, pose_score, feature_score = self.model(batch["image"])
 
 
 class AiVadLightning(AiVad):

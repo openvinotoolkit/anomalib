@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import clip
 import torch
 from torch import nn, Tensor
 from torchvision.models.optical_flow import raft_small, Raft_Small_Weights
 from torchvision.models.detection import keypointrcnn_resnet50_fpn, KeypointRCNN_ResNet50_FPN_Weights
 from torchvision.ops import roi_align
+from sklearn.mixture import GaussianMixture
 
 
 class AiVadModel(nn.Module):
@@ -21,6 +24,11 @@ class AiVadModel(nn.Module):
         # define mem banks
         self.pose_embeddings: Tensor
         self.feature_embeddings: Tensor
+
+        # define gmm
+        self.velocity_estimator = GaussianMixture(n_components=2, random_state=0)
+
+        # norm stats
 
     def forward(self, batch):
         self.flow_extractor.eval()
@@ -53,17 +61,48 @@ class AiVadModel(nn.Module):
 
         # 3. extract pose
         poses = extract_poses(regions)
+        poses = [pos.reshape(pos.shape[0], -1) for pos in poses]
 
         # 4. CLIP
         rgb_regions = [rgb_regions[indices == i] for i in range(batch_size)]  # convert back to list
+        features = []
         for regions in rgb_regions:
             batched_regions = torch.split(regions, batch_size)
             with torch.no_grad():
-                features = torch.vstack([self.encoder.encode_image(batch) for batch in batched_regions])
+                features.append(torch.vstack([self.encoder.encode_image(batch) for batch in batched_regions]))
 
         if self.training:
             # return features
             return velocity, poses, features
+
+        # infer
+        velocity_scores = [self.velocity_estimator.score_samples(vel) for vel in velocity]
+        pose_scores = [nearest_neighbors(self.pose_embeddings, pos.reshape(pos.shape[0], -1).cpu(), 9) for pos in poses]
+        appearance_scores = [
+            nearest_neighbors(self.feature_embeddings.float(), feat.float().cpu(), 9) for feat in features
+        ]
+
+        return velocity_scores, pose_scores, appearance_scores
+
+
+def nearest_neighbors(memory_bank, embedding: Tensor, n_neighbors: int) -> Tensor:
+    """Nearest Neighbours using brute force method and euclidean norm.
+
+    Args:
+        embedding (Tensor): Features to compare the distance with the memory bank.
+        n_neighbors (int): Number of neighbors to look at
+
+    Returns:
+        Tensor: Patch scores.
+        Tensor: Locations of the nearest neighbor(s).
+    """
+    distances = torch.cdist(embedding, memory_bank, p=2.0)  # euclidean norm
+    if n_neighbors == 1:
+        # when n_neighbors is 1, speed up computation by using min instead of topk
+        patch_scores, _ = distances.min(1)
+    else:
+        patch_scores, _ = distances.topk(k=n_neighbors, largest=False, dim=1)
+    return patch_scores.mean(axis=1)
 
 
 def extract_velocity(flows):
