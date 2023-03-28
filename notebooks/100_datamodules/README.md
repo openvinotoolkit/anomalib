@@ -1,4 +1,11 @@
-# Anomalib DataModules
+# Anomalib DataModules Tutorial
+
+| Notebook | GitHub                                         | Colab                                                                                                                                                                                                |
+| -------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| BTech    | [101_btech](100_datamodules/101_btech.ipynb)   | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/100_datamodules/101_btech.ipynb)  |
+| MVTec    | [102_mvtec](100_datamodules/102_mvtec.ipynb)   | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/100_datamodules/102_mvtec.ipynb)  |
+| Folder   | [103_folder](100_datamodules/103_folder.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/100_datamodules/103_folder.ipynb) |
+| Tiling   | [104_tiling](100_datamodules/104_tiling.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/100_datamodules/104_tiling.ipynb) |
 
 The notebooks in this section demonstrate the mechanics of anomalib data modules, with a specific focus on benchmarks such as MVTec AD, BTech, and custom datasets via the Folder module. Anomalib data modules are structured as follows: Each data collection implements the Torch Dataset and the PyTorch Lightning DataModule objects.
 

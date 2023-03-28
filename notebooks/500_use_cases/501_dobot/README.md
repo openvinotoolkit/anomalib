@@ -1,3 +1,10 @@
+# Dobot Use Case Tutorial
+
+| Notebook                       |                                                                                                                                                                                                                                                          |     |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
+| Dataset Creation and Inference | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/500_use_cases/501_dobot/501a_dataset_creation_and_Inference_with_a_robotic_arm.ipynb) |
+| Training a Model               | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/500_use_cases/501_dobot/501b_training_a_model_with_cubes_from_a_robotic_arm.ipynb)    |
+
 ## Steps to use these notebooks
 
 These notebooks will help you to use a Dobot robot and Anomalib Library, for showcasing different kind of Industrial solutions
