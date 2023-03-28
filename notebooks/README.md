@@ -44,3 +44,18 @@ OpenVINO Notebooks require Python and Git. To get started, select the guide for 
 | -------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Benchmarking   | [301_benchmarking](300_benchmarking/301_benchmarking.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/300_benchmarking/301_benchmarking.ipynb) |
 | HPO with wandb | [302_hpo_wandb](300_benchmarking/302_hpo_wandb.ipynb)       | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/300_benchmarking/302_hpo_wandb.ipynb)    |
+
+## 4. OpenVINO
+
+| Notebook | GitHub                                        | Colab                                                                                                                                                                                           |
+| -------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| NNCF     | [401_nncf.ipynb](400_openvino/401_nncf.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/400_openvino/401_nncf.ipynb) |
+
+## 5. Use Cases
+
+### 5.1. Dobot
+
+| Notebook                       | GitHub                                                                                               | Colab                                                                                                                                                                                                                                                    |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dataset Creation and Inference | [501a_dataset](500_use_cases/501_dobot/501a_dataset_creation_and_inference_with_a_robotic_arm.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/500_use_cases/501_dobot/501a_dataset_creation_and_inference_with_a_robotic_arm.ipynb) |
+| Training a Model               | [501b_training](500_use_cases/501_dobot/501b_training_a_model_with_cubes_from_a_robotic_arm.ipynb)   | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/500_use_cases/501_dobot/501b_training_a_model_with_cubes_from_a_robotic_arm.ipynb)    |
