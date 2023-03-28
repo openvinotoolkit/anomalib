@@ -15,13 +15,13 @@ OpenVINO Notebooks require Python and Git. To get started, select the guide for 
 
 ## 🚀 Getting Started
 
-### Training and Inference
+### 1. Training and Inference
 
 | Notebook        | GitHub                                                               | Colab                                                                                                                                                                                                             |
 | --------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Getting Started | [001_getting_started](000_getting_started/001_getting_started.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/000_getting_started/001_getting_started.ipynb) |
 
-### Data Modules
+### 2. Data Modules
 
 | Notebook | GitHub                                         | Colab                                                                                                                                                                                                |
 | -------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -30,26 +30,26 @@ OpenVINO Notebooks require Python and Git. To get started, select the guide for 
 | Folder   | [103_folder](100_datamodules/103_folder.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/100_datamodules/103_folder.ipynb) |
 | Tiling   | [104_tiling](100_datamodules/104_tiling.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/100_datamodules/104_tiling.ipynb) |
 
-### Models
+### 3. Models
 
 | Notebook | GitHub                                        | Colab                                                                                                                                                                                             |
 | -------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Model    | [201_fastflow](200_models/201_fastflow.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/200_models/201_fastflow.ipynb) |
 
-### Benchmarking and Hyperparameter Optimization
+### 4. Benchmarking and Hyperparameter Optimization
 
 | Notebook       | GitHub                                                      | Colab                                                                                                                                                                                                       |
 | -------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Benchmarking   | [301_benchmarking](300_benchmarking/301_benchmarking.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/300_benchmarking/301_benchmarking.ipynb) |
 | HPO with wandb | [302_hpo_wandb](300_benchmarking/302_hpo_wandb.ipynb)       | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/300_benchmarking/302_hpo_wandb.ipynb)    |
 
-### OpenVINO
+### 5. OpenVINO
 
 | Notebook | GitHub                                        | Colab                                                                                                                                                                                           |
 | -------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | NNCF     | [401_nncf.ipynb](400_openvino/401_nncf.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/400_openvino/401_nncf.ipynb) |
 
-### Use Cases
+### 6. Use Cases
 
 #### Dobot
 
