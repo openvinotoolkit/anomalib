@@ -95,7 +95,6 @@ def get_transforms(
                 else:
                     raise ValueError(f"Transformation {key} is not part of albumentations")
             
-            #transforms_list.append(A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)))
             transforms_list.append(ToTensorV2())
             transforms = A.Compose(transforms_list, additional_targets={"image": "image", "depth_image": "image"})
 
