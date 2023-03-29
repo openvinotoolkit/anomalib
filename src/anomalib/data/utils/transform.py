@@ -10,10 +10,9 @@ from enum import Enum
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
+from omegaconf import DictConfig
 
 from anomalib.data.utils.image import get_image_height_and_width
-
-from omegaconf import DictConfig
 
 logger = logging.getLogger(__name__)
 
@@ -94,10 +93,9 @@ def get_transforms(
                     transforms_list.append(transform)
                 else:
                     raise ValueError(f"Transformation {key} is not part of albumentations")
-            
+
             transforms_list.append(ToTensorV2())
             transforms = A.Compose(transforms_list, additional_targets={"image": "image", "depth_image": "image"})
-
 
         # load transforms from config file
         elif isinstance(config, str):
