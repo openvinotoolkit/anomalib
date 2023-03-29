@@ -28,12 +28,6 @@ class AnomalibPredictionEpochLoop(PredictionEpochLoop):
         Note:
             Update methods only between the commented block.
 
-        Warning:
-            The order of callbacks and lightning module's ``predict_step`` has been swapped. Originally callbacks were
-            called before the lightning step. But, we need to compute masks and labels before visualizer callback is
-            called. So, in this case the lightning module's ``predict_step`` is called first, then custom methods for
-            post-processing, and finally, the callbacks are called.
-
 
         Runs the actual predict step together with all the necessary bookkeeping and the hooks tied to the
         predict step.
@@ -62,15 +56,14 @@ class AnomalibPredictionEpochLoop(PredictionEpochLoop):
         if predictions is None:
             self._warning_cache.warn("predict returned None if it was on purpose, ignore this warning...")
 
-        self.trainer._call_lightning_module_hook("on_predict_batch_end", predictions, batch, batch_idx, dataloader_idx)
-
         # Call custom methods on the predictions
-        self.trainer.post_processor.compute_labels(predictions)
-        self.trainer.post_processor.apply_thresholding(self.trainer.lightning_module, predictions)
+        self.trainer.post_processor.apply_predictions(predictions)
+        self.trainer.post_processor.apply_thresholding(predictions)
         self.trainer.normalizer.normalize(self.trainer.lightning_module, predictions)
         # --------------------------------------
 
         self.trainer._call_callback_hooks("on_predict_batch_end", predictions, batch, batch_idx, dataloader_idx)
+        self.trainer._call_lightning_module_hook("on_predict_batch_end", predictions, batch, batch_idx, dataloader_idx)
 
         self.batch_progress.increment_completed()
 
@@ -84,11 +77,12 @@ class AnomalibPredictionLoop(PredictionLoop):
     def __init__(self) -> None:
         super().__init__()
         self.trainer: core.AnomalibTrainer
+        self.epoch_loop = AnomalibPredictionEpochLoop()
 
     def on_run_start(self) -> None:
-        """Setup epoch loop."""
-        epoch_loop = AnomalibPredictionEpochLoop()
-        epoch_loop.trainer = self.trainer
-        epoch_loop.return_predictions = self._return_predictions
-        self.connect(epoch_loop=epoch_loop)
+        """Setup epoch loop.
+
+        Overrides the default epoch loop with the custom epoch loop.
+        """
+        self.trainer.metrics_manager.initialize()
         return super().on_run_start()

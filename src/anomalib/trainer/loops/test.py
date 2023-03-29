@@ -21,11 +21,11 @@ class AnomalibTestEpochLoop(EvaluationEpochLoop):
         self.trainer: core.AnomalibTrainer
 
     def _evaluation_step_end(self, *args, **kwargs: Any) -> STEP_OUTPUT | None:
-        """Runs the ``test_step_end``."""
+        """Computes prediction scores, bounding boxes, and applies thresholding before normalization."""
         outputs = super()._evaluation_step_end(*args, **kwargs)
         if outputs is not None:
-            self.trainer.post_processor.compute_labels(outputs)
-            self.trainer.post_processor.apply_thresholding(self.trainer.lightning_module, outputs)
+            self.trainer.post_processor.apply_predictions(outputs)
+            self.trainer.post_processor.apply_thresholding(outputs)
             self.trainer.normalizer.normalize(self.trainer.lightning_module, outputs)
         return outputs
 
@@ -33,8 +33,9 @@ class AnomalibTestEpochLoop(EvaluationEpochLoop):
     def _should_track_batch_outputs_for_epoch_end(self) -> bool:
         """Track batch outputs for epoch end.
 
-        If this is not overridden, the outputs are not collected if the model does not have a ``test_step_end``
-        method. This ensures that the outputs are collected even if the model does not have a ``test_step_end`` method.
+        If this is not overridden, the outputs are not collected if the model does not have a ``test_epoch_end``
+        method. Lightning ends up deleting epoch outputs if this is false. This ensures that we have the outputs
+        when computing the metrics on the test set.
         """
         return True
 
@@ -43,10 +44,12 @@ class AnomalibTestLoop(EvaluationLoop):
     def __init__(self) -> None:
         super().__init__()
         self.trainer: "core.AnomalibTrainer"
+        self.epoch_loop = AnomalibTestEpochLoop()
 
     def on_run_start(self, *args, **kwargs) -> None:
         """Can be used to call setup."""
-        self.replace(epoch_loop=AnomalibTestEpochLoop)
+        self.trainer.metrics_manager.initialize()
+        # Reset the image and pixel thresholds to 0.5 at start of the run.
         self.trainer.metrics_manager.set_threshold()
         return super().on_run_start(*args, **kwargs)
 
@@ -56,11 +59,10 @@ class AnomalibTestLoop(EvaluationLoop):
         Args:
             outputs (List[EPOCH_OUTPUT])
         """
+        super()._evaluation_epoch_end(outputs)
 
-        # with a single dataloader don't pass a 2D list | Taken from base method
         output_or_outputs: EPOCH_OUTPUT | list[EPOCH_OUTPUT] = (
             outputs[0] if len(outputs) > 0 and self.num_dataloaders == 1 else outputs
         )
         self.trainer.metrics_manager.compute(output_or_outputs)
         self.trainer.metrics_manager.log(self.trainer, "test_epoch_end")
-        super()._evaluation_epoch_end(outputs)

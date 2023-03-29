@@ -40,6 +40,12 @@ class AnomalibFitLoop(FitLoop):
         self.trainer: core.AnomalibTrainer
         self.epoch_loop = AnomalibTrainingEpochLoop()
 
+    def on_run_start(self) -> None:
+        """Set metrics before the run starts."""
+        self.trainer.thresholder.initialize()
+        self.trainer.metrics_manager.initialize()
+        return super().on_run_start()
+
     def on_advance_end(self) -> None:
         """The idea behind this is to call ``on_train_epoch_end`` before the validation loop starts."""
         super().on_advance_end()

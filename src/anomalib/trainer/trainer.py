@@ -12,7 +12,7 @@ from anomalib.data import TaskType
 from anomalib.models.components.base.anomaly_module import AnomalyModule
 from anomalib.post_processing import NormalizationMethod, ThresholdMethod
 from anomalib.trainer.loops import AnomalibFitLoop, AnomalibPredictionLoop, AnomalibTestLoop, AnomalibValidationLoop
-from anomalib.trainer.utils import MetricsManager, Normalizer, PostProcessor
+from anomalib.trainer.utils import MetricsManager, Normalizer, PostProcessor, Thresholder
 
 log = logging.getLogger(__name__)
 # warnings to ignore in trainer
@@ -59,34 +59,13 @@ class AnomalibTrainer(Trainer):
 
         self.task_type = task_type
 
-        # TODO: configure these from the config
-        self.post_processor = PostProcessor(
+        self.thresholder = Thresholder(
+            trainer=self,
             threshold_method=threshold_method,
             manual_image_threshold=manual_image_threshold,
             manual_pixel_threshold=manual_pixel_threshold,
         )
+
+        self.post_processor = PostProcessor(trainer=self)
         self.normalizer = Normalizer(normalization_method=normalization_method)
-        self.metrics_manager = MetricsManager(image_metrics=image_metrics, pixel_metrics=pixel_metrics)
-
-    def _call_setup_hook(self) -> None:
-        """Override the setup hook to call setup for required anomalib classes.
-
-        Ensures that the necessary attributes are added to the model before callbacks are called. The majority of the
-        code is same as the base class. Add custom setup only between the commented block.
-        """
-        assert self.state.fn is not None
-        fn = self.state.fn
-
-        self.strategy.barrier("pre_setup")
-
-        if self.datamodule is not None:
-            self._call_lightning_datamodule_hook("setup", stage=fn)
-
-        # Setup required classes before callbacks and lightning module
-        self.post_processor.setup(self.lightning_module)
-        self.metrics_manager.setup(self.lightning_module, self.task_type)
-        # ------------------------------------------------------------
-        self._call_callback_hooks("setup", stage=fn)
-        self._call_lightning_module_hook("setup", stage=fn)
-
-        self.strategy.barrier("post_setup")
+        self.metrics_manager = MetricsManager(trainer=self, image_metrics=image_metrics, pixel_metrics=pixel_metrics)

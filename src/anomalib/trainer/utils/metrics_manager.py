@@ -1,13 +1,19 @@
 """Assigns and updates metrics."""
+
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from __future__ import annotations
 
 import logging
 from typing import List
 
 from pytorch_lightning import Trainer
+from pytorch_lightning.trainer.states import TrainerFn
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
-from pytorch_lightning.utilities.types import EPOCH_OUTPUT
+from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 
+import anomalib.trainer as core
 from anomalib.data import TaskType
 from anomalib.models.components import AnomalyModule
 from anomalib.utils.metrics import create_metric_collection
@@ -17,58 +23,76 @@ logger = logging.getLogger(__name__)
 
 
 class MetricsManager:
-    def __init__(self, image_metrics: list[str] | None = None, pixel_metrics: list[str] | None = None):
+    def __init__(
+        self,
+        trainer: core.AnomalibTrainer,
+        image_metrics: list[str] | None = None,
+        pixel_metrics: list[str] | None = None,
+    ):
         super().__init__()
         self.image_metric_names = image_metrics
         self.pixel_metric_names = pixel_metrics
+        self.trainer = trainer
 
         self.image_metrics: AnomalibMetricCollection
         self.pixel_metrics: AnomalibMetricCollection
 
-    def setup(self, anomaly_module: AnomalyModule, task: TaskType) -> None:
+    @property
+    def anomaly_module(self) -> AnomalyModule:
+        """Returns anomaly module.
+
+        We can't directly access the anomaly module in ``__init__`` because it is not available till it is passed to the
+        trainer.
+        """
+        return self.trainer.lightning_module
+
+    def initialize(self) -> None:
         """Setup image and pixel-level AnomalibMetricsCollection within Anomalib Model.
 
         Args:
-            anomaly_module (AnomalyModule): Anomalib Model that inherits pl LightningModule.
             task (TaskType): Task type
         """
+        if self.anomaly_module is None:
+            raise MisconfigurationException("Anomaly module is not available yet.")
 
-        image_metric_names = [] if self.image_metric_names is None else self.image_metric_names
+        if not hasattr(self.anomaly_module, "image_metrics"):
+            image_metric_names = [] if self.image_metric_names is None else self.image_metric_names
 
-        pixel_metric_names: list[str]
-        if self.pixel_metric_names is None:
-            pixel_metric_names = []
-        elif task == TaskType.CLASSIFICATION:
-            pixel_metric_names = []
-            logger.warning(
-                "Cannot perform pixel-level evaluation when task type is classification. "
-                "Ignoring the following pixel-level metrics: %s",
-                self.pixel_metric_names,
-            )
+            pixel_metric_names: list[str]
+            if self.pixel_metric_names is None:
+                pixel_metric_names = []
+            elif self.trainer.task_type == TaskType.CLASSIFICATION:
+                pixel_metric_names = []
+                logger.warning(
+                    "Cannot perform pixel-level evaluation when task type is classification. "
+                    "Ignoring the following pixel-level metrics: %s",
+                    self.pixel_metric_names,
+                )
+            else:
+                pixel_metric_names = self.pixel_metric_names
+
+            self.image_metrics = create_metric_collection(image_metric_names, "image_")
+            self.pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
+
+            self.image_metrics.set_threshold(self.anomaly_module.image_threshold.value)
+            self.pixel_metrics.set_threshold(self.anomaly_module.pixel_threshold.value)
+
+    def set_threshold(self) -> None:
+        """Sets threshold."""
+
+        if self.trainer.state.stage == TrainerFn.TESTING:
+            image_metrics_threshold = 0.5
+            pixel_metrics_threshold = 0.5
         else:
-            pixel_metric_names = self.pixel_metric_names
+            image_metrics_threshold = self.anomaly_module.image_threshold.value
+            pixel_metrics_threshold = self.anomaly_module.pixel_threshold.value
 
-        self.image_metrics = create_metric_collection(image_metric_names, "image_")
-        self.pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
-
-        self.image_metrics.set_threshold(anomaly_module.image_threshold.value)
-        self.pixel_metrics.set_threshold(anomaly_module.pixel_threshold.value)
-
-    def set_threshold(self, image_metrics_threshold: float = 0.5, pixel_metrics_threshold: float = 0.5) -> None:
-        """Sets threshold.
-
-        The default 0.5 value is used for testing.
-
-        Args:
-            image_metrics_threshold (float): Value to assign image metrics. Defaults to 0.5.
-            pixel_metrics_threshold (float): Value to assign pixel metrics. Defaults to 0.5.
-        """
         if self.image_metrics is not None:
             self.image_metrics.set_threshold(image_metrics_threshold)
         if self.pixel_metrics is not None:
             self.pixel_metrics.set_threshold(pixel_metrics_threshold)
 
-    def _update_metrics(self, outputs: EPOCH_OUTPUT | List[EPOCH_OUTPUT]):
+    def _update_metrics(self, outputs: STEP_OUTPUT | EPOCH_OUTPUT | List[EPOCH_OUTPUT]):
         """Update metrics.
 
         Args:
