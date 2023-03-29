@@ -27,21 +27,23 @@ class Normalizer:
     """
 
     def __init__(self, normalization_method: NormalizationMethod = NormalizationMethod.NONE):
-        self.normalization_method = normalization_method
-        self.normalization_metrics: Metric
+        self.normalization_method: NormalizationMethod = normalization_method
+        self.normalization_metrics: Metric = self._assign_normalization_metrics()
 
-    def setup(self):
-        """Setup normalization metrics."""
+    def _assign_normalization_metrics(self) -> Metric:
+        """Assign normalization metrics."""
         # TODO change logic here
+        normalization_metrics: Metric
         if not hasattr(self, "normalization_metrics") and self.normalization_method != NormalizationMethod.NONE:
             if self.normalization_method == NormalizationMethod.MIN_MAX:
-                self.normalization_metrics = MinMax().cpu()
+                normalization_metrics = MinMax().cpu()
             elif self.normalization_method == NormalizationMethod.CDF:
                 # TODO CDF only works for padim and stfpm. Check condition
                 # TODO throw error if nncf optimization is enabled.
-                self.normalization_metrics = AnomalyScoreDistribution().cpu()
+                normalization_metrics = AnomalyScoreDistribution().cpu()
             else:
                 raise ValueError(f"Normalization method {self.normalization_method} is not supported.")
+        return normalization_metrics
 
     def update_metrics(self, outputs: STEP_OUTPUT):
         """Update values
@@ -71,16 +73,6 @@ class Normalizer:
             outputs["anomaly_maps"] = cdf.standardize(
                 outputs["anomaly_maps"], stats.pixel_mean, stats.pixel_std, center_at=stats.image_mean
             )
-
-    def set_threshold(self, anomaly_module: AnomalyModule) -> None:
-        """Sets threshold to 0.5
-
-        Args:
-            anomaly_module (AnomalyModule): Anomaly module.
-        """
-        for metric in (anomaly_module.image_metrics, anomaly_module.pixel_metrics):
-            if metric is not None:
-                metric.set_threshold(0.5)
 
     def _normalize_batch(self, outputs: STEP_OUTPUT, anomaly_module: AnomalyModule):
         """Normalize the batch.

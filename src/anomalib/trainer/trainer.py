@@ -84,7 +84,6 @@ class AnomalibTrainer(Trainer):
 
         # Setup required classes before callbacks and lightning module
         self.post_processor.setup(self.lightning_module)
-        self.normalizer.setup()
         self.metrics_manager.setup(self.lightning_module, self.task_type)
         # ------------------------------------------------------------
         self._call_callback_hooks("setup", stage=fn)

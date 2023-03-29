@@ -69,40 +69,43 @@ class PostProcessor:
             anomalib_module.pixel_threshold.value = torch.tensor(self.manual_pixel_threshold).cpu()
             anomalib_module.image_threshold.value = torch.tensor(self.manual_image_threshold).cpu()
 
-    def _compute_adaptive_threshold(
-        self, anomalib_module: AnomalyModule, outputs: EPOCH_OUTPUT | List[EPOCH_OUTPUT]
-    ) -> None:
-        anomalib_module.image_threshold.reset()
-        anomalib_module.pixel_threshold.reset()
-        self.update_metrics(anomalib_module.image_threshold, anomalib_module.pixel_threshold, outputs)
-        anomalib_module.image_threshold.compute()
+    def _update_adaptive_threshold(self, anomalib_module: AnomalyModule, outputs: STEP_OUTPUT) -> None:
+        self._update_metrics(anomalib_module.image_threshold, anomalib_module.pixel_threshold, outputs)
+
+    def compute(self, anomalib_module: AnomalyModule, outputs: EPOCH_OUTPUT | List[EPOCH_OUTPUT]):
+        """Compute thresholds.
+
+        Args:
+            anomalib_module (AnomalyModule): Anomaly module.
+            outputs (EPOCH_OUTPUT | List[EPOCH_OUTPUT]): Outputs are only used to check if the model has pixel level
+                predictions.
+        """
+        if anomalib_module.image_threshold is not None:
+            anomalib_module.image_threshold.compute()
         if "mask" in outputs[0].keys() and "anomaly_maps" in outputs[0].keys():
             anomalib_module.pixel_threshold.compute()
         else:
             anomalib_module.pixel_threshold.value = anomalib_module.image_threshold.value
 
-        anomalib_module.image_metrics.set_threshold(anomalib_module.image_threshold.value.item())
-        anomalib_module.pixel_metrics.set_threshold(anomalib_module.pixel_threshold.value.item())
-
-    def compute_threshold(self, anomalib_module: AnomalyModule, outputs: EPOCH_OUTPUT | List[EPOCH_OUTPUT]) -> None:
-        """Computes adaptive threshold in case thresholding type is ADAPTIVE.
+    def update(self, anomalib_module: AnomalyModule, outputs: STEP_OUTPUT) -> None:
+        """updates adaptive threshold in case thresholding type is ADAPTIVE.
 
         Args:
             anomalib_module (AnomalyModule): Anomaly module.
-            outputs (EPOCH_OUTPUT | List[EPOCH_OUTPUT]): Epoch end outputs.
+            outputs (STEP_OUTPUT): Step outputs.
         """
         if self.threshold_method == ThresholdMethod.ADAPTIVE:
-            self._compute_adaptive_threshold(anomalib_module, outputs)
+            self._update_adaptive_threshold(anomalib_module, outputs)
 
     @staticmethod
-    def update_metrics(
+    def _update_metrics(
         image_metric: AnomalibMetricCollection,
         pixel_metric: AnomalibMetricCollection,
         outputs: EPOCH_OUTPUT | List[EPOCH_OUTPUT] | STEP_OUTPUT,
     ) -> None:
         if isinstance(outputs, list):
             for output in outputs:
-                PostProcessor.update_metrics(image_metric, pixel_metric, output)
+                PostProcessor._update_metrics(image_metric, pixel_metric, output)
         else:
             image_metric.cpu()
             image_metric.update(outputs["pred_scores"], outputs["label"].int())
@@ -113,6 +116,7 @@ class PostProcessor:
     @staticmethod
     def compute_labels(outputs: STEP_OUTPUT) -> None:
         """Compute labels based on model predictions."""
+        PostProcessor._outputs_to_cpu(outputs)
         if isinstance(outputs, dict):
             if "pred_scores" not in outputs and "anomaly_maps" in outputs:
                 # infer image scores from anomaly maps
@@ -136,14 +140,14 @@ class PostProcessor:
                 outputs["anomaly_maps"] = boxes_to_anomaly_maps(pred_boxes, box_scores, image_size)
                 outputs["mask"] = boxes_to_masks(true_boxes, image_size)
 
-    @classmethod
-    def outputs_to_cpu(cls, output):
+    @staticmethod
+    def _outputs_to_cpu(output):
         """Move outputs to CPU."""
         if isinstance(output, dict):
             for key, value in output.items():
-                output[key] = cls.outputs_to_cpu(value)
+                output[key] = PostProcessor._outputs_to_cpu(value)
         elif isinstance(output, list):
-            output = [cls.outputs_to_cpu(item) for item in output]
+            output = [PostProcessor._outputs_to_cpu(item) for item in output]
         elif isinstance(output, Tensor):
             output = output.cpu()
         return output

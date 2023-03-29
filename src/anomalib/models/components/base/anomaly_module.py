@@ -7,13 +7,11 @@ from __future__ import annotations
 
 import logging
 from abc import ABC
-from typing import Any, List
+from typing import Any
 
 import pytorch_lightning as pl
-from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
+from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor, nn
-
-from anomalib.utils.metrics import AnomalibMetricCollection
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +29,6 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.save_hyperparameters()
         self.model: nn.Module
         self.loss: nn.Module
-
-        self.image_metrics: AnomalibMetricCollection
-        self.pixel_metrics: AnomalibMetricCollection
 
     def forward(self, batch: dict[str, str | Tensor], *args, **kwargs) -> Any:
         """Forward-pass input tensor to the module.
@@ -85,22 +80,3 @@ class AnomalyModule(pl.LightningModule, ABC):
         del args, kwargs  # These variables are not used.
 
         return self.predict_step(batch, batch_idx)
-
-    def test_epoch_end(self, outputs: EPOCH_OUTPUT) -> None:
-        """Compute and save anomaly scores of the test set.
-
-        Args:
-            outputs: Batch of outputs from the validation step
-        """
-        self._log_metrics()
-
-    def validation_epoch_end(self, outputs: EPOCH_OUTPUT | List[EPOCH_OUTPUT]) -> None:
-        self._log_metrics()
-
-    def _log_metrics(self) -> None:
-        """Log computed performance metrics."""
-        if self.pixel_metrics.update_called:
-            self.log_dict(self.pixel_metrics, prog_bar=True)
-            self.log_dict(self.image_metrics, prog_bar=False)
-        else:
-            self.log_dict(self.image_metrics, prog_bar=True)

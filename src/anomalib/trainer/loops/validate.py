@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Any, List
+from typing import List
 
 from pytorch_lightning.loops.dataloader.evaluation_loop import EvaluationLoop
 from pytorch_lightning.loops.epoch.evaluation_epoch_loop import EvaluationEpochLoop
@@ -24,21 +24,10 @@ class AnomalibValidationEpochLoop(EvaluationEpochLoop):
         """Runs ``validation_step_end`` after the end of one validation step."""
         outputs = super()._evaluation_step_end(*args, **kwargs)
         if outputs is not None:
-            self.trainer.post_processor.outputs_to_cpu(outputs)
             self.trainer.post_processor.compute_labels(outputs)
+            self.trainer.post_processor.update(self.trainer.lightning_module, outputs)
+            self.trainer.normalizer.update_metrics(outputs)
         return outputs
-
-    def _on_evaluation_batch_end(self, output: STEP_OUTPUT, **kwargs: Any) -> None:
-        """The ``on_validation_batch_end`` hook.
-
-        Args:
-            output: The output of the performed step
-            batch: The input batch for the step
-            batch_idx: The index of the current batch
-            dataloader_idx: Index of the dataloader producing the current batch
-        """
-        super()._on_evaluation_batch_end(output, **kwargs)
-        self.trainer.normalizer.update_metrics(output)
 
     @lru_cache(1)
     def _should_track_batch_outputs_for_epoch_end(self) -> bool:
@@ -70,7 +59,11 @@ class AnomalibValidationLoop(EvaluationLoop):
         output_or_outputs: EPOCH_OUTPUT | List[EPOCH_OUTPUT] = (
             outputs[0] if len(outputs) > 0 and self.num_dataloaders == 1 else outputs
         )
-        self.trainer.post_processor.compute_threshold(self.trainer.lightning_module, output_or_outputs)
-        self.trainer.metrics_manager.update_metrics(self.trainer.lightning_module, output_or_outputs)
-
+        self.trainer.post_processor.compute(self.trainer.lightning_module, output_or_outputs)
+        self.trainer.metrics_manager.set_threshold(
+            self.trainer.lightning_module.image_threshold.value.cpu(),
+            self.trainer.lightning_module.pixel_threshold.value.cpu(),
+        )
+        self.trainer.metrics_manager.compute(output_or_outputs)
+        self.trainer.metrics_manager.log(self.trainer, "validation_epoch_end")
         super()._evaluation_epoch_end(outputs)
