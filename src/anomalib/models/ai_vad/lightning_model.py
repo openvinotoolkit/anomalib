@@ -53,12 +53,11 @@ class AiVad(AnomalyModule):
         return None
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
-        velocity, poses, features = self.model(batch["image"])
-        # add velocity
+        features = self.model(batch["image"])
 
         # # add poses and features to membanks
         for velocity_embeddings, pose_embeddings, feature_embeddings, video_path in zip(
-            velocity, poses, features, batch["video_path"]
+            features["velocity"], features["pose"], features["appearance"], batch["video_path"]
         ):
             self.velocity_embeddings.append(velocity_embeddings.cpu())
             self.pose_embeddings.append(pose_embeddings.cpu())
