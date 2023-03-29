@@ -2,7 +2,7 @@
 
 <div id='-installation-guide'/>
 
-## 📝 Installation Guide
+## ⚙️ Installation Guide
 
 OpenVINO Notebooks require Python and Git. To get started, select the guide for your operating system or environment:
 
