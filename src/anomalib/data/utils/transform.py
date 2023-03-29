@@ -84,7 +84,7 @@ def get_transforms(
     transforms: A.Compose
 
     if config is not None:
-        if isinstance(config, DictConfig)
+        if isinstance(config, DictConfig):
             logger.info("Loading transforms from config File")
             transforms_list = []
             for key, value in config.items():
