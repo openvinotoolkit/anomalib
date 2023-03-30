@@ -12,7 +12,7 @@ During inference this memory bank is coreset subsampled. Coreset subsampling gen
 
 ## Architecture
 
-![PatchCore Architecture](../../../docs/source/images/patchcore/architecture.jpg "PatchCore Architecture")
+![PatchCore Architecture](../../../../docs/source/images/patchcore/architecture.jpg "PatchCore Architecture")
 
 ## Usage
 
@@ -47,8 +47,8 @@ All results gathered with seed `42`.
 
 ### Sample Results
 
-![Sample Result 1](../../../docs/source/images/patchcore/results/0.png "Sample Result 1")
+![Sample Result 1](../../../../docs/source/images/patchcore/results/0.png "Sample Result 1")
 
-![Sample Result 2](../../../docs/source/images/patchcore/results/1.png "Sample Result 2")
+![Sample Result 2](../../../../docs/source/images/patchcore/results/1.png "Sample Result 2")
 
-![Sample Result 3](../../../docs/source/images/patchcore/results/2.png "Sample Result 3")
+![Sample Result 3](../../../../docs/source/images/patchcore/results/2.png "Sample Result 3")
