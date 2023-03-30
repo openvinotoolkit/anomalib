@@ -42,11 +42,8 @@ class FeatureExtractor(nn.Module):
         appearance_features = [appearance_features[indices == i] for i in range(batch_size)]
 
         return [
-            {
-                FeatureType.VELOCITY: velocity,
-                FeatureType.APPEARANCE: appearance,
-                FeatureType.POSE: pose
-            } for velocity, appearance, pose in zip(velocity_features, appearance_features, pose_features)
+            {FeatureType.VELOCITY: velocity, FeatureType.APPEARANCE: appearance, FeatureType.POSE: pose}
+            for velocity, appearance, pose in zip(velocity_features, appearance_features, pose_features)
         ]
 
 

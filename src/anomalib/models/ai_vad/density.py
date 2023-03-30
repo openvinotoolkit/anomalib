@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import torch
@@ -12,7 +11,6 @@ from sklearn.mixture import GaussianMixture
 
 
 class BaseDensityEstimator(nn.Module, ABC):
-
     def __init__(self) -> None:
         super().__init__()
 
@@ -37,16 +35,15 @@ class BaseDensityEstimator(nn.Module, ABC):
 
 
 class CombinedDensityEstimator(BaseDensityEstimator):
-
     def __init__(
-            self,
-            use_pose_features: bool = True,
-            use_appearance_features: bool = True,
-            use_velocity_features: bool = False,
-            n_neighbors_pose: int = 1,
-            n_neighbors_appearance: int = 1,
-            n_components_velocity: int = 5
-        ) -> None:
+        self,
+        use_pose_features: bool = True,
+        use_appearance_features: bool = True,
+        use_velocity_features: bool = False,
+        n_neighbors_pose: int = 1,
+        n_neighbors_appearance: int = 1,
+        n_components_velocity: int = 5,
+    ) -> None:
         super().__init__()
 
         self.use_pose_features = use_pose_features
@@ -89,7 +86,6 @@ class CombinedDensityEstimator(BaseDensityEstimator):
 
 
 class GroupedKNNEstimator(BaseDensityEstimator):
-
     def __init__(self, n_neighbors: int) -> None:
         super().__init__()
 
@@ -113,7 +109,6 @@ class GroupedKNNEstimator(BaseDensityEstimator):
         self._compute_normalization_statistics()
 
     def predict(self, features: Tensor, group: Any = None, n_neighbors: int | None = None, normalize: bool = True):
-
         n_neighbors = n_neighbors or self.n_neighbors
 
         if group:
@@ -133,7 +128,6 @@ class GroupedKNNEstimator(BaseDensityEstimator):
 
     @staticmethod
     def _nearest_neighbors(memory_bank, features, n_neighbors: int = 1):
-
         distances = torch.cdist(features, memory_bank, p=2.0)  # euclidean norm
         if n_neighbors == 1:
             # when n_neighbors is 1, speed up computation by using min instead of topk
@@ -144,7 +138,6 @@ class GroupedKNNEstimator(BaseDensityEstimator):
         return patch_scores
 
     def _compute_normalization_statistics(self):
-
         for group, features in self.memory_bank.items():
             nns = self.predict(features, group, normalize=False)
             self.normalization_statistics.update(nns)
@@ -152,12 +145,12 @@ class GroupedKNNEstimator(BaseDensityEstimator):
         self.normalization_statistics.compute()
 
     def _normalize(self, distances):
-
-        return (distances - self.normalization_statistics.min) / (self.normalization_statistics.max - self.normalization_statistics.min)
+        return (distances - self.normalization_statistics.min) / (
+            self.normalization_statistics.max - self.normalization_statistics.min
+        )
 
 
 class GMMEstimator(BaseDensityEstimator):
-
     def __init__(self, n_components: int = 2) -> None:
         super().__init__()
 
@@ -178,7 +171,9 @@ class GMMEstimator(BaseDensityEstimator):
         density = -self.gmm.score_samples(features.cpu())
         density = Tensor(density).to(self.normalization_statistics.device)
         if normalize:
-            density = (density - self.normalization_statistics.min) / (self.normalization_statistics.max - self.normalization_statistics.min)
+            density = (density - self.normalization_statistics.min) / (
+                self.normalization_statistics.max - self.normalization_statistics.min
+            )
         return density
 
     def _compute_normalization_statistics(self):

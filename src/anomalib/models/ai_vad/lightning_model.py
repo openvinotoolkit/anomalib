@@ -48,9 +48,7 @@ class AiVad(AnomalyModule):
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
         features_per_batch = self.model(batch["image"])
 
-        for features, video_path in zip(
-            features_per_batch, batch["video_path"]
-        ):
+        for features, video_path in zip(features_per_batch, batch["video_path"]):
             self.model.density_estimator.update(features, video_path)
 
     def on_validation_start(self) -> None:

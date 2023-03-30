@@ -12,7 +12,6 @@ from anomalib.models.ai_vad.density import CombinedDensityEstimator
 
 
 class AiVadModel(nn.Module):
-
     def __init__(self):
         super().__init__()
         # initialize flow extractor
@@ -28,9 +27,8 @@ class AiVadModel(nn.Module):
             use_appearance_features=False,
             n_neighbors_pose=1,
             n_neighbors_appearance=1,
-            n_components_velocity=2
+            n_components_velocity=2,
         )
-
 
     def forward(self, batch):
         self.flow_extractor.eval()
