@@ -6,13 +6,21 @@ from torch import nn, Tensor
 from torchvision.ops import roi_align
 from torchvision.transforms import Normalize
 
+from enum import Enum
+
+
+class FeatureType(str, Enum):
+    POSE = "pose"
+    VELOCITY = "velocity"
+    APPEARANCE = "appearance"
+
 
 class FeatureExtractor(nn.Module):
     def __init__(self) -> None:
         super().__init__()
 
         self.appearance_extractor = AppearanceExtractor()
-        self.velocity_extractor = VelocityExtractor()
+        self.velocity_extractor = VelocityExtractor(n_bins=1)
         self.pose_extractor = PoseExtractor()
 
     def forward(self, rgb_batch, flow_batch, regions):
@@ -33,7 +41,13 @@ class FeatureExtractor(nn.Module):
         velocity_features = [velocity_features[indices == i] for i in range(batch_size)]
         appearance_features = [appearance_features[indices == i] for i in range(batch_size)]
 
-        return dict(velocity=velocity_features, appearance=appearance_features, pose=pose_features)
+        return [
+            {
+                FeatureType.VELOCITY: velocity,
+                FeatureType.APPEARANCE: appearance,
+                FeatureType.POSE: pose
+            } for velocity, appearance, pose in zip(velocity_features, appearance_features, pose_features)
+        ]
 
 
 class AppearanceExtractor(nn.Module):
@@ -80,7 +94,7 @@ class VelocityExtractor(nn.Module):
             velocity_hictograms.append(final_histogram)
             # velocity_hictograms.append(histogram_mag)
 
-        return torch.stack(velocity_hictograms)
+        return torch.stack(velocity_hictograms).to(flows.device)
 
 
 class PoseExtractor(nn.Module):

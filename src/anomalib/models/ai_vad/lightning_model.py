@@ -41,52 +41,20 @@ class AiVad(AnomalyModule):
 
         self.model = AiVadModel()
 
-        self.velocity_embeddings: List[Tensor] = []
-        self.pose_embeddings: List[Tensor] = []
-        self.feature_embeddings: List[Tensor] = []
-
-        self.pose_embeddings_dict: dict = {}
-        self.feature_embeddings_dict: dict = {}
-
     @staticmethod
     def configure_optimizers() -> None:  # pylint: disable=arguments-differ
         return None
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
-        features = self.model(batch["image"])
+        features_per_batch = self.model(batch["image"])
 
-        # # add poses and features to membanks
-        for velocity_embeddings, pose_embeddings, feature_embeddings, video_path in zip(
-            features["velocity"], features["pose"], features["appearance"], batch["video_path"]
+        for features, video_path in zip(
+            features_per_batch, batch["video_path"]
         ):
-            self.velocity_embeddings.append(velocity_embeddings.cpu())
-            self.pose_embeddings.append(pose_embeddings.cpu())
-            self.feature_embeddings.append(feature_embeddings.cpu())
-
-            if video_path in self.pose_embeddings_dict:
-                self.pose_embeddings_dict[video_path].append(pose_embeddings.cpu())
-            else:
-                self.pose_embeddings_dict[video_path] = [pose_embeddings.cpu()]
-
-            if video_path in self.feature_embeddings_dict:
-                self.feature_embeddings_dict[video_path].append(feature_embeddings.cpu())
-            else:
-                self.feature_embeddings_dict[video_path] = [feature_embeddings.cpu()]
+            self.model.density_estimator.update(features, video_path)
 
     def on_validation_start(self) -> None:
-        # stack velocity embeddings
-        velocity_embeddings = torch.vstack(self.velocity_embeddings)
-        # pass to torch model
-        self.model.velocity_estimator.fit(velocity_embeddings)
-        self.model.velocity_embeddings = velocity_embeddings
-        # stack pose embeddings
-        self.model.pose_embeddings = [torch.vstack(embeddings) for embeddings in self.pose_embeddings_dict.values()]
-        # stack feature embeddings
-        self.model.feature_embeddings = [
-            torch.vstack(embeddings) for embeddings in self.feature_embeddings_dict.values()
-        ]
-
-        self.model.compute_normalization_statistics()
+        self.model.density_estimator.fit()
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         boxes, anomaly_scores = self.model(batch["image"])

@@ -10,7 +10,7 @@ class RegionExtractor(nn.Module):
         super().__init__(*args, **kwargs)
 
         weights = KeypointRCNN_ResNet50_FPN_Weights.DEFAULT
-        self.backbone = keypointrcnn_resnet50_fpn(weights=weights)
+        self.backbone = keypointrcnn_resnet50_fpn(weights=weights, box_score_thresh=0.8)
 
     def forward(self, batch):
         with torch.no_grad():
