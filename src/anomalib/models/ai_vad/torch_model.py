@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import torch
-from torch import nn, Tensor
+from torch import nn
 
-from anomalib.utils.metrics.min_max import MinMax
 from anomalib.models.ai_vad.flow import FlowExtractor
 from anomalib.models.ai_vad.regions import RegionExtractor
 from anomalib.models.ai_vad.features import FeatureExtractor
@@ -12,22 +11,35 @@ from anomalib.models.ai_vad.density import CombinedDensityEstimator
 
 
 class AiVadModel(nn.Module):
-    def __init__(self):
+    def __init__(
+        self,
+        # region extraction params
+        box_score_thresh: float = 0.8,
+        # feature extraction params
+        n_velocity_bins: int = 8,
+        # density estimation params
+        use_velocity_features: bool = True,
+        use_pose_features: bool = True,
+        use_appearance_features: bool = True,
+        n_components_velocity: int = 5,
+        n_neighbors_pose: int = 1,
+        n_neighbors_appearance: int = 1,
+    ):
         super().__init__()
         # initialize flow extractor
         self.flow_extractor = FlowExtractor()
         # initialize region extractor
-        self.region_extractor = RegionExtractor()
+        self.region_extractor = RegionExtractor(box_score_thresh=box_score_thresh)
         # initialize feature extractor
-        self.feature_extractor = FeatureExtractor()
+        self.feature_extractor = FeatureExtractor(n_velocity_bins=n_velocity_bins)
 
         self.density_estimator = CombinedDensityEstimator(
-            use_pose_features=False,
-            use_velocity_features=True,
-            use_appearance_features=False,
-            n_neighbors_pose=1,
-            n_neighbors_appearance=1,
-            n_components_velocity=2,
+            use_velocity_features=use_velocity_features,
+            use_pose_features=use_pose_features,
+            use_appearance_features=use_appearance_features,
+            n_components_velocity=n_components_velocity,
+            n_neighbors_pose=n_neighbors_pose,
+            n_neighbors_appearance=n_neighbors_appearance,
         )
 
     def forward(self, batch):

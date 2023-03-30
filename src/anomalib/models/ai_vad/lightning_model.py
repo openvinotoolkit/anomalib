@@ -36,10 +36,29 @@ class AiVad(AnomalyModule):
                                 Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        box_score_thresh: float = 0.8,
+        n_velocity_bins: int = 8,
+        use_velocity_features: bool = True,
+        use_pose_features: bool = True,
+        use_appearance_features: bool = True,
+        n_components_velocity: int = 5,
+        n_neighbors_pose: int = 1,
+        n_neighbors_appearance: int = 1,
+    ) -> None:
         super().__init__()
 
-        self.model = AiVadModel()
+        self.model = AiVadModel(
+            box_score_thresh=box_score_thresh,
+            n_velocity_bins=n_velocity_bins,
+            use_velocity_features=use_velocity_features,
+            use_pose_features=use_pose_features,
+            use_appearance_features=use_appearance_features,
+            n_components_velocity=n_components_velocity,
+            n_neighbors_pose=n_neighbors_pose,
+            n_neighbors_appearance=n_neighbors_appearance,
+        )
 
     @staticmethod
     def configure_optimizers() -> None:  # pylint: disable=arguments-differ
@@ -78,6 +97,15 @@ class AiVadLightning(AiVad):
     """
 
     def __init__(self, hparams: DictConfig | ListConfig) -> None:
-        super().__init__()
+        super().__init__(
+            box_score_thresh=hparams.model.box_score_thresh,
+            n_velocity_bins=hparams.model.n_velocity_bins,
+            use_velocity_features=hparams.model.use_velocity_features,
+            use_pose_features=hparams.model.use_pose_features,
+            use_appearance_features=hparams.model.use_appearance_features,
+            n_components_velocity=hparams.model.n_components_velocity,
+            n_neighbors_pose=hparams.model.n_neighbors_pose,
+            n_neighbors_appearance=hparams.model.n_neighbors_appearance,
+        )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)

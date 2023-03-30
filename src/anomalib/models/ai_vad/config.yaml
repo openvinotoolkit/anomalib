@@ -28,6 +28,14 @@ dataset:
 
 model:
   name: ai_vad
+  box_score_thresh: 0.05
+  n_velocity_bins: 1
+  use_velocity_features: True
+  use_pose_features: False
+  use_appearance_features: False
+  n_components_velocity: 2
+  n_neighbors_pose: 1
+  n_neighbors_appearance: 1
   # generic params
   normalization_method: min_max # options: [null, min_max, cdf]
 

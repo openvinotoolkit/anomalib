@@ -16,11 +16,11 @@ class FeatureType(str, Enum):
 
 
 class FeatureExtractor(nn.Module):
-    def __init__(self) -> None:
+    def __init__(self, n_velocity_bins: int = 8) -> None:
         super().__init__()
 
         self.appearance_extractor = AppearanceExtractor()
-        self.velocity_extractor = VelocityExtractor(n_bins=1)
+        self.velocity_extractor = VelocityExtractor(n_bins=n_velocity_bins)
         self.pose_extractor = PoseExtractor()
 
     def forward(self, rgb_batch, flow_batch, regions):
