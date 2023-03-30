@@ -15,7 +15,7 @@ The following code block shows the installation process in a nutshell. If you wa
 For a detailed installation guide, please refer to below:
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :name: start
    :caption: Installation Guide
 
