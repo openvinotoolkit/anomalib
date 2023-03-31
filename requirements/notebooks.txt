@@ -1,0 +1,4 @@
+gitpython
+ipykernel
+ipywidgets
+notebook
