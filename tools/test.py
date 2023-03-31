@@ -5,11 +5,12 @@
 
 from argparse import ArgumentParser, Namespace
 
-from pytorch_lightning import Trainer, seed_everything
+from pytorch_lightning import seed_everything
 
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
+from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.callbacks import get_callbacks
 
 
@@ -48,7 +49,14 @@ def test():
 
     callbacks = get_callbacks(config)
 
-    trainer = Trainer(callbacks=callbacks, **config.trainer)
+    trainer = AnomalibTrainer(
+        **config.trainer,
+        **config.post_processing,
+        callbacks=callbacks,
+        task_type=config.dataset.task,
+        image_metrics=config.metrics.get("image", None),
+        pixel_metrics=config.metrics.get("pixel", None)
+    )
     trainer.test(model=model, datamodule=datamodule)
 
 

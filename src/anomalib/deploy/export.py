@@ -13,10 +13,11 @@ from typing import Any
 
 import numpy as np
 import torch
-from anomalib.data.task_type import TaskType
-from anomalib.models.components import AnomalyModule
 from torch import Tensor
 from torch.types import Number
+
+from anomalib.data.task_type import TaskType
+from anomalib.models.components import AnomalyModule
 
 
 class ExportMode(str, Enum):
@@ -40,7 +41,7 @@ def get_model_metadata(model: AnomalyModule) -> dict[str, Tensor]:
         "image_threshold": model.image_threshold.cpu().value.item(),
         "pixel_threshold": model.pixel_threshold.cpu().value.item(),
     }
-    if hasattr(model, "normalization_metrics") and model.normalization_metrics.state_dict() is not None:
+    if hasattr(model, "normalization_metrics") and model.normalization_metrics is not None:
         for key, value in model.normalization_metrics.state_dict().items():
             cached_metadata[key] = value.cpu()
     # Remove undefined values by copying in a new dict

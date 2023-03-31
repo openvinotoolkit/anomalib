@@ -48,6 +48,7 @@ class AnomalibTestLoop(EvaluationLoop):
 
     def on_run_start(self, *args, **kwargs) -> None:
         """Can be used to call setup."""
+        self.trainer.thresholder.initialize()
         self.trainer.metrics_manager.initialize()
         # Reset the image and pixel thresholds to 0.5 at start of the run.
         self.trainer.metrics_manager.set_threshold()

@@ -14,7 +14,7 @@ import anomalib.trainer as core
 from anomalib.data import TaskType
 from anomalib.models import AnomalyModule
 from anomalib.post_processing import ThresholdMethod
-from anomalib.utils.metrics import AnomalyScoreThreshold
+from anomalib.utils.metrics import AnomalyScoreThreshold, get_thresholding_metrics
 
 
 class Thresholder:
@@ -72,9 +72,9 @@ class Thresholder:
         This allows us to export the metrics along with the torch model.
         """
         if not hasattr(self.anomaly_module, "pixel_threshold"):
-            self.anomaly_module.pixel_threshold = AnomalyScoreThreshold().cpu()
+            self.anomaly_module.pixel_threshold = get_thresholding_metrics()
         if not hasattr(self.anomaly_module, "image_threshold"):
-            self.anomaly_module.image_threshold = AnomalyScoreThreshold().cpu()
+            self.anomaly_module.image_threshold = get_thresholding_metrics()
 
         if self.threshold_method == ThresholdMethod.MANUAL:
             self.anomaly_module.pixel_threshold.value = torch.tensor(self.manual_pixel_threshold).cpu()

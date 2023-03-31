@@ -7,11 +7,13 @@ from __future__ import annotations
 
 import logging
 from abc import ABC
-from typing import Any
+from typing import Any, OrderedDict
 
 import pytorch_lightning as pl
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor, nn
+
+from anomalib.utils.metrics import get_normalization_metrics, get_thresholding_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -80,3 +82,25 @@ class AnomalyModule(pl.LightningModule, ABC):
         del args, kwargs  # These variables are not used.
 
         return self.predict_step(batch, batch_idx)
+
+    def _load_extra_keys(self, state_dict: OrderedDict[str, Tensor]) -> None:
+        """Adds thresholds and normalization metrics if they are in the state dict.
+
+        Args:
+            state_dict (OrderedDict[str, Tensor]): State dict of the model.
+        """
+        for key in state_dict.keys():
+            if key.startswith("normalization") and not hasattr(self, "normalization_metrics"):
+                self.normalization_metrics = get_normalization_metrics(key)
+            elif key.startswith("image_threshold") and not hasattr(self, "image_threshold"):
+                self.image_threshold = get_thresholding_metrics()
+            elif key.startswith("pixel_threshold") and not hasattr(self, "pixel_threshold"):
+                self.pixel_threshold = get_thresholding_metrics()
+
+    def load_state_dict(self, state_dict: OrderedDict[str, Tensor], strict: bool = True):
+        """Load state dict from checkpoint.
+        Ensures that normalization and thresholding attributes is properly setup before model is loaded.
+        """
+        # Used to load missing normalization and threshold parameters
+        self._load_extra_keys(state_dict)
+        return super().load_state_dict(state_dict, strict=strict)

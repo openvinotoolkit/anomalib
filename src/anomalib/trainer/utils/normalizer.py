@@ -13,7 +13,7 @@ import anomalib.trainer as core
 from anomalib.models import AnomalyModule
 from anomalib.post_processing import NormalizationMethod
 from anomalib.post_processing.normalization import cdf, min_max
-from anomalib.utils.metrics import AnomalyScoreDistribution, MinMax
+from anomalib.utils.metrics import get_normalization_metrics
 
 # TODO separate cdf and minmax normalizer
 
@@ -34,33 +34,25 @@ class Normalizer:
         self.trainer = trainer
 
     @property
-    def normalization_metrics(self) -> Metric:
+    def normalization_metrics(self) -> Metric | None:
         """Returns normalization metrics.
 
         Checks if the trainer has anomaly module. If the trainer does, it searches for the normalization metrics in the
         anomaly module. If it does not find it, it assigns the normalization metrics.
         """
         if self.trainer.lightning_module is not None:
+            normalization_metrics = None
             if not hasattr(self.trainer.lightning_module, "normalization_metrics"):
-                setattr(self.trainer.lightning_module, "normalization_metrics", self._assign_normalization_metrics())
-            return self.trainer.lightning_module.normalization_metrics.cpu()
+                setattr(
+                    self.trainer.lightning_module,
+                    "normalization_metrics",
+                    get_normalization_metrics(self.normalization_method),
+                )
+            if self.trainer.lightning_module.normalization_metrics is not None:
+                normalization_metrics = self.trainer.lightning_module.normalization_metrics.cpu()
+            return normalization_metrics
         else:
             raise ValueError("Trainer does not have a lightning module assigned.")
-
-    def _assign_normalization_metrics(self) -> Metric | None:
-        """Assign normalization metrics."""
-        # TODO change logic here
-        normalization_metrics: Metric | None = None
-        if self.normalization_method != NormalizationMethod.NONE:
-            if self.normalization_method == NormalizationMethod.MIN_MAX:
-                normalization_metrics = MinMax().cpu()
-            elif self.normalization_method == NormalizationMethod.CDF:
-                # TODO CDF only works for padim and stfpm. Check condition
-                # TODO throw error if nncf optimization is enabled.
-                normalization_metrics = AnomalyScoreDistribution().cpu()
-            else:
-                raise ValueError(f"Normalization method {self.normalization_method} is not supported.")
-        return normalization_metrics
 
     def update_metrics(self, outputs: STEP_OUTPUT):
         """Update values
@@ -68,6 +60,9 @@ class Normalizer:
         Args:
             outputs (STEP_OUTPUT): Outputs used for gathering normalization metrics.
         """
+        if self.normalization_metrics is None:
+            return
+
         if self.normalization_method == NormalizationMethod.MIN_MAX:
             if "anomaly_maps" in outputs:
                 self.normalization_metrics(outputs["anomaly_maps"])
@@ -84,6 +79,8 @@ class Normalizer:
 
     def _standardize_batch(self, outputs: STEP_OUTPUT) -> None:
         """Only used by CDF normalization"""
+        if self.normalization_metrics is None:
+            return
         stats = self.normalization_metrics.to(outputs["pred_scores"].device)
         outputs["pred_scores"] = cdf.standardize(outputs["pred_scores"], stats.image_mean, stats.image_std)
         if "anomaly_maps" in outputs.keys():
@@ -98,6 +95,8 @@ class Normalizer:
             outputs (STEP_OUTPUT): Output of the batch.
             anomaly_module (AnomalyModule): Anomaly module.
         """
+        if self.normalization_metrics is None:
+            return
         image_threshold = anomaly_module.image_threshold.value.cpu()
         pixel_threshold = anomaly_module.pixel_threshold.value.cpu()
         if self.normalization_method == NormalizationMethod.MIN_MAX:
@@ -130,6 +129,9 @@ class Normalizer:
             anomaly_module (AnomalyModule): Anomaly Module
             outputs (STEP_OUTPUT): outputs to normalize
         """
+        if self.normalization_metrics is None:
+            return
+
         if self.normalization_method == NormalizationMethod.MIN_MAX:
             self._normalize_batch(outputs, anomaly_module)
         elif self.normalization_method == NormalizationMethod.CDF:

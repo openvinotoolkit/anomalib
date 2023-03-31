@@ -69,7 +69,6 @@ class PostProcessor:
 
     def apply_thresholding(self, outputs: STEP_OUTPUT):
         """Computes masks, box labels after applying thresholding."""
-        # PostProcessor.post_process(outputs)
         if outputs is not None and isinstance(outputs, dict):
             outputs["pred_labels"] = outputs["pred_scores"] >= self.anomaly_module.image_threshold.value.cpu()
             if "anomaly_maps" in outputs.keys():
