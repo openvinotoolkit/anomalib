@@ -80,7 +80,7 @@ class MetricsManager:
     def set_threshold(self) -> None:
         """Sets threshold."""
 
-        if self.trainer.state.stage == TrainerFn.TESTING:
+        if self.trainer.state.stage in (TrainerFn.TESTING, TrainerFn.PREDICTING):
             image_metrics_threshold = 0.5
             pixel_metrics_threshold = 0.5
         else:

@@ -16,8 +16,10 @@ class TestAnomalibTrainer:
     def trained_model(self):
         model = DummyAnomalibModule()
         datamodule = DummyTensorDataModule()
-        trainer = AnomalibTrainer(logger=False, max_epochs=2)
-        trainer.fit(model, datamodule)
+        trainer = AnomalibTrainer(
+            logger=False, max_epochs=2, image_metrics=["F1Score"], pixel_metrics=["F1Score"], num_sanity_val_steps=0
+        )
+        trainer.fit(model=model, datamodule=datamodule)
         return trainer, model, datamodule
 
     @pytest.mark.parametrize("stage", ["predict", "validate", "test"])
@@ -33,7 +35,7 @@ class TestAnomalibTrainer:
         if stage == "predict":
             output = outputs[0]
             anomaly_map = torch.zeros((1, 1, 32, 32), dtype=torch.float32)
-            anomaly_map[:, :, 5:15, 5:15] = 3.0
+            anomaly_map[:, :, 5:15, 5:15] = 0.5
             assert (output["anomaly_maps"] == anomaly_map).all()
 
             pred_mask = torch.zeros((32, 32), dtype=torch.int64)
@@ -45,6 +47,9 @@ class TestAnomalibTrainer:
             assert isinstance(model.normalization_metrics, MinMax)
         elif stage == "test":
             assert "image_F1Score" in outputs[0].keys()
+            assert "pixel_F1Score" in outputs[0].keys()
+            assert outputs[0]["image_F1Score"] == 1.0
+            assert outputs[0]["pixel_F1Score"] == 1.0
         else:
             assert model.image_threshold.value == 3.0
             assert model.pixel_threshold.value == 3.0

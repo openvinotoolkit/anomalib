@@ -9,13 +9,6 @@ from anomalib.utils.metrics.min_max import MinMax
 
 
 class DummyAnomalibModule(AnomalyModule):
-    def __init__(self):
-        super().__init__()
-        # TODO: set this from the trainer
-
-        self.image_metrics = create_metric_collection(["F1Score"], "image_")
-        self.pixel_metrics = create_metric_collection(["F1Score"], "pixel_")
-
     def training_step(self, *args, **kwargs):
         pass
 

@@ -9,6 +9,7 @@ import torch
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torchmetrics import Metric
 
+import anomalib.trainer as core
 from anomalib.models import AnomalyModule
 from anomalib.post_processing import NormalizationMethod
 from anomalib.post_processing.normalization import cdf, min_max
@@ -26,15 +27,31 @@ class Normalizer:
         normalization_method (NormalizationMethod): Normalization method. Defaults to None
     """
 
-    def __init__(self, normalization_method: NormalizationMethod = NormalizationMethod.NONE):
+    def __init__(
+        self, trainer: core.AnomalibTrainer, normalization_method: NormalizationMethod = NormalizationMethod.NONE
+    ):
         self.normalization_method: NormalizationMethod = normalization_method
-        self.normalization_metrics: Metric = self._assign_normalization_metrics()
+        self.trainer = trainer
 
-    def _assign_normalization_metrics(self) -> Metric:
+    @property
+    def normalization_metrics(self) -> Metric:
+        """Returns normalization metrics.
+
+        Checks if the trainer has anomaly module. If the trainer does, it searches for the normalization metrics in the
+        anomaly module. If it does not find it, it assigns the normalization metrics.
+        """
+        if self.trainer.lightning_module is not None:
+            if not hasattr(self.trainer.lightning_module, "normalization_metrics"):
+                setattr(self.trainer.lightning_module, "normalization_metrics", self._assign_normalization_metrics())
+            return self.trainer.lightning_module.normalization_metrics.cpu()
+        else:
+            raise ValueError("Trainer does not have a lightning module assigned.")
+
+    def _assign_normalization_metrics(self) -> Metric | None:
         """Assign normalization metrics."""
         # TODO change logic here
-        normalization_metrics: Metric
-        if not hasattr(self, "normalization_metrics") and self.normalization_method != NormalizationMethod.NONE:
+        normalization_metrics: Metric | None = None
+        if self.normalization_method != NormalizationMethod.NONE:
             if self.normalization_method == NormalizationMethod.MIN_MAX:
                 normalization_metrics = MinMax().cpu()
             elif self.normalization_method == NormalizationMethod.CDF:
