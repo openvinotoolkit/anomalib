@@ -10,6 +10,8 @@ import wandb
 from comet_ml import Optimizer
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning.loggers import CometLogger, WandbLogger
+import gc
+import torch
 
 from anomalib.config import update_input_size_config
 from anomalib.data import get_datamodule
@@ -76,6 +78,10 @@ class WandbSweep:
 
         trainer = pl.Trainer(**config.trainer, logger=wandb_logger, callbacks=callbacks)
         trainer.fit(model, datamodule=datamodule)
+
+        del model
+        gc.collect()
+        torch.cuda.empty_cache()
 
 
 class CometSweep:
