@@ -78,6 +78,66 @@ def get_feature_extractor(backbone: str, return_nodes: list[str]) -> GraphModule
     return feature_extractor
 
 
+#Kmeans clustering algorithm implementation in PyTorch framework
+class KMeans_torch:
+    def __init__(self, n_clusters, max_iter=10):
+        """
+        Initializes the KMeans object.
+
+        Parameters:
+            n_clusters: The number of clusters to create.
+            max_iter: The maximum number of iterations to run the algorithm for.
+        """
+        self.n_clusters = n_clusters
+        self.max_iter = max_iter
+
+    def fit(self, X):
+        """
+        Runs the k-means algorithm on input data X.
+
+        Parameters:
+            X: A tensor of shape (N, D) containing the input data.
+            N is the number of data points 
+            D is the dimensionality of the data points.
+        """
+        N, D = X.shape
+
+        # Initialize centroids randomly from the data points
+        centroid_indices = torch.randint(0, N, (self.n_clusters,))
+        self.centroids = X[centroid_indices]
+
+        # Run the k-means algorithm for max_iter iterations
+        for i in range(self.max_iter):
+            # Compute the distance between each data point and each centroid
+            distances = torch.cdist(X, self.centroids)
+
+            # Assign each data point to the closest centroid
+            self.cluster_assignments = torch.argmin(distances, dim=1)
+
+            # Update the centroids to be the mean of the data points assigned to them
+            for j in range(self.n_clusters):
+                mask = self.cluster_assignments == j
+                if mask.any():
+                    self.centroids[j] = X[mask].mean(dim=0)
+                    
+        #thise line returns labels and centoids of the results, 
+        #alternative to Sklearn's cluster_centers_ & labels_ attributes            
+        return self.cluster_assignments, self.centroids
+
+    def predict(self, X):
+        """
+        Assigns each data point in X to its closest centroid.
+
+        Parameters:
+            X: A tensor of shape (N, D) containing the input data.
+
+        Returns:
+            A tensor of shape (N,) containing the index of the closest centroid for each data point.
+        """
+        distances = torch.cdist(X, self.centroids)
+        return torch.argmin(distances, dim=1)
+    
+
 class CfaModel(DynamicBufferModule):
     """Torch implementation of the CFA Model.
 
@@ -160,9 +220,10 @@ class CfaModel(DynamicBufferModule):
         self.memory_bank = rearrange(self.memory_bank, "b c h w -> (b h w) c")
 
         if self.gamma_c > 1:
-            # TODO: Create PyTorch KMeans class.
-            k_means = KMeans(n_clusters=(self.scale[0] * self.scale[1]) // self.gamma_c, max_iter=3000)
-            cluster_centers = k_means.fit(self.memory_bank.cpu()).cluster_centers_
+            # TODO: Create PyTorch KMeans class. (I hope it's the way you want it.)
+            #k_means = KMeans(n_clusters=(self.scale[0] * self.scale[1]) // self.gamma_c, max_iter=3000)
+            k_means = KMeans_torch(n_clusters=(self.scale[0] * self.scale[1]) // self.gamma_c, max_iter=3000)
+            cluster_centers = k_means.fit(self.memory_bank.cpu()).centroids #for torch's, centroids instead of cluster_centers_
             self.memory_bank = torch.tensor(cluster_centers, requires_grad=False).to(device)
 
         self.memory_bank = rearrange(self.memory_bank, "h w -> w h")
