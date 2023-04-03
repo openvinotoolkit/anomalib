@@ -68,7 +68,7 @@ class AUPRO(Metric):
                         connected component analysis.
 
         Returns:
-                Tensor: Components labeled from 0 to N.
+            Tensor: Components labeled from 0 to N.
         """
         target = dim_zero_cat(self.target)
 
