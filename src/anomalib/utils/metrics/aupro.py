@@ -38,7 +38,6 @@ class AUPRO(Metric):
         process_group: Any | None = None,
         dist_sync_fn: Callable | None = None,
         fpr_limit: float = 0.3,
-        inspection_mask: Tensor | None = None,
     ) -> None:
         super().__init__(
             compute_on_step=compute_on_step,
@@ -50,12 +49,6 @@ class AUPRO(Metric):
         self.add_state("preds", default=[], dist_reduce_fx="cat")  # pylint: disable=not-callable
         self.add_state("target", default=[], dist_reduce_fx="cat")  # pylint: disable=not-callable
         self.register_buffer("fpr_limit", torch.tensor(fpr_limit))
-        self.register_buffer("inspection_mask", inspection_mask)
-
-        if (self.inspection_mask is not None) and (
-            not torch.equal(self.inspection_mask, self.inspection_mask.type(torch.bool))
-        ):
-            raise ValueError("inspection_mask must be a binary Tensor")
 
     def update(self, preds: Tensor, target: Tensor) -> None:  # type: ignore
         """Update state with new values.
@@ -99,20 +92,13 @@ class AUPRO(Metric):
 
         It leverages the fact that the overlap corresponds to the tpr, and thus computes the overall
         PRO curve by aggregating per-region tpr/fpr values produced by ROC-construction.
-        If self.inspection_mask is not None, points that are not in the inspection mask will be filtered out.
 
         Returns:
             tuple[Tensor, Tensor]: tuple containing final fpr and tpr values.
         """
-        if self.inspection_mask is not None:
-            inspection_mask = self.inspection_mask.type(torch.bool).repeat(len(self.target), 1)
-            target = dim_zero_cat(self.target).flatten()[inspection_mask.flatten()]
-            preds = dim_zero_cat(self.preds).flatten()[inspection_mask.flatten()]
-            cca = cca.flatten()[inspection_mask.flatten()]
-        else:
-            target = dim_zero_cat(self.target).flatten()
-            preds = dim_zero_cat(self.preds).flatten()
-            cca = cca.flatten()
+        target = dim_zero_cat(self.target).flatten()
+        preds = dim_zero_cat(self.preds).flatten()
+        cca = cca.flatten()
 
         # compute the global fpr-size
         fpr: Tensor = roc(preds, target)[0]  # only need fpr
@@ -178,9 +164,7 @@ class AUPRO(Metric):
     def _compute(self) -> tuple[Tensor, Tensor]:
         """Compute the PRO curve.
 
-        First step is to perform the Connected Component Analysis,
-        Second step is to compute the PRO curve. Points that are outside the inspection mask will
-        be filtered out.
+        Perform the Connected Component Analysis first then compute the PRO curve.
 
         Returns:
             tuple[Tensor, Tensor]: tuple containing final fpr and tpr values.
