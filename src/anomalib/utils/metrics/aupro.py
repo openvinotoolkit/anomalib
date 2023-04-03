@@ -87,7 +87,7 @@ class AUPRO(Metric):
 
         return cca
 
-    def compute_pro(self, cca: Tensor) -> tuple[Tensor, Tensor]:
+    def compute_pro(self, cca: Tensor, target: Tensor, preds: Tensor) -> tuple[Tensor, Tensor]:
         """Compute the pro/fpr value-pairs until the fpr specified by self.fpr_limit.
 
         It leverages the fact that the overlap corresponds to the tpr, and thus computes the overall
@@ -96,9 +96,6 @@ class AUPRO(Metric):
         Returns:
             tuple[Tensor, Tensor]: tuple containing final fpr and tpr values.
         """
-        target = dim_zero_cat(self.target).flatten()
-        preds = dim_zero_cat(self.preds).flatten()
-        cca = cca.flatten()
 
         # compute the global fpr-size
         fpr: Tensor = roc(preds, target)[0]  # only need fpr
@@ -170,8 +167,11 @@ class AUPRO(Metric):
             tuple[Tensor, Tensor]: tuple containing final fpr and tpr values.
         """
 
-        cca = self.perform_cca()
-        return self.compute_pro(cca=cca)
+        cca = self.perform_cca().flatten()
+        target = dim_zero_cat(self.target).flatten()
+        preds = dim_zero_cat(self.preds).flatten()
+
+        return self.compute_pro(cca=cca, target=target, preds=preds)
 
     def compute(self) -> Tensor:
         """Fist compute PRO curve, then compute and scale area under the curve.
