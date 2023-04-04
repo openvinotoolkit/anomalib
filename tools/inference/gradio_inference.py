@@ -34,7 +34,7 @@ def get_args() -> Namespace:
         Namespace: List of arguments.
     """
     parser = ArgumentParser()
-    parser.add_argument("--config", type=Path, required=True, help="Path to a config file")
+    parser.add_argument("--config", type=Path, required=False, help="Path to a config file")
     parser.add_argument("--weights", type=Path, required=True, help="Path to model weights")
     parser.add_argument("--metadata", type=Path, required=False, help="Path to a JSON file containing the metadata.")
     parser.add_argument("--share", type=bool, required=False, default=False, help="Share Gradio `share_url`")
@@ -63,12 +63,18 @@ def get_inferencer(config_path: Path, weight_path: Path, metadata_path: Path | N
     inferencer: Inferencer
     module = import_module("anomalib.deploy")
     if extension in (".ckpt"):
+        if config_path is None:
+            raise ValueError("When using Torch Inferencer, the following arguments are required: --config")
+
         torch_inferencer = getattr(module, "TorchInferencer")
         inferencer = torch_inferencer(config=config_path, model_source=weight_path, metadata_path=metadata_path)
 
     elif extension in (".onnx", ".bin", ".xml"):
+        if metadata_path is None:
+            raise ValueError("When using OpenVINO Inferencer, the following arguments are required: --metadata")
+
         openvino_inferencer = getattr(module, "OpenVINOInferencer")
-        inferencer = openvino_inferencer(config=config_path, path=weight_path, metadata_path=metadata_path)
+        inferencer = openvino_inferencer(path=weight_path, metadata_path=metadata_path)
 
     else:
         raise ValueError(
