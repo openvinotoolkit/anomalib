@@ -60,6 +60,7 @@ def train():
     trainer = AnomalibTrainer(
         **config.trainer,
         **config.post_processing,
+        **config.visualization,
         logger=experiment_logger,
         callbacks=callbacks,
         task_type=config.dataset.task,

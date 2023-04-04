@@ -11,6 +11,7 @@ from pytorch_lightning.loops.dataloader.prediction_loop import PredictionLoop
 from pytorch_lightning.loops.epoch.prediction_epoch_loop import PredictionEpochLoop
 
 import anomalib.trainer as core
+from anomalib.trainer.utils import VisualizationStage
 
 
 class AnomalibPredictionEpochLoop(PredictionEpochLoop):
@@ -60,6 +61,7 @@ class AnomalibPredictionEpochLoop(PredictionEpochLoop):
         self.trainer.post_processor.apply_predictions(predictions)
         self.trainer.post_processor.apply_thresholding(predictions)
         self.trainer.normalizer.normalize(self.trainer.lightning_module, predictions)
+        self.trainer.visualization_manager.visualize_images(predictions, VisualizationStage.VAL)
         # --------------------------------------
 
         self.trainer._call_callback_hooks("on_predict_batch_end", predictions, batch, batch_idx, dataloader_idx)

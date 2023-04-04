@@ -12,7 +12,14 @@ from anomalib.data import TaskType
 from anomalib.models.components.base.anomaly_module import AnomalyModule
 from anomalib.post_processing import NormalizationMethod, ThresholdMethod
 from anomalib.trainer.loops import AnomalibFitLoop, AnomalibPredictionLoop, AnomalibTestLoop, AnomalibValidationLoop
-from anomalib.trainer.utils import MetricsManager, Normalizer, PostProcessor, Thresholder
+from anomalib.trainer.utils import (
+    MetricsManager,
+    Normalizer,
+    PostProcessor,
+    Thresholder,
+    VisualizationManager,
+    VisualizationStage,
+)
 
 log = logging.getLogger(__name__)
 # warnings to ignore in trainer
@@ -33,6 +40,11 @@ class AnomalibTrainer(Trainer):
         normalization_method (NormalizationMethod): Normalization method
         manual_image_threshold (Optional[float]): If threshold method is manual, this needs to be set. Defaults to None.
         manual_pixel_threshold (Optional[float]): If threshold method is manual, this needs to be set. Defaults to None.
+        visualization_mode (str): Visualization mode. Options ["full", "simple"]. Defaults to "full".
+        show_images (bool): Whether to show images. Defaults to False.
+        log_images (bool): Whether to log images. Defaults to False.
+        visualization_stage (VisualizationStage): The stage at which to write images to the logger(s).
+            Defaults to VisualizationStage.TEST.
     """
 
     def __init__(
@@ -43,6 +55,10 @@ class AnomalibTrainer(Trainer):
         manual_pixel_threshold: Optional[float] = None,
         image_metrics: list[str] | None = None,
         pixel_metrics: list[str] | None = None,
+        visualization_mode: str = "full",
+        show_images: bool = False,
+        log_images: bool = False,
+        visualization_stage: VisualizationStage = VisualizationStage.TEST,
         task_type: TaskType = TaskType.SEGMENTATION,
         **kwargs,
     ) -> None:
@@ -69,3 +85,10 @@ class AnomalibTrainer(Trainer):
         self.post_processor = PostProcessor(trainer=self)
         self.normalizer = Normalizer(trainer=self, normalization_method=normalization_method)
         self.metrics_manager = MetricsManager(trainer=self, image_metrics=image_metrics, pixel_metrics=pixel_metrics)
+        self.visualization_manager = VisualizationManager(
+            trainer=self,
+            mode=visualization_mode,
+            show_images=show_images,
+            log_images=log_images,
+            stage=visualization_stage,
+        )

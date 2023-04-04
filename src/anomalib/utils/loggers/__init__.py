@@ -6,16 +6,14 @@
 from __future__ import annotations
 
 import logging
-import os
-import warnings
-from pathlib import Path
 from typing import Iterable
 
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
-from pytorch_lightning.loggers import CSVLogger, Logger
+from pytorch_lightning.loggers import Logger
 
 from .comet import AnomalibCometLogger
+from .file_system import FileSystemLogger
 from .tensorboard import AnomalibTensorBoardLogger
 from .wandb import AnomalibWandbLogger
 
@@ -23,12 +21,13 @@ __all__ = [
     "AnomalibCometLogger",
     "AnomalibTensorBoardLogger",
     "AnomalibWandbLogger",
+    "FileSystemLogger",
     "configure_logger",
     "get_experiment_logger",
 ]
 
 
-AVAILABLE_LOGGERS = ["tensorboard", "wandb", "csv", "comet"]
+AVAILABLE_LOGGERS = ["tensorboard", "wandb", "file_system", "comet"]
 
 
 logger = logging.getLogger(__name__)
@@ -76,62 +75,22 @@ def get_experiment_logger(
     """
     logger.info("Loading the experiment logger(s)")
 
-    # TODO remove when logger is deprecated from project
-    if "logger" in config.project.keys():
-        warnings.warn(
-            "'logger' key will be deprecated from 'project' section of the config file."
-            " Please use the logging section in config file.",
-            DeprecationWarning,
-        )
-        if "logging" not in config:
-            config.logging = {"logger": config.project.logger, "log_graph": False}
-        else:
-            config.logging.logger = config.project.logger
-
-    if config.logging.logger in (None, False):
+    if config.logging.loggers is None:
         return False
 
     logger_list: list[Logger] = []
-    if isinstance(config.logging.logger, str):
-        config.logging.logger = [config.logging.logger]
+    if not isinstance(config.logging.loggers, (list, ListConfig)):
+        config.logging.loggers = [config.logging.loggers]
 
-    for experiment_logger in config.logging.logger:
-        if experiment_logger == "tensorboard":
-            logger_list.append(
-                AnomalibTensorBoardLogger(
-                    name="Tensorboard Logs",
-                    save_dir=os.path.join(config.project.path, "logs"),
-                    log_graph=config.logging.log_graph,
-                )
-            )
-        elif experiment_logger == "wandb":
-            wandb_logdir = os.path.join(config.project.path, "logs")
-            Path(wandb_logdir).mkdir(parents=True, exist_ok=True)
-            name = (
-                config.model.name
-                if "category" not in config.dataset.keys()
-                else f"{config.dataset.category} {config.model.name}"
-            )
-            logger_list.append(
-                AnomalibWandbLogger(
-                    project=config.dataset.name,
-                    name=name,
-                    save_dir=wandb_logdir,
-                )
-            )
-        elif experiment_logger == "comet":
-            comet_logdir = os.path.join(config.project.path, "logs")
-            Path(comet_logdir).mkdir(parents=True, exist_ok=True)
-            run_name = (
-                config.model.name
-                if "category" not in config.dataset.keys()
-                else f"{config.dataset.category} {config.model.name}"
-            )
-            logger_list.append(
-                AnomalibCometLogger(project_name=config.dataset.name, experiment_name=run_name, save_dir=comet_logdir)
-            )
-        elif experiment_logger == "csv":
-            logger_list.append(CSVLogger(save_dir=os.path.join(config.project.path, "logs")))
+    for experiment_logger in config.logging.loggers:
+        if "tensorboard" in experiment_logger.class_path:
+            logger_list.append(AnomalibTensorBoardLogger(**experiment_logger.init_args))
+        elif "wandb" in experiment_logger.class_path:
+            logger_list.append(AnomalibWandbLogger(**experiment_logger.init_args))
+        elif "comet" in experiment_logger.class_path:
+            logger_list.append(AnomalibCometLogger(**experiment_logger.init_args))
+        elif "file_system" in experiment_logger.class_path:
+            logger_list.append(FileSystemLogger(**experiment_logger.init_args))
         else:
             raise UnknownLogger(
                 f"Unknown logger type: {config.logging.logger}. "

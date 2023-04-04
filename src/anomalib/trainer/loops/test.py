@@ -13,6 +13,7 @@ from pytorch_lightning.loops.epoch.evaluation_epoch_loop import EvaluationEpochL
 from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 
 import anomalib.trainer as core
+from anomalib.trainer.utils import VisualizationStage
 
 
 class AnomalibTestEpochLoop(EvaluationEpochLoop):
@@ -67,3 +68,8 @@ class AnomalibTestLoop(EvaluationLoop):
         )
         self.trainer.metrics_manager.compute(output_or_outputs)
         self.trainer.metrics_manager.log(self.trainer, "test_epoch_end")
+        self.trainer.visualization_manager.visualize_images(output_or_outputs, VisualizationStage.TEST)
+        self.trainer.visualization_manager.visualize_metrics(
+            VisualizationStage.TEST,
+            [self.trainer.metrics_manager.image_metrics, self.trainer.metrics_manager.pixel_metrics],
+        )

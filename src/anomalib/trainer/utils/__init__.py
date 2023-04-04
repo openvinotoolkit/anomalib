@@ -11,5 +11,6 @@ from .metrics_manager import MetricsManager
 from .normalizer import Normalizer
 from .post_processor import PostProcessor
 from .thresholder import Thresholder
+from .visualization_manager import VisualizationManager, VisualizationStage
 
-__all__ = ["MetricsManager", "Normalizer", "PostProcessor", "Thresholder"]
+__all__ = ["MetricsManager", "Normalizer", "PostProcessor", "Thresholder", "VisualizationManager", "VisualizationStage"]
