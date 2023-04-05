@@ -127,8 +127,8 @@ def export_to_torch(model: AnomalyModule, metadata: dict[str, Any], export_path:
         export_path (Path): Path to the folder storing the exported model.
     """
     torch.save(
-        obj={"model_state_dict": model.state_dict(), "metadata": metadata},
-        f=export_path / "model.pth",
+        obj={"model": model.model, "metadata": metadata},
+        f=export_path / "model.pt",
     )
 
 
