@@ -61,7 +61,7 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
     monitor_mode = "max" if "early_stopping" not in config.model.keys() else config.model.early_stopping.mode
 
     checkpoint = ModelCheckpoint(
-        dirpath=os.path.join(config.project.path, "weights"),
+        dirpath=os.path.join(config.project.path, "weights", "lightning"),
         filename="model",
         monitor=monitor_metric,
         mode=monitor_mode,
