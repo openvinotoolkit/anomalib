@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import List
+from typing import Any, List
 
 from pytorch_lightning.loops.dataloader.evaluation_loop import EvaluationLoop
 from pytorch_lightning.loops.epoch.evaluation_epoch_loop import EvaluationEpochLoop
@@ -45,6 +45,11 @@ class AnomalibValidationLoop(EvaluationLoop):
         super().__init__()
         self.trainer: core.AnomalibTrainer
         self.epoch_loop = AnomalibValidationEpochLoop()
+
+    def on_run_start(self, *args: Any, **kwargs: Any) -> None:
+        self.trainer.thresholder.initialize()
+        self.trainer.metrics_manager.initialize()
+        return super().on_run_start(*args, **kwargs)
 
     def _evaluation_epoch_end(self, outputs: List[EPOCH_OUTPUT]):
         """Runs ``validation_epoch_end``

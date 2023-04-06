@@ -6,12 +6,14 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 import pytorch_lightning as pl
 from matplotlib import pyplot as plt
 
 from anomalib.models.components import AnomalyModule
+from anomalib.trainer import AnomalibTrainer
 
 from .visualizer_base import BaseVisualizerCallback
 
@@ -33,9 +35,9 @@ class MetricVisualizerCallback(BaseVisualizerCallback):
             trainer (pl.Trainer): pytorch lightning trainer.
             pl_module (AnomalyModule): pytorch lightning module.
         """
-
+        trainer = cast(AnomalibTrainer, trainer)
         if self.save_images or self.log_images:
-            for metrics in (pl_module.image_metrics, pl_module.pixel_metrics):
+            for metrics in (trainer.image_metrics, trainer.pixel_metrics):
                 for metric in metrics.values():
                     # `generate_figure` needs to be defined for every metric that should be plotted automatically
                     if hasattr(metric, "generate_figure"):

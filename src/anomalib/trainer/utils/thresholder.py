@@ -5,10 +5,10 @@
 
 from __future__ import annotations
 
-from typing import List
+from warnings import warn
 
 import torch
-from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
+from pytorch_lightning.utilities.types import STEP_OUTPUT
 
 import anomalib.trainer as core
 from anomalib.data import TaskType
@@ -39,9 +39,9 @@ class Thresholder:
         if threshold_method == ThresholdMethod.ADAPTIVE and all(
             i is not None for i in (manual_image_threshold, manual_pixel_threshold)
         ):
-            raise ValueError(
+            warn(
                 "When `threshold_method` is set to `adaptive`, `manual_image_threshold` and `manual_pixel_threshold` "
-                "must not be set."
+                "must not be set. Ignoring manual thresholds."
             )
 
         if threshold_method == ThresholdMethod.MANUAL and all(
@@ -107,14 +107,10 @@ class Thresholder:
     def _update_thresholds(
         image_metric: AnomalyScoreThreshold,
         pixel_metric: AnomalyScoreThreshold,
-        outputs: EPOCH_OUTPUT | List[EPOCH_OUTPUT] | STEP_OUTPUT,
+        outputs: STEP_OUTPUT,
     ) -> None:
-        if isinstance(outputs, list):
-            for output in outputs:
-                Thresholder._update_thresholds(image_metric, pixel_metric, output)
-        else:
-            image_metric.cpu()
-            image_metric.update(outputs["pred_scores"], outputs["label"].int())
-            if "mask" in outputs.keys() and "anomaly_maps" in outputs.keys():
-                pixel_metric.cpu()
-                pixel_metric.update(outputs["anomaly_maps"], outputs["mask"].int())
+        image_metric.cpu()
+        image_metric.update(outputs["pred_scores"], outputs["label"].int())
+        if "mask" in outputs.keys() and "anomaly_maps" in outputs.keys():
+            pixel_metric.cpu()
+            pixel_metric.update(outputs["anomaly_maps"], outputs["mask"].int())
