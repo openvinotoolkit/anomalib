@@ -1,0 +1,63 @@
+default_language_version:
+  node: system
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      # list of supported hooks: https://pre-commit.com/hooks.html
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: debug-statements
+      - id: detect-private-key
+
+  # python code formatting
+  - repo: https://github.com/psf/black
+    rev: 23.1.0
+    hooks:
+      - id: black
+
+  # Ruff version.
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: "v0.0.253"
+    hooks:
+      - id: ruff
+        exclude: "tests"
+
+  # python static type checking
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: "v1.0.1"
+    hooks:
+      - id: mypy
+        additional_dependencies: [types-PyYAML]
+        exclude: "tests"
+
+  # notebooks.
+  - repo: https://github.com/nbQA-dev/nbQA
+    rev: 1.6.3
+    hooks:
+      - id: nbqa-black
+      - id: nbqa-ruff
+        # Ignore unsorted imports. This is because jupyter notebooks can import
+        # packages in a different order than the rest of the codebase.
+        args: ["--ignore=I001"]
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.0.0-alpha.4
+    hooks:
+      - id: prettier
+
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.33.0
+    hooks:
+      - id: markdownlint
+
+  - repo: https://github.com/AleksaC/hadolint-py
+    rev: v2.12.0.2
+    hooks:
+      - id: hadolint
+        name: Lint Dockerfiles
+        description: Runs hadolint to lint Dockerfiles
+        args: ["--ignore", "DL3008"]
