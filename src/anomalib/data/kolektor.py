@@ -51,6 +51,7 @@ def is_good(path):
 
 def make_kolektor_dataset(
     root: str | Path,
+    train_split_ratio: float = 0.8,
     split: str | Split | None = None,
 ) -> DataFrame:
     root = Path(root)
@@ -92,7 +93,7 @@ def make_kolektor_dataset(
 
     # Divide 'good' images to train/test on 0.8/0.2 ratio
     train_samples, test_samples = train_test_split(
-        samples[samples.label == "Good"], train_size=0.8, test_size=0.2, random_state=42
+        samples[samples.label == "Good"], train_size=train_split_ratio, random_state=42
     )
     samples.loc[train_samples.index, "split"] = "train"
     samples.loc[test_samples.index, "split"] = "test"
@@ -130,7 +131,7 @@ class KolektorDataset(AnomalibDataset):
         self.split = split
 
     def _setup(self) -> None:
-        self.samples = make_kolektor_dataset(self.root, split=self.split)
+        self.samples = make_kolektor_dataset(self.root, train_split_ratio=0.8, split=self.split)
 
 
 class Kolektor(AnomalibDataModule):
