@@ -3,6 +3,7 @@
 Description:
     This script contains PyTorch Dataset, Dataloader and PyTorch
         Lightning DataModule for the Kolektor Surface-Defect dataset.
+    The dataset can be found at https://www.vicos.si/resources/kolektorsdd/
 
 License:
     Kolektor Surface-Defect dataset is released under the Creative Commons
