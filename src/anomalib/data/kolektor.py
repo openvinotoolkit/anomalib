@@ -1,14 +1,33 @@
+"""Kolektor Surface-Defect Dataset (CC BY-NC-SA 4.0).
+
+Description:
+    This script contains PyTorch Dataset, Dataloader and PyTorch
+        Lightning DataModule for the Kolektor Surface-Defect dataset.
+
+License:
+    Kolektor Surface-Defect dataset is released under the Creative Commons
+    Attribution-NonCommercial-ShareAlike 4.0 International License
+    (CC BY-NC-SA 4.0)(https://creativecommons.org/licenses/by-nc-sa/4.0/).
+
+Reference:
+    - Tabernik, Domen, Samo Šela, Jure Skvarč, and Danijel Skočaj.
+    "Segmentation-based deep-learning approach for surface-defect detection."
+    Journal of Intelligent Manufacturing 31, no. 3 (2020): 759-776.
+"""
+
+
 from __future__ import annotations
 
+import logging
 from pathlib import Path
-import albumentations as A
 
-from pandas import DataFrame
+import albumentations as A
+import numpy as np
 from imageio import imread
+from pandas import DataFrame
 from sklearn.model_selection import train_test_split
 
-import numpy as np
-
+from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
     InputNormalizationMethod,
@@ -17,6 +36,8 @@ from anomalib.data.utils import (
     ValSplitMode,
     get_transforms,
 )
+
+logger = logging.getLogger(__name__)
 
 
 # Check if a mask shows defects
@@ -32,16 +53,11 @@ def make_kolektor_dataset(
     root: str | Path,
     split: str | Split | None = None,
 ) -> DataFrame:
-
     root = Path(root)
 
     # Get list of images and masks
-    samples_list = [
-        (str(root),) + f.parts[-2:] for f in root.glob(r"**/*") if f.suffix == ".jpg"
-    ]
-    masks_list = [
-        (str(root),) + f.parts[-2:] for f in root.glob(r"**/*") if f.suffix == ".bmp"
-    ]
+    samples_list = [(str(root),) + f.parts[-2:] for f in root.glob(r"**/*") if f.suffix == ".jpg"]
+    masks_list = [(str(root),) + f.parts[-2:] for f in root.glob(r"**/*") if f.suffix == ".bmp"]
 
     if not samples_list:
         raise RuntimeError(f"Found 0 images in {root}")
@@ -63,8 +79,8 @@ def make_kolektor_dataset(
 
     # Use is_good func to configure the label
     samples["label"] = samples["mask_path"].apply(is_good)
-    samples.loc[(samples.label == True), "label"] = "Good"
-    samples.loc[(samples.label == False), "label"] = "Bad"
+    samples.loc[(samples.label is True), "label"] = "Good"
+    samples.loc[(samples.label is False), "label"] = "Bad"
 
     # Add label indexes
     samples.loc[(samples.label == "Good"), "label_index"] = 0
@@ -82,9 +98,7 @@ def make_kolektor_dataset(
     samples.loc[test_samples.index, "split"] = "test"
 
     # Reorder columns
-    samples = samples[
-        ["path", "item", "split", "label", "image_path", "mask_path", "label_index"]
-    ]
+    samples = samples[["path", "item", "split", "label", "image_path", "mask_path", "label_index"]]
 
     # assert that the right mask files are associated with the right test images
     assert (
@@ -125,8 +139,7 @@ class Kolektor(AnomalibDataModule):
         root: Path | str,
         image_size: int | tuple[int, int] | None = None,
         center_crop: int | tuple[int, int] | None = None,
-        normalization: str
-        | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
+        normalization: str | InputNormalizationMethod = InputNormalizationMethod.IMAGENET,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
