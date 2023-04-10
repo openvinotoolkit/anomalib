@@ -1,8 +1,9 @@
 #KMeans clustering algorithm implementation in PyTorch
 
+import torch
+
 class KMeans:
     def __init__(self, n_clusters: int, max_iter:int = 10):
-        
         """
         Initializes the KMeans object.
 
@@ -40,8 +41,7 @@ class KMeans:
             for j in range(self.n_clusters):
                 mask = self.labels_ == j
                 if mask.any():
-                    self.cluster_centers_[j] = X[mask].mean(dim=0)
-                    
+                    self.cluster_centers_[j] = X[mask].mean(dim=0)        
         #thise line returns labels and centoids of the results,          
         return self.labels_, self.cluster_centers_
 
