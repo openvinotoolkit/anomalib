@@ -26,7 +26,7 @@ class TorchInferencer(Inferencer):
 
     Args:
         path (str | Path | AnomalyModule): Path to the model ckpt file or the Anomaly model.
-        device (str | None, optional): Device to use for inference. Options are auto, cpu, cuda. Defaults to "auto".
+        device (str): Device to use for inference. Options are auto, cpu, cuda. Defaults to "auto".
     """
 
     def __init__(
@@ -39,6 +39,7 @@ class TorchInferencer(Inferencer):
         # Load the model weights.
         self.model = self.load_model(path)
         self.metadata = self._load_metadata(path)
+        self.transform = A.from_dict(self.metadata["transform"])
 
     @staticmethod
     def _get_device(device: str) -> torch.device:
@@ -94,8 +95,7 @@ class TorchInferencer(Inferencer):
         Returns:
             Tensor: pre-processed image.
         """
-        transform = A.from_dict(self.metadata["transform"])
-        processed_image = transform(image=image)["image"]
+        processed_image = self.transform(image=image)["image"]
 
         if len(processed_image) == 3:
             processed_image = processed_image.unsqueeze(0)

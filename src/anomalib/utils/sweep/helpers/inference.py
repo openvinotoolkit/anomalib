@@ -34,7 +34,7 @@ def get_torch_throughput(config: DictConfig | ListConfig, model: AnomalyModule, 
     if device == "gpu":
         device = "cuda"
 
-    inferencer = TorchInferencer(config, model.to(device), device=device)
+    inferencer = TorchInferencer(model.to(device), device=device)
     start_time = time.time()
     for image_path in test_dataset.samples.image_path:
         inferencer.predict(image_path)
