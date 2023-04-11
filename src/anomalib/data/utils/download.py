@@ -8,9 +8,11 @@ from __future__ import annotations
 import hashlib
 import io
 import logging
+import os
 import tarfile
 from dataclasses import dataclass
 from pathlib import Path
+from tarfile import TarError, TarFile
 from typing import Iterable
 from urllib.request import urlretrieve
 from zipfile import ZipFile
@@ -245,9 +247,42 @@ def download_and_extract(root: Path, info: DownloadInfo) -> None:
             zip_file.extractall(root)
     elif downloaded_file_path.suffix in (".tar", ".gz", ".xz"):
         with tarfile.open(downloaded_file_path) as tar_file:
-            tar_file.extractall(root)
+            safe_extract(tar_file, root)
     else:
         raise ValueError(f"Unrecognized file format: {downloaded_file_path}")
 
     logger.info("Cleaning up files.")
     (downloaded_file_path).unlink()
+
+
+def is_within_directory(directory: Path, target: Path):
+    """Checks if a target path is located within a given directory.
+
+    Args:
+        directory (Path): path of the parent directory
+        target (Path): path of the target
+    Returns:
+        (bool): True if the target is within the directory, False otherwise
+    """
+    abs_directory = directory.resolve()
+    abs_target = target.resolve()
+
+    # TODO: replace with pathlib is_relative_to after switching to Python 3.10
+    prefix = os.path.commonprefix([abs_directory, abs_target])
+    return prefix == str(abs_directory)
+
+
+def safe_extract(tar_file: TarFile, path: str | Path = "."):
+    """Extract a tar file safely by first checking for attempted path traversal.
+
+    Args:
+        tar_file (TarFile): Tar file to be extracted
+        path (str | Path): path in which the extracted files will be placed
+    """
+    path = Path(path)
+    for member in tar_file.getmembers():
+        member_path = path / member.name
+        if not is_within_directory(path, member_path):
+            raise TarError("Attempted Path Traversal in Tar File")
+
+    tar_file.extractall(path)
