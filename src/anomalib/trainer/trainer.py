@@ -65,7 +65,6 @@ class AnomalibTrainer(Trainer):
             manual_image_threshold=manual_image_threshold,
             manual_pixel_threshold=manual_pixel_threshold,
         )
-
         self.post_processor = PostProcessor(trainer=self)
         self.normalizer = Normalizer(trainer=self, normalization_method=normalization_method)
         self.metrics_manager = MetricsManager(trainer=self, image_metrics=image_metrics, pixel_metrics=pixel_metrics)
