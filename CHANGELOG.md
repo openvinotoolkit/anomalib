@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 - Add `README.md` files to `notebooks` directories and its subdirectories (<https://github.com/openvinotoolkit/anomalib/issues/993>)
+- Add `Kolektor` dataset and datamodel in a new file to the `src/anomalib/data` directory (<https://github.com/openvinotoolkit/anomalib/issues/964>)
 
 ### Changed
 

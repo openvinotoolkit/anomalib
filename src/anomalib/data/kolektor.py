@@ -49,17 +49,16 @@ def is_good(path):
     img_arr = imread(path)
     if np.all(img_arr == 0):
         return 1
-    else:
-        return 0
+    return 0
 
 
-def download_and_extract_kolektor(url: str, root: Path, hash: str):
+def download_and_extract_kolektor(url: str, root: Path, file_hash: str):
     """Download and extract a dataset.
 
     Args:
         url  (Str): Url for directly downloading the dataset
         root (Path): Root directory where the dataset will be stored.
-        hash (Str): MD5 Checksum of the correct zip file
+        file_hash (Str): MD5 Checksum of the correct zip file
     """
     root.mkdir(parents=True, exist_ok=True)
 
@@ -68,12 +67,12 @@ def download_and_extract_kolektor(url: str, root: Path, hash: str):
         logger.info("Existing dataset archive found. Skipping download stage.")
     else:
         logger.info("Downloading the Kolektor dataset archive")
-        urlretrieve(
+        urlretrieve(  # nosec - suppress bandit warning (urls are hardcoded)
             url=url,
             filename=downloaded_file_path,
         )
         logger.info("Checking the hash of the downloaded file.")
-        hash_check(downloaded_file_path, hash)
+        hash_check(downloaded_file_path, file_hash)
 
     logger.info("Extracting dataset into given folder")
     with ZipFile(downloaded_file_path, "r") as zip_file:
