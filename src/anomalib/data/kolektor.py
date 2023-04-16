@@ -21,6 +21,8 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from urllib.request import urlretrieve
+from zipfile import ZipFile
 
 import albumentations as A
 import numpy as np
@@ -37,6 +39,7 @@ from anomalib.data.utils import (
     ValSplitMode,
     get_transforms,
 )
+from anomalib.data.utils.download import hash_check
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +51,36 @@ def is_good(path):
         return 1
     else:
         return 0
+
+
+def download_and_extract_kolektor(url: str, root: Path, hash: str):
+    """Download and extract a dataset.
+
+    Args:
+        url  (Str): Url for directly downloading the dataset
+        root (Path): Root directory where the dataset will be stored.
+        hash (Str): MD5 Checksum of the correct zip file
+    """
+    root.mkdir(parents=True, exist_ok=True)
+
+    downloaded_file_path = Path.joinpath(root, "KolektorSDD.zip")
+    if downloaded_file_path.exists():
+        logger.info("Existing dataset archive found. Skipping download stage.")
+    else:
+        logger.info("Downloading the Kolektor dataset archive")
+        urlretrieve(
+            url=url,
+            filename=downloaded_file_path,
+        )
+        logger.info("Checking the hash of the downloaded file.")
+        hash_check(downloaded_file_path, hash)
+
+    logger.info("Extracting dataset into given folder")
+    with ZipFile(downloaded_file_path, "r") as zip_file:
+        zip_file.extractall(root)
+
+    logger.info("Cleaning up files.")
+    (downloaded_file_path).unlink()
 
 
 def make_kolektor_dataset(
@@ -81,7 +114,7 @@ def make_kolektor_dataset(
     Examples:
         The following example shows how to get training samples from Kolektor Dataset:
 
-        >>> root = Path('./KolektorSDD')
+        >>> root = Path('./KolektorSDD/')
 
         >>> samples = make_kolektor_dataset(root, train_split_ratio=0.8)
         >>> print(samples.head())
@@ -270,3 +303,14 @@ class Kolektor(AnomalibDataModule):
             split=Split.TEST,
             root=root,
         )
+
+    def prepare_data(self) -> None:
+        """Download the dataset if not available."""
+        if (self.root).is_dir():
+            logger.info("Found the dataset.")
+        else:
+            download_and_extract_kolektor(
+                "https://go.vicos.si/kolektorsdd",
+                self.root,
+                "2b094030343c1cd59df02203ac6c57a0",
+            )
