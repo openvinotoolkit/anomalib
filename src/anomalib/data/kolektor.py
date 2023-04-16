@@ -45,9 +45,9 @@ logger = logging.getLogger(__name__)
 def is_good(path):
     img_arr = imread(path)
     if np.all(img_arr == 0):
-        return True
+        return 1
     else:
-        return False
+        return 0
 
 
 def make_kolektor_dataset(
@@ -55,6 +55,47 @@ def make_kolektor_dataset(
     train_split_ratio: float = 0.8,
     split: str | Split | None = None,
 ) -> DataFrame:
+    """Create Kolektor samples by parsing the Koelktor data file structure.
+
+    The files are expected to follow the structure:
+        image files:
+            path/to/dataset/item/image_filename.jpg
+            path/to/dataset/kos01/Part0.jpg
+        mask files:
+            path/to/dataset/item/mask_filename.bmp
+            path/to/dataset/kos01/Part0_label.bmp
+
+    This function creates a dataframe to store the parsed information based on the following format:
+    |---|--------------------|--------|-------|---------|---------------------|--------------------|-------------|
+    |   |    path            | item   | split | label   |  image_path         | mask_path          | label_index |
+    |---|--------------------|--------|-------|---------|---------------------|--------------------|-------------|
+    | 0 |   KolektorSDD      | kos01  | test  |  Bad    | /path/to/image_file | /path/to/mask_file |      1      |
+    |---|--------------------|--------|-------|---------|---------------------|--------------------|-------------|
+
+    Args:
+        root (Path): Path to dataset
+        train_split_ratio (float, optional): Ratio to split good images into train/test
+            Defaults to 0.8 for train.
+        split (str | Split | None, optional): Dataset split (Either train or test). Defaults to None.
+
+    Examples:
+        The following example shows how to get training samples from Kolektor Dataset:
+
+        >>> root = Path('./KolektorSDD')
+
+        >>> samples = make_kolektor_dataset(root, train_split_ratio=0.8)
+        >>> print(samples.head())
+                path      item   split  label        image_path                        mask_path             label_index
+        0    KolektorSDD  kos01  train  Good  KolektorSDD/kos01/Part0.jpg  KolektorSDD/kos01/Part0_label.bmp      0
+        1    KolektorSDD  kos01  train  Good  KolektorSDD/kos01/Part1.jpg  KolektorSDD/kos01/Part1_label.bmp      0
+        2    KolektorSDD  kos01  train  Good  KolektorSDD/kos01/Part2.jpg  KolektorSDD/kos01/Part2_label.bmp      0
+        3    KolektorSDD  kos01   test  Good  KolektorSDD/kos01/Part3.jpg  KolektorSDD/kos01/Part3_label.bmp      0
+        4    KolektorSDD  kos01  train  Good  KolektorSDD/kos01/Part4.jpg  KolektorSDD/kos01/Part4_label.bmp      0
+
+    Returns:
+        DataFrame: an output dataframe containing the samples of the dataset.
+    """
+
     root = Path(root)
 
     # Get list of images and masks
@@ -81,8 +122,8 @@ def make_kolektor_dataset(
 
     # Use is_good func to configure the label
     samples["label"] = samples["mask_path"].apply(is_good)
-    samples.loc[(samples.label is True), "label"] = "Good"
-    samples.loc[(samples.label is False), "label"] = "Bad"
+    samples.loc[(samples.label == 1), "label"] = "Good"
+    samples.loc[(samples.label == 0), "label"] = "Bad"
 
     # Add label indexes
     samples.loc[(samples.label == "Good"), "label_index"] = 0
@@ -119,6 +160,15 @@ def make_kolektor_dataset(
 
 
 class KolektorDataset(AnomalibDataset):
+    """Kolektor dataset class.
+
+    Args:
+        task (TaskType): Task type, ``classification``, ``detection`` or ``segmentation``
+        transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
+        root (Path | str): Path to the root of the dataset
+        split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
+    """
+
     def __init__(
         self,
         task: TaskType,
@@ -136,6 +186,34 @@ class KolektorDataset(AnomalibDataset):
 
 
 class Kolektor(AnomalibDataModule):
+    """Kolektor Datamodule.
+
+    Args:
+        root (Path | str): Path to the root of the dataset
+        image_size (int | tuple[int, int] | None, optional): Size of the input image.
+            Defaults to None.
+        center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped
+            to the provided dimensions.
+        normalize (bool): When True, the images will be normalized to the ImageNet statistics.
+        train_batch_size (int, optional): Training batch size. Defaults to 32.
+        eval_batch_size (int, optional): Test batch size. Defaults to 32.
+        num_workers (int, optional): Number of workers. Defaults to 8.
+        task TaskType): Task type, 'classification', 'detection' or 'segmentation'
+        transform_config_train (str | A.Compose | None, optional): Config for pre-processing
+            during training.
+            Defaults to None.
+        transform_config_val (str | A.Compose | None, optional): Config for pre-processing
+            during validation.
+            Defaults to None.
+        test_split_mode (TestSplitMode): Setting that determines how the testing subset is obtained.
+        test_split_ratio (float): Fraction of images from the train set that will be reserved for testing.
+            Defaults to 0.2
+        val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
+        val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
+            Defaults to 0.5
+        seed (int | None, optional): Seed which may be set to a fixed value for reproducibility.
+    """
+
     def __init__(
         self,
         root: Path | str,
