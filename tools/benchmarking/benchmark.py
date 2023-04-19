@@ -31,13 +31,7 @@ from anomalib.deploy import export
 from anomalib.deploy.export import ExportMode
 from anomalib.models import get_model
 from anomalib.utils.loggers import configure_logger
-from anomalib.utils.sweep import (
-    get_openvino_throughput,
-    get_run_config,
-    get_sweep_callbacks,
-    get_torch_throughput,
-    set_in_nested_config,
-)
+from anomalib.utils.sweep import get_openvino_throughput, get_run_config, get_torch_throughput, set_in_nested_config
 
 warnings.filterwarnings("ignore")
 
@@ -92,9 +86,7 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_met
         datamodule = get_datamodule(model_config)
         model = get_model(model_config)
 
-        callbacks = get_sweep_callbacks(model_config)
-
-        trainer = Trainer(**model_config.trainer, logger=None, callbacks=callbacks)
+        trainer = Trainer(**model_config.trainer, logger=None)
 
         start_time = time.time()
 

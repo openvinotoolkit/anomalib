@@ -12,12 +12,13 @@ import logging
 import warnings
 from argparse import ArgumentParser, Namespace
 
-from pytorch_lightning import Trainer, seed_everything
+from pytorch_lightning import seed_everything
 
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
 from anomalib.data.utils import TestSplitMode
 from anomalib.models import get_model
+from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.callbacks import LoadModelCallback, get_callbacks
 from anomalib.utils.loggers import configure_logger, get_experiment_logger
 
@@ -56,7 +57,15 @@ def train():
     experiment_logger = get_experiment_logger(config)
     callbacks = get_callbacks(config)
 
-    trainer = Trainer(**config.trainer, logger=experiment_logger, callbacks=callbacks)
+    trainer = AnomalibTrainer(
+        **config.trainer,
+        **config.post_processing,
+        logger=experiment_logger,
+        callbacks=callbacks,
+        task_type=config.dataset.task,
+        image_metrics=config.metrics.get("image", None),
+        pixel_metrics=config.metrics.get("pixel", None)
+    )
     logger.info("Training the model.")
     trainer.fit(model=model, datamodule=datamodule)
 

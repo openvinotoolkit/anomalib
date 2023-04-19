@@ -13,7 +13,7 @@ from anomalib.utils.metrics import (
     AnomalyScoreThreshold,
     MinMax,
 )
-from tests.helpers.dummy import DummyModel
+from tests.helpers.models.dummy_model import DummyModel
 
 
 class FakeDataModule(pl.LightningDataModule):

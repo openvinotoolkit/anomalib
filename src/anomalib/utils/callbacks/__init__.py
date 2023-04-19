@@ -17,25 +17,17 @@ from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 
 from anomalib.deploy import ExportMode
 
-from .cdf_normalization import CdfNormalizationCallback
 from .graph import GraphLogger
-from .metrics_configuration import MetricsConfigurationCallback
-from .min_max_normalization import MinMaxNormalizationCallback
 from .model_loader import LoadModelCallback
-from .post_processing_configuration import PostProcessingConfigurationCallback
 from .tiler_configuration import TilerConfigurationCallback
 from .timer import TimerCallback
 from .visualizer import ImageVisualizerCallback, MetricVisualizerCallback
 
 __all__ = [
-    "CdfNormalizationCallback",
     "GraphLogger",
     "ImageVisualizerCallback",
     "LoadModelCallback",
-    "MetricsConfigurationCallback",
     "MetricVisualizerCallback",
-    "MinMaxNormalizationCallback",
-    "PostProcessingConfigurationCallback",
     "TilerConfigurationCallback",
     "TimerCallback",
 ]
@@ -66,6 +58,7 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
         monitor=monitor_metric,
         mode=monitor_mode,
         auto_insert_metric_name=False,
+        save_on_train_epoch_end=False,  # need to set this as validation loop now runs after train loop.
     )
 
     callbacks.extend([checkpoint, TimerCallback()])
@@ -73,41 +66,6 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
     if "resume_from_checkpoint" in config.trainer.keys() and config.trainer.resume_from_checkpoint is not None:
         load_model = LoadModelCallback(config.trainer.resume_from_checkpoint)
         callbacks.append(load_model)
-
-    # Add post-processing configurations to AnomalyModule.
-    image_threshold = (
-        config.metrics.threshold.manual_image if "manual_image" in config.metrics.threshold.keys() else None
-    )
-    pixel_threshold = (
-        config.metrics.threshold.manual_pixel if "manual_pixel" in config.metrics.threshold.keys() else None
-    )
-    post_processing_callback = PostProcessingConfigurationCallback(
-        threshold_method=config.metrics.threshold.method,
-        manual_image_threshold=image_threshold,
-        manual_pixel_threshold=pixel_threshold,
-    )
-    callbacks.append(post_processing_callback)
-
-    # Add metric configuration to the model via MetricsConfigurationCallback
-    metrics_callback = MetricsConfigurationCallback(
-        config.dataset.task,
-        config.metrics.get("image", None),
-        config.metrics.get("pixel", None),
-    )
-    callbacks.append(metrics_callback)
-
-    if "normalization_method" in config.model.keys() and not config.model.normalization_method == "none":
-        if config.model.normalization_method == "cdf":
-            if config.model.name in ("padim", "stfpm"):
-                if "nncf" in config.optimization and config.optimization.nncf.apply:
-                    raise NotImplementedError("CDF Score Normalization is currently not compatible with NNCF.")
-                callbacks.append(CdfNormalizationCallback())
-            else:
-                raise NotImplementedError("Score Normalization is currently supported for PADIM and STFPM only.")
-        elif config.model.normalization_method == "min_max":
-            callbacks.append(MinMaxNormalizationCallback())
-        else:
-            raise ValueError(f"Normalization method not recognized: {config.model.normalization_method}")
 
     add_visualizer_callback(callbacks, config)
 
@@ -125,9 +83,7 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
                 )
             )
         if config.optimization.export_mode is not None:
-            from .export import (  # pylint: disable=import-outside-toplevel
-                ExportCallback,
-            )
+            from .export import ExportCallback  # pylint: disable=import-outside-toplevel
 
             logger.info("Setting model export to %s", config.optimization.export_mode)
             callbacks.append(
@@ -178,7 +134,7 @@ def add_visualizer_callback(callbacks: list[Callback], config: DictConfig | List
             if "local" not in config.project.log_images_to or len(config.project.log_images_to) > 1:
                 config.visualization["log_images"] = True
         config.visualization.task = config.dataset.task
-        config.visualization.inputs_are_normalized = not config.model.normalization_method == "none"
+        config.visualization.inputs_are_normalized = not config.post_processing.normalization_method == "none"
     else:
         config.visualization.task = config.data.init_args.task
         config.visualization.inputs_are_normalized = not config.post_processing.normalization_method == "none"

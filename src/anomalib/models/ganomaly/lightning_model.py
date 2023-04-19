@@ -238,5 +238,6 @@ class GanomalyLightning(Ganomaly):
             monitor=self.hparams.model.early_stopping.metric,
             patience=self.hparams.model.early_stopping.patience,
             mode=self.hparams.model.early_stopping.mode,
+            check_on_train_epoch_end=False,  # check on validation epoch end
         )
         return [early_stopping]

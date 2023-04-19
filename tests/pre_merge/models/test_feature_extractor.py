@@ -12,7 +12,7 @@ from anomalib.models.components.feature_extractors import (
     TorchFXFeatureExtractor,
     dryrun_find_featuremap_dims,
 )
-from tests.helpers.dummy import DummyModel
+from tests.helpers.models.dummy_model import DummyModel
 
 
 class TestFeatureExtractor:
