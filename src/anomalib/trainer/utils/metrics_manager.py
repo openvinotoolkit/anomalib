@@ -56,7 +56,7 @@ class MetricsManager:
         if self.anomaly_module is None:
             raise MisconfigurationException("Anomaly module is not available yet.")
 
-        if not hasattr(self.anomaly_module, "image_metrics"):
+        if not hasattr(self, "image_metrics"):
             image_metric_names = [] if self.image_metric_names is None else self.image_metric_names
 
             pixel_metric_names: list[str]

@@ -27,7 +27,7 @@ class AnomalibTestEpochLoop(EvaluationEpochLoop):
         if outputs is not None:
             self.trainer.post_processor.apply_predictions(outputs)
             self.trainer.post_processor.apply_thresholding(outputs)
-            self.trainer.normalizer.normalize(self.trainer.lightning_module, outputs)
+            self.trainer.normalizer.normalize(outputs)
         return outputs
 
     @lru_cache(1)

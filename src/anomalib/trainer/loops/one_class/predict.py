@@ -60,7 +60,7 @@ class AnomalibPredictionEpochLoop(PredictionEpochLoop):
         # Call custom methods on the predictions
         self.trainer.post_processor.apply_predictions(predictions)
         self.trainer.post_processor.apply_thresholding(predictions)
-        self.trainer.normalizer.normalize(self.trainer.lightning_module, predictions)
+        self.trainer.normalizer.normalize(predictions)
         self.trainer.visualization_manager.visualize_images(predictions, VisualizationStage.VAL)
         # --------------------------------------
 

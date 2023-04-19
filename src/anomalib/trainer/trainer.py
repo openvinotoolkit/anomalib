@@ -13,7 +13,7 @@ from anomalib.post_processing import NormalizationMethod, ThresholdMethod
 from anomalib.trainer.loops.one_class import FitLoop, PredictionLoop, TestLoop, ValidationLoop
 from anomalib.trainer.utils import (
     MetricsManager,
-    Normalizer,
+    NormalizationManager,
     PostProcessor,
     Thresholder,
     VisualizationManager,
@@ -78,7 +78,7 @@ class AnomalibTrainer(Trainer):
             manual_pixel_threshold=manual_pixel_threshold,
         )
         self.post_processor = PostProcessor(trainer=self)
-        self.normalizer = Normalizer(trainer=self, normalization_method=normalization_method)
+        self.normalizer = NormalizationManager(trainer=self, normalization_method=normalization_method)
         self.metrics_manager = MetricsManager(trainer=self, image_metrics=image_metrics, pixel_metrics=pixel_metrics)
         self.visualization_manager = VisualizationManager(
             trainer=self,
