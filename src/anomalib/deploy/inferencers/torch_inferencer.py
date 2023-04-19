@@ -8,19 +8,15 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import albumentations as A
 import cv2
 import numpy as np
 import torch
-from omegaconf import DictConfig, ListConfig
-from torch import Tensor
+from omegaconf import DictConfig
+from torch import Tensor, nn
 
-from anomalib.config import get_configurable_parameters
 from anomalib.data import TaskType
-from anomalib.data.utils import InputNormalizationMethod, get_transforms
 from anomalib.data.utils.boxes import masks_to_boxes
-from anomalib.deploy.export import get_model_metadata
-from anomalib.models import get_model
-from anomalib.models.components import AnomalyModule
 
 from .base_inferencer import Inferencer
 
@@ -29,38 +25,21 @@ class TorchInferencer(Inferencer):
     """PyTorch implementation for the inference.
 
     Args:
-        config (str | Path | DictConfig | ListConfig): Configurable parameters that are used
-            during the training stage.
-        model_source (str | Path | AnomalyModule): Path to the model ckpt file or the Anomaly model.
-        metadata_path (str | Path, optional): Path to metadata file. If none, it tries to load the params
-                from the model state_dict. Defaults to None.
-        device (str | None, optional): Device to use for inference. Options are auto, cpu, cuda. Defaults to "auto".
+        path (str | Path): Path to Torch model weights.
+        device (str): Device to use for inference. Options are auto, cpu, cuda. Defaults to "auto".
     """
 
     def __init__(
         self,
-        config: str | Path | DictConfig | ListConfig,
-        model_source: str | Path | AnomalyModule,
-        metadata_path: str | Path | None = None,
+        path: str | Path,
         device: str = "auto",
     ) -> None:
         self.device = self._get_device(device)
 
-        # Check and load the configuration
-        if isinstance(config, (str, Path)):
-            self.config = get_configurable_parameters(config_path=config)
-        elif isinstance(config, (DictConfig, ListConfig)):
-            self.config = config
-        else:
-            raise ValueError(f"Unknown config type {type(config)}")
-
-        # Check and load the model weights.
-        if isinstance(model_source, AnomalyModule):
-            self.model = model_source
-        else:
-            self.model = self.load_model(model_source)
-
-        self.metadata = self._load_metadata(metadata_path)
+        # Load the model weights.
+        self.model = self.load_model(path)
+        self.metadata = self._load_metadata(path)
+        self.transform = A.from_dict(self.metadata["transform"])
 
     @staticmethod
     def _get_device(device: str) -> torch.device:
@@ -82,24 +61,18 @@ class TorchInferencer(Inferencer):
         return torch.device(device)
 
     def _load_metadata(self, path: str | Path | None = None) -> dict | DictConfig:
-        """Load metadata from file or from model state dict.
+        """Load metadata from file.
 
         Args:
-            path (str | Path | None, optional): Path to metadata file. If none, it tries to load the params
-                from the model state_dict. Defaults to None.
+            path (str | Path): Path to the model pt file.
 
         Returns:
             dict: Dictionary containing the metadata.
         """
-        metadata: dict[str, float | np.ndarray | Tensor] | DictConfig
-        if path is None:
-            # Torch inferencer still reads metadata from the model.
-            metadata = get_model_metadata(self.model)
-        else:
-            metadata = super()._load_metadata(path)
+        metadata = torch.load(path, map_location=self.device)["metadata"] if path else {}
         return metadata
 
-    def load_model(self, path: str | Path) -> AnomalyModule:
+    def load_model(self, path: str | Path) -> nn.Module:
         """Load the PyTorch model.
 
         Args:
@@ -108,8 +81,8 @@ class TorchInferencer(Inferencer):
         Returns:
             (AnomalyModule): PyTorch Lightning model.
         """
-        model = get_model(self.config)
-        model.load_state_dict(torch.load(path, map_location=self.device)["state_dict"])
+
+        model = torch.load(path, map_location=self.device)["model"]
         model.eval()
         return model.to(self.device)
 
@@ -122,19 +95,7 @@ class TorchInferencer(Inferencer):
         Returns:
             Tensor: pre-processed image.
         """
-        transform_config = (
-            self.config.dataset.transform_config.eval if "transform_config" in self.config.dataset.keys() else None
-        )
-
-        image_size = (self.config.dataset.image_size[0], self.config.dataset.image_size[1])
-        center_crop = self.config.dataset.get("center_crop")
-        if center_crop is not None:
-            center_crop = tuple(center_crop)
-        normalization = InputNormalizationMethod(self.config.dataset.normalization)
-        transform = get_transforms(
-            config=transform_config, image_size=image_size, center_crop=center_crop, normalization=normalization
-        )
-        processed_image = transform(image=image)["image"]
+        processed_image = self.transform(image=image)["image"]
 
         if len(processed_image) == 3:
             processed_image = processed_image.unsqueeze(0)
@@ -209,7 +170,7 @@ class TorchInferencer(Inferencer):
             if pred_mask is not None:
                 pred_mask = cv2.resize(pred_mask, (image_width, image_height))
 
-        if self.config.dataset.task == TaskType.DETECTION:
+        if self.metadata["task"] == TaskType.DETECTION:
             pred_boxes = masks_to_boxes(torch.from_numpy(pred_mask))[0][0].numpy()
             box_labels = np.ones(pred_boxes.shape[0])
         else:
