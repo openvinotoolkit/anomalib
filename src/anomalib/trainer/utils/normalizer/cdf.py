@@ -13,10 +13,24 @@ from .base import BaseNormalizer
 
 
 class CDFNormalizer(BaseNormalizer):
+    """CDF normalizer.
+
+    Args:
+        trainer (trainer.AnomalibTrainer): Trainer object.
+    """
+
     def __init__(self, trainer: "trainer.AnomalibTrainer"):
         super().__init__(metric_class=AnomalyScoreDistribution, trainer=trainer)
 
     def update(self, outputs: STEP_OUTPUT):
+        """Update the metric.
+
+        Args:
+            outputs (STEP_OUTPUT): Outputs from the model.
+
+        Raises:
+            ValueError: If no values are found for normalization.
+        """
         self._standardize_batch(outputs)
 
     def _standardize_batch(self, outputs: STEP_OUTPUT) -> None:
@@ -29,6 +43,11 @@ class CDFNormalizer(BaseNormalizer):
             )
 
     def normalize(self, outputs: STEP_OUTPUT):
+        """Normalize the outputs.
+
+        Args:
+            outputs (STEP_OUTPUT): Outputs from the model.
+        """
         outputs["pred_scores"] = cdf.normalize(outputs["pred_scores"], self.anomaly_module.image_threshold.value)
         if "anomaly_maps" in outputs.keys():
             outputs["anomaly_maps"] = cdf.normalize(outputs["anomaly_maps"], self.anomaly_module.pixel_threshold.value)

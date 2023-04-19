@@ -14,10 +14,24 @@ from .base import BaseNormalizer
 
 
 class MinMaxNormalizer(BaseNormalizer):
+    """MinMax normalizer.
+
+    Args:
+        trainer (trainer.AnomalibTrainer): Trainer object.
+    """
+
     def __init__(self, trainer: "trainer.AnomalibTrainer"):
         super().__init__(metric_class=MinMax, trainer=trainer)
 
     def update(self, outputs: STEP_OUTPUT):
+        """Update the metric.
+
+        Args:
+            outputs (STEP_OUTPUT): Outputs from the model.
+
+        Raises:
+            ValueError: If no values are found for normalization.
+        """
         if "anomaly_maps" in outputs:
             self.metric(outputs["anomaly_maps"])
         elif "box_scores" in outputs:
@@ -28,6 +42,11 @@ class MinMaxNormalizer(BaseNormalizer):
             raise ValueError("No values found for normalization, provide anomaly maps, bbox scores, or image scores")
 
     def normalize(self, outputs: STEP_OUTPUT):
+        """Normalize the outputs.
+
+        Args:
+            outputs (STEP_OUTPUT): Outputs from the model.
+        """
         outputs["pred_scores"] = min_max.normalize(
             outputs["pred_scores"], self.anomaly_module.image_threshold.value.cpu(), self.metric.min, self.metric.max
         )
