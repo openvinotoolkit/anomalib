@@ -50,10 +50,6 @@ Following is a guide on how to get started with `anomalib`. For more details, lo
 
 For getting started with a Jupyter Notebook, please refer to the [Notebooks](notebooks) folder of this repository. Additionally, you can refer to a few created by the community:
 
-<a href="https://colab.research.google.com/drive/1K4a4z2iZGBNhWdmt9Aqdld7kTAxBfAmi?usp=sharing" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> by [@bth5](https://github.com/bth5)
-
-<a target="_blank" href="https://www.kaggle.com/code/ipythonx/mvtec-ad-anomaly-detection-with-anomalib-library"><img src="https://kaggle.com/static/images/open-in-kaggle.svg" /></a> by [@innat](https://github.com/innat)
-
 ## PyPI Install
 
 You can get started with `anomalib` by just using pip.
@@ -196,7 +192,6 @@ Example OpenVINO Inference:
 
 ```bash
 python tools/inference/openvino_inference.py \
-    --config src/anomalib/models/padim/config.yaml \
     --weights results/padim/mvtec/bottle/run/openvino/model.bin \
     --metadata results/padim/mvtec/bottle/run/openvino/metadata.json \
     --input datasets/MVTec/bottle/test/broken_large/000.png \
@@ -211,7 +206,6 @@ A quick example:
 
 ```bash
 python tools/inference/gradio_inference.py \
-        --config src/anomalib/models/padim/config.yaml \
         --weights results/padim/mvtec/bottle/run/weights/model.ckpt
 ```
 
@@ -360,3 +354,13 @@ If you use this library and love it, use this to cite it 🤗
       primaryClass={cs.CV}
 }
 ```
+
+# Contributing
+
+For those who would like to contribute to the library, see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+Thank you to all of the people who have already made a contribution - we appreciate your support!
+
+<a href="https://github.com/openvinotoolkit/anomalib/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=openvinotoolkit/anomalib" />
+</a>

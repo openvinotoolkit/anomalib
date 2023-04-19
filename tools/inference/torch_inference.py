@@ -1,6 +1,6 @@
 """Anomalib Torch Inferencer Script.
 
-This script performs torch inference by reading model config files and weights
+This script performs torch inference by reading model weights
 from command line, and show the visualization results.
 """
 
@@ -29,7 +29,6 @@ def get_args() -> Namespace:
         Namespace: List of arguments.
     """
     parser = ArgumentParser()
-    parser.add_argument("--config", type=Path, required=True, help="Path to a config file")
     parser.add_argument("--weights", type=Path, required=True, help="Path to model weights")
     parser.add_argument("--input", type=Path, required=True, help="Path to an image to infer.")
     parser.add_argument("--output", type=Path, required=False, help="Path to save the output image.")
@@ -74,15 +73,13 @@ def infer() -> None:
 
     Show/save the output if path is to an image. If the path is a directory, go over each image in the directory.
     """
-    # Get the command line arguments, and config from the config.yaml file.
-    # This config file is also used for training and contains all the relevant
-    # information regarding the data, model, train and inference details.
+    # Get the command line arguments.
     args = get_args()
 
     torch.set_grad_enabled(False)
 
     # Create the inferencer and visualizer.
-    inferencer = TorchInferencer(config=args.config, model_source=args.weights, device=args.device)
+    inferencer = TorchInferencer(path=args.weights, device=args.device)
     visualizer = Visualizer(mode=args.visualization_mode, task=args.task)
 
     filenames = get_image_filenames(path=args.input)

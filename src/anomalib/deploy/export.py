@@ -25,6 +25,7 @@ class ExportMode(str, Enum):
 
     ONNX = "onnx"
     OPENVINO = "openvino"
+    TORCH = "torch"
 
 
 def get_model_metadata(model: AnomalyModule) -> dict[str, Tensor]:
@@ -59,6 +60,7 @@ def get_metadata(task: TaskType, transform: dict[str, Any], model: AnomalyModule
         task (TaskType): Task type.
         transform (dict[str, Any]): Transform used for the model.
         model (AnomalyModule): Model to export.
+        export_mode (ExportMode): Mode to export the model. Torch, ONNX or OpenVINO.
 
     Returns:
         dict[str, Any]: Metadata for the exported model.
@@ -90,20 +92,44 @@ def export(
         transform (dict[str, Any]): Data transforms (augmentatiions) used for the model.
         input_size (tuple[int, int]): Input size of the model.
         model (AnomalyModule): Anomaly model to export.
-        export_mode (ExportMode): Mode to export the model. ONNX or OpenVINO.
-        export_root (str | Path): Path to exported ONNX/OpenVINO IR.
+        export_mode (ExportMode): Mode to export the model. Torch, ONNX or OpenVINO.
+        export_root (str | Path): Path to exported Torch, ONNX or OpenVINO IR.
     """
-    # Write metadata to json file. The file is written in the same directory as the target model.
-    export_path = Path(export_root) / export_mode.value
+    # Create export directory.
+    export_path = Path(export_root) / "weights" / export_mode.value
     export_path.mkdir(parents=True, exist_ok=True)
-    with (Path(export_path) / "metadata.json").open("w", encoding="utf-8") as metadata_file:
-        metadata = get_metadata(task, transform, model)
-        json.dump(metadata, metadata_file, ensure_ascii=False, indent=4)
 
-    # Export model to onnx and convert to OpenVINO IR if export mode is set to OpenVINO.
-    onnx_path = export_to_onnx(model, input_size, export_path)
-    if export_mode == ExportMode.OPENVINO:
-        export_to_openvino(export_path, onnx_path)
+    # Get metadata.
+    metadata = get_metadata(task, transform, model)
+
+    if export_mode == ExportMode.TORCH:
+        export_to_torch(model, metadata, export_path)
+
+    elif export_mode in (ExportMode.ONNX, ExportMode.OPENVINO):
+        # Write metadata to json file. The file is written in the same directory as the target model.
+        with (Path(export_path) / "metadata.json").open("w", encoding="utf-8") as metadata_file:
+            json.dump(metadata, metadata_file, ensure_ascii=False, indent=4)
+
+        # Export model to onnx and convert to OpenVINO IR if export mode is set to OpenVINO.
+        onnx_path = export_to_onnx(model, input_size, export_path)
+        if export_mode == ExportMode.OPENVINO:
+            export_to_openvino(export_path, onnx_path)
+
+    else:
+        raise ValueError(f"Unknown export mode {export_mode}")
+
+
+def export_to_torch(model: AnomalyModule, metadata: dict[str, Any], export_path: Path) -> None:
+    """Export AnomalibModel to torch.
+
+    Args:
+        model (AnomalyModule): Model to export.
+        export_path (Path): Path to the folder storing the exported model.
+    """
+    torch.save(
+        obj={"model": model.model, "metadata": metadata},
+        f=export_path / "model.pt",
+    )
 
 
 def export_to_onnx(model: AnomalyModule, input_size: tuple[int, int], export_path: Path) -> Path:

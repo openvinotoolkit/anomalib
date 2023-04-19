@@ -10,7 +10,6 @@ API Reference
    data/index
    model/index
    post_processing
-   training
    metrics
    loggers
    sweep

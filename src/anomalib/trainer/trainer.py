@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import logging
 import warnings
-from typing import Optional
 
 from pytorch_lightning import Trainer
 
 from anomalib.data import TaskType
 from anomalib.models.components.base.anomaly_module import AnomalyModule
 from anomalib.post_processing import NormalizationMethod, ThresholdMethod
-from anomalib.trainer.loops import AnomalibFitLoop, AnomalibPredictionLoop, AnomalibTestLoop, AnomalibValidationLoop
+from anomalib.trainer.loops.one_class import FitLoop, PredictionLoop, TestLoop, ValidationLoop
 from anomalib.trainer.utils import (
     MetricsManager,
     Normalizer,
@@ -30,7 +29,6 @@ warnings.filterwarnings(
 
 class AnomalibTrainer(Trainer):
     """Anomalib trainer.
-
 
     Note:
         Refer to PyTorch Lightning's Trainer for a list of parameters for details on other Trainer parameters.
@@ -51,8 +49,8 @@ class AnomalibTrainer(Trainer):
         self,
         threshold_method: ThresholdMethod = ThresholdMethod.ADAPTIVE,
         normalization_method: NormalizationMethod = NormalizationMethod.MIN_MAX,
-        manual_image_threshold: Optional[float] = None,
-        manual_pixel_threshold: Optional[float] = None,
+        manual_image_threshold: float | None = None,
+        manual_pixel_threshold: float | None = None,
         image_metrics: list[str] | None = None,
         pixel_metrics: list[str] | None = None,
         visualization_mode: str = "full",
@@ -66,12 +64,10 @@ class AnomalibTrainer(Trainer):
 
         self.lightning_module: AnomalyModule  # for mypy
 
-        self.fit_loop = AnomalibFitLoop(
-            min_epochs=kwargs.get("min_epochs", 0), max_epochs=kwargs.get("max_epochs", None)
-        )
-        self.validate_loop = AnomalibValidationLoop()
-        self.test_loop = AnomalibTestLoop()
-        self.predict_loop = AnomalibPredictionLoop()
+        self.fit_loop = FitLoop(min_epochs=kwargs.get("min_epochs", 0), max_epochs=kwargs.get("max_epochs", None))
+        self.validate_loop = ValidationLoop()
+        self.test_loop = TestLoop()
+        self.predict_loop = PredictionLoop()
 
         self.task_type = task_type
 
@@ -81,7 +77,6 @@ class AnomalibTrainer(Trainer):
             manual_image_threshold=manual_image_threshold,
             manual_pixel_threshold=manual_pixel_threshold,
         )
-
         self.post_processor = PostProcessor(trainer=self)
         self.normalizer = Normalizer(trainer=self, normalization_method=normalization_method)
         self.metrics_manager = MetricsManager(trainer=self, image_metrics=image_metrics, pixel_metrics=pixel_metrics)

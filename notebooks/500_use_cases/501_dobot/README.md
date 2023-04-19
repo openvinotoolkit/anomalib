@@ -1,35 +1,25 @@
-## Steps to use these notebooks
+# Dobot Use Case Tutorial
 
-These notebooks will help you to use a Dobot robot and Anomalib Library, for showcasing different kind of Industrial solutions
+| Notebook                       |                                                                                                                                                                                                                                                          |     |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
+| Dataset Creation and Inference | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/500_use_cases/501_dobot/501a_dataset_creation_and_Inference_with_a_robotic_arm.ipynb) |
+| Training a Model               | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/500_use_cases/501_dobot/501b_training_a_model_with_cubes_from_a_robotic_arm.ipynb)    |
 
-Step 1: Create an environment to run Anomalib + Dobot DLL using Python version 3.8
+## Installation Instructions
 
-a. For Windows, use the following:
+If you have not installed all required dependencies, follow the [Installation Guide](https://openvinotoolkit.github.io/anomalib/getting_started/installation/index.html).
 
-       python -m venv anomalib_env
-       anomalib_env\Scripts\activate
+## Notebook Contents
 
-b. For Linux and MacOS:
+This notebook demonstrates how NNCF can be used to compress a model trained with Anomalib. The notebook is divided into the following sections:
 
-       python3 -m venv anomalib_env
-       source anomalib_env/bin/activate
+- Train an anomalib model without compression
+- Train a model with NNCF compression
+- Compare the performance of the two models (FP32 vs INT8)
 
-Step 2: Install Anomalib from the GitHub repo and also the OpenVINO requirements (For this post, we will not be using the pip install command):
+Step 1: Then connect your USB Camera and verify it works using a simple camera application. Once it is verified, close the application.
 
-       python –m pip install –upgrade pip wheel setuptools
-       git clone https://github.com/openvinotoolkit/anomalib.git
-       cd anomalib
-       pip install -e ".[full]"
-
-Step 3: Install Jupyter Lab or Jupyter Notebook through: https://jupyter.org/install
-
-       pip install notebook
-       pip install ipykernel
-       pip install ipywidgets
-
-Step 4: Then connect your USB Camera and verify it works using a simple camera application. Once it is verified, close the application.
-
-Step 5 (Optional): If you have the Dobot robot please make the following.
+Step 2 (Optional): If you have the Dobot robot please make the following.
 
 1. Install Dobot requirements (See Dobot documentation here: https://en.dobot.cn/products/education/magician.html).
 2. Check all connections to the Dobot and verify it is working using the Dobot Studio.

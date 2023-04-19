@@ -64,8 +64,10 @@ def test_export_model_callback(dummy_datamodule: MVTec, export_mode):
         trainer.fit(model, datamodule=dummy_datamodule)
 
         if export_mode == ExportMode.OPENVINO:
-            assert os.path.exists(os.path.join(tmp_dir, "openvino/model.bin")), "Failed to generate OpenVINO model"
+            assert os.path.exists(
+                os.path.join(tmp_dir, "weights/openvino/model.bin")
+            ), "Failed to generate OpenVINO model"
         elif export_mode == ExportMode.ONNX:
-            assert os.path.exists(os.path.join(tmp_dir, "onnx/model.onnx")), "Failed to generate ONNX model"
+            assert os.path.exists(os.path.join(tmp_dir, "weights/onnx/model.onnx")), "Failed to generate ONNX model"
         else:
             raise ValueError(f"Unknown export_mode {export_mode}. Supported modes: onnx or openvino.")
