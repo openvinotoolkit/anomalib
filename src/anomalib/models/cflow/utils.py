@@ -11,8 +11,9 @@ import math
 import numpy as np
 import torch
 from FrEIA.framework import SequenceINN
-from FrEIA.modules import AllInOneBlock
 from torch import Tensor, nn
+
+from anomalib.models.components.flow import AllInOneBlock
 
 logger = logging.getLogger(__name__)
 

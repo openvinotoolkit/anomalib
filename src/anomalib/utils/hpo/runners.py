@@ -5,7 +5,10 @@
 
 from __future__ import annotations
 
+import gc
+
 import pytorch_lightning as pl
+import torch
 import wandb
 from comet_ml import Optimizer
 from omegaconf import DictConfig, ListConfig, OmegaConf
@@ -71,6 +74,10 @@ class WandbSweep:
 
         trainer = pl.Trainer(**config.trainer, logger=wandb_logger)
         trainer.fit(model, datamodule=datamodule)
+
+        del model
+        gc.collect()
+        torch.cuda.empty_cache()
 
 
 class CometSweep:
