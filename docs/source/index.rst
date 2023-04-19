@@ -47,7 +47,6 @@ This page lists all the modules, classes and functions available within the
 - data
 - model
 - post_processing
-- training
 - metrics
 - loggers
 - hpo
