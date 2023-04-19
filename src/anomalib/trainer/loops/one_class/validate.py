@@ -26,7 +26,7 @@ class AnomalibValidationEpochLoop(EvaluationEpochLoop):
         if outputs is not None:
             self.trainer.post_processor.apply_predictions(outputs)
             self.trainer.thresholder.update(outputs)
-            self.trainer.normalizer.update_metrics(outputs)
+            self.trainer.normalizer.update(outputs)
         return outputs
 
     @lru_cache(1)

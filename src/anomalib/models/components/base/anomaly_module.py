@@ -7,13 +7,14 @@ from __future__ import annotations
 
 import logging
 from abc import ABC
-from typing import Any, OrderedDict
+from typing import Any, List, OrderedDict
 
 import pytorch_lightning as pl
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor, nn
+from torchmetrics import Metric
 
-from anomalib.utils.metrics import get_normalization_metrics, get_thresholding_metrics
+from anomalib.utils.metrics import AnomalyScoreDistribution, AnomalyScoreThreshold, MinMax
 
 logger = logging.getLogger(__name__)
 
@@ -83,24 +84,48 @@ class AnomalyModule(pl.LightningModule, ABC):
 
         return self.predict_step(batch, batch_idx)
 
-    def _load_extra_keys(self, state_dict: OrderedDict[str, Tensor]) -> None:
-        """Adds thresholds and normalization metrics if they are in the state dict.
+    def _load_normalization_metrics(self, state_dict: OrderedDict[str, Tensor]) -> None:
+        """Loads the normalization class from the state dict.
 
         Args:
             state_dict (OrderedDict[str, Tensor]): State dict of the model.
         """
-        for key in state_dict.keys():
-            if key.startswith("normalization") and not hasattr(self, "normalization_metrics"):
-                self.normalization_metrics = get_normalization_metrics(key)
-            elif key.startswith("image_threshold") and not hasattr(self, "image_threshold"):
-                self.image_threshold = get_thresholding_metrics()
-            elif key.startswith("pixel_threshold") and not hasattr(self, "pixel_threshold"):
-                self.pixel_threshold = get_thresholding_metrics()
+        # get set of normalization keys in state dict
+        normalization_keys = set(
+            [key.split(".")[-1] for key in filter(lambda key: "normalization" in key, state_dict.keys())]
+        )
+        if normalization_keys:
+            # get the corresponding class
+            metrics: List[Metric] = [MinMax(), AnomalyScoreDistribution()]
+            # WARN: One potential problem with this method is that if two metrics have the same keys then the first one
+            # will be selected. This is not a problem for now since MinMax and AnomalyScoreDistribution have different
+            # keys.
+            metric_mapping = {metric: set(metric.state_dict().keys()) for metric in metrics}
+            for metric, metric_keys in metric_mapping.items():
+                if metric_keys == normalization_keys:
+                    self.normalization_metrics = metric.cpu()
+                    break
+
+    def _load_thresholding_metrics(self, state_dict: OrderedDict[str, Tensor]) -> None:
+        """Loads the thresholding class from the state dict.
+
+        Args:
+            state_dict (OrderedDict[str, Tensor]): State dict of the model.
+        """
+        # currently only adaptive thresholding is supported
+        thresholding_keys = set(
+            [key.split(".")[0] for key in filter(lambda key: "threshold" in key, state_dict.keys())]
+        )
+        if "image_threshold" in thresholding_keys:
+            self.image_threshold = AnomalyScoreThreshold().cpu()
+        if "pixel_threshold" in thresholding_keys:
+            self.pixel_threshold = AnomalyScoreThreshold().cpu()
 
     def load_state_dict(self, state_dict: OrderedDict[str, Tensor], strict: bool = True):
         """Load state dict from checkpoint.
         Ensures that normalization and thresholding attributes is properly setup before model is loaded.
         """
         # Used to load missing normalization and threshold parameters
-        self._load_extra_keys(state_dict)
+        self._load_normalization_metrics(state_dict)
+        self._load_thresholding_metrics(state_dict)
         return super().load_state_dict(state_dict, strict=strict)

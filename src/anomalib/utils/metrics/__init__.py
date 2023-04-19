@@ -11,9 +11,6 @@ from typing import Any
 
 import torchmetrics
 from omegaconf import DictConfig, ListConfig
-from torchmetrics import Metric
-
-from anomalib.post_processing.normalization import NormalizationMethod
 
 from .anomaly_score_distribution import AnomalyScoreDistribution
 from .anomaly_score_threshold import AnomalyScoreThreshold
@@ -178,48 +175,3 @@ def create_metric_collection(
         return metric_collection_from_dicts(metrics, prefix)
 
     raise ValueError(f"metrics must be a list or a dict, found {type(metrics)}")
-
-
-def get_normalization_metrics(normalization_method: NormalizationMethod | str) -> Metric | None:
-    """Get the normalization metrics for a given normalization method.
-
-    Args:
-        normalization_method (NormalizationMethod| str): Normalization method. Either get by NormalizationMethod or by
-            key as string.
-
-    Returns:
-        Metric: Normalization metric.
-    """
-    normalization_metrics: Metric | None = None
-    if normalization_method == NormalizationMethod.NONE:
-        normalization_metrics = None
-    if normalization_method == NormalizationMethod.MIN_MAX:
-        normalization_metrics = MinMax().cpu()
-    elif normalization_method == NormalizationMethod.CDF:
-        # TODO CDF only works for padim and stfpm. Check condition
-        # TODO throw error if nncf optimization is enabled.
-        normalization_metrics = AnomalyScoreDistribution().cpu()
-
-    # Use keys from state_dict to check if the normalization method is supported.
-    elif normalization_method.split(".")[-1] in MinMax().state_dict().keys():
-        normalization_metrics = MinMax()
-    elif normalization_method.split(".")[-1] in AnomalyScoreDistribution().state_dict().keys():
-        normalization_metrics = AnomalyScoreDistribution()
-    else:
-        raise ValueError(f"Normalization method for key/NormalizationMethod {normalization_method} is not supported.")
-
-    return normalization_metrics
-
-
-def get_thresholding_metrics() -> Metric:
-    """Get the thresholding metrics for a given thresholding method.
-
-    Returns:
-        Metric: Thresholding metric.
-    """
-    # TODO currently AnomalyScoreThreshold stores the threshold value for both manual and adaptive threshold.
-    # Separate this into two different metrics.
-    thresholding_metrics = AnomalyScoreThreshold().cpu()
-    # TODO raise value error if thresholding method is not supported.
-
-    return thresholding_metrics
