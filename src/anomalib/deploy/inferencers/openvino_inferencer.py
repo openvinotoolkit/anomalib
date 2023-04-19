@@ -12,8 +12,9 @@ from typing import Any
 import albumentations as A
 import cv2
 import numpy as np
-from anomalib.data import TaskType
 from omegaconf import DictConfig
+
+from anomalib.data import TaskType
 
 from .base_inferencer import Inferencer
 

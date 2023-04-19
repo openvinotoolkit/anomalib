@@ -5,7 +5,6 @@ import pytest
 import torch
 from torchvision.models import ResNet18_Weights, resnet18
 from torchvision.models.efficientnet import EfficientNet_B5_Weights
-from torchvision.models.resnet import ResNet18_Weights
 
 from anomalib.models.components.feature_extractors import (
     BackboneParams,

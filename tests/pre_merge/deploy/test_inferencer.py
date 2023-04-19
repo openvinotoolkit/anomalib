@@ -101,11 +101,15 @@ def test_torch_inference(
     Args:
         model_name (str): Name of the model
     """
-    model_config, model = generate_results_dir(model_name=model_name, dataset_path=path, task=task, category=category)
-    model.eval()
+    model_config, model = generate_results_dir(
+        model_name=model_name, dataset_path=path, task=task, category=category, export_mode="torch"
+    )
 
     # Test torch inferencer
-    torch_inferencer = TorchInferencer(model_config, model, device="cpu")
+    torch_inferencer = TorchInferencer(
+        path=Path(model_config.project.path) / "weights" / "torch" / "model.pt",
+        device="cpu",
+    )
     torch_dataloader = MockImageLoader(model_config.dataset.image_size, total_count=1)
     with torch.no_grad():
         for image in torch_dataloader():
@@ -142,7 +146,9 @@ def test_openvino_inference(
     export_path = Path(model_config.project.path)
 
     # Test OpenVINO inferencer
-    openvino_inferencer = OpenVINOInferencer(export_path / "openvino/model.xml", export_path / "openvino/metadata.json")
+    openvino_inferencer = OpenVINOInferencer(
+        export_path / "weights/openvino/model.xml", export_path / "weights/openvino/metadata.json"
+    )
     openvino_dataloader = MockImageLoader(model_config.dataset.image_size, total_count=1)
     for image in openvino_dataloader():
         prediction = openvino_inferencer.predict(image)

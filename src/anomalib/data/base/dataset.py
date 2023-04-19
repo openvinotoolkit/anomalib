@@ -45,7 +45,7 @@ class AnomalibDataset(Dataset, ABC):
         super().__init__()
         self.task = task
         self.transform = transform
-        self._samples: DataFrame = None
+        self._samples: DataFrame
 
     def __len__(self) -> int:
         """Get length of the dataset."""
@@ -66,7 +66,7 @@ class AnomalibDataset(Dataset, ABC):
     @property
     def is_setup(self) -> bool:
         """Checks if setup() been called."""
-        return isinstance(self._samples, DataFrame)
+        return hasattr(self, "_samples")
 
     @property
     def samples(self) -> DataFrame:
