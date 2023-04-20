@@ -42,6 +42,6 @@ class CDFNormalizer(BaseNormalizer):
         Args:
             outputs (STEP_OUTPUT): Outputs from the model.
         """
-        outputs["pred_scores"] = cdf.normalize(outputs["pred_scores"], self.anomaly_module.image_threshold.value)
+        outputs["pred_scores"] = cdf.normalize(outputs["pred_scores"], self.trainer.image_threshold.value)
         if "anomaly_maps" in outputs.keys():
-            outputs["anomaly_maps"] = cdf.normalize(outputs["anomaly_maps"], self.anomaly_module.pixel_threshold.value)
+            outputs["anomaly_maps"] = cdf.normalize(outputs["anomaly_maps"], self.trainer.pixel_threshold.value)

@@ -49,19 +49,17 @@ class MinMaxNormalizer(BaseNormalizer):
             outputs (STEP_OUTPUT): Outputs from the model.
         """
         outputs["pred_scores"] = min_max.normalize(
-            outputs["pred_scores"], self.anomaly_module.image_threshold.value.cpu(), self.metric.min, self.metric.max
+            outputs["pred_scores"], self.trainer.image_threshold.value.cpu(), self.metric.min, self.metric.max
         )
         if "anomaly_maps" in outputs:
             outputs["anomaly_maps"] = min_max.normalize(
                 outputs["anomaly_maps"],
-                self.anomaly_module.pixel_threshold.value.cpu(),
+                self.trainer.pixel_threshold.value.cpu(),
                 self.metric.min,
                 self.metric.max,
             )
         if "box_scores" in outputs:
             outputs["box_scores"] = [
-                min_max.normalize(
-                    scores, self.anomaly_module.pixel_threshold.value.cpu(), self.metric.min, self.metric.max
-                )
+                min_max.normalize(scores, self.trainer.pixel_threshold.value.cpu(), self.metric.min, self.metric.max)
                 for scores in outputs["box_scores"]
             ]

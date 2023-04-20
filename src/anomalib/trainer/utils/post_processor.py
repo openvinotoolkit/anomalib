@@ -10,7 +10,6 @@ from torch import Tensor
 
 import anomalib.trainer as trainer  # to avoid circular import
 from anomalib.data.utils import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
-from anomalib.models import AnomalyModule
 
 
 class PostProcessor:
@@ -18,15 +17,6 @@ class PostProcessor:
 
     def __init__(self, trainer: trainer.AnomalibTrainer) -> None:
         self.trainer = trainer
-
-    @property
-    def anomaly_module(self) -> AnomalyModule:
-        """Returns anomaly module.
-
-        We can't directly access the anomaly module in ``__init__`` because it is not available till it is passed to the
-        trainer.
-        """
-        return self.trainer.lightning_module
 
     @staticmethod
     def apply_predictions(outputs: STEP_OUTPUT) -> None:
@@ -70,9 +60,9 @@ class PostProcessor:
     def apply_thresholding(self, outputs: STEP_OUTPUT):
         """Computes masks, box labels after applying thresholding."""
         if outputs is not None and isinstance(outputs, dict):
-            outputs["pred_labels"] = outputs["pred_scores"] >= self.anomaly_module.image_threshold.value.cpu()
+            outputs["pred_labels"] = outputs["pred_scores"] >= self.trainer.image_threshold.value.cpu()
             if "anomaly_maps" in outputs.keys():
-                outputs["pred_masks"] = outputs["anomaly_maps"] >= self.anomaly_module.pixel_threshold.value.cpu()
+                outputs["pred_masks"] = outputs["anomaly_maps"] >= self.trainer.pixel_threshold.value.cpu()
                 if "pred_boxes" not in outputs.keys():
                     outputs["pred_boxes"], outputs["box_scores"] = masks_to_boxes(
                         outputs["pred_masks"], outputs["anomaly_maps"]
@@ -81,8 +71,6 @@ class PostProcessor:
             # apply thresholding to boxes
             if "box_scores" in outputs and "box_labels" not in outputs:
                 # apply threshold to assign normal/anomalous label to boxes
-                is_anomalous = [
-                    scores > self.anomaly_module.pixel_threshold.value.cpu() for scores in outputs["box_scores"]
-                ]
+                is_anomalous = [scores > self.trainer.pixel_threshold.value.cpu() for scores in outputs["box_scores"]]
                 outputs["box_labels"] = [labels.int() for labels in is_anomalous]
         return outputs
