@@ -40,7 +40,7 @@ class NormalizationManager:
             normalization_method = MinMaxNormalizer(self.trainer)
         elif self.normalization_method == NormalizationMethod.CDF:
             normalization_method = CDFNormalizer(self.trainer)
-        elif self.normalization_method == NormalizationMethod.NONE:
+        elif self.normalization_method != NormalizationMethod.NONE:
             raise ValueError(f"Normalization method {self.normalization_method} is not supported.")
         return normalization_method
 
