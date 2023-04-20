@@ -59,7 +59,8 @@ class AnomalibPredictionEpochLoop(PredictionEpochLoop):
         # Call custom methods on the predictions
         self.trainer.post_processor.apply_predictions(predictions)
         self.trainer.post_processor.apply_thresholding(predictions)
-        self.trainer.normalizer.normalize(predictions)
+        if self.trainer.normalizer:
+            self.trainer.normalizer.normalize(predictions)
         # --------------------------------------
 
         self.trainer._call_callback_hooks("on_predict_batch_end", predictions, batch, batch_idx, dataloader_idx)

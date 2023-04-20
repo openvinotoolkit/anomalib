@@ -6,5 +6,6 @@
 from .base import BaseNormalizer
 from .cdf import CDFNormalizer
 from .min_max import MinMaxNormalizer
+from .utils import get_normalizer
 
-__all__ = ["BaseNormalizer", "CDFNormalizer", "MinMaxNormalizer"]
+__all__ = ["get_normalizer", "BaseNormalizer", "CDFNormalizer", "MinMaxNormalizer"]

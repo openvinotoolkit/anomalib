@@ -21,10 +21,11 @@ class MinMaxNormalizer(BaseNormalizer):
     """
 
     def __init__(self, trainer: "trainer.AnomalibTrainer"):
-        super().__init__(metric_class=MinMax, trainer=trainer)
+        self.metric_class = MinMax
+        super().__init__(trainer=trainer)
 
     def update(self, outputs: STEP_OUTPUT):
-        """Update the metric.
+        """Update the min and max values based on the batch.
 
         Args:
             outputs (STEP_OUTPUT): Outputs from the model.

@@ -16,7 +16,6 @@ from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 import anomalib.trainer as core
 from anomalib.data import TaskType
 from anomalib.models.components import AnomalyModule
-from anomalib.post_processing import NormalizationMethod
 from anomalib.utils.metrics import create_metric_collection
 from anomalib.utils.metrics.collection import AnomalibMetricCollection
 
@@ -83,7 +82,7 @@ class MetricsManager:
 
         if (
             self.trainer.state.stage in (TrainerFn.TESTING, TrainerFn.PREDICTING)
-            and self.trainer.normalizer.normalization_method != NormalizationMethod.NONE
+            and self.trainer.normalizer is not None
         ):
             image_metrics_threshold = 0.5
             pixel_metrics_threshold = 0.5

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABC
-from typing import Any, List, OrderedDict
+from typing import Any, OrderedDict
 
 import pytorch_lightning as pl
 from pytorch_lightning.utilities.types import STEP_OUTPUT
@@ -96,7 +96,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         )
         if normalization_keys:
             # get the corresponding class
-            metrics: List[Metric] = [MinMax(), AnomalyScoreDistribution()]
+            metrics: list[Metric] = [MinMax(), AnomalyScoreDistribution()]
             # WARN: One potential problem with this method is that if two metrics have the same keys then the first one
             # will be selected. This is not a problem for now since MinMax and AnomalyScoreDistribution have different
             # keys.

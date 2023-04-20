@@ -17,12 +17,11 @@ class BaseNormalizer(ABC):
     """Base class for normalizers.
 
     Args:
-        metric_class (Metric): Metric class to be used for normalization.
         trainer (trainer.AnomalibTrainer): Trainer object.
     """
 
-    def __init__(self, metric_class: Type[Metric], trainer: "trainer.AnomalibTrainer"):
-        self.metric_class = metric_class
+    def __init__(self, trainer: "trainer.AnomalibTrainer"):
+        self.metric_class: Type[Metric]
         self.trainer = trainer
 
     @property
@@ -42,7 +41,7 @@ class BaseNormalizer(ABC):
         return self.trainer.lightning_module.normalization_metrics.cpu()
 
     def update(self, outputs: STEP_OUTPUT):
-        raise NotImplementedError("update this in the child class.")
+        raise NotImplementedError("update not implemented in the child class.")
 
     def normalize(self, outputs: STEP_OUTPUT):
         raise NotImplementedError("normalize not implemented in the child class.")
