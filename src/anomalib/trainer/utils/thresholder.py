@@ -10,7 +10,7 @@ from warnings import warn
 import torch
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 
-import anomalib.trainer as core
+import anomalib.trainer as trainer  # to avoid circular import
 from anomalib.data import TaskType
 from anomalib.models import AnomalyModule
 from anomalib.post_processing import ThresholdMethod
@@ -23,7 +23,7 @@ class Thresholder:
     Used in AnomalibTrainer.
 
     Args:
-        trainer (core.AnomalibTrainer): Trainer object
+        trainer (trainer.AnomalibTrainer): Trainer object
         threshold_method (ThresholdMethod): Thresholding method to use. Defaults to ``ThresholdMethod.ADAPTIVE``.
         manual_image_threshold (Optional[float]): Image threshold in case manual threshold is used. Defaults to None.
         manual_pixel_threshold (Optional[float]) = Pixel threshold in case manual threshold is used. Defaults to None.
@@ -31,7 +31,7 @@ class Thresholder:
 
     def __init__(
         self,
-        trainer: core.AnomalibTrainer,
+        trainer: trainer.AnomalibTrainer,
         threshold_method: ThresholdMethod = ThresholdMethod.ADAPTIVE,
         manual_image_threshold: float | None = None,
         manual_pixel_threshold: float | None = None,

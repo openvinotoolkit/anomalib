@@ -10,7 +10,7 @@ from lightning_fabric.utilities import move_data_to_device
 from pytorch_lightning.loops.dataloader.prediction_loop import PredictionLoop
 from pytorch_lightning.loops.epoch.prediction_epoch_loop import PredictionEpochLoop
 
-import anomalib.trainer as core
+import anomalib.trainer as trainer  # to avoid circular import
 
 
 class AnomalibPredictionEpochLoop(PredictionEpochLoop):
@@ -18,7 +18,7 @@ class AnomalibPredictionEpochLoop(PredictionEpochLoop):
 
     def __init__(self) -> None:
         super().__init__()
-        self.trainer: core.AnomalibTrainer
+        self.trainer: trainer.AnomalibTrainer
 
     def _predict_step(self, batch: Any, batch_idx: int, dataloader_idx: int) -> None:
         """Overrides the predict step of the base class.
@@ -77,7 +77,7 @@ class AnomalibPredictionLoop(PredictionLoop):
 
     def __init__(self) -> None:
         super().__init__()
-        self.trainer: core.AnomalibTrainer
+        self.trainer: trainer.AnomalibTrainer
         self.epoch_loop = AnomalibPredictionEpochLoop()
 
     def on_run_start(self) -> None:

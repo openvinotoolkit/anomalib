@@ -5,15 +5,17 @@ This is responsible for setting up the normalization method.
 
 from __future__ import annotations
 
+import anomalib.trainer as trainer  # to avoid circular import
 from anomalib.post_processing import NormalizationMethod
-from anomalib.trainer import AnomalibTrainer
 
 from .base import BaseNormalizer
 from .cdf import CDFNormalizer
 from .min_max import MinMaxNormalizer
 
 
-def get_normalizer(normalization_method: NormalizationMethod, trainer: AnomalibTrainer) -> BaseNormalizer | None:
+def get_normalizer(
+    normalization_method: NormalizationMethod, trainer: trainer.AnomalibTrainer
+) -> BaseNormalizer | None:
     """Returns the normalizer class based on the normalization method.
 
     Args:

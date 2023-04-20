@@ -8,7 +8,7 @@ from __future__ import annotations
 from pytorch_lightning.loops.epoch.training_epoch_loop import TrainingEpochLoop
 from pytorch_lightning.loops.fit_loop import FitLoop
 
-import anomalib.trainer as core
+import anomalib.trainer as trainer  # to avoid circular import
 
 from .validate import AnomalibValidationLoop
 
@@ -16,7 +16,7 @@ from .validate import AnomalibValidationLoop
 class AnomalibTrainingEpochLoop(TrainingEpochLoop):
     def __init__(self) -> None:
         super().__init__()
-        self.trainer: core.AnomalibTrainer
+        self.trainer: trainer.AnomalibTrainer
         self.val_loop = AnomalibValidationLoop()
 
     def _should_check_val_epoch(self) -> bool:
@@ -37,7 +37,7 @@ class AnomalibFitLoop(FitLoop):
 
     def __init__(self, min_epochs: int | None, max_epochs: int | None) -> None:
         super().__init__(min_epochs=min_epochs, max_epochs=max_epochs)
-        self.trainer: core.AnomalibTrainer
+        self.trainer: trainer.AnomalibTrainer
         self.epoch_loop = AnomalibTrainingEpochLoop()
 
     def on_advance_end(self) -> None:

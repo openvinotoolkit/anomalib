@@ -13,7 +13,7 @@ from pytorch_lightning.trainer.states import TrainerFn
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
 from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 
-import anomalib.trainer as core
+import anomalib.trainer as trainer  # to avoid circular import
 from anomalib.data import TaskType
 from anomalib.models.components import AnomalyModule
 from anomalib.utils.metrics import create_metric_collection
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 class MetricsManager:
     def __init__(
         self,
-        trainer: core.AnomalibTrainer,
+        trainer: trainer.AnomalibTrainer,
         image_metrics: list[str] | None = None,
         pixel_metrics: list[str] | None = None,
     ):
