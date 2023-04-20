@@ -66,7 +66,7 @@ class AiVad(AnomalyModule):
         return None
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
-        features_per_batch = self.model(batch["image"])
+        features_per_batch = self.model(batch)
 
         for features, video_path in zip(features_per_batch, batch["video_path"]):
             self.model.density_estimator.update(features, video_path)
@@ -89,43 +89,43 @@ class AiVad(AnomalyModule):
 
         return batch
 
-    def validation_epoch_end(self, outputs) -> None:
-        # smoothen frame-level predictions using 1d Gaussian filter
-        sigma = 3
-        kernel_size = 5
+    # def validation_epoch_end(self, outputs) -> None:
+    #     # smoothen frame-level predictions using 1d Gaussian filter
+    #     sigma = 3
+    #     kernel_size = 5
 
-        # collect in dict
-        anomaly_score_dict = {}
-        for batch in outputs:
-            # group by video id
-            for pred_score, vid_id, frames in zip(batch["pred_scores"], batch["video_path"], batch["frames"]):
-                if vid_id not in anomaly_score_dict:
-                    anomaly_score_dict[vid_id] = {"pred_scores": [], "frames": []}
-                anomaly_score_dict[vid_id]["pred_scores"].append(pred_score)
-                anomaly_score_dict[vid_id]["frames"].append(frames)
+    #     # collect in dict
+    #     anomaly_score_dict = {}
+    #     for batch in outputs:
+    #         # group by video id
+    #         for pred_score, vid_id, frames in zip(batch["pred_scores"], batch["video_path"], batch["frames"]):
+    #             if vid_id not in anomaly_score_dict:
+    #                 anomaly_score_dict[vid_id] = {"pred_scores": [], "frames": []}
+    #             anomaly_score_dict[vid_id]["pred_scores"].append(pred_score)
+    #             anomaly_score_dict[vid_id]["frames"].append(frames)
 
-        for vid_id, score_dict in anomaly_score_dict.items():
-            score_dict["pred_scores"] = torch.stack(score_dict["pred_scores"])
-            scores = score_dict["pred_scores"]
-            # TODO: re-order based on frames before filtering
-            if len(scores) >= kernel_size - 2:  # minimum length depends on kernel size
-                scores = gaussian_blur(scores.reshape(1, 1, -1), kernel_size=[kernel_size, 1], sigma=sigma)
-            score_dict["filtered_scores"] = scores.reshape(-1)
-            score_dict["frames"] = torch.stack(score_dict["frames"])
+    #     for vid_id, score_dict in anomaly_score_dict.items():
+    #         score_dict["pred_scores"] = torch.stack(score_dict["pred_scores"])
+    #         scores = score_dict["pred_scores"]
+    #         # TODO: re-order based on frames before filtering
+    #         if len(scores) >= kernel_size - 2:  # minimum length depends on kernel size
+    #             scores = gaussian_blur(scores.reshape(1, 1, -1), kernel_size=[kernel_size, 1], sigma=sigma)
+    #         score_dict["filtered_scores"] = scores.reshape(-1)
+    #         score_dict["frames"] = torch.stack(score_dict["frames"])
 
-        for batch in outputs:
-            new_batch_scores = torch.zeros_like(batch["pred_scores"])
-            for idx, (pred_score, vid_id, frame) in enumerate(
-                zip(batch["pred_scores"], batch["video_path"], batch["frames"])
-            ):
-                filtered_frames = anomaly_score_dict[vid_id]["frames"]
-                filtered_scores = anomaly_score_dict[vid_id]["filtered_scores"]
+    #     for batch in outputs:
+    #         new_batch_scores = torch.zeros_like(batch["pred_scores"])
+    #         for idx, (pred_score, vid_id, frame) in enumerate(
+    #             zip(batch["pred_scores"], batch["video_path"], batch["frames"])
+    #         ):
+    #             filtered_frames = anomaly_score_dict[vid_id]["frames"]
+    #             filtered_scores = anomaly_score_dict[vid_id]["filtered_scores"]
 
-                new_batch_scores[idx] = filtered_scores[filtered_frames == frame]
+    #             new_batch_scores[idx] = filtered_scores[filtered_frames == frame]
 
-            batch["pred_scores"] = new_batch_scores
+    #         batch["pred_scores"] = new_batch_scores
 
-        return outputs
+    #     return outputs
 
 
 class AiVadLightning(AiVad):
