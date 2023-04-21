@@ -10,7 +10,7 @@ from lightning_fabric.utilities import move_data_to_device
 from pytorch_lightning.loops.dataloader.prediction_loop import PredictionLoop
 from pytorch_lightning.loops.epoch.prediction_epoch_loop import PredictionEpochLoop
 
-import anomalib.trainer as trainer  # to avoid circular import
+from anomalib import trainer
 
 
 class AnomalibPredictionEpochLoop(PredictionEpochLoop):

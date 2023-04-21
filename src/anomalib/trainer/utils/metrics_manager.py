@@ -13,7 +13,7 @@ from pytorch_lightning.trainer.states import TrainerFn
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
 from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 
-import anomalib.trainer as trainer  # to avoid circular import
+from anomalib import trainer
 from anomalib.data import TaskType
 from anomalib.utils.metrics import create_metric_collection
 from anomalib.utils.metrics.collection import AnomalibMetricCollection

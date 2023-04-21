@@ -10,7 +10,7 @@ from warnings import warn
 import torch
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 
-import anomalib.trainer as trainer  # to avoid circular import
+from anomalib import trainer
 from anomalib.data import TaskType
 from anomalib.post_processing import ThresholdMethod
 from anomalib.utils.metrics import AnomalyScoreThreshold

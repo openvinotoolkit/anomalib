@@ -34,6 +34,15 @@ class BaseNormalizer(ABC):
         # Every time metric is called, it is moved to the cpu
         return self._metric.cpu()
 
+    @metric.setter
+    def metric(self, metric: Metric) -> None:
+        """Sets the metric.
+
+        Args:
+            metric (Metric): Metric to set.
+        """
+        self._metric = metric
+
     def update(self, outputs: STEP_OUTPUT):
         raise NotImplementedError("update not implemented in the child class.")
 

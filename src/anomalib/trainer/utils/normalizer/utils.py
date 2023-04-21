@@ -5,7 +5,7 @@ This is responsible for setting up the normalization method.
 
 from __future__ import annotations
 
-import anomalib.trainer as trainer  # to avoid circular import
+from anomalib import trainer
 from anomalib.post_processing import NormalizationMethod
 
 from .base import BaseNormalizer

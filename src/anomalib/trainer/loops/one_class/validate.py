@@ -12,7 +12,7 @@ from pytorch_lightning.loops.dataloader.evaluation_loop import EvaluationLoop
 from pytorch_lightning.loops.epoch.evaluation_epoch_loop import EvaluationEpochLoop
 from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 
-import anomalib.trainer as trainer  # to avoid circular import
+from anomalib import trainer
 
 
 class AnomalibValidationEpochLoop(EvaluationEpochLoop):

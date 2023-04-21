@@ -9,7 +9,7 @@ from __future__ import annotations
 from lightning_fabric.utilities.types import _PATH
 from pytorch_lightning.trainer.connectors import checkpoint_connector
 
-import anomalib.trainer as trainer  # to avoid circular imports
+from anomalib import trainer
 
 
 class CheckpointConnector(checkpoint_connector.CheckpointConnector):
@@ -38,4 +38,5 @@ class CheckpointConnector(checkpoint_connector.CheckpointConnector):
         if "pixel_threshold" in checkpoint.keys():
             self.trainer.pixel_threshold = checkpoint["pixel_threshold"]
         if "normalization_metric" in checkpoint.keys():
-            self.trainer.normalizer._metric = checkpoint["normalization_metric"]
+            assert self.trainer.normalizer is not None, "Normalizer not initialized while the checkpoint has a metric."
+            self.trainer.normalizer.metric = checkpoint["normalization_metric"]

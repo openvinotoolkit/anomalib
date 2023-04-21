@@ -8,7 +8,7 @@ import torch
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
-import anomalib.trainer as trainer  # to avoid circular import
+from anomalib import trainer
 from anomalib.data.utils import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
 
 
