@@ -5,7 +5,7 @@
 
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 
-import anomalib.trainer as trainer
+from anomalib import trainer
 from anomalib.post_processing.normalization import cdf
 from anomalib.utils.metrics import AnomalyScoreDistribution
 

@@ -10,7 +10,7 @@ from typing import Type
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torchmetrics import Metric
 
-import anomalib.trainer as trainer
+from anomalib import trainer
 
 
 class BaseNormalizer(ABC):
@@ -20,7 +20,7 @@ class BaseNormalizer(ABC):
         trainer (trainer.AnomalibTrainer): Trainer object.
     """
 
-    def __init__(self, trainer: "trainer.AnomalibTrainer"):
+    def __init__(self, trainer: trainer.AnomalibTrainer):
         self.metric_class: Type[Metric]
         self.trainer = trainer
         self._metric: Metric | None = None
