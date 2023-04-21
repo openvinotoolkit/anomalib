@@ -9,7 +9,7 @@ dataset:
   image_size: [240, 360] # RKDE region- and feature extractor apply custom resizing
   normalization: none # RKDE region- and feature extractor apply custom normalization
   train_batch_size: 1
-  eval_batch_size: 8
+  eval_batch_size: 1
   num_workers: 8
   transform_config:
     train: null
@@ -28,10 +28,10 @@ dataset:
 
 model:
   name: ai_vad
-  box_score_thresh: 0.8
+  box_score_thresh: 0.7
   n_velocity_bins: 1
-  use_velocity_features: False
-  use_pose_features: False
+  use_velocity_features: True
+  use_pose_features: True
   use_appearance_features: True
   n_components_velocity: 2
   n_neighbors_pose: 1

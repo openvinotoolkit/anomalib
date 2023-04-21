@@ -5,6 +5,8 @@ import torch
 from torch import nn, Tensor
 from torchvision.ops import roi_align
 from torchvision.transforms import Normalize
+from torchvision.models.detection import keypointrcnn_resnet50_fpn, KeypointRCNN_ResNet50_FPN_Weights
+from torchvision.models.detection.roi_heads import keypointrcnn_inference
 
 from enum import Enum
 
@@ -21,6 +23,7 @@ class FeatureExtractor(nn.Module):
 
         self.appearance_extractor = AppearanceExtractor()
         self.velocity_extractor = VelocityExtractor(n_bins=n_velocity_bins)
+        self.keypoint_extractor = KeypointExtractor()
         self.pose_extractor = PoseExtractor()
 
     def forward(self, rgb_batch, flow_batch, regions):
@@ -35,7 +38,9 @@ class FeatureExtractor(nn.Module):
 
         velocity_features = self.velocity_extractor(flow_batch, boxes)
         appearance_features = self.appearance_extractor(rgb_batch, boxes, batch_size)
-        pose_features = self.pose_extractor(regions)
+        # pose_features = self.pose_extractor(regions)
+        keypoint_detections = self.keypoint_extractor(rgb_batch, boxes_list)
+        pose_features = self.pose_extractor(keypoint_detections)
 
         # convert back to list
         velocity_features = [velocity_features[indices == i] for i in range(batch_size)]
@@ -94,15 +99,50 @@ class VelocityExtractor(nn.Module):
         return torch.stack(velocity_hictograms).to(flows.device)
 
 
+class KeypointExtractor(nn.Module):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        weights = KeypointRCNN_ResNet50_FPN_Weights.DEFAULT
+        model = keypointrcnn_resnet50_fpn(weights=weights)
+        self.model = model
+        self.transform = model.transform
+        self.backbone = model.backbone
+        self.roi_heads = model.roi_heads
+
+    def forward(self, batch, boxes):
+        # preds = self.model(batch)
+
+        images, _ = self.transform(batch)
+        features = self.backbone(images.tensors)
+
+        image_sizes = [b.shape[-2:] for b in batch]
+        scales = [Tensor(new) / Tensor([orig[0], orig[1]]) for orig, new in zip(image_sizes, images.image_sizes)]
+
+        boxes = [box * scale.repeat(2).to(box.device) for box, scale in zip(boxes, scales)]
+
+        detections, _ = self.roi_heads(features, boxes, images.image_sizes)
+
+        keypoint_features = self.roi_heads.keypoint_roi_pool(features, boxes, images.image_sizes)
+        keypoint_features = self.roi_heads.keypoint_head(keypoint_features)
+        keypoint_logits = self.roi_heads.keypoint_predictor(keypoint_features)
+        keypoints_probs, _kp_scores = keypointrcnn_inference(keypoint_logits, boxes)
+
+        detections = self.transform.postprocess(
+            [{"keypoints": kp, "boxes": bx} for kp, bx in zip(keypoints_probs, boxes)], images.image_sizes, image_sizes
+        )
+        return detections
+
+
 class PoseExtractor(nn.Module):
     def __init__(self) -> None:
         super().__init__()
 
-    def forward(self, regions):
+    def forward(self, keypoint_detections):
         poses = []
-        for region in regions:
-            boxes = region["boxes"].unsqueeze(1)
-            keypoints = region["keypoints"]
+        for detection in keypoint_detections:
+            boxes = detection["boxes"].unsqueeze(1)
+            keypoints = detection["keypoints"]
             normalized_keypoints = (keypoints[..., :2] - boxes[..., :2]) / (boxes[..., 2:] - boxes[..., :2])
             poses.append(normalized_keypoints.reshape(normalized_keypoints.shape[0], -1))
         return poses
