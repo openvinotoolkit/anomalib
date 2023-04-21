@@ -23,7 +23,8 @@ from anomalib.data.task_type import TaskType
 from anomalib.data.utils import masks_to_boxes, read_image
 
 _EXPECTED_COLUMNS_CLASSIFICATION = ["image_path", "split"]
-_EXPECTED_COLUMNS_SEGMENTATION = _EXPECTED_COLUMNS_CLASSIFICATION + ["mask_path"]
+_EXPECTED_COLUMNS_SEGMENTATION = _EXPECTED_COLUMNS_CLASSIFICATION + \
+    ["mask_path"]
 _EXPECTED_COLUMNS_PERTASK = {
     "classification": _EXPECTED_COLUMNS_CLASSIFICATION,
     "segmentation": _EXPECTED_COLUMNS_SEGMENTATION,
@@ -58,7 +59,8 @@ class AnomalibDataset(Dataset, ABC):
             indices (Sequence[int]): Indices at which the dataset is to be subsampled.
             inplace (bool): When true, the subsampling will be performed on the instance itself.
         """
-        assert len(set(indices)) == len(indices), "No duplicates allowed in indices."
+        assert len(set(indices)) == len(
+            indices), "No duplicates allowed in indices."
         dataset = self if inplace else copy.deepcopy(self)
         dataset.samples = self.samples.iloc[indices].reset_index(drop=True)
         return dataset
@@ -83,12 +85,14 @@ class AnomalibDataset(Dataset, ABC):
             samples (DataFrame): DataFrame with new samples.
         """
         # validate the passed samples by checking the
-        assert isinstance(samples, DataFrame), f"samples must be a pandas.DataFrame, found {type(samples)}"
+        assert isinstance(
+            samples, DataFrame), f"samples must be a pandas.DataFrame, found {type(samples)}"
         expected_columns = _EXPECTED_COLUMNS_PERTASK[self.task]
         assert all(
             col in samples.columns for col in expected_columns
         ), f"samples must have (at least) columns {expected_columns}, found {samples.columns}"
-        assert samples["image_path"].apply(lambda p: Path(p).exists()).all(), "missing file path(s) in samples"
+        assert samples["image_path"].apply(lambda p: Path(
+            p).exists()).all(), "missing file path(s) in samples"
 
         self._samples = samples.sort_values(by="image_path", ignore_index=True)
 
@@ -120,28 +124,28 @@ class AnomalibDataset(Dataset, ABC):
         image = read_image(image_path)
         item = dict(image_path=image_path, label=label_index)
 
-        if self.task == TaskType.CLASSIFICATION:
+        if self.task == TaskType.SEGMENTATION:
             transformed = self.transform(image=image)
             item["image"] = transformed["image"]
-        elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
-            # Only Anomalous (1) images have masks in anomaly datasets
-            # Therefore, create empty mask for Normal (0) images.
+        # elif self.task in (TaskType.DETECTION, TaskType.SEGMENTATION):
+        #     # Only Anomalous (1) images have masks in anomaly datasets
+        #     # Therefore, create empty mask for Normal (0) images.
 
-            if label_index == 0:
-                mask = np.zeros(shape=image.shape[:2])
-            else:
-                mask = cv2.imread(mask_path, flags=0) / 255.0
+        #     if label_index == 0:
+        #         mask = np.zeros(shape=image.shape[:2])
+        #     else:
+        #         mask = cv2.imread(mask_path, flags=0) / 255.0
 
-            transformed = self.transform(image=image, mask=mask)
+        #     transformed = self.transform(image=image, mask=mask)
 
-            item["image"] = transformed["image"]
-            item["mask_path"] = mask_path
-            item["mask"] = transformed["mask"]
+        #     item["image"] = transformed["image"]
+        #     item["mask_path"] = mask_path
+        #     item["mask"] = transformed["mask"]
 
-            if self.task == TaskType.DETECTION:
-                # create boxes from masks for detection task
-                boxes, _ = masks_to_boxes(item["mask"])
-                item["boxes"] = boxes[0]
+        #     if self.task == TaskType.DETECTION:
+        #         # create boxes from masks for detection task
+        #         boxes, _ = masks_to_boxes(item["mask"])
+        #         item["boxes"] = boxes[0]
         else:
             raise ValueError(f"Unknown task type: {self.task}")
 
@@ -149,11 +153,13 @@ class AnomalibDataset(Dataset, ABC):
 
     def __add__(self, other_dataset: AnomalibDataset) -> AnomalibDataset:
         """Concatenate this dataset with another dataset."""
-        assert isinstance(other_dataset, self.__class__), "Cannot concatenate datasets that are not of the same type."
+        assert isinstance(
+            other_dataset, self.__class__), "Cannot concatenate datasets that are not of the same type."
         assert self.is_setup, "Cannot concatenate uninitialized datasets. Call setup first."
         assert other_dataset.is_setup, "Cannot concatenate uninitialized datasets. Call setup first."
         dataset = copy.deepcopy(self)
-        dataset.samples = pd.concat([self.samples, other_dataset.samples], ignore_index=True)
+        dataset.samples = pd.concat(
+            [self.samples, other_dataset.samples], ignore_index=True)
         return dataset
 
     def setup(self) -> None:
