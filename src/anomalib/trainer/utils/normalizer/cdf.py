@@ -5,7 +5,7 @@
 
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 
-import anomalib.trainer as trainer
+from anomalib import trainer
 from anomalib.post_processing.normalization import cdf
 from anomalib.utils.metrics import AnomalyScoreDistribution
 
@@ -20,21 +20,15 @@ class CDFNormalizer(BaseNormalizer):
     """
 
     def __init__(self, trainer: "trainer.AnomalibTrainer"):
-        super().__init__(metric_class=AnomalyScoreDistribution, trainer=trainer)
+        self.metric_class = AnomalyScoreDistribution
+        super().__init__(trainer=trainer)
 
     def update(self, outputs: STEP_OUTPUT):
-        """Update the metric.
+        """Applies CDF standardization to the batch.
 
         Args:
             outputs (STEP_OUTPUT): Outputs from the model.
-
-        Raises:
-            ValueError: If no values are found for normalization.
         """
-        self._standardize_batch(outputs)
-
-    def _standardize_batch(self, outputs: STEP_OUTPUT) -> None:
-        """Only used by CDF normalization"""
         stats = self.metric.to(outputs["pred_scores"].device)
         outputs["pred_scores"] = cdf.standardize(outputs["pred_scores"], stats.image_mean, stats.image_std)
         if "anomaly_maps" in outputs.keys():
@@ -48,6 +42,6 @@ class CDFNormalizer(BaseNormalizer):
         Args:
             outputs (STEP_OUTPUT): Outputs from the model.
         """
-        outputs["pred_scores"] = cdf.normalize(outputs["pred_scores"], self.anomaly_module.image_threshold.value)
+        outputs["pred_scores"] = cdf.normalize(outputs["pred_scores"], self.trainer.image_threshold.value)
         if "anomaly_maps" in outputs.keys():
-            outputs["anomaly_maps"] = cdf.normalize(outputs["anomaly_maps"], self.anomaly_module.pixel_threshold.value)
+            outputs["anomaly_maps"] = cdf.normalize(outputs["anomaly_maps"], self.trainer.pixel_threshold.value)

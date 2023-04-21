@@ -1,5 +1,9 @@
 """Implements custom trainer for Anomalib."""
 
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+
 from __future__ import annotations
 
 import logging
@@ -12,13 +16,15 @@ from anomalib.models.components.base.anomaly_module import AnomalyModule
 from anomalib.post_processing import NormalizationMethod, ThresholdMethod
 from anomalib.trainer.loops.one_class import FitLoop, PredictionLoop, TestLoop, ValidationLoop
 from anomalib.trainer.utils import (
+    CheckpointConnector,
     MetricsManager,
-    NormalizationManager,
     PostProcessor,
     Thresholder,
     VisualizationManager,
     VisualizationStage,
+    get_normalizer,
 )
+from anomalib.utils.metrics import AnomalyScoreThreshold
 
 log = logging.getLogger(__name__)
 # warnings to ignore in trainer
@@ -61,6 +67,7 @@ class AnomalibTrainer(Trainer):
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
+        self._checkpoint_connector = CheckpointConnector(self, kwargs.get("resume_from_checkpoint", None))
 
         self.lightning_module: AnomalyModule  # for mypy
 
@@ -70,6 +77,9 @@ class AnomalibTrainer(Trainer):
         self.predict_loop = PredictionLoop()
 
         self.task_type = task_type
+        # these are part of the trainer as they are used in the metrics-manager, post-processor and thresholder
+        self.image_threshold = AnomalyScoreThreshold().cpu()
+        self.pixel_threshold = AnomalyScoreThreshold().cpu()
 
         self.thresholder = Thresholder(
             trainer=self,
@@ -78,7 +88,7 @@ class AnomalibTrainer(Trainer):
             manual_pixel_threshold=manual_pixel_threshold,
         )
         self.post_processor = PostProcessor(trainer=self)
-        self.normalizer = NormalizationManager(trainer=self, normalization_method=normalization_method)
+        self.normalizer = get_normalizer(trainer=self, normalization_method=normalization_method)
         self.metrics_manager = MetricsManager(trainer=self, image_metrics=image_metrics, pixel_metrics=pixel_metrics)
         self.visualization_manager = VisualizationManager(
             trainer=self,

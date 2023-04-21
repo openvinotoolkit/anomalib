@@ -12,14 +12,14 @@ from pytorch_lightning.loops.dataloader.evaluation_loop import EvaluationLoop
 from pytorch_lightning.loops.epoch.evaluation_epoch_loop import EvaluationEpochLoop
 from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 
-import anomalib.trainer as core
+from anomalib import trainer
 from anomalib.trainer.utils import VisualizationStage
 
 
 class AnomalibValidationEpochLoop(EvaluationEpochLoop):
     def __init__(self):
         super().__init__()
-        self.trainer: core.AnomalibTrainer
+        self.trainer: trainer.AnomalibTrainer
 
     def _evaluation_step_end(self, *args, **kwargs) -> STEP_OUTPUT | None:
         """Post-processes outputs and updates normalization metrics after the end of one validation step end."""
@@ -27,7 +27,8 @@ class AnomalibValidationEpochLoop(EvaluationEpochLoop):
         if outputs is not None:
             self.trainer.post_processor.apply_predictions(outputs)
             self.trainer.thresholder.update(outputs)
-            self.trainer.normalizer.update(outputs)
+            if self.trainer.normalizer:
+                self.trainer.normalizer.update(outputs)
         return outputs
 
     @lru_cache(1)
@@ -44,7 +45,7 @@ class AnomalibValidationEpochLoop(EvaluationEpochLoop):
 class AnomalibValidationLoop(EvaluationLoop):
     def __init__(self) -> None:
         super().__init__()
-        self.trainer: core.AnomalibTrainer
+        self.trainer: trainer.AnomalibTrainer
         self.epoch_loop = AnomalibValidationEpochLoop()
 
     def on_run_start(self, *args: Any, **kwargs: Any) -> None:

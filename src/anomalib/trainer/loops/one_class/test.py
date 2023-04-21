@@ -12,14 +12,14 @@ from pytorch_lightning.loops.dataloader.evaluation_loop import EvaluationLoop
 from pytorch_lightning.loops.epoch.evaluation_epoch_loop import EvaluationEpochLoop
 from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 
-import anomalib.trainer as core
+from anomalib import trainer
 from anomalib.trainer.utils import VisualizationStage
 
 
 class AnomalibTestEpochLoop(EvaluationEpochLoop):
     def __init__(self) -> None:
         super().__init__()
-        self.trainer: core.AnomalibTrainer
+        self.trainer: trainer.AnomalibTrainer
 
     def _evaluation_step_end(self, *args, **kwargs: Any) -> STEP_OUTPUT | None:
         """Computes prediction scores, bounding boxes, and applies thresholding before normalization."""
@@ -27,7 +27,8 @@ class AnomalibTestEpochLoop(EvaluationEpochLoop):
         if outputs is not None:
             self.trainer.post_processor.apply_predictions(outputs)
             self.trainer.post_processor.apply_thresholding(outputs)
-            self.trainer.normalizer.normalize(outputs)
+            if self.trainer.normalizer:
+                self.trainer.normalizer.normalize(outputs)
         return outputs
 
     @lru_cache(1)
@@ -44,7 +45,7 @@ class AnomalibTestEpochLoop(EvaluationEpochLoop):
 class AnomalibTestLoop(EvaluationLoop):
     def __init__(self) -> None:
         super().__init__()
-        self.trainer: "core.AnomalibTrainer"
+        self.trainer: trainer.AnomalibTrainer
         self.epoch_loop = AnomalibTestEpochLoop()
 
     def on_run_start(self, *args, **kwargs) -> None:

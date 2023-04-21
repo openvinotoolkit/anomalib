@@ -57,7 +57,7 @@ def test():
         image_metrics=config.metrics.get("image", None),
         pixel_metrics=config.metrics.get("pixel", None)
     )
-    trainer.test(model=model, datamodule=datamodule)
+    trainer.test(model=model, datamodule=datamodule, ckpt_path=args.weight_file)
 
 
 if __name__ == "__main__":
