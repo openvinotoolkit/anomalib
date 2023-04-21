@@ -4,7 +4,7 @@ import torch
 from torch import nn
 
 from anomalib.models.ai_vad.flow import FlowExtractor
-from anomalib.models.ai_vad.regions import RegionExtractorOrig
+from anomalib.models.ai_vad.regions import RegionExtractorOrig, RegionExtractor
 from anomalib.models.ai_vad.features import FeatureExtractor
 
 from anomalib.models.ai_vad.density import CombinedDensityEstimator
@@ -29,8 +29,8 @@ class AiVadModel(nn.Module):
         # initialize flow extractor
         self.flow_extractor = FlowExtractor()
         # initialize region extractor
-        # self.region_extractor = RegionExtractor(box_score_thresh=box_score_thresh)
-        self.region_extractor = RegionExtractorOrig()
+        self.region_extractor = RegionExtractor(box_score_thresh=box_score_thresh)
+        self.region_extractor_orig = RegionExtractorOrig()
         # initialize feature extractor
         self.feature_extractor = FeatureExtractor(n_velocity_bins=n_velocity_bins)
 
@@ -59,10 +59,11 @@ class AiVadModel(nn.Module):
         # 2. extract flows and regions
         with torch.no_grad():
             flows = self.flow_extractor(first_frame, last_frame)
-            regions = self.region_extractor(video_path, frames, train=self.training)
+            # regions = self.region_extractor(last_frame)
+            regions = self.region_extractor_orig(first_frame, video_path, frames, train=self.training)
 
         # 3. extract pose, appearance and velocity features
-        features_per_batch = self.feature_extractor(last_frame, flows, regions)
+        features_per_batch = self.feature_extractor(first_frame, flows, regions)
 
         if self.training:
             return features_per_batch

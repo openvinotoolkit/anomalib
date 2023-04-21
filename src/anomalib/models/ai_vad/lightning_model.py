@@ -10,15 +10,12 @@ from __future__ import annotations
 
 import logging
 
-from typing import List
-import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.ai_vad.torch_model import AiVadModel
-from torchvision.transforms.functional import gaussian_blur
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +72,7 @@ class AiVad(AnomalyModule):
         self.model.density_estimator.fit()
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        boxes, anomaly_scores = self.model(batch["image"])
+        boxes, anomaly_scores = self.model(batch)
         batch["pred_boxes"] = [box.int() for box in boxes]
         batch["box_scores"] = [score.to(self.device) for score in anomaly_scores]
 
@@ -88,44 +85,6 @@ class AiVad(AnomalyModule):
         batch["frames"] = batch["frames"][:, -1]
 
         return batch
-
-    # def validation_epoch_end(self, outputs) -> None:
-    #     # smoothen frame-level predictions using 1d Gaussian filter
-    #     sigma = 3
-    #     kernel_size = 5
-
-    #     # collect in dict
-    #     anomaly_score_dict = {}
-    #     for batch in outputs:
-    #         # group by video id
-    #         for pred_score, vid_id, frames in zip(batch["pred_scores"], batch["video_path"], batch["frames"]):
-    #             if vid_id not in anomaly_score_dict:
-    #                 anomaly_score_dict[vid_id] = {"pred_scores": [], "frames": []}
-    #             anomaly_score_dict[vid_id]["pred_scores"].append(pred_score)
-    #             anomaly_score_dict[vid_id]["frames"].append(frames)
-
-    #     for vid_id, score_dict in anomaly_score_dict.items():
-    #         score_dict["pred_scores"] = torch.stack(score_dict["pred_scores"])
-    #         scores = score_dict["pred_scores"]
-    #         # TODO: re-order based on frames before filtering
-    #         if len(scores) >= kernel_size - 2:  # minimum length depends on kernel size
-    #             scores = gaussian_blur(scores.reshape(1, 1, -1), kernel_size=[kernel_size, 1], sigma=sigma)
-    #         score_dict["filtered_scores"] = scores.reshape(-1)
-    #         score_dict["frames"] = torch.stack(score_dict["frames"])
-
-    #     for batch in outputs:
-    #         new_batch_scores = torch.zeros_like(batch["pred_scores"])
-    #         for idx, (pred_score, vid_id, frame) in enumerate(
-    #             zip(batch["pred_scores"], batch["video_path"], batch["frames"])
-    #         ):
-    #             filtered_frames = anomaly_score_dict[vid_id]["frames"]
-    #             filtered_scores = anomaly_score_dict[vid_id]["filtered_scores"]
-
-    #             new_batch_scores[idx] = filtered_scores[filtered_frames == frame]
-
-    #         batch["pred_scores"] = new_batch_scores
-
-    #     return outputs
 
 
 class AiVadLightning(AiVad):
