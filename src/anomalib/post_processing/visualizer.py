@@ -88,7 +88,7 @@ class Visualizer:
         Returns:
             Generator that yields a display-ready visualization for each image.
         """
-        batch_size, _num_channels, height, width = batch["image"].size()
+        batch_size, height, width, _num_channels = batch["original_image"].size()
         for i in range(batch_size):
             if "image_path" in batch:
                 image = read_image(path=batch["image_path"][i], image_size=(height, width))

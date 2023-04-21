@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC
+from enum import Enum
 from typing import Callable
 
 import albumentations as A
@@ -17,6 +18,18 @@ from anomalib.data.utils import ValSplitMode, masks_to_boxes
 from anomalib.data.utils.video import ClipsIndexer
 
 
+class VideoTargetFrame(str, Enum):
+    """Target frame for a video-clip.
+
+    Used in multi-frame models to determine which frame's ground truth information will be used.
+    """
+
+    FIRST = "first"
+    LAST = "last"
+    MID = "mid"
+    ALL = "all"
+
+
 class AnomalibVideoDataset(AnomalibDataset, ABC):
     """Base video anomalib dataset class.
 
@@ -28,7 +41,12 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
     """
 
     def __init__(
-        self, task: TaskType, transform: A.Compose, clip_length_in_frames: int, frames_between_clips: int
+        self,
+        task: TaskType,
+        transform: A.Compose,
+        clip_length_in_frames: int,
+        frames_between_clips: int,
+        target_frame=VideoTargetFrame.LAST,
     ) -> None:
         super().__init__(task, transform)
 
@@ -38,6 +56,8 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
 
         self.indexer: ClipsIndexer | None = None
         self.indexer_cls: Callable | None = None
+
+        self.target_frame = target_frame
 
     def __len__(self) -> int:
         """Get length of the dataset."""
@@ -68,6 +88,28 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
             frames_between_clips=self.frames_between_clips,
         )
 
+    def _select_targets(self, item):
+        if self.target_frame == VideoTargetFrame.FIRST:
+            idx = 0
+        elif self.target_frame == VideoTargetFrame.LAST:
+            idx = -1
+        elif self.target_frame == VideoTargetFrame.MID:
+            idx = int(self.clip_length_in_frames / 2)
+        else:
+            raise ValueError(f"Unknown video target frame: {self.target_frame}")
+
+        if item.get("mask") is not None:
+            item["mask"] = item["mask"][idx, ...]
+        if item.get("boxes") is not None:
+            item["boxes"] = item["boxes"][idx]
+        if item.get("label") is not None:
+            item["label"] = item["label"][idx]
+        if item.get("original_image") is not None:
+            item["original_image"] = item["original_image"][idx]
+        if item.get("frames") is not None:
+            item["frames"] = item["frames"][idx]
+        return item
+
     def __getitem__(self, index: int) -> dict[str, str | Tensor]:
         """Return mask, clip and file system information."""
         assert isinstance(self.indexer, ClipsIndexer)
@@ -92,6 +134,10 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
             item["image"] = torch.stack(
                 [self.transform(image=frame.numpy())["image"] for frame in item["image"]]
             ).squeeze(0)
+
+        # include only target frame in gt
+        if self.clip_length_in_frames > 1 and self.target_frame != VideoTargetFrame.ALL:
+            item = self._select_targets(item)
 
         if item["mask"] is None:
             item.pop("mask")
