@@ -38,6 +38,7 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         clip_length_in_frames (int): Number of video frames in each clip.
         frames_between_clips (int): Number of frames between each consecutive video clip.
+        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
     """
 
     def __init__(
