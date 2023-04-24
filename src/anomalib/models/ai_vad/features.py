@@ -92,7 +92,6 @@ class VelocityExtractor(nn.Module):
             mask = histogram_counts != 0
             final_histogram[mask] = histogram_mag[mask] / histogram_counts[mask]
             velocity_hictograms.append(final_histogram)
-            # velocity_hictograms.append(histogram_mag)
 
         return torch.stack(velocity_hictograms).to(flows.device)
 
@@ -127,12 +126,10 @@ class PoseExtractor(nn.Module):
 
         boxes = [box * scale.repeat(2).to(box.device) for box, scale in zip(boxes, scales)]
 
-        detections, _ = self.roi_heads(features, boxes, images.image_sizes)
-
         keypoint_features = self.roi_heads.keypoint_roi_pool(features, boxes, images.image_sizes)
         keypoint_features = self.roi_heads.keypoint_head(keypoint_features)
         keypoint_logits = self.roi_heads.keypoint_predictor(keypoint_features)
-        keypoints_probs, _kp_scores = keypointrcnn_inference(keypoint_logits, boxes)
+        keypoints_probs, _ = keypointrcnn_inference(keypoint_logits, boxes)
 
         keypoint_detections = self.transform.postprocess(
             [{"keypoints": kp, "boxes": bx} for kp, bx in zip(keypoints_probs, boxes)], images.image_sizes, image_sizes
