@@ -18,6 +18,7 @@ from pandas import DataFrame
 from torch import Tensor
 
 from anomalib.data.base import AnomalibVideoDataModule, AnomalibVideoDataset
+from anomalib.data.base.video import VideoTargetFrame
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
     DownloadInfo,
@@ -166,8 +167,9 @@ class UCSDpedDataset(AnomalibVideoDataset):
         split: Split,
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
+        target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
     ) -> None:
-        super().__init__(task, transform, clip_length_in_frames, frames_between_clips)
+        super().__init__(task, transform, clip_length_in_frames, frames_between_clips, target_frame)
 
         self.root_category = Path(root) / category
         self.split = split
@@ -215,6 +217,7 @@ class UCSDped(AnomalibVideoDataModule):
         category: str,
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
+        target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
         task: TaskType = TaskType.SEGMENTATION,
         image_size: int | tuple[int, int] | None = None,
         center_crop: int | tuple[int, int] | None = None,
@@ -258,6 +261,7 @@ class UCSDped(AnomalibVideoDataModule):
             transform=transform_train,
             clip_length_in_frames=clip_length_in_frames,
             frames_between_clips=frames_between_clips,
+            target_frame=target_frame,
             root=root,
             category=category,
             split=Split.TRAIN,
@@ -268,6 +272,7 @@ class UCSDped(AnomalibVideoDataModule):
             transform=transform_eval,
             clip_length_in_frames=clip_length_in_frames,
             frames_between_clips=frames_between_clips,
+            target_frame=target_frame,
             root=root,
             category=category,
             split=Split.TEST,
