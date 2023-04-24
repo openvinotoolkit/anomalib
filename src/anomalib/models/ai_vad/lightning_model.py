@@ -71,7 +71,7 @@ class AiVad(AnomalyModule):
         Args:
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
         """
-        features_per_batch = self.model(batch)
+        features_per_batch = self.model(batch["image"])
 
         for features, video_path in zip(features_per_batch, batch["video_path"]):
             self.model.density_estimator.update(features, video_path)
@@ -94,7 +94,7 @@ class AiVad(AnomalyModule):
         Returns:
             Batch dictionary with added boxes and box scores.
         """
-        boxes, anomaly_scores = self.model(batch)
+        boxes, anomaly_scores = self.model(batch["image"])
         batch["pred_boxes"] = [box.int() for box in boxes]
         batch["box_scores"] = [score.to(self.device) for score in anomaly_scores]
 
