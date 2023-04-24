@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import gc
 
-import pytorch_lightning as pl
 import torch
 import wandb
 from comet_ml import Optimizer
@@ -17,6 +16,7 @@ from pytorch_lightning.loggers import CometLogger, WandbLogger
 from anomalib.config import update_input_size_config
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
+from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.sweep import flatten_sweep_params, set_in_nested_config
 
 from .config import flatten_hpo_params
@@ -72,7 +72,14 @@ class WandbSweep:
         # Disable saving checkpoints as all checkpoints from the sweep will get uploaded
         config.trainer.enable_checkpointing = False
 
-        trainer = pl.Trainer(**config.trainer, logger=wandb_logger)
+        trainer = AnomalibTrainer(
+            **config.trainer,
+            **config.post_processing,
+            logger=wandb_logger,
+            task_type=config.dataset.task,
+            image_metrics=config.metrics.get("image", None),
+            pixel_metrics=config.metrics.get("pixel", None),
+        )
         trainer.fit(model, datamodule=datamodule)
 
         del model
@@ -129,5 +136,12 @@ class CometSweep:
             # Disable saving checkpoints as all checkpoints from the sweep will get uploaded
             config.trainer.enable_checkpointing = False
 
-            trainer = pl.Trainer(**config.trainer, logger=comet_logger)
+            trainer = AnomalibTrainer(
+                **config.trainer,
+                **config.post_processing,
+                logger=comet_logger,
+                task_type=config.dataset.task,
+                image_metrics=config.metrics.get("image", None),
+                pixel_metrics=config.metrics.get("pixel", None),
+            )
             trainer.fit(model, datamodule=datamodule)
