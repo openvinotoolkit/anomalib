@@ -14,8 +14,8 @@ from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
-from anomalib.models.components import AnomalyModule
 from anomalib.models.ai_vad.torch_model import AiVadModel
+from anomalib.models.components import AnomalyModule
 
 logger = logging.getLogger(__name__)
 
@@ -60,18 +60,40 @@ class AiVad(AnomalyModule):
 
     @staticmethod
     def configure_optimizers() -> None:  # pylint: disable=arguments-differ
+        """TAI-VAD training does not involve fine-tuning of NN weights, no optimizers needed."""
         return None
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
+        """Training Step of AI-VAD.
+
+        Extract features from the batch of clips and update the density estimators.
+
+        Args:
+            batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
+        """
         features_per_batch = self.model(batch)
 
         for features, video_path in zip(features_per_batch, batch["video_path"]):
             self.model.density_estimator.update(features, video_path)
 
     def on_validation_start(self) -> None:
+        """Fit the density estimators to the extracted features from the training set."""
+        # NOTE: Previous anomalib versions fit Gaussian at the end of the epoch.
+        #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
+        #   is run within train epoch.
         self.model.density_estimator.fit()
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+        """Validation Step of AI-VAD.
+
+        Extract boxes and box scores..
+
+        Args:
+            batch (dict[str, str | Tensor]): Input batch
+
+        Returns:
+            Batch dictionary with added boxes and box scores.
+        """
         boxes, anomaly_scores = self.model(batch)
         batch["pred_boxes"] = [box.int() for box in boxes]
         batch["box_scores"] = [score.to(self.device) for score in anomaly_scores]
