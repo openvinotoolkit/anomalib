@@ -12,19 +12,22 @@ from anomalib.models.ai_vad.regions import RegionExtractor
 class AiVadModel(nn.Module):
     def __init__(
         self,
-        # region extraction params
+        # region-extraction params
         box_score_thresh: float = 0.8,
-        # feature extraction params
+        # feature-extraction params
         n_velocity_bins: int = 8,
-        # density estimation params
         use_velocity_features: bool = True,
         use_pose_features: bool = True,
         use_deep_features: bool = True,
+        # density-estimation params
         n_components_velocity: int = 5,
         n_neighbors_pose: int = 1,
         n_neighbors_deep: int = 1,
     ):
         super().__init__()
+        if not any((use_velocity_features, use_pose_features, use_deep_features)):
+            raise ValueError("Select at least one feature type.")
+
         # initialize flow extractor
         self.flow_extractor = FlowExtractor()
         # initialize region extractor
@@ -36,7 +39,7 @@ class AiVadModel(nn.Module):
             use_pose_features=use_pose_features,
             use_deep_features=use_deep_features,
         )
-
+        # initialize density estimator
         self.density_estimator = CombinedDensityEstimator(
             use_velocity_features=use_velocity_features,
             use_pose_features=use_pose_features,
