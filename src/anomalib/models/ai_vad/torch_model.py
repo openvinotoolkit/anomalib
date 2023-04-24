@@ -59,8 +59,8 @@ class AiVadModel(nn.Module):
         # 2. extract flows and regions
         with torch.no_grad():
             flows = self.flow_extractor(first_frame, last_frame)
-            # regions = self.region_extractor(last_frame)
-            regions = self.region_extractor_orig(first_frame, video_path, frames, train=self.training)
+            regions = self.region_extractor(last_frame)
+            # regions = self.region_extractor_orig(first_frame, video_path, frames, train=self.training)
 
         # 3. extract pose, appearance and velocity features
         features_per_batch = self.feature_extractor(first_frame, flows, regions)

@@ -76,14 +76,6 @@ class AiVad(AnomalyModule):
         batch["pred_boxes"] = [box.int() for box in boxes]
         batch["box_scores"] = [score.to(self.device) for score in anomaly_scores]
 
-        # TODO: this should be handled by video dataset
-        batch["boxes"] = [boxes[-1] for boxes in batch["boxes"]]
-        batch["mask"] = batch["mask"][:, -1, ...]
-        batch["image"] = batch["image"][:, -1, ...]
-        batch["original_image"] = batch["original_image"][:, -1, ...]
-        batch["label"] = batch["label"][:, -1]
-        batch["frames"] = batch["frames"][:, -1]
-
         return batch
 
 
