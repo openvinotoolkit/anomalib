@@ -85,7 +85,8 @@ class TestModel:
             or (results["image_AUROC"] >= threshold["image_AUROC"])
         ):
             raise AssertionError(
-                f"results['image_AUROC']:{results['image_AUROC']} >= threshold['image_AUROC']:{threshold['image_AUROC']}"
+                f"results['image_AUROC']: {results['image_AUROC']} >= "
+                f"threshold['image_AUROC']: {threshold['image_AUROC']}"
             )
 
         if config.dataset.task == "segmentation":
@@ -94,7 +95,8 @@ class TestModel:
                 or (results["pixel_AUROC"] >= threshold["pixel_AUROC"])
             ):
                 raise AssertionError(
-                    f"results['pixel_AUROC']:{results['pixel_AUROC']} >= threshold['pixel_AUROC']:{threshold['pixel_AUROC']}"
+                    f"results['pixel_AUROC']:{results['pixel_AUROC']} >= "
+                    f"threshold['pixel_AUROC']:{threshold['pixel_AUROC']}"
                 )
         return results
 

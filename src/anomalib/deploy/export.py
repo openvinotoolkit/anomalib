@@ -13,10 +13,11 @@ from typing import Any
 
 import numpy as np
 import torch
-from anomalib.data.task_type import TaskType
-from anomalib.models.components import AnomalyModule
 from torch import Tensor
 from torch.types import Number
+
+from anomalib.data.task_type import TaskType
+from anomalib.models.components import AnomalyModule
 
 
 class ExportMode(str, Enum):
