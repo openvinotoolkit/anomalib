@@ -89,9 +89,9 @@ Troubleshooting
 
 -  If you use Anaconda or Miniconda, see the :ref:`conda` installation instructions.
 
--  On Ubuntu, if you see the error **“libpython3.8m.so.1.0: cannot open
+-  On Ubuntu, if you see the error **“libpython3.10m.so.1.0: cannot open
    shared object file: No such object or directory”** please install the
-   required package using ``apt install libpython3.8-dev``.
+   required package using ``apt install libpython3.10-dev``.
 
 -  On Ubuntu, if you see the error **“OSError(‘sndfile library not
    found’) OSError: sndfile library not found”** please install the
