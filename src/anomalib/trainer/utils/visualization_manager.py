@@ -72,7 +72,7 @@ class VisualizationManager:
             outputs (EPOCH_OUTPUT, List[EPOCH_OUTPUT]): The outputs to visualize.
             stage (str): The stage at which to visualize.
         """
-        if stage == self.stage:
+        if stage == self.stage and (self.show_images or self.log_images):
             if isinstance(outputs, list):
                 for output in outputs:
                     self.visualize_images(output, stage)
@@ -93,7 +93,7 @@ class VisualizationManager:
         Args:
             stage (VisualizationStage): The stage at which to visualize metrics.
         """
-        if stage == self.stage:
+        if stage == self.stage and (self.show_images or self.log_images):
             for metrics in metrics_list:
                 for metric in metrics.values():
                     # `generate_figure` needs to be defined for every metric that should be plotted automatically

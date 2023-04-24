@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import importlib
 import logging
 from typing import Iterable
 
@@ -68,7 +69,7 @@ def get_experiment_logger(
         config (DictConfig): config.yaml file for the corresponding anomalib model.
 
     Raises:
-        ValueError: for any logger types apart from false and tensorboard
+        ValueError: for any logger types apart from false and the available loggers.
 
     Returns:
         Logger | Iterable[Logger] | bool]: Logger
@@ -83,20 +84,16 @@ def get_experiment_logger(
         config.logging.loggers = [config.logging.loggers]
 
     for experiment_logger in config.logging.loggers:
-        if "tensorboard" in experiment_logger.class_path:
-            logger_list.append(AnomalibTensorBoardLogger(**experiment_logger.init_args))
-        elif "wandb" in experiment_logger.class_path:
-            logger_list.append(AnomalibWandbLogger(**experiment_logger.init_args))
-        elif "comet" in experiment_logger.class_path:
-            logger_list.append(AnomalibCometLogger(**experiment_logger.init_args))
-        elif "file_system" in experiment_logger.class_path:
-            logger_list.append(FileSystemLogger(**experiment_logger.init_args))
-        else:
+        try:
+            module = importlib.import_module(".".join(experiment_logger.class_path.split(".")[:-1]))
+            class_ = getattr(module, experiment_logger.class_path.split(".")[-1])
+            logger_list.append(class_(**experiment_logger.init_args))
+        except (ImportError, AttributeError) as exception:
             raise UnknownLogger(
-                f"Unknown logger type: {config.logging.logger}. "
+                f"Unknown logger type: {experiment_logger}. "
                 f"Available loggers are: {AVAILABLE_LOGGERS}.\n"
                 f"To enable the logger, set `project.logger` to `true` or use one of available loggers in config.yaml\n"
                 f"To disable the logger, set `project.logger` to `false`."
-            )
+            ) from exception
 
     return logger_list

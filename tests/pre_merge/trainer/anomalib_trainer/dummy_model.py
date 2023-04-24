@@ -16,7 +16,7 @@ class DummyAnomalibModule(AnomalyModule):
         return super().training_epoch_end(outputs)
 
     def validation_step(self, batch, *args, **kwargs):
-        batch["anomaly_maps"] = reduce(batch["images"], "b c h w -> b 1 h w", "sum")
+        batch["anomaly_maps"] = reduce(batch["image"], "b c h w -> b 1 h w", "sum")
         return batch
 
     def test_step(self, batch, *args, **kwargs):

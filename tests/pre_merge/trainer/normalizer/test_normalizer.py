@@ -1,8 +1,9 @@
-from pytorch_lightning import Trainer, seed_everything
+from pytorch_lightning import seed_everything
 
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
+from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.callbacks import get_callbacks
 from tests.helpers.dataset import TestDataset, get_dataset_path
 
@@ -12,7 +13,9 @@ def run_train_test(config):
     datamodule = get_datamodule(config)
     callbacks = get_callbacks(config)
 
-    trainer = Trainer(**config.trainer, callbacks=callbacks)
+    trainer = AnomalibTrainer(
+        **config.trainer, **config.post_processing, callbacks=callbacks, image_metrics=config.metrics.image
+    )
     trainer.fit(model=model, datamodule=datamodule)
     results = trainer.test(model=model, datamodule=datamodule)
     return results
@@ -23,8 +26,7 @@ def test_normalizer(path=get_dataset_path(), category="shapes"):
     config = get_configurable_parameters(config_path="src/anomalib/models/padim/config.yaml")
     config.dataset.path = path
     config.dataset.category = category
-    config.metrics.threshold.method = "adaptive"
-    config.project.log_images_to = []
+    config.post_processing.threshold_method = "adaptive"
     config.metrics.image = ["F1Score", "AUROC"]
 
     # run without normalization

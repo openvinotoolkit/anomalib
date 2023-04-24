@@ -8,42 +8,22 @@ from unittest.mock import patch
 import pytest
 from omegaconf import OmegaConf
 
-try:
-    from wandb import init  # noqa: F401
-
-    wandb_installed = True
-except ImportError:
-    wandb_installed = False
-
-if wandb_installed:
-    with patch("wandb.init"):
-        from pytorch_lightning.loggers import CSVLogger
-
-        from anomalib.utils.loggers import (
-            AnomalibCometLogger,
-            AnomalibTensorBoardLogger,
-            AnomalibWandbLogger,
-            UnknownLogger,
-            get_experiment_logger,
-        )
-else:
-    from pytorch_lightning.loggers import CSVLogger
-
-    from anomalib.utils.loggers import (
-        AnomalibCometLogger,
-        AnomalibTensorBoardLogger,
-        AnomalibWandbLogger,
-        UnknownLogger,
-        get_experiment_logger,
-    )
+from anomalib.utils.loggers import (
+    AnomalibCometLogger,
+    AnomalibTensorBoardLogger,
+    AnomalibWandbLogger,
+    FileSystemLogger,
+    UnknownLogger,
+    get_experiment_logger,
+)
 
 
-def test_get_experiment_logger():
+def test_get_experiment_logger(tmpdir):
     """Test whether the right logger is returned."""
-
+    tmpdir = str(tmpdir)
     config = OmegaConf.create(
         {
-            "project": {"logger": None, "path": "/tmp"},
+            "logging": {"loggers": None},
             "dataset": {"name": "dummy", "category": "cat1"},
             "model": {"name": "DummyModel"},
         }
@@ -51,43 +31,62 @@ def test_get_experiment_logger():
 
     with patch("anomalib.utils.loggers.wandb.AnomalibWandbLogger.experiment"), patch(
         "pytorch_lightning.loggers.wandb.wandb"
-    ), patch("pytorch_lightning.loggers.comet.comet_ml"):
+    ), patch("pytorch_lightning.loggers.comet.comet_ml"), patch(
+        "anomalib.utils.loggers.comet.AnomalibCometLogger.experiment"
+    ):
         # get no logger
         logger = get_experiment_logger(config=config)
         assert isinstance(logger, bool)
-        config.project.logger = False
+        config.logging.loggers = None
         logger = get_experiment_logger(config=config)
         assert isinstance(logger, bool)
 
         # get tensorboard
-        config.project.logger = "tensorboard"
+        config.logging.loggers = {
+            "class_path": "anomalib.utils.loggers.AnomalibTensorBoardLogger",
+            "init_args": {"save_dir": tmpdir},
+        }
         logger = get_experiment_logger(config=config)
         assert isinstance(logger[0], AnomalibTensorBoardLogger)
 
         # get wandb logger
-        config.project.logger = "wandb"
+        config.logging.loggers = {
+            "class_path": "anomalib.utils.loggers.AnomalibWandbLogger",
+            "init_args": {"save_dir": tmpdir},
+        }
         logger = get_experiment_logger(config=config)
         assert isinstance(logger[0], AnomalibWandbLogger)
 
         # get comet logger
-        config.project.logger = "comet"
+        config.logging.loggers = {
+            "class_path": "anomalib.utils.loggers.AnomalibCometLogger",
+            "init_args": {"save_dir": tmpdir},
+        }
         logger = get_experiment_logger(config=config)
         assert isinstance(logger[0], AnomalibCometLogger)
 
         # get csv logger.
-        config.project.logger = "csv"
+        config.logging.loggers = {
+            "class_path": "anomalib.utils.loggers.FileSystemLogger",
+            "init_args": {"save_dir": tmpdir},
+        }
         logger = get_experiment_logger(config=config)
-        assert isinstance(logger[0], CSVLogger)
+        assert isinstance(logger[0], FileSystemLogger)
 
         # get multiple loggers
-        config.project.logger = ["tensorboard", "wandb", "csv", "comet"]
+        config.logging.loggers = [
+            {"class_path": "anomalib.utils.loggers.AnomalibTensorBoardLogger", "init_args": {"save_dir": tmpdir}},
+            {"class_path": "anomalib.utils.loggers.AnomalibWandbLogger", "init_args": {"save_dir": tmpdir}},
+            {"class_path": "anomalib.utils.loggers.FileSystemLogger", "init_args": {"save_dir": tmpdir}},
+            {"class_path": "anomalib.utils.loggers.AnomalibCometLogger", "init_args": {"save_dir": tmpdir}},
+        ]
         logger = get_experiment_logger(config=config)
         assert isinstance(logger[0], AnomalibTensorBoardLogger)
         assert isinstance(logger[1], AnomalibWandbLogger)
-        assert isinstance(logger[2], CSVLogger)
+        assert isinstance(logger[2], FileSystemLogger)
         assert isinstance(logger[3], AnomalibCometLogger)
 
         # raise unknown
         with pytest.raises(UnknownLogger):
-            config.project.logger = "randomlogger"
+            config.logging.loggers = {"class_path": "anomalib.utils.loggers.RandomLogger"}
             logger = get_experiment_logger(config=config)

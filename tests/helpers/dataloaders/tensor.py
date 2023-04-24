@@ -19,7 +19,7 @@ class DummyTensorDataset(Dataset):
         self.mask = reduce(abnormal_image.type(torch.uint8), "c h w -> 1 h w", "max")
 
     def __getitem__(self, index):
-        item = {"images": self.images[index], "label": self.labels[index]}
+        item = {"image": self.images[index], "label": self.labels[index]}
         if self.labels[index] == 1:
             item["mask"] = self.mask
         return item

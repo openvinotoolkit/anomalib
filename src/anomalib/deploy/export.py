@@ -11,13 +11,11 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 import torch
 from torch import Tensor
-from torch.types import Number
 
-from anomalib.data.task_type import TaskType
 from anomalib.models.components import AnomalyModule
+from anomalib.trainer import AnomalibTrainer
 
 
 class ExportMode(str, Enum):
@@ -28,47 +26,26 @@ class ExportMode(str, Enum):
     TORCH = "torch"
 
 
-def get_model_metadata(model: AnomalyModule) -> dict[str, Tensor]:
-    """Get meta data related to normalization from model.
-
-    Args:
-        model (AnomalyModule): Anomaly model which contains metadata related to normalization.
-
-    Returns:
-        dict[str, Tensor]: Model metadata
-    """
-    metadata = {}
-    cached_metadata: dict[str, Number | Tensor] = {
-        "image_threshold": model.image_threshold.cpu().value.item(),
-        "pixel_threshold": model.pixel_threshold.cpu().value.item(),
-    }
-    if hasattr(model, "normalization_metrics") and model.normalization_metrics is not None:
-        for key, value in model.normalization_metrics.state_dict().items():
-            cached_metadata[key] = value.cpu()
-    # Remove undefined values by copying in a new dict
-    for key, val in cached_metadata.items():
-        if not np.isinf(val).all():
-            metadata[key] = val
-    del cached_metadata
-    return metadata
-
-
-def get_metadata(task: TaskType, transform: dict[str, Any], model: AnomalyModule) -> dict[str, Any]:
+def get_metadata(trainer: AnomalibTrainer, transform: dict[str, Any]) -> dict[str, Any]:
     """Get metadata for the exported model.
 
     Args:
-        task (TaskType): Task type.
+        trainer (AnomalibTrainer): Trainer used for training the model.
         transform (dict[str, Any]): Transform used for the model.
-        model (AnomalyModule): Model to export.
-        export_mode (ExportMode): Mode to export the model. Torch, ONNX or OpenVINO.
 
     Returns:
         dict[str, Any]: Metadata for the exported model.
     """
-    data_metadata = {"task": task, "transform": transform}
-    model_metadata = get_model_metadata(model)
-    metadata = {**data_metadata, **model_metadata}
+    data_metadata = {"task": trainer.task_type, "transform": transform}
+    normalization_metadata = {
+        "image_threshold": trainer.image_threshold.cpu().value.item(),
+        "pixel_threshold": trainer.pixel_threshold.cpu().value.item(),
+    }
+    if trainer.normalizer:
+        for key, value in trainer.normalizer.metric.state_dict().items():
+            normalization_metadata[key] = value.cpu()
 
+    metadata = {**data_metadata, **normalization_metadata}
     # Convert torch tensors to python lists or values for json serialization.
     for key, value in metadata.items():
         if isinstance(value, Tensor):
@@ -78,8 +55,8 @@ def get_metadata(task: TaskType, transform: dict[str, Any], model: AnomalyModule
 
 
 def export(
-    task: TaskType,
     transform: dict[str, Any],
+    trainer: AnomalibTrainer,
     input_size: tuple[int, int],
     model: AnomalyModule,
     export_mode: ExportMode,
@@ -88,7 +65,7 @@ def export(
     """Export the model to onnx format and (optionally) convert to OpenVINO IR if export mode is set to OpenVINO.
 
     Args:
-        task (TaskType): Task type.
+        trainer (AnomalibTrainer): Trainer used for training the model.
         transform (dict[str, Any]): Data transforms (augmentatiions) used for the model.
         input_size (tuple[int, int]): Input size of the model.
         model (AnomalyModule): Anomaly model to export.
@@ -100,7 +77,7 @@ def export(
     export_path.mkdir(parents=True, exist_ok=True)
 
     # Get metadata.
-    metadata = get_metadata(task, transform, model)
+    metadata = get_metadata(trainer, transform)
 
     if export_mode == ExportMode.TORCH:
         export_to_torch(model, metadata, export_path)
