@@ -19,10 +19,10 @@ class AiVadModel(nn.Module):
         # density estimation params
         use_velocity_features: bool = True,
         use_pose_features: bool = True,
-        use_appearance_features: bool = True,
+        use_deep_features: bool = True,
         n_components_velocity: int = 5,
         n_neighbors_pose: int = 1,
-        n_neighbors_appearance: int = 1,
+        n_neighbors_deep: int = 1,
     ):
         super().__init__()
         # initialize flow extractor
@@ -30,15 +30,20 @@ class AiVadModel(nn.Module):
         # initialize region extractor
         self.region_extractor = RegionExtractor(box_score_thresh=box_score_thresh)
         # initialize feature extractor
-        self.feature_extractor = FeatureExtractor(n_velocity_bins=n_velocity_bins)
+        self.feature_extractor = FeatureExtractor(
+            n_velocity_bins=n_velocity_bins,
+            use_velocity_features=use_velocity_features,
+            use_pose_features=use_pose_features,
+            use_deep_features=use_deep_features,
+        )
 
         self.density_estimator = CombinedDensityEstimator(
             use_velocity_features=use_velocity_features,
             use_pose_features=use_pose_features,
-            use_appearance_features=use_appearance_features,
+            use_deep_features=use_deep_features,
             n_components_velocity=n_components_velocity,
             n_neighbors_pose=n_neighbors_pose,
-            n_neighbors_appearance=n_neighbors_appearance,
+            n_neighbors_deep=n_neighbors_deep,
         )
 
     def forward(self, batch):

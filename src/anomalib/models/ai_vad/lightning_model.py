@@ -40,10 +40,10 @@ class AiVad(AnomalyModule):
         n_velocity_bins: int = 8,
         use_velocity_features: bool = True,
         use_pose_features: bool = True,
-        use_appearance_features: bool = True,
+        use_deep_features: bool = True,
         n_components_velocity: int = 5,
         n_neighbors_pose: int = 1,
-        n_neighbors_appearance: int = 1,
+        n_neighbors_deep: int = 1,
     ) -> None:
         super().__init__()
 
@@ -52,10 +52,10 @@ class AiVad(AnomalyModule):
             n_velocity_bins=n_velocity_bins,
             use_velocity_features=use_velocity_features,
             use_pose_features=use_pose_features,
-            use_appearance_features=use_appearance_features,
+            use_deep_features=use_deep_features,
             n_components_velocity=n_components_velocity,
             n_neighbors_pose=n_neighbors_pose,
-            n_neighbors_appearance=n_neighbors_appearance,
+            n_neighbors_deep=n_neighbors_deep,
         )
 
     @staticmethod
@@ -114,10 +114,10 @@ class AiVadLightning(AiVad):
             n_velocity_bins=hparams.model.n_velocity_bins,
             use_velocity_features=hparams.model.use_velocity_features,
             use_pose_features=hparams.model.use_pose_features,
-            use_appearance_features=hparams.model.use_appearance_features,
+            use_deep_features=hparams.model.use_deep_features,
             n_components_velocity=hparams.model.n_components_velocity,
             n_neighbors_pose=hparams.model.n_neighbors_pose,
-            n_neighbors_appearance=hparams.model.n_neighbors_appearance,
+            n_neighbors_deep=hparams.model.n_neighbors_deep,
         )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)

@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import torch
-from torch import nn
-from torchvision.models.optical_flow import raft_large, Raft_Large_Weights
-import torchvision.transforms.functional as F
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
+import torchvision.transforms.functional as F
+from torch import nn
+from torchvision.models.optical_flow import Raft_Large_Weights, raft_large
 
 
 class FlowExtractor(nn.Module):

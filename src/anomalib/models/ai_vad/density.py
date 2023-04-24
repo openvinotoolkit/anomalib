@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-import torch
-from torch import nn, Tensor
+from abc import ABC, abstractmethod
 from typing import Any
 
-from abc import ABC, abstractmethod
-from anomalib.utils.metrics.min_max import MinMax
-from anomalib.models.ai_vad.features import FeatureType
+import torch
 from sklearn.mixture import GaussianMixture
+from torch import Tensor, nn
+
+from anomalib.models.ai_vad.features import FeatureType
+from anomalib.utils.metrics.min_max import MinMax
 
 
 class BaseDensityEstimator(nn.Module, ABC):
@@ -38,38 +39,38 @@ class CombinedDensityEstimator(BaseDensityEstimator):
     def __init__(
         self,
         use_pose_features: bool = True,
-        use_appearance_features: bool = True,
+        use_deep_features: bool = True,
         use_velocity_features: bool = False,
         n_neighbors_pose: int = 1,
-        n_neighbors_appearance: int = 1,
+        n_neighbors_deep: int = 1,
         n_components_velocity: int = 5,
     ) -> None:
         super().__init__()
 
         self.use_pose_features = use_pose_features
-        self.use_appearance_features = use_appearance_features
+        self.use_deep_features = use_deep_features
         self.use_velocity_features = use_velocity_features
 
         if self.use_velocity_features:
             self.velocity_estimator = GMMEstimator(n_components=n_components_velocity)
-        if self.use_appearance_features:
-            self.appearance_estimator = GroupedKNNEstimator(n_neighbors_appearance)
+        if self.use_deep_features:
+            self.appearance_estimator = GroupedKNNEstimator(n_neighbors_deep)
         if self.use_pose_features:
             self.pose_estimator = GroupedKNNEstimator(n_neighbors=n_neighbors_pose)
-        assert any((use_pose_features, use_appearance_features, use_velocity_features))
+        assert any((use_pose_features, use_deep_features, use_velocity_features))
 
     def update(self, features, video_id):
         if self.use_velocity_features:
             self.velocity_estimator.update(features[FeatureType.VELOCITY])
-        if self.use_appearance_features:
-            self.appearance_estimator.update(features[FeatureType.APPEARANCE], group=video_id)
+        if self.use_deep_features:
+            self.appearance_estimator.update(features[FeatureType.DEEP], group=video_id)
         if self.use_pose_features:
             self.pose_estimator.update(features[FeatureType.POSE], group=video_id)
 
     def fit(self):
         if self.use_velocity_features:
             self.velocity_estimator.fit()
-        if self.use_appearance_features:
+        if self.use_deep_features:
             self.appearance_estimator.fit()
         if self.use_pose_features:
             self.pose_estimator.fit()
@@ -78,8 +79,8 @@ class CombinedDensityEstimator(BaseDensityEstimator):
         anomaly_scores = torch.zeros(list(features.values())[0].shape[0]).to(list(features.values())[0].device)
         if self.use_velocity_features:
             anomaly_scores += self.velocity_estimator.predict(features[FeatureType.VELOCITY])
-        if self.use_appearance_features:
-            anomaly_scores += self.appearance_estimator.predict(features[FeatureType.APPEARANCE])
+        if self.use_deep_features:
+            anomaly_scores += self.appearance_estimator.predict(features[FeatureType.DEEP])
         if self.use_pose_features:
             anomaly_scores += self.pose_estimator.predict(features[FeatureType.POSE])
         return anomaly_scores

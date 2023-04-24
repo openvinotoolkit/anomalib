@@ -9,7 +9,7 @@ dataset:
   video_target_frame: "last"
   image_size: [240, 360] # RKDE region- and feature extractor apply custom resizing
   normalization: none # RKDE region- and feature extractor apply custom normalization
-  train_batch_size: 1
+  train_batch_size: 8
   eval_batch_size: 1
   num_workers: 8
   transform_config:
@@ -33,10 +33,10 @@ model:
   n_velocity_bins: 1
   use_velocity_features: True
   use_pose_features: True
-  use_appearance_features: True
+  use_deep_features: True
   n_components_velocity: 2
   n_neighbors_pose: 1
-  n_neighbors_appearance: 1
+  n_neighbors_deep: 1
   # generic params
   normalization_method: min_max # options: [null, min_max, cdf]
 

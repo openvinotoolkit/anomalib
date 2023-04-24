@@ -14,18 +14,36 @@ from torchvision.transforms import Normalize
 class FeatureType(str, Enum):
     POSE = "pose"
     VELOCITY = "velocity"
-    APPEARANCE = "appearance"
+    DEEP = "deep"
 
 
 class FeatureExtractor(nn.Module):
-    def __init__(self, n_velocity_bins: int = 8) -> None:
+    def __init__(
+        self,
+        n_velocity_bins: int = 8,
+        use_velocity_features: bool = True,
+        use_pose_features: bool = True,
+        use_deep_features: bool = True,
+    ) -> None:
         super().__init__()
+        assert (
+            use_velocity_features or use_pose_features or use_deep_features
+        ), "At least one feature stream must be enabled."
+
+        self.use_velocity_features = use_velocity_features
+        self.use_pose_features = use_pose_features
+        self.use_deep_features = use_deep_features
 
         self.appearance_extractor = AppearanceExtractor()
         self.velocity_extractor = VelocityExtractor(n_bins=n_velocity_bins)
         self.pose_extractor = PoseExtractor()
 
-    def forward(self, rgb_batch, flow_batch, regions):
+    def forward(
+        self,
+        rgb_batch,
+        flow_batch,
+        regions,
+    ):
         batch_size = rgb_batch.shape[0]
 
         # convert from list of [N, 4] tensors to single [N, 5] tensor where each row is [index-in-batch, x1, y1, x2, y2]
@@ -35,19 +53,22 @@ class FeatureExtractor(nn.Module):
         )
         boxes = torch.cat([indices.unsqueeze(1).to(rgb_batch.device), torch.cat(boxes_list)], dim=1)
 
-        velocity_features = self.velocity_extractor(flow_batch, boxes)
-        appearance_features = self.appearance_extractor(rgb_batch, boxes, batch_size)
-        # pose_features = self.pose_extractor(regions)
-        pose_features = self.pose_extractor(rgb_batch, boxes_list)
+        # Extract features
+        feature_collection = {}
+        if self.use_velocity_features:
+            velocity_features = self.velocity_extractor(flow_batch, boxes)
+            feature_collection[FeatureType.VELOCITY] = [velocity_features[indices == i] for i in range(batch_size)]
+        if self.use_pose_features:
+            pose_features = self.pose_extractor(rgb_batch, boxes_list)
+            feature_collection[FeatureType.POSE] = pose_features
+        if self.use_deep_features:
+            deep_features = self.appearance_extractor(rgb_batch, boxes, batch_size)
+            feature_collection[FeatureType.DEEP] = [deep_features[indices == i] for i in range(batch_size)]
 
-        # convert back to list
-        velocity_features = [velocity_features[indices == i] for i in range(batch_size)]
-        appearance_features = [appearance_features[indices == i] for i in range(batch_size)]
+        # dict of lists to list of dicts
+        feature_collection = [dict(zip(feature_collection, item)) for item in zip(*feature_collection.values())]
 
-        return [
-            {FeatureType.VELOCITY: velocity, FeatureType.APPEARANCE: appearance, FeatureType.POSE: pose}
-            for velocity, appearance, pose in zip(velocity_features, appearance_features, pose_features)
-        ]
+        return feature_collection
 
 
 class AppearanceExtractor(nn.Module):
