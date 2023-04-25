@@ -45,11 +45,11 @@ logger = logging.getLogger(__name__)
 
 
 # Check if a mask shows defects
-def is_good(path):
+def is_mask_anomalous(path):
     img_arr = imread(path)
     if np.all(img_arr == 0):
-        return 1
-    return 0
+        return 0
+    return 1
 
 
 def download_and_extract_kolektor(url: str, root: Path, file_hash: str):
@@ -152,15 +152,13 @@ def make_kolektor_dataset(
     # Add mask paths for sample images
     samples["mask_path"] = masks.image_path.values
 
-    # Use is_good func to configure the label
-    samples["label"] = samples["mask_path"].apply(is_good)
-    samples.loc[(samples.label == 1), "label"] = "Good"
-    samples.loc[(samples.label == 0), "label"] = "Bad"
-
-    # Add label indexes
-    samples.loc[(samples.label == "Good"), "label_index"] = 0
-    samples.loc[(samples.label == "Bad"), "label_index"] = 1
+    # Use is_good func to configure the label_index
+    samples["label_index"] = samples["mask_path"].apply(is_mask_anomalous)
     samples.label_index = samples.label_index.astype(int)
+
+    # Use label indexes to label data
+    samples.loc[(samples.label_index == 0), "label"] = "Good"
+    samples.loc[(samples.label_index == 1), "label"] = "Bad"
 
     # Add all 'Bad' samples to test set
     samples.loc[(samples.label == "Bad"), "split"] = "test"
