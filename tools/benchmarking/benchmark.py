@@ -117,19 +117,15 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_met
         openvino_throughput = float("nan")
         if openvino_metrics:
             # Create dirs for openvino model export
-            openvino_export_path = project_path / Path("exported_models")
-            openvino_export_path.mkdir(parents=True, exist_ok=True)
             export(
                 task=model_config.dataset.task,
                 transform=trainer.datamodule.test_data.transform.to_dict(),
                 input_size=model_config.model.input_size,
                 model=model,
                 export_mode=ExportMode.OPENVINO,
-                export_root=openvino_export_path,
+                export_root=project_path,
             )
-            openvino_throughput = get_openvino_throughput(
-                model_path=openvino_export_path, test_dataset=datamodule.test_data
-            )
+            openvino_throughput = get_openvino_throughput(model_path=project_path, test_dataset=datamodule.test_data)
 
         # arrange the data
         data = {
