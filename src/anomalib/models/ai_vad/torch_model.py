@@ -1,3 +1,11 @@
+"""PyTorch model for AI-VAD model implementation.
+
+Paper https://arxiv.org/pdf/2212.00789.pdf
+"""
+
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from __future__ import annotations
 
 import torch
@@ -70,7 +78,12 @@ class AiVadModel(nn.Module):
             return features_per_batch
 
         # 4. estimate density
-        anomaly_scores = [self.density_estimator(features) for features in features_per_batch]
+        box_scores = []
+        image_scores = []
+        for features in features_per_batch:
+            box, image = self.density_estimator(features)
+            box_scores.append(box)
+            image_scores.append(image)
 
-        boxes_list = [batch_item["boxes"] for batch_item in regions]
-        return boxes_list, anomaly_scores
+        box_locations = [batch_item["boxes"] for batch_item in regions]
+        return box_locations, box_scores, image_scores

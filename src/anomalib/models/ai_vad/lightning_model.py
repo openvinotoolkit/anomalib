@@ -94,9 +94,10 @@ class AiVad(AnomalyModule):
         Returns:
             Batch dictionary with added boxes and box scores.
         """
-        boxes, anomaly_scores = self.model(batch["image"])
+        boxes, anomaly_scores, image_scores = self.model(batch["image"])
         batch["pred_boxes"] = [box.int() for box in boxes]
         batch["box_scores"] = [score.to(self.device) for score in anomaly_scores]
+        batch["pred_scores"] = Tensor(image_scores).to(self.device)
 
         return batch
 

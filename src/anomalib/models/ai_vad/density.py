@@ -76,14 +76,21 @@ class CombinedDensityEstimator(BaseDensityEstimator):
             self.pose_estimator.fit()
 
     def predict(self, features):
-        anomaly_scores = torch.zeros(list(features.values())[0].shape[0]).to(list(features.values())[0].device)
+        region_scores = torch.zeros(list(features.values())[0].shape[0]).to(list(features.values())[0].device)
+        image_score = 0
         if self.use_velocity_features:
-            anomaly_scores += self.velocity_estimator.predict(features[FeatureType.VELOCITY])
+            velocity_scores = self.velocity_estimator.predict(features[FeatureType.VELOCITY])
+            region_scores += velocity_scores
+            image_score += velocity_scores.max()
         if self.use_deep_features:
-            anomaly_scores += self.appearance_estimator.predict(features[FeatureType.DEEP])
+            deep_scores = self.appearance_estimator.predict(features[FeatureType.DEEP])
+            region_scores += deep_scores
+            image_score += deep_scores.max()
         if self.use_pose_features:
-            anomaly_scores += self.pose_estimator.predict(features[FeatureType.POSE])
-        return anomaly_scores
+            pose_scores = self.pose_estimator.predict(features[FeatureType.POSE])
+            region_scores += pose_scores
+            image_score += pose_scores.max()
+        return region_scores, image_score
 
 
 class GroupedKNNEstimator(BaseDensityEstimator):

@@ -20,7 +20,7 @@ dataset:
   val_split_mode: same_as_test # options: [same_as_test, from_test]
   val_split_ratio: 0.5
   tiling:
-    apply: false
+    apply: falser
     tile_size: null
     stride: null
     remove_border_count: 0
