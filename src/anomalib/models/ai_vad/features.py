@@ -1,3 +1,8 @@
+"""Feature extraction module for AI-VAD model implementation"""
+
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from __future__ import annotations
 
 from enum import Enum
@@ -12,12 +17,23 @@ from torchvision.transforms import Normalize
 
 
 class FeatureType(str, Enum):
+    """Names of the different feature streams used in AI-VAD."""
+
     POSE = "pose"
     VELOCITY = "velocity"
     DEEP = "deep"
 
 
 class FeatureExtractor(nn.Module):
+    """Feature extractor for AI-VAD.
+
+    Args:
+        n_velocity_bins (int): Number of discrete bins used for velocity histogram features.
+        use_velocity_features (bool): Flag indicating if velocity features should be used.
+        use_pose_features (bool): Flag indicating if pose features should be used.
+        use_deep_features (bool): Flag indicating if deep features should be used.
+    """
+
     def __init__(
         self,
         n_velocity_bins: int = 8,
@@ -34,16 +50,27 @@ class FeatureExtractor(nn.Module):
         self.use_pose_features = use_pose_features
         self.use_deep_features = use_deep_features
 
-        self.appearance_extractor = AppearanceExtractor()
+        self.appearance_extractor = DeepExtractor()
         self.velocity_extractor = VelocityExtractor(n_bins=n_velocity_bins)
         self.pose_extractor = PoseExtractor()
 
     def forward(
         self,
-        rgb_batch,
-        flow_batch,
-        regions,
-    ):
+        rgb_batch: Tensor,
+        flow_batch: Tensor,
+        regions: list[dict],
+    ) -> list[dict]:
+        """Forward pass through the feature extractor.
+
+        Extract any combination of velocity, pose and deep features depending on configuration.
+
+        Args:
+            rgb_batch (Tensor): Batch of RGB images of shape (N, 3, H, W)
+            flow_batch (Tensor): Batch of optical flow images of shape (N, 2, H, W)
+            regions (list[dict]): Region information per image in batch.
+        Returns:
+            list[dict]: Feature dictionary per image in batch.
+        """
         batch_size = rgb_batch.shape[0]
 
         # convert from list of [N, 4] tensors to single [N, 5] tensor where each row is [index-in-batch, x1, y1, x2, y2]
@@ -54,31 +81,45 @@ class FeatureExtractor(nn.Module):
         boxes = torch.cat([indices.unsqueeze(1).to(rgb_batch.device), torch.cat(boxes_list)], dim=1)
 
         # Extract features
-        feature_collection = {}
+        feature_dict = {}
         if self.use_velocity_features:
             velocity_features = self.velocity_extractor(flow_batch, boxes)
-            feature_collection[FeatureType.VELOCITY] = [velocity_features[indices == i] for i in range(batch_size)]
+            feature_dict[FeatureType.VELOCITY] = [velocity_features[indices == i] for i in range(batch_size)]
         if self.use_pose_features:
             pose_features = self.pose_extractor(rgb_batch, boxes_list)
-            feature_collection[FeatureType.POSE] = pose_features
+            feature_dict[FeatureType.POSE] = pose_features
         if self.use_deep_features:
             deep_features = self.appearance_extractor(rgb_batch, boxes, batch_size)
-            feature_collection[FeatureType.DEEP] = [deep_features[indices == i] for i in range(batch_size)]
+            feature_dict[FeatureType.DEEP] = [deep_features[indices == i] for i in range(batch_size)]
 
         # dict of lists to list of dicts
-        feature_collection = [dict(zip(feature_collection, item)) for item in zip(*feature_collection.values())]
+        feature_collection = [dict(zip(feature_dict, item)) for item in zip(*feature_dict.values())]
 
         return feature_collection
 
 
-class AppearanceExtractor(nn.Module):
+class DeepExtractor(nn.Module):
+    """Deep feature extractor.
+
+    Extracts the deep (appearance) features from the input regions.
+    """
+
     def __init__(self) -> None:
         super().__init__()
 
         self.encoder, _ = clip.load("ViT-B/16")
         self.transform = Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711))
 
-    def forward(self, batch, boxes, batch_size):
+    def forward(self, batch: Tensor, boxes: Tensor, batch_size: int) -> Tensor:
+        """Extract deep features using CLIP encoder.
+
+        Args:
+            batch (Tensor): Batch of RGB input images of shape (N, 3, H, W)
+            boxes (Tensor): Bounding box coordinates of shaspe (M, 5). First column indicates batch index of the bbox.
+            batch_size (int): Number of images in the batch.
+        Returns:
+            Tensor: Deep feature tensor of shape (M, 512)
+        """
         rgb_regions = roi_align(batch, boxes, output_size=[224, 224])
 
         features = []
@@ -90,12 +131,28 @@ class AppearanceExtractor(nn.Module):
 
 
 class VelocityExtractor(nn.Module):
+    """Velocity feature extractor.
+
+    Extracts histograms of optical flow magnitude and direction.
+
+    Args:
+        n_bins (int): Number of direction bins used for the feature histograms.
+    """
+
     def __init__(self, n_bins: int = 8) -> None:
         super().__init__()
 
         self.n_bins = n_bins
 
-    def forward(self, flows, boxes):
+    def forward(self, flows: Tensor, boxes: Tensor) -> Tensor:
+        """Extract velocioty features by filling a histogram.
+
+        Args:
+            flows (Tensor): Batch of optical flow images of shape (N, 2, H, W)
+            boxes (Tensor): Bounding box coordinates of shaspe (M, 5). First column indicates batch index of the bbox.
+        Returns:
+            Tensor: Velocity feature tensor of shape (M, n_bins)
+        """
         flow_regions = roi_align(flows, boxes, output_size=[224, 224])
 
         # cartesian to polar
@@ -118,6 +175,11 @@ class VelocityExtractor(nn.Module):
 
 
 class PoseExtractor(nn.Module):
+    """Pose feature extractor.
+
+    Extracts pose features based on estimated body landmark keypoints.
+    """
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
@@ -129,7 +191,16 @@ class PoseExtractor(nn.Module):
         self.roi_heads = model.roi_heads
 
     @staticmethod
-    def _post_process(keypoint_detections):
+    def _post_process(keypoint_detections: list[dict]) -> list[Tensor]:
+        """Convert keypoint predictions to 1D feature vectors.
+
+        Post-processing consists of flattening and normalizing to bbox coordinates.
+
+        Args:
+            keypoint_detections (list[dict]): Outputs of the keypoint extractor
+        Returns:
+            list[Tensor]: List of pose feature tensors for each image
+        """
         poses = []
         for detection in keypoint_detections:
             boxes = detection["boxes"].unsqueeze(1)
@@ -138,7 +209,15 @@ class PoseExtractor(nn.Module):
             poses.append(normalized_keypoints.reshape(normalized_keypoints.shape[0], -1))
         return poses
 
-    def forward(self, batch, boxes):
+    def forward(self, batch: Tensor, boxes: Tensor) -> list[Tensor]:
+        """Extract pose features using a human keypoint estimation model.
+
+        Args:
+            batch (Tensor): Batch of RGB input images of shape (N, 3, H, W)
+            boxes (Tensor): Bounding box coordinates of shaspe (M, 5). First column indicates batch index of the bbox.
+        Returns:
+            list[Tensor]: list of pose feature tensors for each image.
+        """
         images, _ = self.transform(batch)
         features = self.backbone(images.tensors)
 
@@ -153,6 +232,8 @@ class PoseExtractor(nn.Module):
         keypoints_probs, _ = keypointrcnn_inference(keypoint_logits, boxes)
 
         keypoint_detections = self.transform.postprocess(
-            [{"keypoints": kp, "boxes": bx} for kp, bx in zip(keypoints_probs, boxes)], images.image_sizes, image_sizes
+            [{"keypoints": keypoints, "boxes": box} for keypoints, box in zip(keypoints_probs, boxes)],
+            images.image_sizes,
+            image_sizes,
         )
         return self._post_process(keypoint_detections)

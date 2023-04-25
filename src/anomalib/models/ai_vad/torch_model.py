@@ -9,7 +9,7 @@ Paper https://arxiv.org/pdf/2212.00789.pdf
 from __future__ import annotations
 
 import torch
-from torch import nn
+from torch import Tensor, nn
 
 from anomalib.models.ai_vad.density import CombinedDensityEstimator
 from anomalib.models.ai_vad.features import FeatureExtractor
@@ -18,6 +18,19 @@ from anomalib.models.ai_vad.regions import RegionExtractor
 
 
 class AiVadModel(nn.Module):
+    """AI-VAD model.
+
+    Args:
+        box_score_thresh (float): Confidence threshold for region extraction stage.
+        n_velocity_bins (int): Number of discrete bins used for velocity histogram features.
+        use_velocity_features (bool): Flag indicating if velocity features should be used.
+        use_pose_features (bool): Flag indicating if pose features should be used.
+        use_deep_features (bool): Flag indicating if deep features should be used.
+        n_components_velocity (int): Number of components used by GMM density estimation for velocity features.
+        n_neighbors_pose (int): Number of neighbors used in KNN density estimation for pose features.
+        n_neighbors_deep (int): Number of neighbors used in KNN density estimation for deep features.
+    """
+
     def __init__(
         self,
         # region-extraction params
@@ -57,7 +70,16 @@ class AiVadModel(nn.Module):
             n_neighbors_deep=n_neighbors_deep,
         )
 
-    def forward(self, batch):
+    def forward(self, batch: Tensor) -> tuple[list[Tensor], list[Tensor], list[Tensor]]:
+        """Forward pass through AI-VAD model.
+
+        Args:
+            batch (Tensor): Input image of shape (N, L, C, H, W)
+        Returns:
+            list[Tensor]: List of bbox locations for each image.
+            list[Tensor]: List of per-bbox anomaly scores for each image.
+            list[Tensor]: List of per-image anomaly scores.
+        """
         self.flow_extractor.eval()
         self.region_extractor.eval()
         self.feature_extractor.eval()
