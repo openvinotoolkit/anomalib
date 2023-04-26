@@ -7,8 +7,8 @@ dataset:
   clip_length_in_frames: 2
   frames_between_clips: 10
   video_target_frame: "last"
-  image_size: [240, 360] # RKDE region- and feature extractor apply custom resizing
-  normalization: none # RKDE region- and feature extractor apply custom normalization
+  image_size: [240, 360] # AI-VAD region- and feature extractor apply custom resizing
+  normalization: none # AI-VAD region- and feature extractor apply custom normalization
   train_batch_size: 8
   eval_batch_size: 1
   num_workers: 8
