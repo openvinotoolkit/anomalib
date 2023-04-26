@@ -14,6 +14,7 @@ from anomalib.utils.callbacks import (
     PostProcessingConfigurationCallback,
 )
 from anomalib.utils.callbacks.timer import TimerCallback
+from anomalib.utils.metrics import GaussianMixtureThresholdEstimator
 
 
 def get_sweep_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
@@ -39,6 +40,25 @@ def get_sweep_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
             config.metrics.threshold.manual_pixel if "manual_pixel" in config.metrics.threshold.keys() else None
         )
         normalization_method = config.model.normalization_method
+
+        # For Gaussian Mixture Estimation of threshold.
+        image_positive_rate = (
+            config.metrics.threshold.image_positive_rate if "image_positive_rate" in config.metrics.threshold.keys() \
+                else GaussianMixtureThresholdEstimator.DEFAULT_POSITIVE_RATE
+        )
+        pixel_positive_rate = (
+            config.metrics.threshold.pixel_positive_rate if "pixel_positive_rate" in config.metrics.threshold.keys() \
+                else GaussianMixtureThresholdEstimator.DEFAULT_POSITIVE_RATE
+        )
+        image_n_components = (
+            config.metrics.threshold.image_n_components if "image_n_components" in config.metrics.threshold.keys() \
+                else GaussianMixtureThresholdEstimator.DEFAULT_N_COMPONENTS
+        )
+        pixel_n_components = (
+            config.metrics.threshold.pixel_n_components if "pixel_n_components" in config.metrics.threshold.keys() \
+                else GaussianMixtureThresholdEstimator.DEFAULT_N_COMPONENTS
+        )
+
     # NOTE: This is for the new anomalib CLI.
     else:
         image_metrics = config.metrics.image_metrics if "image_metrics" in config.metrics else None
@@ -51,10 +71,32 @@ def get_sweep_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
         )
         normalization_method = config.post_processing.normalization_method
 
+        # For Gaussian Mixture Estimation of threshold.
+        image_positive_rate = (
+            config.post_processing.image_positive_rate if "image_positive_rate" in config.metrics.threshold.keys()
+            else GaussianMixtureThresholdEstimator.DEFAULT_POSITIVE_RATE
+        )
+        pixel_positive_rate = (
+            config.post_processing.pixel_positive_rate if "pixel_positive_rate" in config.metrics.threshold.keys()
+            else GaussianMixtureThresholdEstimator.DEFAULT_POSITIVE_RATE
+        )
+        image_n_components = (
+            config.post_processing.image_n_components if "image_n_components" in config.metrics.threshold.keys()
+            else GaussianMixtureThresholdEstimator.DEFAULT_N_COMPONENTS
+        )
+        pixel_n_components = (
+            config.post_processing.pixel_n_components if "pixel_n_components" in config.metrics.threshold.keys()
+            else GaussianMixtureThresholdEstimator.DEFAULT_N_COMPONENTS
+        )
+
     post_processing_configuration_callback = PostProcessingConfigurationCallback(
         normalization_method=normalization_method,
         manual_image_threshold=image_threshold,
         manual_pixel_threshold=pixel_threshold,
+        image_positive_rate=image_positive_rate,
+        pixel_positive_rate=pixel_positive_rate,
+        image_n_components=image_n_components,
+        pixel_n_components=pixel_n_components,
     )
     callbacks.append(post_processing_configuration_callback)
 

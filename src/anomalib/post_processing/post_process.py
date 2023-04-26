@@ -13,12 +13,22 @@ import cv2
 import numpy as np
 from skimage import morphology
 
+from anomalib.utils.metrics import (AnomalyScoreThreshold,
+                                    GaussianMixtureThresholdEstimator)
+
 
 class ThresholdMethod(str, Enum):
     """Threshold method to apply post-processing to the output predictions."""
 
     ADAPTIVE = "adaptive"
+    GAUSSIAN_MIXTURE = "gaussian_mixture"
     MANUAL = "manual"
+
+
+ADAPTIVE_THRESHOLD_METHOD_MAP = {
+    ThresholdMethod.ADAPTIVE: AnomalyScoreThreshold,
+    ThresholdMethod.GAUSSIAN_MIXTURE: GaussianMixtureThresholdEstimator,
+}
 
 
 def add_label(

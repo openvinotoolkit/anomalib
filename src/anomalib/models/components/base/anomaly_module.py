@@ -18,7 +18,7 @@ from torch import Tensor, nn
 from torchmetrics import Metric
 
 from anomalib.data.utils import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
-from anomalib.post_processing import ThresholdMethod
+from anomalib.post_processing import ThresholdMethod, ADAPTIVE_THRESHOLD_METHOD_MAP
 from anomalib.utils.metrics import (
     AnomalibMetricCollection,
     AnomalyScoreDistribution,
@@ -45,8 +45,9 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.callbacks: list[Callback]
 
         self.threshold_method: ThresholdMethod
-        self.image_threshold = AnomalyScoreThreshold().cpu()
-        self.pixel_threshold = AnomalyScoreThreshold().cpu()
+        threshold_cls = ADAPTIVE_THRESHOLD_METHOD_MAP.get(self.threshold_method, AnomalyScoreThreshold)
+        self.image_threshold = threshold_cls().cpu()
+        self.pixel_threshold = threshold_cls().cpu()
 
         self.normalization_metrics: Metric
 
@@ -141,7 +142,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         Args:
           outputs: Batch of outputs from the validation step
         """
-        if self.threshold_method == ThresholdMethod.ADAPTIVE:
+        if self.threshold_method in ADAPTIVE_THRESHOLD_METHOD_MAP.keys():
             self._compute_adaptive_threshold(outputs)
         self._collect_outputs(self.image_metrics, self.pixel_metrics, outputs)
         self._log_metrics()

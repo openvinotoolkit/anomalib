@@ -11,6 +11,7 @@ from .post_process import (
     anomaly_map_to_color_map,
     compute_mask,
     superimpose_anomaly_map,
+    ADAPTIVE_THRESHOLD_METHOD_MAP,
 )
 from .visualizer import ImageResult, Visualizer
 
@@ -24,4 +25,5 @@ __all__ = [
     "NormalizationMethod",
     "Visualizer",
     "ThresholdMethod",
+    "ADAPTIVE_THRESHOLD_METHOD_MAP",
 ]
