@@ -151,6 +151,7 @@ class VelocityExtractor(nn.Module):
         Args:
             flows (Tensor): Batch of optical flow images of shape (N, 2, H, W)
             boxes (Tensor): Bounding box coordinates of shaspe (M, 5). First column indicates batch index of the bbox.
+        
         Returns:
             Tensor: Velocity feature tensor of shape (M, n_bins)
         """
