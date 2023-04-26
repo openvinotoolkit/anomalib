@@ -51,7 +51,7 @@ class FeatureExtractor(nn.Module):
         self.use_pose_features = use_pose_features
         self.use_deep_features = use_deep_features
 
-        self.appearance_extractor = DeepExtractor()
+        self.deep_extractor = DeepExtractor()
         self.velocity_extractor = VelocityExtractor(n_bins=n_velocity_bins)
         self.pose_extractor = PoseExtractor()
 
@@ -90,7 +90,7 @@ class FeatureExtractor(nn.Module):
             pose_features = self.pose_extractor(rgb_batch, boxes_list)
             feature_dict[FeatureType.POSE] = pose_features
         if self.use_deep_features:
-            deep_features = self.appearance_extractor(rgb_batch, boxes, batch_size)
+            deep_features = self.deep_extractor(rgb_batch, boxes, batch_size)
             feature_dict[FeatureType.DEEP] = [deep_features[indices == i] for i in range(batch_size)]
 
         # dict of lists to list of dicts
@@ -151,7 +151,7 @@ class VelocityExtractor(nn.Module):
         Args:
             flows (Tensor): Batch of optical flow images of shape (N, 2, H, W)
             boxes (Tensor): Bounding box coordinates of shaspe (M, 5). First column indicates batch index of the bbox.
-        
+
         Returns:
             Tensor: Velocity feature tensor of shape (M, n_bins)
         """
