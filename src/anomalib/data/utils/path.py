@@ -87,7 +87,12 @@ def _prepare_files_labels_from_csv(
         raise RuntimeError(f"Invalid CSV file (missing required columns) {path}")
 
     # Convert to posix path for best compatibility
-    csv_data["image_path"] = csv_data.apply(lambda row: PureWindowsPath(row.image_path).as_posix(), axis=1)
+    csv_data["image_path"] = csv_data.apply(lambda row: Path(PureWindowsPath(row.image_path).as_posix()), axis=1)
+
+    # Filter out unsupported extensions
+    csv_data = csv_data[csv_data.image_path.apply(lambda path: path.suffix in extensions)]
+    if len(csv_data) == 0:
+        raise RuntimeError(f"Found 0 {csv_type} images in CSV file in {path}")
 
     # labels are either normal, abnormal, normal_test
     labels = [csv_type] * len(csv_data)
