@@ -136,18 +136,18 @@ class CSVDataset(AnomalibDataset):
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (str | Split | None): Fixed subset split that follows from folder structure on file system.
             Choose from [Split.FULL, Split.TRAIN, Split.TEST]
-        normal_dir (str | Path): Path to the directory containing normal images.
+        normal_csv (str | Path): Path to the CSV file containing normal images.
         root (str | Path | None): Root folder of the dataset.
-        abnormal_dir (str | Path | None, optional): Path to the directory containing abnormal images.
-        normal_test_dir (str | Path | None, optional): Path to the directory containing
+        abnormal_csv (str | Path | None, optional): Path to the CSV file containing abnormal images.
+        normal_test_csv (str | Path | None, optional): Path to the CSV file containing
             normal images for the test dataset. Defaults to None.
-        mask_dir (str | Path | None, optional): Path to the directory containing
+        mask_csv (str | Path | None, optional): Path to the CSV file containing
             the mask annotations. Defaults to None.
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
             directory.
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
     Raises:
-        ValueError: When task is set to classification and `mask_dir` is provided. When `mask_dir` is
+        ValueError: When task is set to classification and `mask_csv` is provided. When `mask_csv` is
             provided, `task` should be set to `segmentation`.
     """
 
@@ -190,20 +190,20 @@ class CSV(AnomalibDataModule):
     """CSV DataModule.
     Args:
         TODO: Update these
-        normal_dir (str | Path): Name of the directory containing normal images.
+        normal_csv (str | Path): Name of the CSV file containing normal images.
             Defaults to "normal".
-        root (str | Path | None): Path to the root folder containing normal and abnormal dirs.
-        abnormal_dir (str | Path | None): Name of the directory containing abnormal images.
+        root (str | Path | None): Path to the root folder containing normal and abnormal CSVs.
+        abnormal_csv (str | Path | None): Name of the CSV file containing abnormal images.
             Defaults to "abnormal".
-        normal_test_dir (str | Path | None, optional): Path to the directory containing
+        normal_test_csv (str | Path | None, optional): Path to the CSV file containing
             normal images for the test dataset. Defaults to None.
-        mask_dir (str | Path | None, optional): Path to the directory containing
+        mask_csv (str | Path | None, optional): Path to the CSV file containing
             the mask annotations. Defaults to None.
         normal_split_ratio (float, optional): Ratio to split normal training images and add to the
             test set in case test set doesn't contain any normal images.
             Defaults to 0.2.
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
-            directory. Defaults to None.
+            CSV. Defaults to None.
         image_size (int | tuple[int, int] | None, optional): Size of the input image.
             Defaults to None.
         center_crop (int | tuple[int, int] | None, optional): When provided, the images will be center-cropped
