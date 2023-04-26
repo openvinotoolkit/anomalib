@@ -219,6 +219,7 @@ class PoseExtractor(nn.Module):
         Args:
             batch (Tensor): Batch of RGB input images of shape (N, 3, H, W)
             boxes (Tensor): Bounding box coordinates of shaspe (M, 5). First column indicates batch index of the bbox.
+
         Returns:
             list[Tensor]: list of pose feature tensors for each image.
         """
