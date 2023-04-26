@@ -163,7 +163,7 @@ class VelocityExtractor(nn.Module):
         theta_batch = torch.atan2(flow_regions[:, 0, ...], flow_regions[:, 1, ...])
 
         # compute velocity histogram
-        velocity_hictograms = []
+        velocity_histograms = []
         for mag, theta in zip(mag_batch, theta_batch):
             histogram_mag = torch.histogram(
                 input=theta.cpu(), bins=self.n_bins, range=(-torch.pi, torch.pi), weight=mag.cpu()
@@ -172,9 +172,9 @@ class VelocityExtractor(nn.Module):
             final_histogram = torch.zeros_like(histogram_mag)
             mask = histogram_counts != 0
             final_histogram[mask] = histogram_mag[mask] / histogram_counts[mask]
-            velocity_hictograms.append(final_histogram)
+            velocity_histograms.append(final_histogram)
 
-        return torch.stack(velocity_hictograms).to(flows.device)
+        return torch.stack(velocity_histograms).to(flows.device)
 
 
 class PoseExtractor(nn.Module):
