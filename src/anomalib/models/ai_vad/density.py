@@ -246,6 +246,7 @@ class GMMEstimator(BaseDensityEstimator):
     def __init__(self, n_components: int = 2) -> None:
         super().__init__()
 
+        # TODO: replace with custom pytorch implementation of GMM (CVS-109432)
         self.gmm = GaussianMixture(n_components=n_components, random_state=0)
         self.memory_bank: list[Tensor] | Tensor = []
 
