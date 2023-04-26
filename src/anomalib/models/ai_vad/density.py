@@ -215,8 +215,8 @@ class GroupedKNNEstimator(BaseDensityEstimator):
     def _compute_normalization_statistics(self):
         """Compute min-max normalization statistics while taking the group into account."""
         for group, features in self.memory_bank.items():
-            nns = self.predict(features, group, normalize=False)
-            self.normalization_statistics.update(nns)
+            distances = self.predict(features, group, normalize=False)
+            self.normalization_statistics.update(distances)
 
         self.normalization_statistics.compute()
 
