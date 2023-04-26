@@ -48,7 +48,7 @@ class AUPRO(Metric):
 
         self.add_state("preds", default=[], dist_reduce_fx="cat")  # pylint: disable=not-callable
         self.add_state("target", default=[], dist_reduce_fx="cat")  # pylint: disable=not-callable
-        self.register_buffer("fpr_limit", torch.tensor(fpr_limit))
+        self.register_buffer("fpr_limit", torch.tensor(fpr_limit), persistent=False)
 
     def update(self, preds: Tensor, target: Tensor) -> None:  # type: ignore
         """Update state with new values.
