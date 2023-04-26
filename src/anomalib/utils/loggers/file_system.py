@@ -29,10 +29,13 @@ class FileSystemLogger(ImageLoggerBase, CSVLogger):
             version (int | str | None, optional): The version of the experiment. Defaults to None.
         """
         super().__init__(save_dir=save_dir, name=name, version=version)
+        dir_path = Path(self.log_dir) / "images"
+        dir_path.mkdir(parents=True, exist_ok=True)
 
     def add_image(self, image: np.ndarray | Figure, name: str | None = None, **kwargs: Any) -> None:
         assert name is not None, "Name of the image cannot be None."
-        file_path = Path(self.log_dir) / name
+        file_path = Path(self.log_dir) / "images" / name
+
         if isinstance(image, Figure):
             image.savefig(str(file_path))
         else:

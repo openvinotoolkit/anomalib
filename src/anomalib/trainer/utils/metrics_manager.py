@@ -141,4 +141,8 @@ class MetricsManager:
         if trainer._results is None:
             raise MisconfigurationException("Loop's result collection is not registered.")
         for key, value in metrics.items(keep_base=False, copy_state=False):
-            trainer._results.log(current_fx_name, name=key, value=value, prog_bar=prog_bar)
+            # Need to explicitly mention 'mean' as a string as reduce_fx =``torch.mean`` does not assert to True when
+            # NNCF optimization is enabled. This is probably an issue in torch.compile as well.
+            # See issue https://github.com/pytorch/pytorch/issues/96197 for more details. This is a temporary fix.
+            # TODO: Remove this once we upgrade to torch 2.0
+            trainer._results.log(current_fx_name, name=key, value=value, prog_bar=prog_bar, reduce_fx="mean")
