@@ -52,10 +52,8 @@ def make_csv_dataset(
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
     normal_csv = _resolve_path(normal_csv, root)
-    abnormal_csv = _resolve_path(
-        abnormal_csv, root) if abnormal_csv is not None else None
-    normal_test_csv = _resolve_path(
-        normal_test_csv, root) if normal_test_csv is not None else None
+    abnormal_csv = _resolve_path(abnormal_csv, root) if abnormal_csv is not None else None
+    normal_test_csv = _resolve_path(normal_test_csv, root) if normal_test_csv is not None else None
     mask_csv = _resolve_path(mask_csv, root) if mask_csv is not None else None
     assert normal_csv.is_file(), "A CSV file must be provided in normal_csv."
 
@@ -73,17 +71,18 @@ def make_csv_dataset(
         csvs = {**csvs, **{"mask_csv": mask_csv}}
 
     for csv_type, path in csvs.items():
-        filename, label = _prepare_files_labels_from_csv(
-            path, csv_type, extensions)
+        filename, label = _prepare_files_labels_from_csv(path, csv_type, extensions)
         filenames += filename
         labels += label
 
     samples = DataFrame({"image_path": filenames, "label": labels})
     samples = samples.sort_values(by="image_path", ignore_index=True)
 
+    # Convert to absolute path if not
+    samples.image_path = samples.image_path.apply(lambda path: _resolve_path(path, root))
+
     # Create label index for normal (0) and abnormal (1) images.
-    samples.loc[(samples.label == "normal") | (
-        samples.label == "normal_test"), "label_index"] = 0
+    samples.loc[(samples.label == "normal") | (samples.label == "normal_test"), "label_index"] = 0
     samples.loc[(samples.label == "abnormal"), "label_index"] = 1
     samples.label_index = samples.label_index.astype("Int64")
 
@@ -109,8 +108,7 @@ def make_csv_dataset(
 
     # remove all the rows with temporal image samples that have already been assigned
     samples = samples.loc[
-        (samples.label == "normal") | (samples.label ==
-                                       "abnormal") | (samples.label == "normal_test")
+        (samples.label == "normal") | (samples.label == "abnormal") | (samples.label == "normal_test")
     ]
 
     # Ensure the pathlib objects are converted to str.
@@ -121,8 +119,7 @@ def make_csv_dataset(
     # By default, all the normal samples are assigned as train.
     #   and all the abnormal samples are test.
     samples.loc[(samples.label == "normal"), "split"] = "train"
-    samples.loc[(samples.label == "abnormal") | (
-        samples.label == "normal_test"), "split"] = "test"
+    samples.loc[(samples.label == "abnormal") | (samples.label == "normal_test"), "split"] = "test"
 
     # Get the data frame for the split.
     if split:

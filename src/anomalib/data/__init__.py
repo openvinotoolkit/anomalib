@@ -12,9 +12,9 @@ from omegaconf import DictConfig, ListConfig
 from .avenue import Avenue
 from .base import AnomalibDataModule, AnomalibDataset
 from .btech import BTech
+from .csv import CSV
 from .folder import Folder
 from .folder_3d import Folder3D
-from .csv import CSV
 from .inference import InferenceDataset
 from .mvtec import MVTec
 from .mvtec_3d import MVTec3D
@@ -48,8 +48,7 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
         datamodule = MVTec(
             root=config.dataset.path,
             category=config.dataset.category,
-            image_size=(
-                config.dataset.image_size[0], config.dataset.image_size[1]),
+            image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
             center_crop=center_crop,
             normalization=config.dataset.normalization,
             train_batch_size=config.dataset.train_batch_size,
@@ -67,8 +66,7 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
         datamodule = MVTec3D(
             root=config.dataset.path,
             category=config.dataset.category,
-            image_size=(
-                config.dataset.image_size[0], config.dataset.image_size[1]),
+            image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
             center_crop=center_crop,
             normalization=config.dataset.normalization,
             train_batch_size=config.dataset.train_batch_size,
@@ -86,8 +84,7 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
         datamodule = BTech(
             root=config.dataset.path,
             category=config.dataset.category,
-            image_size=(
-                config.dataset.image_size[0], config.dataset.image_size[1]),
+            image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
             center_crop=center_crop,
             normalization=config.dataset.normalization,
             train_batch_size=config.dataset.train_batch_size,
@@ -110,8 +107,7 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             normal_test_dir=config.dataset.normal_test_dir,
             mask_dir=config.dataset.mask_dir,
             extensions=config.dataset.extensions,
-            image_size=(
-                config.dataset.image_size[0], config.dataset.image_size[1]),
+            image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
             center_crop=center_crop,
             normalization=config.dataset.normalization,
             train_batch_size=config.dataset.train_batch_size,
@@ -136,8 +132,7 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             normal_test_depth_dir=config.dataset.normal_test_depth_dir,
             mask_dir=config.dataset.mask_dir,
             extensions=config.dataset.extensions,
-            image_size=(
-                config.dataset.image_size[0], config.dataset.image_size[1]),
+            image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
             center_crop=center_crop,
             normalization=config.dataset.normalization,
             train_batch_size=config.dataset.train_batch_size,
@@ -159,8 +154,7 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             normal_test_csv=config.dataset.normal_test_csv,
             mask_csv=config.dataset.mask_csv,
             extensions=config.dataset.extensions,
-            image_size=(
-                config.dataset.image_size[0], config.dataset.image_size[1]),
+            image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
             center_crop=center_crop,
             normalization=config.dataset.normalization,
             train_batch_size=config.dataset.train_batch_size,
@@ -180,8 +174,7 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             task=config.dataset.task,
             clip_length_in_frames=config.dataset.clip_length_in_frames,
             frames_between_clips=config.dataset.frames_between_clips,
-            image_size=(
-                config.dataset.image_size[0], config.dataset.image_size[1]),
+            image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
             center_crop=center_crop,
             normalization=config.dataset.normalization,
             transform_config_train=config.dataset.transform_config.train,
@@ -199,8 +192,7 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             task=config.dataset.task,
             clip_length_in_frames=config.dataset.clip_length_in_frames,
             frames_between_clips=config.dataset.frames_between_clips,
-            image_size=(
-                config.dataset.image_size[0], config.dataset.image_size[1]),
+            image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
             center_crop=center_crop,
             normalization=config.dataset.normalization,
             transform_config_train=config.dataset.transform_config.train,
@@ -215,8 +207,7 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
         datamodule = Visa(
             root=config.dataset.path,
             category=config.dataset.category,
-            image_size=(
-                config.dataset.image_size[0], config.dataset.image_size[1]),
+            image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
             center_crop=center_crop,
             normalization=config.dataset.normalization,
             train_batch_size=config.dataset.train_batch_size,
@@ -237,8 +228,7 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             task=config.dataset.task,
             clip_length_in_frames=config.dataset.clip_length_in_frames,
             frames_between_clips=config.dataset.frames_between_clips,
-            image_size=(
-                config.dataset.image_size[0], config.dataset.image_size[1]),
+            image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
             center_crop=center_crop,
             normalization=config.dataset.normalization,
             transform_config_train=config.dataset.transform_config.train,

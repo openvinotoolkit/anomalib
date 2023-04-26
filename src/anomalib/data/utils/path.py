@@ -6,11 +6,9 @@
 from __future__ import annotations
 
 from pathlib import Path, PureWindowsPath
-from typing import Union
-
-from torchvision.datasets.folder import IMG_EXTENSIONS
 
 import pandas as pd
+from torchvision.datasets.folder import IMG_EXTENSIONS
 
 
 def _check_and_convert_path(path: str | Path) -> Path:
@@ -48,8 +46,7 @@ def _prepare_files_labels(
     if isinstance(extensions, str):
         extensions = (extensions,)
 
-    filenames = [f for f in path.glob(
-        r"**/*") if f.suffix in extensions and not f.is_dir()]
+    filenames = [f for f in path.glob(r"**/*") if f.suffix in extensions and not f.is_dir()]
     if not filenames:
         raise RuntimeError(f"Found 0 {path_type} images in {path}")
 
@@ -86,27 +83,16 @@ def _prepare_files_labels_from_csv(
         raise RuntimeError(f"Empty CSV file in {path}")
 
     # Check and ensure `path` column exists
-    if 'path' not in csv_data:
-        raise RuntimeError(
-            f"Invalid CSV file (missing required columns) {path}")
+    if "image_path" not in csv_data:
+        raise RuntimeError(f"Invalid CSV file (missing required columns) {path}")
 
-    # Convert to absolute path
-    # TODO: handle different scenarios of path types, confirm if we should always convert to posix?
-    csv_data['path'] = csv_data.apply(
-        lambda row: PureWindowsPath(row.path).as_posix(), axis=1)
-
-    if csv_type == 'normal':
-        csv_data['label'] = 'normal'
-    elif csv_type in ['abnormal', 'normal_test']:
-        # relies on ground truth label
-        # TODO: change installation to groundtruth
-        csv_data['label'] = csv_data.installation.apply(
-            lambda label: 'normal_test' if label == 1 else 'abnormal')
-    else:
-        raise RuntimeError(f"Invalid csv type argument.")
+    # Convert to posix path for best compatibility
+    csv_data["image_path"] = csv_data.apply(lambda row: PureWindowsPath(row.image_path).as_posix(), axis=1)
 
     # labels are either normal, abnormal, normal_test
-    return csv_data.path.tolist(), csv_data.label.tolist()
+    labels = [csv_type] * len(csv_data)
+
+    return csv_data.image_path.tolist(), labels
 
 
 def _resolve_path(folder: str | Path, root: str | Path | None = None) -> Path:
