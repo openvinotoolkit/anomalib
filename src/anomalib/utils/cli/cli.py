@@ -21,7 +21,7 @@ from pytorch_lightning.cli import ArgsType, LightningArgumentParser, LightningCL
 from anomalib.post_processing.normalization import NormalizationMethod
 from anomalib.post_processing.post_process import ThresholdMethod
 from anomalib.trainer.trainer import AnomalibTrainer
-from anomalib.utils.callbacks import LoadModelCallback, ModelCheckpoint, TimerCallback, add_visualizer_callback
+from anomalib.utils.callbacks import ModelCheckpoint, TimerCallback
 from anomalib.utils.loggers import configure_logger
 
 logger = logging.getLogger("anomalib.cli")
@@ -151,15 +151,9 @@ class AnomalibCLI(LightningCLI):
         )
         callbacks.append(checkpoint)
 
-        # LoadModel from Checkpoint.
-        if config.trainer.resume_from_checkpoint:
-            load_model = LoadModelCallback(config.trainer.resume_from_checkpoint)
-            callbacks.append(load_model)
-
         # Add timing to the pipeline.
         callbacks.append(TimerCallback())
 
-        add_visualizer_callback(callbacks, config)
         self.config[subcommand].visualization = config.visualization
 
         # Export to OpenVINO

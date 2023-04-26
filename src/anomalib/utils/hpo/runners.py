@@ -6,10 +6,10 @@
 from __future__ import annotations
 
 import gc
+from warnings import warn
 
 import torch
-import wandb
-from comet_ml import Optimizer
+from lightning_utilities.core.imports import module_available
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning.loggers import CometLogger, WandbLogger
 
@@ -20,6 +20,17 @@ from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.sweep import flatten_sweep_params, set_in_nested_config
 
 from .config import flatten_hpo_params
+
+try:
+    import wandb
+except ImportError:
+    warn("wandb not installed. Please install to use these features.")
+
+
+try:
+    from comet_ml import Optimizer
+except ImportError:
+    warn("comet_ml not installed. Please install to use these features.")
 
 
 class WandbSweep:
@@ -37,6 +48,8 @@ class WandbSweep:
         sweep_config: DictConfig | ListConfig,
         entity: str | None = None,
     ) -> None:
+        if not module_available("wandb"):
+            raise ImportError("wandb not installed. Please install to use these features.")
         self.config = config
         self.sweep_config = sweep_config
         self.observation_budget = sweep_config.observation_budget
@@ -102,6 +115,8 @@ class CometSweep:
         sweep_config: DictConfig | ListConfig,
         entity: str | None = None,
     ) -> None:
+        if not module_available("comet_ml"):
+            raise ImportError("comet_ml not installed. Please install to use these features.")
         self.config = config
         self.sweep_config = sweep_config
         self.entity = entity

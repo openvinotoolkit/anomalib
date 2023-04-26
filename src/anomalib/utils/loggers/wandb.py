@@ -6,8 +6,10 @@
 from __future__ import annotations
 
 from typing import Any
+from warnings import warn
 
 import numpy as np
+from lightning_utilities.core.imports import module_available
 from matplotlib.figure import Figure
 from pytorch_lightning.loggers.wandb import WandbLogger
 from pytorch_lightning.utilities import rank_zero_only
@@ -15,7 +17,8 @@ from pytorch_lightning.utilities import rank_zero_only
 try:
     import wandb
 except ModuleNotFoundError:
-    print("To use wandb logger install it using `pip install wandb`")
+    warn("To use wandb logger install it using `pip install wandb`")
+
 
 from .base import ImageLoggerBase
 
@@ -85,6 +88,8 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
         prefix: str | None = "",
         **kwargs,
     ) -> None:
+        if not module_available("wandb"):
+            raise ModuleNotFoundError("Please install wandb to use this logger")
         super().__init__(
             name=name,
             save_dir=save_dir,

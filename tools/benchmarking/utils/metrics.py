@@ -9,11 +9,22 @@ import random
 import string
 from glob import glob
 from pathlib import Path
+from warnings import warn
 
 import pandas as pd
-import wandb
-from comet_ml import Experiment
+from lightning_utilities.core.imports import module_available
 from torch.utils.tensorboard.writer import SummaryWriter
+
+try:
+    import wandb
+except ImportError:
+    warn("wandb not installed. Please install to use these features.")
+
+
+try:
+    from comet_ml import Experiment
+except ImportError:
+    warn("comet_ml not installed. Please install to use these features.")
 
 
 def write_metrics(
@@ -104,6 +115,8 @@ def upload_to_wandb(
         Defaults to "anomalib".
         folder (optional, str): Sub-directory from which runs are picked up. Defaults to None. If none picks from runs.
     """
+    if not module_available("wandb"):
+        raise ImportError("wandb not installed. Please install to use these features.")
     project = f"benchmarking_{get_unique_key(2)}"
     tag_list = ["dataset.category", "model_name", "dataset.image_size", "model.backbone", "device"]
     search_path = "runs/*.csv" if folder is None else f"runs/{folder}/*.csv"
@@ -130,6 +143,8 @@ def upload_to_comet(
     Args:
         folder (optional, str): Sub-directory from which runs are picked up. Defaults to None. If none picks from runs.
     """
+    if not module_available("comet_ml"):
+        raise ImportError("comet_ml not installed. Please install to use these features.")
     project = f"benchmarking_{get_unique_key(2)}"
     tag_list = ["dataset.category", "model_name", "dataset.image_size", "model.backbone", "device"]
     search_path = "runs/*.csv" if folder is None else f"runs/{folder}/*.csv"
