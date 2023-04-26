@@ -6,7 +6,7 @@ dataset:
   task: detection
   clip_length_in_frames: 2
   frames_between_clips: 10
-  video_target_frame: "last"
+  target_frame: "last"
   image_size: [240, 360] # AI-VAD region- and feature extractor apply custom resizing
   normalization: none # AI-VAD region- and feature extractor apply custom normalization
   train_batch_size: 8
@@ -20,7 +20,7 @@ dataset:
   val_split_mode: same_as_test # options: [same_as_test, from_test]
   val_split_ratio: 0.5
   tiling:
-    apply: falser
+    apply: false
     tile_size: null
     stride: null
     remove_border_count: 0
