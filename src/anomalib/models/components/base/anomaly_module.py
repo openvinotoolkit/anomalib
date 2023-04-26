@@ -142,7 +142,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         Args:
           outputs: Batch of outputs from the validation step
         """
-        if self.threshold_method in ADAPTIVE_THRESHOLD_METHOD_MAP.keys():
+        if self.threshold_method in ADAPTIVE_THRESHOLD_METHOD_MAP:
             self._compute_adaptive_threshold(outputs)
         self._collect_outputs(self.image_metrics, self.pixel_metrics, outputs)
         self._log_metrics()

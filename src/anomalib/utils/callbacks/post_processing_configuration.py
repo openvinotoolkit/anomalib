@@ -48,7 +48,7 @@ class PostProcessingConfigurationCallback(Callback):
         super().__init__()
         self.normalization_method = normalization_method
 
-        if threshold_method in ADAPTIVE_THRESHOLD_METHOD_MAP.keys() and all(
+        if threshold_method in ADAPTIVE_THRESHOLD_METHOD_MAP and all(
             i is not None for i in (manual_image_threshold, manual_pixel_threshold)
         ):
             raise ValueError(

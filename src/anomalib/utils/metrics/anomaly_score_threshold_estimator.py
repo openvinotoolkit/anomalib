@@ -19,7 +19,6 @@ from torchmetrics.utilities.data import dim_zero_cat
 
 from anomalib.utils.metrics import AnomalyScoreThreshold
 
-
 __all__ = ["GaussianMixtureThresholdEstimator"]
 
 
@@ -39,42 +38,32 @@ class BaseAnomalyScoreThresholdEstimator(AnomalyScoreThreshold, ABC):
             warnings.warn(f"{warning_message} Falling back to Adaptive Threshold without density estimation.")
             return super().compute()
 
-        positive_preds = preds[target == 1]
-        positive_estimator = self._create_estimator()
-        positive_estimator.fit(positive_preds.reshape(-1, 1).numpy())
-
-        negative_preds = preds[target == 0]
-        negative_estimator = self._create_estimator()
-        negative_estimator.fit(negative_preds.reshape(-1, 1).numpy())
-
         thresholds = self._get_sorted_candidate_thresholds(preds, target)
-        positive_cdf = self._cdf_samples(positive_estimator, thresholds)
-        negative_cdf = self._cdf_samples(negative_estimator, thresholds)
+        positive_cdf = self._run_estimator_cdf(preds[target == 1], thresholds)
+        negative_cdf = self._run_estimator_cdf(preds[target == 0], thresholds)
 
-        # Calculate f1_scores using CDF.
         if self.positive_rate is not None:
             negative_alpha = (1 - self.positive_rate) / self.positive_rate
         else:
-            negative_alpha = len(negative_preds) / len(positive_preds)
+            negative_alpha = target.numel() / (target == 1).sum() - 1
         fp = (1. - negative_cdf) * negative_alpha
         tp = 1. - positive_cdf
         fn = positive_cdf
-        f1_scores = (2 * tp) / (2 * tp + fp + fn)
+        f1_scores = (tp * 2.) / (tp * 2. + fp + fn)
+
         self.value = torch.tensor(thresholds[np.argmax(f1_scores)])  # pylint: disable=not-callable
         return self.value
 
     def _check_validity_warning_message(self, preds: Tensor, target: Tensor) -> Optional[str]:
+        # pylint: disable=unused-argument
         return None
 
-    def _get_sorted_candidate_thresholds(self, preds: Tensor, target: Tensor) -> np.ndarray:
-        return np.sort(preds.numpy())
+    def _get_sorted_candidate_thresholds(self, preds: Tensor, target: Tensor) -> Tensor:
+        # pylint: disable=unused-argument
+        return torch.sort(preds)[0].view(-1)
 
     @abstractmethod
-    def _create_estimator(self) -> BaseEstimator:
-        pass
-
-    @abstractmethod
-    def _cdf_samples(self, estimator: BaseEstimator, x_sorted: np.ndarray) -> np.ndarray:
+    def _run_estimator_cdf(self, preds: Tensor, sorted_thresholds: Tensor) -> Tensor:
         pass
 
 
@@ -92,23 +81,25 @@ class GaussianMixtureThresholdEstimator(BaseAnomalyScoreThresholdEstimator):
         self.n_candidate_thresholds = 10 ** 5
 
     def _check_validity_warning_message(self, preds: Tensor, target: Tensor) -> Optional[str]:
+        # pylint: disable=unused-argument
         min_samples = max(2, self.n_components)
         has_enough_data = (target == 0).sum() >= min_samples and (target == 1).sum() >= min_samples
         if not has_enough_data:
             return ("The validation set contains too few anomalous or normal images to conduct a "
-                    f"Gaussian Mixture estimator.")
+                    "Gaussian Mixture estimator.")
         return None
 
-    def _get_sorted_candidate_thresholds(self, preds: Tensor, target: Tensor) -> np.ndarray:
-        return np.linspace(preds.min(), preds.max(), self.n_candidate_thresholds)
+    def _get_sorted_candidate_thresholds(self, preds: Tensor, target: Tensor) -> Tensor:
+        # pylint: disable=unused-argument
+        return torch.linspace(preds.min(), preds.max(), self.n_candidate_thresholds)
 
-    def _create_estimator(self) -> GaussianMixture:
-        return GaussianMixture(self.n_components, covariance_type='full', **self.kwargs)
-
-    def _cdf_samples(self, estimator: GaussianMixture, x_sorted: np.ndarray) -> np.ndarray:
-        cdf = np.zeros((x_sorted.size))
+    def _run_estimator_cdf(self, preds: Tensor, sorted_thresholds: Tensor) -> Tensor:
+        estimator = GaussianMixture(self.n_components, covariance_type='full', **self.kwargs)
+        estimator.fit(preds.reshape(-1, 1).numpy())
+        cdf = np.zeros(sorted_thresholds.shape)
         for weight, mean, var in zip(estimator.weights_, estimator.means_, estimator.covariances_):
+            # TODO(yujie): var should be sqrt?
             mean = mean.flatten()[0]
             var = var.flatten()[0]
-            cdf += norm.cdf(x_sorted, loc=mean, scale=var ** 0.5) * weight
-        return cdf
+            cdf += norm.cdf(sorted_thresholds, loc=mean, scale=var ** 0.5) * weight
+        return torch.from_numpy(cdf)
