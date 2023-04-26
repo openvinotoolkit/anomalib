@@ -56,6 +56,6 @@ class FlowExtractor(nn.Module):
             flows = self.model(first_frame, last_frame)[-1]
 
         # convert back to original size
-        flows = F.resize(flows, [height, width])
+        flows = F.resize(flows, [height, width], antialias=False)
 
         return flows
