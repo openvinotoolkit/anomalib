@@ -189,6 +189,7 @@ class UCSDped(AnomalibVideoDataModule):
         category (str): Sub-category of the dataset, e.g. 'bottle'
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
+        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
         image_size (int | tuple[int, int] | None, optional): Size of the input image.
             Defaults to None.
