@@ -118,6 +118,7 @@ class DeepExtractor(nn.Module):
             batch (Tensor): Batch of RGB input images of shape (N, 3, H, W)
             boxes (Tensor): Bounding box coordinates of shaspe (M, 5). First column indicates batch index of the bbox.
             batch_size (int): Number of images in the batch.
+
         Returns:
             Tensor: Deep feature tensor of shape (M, 512)
         """

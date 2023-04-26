@@ -107,6 +107,7 @@ class CombinedDensityEstimator(BaseDensityEstimator):
 
         Args:
             features (dict[Tensor]): Dictionary containing extracted features for a single frame.
+        
         Returns:
             Tensor: Region-level anomaly scores for all regions withing the frame.
             Tensor: Frame-level anomaly score for the frame.
