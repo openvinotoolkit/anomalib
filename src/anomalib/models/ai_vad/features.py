@@ -7,13 +7,14 @@ from __future__ import annotations
 
 from enum import Enum
 
-import clip
 import torch
 from torch import Tensor, nn
 from torchvision.models.detection import KeypointRCNN_ResNet50_FPN_Weights, keypointrcnn_resnet50_fpn
 from torchvision.models.detection.roi_heads import keypointrcnn_inference
 from torchvision.ops import roi_align
 from torchvision.transforms import Normalize
+
+from anomalib.models.ai_vad.clip import clip
 
 
 class FeatureType(str, Enum):
