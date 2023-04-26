@@ -42,7 +42,6 @@ model:
 
 metrics:
   image:
-    - F1Score
     - AUROC
   threshold:
     method: adaptive #options: [adaptive, manual]
