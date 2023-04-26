@@ -19,9 +19,6 @@ from anomalib.utils.metrics.min_max import MinMax
 class BaseDensityEstimator(nn.Module, ABC):
     """Base density estimator."""
 
-    def __init__(self) -> None:
-        super().__init__()
-
     @abstractmethod
     def update(self, features: dict[FeatureType, Tensor] | Tensor, group: Any = None):
         """Update the density model with a new set of features."""
