@@ -201,6 +201,7 @@ class PoseExtractor(nn.Module):
 
         Args:
             keypoint_detections (list[dict]): Outputs of the keypoint extractor
+
         Returns:
             list[Tensor]: List of pose feature tensors for each image
         """
