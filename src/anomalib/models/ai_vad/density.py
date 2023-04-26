@@ -248,8 +248,9 @@ class GMMEstimator(BaseDensityEstimator):
 
         self.normalization_statistics = MinMax()
 
-    def update(self, features: Tensor, _group: Any = None):
+    def update(self, features: Tensor, group: Any = None):
         """Update the feature bank."""
+        del group
         self.memory_bank.append(features)
 
     def fit(self):
