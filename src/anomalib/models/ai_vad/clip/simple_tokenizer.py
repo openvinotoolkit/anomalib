@@ -1,12 +1,19 @@
 # mypy: ignore-errors
 # ruff: noqa
 
+# Original Code
+# https://github.com/openai/CLIP.
+# SPDX-License-Identifier: MIT
+#
+# Modified
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import gzip
 import html
 import os
 from functools import lru_cache
 
-import ftfy
 import regex as re
 
 
@@ -51,7 +58,6 @@ def get_pairs(word):
 
 
 def basic_clean(text):
-    text = ftfy.fix_text(text)
     text = html.unescape(html.unescape(text))
     return text.strip()
 

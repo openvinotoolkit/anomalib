@@ -1,6 +1,14 @@
 # mypy: ignore-errors
 # ruff: noqa
 
+# Original Code
+# https://github.com/openai/CLIP.
+# SPDX-License-Identifier: MIT
+#
+# Modified
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import hashlib
 import os
 import urllib
