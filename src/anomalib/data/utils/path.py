@@ -82,7 +82,7 @@ def _prepare_files_labels_from_csv(
     if len(csv_data) == 0:
         raise RuntimeError(f"Empty CSV file in {path}")
 
-    # Check and ensure `path` column exists
+    # Check and ensure `image_path` column exists
     if "image_path" not in csv_data:
         raise RuntimeError(f"Invalid CSV file (missing required columns) {path}")
 
