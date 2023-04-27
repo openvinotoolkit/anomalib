@@ -235,6 +235,13 @@ class AnomalyModule(pl.LightningModule, ABC):
         else:
             warn("No known normalization found in model weights.")
 
+    def _load_pixel_metrics(self, state_dict: OrderedDict[str, Tensor]) -> None:
+        """Create pixel_metrics and add AUPRO."""
+        if not hasattr(self, "pixel_metrics") and "pixel_metrics.AUPRO.fpr_limit" in state_dict.keys():
+            self.pixel_metrics = AnomalibMetricCollection([], prefix="pixel_")
+            fpr_limit = state_dict["pixel_metrics.AUPRO.fpr_limit"].item()
+            self.pixel_metrics.add_metrics(AUPRO(fpr_limit=fpr_limit))
+
     def load_state_dict(self, state_dict: OrderedDict[str, Tensor], strict: bool = True):
         """Load state dict from checkpoint.
 
@@ -242,9 +249,6 @@ class AnomalyModule(pl.LightningModule, ABC):
         """
         # Used to load missing normalization and threshold parameters
         self._load_normalization_class(state_dict)
-        # Used to load fpr_limit in AURPO before create_metric_collection
-        if not hasattr(self, "pixel_metrics") and "pixel_metrics.AUPRO.fpr_limit" in state_dict.keys():
-            self.pixel_metrics = AnomalibMetricCollection([], prefix="pixel_")
-            fpr_limit = state_dict["pixel_metrics.AUPRO.fpr_limit"].item()
-            self.pixel_metrics.add_metrics(AUPRO(fpr_limit=fpr_limit))
+        # Used to load pixel metrics before create_metric_collection
+        self._load_pixel_metrics(state_dict)
         return super().load_state_dict(state_dict, strict=strict)
