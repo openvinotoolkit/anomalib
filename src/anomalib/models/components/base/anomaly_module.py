@@ -56,7 +56,9 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.image_threshold = MethodToThrehsoldMapping.get(threshold_config.method, AnomalyScoreThreshold)(
             **threshold_config
         ).cpu()
-        self.pixel_threshold = AnomalyScoreThreshold(**threshold_config).cpu()
+        self.pixel_threshold = MethodToThrehsoldMapping.get(threshold_config.method, AnomalyScoreThreshold)(
+            **threshold_config
+        ).cpu()
 
         self.normalization_metrics: Metric
 
