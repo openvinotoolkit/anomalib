@@ -18,6 +18,7 @@ from .inference import InferenceDataset
 from .mvtec import MVTec
 from .mvtec_3d import MVTec3D
 from .shanghaitech import ShanghaiTech
+from .synthetic import NoiseType
 from .task_type import TaskType
 from .ucsd_ped import UCSDped
 from .visa import Visa
@@ -240,4 +241,5 @@ __all__ = [
     "UCSDped",
     "TaskType",
     "ShanghaiTech",
+    "NoiseType",
 ]
