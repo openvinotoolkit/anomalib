@@ -6,7 +6,7 @@
 from .augmenter import Augmenter
 from .boxes import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
 from .download import DownloadInfo, download_and_extract
-from .generators import random_2d_perlin
+from .generators import random_2d_perlin, random_2d_simplex
 from .image import (
     generate_output_image_filename,
     get_image_filenames,
@@ -31,6 +31,7 @@ __all__ = [
     "get_image_filenames",
     "get_image_height_and_width",
     "random_2d_perlin",
+    "random_2d_simplex",
     "read_image",
     "read_depth_image",
     "random_split",
