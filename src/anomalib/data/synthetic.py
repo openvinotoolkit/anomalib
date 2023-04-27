@@ -156,6 +156,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         Args:
             dataset (AnomalibDataset): Dataset consisting of only normal images that will be converrted to a synthetic
                 anomalous dataset with a 50/50 normal anomalous split.
+            synthetic_type (str): Synthetic method to be used to generate anomalous samples.
         """
         return cls(task=dataset.task, transform=dataset.transform, source_samples=dataset.samples, synthetic_type=synthetic_type)
 
@@ -179,8 +180,6 @@ class SyntheticAnomalyDataset(AnomalibDataset):
     def _setup(self) -> None:
         """Create samples dataframe."""
         logger.info("Generating synthetic anomalous images for validation set")
-        print("--------------------------------------")
-        print(self.__dict__.keys())
         self.samples = make_synthetic_dataset(self.source_samples, self.im_dir, self.mask_dir, 0.5)
 
     def __del__(self) -> None:
