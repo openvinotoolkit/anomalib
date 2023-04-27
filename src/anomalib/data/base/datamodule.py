@@ -19,6 +19,8 @@ from anomalib.data.synthetic import SyntheticAnomalyDataset
 from anomalib.data.utils import (
     TestSplitMode,
     ValSplitMode,
+    TestSyntheticType,
+    ValSyntheticType,
     random_split,
     split_by_label,
 )
@@ -63,6 +65,10 @@ class AnomalibDataModule(LightningDataModule, ABC):
             from_test, synthetic]
         val_split_ratio (float): Fraction of the train or test images held our for validation.
         seed (int | None, optional): Seed used during random subset splitting.
+        test_synthetic_type (Optional[TestSyntheticType], optional): Determines which test synthetic method is used.
+            Options: [perlin, perlin_roi]
+        val_synthetic_type (Optional[ValSyntheticType], optional): Determines which val synthetic method is used.
+            Options: [perlin, perlin_roi]
     """
 
     def __init__(
@@ -75,6 +81,8 @@ class AnomalibDataModule(LightningDataModule, ABC):
         test_split_mode: TestSplitMode | None = None,
         test_split_ratio: float | None = None,
         seed: int | None = None,
+        test_synthetic_type: TestSyntheticType | None = None,
+        val_synthetic_type: ValSyntheticType | None = None
     ) -> None:
         super().__init__()
         self.train_batch_size = train_batch_size
@@ -89,6 +97,9 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self.train_data: AnomalibDataset
         self.val_data: AnomalibDataset
         self.test_data: AnomalibDataset
+        
+        self.test_synthetic_type = test_synthetic_type
+        self.val_synthetic_type = val_synthetic_type
 
         self._samples: DataFrame | None = None
 
