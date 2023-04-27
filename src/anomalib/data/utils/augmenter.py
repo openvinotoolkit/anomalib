@@ -15,6 +15,7 @@ from __future__ import annotations
 import glob
 import math
 import random
+from typing import Callable, Mapping
 
 import cv2
 import imgaug.augmenters as iaa
@@ -23,8 +24,14 @@ import torch
 from torch import Tensor
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
-from anomalib.data.utils.generators.perlin import random_2d_perlin
+from anomalib.data.synthetic import NoiseType
 from anomalib.data.utils.generators.opensimplex import random_2d_simplex
+from anomalib.data.utils.generators.perlin import random_2d_perlin
+
+NoiseToProcessFunctionMapping: Mapping[NoiseType, Callable] = {
+    NoiseType.PERLIN_2D: random_2d_perlin,
+    NoiseType.SIMPLEX_2D: random_2d_simplex,
+}
 
 
 def nextpow2(value):
@@ -47,10 +54,11 @@ class Augmenter:
         anomaly_source_path: str | None = None,
         p_anomalous: float = 0.5,
         beta: float | tuple[float, float] = (0.2, 1.0),
+        noise_type: NoiseType = NoiseType.PERLIN_2D,
     ):
         self.p_anomalous = p_anomalous
         self.beta = beta
-
+        self.noise_type = noise_type
         self.anomaly_source_paths = []
         if anomaly_source_path is not None:
             for img_ext in IMG_EXTENSIONS:
@@ -94,20 +102,20 @@ class Augmenter:
         Returns:
             Image containing a random anomalous perturbation, and the corresponding ground truth anomaly mask.
         """
-        # Generate random perlin noise
+        # Generate random perlin or simplex noise
         perlin_scale = 6
         min_perlin_scale = 0
 
         perlin_scalex = 2 ** random.randint(min_perlin_scale, perlin_scale)
         perlin_scaley = 2 ** random.randint(min_perlin_scale, perlin_scale)
-
-        perlin_noise = random_2d_perlin((nextpow2(height), nextpow2(width)), (perlin_scalex, perlin_scaley))[
+        process_function = NoiseToProcessFunctionMapping.get(self.noise_type, random_2d_perlin)
+        generated_noise = process_function((nextpow2(height), nextpow2(width)), (perlin_scalex, perlin_scaley))[
             :height, :width
         ]
-        perlin_noise = self.rot(image=perlin_noise)
+        generated_noise = self.rot(image=generated_noise)
 
         # Create mask from perlin noise
-        mask = np.where(perlin_noise > 0.5, np.ones_like(perlin_noise), np.zeros_like(perlin_noise))
+        mask = np.where(generated_noise > 0.5, np.ones_like(generated_noise), np.zeros_like(generated_noise))
         mask = np.expand_dims(mask, axis=2).astype(np.float32)
 
         # Load anomaly source image
@@ -115,7 +123,7 @@ class Augmenter:
             anomaly_source_img = cv2.imread(anomaly_source_path)
             anomaly_source_img = cv2.resize(anomaly_source_img, dsize=(width, height))
         else:  # if no anomaly source is specified, we use the perlin noise as anomalous source
-            anomaly_source_img = np.expand_dims(perlin_noise, 2).repeat(3, 2)
+            anomaly_source_img = np.expand_dims(generated_noise, 2).repeat(3, 2)
             anomaly_source_img = (anomaly_source_img * 255).astype(np.uint8)
 
         # Augment anomaly source image
@@ -169,53 +177,3 @@ class Augmenter:
         augmented_batch = batch * (1 - masks) + (beta) * perturbations + (1 - beta) * batch * (masks)
 
         return augmented_batch, masks
-
-
-class SimplexAugmenter(Augmenter):
-
-    def generate_perturbation(
-        self, height: int, width: int, anomaly_source_path: str | None
-    ) -> tuple[np.ndarray, np.ndarray]:
-        """Generate an image containing a random anomalous perturbation using a source image.
-
-        Args:
-            height (int): height of the generated image.
-            width: (int): width of the generated image.
-            anomaly_source_path (str | None): Path to an image file. If not provided, random noise will be used
-            instead.
-
-        Returns:
-            Image containing a random anomalous perturbation, and the corresponding ground truth anomaly mask.
-        """
-        # Generate random simplex noise
-        simplex_scale = 6
-        min_simplex_scale = 0
-
-        simplex_scalex = 2 ** random.randint(min_simplex_scale, simplex_scale)
-        simplex_scaley = 2 ** random.randint(min_simplex_scale, simplex_scale)
-
-        simplex_noise = random_2d_simplex((nextpow2(height), nextpow2(width)), (simplex_scalex, simplex_scaley))[
-            :height, :width
-        ]
-        simplex_noise = self.rot(image=simplex_noise)
-
-        # Create mask from simplex noise
-        mask = np.where(simplex_noise > 0.5, np.ones_like(simplex_noise), np.zeros_like(simplex_noise))
-        mask = np.expand_dims(mask, axis=2).astype(np.float32)
-
-        # Load anomaly source image
-        if anomaly_source_path:
-            anomaly_source_img = cv2.imread(anomaly_source_path)
-            anomaly_source_img = cv2.resize(anomaly_source_img, dsize=(width, height))
-        else:  # if no anomaly source is specified, we use the simplex noise as anomalous source
-            anomaly_source_img = np.expand_dims(simplex_noise, 2).repeat(3, 2)
-            anomaly_source_img = (anomaly_source_img * 255).astype(np.uint8)
-
-        # Augment anomaly source image
-        aug = self.rand_augmenter()
-        anomaly_img_augmented = aug(image=anomaly_source_img)
-
-        # Create anomalous perturbation that we will apply to the image
-        perturbation = anomaly_img_augmented.astype(np.float32) * mask / 255.0
-
-        return perturbation, mask

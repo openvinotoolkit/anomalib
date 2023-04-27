@@ -9,6 +9,7 @@ from math import floor
 import numpy as np
 import torch
 from torch import Tensor
+
 try:
     from numba import njit, prange
 except ImportError:
@@ -24,14 +25,29 @@ except ImportError:
 class SimplexConstant(Enum):
     """Constant for simplex noise"""
 
-    GRADIENTS2 = np.array([
-         5,  2,  2,  5,
-        -5,  2, -2,  5,
-         5, -2,  2, -5,
-        -5, -2, -2, -5,
-    ], dtype=np.int64)
-    STRETCH_CONSTANT2 = -0.211324865405187    # (1/Math.sqrt(2+1)-1)/2
-    SQUISH_CONSTANT2 = 0.366025403784439      # (Math.sqrt(2+1)-1)/2
+    GRADIENTS2 = np.array(
+        [
+            5,
+            2,
+            2,
+            5,
+            -5,
+            2,
+            -2,
+            5,
+            5,
+            -2,
+            2,
+            -5,
+            -5,
+            -2,
+            -2,
+            -5,
+        ],
+        dtype=np.int64,
+    )
+    STRETCH_CONSTANT2 = -0.211324865405187  # (1/Math.sqrt(2+1)-1)/2
+    SQUISH_CONSTANT2 = 0.366025403784439  # (Math.sqrt(2+1)-1)/2
     NORM_CONSTANT2 = 47
 
 
@@ -44,6 +60,7 @@ def _extrapolate2(perm, xsb, ysb, dx, dy):
 
 @njit(cache=True)
 def _simplex_noise2d(x, y, perm):
+    # Porting from https://github.com/lmas/opensimplex/blob/master/opensimplex/internals.py#L105
     # Place input coordinates onto grid.
     stretch_offset = (x + y) * SimplexConstant.STRETCH_CONSTANT2
     xs = x + stretch_offset
@@ -145,7 +162,7 @@ def _simplex_noise2d(x, y, perm):
 
 def random_2d_simplex(
     shape: tuple[int | Tensor, int | Tensor],
-)-> np.ndarray | Tensor:
+) -> np.ndarray | Tensor:
     """Generate a random image containing Simplex noise.
 
      Args:
@@ -162,9 +179,9 @@ def random_2d_simplex(
         result = torch.zeros(shape)
     else:
         raise TypeError(f"got scales of type {type(shape[0])}")
-    
+
     for y in range(shape[0]):
         for x in range(shape[1]):
             result[x, y] = _simplex_noise2d(x / shape[1], y / shape[0])
-    result = (result + 1) * 0.5 # normalize to 0-1
+    result = (result + 1) * 0.5  # normalize to 0-1
     return result
