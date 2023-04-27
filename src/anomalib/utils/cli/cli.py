@@ -68,6 +68,8 @@ class AnomalibCLI(LightningCLI):
                 "post_processing.threshold_method": "adaptive",
                 "post_processing.manual_image_threshold": None,
                 "post_processing.manual_pixel_threshold": None,
+                "post_processing.meanvar_mode": None,
+                "post_processing.std_dev_ratio": None,
             }
         )
 

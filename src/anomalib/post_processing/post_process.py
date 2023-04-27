@@ -19,6 +19,7 @@ class ThresholdMethod(str, Enum):
 
     ADAPTIVE = "adaptive"
     MANUAL = "manual"
+    MEANVAR = "meanvar"
 
 
 def add_label(
