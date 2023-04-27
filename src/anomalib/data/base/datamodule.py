@@ -150,7 +150,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         if self.test_split_mode == TestSplitMode.FROM_DIR:
             self.test_data += normal_test_data
         elif self.test_split_mode == TestSplitMode.SYNTHETIC:
-            self.test_data = SyntheticAnomalyDataset.from_dataset(normal_test_data)
+            self.test_data = SyntheticAnomalyDataset.from_dataset(normal_test_data, self.test_synthetic_type)
         elif self.test_split_mode != TestSplitMode.NONE:
             raise ValueError(f"Unsupported Test Split Mode: {self.test_split_mode}")
 
@@ -167,7 +167,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         elif self.val_split_mode == ValSplitMode.SYNTHETIC:
             # converted from random training sample
             self.train_data, normal_val_data = random_split(self.train_data, self.val_split_ratio, seed=self.seed)
-            self.val_data = SyntheticAnomalyDataset.from_dataset(normal_val_data)
+            self.val_data = SyntheticAnomalyDataset.from_dataset(normal_val_data, self.val_synthetic_type)
         elif self.val_split_mode != ValSplitMode.NONE:
             raise ValueError(f"Unknown validation split mode: {self.val_split_mode}")
 
