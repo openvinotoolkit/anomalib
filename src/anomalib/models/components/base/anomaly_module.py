@@ -52,7 +52,7 @@ class AnomalyModule(pl.LightningModule, ABC):
 
         self.threshold_method: ThresholdMethod
 
-        threshold_config = kwargs.pop("threshold", dict())
+        threshold_config = kwargs.pop("threshold", {})
         self.image_threshold = MethodToThrehsoldMapping.get(threshold_config.method, AnomalyScoreThreshold)(
             **threshold_config
         ).cpu()
