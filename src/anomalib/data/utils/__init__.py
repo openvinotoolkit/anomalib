@@ -18,8 +18,8 @@ from .path import _check_and_convert_path, _prepare_files_labels, _resolve_path
 from .split import (
     Split,
     TestSplitMode,
-    ValSplitMode,
     TestSyntheticType,
+    ValSplitMode,
     ValSyntheticType,
     concatenate_datasets,
     random_split,

@@ -18,8 +18,8 @@ from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.synthetic import SyntheticAnomalyDataset
 from anomalib.data.utils import (
     TestSplitMode,
-    ValSplitMode,
     TestSyntheticType,
+    ValSplitMode,
     ValSyntheticType,
     random_split,
     split_by_label,
@@ -82,7 +82,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         test_split_ratio: float | None = None,
         seed: int | None = None,
         test_synthetic_type: TestSyntheticType | None = None,
-        val_synthetic_type: ValSyntheticType | None = None
+        val_synthetic_type: ValSyntheticType | None = None,
     ) -> None:
         super().__init__()
         self.train_batch_size = train_batch_size
@@ -97,7 +97,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self.train_data: AnomalibDataset
         self.val_data: AnomalibDataset
         self.test_data: AnomalibDataset
-        
+
         self.test_synthetic_type = test_synthetic_type
         self.val_synthetic_type = val_synthetic_type
 
