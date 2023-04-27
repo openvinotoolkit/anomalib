@@ -134,8 +134,7 @@ class CSVDataset(AnomalibDataset):
     Args:
         task (TaskType): Task type. (``classification``, ``detection`` or ``segmentation``).
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
-        split (str | Split | None): Fixed subset split that follows from folder structure on file system.
-            Choose from [Split.FULL, Split.TRAIN, Split.TEST]
+        split (str | Split | None): Fixed subset split. Choose from [Split.FULL, Split.TRAIN, Split.TEST]
         normal_csv (str | Path): Path to the CSV file containing normal images.
         root (str | Path | None): Root folder of the dataset.
         abnormal_csv (str | Path | None, optional): Path to the CSV file containing abnormal images.
