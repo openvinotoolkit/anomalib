@@ -95,7 +95,7 @@ def make_csv_dataset(
         samples["mask_path"].fillna("", inplace=True)
         samples = samples.astype({"mask_path": "str"})
 
-        # make sure all every rgb image has a corresponding mask image.
+        # make sure every rgb image has a corresponding mask image.
         assert (
             samples.loc[samples.label_index == 1]
             .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
