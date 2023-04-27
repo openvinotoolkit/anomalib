@@ -22,7 +22,7 @@ from albumentations.pytorch import ToTensorV2
 from pandas import DataFrame, Series
 from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.task_type import TaskType
-from anomalib.data.utils import Augmenter, Split, read_image
+from anomalib.data.utils import Augmenter, PerlinROIAugmenter, Split, read_image
 
 logger = logging.getLogger(__name__)
 
