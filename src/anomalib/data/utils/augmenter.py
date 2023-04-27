@@ -24,6 +24,7 @@ from torch import Tensor
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
 from anomalib.data.utils.generators.perlin import random_2d_perlin
+import albumentations as A
 
 
 def nextpow2(value):
@@ -168,3 +169,77 @@ class Augmenter:
         augmented_batch = batch * (1 - masks) + (beta) * perturbations + (1 - beta) * batch * (masks)
 
         return augmented_batch, masks
+
+
+class PerlinROIAugmenter(Augmenter):
+
+    def augment_batch(self, batch: Tensor, thresh_batch: Tensor) -> tuple[Tensor, Tensor]:
+        """Generate anomalous augmentations for a batch of input images.
+
+        Args:
+            batch (Tensor): Batch of input images
+            thresh_batch (Tensor): Batch of 
+
+        Returns:
+            - Augmented image to which anomalous perturbations have been added.
+            - Ground truth masks corresponding to the anomalous perturbations.
+        """
+        batch_size, channels, height, width = batch.shape
+
+        # Collect perturbations
+        perturbations_list = []
+        masks_list = []
+        for _ in range(batch_size):
+            if torch.rand(1) > self.p_anomalous:  # include normal samples
+                perturbations_list.append(torch.zeros((channels, height, width)))
+                masks_list.append(torch.zeros((1, height, width)))
+            else:
+                anomaly_source_path = (
+                    random.sample(self.anomaly_source_paths, 1)[0] if len(self.anomaly_source_paths) > 0 else None
+                )
+                perturbation, mask = self.generate_perturbation(height, width, anomaly_source_path)
+                perturbations_list.append(Tensor(perturbation).permute((2, 0, 1)))
+                masks_list.append((Tensor(mask).permute((2, 0, 1)) * thresh_batch))
+
+        perturbations = torch.stack(perturbations_list).to(batch.device)
+        masks = torch.stack(masks_list).to(batch.device)
+
+        # Apply perturbations batch wise
+        if isinstance(self.beta, float):
+            beta = self.beta
+        elif isinstance(self.beta, tuple):
+            beta = torch.rand(batch_size) * (self.beta[1] - self.beta[0]) + self.beta[0]
+            beta = beta.view(batch_size, 1, 1, 1).expand_as(batch).to(batch.device)  # type: ignore
+        else:
+            raise ValueError("Beta must be either float or tuple of floats")
+
+        augmented_batch = batch * (1 - masks) + (beta) * (perturbations * masks) + (1 - beta) * batch * (masks)
+        
+        return augmented_batch, masks
+    
+    def gaussian_blur(self, transform:A.Compose) -> tuple[Tensor, Tensor]:
+        """Generate Gaussian Blur.
+
+        Args:
+            image (Tensor): Batch of input images
+            thresh (Tensor): Batch of thresholds
+
+        Returns:
+            - 
+            -
+        """
+
+        #gaussian = cv2.GaussianBlur(image,(5,5),0)
+        #t_value,thresh = cv2.threshold(gaussian,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+        # th3b = cv2.bitwise_not(thresh) #need this?
+
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(gray, (7, 7), 0)
+
+        (T, thresh) = cv2.threshold(blurred, 0, 255, 
+                cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+        
+        thresh = transform(image=thresh)["image"].unsqueeze(0)
+        image = transform(image=image)["image"].unsqueeze(0)
+
+        return image, thresh
