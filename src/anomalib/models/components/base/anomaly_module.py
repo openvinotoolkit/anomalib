@@ -20,6 +20,7 @@ from torchmetrics import Metric
 from anomalib.data.utils import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
 from anomalib.post_processing import ThresholdMethod
 from anomalib.utils.metrics import (
+    AUPRO,
     AnomalibMetricCollection,
     AnomalyScoreDistribution,
     AnomalyScoreThreshold,
@@ -241,4 +242,9 @@ class AnomalyModule(pl.LightningModule, ABC):
         """
         # Used to load missing normalization and threshold parameters
         self._load_normalization_class(state_dict)
+        # Used to load fpr_limit in AURPO before create_metric_collection
+        if not hasattr(self, "pixel_metrics") and "pixel_metrics.AUPRO.fpr_limit" in state_dict.keys():
+            self.pixel_metrics = AnomalibMetricCollection([], prefix="pixel_")
+            fpr_limit = state_dict["pixel_metrics.AUPRO.fpr_limit"].item()
+            self.pixel_metrics.add_metrics(AUPRO(fpr_limit=fpr_limit))
         return super().load_state_dict(state_dict, strict=strict)
