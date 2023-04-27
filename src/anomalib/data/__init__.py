@@ -76,6 +76,7 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             test_split_ratio=config.dataset.test_split_ratio,
             val_split_mode=config.dataset.val_split_mode,
             val_split_ratio=config.dataset.val_split_ratio,
+            noise_type=config.dataset.noise_type,
         )
     elif config.dataset.format.lower() == DataFormat.MVTEC_3D:
         datamodule = MVTec3D(
