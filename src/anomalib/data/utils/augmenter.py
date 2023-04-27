@@ -217,7 +217,7 @@ class PerlinROIAugmenter(Augmenter):
         
         return augmented_batch, masks
     
-    def gaussian_blur(self, image， transform:A.Compose) -> tuple[Tensor, Tensor]:
+    def gaussian_blur(self, image, transform:A.Compose) -> tuple[Tensor, Tensor]:
         """Generate Gaussian Blur.
 
         Args:

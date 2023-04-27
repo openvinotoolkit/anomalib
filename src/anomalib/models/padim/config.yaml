@@ -2,7 +2,7 @@ dataset:
   name: mvtec
   format: mvtec
   path: ./datasets/MVTec
-  category: bottle
+  category: Transistor
   task: segmentation
   train_batch_size: 32
   eval_batch_size: 32

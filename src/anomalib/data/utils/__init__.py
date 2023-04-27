@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from .augmenter import Augmenter
+from .augmenter import Augmenter, PerlinROIAugmenter
 from .boxes import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
 from .download import DownloadInfo, download_and_extract
 from .generators import random_2d_perlin
