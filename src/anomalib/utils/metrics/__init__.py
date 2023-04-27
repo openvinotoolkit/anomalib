@@ -13,8 +13,7 @@ import torchmetrics
 from omegaconf import DictConfig, ListConfig
 
 from .anomaly_score_distribution import AnomalyScoreDistribution
-from .anomaly_score_threshold import AnomalyScoreThreshold
-from .anomaly_score_threshold_estimator import GaussianMixtureThresholdEstimator
+from .anomaly_score_threshold import AnomalyScoreGaussianMixtureThreshold, AnomalyScoreThreshold
 from .aupr import AUPR
 from .aupro import AUPRO
 from .auroc import AUROC
@@ -23,8 +22,17 @@ from .min_max import MinMax
 from .optimal_f1 import OptimalF1
 from .pro import PRO
 
-__all__ = ["AUROC", "AUPR", "AUPRO", "OptimalF1", "AnomalyScoreDistribution", "MinMax", "PRO",
-           "AnomalyScoreThreshold", "GaussianMixtureThresholdEstimator"]
+__all__ = [
+    "AUROC",
+    "AUPR",
+    "AUPRO",
+    "OptimalF1",
+    "AnomalyScoreDistribution",
+    "MinMax",
+    "PRO",
+    "AnomalyScoreThreshold",
+    "AnomalyScoreGaussianMixtureThreshold",
+]
 
 
 def metric_collection_from_names(metric_names: list[str], prefix: str | None) -> AnomalibMetricCollection:

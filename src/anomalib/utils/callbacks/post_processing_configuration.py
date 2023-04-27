@@ -12,8 +12,8 @@ import torch
 from pytorch_lightning import Callback, LightningModule, Trainer
 
 from anomalib.models.components.base.anomaly_module import AnomalyModule
-from anomalib.utils.metrics import GaussianMixtureThresholdEstimator
-from anomalib.post_processing import NormalizationMethod, ThresholdMethod, ADAPTIVE_THRESHOLD_METHOD_MAP
+from anomalib.post_processing import ADAPTIVE_THRESHOLD_METHOD_MAP, NormalizationMethod, ThresholdMethod
+from anomalib.utils.metrics import AnomalyScoreGaussianMixtureThreshold
 
 logger = logging.getLogger(__name__)
 
@@ -28,10 +28,10 @@ class PostProcessingConfigurationCallback(Callback):
         threshold_method (ThresholdMethod): Flag indicating whether threshold should be manual or adaptive.
         manual_image_threshold (float | None): Default manual image threshold value.
         manual_pixel_threshold (float | None): Default manual pixel threshold value.
-        image_positive_rate (float | None): TODO(yujie),
-        pixel_positive_rate (float | None):
-        image_n_components (float | None): 
-        pixel_n_components (float | None):
+        image_anomalous_rate (float | None): Anticipated image anomalous rate for Gaussian Mixture based threshold.
+        pixel_anomalous_rate (float | None): Anticipated pixel anomalous rate for Gaussian Mixture based threshold.
+        image_n_components (int): Number of mixture components of Gaussian Mixture based threshold for images.
+        pixel_n_components (int): Number of mixture components of Gaussian Mixture based threshold for pixels.
     """
 
     def __init__(
@@ -40,10 +40,10 @@ class PostProcessingConfigurationCallback(Callback):
         threshold_method: ThresholdMethod = ThresholdMethod.ADAPTIVE,
         manual_image_threshold: float | None = None,
         manual_pixel_threshold: float | None = None,
-        image_positive_rate: float | None = GaussianMixtureThresholdEstimator.DEFAULT_POSITIVE_RATE,
-        pixel_positive_rate: float | None = GaussianMixtureThresholdEstimator.DEFAULT_POSITIVE_RATE,
-        image_n_components: int = GaussianMixtureThresholdEstimator.DEFAULT_N_COMPONENTS,
-        pixel_n_components: int = GaussianMixtureThresholdEstimator.DEFAULT_N_COMPONENTS,
+        image_anomalous_rate: float | None = AnomalyScoreGaussianMixtureThreshold.DEFAULT_ANOMALOUS_RATE,
+        pixel_anomalous_rate: float | None = AnomalyScoreGaussianMixtureThreshold.DEFAULT_ANOMALOUS_RATE,
+        image_n_components: int = AnomalyScoreGaussianMixtureThreshold.DEFAULT_N_COMPONENTS,
+        pixel_n_components: int = AnomalyScoreGaussianMixtureThreshold.DEFAULT_N_COMPONENTS,
     ) -> None:
         super().__init__()
         self.normalization_method = normalization_method
@@ -67,8 +67,8 @@ class PostProcessingConfigurationCallback(Callback):
         self.threshold_method = threshold_method
         self.manual_image_threshold = manual_image_threshold
         self.manual_pixel_threshold = manual_pixel_threshold
-        self.image_positive_rate = image_positive_rate
-        self.pixel_positive_rate = pixel_positive_rate
+        self.image_anomalous_rate = image_anomalous_rate
+        self.pixel_anomalous_rate = pixel_anomalous_rate
         self.image_n_components = image_n_components
         self.pixel_n_components = pixel_n_components
 
@@ -88,9 +88,9 @@ class PostProcessingConfigurationCallback(Callback):
                 pl_module.image_threshold.value = torch.tensor(self.manual_image_threshold).cpu()
                 pl_module.pixel_threshold.value = torch.tensor(self.manual_pixel_threshold).cpu()
             if pl_module.threshold_method == ThresholdMethod.GAUSSIAN_MIXTURE:
-                image_threshold: GaussianMixtureThresholdEstimator = pl_module.image_threshold
-                pixel_threshold: GaussianMixtureThresholdEstimator = pl_module.pixel_threshold
-                image_threshold.positive_rate = self.image_positive_rate
-                pixel_threshold.positive_rate = self.pixel_positive_rate
+                image_threshold: AnomalyScoreGaussianMixtureThreshold = pl_module.image_threshold
+                pixel_threshold: AnomalyScoreGaussianMixtureThreshold = pl_module.pixel_threshold
+                image_threshold.anomalous_rate = self.image_anomalous_rate
+                pixel_threshold.anomalous_rate = self.pixel_anomalous_rate
                 image_threshold.n_components = self.image_n_components
                 pixel_threshold.n_components = self.pixel_n_components

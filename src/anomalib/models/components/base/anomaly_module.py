@@ -12,16 +12,18 @@ from warnings import warn
 
 import pytorch_lightning as pl
 import torch
+from omegaconf import DictConfig
 from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 from torch import Tensor, nn
 from torchmetrics import Metric
 
 from anomalib.data.utils import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
-from anomalib.post_processing import ThresholdMethod, ADAPTIVE_THRESHOLD_METHOD_MAP
+from anomalib.post_processing import ADAPTIVE_THRESHOLD_METHOD_MAP, ThresholdMethod
 from anomalib.utils.metrics import (
     AnomalibMetricCollection,
     AnomalyScoreDistribution,
+    AnomalyScoreGaussianMixtureThreshold,
     AnomalyScoreThreshold,
     MinMax,
 )
@@ -45,9 +47,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.callbacks: list[Callback]
 
         self.threshold_method: ThresholdMethod
-        threshold_cls = ADAPTIVE_THRESHOLD_METHOD_MAP.get(self.threshold_method, AnomalyScoreThreshold)
-        self.image_threshold = threshold_cls().cpu()
-        self.pixel_threshold = threshold_cls().cpu()
+        self.image_threshold: AnomalyScoreThreshold
+        self.pixel_threshold: AnomalyScoreThreshold
 
         self.normalization_metrics: Metric
 
@@ -243,3 +244,38 @@ class AnomalyModule(pl.LightningModule, ABC):
         # Used to load missing normalization and threshold parameters
         self._load_normalization_class(state_dict)
         return super().load_state_dict(state_dict, strict=strict)
+
+    def configure_thresholds(self, threshold_config: DictConfig) -> list[AnomalyScoreThreshold]:
+        """Configure image and pixel thresholds that determine the prediction labels given scores.
+
+        Args:
+          threshold_config (DictConfig): The configuration of threshold.
+
+        Returns:
+          The image threshold and pixel threshold.
+        """
+        image_threshold: AnomalyScoreThreshold
+        pixel_threshold: AnomalyScoreThreshold
+        if threshold_config.method == ThresholdMethod.GAUSSIAN_MIXTURE:
+            image_anomalous_rate = threshold_config.get(
+                "image_anomalous_rate", AnomalyScoreGaussianMixtureThreshold.DEFAULT_ANOMALOUS_RATE
+            )
+            pixel_anomalous_rate = threshold_config.get(
+                "pixel_anomalous_rate", AnomalyScoreGaussianMixtureThreshold.DEFAULT_ANOMALOUS_RATE
+            )
+            image_n_components = threshold_config.get(
+                "image_n_components", AnomalyScoreGaussianMixtureThreshold.DEFAULT_N_COMPONENTS
+            )
+            pixel_n_components = threshold_config.get(
+                "pixel_n_components", AnomalyScoreGaussianMixtureThreshold.DEFAULT_N_COMPONENTS
+            )
+            image_threshold = AnomalyScoreGaussianMixtureThreshold(
+                anomalous_rate=image_anomalous_rate, n_components=image_n_components
+            ).cpu()
+            pixel_threshold = AnomalyScoreGaussianMixtureThreshold(
+                anomalous_rate=pixel_anomalous_rate, n_components=pixel_n_components
+            ).cpu()
+        else:
+            image_threshold = AnomalyScoreThreshold().cpu()
+            pixel_threshold = AnomalyScoreThreshold().cpu()
+        return [image_threshold, pixel_threshold]

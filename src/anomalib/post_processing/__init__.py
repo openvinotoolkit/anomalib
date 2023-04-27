@@ -5,13 +5,13 @@
 
 from .normalization import NormalizationMethod
 from .post_process import (
+    ADAPTIVE_THRESHOLD_METHOD_MAP,
     ThresholdMethod,
     add_anomalous_label,
     add_normal_label,
     anomaly_map_to_color_map,
     compute_mask,
     superimpose_anomaly_map,
-    ADAPTIVE_THRESHOLD_METHOD_MAP,
 )
 from .visualizer import ImageResult, Visualizer
 
