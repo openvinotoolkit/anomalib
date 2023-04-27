@@ -39,6 +39,7 @@ __all__ = [
     "ValSplitMode",
     "TestSplitMode",
     "Augmenter",
+    "PerlinROIAugmenter",
     "masks_to_boxes",
     "boxes_to_masks",
     "boxes_to_anomaly_maps",

@@ -20,6 +20,7 @@ import cv2
 import pandas as pd
 from albumentations.pytorch import ToTensorV2
 from pandas import DataFrame, Series
+
 from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import Augmenter, PerlinROIAugmenter, Split, read_image
@@ -83,7 +84,6 @@ def make_synthetic_dataset(
         image = read_image(sample.image_path)
 
         if augment_roi:
-            
             image, thresh = augmenter.gaussian_blur(image, transform)
             # apply anomalous perturbation
             aug_im, mask = augmenter.augment_batch(image, thresh)
@@ -91,7 +91,7 @@ def make_synthetic_dataset(
             image = transform(image=image)["image"].unsqueeze(0)
             # apply anomalous perturbation
             aug_im, mask = augmenter.augment_batch(image)
-                
+
         # target file name with leading zeros
         file_name = f"{str(sample.name).zfill(int(math.log10(n_anomalous)) + 1)}.png"
         # write image

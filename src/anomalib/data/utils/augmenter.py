@@ -16,6 +16,7 @@ import glob
 import math
 import random
 
+import albumentations as A
 import cv2
 import imgaug.augmenters as iaa
 import numpy as np
@@ -24,7 +25,6 @@ from torch import Tensor
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
 from anomalib.data.utils.generators.perlin import random_2d_perlin
-import albumentations as A
 
 
 def nextpow2(value):
@@ -127,11 +127,12 @@ class Augmenter:
 
         return perturbation, mask
 
-    def augment_batch(self, batch: Tensor) -> tuple[Tensor, Tensor]:
+    def augment_batch(self, batch: Tensor, thresh_batch: Tensor | None = None) -> tuple[Tensor, Tensor]:
         """Generate anomalous augmentations for a batch of input images.
 
         Args:
             batch (Tensor): Batch of input images
+            thresh_batch (Tensor | None, optional): Batch of
 
         Returns:
             - Augmented image to which anomalous perturbations have been added.
@@ -170,15 +171,18 @@ class Augmenter:
 
         return augmented_batch, masks
 
+    def gaussian_blur(self, image: Tensor, transform: A.Compose) -> tuple[Tensor, Tensor]:
+        """To be implemented in the subclasses."""
+        raise NotImplementedError
+
 
 class PerlinROIAugmenter(Augmenter):
-
-    def augment_batch(self, batch: Tensor, thresh_batch: Tensor) -> tuple[Tensor, Tensor]:
+    def augment_batch(self, batch: Tensor, thresh_batch: Tensor | None = None) -> tuple[Tensor, Tensor]:
         """Generate anomalous augmentations for a batch of input images.
 
         Args:
             batch (Tensor): Batch of input images
-            thresh_batch (Tensor): Batch of 
+            thresh_batch (Tensor | None, optional): Batch of
 
         Returns:
             - Augmented image to which anomalous perturbations have been added.
@@ -214,31 +218,30 @@ class PerlinROIAugmenter(Augmenter):
             raise ValueError("Beta must be either float or tuple of floats")
 
         augmented_batch = batch * (1 - masks) + (beta) * (perturbations * masks) + (1 - beta) * batch * (masks)
-        
+
         return augmented_batch, masks
-    
-    def gaussian_blur(self, image, transform:A.Compose) -> tuple[Tensor, Tensor]:
+
+    def gaussian_blur(self, image: Tensor, transform: A.Compose) -> tuple[Tensor, Tensor]:
         """Generate Gaussian Blur.
 
         Args:
             image (Tensor): Batch of input images
-            thresh (Tensor): Batch of thresholds
+            transform (A.Compose): Batch of thresholds
 
         Returns:
-            - 
+            -
             -
         """
 
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-        (T, thresh) = cv2.threshold(blurred, 0, 255, 
-                        cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+        (T, thresh) = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
 
-        thresh_b = cv2.bitwise_not(thresh)
+        cv2.bitwise_not(thresh)
 
-        if thresh[0,0] & thresh[-1,-1] & thresh[-1,0] & thresh[0,-1] == 255:
+        if thresh[0, 0] & thresh[-1, -1] & thresh[-1, 0] & thresh[0, -1] == 255:
             thresh = cv2.bitwise_not(thresh)
-        
+
         thresh = transform(image=thresh)["image"].unsqueeze(0)
         image = transform(image=image)["image"].unsqueeze(0)
 
