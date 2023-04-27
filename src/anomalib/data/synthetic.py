@@ -84,7 +84,7 @@ def make_synthetic_dataset(
 
         if augment_roi:
             
-            image, thresh = augmenter.gaussian_blur(transform)
+            image, thresh = augmenter.gaussian_blur(image, transform)
             # apply anomalous perturbation
             aug_im, mask = augmenter.augment_batch(image, thresh)
         else:

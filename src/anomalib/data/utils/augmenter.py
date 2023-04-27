@@ -217,7 +217,7 @@ class PerlinROIAugmenter(Augmenter):
         
         return augmented_batch, masks
     
-    def gaussian_blur(self, transform:A.Compose) -> tuple[Tensor, Tensor]:
+    def gaussian_blur(self, image， transform:A.Compose) -> tuple[Tensor, Tensor]:
         """Generate Gaussian Blur.
 
         Args:
@@ -229,15 +229,15 @@ class PerlinROIAugmenter(Augmenter):
             -
         """
 
-        #gaussian = cv2.GaussianBlur(image,(5,5),0)
-        #t_value,thresh = cv2.threshold(gaussian,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-        # th3b = cv2.bitwise_not(thresh) #need this?
-
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        blurred = cv2.GaussianBlur(gray, (7, 7), 0)
-
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
         (T, thresh) = cv2.threshold(blurred, 0, 255, 
-                cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+                        cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+
+        thresh_b = cv2.bitwise_not(thresh)
+
+        if thresh[0,0] & thresh[-1,-1] & thresh[-1,0] & thresh[0,-1] == 255:
+            thresh = cv2.bitwise_not(thresh)
         
         thresh = transform(image=thresh)["image"].unsqueeze(0)
         image = transform(image=image)["image"].unsqueeze(0)
