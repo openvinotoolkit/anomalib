@@ -40,7 +40,7 @@ def test_adaptive_threshold(labels, preds, target_threshold):
     ],
 )
 def test_meanvar_threshold(labels, preds, target_threshold):
-    """Test if the adaptive threshold computation returns the desired value."""
+    """Test if the meanvar threshold computation returns the desired value."""
 
     meanvar_threshold = AnomalyScoreMeanVarThreshold(default_value=0.5)
     meanvar_threshold.update(preds, labels)
