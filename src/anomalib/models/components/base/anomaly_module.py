@@ -237,31 +237,28 @@ class AnomalyModule(pl.LightningModule, ABC):
 
     def _load_metrics(self, state_dict: OrderedDict[str, Tensor]) -> None:
         """Load metrics from saved checkpoint."""
+        self._set_metrics("pixel", state_dict)
+        self._set_metrics("image", state_dict)
 
-        def _set_metrics(self, name: str, state_dict: OrderedDict[str, Tensor]):
-            """Sets the pixel/image metrics.
+    def _set_metrics(self, name: str, state_dict: OrderedDict[str, Tensor]):
+        """Sets the pixel/image metrics.
 
-            Args:
-            name (str): is it pixel or image.
-            state_dict (OrderedDict[str, Tensor]): state dict of the model.
-            """
-            metric_keys = [key for key in state_dict.keys() if key.startswith(f"{name}_metrics")]
-            if not hasattr(self, f"{name}_metrics") and any(metric_keys):
-                metrics = AnomalibMetricCollection([], prefix=f"{name}_")
-                for key in metric_keys:
-                    class_name = key.split(".")[1]
-                    try:
-                        metrics_module = importlib.import_module("anomalib.utils.metrics")
-                        metrics_cls = getattr(metrics_module, class_name)
-                    except Exception as exception:
-                        raise ImportError(
-                            f"Class {class_name} not found in module anomalib.utils.metrics"
-                        ) from exception
-                    metrics.add_metrics(metrics_cls())
-                setattr(self, f"{name}_metrics", metrics)
-
-        _set_metrics(self, "pixel", state_dict)
-        _set_metrics(self, "image", state_dict)
+        Args:
+        name (str): is it pixel or image.
+        state_dict (OrderedDict[str, Tensor]): state dict of the model.
+        """
+        metric_keys = [key for key in state_dict.keys() if key.startswith(f"{name}_metrics")]
+        if not hasattr(self, f"{name}_metrics") and any(metric_keys):
+            metrics = AnomalibMetricCollection([], prefix=f"{name}_")
+            for key in metric_keys:
+                class_name = key.split(".")[1]
+                try:
+                    metrics_module = importlib.import_module("anomalib.utils.metrics")
+                    metrics_cls = getattr(metrics_module, class_name)
+                except Exception as exception:
+                    raise ImportError(f"Class {class_name} not found in module anomalib.utils.metrics") from exception
+                metrics.add_metrics(metrics_cls())
+            setattr(self, f"{name}_metrics", metrics)
 
     def load_state_dict(self, state_dict: OrderedDict[str, Tensor], strict: bool = True):
         """Load state dict from checkpoint.
