@@ -180,8 +180,8 @@ class SyntheticAnomalyDataset(AnomalibDataset):
     def _setup(self) -> None:
         """Create samples dataframe."""
         logger.info("Generating synthetic anomalous images for validation set")
-        self.samples = make_synthetic_dataset(self.source_samples, self.im_dir, self.mask_dir, 0.5)
-
+        self.samples = make_synthetic_dataset(self.source_samples, self.im_dir, self.mask_dir, 0.5, self.synthetic_type)
+        
     def __del__(self) -> None:
         """Make sure the temporary directory is cleaned up when the dataset object is deleted."""
         if self._cleanup:

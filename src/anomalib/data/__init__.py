@@ -57,6 +57,7 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             transform_config_train=config.dataset.transform_config.train,
             transform_config_eval=config.dataset.transform_config.eval,
             test_split_mode=config.dataset.test_split_mode,
+            test_synthetic_type=config.dataset.test_synthetic_type,
             test_split_ratio=config.dataset.test_split_ratio,
             val_split_mode=config.dataset.val_split_mode,
             val_split_ratio=config.dataset.val_split_ratio,
