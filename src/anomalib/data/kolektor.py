@@ -24,7 +24,7 @@ from pathlib import Path
 
 import albumentations as A
 import numpy as np
-from imageio.v2 import imread
+from cv2 import imread
 from pandas import DataFrame
 from sklearn.model_selection import train_test_split
 
