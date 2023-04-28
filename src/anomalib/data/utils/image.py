@@ -7,21 +7,26 @@ from __future__ import annotations
 
 import math
 import warnings
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 import cv2
 import numpy as np
+import pandas as pd
 import tifffile as tiff
 import torch.nn.functional as F
 from torch import Tensor
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
+from anomalib.data.utils.path import _resolve_path
 
-def get_image_filenames(path: str | Path) -> list[Path]:
+
+def get_image_filenames(path: str | Path, root: str | Path | None = None) -> list[Path]:
     """Get image filenames.
 
     Args:
         path (str | Path): Path to image or image-folder.
+        root (str | Path | Nne, optional): Root path as defined in config
+
 
     Returns:
         list[Path]: List of image filenames
@@ -31,6 +36,19 @@ def get_image_filenames(path: str | Path) -> list[Path]:
 
     if isinstance(path, str):
         path = Path(path)
+
+    # read from csv file
+    # must have required column: `image_path`
+    if path.is_file() and path.suffix.lower() == ".csv":
+        csv_data = pd.read_csv(path)
+        # Check and ensure `image_path` column exists
+        if "path" not in csv_data:
+            raise RuntimeError(f"Invalid CSV file (missing required columns) {path}")
+        # Convert to posix path for best compatibility
+        csv_data.path = csv_data.apply(lambda row: Path(PureWindowsPath(row.path).as_posix()), axis=1)
+        # Convert to absolute path if not
+        csv_data.path = csv_data.path.apply(lambda path: _resolve_path(path, root))
+        image_filenames = csv_data.path.tolist()
 
     if path.is_file() and path.suffix in IMG_EXTENSIONS:
         image_filenames = [path]

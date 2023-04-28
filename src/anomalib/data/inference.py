@@ -19,6 +19,7 @@ class InferenceDataset(Dataset):
 
     Args:
         path (str | Path): Path to an image or image-folder.
+        root (str | Path | None, optional): Root path as defined in config
         transform (A.Compose | None, optional): Albumentations Compose object describing the transforms that are
             applied to the inputs.
         image_size (int | tuple[int, int] | None, optional): Target image size
@@ -28,12 +29,13 @@ class InferenceDataset(Dataset):
     def __init__(
         self,
         path: str | Path,
+        root: str | Path | None = None,
         transform: A.Compose | None = None,
         image_size: int | tuple[int, int] | None = None,
     ) -> None:
         super().__init__()
 
-        self.image_filenames = get_image_filenames(path)
+        self.image_filenames = get_image_filenames(path, root)
 
         if transform is None:
             self.transform = get_transforms(image_size=image_size)
