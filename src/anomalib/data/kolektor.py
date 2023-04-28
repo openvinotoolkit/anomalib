@@ -21,8 +21,6 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from urllib.request import urlretrieve
-from zipfile import ZipFile
 
 import albumentations as A
 import numpy as np
@@ -33,15 +31,23 @@ from sklearn.model_selection import train_test_split
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
+    DownloadInfo,
     InputNormalizationMethod,
     Split,
     TestSplitMode,
     ValSplitMode,
+    download_and_extract,
     get_transforms,
 )
-from anomalib.data.utils.download import hash_check
 
 logger = logging.getLogger(__name__)
+
+DOWNLOAD_INFO = DownloadInfo(
+    name="kolektor",
+    url="https://go.vicos.si/kolektorsdd",
+    hash="2b094030343c1cd59df02203ac6c57a0",
+    filename="KolektorSDD.zip",
+)
 
 
 # Check if a mask shows defects
@@ -50,36 +56,6 @@ def is_mask_anomalous(path):
     if np.all(img_arr == 0):
         return 0
     return 1
-
-
-def download_and_extract_kolektor(url: str, root: Path, file_hash: str):
-    """Download and extract a dataset.
-
-    Args:
-        url  (Str): Url for directly downloading the dataset
-        root (Path): Root directory where the dataset will be stored.
-        file_hash (Str): MD5 Checksum of the correct zip file
-    """
-    root.mkdir(parents=True, exist_ok=True)
-
-    downloaded_file_path = Path.joinpath(root, "KolektorSDD.zip")
-    if downloaded_file_path.exists():
-        logger.info("Existing dataset archive found. Skipping download stage.")
-    else:
-        logger.info("Downloading the Kolektor dataset archive")
-        urlretrieve(  # nosec - suppress bandit warning (urls are hardcoded)
-            url=url,
-            filename=downloaded_file_path,
-        )
-        logger.info("Checking the hash of the downloaded file.")
-        hash_check(downloaded_file_path, file_hash)
-
-    logger.info("Extracting dataset into given folder")
-    with ZipFile(downloaded_file_path, "r") as zip_file:
-        zip_file.extractall(root)
-
-    logger.info("Cleaning up files.")
-    (downloaded_file_path).unlink()
 
 
 def make_kolektor_dataset(
@@ -306,8 +282,4 @@ class Kolektor(AnomalibDataModule):
         if (self.root).is_dir():
             logger.info("Found the dataset.")
         else:
-            download_and_extract_kolektor(
-                "https://go.vicos.si/kolektorsdd",
-                self.root,
-                "2b094030343c1cd59df02203ac6c57a0",
-            )
+            download_and_extract(self.root, DOWNLOAD_INFO)
