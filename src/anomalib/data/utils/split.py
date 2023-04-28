@@ -49,6 +49,21 @@ class ValSplitMode(str, Enum):
     SYNTHETIC = "synthetic"
 
 
+class TestSyntheticType(str, Enum):
+    """Method used to generate synthetic anomalous test data"""
+
+    PERLIN = "perlin"
+    PERLIN_ROI = "perlin_roi"
+
+
+class ValSyntheticType(str, Enum):
+    """Method used to generate synthetic anomalous test data"""
+
+    PERLIN = "perlin"
+    PERLIN_ROI = "perlin_roi"
+    SAME_AS_TEST = "same_as_test"
+
+
 def concatenate_datasets(datasets: Sequence[AnomalibDataset]) -> AnomalibDataset:
     """Concatenate multiple datasets into a single dataset object.
 

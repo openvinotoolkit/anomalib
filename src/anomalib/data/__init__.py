@@ -57,8 +57,10 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             transform_config_train=config.dataset.transform_config.train,
             transform_config_eval=config.dataset.transform_config.eval,
             test_split_mode=config.dataset.test_split_mode,
+            test_synthetic_type=config.dataset.test_synthetic_type,
             test_split_ratio=config.dataset.test_split_ratio,
             val_split_mode=config.dataset.val_split_mode,
+            val_synthetic_type=config.dataset.val_synthetic_type,
             val_split_ratio=config.dataset.val_split_ratio,
         )
     elif config.dataset.format.lower() == "mvtec_3d":
@@ -75,8 +77,10 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             transform_config_train=config.dataset.transform_config.train,
             transform_config_eval=config.dataset.transform_config.eval,
             test_split_mode=config.dataset.test_split_mode,
+            test_synthetic_type=config.dataset.test_synthetic_type,
             test_split_ratio=config.dataset.test_split_ratio,
             val_split_mode=config.dataset.val_split_mode,
+            val_synthetic_type=config.dataset.val_synthetic_type,
             val_split_ratio=config.dataset.val_split_ratio,
         )
     elif config.dataset.format.lower() == "btech":
@@ -93,8 +97,10 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             transform_config_train=config.dataset.transform_config.train,
             transform_config_eval=config.dataset.transform_config.eval,
             test_split_mode=config.dataset.test_split_mode,
+            test_synthetic_type=config.dataset.test_synthetic_type,
             test_split_ratio=config.dataset.test_split_ratio,
             val_split_mode=config.dataset.val_split_mode,
+            val_synthetic_type=config.dataset.val_synthetic_type,
             val_split_ratio=config.dataset.val_split_ratio,
         )
     elif config.dataset.format.lower() == "folder":
@@ -115,8 +121,10 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             transform_config_train=config.dataset.transform_config.train,
             transform_config_eval=config.dataset.transform_config.eval,
             test_split_mode=config.dataset.test_split_mode,
+            test_synthetic_type=config.dataset.test_synthetic_type,
             test_split_ratio=config.dataset.test_split_ratio,
             val_split_mode=config.dataset.val_split_mode,
+            val_synthetic_type=config.dataset.val_synthetic_type,
             val_split_ratio=config.dataset.val_split_ratio,
         )
     elif config.dataset.format.lower() == "folder_3d":
@@ -140,8 +148,10 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             transform_config_train=config.dataset.transform_config.train,
             transform_config_eval=config.dataset.transform_config.eval,
             test_split_mode=config.dataset.test_split_mode,
+            test_synthetic_type=config.dataset.test_synthetic_type,
             test_split_ratio=config.dataset.test_split_ratio,
             val_split_mode=config.dataset.val_split_mode,
+            val_synthetic_type=config.dataset.val_synthetic_type,
             val_split_ratio=config.dataset.val_split_ratio,
         )
     elif config.dataset.format.lower() == "ucsdped":
@@ -194,8 +204,10 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             transform_config_train=config.dataset.transform_config.train,
             transform_config_eval=config.dataset.transform_config.eval,
             test_split_mode=config.dataset.test_split_mode,
+            test_synthetic_type=config.dataset.test_synthetic_type,
             test_split_ratio=config.dataset.test_split_ratio,
             val_split_mode=config.dataset.val_split_mode,
+            val_synthetic_type=config.dataset.val_synthetic_type,
             val_split_ratio=config.dataset.val_split_ratio,
         )
     elif config.dataset.format.lower() == "shanghaitech":

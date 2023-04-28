@@ -28,7 +28,9 @@ from anomalib.data.utils import (
     InputNormalizationMethod,
     Split,
     TestSplitMode,
+    TestSyntheticType,
     ValSplitMode,
+    ValSyntheticType,
     download_and_extract,
     get_transforms,
 )
@@ -202,10 +204,14 @@ class BTech(AnomalibDataModule):
             Defaults to None.
         test_split_mode (TestSplitMode, optional): Setting that determines how the testing subset is obtained.
             Defaults to TestSplitMode.FROM_DIR.
+        test_synthetic_type (TestSyntheticType, optional): Method for generating synthetic test data.
+            Defaults to None.
         test_split_ratio (float, optional): Fraction of images from the train set that will be reserved for testing.
             Defaults to 0.2.
         val_split_mode (ValSplitMode, optional): Setting that determines how the validation subset is obtained.
             Defaults to ValSplitMode.SAME_AS_TEST.
+        val_synthetic_type (ValSyntheticType, optional): Method for generating synthetic val data.
+            Defaults to None.
         val_split_ratio (float, optional): Fraction of train or test images that will be reserved for validation.
             Defaults to 0.5.
         seed (int | None, optional): Seed which may be set to a fixed value for reproducibility. Defaults to None.
@@ -251,8 +257,10 @@ class BTech(AnomalibDataModule):
         transform_config_train: str | A.Compose | None = None,
         transform_config_eval: str | A.Compose | None = None,
         test_split_mode: TestSplitMode = TestSplitMode.FROM_DIR,
+        test_synthetic_type: TestSyntheticType | None = None,
         test_split_ratio: float = 0.2,
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
+        val_synthetic_type: ValSyntheticType | None = None,
         val_split_ratio: float = 0.5,
         seed: int | None = None,
     ) -> None:
@@ -261,8 +269,10 @@ class BTech(AnomalibDataModule):
             eval_batch_size=eval_batch_size,
             num_workers=num_workers,
             test_split_mode=test_split_mode,
+            test_synthetic_type=test_synthetic_type,
             test_split_ratio=test_split_ratio,
             val_split_mode=val_split_mode,
+            val_synthetic_type=val_synthetic_type,
             val_split_ratio=val_split_ratio,
             seed=seed,
         )

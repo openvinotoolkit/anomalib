@@ -23,7 +23,7 @@ from pandas import DataFrame, Series
 
 from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.task_type import TaskType
-from anomalib.data.utils import Augmenter, Split, read_image
+from anomalib.data.utils import Augmenter, PerlinROIAugmenter, Split, TestSyntheticType, read_image
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,11 @@ ROOT = "./.tmp/synthetic_anomaly"
 
 
 def make_synthetic_dataset(
-    source_samples: DataFrame, image_dir: Path, mask_dir: Path, anomalous_ratio: float = 0.5
+    source_samples: DataFrame,
+    image_dir: Path,
+    mask_dir: Path,
+    anomalous_ratio: float = 0.5,
+    synthetic_type: str = TestSyntheticType.PERLIN,
 ) -> DataFrame:
     """Convert a set of normal samples into a mixed set of normal and synthetic anomalous samples.
 
@@ -44,6 +48,7 @@ def make_synthetic_dataset(
         image_dir (Path): Directory to which the synthetic anomalous image files will be written.
         mask_dir (Path): Directory to which the ground truth anomaly masks will be written.
         anomalous_ratio (float): Fraction of source samples that will be converted into anomalous samples.
+        synthetic_type (str): Synthetic method to be used to generate anomalous samples.
     """
     assert 1 not in source_samples.label_index.values, "All source images must be normal."
     assert image_dir.is_dir(), f"{image_dir} is not a folder."
@@ -57,8 +62,11 @@ def make_synthetic_dataset(
     normal_samples = source_samples.drop(anomalous_samples.index)
     anomalous_samples = anomalous_samples.reset_index(drop=True)
 
-    # initialize augmenter
+    # initialize default augmenter
     augmenter = Augmenter("./datasets/dtd", p_anomalous=1.0, beta=(0.01, 0.2))
+
+    if synthetic_type == TestSyntheticType.PERLIN_ROI:
+        augmenter = PerlinROIAugmenter("./datasets/dtd", p_anomalous=1.0, beta=(0.01, 0.2))
 
     # initialize transform for source images
     transform = A.Compose([A.ToFloat(), ToTensorV2()])
@@ -77,9 +85,16 @@ def make_synthetic_dataset(
         """
         # read and transform image
         image = read_image(sample.image_path)
-        image = transform(image=image)["image"].unsqueeze(0)
-        # apply anomalous perturbation
-        aug_im, mask = augmenter.augment_batch(image)
+
+        if synthetic_type == TestSyntheticType.PERLIN_ROI:
+            image, thresh = augmenter.gaussian_blur(image, transform)
+            # apply anomalous perturbation
+            aug_im, mask = augmenter.augment_batch(image, thresh)
+        else:  # defaults to Perlin Noise
+            image = transform(image=image)["image"].unsqueeze(0)
+            # apply anomalous perturbation
+            aug_im, mask = augmenter.augment_batch(image)
+
         # target file name with leading zeros
         file_name = f"{str(sample.name).zfill(int(math.log10(n_anomalous)) + 1)}.png"
         # write image
@@ -110,7 +125,13 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         source_samples (DataFrame): Normal samples to which the anomalous augmentations will be applied.
     """
 
-    def __init__(self, task: TaskType, transform: A.Compose, source_samples: DataFrame) -> None:
+    def __init__(
+        self,
+        task: TaskType,
+        transform: A.Compose,
+        source_samples: DataFrame,
+        synthetic_type: str = TestSyntheticType.PERLIN,
+    ) -> None:
         super().__init__(task, transform)
 
         self.source_samples = source_samples
@@ -122,6 +143,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         self.root = Path(mkdtemp(dir=root))
         self.im_dir = self.root / "abnormal"
         self.mask_dir = self.root / "ground_truth"
+        self.synthetic_type = synthetic_type
 
         # create directories
         self.im_dir.mkdir()
@@ -131,14 +153,23 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         self.setup()
 
     @classmethod
-    def from_dataset(cls, dataset: AnomalibDataset) -> SyntheticAnomalyDataset:
+    def from_dataset(
+        cls, dataset: AnomalibDataset, synthetic_type: str = TestSyntheticType.PERLIN
+    ) -> SyntheticAnomalyDataset:
         """Create a synthetic anomaly dataset from an existing dataset of normal images.
 
         Args:
             dataset (AnomalibDataset): Dataset consisting of only normal images that will be converrted to a synthetic
                 anomalous dataset with a 50/50 normal anomalous split.
+            synthetic_type (str): Synthetic method to be used to generate anomalous samples.
+                Defaults to TestSyntheticType.PERLIN.
         """
-        return cls(task=dataset.task, transform=dataset.transform, source_samples=dataset.samples)
+        return cls(
+            task=dataset.task,
+            transform=dataset.transform,
+            source_samples=dataset.samples,
+            synthetic_type=synthetic_type,
+        )
 
     def __copy__(self) -> SyntheticAnomalyDataset:
         """Returns a shallow copy of the dataset object and prevents cleanup when original object is deleted."""
@@ -160,7 +191,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
     def _setup(self) -> None:
         """Create samples dataframe."""
         logger.info("Generating synthetic anomalous images for validation set")
-        self.samples = make_synthetic_dataset(self.source_samples, self.im_dir, self.mask_dir, 0.5)
+        self.samples = make_synthetic_dataset(self.source_samples, self.im_dir, self.mask_dir, 0.5, self.synthetic_type)
 
     def __del__(self) -> None:
         """Make sure the temporary directory is cleaned up when the dataset object is deleted."""
