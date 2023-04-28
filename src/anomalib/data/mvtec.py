@@ -33,7 +33,7 @@ import albumentations as A
 from pandas import DataFrame
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
-from anomalib.data.synthetic import NoiseType
+from anomalib.data.noise import NoiseType
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
     DownloadInfo,
