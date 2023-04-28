@@ -42,13 +42,13 @@ def get_image_filenames(path: str | Path, root: str | Path | None = None) -> lis
     if path.is_file() and path.suffix.lower() == ".csv":
         csv_data = pd.read_csv(path)
         # Check and ensure `image_path` column exists
-        if "path" not in csv_data:
+        if "image_path" not in csv_data:
             raise RuntimeError(f"Invalid CSV file (missing required columns) {path}")
         # Convert to posix path for best compatibility
-        csv_data.path = csv_data.apply(lambda row: Path(PureWindowsPath(row.path).as_posix()), axis=1)
+        csv_data.image_path = csv_data.apply(lambda row: Path(PureWindowsPath(row.image_path).as_posix()), axis=1)
         # Convert to absolute path if not
-        csv_data.path = csv_data.path.apply(lambda path: _resolve_path(path, root))
-        image_filenames = csv_data.path.tolist()
+        csv_data.image_path = csv_data.image_path.apply(lambda path: _resolve_path(path, root))
+        image_filenames = csv_data.image_path.tolist()
 
     if path.is_file() and path.suffix in IMG_EXTENSIONS:
         image_filenames = [path]
