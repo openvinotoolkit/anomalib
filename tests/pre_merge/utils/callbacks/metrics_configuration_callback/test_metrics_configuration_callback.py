@@ -1,8 +1,11 @@
+from itertools import chain
 from pathlib import Path
+from collections import OrderedDict
 
 import pytest
 import pytorch_lightning as pl
 from omegaconf import OmegaConf
+import torch
 
 from anomalib.models.components import AnomalyModule
 from anomalib.utils.callbacks.metrics_configuration import MetricsConfigurationCallback
@@ -61,3 +64,46 @@ def test_metric_collection_configuration_callback(config_from_yaml):
     assert isinstance(
         dummy_anomaly_module.pixel_metrics, AnomalibMetricCollection
     ), f"{dummy_anomaly_module.pixel_metrics}"
+
+
+@pytest.mark.parametrize(
+    ["ori_config_from_yaml", "saved_config_from_yaml"],
+    [("data/config-good-01.yaml", "data/config-good-01-serialized.yaml")],
+)
+def test_metric_collection_configuration_deserialzation_callback(ori_config_from_yaml, saved_config_from_yaml):
+    """Test if metrics are properly instantiated during deserialzation."""
+
+    ori_config_from_yaml_res = OmegaConf.load(Path(__file__).parent / ori_config_from_yaml)
+    saved_config_from_yaml_res = OmegaConf.load(Path(__file__).parent / saved_config_from_yaml)
+    callback = MetricsConfigurationCallback(
+        task="segmentation",
+        image_metrics=ori_config_from_yaml_res.metrics.image,
+        pixel_metrics=ori_config_from_yaml_res.metrics.pixel,
+    )
+
+    dummy_logger = DummyLogger()
+    dummy_anomaly_module = _DummyAnomalyModule()
+    trainer = pl.Trainer(
+        callbacks=[callback], logger=dummy_logger, enable_checkpointing=False, default_root_dir=dummy_logger.tempdir
+    )
+
+    saved_image_state_dict = OrderedDict(
+        {"image_metrics" + e: torch.tensor(1.0) for e in saved_config_from_yaml_res.metrics.image}
+    )
+    saved_pixel_state_dict = OrderedDict(
+        {"pixel_metrics" + e: torch.tensor(1.0) for e in saved_config_from_yaml_res.metrics.pixel}
+    )
+
+    final_state_dict = OrderedDict(chain(saved_image_state_dict.items(), saved_pixel_state_dict.items()))
+
+    dummy_anomaly_module._load_metrics(final_state_dict)
+    callback.setup(trainer, dummy_anomaly_module, DummyDataModule())
+
+    assert isinstance(
+        dummy_anomaly_module.image_metrics, AnomalibMetricCollection
+    ), f"{dummy_anomaly_module.image_metrics}"
+    assert isinstance(
+        dummy_anomaly_module.pixel_metrics, AnomalibMetricCollection
+    ), f"{dummy_anomaly_module.pixel_metrics}"
+
+    assert sorted((list(dummy_anomaly_module.pixel_metrics))) == ["AUPRO", "AUROC", "F1Score"]
