@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import importlib
 import logging
 from abc import ABC
 from typing import Any, OrderedDict
@@ -20,7 +21,6 @@ from torchmetrics import Metric
 from anomalib.data.utils import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
 from anomalib.post_processing import ThresholdMethod
 from anomalib.utils.metrics import (
-    AUPRO,
     AnomalibMetricCollection,
     AnomalyScoreDistribution,
     AnomalyScoreThreshold,
@@ -235,12 +235,33 @@ class AnomalyModule(pl.LightningModule, ABC):
         else:
             warn("No known normalization found in model weights.")
 
-    def _load_pixel_metrics(self, state_dict: OrderedDict[str, Tensor]) -> None:
-        """Create pixel_metrics and add AUPRO."""
-        if not hasattr(self, "pixel_metrics") and "pixel_metrics.AUPRO.fpr_limit" in state_dict.keys():
-            self.pixel_metrics = AnomalibMetricCollection([], prefix="pixel_")
-            fpr_limit = state_dict["pixel_metrics.AUPRO.fpr_limit"].item()
-            self.pixel_metrics.add_metrics(AUPRO(fpr_limit=fpr_limit))
+    def _load_metrics(self, state_dict: OrderedDict[str, Tensor]) -> None:
+        """Load metrics from saved checkpoint."""
+
+        def _set_metrics(self, name: str, state_dict: OrderedDict[str, Tensor]):
+            """Sets the pixel/image metrics.
+
+            Args:
+            name (str): is it pixel or image.
+            state_dict (OrderedDict[str, Tensor]): state dict of the model.
+            """
+            metric_keys = [key for key in state_dict.keys() if key.startswith(f"{name}_metrics")]
+            if not hasattr(self, f"{name}_metrics") and any(metric_keys):
+                metrics = AnomalibMetricCollection([], prefix=f"{name}_")
+                for key in metric_keys:
+                    class_name = key.split(".")[1]
+                    try:
+                        metrics_module = importlib.import_module("anomalib.utils.metrics")
+                        metrics_cls = getattr(metrics_module, class_name)
+                    except Exception as exception:
+                        raise ImportError(
+                            f"Class {class_name} not found in module anomalib.utils.metrics"
+                        ) from exception
+                    metrics.add_metrics(metrics_cls())
+                setattr(self, f"{name}_metrics", metrics)
+
+        _set_metrics(self, "pixel", state_dict)
+        _set_metrics(self, "image", state_dict)
 
     def load_state_dict(self, state_dict: OrderedDict[str, Tensor], strict: bool = True):
         """Load state dict from checkpoint.
@@ -249,6 +270,6 @@ class AnomalyModule(pl.LightningModule, ABC):
         """
         # Used to load missing normalization and threshold parameters
         self._load_normalization_class(state_dict)
-        # Used to load pixel metrics before create_metric_collection
-        self._load_pixel_metrics(state_dict)
+        # Used to load metrics if there is any related data in state_dict
+        self._load_metrics(state_dict)
         return super().load_state_dict(state_dict, strict=strict)
