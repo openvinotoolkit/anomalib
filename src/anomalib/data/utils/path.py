@@ -5,10 +5,23 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from pathlib import Path, PureWindowsPath
 
 import pandas as pd
 from torchvision.datasets.folder import IMG_EXTENSIONS
+
+
+class DirType(str, Enum):
+    """Dir type names."""
+
+    NORMAL = "normal"
+    ABNORMAL = "abnormal"
+    NORMAL_TEST = "normal_test"
+    NORMAL_DEPTH = "normal_depth"
+    ABNORMAL_DEPTH = "abnormal_depth"
+    NORMAL_TEST_DEPTH = "normal_test_depth"
+    MASK = "mask_dir"
 
 
 def _check_and_convert_path(path: str | Path) -> Path:
