@@ -173,7 +173,6 @@ class Augmenter:
 
 
 class PerlinROIAugmenter(Augmenter):
-    
     def augment_batch(self, batch: Tensor, thresh_batch: Tensor | None = None) -> tuple[Tensor, Tensor]:
         """Generate anomalous augmentations for a batch of input images.
 
@@ -223,7 +222,8 @@ class PerlinROIAugmenter(Augmenter):
 
         Args:
             image (Tensor): Batch of input images
-            transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
+            transform (A.Compose): Albumentations Compose object
+            describing the transforms that are applied to the inputs.
 
         Returns:
             - Augmented image to which anomalous perturbations have been added.

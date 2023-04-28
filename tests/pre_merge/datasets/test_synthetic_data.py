@@ -43,8 +43,8 @@ def make_perlin_synthetic_dataset():
 
 @pytest.fixture(autouse=True)
 def make_perlinroi_synthetic_dataset():
-    """Create synthetic anomaly dataset from folder dataset."""    
-    
+    """Create synthetic anomaly dataset from folder dataset."""
+
     def make():
         folder_dataset = get_folder_dataset()
         synthetic_dataset = SyntheticAnomalyDataset.from_dataset(folder_dataset, TestSyntheticType.PERLIN_ROI)
@@ -59,8 +59,10 @@ def synthetic_perlin_dataset_from_samples():
     folder_dataset = get_folder_dataset()
     transform = get_transforms(image_size=(256, 256))
     synthetic_dataset = SyntheticAnomalyDataset(
-        task=folder_dataset.task, transform=transform, source_samples=folder_dataset.samples,
-        synthetic_type = TestSyntheticType.PERLIN
+        task=folder_dataset.task,
+        transform=transform,
+        source_samples=folder_dataset.samples,
+        synthetic_type=TestSyntheticType.PERLIN,
     )
     return synthetic_dataset
 
@@ -71,8 +73,10 @@ def synthetic_perlinroi_dataset_from_samples():
     folder_dataset = get_folder_dataset()
     transform = get_transforms(image_size=(256, 256))
     synthetic_dataset = SyntheticAnomalyDataset(
-        task=folder_dataset.task, transform=transform, source_samples=folder_dataset.samples,
-        synthetic_type = TestSyntheticType.PERLIN_ROI
+        task=folder_dataset.task,
+        transform=transform,
+        source_samples=folder_dataset.samples,
+        synthetic_type=TestSyntheticType.PERLIN_ROI,
     )
     return synthetic_dataset
 
