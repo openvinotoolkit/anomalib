@@ -12,7 +12,6 @@ import logging
 import math
 import shutil
 from copy import deepcopy
-from enum import Enum
 from pathlib import Path
 from tempfile import mkdtemp
 
@@ -23,6 +22,7 @@ from albumentations.pytorch import ToTensorV2
 from pandas import DataFrame, Series
 
 from anomalib.data.base.dataset import AnomalibDataset
+from anomalib.data.noise import NoiseType
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import Augmenter, Split, read_image
 
@@ -30,13 +30,6 @@ logger = logging.getLogger(__name__)
 
 
 ROOT = "./.tmp/synthetic_anomaly"
-
-
-class NoiseType(str, Enum):
-    """Supported Noise Types"""
-
-    PERLIN_2D = "perlin_2d"
-    SIMPLEX_2D = "simplex_2d"
 
 
 def make_synthetic_dataset(

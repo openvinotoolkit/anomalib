@@ -15,23 +15,17 @@ from __future__ import annotations
 import glob
 import math
 import random
-from typing import Callable, Mapping
 
 import cv2
 import imgaug.augmenters as iaa
 import numpy as np
 import torch
+from opensimplex import noise2array
 from torch import Tensor
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
-from anomalib.data.synthetic import NoiseType
-from anomalib.data.utils.generators.opensimplex import random_2d_simplex
+from anomalib.data.noise import NoiseType
 from anomalib.data.utils.generators.perlin import random_2d_perlin
-
-NoiseToProcessFunctionMapping: Mapping[NoiseType, Callable] = {
-    NoiseType.PERLIN_2D: random_2d_perlin,
-    NoiseType.SIMPLEX_2D: random_2d_simplex,
-}
 
 
 def nextpow2(value):
@@ -108,10 +102,16 @@ class Augmenter:
 
         perlin_scalex = 2 ** random.randint(min_perlin_scale, perlin_scale)
         perlin_scaley = 2 ** random.randint(min_perlin_scale, perlin_scale)
-        process_function = NoiseToProcessFunctionMapping.get(self.noise_type, random_2d_perlin)
-        generated_noise = process_function((nextpow2(height), nextpow2(width)), (perlin_scalex, perlin_scaley))[
-            :height, :width
-        ]
+
+        if self.noise_type == NoiseType.SIMPLEX_2D:
+            rng = np.random.default_rng(seed=0)
+            ix, iy = rng.random(width), rng.random(height)
+            generated_noise = noise2array(ix, iy)
+        else:
+            generated_noise = random_2d_perlin((nextpow2(height), nextpow2(width)), (perlin_scalex, perlin_scaley))[
+                :height, :width
+            ]
+
         generated_noise = self.rot(image=generated_noise)
 
         # Create mask from perlin noise

@@ -18,8 +18,8 @@ from .folder_3d import Folder3D
 from .inference import InferenceDataset
 from .mvtec import MVTec
 from .mvtec_3d import MVTec3D
+from .noise import NoiseType
 from .shanghaitech import ShanghaiTech
-from .synthetic import NoiseType
 from .task_type import TaskType
 from .ucsd_ped import UCSDped
 from .visa import Visa
