@@ -57,7 +57,7 @@ class SSPCAB(nn.Module):
         super().__init__()
 
         self.pad = kernel_size + dilation
-        self.crop = 2 * (kernel_size + dilation)
+        self.crop = kernel_size + 2 * dilation + 1
 
         self.masked_conv1 = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=kernel_size)
         self.masked_conv2 = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=kernel_size)
