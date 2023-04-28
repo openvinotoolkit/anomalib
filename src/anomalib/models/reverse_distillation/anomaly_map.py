@@ -11,11 +11,20 @@
 
 from __future__ import annotations
 
+from enum import Enum
+
 import torch
 import torch.nn.functional as F
 from kornia.filters import gaussian_blur2d
 from omegaconf import ListConfig
 from torch import Tensor, nn
+
+
+class AnomalyMapGenerationMode(str, Enum):
+    """Type of mode when generating anomaly imape."""
+
+    ADD = "add"
+    MULTIPLY = "multiply"
 
 
 class AnomalyMapGenerator(nn.Module):
@@ -24,20 +33,26 @@ class AnomalyMapGenerator(nn.Module):
     Args:
         image_size (ListConfig, tuple): Size of original image used for upscaling the anomaly map.
         sigma (int): Standard deviation of the gaussian kernel used to smooth anomaly map.
-        mode (str, optional): Operation used to generate anomaly map. Options are `add` and `multiply`.
-                Defaults to "multiply".
+        mode (AnomalyMapGenerationMode, optional): Operation used to generate anomaly map.
+        Options are `AnomalyMapGenerationMode.ADD` and `AnomalyMapGenerationMode.MULTIPLY`.
+        Defaults to "AnomalyMapGenerationMode.MULTIPLY".
 
     Raises:
         ValueError: In case modes other than multiply and add are passed.
     """
 
-    def __init__(self, image_size: ListConfig | tuple, sigma: int = 4, mode: str = "multiply") -> None:
+    def __init__(
+        self,
+        image_size: ListConfig | tuple,
+        sigma: int = 4,
+        mode: AnomalyMapGenerationMode = AnomalyMapGenerationMode.MULTIPLY,
+    ) -> None:
         super().__init__()
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
         self.sigma = sigma
         self.kernel_size = 2 * int(4.0 * sigma + 0.5) + 1
 
-        if mode not in ("add", "multiply"):
+        if mode not in (AnomalyMapGenerationMode.ADD, AnomalyMapGenerationMode.MULTIPLY):
             raise ValueError(f"Found mode {mode}. Only multiply and add are supported.")
         self.mode = mode
 
@@ -51,11 +66,11 @@ class AnomalyMapGenerator(nn.Module):
         Returns:
             Tensor: Anomaly maps of length batch.
         """
-        if self.mode == "multiply":
+        if self.mode == AnomalyMapGenerationMode.MULTIPLY:
             anomaly_map = torch.ones(
                 [student_features[0].shape[0], 1, *self.image_size], device=student_features[0].device
             )  # b c h w
-        elif self.mode == "add":
+        elif self.mode == AnomalyMapGenerationMode.ADD:
             anomaly_map = torch.zeros(
                 [student_features[0].shape[0], 1, *self.image_size], device=student_features[0].device
             )
@@ -64,9 +79,9 @@ class AnomalyMapGenerator(nn.Module):
             distance_map = 1 - F.cosine_similarity(student_feature, teacher_feature)
             distance_map = torch.unsqueeze(distance_map, dim=1)
             distance_map = F.interpolate(distance_map, size=self.image_size, mode="bilinear", align_corners=True)
-            if self.mode == "multiply":
+            if self.mode == AnomalyMapGenerationMode.MULTIPLY:
                 anomaly_map *= distance_map
-            elif self.mode == "add":
+            elif self.mode == AnomalyMapGenerationMode.ADD:
                 anomaly_map += distance_map
 
         anomaly_map = gaussian_blur2d(
