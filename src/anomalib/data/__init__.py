@@ -170,7 +170,6 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             eval_batch_size=config.dataset.eval_batch_size,
             num_workers=config.dataset.num_workers,
             val_split_mode=config.dataset.val_split_mode,
-            val_synthetic_type=config.dataset.val_synthetic_type,
             val_split_ratio=config.dataset.val_split_ratio,
         )
     elif config.dataset.format.lower() == "avenue":
@@ -189,7 +188,6 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             eval_batch_size=config.dataset.eval_batch_size,
             num_workers=config.dataset.num_workers,
             val_split_mode=config.dataset.val_split_mode,
-            val_synthetic_type=config.dataset.val_synthetic_type,
             val_split_ratio=config.dataset.val_split_ratio,
         )
     elif config.dataset.format.lower() == "visa":
@@ -228,7 +226,6 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             eval_batch_size=config.dataset.eval_batch_size,
             num_workers=config.dataset.num_workers,
             val_split_mode=config.dataset.val_split_mode,
-            val_synthetic_type=config.dataset.val_synthetic_type,
             val_split_ratio=config.dataset.val_split_ratio,
         )
     else:
