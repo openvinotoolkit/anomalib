@@ -24,6 +24,7 @@ from anomalib.data.utils import (
     InputNormalizationMethod,
     Split,
     ValSplitMode,
+    ValSyntheticType,
     download_and_extract,
     get_transforms,
     read_image,
@@ -205,6 +206,7 @@ class UCSDped(AnomalibVideoDataModule):
             during validation.
             Defaults to None.
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
+        val_synthetic_type (ValSyntheticType): Method for generating synthetic validation data.
         val_split_ratio (float): Fraction of train or test images that will be reserved for validation.
         seed (int | None, optional): Seed which may be set to a fixed value for reproducibility.
     """
@@ -225,6 +227,7 @@ class UCSDped(AnomalibVideoDataModule):
         transform_config_train: str | A.Compose | None = None,
         transform_config_eval: str | A.Compose | None = None,
         val_split_mode: ValSplitMode = ValSplitMode.FROM_TEST,
+        val_synthetic_type: ValSyntheticType | None = None,
         val_split_ratio: float = 0.5,
         seed: int | None = None,
     ) -> None:
@@ -234,6 +237,7 @@ class UCSDped(AnomalibVideoDataModule):
             num_workers=num_workers,
             val_split_mode=val_split_mode,
             val_split_ratio=val_split_ratio,
+            val_synthetic_type=val_synthetic_type,
             seed=seed,
         )
 
