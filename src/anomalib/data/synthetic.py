@@ -128,7 +128,8 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         source_samples (DataFrame): Normal samples to which the anomalous augmentations will be applied.
     """
 
-    def __init__(self, task: TaskType, transform: A.Compose, source_samples: DataFrame, synthetic_type: str) -> None:
+    def __init__(self, task: TaskType, transform: A.Compose, source_samples: DataFrame, 
+                 synthetic_type: str = TestSyntheticType.PERLIN) -> None:
         super().__init__(task, transform)
 
         self.source_samples = source_samples
