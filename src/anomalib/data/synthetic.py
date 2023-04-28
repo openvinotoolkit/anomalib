@@ -150,13 +150,14 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         self.setup()
 
     @classmethod
-    def from_dataset(cls, dataset: AnomalibDataset, synthetic_type: str) -> SyntheticAnomalyDataset:
+    def from_dataset(cls, dataset: AnomalibDataset, synthetic_type: str = TestSyntheticType.PERLIN) -> SyntheticAnomalyDataset:
         """Create a synthetic anomaly dataset from an existing dataset of normal images.
 
         Args:
             dataset (AnomalibDataset): Dataset consisting of only normal images that will be converrted to a synthetic
                 anomalous dataset with a 50/50 normal anomalous split.
             synthetic_type (str): Synthetic method to be used to generate anomalous samples.
+                Defaults to TestSyntheticType.PERLIN.
         """
         return cls(task=dataset.task, transform=dataset.transform, source_samples=dataset.samples, synthetic_type=synthetic_type)
 
