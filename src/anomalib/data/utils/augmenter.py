@@ -171,18 +171,15 @@ class Augmenter:
 
         return augmented_batch, masks
 
-    def gaussian_blur(self, image: Tensor, transform: A.Compose) -> tuple[Tensor, Tensor]:
-        """To be implemented in the subclasses."""
-        raise NotImplementedError
-
 
 class PerlinROIAugmenter(Augmenter):
+    
     def augment_batch(self, batch: Tensor, thresh_batch: Tensor | None = None) -> tuple[Tensor, Tensor]:
         """Generate anomalous augmentations for a batch of input images.
 
         Args:
             batch (Tensor): Batch of input images
-            thresh_batch (Tensor | None, optional): Batch of
+            thresh_batch (Tensor | None, optional): Batch of thresholds
 
         Returns:
             - Augmented image to which anomalous perturbations have been added.
@@ -226,13 +223,12 @@ class PerlinROIAugmenter(Augmenter):
 
         Args:
             image (Tensor): Batch of input images
-            transform (A.Compose): Batch of thresholds
+            transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
 
         Returns:
-            -
-            -
+            - Augmented image to which anomalous perturbations have been added.
+            - Ground truth masks corresponding to the anomalous perturbations.
         """
-
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray, (5, 5), 0)
         (T, thresh) = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
