@@ -7,7 +7,7 @@ import pytest
 
 from anomalib.data.folder import FolderDataset
 from anomalib.data.synthetic import SyntheticAnomalyDataset
-from anomalib.data.utils import get_transforms
+from anomalib.data.utils import get_transforms, TestSyntheticType
 from tests.helpers.dataset import get_dataset_path
 
 
@@ -30,24 +30,49 @@ def get_folder_dataset():
 
 
 @pytest.fixture(autouse=True)
-def make_synthetic_dataset():
+def make_perlin_synthetic_dataset():
     """Create synthetic anomaly dataset from folder dataset."""
 
     def make():
         folder_dataset = get_folder_dataset()
-        synthetic_dataset = SyntheticAnomalyDataset.from_dataset(folder_dataset)
+        synthetic_dataset = SyntheticAnomalyDataset.from_dataset(folder_dataset, TestSyntheticType.PERLIN)
         return synthetic_dataset
 
     return make
 
 
 @pytest.fixture(autouse=True)
-def synthetic_dataset_from_samples():
+def make_perlinroi_synthetic_dataset():
+    """Create synthetic anomaly dataset from folder dataset."""    
+    
+    def make():
+        folder_dataset = get_folder_dataset()
+        synthetic_dataset = SyntheticAnomalyDataset.from_dataset(folder_dataset, TestSyntheticType.PERLIN_ROI)
+        return synthetic_dataset
+
+    return make
+
+
+@pytest.fixture(autouse=True)
+def synthetic_perlin_dataset_from_samples():
     """Create synthetic anomaly dataset by passing a samples dataframe."""
     folder_dataset = get_folder_dataset()
     transform = get_transforms(image_size=(256, 256))
     synthetic_dataset = SyntheticAnomalyDataset(
-        task=folder_dataset.task, transform=transform, source_samples=folder_dataset.samples
+        task=folder_dataset.task, transform=transform, source_samples=folder_dataset.samples,
+        synthetic_type = TestSyntheticType.PERLIN
+    )
+    return synthetic_dataset
+
+
+@pytest.fixture(autouse=True)
+def synthetic_perlinroi_dataset_from_samples():
+    """Create synthetic anomaly dataset by passing a samples dataframe."""
+    folder_dataset = get_folder_dataset()
+    transform = get_transforms(image_size=(256, 256))
+    synthetic_dataset = SyntheticAnomalyDataset(
+        task=folder_dataset.task, transform=transform, source_samples=folder_dataset.samples,
+        synthetic_type = TestSyntheticType.PERLIN_ROI
     )
     return synthetic_dataset
 
