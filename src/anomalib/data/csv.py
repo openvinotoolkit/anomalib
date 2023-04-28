@@ -21,80 +21,43 @@ from anomalib.data.utils import (
     ValSplitMode,
     get_transforms,
 )
-from anomalib.data.utils.path import _prepare_files_labels_from_csv, _resolve_path
+from anomalib.data.utils.path import _prepare_filemeta_from_csv, _resolve_path
 
 
 def make_csv_dataset(
-    normal_csv: str | Path,
+    csv_file: str | Path,
     root: str | Path | None = None,
-    abnormal_csv: str | Path | None = None,
-    normal_test_csv: str | Path | None = None,
-    mask_csv: str | Path | None = None,
     split: str | Split | None = None,
     extensions: tuple[str, ...] | None = None,
 ) -> DataFrame:
     """Make Folder Dataset.
     Args:
-        normal_csv (str | Path): Path to the CSV file containing normal images.
+        csv_file (str | Path | None, optional): Path to the CSV file containing abnormal images.
         root (str | Path | None): Path to the root directory of the dataset.
-        abnormal_csv (str | Path | None, optional): Path to the CSV file containing abnormal images.
-        normal_test_csv (str | Path | None, optional): Path to the CSV file containing
-            normal images for the test dataset. Normal test images will be a split of `normal_csv`
-            if `None`. Defaults to None.
-        mask_csv (str | Path | None, optional): Path to the CSV file containing
-            the mask annotations. Defaults to None.
         split (str | Split | None, optional): Dataset split (ie., Split.FULL, Split.TRAIN or Split.TEST).
             Defaults to None.
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
             file.
-        TODO: Need to define conventions for CSV file column names, or args for expected column names
     Returns:
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
-    normal_csv = _resolve_path(normal_csv, root)
-    abnormal_csv = _resolve_path(abnormal_csv, root) if abnormal_csv is not None else None
-    normal_test_csv = _resolve_path(normal_test_csv, root) if normal_test_csv is not None else None
-    mask_csv = _resolve_path(mask_csv, root) if mask_csv is not None else None
-    assert normal_csv.is_file(), "A CSV file must be provided in normal_csv."
+    csv_file = _resolve_path(csv_file, root)
+    assert csv_file.is_file(), "A CSV file must be provided in csv_file."
 
-    filenames = []
-    labels = []
-    csvs = {"normal": normal_csv}
-
-    if abnormal_csv:
-        csvs = {**csvs, **{"abnormal": abnormal_csv}}
-
-    if normal_test_csv:
-        csvs = {**csvs, **{"normal_test": normal_test_csv}}
-
-    if mask_csv:
-        csvs = {**csvs, **{"mask_csv": mask_csv}}
-
-    for csv_type, path in csvs.items():
-        filename, label = _prepare_files_labels_from_csv(path, csv_type, extensions)
-        filenames += filename
-        labels += label
-
-    samples = DataFrame({"image_path": filenames, "label": labels})
+    samples = _prepare_filemeta_from_csv(csv_file, extensions)
     samples = samples.sort_values(by="image_path", ignore_index=True)
 
     # Convert to absolute path if not
     samples.image_path = samples.image_path.apply(lambda path: _resolve_path(path, root))
 
     # Create label index for normal (0) and abnormal (1) images.
-    samples.loc[(samples.label == "normal") | (samples.label == "normal_test"), "label_index"] = 0
-    samples.loc[(samples.label == "abnormal"), "label_index"] = 1
+    if "label_index" not in samples:
+        samples.loc[(samples.label == "normal") | (samples.label == "normal_test"), "label_index"] = 0
+        samples.loc[(samples.label == "abnormal"), "label_index"] = 1
     samples.label_index = samples.label_index.astype("Int64")
 
-    # If a path to mask is provided, add it to the sample dataframe.
-
-    if mask_csv is not None and abnormal_csv is not None:
-        samples.loc[samples.label == "abnormal", "mask_path"] = samples.loc[
-            samples.label == "mask_dir"
-        ].image_path.values
-        samples["mask_path"].fillna("", inplace=True)
-        samples = samples.astype({"mask_path": "str"})
-
+    # If mask_path provided, validate
+    if "mask_path" in samples:
         # make sure every rgb image has a corresponding mask image.
         assert (
             samples.loc[samples.label_index == 1]
@@ -118,8 +81,12 @@ def make_csv_dataset(
     # Create train/test split.
     # By default, all the normal samples are assigned as train.
     #   and all the abnormal samples are test.
-    samples.loc[(samples.label == "normal"), "split"] = "train"
-    samples.loc[(samples.label == "abnormal") | (samples.label == "normal_test"), "split"] = "test"
+    if "split" not in samples:
+        samples.loc[(samples.label == "normal"), "split"] = "train"
+        samples.loc[(samples.label == "abnormal") | (samples.label == "normal_test"), "split"] = "test"
+    else:
+        # If split provided in csv, ensure train has only normal samples by excluding non-normal training samples
+        samples = samples.loc[~((samples.label != "normal") & (samples.split == "train"))]
 
     # Get the data frame for the split.
     if split:
@@ -135,30 +102,19 @@ class CSVDataset(AnomalibDataset):
         task (TaskType): Task type. (``classification``, ``detection`` or ``segmentation``).
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (str | Split | None): Fixed subset split. Choose from [Split.FULL, Split.TRAIN, Split.TEST]
-        normal_csv (str | Path): Path to the CSV file containing normal images.
+        csv_file (str | Path): Path to the CSV file
         root (str | Path | None): Root folder of the dataset.
-        abnormal_csv (str | Path | None, optional): Path to the CSV file containing abnormal images.
-        normal_test_csv (str | Path | None, optional): Path to the CSV file containing
-            normal images for the test dataset. Defaults to None.
-        mask_csv (str | Path | None, optional): Path to the CSV file containing
-            the mask annotations. Defaults to None.
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
             directory.
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
-    Raises:
-        ValueError: When task is set to classification and `mask_csv` is provided. When `mask_csv` is
-            provided, `task` should be set to `segmentation`.
     """
 
     def __init__(
         self,
         task: TaskType,
         transform: A.Compose,
-        normal_csv: str | Path,
+        csv_file: str | Path,
         root: str | Path | None = None,
-        abnormal_csv: str | Path | None = None,
-        normal_test_csv: str | Path | None = None,
-        mask_csv: str | Path | None = None,
         split: str | Split | None = None,
         extensions: tuple[str, ...] | None = None,
     ) -> None:
@@ -166,20 +122,14 @@ class CSVDataset(AnomalibDataset):
 
         self.split = split
         self.root = root
-        self.normal_csv = normal_csv
-        self.abnormal_csv = abnormal_csv
-        self.normal_test_csv = normal_test_csv
-        self.mask_csv = mask_csv
+        self.csv_file = csv_file
         self.extensions = extensions
 
     def _setup(self) -> None:
         """Assign samples."""
         self.samples = make_csv_dataset(
+            csv_file=self.csv_file,
             root=self.root,
-            normal_csv=self.normal_csv,
-            abnormal_csv=self.abnormal_csv,
-            normal_test_csv=self.normal_test_csv,
-            mask_csv=self.mask_csv,
             split=self.split,
             extensions=self.extensions,
         )
@@ -188,16 +138,8 @@ class CSVDataset(AnomalibDataset):
 class CSV(AnomalibDataModule):
     """CSV DataModule.
     Args:
-        TODO: Update these
-        normal_csv (str | Path): Name of the CSV file containing normal images.
-            Defaults to "normal".
+        csv_file (str | Path): Name of the CSV file containing images paths
         root (str | Path | None): Path to the root folder containing normal and abnormal CSVs.
-        abnormal_csv (str | Path | None): Name of the CSV file containing abnormal images.
-            Defaults to "abnormal".
-        normal_test_csv (str | Path | None, optional): Path to the CSV file containing
-            normal images for the test dataset. Defaults to None.
-        mask_csv (str | Path | None, optional): Path to the CSV file containing
-            the mask annotations. Defaults to None.
         normal_split_ratio (float, optional): Ratio to split normal training images and add to the
             test set in case test set doesn't contain any normal images.
             Defaults to 0.2.
@@ -228,11 +170,8 @@ class CSV(AnomalibDataModule):
 
     def __init__(
         self,
-        normal_csv: str | Path,
+        csv_file: str | Path,
         root: str | Path | None = None,
-        abnormal_csv: str | Path | None = None,
-        normal_test_csv: str | Path | None = None,
-        mask_csv: str | Path | None = None,
         normal_split_ratio: float = 0.2,
         extensions: tuple[str] | None = None,
         image_size: int | tuple[int, int] | None = None,
@@ -281,10 +220,7 @@ class CSV(AnomalibDataModule):
             transform=transform_train,
             split=Split.TRAIN,
             root=root,
-            normal_csv=normal_csv,
-            abnormal_csv=abnormal_csv,
-            normal_test_csv=normal_test_csv,
-            mask_csv=mask_csv,
+            csv_file=csv_file,
             extensions=extensions,
         )
 
@@ -293,9 +229,6 @@ class CSV(AnomalibDataModule):
             transform=transform_eval,
             split=Split.TEST,
             root=root,
-            normal_csv=normal_csv,
-            abnormal_csv=abnormal_csv,
-            normal_test_csv=normal_test_csv,
-            mask_csv=mask_csv,
+            csv_file=csv_file,
             extensions=extensions,
         )

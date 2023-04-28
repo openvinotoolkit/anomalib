@@ -77,7 +77,7 @@ def infer():
 
     # create the dataset
     dataset = InferenceDataset(
-        args.input, config.dataset.path, image_size=tuple(config.dataset.image_size), transform=transform
+        args.input, config.dataset.root, image_size=tuple(config.dataset.image_size), transform=transform
     )
     dataloader = DataLoader(dataset)
 

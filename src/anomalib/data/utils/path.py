@@ -68,19 +68,16 @@ def _prepare_files_labels(
     return filenames, labels
 
 
-def _prepare_files_labels_from_csv(
-    path: str | Path, csv_type: str, extensions: tuple[str, ...] | None = None
-) -> tuple[list, list]:
-    """Return a list of filenames and list corresponding labels.
+def _prepare_filemeta_from_csv(path: str | Path, extensions: tuple[str, ...] | None = None) -> pd.DataFrame:
+    """Return a DataFrame of dataset file metadata from CSV file
 
     Args:
-        path (str | Path): Path to the CSV file containing list of images.
-        csv_type (str): Type of images in the provided CSV ("normal", "abnormal", "normal_test")
+        path (str | Path): Path to the CSV file
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
-            directory.
+            CSV file.
 
     Returns:
-        List, List: Filenames of the images provided in the paths, labels of the images provided in the paths
+        pd.DataFrame: Contents of CSV dataset file, with at least `image_path` and `label` columns
     """
     path = _check_and_convert_path(path)
     if extensions is None:
@@ -89,14 +86,11 @@ def _prepare_files_labels_from_csv(
     if isinstance(extensions, str):
         extensions = (extensions,)
 
-    # read CSV file
-    # confirm pandas dependency
     csv_data = pd.read_csv(path)
     if len(csv_data) == 0:
         raise RuntimeError(f"Empty CSV file in {path}")
 
-    # Check and ensure `image_path` column exists
-    if "image_path" not in csv_data:
+    if "image_path" not in csv_data or "label" not in csv_data:
         raise RuntimeError(f"Invalid CSV file (missing required columns) {path}")
 
     # Convert to posix path for best compatibility
@@ -105,12 +99,10 @@ def _prepare_files_labels_from_csv(
     # Filter out unsupported extensions
     csv_data = csv_data[csv_data.image_path.apply(lambda path: path.suffix in extensions)]
     if len(csv_data) == 0:
-        raise RuntimeError(f"Found 0 {csv_type} images in CSV file in {path}")
+        raise RuntimeError(f"Found 0 images in CSV file in {path}")
 
-    # labels are either normal, abnormal, normal_test
-    labels = [csv_type] * len(csv_data)
-
-    return csv_data.image_path.tolist(), labels
+    # Any extra columns will be returned to caller
+    return csv_data
 
 
 def _resolve_path(folder: str | Path, root: str | Path | None = None) -> Path:

@@ -164,11 +164,8 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
     elif config.dataset.format.lower() == DataFormat.CSV:
         datamodule = CSV(
             root=config.dataset.root,
-            normal_csv=config.dataset.normal_csv,
-            abnormal_csv=config.dataset.abnormal_csv,
+            csv_file=config.dataset.csv_file,
             task=config.dataset.task,
-            normal_test_csv=config.dataset.normal_test_csv,
-            mask_csv=config.dataset.mask_csv,
             extensions=config.dataset.extensions,
             image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
             center_crop=center_crop,
