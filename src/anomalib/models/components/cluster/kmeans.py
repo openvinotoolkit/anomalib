@@ -17,7 +17,7 @@ class KMeans:
         self.max_iter = max_iter
 
     def fit(self, inputs):
-         """
+        """
         Fits the K-means algorithm to the input data.
 
         Args:
