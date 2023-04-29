@@ -78,7 +78,7 @@ def get_feature_extractor(backbone: str, return_nodes: list[str]) -> GraphModule
 
     return feature_extractor
 
-    
+
 class CfaModel(DynamicBufferModule):
     """Torch implementation of the CFA Model.
 
@@ -161,7 +161,7 @@ class CfaModel(DynamicBufferModule):
         self.memory_bank = rearrange(self.memory_bank, "b c h w -> (b h w) c")
 
         if self.gamma_c > 1:
-            # TODO: Create PyTorch KMeans class. (I hope it's the way you want it.)
+            # TODO: Create PyTorch KMeans class.
             k_means = KMeans(n_clusters=(self.scale[0] * self.scale[1]) // self.gamma_c, max_iter=3000)
             cluster_centers = k_means.fit(self.memory_bank.cpu()).cluster_centers_ 
             self.memory_bank = torch.tensor(cluster_centers, requires_grad=False).to(device)

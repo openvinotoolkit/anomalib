@@ -1,4 +1,6 @@
-#KMeans clustering algorithm implementation in PyTorch
+"""
+    KMeans clustering algorithm implementation using PyTorch.
+"""
 
 import torch
 
@@ -7,32 +9,38 @@ class KMeans:
         """
         Initializes the KMeans object.
 
-        Parameters:
-            n_clusters: The number of clusters to create.
-            max_iter: The maximum number of iterations to run the algorithm for.
+        Args:
+            n_clusters (int): The number of clusters to create.
+            max_iter (int, optional)): The maximum number of iterations to run the algorithm. Defaults to 10.
         """
         self.n_clusters = n_clusters
         self.max_iter = max_iter
 
-    def fit(self, X):
-        """
-        Runs the k-means algorithm on input data X.
+    def fit(self, inputs):
+         """
+        Fits the K-means algorithm to the input data.
 
-        Parameters:
-            X: A tensor of shape (N, D) containing the input data.
-            N is the number of data points 
-            D is the dimensionality of the data points.
+        Args:
+            inputs (torch.Tensor): Input data of shape (batch_size, n_features).
+
+        Returns:
+            tuple: A tuple containing the labels of the input data with respect to the identified clusters
+            and the cluster centers themselves. The labels have a shape of (batch_size,) and the
+            cluster centers have a shape of (n_clusters, n_features).
+
+        Raises:
+            ValueError: If the number of clusters is less than or equal to 0.
         """
-        N, D = X.shape
+        batch_size, _ = inputs.shape
 
         # Initialize centroids randomly from the data points
-        centroid_indices = torch.randint(0, N, (self.n_clusters,))
-        self.cluster_centers_ = X[centroid_indices]
+        centroid_indices = torch.randint(0, batch_size, (self.n_clusters,))
+        self.cluster_centers_ = inputs[centroid_indices]
 
         # Run the k-means algorithm for max_iter iterations
-        for i in range(self.max_iter):
+        for _ in range(self.max_iter):
             # Compute the distance between each data point and each centroid
-            distances = torch.cdist(X, self.cluster_centers_)
+            distances = torch.cdist(inputs, self.cluster_centers_)
 
             # Assign each data point to the closest centroid
             self.labels_ = torch.argmin(distances, dim=1)
@@ -41,19 +49,22 @@ class KMeans:
             for j in range(self.n_clusters):
                 mask = self.labels_ == j
                 if mask.any():
-                    self.cluster_centers_[j] = X[mask].mean(dim=0)        
-        #thise line returns labels and centoids of the results,          
+                    self.cluster_centers_[j] = inputs[mask].mean(dim=0)
+        #this line returns labels and centoids of the results
         return self.labels_, self.cluster_centers_
 
-    def predict(self, X):
+    def predict(self, inputs):
         """
-        Assigns each data point in X to its closest centroid.
+        Predicts the labels of input data based on the fitted model.
 
-        Parameters:
-            X: A tensor of shape (N, D) containing the input data.
+        Args:
+            inputs (torch.Tensor): Input data of shape (batch_size, n_features).
 
         Returns:
-            A tensor of shape (N,) containing the index of the closest centroid for each data point.
+            torch.Tensor: The predicted labels of the input data with respect to the identified clusters.
+
+        Raises:
+            AttributeError: If the KMeans object has not been fitted to input data.
         """
-        distances = torch.cdist(X, self.cluster_centers_)
+        distances = torch.cdist(inputs, self.cluster_centers_)
         return torch.argmin(distances, dim=1)
