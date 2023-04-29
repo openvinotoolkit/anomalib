@@ -14,7 +14,6 @@ import torch
 import torch.nn.functional as F
 import torchvision
 from einops import rearrange
-#from sklearn.cluster import KMeans
 from anomalib.models.components.cluster.kmeans import KMeans
 from torch import Tensor, nn
 from torch.fx.graph_module import GraphModule
