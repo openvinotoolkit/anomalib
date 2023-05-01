@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
-- Thresholding method now uses `class_path` and `init_args`. Note: This is a breaking change. (<TODO>)
+- Thresholding method now uses `class_path` and `init_args`. Note: This is a breaking change. (<https://github.com/openvinotoolkit/anomalib/pull/1064>)
 - Remove `config` flag from `OpenVINOInferencer` (<https://github.com/openvinotoolkit/anomalib/pull/939>)
 
 ### Deprecated
