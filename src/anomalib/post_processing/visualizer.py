@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
 from typing import Iterator
 
@@ -61,16 +62,23 @@ class ImageResult:
             self.anomalous_boxes = self.pred_boxes[self.box_labels.astype(bool)]
 
 
+class VisualizationMode(str, Enum):
+    """Type of visualization mode."""
+
+    FULL = "full"
+    SIMPLE = "simple"
+
+
 class Visualizer:
     """Class that handles the logic of composing the visualizations.
 
     Args:
-        mode (str): visualization mode, either "full" or "simple"
+        mode (VisualizationMode): visualization mode, either "full" or "simple"
         task (TaskType): task type "segmentation", "detection" or "classification"
     """
 
-    def __init__(self, mode: str, task: TaskType) -> None:
-        if mode not in ("full", "simple"):
+    def __init__(self, mode: VisualizationMode, task: TaskType) -> None:
+        if mode not in (VisualizationMode.FULL, VisualizationMode.SIMPLE):
             raise ValueError(f"Unknown visualization mode: {mode}. Please choose one of ['full', 'simple']")
         self.mode = mode
         if task not in (TaskType.CLASSIFICATION, TaskType.DETECTION, TaskType.SEGMENTATION):
@@ -122,9 +130,9 @@ class Visualizer:
         Returns:
             The full or simple visualization for the image, depending on the specified mode.
         """
-        if self.mode == "full":
+        if self.mode == VisualizationMode.FULL:
             return self._visualize_full(image_result)
-        if self.mode == "simple":
+        if self.mode == VisualizationMode.SIMPLE:
             return self._visualize_simple(image_result)
         raise ValueError(f"Unknown visualization mode: {self.mode}")
 
