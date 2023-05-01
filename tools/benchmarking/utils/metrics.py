@@ -11,9 +11,10 @@ from glob import glob
 from pathlib import Path
 
 import pandas as pd
-import wandb
 from comet_ml import Experiment
 from torch.utils.tensorboard.writer import SummaryWriter
+
+import wandb
 
 
 def write_metrics(

@@ -12,7 +12,6 @@ from importlib import import_module
 from pytorch_lightning import Callback, LightningModule, Trainer
 
 from anomalib.models.components.base.anomaly_module import AnomalyModule
-from anomalib.post_processing import NormalizationMethod
 from anomalib.utils.metrics.thresholding import AdaptiveScoreThreshold, BaseAnomalyScoreThreshold
 
 logger = logging.getLogger(__name__)
@@ -24,7 +23,6 @@ class PostProcessingConfigurationCallback(Callback):
     """Post-Processing Configuration Callback.
 
     Args:
-        normalization_method(NormalizationMethod): Normalization method. <none, min_max, cdf>
         image_threshold_class (str | None): Threshold class. Defaults to Adaptive Thresholding.
         image_threshold_args (dict | None): Arguments for the thresholding class.
         pixel_threshold_class (str): Threshold class. Defaults to None as not all models use pixel thresholding.
@@ -33,14 +31,12 @@ class PostProcessingConfigurationCallback(Callback):
 
     def __init__(
         self,
-        normalization_method: NormalizationMethod = NormalizationMethod.MIN_MAX,
         image_threshold_class: str | None = "AdaptiveScoreThreshold",
         image_threshold_args: dict | None = None,
         pixel_threshold_class: str | None = None,
         pixel_threshold_args: dict | None = None,
     ) -> None:
         super().__init__()
-        self.normalization_method = normalization_method
 
         self.image_threshold = self._get_threshold_method(image_threshold_class, image_threshold_args)
         self.pixel_threshold = self._get_threshold_method(pixel_threshold_class, pixel_threshold_args)
