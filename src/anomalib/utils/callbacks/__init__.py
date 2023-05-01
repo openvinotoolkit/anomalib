@@ -75,17 +75,8 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
         callbacks.append(load_model)
 
     # Add post-processing configurations to AnomalyModule.
-    image_threshold = (
-        config.metrics.threshold.manual_image if "manual_image" in config.metrics.threshold.keys() else None
-    )
-    pixel_threshold = (
-        config.metrics.threshold.manual_pixel if "manual_pixel" in config.metrics.threshold.keys() else None
-    )
-    post_processing_callback = PostProcessingConfigurationCallback(
-        threshold_method=config.metrics.threshold.method,
-        manual_image_threshold=image_threshold,
-        manual_pixel_threshold=pixel_threshold,
-    )
+    threshold_arguments = _get_threshold_arguments(config)
+    post_processing_callback = PostProcessingConfigurationCallback(**threshold_arguments)
     callbacks.append(post_processing_callback)
 
     # Add metric configuration to the model via MetricsConfigurationCallback
@@ -125,9 +116,7 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
                 )
             )
         if config.optimization.export_mode is not None:
-            from .export import (  # pylint: disable=import-outside-toplevel
-                ExportCallback,
-            )
+            from .export import ExportCallback  # pylint: disable=import-outside-toplevel
 
             logger.info("Setting model export to %s", config.optimization.export_mode)
             callbacks.append(
@@ -146,6 +135,21 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
         callbacks.append(GraphLogger())
 
     return callbacks
+
+
+def _get_threshold_arguments(config):
+    image_threshold_config = config.metrics.threshold.get("image", None)
+    image_threshold_class = image_threshold_config.get("class_path", None) if image_threshold_config else None
+    image_threshold_args = image_threshold_config.get("init_args", None) if image_threshold_config else None
+    pixel_threshold_config = config.metrics.threshold.get("pixel", None)
+    pixel_threshold_class = pixel_threshold_config.get("class_path", None) if pixel_threshold_config else None
+    pixel_threshold_args = pixel_threshold_config.get("init_args", None) if pixel_threshold_config else None
+    return {
+        "image_threshold_class": image_threshold_class,
+        "image_threshold_args": image_threshold_args,
+        "pixel_threshold_class": pixel_threshold_class,
+        "pixel_threshold_args": pixel_threshold_args,
+    }
 
 
 def add_visualizer_callback(callbacks: list[Callback], config: DictConfig | ListConfig) -> None:

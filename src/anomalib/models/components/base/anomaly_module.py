@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABC
+from importlib import import_module
 from typing import Any, OrderedDict
 from warnings import warn
 
@@ -18,13 +19,7 @@ from torch import Tensor, nn
 from torchmetrics import Metric
 
 from anomalib.data.utils import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
-from anomalib.post_processing import ThresholdMethod
-from anomalib.utils.metrics import (
-    AnomalibMetricCollection,
-    AnomalyScoreDistribution,
-    AnomalyScoreThreshold,
-    MinMax,
-)
+from anomalib.utils.metrics import AnomalibMetricCollection, AnomalyScoreDistribution, BaseAnomalyScoreThreshold, MinMax
 
 logger = logging.getLogger(__name__)
 
@@ -44,9 +39,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.loss: nn.Module
         self.callbacks: list[Callback]
 
-        self.threshold_method: ThresholdMethod
-        self.image_threshold = AnomalyScoreThreshold().cpu()
-        self.pixel_threshold = AnomalyScoreThreshold().cpu()
+        self.image_threshold: BaseAnomalyScoreThreshold
+        self.pixel_threshold: BaseAnomalyScoreThreshold
 
         self.normalization_metrics: Metric
 
@@ -141,8 +135,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         Args:
           outputs: Batch of outputs from the validation step
         """
-        if self.threshold_method == ThresholdMethod.ADAPTIVE:
-            self._compute_adaptive_threshold(outputs)
+        self._compute_threshold(outputs)
         self._collect_outputs(self.image_metrics, self.pixel_metrics, outputs)
         self._log_metrics()
 
@@ -155,7 +148,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         self._collect_outputs(self.image_metrics, self.pixel_metrics, outputs)
         self._log_metrics()
 
-    def _compute_adaptive_threshold(self, outputs: EPOCH_OUTPUT) -> None:
+    def _compute_threshold(self, outputs: EPOCH_OUTPUT) -> None:
         self.image_threshold.reset()
         self.pixel_threshold.reset()
         self._collect_outputs(self.image_threshold, self.pixel_threshold, outputs)
@@ -170,8 +163,8 @@ class AnomalyModule(pl.LightningModule, ABC):
 
     @staticmethod
     def _collect_outputs(
-        image_metric: AnomalibMetricCollection,
-        pixel_metric: AnomalibMetricCollection,
+        image_metric: AnomalibMetricCollection | BaseAnomalyScoreThreshold,
+        pixel_metric: AnomalibMetricCollection | BaseAnomalyScoreThreshold,
         outputs: EPOCH_OUTPUT,
     ) -> None:
         for output in outputs:
@@ -234,6 +227,26 @@ class AnomalyModule(pl.LightningModule, ABC):
         else:
             warn("No known normalization found in model weights.")
 
+    def _load_thresholding_class(self, state_dict: OrderedDict[str, Tensor]) -> None:
+        """Assigns the threshold method to use.
+
+        This assumes that the keys are stored as ``{ThresholdingClass}.{image|pixel_threshold}.{attribute}``.
+
+        Note: This is temporary and will be removed when Custom Loops are merged.
+
+        Args:
+            state_dict: Model state dict.
+        """
+        for name in ("image", "pixel"):
+            thresholding_keys = [key for key in state_dict.keys() if f"{name}_threshold" in key.split(".")]
+            if thresholding_keys:
+                threshold_module = import_module("anomalib.utils.metrics.thresholding")
+                threshold_class = thresholding_keys[0].split(".")[0]
+                _threshold_class = getattr(threshold_module, threshold_class)
+                setattr(self, f"{name}_threshold", _threshold_class())
+                for key in thresholding_keys:
+                    getattr(self, f"{name}_threshold").__setattr__(key.split(".")[-1], state_dict.pop(key))
+
     def load_state_dict(self, state_dict: OrderedDict[str, Tensor], strict: bool = True):
         """Load state dict from checkpoint.
 
@@ -241,4 +254,5 @@ class AnomalyModule(pl.LightningModule, ABC):
         """
         # Used to load missing normalization and threshold parameters
         self._load_normalization_class(state_dict)
+        self._load_thresholding_class(state_dict)
         return super().load_state_dict(state_dict, strict=strict)

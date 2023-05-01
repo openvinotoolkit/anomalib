@@ -1,6 +1,6 @@
-"""Implementation of AnomalyScoreThreshold based on TorchMetrics."""
+"""Implementation of AdaptiveScoreThreshold based on TorchMetrics."""
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
@@ -11,16 +11,16 @@ import torch
 from torch import Tensor
 from torchmetrics import PrecisionRecallCurve
 
+from .base import BaseAnomalyScoreThreshold
 
-class AnomalyScoreThreshold(PrecisionRecallCurve):
+
+class AdaptiveScoreThreshold(PrecisionRecallCurve, BaseAnomalyScoreThreshold):
     """Anomaly Score Threshold.
 
     This class computes/stores the threshold that determines the anomalous label
-    given anomaly scores. If the threshold method is ``manual``, the class only
-    stores the manual threshold values.
+    given anomaly scores.
 
-    If the threshold method is ``adaptive``, the class initially computes the
-    adaptive threshold to find the optimal f1_score and stores the computed
+    The class initially computes the adaptive threshold to find the optimal f1_score and stores the computed
     adaptive threshold value.
     """
 

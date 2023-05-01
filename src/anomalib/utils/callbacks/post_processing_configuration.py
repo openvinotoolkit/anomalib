@@ -7,12 +7,13 @@
 from __future__ import annotations
 
 import logging
+from importlib import import_module
 
-import torch
 from pytorch_lightning import Callback, LightningModule, Trainer
 
 from anomalib.models.components.base.anomaly_module import AnomalyModule
-from anomalib.post_processing import NormalizationMethod, ThresholdMethod
+from anomalib.post_processing import NormalizationMethod
+from anomalib.utils.metrics.thresholding import AdaptiveScoreThreshold, BaseAnomalyScoreThreshold
 
 logger = logging.getLogger(__name__)
 
@@ -24,40 +25,57 @@ class PostProcessingConfigurationCallback(Callback):
 
     Args:
         normalization_method(NormalizationMethod): Normalization method. <none, min_max, cdf>
-        threshold_method (ThresholdMethod): Flag indicating whether threshold should be manual or adaptive.
-        manual_image_threshold (float | None): Default manual image threshold value.
-        manual_pixel_threshold (float | None): Default manual pixel threshold value.
+        image_threshold_class (str | None): Threshold class. Defaults to Adaptive Thresholding.
+        image_threshold_args (dict | None): Arguments for the thresholding class.
+        pixel_threshold_class (str): Threshold class. Defaults to None as not all models use pixel thresholding.
+        pixel_threshold_args (dict | None): Arguments for the thresholding class.
     """
 
     def __init__(
         self,
         normalization_method: NormalizationMethod = NormalizationMethod.MIN_MAX,
-        threshold_method: ThresholdMethod = ThresholdMethod.ADAPTIVE,
-        manual_image_threshold: float | None = None,
-        manual_pixel_threshold: float | None = None,
+        image_threshold_class: str | None = "AdaptiveScoreThreshold",
+        image_threshold_args: dict | None = None,
+        pixel_threshold_class: str | None = None,
+        pixel_threshold_args: dict | None = None,
     ) -> None:
         super().__init__()
         self.normalization_method = normalization_method
 
-        if threshold_method == ThresholdMethod.ADAPTIVE and all(
-            i is not None for i in (manual_image_threshold, manual_pixel_threshold)
-        ):
-            raise ValueError(
-                "When `threshold_method` is set to `adaptive`, `manual_image_threshold` and `manual_pixel_threshold` "
-                "must not be set."
-            )
+        self.image_threshold = self._get_threshold_method(image_threshold_class, image_threshold_args)
+        self.pixel_threshold = self._get_threshold_method(pixel_threshold_class, pixel_threshold_args)
 
-        if threshold_method == ThresholdMethod.MANUAL and all(
-            i is None for i in (manual_image_threshold, manual_pixel_threshold)
-        ):
-            raise ValueError(
-                "When `threshold_method` is set to `manual`, `manual_image_threshold` and `manual_pixel_threshold` "
-                "must be set."
-            )
+    def _get_threshold_method(
+        self, threshold_class: str | None, threshold_args: dict | None = None
+    ) -> BaseAnomalyScoreThreshold:
+        """Gets the thresholding class based on the class_path
 
-        self.threshold_method = threshold_method
-        self.manual_image_threshold = manual_image_threshold
-        self.manual_pixel_threshold = manual_pixel_threshold
+        Args:
+            threshold_class (str | None): Threshold class. If None, Adaptive Thresholding is used.
+            threshold_args (dict | None): Arguments for the thresholding class. Defaults to None.
+
+        Returns:
+            BaseAnomalyScoreThreshold: Thresholding class
+        """
+        threshold_method: BaseAnomalyScoreThreshold
+        if threshold_class is None:
+            threshold_method = AdaptiveScoreThreshold()
+        else:
+            try:
+                if len(threshold_class.split(".")) > 1:  # When the entire class path is provided
+                    threshold_module = import_module(".".join(threshold_class.split(".")[:-1]))
+                    _threshold_class = getattr(threshold_module, threshold_class.split(".")[-1])
+                else:
+                    threshold_module = import_module("anomalib.utils.metrics.thresholding")
+                    _threshold_class = getattr(threshold_module, threshold_class)
+            except (AttributeError, ModuleNotFoundError) as exception:
+                raise Exception(f"Threshold class {threshold_class} not found") from exception
+
+            if threshold_args is None:
+                threshold_args = {}
+            threshold_method = _threshold_class(**threshold_args)
+
+        return threshold_method
 
     def setup(self, trainer: Trainer, pl_module: LightningModule, stage: str | None = None) -> None:
         """Setup post-processing configuration within Anomalib Model.
@@ -70,7 +88,7 @@ class PostProcessingConfigurationCallback(Callback):
         del trainer, stage  # These variables are not used.
 
         if isinstance(pl_module, AnomalyModule):
-            pl_module.threshold_method = self.threshold_method
-            if pl_module.threshold_method == ThresholdMethod.MANUAL:
-                pl_module.image_threshold.value = torch.tensor(self.manual_image_threshold).cpu()
-                pl_module.pixel_threshold.value = torch.tensor(self.manual_pixel_threshold).cpu()
+            if not hasattr(pl_module, "image_threshold"):
+                pl_module.image_threshold = self.image_threshold
+            if not hasattr(pl_module, "pixel_threshold"):
+                pl_module.pixel_threshold = self.pixel_threshold
