@@ -32,7 +32,6 @@ class Cflow(AnomalyModule):
         input_size: tuple[int, int],
         backbone: str,
         layers: list[str],
-        threshold: DictConfig,
         pre_trained: bool = True,
         fiber_batch_size: int = 64,
         decoder: str = "freia-cflow",
@@ -60,7 +59,6 @@ class Cflow(AnomalyModule):
         # TODO: LR should be part of optimizer in config.yaml! Since cflow has custom
         #   optimizer this is to be addressed later.
         self.learning_rate = lr
-        self.image_threshold, self.pixel_threshold = self.configure_thresholds(threshold)
 
     def configure_optimizers(self) -> Optimizer:
         """Configures optimizers for each decoder.
@@ -189,7 +187,6 @@ class CflowLightning(Cflow):
             input_size=hparams.model.input_size,
             backbone=hparams.model.backbone,
             layers=hparams.model.layers,
-            threshold=hparams.metrics.threshold,
             pre_trained=hparams.model.pre_trained,
             fiber_batch_size=hparams.model.fiber_batch_size,
             decoder=hparams.model.decoder,
@@ -200,6 +197,7 @@ class CflowLightning(Cflow):
         )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
+        self.image_threshold, self.pixel_threshold = self.configure_thresholds(hparams.metrics.threshold)
 
     def configure_callbacks(self) -> list[EarlyStopping]:
         """Configure model-specific callbacks.

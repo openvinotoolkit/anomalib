@@ -127,3 +127,4 @@ class DfkdeLightning(Dfkde):
         )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
+        self.image_threshold, self.pixel_threshold = self.configure_thresholds(hparams.metrics.threshold)

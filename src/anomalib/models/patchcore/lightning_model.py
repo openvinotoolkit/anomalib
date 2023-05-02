@@ -39,7 +39,6 @@ class Patchcore(AnomalyModule):
         input_size: tuple[int, int],
         backbone: str,
         layers: list[str],
-        threshold: DictConfig,
         pre_trained: bool = True,
         coreset_sampling_ratio: float = 0.1,
         num_neighbors: int = 9,
@@ -55,7 +54,6 @@ class Patchcore(AnomalyModule):
         )
         self.coreset_sampling_ratio = coreset_sampling_ratio
         self.embeddings: list[Tensor] = []
-        self.image_threshold, self.pixel_threshold = self.configure_thresholds(threshold)
 
     def configure_optimizers(self) -> None:
         """Configure optimizers.
@@ -127,10 +125,10 @@ class PatchcoreLightning(Patchcore):
             input_size=hparams.model.input_size,
             backbone=hparams.model.backbone,
             layers=hparams.model.layers,
-            threshold=hparams.metrics.threshold,
             pre_trained=hparams.model.pre_trained,
             coreset_sampling_ratio=hparams.model.coreset_sampling_ratio,
             num_neighbors=hparams.model.num_neighbors,
         )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
+        self.image_threshold, self.pixel_threshold = self.configure_thresholds(hparams.metrics.threshold)
