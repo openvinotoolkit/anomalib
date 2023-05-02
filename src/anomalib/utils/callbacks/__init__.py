@@ -18,7 +18,6 @@ from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 from anomalib.deploy import ExportMode
 
 from .graph import GraphLogger
-from .model_loader import LoadModelCallback
 from .tiler_configuration import TilerConfigurationCallback
 from .timer import TimerCallback
 from .visualizer import ImageVisualizerCallback, MetricVisualizerCallback
@@ -26,7 +25,6 @@ from .visualizer import ImageVisualizerCallback, MetricVisualizerCallback
 __all__ = [
     "GraphLogger",
     "ImageVisualizerCallback",
-    "LoadModelCallback",
     "MetricVisualizerCallback",
     "TilerConfigurationCallback",
     "TimerCallback",
@@ -62,10 +60,6 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
     )
 
     callbacks.extend([checkpoint, TimerCallback()])
-
-    if "resume_from_checkpoint" in config.trainer.keys() and config.trainer.resume_from_checkpoint is not None:
-        load_model = LoadModelCallback(config.trainer.resume_from_checkpoint)
-        callbacks.append(load_model)
 
     add_visualizer_callback(callbacks, config)
 

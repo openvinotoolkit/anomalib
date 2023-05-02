@@ -13,10 +13,8 @@ from pytorch_lightning.trainer.states import TrainerFn
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
 from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 
-import anomalib.trainer as core
+from anomalib import trainer
 from anomalib.data import TaskType
-from anomalib.models.components import AnomalyModule
-from anomalib.post_processing import NormalizationMethod
 from anomalib.utils.metrics import create_metric_collection
 from anomalib.utils.metrics.collection import AnomalibMetricCollection
 
@@ -26,7 +24,7 @@ logger = logging.getLogger(__name__)
 class MetricsManager:
     def __init__(
         self,
-        trainer: core.AnomalibTrainer,
+        trainer: trainer.AnomalibTrainer,
         image_metrics: list[str] | None = None,
         pixel_metrics: list[str] | None = None,
     ):
@@ -38,24 +36,12 @@ class MetricsManager:
         self.image_metrics: AnomalibMetricCollection
         self.pixel_metrics: AnomalibMetricCollection
 
-    @property
-    def anomaly_module(self) -> AnomalyModule:
-        """Returns anomaly module.
-
-        We can't directly access the anomaly module in ``__init__`` because it is not available till it is passed to the
-        trainer.
-        """
-        return self.trainer.lightning_module
-
     def initialize(self) -> None:
         """Setup image and pixel-level AnomalibMetricsCollection within Anomalib Model.
 
         Args:
             task (TaskType): Task type
         """
-        if self.anomaly_module is None:
-            raise MisconfigurationException("Anomaly module is not available yet.")
-
         if not hasattr(self, "image_metrics"):
             image_metric_names = [] if self.image_metric_names is None else self.image_metric_names
 
@@ -75,21 +61,21 @@ class MetricsManager:
             self.image_metrics = create_metric_collection(image_metric_names, "image_")
             self.pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
 
-            self.image_metrics.set_threshold(self.anomaly_module.image_threshold.value)
-            self.pixel_metrics.set_threshold(self.anomaly_module.pixel_threshold.value)
+            self.image_metrics.set_threshold(self.trainer.image_threshold.value)
+            self.pixel_metrics.set_threshold(self.trainer.pixel_threshold.value)
 
     def set_threshold(self) -> None:
         """Sets threshold."""
 
         if (
             self.trainer.state.stage in (TrainerFn.TESTING, TrainerFn.PREDICTING)
-            and self.trainer.normalizer.normalization_method != NormalizationMethod.NONE
+            and self.trainer.normalizer is not None
         ):
             image_metrics_threshold = 0.5
             pixel_metrics_threshold = 0.5
         else:
-            image_metrics_threshold = self.anomaly_module.image_threshold.value
-            pixel_metrics_threshold = self.anomaly_module.pixel_threshold.value
+            image_metrics_threshold = self.trainer.image_threshold.value
+            pixel_metrics_threshold = self.trainer.pixel_threshold.value
 
         if self.image_metrics is not None:
             self.image_metrics.set_threshold(image_metrics_threshold)

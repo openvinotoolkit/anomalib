@@ -12,13 +12,13 @@ from pytorch_lightning.loops.dataloader.evaluation_loop import EvaluationLoop
 from pytorch_lightning.loops.epoch.evaluation_epoch_loop import EvaluationEpochLoop
 from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 
-import anomalib.trainer as core
+from anomalib import trainer
 
 
 class AnomalibTestEpochLoop(EvaluationEpochLoop):
     def __init__(self) -> None:
         super().__init__()
-        self.trainer: core.AnomalibTrainer
+        self.trainer: trainer.AnomalibTrainer
 
     def _evaluation_step_end(self, *args, **kwargs: Any) -> STEP_OUTPUT | None:
         """Computes prediction scores, bounding boxes, and applies thresholding before normalization."""
@@ -26,7 +26,8 @@ class AnomalibTestEpochLoop(EvaluationEpochLoop):
         if outputs is not None:
             self.trainer.post_processor.apply_predictions(outputs)
             self.trainer.post_processor.apply_thresholding(outputs)
-            self.trainer.normalizer.normalize(self.trainer.lightning_module, outputs)
+            if self.trainer.normalizer:
+                self.trainer.normalizer.normalize(outputs)
         return outputs
 
     @lru_cache(1)
@@ -43,14 +44,15 @@ class AnomalibTestEpochLoop(EvaluationEpochLoop):
 class AnomalibTestLoop(EvaluationLoop):
     def __init__(self) -> None:
         super().__init__()
-        self.trainer: "core.AnomalibTrainer"
+        self.trainer: trainer.AnomalibTrainer
         self.epoch_loop = AnomalibTestEpochLoop()
 
     def on_run_start(self, *args, **kwargs) -> None:
         """Can be used to call setup."""
-        self.trainer.metrics_manager.initialize()
+        self.trainer.thresholder.initialize()
+        self.trainer.metrics.initialize()
         # Reset the image and pixel thresholds to 0.5 at start of the run.
-        self.trainer.metrics_manager.set_threshold()
+        self.trainer.metrics.set_threshold()
         return super().on_run_start(*args, **kwargs)
 
     def _evaluation_epoch_end(self, outputs: List[EPOCH_OUTPUT]) -> None:
@@ -64,5 +66,5 @@ class AnomalibTestLoop(EvaluationLoop):
         output_or_outputs: EPOCH_OUTPUT | list[EPOCH_OUTPUT] = (
             outputs[0] if len(outputs) > 0 and self.num_dataloaders == 1 else outputs
         )
-        self.trainer.metrics_manager.compute(output_or_outputs)
-        self.trainer.metrics_manager.log(self.trainer, "test_epoch_end")
+        self.trainer.metrics.compute(output_or_outputs)
+        self.trainer.metrics.log(self.trainer, "test_epoch_end")

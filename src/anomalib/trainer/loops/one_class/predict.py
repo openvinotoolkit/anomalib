@@ -10,7 +10,7 @@ from lightning_fabric.utilities import move_data_to_device
 from pytorch_lightning.loops.dataloader.prediction_loop import PredictionLoop
 from pytorch_lightning.loops.epoch.prediction_epoch_loop import PredictionEpochLoop
 
-import anomalib.trainer as core
+from anomalib import trainer
 
 
 class AnomalibPredictionEpochLoop(PredictionEpochLoop):
@@ -18,7 +18,7 @@ class AnomalibPredictionEpochLoop(PredictionEpochLoop):
 
     def __init__(self) -> None:
         super().__init__()
-        self.trainer: core.AnomalibTrainer
+        self.trainer: trainer.AnomalibTrainer
 
     def _predict_step(self, batch: Any, batch_idx: int, dataloader_idx: int) -> None:
         """Overrides the predict step of the base class.
@@ -59,7 +59,8 @@ class AnomalibPredictionEpochLoop(PredictionEpochLoop):
         # Call custom methods on the predictions
         self.trainer.post_processor.apply_predictions(predictions)
         self.trainer.post_processor.apply_thresholding(predictions)
-        self.trainer.normalizer.normalize(self.trainer.lightning_module, predictions)
+        if self.trainer.normalizer:
+            self.trainer.normalizer.normalize(predictions)
         # --------------------------------------
 
         self.trainer._call_callback_hooks("on_predict_batch_end", predictions, batch, batch_idx, dataloader_idx)
@@ -76,7 +77,7 @@ class AnomalibPredictionLoop(PredictionLoop):
 
     def __init__(self) -> None:
         super().__init__()
-        self.trainer: core.AnomalibTrainer
+        self.trainer: trainer.AnomalibTrainer
         self.epoch_loop = AnomalibPredictionEpochLoop()
 
     def on_run_start(self) -> None:
@@ -84,7 +85,7 @@ class AnomalibPredictionLoop(PredictionLoop):
 
         Overrides the default epoch loop with the custom epoch loop.
         """
-        self.trainer.metrics_manager.initialize()
+        self.trainer.metrics.initialize()
         # Reset the image and pixel thresholds to 0.5 at start of the run.
-        self.trainer.metrics_manager.set_threshold()
+        self.trainer.metrics.set_threshold()
         return super().on_run_start()
