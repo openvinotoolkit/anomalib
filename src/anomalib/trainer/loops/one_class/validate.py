@@ -50,7 +50,7 @@ class AnomalibValidationLoop(EvaluationLoop):
 
     def on_run_start(self, *args: Any, **kwargs: Any) -> None:
         self.trainer.thresholder.initialize()
-        self.trainer.metrics_manager.initialize()
+        self.trainer.metrics.initialize()
         return super().on_run_start(*args, **kwargs)
 
     def _evaluation_epoch_end(self, outputs: List[EPOCH_OUTPUT]):
@@ -66,11 +66,11 @@ class AnomalibValidationLoop(EvaluationLoop):
 
         # keep custom code between these lines
         self.trainer.thresholder.compute()
-        self.trainer.metrics_manager.set_threshold()
-        self.trainer.metrics_manager.compute(output_or_outputs)
-        self.trainer.metrics_manager.log(self.trainer, "validation_epoch_end")
+        self.trainer.metrics.set_threshold()
+        self.trainer.metrics.compute(output_or_outputs)
+        self.trainer.metrics.log(self.trainer, "validation_epoch_end")
         self.trainer.visualization_manager.visualize_images(output_or_outputs, VisualizationStage.VAL)
         self.trainer.visualization_manager.visualize_metrics(
             VisualizationStage.VAL,
-            [self.trainer.metrics_manager.image_metrics, self.trainer.metrics_manager.pixel_metrics],
+            [self.trainer.metrics.image_metrics, self.trainer.metrics.pixel_metrics],
         )

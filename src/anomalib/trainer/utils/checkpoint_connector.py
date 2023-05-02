@@ -47,7 +47,7 @@ class CheckpointConnector(checkpoint_connector.CheckpointConnector):
         self._load_metrics()
 
     def _load_metrics(self) -> None:
-        """Loads the thersholding and normalization classes from the checkpoint."""
+        """Loads the thresholding and normalization classes from the checkpoint."""
         # get set of normalization keys in state dict
         checkpoint = self._loaded_checkpoint
         if "image_threshold" in checkpoint.keys():

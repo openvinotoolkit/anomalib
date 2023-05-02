@@ -51,9 +51,9 @@ class AnomalibTestLoop(EvaluationLoop):
     def on_run_start(self, *args, **kwargs) -> None:
         """Can be used to call setup."""
         self.trainer.thresholder.initialize()
-        self.trainer.metrics_manager.initialize()
+        self.trainer.metrics.initialize()
         # Reset the image and pixel thresholds to 0.5 at start of the run.
-        self.trainer.metrics_manager.set_threshold()
+        self.trainer.metrics.set_threshold()
         return super().on_run_start(*args, **kwargs)
 
     def _evaluation_epoch_end(self, outputs: List[EPOCH_OUTPUT]) -> None:
@@ -67,10 +67,10 @@ class AnomalibTestLoop(EvaluationLoop):
         output_or_outputs: EPOCH_OUTPUT | list[EPOCH_OUTPUT] = (
             outputs[0] if len(outputs) > 0 and self.num_dataloaders == 1 else outputs
         )
-        self.trainer.metrics_manager.compute(output_or_outputs)
-        self.trainer.metrics_manager.log(self.trainer, "test_epoch_end")
+        self.trainer.metrics.compute(output_or_outputs)
+        self.trainer.metrics.log(self.trainer, "test_epoch_end")
         self.trainer.visualization_manager.visualize_images(output_or_outputs, VisualizationStage.TEST)
         self.trainer.visualization_manager.visualize_metrics(
             VisualizationStage.TEST,
-            [self.trainer.metrics_manager.image_metrics, self.trainer.metrics_manager.pixel_metrics],
+            [self.trainer.metrics.image_metrics, self.trainer.metrics.pixel_metrics],
         )
