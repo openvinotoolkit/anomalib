@@ -89,7 +89,6 @@ class AnomalibTrainer(Trainer):
         )
         self.post_processor = PostProcessor(trainer=self)
         self.normalizer = get_normalizer(trainer=self, normalization_method=normalization_method)
-        self.metrics_manager = MetricsManager(trainer=self, image_metrics=image_metrics, pixel_metrics=pixel_metrics)
         self.visualization_manager = VisualizationManager(
             trainer=self,
             mode=visualization_mode,
@@ -97,3 +96,4 @@ class AnomalibTrainer(Trainer):
             log_images=log_images,
             stage=visualization_stage,
         )
+        self.metrics = MetricsManager(trainer=self, image_metrics=image_metrics, pixel_metrics=pixel_metrics)
