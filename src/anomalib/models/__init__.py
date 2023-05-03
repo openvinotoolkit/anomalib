@@ -26,6 +26,7 @@ from anomalib.models.patchcore import Patchcore
 from anomalib.models.reverse_distillation import ReverseDistillation
 from anomalib.models.rkde import Rkde
 from anomalib.models.stfpm import Stfpm
+from anomalib.models.efficient_ad import EfficientAD
 
 __all__ = [
     "Cfa",
@@ -41,6 +42,7 @@ __all__ = [
     "ReverseDistillation",
     "Rkde",
     "Stfpm",
+    "EfficientAD"
 ]
 
 logger = logging.getLogger(__name__)
@@ -92,11 +94,13 @@ def get_model(config: DictConfig | ListConfig) -> AnomalyModule:
         "reverse_distillation",
         "rkde",
         "stfpm",
+        "efficient_ad"
     ]
     model: AnomalyModule
-
+    print(f"{_snake_to_pascal_case(config.model.name)}Lightning")
     if config.model.name in model_list:
         module = import_module(f"anomalib.models.{config.model.name}")
+        
         model = getattr(module, f"{_snake_to_pascal_case(config.model.name)}Lightning")(config)
 
     else:

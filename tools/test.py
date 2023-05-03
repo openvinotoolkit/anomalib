@@ -47,6 +47,7 @@ def test():
     model = get_model(config)
 
     callbacks = get_callbacks(config)
+    print(callbacks)
 
     trainer = Trainer(callbacks=callbacks, **config.trainer)
     trainer.test(model=model, datamodule=datamodule)
