@@ -38,6 +38,7 @@ class BaseDensityEstimator(nn.Module, ABC):
         """Update or predict depending on training status."""
         if self.training:
             self.update(features)
+            return None
         else:
             return self.predict(features)
 
@@ -211,8 +212,7 @@ class GroupedKNNEstimator(BaseDensityEstimator):
             # when n_neighbors is 1, speed up computation by using min instead of topk
             distances, _ = distances.min(1)
             return distances.unsqueeze(1)
-        else:
-            distances, _ = distances.topk(k=n_neighbors, largest=False, dim=1)
+        distances, _ = distances.topk(k=n_neighbors, largest=False, dim=1)
         return distances
 
     def _compute_normalization_statistics(self):

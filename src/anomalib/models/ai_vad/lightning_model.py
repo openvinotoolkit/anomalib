@@ -59,11 +59,11 @@ class AiVad(AnomalyModule):
         )
 
     @staticmethod
-    def configure_optimizers() -> None:  # pylint: disable=arguments-differ
+    def configure_optimizers() -> None:
         """TAI-VAD training does not involve fine-tuning of NN weights, no optimizers needed."""
         return None
 
-    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
+    def training_step(self, batch: dict[str, str | Tensor]) -> None:
         """Training Step of AI-VAD.
 
         Extract features from the batch of clips and update the density estimators.
