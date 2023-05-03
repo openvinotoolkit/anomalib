@@ -6,29 +6,31 @@
 from __future__ import annotations
 
 import logging
+import random
 
 import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
-
-import random 
 from torchvision import transforms
 
 logger = logging.getLogger(__name__)
 
+
 def weights_init(m):
     classname = m.__class__.__name__
-    if classname.find('Conv2d') != -1:
+    if classname.find("Conv2d") != -1:
         m.weight.data.normal_(0.0, 0.02)
-    elif classname.find('BatchNorm') != -1:
+    elif classname.find("BatchNorm") != -1:
         m.weight.data.normal_(1.0, 0.02)
         m.bias.data.fill_(0)
 
-#def imagenet_norm_batch(x):
+
+# def imagenet_norm_batch(x):
 #    mean = torch.tensor([0.485, 0.456, 0.406])[None, :, None, None]
 #    std = torch.tensor([0.229, 0.224, 0.225])[None, :, None, None]
 #    x_norm = (x - mean) / (std + 1e-11)
 #    return x_norm
+
 
 class PDN_S(nn.Module):
     def __init__(self, last_kernel_size=384) -> None:
@@ -48,6 +50,7 @@ class PDN_S(nn.Module):
         x = F.relu(self.conv3(x))
         x = self.conv4(x)
         return x
+
 
 class PDN_M(nn.Module):
     def __init__(self, last_kernel_size=384) -> None:
@@ -71,7 +74,8 @@ class PDN_M(nn.Module):
         x = F.relu(self.conv5(x))
         x = self.conv6(x)
         return x
-    
+
+
 class EncConv(nn.Module):
     def __init__(self) -> None:
         super().__init__()
@@ -92,24 +96,33 @@ class EncConv(nn.Module):
         x = F.relu(self.enconv5(x))
         x = self.enconv6(x)
         return x
-    
-class DecBlock(nn.Module):
 
-    def __init__(self,scale_factor,stride,kernel_size,num_kernels,padding,activation,dropout_rate,):
+
+class DecBlock(nn.Module):
+    def __init__(
+        self,
+        scale_factor,
+        stride,
+        kernel_size,
+        num_kernels,
+        padding,
+        activation,
+        dropout_rate,
+    ):
         super().__init__()
-        self.activation = activation    
-        self.upsample = nn.Upsample(scale_factor=scale_factor, mode='bilinear')
+        self.activation = activation
+        self.upsample = nn.Upsample(scale_factor=scale_factor, mode="bilinear")
         self.deconv = nn.Conv2d(num_kernels, num_kernels, kernel_size, stride, padding)
         self.dropout = nn.Dropout2d(p=dropout_rate)
-        
+
     def forward(self, x):
         x = self.upsample(x)
         x = F.relu(self.deconv(x))
         x = self.dropout(x)
         return x
 
-class DecConv(nn.Module):
 
+class DecConv(nn.Module):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.deconv1 = nn.Conv2d(64, 64, kernel_size=4, stride=1, padding=2)
@@ -130,25 +143,25 @@ class DecConv(nn.Module):
 
     def forward(self, x):
         # x = self.bilinear1(x)
-        x = F.interpolate(x, size=3, mode='bilinear')
+        x = F.interpolate(x, size=3, mode="bilinear")
         x = F.relu(self.deconv1(x))
         x = self.dropout1(x)
-        x = F.interpolate(x, size=8, mode='bilinear')
+        x = F.interpolate(x, size=8, mode="bilinear")
         x = F.relu(self.deconv2(x))
         x = self.dropout2(x)
-        x = F.interpolate(x, size=15, mode='bilinear')
+        x = F.interpolate(x, size=15, mode="bilinear")
         x = F.relu(self.deconv3(x))
         x = self.dropout3(x)
-        x = F.interpolate(x, size=32, mode='bilinear')
+        x = F.interpolate(x, size=32, mode="bilinear")
         x = F.relu(self.deconv4(x))
         x = self.dropout4(x)
-        x = F.interpolate(x, size=63, mode='bilinear')
+        x = F.interpolate(x, size=63, mode="bilinear")
         x = F.relu(self.deconv5(x))
         x = self.dropout5(x)
-        x = F.interpolate(x, size=127, mode='bilinear')
+        x = F.interpolate(x, size=127, mode="bilinear")
         x = F.relu(self.deconv6(x))
         x = self.dropout6(x)
-        x = F.interpolate(x, size=64, mode='bilinear')
+        x = F.interpolate(x, size=64, mode="bilinear")
         x = F.relu(self.deconv7(x))
         x = self.deconv8(x)
         return x
@@ -161,17 +174,18 @@ class AutoEncoder(nn.Module):
         self.decoder = DecConv()
 
     def forward(self, x):
-        #x = imagenet_norm_batch(x) #Comments on Algorithm 3: We use the image normalization of the pretrained models of torchvision [44].
+        # x = imagenet_norm_batch(x) #Comments on Algorithm 3: We use the image normalization of the pretrained models of torchvision [44].
         x = self.encoder(x)
         x = self.decoder(x)
         return x
-        
+
+
 class Teacher(nn.Module):
-    def __init__(self, size, teacher_path = None, *args, **kwargs) -> None:
+    def __init__(self, size, teacher_path=None, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        if size =='M':
+        if size == "M":
             self.pdn = PDN_M(last_kernel_size=384)
-        elif size =='S':
+        elif size == "S":
             self.pdn = PDN_S(last_kernel_size=384)
         self.pdn.apply(weights_init)
 
@@ -182,19 +196,23 @@ class Teacher(nn.Module):
     def forward(self, x):
         x = self.pdn(x)
         return x
-    
+
 
 class Student(nn.Module):
-    def __init__(self,size, *args, **kwargs) -> None:
+    def __init__(self, size, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        if size =='M':
-            self.pdn = PDN_M(last_kernel_size=768) #The student network has the same architecture,but 768 kernels instead of 384 in the Conv-5 and Conv-6 layers.
-        elif size =='S':
-            self.pdn = PDN_S(last_kernel_size=768) #The student network has the same architecture, but 768 kernels instead of 384 in the Conv-4 layer
+        if size == "M":
+            self.pdn = PDN_M(
+                last_kernel_size=768
+            )  # The student network has the same architecture,but 768 kernels instead of 384 in the Conv-5 and Conv-6 layers.
+        elif size == "S":
+            self.pdn = PDN_S(
+                last_kernel_size=768
+            )  # The student network has the same architecture, but 768 kernels instead of 384 in the Conv-4 layer
         self.pdn.apply(weights_init)
 
     def forward(self, x):
-        #x = imagenet_norm_batch(x) #Comments on Algorithm 3: We use the image normalization of the pretrained models of torchvision [44].
+        # x = imagenet_norm_batch(x) #Comments on Algorithm 3: We use the image normalization of the pretrained models of torchvision [44].
         pdn_out = self.pdn(x)
         return pdn_out
 
@@ -211,11 +229,10 @@ class EfficientADModel(nn.Module):
         self,
         teacher_path: str,
         model_size="M",
-
     ) -> None:
         super().__init__()
 
-        self.teacher = Teacher(model_size, teacher_path = teacher_path)
+        self.teacher = Teacher(model_size, teacher_path=teacher_path)
         self.student = Student(model_size)
         self.ae = AutoEncoder()
 
@@ -223,9 +240,9 @@ class EfficientADModel(nn.Module):
         self.quantiles = {}
 
     def choose_random_aug_image(self, image):
-        aug_index = random.choice([1,2,3])
+        aug_index = random.choice([1, 2, 3])
         # Sample an augmentation coefficient λ from the uniform distribution U(0.8, 1.2)
-        coefficient = random.uniform(0.8,1.2)
+        coefficient = random.uniform(0.8, 1.2)
         if aug_index == 1:
             img_aug = transforms.functional.adjust_brightness(image, coefficient)
         elif aug_index == 2:
@@ -233,7 +250,6 @@ class EfficientADModel(nn.Module):
         elif aug_index == 3:
             img_aug = transforms.functional.adjust_saturation(image, coefficient)
         return img_aug
-
 
     def forward(self, batch: Tensor, batch_imagenet: Tensor = None) -> Tensor:
         """Prediction by normality model.
@@ -246,26 +262,26 @@ class EfficientADModel(nn.Module):
         """
         with torch.no_grad():
             teacher_output = self.teacher(batch)
-            normal_teacher_output = (teacher_output - self.mean_std['mean']) / self.mean_std['std']
+            normal_teacher_output = (teacher_output - self.mean_std["mean"]) / self.mean_std["std"]
             b, c, h, w = normal_teacher_output.shape
 
         student_output = self.student(batch)
         ae_output = self.ae(batch)
-        #3: Split the student output into Y ST ∈ R 384×64×64 and Y STAE ∈ R 384×64×64 as above
+        # 3: Split the student output into Y ST ∈ R 384×64×64 and Y STAE ∈ R 384×64×64 as above
         y_st = student_output[:, :384, :, :]
         y_stae = student_output[:, -384:, :, :]
 
         distance_st = torch.pow(normal_teacher_output - y_st, 2)
 
         if self.training:
-            #Student loss
+            # Student loss
             d_hard = torch.quantile(distance_st, 0.999)
-            loss_hard = torch.mean(distance_st[distance_st>=d_hard])
+            loss_hard = torch.mean(distance_st[distance_st >= d_hard])
 
             student_imagenet_output = self.student(batch_imagenet)
-            loss_st = loss_hard + (1/(c*h*w))*torch.sum(torch.pow(student_imagenet_output[:, :384, :, :],2))
+            loss_st = loss_hard + (1 / (c * h * w)) * torch.sum(torch.pow(student_imagenet_output[:, :384, :, :], 2))
 
-            #Autoencoder and Student AE Loss
+            # Autoencoder and Student AE Loss
             aug_img = self.choose_random_aug_image(batch)
             ae_output_aug = self.ae(aug_img)
             student_output_aug = self.student(aug_img)
@@ -273,10 +289,10 @@ class EfficientADModel(nn.Module):
 
             with torch.no_grad():
                 teacher_output_aug = self.teacher(aug_img)
-                normal_teacher_output_aug = (teacher_output_aug - self.mean_std['mean']) / self.mean_std['std']
-            
+                normal_teacher_output_aug = (teacher_output_aug - self.mean_std["mean"]) / self.mean_std["std"]
+
             distance_ae = torch.pow(normal_teacher_output_aug - ae_output_aug, 2)
-            distance_stae = torch.pow(ae_output_aug - student_output_ae_aug,2)
+            distance_stae = torch.pow(ae_output_aug - student_output_ae_aug, 2)
 
             loss_ae = torch.mean(distance_ae)
             loss_stae = torch.mean(distance_stae)
@@ -289,13 +305,15 @@ class EfficientADModel(nn.Module):
             map_st = torch.mean(distance_st, dim=1, keepdim=True)
             map_stae = torch.mean(distance_stae, dim=1, keepdim=True)
 
-            map_st = F.interpolate(map_st, size=(256, 256), mode='bilinear')
-            map_stae = F.interpolate(map_stae, size=(256, 256), mode='bilinear')
+            map_st = F.interpolate(map_st, size=(256, 256), mode="bilinear")
+            map_stae = F.interpolate(map_stae, size=(256, 256), mode="bilinear")
 
             if len(self.quantiles) != 0:
-                map_st = 0.1 * (map_st - self.quantiles['qa_st']) / (self.quantiles['qb_st'] - self.quantiles['qa_st'])
-                map_stae = 0.1 * (map_stae - self.quantiles['qa_ae']) / (self.quantiles['qb_ae'] - self.quantiles['qa_ae'])
+                map_st = 0.1 * (map_st - self.quantiles["qa_st"]) / (self.quantiles["qb_st"] - self.quantiles["qa_st"])
+                map_stae = (
+                    0.1 * (map_stae - self.quantiles["qa_ae"]) / (self.quantiles["qb_ae"] - self.quantiles["qa_ae"])
+                )
 
             map_combined = 0.5 * map_st + 0.5 * map_stae
 
-            return {"anomaly_map_combined" : map_combined, "map_st" : map_st, "map_ae" : map_stae}
+            return {"anomaly_map_combined": map_combined, "map_st": map_st, "map_ae": map_stae}
