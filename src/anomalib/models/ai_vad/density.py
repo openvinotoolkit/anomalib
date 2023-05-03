@@ -39,8 +39,7 @@ class BaseDensityEstimator(nn.Module, ABC):
         if self.training:
             self.update(features)
             return None
-        else:
-            return self.predict(features)
+        return self.predict(features)
 
 
 class CombinedDensityEstimator(BaseDensityEstimator):
