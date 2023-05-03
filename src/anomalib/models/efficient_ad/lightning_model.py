@@ -24,7 +24,7 @@ from torchvision.datasets import ImageFolder
 
 from anomalib.data.utils import (
     DownloadInfo,
-    download_and_extract,
+    download_and_extract_gdrive,
 )
 from anomalib.models.components import AnomalyModule
 
@@ -33,16 +33,14 @@ from .torch_model import EfficientADModel
 logger = logging.getLogger(__name__)
 
 IMAGENET_SUBSET_DOWNLOAD_INFO = DownloadInfo(
-    name="imagenet_subset_100k_512px",
-    url="https://www.mydrive.ch/shares/38536/3830184030e49fe74747669442f0f282/download/420938113-1629952094"
-    "/mvtec_anomaly_detection.tar.xz",
-    hash="eefca59f2cede9c3fc5b6befbfec275e",
+    name="imagenet_100k_512px.zip",
+    url="https://drive.google.com/uc?id=1n6RF08sp7RDxzKYuUoMox4RM13hqB1Jo",
+    hash="000"
 )
 
 
 class EfficientAD(AnomalyModule):
     """PL Lightning Module for the EfficientAD algorithm."""
-
     def __init__(
         self,
         category_name: str,
@@ -55,11 +53,11 @@ class EfficientAD(AnomalyModule):
         super().__init__()
 
         self.category = category_name
-        additional_data_dir = Path(additional_data_dir)
-        self.imagenet_dir = additional_data_dir / "imagenet_subset"
+        self.additional_data_dir = Path(additional_data_dir)
+        self.imagenet_dir = Path("./datasets/imagenet_subset")
         self.model = EfficientADModel(
             model_size=model_size,
-            teacher_path=additional_data_dir / teacher_file_name,
+            teacher_path=self.additional_data_dir / teacher_file_name,
         )
         self.data_transforms_imagenet = transforms.Compose(
             [  # We obtain an image P ∈ R 3×256×256 from ImageNet by choosing a random image,
@@ -70,7 +68,7 @@ class EfficientAD(AnomalyModule):
                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ]
         )
-
+        self.prepare_imagenet_data()
         imagenet_dataset = ImageFolder(self.imagenet_dir, transform=self.data_transforms_imagenet)
         self.imagenet_loader = DataLoader(imagenet_dataset, batch_size=1, shuffle=True)
         self.lr = lr
@@ -79,7 +77,7 @@ class EfficientAD(AnomalyModule):
     def prepare_imagenet_data(self) -> None:
         """Download the imagenet subset if not available."""
         if not self.imagenet_dir.is_dir():
-            download_and_extract(self.imagenet_dir, IMAGENET_SUBSET_DOWNLOAD_INFO)
+            download_and_extract_gdrive(self.imagenet_dir, IMAGENET_SUBSET_DOWNLOAD_INFO)
         else:
             logger.info("Found the dataset.")
 
@@ -206,7 +204,6 @@ class EfficientAD(AnomalyModule):
         batch["anomaly_maps"] = self.model(batch["image"])["anomaly_map_combined"]
 
         return batch
-
 
 class EfficientAdLightning(EfficientAD):
     """PL Lightning Module for the EfficientAD Algorithm.
