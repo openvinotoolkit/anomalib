@@ -16,8 +16,8 @@ from tarfile import TarError, TarFile
 from typing import Iterable
 from urllib.request import urlretrieve
 from zipfile import ZipFile
-import gdown
 
+import gdown
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
@@ -217,13 +217,14 @@ def hash_check(file_path: Path, expected_hash: str) -> None:
             hashlib.md5(hash_file.read()).hexdigest() == expected_hash
         ), f"Downloaded file {file_path} does not match the required hash."
 
+
 def extract(file_name: Path, root: Path) -> None:
     """Extract a dataset
 
     Args:
         file_name (Path): Path of the file to be extracted.
         root (Path): Root directory where the dataset will be stored.
-    
+
     """
     logger.info("Extracting dataset into root folder.")
     if file_name.suffix == ".zip":
@@ -265,6 +266,7 @@ def download_and_extract(root: Path, info: DownloadInfo) -> None:
 
     extract(downloaded_file_path, root)
 
+
 def download_and_extract_gdrive(root: Path, info: DownloadInfo) -> None:
     """Download and extract a dataset from a google drive link.
 
@@ -284,6 +286,7 @@ def download_and_extract_gdrive(root: Path, info: DownloadInfo) -> None:
         hash_check(file_path, info.hash)
 
     extract(file_path, root)
+
 
 def is_within_directory(directory: Path, target: Path):
     """Checks if a target path is located within a given directory.

@@ -33,37 +33,39 @@ from .torch_model import EfficientADModel
 logger = logging.getLogger(__name__)
 
 IMAGENET_SUBSET_DOWNLOAD_INFO = DownloadInfo(
-    name="imagenet_100k_512px.zip",
-    url="https://drive.google.com/uc?id=1n6RF08sp7RDxzKYuUoMox4RM13hqB1Jo",
-    hash="000"
+    name="imagenet_100k_512px.zip", url="https://drive.google.com/uc?id=1n6RF08sp7RDxzKYuUoMox4RM13hqB1Jo", hash="000"
 )
 
 
 class EfficientAD(AnomalyModule):
     """PL Lightning Module for the EfficientAD algorithm."""
+
     def __init__(
         self,
         category_name: str,
         teacher_file_name: str,
-        additional_data_dir: str,
+        teacher_out_channels: int,
+        pre_trained_dir: str,
         model_size: str = "M",
         lr: float = 0.0001,
         weight_decay: float = 0.00001,
+        image_size: int = 256
     ) -> None:
         super().__init__()
 
         self.category = category_name
-        self.additional_data_dir = Path(additional_data_dir)
+        self.pre_trained_dir = Path(pre_trained_dir)
         self.imagenet_dir = Path("./datasets/imagenet_subset")
-        self.model = EfficientADModel(
+        self.model : EfficientADModel = EfficientADModel(
+            teacher_path=self.pre_trained_dir / teacher_file_name,
+            teacher_out_channels=teacher_out_channels,
             model_size=model_size,
-            teacher_path=self.additional_data_dir / teacher_file_name,
         )
         self.data_transforms_imagenet = transforms.Compose(
             [  # We obtain an image P ∈ R 3×256×256 from ImageNet by choosing a random image,
-                transforms.Resize((512, 512)),  # resizing it to 512 × 512,
+                transforms.Resize((image_size*2, image_size*2)),  # resizing it to 512 × 512,
                 transforms.RandomGrayscale(p=0.3),  # converting it to gray scale with a probability of 0.3
-                transforms.CenterCrop((256, 256)),  # and cropping the center 256 × 256 pixels
+                transforms.CenterCrop((image_size, image_size)),  # and cropping the center 256 × 256 pixels
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ]
@@ -81,6 +83,7 @@ class EfficientAD(AnomalyModule):
         else:
             logger.info("Found the dataset.")
 
+    '''
     def get_from_file_or_function(self, func: Callable, dataloader: DataLoader = None) -> dict[str, Tensor]:
         """Load or save datasets statistics returned by a function.
 
@@ -92,7 +95,7 @@ class EfficientAD(AnomalyModule):
             dict[str, Tensor]: Dictionary returned by the respective function.
 
         """
-        ckpt_filename = f"{self.additional_data_dir}/{self.category}_{func.__name__}.pth"
+        ckpt_filename = f"{self.pre_trained_dir}/{self.category}_{func.__name__}.pth"
         if os.path.isfile(ckpt_filename):
             logger.info(f"Loading dataset {func.__name__} from {ckpt_filename}")
             ret = torch.load(ckpt_filename)
@@ -101,6 +104,7 @@ class EfficientAD(AnomalyModule):
             ret = func(dataloader)
             torch.save(ret, ckpt_filename)
         return ret
+    '''
 
     def teacher_channel_mean_std(self, dataloader: DataLoader) -> dict[str, Tensor]:
         """Calculate the the mean and std of the teacher models activations.
@@ -126,7 +130,8 @@ class EfficientAD(AnomalyModule):
             dataloader (DataLoader): Dataloader of the respective dataset.
 
         Returns:
-            dict[str, Tensor]: Dictionary of both the 90% and 99.5% quantiles of both the student and autoencoder feature maps
+            dict[str, Tensor]: Dictionary of both the 90% and 99.5% quantiles
+            of both the student and autoencoder feature maps.
         """
         maps_st = []
         maps_ae = []
@@ -153,8 +158,8 @@ class EfficientAD(AnomalyModule):
 
     def on_train_start(self) -> None:
         """Calculate or load the channel-wise mean and std of the training dataset and set it to the model."""
-        channel_mean_std = self.get_from_file_or_function(self.teacher_channel_mean_std, self.trainer.train_dataloader)
-        self.model.mean_std = channel_mean_std
+        channel_mean_std = self.teacher_channel_mean_std(self.trainer.train_dataloader)
+        self.model.set_teacher_mean_std(channel_mean_std)
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> dict[str, Tensor]:
         """Training step for EfficintAD returns the  student, autoencoder and combined loss.
@@ -182,13 +187,11 @@ class EfficientAD(AnomalyModule):
         Calculate or load the channel-wise mean and std of the training dataset and set it in the model.
         Calculate the feature map quantiles of the test dataset and set it in the model.
         """
-        channel_mean_std = self.get_from_file_or_function(self.teacher_channel_mean_std)
-        self.model.mean_std = channel_mean_std
+        channel_mean_std = self.teacher_channel_mean_std(self.trainer.train_dataloader)
+        self.model.set_teacher_mean_std(channel_mean_std)
 
-        map_norm_quantiles = self.map_norm_quantiles(
-            self.trainer.test_dataloaders[0]
-        )  # self.get_from_file_or_function(self.map_norm_quantiles, self.trainer.test_dataloaders[0])
-        self.model.quantiles = map_norm_quantiles
+        map_norm_quantiles = self.map_norm_quantiles(self.trainer.test_dataloaders[0])
+        self.model.set_quantiles(map_norm_quantiles)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Validation Step of EfficientAD returns anomaly maps for the input image batch
@@ -205,6 +208,7 @@ class EfficientAD(AnomalyModule):
 
         return batch
 
+
 class EfficientAdLightning(EfficientAD):
     """PL Lightning Module for the EfficientAD Algorithm.
 
@@ -216,10 +220,12 @@ class EfficientAdLightning(EfficientAD):
         super().__init__(
             category_name=hparams.dataset.category,
             teacher_file_name=hparams.model.teacher_file_name,
-            additional_data_dir=hparams.model.additional_data_dir,
+            pre_trained_dir=hparams.model.pre_trained_dir,
+            teacher_out_channels=hparams.model.teacher_out_channels,
             model_size=hparams.model.model_size,
             lr=hparams.model.lr,
             weight_decay=hparams.model.weight_decay,
+            image_size=hparams.dataset.image_size
         )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)

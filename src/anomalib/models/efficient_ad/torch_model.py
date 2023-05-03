@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 import random
+from pathlib import Path
 
 import torch
 import torch.nn.functional as F
@@ -24,21 +25,13 @@ def weights_init(m):
         m.weight.data.normal_(1.0, 0.02)
         m.bias.data.fill_(0)
 
-
-# def imagenet_norm_batch(x):
-#    mean = torch.tensor([0.485, 0.456, 0.406])[None, :, None, None]
-#    std = torch.tensor([0.229, 0.224, 0.225])[None, :, None, None]
-#    x_norm = (x - mean) / (std + 1e-11)
-#    return x_norm
-
-
 class PDN_S(nn.Module):
-    def __init__(self, last_kernel_size=384) -> None:
+    def __init__(self, out_channels) -> None:
         super().__init__()
         self.conv1 = nn.Conv2d(3, 128, kernel_size=4, stride=1, padding=3)
         self.conv2 = nn.Conv2d(128, 256, kernel_size=4, stride=1, padding=3)
         self.conv3 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
-        self.conv4 = nn.Conv2d(256, last_kernel_size, kernel_size=4, stride=1, padding=0)
+        self.conv4 = nn.Conv2d(256, out_channels, kernel_size=4, stride=1, padding=0)
         self.avgpool1 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1)
         self.avgpool2 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1)
 
@@ -53,14 +46,14 @@ class PDN_S(nn.Module):
 
 
 class PDN_M(nn.Module):
-    def __init__(self, last_kernel_size=384) -> None:
+    def __init__(self, out_channels) -> None:
         super().__init__()
         self.conv1 = nn.Conv2d(3, 256, kernel_size=4, stride=1, padding=3)
         self.conv2 = nn.Conv2d(256, 512, kernel_size=4, stride=1, padding=3)
         self.conv3 = nn.Conv2d(512, 512, kernel_size=1, stride=1, padding=0)
         self.conv4 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
-        self.conv5 = nn.Conv2d(512, last_kernel_size, kernel_size=4, stride=1, padding=0)
-        self.conv6 = nn.Conv2d(last_kernel_size, last_kernel_size, kernel_size=1, stride=1, padding=0)
+        self.conv5 = nn.Conv2d(512, out_channels, kernel_size=4, stride=1, padding=0)
+        self.conv6 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0)
         self.avgpool1 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1)
         self.avgpool2 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1)
 
@@ -88,7 +81,6 @@ class EncConv(nn.Module):
         self.apply(weights_init)
 
     def forward(self, x):
-        # pdb.set_trace()
         x = F.relu(self.enconv1(x))
         x = F.relu(self.enconv2(x))
         x = F.relu(self.enconv3(x))
@@ -97,33 +89,8 @@ class EncConv(nn.Module):
         x = self.enconv6(x)
         return x
 
-
-class DecBlock(nn.Module):
-    def __init__(
-        self,
-        scale_factor,
-        stride,
-        kernel_size,
-        num_kernels,
-        padding,
-        activation,
-        dropout_rate,
-    ):
-        super().__init__()
-        self.activation = activation
-        self.upsample = nn.Upsample(scale_factor=scale_factor, mode="bilinear")
-        self.deconv = nn.Conv2d(num_kernels, num_kernels, kernel_size, stride, padding)
-        self.dropout = nn.Dropout2d(p=dropout_rate)
-
-    def forward(self, x):
-        x = self.upsample(x)
-        x = F.relu(self.deconv(x))
-        x = self.dropout(x)
-        return x
-
-
 class DecConv(nn.Module):
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, out_channels, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.deconv1 = nn.Conv2d(64, 64, kernel_size=4, stride=1, padding=2)
         self.deconv2 = nn.Conv2d(64, 64, kernel_size=4, stride=1, padding=2)
@@ -132,7 +99,7 @@ class DecConv(nn.Module):
         self.deconv5 = nn.Conv2d(64, 64, kernel_size=4, stride=1, padding=2)
         self.deconv6 = nn.Conv2d(64, 64, kernel_size=4, stride=1, padding=2)
         self.deconv7 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1)
-        self.deconv8 = nn.Conv2d(64, 384, kernel_size=3, stride=1, padding=1)
+        self.deconv8 = nn.Conv2d(64, out_channels, kernel_size=3, stride=1, padding=1)
         self.dropout1 = nn.Dropout(p=0.2)
         self.dropout2 = nn.Dropout(p=0.2)
         self.dropout3 = nn.Dropout(p=0.2)
@@ -168,51 +135,50 @@ class DecConv(nn.Module):
 
 
 class AutoEncoder(nn.Module):
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, out_channels, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.encoder = EncConv()
-        self.decoder = DecConv()
+        self.decoder = DecConv(out_channels)
 
     def forward(self, x):
-        # x = imagenet_norm_batch(x) #Comments on Algorithm 3: We use the image normalization of the pretrained models of torchvision [44].
         x = self.encoder(x)
         x = self.decoder(x)
         return x
 
 
 class Teacher(nn.Module):
-    def __init__(self, size, teacher_path=None, *args, **kwargs) -> None:
+    def __init__(self, size, out_channels, teacher_path=None, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         if size == "M":
-            self.pdn = PDN_M(last_kernel_size=384)
+            self.pdn = PDN_M(out_channels=out_channels) #384
         elif size == "S":
-            self.pdn = PDN_S(last_kernel_size=384)
+            self.pdn = PDN_S(out_channels=out_channels)
         self.pdn.apply(weights_init)
 
         if teacher_path is not None:
             self.load_state_dict(torch.load(teacher_path))
             logger.info(f"Loaded pretrained Teacher model from {teacher_path}")
+        
+        self._mean_std = {}
 
     def forward(self, x):
         x = self.pdn(x)
+
+        if self._mean_std != {}:
+            x = (x - self._mean_std["mean"]) / self._mean_std["std"]
         return x
 
 
 class Student(nn.Module):
-    def __init__(self, size, *args, **kwargs) -> None:
+    def __init__(self, size, out_channels, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         if size == "M":
-            self.pdn = PDN_M(
-                last_kernel_size=768
-            )  # The student network has the same architecture,but 768 kernels instead of 384 in the Conv-5 and Conv-6 layers.
+            self.pdn = PDN_M(out_channels=out_channels) #768
         elif size == "S":
-            self.pdn = PDN_S(
-                last_kernel_size=768
-            )  # The student network has the same architecture, but 768 kernels instead of 384 in the Conv-4 layer
+            self.pdn = PDN_S(out_channels=out_channels)
         self.pdn.apply(weights_init)
 
     def forward(self, x):
-        # x = imagenet_norm_batch(x) #Comments on Algorithm 3: We use the image normalization of the pretrained models of torchvision [44].
         pdn_out = self.pdn(x)
         return pdn_out
 
@@ -227,19 +193,25 @@ class EfficientADModel(nn.Module):
 
     def __init__(
         self,
-        teacher_path: str,
+        teacher_path: Path,
+        teacher_out_channels: int,
         model_size="M",
     ) -> None:
         super().__init__()
 
-        self.teacher = Teacher(model_size, teacher_path=teacher_path)
-        self.student = Student(model_size)
+        self.teacher = Teacher(model_size, teacher_path=teacher_path, out_channels=teacher_out_channels)
+        self.student = Student(model_size, out_channels=teacher_out_channels*2)
         self.ae = AutoEncoder()
 
-        self.mean_std = {}
-        self.quantiles = {}
+        self._quantiles: dict[str, Tensor] = {}
+    
+    def set_teacher_mean_std(self, mean_std: dict) -> None:
+        self.teacher._mean_std = mean_std
+    
+    def set_quantiles(self, quantiles: dict) -> None:
+        self._quantiles = quantiles
 
-    def choose_random_aug_image(self, image):
+    def choose_random_aug_image(self, image: Tensor) -> Tensor:
         aug_index = random.choice([1, 2, 3])
         # Sample an augmentation coefficient λ from the uniform distribution U(0.8, 1.2)
         coefficient = random.uniform(0.8, 1.2)
@@ -261,17 +233,17 @@ class EfficientADModel(nn.Module):
             Tensor: Predictions
         """
         with torch.no_grad():
-            teacher_output = self.teacher(batch)
-            normal_teacher_output = (teacher_output - self.mean_std["mean"]) / self.mean_std["std"]
-            b, c, h, w = normal_teacher_output.shape
+            normal_teacher_output = self.teacher(batch)
+            #normal_teacher_output = (teacher_output - self.mean_std["mean"]) / self.mean_std["std"]
+            _, c, h, w = normal_teacher_output.shape
 
         student_output = self.student(batch)
         ae_output = self.ae(batch)
         # 3: Split the student output into Y ST ∈ R 384×64×64 and Y STAE ∈ R 384×64×64 as above
-        y_st = student_output[:, :384, :, :]
-        y_stae = student_output[:, -384:, :, :]
+        student_output = student_output[:, :384, :, :]
+        student_output_ae = student_output[:, -384:, :, :]
 
-        distance_st = torch.pow(normal_teacher_output - y_st, 2)
+        distance_st = torch.pow(normal_teacher_output - student_output, 2)
 
         if self.training:
             # Student loss
@@ -288,8 +260,8 @@ class EfficientADModel(nn.Module):
             student_output_ae_aug = student_output_aug[:, -384:, :, :]
 
             with torch.no_grad():
-                teacher_output_aug = self.teacher(aug_img)
-                normal_teacher_output_aug = (teacher_output_aug - self.mean_std["mean"]) / self.mean_std["std"]
+                normal_teacher_output_aug = self.teacher(aug_img)
+                #normal_teacher_output_aug = (teacher_output_aug - self.mean_std["mean"]) / self.mean_std["std"]
 
             distance_ae = torch.pow(normal_teacher_output_aug - ae_output_aug, 2)
             distance_stae = torch.pow(ae_output_aug - student_output_ae_aug, 2)
@@ -297,10 +269,10 @@ class EfficientADModel(nn.Module):
             loss_ae = torch.mean(distance_ae)
             loss_stae = torch.mean(distance_stae)
 
-            return loss_st, loss_ae, loss_stae
+            return (loss_st, loss_ae, loss_stae)
 
         else:
-            distance_stae = torch.pow(ae_output - y_stae, 2)
+            distance_stae = torch.pow(ae_output - student_output_ae, 2)
 
             map_st = torch.mean(distance_st, dim=1, keepdim=True)
             map_stae = torch.mean(distance_stae, dim=1, keepdim=True)
@@ -308,10 +280,10 @@ class EfficientADModel(nn.Module):
             map_st = F.interpolate(map_st, size=(256, 256), mode="bilinear")
             map_stae = F.interpolate(map_stae, size=(256, 256), mode="bilinear")
 
-            if len(self.quantiles) != 0:
-                map_st = 0.1 * (map_st - self.quantiles["qa_st"]) / (self.quantiles["qb_st"] - self.quantiles["qa_st"])
+            if len(self._quantiles) != 0:
+                map_st = 0.1 * (map_st - self._quantiles["qa_st"]) / (self._quantiles["qb_st"] - self._quantiles["qa_st"])
                 map_stae = (
-                    0.1 * (map_stae - self.quantiles["qa_ae"]) / (self.quantiles["qb_ae"] - self.quantiles["qa_ae"])
+                    0.1 * (map_stae - self._quantiles["qa_ae"]) / (self._quantiles["qb_ae"] - self._quantiles["qa_ae"])
                 )
 
             map_combined = 0.5 * map_st + 0.5 * map_stae
