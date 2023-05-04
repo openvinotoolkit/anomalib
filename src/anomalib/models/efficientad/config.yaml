@@ -28,6 +28,7 @@ model:
   weight_decay: 0.00001
   # generic params
   normalization_method: min_max # options: [null, min_max, cdf]
+  save_on_train_epoch_end: false
 
 metrics:
   image:
@@ -92,7 +93,7 @@ trainer:
   profiler: null
   benchmark: false
   deterministic: false
-  reload_dataloaders_every_n_epochs: 1
+  reload_dataloaders_every_n_epochs: 0
   auto_lr_find: false
   replace_sampler_ddp: true
   detect_anomaly: false
