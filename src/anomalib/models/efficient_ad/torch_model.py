@@ -25,6 +25,7 @@ def weights_init(m):
         m.weight.data.normal_(1.0, 0.02)
         m.bias.data.fill_(0)
 
+
 class PDN_S(nn.Module):
     def __init__(self, out_channels) -> None:
         super().__init__()
@@ -89,6 +90,7 @@ class EncConv(nn.Module):
         x = self.enconv6(x)
         return x
 
+
 class DecConv(nn.Module):
     def __init__(self, out_channels, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -150,7 +152,7 @@ class Teacher(nn.Module):
     def __init__(self, size, out_channels, teacher_path=None, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         if size == "M":
-            self.pdn = PDN_M(out_channels=out_channels) #384
+            self.pdn = PDN_M(out_channels=out_channels)  # 384
         elif size == "S":
             self.pdn = PDN_S(out_channels=out_channels)
         self.pdn.apply(weights_init)
@@ -158,7 +160,7 @@ class Teacher(nn.Module):
         if teacher_path is not None:
             self.load_state_dict(torch.load(teacher_path))
             logger.info(f"Loaded pretrained Teacher model from {teacher_path}")
-        
+
         self._mean_std = {}
 
     def forward(self, x):
@@ -173,7 +175,7 @@ class Student(nn.Module):
     def __init__(self, size, out_channels, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         if size == "M":
-            self.pdn = PDN_M(out_channels=out_channels) #768
+            self.pdn = PDN_M(out_channels=out_channels)  # 768
         elif size == "S":
             self.pdn = PDN_S(out_channels=out_channels)
         self.pdn.apply(weights_init)
@@ -200,14 +202,14 @@ class EfficientADModel(nn.Module):
         super().__init__()
 
         self.teacher = Teacher(model_size, teacher_path=teacher_path, out_channels=teacher_out_channels)
-        self.student = Student(model_size, out_channels=teacher_out_channels*2)
+        self.student = Student(model_size, out_channels=teacher_out_channels * 2)
         self.ae = AutoEncoder(out_channels=teacher_out_channels)
 
         self._quantiles: dict[str, Tensor] = {}
-    
+
     def set_teacher_mean_std(self, mean_std: dict) -> None:
         self.teacher._mean_std = mean_std
-    
+
     def set_quantiles(self, quantiles: dict) -> None:
         self._quantiles = quantiles
 
@@ -234,7 +236,7 @@ class EfficientADModel(nn.Module):
         """
         with torch.no_grad():
             normal_teacher_output = self.teacher(batch)
-            #normal_teacher_output = (teacher_output - self.mean_std["mean"]) / self.mean_std["std"]
+            # normal_teacher_output = (teacher_output - self.mean_std["mean"]) / self.mean_std["std"]
             _, c, h, w = normal_teacher_output.shape
 
         student_output = self.student(batch)
@@ -261,7 +263,7 @@ class EfficientADModel(nn.Module):
 
             with torch.no_grad():
                 normal_teacher_output_aug = self.teacher(aug_img)
-                #normal_teacher_output_aug = (teacher_output_aug - self.mean_std["mean"]) / self.mean_std["std"]
+                # normal_teacher_output_aug = (teacher_output_aug - self.mean_std["mean"]) / self.mean_std["std"]
 
             distance_ae = torch.pow(normal_teacher_output_aug - ae_output_aug, 2)
             distance_stae = torch.pow(ae_output_aug - student_output_ae_aug, 2)
@@ -281,7 +283,9 @@ class EfficientADModel(nn.Module):
             map_stae = F.interpolate(map_stae, size=(256, 256), mode="bilinear")
 
             if len(self._quantiles) != 0:
-                map_st = 0.1 * (map_st - self._quantiles["qa_st"]) / (self._quantiles["qb_st"] - self._quantiles["qa_st"])
+                map_st = (
+                    0.1 * (map_st - self._quantiles["qa_st"]) / (self._quantiles["qb_st"] - self._quantiles["qa_st"])
+                )
                 map_stae = (
                     0.1 * (map_stae - self._quantiles["qa_ae"]) / (self._quantiles["qb_ae"] - self._quantiles["qa_ae"])
                 )

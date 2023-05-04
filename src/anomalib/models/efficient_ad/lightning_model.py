@@ -9,9 +9,7 @@ https://arxiv.org/pdf/2303.14535.pdf
 from __future__ import annotations
 
 import logging
-import os
 from pathlib import Path
-from typing import Callable
 
 import torch
 import tqdm
@@ -33,7 +31,9 @@ from .torch_model import EfficientADModel
 logger = logging.getLogger(__name__)
 
 IMAGENET_SUBSET_DOWNLOAD_INFO = DownloadInfo(
-    name="imagenet_100k_512px.zip", url="https://drive.google.com/uc?id=1n6RF08sp7RDxzKYuUoMox4RM13hqB1Jo", hash="000"
+    name="imagenet_100k_512px.zip",
+    url="https://drive.google.com/uc?id=1n6RF08sp7RDxzKYuUoMox4RM13hqB1Jo",
+    hash="d3cafd8d33eaf27ff40036fc62c33e85",
 )
 
 
@@ -49,21 +49,21 @@ class EfficientAD(AnomalyModule):
         model_size: str = "M",
         lr: float = 0.0001,
         weight_decay: float = 0.00001,
-        image_size: list = [256, 256]
+        image_size: list = [256, 256],
     ) -> None:
         super().__init__()
 
         self.category = category_name
         self.pre_trained_dir = Path(pre_trained_dir)
         self.imagenet_dir = Path("./datasets/imagenet_subset")
-        self.model : EfficientADModel = EfficientADModel(
+        self.model: EfficientADModel = EfficientADModel(
             teacher_path=self.pre_trained_dir / teacher_file_name,
             teacher_out_channels=teacher_out_channels,
             model_size=model_size,
         )
         self.data_transforms_imagenet = transforms.Compose(
             [  # We obtain an image P ∈ R 3×256×256 from ImageNet by choosing a random image,
-                transforms.Resize((image_size[0]*2, image_size[1]*2)),  # resizing it to 512 × 512,
+                transforms.Resize((image_size[0] * 2, image_size[1] * 2)),  # resizing it to 512 × 512,
                 transforms.RandomGrayscale(p=0.3),  # converting it to gray scale with a probability of 0.3
                 transforms.CenterCrop((image_size[0], image_size[1])),  # and cropping the center 256 × 256 pixels
                 transforms.ToTensor(),
@@ -225,7 +225,7 @@ class EfficientAdLightning(EfficientAD):
             model_size=hparams.model.model_size,
             lr=hparams.model.lr,
             weight_decay=hparams.model.weight_decay,
-            image_size=hparams.dataset.image_size
+            image_size=hparams.dataset.image_size,
         )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
