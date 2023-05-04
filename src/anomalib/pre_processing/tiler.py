@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from itertools import product
 from math import ceil
 from typing import Sequence
@@ -13,6 +14,13 @@ import torch
 import torchvision.transforms as T
 from torch import Tensor
 from torch.nn import functional as F
+
+
+class ImageUpscaleMode(str, Enum):
+    """Type of mode when upscaling image."""
+
+    PADDING = "padding"
+    INTERPOLATION = "interpolation"
 
 
 class StrideSizeError(Exception):
@@ -53,7 +61,7 @@ def compute_new_image_size(image_size: tuple, tile_size: tuple, stride: tuple) -
     return resized_h, resized_w
 
 
-def upscale_image(image: Tensor, size: tuple, mode: str = "padding") -> Tensor:
+def upscale_image(image: Tensor, size: tuple, mode: ImageUpscaleMode = ImageUpscaleMode.PADDING) -> Tensor:
     """Upscale image to the desired size via either padding or interpolation.
 
     Args:
@@ -79,12 +87,12 @@ def upscale_image(image: Tensor, size: tuple, mode: str = "padding") -> Tensor:
     image_h, image_w = image.shape[2:]
     resize_h, resize_w = size
 
-    if mode == "padding":
+    if mode == ImageUpscaleMode.PADDING:
         pad_h = resize_h - image_h
         pad_w = resize_w - image_w
 
         image = F.pad(image, [0, pad_w, 0, pad_h])
-    elif mode == "interpolation":
+    elif mode == ImageUpscaleMode.INTERPOLATION:
         image = F.interpolate(input=image, size=(resize_h, resize_w))
     else:
         raise ValueError(f"Unknown mode {mode}. Only padding and interpolation is available.")
@@ -92,7 +100,7 @@ def upscale_image(image: Tensor, size: tuple, mode: str = "padding") -> Tensor:
     return image
 
 
-def downscale_image(image: Tensor, size: tuple, mode: str = "padding") -> Tensor:
+def downscale_image(image: Tensor, size: tuple, mode: ImageUpscaleMode = ImageUpscaleMode.PADDING) -> Tensor:
     """Opposite of upscaling. This image downscales image to a desired size.
 
     Args:
@@ -111,7 +119,7 @@ def downscale_image(image: Tensor, size: tuple, mode: str = "padding") -> Tensor
         Tensor: Downscaled image
     """
     input_h, input_w = size
-    if mode == "padding":
+    if mode == ImageUpscaleMode.PADDING:
         image = image[:, :, :input_h, :input_w]
     else:
         image = F.interpolate(input=image, size=(input_h, input_w))
@@ -151,7 +159,7 @@ class Tiler:
         tile_size: int | Sequence,
         stride: int | Sequence | None = None,
         remove_border_count: int = 0,
-        mode: str = "padding",
+        mode: ImageUpscaleMode = ImageUpscaleMode.PADDING,
         tile_count: int = 4,
     ) -> None:
         self.tile_size_h, self.tile_size_w = self.__validate_size_type(tile_size)
@@ -170,7 +178,7 @@ class Tiler:
                 "Please ensure stride size is less than or equal than tiling size."
             )
 
-        if self.mode not in ("padding", "interpolation"):
+        if self.mode not in (ImageUpscaleMode.PADDING, ImageUpscaleMode.INTERPOLATION):
             raise ValueError(f"Unknown tiling mode {self.mode}. Available modes are padding and interpolation")
 
         self.batch_size: int

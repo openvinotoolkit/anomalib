@@ -15,7 +15,9 @@ from pandas import DataFrame
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
+    DirType,
     InputNormalizationMethod,
+    LabelName,
     Split,
     TestSplitMode,
     ValSplitMode,
@@ -58,16 +60,16 @@ def make_folder_dataset(
 
     filenames = []
     labels = []
-    dirs = {"normal": normal_dir}
+    dirs = {DirType.NORMAL: normal_dir}
 
     if abnormal_dir:
-        dirs = {**dirs, **{"abnormal": abnormal_dir}}
+        dirs = {**dirs, **{DirType.ABNORMAL: abnormal_dir}}
 
     if normal_test_dir:
-        dirs = {**dirs, **{"normal_test": normal_test_dir}}
+        dirs = {**dirs, **{DirType.NORMAL_TEST: normal_test_dir}}
 
     if mask_dir:
-        dirs = {**dirs, **{"mask_dir": mask_dir}}
+        dirs = {**dirs, **{DirType.MASK: mask_dir}}
 
     for dir_type, path in dirs.items():
         filename, label = _prepare_files_labels(path, dir_type, extensions)
@@ -78,22 +80,24 @@ def make_folder_dataset(
     samples = samples.sort_values(by="image_path", ignore_index=True)
 
     # Create label index for normal (0) and abnormal (1) images.
-    samples.loc[(samples.label == "normal") | (samples.label == "normal_test"), "label_index"] = 0
-    samples.loc[(samples.label == "abnormal"), "label_index"] = 1
+    samples.loc[
+        (samples.label == DirType.NORMAL) | (samples.label == DirType.NORMAL_TEST), "label_index"
+    ] = LabelName.NORMAL
+    samples.loc[(samples.label == DirType.ABNORMAL), "label_index"] = LabelName.ABNORMAL
     samples.label_index = samples.label_index.astype("Int64")
 
     # If a path to mask is provided, add it to the sample dataframe.
 
     if mask_dir is not None and abnormal_dir is not None:
-        samples.loc[samples.label == "abnormal", "mask_path"] = samples.loc[
-            samples.label == "mask_dir"
+        samples.loc[samples.label == DirType.ABNORMAL, "mask_path"] = samples.loc[
+            samples.label == DirType.MASK
         ].image_path.values
         samples["mask_path"].fillna("", inplace=True)
         samples = samples.astype({"mask_path": "str"})
 
         # make sure all every rgb image has a corresponding mask image.
         assert (
-            samples.loc[samples.label_index == 1]
+            samples.loc[samples.label_index == LabelName.ABNORMAL]
             .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
             .all()
         ), "Mismatch between anomalous images and mask images. Make sure the mask files \
@@ -104,7 +108,7 @@ def make_folder_dataset(
 
     # remove all the rows with temporal image samples that have already been assigned
     samples = samples.loc[
-        (samples.label == "normal") | (samples.label == "abnormal") | (samples.label == "normal_test")
+        (samples.label == DirType.NORMAL) | (samples.label == DirType.ABNORMAL) | (samples.label == DirType.NORMAL_TEST)
     ]
 
     # Ensure the pathlib objects are converted to str.
@@ -114,8 +118,8 @@ def make_folder_dataset(
     # Create train/test split.
     # By default, all the normal samples are assigned as train.
     #   and all the abnormal samples are test.
-    samples.loc[(samples.label == "normal"), "split"] = "train"
-    samples.loc[(samples.label == "abnormal") | (samples.label == "normal_test"), "split"] = "test"
+    samples.loc[(samples.label == DirType.NORMAL), "split"] = Split.TRAIN
+    samples.loc[(samples.label == DirType.ABNORMAL) | (samples.label == DirType.NORMAL_TEST), "split"] = Split.TEST
 
     # Get the data frame for the split.
     if split:
