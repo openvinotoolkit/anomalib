@@ -163,9 +163,6 @@ class Teacher(nn.Module):
 
     def forward(self, x):
         x = self.pdn(x)
-
-        if self._mean_std != {}:
-            x = (x - self._mean_std["mean"]) / self._mean_std["std"]
         return x
 
 
