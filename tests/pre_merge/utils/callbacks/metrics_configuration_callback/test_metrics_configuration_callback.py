@@ -68,7 +68,7 @@ def test_metric_collection_configuration_callback(config_from_yaml):
 
 @pytest.mark.parametrize(
     ["ori_config_from_yaml", "saved_config_from_yaml"],
-    [("data/config-good-01.yaml", "data/config-good-01-serialized.yaml")],
+    [("data/config-good-02.yaml", "data/config-good-02-serialized.yaml")],
 )
 def test_metric_collection_configuration_deserialzation_callback(ori_config_from_yaml, saved_config_from_yaml):
     """Test if metrics are properly instantiated during deserialzation."""
@@ -88,10 +88,18 @@ def test_metric_collection_configuration_deserialzation_callback(ori_config_from
     )
 
     saved_image_state_dict = OrderedDict(
-        {"image_metrics" + e: torch.tensor(1.0) for e in saved_config_from_yaml_res.metrics.image}
+        {
+            "image_metrics." + k: torch.tensor(1.0)
+            for k, v in saved_config_from_yaml_res.metrics.image.items()
+            if not v["class_path"].startswith("torchmetrics")
+        }
     )
     saved_pixel_state_dict = OrderedDict(
-        {"pixel_metrics" + e: torch.tensor(1.0) for e in saved_config_from_yaml_res.metrics.pixel}
+        {
+            "pixel_metrics." + k: torch.tensor(1.0)
+            for k, v in saved_config_from_yaml_res.metrics.pixel.items()
+            if not v["class_path"].startswith("torchmetrics")
+        }
     )
 
     final_state_dict = OrderedDict(chain(saved_image_state_dict.items(), saved_pixel_state_dict.items()))
