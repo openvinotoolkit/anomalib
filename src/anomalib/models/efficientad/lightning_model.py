@@ -117,7 +117,7 @@ class EfficientAD(AnomalyModule):
         """
         x = torch.empty(0)
         logger.info("Calculate teacher channel mean and std")
-        for batch in tqdm.tqdm(dataloader, desc="Calculate teacher channel mean and std"):
+        for batch in tqdm.tqdm(dataloader, desc="Calculate teacher channel mean and std", position=0, leave=True):
             y = self.model.teacher(batch["image"].to(self.device)).detach().cpu()
             x = torch.cat((x, y), 0)
         channel_mean = x.mean(dim=[0, 2, 3], keepdim=True).to(self.device)
@@ -137,7 +137,7 @@ class EfficientAD(AnomalyModule):
         maps_st = []
         maps_ae = []
         logger.info("Calculate Validation Dataset Quantiles")
-        for batch in tqdm.tqdm(dataloader, desc="Calculate Validation Dataset Quantiles"):
+        for batch in tqdm.tqdm(dataloader, desc="Calculate Validation Dataset Quantiles", position=0, leave=True):
             output = self.model(batch["image"].to(self.device))
             map_st = output["map_st"].detach().cpu()
             map_ae = output["map_ae"].detach().cpu()
