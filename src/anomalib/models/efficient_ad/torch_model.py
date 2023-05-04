@@ -201,7 +201,7 @@ class EfficientADModel(nn.Module):
 
         self.teacher = Teacher(model_size, teacher_path=teacher_path, out_channels=teacher_out_channels)
         self.student = Student(model_size, out_channels=teacher_out_channels*2)
-        self.ae = AutoEncoder()
+        self.ae = AutoEncoder(out_channels=teacher_out_channels)
 
         self._quantiles: dict[str, Tensor] = {}
     
