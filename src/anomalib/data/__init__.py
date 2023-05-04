@@ -18,7 +18,7 @@ from .folder_3d import Folder3D
 from .inference import InferenceDataset
 from .mvtec import MVTec
 from .mvtec_3d import MVTec3D
-from .noise import NoiseType
+from .noise_type import NoiseType
 from .shanghaitech import ShanghaiTech
 from .task_type import TaskType
 from .ucsd_ped import UCSDped

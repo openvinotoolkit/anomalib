@@ -22,7 +22,7 @@ from albumentations.pytorch import ToTensorV2
 from pandas import DataFrame, Series
 
 from anomalib.data.base.dataset import AnomalibDataset
-from anomalib.data.noise import NoiseType
+from anomalib.data.noise_type import NoiseType
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import Augmenter, Split, read_image
 

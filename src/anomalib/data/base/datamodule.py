@@ -15,7 +15,7 @@ from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADER
 from torch.utils.data.dataloader import DataLoader, default_collate
 
 from anomalib.data.base.dataset import AnomalibDataset
-from anomalib.data.noise import NoiseType
+from anomalib.data.noise_type import NoiseType
 from anomalib.data.synthetic import SyntheticAnomalyDataset
 from anomalib.data.utils import (
     TestSplitMode,

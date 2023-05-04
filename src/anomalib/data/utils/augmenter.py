@@ -24,7 +24,7 @@ from opensimplex import noise2array
 from torch import Tensor
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
-from anomalib.data.noise import NoiseType
+from anomalib.data.noise_type import NoiseType
 from anomalib.data.utils.generators.perlin import random_2d_perlin
 
 
