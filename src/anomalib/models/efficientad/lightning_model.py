@@ -116,7 +116,8 @@ class EfficientAD(AnomalyModule):
             dict[str, Tensor]: Dictionary of channel-wise mean and std
         """
         x = torch.empty(0)
-        for batch in tqdm.tqdm(dataloader, desc="Calculating teacher channel mean and std"):
+        logger.info("Calculate teacher channel mean and std")
+        for batch in tqdm.tqdm(dataloader):
             y = self.model.teacher(batch["image"].to(self.device)).detach().cpu()
             x = torch.cat((x, y), 0)
         channel_mean = x.mean(dim=[0, 2, 3], keepdim=True).to(self.device)
@@ -135,7 +136,8 @@ class EfficientAD(AnomalyModule):
         """
         maps_st = []
         maps_ae = []
-        for batch in tqdm.tqdm(dataloader, desc="Calculating feature map quantiles"):
+        logger.info("Calculate Validation Dataset Quantiles")
+        for batch in tqdm.tqdm(dataloader):
             output = self.model(batch["image"].to(self.device))
             map_st = output["map_st"].detach().cpu()
             map_ae = output["map_ae"].detach().cpu()
@@ -189,7 +191,7 @@ class EfficientAD(AnomalyModule):
         Calculate the feature map quantiles of the validation dataset and push to the model.
         """
         if not self.model.is_set(self.model._quantiles):
-            logger.info("Calculate Validation Dataset Quantiles")
+            
             map_norm_quantiles = self.map_norm_quantiles(self.trainer.val_dataloaders[0])
             self.model._quantiles.update(map_norm_quantiles)
 
