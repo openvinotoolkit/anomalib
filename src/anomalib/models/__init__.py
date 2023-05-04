@@ -19,7 +19,7 @@ from anomalib.models.csflow import Csflow
 from anomalib.models.dfkde import Dfkde
 from anomalib.models.dfm import Dfm
 from anomalib.models.draem import Draem
-from anomalib.models.efficient_ad import EfficientAD
+from anomalib.models.efficientad import EfficientAD
 from anomalib.models.fastflow import Fastflow
 from anomalib.models.ganomaly import Ganomaly
 from anomalib.models.padim import Padim
@@ -94,7 +94,7 @@ def get_model(config: DictConfig | ListConfig) -> AnomalyModule:
         "reverse_distillation",
         "rkde",
         "stfpm",
-        "efficient_ad",
+        "efficientad",
     ]
     model: AnomalyModule
 
