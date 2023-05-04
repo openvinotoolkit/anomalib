@@ -14,7 +14,7 @@ from pathlib import Path
 import torch
 import tqdm
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.utilities.types import STEP_OUTPUT
+from pytorch_lightning.utilities.types import STEP_OUTPUT, EPOCH_OUTPUT
 from torch import Tensor, optim
 from torch.utils.data import DataLoader
 from torchvision import transforms
@@ -185,7 +185,7 @@ class EfficientAD(AnomalyModule):
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def training_epoch_end(self) -> None:
+    def training_epoch_end(self, outputs: EPOCH_OUTPUT) -> None:
         """
         Calculate the feature map quantiles of the validation dataset and push to the model.
         """
