@@ -49,7 +49,7 @@ class EfficientAD(AnomalyModule):
         model_size: str = "M",
         lr: float = 0.0001,
         weight_decay: float = 0.00001,
-        image_size: int = 256
+        image_size: list = [256, 256]
     ) -> None:
         super().__init__()
 
@@ -63,9 +63,9 @@ class EfficientAD(AnomalyModule):
         )
         self.data_transforms_imagenet = transforms.Compose(
             [  # We obtain an image P ∈ R 3×256×256 from ImageNet by choosing a random image,
-                transforms.Resize((image_size*2, image_size*2)),  # resizing it to 512 × 512,
+                transforms.Resize((image_size[0]*2, image_size[1]*2)),  # resizing it to 512 × 512,
                 transforms.RandomGrayscale(p=0.3),  # converting it to gray scale with a probability of 0.3
-                transforms.CenterCrop((image_size, image_size)),  # and cropping the center 256 × 256 pixels
+                transforms.CenterCrop((image_size[0], image_size[1])),  # and cropping the center 256 × 256 pixels
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ]
