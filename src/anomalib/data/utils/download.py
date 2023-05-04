@@ -281,7 +281,7 @@ def download_and_extract_gdrive(root: Path, info: DownloadInfo) -> None:
         logger.info("Existing dataset archive found. Skipping download stage.")
     else:
         logger.info("Downloading the %s dataset.", file_path)
-        gdown.download(info.url, file_path, quiet=False, fuzzy=True)
+        gdown.download(info.url, str(file_path), quiet=False, fuzzy=True)
         logger.info("Checking file_path hash of the downloaded file.")
         hash_check(file_path, info.hash)
 
