@@ -117,7 +117,7 @@ class EfficientAD(AnomalyModule):
         """
         x = torch.empty(0)
         logger.info("Calculate teacher channel mean and std")
-        for batch in tqdm.tqdm(dataloader):
+        for batch in tqdm.tqdm(dataloader, desc="Calculate teacher channel mean and std"):
             y = self.model.teacher(batch["image"].to(self.device)).detach().cpu()
             x = torch.cat((x, y), 0)
         channel_mean = x.mean(dim=[0, 2, 3], keepdim=True).to(self.device)
@@ -137,7 +137,7 @@ class EfficientAD(AnomalyModule):
         maps_st = []
         maps_ae = []
         logger.info("Calculate Validation Dataset Quantiles")
-        for batch in tqdm.tqdm(dataloader):
+        for batch in tqdm.tqdm(dataloader, desc="Calculate Validation Dataset Quantiles"):
             output = self.model(batch["image"].to(self.device))
             map_st = output["map_st"].detach().cpu()
             map_ae = output["map_ae"].detach().cpu()
@@ -160,7 +160,6 @@ class EfficientAD(AnomalyModule):
 
     def on_train_start(self) -> None:
         """Calculate or load the channel-wise mean and std of the training dataset and push to the model."""
-
         if not self.model.is_set(self.model._mean_std):
             channel_mean_std = self.teacher_channel_mean_std(self.trainer.train_dataloader)
             self.model._mean_std.update(channel_mean_std)
@@ -186,7 +185,7 @@ class EfficientAD(AnomalyModule):
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
 
-    def on_validation_start(self) -> None:
+    def training_epoch_end(self) -> None:
         """
         Calculate the feature map quantiles of the validation dataset and push to the model.
         """

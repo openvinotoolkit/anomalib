@@ -28,7 +28,6 @@ model:
   weight_decay: 0.00001
   # generic params
   normalization_method: min_max # options: [null, min_max, cdf]
-  save_on_train_epoch_end: false
 
 metrics:
   image:

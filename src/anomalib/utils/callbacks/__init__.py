@@ -60,15 +60,12 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
     monitor_metric = None if "early_stopping" not in config.model.keys() else config.model.early_stopping.metric
     monitor_mode = "max" if "early_stopping" not in config.model.keys() else config.model.early_stopping.mode
 
-    save_on_train_epoch_end = None if "save_on_train_epoch_end"  not in config.model.keys() else config.model.save_on_train_epoch_end
-
     checkpoint = ModelCheckpoint(
         dirpath=os.path.join(config.project.path, "weights", "lightning"),
         filename="model",
         monitor=monitor_metric,
         mode=monitor_mode,
         auto_insert_metric_name=False,
-        save_on_train_epoch_end=save_on_train_epoch_end
     )
 
     callbacks.extend([checkpoint, TimerCallback()])
