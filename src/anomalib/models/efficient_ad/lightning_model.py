@@ -187,8 +187,8 @@ class EfficientAD(AnomalyModule):
         Calculate or load the channel-wise mean and std of the training dataset and set it in the model.
         Calculate the feature map quantiles of the test dataset and set it in the model.
         """
-        channel_mean_std = self.teacher_channel_mean_std(self.trainer.train_dataloader)
-        self.model.set_teacher_mean_std(channel_mean_std)
+        #channel_mean_std = self.teacher_channel_mean_std(self.trainer.train_dataloader)
+        #self.model.set_teacher_mean_std(channel_mean_std)
 
         map_norm_quantiles = self.map_norm_quantiles(self.trainer.test_dataloaders[0])
         self.model.set_quantiles(map_norm_quantiles)
