@@ -81,8 +81,8 @@ class AnomalyScoreMeanVarThreshold(AnomalyScoreThreshold):
     MEANVAR_MODE = MeanVarianceMode.ADD
 
     def __init__(self, default_value: float = 0.5, **kwargs) -> None:
-        self.meanvar_mode = self.MEANVAR_MODE
-        self.std_dev_ratio = self.STD_DEV_RATIO
+        self.meanvar_mode = kwargs.get("meanvar_mode", self.MEANVAR_MODE)
+        self.std_dev_ratio = kwargs.get("std_dev_ratio", self.STD_DEV_RATIO)
         super().__init__(default_value=default_value, **kwargs)
 
     def compute(self) -> Tensor:
