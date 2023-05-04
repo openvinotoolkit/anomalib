@@ -74,7 +74,7 @@ trainer:
   accumulate_grad_batches: 1
   max_epochs: 1
   min_epochs: null
-  max_steps: 70000
+  max_steps: 7
   min_steps: null
   max_time: null
   limit_train_batches: 1.0

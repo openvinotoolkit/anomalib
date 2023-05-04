@@ -137,8 +137,8 @@ class EfficientAD(AnomalyModule):
         maps_ae = []
         for batch in tqdm.tqdm(dataloader, desc="Calculating feature map quantiles"):
             output = self.model(batch["image"].to(self.device))
-            map_st = output["map_st"]
-            map_ae = output["map_ae"]
+            map_st = output["map_st"].detach().cpu()
+            map_ae = output["map_ae"].detach().cpu()
             maps_st.append(map_st)
             maps_ae.append(map_ae)
         maps_st = torch.cat(maps_st)
@@ -189,7 +189,7 @@ class EfficientAD(AnomalyModule):
         Calculate the feature map quantiles of the test dataset and set it in the model.
         """
         if not self.model.is_set(self.model._quantiles):
-            map_norm_quantiles = self.map_norm_quantiles(self.trainer.test_dataloaders[0])
+            map_norm_quantiles = self.map_norm_quantiles(self.trainer.val_dataloaders[0])
             self.model._quantiles.update(map_norm_quantiles)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
