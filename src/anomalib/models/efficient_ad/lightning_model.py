@@ -119,8 +119,8 @@ class EfficientAD(AnomalyModule):
         for batch in tqdm.tqdm(dataloader, desc="Calculating teacher channel mean and std"):
             y = self.model.teacher(batch["image"].to(self.device)).detach().cpu()
             x = torch.cat((x, y), 0)
-        channel_mean = x.mean(dim=[0, 2, 3], keepdim=True).cuda()
-        channel_std = x.std(dim=[0, 2, 3], keepdim=True).cuda()
+        channel_mean = x.mean(dim=[0, 2, 3], keepdim=True).to(self.device)
+        channel_std = x.std(dim=[0, 2, 3], keepdim=True).to(self.device)
         return {"mean": channel_mean, "std": channel_std}
 
     def map_norm_quantiles(self, dataloader: DataLoader) -> dict[str, Tensor]:
@@ -158,8 +158,9 @@ class EfficientAD(AnomalyModule):
 
     def on_train_start(self) -> None:
         """Calculate or load the channel-wise mean and std of the training dataset and set it to the model."""
-        channel_mean_std = self.teacher_channel_mean_std(self.trainer.train_dataloader)
-        self.model.set_teacher_mean_std(channel_mean_std)
+        if not self.model.is_set(self.model._mean_std):
+            channel_mean_std = self.teacher_channel_mean_std(self.trainer.train_dataloader)
+            self.model._mean_std.update(channel_mean_std)
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> dict[str, Tensor]:
         """Training step for EfficintAD returns the  student, autoencoder and combined loss.
@@ -187,11 +188,9 @@ class EfficientAD(AnomalyModule):
         Calculate or load the channel-wise mean and std of the training dataset and set it in the model.
         Calculate the feature map quantiles of the test dataset and set it in the model.
         """
-        #channel_mean_std = self.teacher_channel_mean_std(self.trainer.train_dataloader)
-        #self.model.set_teacher_mean_std(channel_mean_std)
-
-        map_norm_quantiles = self.map_norm_quantiles(self.trainer.test_dataloaders[0])
-        self.model.set_quantiles(map_norm_quantiles)
+        if not self.model.is_set(self.model._quantiles):
+            map_norm_quantiles = self.map_norm_quantiles(self.trainer.test_dataloaders[0])
+            self.model._quantiles.update(map_norm_quantiles)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Validation Step of EfficientAD returns anomaly maps for the input image batch
