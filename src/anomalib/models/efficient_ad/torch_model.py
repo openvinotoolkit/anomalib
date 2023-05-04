@@ -201,15 +201,15 @@ class EfficientADModel(nn.Module):
         self.ae = AutoEncoder(out_channels=teacher_out_channels)
 
         self._mean_std: nn.ParameterDict = nn.ParameterDict({
-                'mean': torch.zeros((384)),
-                'std': torch.zeros((384))
+                'mean': torch.zeros((1, 384, 1, 1)),
+                'std': torch.zeros((1, 384, 1, 1))
         })
 
         self._quantiles: nn.ParameterDict = nn.ParameterDict({
-                'qa_st': torch.zeros((384)),
-                'qb_st': torch.zeros((384)),
-                'qa_ae': torch.zeros((384)),
-                'qb_ae': torch.zeros((384)),
+                'qa_st': torch.tensor(0.0),
+                'qb_st': torch.tensor(0.0),
+                'qa_ae': torch.tensor(0.0),
+                'qb_ae': torch.tensor(0.0),
         })
 
     def is_set(self, p_dic: nn.ParameterDict) -> bool:
