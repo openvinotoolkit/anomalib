@@ -189,6 +189,7 @@ class EfficientAD(AnomalyModule):
         Calculate the feature map quantiles of the validation dataset and push to the model.
         """
         if not self.model.is_set(self.model._quantiles):
+            logger.info("Calculate Validation Dataset Quantiles")
             map_norm_quantiles = self.map_norm_quantiles(self.trainer.val_dataloaders[0])
             self.model._quantiles.update(map_norm_quantiles)
 
