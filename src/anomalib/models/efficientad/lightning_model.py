@@ -182,12 +182,6 @@ class EfficientAD(AnomalyModule):
         self.log("train_ae", loss_ae.item(), on_epoch=True, prog_bar=True, logger=True)
         self.log("train_stae", loss_stae.item(), on_epoch=True, prog_bar=True, logger=True)
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
-
-        if (self.current_epoch + 1) == self.trainer.max_epochs:
-            self.model.eval()
-            if not self.model.is_set(self.model._quantiles):
-                map_norm_quantiles = self.map_norm_quantiles(self.trainer.val_dataloaders[0])
-                self.model._quantiles.update(map_norm_quantiles)
                 
         return {"loss": loss}
 
