@@ -28,7 +28,12 @@ def weights_init(m):
 
 
 class PDN_S(nn.Module):
-    def __init__(self, out_channels) -> None:
+    """Patch Description Network small
+
+    Args: 
+        out_channels (int): number of convolution output channels
+    """
+    def __init__(self, out_channels:int) -> None:
         super().__init__()
         self.conv1 = nn.Conv2d(3, 128, kernel_size=4, stride=1, padding=3)
         self.conv2 = nn.Conv2d(128, 256, kernel_size=4, stride=1, padding=3)
@@ -48,6 +53,12 @@ class PDN_S(nn.Module):
 
 
 class PDN_M(nn.Module):
+    """Patch Description Network medium
+
+    Args: 
+        out_channels (int): number of convolution output channels
+    """
+
     def __init__(self, out_channels) -> None:
         super().__init__()
         self.conv1 = nn.Conv2d(3, 256, kernel_size=4, stride=1, padding=3)
@@ -71,7 +82,9 @@ class PDN_M(nn.Module):
         return x
 
 
-class EncConv(nn.Module):
+class Encoder(nn.Module):
+    """Autoencoder Encoder model.
+    """
     def __init__(self) -> None:
         super().__init__()
         self.enconv1 = nn.Conv2d(3, 32, kernel_size=4, stride=2, padding=1)
@@ -92,7 +105,12 @@ class EncConv(nn.Module):
         return x
 
 
-class DecConv(nn.Module):
+class Decoder(nn.Module):
+    """Autoencoder Decoder model.
+
+    Args:
+        out_channels (int): number of convolution output channels
+    """
     def __init__(self, out_channels, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.deconv1 = nn.Conv2d(64, 64, kernel_size=4, stride=1, padding=2)
@@ -112,7 +130,6 @@ class DecConv(nn.Module):
         self.apply(weights_init)
 
     def forward(self, x):
-        # x = self.bilinear1(x)
         x = F.interpolate(x, size=3, mode="bilinear")
         x = F.relu(self.deconv1(x))
         x = self.dropout1(x)
@@ -138,10 +155,15 @@ class DecConv(nn.Module):
 
 
 class AutoEncoder(nn.Module):
+    """EfficientAD Autoencoder.
+
+     Args:
+        out_channels (int): number of convolution output channels
+    """
     def __init__(self, out_channels, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.encoder = EncConv()
-        self.decoder = DecConv(out_channels)
+        self.encoder = Encoder()
+        self.decoder = Decoder(out_channels)
 
     def forward(self, x):
         x = self.encoder(x)
@@ -150,7 +172,15 @@ class AutoEncoder(nn.Module):
 
 
 class Teacher(nn.Module):
-    def __init__(self, size, out_channels, *args, teacher_path=None, **kwargs) -> None:
+    """Pre-trained EfficientAD teacher model. The model is trained by destillation training on WideResnet-101 ImageNet feature maps.
+
+    Args:
+        size (str): size of teacher model (same as student)
+        out_channels (int): number of convolution output channels
+        teacher_path (Path): path of pre-trained teacher model
+    
+    """
+    def __init__(self, size: str, out_channels: int, teacher_path: Path, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         if size == "M":
             self.pdn = PDN_M(out_channels=out_channels)  # 384
@@ -158,7 +188,7 @@ class Teacher(nn.Module):
             self.pdn = PDN_S(out_channels=out_channels)
         self.pdn.apply(weights_init)
 
-        if not Path(teacher_path).is_file():
+        if not teacher_path.is_file():
             raise ValueError("No pretrained teacher model found!")
 
         self.load_state_dict(torch.load(teacher_path))
@@ -170,6 +200,13 @@ class Teacher(nn.Module):
 
 
 class Student(nn.Module):
+    """EfficientAD student model.
+
+    Args:
+        size (str): size of student model (same as teacher)
+        out_channels (int): number of convolution output channels
+    
+    """
     def __init__(self, size, out_channels, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         if size == "M":
@@ -184,11 +221,12 @@ class Student(nn.Module):
 
 
 class EfficientADModel(nn.Module):
-    """XXXXXXXXXXXXXXXXXXXX
+    """EfficientAD model.
 
     Args:
-        backbone (str): Pre-trained model backbone.
-        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+        teacher_path (Path): path of pre-trained teacher model.
+        teacher_out_channels (int): number of convolution output channels of the pre-trained teacher model
+        model_size (str): size of teacher and student model
     """
 
     def __init__(
