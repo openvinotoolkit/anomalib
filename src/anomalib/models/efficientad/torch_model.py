@@ -299,7 +299,7 @@ class EfficientADModel(nn.Module):
             map_st = F.interpolate(map_st, size=(256, 256), mode="bilinear")
             map_stae = F.interpolate(map_stae, size=(256, 256), mode="bilinear")
 
-            if self.is_set(self._quantiles):
+            if self.is_set(self.quantiles):
                 map_st = 0.1 * (map_st - self.quantiles["qa_st"]) / (self.quantiles["qb_st"] - self.quantiles["qa_st"])
                 map_stae = 0.1 * (map_stae - self.quantiles["qa_ae"]) / (self.quantiles["qb_ae"] - self.quantiles["qa_ae"])
 
