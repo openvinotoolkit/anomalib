@@ -1,6 +1,6 @@
 ## Anomalib notebooks
 
-This is a great place in our repo where you can try some capabilities and functions you can achive with Anomalib. First follow the installation guide and then explore the notebooks you offer to you.
+This is a great place in our repo where you can try some capabilities and functions you can achive with Anomalib. First follow the installation guide and then explore the notebooks that it offer to you.
 
 [![-----------------------------------------------------](https://user-images.githubusercontent.com/10940214/155750931-fc094349-b6ec-4e1f-9f9a-113e67941119.jpg)]()
 
