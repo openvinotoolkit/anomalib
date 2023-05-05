@@ -21,7 +21,7 @@ dataset:
 model:
   name: efficientad
   pre_trained_dir: src/anomalib/models/efficientad/pre_trained/
-  teacher_file_name: best_teacher.pth
+  teacher_file_name: teacher_medium.pth
   teacher_out_channels: 384
   model_size: M
   lr: 0.0001

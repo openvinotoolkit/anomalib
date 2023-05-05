@@ -9,7 +9,7 @@ Fast anomaly segmentation algorithm that consists of a distilled pre-trained tea
 
 ### Feature Extraction
 
-Features are extracted by feeding the images through a ResNet50 backbone, which was pre-trained on ImageNet. The output of the penultimate layer (average pooling layer) of the network is used to obtain a semantic feature vector with a fixed length of 2048.
+
 
 ### Anomaly Detection
 

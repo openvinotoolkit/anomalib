@@ -191,7 +191,24 @@ class Teacher(nn.Module):
         if not teacher_path.is_file():
             raise ValueError("No pretrained teacher model found!")
 
-        self.load_state_dict(torch.load(teacher_path))
+        state_dict = torch.load(teacher_path)
+        mapping = {"0.weight" : "pdn.conv1.weight",
+                   "0.bias" : "pdn.conv1.bias",
+                   "3.weight" : "pdn.conv2.weight",
+                   "3.bias" : "pdn.conv2.bias",
+                   "6.weight" : "pdn.conv3.weight",
+                   "6.bias" : "pdn.conv3.bias",
+                   "8.weight" : "pdn.conv4.weight",
+                   "8.bias" : "pdn.conv4.bias",
+                   "10.weight" : "pdn.conv5.weight",
+                   "10.bias" : "pdn.conv5.bias",
+                   "12.weight" : "pdn.conv6.weight",
+                   "12.bias" : "pdn.conv6.bias"}
+        state_dict_new = {}
+        for k, v in state_dict.items():
+            state_dict_new[mapping[k]] = v
+        print(state_dict_new.keys())
+        self.load_state_dict(state_dict_new)
         logger.info(f"Loaded pretrained Teacher model from {teacher_path}")
 
     def forward(self, x):
@@ -285,11 +302,11 @@ class EfficientADModel(nn.Module):
         Returns:
             Tensor: Predictions
         """
-        with torch.no_grad():
-            teacher_output = self.teacher(batch)
-            if self.is_set(self.mean_std):
-                teacher_output = (teacher_output - self.mean_std["mean"]) / self.mean_std["std"]
-            _, c, h, w = teacher_output.shape
+        #with torch.no_grad():
+        teacher_output = self.teacher(batch)
+        if self.is_set(self.mean_std):
+            teacher_output = (teacher_output - self.mean_std["mean"]) / self.mean_std["std"]
+        _, c, h, w = teacher_output.shape
 
         student_output = self.student(batch)
         ae_output = self.ae(batch)
@@ -303,7 +320,6 @@ class EfficientADModel(nn.Module):
             # Student loss
             d_hard = torch.quantile(distance_st, 0.999)
             loss_hard = torch.mean(distance_st[distance_st >= d_hard])
-
             student_imagenet_output = self.student(batch_imagenet)
             loss_st = loss_hard + (1 / (c * h * w)) * torch.sum(
                 torch.pow(student_imagenet_output[:, : self.teacher_out_channels, :, :], 2)
@@ -315,10 +331,10 @@ class EfficientADModel(nn.Module):
             student_output_aug = self.student(aug_img)
             student_output_ae_aug = student_output_aug[:, -self.teacher_out_channels :, :, :]
 
-            with torch.no_grad():
-                teacher_output_aug = self.teacher(aug_img)
-                if self.is_set(self.mean_std):
-                    teacher_output_aug = (teacher_output_aug - self.mean_std["mean"]) / self.mean_std["std"]
+            #with torch.no_grad():
+            teacher_output_aug = self.teacher(aug_img)
+            if self.is_set(self.mean_std):
+                teacher_output_aug = (teacher_output_aug - self.mean_std["mean"]) / self.mean_std["std"]
 
             distance_ae = torch.pow(teacher_output_aug - ae_output_aug, 2)
             distance_stae = torch.pow(ae_output_aug - student_output_ae_aug, 2)

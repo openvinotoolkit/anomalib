@@ -72,7 +72,7 @@ class EfficientAD(AnomalyModule):
         )
         self.prepare_imagenet_data()
         imagenet_dataset = ImageFolder(self.imagenet_dir, transform=self.data_transforms_imagenet)
-        self.imagenet_loader = DataLoader(imagenet_dataset, batch_size=1, shuffle=True)
+        self.imagenet_loader = DataLoader(imagenet_dataset, batch_size=1, shuffle=True, pin_memory=True)
         self.lr = lr
         self.weight_decay = weight_decay
 
@@ -138,7 +138,7 @@ class EfficientAD(AnomalyModule):
     def on_train_start(self) -> None:
         """Calculate or load the channel-wise mean and std of the training dataset and push to the model."""
         if not self.model.is_set(self.model.mean_std):
-            channel_mean_std = self.teacher_channel_mean_std(self.trainer.train_dataloader)
+            channel_mean_std = self.teacher_channel_mean_std(self.trainer.datamodule.train_dataloader())
             self.model.mean_std.update(channel_mean_std)
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> dict[str, Tensor]:
@@ -152,7 +152,7 @@ class EfficientAD(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        batch_imagenet = next(iter(self.imagenet_loader))[0].to(self.device)
+        batch_imagenet = next(iter(self.imagenet_loader))[0].to(self.device) #[0] getting the image not the label
         loss_st, loss_ae, loss_stae = self.model(batch=batch["image"], batch_imagenet=batch_imagenet)
 
         loss = loss_st + loss_ae + loss_stae
@@ -168,7 +168,7 @@ class EfficientAD(AnomalyModule):
         """
         if (self.current_epoch + 1) == self.trainer.max_epochs:
             if not self.model.is_set(self.model.quantiles):
-                map_norm_quantiles = self.map_norm_quantiles(self.trainer.val_dataloaders[0])
+                map_norm_quantiles = self.map_norm_quantiles(self.trainer.datamodule.val_dataloader())
                 self.model.quantiles.update(map_norm_quantiles)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
