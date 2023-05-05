@@ -1,4 +1,4 @@
-"""Normality model of DFKDE."""
+"""Torch model for student, teacher and autoencoder model in EfficientAD"""
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -238,7 +238,7 @@ class EfficientADModel(nn.Module):
         return img_aug
 
     def forward(self, batch: Tensor, batch_imagenet: Tensor = None) -> Tensor:
-        """Prediction by normality model.
+        """Prediction by EfficientAD models.
 
         Args:
             batch (Tensor): Input images.
