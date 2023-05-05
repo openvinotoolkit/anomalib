@@ -21,11 +21,12 @@ dataset:
 model:
   name: efficientad
   pre_trained_dir: src/anomalib/models/efficientad/pre_trained/
-  teacher_file_name: teacher_medium.pth
+  teacher_file_name: teacher_medium_formatted_nelson1425.pth
   teacher_out_channels: 384
   model_size: M
   lr: 0.0001
   weight_decay: 0.00001
+  padding: false
   # generic params
   normalization_method: min_max # options: [null, min_max, cdf]
 
@@ -53,7 +54,7 @@ project:
   path: ./results
 
 logging:
-  logger: [wandb] # options: [comet, tensorboard, wandb, csv] or combinations.
+  logger: [] # options: [comet, tensorboard, wandb, csv] or combinations.
   log_graph: false # Logs the model graph to respective logger.
 
 optimization:

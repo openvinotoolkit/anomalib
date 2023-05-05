@@ -19,6 +19,8 @@ from torch import Tensor, optim
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
 
 from anomalib.data.utils import (
     DownloadInfo,
@@ -27,7 +29,7 @@ from anomalib.data.utils import (
 from anomalib.models.components import AnomalyModule
 
 from .torch_model import EfficientADModel
-
+import numpy as np
 logger = logging.getLogger(__name__)
 
 IMAGENET_SUBSET_DOWNLOAD_INFO = DownloadInfo(
@@ -36,6 +38,13 @@ IMAGENET_SUBSET_DOWNLOAD_INFO = DownloadInfo(
     hash="d3cafd8d33eaf27ff40036fc62c33e85",
 )
 
+
+class TransformsWrapper:
+    def __init__(self, t: A.Compose):
+        self.transforms = t
+
+    def __call__(self, img, *args, **kwargs):
+        return self.transforms(image=np.array(img))
 
 class EfficientAD(AnomalyModule):
     """PL Lightning Module for the EfficientAD algorithm."""
@@ -50,6 +59,7 @@ class EfficientAD(AnomalyModule):
         lr: float = 0.0001,
         weight_decay: float = 0.00001,
         image_size: list = [256, 256],
+        padding: bool = False
     ) -> None:
         super().__init__()
 
@@ -60,18 +70,19 @@ class EfficientAD(AnomalyModule):
             teacher_path=self.pre_trained_dir / teacher_file_name,
             teacher_out_channels=teacher_out_channels,
             model_size=model_size,
+            padding=padding
         )
-        self.data_transforms_imagenet = transforms.Compose(
+        self.data_transforms_imagenet = A.Compose(
             [  # We obtain an image P ∈ R 3×256×256 from ImageNet by choosing a random image,
-                transforms.Resize((image_size[0] * 2, image_size[1] * 2)),  # resizing it to 512 × 512,
-                transforms.RandomGrayscale(p=0.3),  # converting it to gray scale with a probability of 0.3
-                transforms.CenterCrop((image_size[0], image_size[1])),  # and cropping the center 256 × 256 pixels
-                transforms.ToTensor(),
-                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                A.Resize(image_size[0] * 2, image_size[1] * 2),  # resizing it to 512 × 512,
+                A.ToGray (p=0.3),  # converting it to gray scale with a probability of 0.3
+                A.CenterCrop(image_size[0], image_size[1]),  # and cropping the center 256 × 256 pixels
+                A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+                ToTensorV2(),
             ]
         )
         self.prepare_imagenet_data()
-        imagenet_dataset = ImageFolder(self.imagenet_dir, transform=self.data_transforms_imagenet)
+        imagenet_dataset = ImageFolder(self.imagenet_dir, transform=TransformsWrapper(t=self.data_transforms_imagenet))
         self.imagenet_loader = DataLoader(imagenet_dataset, batch_size=1, shuffle=True, pin_memory=True)
         self.lr = lr
         self.weight_decay = weight_decay
@@ -83,7 +94,10 @@ class EfficientAD(AnomalyModule):
         else:
             logger.info("Found the dataset.")
 
+    @torch.no_grad()
     def teacher_channel_mean_std(self, dataloader: DataLoader) -> dict[str, Tensor]:
+        import matplotlib.pyplot as plt
+
         """Calculate the the mean and std of the teacher models activations.
 
         Args:
@@ -92,15 +106,28 @@ class EfficientAD(AnomalyModule):
         Returns:
             dict[str, Tensor]: Dictionary of channel-wise mean and std
         """
-        x = torch.empty(0)
+        y_means = []
+        teacher_outputs = []
+        means_distance = []
+
         logger.info("Calculate teacher channel mean and std")
-        for batch in tqdm.tqdm(dataloader, desc="Calculate teacher channel mean and std", position=0, leave=True):
-            y = self.model.teacher(batch["image"].to(self.device)).detach().cpu()
-            x = torch.cat((x, y), 0)
-        channel_mean = x.mean(dim=[0, 2, 3], keepdim=True).to(self.device)
-        channel_std = x.std(dim=[0, 2, 3], keepdim=True).to(self.device)
+        for batch in tqdm.tqdm(dataloader, desc="Calculate teacher channel mean", position=0, leave=True):
+            y = self.model.teacher(batch["image"].to(self.device))
+            y_means.append(torch.mean(y, dim=[0, 2, 3]))
+            teacher_outputs.append(y)
+
+        channel_mean = torch.mean(torch.stack(y_means), dim=0)[None, :, None, None]
+
+        for y in tqdm.tqdm(teacher_outputs, desc="Calculate teacher channel std", position=0, leave=True):
+            distance = (y - channel_mean) ** 2
+            means_distance.append(torch.mean(distance, dim=[0, 2, 3]))
+
+        channel_var = torch.mean(torch.stack(means_distance), dim=0)[None, :, None, None]
+        channel_std = torch.sqrt(channel_var)
+        #torch.Size([1, 384, 1, 1]) tensor(-0.0083, device='cuda:0') torch.Size([1, 384, 1, 1]) tensor(0.6691, device='cuda:0')
         return {"mean": channel_mean, "std": channel_std}
 
+    @torch.no_grad()
     def map_norm_quantiles(self, dataloader: DataLoader) -> dict[str, Tensor]:
         """Calculate 90% andf 99.5% quantiles of the student and autoencoder feature maps.
 
@@ -116,8 +143,8 @@ class EfficientAD(AnomalyModule):
         logger.info("Calculate Validation Dataset Quantiles")
         for batch in tqdm.tqdm(dataloader, desc="Calculate Validation Dataset Quantiles", position=0, leave=True):
             output = self.model(batch["image"].to(self.device))
-            map_st = output["map_st"].detach().cpu()
-            map_ae = output["map_ae"].detach().cpu()
+            map_st = output["map_st"]
+            map_ae = output["map_ae"]
             maps_st.append(map_st)
             maps_ae.append(map_ae)
         maps_st = torch.cat(maps_st)
@@ -151,8 +178,8 @@ class EfficientAD(AnomalyModule):
           Loss.
         """
         del args, kwargs  # These variables are not used.
-
-        batch_imagenet = next(iter(self.imagenet_loader))[0].to(self.device) #[0] getting the image not the label
+        
+        batch_imagenet = next(iter(self.imagenet_loader))[0]['image'].to(self.device) #[0] getting the image not the label
         loss_st, loss_ae, loss_stae = self.model(batch=batch["image"], batch_imagenet=batch_imagenet)
 
         loss = loss_st + loss_ae + loss_stae
@@ -203,7 +230,9 @@ class EfficientadLightning(EfficientAD):
             model_size=hparams.model.model_size,
             lr=hparams.model.lr,
             weight_decay=hparams.model.weight_decay,
+            padding=hparams.model.padding,
             image_size=hparams.dataset.image_size,
+
         )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
