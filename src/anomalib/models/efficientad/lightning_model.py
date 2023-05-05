@@ -83,29 +83,6 @@ class EfficientAD(AnomalyModule):
         else:
             logger.info("Found the dataset.")
 
-    '''
-    def get_from_file_or_function(self, func: Callable, dataloader: DataLoader = None) -> dict[str, Tensor]:
-        """Load or save datasets statistics returned by a function.
-
-        Args:
-            func (Callable): Function that consumes a dataloader
-            dataloader (DataLoader): Dataloader to be consumed by a function
-
-        Returns:
-            dict[str, Tensor]: Dictionary returned by the respective function.
-
-        """
-        ckpt_filename = f"{self.pre_trained_dir}/{self.category}_{func.__name__}.pth"
-        if os.path.isfile(ckpt_filename):
-            logger.info(f"Loading dataset {func.__name__} from {ckpt_filename}")
-            ret = torch.load(ckpt_filename)
-        else:
-            logger.info(f"Calculating dataset {func.__name__}")
-            ret = func(dataloader)
-            torch.save(ret, ckpt_filename)
-        return ret
-    '''
-
     def teacher_channel_mean_std(self, dataloader: DataLoader) -> dict[str, Tensor]:
         """Calculate the the mean and std of the teacher models activations.
 

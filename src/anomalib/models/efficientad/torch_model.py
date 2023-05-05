@@ -198,10 +198,10 @@ class EfficientADModel(nn.Module):
     ) -> None:
         super().__init__()
 
-        self.teacher = Teacher(model_size, teacher_path=teacher_path, out_channels=teacher_out_channels)
-        self.student = Student(model_size, out_channels=teacher_out_channels * 2)
-        self.ae = AutoEncoder(out_channels=teacher_out_channels)
-        self.teacher_out_channels = teacher_out_channels
+        self.teacher: Teacher = Teacher(model_size, teacher_path=teacher_path, out_channels=teacher_out_channels)
+        self.student: Student = Student(model_size, out_channels=teacher_out_channels * 2)
+        self.ae: AutoEncoder = AutoEncoder(out_channels=teacher_out_channels)
+        self.teacher_out_channels: int = teacher_out_channels
 
         self._mean_std: nn.ParameterDict = nn.ParameterDict({
                 'mean': torch.zeros((1, self.teacher_out_channels, 1, 1)),
@@ -293,12 +293,8 @@ class EfficientADModel(nn.Module):
             map_stae = F.interpolate(map_stae, size=(256, 256), mode="bilinear")
 
             if self.is_set(self._quantiles):
-                map_st = (
-                    0.1 * (map_st - self._quantiles["qa_st"]) / (self._quantiles["qb_st"] - self._quantiles["qa_st"])
-                )
-                map_stae = (
-                    0.1 * (map_stae - self._quantiles["qa_ae"]) / (self._quantiles["qb_ae"] - self._quantiles["qa_ae"])
-                )
+                map_st = (0.1 * (map_st - self._quantiles["qa_st"])) / (self._quantiles["qb_st"] - self._quantiles["qa_st"])
+                map_stae = (0.1 * (map_stae - self._quantiles["qa_ae"])) / (self._quantiles["qb_ae"] - self._quantiles["qa_ae"])
 
             map_combined = 0.5 * map_st + 0.5 * map_stae
 
