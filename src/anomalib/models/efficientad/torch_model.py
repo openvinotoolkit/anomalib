@@ -301,7 +301,9 @@ class EfficientADModel(nn.Module):
 
             if self.is_set(self.quantiles):
                 map_st = 0.1 * (map_st - self.quantiles["qa_st"]) / (self.quantiles["qb_st"] - self.quantiles["qa_st"])
-                map_stae = 0.1 * (map_stae - self.quantiles["qa_ae"]) / (self.quantiles["qb_ae"] - self.quantiles["qa_ae"])
+                map_stae = (
+                    0.1 * (map_stae - self.quantiles["qa_ae"]) / (self.quantiles["qb_ae"] - self.quantiles["qa_ae"])
+                )
 
             map_combined = 0.5 * map_st + 0.5 * map_stae
 

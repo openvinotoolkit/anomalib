@@ -14,7 +14,7 @@ from pathlib import Path
 import torch
 import tqdm
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
+from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor, optim
 from torch.utils.data import DataLoader
 from torchvision import transforms
