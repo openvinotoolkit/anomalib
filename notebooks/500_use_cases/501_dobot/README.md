@@ -38,9 +38,9 @@ d. Then, replace those coordinates in the notebook
 
 ### Data acquisition and inferencing
 
-For data acquisition and inferencing we will use [501_1 notebook](https://github.com/openvinotoolkit/anomalib/blob/feature/notebooks/usecases/dobot/notebooks/500_use_cases/dobot/501_1_Dataset%20creation%20and%20Inference%20with%20a%20robotic%20arm.ipynb). There we need to identify the `acquisition` flag, **True** for _acquisition mode_ and **False** for _inferencing mode_. In acquisition mode be aware of the _normal_ or _abnormal_ folder we want to create, in this mode the notebook will save every image in the anomalib/datasets/cubes/{FOLDER} for further training. In inferencing mode the notebook won't save images, it will run the inference and show the results.
+For data acquisition and inferencing we will use [501a notebook](https://github.com/openvinotoolkit/anomalib/blob/main/notebooks/500_use_cases/501_dobot/501a_dataset_creation_and_Inference_with_a_robotic_arm.ipynb). There we need to identify the `acquisition` flag, **True** for _acquisition mode_ and **False** for _inferencing mode_. In acquisition mode be aware of the _normal_ or _abnormal_ folder we want to create, in this mode the notebook will save every image in the anomalib/datasets/cubes/{FOLDER} for further training. In inferencing mode the notebook won't save images, it will run the inference and show the results.
 
-_Note_: If you dont have the robot you could jump to the another notebook [501_2](https://github.com/openvinotoolkit/anomalib/blob/feature/notebooks/usecases/dobot/notebooks/500_use_cases/dobot/501_2_Training%20a%20model%20with%20cubes%20from%20a%20robotic%20arm.ipynb) and download the dataset from this [link](https://github.com/openvinotoolkit/anomalib/releases/tag/dobot)
+_Note_: If you dont have the robot you could jump to the another notebook [501b](https://github.com/openvinotoolkit/anomalib/blob/main/notebooks/500_use_cases/501_dobot/501b_training_a_model_with_cubes_from_a_robotic_arm.ipynb) and download the dataset from this [link](https://github.com/openvinotoolkit/anomalib/releases/tag/dobot)
 
 ### Training
 
