@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 import random
 from pathlib import Path
+from typing import Union
 
 import torch
 import torch.nn.functional as F
@@ -237,7 +238,7 @@ class EfficientADModel(nn.Module):
             img_aug = transforms.functional.adjust_saturation(image, coefficient)
         return img_aug
 
-    def forward(self, batch: Tensor, batch_imagenet: Tensor = None) -> Tensor:
+    def forward(self, batch: Tensor, batch_imagenet: Tensor = None) -> Union[Tensor, dict]:
         """Prediction by EfficientAD models.
 
         Args:
