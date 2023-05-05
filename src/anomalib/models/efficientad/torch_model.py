@@ -159,10 +159,10 @@ class Teacher(nn.Module):
 
         if not Path(teacher_path).is_file():
             raise ValueError("No pretrained teacher model found!")
-        
+
         self.load_state_dict(torch.load(teacher_path))
         logger.info(f"Loaded pretrained Teacher model from {teacher_path}")
-            
+
     def forward(self, x):
         x = self.pdn(x)
         return x
@@ -203,17 +203,21 @@ class EfficientADModel(nn.Module):
         self.ae: AutoEncoder = AutoEncoder(out_channels=teacher_out_channels)
         self.teacher_out_channels: int = teacher_out_channels
 
-        self._mean_std: nn.ParameterDict = nn.ParameterDict({
-                'mean': torch.zeros((1, self.teacher_out_channels, 1, 1)),
-                'std': torch.zeros((1, self.teacher_out_channels, 1, 1))
-        })
+        self._mean_std: nn.ParameterDict = nn.ParameterDict(
+            {
+                "mean": torch.zeros((1, self.teacher_out_channels, 1, 1)),
+                "std": torch.zeros((1, self.teacher_out_channels, 1, 1)),
+            }
+        )
 
-        self._quantiles: nn.ParameterDict = nn.ParameterDict({
-                'qa_st': torch.tensor(0.0),
-                'qb_st': torch.tensor(0.0),
-                'qa_ae': torch.tensor(0.0),
-                'qb_ae': torch.tensor(0.0),
-        })
+        self._quantiles: nn.ParameterDict = nn.ParameterDict(
+            {
+                "qa_st": torch.tensor(0.0),
+                "qb_st": torch.tensor(0.0),
+                "qa_ae": torch.tensor(0.0),
+                "qb_ae": torch.tensor(0.0),
+            }
+        )
 
     def is_set(self, p_dic: nn.ParameterDict) -> bool:
         for _, value in p_dic.items():
@@ -251,8 +255,8 @@ class EfficientADModel(nn.Module):
         student_output = self.student(batch)
         ae_output = self.ae(batch)
         # 3: Split the student output into Y ST ∈ R 384×64×64 and Y STAE ∈ R 384×64×64 as above
-        student_output = student_output[:, :self.teacher_out_channels, :, :]
-        student_output_ae = student_output[:, -self.teacher_out_channels:, :, :]
+        student_output = student_output[:, : self.teacher_out_channels, :, :]
+        student_output_ae = student_output[:, -self.teacher_out_channels :, :, :]
 
         distance_st = torch.pow(teacher_output - student_output, 2)
 
@@ -262,13 +266,15 @@ class EfficientADModel(nn.Module):
             loss_hard = torch.mean(distance_st[distance_st >= d_hard])
 
             student_imagenet_output = self.student(batch_imagenet)
-            loss_st = loss_hard + (1 / (c * h * w)) * torch.sum(torch.pow(student_imagenet_output[:, :self.teacher_out_channels, :, :], 2))
+            loss_st = loss_hard + (1 / (c * h * w)) * torch.sum(
+                torch.pow(student_imagenet_output[:, : self.teacher_out_channels, :, :], 2)
+            )
 
             # Autoencoder and Student AE Loss
             aug_img = self.choose_random_aug_image(batch)
             ae_output_aug = self.ae(aug_img)
             student_output_aug = self.student(aug_img)
-            student_output_ae_aug = student_output_aug[:, -self.teacher_out_channels:, :, :]
+            student_output_ae_aug = student_output_aug[:, -self.teacher_out_channels :, :, :]
 
             with torch.no_grad():
                 teacher_output_aug = self.teacher(aug_img)
@@ -293,8 +299,12 @@ class EfficientADModel(nn.Module):
             map_stae = F.interpolate(map_stae, size=(256, 256), mode="bilinear")
 
             if self.is_set(self._quantiles):
-                map_st = (0.1 * (map_st - self._quantiles["qa_st"])) / (self._quantiles["qb_st"] - self._quantiles["qa_st"])
-                map_stae = (0.1 * (map_stae - self._quantiles["qa_ae"])) / (self._quantiles["qb_ae"] - self._quantiles["qa_ae"])
+                map_st = (
+                    0.1 * (map_st - self._quantiles["qa_st"]) / (self._quantiles["qb_st"] - self._quantiles["qa_st"])
+                )
+                map_stae = (
+                    0.1 * (map_stae - self._quantiles["qa_ae"]) / (self._quantiles["qb_ae"] - self._quantiles["qa_ae"])
+                )
 
             map_combined = 0.5 * map_st + 0.5 * map_stae
 

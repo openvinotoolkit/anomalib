@@ -14,7 +14,7 @@ from pathlib import Path
 import torch
 import tqdm
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.utilities.types import STEP_OUTPUT, EPOCH_OUTPUT
+from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 from torch import Tensor, optim
 from torch.utils.data import DataLoader
 from torchvision import transforms
@@ -166,8 +166,8 @@ class EfficientAD(AnomalyModule):
         """
         Calculate the feature map quantiles of the validation dataset and push to the model.
         """
-        del outputs # This variable is not used.
-        
+        del outputs  # This variable is not used.
+
         if (self.current_epoch + 1) == self.trainer.max_epochs:
             self.model.eval()
             if not self.model.is_set(self.model._quantiles):
