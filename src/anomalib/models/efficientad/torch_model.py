@@ -160,6 +160,9 @@ class Teacher(nn.Module):
         if teacher_path is not None:
             self.load_state_dict(torch.load(teacher_path))
             logger.info(f"Loaded pretrained Teacher model from {teacher_path}")
+        
+        else:
+            
 
     def forward(self, x):
         x = self.pdn(x)
@@ -218,12 +221,6 @@ class EfficientADModel(nn.Module):
             if value.sum() != 0:
                 return True
         return False
-
-    def set_teacher_mean_std(self, mean_std: dict) -> None:
-        self._mean_std = mean_std
-
-    def set_quantiles(self, quantiles: dict) -> None:
-        self._quantiles = quantiles
 
     def choose_random_aug_image(self, image: Tensor) -> Tensor:
         aug_index = random.choice([1, 2, 3])
