@@ -150,7 +150,7 @@ class AutoEncoder(nn.Module):
 
 
 class Teacher(nn.Module):
-    def __init__(self, size, out_channels, teacher_path=None, *args, **kwargs) -> None:
+    def __init__(self, size, out_channels, *args, teacher_path=None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         if size == "M":
             self.pdn = PDN_M(out_channels=out_channels)  # 384
@@ -204,14 +204,14 @@ class EfficientADModel(nn.Module):
         self.ae: AutoEncoder = AutoEncoder(out_channels=teacher_out_channels)
         self.teacher_out_channels: int = teacher_out_channels
 
-        self._mean_std: nn.ParameterDict = nn.ParameterDict(
+        self.mean_std: nn.ParameterDict = nn.ParameterDict(
             {
                 "mean": torch.zeros((1, self.teacher_out_channels, 1, 1)),
                 "std": torch.zeros((1, self.teacher_out_channels, 1, 1)),
             }
         )
 
-        self._quantiles: nn.ParameterDict = nn.ParameterDict(
+        self.quantiles: nn.ParameterDict = nn.ParameterDict(
             {
                 "qa_st": torch.tensor(0.0),
                 "qb_st": torch.tensor(0.0),
@@ -249,8 +249,8 @@ class EfficientADModel(nn.Module):
         """
         with torch.no_grad():
             teacher_output = self.teacher(batch)
-            if self.is_set(self._mean_std):
-                teacher_output = (teacher_output - self._mean_std["mean"]) / self._mean_std["std"]
+            if self.is_set(self.mean_std):
+                teacher_output = (teacher_output - self.mean_std["mean"]) / self.mean_std["std"]
             _, c, h, w = teacher_output.shape
 
         student_output = self.student(batch)
@@ -279,8 +279,8 @@ class EfficientADModel(nn.Module):
 
             with torch.no_grad():
                 teacher_output_aug = self.teacher(aug_img)
-                if self.is_set(self._mean_std):
-                    teacher_output_aug = (teacher_output_aug - self._mean_std["mean"]) / self._mean_std["std"]
+                if self.is_set(self.mean_std):
+                    teacher_output_aug = (teacher_output_aug - self.mean_std["mean"]) / self.mean_std["std"]
 
             distance_ae = torch.pow(teacher_output_aug - ae_output_aug, 2)
             distance_stae = torch.pow(ae_output_aug - student_output_ae_aug, 2)
@@ -300,12 +300,8 @@ class EfficientADModel(nn.Module):
             map_stae = F.interpolate(map_stae, size=(256, 256), mode="bilinear")
 
             if self.is_set(self._quantiles):
-                map_st = (
-                    0.1 * (map_st - self._quantiles["qa_st"]) / (self._quantiles["qb_st"] - self._quantiles["qa_st"])
-                )
-                map_stae = (
-                    0.1 * (map_stae - self._quantiles["qa_ae"]) / (self._quantiles["qb_ae"] - self._quantiles["qa_ae"])
-                )
+                map_st = 0.1 * (map_st - self.quantiles["qa_st"]) / (self.quantiles["qb_st"] - self.quantiles["qa_st"])
+                map_stae = 0.1 * (map_stae - self.quantiles["qa_ae"]) / (self.quantiles["qb_ae"] - self.quantiles["qa_ae"])
 
             map_combined = 0.5 * map_st + 0.5 * map_stae
 

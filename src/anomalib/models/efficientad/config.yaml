@@ -77,7 +77,7 @@ trainer:
   max_steps: -1
   min_steps: null
   max_time: null
-  limit_train_batches: 1.0
+  limit_train_batches: 0.3
   limit_val_batches: 1.0
   limit_test_batches: 1.0
   limit_predict_batches: 1.0
