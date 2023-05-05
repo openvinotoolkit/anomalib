@@ -91,14 +91,14 @@ def test_metric_collection_configuration_deserialzation_callback(ori_config_from
         {
             "image_metrics." + k: torch.tensor(1.0)
             for k, v in saved_config_from_yaml_res.metrics.image.items()
-            if not v["class_path"].startswith("torchmetrics")
+            if v["class_path"].startswith("anomalib.utils.metrics")
         }
     )
     saved_pixel_state_dict = OrderedDict(
         {
             "pixel_metrics." + k: torch.tensor(1.0)
             for k, v in saved_config_from_yaml_res.metrics.pixel.items()
-            if not v["class_path"].startswith("torchmetrics")
+            if v["class_path"].startswith("anomalib.utils.metrics")
         }
     )
 
