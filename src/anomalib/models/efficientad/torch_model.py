@@ -157,13 +157,12 @@ class Teacher(nn.Module):
             self.pdn = PDN_S(out_channels=out_channels)
         self.pdn.apply(weights_init)
 
-        if teacher_path is not None:
-            self.load_state_dict(torch.load(teacher_path))
-            logger.info(f"Loaded pretrained Teacher model from {teacher_path}")
+        if not Path(teacher_path).is_file():
+            raise ValueError("No pretrained teacher model found!")
         
-        else:
+        self.load_state_dict(torch.load(teacher_path))
+        logger.info(f"Loaded pretrained Teacher model from {teacher_path}")
             
-
     def forward(self, x):
         x = self.pdn(x)
         return x
