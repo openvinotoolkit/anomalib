@@ -17,7 +17,6 @@ To install Python, Git and other required tools, [OpenVINO Notebooks](https://gi
 
 <div id='-getting-started'/>
 
-
 # Useful Jupyter Notebooks to get started with Anomalib
 
 ## 0. Training and Inference
@@ -49,13 +48,13 @@ To install Python, Git and other required tools, [OpenVINO Notebooks](https://gi
 
 ## 4. OpenVINO Optimization
 
-| Notebook       | GitHub                                                      | Colab                                                                                                                                                                                                       |
-| -------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Quantization   | [401_NNCF](https://github.com/openvinotoolkit/anomalib/blob/main/notebooks/400_openvino/401_nncf.ipynb) |  |
+| Notebook     | GitHub                                                                                                  | Colab |
+| ------------ | ------------------------------------------------------------------------------------------------------- | ----- |
+| Quantization | [401_NNCF](https://github.com/openvinotoolkit/anomalib/blob/main/notebooks/400_openvino/401_nncf.ipynb) |       |
 
 ## 3. Use cases
 
-| Notebook       | GitHub                                                      | Colab                                                                                                                                                                                                       |
-| -------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Dobot Dataset Creation   | [501a_dataset_creation](https://github.com/openvinotoolkit/anomalib/blob/main/notebooks/500_use_cases/501_dobot/501a_dataset_creation_and_Inference_with_a_robotic_arm.ipynb) |  |
-| Training | [501b_training](https://github.com/openvinotoolkit/anomalib/blob/main/notebooks/500_use_cases/501_dobot/501b_training_a_model_with_cubes_from_a_robotic_arm.ipynb) |  | 
+| Notebook               | GitHub                                                                                                                                                                        | Colab |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| Dobot Dataset Creation | [501a_dataset_creation](https://github.com/openvinotoolkit/anomalib/blob/main/notebooks/500_use_cases/501_dobot/501a_dataset_creation_and_Inference_with_a_robotic_arm.ipynb) |       |
+| Training               | [501b_training](https://github.com/openvinotoolkit/anomalib/blob/main/notebooks/500_use_cases/501_dobot/501b_training_a_model_with_cubes_from_a_robotic_arm.ipynb)            |       |
