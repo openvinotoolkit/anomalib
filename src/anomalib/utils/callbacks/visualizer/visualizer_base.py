@@ -14,7 +14,7 @@ from pytorch_lightning import Callback
 
 from anomalib.data import TaskType
 from anomalib.models.components import AnomalyModule
-from anomalib.post_processing import Visualizer
+from anomalib.post_processing import VisualizationMode, Visualizer
 from anomalib.utils.loggers import AnomalibWandbLogger
 from anomalib.utils.loggers.base import ImageLoggerBase
 
@@ -29,7 +29,7 @@ class BaseVisualizerCallback(Callback):
     def __init__(
         self,
         task: TaskType,
-        mode: str,
+        mode: VisualizationMode,
         image_save_path: str,
         inputs_are_normalized: bool = True,
         show_images: bool = False,
