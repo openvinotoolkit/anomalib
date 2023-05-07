@@ -186,7 +186,8 @@ class AutoEncoder(nn.Module):
 
 
 class Teacher(nn.Module):
-    """Pre-trained EfficientAD teacher model. The model is trained by destillation training on WideResnet-101 ImageNet feature maps.
+    """Pre-trained EfficientAD teacher model. The model is trained by destillation
+    training on WideResnet-101 ImageNet feature maps.
 
     Args:
         size (str): size of teacher model (same as student)
