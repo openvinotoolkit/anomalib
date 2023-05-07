@@ -10,16 +10,16 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+import albumentations as A
+import numpy as np
 import torch
 import tqdm
+from albumentations.pytorch import ToTensorV2
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor, optim
 from torch.utils.data import DataLoader
-from torchvision import transforms
 from torchvision.datasets import ImageFolder
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
 
 from anomalib.data.utils import (
     DownloadInfo,
@@ -28,7 +28,7 @@ from anomalib.data.utils import (
 from anomalib.models.components import AnomalyModule
 
 from .torch_model import EfficientADModel
-import numpy as np
+
 logger = logging.getLogger(__name__)
 
 IMAGENET_SUBSET_DOWNLOAD_INFO = DownloadInfo(
@@ -37,12 +37,14 @@ IMAGENET_SUBSET_DOWNLOAD_INFO = DownloadInfo(
     hash="d3cafd8d33eaf27ff40036fc62c33e85",
 )
 
+
 class TransformsWrapper:
     def __init__(self, t: A.Compose):
         self.transforms = t
 
     def __call__(self, img, *args, **kwargs):
         return self.transforms(image=np.array(img))
+
 
 class EfficientAD(AnomalyModule):
     """PL Lightning Module for the EfficientAD algorithm."""
@@ -57,7 +59,7 @@ class EfficientAD(AnomalyModule):
         lr: float = 0.0001,
         weight_decay: float = 0.00001,
         image_size: list = [256, 256],
-        padding: bool = False
+        padding: bool = False,
     ) -> None:
         super().__init__()
 
@@ -68,12 +70,12 @@ class EfficientAD(AnomalyModule):
             teacher_path=self.pre_trained_dir / teacher_file_name,
             teacher_out_channels=teacher_out_channels,
             model_size=model_size,
-            padding=padding
+            padding=padding,
         )
         self.data_transforms_imagenet = A.Compose(
             [  # We obtain an image P ∈ R 3×256×256 from ImageNet by choosing a random image,
                 A.Resize(image_size[0] * 2, image_size[1] * 2),  # resizing it to 512 × 512,
-                A.ToGray (p=0.3),  # converting it to gray scale with a probability of 0.3
+                A.ToGray(p=0.3),  # converting it to gray scale with a probability of 0.3
                 A.CenterCrop(image_size[0], image_size[1]),  # and cropping the center 256 × 256 pixels
                 ToTensorV2(),
             ]
@@ -172,8 +174,10 @@ class EfficientAD(AnomalyModule):
           Loss.
         """
         del args, kwargs  # These variables are not used.
-        
-        batch_imagenet = next(iter(self.imagenet_loader))[0]['image'].to(self.device) #[0] getting the image not the label
+
+        batch_imagenet = next(iter(self.imagenet_loader))[0]["image"].to(
+            self.device
+        )  # [0] getting the image not the label
         loss_st, loss_ae, loss_stae = self.model(batch=batch["image"], batch_imagenet=batch_imagenet)
 
         loss = loss_st + loss_ae + loss_stae
@@ -189,7 +193,9 @@ class EfficientAD(AnomalyModule):
         """
         if (self.current_epoch + 1) == self.trainer.max_epochs:
             if not self.model.is_set(self.model.quantiles):
-                map_norm_quantiles = self.map_norm_quantiles(self.trainer.datamodule.val_dataloader()) #only use good images of validation!
+                map_norm_quantiles = self.map_norm_quantiles(
+                    self.trainer.datamodule.val_dataloader()
+                )  # only use good images of validation!
                 self.model.quantiles.update(map_norm_quantiles)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
@@ -226,7 +232,6 @@ class EfficientadLightning(EfficientAD):
             weight_decay=hparams.model.weight_decay,
             padding=hparams.model.padding,
             image_size=hparams.dataset.image_size,
-
         )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)

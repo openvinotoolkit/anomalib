@@ -26,27 +26,30 @@ def weights_init(m):
         m.weight.data.normal_(1.0, 0.02)
         m.bias.data.fill_(0)
 
+
 def imagenet_norm_batch(x):
     mean = torch.tensor([0.485, 0.456, 0.406])[None, :, None, None].cuda()
     std = torch.tensor([0.229, 0.224, 0.225])[None, :, None, None].cuda()
     x_norm = (x - mean) / (std + 1e-11)
     return x_norm
 
+
 class PDN_S(nn.Module):
     """Patch Description Network small
 
-    Args: 
+    Args:
         out_channels (int): number of convolution output channels
     """
-    def __init__(self, out_channels:int, padding: bool=False) -> None:
+
+    def __init__(self, out_channels: int, padding: bool = False) -> None:
         super().__init__()
         pad_mult = 1 if padding else 0
-        self.conv1 = nn.Conv2d(3, 128, kernel_size=4, stride=1, padding=3*pad_mult)
-        self.conv2 = nn.Conv2d(128, 256, kernel_size=4, stride=1, padding=3*pad_mult)
-        self.conv3 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1*pad_mult)
-        self.conv4 = nn.Conv2d(256, out_channels, kernel_size=4, stride=1, padding=0*pad_mult)
-        self.avgpool1 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1*pad_mult)
-        self.avgpool2 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1*pad_mult)
+        self.conv1 = nn.Conv2d(3, 128, kernel_size=4, stride=1, padding=3 * pad_mult)
+        self.conv2 = nn.Conv2d(128, 256, kernel_size=4, stride=1, padding=3 * pad_mult)
+        self.conv3 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1 * pad_mult)
+        self.conv4 = nn.Conv2d(256, out_channels, kernel_size=4, stride=1, padding=0 * pad_mult)
+        self.avgpool1 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
+        self.avgpool2 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
@@ -61,21 +64,21 @@ class PDN_S(nn.Module):
 class PDN_M(nn.Module):
     """Patch Description Network medium
 
-    Args: 
+    Args:
         out_channels (int): number of convolution output channels
     """
 
-    def __init__(self, out_channels: int, padding: bool=False) -> None:
+    def __init__(self, out_channels: int, padding: bool = False) -> None:
         super().__init__()
         pad_mult = 1 if padding else 0
-        self.conv1 = nn.Conv2d(3, 256, kernel_size=4, stride=1, padding=3*pad_mult)
-        self.conv2 = nn.Conv2d(256, 512, kernel_size=4, stride=1, padding=3*pad_mult)
-        self.conv3 = nn.Conv2d(512, 512, kernel_size=1, stride=1, padding=0*pad_mult)
-        self.conv4 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1*pad_mult)
-        self.conv5 = nn.Conv2d(512, out_channels, kernel_size=4, stride=1, padding=0*pad_mult)
-        self.conv6 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0*pad_mult)
-        self.avgpool1 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1*pad_mult)
-        self.avgpool2 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1*pad_mult)
+        self.conv1 = nn.Conv2d(3, 256, kernel_size=4, stride=1, padding=3 * pad_mult)
+        self.conv2 = nn.Conv2d(256, 512, kernel_size=4, stride=1, padding=3 * pad_mult)
+        self.conv3 = nn.Conv2d(512, 512, kernel_size=1, stride=1, padding=0 * pad_mult)
+        self.conv4 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1 * pad_mult)
+        self.conv5 = nn.Conv2d(512, out_channels, kernel_size=4, stride=1, padding=0 * pad_mult)
+        self.conv6 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0 * pad_mult)
+        self.avgpool1 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
+        self.avgpool2 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
@@ -90,8 +93,8 @@ class PDN_M(nn.Module):
 
 
 class Encoder(nn.Module):
-    """Autoencoder Encoder model.
-    """
+    """Autoencoder Encoder model."""
+
     def __init__(self) -> None:
         super().__init__()
         self.enconv1 = nn.Conv2d(3, 32, kernel_size=4, stride=2, padding=1)
@@ -118,6 +121,7 @@ class Decoder(nn.Module):
     Args:
         out_channels (int): number of convolution output channels
     """
+
     def __init__(self, out_channels, padding, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.last_upsample = 64 if padding else 56
@@ -165,9 +169,10 @@ class Decoder(nn.Module):
 class AutoEncoder(nn.Module):
     """EfficientAD Autoencoder.
 
-     Args:
-        out_channels (int): number of convolution output channels
+    Args:
+       out_channels (int): number of convolution output channels
     """
+
     def __init__(self, out_channels, padding, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.encoder = Encoder()
@@ -187,9 +192,10 @@ class Teacher(nn.Module):
         size (str): size of teacher model (same as student)
         out_channels (int): number of convolution output channels
         teacher_path (Path): path of pre-trained teacher model
-    
+
     """
-    def __init__(self, size: str, out_channels: int, padding: bool,  teacher_path: Path, *args, **kwargs) -> None:
+
+    def __init__(self, size: str, out_channels: int, padding: bool, teacher_path: Path, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         if size == "M":
             self.pdn = PDN_M(out_channels=out_channels, padding=padding)  # 384
@@ -216,9 +222,10 @@ class Student(nn.Module):
     Args:
         size (str): size of student model (same as teacher)
         out_channels (int): number of convolution output channels
-    
+
     """
-    def __init__(self, size: str, out_channels: int, padding:bool, *args, **kwargs) -> None:
+
+    def __init__(self, size: str, out_channels: int, padding: bool, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         if size == "M":
             self.pdn = PDN_M(out_channels=out_channels, padding=padding)  # 768
@@ -230,6 +237,7 @@ class Student(nn.Module):
         x = imagenet_norm_batch(x)
         pdn_out = self.pdn(x)
         return pdn_out
+
 
 class EfficientADModel(nn.Module):
     """EfficientAD model.
@@ -249,7 +257,9 @@ class EfficientADModel(nn.Module):
     ) -> None:
         super().__init__()
 
-        self.teacher: Teacher = Teacher(model_size, teacher_path=teacher_path, out_channels=teacher_out_channels, padding=padding).eval()
+        self.teacher: Teacher = Teacher(
+            model_size, teacher_path=teacher_path, out_channels=teacher_out_channels, padding=padding
+        ).eval()
         self.student: Student = Student(model_size, out_channels=teacher_out_channels * 2, padding=padding)
         self.ae: AutoEncoder = AutoEncoder(out_channels=teacher_out_channels, padding=padding)
         self.teacher_out_channels: int = teacher_out_channels
@@ -306,8 +316,8 @@ class EfficientADModel(nn.Module):
         student_output = self.student(batch)
         ae_output = self.ae(batch)
         # 3: Split the student output into Y ST ∈ R 384×64×64 and Y STAE ∈ R 384×64×64 as above
-        student_output = student_output[:, :self.teacher_out_channels, :, :]
-        student_output_ae = student_output[:, -self.teacher_out_channels:, :, :]
+        student_output = student_output[:, : self.teacher_out_channels, :, :]
+        student_output_ae = student_output[:, -self.teacher_out_channels :, :, :]
 
         distance_st = torch.pow(teacher_output - student_output, 2)
 
@@ -315,7 +325,7 @@ class EfficientADModel(nn.Module):
             # Student loss
             d_hard = torch.quantile(distance_st, 0.999)
             loss_hard = torch.mean(distance_st[distance_st >= d_hard])
-            student_imagenet_output = self.student(batch_imagenet)[:, :self.teacher_out_channels, :, :]
+            student_imagenet_output = self.student(batch_imagenet)[:, : self.teacher_out_channels, :, :]
             loss_st = loss_hard + (1 / (c * h * w)) * torch.sum(torch.pow(student_imagenet_output, 2))
 
             # Autoencoder and Student AE Loss
