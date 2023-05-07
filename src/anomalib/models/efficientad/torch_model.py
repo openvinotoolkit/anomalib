@@ -26,6 +26,11 @@ def weights_init(m):
         m.weight.data.normal_(1.0, 0.02)
         m.bias.data.fill_(0)
 
+def imagenet_norm_batch(x):
+    mean = torch.tensor([0.485, 0.456, 0.406])[None, :, None, None].cuda()
+    std = torch.tensor([0.229, 0.224, 0.225])[None, :, None, None].cuda()
+    x_norm = (x - mean) / (std + 1e-11)
+    return x_norm
 
 class PDN_S(nn.Module):
     """Patch Description Network small
@@ -169,6 +174,7 @@ class AutoEncoder(nn.Module):
         self.decoder = Decoder(out_channels, padding)
 
     def forward(self, x):
+        x = imagenet_norm_batch(x)
         x = self.encoder(x)
         x = self.decoder(x)
         return x
@@ -199,6 +205,7 @@ class Teacher(nn.Module):
         logger.info(f"Loaded pretrained Teacher model from {teacher_path}")
 
     def forward(self, x):
+        x = imagenet_norm_batch(x)
         x = self.pdn(x)
         return x
 
@@ -220,9 +227,9 @@ class Student(nn.Module):
         self.pdn.apply(weights_init)
 
     def forward(self, x):
+        x = imagenet_norm_batch(x)
         pdn_out = self.pdn(x)
         return pdn_out
-
 
 class EfficientADModel(nn.Module):
     """EfficientAD model.
@@ -299,8 +306,8 @@ class EfficientADModel(nn.Module):
         student_output = self.student(batch)
         ae_output = self.ae(batch)
         # 3: Split the student output into Y ST ∈ R 384×64×64 and Y STAE ∈ R 384×64×64 as above
-        student_output = student_output[:, : self.teacher_out_channels, :, :]
-        student_output_ae = student_output[:, -self.teacher_out_channels :, :, :]
+        student_output = student_output[:, :self.teacher_out_channels, :, :]
+        student_output_ae = student_output[:, -self.teacher_out_channels:, :, :]
 
         distance_st = torch.pow(teacher_output - student_output, 2)
 
@@ -346,5 +353,6 @@ class EfficientADModel(nn.Module):
                 )
 
             map_combined = 0.5 * map_st + 0.5 * map_stae
+            map_combined = torch.nn.functional.pad(map_combined, (4, 4, 4, 4))
 
             return {"anomaly_map_combined": map_combined, "map_st": map_st, "map_ae": map_stae}

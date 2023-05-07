@@ -1,5 +1,4 @@
 """EfficientAD: Accurate Visual Anomaly Detection at Millisecond-Level Latencies.
-
 https://arxiv.org/pdf/2303.14535.pdf
 """
 
@@ -37,7 +36,6 @@ IMAGENET_SUBSET_DOWNLOAD_INFO = DownloadInfo(
     url="https://drive.google.com/uc?id=1n6RF08sp7RDxzKYuUoMox4RM13hqB1Jo",
     hash="d3cafd8d33eaf27ff40036fc62c33e85",
 )
-
 
 class TransformsWrapper:
     def __init__(self, t: A.Compose):
@@ -77,7 +75,6 @@ class EfficientAD(AnomalyModule):
                 A.Resize(image_size[0] * 2, image_size[1] * 2),  # resizing it to 512 × 512,
                 A.ToGray (p=0.3),  # converting it to gray scale with a probability of 0.3
                 A.CenterCrop(image_size[0], image_size[1]),  # and cropping the center 256 × 256 pixels
-                A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
                 ToTensorV2(),
             ]
         )
@@ -96,8 +93,6 @@ class EfficientAD(AnomalyModule):
 
     @torch.no_grad()
     def teacher_channel_mean_std(self, dataloader: DataLoader) -> dict[str, Tensor]:
-        import matplotlib.pyplot as plt
-
         """Calculate the the mean and std of the teacher models activations.
 
         Args:
@@ -124,7 +119,6 @@ class EfficientAD(AnomalyModule):
 
         channel_var = torch.mean(torch.stack(means_distance), dim=0)[None, :, None, None]
         channel_std = torch.sqrt(channel_var)
-        #torch.Size([1, 384, 1, 1]) tensor(-0.0083, device='cuda:0') torch.Size([1, 384, 1, 1]) tensor(0.6691, device='cuda:0')
         return {"mean": channel_mean, "std": channel_std}
 
     @torch.no_grad()
@@ -195,7 +189,7 @@ class EfficientAD(AnomalyModule):
         """
         if (self.current_epoch + 1) == self.trainer.max_epochs:
             if not self.model.is_set(self.model.quantiles):
-                map_norm_quantiles = self.map_norm_quantiles(self.trainer.datamodule.val_dataloader())
+                map_norm_quantiles = self.map_norm_quantiles(self.trainer.datamodule.val_dataloader()) #only use good images of validation!
                 self.model.quantiles.update(map_norm_quantiles)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:

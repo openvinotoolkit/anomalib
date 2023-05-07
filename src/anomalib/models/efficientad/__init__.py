@@ -1,4 +1,6 @@
-"""Deep Feature Kernel Density Estimation model."""
+"""EfficientAD: Accurate Visual Anomaly Detection at Millisecond-Level Latencies.
+https://arxiv.org/pdf/2303.14535.pdf
+"""
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
