@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-
+from torchvision import transforms
 import albumentations as A
 import numpy as np
 import torch
@@ -73,7 +73,15 @@ class EfficientAD(AnomalyModule):
             model_size=model_size,
             padding=padding,
         )
-        self.data_transforms_imagenet = A.Compose(
+        self.data_transforms_imagenet = transforms.Compose([
+                transforms.Resize((2 * image_size[0], 2 * image_size[1])),
+                transforms.RandomGrayscale(0.3),
+                transforms.CenterCrop(image_size),
+                transforms.ToTensor(),
+            ])
+                
+        """
+        A.Compose(
             [  # We obtain an image P ∈ R 3×256×256 from ImageNet by choosing a random image,
                 A.Resize(image_size[0] * 2, image_size[1] * 2),  # resizing it to 512 × 512,
                 A.ToGray(p=0.3),  # converting it to gray scale with a probability of 0.3
@@ -81,8 +89,10 @@ class EfficientAD(AnomalyModule):
                 ToTensorV2(),
             ]
         )
+        """
         self.prepare_imagenet_data()
-        imagenet_dataset = ImageFolder(self.imagenet_dir, transform=TransformsWrapper(t=self.data_transforms_imagenet))
+        #imagenet_dataset = ImageFolder(self.imagenet_dir, transform=TransformsWrapper(t=self.data_transforms_imagenet))
+        imagenet_dataset = ImageFolder(self.imagenet_dir, transform=self.data_transforms_imagenet)
         self.imagenet_loader = DataLoader(imagenet_dataset, batch_size=1, shuffle=True, pin_memory=True)
         self.lr = lr
         self.weight_decay = weight_decay
@@ -182,7 +192,7 @@ class EfficientAD(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        batch_imagenet = next(iter(self.imagenet_loader))[0]["image"].to(
+        batch_imagenet = next(iter(self.imagenet_loader))[0].to(
             self.device
         )  # [0] getting the image not the label
         loss_st, loss_ae, loss_stae = self.model(batch=batch["image"], batch_imagenet=batch_imagenet)
