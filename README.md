@@ -1,6 +1,4 @@
-This library at his current state is a fork of the anomalib library hosted on github with some improvements
-this is mainly due to the fact that I'd like to freely improve the code while maintaining the updates made by the
-original authors at least for now that the library is still in a very developmental state.
+Fork of anomalib library used to integrate some changes that are required for our experiment manager library to work properly. Changes are mainly related to the ability of using torchscript to export models and some metric additions.
 
 To synchronize changes between the original repository and this repo a second remote must be added as follows:
 ```bash
@@ -15,7 +13,7 @@ git pull sync development
 git merge github master
 ```
 
-Current version (1.3.0) is synced with anomalib tag 0.4.0.
+Current version (1.0.0) is synced with anomalib tag 0.4.0.
 
 <div align="center">
 
