@@ -86,7 +86,6 @@ class EfficientAD(AnomalyModule):
         self.imagenet_loader = DataLoader(imagenet_dataset, batch_size=1, shuffle=True, pin_memory=True)
         self.lr = lr
         self.weight_decay = weight_decay
-        self.num_steps = max(self.trainer.max_steps, self.trainer.max_epochs * len(self.trainer.datamodule.train_dataloader()))
 
     def prepare_imagenet_data(self) -> None:
         """Download the imagenet subset if not available."""
@@ -165,10 +164,16 @@ class EfficientAD(AnomalyModule):
         return {"optimizer": optimizer, "lr_scheduler": scheduler}
 
     def on_train_start(self) -> None:
-        """Calculate or load the channel-wise mean and std of the training dataset and push to the model."""
+        """Calculate or load the channel-wise mean and std of the training dataset and push to the model.
+        Set the number calculated number of training steps.
+        """
         if not self.model.is_set(self.model.mean_std):
             channel_mean_std = self.teacher_channel_mean_std(self.trainer.datamodule.train_dataloader())
             self.model.mean_std.update(channel_mean_std)
+
+        self.num_steps = max(
+            self.trainer.max_steps, self.trainer.max_epochs * len(self.trainer.datamodule.train_dataloader())
+        )
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> dict[str, Tensor]:
         """Training step for EfficintAD returns the  student, autoencoder and combined loss.
