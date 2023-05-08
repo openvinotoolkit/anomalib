@@ -18,15 +18,6 @@ from torchvision import transforms
 logger = logging.getLogger(__name__)
 
 
-def weights_init(m):
-    classname = m.__class__.__name__
-    if classname.find("Conv2d") != -1:
-        m.weight.data.normal_(0.0, 0.02)
-    elif classname.find("BatchNorm") != -1:
-        m.weight.data.normal_(1.0, 0.02)
-        m.bias.data.fill_(0)
-
-
 def imagenet_norm_batch(x):
     mean = torch.tensor([0.485, 0.456, 0.406])[None, :, None, None].cuda()
     std = torch.tensor([0.229, 0.224, 0.225])[None, :, None, None].cuda()
@@ -50,7 +41,6 @@ class PDN_S(nn.Module):
         self.conv4 = nn.Conv2d(256, out_channels, kernel_size=4, stride=1, padding=0 * pad_mult)
         self.avgpool1 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
         self.avgpool2 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
-        self.apply(weights_init)
 
     def forward(self, x):
         x = imagenet_norm_batch(x)
@@ -81,7 +71,6 @@ class PDN_M(nn.Module):
         self.conv6 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0 * pad_mult)
         self.avgpool1 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
         self.avgpool2 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
-        self.apply(weights_init)
 
     def forward(self, x):
         x = imagenet_norm_batch(x)
@@ -107,7 +96,6 @@ class Encoder(nn.Module):
         self.enconv4 = nn.Conv2d(64, 64, kernel_size=4, stride=2, padding=1)
         self.enconv5 = nn.Conv2d(64, 64, kernel_size=4, stride=2, padding=1)
         self.enconv6 = nn.Conv2d(64, 64, kernel_size=8, stride=1, padding=0)
-        self.apply(weights_init)
 
     def forward(self, x):
         x = F.relu(self.enconv1(x))
@@ -143,7 +131,6 @@ class Decoder(nn.Module):
         self.dropout4 = nn.Dropout(p=0.2)
         self.dropout5 = nn.Dropout(p=0.2)
         self.dropout6 = nn.Dropout(p=0.2)
-        self.apply(weights_init)
 
     def forward(self, x):
         x = F.interpolate(x, size=3, mode="bilinear")
@@ -307,8 +294,8 @@ class EfficientADModel(nn.Module):
             distance_ae = torch.pow(teacher_output_aug - ae_output_aug, 2)
             distance_stae = torch.pow(ae_output_aug - student_output_ae_aug, 2)
 
-            loss_ae = torch.mean(distance_ae)
-            loss_stae = torch.mean(distance_stae)
+            loss_ae = torch.mean(distance_ae) *10
+            loss_stae = torch.mean(distance_stae) *100
 
             return (loss_st, loss_ae, loss_stae)
 

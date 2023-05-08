@@ -153,7 +153,7 @@ class EfficientAD(AnomalyModule):
         qb_ae = torch.quantile(maps_ae, q=0.995).to(self.device)
         return {"qa_st": qa_st, "qa_ae": qa_ae, "qb_st": qb_st, "qb_ae": qb_ae}
 
-    def configure_optimizers(self) -> optim.Optimizer:  # pylint: disable=arguments-differ
+    def configure_optimizers(self) -> optim.Optimizer:
         return optim.Adam(
             list(self.model.student.parameters()) + list(self.model.ae.parameters()),
             lr=self.lr,
