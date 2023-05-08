@@ -161,7 +161,7 @@ class EfficientAD(AnomalyModule):
         )
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=int(0.95 * self.trainer.max_steps), gamma=0.1)
 
-        return {"optimizer" : optimizer, "lr_scheduler" : scheduler}
+        return {"optimizer": optimizer, "lr_scheduler": scheduler}
 
     def on_train_start(self) -> None:
         """Calculate or load the channel-wise mean and std of the training dataset and push to the model."""
