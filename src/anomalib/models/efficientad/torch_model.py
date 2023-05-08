@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 def imagenet_norm_batch(x):
     mean = torch.tensor([0.485, 0.456, 0.406])[None, :, None, None].cuda()
     std = torch.tensor([0.229, 0.224, 0.225])[None, :, None, None].cuda()
-    x_norm = (x - mean) / (std + 1e-11)
+    x_norm = (x - mean) / std
     return x_norm
 
 
