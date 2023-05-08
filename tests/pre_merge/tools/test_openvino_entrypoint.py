@@ -32,7 +32,12 @@ class TestOpenVINOInferenceEntrypoint:
             raise Exception("Unable to import openvino_inference.py for testing")
         return get_parser, infer
 
-    def setUp(self, get_config, project_path, transforms_config):
+    def test_openvino_inference(
+        self, get_functions, get_config, project_path, get_dummy_inference_image, transforms_config
+    ):
+        """Test openvino_inference.py"""
+        get_parser, infer = get_functions
+
         model = get_model(get_config("padim"))
 
         # export OpenVINO model
@@ -44,10 +49,6 @@ class TestOpenVINOInferenceEntrypoint:
             export_mode=ExportMode.OPENVINO,
             export_root=project_path,
         )
-
-    def test_openvino_inference(self, get_functions, project_path, get_dummy_inference_image):
-        """Test openvino_inference.py"""
-        get_parser, infer = get_functions
 
         arguments = get_parser().parse_args(
             [
