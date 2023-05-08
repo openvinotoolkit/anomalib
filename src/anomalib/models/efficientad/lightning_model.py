@@ -86,6 +86,7 @@ class EfficientAD(AnomalyModule):
         self.imagenet_loader = DataLoader(imagenet_dataset, batch_size=1, shuffle=True, pin_memory=True)
         self.lr = lr
         self.weight_decay = weight_decay
+        self.num_steps = max(self.trainer.max_steps, self.trainer.max_epochs * len(self.trainer.datamodule.train_dataloader()))
 
     def prepare_imagenet_data(self) -> None:
         """Download the imagenet subset if not available."""
@@ -159,8 +160,8 @@ class EfficientAD(AnomalyModule):
             lr=self.lr,
             weight_decay=self.weight_decay,
         )
-        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=int(0.95 * self.trainer.max_steps), gamma=0.1)
 
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=int(0.95 * self.num_steps), gamma=0.1)
         return {"optimizer": optimizer, "lr_scheduler": scheduler}
 
     def on_train_start(self) -> None:
