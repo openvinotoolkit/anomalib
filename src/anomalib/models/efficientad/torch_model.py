@@ -189,9 +189,6 @@ class AutoEncoder(nn.Module):
         return x
 
 
-
-
-
 class EfficientADModel(nn.Module):
     """EfficientAD model.
 
@@ -208,27 +205,29 @@ class EfficientADModel(nn.Module):
         input_size: list,
         model_size="M",
         padding=False,
-
     ) -> None:
         super().__init__()
 
+        self.teacher: Union[PDN_M, PDN_S]
+        self.student: Union[PDN_M, PDN_S]
+
         if model_size == "M":
-            self.teacher: PDN_M = PDN_M(out_channels=teacher_out_channels, padding=padding).eval()
-            self.student: PDN_M = PDN_M(out_channels=teacher_out_channels * 2, padding=padding)
-        
+            self.teacher = PDN_M(out_channels=teacher_out_channels, padding=padding).eval()
+            self.student = PDN_M(out_channels=teacher_out_channels * 2, padding=padding)
+
         elif model_size == "S":
-            self.teacher: PDN_S = PDN_S(out_channels=teacher_out_channels, padding=padding).eval()
-            self.student: PDN_S = PDN_S(out_channels=teacher_out_channels * 2, padding=padding)
-        
+            self.teacher = PDN_S(out_channels=teacher_out_channels, padding=padding).eval()
+            self.student = PDN_S(out_channels=teacher_out_channels * 2, padding=padding)
+
         else:
             raise ValueError(f"Unknown model size {model_size}")
-        
+
         logger.info(f"Load pretrained Teacher model from {teacher_path}")
         self.teacher.load_state_dict(torch.load(teacher_path))
 
         self.ae: AutoEncoder = AutoEncoder(out_channels=teacher_out_channels, padding=padding)
         self.teacher_out_channels: int = teacher_out_channels
-        self.input_size: int = input_size
+        self.input_size: list[int] = input_size
 
         self.mean_std: nn.ParameterDict = nn.ParameterDict(
             {
@@ -319,8 +318,8 @@ class EfficientADModel(nn.Module):
             map_st = torch.mean(distance_st, dim=1, keepdim=True)
             map_stae = torch.mean(distance_stae, dim=1, keepdim=True)
 
-            map_st = F.interpolate(map_st, size=(self.input_size[0], self.input_size[1]), mode='bilinear')
-            map_stae = F.interpolate(map_stae, size=(self.input_size[0], self.input_size[1]), mode='bilinear')
+            map_st = F.interpolate(map_st, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
+            map_stae = F.interpolate(map_stae, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
 
             if self.is_set(self.quantiles):
                 map_st = 0.1 * (map_st - self.quantiles["qa_st"]) / (self.quantiles["qb_st"] - self.quantiles["qa_st"])
