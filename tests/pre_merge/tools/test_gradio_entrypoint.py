@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import sys
 from importlib.util import find_spec
-from unittest.mock import patch
 
 import pytest
 
@@ -35,12 +34,12 @@ class TestGradioInferenceEntrypoint:
             raise Exception("Unable to import gradio_inference.py for testing")
         return get_parser, get_inferencer
 
-    def test_gradio_inference(self, get_functions, get_config, project_path, transforms_config):
+    def test_torch_inference(self, get_functions, project_path, get_config, transforms_config):
         """Test gradio_inference.py"""
         parser, inferencer = get_functions
         model = get_model(get_config("padim"))
 
-        # test torch model
+        # export torch model
         export(
             task=TaskType.SEGMENTATION,
             transform=transforms_config,
@@ -58,7 +57,12 @@ class TestGradioInferenceEntrypoint:
         )
         assert isinstance(inferencer(arguments.weights, arguments.metadata), TorchInferencer)
 
-        # test openvino model
+    def test_openvino_inference(self, get_functions, project_path, get_config, transforms_config):
+        """Test gradio_inference.py"""
+        parser, inferencer = get_functions
+        model = get_model(get_config("padim"))
+
+        # export OpenVINO model
         export(
             task=TaskType.SEGMENTATION,
             transform=transforms_config,
@@ -67,6 +71,7 @@ class TestGradioInferenceEntrypoint:
             export_mode=ExportMode.OPENVINO,
             export_root=project_path,
         )
+
         arguments = parser().parse_args(
             [
                 "--weights",

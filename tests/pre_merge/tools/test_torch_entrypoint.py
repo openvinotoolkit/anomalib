@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import sys
 from importlib.util import find_spec
-from unittest.mock import patch
 
 import pytest
 
@@ -37,7 +36,6 @@ class TestTorchInferenceEntrypoint:
     ):
         """Test torch_inference.py"""
         get_parser, infer = get_functions
-        # with patch("tools.inference.torch_inference.get_configurable_parameters", side_effect=get_config):
         model = get_model(get_config("padim"))
         export(
             task=TaskType.SEGMENTATION,
@@ -47,7 +45,6 @@ class TestTorchInferenceEntrypoint:
             export_mode=ExportMode.TORCH,
             export_root=project_path,
         )
-
         arguments = get_parser().parse_args(
             [
                 "--weights",
