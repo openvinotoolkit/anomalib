@@ -294,8 +294,8 @@ class EfficientADModel(nn.Module):
             distance_ae = torch.pow(teacher_output_aug - ae_output_aug, 2)
             distance_stae = torch.pow(ae_output_aug - student_output_ae_aug, 2)
 
-            loss_ae = torch.mean(distance_ae) *10
-            loss_stae = torch.mean(distance_stae) *100
+            loss_ae = torch.mean(distance_ae) * 10
+            loss_stae = torch.mean(distance_stae) * 100
 
             return (loss_st, loss_ae, loss_stae)
 
