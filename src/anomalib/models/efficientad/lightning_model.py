@@ -139,11 +139,12 @@ class EfficientAD(AnomalyModule):
         maps_ae = []
         logger.info("Calculate Validation Dataset Quantiles")
         for batch in tqdm.tqdm(dataloader, desc="Calculate Validation Dataset Quantiles", position=0, leave=True):
-            output = self.model(batch["image"].to(self.device))
-            map_st = output["map_st"]
-            map_ae = output["map_ae"]
-            maps_st.append(map_st)
-            maps_ae.append(map_ae)
+            if batch["label"] == 0: #only use good images of validation set!
+                output = self.model(batch["image"].to(self.device))
+                map_st = output["map_st"]
+                map_ae = output["map_ae"]
+                maps_st.append(map_st)
+                maps_ae.append(map_ae)
         maps_st = torch.cat(maps_st)
         maps_ae = torch.cat(maps_ae)
         qa_st = torch.quantile(maps_st, q=0.9).to(self.device)
@@ -160,6 +161,12 @@ class EfficientAD(AnomalyModule):
         )
 
     def on_train_start(self) -> None:
+        print("DATALOADERS")
+        print(len(self.trainer.datamodule.train_dataloader()))
+        print(len(self.trainer.datamodule.test_dataloader()))
+        print(len(self.trainer.datamodule.val_dataloader()))
+        for batch in self.trainer.datamodule.val_dataloader():
+            print(batch["label"])
         """Calculate or load the channel-wise mean and std of the training dataset and push to the model."""
         if not self.model.is_set(self.model.mean_std):
             channel_mean_std = self.teacher_channel_mean_std(self.trainer.datamodule.train_dataloader())
@@ -195,8 +202,8 @@ class EfficientAD(AnomalyModule):
         if (self.current_epoch + 1) == self.trainer.max_epochs:
             if not self.model.is_set(self.model.quantiles):
                 map_norm_quantiles = self.map_norm_quantiles(
-                    self.trainer.datamodule.val_dataloader()
-                )  # only use good images of validation!
+                    self.trainer.datamodule.train_dataloader()
+                )
                 self.model.quantiles.update(map_norm_quantiles)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
