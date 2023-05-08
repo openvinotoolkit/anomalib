@@ -154,11 +154,14 @@ class EfficientAD(AnomalyModule):
         return {"qa_st": qa_st, "qa_ae": qa_ae, "qb_st": qb_st, "qb_ae": qb_ae}
 
     def configure_optimizers(self) -> optim.Optimizer:
-        return optim.Adam(
+        optimizer = optim.Adam(
             list(self.model.student.parameters()) + list(self.model.ae.parameters()),
             lr=self.lr,
             weight_decay=self.weight_decay,
         )
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=int(0.95 * self.trainer.max_steps), gamma=0.1)
+
+        return {"optimizer" : optimizer, "lr_scheduler" : scheduler}
 
     def on_train_start(self) -> None:
         """Calculate or load the channel-wise mean and std of the training dataset and push to the model."""
