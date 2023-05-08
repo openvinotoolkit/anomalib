@@ -21,7 +21,7 @@ dataset:
 model:
   name: efficientad
   pre_trained_dir: src/anomalib/models/efficientad/pre_trained/
-  teacher_file_name: teacher_medium_formatted_nelson1425.pth
+  teacher_file_name: teacher_medium_albumentations_state.pth
   teacher_out_channels: 384
   model_size: M
   lr: 0.0001
@@ -78,7 +78,7 @@ trainer:
   max_steps: -1
   min_steps: null
   max_time: null
-  limit_train_batches: 1.0
+  limit_train_batches: 0.2
   limit_val_batches: 1.0
   limit_test_batches: 1.0
   limit_predict_batches: 1.0

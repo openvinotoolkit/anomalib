@@ -50,8 +50,10 @@ class PDN_S(nn.Module):
         self.conv4 = nn.Conv2d(256, out_channels, kernel_size=4, stride=1, padding=0 * pad_mult)
         self.avgpool1 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
         self.avgpool2 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
+        self.apply(weights_init)
 
     def forward(self, x):
+        x = imagenet_norm_batch(x)
         x = F.relu(self.conv1(x))
         x = self.avgpool1(x)
         x = F.relu(self.conv2(x))
@@ -79,8 +81,10 @@ class PDN_M(nn.Module):
         self.conv6 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0 * pad_mult)
         self.avgpool1 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
         self.avgpool2 = nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult)
+        self.apply(weights_init)
 
     def forward(self, x):
+        x = imagenet_norm_batch(x)
         x = F.relu(self.conv1(x))
         x = self.avgpool1(x)
         x = F.relu(self.conv2(x))
@@ -185,59 +189,7 @@ class AutoEncoder(nn.Module):
         return x
 
 
-class Teacher(nn.Module):
-    """Pre-trained EfficientAD teacher model. The model is trained by destillation
-    training on WideResnet-101 ImageNet feature maps.
 
-    Args:
-        size (str): size of teacher model (same as student)
-        out_channels (int): number of convolution output channels
-        teacher_path (Path): path of pre-trained teacher model
-
-    """
-
-    def __init__(self, size: str, out_channels: int, padding: bool, teacher_path: Path, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        if size == "M":
-            self.pdn = PDN_M(out_channels=out_channels, padding=padding)  # 384
-        elif size == "S":
-            self.pdn = PDN_S(out_channels=out_channels, padding=padding)
-        self.pdn.apply(weights_init)
-
-        if not teacher_path.is_file():
-            raise ValueError("No pretrained teacher model found!")
-
-        state_dict = torch.load(teacher_path)
-        self.load_state_dict(state_dict)
-        logger.info(f"Loaded pretrained Teacher model from {teacher_path}")
-
-    def forward(self, x):
-        x = imagenet_norm_batch(x)
-        x = self.pdn(x)
-        return x
-
-
-class Student(nn.Module):
-    """EfficientAD student model.
-
-    Args:
-        size (str): size of student model (same as teacher)
-        out_channels (int): number of convolution output channels
-
-    """
-
-    def __init__(self, size: str, out_channels: int, padding: bool, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        if size == "M":
-            self.pdn = PDN_M(out_channels=out_channels, padding=padding)  # 768
-        elif size == "S":
-            self.pdn = PDN_S(out_channels=out_channels, padding=padding)
-        self.pdn.apply(weights_init)
-
-    def forward(self, x):
-        x = imagenet_norm_batch(x)
-        pdn_out = self.pdn(x)
-        return pdn_out
 
 
 class EfficientADModel(nn.Module):
@@ -253,17 +205,30 @@ class EfficientADModel(nn.Module):
         self,
         teacher_path: Path,
         teacher_out_channels: int,
+        input_size: list,
         model_size="M",
         padding=False,
+
     ) -> None:
         super().__init__()
 
-        self.teacher: Teacher = Teacher(
-            model_size, teacher_path=teacher_path, out_channels=teacher_out_channels, padding=padding
-        ).eval()
-        self.student: Student = Student(model_size, out_channels=teacher_out_channels * 2, padding=padding)
+        if model_size == "M":
+            self.teacher: PDN_M = PDN_M(out_channels=teacher_out_channels, padding=padding).eval()
+            self.student: PDN_M = PDN_M(out_channels=teacher_out_channels * 2, padding=padding)
+        
+        elif model_size == "S":
+            self.teacher: PDN_S = PDN_S(out_channels=teacher_out_channels, padding=padding).eval()
+            self.student: PDN_S = PDN_S(out_channels=teacher_out_channels * 2, padding=padding)
+        
+        else:
+            raise ValueError(f"Unknown model size {model_size}")
+        
+        logger.info(f"Load pretrained Teacher model from {teacher_path}")
+        self.teacher.load_state_dict(torch.load(teacher_path))
+
         self.ae: AutoEncoder = AutoEncoder(out_channels=teacher_out_channels, padding=padding)
         self.teacher_out_channels: int = teacher_out_channels
+        self.input_size: int = input_size
 
         self.mean_std: nn.ParameterDict = nn.ParameterDict(
             {
@@ -354,8 +319,8 @@ class EfficientADModel(nn.Module):
             map_st = torch.mean(distance_st, dim=1, keepdim=True)
             map_stae = torch.mean(distance_stae, dim=1, keepdim=True)
 
-            map_st = F.interpolate(map_st, size=(256, 256), mode="bilinear")
-            map_stae = F.interpolate(map_stae, size=(256, 256), mode="bilinear")
+            map_st = F.interpolate(map_st, size=(self.input_size[0], self.input_size[1]), mode='bilinear')
+            map_stae = F.interpolate(map_stae, size=(self.input_size[0], self.input_size[1]), mode='bilinear')
 
             if self.is_set(self.quantiles):
                 map_st = 0.1 * (map_st - self.quantiles["qa_st"]) / (self.quantiles["qb_st"] - self.quantiles["qa_st"])
@@ -364,6 +329,5 @@ class EfficientADModel(nn.Module):
                 )
 
             map_combined = 0.5 * map_st + 0.5 * map_stae
-            map_combined = torch.nn.functional.pad(map_combined, (4, 4, 4, 4))
 
             return {"anomaly_map_combined": map_combined, "map_st": map_st, "map_ae": map_stae}

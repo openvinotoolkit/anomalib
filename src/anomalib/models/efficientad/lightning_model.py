@@ -69,6 +69,7 @@ class EfficientAD(AnomalyModule):
         self.model: EfficientADModel = EfficientADModel(
             teacher_path=self.pre_trained_dir / teacher_file_name,
             teacher_out_channels=teacher_out_channels,
+            input_size=image_size, 
             model_size=model_size,
             padding=padding,
         )
