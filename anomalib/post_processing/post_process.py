@@ -130,7 +130,7 @@ def superimpose_anomaly_map(
     return superimposed_map
 
 
-def compute_mask(anomaly_map: np.ndarray, threshold: float, kernel_size: int = 4) -> np.ndarray:
+def compute_mask(anomaly_map: np.ndarray, threshold: float, kernel_size: int = 2) -> np.ndarray:
     """Compute anomaly mask via thresholding the predicted anomaly map.
 
     Args:
@@ -144,7 +144,7 @@ def compute_mask(anomaly_map: np.ndarray, threshold: float, kernel_size: int = 4
 
     anomaly_map = anomaly_map.squeeze()
     mask: np.ndarray = np.zeros_like(anomaly_map).astype(np.uint8)
-    mask[anomaly_map > threshold] = 1
+    mask[anomaly_map >= threshold] = 1
 
     kernel = morphology.disk(kernel_size)
     mask = morphology.opening(mask, kernel)

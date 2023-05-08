@@ -12,7 +12,6 @@
 
 
 from __future__ import annotations
-
 from math import exp
 
 import numpy as np
@@ -21,9 +20,11 @@ import torch.nn.functional as F
 from FrEIA.framework import GraphINN, InputNode, Node, OutputNode
 from FrEIA.modules import InvertibleModule
 from torch import Tensor, nn
-from torchvision.models.efficientnet import EfficientNet_B5_Weights
+
+# from torchvision.models.efficientnet import EfficientNet_B5_Weights
 
 from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor
+from anomalib.utils.torchvision_future import EfficientNet_B5_Weights
 
 from .anomaly_map import AnomalyMapGenerator, AnomalyMapMode
 

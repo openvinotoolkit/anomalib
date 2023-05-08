@@ -109,7 +109,8 @@ class Draem(AnomalyModule):
         del args, kwargs  # These variables are not used.
 
         prediction = self.model(batch["image"])
-        batch["anomaly_maps"] = prediction
+        batch["anomaly_maps"] = prediction[0]
+        batch["pred_scores"] = prediction[1]
         return batch
 
 
@@ -138,12 +139,15 @@ class DraemLightning(Draem):
                 deprecated, and callbacks will be configured from either
                 config.yaml file or from CLI.
         """
-        early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
-        )
-        return [early_stopping]
+        if hasattr(self.hparams, "early_stopping"):
+            early_stopping = EarlyStopping(
+                monitor=self.hparams.model.early_stopping.metric,
+                patience=self.hparams.model.early_stopping.patience,
+                mode=self.hparams.model.early_stopping.mode,
+            )
+            return [early_stopping]
+        
+        return []
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """Configure the Adam optimizer."""

@@ -20,7 +20,17 @@ from anomalib.utils.metrics import MinMax
 class MinMaxNormalizationCallback(Callback):
     """Callback that normalizes the image-level and pixel-level anomaly scores using min-max normalization."""
 
-    def setup(self, trainer: pl.Trainer, pl_module: AnomalyModule, stage: str | None = None) -> None:
+    def __init__(self, threshold_type="pixel"):
+        """
+
+        Args:
+            threshold_type: Threshold used to normalize pixel level anomaly scores, either image or pixel (default)
+        """
+        super(MinMaxNormalizationCallback, self).__init__()
+        self.threshold_type = threshold_type
+
+    # pylint: disable=unused-argument
+    def setup(self, trainer: pl.Trainer, pl_module: AnomalyModule, stage: str | None) -> None:
         """Adds min_max metrics to normalization metrics."""
         del trainer, stage  # These variables are not used.
 
@@ -88,16 +98,18 @@ class MinMaxNormalizationCallback(Callback):
 
         self._normalize_batch(outputs, pl_module)
 
-    @staticmethod
-    def _normalize_batch(outputs, pl_module) -> None:
+    def _normalize_batch(self, outputs, pl_module):
         """Normalize a batch of predictions."""
         image_threshold = pl_module.image_threshold.value.cpu()
         pixel_threshold = pl_module.pixel_threshold.value.cpu()
         stats = pl_module.normalization_metrics.cpu()
         outputs["pred_scores"] = normalize(outputs["pred_scores"], image_threshold, stats.min, stats.max)
-        if "anomaly_maps" in outputs:
-            outputs["anomaly_maps"] = normalize(outputs["anomaly_maps"], pixel_threshold, stats.min, stats.max)
+
+        threshold = pixel_threshold if self.threshold_type == "pixel" else image_threshold
+        if "anomaly_maps" in outputs.keys():
+            outputs["anomaly_maps"] = normalize(outputs["anomaly_maps"], threshold, stats.min, stats.max)
+
         if "box_scores" in outputs:
             outputs["box_scores"] = [
-                normalize(scores, pixel_threshold, stats.min, stats.max) for scores in outputs["box_scores"]
+                normalize(scores, threshold, stats.min, stats.max) for scores in outputs["box_scores"]
             ]

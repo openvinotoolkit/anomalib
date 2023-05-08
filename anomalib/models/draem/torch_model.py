@@ -40,7 +40,10 @@ class DraemModel(nn.Module):
         prediction = self.discriminative_subnetwork(concatenated_inputs)
         if self.training:
             return reconstruction, prediction
-        return torch.softmax(prediction, dim=1)[:, 1, ...]
+
+        anomaly_map = torch.softmax(prediction, dim=1)[:, 1, ...]
+        anomaly_score = anomaly_map.reshape((anomaly_map.shape[0], -1)).max(1)[0]
+        return anomaly_map, anomaly_score
 
 
 class ReconstructiveSubNetwork(nn.Module):

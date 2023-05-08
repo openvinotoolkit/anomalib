@@ -8,18 +8,21 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
+from typing import Optional
 
 import numpy as np
 import torch
 from sklearn.utils.random import sample_without_replacement
 from torch import Tensor
 
+from anomalib.models.components.base.dynamic_module import DynamicBufferModule
+
 
 class NotFittedError(ValueError, AttributeError):
     """Raise Exception if estimator is used before fitting."""
 
 
-class SparseRandomProjection:
+class SparseRandomProjection(DynamicBufferModule):
     """Sparse Random Projection using PyTorch operations.
 
     Args:
@@ -29,8 +32,10 @@ class SparseRandomProjection:
             state for sample_without_replacement function. Defaults to None.
     """
 
-    def __init__(self, eps: float = 0.1, random_state: int | None = None) -> None:
+    def __init__(self, eps: float = 0.1, random_state: Optional[int] = None) -> None:
+        super().__init__()
         self.n_components: int
+        self.register_buffer("sparse_random_matrix", torch.Tensor())
         self.sparse_random_matrix: Tensor
         self.eps = eps
         self.random_state = random_state
@@ -106,6 +111,7 @@ class SparseRandomProjection:
         device = embedding.device
 
         self.n_components = self.johnson_lindenstrauss_min_dim(n_samples=n_samples, eps=self.eps)
+        # TODO: What if n_components > n_features?
 
         # Generate projection matrix
         # torch can't multiply directly on sparse matrix and moving sparse matrix to cuda throws error
@@ -114,6 +120,9 @@ class SparseRandomProjection:
         self.sparse_random_matrix = self._sparse_random_matrix(n_features=n_features).to(device)
 
         return self
+
+    def forward(self, embedding: Tensor) -> Tensor:
+        return self.transform(embedding)
 
     def transform(self, embedding: Tensor) -> Tensor:
         """Project the data by using matrix product with the random matrix.
@@ -129,5 +138,9 @@ class SparseRandomProjection:
         if self.sparse_random_matrix is None:
             raise NotFittedError("`fit()` has not been called on SparseRandomProjection yet.")
 
-        projected_embedding = embedding @ self.sparse_random_matrix.T.float()
+        if embedding.dtype == torch.float32:
+            projected_embedding = embedding @ self.sparse_random_matrix.T.float()
+        else:
+            projected_embedding = embedding @ self.sparse_random_matrix.T.half()
+
         return projected_embedding

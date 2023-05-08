@@ -75,10 +75,10 @@ class Fastflow(AnomalyModule):
         Returns:
             STEP_OUTPUT | None: batch dictionary containing anomaly-maps.
         """
+        prediction = self.model(batch["image"])
+        batch["anomaly_maps"] = prediction[0]
+        batch["pred_scores"] = prediction[1]
         del args, kwargs  # These variables are not used.
-
-        anomaly_maps = self.model(batch["image"])
-        batch["anomaly_maps"] = anomaly_maps
         return batch
 
 
@@ -110,12 +110,15 @@ class FastflowLightning(Fastflow):
                 deprecated, and callbacks will be configured from either
                 config.yaml file or from CLI.
         """
-        early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
-        )
-        return [early_stopping]
+        if hasattr(self.hparams, "early_stopping"):
+            early_stopping = EarlyStopping(
+                monitor=self.hparams.model.early_stopping.metric,
+                patience=self.hparams.model.early_stopping.patience,
+                mode=self.hparams.model.early_stopping.mode,
+            )
+            return [early_stopping]
+
+        return []
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """Configures optimizers for each decoder.

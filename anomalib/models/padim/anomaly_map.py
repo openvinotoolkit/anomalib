@@ -9,6 +9,8 @@ import torch
 import torch.nn.functional as F
 from omegaconf import ListConfig
 from torch import Tensor, nn
+from torch.jit import script_if_tracing
+from kornia.filters import gaussian_blur2d
 
 from anomalib.models.components import GaussianBlur2d
 
@@ -24,8 +26,7 @@ class AnomalyMapGenerator(nn.Module):
     def __init__(self, image_size: ListConfig | tuple, sigma: int = 4) -> None:
         super().__init__()
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
-        kernel_size = 2 * int(4.0 * sigma + 0.5) + 1
-        self.blur = GaussianBlur2d(kernel_size=(kernel_size, kernel_size), sigma=(sigma, sigma), channels=1)
+        self.sigma = sigma
 
     @staticmethod
     def compute_distance(embedding: Tensor, stats: list[Tensor]) -> Tensor:
@@ -72,18 +73,22 @@ class AnomalyMapGenerator(nn.Module):
         )
         return score_map
 
-    def smooth_anomaly_map(self, anomaly_map: Tensor) -> Tensor:
+    @staticmethod
+    @script_if_tracing
+    def smooth_anomaly_map(anomaly_map: Tensor, sigma: float) -> Tensor:
         """Apply gaussian smoothing to the anomaly map.
 
         Args:
             anomaly_map (Tensor): Anomaly score for the test image(s).
+            sigma: Standard deviation for Gaussian Kernel.
 
         Returns:
             Filtered anomaly scores
         """
+        kernel_size = 2 * int(4.0 * sigma + 0.5) + 1
+        anomaly_map = gaussian_blur2d(anomaly_map, (kernel_size, kernel_size), sigma=(sigma, sigma))
 
-        blurred_anomaly_map = self.blur(anomaly_map)
-        return blurred_anomaly_map
+        return anomaly_map
 
     def compute_anomaly_map(self, embedding: Tensor, mean: Tensor, inv_covariance: Tensor) -> Tensor:
         """Compute anomaly score.
@@ -102,10 +107,10 @@ class AnomalyMapGenerator(nn.Module):
 
         score_map = self.compute_distance(
             embedding=embedding,
-            stats=[mean.to(embedding.device), inv_covariance.to(embedding.device)],
+            stats=[mean, inv_covariance],
         )
         up_sampled_score_map = self.up_sample(score_map)
-        smoothed_anomaly_map = self.smooth_anomaly_map(up_sampled_score_map)
+        smoothed_anomaly_map = self.smooth_anomaly_map(up_sampled_score_map, self.sigma)
 
         return smoothed_anomaly_map
 

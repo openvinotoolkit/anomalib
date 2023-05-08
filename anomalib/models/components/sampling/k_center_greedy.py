@@ -6,7 +6,7 @@
 """
 
 from __future__ import annotations
-
+from tqdm import tqdm
 import torch
 import torch.nn.functional as F
 from torch import Tensor
@@ -18,27 +18,13 @@ class KCenterGreedy:
     """Implements k-center-greedy method.
 
     Args:
-        embedding (Tensor): Embedding vector extracted from a CNN
         sampling_ratio (float): Ratio to choose coreset size from the embedding size.
-
-    Example:
-        >>> embedding.shape
-        torch.Size([219520, 1536])
-        >>> sampler = KCenterGreedy(embedding=embedding)
-        >>> sampled_idxs = sampler.select_coreset_idxs()
-        >>> coreset = embedding[sampled_idxs]
-        >>> coreset.shape
-        torch.Size([219, 1536])
     """
 
-    def __init__(self, embedding: Tensor, sampling_ratio: float) -> None:
-        self.embedding = embedding
-        self.coreset_size = int(embedding.shape[0] * sampling_ratio)
-        self.model = SparseRandomProjection(eps=0.9)
-
+    def __init__(self, sampling_ratio: float) -> None:
+        self.sampling_ratio = sampling_ratio
         self.features: Tensor
         self.min_distances: Tensor = None
-        self.n_observations = self.embedding.shape[0]
 
     def reset_distances(self) -> None:
         """Reset minimum distances."""
@@ -77,10 +63,11 @@ class KCenterGreedy:
 
         return idx
 
-    def select_coreset_idxs(self, selected_idxs: list[int] | None = None) -> list[int]:
+    def select_coreset_idxs(self, embedding: Tensor, selected_idxs: list[int] | None = None) -> list[int]:
         """Greedily form a coreset to minimize the maximum distance of a cluster.
 
         Args:
+            embedding: Embedding vector extracted from a CNN
             selected_idxs: index of samples already selected. Defaults to an empty set.
 
         Returns:
@@ -90,17 +77,17 @@ class KCenterGreedy:
         if selected_idxs is None:
             selected_idxs = []
 
-        if self.embedding.ndim == 2:
-            self.model.fit(self.embedding)
-            self.features = self.model.transform(self.embedding)
-            self.reset_distances()
+        if embedding.ndim != 2:
+            self.features = embedding.reshape(embedding.shape[0], -1)
         else:
-            self.features = self.embedding.reshape(self.embedding.shape[0], -1)
-            self.update_distances(cluster_centers=selected_idxs)
+            self.features = embedding
 
+        n_observations = self.features.shape[0]
         selected_coreset_idxs: list[int] = []
-        idx = int(torch.randint(high=self.n_observations, size=(1,)).item())
-        for _ in range(self.coreset_size):
+        idx = int(torch.randint(high=n_observations, size=(1,)).item())
+        self.coreset_size = int(n_observations * self.sampling_ratio)
+
+        for _ in tqdm(range(self.coreset_size), desc="Sampling Coreset"):
             self.update_distances(cluster_centers=[idx])
             idx = self.get_new_idx()
             if idx in selected_idxs:
@@ -108,27 +95,19 @@ class KCenterGreedy:
             self.min_distances[idx] = 0
             selected_coreset_idxs.append(idx)
 
+        del self.features
         return selected_coreset_idxs
 
-    def sample_coreset(self, selected_idxs: list[int] | None = None) -> Tensor:
+    def sample_coreset(self, embedding: Tensor, selected_idxs: list[int] | None = None) -> Tensor:
         """Select coreset from the embedding.
 
         Args:
+            embedding: Embedding vector extracted from a CNN
             selected_idxs: index of samples already selected. Defaults to an empty set.
 
         Returns:
             Tensor: Output coreset
-
-        Example:
-            >>> embedding.shape
-            torch.Size([219520, 1536])
-            >>> sampler = KCenterGreedy(...)
-            >>> coreset = sampler.sample_coreset()
-            >>> coreset.shape
-            torch.Size([219, 1536])
         """
+        idxs = self.select_coreset_idxs(embedding, selected_idxs)
 
-        idxs = self.select_coreset_idxs(selected_idxs)
-        coreset = self.embedding[idxs]
-
-        return coreset
+        return idxs

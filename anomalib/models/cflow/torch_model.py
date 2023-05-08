@@ -124,6 +124,8 @@ class CflowModel(nn.Module):
                 distribution[layer_idx] = torch.cat((distribution[layer_idx], log_prob))
 
         output = self.anomaly_map_generator(distribution=distribution, height=height, width=width)
+        anomaly_score = output.reshape((output.shape[0], -1)).max(1)[0]
+
         self.decoders.train()
 
-        return output.to(images.device)
+        return output.to(images.device), anomaly_score.to(images.device)

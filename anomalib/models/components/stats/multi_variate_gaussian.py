@@ -9,12 +9,13 @@ from typing import Any
 
 import torch
 from torch import Tensor, nn
+from einops import rearrange
 
 
 class MultiVariateGaussian(nn.Module):
     """Multi Variate Gaussian Distribution."""
 
-    def __init__(self, n_features, n_patches):
+    def __init__(self, n_features, n_patches, tied_covariance: bool = False):
         super().__init__()
 
         self.register_buffer("mean", torch.zeros(n_features, n_patches))
@@ -22,6 +23,7 @@ class MultiVariateGaussian(nn.Module):
 
         self.mean: Tensor
         self.inv_covariance: Tensor
+        self.tied_covariance = tied_covariance
 
     @staticmethod
     def _cov(
@@ -120,13 +122,23 @@ class MultiVariateGaussian(nn.Module):
         batch, channel, height, width = embedding.size()
         embedding_vectors = embedding.view(batch, channel, height * width)
         self.mean = torch.mean(embedding_vectors, dim=0)
-        covariance = torch.zeros(size=(channel, channel, height * width), device=device)
-        identity = torch.eye(channel).to(device)
-        for i in range(height * width):
-            covariance[:, :, i] = self._cov(embedding_vectors[:, :, i], rowvar=False) + 0.01 * identity
 
-        # calculate inverse covariance as we need only the inverse
-        self.inv_covariance = torch.linalg.inv(covariance.permute(2, 0, 1))
+        identity = torch.eye(channel).to(device)
+
+        if not self.tied_covariance:
+            covariance = torch.zeros(size=(channel, channel, height * width), device=device)
+
+            for i in range(height * width):
+                covariance[:, :, i] = self._cov(embedding_vectors[:, :, i], rowvar=False) + 0.01 * identity
+
+            # calculate inverse covariance as we need only the inverse
+            self.inv_covariance = torch.linalg.inv(covariance.permute(2, 0, 1))
+        else:
+            # Tied covariance reduces dramatically the disk space but probably harms way too much the performance
+            covariance = self._cov(rearrange(embedding_vectors, "b c d -> (b d) c"), rowvar=False) + 0.01 * identity
+
+            # calculate inverse covariance as we need only the inverse
+            self.inv_covariance = torch.linalg.inv(covariance)
 
         return [self.mean, self.inv_covariance]
 

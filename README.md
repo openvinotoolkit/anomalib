@@ -1,3 +1,20 @@
+Fork of anomalib library used to integrate some changes that are required for our experiment manager library to work properly. Changes are mainly related to the ability of using torchscript to export models and some metric additions.
+
+To synchronize changes between the original repository and this repo a second remote must be added as follows:
+```bash
+git remote add sync https://github.com/openvinotoolkit/anomalib.git
+git pull sync main
+git branch --set-upstream github sync/development
+```
+
+If anomalib is updated to sync back again run
+```bash
+git pull sync development
+git merge github master
+```
+
+Current version (1.0.0) is synced with anomalib tag 0.4.0.
+
 <div align="center">
 
 <img src="https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/logos/anomalib-wide-blue.png" width="600px">

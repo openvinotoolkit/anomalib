@@ -1,8 +1,8 @@
-"""Implementation of Optimal F1 score based on TorchMetrics."""
-
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+"""Implementation of Optimal F1 score based on TorchMetrics."""
+from typing import Optional
 import warnings
 
 import torch
@@ -28,10 +28,8 @@ class OptimalF1(Metric):
             )
         )
         super().__init__(**kwargs)
-
-        self.precision_recall_curve = PrecisionRecallCurve(num_classes=num_classes)
-
-        self.threshold: Tensor
+        self.precision_recall_curve = PrecisionRecallCurve(num_classes=num_classes, compute_on_step=False)
+        self.threshold: torch.Tensor = torch.tensor(-1.0)
 
     def update(self, preds: Tensor, target: Tensor, *args, **kwargs) -> None:
         """Update the precision-recall curve metric."""
@@ -48,15 +46,27 @@ class OptimalF1(Metric):
         Returns:
             Value of the F1 score at the optimal threshold.
         """
-        precision: Tensor
-        recall: Tensor
-        thresholds: Tensor
+        precision: torch.Tensor
+        recall: torch.Tensor
+        thresholds: torch.Tensor
+        current_targets = torch.concat(self.precision_recall_curve.target)
 
-        precision, recall, thresholds = self.precision_recall_curve.compute()
-        f1_score = (2 * precision * recall) / (precision + recall + 1e-10)
-        self.threshold = thresholds[torch.argmax(f1_score)]
-        optimal_f1_score = torch.max(f1_score)
-        return optimal_f1_score
+        epsilon = 1e-3
+        if len(current_targets.unique()) == 1:
+            optimal_f1_score = torch.tensor(1.0)
+
+            if current_targets.max() == 0:
+                self.threshold = torch.concat(self.precision_recall_curve.preds).max() + epsilon
+            else:
+                self.threshold = torch.concat(self.precision_recall_curve.preds).min()
+
+            return optimal_f1_score
+        else:
+            precision, recall, thresholds = self.precision_recall_curve.compute()
+            f1_score = (2 * precision * recall) / (precision + recall + 1e-10)
+            self.threshold = thresholds[torch.argmax(f1_score)]
+            optimal_f1_score = torch.max(f1_score)
+            return optimal_f1_score
 
     def reset(self) -> None:
         """Reset the metric."""

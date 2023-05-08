@@ -11,6 +11,7 @@ from typing import Any, OrderedDict
 from warnings import warn
 
 import pytorch_lightning as pl
+from anomalib.models.components.losses import dice
 import torch
 from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
@@ -52,6 +53,8 @@ class AnomalyModule(pl.LightningModule, ABC):
 
         self.image_metrics: AnomalibMetricCollection
         self.pixel_metrics: AnomalibMetricCollection
+        self.false_good = 0
+        self.false_bad = 0
 
     def forward(self, batch: dict[str, str | Tensor], *args, **kwargs) -> Any:
         """Forward-pass input tensor to the module.
@@ -102,6 +105,7 @@ class AnomalyModule(pl.LightningModule, ABC):
                 # apply threshold to assign normal/anomalous label to boxes
                 is_anomalous = [scores > self.pixel_threshold.value for scores in outputs["box_scores"]]
                 outputs["box_labels"] = [labels.int() for labels in is_anomalous]
+
         return outputs
 
     def test_step(self, batch: dict[str, str | Tensor], batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
@@ -143,8 +147,17 @@ class AnomalyModule(pl.LightningModule, ABC):
         """
         if self.threshold_method == ThresholdMethod.ADAPTIVE:
             self._compute_adaptive_threshold(outputs)
+
+        if hasattr(self.image_metrics, "F1Score"):
+            self.log("image_F1_threshold", self.image_metrics.F1Score.threshold)
+            logging.info("Image f1 threshold {%s}", self.image_metrics.F1Score.threshold)
+
+        if hasattr(self.pixel_metrics, "F1Score"):
+            self.log("pixel_F1_threshold", self.pixel_metrics.F1Score.threshold)
+            logging.info("Pixel f1 threshold {%s}", self.pixel_metrics.F1Score.threshold)
+
         self._collect_outputs(self.image_metrics, self.pixel_metrics, outputs)
-        self._log_metrics()
+        self._log_metrics("validation")
 
     def test_epoch_end(self, outputs: EPOCH_OUTPUT) -> None:
         """Compute and save anomaly scores of the test set.
@@ -152,8 +165,30 @@ class AnomalyModule(pl.LightningModule, ABC):
         Args:
             outputs: Batch of outputs from the validation step
         """
+        if hasattr(self.image_metrics, "F1Score"):
+            dice_score = 0
+            counter = 0
+
+            for output in outputs:
+                for (anomaly_score, gt_label) in zip(output["pred_scores"], output["label"]):
+                    pred_label = int(anomaly_score >= self.image_metrics.F1Score.threshold)
+                    if gt_label == 0 and pred_label == 1:
+                        self.false_bad += 1
+                    elif gt_label == 1 and pred_label == 0:
+                        self.false_good += 1
+
+                if "mask" in output.keys():
+                    for (anomaly_map, mask) in zip(output["anomaly_maps"], output["mask"]):
+                        dice_score += 1 - dice(anomaly_map >= self.pixel_metrics.F1Score.threshold, mask)
+                        counter += 1
+
+            if counter > 0:
+                self.log("Dice_score", dice_score / counter)
+            self.log("False_good", self.false_good)
+            self.log("False_bad", self.false_bad)
+
         self._collect_outputs(self.image_metrics, self.pixel_metrics, outputs)
-        self._log_metrics()
+        self._log_metrics("test")
 
     def _compute_adaptive_threshold(self, outputs: EPOCH_OUTPUT) -> None:
         self.image_threshold.reset()
@@ -203,9 +238,24 @@ class AnomalyModule(pl.LightningModule, ABC):
                 true_boxes: list[Tensor] = outputs["boxes"]
                 pred_boxes: Tensor = outputs["pred_boxes"]
                 box_scores: Tensor = outputs["box_scores"]
-
                 outputs["anomaly_maps"] = boxes_to_anomaly_maps(pred_boxes, box_scores, image_size)
                 outputs["mask"] = boxes_to_masks(true_boxes, image_size)
+
+    def _log_metrics(self, phase: str):
+        if hasattr(self.image_metrics, "F1Score"):
+            self.log(f"{phase}_image_F1", self.image_metrics.F1Score.compute().item())
+
+        if hasattr(self.image_metrics, "AUROC"):
+            self.log(f"{phase}_image_AUROC", self.image_metrics.AUROC.compute().item())
+
+        if self.hparams.dataset.task == "segmentation":
+            if hasattr(self.pixel_metrics, "F1Score"):
+                self.log(f"{phase}_pixel_F1", self.pixel_metrics.F1Score.compute().item())
+            if hasattr(self.pixel_metrics, "AUROC"):
+                self.log(f"{phase}_pixel_AUROC", self.pixel_metrics.AUROC.compute().item())
+
+        self.pixel_metrics.reset()
+        self.image_metrics.reset()
 
     def _outputs_to_cpu(self, output):
         if isinstance(output, dict):
@@ -217,13 +267,14 @@ class AnomalyModule(pl.LightningModule, ABC):
             output = output.cpu()
         return output
 
-    def _log_metrics(self) -> None:
-        """Log computed performance metrics."""
-        if self.pixel_metrics.update_called:
-            self.log_dict(self.pixel_metrics, prog_bar=True)
-            self.log_dict(self.image_metrics, prog_bar=False)
-        else:
-            self.log_dict(self.image_metrics, prog_bar=True)
+    # TODO: Check if this is necessary
+    # def _log_metrics(self) -> None:
+    #     """Log computed performance metrics."""
+    #     if self.pixel_metrics.update_called:
+    #         self.log_dict(self.pixel_metrics, prog_bar=True)
+    #         self.log_dict(self.image_metrics, prog_bar=False)
+    #     else:
+    #         self.log_dict(self.image_metrics, prog_bar=True)
 
     def _load_normalization_class(self, state_dict: OrderedDict[str, Tensor]) -> None:
         """Assigns the normalization method to use."""

@@ -162,19 +162,18 @@ class FastflowModel(nn.Module):
             )
         self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
 
-    def forward(self, input_tensor: Tensor) -> Tensor | list[Tensor] | tuple[list[Tensor]]:
+    def forward(self, input_tensor: Tensor) -> tuple[Tensor, Tensor] | tuple[list[Tensor], list[Tensor]]:
         """Forward-Pass the input to the FastFlow Model.
 
         Args:
             input_tensor (Tensor): Input tensor.
 
         Returns:
-            Tensor | list[Tensor] | tuple[list[Tensor]]: During training, return
-                (hidden_variables, log-of-the-jacobian-determinants).
-                During the validation/test, return the anomaly map.
+            During training, return (hidden_variables, log-of-the-jacobian-determinants).
+                During the validation/test, return the anomaly map and the anomaly score.
         """
 
-        return_val: Tensor | list[Tensor] | tuple[list[Tensor]]
+        return_val: tuple[Tensor, Tensor] | tuple[list[Tensor], list[Tensor]]
 
         self.feature_extractor.eval()
         if isinstance(self.feature_extractor, VisionTransformer):
@@ -198,8 +197,10 @@ class FastflowModel(nn.Module):
 
         if not self.training:
             return_val = self.anomaly_map_generator(hidden_variables)
-
-        return return_val
+            anomaly_score = return_val.reshape((return_val.shape[0], -1)).max(1)[0]
+            return return_val, anomaly_score
+        else:
+            return return_val
 
     def _get_cnn_features(self, input_tensor: Tensor) -> list[Tensor]:
         """Get CNN-based features.

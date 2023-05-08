@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 
 import torch
+from torch import nn
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
@@ -32,16 +33,26 @@ class Patchcore(AnomalyModule):
         coreset_sampling_ratio (float, optional): Coreset sampling ratio to subsample embedding.
             Defaults to 0.1.
         num_neighbors (int, optional): Number of nearest neighbors. Defaults to 9.
+        pretrained_weights (str, optional): Path to pretrained weights. Defaults to None.
+        compress_memory_bank (bool): If true the memory bank features are projected to a lower dimensionality following
+        the Johnson-Lindenstrauss lemma.
+        coreset_sampler (str): Coreset sampler to use. Defaults to "anomalib".
+        score_computation (str): Score computation to use. Defaults to "anomalib". If "amazon" is used, the anomaly
+        score is correctly computed as from the paper but it may require more time to compute.
     """
 
     def __init__(
         self,
         input_size: tuple[int, int],
-        backbone: str,
+        backbone: str | nn.Module,
         layers: list[str],
         pre_trained: bool = True,
         coreset_sampling_ratio: float = 0.1,
         num_neighbors: int = 9,
+        pretrained_weights: str | None = None,
+        compress_memory_bank: bool = False,
+        coreset_sampler: str = "anomalib",
+        score_computation: str = "anomalib",
     ) -> None:
         super().__init__()
 
@@ -51,9 +62,14 @@ class Patchcore(AnomalyModule):
             pre_trained=pre_trained,
             layers=layers,
             num_neighbors=num_neighbors,
+            pretrained_weights=pretrained_weights,
+            compress_memory_bank=compress_memory_bank,
+            score_computation=score_computation,
         )
         self.coreset_sampling_ratio = coreset_sampling_ratio
         self.embeddings: list[Tensor] = []
+        # self.automatic_optimization = False
+        self.coreset_sampler = coreset_sampler
 
     def configure_optimizers(self) -> None:
         """Configure optimizers.
@@ -92,7 +108,7 @@ class Patchcore(AnomalyModule):
         embeddings = torch.vstack(self.embeddings)
 
         logger.info("Applying core-set subsampling to get the embedding.")
-        self.model.subsample_embedding(embeddings, self.coreset_sampling_ratio)
+        self.model.subsample_embedding(embeddings, self.coreset_sampling_ratio, mode=self.coreset_sampler)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Get batch of anomaly maps from input image batch.
@@ -117,17 +133,25 @@ class PatchcoreLightning(Patchcore):
     """PatchcoreLightning Module to train PatchCore algorithm.
 
     Args:
-        hparams (DictConfig | ListConfig): Model params
+        hparams (Union[DictConfig, ListConfig]): Model params
+        backbone: optional, override hparams.model.backbone. Can be both a string or a nn.Module
     """
 
-    def __init__(self, hparams) -> None:
+    def __init__(self, hparams: DictConfig | ListConfig, backbone: str | nn.Module | None = None):
+        if backbone is None:
+            backbone = hparams.model.backbone
+
         super().__init__(
             input_size=hparams.model.input_size,
-            backbone=hparams.model.backbone,
+            backbone=backbone,
             layers=hparams.model.layers,
-            pre_trained=hparams.model.pre_trained,
+            pre_trained=getattr(hparams.model, "pre_trained", True),
             coreset_sampling_ratio=hparams.model.coreset_sampling_ratio,
             num_neighbors=hparams.model.num_neighbors,
+            pretrained_weights=getattr(hparams.model, "pretrained_weights", None),
+            compress_memory_bank=getattr(hparams.model, "compress_memory_bank", False),
+            coreset_sampler=getattr(hparams.model, "coreset_sampler", "anomalib"),
+            score_computation=getattr(hparams.model, "score_computation", "anomalib"),
         )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
