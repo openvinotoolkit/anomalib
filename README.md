@@ -1,3 +1,22 @@
+This library at his current state is a fork of the anomalib library hosted on github with some improvements
+this is mainly due to the fact that I'd like to freely improve the code while maintaining the updates made by the
+original authors at least for now that the library is still in a very developmental state.
+
+To synchronize changes between the original repository and this repo a second remote must be added as follows:
+```bash
+git remote add sync https://github.com/openvinotoolkit/anomalib.git
+git pull sync main
+git branch --set-upstream github sync/development
+```
+
+If anomalib is updated to sync back again run
+```bash
+git pull sync development
+git merge github master
+```
+
+Current version (1.3.0) is synced with anomalib tag 0.4.0.
+
 <div align="center">
 
 <img src="https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/logos/anomalib-wide-blue.png" width="600px">

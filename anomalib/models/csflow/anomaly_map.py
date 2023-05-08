@@ -10,6 +10,7 @@ from enum import Enum
 import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
+from torch.jit import script_if_tracing
 
 
 class AnomalyMapMode(str, Enum):
@@ -32,6 +33,20 @@ class AnomalyMapGenerator(nn.Module):
         self.mode = mode
         self.input_dims = input_dims
 
+    @staticmethod
+    @script_if_tracing
+    def generate_empty_anomaly_map(inputs: Tensor, h: int, w: int) -> Tensor:
+        """Generate empty anomaly map.
+
+        Args:
+            batch_size (torch.Tensor): Batch size.
+            input_dims (Tuple[int, int, int]): Input dimensions.
+
+        Returns:
+            Tensor: Empty anomaly map.
+        """
+        return torch.ones(inputs.shape[0], 1, h, w, device=inputs.device)
+
     def forward(self, inputs: Tensor) -> Tensor:
         """Get anomaly maps by taking mean of the z-distributions across channels.
 
@@ -47,7 +62,7 @@ class AnomalyMapGenerator(nn.Module):
         """
         anomaly_map: Tensor
         if self.mode == AnomalyMapMode.ALL:
-            anomaly_map = torch.ones(inputs[0].shape[0], 1, *self.input_dims[1:]).to(inputs[0].device)
+            anomaly_map = self.generate_empty_anomaly_map(inputs[0], self.input_dims[1], self.input_dims[2])
             for z_dist in inputs:
                 mean_z = (z_dist**2).mean(dim=1, keepdim=True)
                 anomaly_map *= F.interpolate(

@@ -6,7 +6,8 @@
 from __future__ import annotations
 
 from random import sample
-
+from typing import Dict, List, Optional, Tuple, Union
+import logging
 import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
@@ -20,7 +21,10 @@ from anomalib.pre_processing import Tiler
 _N_FEATURES_DEFAULTS = {
     "resnet18": 100,
     "wide_resnet50_2": 550,
+    "mobilenet_v2": 100,
 }
+
+log = logging.getLogger(__name__)
 
 
 def _deduce_dims(
@@ -50,37 +54,48 @@ class PadimModel(nn.Module):
     """Padim Module.
 
     Args:
-        input_size (tuple[int, int]): Input size for the model.
-        layers (list[str]): Layers used for feature extraction
-        backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
-        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+        input_size: Input size for the model.
+        layers: Layers used for feature extraction
+        backbone: can be a string (pre-trained model backbone from torchvision) or the backbone nn.Module. Defaults to "resnet18".
+        pretrained_weights: path to pretrained weights. Default to None.
+        tied_covariance (bool, optional): Whether to use tied covariance. Defaults to False.
+        input_size (Tuple[int, int]): Input size for the model.
+        layers (List[str]): Layers used for feature extraction
+        pre_trained (bool, optional): if True, then download the standard pretrained weights.
+            If pretrained_weights is not None, final backbone will have pretrained_weights weights.
+            Default to True.
         n_features (int, optional): Number of features to retain in the dimension reduction step.
-                                Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
+            Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
     """
 
     def __init__(
         self,
-        input_size: tuple[int, int],
-        layers: list[str],
-        backbone: str = "resnet18",
+        input_size: Tuple[int, int],
+        layers: List[str],
+        backbone: Union[str, nn.Module] = "resnet18",
+        pretrained_weights: Optional[str] = None,
+        tied_covariance: bool = False,
         pre_trained: bool = True,
         n_features: int | None = None,
     ) -> None:
         super().__init__()
-        self.tiler: Tiler | None = None
-
-        self.backbone = backbone
+        self.tiler: Optional[Tiler] = None
         self.layers = layers
-        self.feature_extractor = FeatureExtractor(backbone=self.backbone, layers=layers, pre_trained=pre_trained)
+        self.backbone = backbone
+
+        self.feature_extractor = FeatureExtractor(backbone=self.backbone, layers=layers, pre_trained=pre_trained, pretrained_weights=pretrained_weights)
         self.n_features_original, self.n_patches = _deduce_dims(self.feature_extractor, input_size, self.layers)
 
         n_features = n_features or _N_FEATURES_DEFAULTS.get(self.backbone)
 
         if n_features is None:
-            raise ValueError(
-                f"n_features must be specified for backbone {self.backbone}. "
-                f"Default values are available for: {sorted(_N_FEATURES_DEFAULTS.keys())}"
-            )
+            if isinstance(self.backbone, str):
+                raise ValueError(
+                    f"n_features must be specified for backbone {self.backbone}. "
+                    f"Default values are available for: {sorted(_N_FEATURES_DEFAULTS.keys())}"
+                )
+            else:
+                raise ValueError("n_features must be specified for custom backbones")
 
         assert (
             0 < n_features <= self.n_features_original
@@ -98,9 +113,9 @@ class PadimModel(nn.Module):
         self.loss = None
         self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
 
-        self.gaussian = MultiVariateGaussian(self.n_features, self.n_patches)
+        self.gaussian = MultiVariateGaussian(self.n_features, self.n_patches, tied_covariance=tied_covariance)
 
-    def forward(self, input_tensor: Tensor) -> Tensor:
+    def forward(self, input_tensor: Tensor) -> Tuple[Tensor, Tensor]:
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
 
         Args:
@@ -127,10 +142,16 @@ class PadimModel(nn.Module):
 
         with torch.no_grad():
             features = self.feature_extractor(input_tensor)
+
+            for item in features.keys():
+                assert not torch.isnan(features[item]).any()
+
             embeddings = self.generate_embedding(features)
 
         if self.tiler:
             embeddings = self.tiler.untile(embeddings)
+
+        anomaly_score = None
 
         if self.training:
             output = embeddings
@@ -138,7 +159,9 @@ class PadimModel(nn.Module):
             output = self.anomaly_map_generator(
                 embedding=embeddings, mean=self.gaussian.mean, inv_covariance=self.gaussian.inv_covariance
             )
-        return output
+            anomaly_score = output.reshape((output.shape[0], -1)).max(1)[0]
+
+        return output, anomaly_score
 
     def generate_embedding(self, features: dict[str, Tensor]) -> Tensor:
         """Generate embedding from hierarchical feature map.
@@ -157,6 +180,5 @@ class PadimModel(nn.Module):
             embeddings = torch.cat((embeddings, layer_embedding), 1)
 
         # subsample embeddings
-        idx = self.idx.to(embeddings.device)
-        embeddings = torch.index_select(embeddings, 1, idx)
+        embeddings = torch.index_select(embeddings, 1, self.idx)
         return embeddings

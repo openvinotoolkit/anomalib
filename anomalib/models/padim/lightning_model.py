@@ -30,6 +30,8 @@ class Padim(AnomalyModule):
         layers (list[str]): Layers to extract features from the backbone CNN
         input_size (tuple[int, int]): Size of the model input.
         backbone (str): Backbone CNN network
+        pretrained_weights (str, optional): Path to pretrained weights. Defaults to None.
+        tied_covariance (bool): Whether to use tied covariance matrix. Defaults to False.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         n_features (int, optional): Number of features to retain in the dimension reduction step.
                                 Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
@@ -40,6 +42,8 @@ class Padim(AnomalyModule):
         layers: list[str],
         input_size: tuple[int, int],
         backbone: str,
+        pretrained_weights: str | None = None,
+        tied_covariance: bool = False,
         pre_trained: bool = True,
         n_features: int | None = None,
     ) -> None:
@@ -51,6 +55,8 @@ class Padim(AnomalyModule):
             backbone=backbone,
             pre_trained=pre_trained,
             layers=layers,
+            pretrained_weights=pretrained_weights,
+            tied_covariance=tied_covariance,
             n_features=n_features,
         ).eval()
 
@@ -75,7 +81,7 @@ class Padim(AnomalyModule):
         del args, kwargs  # These variables are not used.
 
         self.model.feature_extractor.eval()
-        embedding = self.model(batch["image"])
+        embedding, _ = self.model(batch["image"])
 
         # NOTE: `self.embedding` appends each batch embedding to
         #   store the training set embedding. We manually append these
@@ -93,6 +99,7 @@ class Padim(AnomalyModule):
 
         logger.info("Fitting a Gaussian to the embedding collected from the training set.")
         self.stats = self.model.gaussian.fit(embeddings)
+        self.model.gaussian.to(self.device)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Validation Step of PADIM.
@@ -108,7 +115,7 @@ class Padim(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        batch["anomaly_maps"] = self.model(batch["image"])
+        batch["anomaly_maps"], _ = self.model(batch["image"])
         return batch
 
 
@@ -116,16 +123,22 @@ class PadimLightning(Padim):
     """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
 
     Args:
-        hparams (DictConfig | ListConfig): Model params
+        hparams (Union[DictConfig, ListConfig]): Model params
+        backbone: optional, override hparams.model.backbone. Can be both a string or a nn.Module
     """
 
-    def __init__(self, hparams: DictConfig | ListConfig) -> None:
+    def __init__(self, hparams: (DictConfig | ListConfig), backbone: str | torch.nn.Module | None = None):
+        if backbone is None:
+            backbone = hparams.model.backbone
+
         super().__init__(
             input_size=hparams.model.input_size,
             layers=hparams.model.layers,
-            backbone=hparams.model.backbone,
-            pre_trained=hparams.model.pre_trained,
-            n_features=hparams.model.n_features if "n_features" in hparams.model else None,
+            backbone=backbone,
+            pretrained_weights=getattr(hparams.model, "pretrained_weights", None),
+            tied_covariance=getattr(hparams.model, "tied_covariance", False),
+            pre_trained=getattr(hparams.model, "pre_trained", True),
+            n_features=getattr(hparams.model, "n_features", None),
         )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)

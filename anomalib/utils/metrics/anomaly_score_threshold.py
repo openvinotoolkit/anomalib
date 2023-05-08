@@ -39,24 +39,18 @@ class AnomalyScoreThreshold(PrecisionRecallCurve):
         Returns:
             Value of the F1 score at the optimal threshold.
         """
-        precision: Tensor
-        recall: Tensor
-        thresholds: Tensor
+        current_targets = torch.concat(self.target)
 
-        if not any(1 in batch for batch in self.target):
-            warnings.warn(
-                "The validation set does not contain any anomalous images. As a result, the adaptive threshold will "
-                "take the value of the highest anomaly score observed in the normal validation images, which may lead "
-                "to poor predictions. For a more reliable adaptive threshold computation, please add some anomalous "
-                "images to the validation set."
-            )
+        epsilon = 1e-3
 
-        precision, recall, thresholds = super().compute()
-        f1_score = (2 * precision * recall) / (precision + recall + 1e-10)
-        if thresholds.dim() == 0:
-            # special case where recall is 1.0 even for the highest threshold.
-            # In this case 'thresholds' will be scalar.
-            self.value = thresholds
+        if len(current_targets.unique()) == 1:
+            if current_targets.max() == 0:
+                self.value = torch.concat(self.preds).max() + epsilon
+            else:
+                self.value = torch.concat(self.preds).min()
         else:
+            precision, recall, thresholds = super().compute()
+            f1_score = (2 * precision * recall) / (precision + recall + 1e-10)
             self.value = thresholds[torch.argmax(f1_score)]
+
         return self.value

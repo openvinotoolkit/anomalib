@@ -12,8 +12,12 @@ from typing import Callable
 import torch
 from torch import Tensor, nn
 from torch.fx.graph_module import GraphModule
-from torchvision.models._api import WeightsEnum
 from torchvision.models.feature_extraction import create_feature_extractor
+from dataclasses import fields
+import enum
+
+# When we upgrade torchvision import from there
+from anomalib.utils.torchvision_future import WeightsEnum
 
 
 @dataclass

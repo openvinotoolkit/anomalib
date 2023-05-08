@@ -11,6 +11,7 @@ from __future__ import annotations
 import einops
 import torch
 import torch.nn.functional as F
+
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.utilities.types import STEP_OUTPUT
@@ -169,9 +170,11 @@ class Cflow(AnomalyModule):
             These are required in `validation_epoch_end` for feature concatenation.
 
         """
+        prediction = self.model(batch["image"])
+        batch["anomaly_maps"] = prediction[0]
+        batch["pred_scores"] = prediction[1]
         del args, kwargs  # These variables are not used.
 
-        batch["anomaly_maps"] = self.model(batch["image"])
         return batch
 
 
@@ -187,7 +190,7 @@ class CflowLightning(Cflow):
             input_size=hparams.model.input_size,
             backbone=hparams.model.backbone,
             layers=hparams.model.layers,
-            pre_trained=hparams.model.pre_trained,
+            pre_trained=getattr(hparams.model, "pre_trained", True),
             fiber_batch_size=hparams.model.fiber_batch_size,
             decoder=hparams.model.decoder,
             condition_vector=hparams.model.condition_vector,
@@ -207,9 +210,12 @@ class CflowLightning(Cflow):
                 deprecated, and callbacks will be configured from either
                 config.yaml file or from CLI.
         """
-        early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
-        )
-        return [early_stopping]
+        if hasattr(self.hparams.model, "early_stopping"):
+            early_stopping = EarlyStopping(
+                monitor=self.hparams.model.early_stopping.metric,
+                patience=self.hparams.model.early_stopping.patience,
+                mode=self.hparams.model.early_stopping.mode,
+            )
+            return [early_stopping]
+
+        return []

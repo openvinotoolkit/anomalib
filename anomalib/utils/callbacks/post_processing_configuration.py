@@ -10,7 +10,6 @@ import logging
 
 import torch
 from pytorch_lightning import Callback, LightningModule, Trainer
-
 from anomalib.models.components.base.anomaly_module import AnomalyModule
 from anomalib.post_processing import NormalizationMethod, ThresholdMethod
 

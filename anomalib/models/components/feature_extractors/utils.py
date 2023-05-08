@@ -21,7 +21,12 @@ def dryrun_find_featuremap_dims(
     """
 
     dryrun_input = torch.empty(1, 3, *input_size)
-    dryrun_features = feature_extractor(dryrun_input)
+
+    feature_extractor.eval()
+    with torch.no_grad():
+        dryrun_features = feature_extractor(dryrun_input)
+
+    feature_extractor.train()
     return {
         layer: {"num_features": dryrun_features[layer].shape[1], "resolution": dryrun_features[layer].shape[2:]}
         for layer in layers

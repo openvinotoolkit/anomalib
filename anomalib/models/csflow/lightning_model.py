@@ -117,12 +117,15 @@ class CsflowLightning(Csflow):
                 deprecated, and callbacks will be configured from either
                 config.yaml file or from CLI.
         """
-        early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
-        )
-        return [early_stopping]
+        if hasattr(self.hparams.model, "early_stopping") and self.hparams.model.early_stopping is not None:
+            early_stopping = EarlyStopping(
+                monitor=self.hparams.model.early_stopping.metric,
+                patience=self.hparams.model.early_stopping.patience,
+                mode=self.hparams.model.early_stopping.mode,
+            )
+            return [early_stopping]
+
+        return []
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """Configures optimizers.

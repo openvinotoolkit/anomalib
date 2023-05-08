@@ -27,6 +27,21 @@ class ImageVisualizerCallback(BaseVisualizerCallback):
     config.yaml file.
     """
 
+    def __init__(
+        self, threshold_type: str = "pixel", disable: bool = False, plot_only_wrong: bool = False, **kwargs: Any
+    ) -> None:
+        """Initialize the ImageVisualizerCallback.
+
+        Args:
+            threshold_type: Either 'pixel' or 'image'. If 'pixel', the threshold is computed on the pixel-level.
+            disable: whether to disable the callback.
+            plot_only_wrong: whether to plot only the images that are not correctly predicted.
+        """
+        self.threshold_type = threshold_type
+        self.disable = disable
+        self.plot_only_wrong = plot_only_wrong
+        super().__init__(**kwargs)
+
     def on_predict_batch_end(
         self,
         trainer: pl.Trainer,
@@ -47,6 +62,9 @@ class ImageVisualizerCallback(BaseVisualizerCallback):
             batch_idx (int): Index of the current test batch (unused).
             dataloader_idx (int): Index of the dataloader that yielded the current batch (unused).
         """
+        if self.disable:
+            return
+
         del trainer, pl_module, batch, batch_idx, dataloader_idx  # These variables are not used.
         assert outputs is not None
 

@@ -9,7 +9,7 @@ import torch
 from matplotlib.figure import Figure
 from torch import Tensor
 from torchmetrics import ROC
-from torchmetrics.functional import auc
+from torchmetrics.utilities.compute import auc
 
 from .plotting_utils import plot_figure
 
