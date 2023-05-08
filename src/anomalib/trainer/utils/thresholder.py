@@ -75,7 +75,7 @@ class Thresholder:
         if self.threshold_method == ThresholdMethod.ADAPTIVE:
             if self.trainer.image_threshold is not None:
                 self.trainer.image_threshold.compute()
-            if self.trainer.task_type in (TaskType.SEGMENTATION, TaskType.DETECTION):
+            if self.trainer.task_type != TaskType.CLASSIFICATION:
                 self.trainer.pixel_threshold.compute()
             else:
                 self.trainer.pixel_threshold.value = self.trainer.image_threshold.value
@@ -89,6 +89,6 @@ class Thresholder:
         if self.threshold_method == ThresholdMethod.ADAPTIVE:
             self.trainer.image_threshold.cpu()
             self.trainer.image_threshold.update(outputs["pred_scores"], outputs["label"].int())
-            if "mask" in outputs.keys() and "anomaly_maps" in outputs.keys():
+            if self.trainer.task_type != TaskType.CLASSIFICATION:
                 self.trainer.pixel_threshold.cpu()
                 self.trainer.pixel_threshold.update(outputs["anomaly_maps"], outputs["mask"].int())

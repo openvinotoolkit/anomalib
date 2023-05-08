@@ -63,7 +63,6 @@ def train():
         **config.visualization,
         logger=experiment_logger,
         callbacks=callbacks,
-        task_type=config.dataset.task,
         image_metrics=config.metrics.get("image", None),
         pixel_metrics=config.metrics.get("pixel", None)
     )

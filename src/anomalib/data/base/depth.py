@@ -23,7 +23,7 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
     """
 
     def __init__(self, task: TaskType, transform: A.Compose) -> None:
-        super().__init__(task, transform)
+        super().__init__(task=task, transform=transform)
 
         self.transform = transform
 

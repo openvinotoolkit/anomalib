@@ -111,7 +111,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
     """
 
     def __init__(self, task: TaskType, transform: A.Compose, source_samples: DataFrame) -> None:
-        super().__init__(task, transform)
+        super().__init__(task=task, transform=transform)
 
         self.source_samples = source_samples
 

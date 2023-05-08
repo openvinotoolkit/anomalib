@@ -9,6 +9,7 @@ from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
 from anomalib import trainer
+from anomalib.data import TaskType
 from anomalib.data.utils import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
 
 
@@ -18,24 +19,28 @@ class PostProcessor:
     def __init__(self, trainer: trainer.AnomalibTrainer) -> None:
         self.trainer = trainer
 
-    @staticmethod
-    def apply_predictions(outputs: STEP_OUTPUT) -> None:
+    def apply_predictions(self, outputs: STEP_OUTPUT) -> None:
         """Computes prediction scores and prediction boxes."""
-        PostProcessor._outputs_to_cpu(outputs)
+        self._outputs_to_cpu(outputs)
         if isinstance(outputs, dict):
-            if "pred_scores" not in outputs and "anomaly_maps" in outputs:
-                # infer image scores from anomaly maps
-                outputs["pred_scores"] = (
-                    outputs["anomaly_maps"].reshape(outputs["anomaly_maps"].shape[0], -1).max(dim=1).values
-                )
-            elif "pred_scores" not in outputs and "box_scores" in outputs:
-                # infer image score from bbox confidence scores
-                outputs["pred_scores"] = torch.zeros_like(outputs["label"]).float()
-                for idx, (boxes, scores) in enumerate(zip(outputs["pred_boxes"], outputs["box_scores"])):
-                    if boxes.numel():
-                        outputs["pred_scores"][idx] = scores.max().item()
+            if "pred_scores" not in outputs:
+                if "anomaly_maps" in outputs:
+                    # infer image scores from anomaly maps
+                    outputs["pred_scores"] = (
+                        outputs["anomaly_maps"].reshape(outputs["anomaly_maps"].shape[0], -1).max(dim=1).values
+                    )
+                elif "box_scores" in outputs:
+                    # infer image score from bbox confidence scores
+                    outputs["pred_scores"] = torch.zeros_like(outputs["label"]).float()
+                    for idx, (boxes, scores) in enumerate(zip(outputs["pred_boxes"], outputs["box_scores"])):
+                        if boxes.numel():
+                            outputs["pred_scores"][idx] = scores.max().item()
 
-            if "pred_boxes" in outputs and "anomaly_maps" not in outputs:
+            if (
+                "pred_boxes" in outputs
+                and "anomaly_maps" not in outputs
+                and self.trainer.task_type in (TaskType.SEGMENTATION, TaskType.ALL)
+            ):
                 # create anomaly maps from bbox predictions for thresholding and evaluation
                 image_size: tuple[int, int] = outputs["image"].shape[-2:]
                 true_boxes: list[Tensor] = outputs["boxes"]

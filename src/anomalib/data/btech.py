@@ -166,7 +166,7 @@ class BTechDataset(AnomalibDataset):
         split: str | Split | None = None,
         task: TaskType = TaskType.SEGMENTATION,
     ) -> None:
-        super().__init__(task, transform)
+        super().__init__(task=task, transform=transform)
 
         self.root_category = Path(root) / category
         self.split = split

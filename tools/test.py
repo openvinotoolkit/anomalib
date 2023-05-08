@@ -53,7 +53,6 @@ def test():
         **config.trainer,
         **config.post_processing,
         callbacks=callbacks,
-        task_type=config.dataset.task,
         image_metrics=config.metrics.get("image", None),
         pixel_metrics=config.metrics.get("pixel", None)
     )

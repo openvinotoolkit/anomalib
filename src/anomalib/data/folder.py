@@ -14,13 +14,7 @@ from pandas import DataFrame
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.task_type import TaskType
-from anomalib.data.utils import (
-    InputNormalizationMethod,
-    Split,
-    TestSplitMode,
-    ValSplitMode,
-    get_transforms,
-)
+from anomalib.data.utils import InputNormalizationMethod, Split, TestSplitMode, ValSplitMode, get_transforms
 from anomalib.data.utils.path import _prepare_files_labels, _resolve_path
 
 
@@ -159,7 +153,7 @@ class FolderDataset(AnomalibDataset):
         split: str | Split | None = None,
         extensions: tuple[str, ...] | None = None,
     ) -> None:
-        super().__init__(task, transform)
+        super().__init__(task=task, transform=transform)
 
         self.split = split
         self.root = root

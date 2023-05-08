@@ -10,6 +10,7 @@ import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Sequence
+from warnings import warn
 
 import albumentations as A
 import cv2
@@ -37,13 +38,14 @@ class AnomalibDataset(Dataset, ABC):
     """Anomalib dataset.
 
     Args:
-        task (str): Task type, either 'classification' or 'segmentation'
+        task (TaskType): Task type, 'classification', 'segmentation', "detection", or 'all'. Defaults to 'all'.
+            Note: We recommend not setting this parameter manually, but rather setting this in the `AnomalibTrainer`.
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
     """
 
-    def __init__(self, task: TaskType, transform: A.Compose) -> None:
+    def __init__(self, transform: A.Compose, task: TaskType | None) -> None:
         super().__init__()
-        self.task = task
+        self._task = task
         self.transform = transform
         self._samples: DataFrame
 
@@ -67,6 +69,27 @@ class AnomalibDataset(Dataset, ABC):
     def is_setup(self) -> bool:
         """Checks if setup() been called."""
         return hasattr(self, "_samples")
+
+    @property
+    def task(self) -> TaskType:
+        """Get the task type."""
+        if self._task is None:
+            raise RuntimeError("TaskType is not set")
+        return self._task
+
+    @task.setter
+    def task(self, task: TaskType) -> None:
+        """Set the task type."""
+        if self._task is None:
+            self._task = task
+        if self._task != task and self._task is not None:
+            warn(
+                f"TaskType mismatch self.task = {self._task}, new value {task}.\n"
+                "Looks like task was configured already, probably when initializing this class.\n"
+                "The recommended approach is to set it via ``trainer.task_type``."
+                "Overriding {self._task} with {task}"
+            )
+            self._task = task
 
     @property
     def samples(self) -> DataFrame:

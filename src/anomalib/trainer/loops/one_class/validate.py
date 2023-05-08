@@ -71,7 +71,4 @@ class AnomalibValidationLoop(EvaluationLoop):
             self.trainer.metrics_manager.compute(output_or_outputs)
             self.trainer.metrics_manager.log(self.trainer, "validation_epoch_end")
             self.trainer.visualization_manager.visualize_images(output_or_outputs, VisualizationStage.VAL)
-            self.trainer.visualization_manager.visualize_metrics(
-                VisualizationStage.VAL,
-                [self.trainer.metrics_manager.image_metrics, self.trainer.metrics_manager.pixel_metrics],
-            )
+            self.trainer.visualization_manager.visualize_metrics(VisualizationStage.VAL)

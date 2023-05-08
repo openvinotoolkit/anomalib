@@ -12,3 +12,4 @@ class TaskType(str, Enum):
     CLASSIFICATION = "classification"
     DETECTION = "detection"
     SEGMENTATION = "segmentation"
+    ALL = "all"  # Produces all available annotations

@@ -59,10 +59,11 @@ class MetricsManager:
                 pixel_metric_names = self.pixel_metric_names
 
             self.image_metrics = create_metric_collection(image_metric_names, "image_")
-            self.pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
-
             self.image_metrics.set_threshold(self.trainer.image_threshold.value)
-            self.pixel_metrics.set_threshold(self.trainer.pixel_threshold.value)
+
+            if self.trainer.task_type != TaskType.CLASSIFICATION:
+                self.pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
+                self.pixel_metrics.set_threshold(self.trainer.pixel_threshold.value)
 
     def set_threshold(self) -> None:
         """Sets threshold."""
@@ -75,11 +76,12 @@ class MetricsManager:
             pixel_metrics_threshold = 0.5
         else:
             image_metrics_threshold = self.trainer.image_threshold.value
-            pixel_metrics_threshold = self.trainer.pixel_threshold.value
+            if self.trainer.task_type != TaskType.CLASSIFICATION:
+                pixel_metrics_threshold = self.trainer.pixel_threshold.value
 
         if self.image_metrics is not None:
             self.image_metrics.set_threshold(image_metrics_threshold)
-        if self.pixel_metrics is not None:
+        if self.trainer.task_type != TaskType.CLASSIFICATION and self.pixel_metrics is not None:
             self.pixel_metrics.set_threshold(pixel_metrics_threshold)
 
     def _update_metrics(self, outputs: STEP_OUTPUT | EPOCH_OUTPUT | List[EPOCH_OUTPUT]):
@@ -94,7 +96,7 @@ class MetricsManager:
         else:
             self.image_metrics.cpu()
             self.image_metrics.update(outputs["pred_scores"], outputs["label"].int())
-            if "mask" in outputs.keys() and "anomaly_maps" in outputs.keys():
+            if self.trainer.task_type != TaskType.CLASSIFICATION:
                 self.pixel_metrics.cpu()
                 self.pixel_metrics.update(outputs["anomaly_maps"], outputs["mask"].int())
 
@@ -109,7 +111,8 @@ class MetricsManager:
         """
         self._update_metrics(outputs)
         self.image_metrics.compute()
-        self.pixel_metrics.compute()
+        if self.trainer.task_type != TaskType.CLASSIFICATION:
+            self.pixel_metrics.compute()
 
     def log(self, trainer: Trainer, current_fx_name: str):
         """Log metrics.
@@ -118,11 +121,9 @@ class MetricsManager:
             trainer (Trainer): Lightning Trainer
             current_fx_name (str): Name of the current hook. Eg: ``validation_epoch_end``
         """
-        if self.pixel_metrics.update_called:
+        if self.trainer.task_type != TaskType.CLASSIFICATION:
             self._log_metrics(trainer, self.pixel_metrics, current_fx_name, prog_bar=True)
-            self._log_metrics(trainer, self.image_metrics, current_fx_name, prog_bar=False)
-        else:
-            self._log_metrics(trainer, self.image_metrics, current_fx_name, prog_bar=True)
+        self._log_metrics(trainer, self.image_metrics, current_fx_name, prog_bar=True)
 
     def _log_metrics(
         self, trainer: Trainer, metrics: AnomalibMetricCollection, current_fx_name: str, prog_bar: bool = False

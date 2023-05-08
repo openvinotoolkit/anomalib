@@ -8,7 +8,7 @@ from __future__ import annotations
 import math
 from enum import Enum
 from pathlib import Path
-from typing import Any, List, cast
+from typing import Any, cast
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -19,7 +19,6 @@ from anomalib.data import TaskType
 from anomalib.models.components import AnomalyModule
 from anomalib.post_processing import Visualizer
 from anomalib.utils.loggers.base import ImageLoggerBase
-from anomalib.utils.metrics.collection import AnomalibMetricCollection
 
 
 class VisualizationStage(str, Enum):
@@ -84,7 +83,7 @@ class VisualizationManager:
                     if self.log_images:
                         self._add_to_loggers(image, filename=filename)
 
-    def visualize_metrics(self, stage: VisualizationStage, metrics_list: List[AnomalibMetricCollection]) -> None:
+    def visualize_metrics(self, stage: VisualizationStage) -> None:
         """Visualize metrics.
 
         Note:
@@ -93,6 +92,12 @@ class VisualizationManager:
         Args:
             stage (VisualizationStage): The stage at which to visualize metrics.
         """
+        metrics_list = []
+        if hasattr(self.trainer.metrics_manager, "image_metrics"):
+            metrics_list.append(self.trainer.metrics_manager.image_metrics)
+        if hasattr(self.trainer.metrics_manager, "pixel_metrics"):
+            metrics_list.append(self.trainer.metrics_manager.pixel_metrics)
+
         if stage == self.stage and (self.show_images or self.log_images):
             for metrics in metrics_list:
                 for metric in metrics.values():

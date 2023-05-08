@@ -72,5 +72,4 @@ class AnomalibTestLoop(EvaluationLoop):
         self.trainer.visualization_manager.visualize_images(output_or_outputs, VisualizationStage.TEST)
         self.trainer.visualization_manager.visualize_metrics(
             VisualizationStage.TEST,
-            [self.trainer.metrics_manager.image_metrics, self.trainer.metrics_manager.pixel_metrics],
         )

@@ -30,7 +30,7 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
     def __init__(
         self, task: TaskType, transform: A.Compose, clip_length_in_frames: int, frames_between_clips: int
     ) -> None:
-        super().__init__(task, transform)
+        super().__init__(task=task, transform=transform)
 
         self.clip_length_in_frames = clip_length_in_frames
         self.frames_between_clips = frames_between_clips

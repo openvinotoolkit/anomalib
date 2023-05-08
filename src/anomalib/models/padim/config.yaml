@@ -3,7 +3,6 @@ dataset:
   format: mvtec
   path: ./datasets/MVTec
   category: bottle
-  task: segmentation
   train_batch_size: 32
   eval_batch_size: 32
   num_workers: 8
@@ -70,6 +69,7 @@ optimization:
 
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
+  task_type: segmentation
   enable_checkpointing: true
   default_root_dir: null
   gradient_clip_val: 0

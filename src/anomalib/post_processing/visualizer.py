@@ -73,7 +73,7 @@ class Visualizer:
         if mode not in ("full", "simple"):
             raise ValueError(f"Unknown visualization mode: {mode}. Please choose one of ['full', 'simple']")
         self.mode = mode
-        if task not in (TaskType.CLASSIFICATION, TaskType.DETECTION, TaskType.SEGMENTATION):
+        if task not in set(TaskType):
             raise ValueError(
                 f"Unknown task type: {mode}. Please choose one of ['classification', 'detection', 'segmentation']"
             )
@@ -140,27 +140,27 @@ class Visualizer:
             An image showing the full set of visualizations for the input image.
         """
         visualization = ImageGrid()
-        if self.task == TaskType.DETECTION:
-            assert image_result.pred_boxes is not None
-            visualization.add_image(image_result.image, "Image")
+        visualization.add_image(image_result.image, "Image")
+        if self.task in (TaskType.DETECTION, TaskType.ALL):
+            if self.task == TaskType.DETECTION and image_result.pred_boxes is None:
+                raise ValueError("Detection task requires predicted boxes.")
             if image_result.gt_boxes is not None:
                 gt_image = draw_boxes(np.copy(image_result.image), image_result.gt_boxes, color=(255, 0, 0))
                 visualization.add_image(image=gt_image, color_map="gray", title="Ground Truth")
-            else:
-                visualization.add_image(image_result.image, "Image")
-            pred_image = draw_boxes(np.copy(image_result.image), image_result.normal_boxes, color=(0, 255, 0))
-            pred_image = draw_boxes(pred_image, image_result.anomalous_boxes, color=(255, 0, 0))
-            visualization.add_image(pred_image, "Predictions")
-        if self.task == TaskType.SEGMENTATION:
-            assert image_result.pred_mask is not None
-            visualization.add_image(image_result.image, "Image")
+            if image_result.pred_boxes is not None:
+                pred_image = draw_boxes(np.copy(image_result.image), image_result.normal_boxes, color=(0, 255, 0))
+                pred_image = draw_boxes(pred_image, image_result.anomalous_boxes, color=(255, 0, 0))
+                visualization.add_image(pred_image, "Predictions")
+        if self.task in (TaskType.SEGMENTATION, TaskType.ALL):
+            if self.task == TaskType.SEGMENTATION and image_result.pred_mask is None:
+                raise ValueError("Segmentation task requires predicted mask.")
             if image_result.gt_mask is not None:
                 visualization.add_image(image=image_result.gt_mask, color_map="gray", title="Ground Truth")
-            visualization.add_image(image_result.heat_map, "Predicted Heat Map")
-            visualization.add_image(image=image_result.pred_mask, color_map="gray", title="Predicted Mask")
-            visualization.add_image(image=image_result.segmentations, title="Segmentation Result")
-        elif self.task == TaskType.CLASSIFICATION:
-            visualization.add_image(image_result.image, title="Image")
+            if image_result.pred_mask is not None:
+                visualization.add_image(image_result.heat_map, "Predicted Heat Map")
+                visualization.add_image(image=image_result.pred_mask, color_map="gray", title="Predicted Mask")
+                visualization.add_image(image=image_result.segmentations, title="Segmentation Result")
+        if self.task in (TaskType.CLASSIFICATION, TaskType.ALL):
             if hasattr(image_result, "heat_map"):
                 visualization.add_image(image_result.heat_map, "Predicted Heat Map")
             if image_result.pred_label:
@@ -182,26 +182,25 @@ class Visualizer:
         Returns:
             An image showing the simple visualization for the input image.
         """
-        if self.task == TaskType.DETECTION:
+        result_image: np.ndarray = image_result.image
+        if self.task in (TaskType.DETECTION, TaskType.ALL):
             # return image with bounding boxes augmented
-            image_with_boxes = draw_boxes(
-                image=np.copy(image_result.image), boxes=image_result.anomalous_boxes, color=(0, 0, 255)
+            result_image = draw_boxes(
+                image=np.copy(result_image), boxes=image_result.anomalous_boxes, color=(0, 0, 255)
             )
             if image_result.gt_boxes is not None:
-                image_with_boxes = draw_boxes(image=image_with_boxes, boxes=image_result.gt_boxes, color=(255, 0, 0))
-            return image_with_boxes
-        if self.task == TaskType.SEGMENTATION:
+                result_image = draw_boxes(image=result_image, boxes=image_result.gt_boxes, color=(255, 0, 0))
+        if self.task in (TaskType.SEGMENTATION, TaskType.ALL):
             visualization = mark_boundaries(
                 image_result.heat_map, image_result.pred_mask, color=(1, 0, 0), mode="thick"
             )
-            return (visualization * 255).astype(np.uint8)
-        if self.task == TaskType.CLASSIFICATION:
+            result_image = (visualization * 255).astype(np.uint8)
+        if self.task in (TaskType.CLASSIFICATION, TaskType.ALL):
             if image_result.pred_label:
-                image_classified = add_anomalous_label(image_result.image, image_result.pred_score)
+                result_image = add_anomalous_label(result_image, image_result.pred_score)
             else:
-                image_classified = add_normal_label(image_result.image, 1 - image_result.pred_score)
-            return image_classified
-        raise ValueError(f"Unknown task type: {self.task}")
+                result_image = add_normal_label(result_image, 1 - image_result.pred_score)
+        return result_image
 
     @staticmethod
     def show(title: str, image: np.ndarray, delay: int = 0) -> None:

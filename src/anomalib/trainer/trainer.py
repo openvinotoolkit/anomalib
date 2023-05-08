@@ -9,9 +9,11 @@ from __future__ import annotations
 import logging
 import warnings
 
-from pytorch_lightning import Trainer
+from pytorch_lightning import LightningModule, Trainer
+from pytorch_lightning.core.datamodule import LightningDataModule
+from pytorch_lightning.utilities.types import _EVALUATE_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
 
-from anomalib.data import TaskType
+from anomalib.data import AnomalibDataModule, AnomalibDataset, TaskType
 from anomalib.models.components.base.anomaly_module import AnomalyModule
 from anomalib.post_processing import NormalizationMethod, ThresholdMethod
 from anomalib.trainer.loops.one_class import FitLoop, PredictionLoop, TestLoop, ValidationLoop
@@ -97,3 +99,72 @@ class AnomalibTrainer(Trainer):
             log_images=log_images,
             stage=visualization_stage,
         )
+
+    def fit(
+        self,
+        model: LightningModule,
+        train_dataloaders: TRAIN_DATALOADERS | LightningDataModule | None = None,
+        val_dataloaders: EVAL_DATALOADERS | None = None,
+        datamodule: LightningDataModule | None = None,
+        ckpt_path: str | None = None,
+    ) -> None:
+        """Sets task type in the dataset and calls the fit method of the trainer."""
+        if datamodule is not None:
+            self._set_datamodule_task(datamodule)
+
+        if train_dataloaders is not None:
+            self._set_dataloader_task(train_dataloaders)
+
+        if val_dataloaders is not None:
+            self._set_dataloader_task(val_dataloaders)
+
+        return super().fit(model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)
+
+    def test(
+        self,
+        model: LightningModule | None = None,
+        dataloaders: EVAL_DATALOADERS | LightningDataModule | None = None,
+        ckpt_path: str | None = None,
+        verbose: bool = True,
+        datamodule: LightningDataModule | None = None,
+    ) -> _EVALUATE_OUTPUT:
+        """Sets the task type in the dataset and calls the test method of the trainer."""
+        if datamodule is not None:
+            self._set_datamodule_task(datamodule)
+
+        if dataloaders is not None:
+            self._set_dataloader_task(dataloaders)
+
+        return super().test(model, dataloaders, ckpt_path, verbose, datamodule)
+
+    def _set_datamodule_task(self, datamodule: LightningDataModule):
+        """Sets task type parameter in the dataset of the datamodule.
+
+        Args:
+            datamodule (LightningDataModule): Lightning datamodule.
+        """
+        if isinstance(datamodule, AnomalibDataModule):
+            for attribute in ("val_data", "test_data", "train_data"):
+                if hasattr(datamodule, attribute):
+                    dataset = getattr(datamodule, attribute)
+                    if isinstance(dataset, AnomalibDataset):
+                        dataset.task = self.task_type
+
+    def _set_dataloader_task(self, dataloader: TRAIN_DATALOADERS | EVAL_DATALOADERS | LightningDataModule):
+        """Sets task type parameter in the dataset of the dataloader or datamodule.
+
+        Args:
+            dataloader (TRAIN_DATALOADERS | EVAL_DATALOADERS | LightningDataModule): Lightning dataloader.
+        """
+        if isinstance(dataloader, LightningDataModule):
+            self._set_datamodule_task(dataloader)
+        elif isinstance(dataloader, (list, tuple)):
+            for dataloader in dataloader:
+                if isinstance(dataloader, LightningDataModule):
+                    self._set_datamodule_task(dataloader)
+        elif isinstance(dataloader, dict):
+            for dataloader in dataloader.values():
+                if isinstance(dataloader, LightningDataModule):
+                    self._set_datamodule_task(dataloader)
+        else:
+            warnings.warn(f"train_dataloaders is of type {type(dataloader)}. Skipping setting task type.")
