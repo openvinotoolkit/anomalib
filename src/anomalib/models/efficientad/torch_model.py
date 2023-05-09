@@ -265,7 +265,6 @@ class EfficientADModel(nn.Module):
                 teacher_output = (teacher_output - self.mean_std["mean"]) / self.mean_std["std"]
 
         student_output = self.student(batch)
-        # 3: Split the student output into Y ST ∈ R 384×64×64 and Y STAE ∈ R 384×64×64 as above
         distance_st = torch.pow(teacher_output - student_output[:, : self.teacher_out_channels, :, :], 2)
 
         if self.training:
@@ -298,9 +297,7 @@ class EfficientADModel(nn.Module):
             with torch.no_grad():
                 ae_output = self.ae(batch)
 
-            map_st = torch.mean(
-                (teacher_output - student_output[:, : self.teacher_out_channels]) ** 2, dim=1, keepdim=True
-            )
+            map_st = torch.mean(distance_st, dim=1, keepdim=True)
             map_stae = torch.mean(
                 (ae_output - student_output[:, self.teacher_out_channels :]) ** 2, dim=1, keepdim=True
             )
