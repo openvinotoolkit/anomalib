@@ -61,5 +61,5 @@ jobs:
           then
             ./codecov -t ${{ secrets.CODECOV_TOKEN }} --sha $COMMIT_ID -U $HTTP_PROXY -f .tox/coverage.xml
           else
-            ./codecov --sha $COMMIT_ID -U $HTTP_PROXY -f .tox/coverage.xml
+            ./codecov --sha $COMMIT_ID -r openvinotoolkit/anomalib -U $HTTP_PROXY -f .tox/coverage.xml
           fi
