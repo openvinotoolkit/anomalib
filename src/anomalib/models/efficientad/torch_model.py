@@ -268,8 +268,8 @@ class EfficientADModel(nn.Module):
         student_output = self.student(batch)
         ae_output = self.ae(batch)
         # 3: Split the student output into Y ST ∈ R 384×64×64 and Y STAE ∈ R 384×64×64 as above
-        student_output = student_output[:, : self.teacher_out_channels, :, :]
-        student_output_ae = student_output[:, -self.teacher_out_channels :, :, :]
+        student_output = student_output[:, :self.teacher_out_channels, :, :]
+        student_output_ae = student_output[:, self.teacher_out_channels:, :, :]
 
         distance_st = torch.pow(teacher_output - student_output, 2)
 
@@ -277,14 +277,14 @@ class EfficientADModel(nn.Module):
             # Student loss
             d_hard = torch.quantile(distance_st, 0.999)
             loss_hard = torch.mean(distance_st[distance_st >= d_hard])
-            student_imagenet_output = self.student(batch_imagenet)[:, : self.teacher_out_channels, :, :]
+            student_imagenet_output = self.student(batch_imagenet)[:, :self.teacher_out_channels, :, :]
             loss_st = loss_hard + (1 / (c * h * w)) * torch.sum(torch.pow(student_imagenet_output, 2))
 
             # Autoencoder and Student AE Loss
             aug_img = self.choose_random_aug_image(batch)
             ae_output_aug = self.ae(aug_img)
             student_output_aug = self.student(aug_img)
-            student_output_ae_aug = student_output_aug[:, -self.teacher_out_channels :, :, :]
+            student_output_ae_aug = student_output_aug[:, self.teacher_out_channels:, :, :]
 
             with torch.no_grad():
                 teacher_output_aug = self.teacher(aug_img)

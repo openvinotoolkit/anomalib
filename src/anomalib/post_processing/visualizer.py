@@ -168,11 +168,7 @@ class Visualizer:
                 visualization.add_image(image=image_result.gt_mask, color_map="gray", title="Ground Truth")
             visualization.add_image(image_result.heat_map, "Predicted Heat Map")
             visualization.add_image(image=image_result.pred_mask, color_map="gray", title="Predicted Mask")
-            if image_result.pred_label:
-                image_classified = add_anomalous_label(image_result.segmentations, image_result.pred_score)
-            else:
-                image_classified = add_normal_label(image_result.segmentations, 1 - image_result.pred_score)
-            visualization.add_image(image=image_classified, title="Segmentation Result")
+            visualization.add_image(image=image_result.segmentations, title="Segmentation Result")
         elif self.task == TaskType.CLASSIFICATION:
             visualization.add_image(image_result.image, title="Image")
             if hasattr(image_result, "heat_map"):
