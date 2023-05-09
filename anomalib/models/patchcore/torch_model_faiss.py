@@ -19,13 +19,23 @@ from typing import Optional, Union
 import torch
 from torch import Tensor
 from anomalib.models.patchcore.torch_model import PatchcoreModel
-import faiss
 
-# Importing this will add the bindings between faiss and torch
-from faiss.contrib import torch_utils
+try:
+    import faiss
+
+    # Importing this will add the bindings between faiss and torch
+    from faiss.contrib import torch_utils
+
+    FAISS_AVAILABLE = True
+except ImportError:
+    FAISS_AVAILABLE = False
+
 import numpy as np
 
 log = logging.getLogger(__name__)
+
+
+# This is just an experimental model it is not designed to work as it is hardly exportable
 
 
 class FaissNN(object):
@@ -34,6 +44,8 @@ class FaissNN(object):
         Args:
             num_workers: Number of workers to use with FAISS for similarity search.
         """
+        if not FAISS_AVAILABLE:
+            raise ImportError("Faiss is not installed, if you are using a linux based machine install faiss-gpu==1.7.2")
         faiss.omp_set_num_threads(num_workers)
         self.search_index = None
         self.fit_on_gpu = False
@@ -116,6 +128,9 @@ class FaissPatchcoreModel(PatchcoreModel):
         self,
         **kwargs,
     ) -> None:
+        if not FAISS_AVAILABLE:
+            raise ImportError("Faiss is not installed, if you are using a linux based machine install faiss-gpu==1.7.2")
+
         super().__init__(**kwargs)
         self.faiss_nn = FaissNN(num_workers=8)
 
