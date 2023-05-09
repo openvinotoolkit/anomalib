@@ -166,7 +166,7 @@ class EfficientAD(AnomalyModule):
         return {"qa_st": qa_st, "qa_ae": qa_ae, "qb_st": qb_st, "qb_ae": qb_ae}
 
     def configure_optimizers(self) -> optim.Optimizer:
-        optimizer = optim.Adam(
+        optimizer = optim.AdamW(
             list(self.model.student.parameters()) + list(self.model.ae.parameters()),
             lr=self.lr,
             weight_decay=self.weight_decay,
