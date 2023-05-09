@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.4.0+obx.1.0.1]
+
+### Fixed
+- Remove faiss-gpu requirement to avoid problems with a windows installation
+
 ## [v0.4.0] - 2023-03-01
 
 ### Added
