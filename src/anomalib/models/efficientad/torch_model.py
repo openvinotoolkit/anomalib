@@ -263,19 +263,18 @@ class EfficientADModel(nn.Module):
             teacher_output = self.teacher(batch)
             if self.is_set(self.mean_std):
                 teacher_output = (teacher_output - self.mean_std["mean"]) / self.mean_std["std"]
-            #_, c, h, w = teacher_output.shape
 
         student_output = self.student(batch)
         # 3: Split the student output into Y ST ∈ R 384×64×64 and Y STAE ∈ R 384×64×64 as above
-        distance_st = torch.pow(teacher_output - student_output[:, :self.teacher_out_channels, :, :], 2)
+        distance_st = torch.pow(teacher_output - student_output[:, : self.teacher_out_channels, :, :], 2)
 
         if self.training:
             # Student loss
             d_hard = torch.quantile(distance_st, 0.999)
             loss_hard = torch.mean(distance_st[distance_st >= d_hard])
-            student_output_penalty  = self.student(batch_imagenet)[:, :self.teacher_out_channels, :, :]
+            student_output_penalty = self.student(batch_imagenet)[:, : self.teacher_out_channels, :, :]
             loss_penalty = torch.mean(student_output_penalty**2)
-            loss_st = loss_hard +  loss_penalty
+            loss_st = loss_hard + loss_penalty
 
             # Autoencoder and Student AE Loss
             aug_img = self.choose_random_aug_image(batch)
@@ -286,32 +285,25 @@ class EfficientADModel(nn.Module):
                 if self.is_set(self.mean_std):
                     teacher_output_aug = (teacher_output_aug - self.mean_std["mean"]) / self.mean_std["std"]
 
-            student_output_ae_aug = self.student(aug_img)[:, self.teacher_out_channels:, :, :]
+            student_output_ae_aug = self.student(aug_img)[:, self.teacher_out_channels :, :, :]
 
             distance_ae = torch.pow(teacher_output_aug - ae_output_aug, 2)
             distance_stae = torch.pow(ae_output_aug - student_output_ae_aug, 2)
 
             loss_ae = torch.mean(distance_ae)
             loss_stae = torch.mean(distance_stae)
-
             return (loss_st, loss_ae, loss_stae)
 
         else:
             with torch.no_grad():
                 ae_output = self.ae(batch)
 
-            #student_output_ae = student_output[:, self.teacher_out_channels:, :, :]
-            #distance_stae = torch.pow(ae_output - student_output_ae, 2)
-
-            map_st = torch.mean((teacher_output - student_output[:, :self.teacher_out_channels])**2,
-                        dim=1, keepdim=True)
-        
-            map_stae = torch.mean((ae_output -
-                         student_output[:, self.teacher_out_channels:])**2,
-                        dim=1, keepdim=True)
-
-            #map_st = torch.mean(distance_st, dim=1, keepdim=True)
-            #map_stae = torch.mean(distance_stae, dim=1, keepdim=True)
+            map_st = torch.mean(
+                (teacher_output - student_output[:, : self.teacher_out_channels]) ** 2, dim=1, keepdim=True
+            )
+            map_stae = torch.mean(
+                (ae_output - student_output[:, self.teacher_out_channels :]) ** 2, dim=1, keepdim=True
+            )
 
             map_st = F.interpolate(map_st, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
             map_stae = F.interpolate(map_stae, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
@@ -323,5 +315,4 @@ class EfficientADModel(nn.Module):
                 )
 
             map_combined = 0.5 * map_st + 0.5 * map_stae
-
             return {"anomaly_map_combined": map_combined, "map_st": map_st, "map_ae": map_stae}
