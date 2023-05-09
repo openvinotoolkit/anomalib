@@ -10,7 +10,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - 📚 Add OpenVINO Inference to getting started notebook. by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/897
 - Mvtec 3d by @alexriedel1 in https://github.com/openvinotoolkit/anomalib/pull/907
-- Add ruff as the main linter by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/936
 - MVTec 3D and Folder3D by @alexriedel1 in https://github.com/openvinotoolkit/anomalib/pull/942
 - add reorder=True argument in aupro by @triet1102 in https://github.com/openvinotoolkit/anomalib/pull/944
 - always reorder inputs when computing AUROC by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/945
@@ -18,19 +17,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add `README.md` files to `notebooks` directories and its subdirectories (<https://github.com/openvinotoolkit/anomalib/issues/993>)
 - Set transformations from the config file by @alexriedel1 in https://github.com/openvinotoolkit/anomalib/pull/990
 - Add contributors to `README.md` by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/995
-- enable auto-fixing for ruff in pre-commit by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/1004
 - Add codeowners file by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1019
 - Configure reference frame for multi-frame video clips by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/1023
-- Make anomalib PEP 561 compliant for mypy by @WenjingKangIntel in https://github.com/openvinotoolkit/anomalib/pull/1038
+- [Algo] Attribute-based Representations for Accurate and Interpretable Video Anomaly Detection by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/1040
 
 ### Changed
 
 - Switch to src layout by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/921
 - Remove `config` flag from `OpenVINOInferencer` (<https://github.com/openvinotoolkit/anomalib/pull/939>)
+- Add ruff as the main linter by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/936
 - Add a new workflow for code scanning by @yunchu in https://github.com/openvinotoolkit/anomalib/pull/940
 - Enable bandit scanning by @yunchu in https://github.com/openvinotoolkit/anomalib/pull/954
 - 🐳 Update Containers and Readme by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/952
 - Refactor AUPRO metric by @triet1102 in https://github.com/openvinotoolkit/anomalib/pull/991
+- enable auto-fixing for ruff in pre-commit by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/1004
 - Refactor strings and ints into enum.Enum by @WenjingKangIntel in https://github.com/openvinotoolkit/anomalib/pull/1044
 - Modify codecov upload by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/1080
 
@@ -52,6 +52,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix issue in tutorial by @Ravindu987 in https://github.com/openvinotoolkit/anomalib/pull/997
 - Fix tarfile vulnerability by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/1003
 - Cuda 11.4 dockerfile fix by @phcarval in https://github.com/openvinotoolkit/anomalib/pull/1021
+- Make anomalib PEP 561 compliant for mypy by @WenjingKangIntel in https://github.com/openvinotoolkit/anomalib/pull/1038
 - [Bug: 839] Crop in SSPCAB implementation by @isaacncz in https://github.com/openvinotoolkit/anomalib/pull/1057
 - [Bug: 865] datamodule.setup() assertion failed by @isaacncz in https://github.com/openvinotoolkit/anomalib/pull/1058
 - Fix logger message for test_split_ratio by @ugotsoul in https://github.com/openvinotoolkit/anomalib/pull/1071
