@@ -6,27 +6,13 @@ dataset:
   task: segmentation
   train_batch_size: 1
   eval_batch_size: 16
-  num_workers: 0
+  num_workers: 8
   image_size: 256 # dimensions to which images are resized (mandatory)
   center_crop: null # dimensions to which images are center-cropped after resizing (optional)
   normalization: none # data distribution to which the images will be normalized: [none, imagenet]
   transform_config:
-    train:
-      Resize:
-        height: 256
-        width: 256
-        always_apply: true
-        interpolation: 3
-      ToFloat:
-        max_value: 255
-    eval:
-      Resize:
-        height: 256
-        width: 256
-        always_apply: true
-        interpolation: 3
-      ToFloat:
-        max_value: 255
+    train: null
+    eval: null
   test_split_mode: from_dir # options: [from_dir, synthetic]
   test_split_ratio: 0.2 # fraction of train images held out testing (usage depends on test_split_mode)
   val_split_mode: same_as_test # options: [same_as_test, from_test, synthetic]
@@ -35,7 +21,7 @@ dataset:
 model:
   name: efficientad
   pre_trained_dir: src/anomalib/models/efficientad/pre_trained/
-  teacher_file_name: teacher_medium_nelson1425.pth
+  teacher_file_name: teacher_medium_rximg.pth
   teacher_out_channels: 384
   model_size: M
   lr: 0.0001
