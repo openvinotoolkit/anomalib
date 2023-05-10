@@ -87,6 +87,7 @@ class EfficientAD(AnomalyModule):
                 A.Resize(image_size[0] * 2, image_size[1] * 2),  # resizing it to 512 × 512,
                 A.ToGray(p=0.3),  # converting it to gray scale with a probability of 0.3
                 A.CenterCrop(image_size[0], image_size[1]),  # and cropping the center 256 × 256 pixels
+                A.ToFloat(always_apply=False, p=1.0, max_value=255),
                 ToTensorV2(),
             ]
         )
