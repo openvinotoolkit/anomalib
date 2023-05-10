@@ -3,9 +3,6 @@
 from einops import reduce
 
 from anomalib.models import AnomalyModule
-from anomalib.post_processing.post_process import ThresholdMethod
-from anomalib.utils.metrics import create_metric_collection
-from anomalib.utils.metrics.min_max import MinMax
 
 
 class DummyAnomalibModule(AnomalyModule):

@@ -3,11 +3,9 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
-from __future__ import annotations
-
 import logging
 import warnings
+from typing import List, Optional, Union
 
 from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.core.datamodule import LightningDataModule
@@ -57,10 +55,10 @@ class AnomalibTrainer(Trainer):
         self,
         threshold_method: ThresholdMethod = ThresholdMethod.ADAPTIVE,
         normalization_method: NormalizationMethod = NormalizationMethod.MIN_MAX,
-        manual_image_threshold: float | None = None,
-        manual_pixel_threshold: float | None = None,
-        image_metrics: list[str] | None = None,
-        pixel_metrics: list[str] | None = None,
+        manual_image_threshold: Optional[float] = None,
+        manual_pixel_threshold: Optional[float] = None,
+        image_metrics: Optional[List[str]] = None,
+        pixel_metrics: Optional[List[str]] = None,
         visualization_mode: str = "full",
         show_images: bool = False,
         log_images: bool = False,
@@ -103,10 +101,10 @@ class AnomalibTrainer(Trainer):
     def fit(
         self,
         model: LightningModule,
-        train_dataloaders: TRAIN_DATALOADERS | LightningDataModule | None = None,
-        val_dataloaders: EVAL_DATALOADERS | None = None,
-        datamodule: LightningDataModule | None = None,
-        ckpt_path: str | None = None,
+        train_dataloaders: Union[TRAIN_DATALOADERS, LightningDataModule, None] = None,
+        val_dataloaders: Union[EVAL_DATALOADERS, None] = None,
+        datamodule: Union[LightningDataModule, None] = None,
+        ckpt_path: Union[str, None] = None,
     ) -> None:
         """Sets task type in the dataset and calls the fit method of the trainer."""
         if datamodule is not None:
@@ -122,11 +120,11 @@ class AnomalibTrainer(Trainer):
 
     def test(
         self,
-        model: LightningModule | None = None,
-        dataloaders: EVAL_DATALOADERS | LightningDataModule | None = None,
-        ckpt_path: str | None = None,
+        model: Union[LightningModule, None] = None,
+        dataloaders: Union[EVAL_DATALOADERS, LightningDataModule, None] = None,
+        ckpt_path: Union[str, None] = None,
         verbose: bool = True,
-        datamodule: LightningDataModule | None = None,
+        datamodule: Union[LightningDataModule, None] = None,
     ) -> _EVALUATE_OUTPUT:
         """Sets the task type in the dataset and calls the test method of the trainer."""
         if datamodule is not None:
@@ -150,7 +148,7 @@ class AnomalibTrainer(Trainer):
                     if isinstance(dataset, AnomalibDataset):
                         dataset.task = self.task_type
 
-    def _set_dataloader_task(self, dataloader: TRAIN_DATALOADERS | EVAL_DATALOADERS | LightningDataModule):
+    def _set_dataloader_task(self, dataloader: Union[TRAIN_DATALOADERS, EVAL_DATALOADERS, LightningDataModule]):
         """Sets task type parameter in the dataset of the dataloader or datamodule.
 
         Args:
