@@ -185,7 +185,7 @@ class EfficientAD(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        batch_imagenet = next(iter(self.imagenet_loader))[0].to(
+        batch_imagenet = next(iter(self.imagenet_loader))["image"][0].to(
             self.device
         )  # [0] getting the image not the label
         loss_st, loss_ae, loss_stae = self.model(batch=batch["image"], batch_imagenet=batch_imagenet)
