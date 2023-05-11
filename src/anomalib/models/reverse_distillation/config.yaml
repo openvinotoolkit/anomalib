@@ -70,7 +70,7 @@ project:
 logging:
   log_graph: false
   loggers:
-    class_path: anomalib.utils.loggers.file_system.FileSystemLogger
+    class_path: anomalib.utils.loggers.FileSystemLogger
     init_args:
       save_dir: results/logs
 

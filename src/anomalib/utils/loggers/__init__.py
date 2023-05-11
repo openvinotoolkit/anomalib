@@ -83,17 +83,17 @@ def get_experiment_logger(
         config.logging.loggers = [config.logging.loggers]
 
     for experiment_logger in config.logging.loggers:
-        if "tensorboard" in experiment_logger.class_path:
+        if "tensorboard" in experiment_logger.class_path.lower():
             logger_list.append(AnomalibTensorBoardLogger(**experiment_logger.init_args))
-        elif "wandb" in experiment_logger.class_path:
+        elif "wandb" in experiment_logger.class_path.lower():
             logger_list.append(AnomalibWandbLogger(**experiment_logger.init_args))
-        elif "comet" in experiment_logger.class_path:
+        elif "comet" in experiment_logger.class_path.lower():
             logger_list.append(AnomalibCometLogger(**experiment_logger.init_args))
-        elif "file_system" in experiment_logger.class_path:
+        elif "filesystem" in experiment_logger.class_path.lower():
             logger_list.append(FileSystemLogger(**experiment_logger.init_args))
         else:
             raise UnknownLogger(
-                f"Unknown logger type: {config.logging.logger}. "
+                f"Unknown logger type: {config.logging.loggers}. "
                 f"Available loggers are: {AVAILABLE_LOGGERS}.\n"
                 f"To enable the logger, set `project.logger` to `true` or use one of available loggers in config.yaml\n"
                 f"To disable the logger, set `project.logger` to `false`."

@@ -69,8 +69,8 @@ class AnomalibTestLoop(EvaluationLoop):
         )
         self.trainer.metrics.compute(output_or_outputs)
         self.trainer.metrics.log(self.trainer, "test_epoch_end")
-        self.trainer.visualization_manager.visualize_images(output_or_outputs, VisualizationStage.TEST)
-        self.trainer.visualization_manager.visualize_metrics(
+        self.trainer.visualizer.visualize_images(output_or_outputs, VisualizationStage.TEST)
+        self.trainer.visualizer.visualize_metrics(
             VisualizationStage.TEST,
             [self.trainer.metrics.image_metrics, self.trainer.metrics.pixel_metrics],
         )

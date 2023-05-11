@@ -8,16 +8,17 @@ from __future__ import annotations
 import math
 from enum import Enum
 from pathlib import Path
-from typing import Any, List, cast
+from typing import Any, cast
 
 import numpy as np
 from matplotlib import pyplot as plt
 from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 
-import anomalib.trainer as core
+from anomalib import trainer
 from anomalib.data import TaskType
 from anomalib.models.components import AnomalyModule
-from anomalib.post_processing import Visualizer
+from anomalib.post_processing import VisualizationMode
+from anomalib.post_processing import Visualizer as _Visualizer
 from anomalib.utils.loggers.base import ImageLoggerBase
 from anomalib.utils.metrics.collection import AnomalibMetricCollection
 
@@ -30,12 +31,12 @@ class VisualizationStage(str, Enum):
     PREDICT = "predict"
 
 
-class VisualizationManager:
+class Visualizer:
     """Manages visualization.
 
     Args:
         trainer (core.AnomalibTrainer): Anomaly trainer.
-        mode (str): The mode of visualization. Can be one of ['full', 'simple'].
+        mode (VisualizationMode): The mode of visualization. Can be one of ['full', 'simple'].
         show_images (bool, optional): Whether to show images. Defaults to False.
         log_images (bool, optional): Whether to log images to available loggers. Defaults to False.
         stage (VisualizationStage, optional): The stage at which to write images to the logger(s).
@@ -44,14 +45,14 @@ class VisualizationManager:
 
     def __init__(
         self,
-        trainer: core.AnomalibTrainer,
-        mode: str,
+        trainer: trainer.AnomalibTrainer,
+        mode: VisualizationMode,
         show_images: bool = False,
         log_images: bool = False,
         stage: VisualizationStage = VisualizationStage.TEST,
     ) -> None:
-        if mode not in ("full", "simple"):
-            raise ValueError(f"Unknown visualization mode: {mode}. Please choose one of ['full', 'simple']")
+        if mode not in set(VisualizationMode):
+            raise ValueError(f"Unknown visualization mode: {mode}. Please choose one of {set(VisualizationMode)}")
         self.mode = mode
         if trainer.task_type not in (TaskType.CLASSIFICATION, TaskType.DETECTION, TaskType.SEGMENTATION):
             raise ValueError(
@@ -61,7 +62,7 @@ class VisualizationManager:
         self.show_images = show_images
         self.log_images = log_images
         self.stage = stage
-        self.visualizer = Visualizer(mode, trainer.task_type)
+        self.visualizer = _Visualizer(mode, trainer.task_type)
 
     def visualize_images(
         self, outputs: EPOCH_OUTPUT | list[EPOCH_OUTPUT] | STEP_OUTPUT, stage: VisualizationStage
@@ -84,7 +85,7 @@ class VisualizationManager:
                     if self.log_images:
                         self._add_to_loggers(image, filename=filename)
 
-    def visualize_metrics(self, stage: VisualizationStage, metrics_list: List[AnomalibMetricCollection]) -> None:
+    def visualize_metrics(self, stage: VisualizationStage, metrics_list: list[AnomalibMetricCollection]) -> None:
         """Visualize metrics.
 
         Note:
@@ -153,10 +154,10 @@ class VisualizationManager:
         }
         # save image to respective logger
         if self.log_images:
-            for log_to in available_loggers:
+            for available_logger in available_loggers.values():
                 # check if logger object is same as the requested object
-                if isinstance(available_loggers[log_to], ImageLoggerBase):
-                    logger: ImageLoggerBase = cast(ImageLoggerBase, available_loggers[log_to])  # placate mypy
+                if isinstance(available_logger, ImageLoggerBase):
+                    logger: ImageLoggerBase = cast(ImageLoggerBase, available_logger)  # placate mypy
                     if isinstance(filename, Path):
                         _name = filename.parent.name + "_" + filename.name
                     elif isinstance(filename, str):
