@@ -26,6 +26,7 @@ from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
     DownloadInfo,
     InputNormalizationMethod,
+    LabelName,
     Split,
     TestSplitMode,
     ValSplitMode,
@@ -104,8 +105,8 @@ def make_btech_dataset(path: Path, split: str | Split | None = None) -> DataFram
     samples.loc[(samples.split == "test") & (samples.label == "ok"), "mask_path"] = ""
 
     # Create label index for normal (0) and anomalous (1) images.
-    samples.loc[(samples.label == "ok"), "label_index"] = 0
-    samples.loc[(samples.label != "ok"), "label_index"] = 1
+    samples.loc[(samples.label == "ok"), "label_index"] = LabelName.NORMAL
+    samples.loc[(samples.label != "ok"), "label_index"] = LabelName.ABNORMAL
     samples.label_index = samples.label_index.astype(int)
 
     # Get the data frame for the split.
