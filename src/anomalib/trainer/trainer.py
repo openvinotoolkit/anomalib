@@ -13,10 +13,10 @@ from pytorch_lightning import Trainer
 
 from anomalib.data import TaskType
 from anomalib.models.components.base.anomaly_module import AnomalyModule
-from anomalib.post_processing import NormalizationMethod, ThresholdMethod
+from anomalib.post_processing import NormalizationMethod
 from anomalib.trainer.loops.one_class import FitLoop, PredictionLoop, TestLoop, ValidationLoop
 from anomalib.trainer.utils import CheckpointConnector, MetricsManager, PostProcessor, Thresholder, get_normalizer
-from anomalib.utils.metrics import AnomalyScoreThreshold
+from anomalib.utils.metrics import BaseAnomalyScoreThreshold
 
 log = logging.getLogger(__name__)
 # warnings to ignore in trainer
@@ -32,18 +32,16 @@ class AnomalibTrainer(Trainer):
         Refer to PyTorch Lightning's Trainer for a list of parameters for details on other Trainer parameters.
 
     Args:
-        threshold_method (ThresholdMethod): Thresholding method for normalizer.
+        imag_threshold_method (dict): Thresholding method. If None, adaptive thresholding is used.
+        pixel_threshold_method (dict): Thresholding method. If None, adaptive thresholding is used.
         normalization_method (NormalizationMethod): Normalization method
-        manual_image_threshold (float | None): If threshold method is manual, this needs to be set. Defaults to None.
-        manual_pixel_threshold (float | None): If threshold method is manual, this needs to be set. Defaults to None.
     """
 
     def __init__(
         self,
-        threshold_method: ThresholdMethod = ThresholdMethod.ADAPTIVE,
+        image_threshold: dict | None = None,  # TODO change from dict to BaseAnomalyScoreThreshold in CLI
+        pixel_threshold: dict | None = None,
         normalization_method: NormalizationMethod = NormalizationMethod.MIN_MAX,
-        manual_image_threshold: float | None = None,
-        manual_pixel_threshold: float | None = None,
         image_metrics: list[str] | None = None,
         pixel_metrics: list[str] | None = None,
         task_type: TaskType = TaskType.SEGMENTATION,
@@ -61,14 +59,13 @@ class AnomalibTrainer(Trainer):
 
         self.task_type = task_type
         # these are part of the trainer as they are used in the metrics-manager, post-processor and thresholder
-        self.image_threshold = AnomalyScoreThreshold().cpu()
-        self.pixel_threshold = AnomalyScoreThreshold().cpu()
+        self.image_threshold: BaseAnomalyScoreThreshold
+        self.pixel_threshold: BaseAnomalyScoreThreshold
 
         self.thresholder = Thresholder(
             trainer=self,
-            threshold_method=threshold_method,
-            manual_image_threshold=manual_image_threshold,
-            manual_pixel_threshold=manual_pixel_threshold,
+            image_threshold_method=image_threshold,
+            pixel_threshold_method=pixel_threshold,
         )
         self.post_processor = PostProcessor(trainer=self)
         self.normalizer = get_normalizer(trainer=self, normalization_method=normalization_method)
