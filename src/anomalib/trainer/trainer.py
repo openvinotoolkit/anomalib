@@ -32,7 +32,7 @@ class AnomalibTrainer(Trainer):
         Refer to PyTorch Lightning's Trainer for a list of parameters for details on other Trainer parameters.
 
     Args:
-        imag_threshold_method (dict): Thresholding method. If None, adaptive thresholding is used.
+        image_threshold_method (dict): Thresholding method. If None, adaptive thresholding is used.
         pixel_threshold_method (dict): Thresholding method. If None, adaptive thresholding is used.
         normalization_method (NormalizationMethod): Normalization method
     """

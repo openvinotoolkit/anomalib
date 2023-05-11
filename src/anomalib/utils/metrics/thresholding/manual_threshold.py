@@ -13,6 +13,7 @@ from .base import BaseAnomalyScoreThreshold
 class ManualThreshold(BaseAnomalyScoreThreshold):
     def __init__(self, default_value: float = 0.5, **kwargs) -> None:
         """Initialize Manual Threshold.
+
         Args:
             default_value (float, optional): Default threshold value. Defaults to 0.5.
         """
@@ -22,7 +23,9 @@ class ManualThreshold(BaseAnomalyScoreThreshold):
 
     def compute(self) -> torch.Tensor:
         """Compute the threshold.
+
         In case of manual thresholding, the threshold is already set and does not need to be computed.
+
         Returns:
             torch.Tensor: Value of the optimal threshold.
         """
@@ -30,6 +33,7 @@ class ManualThreshold(BaseAnomalyScoreThreshold):
 
     def update(self, *args, **kwargs) -> None:
         """Do nothing.
+
         Args:
             *args: Any positional arguments.
             **kwargs: Any keyword arguments.

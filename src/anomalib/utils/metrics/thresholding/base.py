@@ -19,6 +19,7 @@ class BaseAnomalyScoreThreshold(Metric, ABC):
 
     def compute(self) -> Any:
         """Compute the threshold
+
         Returns:
             Value of the optimal threshold.
         """
@@ -26,6 +27,7 @@ class BaseAnomalyScoreThreshold(Metric, ABC):
 
     def update(self, *args, **kwargs) -> None:
         """Update the metric state
+
         Args:
             *args: Any positional arguments.
             **kwargs: Any keyword arguments.

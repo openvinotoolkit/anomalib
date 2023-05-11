@@ -21,7 +21,7 @@ class Thresholder:
 
     Args:
         trainer (trainer.AnomalibTrainer): Trainer object
-        imag_threshold_method (BaseAnomalyScoreThreshold): Thresholding method. If None, adaptive thresholding is used.
+        image_threshold_method (BaseAnomalyScoreThreshold): Thresholding method. If None, adaptive thresholding is used.
         pixel_threshold_method (BaseAnomalyScoreThreshold): Thresholding method. If None, adaptive thresholding is used.
     """
 
@@ -44,14 +44,14 @@ class Thresholder:
         self.setup("image_threshold", self.image_threshold_method)
         self.setup("pixel_threshold", self.pixel_threshold_method)
 
-    def setup(self, property: str, threshold_method: dict | None):
+    def setup(self, attribute: str, threshold_method: dict | None):
         """Setup thresholds.
 
         Args:
-            property (str): Property to setup.
+            attribute (str): Property to setup.
         """
-        if not hasattr(self.trainer, property) or getattr(self.trainer, property) is None:
-            setattr(self.trainer, property, self._get_threshold_method(threshold_method))
+        if not hasattr(self.trainer, attribute) or getattr(self.trainer, attribute) is None:
+            setattr(self.trainer, attribute, self._get_thresholder(threshold_method))
 
     def compute(self):
         """Compute thresholds.
@@ -86,7 +86,7 @@ class Thresholder:
             # TODO this should use bounding boxes for detection task type
             pixel_metric.update(outputs["anomaly_maps"], outputs["mask"].int())
 
-    def _get_threshold_method(self, threshold_method: dict | None) -> BaseAnomalyScoreThreshold:
+    def _get_thresholder(self, threshold_method: dict | None) -> BaseAnomalyScoreThreshold:
         """Get threshold method.
 
         Args:
@@ -108,7 +108,7 @@ class Thresholder:
                     threshold_module = import_module("anomalib.utils.metrics.thresholding")
                     _threshold_class = getattr(threshold_module, _class_path)
             except (AttributeError, ModuleNotFoundError) as exception:
-                raise Exception(f"Threshold class {_class_path} not found") from exception
+                raise ValueError(f"Threshold class {_class_path} not found") from exception
 
             init_args = threshold_method.get("init_args")
             init_args = init_args if init_args is not None else {}
