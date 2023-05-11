@@ -18,6 +18,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Install requirements
         run: |
+          pip install -r requirements/docs.txt
           pip install .[full]
       - name: Link dataset path to local directory as nbsphinx runs the notebook
         run: ln -s $ANOMALIB_DATASET_PATH ./datasets
