@@ -31,12 +31,3 @@ class BaseAnomalyScoreThreshold(Metric, ABC):
             **kwargs: Any keyword arguments.
         """
         raise NotImplementedError("Subclass of BaseAnomalyScoreThreshold must implement the update method")
-
-    # def state_dict(
-    #     self, destination: dict[str, Any], prefix: str = "", keep_vars: bool = False
-    # ) -> dict[str, Any] | None:
-    #     """Since class name is added to the keys, this makes it easier to load the correct class from weights.
-    #     Note: This is temporary and will be replaced when custom loops are merged.
-    #     """
-    #     prefix = f"{self.__class__.__name__}.{prefix}"
-    #     return super().state_dict(destination, prefix, keep_vars)
