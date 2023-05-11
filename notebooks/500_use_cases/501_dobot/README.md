@@ -5,21 +5,37 @@
 | Training a Model         | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/500_use_cases/501_dobot/501a_training_a_model_with_cubes_from_a_robotic_arm.ipynb) |
 | Inference with the Model | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openvinotoolkit/anomalib/blob/main/notebooks/500_use_cases/501_dobot/501b_inference_with_a_robotic_arm.ipynb)                   |
 
-## Installation Instructions
+## Steps to use these notebooks
 
-If you have not installed all required dependencies, follow the [Installation Guide](https://openvinotoolkit.github.io/anomalib/getting_started/installation/index.html).
+These notebooks will help you to use a Dobot robot and Anomalib Library, for showcasing different kind of Industrial solutions
+
+Step 1: Create an environment to run Anomalib + Dobot DLL using Python version 3.8
+
+a. For Windows, use the following:
+
+       python -m venv anomalib_env
+       anomalib_env\Scripts\activate
+
+b. For Linux and MacOS:
+
+       python3 -m venv anomalib_env
+       source anomalib_env/bin/activate
+
+Step 2: Install Anomalib using pip install, you will find this command line in the notebook, but you can also install it after to run the notebook:
+
+       pip install anomalib[full]
+       
+Step 3: Install Jupyter Lab or Jupyter Notebook through: https://jupyter.org/install
+
+       pip install notebook
+       pip install ipykernel
+       pip install ipywidgets
 
 ## Notebook Contents
 
-This notebook demonstrates how NNCF can be used to compress a model trained with Anomalib. The notebook is divided into the following sections:
+Step 4: Then connect your USB Camera and verify it works using a simple camera application. Once it is verified, close the application.
 
-- Train an anomalib model without compression
-- Train a model with NNCF compression
-- Compare the performance of the two models (FP32 vs INT8)
-
-Step 1: Then connect your USB Camera and verify it works using a simple camera application. Once it is verified, close the application.
-
-Step 2 (Optional): If you have the Dobot robot please make the following.
+Step 5 (Optional): If you have the Dobot robot please make the following.
 
 1. Install Dobot requirements (See Dobot documentation here: https://en.dobot.cn/products/education/magician.html).
 2. Check all connections to the Dobot and verify it is working using the Dobot Studio.
