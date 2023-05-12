@@ -60,6 +60,6 @@ _Note_: If you dont have the robot you could jump to the another notebook [501a]
 
 ### Training
 
-For training we will use [501a notebook](https://github.com/openvinotoolkit/anomalib/blob/feature/notebooks/usecases/dobot/notebooks/500_use_cases/dobot/501a_training_a_model_with_cubes_from_a_robotic_arm.ipynb). In this example we are using "Padim" model and we are using Anomalib API for setting up the dataset, model, metrics, and the optimization process with OpenVINO.
+For training we will use [501a notebook](https://github.com/openvinotoolkit/anomalib/blob/main/notebooks/500_use_cases/501_dobot/501a_training_a_model_with_cubes_from_a_robotic_arm.ipynb). In this example we are using "Padim" model and we are using Anomalib API for setting up the dataset, model, metrics, and the optimization process with OpenVINO.
 
 ### Have Fun and share your results in the discussion channel! 😊
