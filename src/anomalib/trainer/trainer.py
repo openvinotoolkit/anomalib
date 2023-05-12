@@ -39,7 +39,7 @@ class AnomalibTrainer(Trainer):
 
     def __init__(
         self,
-        image_threshold: dict | None = None,  # TODO change from dict to BaseAnomalyScoreThreshold in CLI
+        image_threshold: dict | None = None,  # TODO change from dict to BaseAnomalyThreshold in CLI
         pixel_threshold: dict | None = None,
         normalization_method: NormalizationMethod = NormalizationMethod.MIN_MAX,
         image_metrics: list[str] | None = None,

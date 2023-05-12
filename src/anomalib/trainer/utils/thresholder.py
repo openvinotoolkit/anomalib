@@ -21,8 +21,8 @@ class Thresholder:
 
     Args:
         trainer (trainer.AnomalibTrainer): Trainer object
-        image_threshold_method (BaseAnomalyScoreThreshold): Thresholding method. If None, adaptive thresholding is used.
-        pixel_threshold_method (BaseAnomalyScoreThreshold): Thresholding method. If None, adaptive thresholding is used.
+        image_threshold_method (BaseAnomalyThreshold): Thresholding method. If None, adaptive thresholding is used.
+        pixel_threshold_method (BaseAnomalyThreshold): Thresholding method. If None, adaptive thresholding is used.
     """
 
     def __init__(
