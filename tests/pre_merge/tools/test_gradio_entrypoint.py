@@ -8,12 +8,14 @@ from __future__ import annotations
 
 import sys
 from importlib.util import find_spec
+from unittest.mock import patch
 
 import pytest
 
 from anomalib.data import TaskType
 from anomalib.deploy import ExportMode, OpenVINOInferencer, TorchInferencer, export
 from anomalib.models import get_model
+from anomalib.trainer import AnomalibTrainer
 
 sys.path.append("tools/inference")
 
@@ -41,7 +43,7 @@ class TestGradioInferenceEntrypoint:
 
         # export torch model
         export(
-            task=TaskType.SEGMENTATION,
+            trainer=AnomalibTrainer(),
             transform=transforms_config,
             input_size=(100, 100),
             model=model,

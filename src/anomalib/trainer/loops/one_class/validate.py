@@ -70,8 +70,8 @@ class AnomalibValidationLoop(EvaluationLoop):
             self.trainer.metrics.set_threshold()
             self.trainer.metrics.compute(output_or_outputs)
             self.trainer.metrics.log(self.trainer, "validation_epoch_end")
-            self.trainer.visualization_manager.visualize_images(output_or_outputs, VisualizationStage.VAL)
-            self.trainer.visualization_manager.visualize_metrics(
+            self.trainer.visualizer.visualize_images(output_or_outputs, VisualizationStage.VAL)
+            self.trainer.visualizer.visualize_metrics(
                 VisualizationStage.VAL,
                 [self.trainer.metrics.image_metrics, self.trainer.metrics.pixel_metrics],
             )

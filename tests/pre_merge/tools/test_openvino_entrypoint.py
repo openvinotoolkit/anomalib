@@ -11,9 +11,9 @@ from importlib.util import find_spec
 
 import pytest
 
-from anomalib.data import TaskType
 from anomalib.deploy import ExportMode, export
 from anomalib.models import get_model
+from anomalib.trainer import AnomalibTrainer
 
 sys.path.append("tools/inference")
 
@@ -41,8 +41,8 @@ class TestOpenVINOInferenceEntrypoint:
 
         # export OpenVINO model
         export(
-            task=TaskType.SEGMENTATION,
             transform=transforms_config,
+            trainer=AnomalibTrainer(),
             input_size=(100, 100),
             model=model,
             export_mode=ExportMode.OPENVINO,
