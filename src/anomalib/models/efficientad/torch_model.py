@@ -239,16 +239,15 @@ class EfficientADModel(nn.Module):
         return False
 
     def choose_random_aug_image(self, image: Tensor) -> Tensor:
-        aug_index = random.choice([1, 2, 3])
+        transform_functions = [
+            transforms.functional.adjust_brightness,
+            transforms.functional.adjust_contrast,
+            transforms.functional.adjust_saturation,
+        ]
         # Sample an augmentation coefficient λ from the uniform distribution U(0.8, 1.2)
         coefficient = random.uniform(0.8, 1.2)
-        if aug_index == 1:
-            img_aug = transforms.functional.adjust_brightness(image, coefficient)
-        elif aug_index == 2:
-            img_aug = transforms.functional.adjust_contrast(image, coefficient)
-        elif aug_index == 3:
-            img_aug = transforms.functional.adjust_saturation(image, coefficient)
-        return img_aug
+        transform_function = random.choice(transform_functions)
+        return transform_function(image, coefficient)
 
     def forward(self, batch: Tensor, batch_imagenet: Tensor = None) -> Union[Tensor, dict]:
         """Prediction by EfficientAD models.

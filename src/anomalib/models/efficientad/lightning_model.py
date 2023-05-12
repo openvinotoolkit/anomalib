@@ -55,10 +55,10 @@ class EfficientAD(AnomalyModule):
         teacher_file_name: str,
         teacher_out_channels: int,
         pre_trained_dir: str,
+        image_size: list,
         model_size: str = "M",
         lr: float = 0.0001,
         weight_decay: float = 0.00001,
-        image_size: list = [256, 256],
         padding: bool = False,
     ) -> None:
         super().__init__()
