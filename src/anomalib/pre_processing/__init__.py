@@ -4,6 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from .pre_process import PreProcessor
-from .tiler import Tiler
+from .tiler import ImageUpscaleMode, Tiler
 
-__all__ = ["PreProcessor", "Tiler"]
+__all__ = ["PreProcessor", "Tiler", "ImageUpscaleMode"]

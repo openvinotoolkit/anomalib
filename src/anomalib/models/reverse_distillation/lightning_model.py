@@ -15,6 +15,7 @@ from torch import Tensor, optim
 
 from anomalib.models.components import AnomalyModule
 
+from .anomaly_map import AnomalyMapGenerationMode
 from .loss import ReverseDistillationLoss
 from .torch_model import ReverseDistillationModel
 
@@ -34,7 +35,7 @@ class ReverseDistillation(AnomalyModule):
         input_size: tuple[int, int],
         backbone: str,
         layers: list[str],
-        anomaly_map_mode: str,
+        anomaly_map_mode: AnomalyMapGenerationMode,
         lr: float,
         beta1: float,
         beta2: float,
