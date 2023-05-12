@@ -5,7 +5,7 @@
 
 import logging
 import warnings
-from typing import List, Optional, Union
+from typing import List, Optional
 
 from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.core.datamodule import LightningDataModule
@@ -25,6 +25,8 @@ from anomalib.trainer.utils import (
     get_normalizer,
 )
 from anomalib.utils.metrics import AnomalyScoreThreshold
+
+from .utils import CallbackConnector
 
 log = logging.getLogger(__name__)
 # warnings to ignore in trainer
@@ -67,6 +69,8 @@ class AnomalibTrainer(Trainer):
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
+
+        self._callback_connector = CallbackConnector(self)
         self._checkpoint_connector = CheckpointConnector(self, kwargs.get("resume_from_checkpoint", None))
 
         self.lightning_module: AnomalyModule  # for mypy
@@ -75,6 +79,16 @@ class AnomalibTrainer(Trainer):
         self.validate_loop = ValidationLoop()
         self.test_loop = TestLoop()
         self.predict_loop = PredictionLoop()
+
+        self._callback_connector.on_trainer_init(
+            callbacks=kwargs.get("callbacks", None),
+            enable_checkpointing=kwargs.get("enable_checkpointing", True),
+            enable_progress_bar=kwargs.get("enable_progress_bar", True),
+            default_root_dir=kwargs.get("default_root_dir"),
+            enable_model_summary=kwargs.get("enable_model_summary", True),
+            max_time=kwargs.get("max_time", None),
+            accumulate_grad_batches=kwargs.get("accumulate_grad_batches", None),
+        )
 
         self.task_type = task_type
         # these are part of the trainer as they are used in the metrics-manager, post-processor and thresholder
@@ -101,10 +115,10 @@ class AnomalibTrainer(Trainer):
     def fit(
         self,
         model: LightningModule,
-        train_dataloaders: Union[TRAIN_DATALOADERS, LightningDataModule, None] = None,
-        val_dataloaders: Union[EVAL_DATALOADERS, None] = None,
-        datamodule: Union[LightningDataModule, None] = None,
-        ckpt_path: Union[str, None] = None,
+        train_dataloaders: TRAIN_DATALOADERS | LightningDataModule | None = None,
+        val_dataloaders: EVAL_DATALOADERS | None = None,
+        datamodule: LightningDataModule | None = None,
+        ckpt_path: str | None = None,
     ) -> None:
         """Sets task type in the dataset and calls the fit method of the trainer."""
         if datamodule is not None:
@@ -120,11 +134,11 @@ class AnomalibTrainer(Trainer):
 
     def test(
         self,
-        model: Union[LightningModule, None] = None,
-        dataloaders: Union[EVAL_DATALOADERS, LightningDataModule, None] = None,
-        ckpt_path: Union[str, None] = None,
+        model: LightningModule | None = None,
+        dataloaders: EVAL_DATALOADERS | LightningDataModule | None = None,
+        ckpt_path: str | None = None,
         verbose: bool = True,
-        datamodule: Union[LightningDataModule, None] = None,
+        datamodule: LightningDataModule | None = None,
     ) -> _EVALUATE_OUTPUT:
         """Sets the task type in the dataset and calls the test method of the trainer."""
         if datamodule is not None:
@@ -148,7 +162,7 @@ class AnomalibTrainer(Trainer):
                     if isinstance(dataset, AnomalibDataset):
                         dataset.task = self.task_type
 
-    def _set_dataloader_task(self, dataloader: Union[TRAIN_DATALOADERS, EVAL_DATALOADERS, LightningDataModule]):
+    def _set_dataloader_task(self, dataloader: TRAIN_DATALOADERS | EVAL_DATALOADERS | LightningDataModule):
         """Sets task type parameter in the dataset of the dataloader or datamodule.
 
         Args:

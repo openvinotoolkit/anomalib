@@ -3,9 +3,9 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import Any
 
 from pytorch_lightning.cli import LightningArgumentParser, LightningCLI
@@ -42,6 +42,8 @@ class AnomalibCLI(LightningCLI):
         super().__init__(
             model_class=AnomalyModule,
             trainer_class=AnomalibTrainer,
+            subclass_mode_model=kwargs.pop("subclass_mode_model", True),
+            save_config_kwargs=kwargs.pop("save_config_kwargs", {"overwrite": True}),
             **kwargs,
         )
 
@@ -55,11 +57,35 @@ class AnomalibCLI(LightningCLI):
         add_metrics_arguments(parser)
         add_visualization_arguments(parser)
         add_logging_arguments(parser)
+        # link other arguments
+        parser.link_arguments("data.init_args.image_size", "model.init_args.input_size")
 
     def before_instantiate_classes(self) -> None:
         # TODO
         # loggers = get_experiment_logger()
-        pass
+        config = self.config[self.config.subcommand]
+        self._set_default_root_dir(config)
+        self._set_ckpt_path(config)
+
+    def _set_default_root_dir(self, config):
+        if config.trainer.default_root_dir is None:
+            project_path = (
+                Path("./results")
+                / config.model.class_path.split(".")[-1].lower()
+                / config.data.class_path.split(".")[-1].lower()
+            )
+            if config.data.init_args.get("category", None) is not None:
+                project_path /= config.data.init_args["category"]
+            # TODO make unique directory
+            project_path /= "run"
+            config.trainer.default_root_dir = str(project_path)
+
+    def _set_ckpt_path(self, config):
+        if config.ckpt_path is None and config.trainer.default_root_dir is not None:
+            model_ckpt_path = Path(config.trainer.default_root_dir) / "weights" / "lightning" / "model.ckpt"
+            if model_ckpt_path.exists():
+                logger.info(f"Model checkpoint exists at {model_ckpt_path}. Setting ckpt_path to this.")
+                config.ckpt_path = str(model_ckpt_path)
 
 
 def main() -> None:

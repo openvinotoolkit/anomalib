@@ -3,7 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import json
 import subprocess  # nosec
@@ -14,8 +13,8 @@ from typing import Any
 import torch
 from torch import Tensor
 
+from anomalib import trainer
 from anomalib.models.components import AnomalyModule
-from anomalib.trainer import AnomalibTrainer
 
 
 class ExportMode(str, Enum):
@@ -26,7 +25,7 @@ class ExportMode(str, Enum):
     TORCH = "torch"
 
 
-def get_metadata(trainer: AnomalibTrainer, transform: dict[str, Any]) -> dict[str, Any]:
+def get_metadata(trainer: "trainer.AnomalibTrainer", transform: dict[str, Any]) -> dict[str, Any]:
     """Get metadata for the exported model.
 
     Args:
@@ -56,7 +55,7 @@ def get_metadata(trainer: AnomalibTrainer, transform: dict[str, Any]) -> dict[st
 
 def export(
     transform: dict[str, Any],
-    trainer: AnomalibTrainer,
+    trainer: "trainer.AnomalibTrainer",
     input_size: tuple[int, int],
     model: AnomalyModule,
     export_mode: ExportMode,

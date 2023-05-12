@@ -3,7 +3,6 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import math
 from enum import Enum
@@ -14,7 +13,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 
-import anomalib.trainer as core
+from anomalib import trainer
 from anomalib.data import TaskType
 from anomalib.models.components import AnomalyModule
 from anomalib.post_processing import Visualizer
@@ -33,7 +32,7 @@ class VisualizationManager:
     """Manages visualization.
 
     Args:
-        trainer (core.AnomalibTrainer): Anomaly trainer.
+        trainer (trainer.AnomalibTrainer): Anomaly trainer.
         mode (str): The mode of visualization. Can be one of ['full', 'simple'].
         show_images (bool, optional): Whether to show images. Defaults to False.
         log_images (bool, optional): Whether to log images to available loggers. Defaults to False.
@@ -43,7 +42,7 @@ class VisualizationManager:
 
     def __init__(
         self,
-        trainer: core.AnomalibTrainer,
+        trainer: "trainer.AnomalibTrainer",
         mode: str,
         show_images: bool = False,
         log_images: bool = False,

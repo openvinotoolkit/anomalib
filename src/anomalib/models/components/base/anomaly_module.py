@@ -3,11 +3,11 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
+#
 
 import logging
 from abc import ABC
-from typing import Any
+from typing import Any, Union
 
 import pytorch_lightning as pl
 from pytorch_lightning.utilities.types import STEP_OUTPUT
@@ -30,7 +30,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.model: nn.Module
         self.loss: nn.Module
 
-    def forward(self, batch: dict[str, str | Tensor], *args, **kwargs) -> Any:
+    def forward(self, batch: dict[str, Union[str, Tensor]], *args, **kwargs) -> Any:
         """Forward-pass input tensor to the module.
 
         Args:
@@ -43,7 +43,7 @@ class AnomalyModule(pl.LightningModule, ABC):
 
         return self.model(batch)
 
-    def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: dict[str, Union[str, Tensor]], *args, **kwargs) -> STEP_OUTPUT:
         """To be implemented in the subclasses."""
         raise NotImplementedError
 
@@ -66,7 +66,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         outputs: Tensor | dict[str, Any] = self.validation_step(batch)
         return outputs
 
-    def test_step(self, batch: dict[str, str | Tensor], batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
+    def test_step(self, batch: dict[str, Union[str, Tensor]], batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
         """Calls validation_step for anomaly map/score calculation.
 
         Args:

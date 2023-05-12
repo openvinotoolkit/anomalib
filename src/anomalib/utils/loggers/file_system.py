@@ -6,7 +6,6 @@ This is responsible for logging images to the file system and writing metrics in
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 from pathlib import Path
 from typing import Any

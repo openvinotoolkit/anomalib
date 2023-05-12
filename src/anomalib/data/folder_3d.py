@@ -6,7 +6,6 @@ This script creates a custom dataset from a folder.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 from pathlib import Path
 
@@ -15,13 +14,7 @@ from pandas import DataFrame, isna
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDepthDataset
 from anomalib.data.task_type import TaskType
-from anomalib.data.utils import (
-    InputNormalizationMethod,
-    Split,
-    TestSplitMode,
-    ValSplitMode,
-    get_transforms,
-)
+from anomalib.data.utils import InputNormalizationMethod, Split, TestSplitMode, ValSplitMode, get_transforms
 from anomalib.data.utils.path import _prepare_files_labels, _resolve_path
 
 

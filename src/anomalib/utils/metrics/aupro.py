@@ -3,7 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 from typing import Any, Callable
 
@@ -14,10 +13,7 @@ from torchmetrics import Metric
 from torchmetrics.functional import auc, roc
 from torchmetrics.utilities.data import dim_zero_cat
 
-from anomalib.utils.metrics.pro import (
-    connected_components_cpu,
-    connected_components_gpu,
-)
+from anomalib.utils.metrics.pro import connected_components_cpu, connected_components_gpu
 
 from .plotting_utils import plot_figure
 
