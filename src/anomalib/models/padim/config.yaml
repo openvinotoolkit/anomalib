@@ -37,6 +37,7 @@ model:
 post_processing:
   normalization_method: min_max # <null, min_max, cdf>
   image_threshold:
+    class_path: F1AdaptiveThreshold
   pixel_threshold:
     class_path: F1AdaptiveThreshold
 
