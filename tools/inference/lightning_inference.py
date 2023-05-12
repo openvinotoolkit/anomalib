@@ -16,11 +16,11 @@ from anomalib.models import get_model
 from anomalib.utils.callbacks import get_callbacks
 
 
-def get_args() -> Namespace:
-    """Get command line arguments.
+def get_parser() -> ArgumentParser:
+    """Get parser.
 
     Returns:
-        Namespace: List of arguments.
+        ArgumentParser: The parser object.
     """
     parser = ArgumentParser()
     parser.add_argument("--config", type=Path, required=True, help="Path to a config file")
@@ -42,13 +42,11 @@ def get_args() -> Namespace:
         help="Show the visualized predictions on the screen.",
     )
 
-    args = parser.parse_args()
-    return args
+    return parser
 
 
-def infer():
+def infer(args: Namespace):
     """Run inference."""
-    args = get_args()
     config = get_configurable_parameters(config_path=args.config)
     config.trainer.resume_from_checkpoint = str(args.weights)
     config.visualization.show_images = args.show
@@ -76,7 +74,9 @@ def infer():
     )
 
     # create the dataset
-    dataset = InferenceDataset(args.input, image_size=tuple(config.dataset.image_size), transform=transform)
+    dataset = InferenceDataset(
+        args.input, image_size=tuple(config.dataset.image_size), transform=transform  # type: ignore
+    )
     dataloader = DataLoader(dataset)
 
     # generate predictions
@@ -84,4 +84,5 @@ def infer():
 
 
 if __name__ == "__main__":
-    infer()
+    args = get_parser().parse_args()
+    infer(args)

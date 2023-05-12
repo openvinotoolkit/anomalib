@@ -16,8 +16,13 @@ jobs:
     steps:
       - name: CHECKOUT REPOSITORY
         uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
       - name: Install requirements
         run: |
+          pip install -r requirements/docs.txt
           pip install .[full]
       - name: Link dataset path to local directory as nbsphinx runs the notebook
         run: ln -s $ANOMALIB_DATASET_PATH ./datasets

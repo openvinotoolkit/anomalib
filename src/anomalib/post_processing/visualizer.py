@@ -96,11 +96,13 @@ class Visualizer:
         Returns:
             Generator that yields a display-ready visualization for each image.
         """
-        batch_size, _num_channels, height, width = batch["image"].size()
+        batch_size = batch["image"].shape[0]
         for i in range(batch_size):
             if "image_path" in batch:
+                height, width = batch["image"].shape[-2:]
                 image = read_image(path=batch["image_path"][i], image_size=(height, width))
             elif "video_path" in batch:
+                height, width = batch["original_image"].shape[1:3]
                 image = batch["original_image"][i].squeeze().numpy()
                 image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
             else:
