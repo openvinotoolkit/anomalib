@@ -11,20 +11,16 @@ import warnings
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
-from anomalib.data.utils import (
-    generate_output_image_filename,
-    get_image_filenames,
-    read_image,
-)
+from anomalib.data.utils import generate_output_image_filename, get_image_filenames, read_image
 from anomalib.deploy import OpenVINOInferencer
 from anomalib.post_processing import Visualizer
 
 
-def get_args() -> Namespace:
-    """Get command line arguments.
+def get_parser() -> ArgumentParser:
+    """Get parser.
 
     Returns:
-        Namespace: List of arguments.
+        ArgumentParser: The parser object.
     """
     parser = ArgumentParser()
     parser.add_argument("--config", type=Path, required=True, help="Path to a config file")
@@ -63,21 +59,17 @@ def get_args() -> Namespace:
         help="Show the visualized predictions on the screen.",
     )
 
-    args = parser.parse_args()
-
-    return args
+    return parser
 
 
-def infer() -> None:
+def infer(args: Namespace) -> None:
     """Infer predictions.
 
     Show/save the output if path is to an image. If the path is a directory, go over each image in the directory.
-    """
-    # Get the command line arguments, and config from the config.yaml file.
-    # This config file is also used for training and contains all the relevant
-    # information regarding the data, model, train and inference details.
-    args = get_args()
 
+    Args:
+        args (Namespace): The arguments from the command line.
+    """
     # Get the inferencer.
     inferencer = OpenVINOInferencer(path=args.weights, metadata_path=args.metadata, device=args.device)
     visualizer = Visualizer(mode=args.visualization_mode, task=args.task)
@@ -103,4 +95,5 @@ def infer() -> None:
 
 
 if __name__ == "__main__":
-    infer()
+    args = get_parser().parse_args()
+    infer(args)

@@ -12,6 +12,7 @@ from importlib import import_module
 from omegaconf import DictConfig, ListConfig
 from torch import load
 
+from anomalib.models.ai_vad import AiVad
 from anomalib.models.cfa import Cfa
 from anomalib.models.cflow import Cflow
 from anomalib.models.components import AnomalyModule
@@ -41,6 +42,7 @@ __all__ = [
     "ReverseDistillation",
     "Rkde",
     "Stfpm",
+    "AiVad",
 ]
 
 logger = logging.getLogger(__name__)
@@ -92,6 +94,7 @@ def get_model(config: DictConfig | ListConfig) -> AnomalyModule:
         "reverse_distillation",
         "rkde",
         "stfpm",
+        "ai_vad",
     ]
     model: AnomalyModule
 
