@@ -24,7 +24,7 @@ b. For Linux and MacOS:
 Step 2: Install Anomalib using pip install, you will find this command line in the notebook, but you can also install it after to run the notebook:
 
        pip install anomalib[full]
-       
+
 Step 3: Install Jupyter Lab or Jupyter Notebook through: https://jupyter.org/install
 
        pip install notebook
