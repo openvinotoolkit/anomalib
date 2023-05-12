@@ -42,6 +42,7 @@ __all__ = [
     "ReverseDistillation",
     "Rkde",
     "Stfpm",
+    "AiVad",
     "EfficientAD",
 ]
 
@@ -94,6 +95,7 @@ def get_model(config: DictConfig | ListConfig) -> AnomalyModule:
         "reverse_distillation",
         "rkde",
         "stfpm",
+        "ai_vad",
         "efficientad",
     ]
     model: AnomalyModule
