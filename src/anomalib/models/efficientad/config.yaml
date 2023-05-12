@@ -26,7 +26,7 @@ model:
   model_size: M
   lr: 0.0001
   weight_decay: 0.00001
-  padding: false
+  padding: true
   # generic params
   normalization_method: min_max # options: [null, min_max, cdf]
 
