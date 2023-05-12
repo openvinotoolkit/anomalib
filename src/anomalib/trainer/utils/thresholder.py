@@ -70,18 +70,18 @@ class Thresholder:
         Args:
             outputs (STEP_OUTPUT): Step outputs.
         """
-        image_metric = self.trainer.image_threshold
-        pixel_metric = self.trainer.pixel_threshold
-        image_metric.cpu()
-        image_metric.update(outputs["pred_scores"], outputs["label"].int())
+        image_threshold = self.trainer.image_threshold
+        pixel_threshold = self.trainer.pixel_threshold
+        image_threshold.cpu()
+        image_threshold.update(outputs["pred_scores"], outputs["label"].int())
         if (
             self.trainer.task_type != TaskType.CLASSIFICATION
             and "anomaly_maps" in outputs.keys()
             and "mask" in outputs.keys()
         ):
-            pixel_metric.cpu()
+            pixel_threshold.cpu()
             # TODO this should use bounding boxes for detection task type
-            pixel_metric.update(outputs["anomaly_maps"], outputs["mask"].int())
+            pixel_threshold.update(outputs["anomaly_maps"], outputs["mask"].int())
 
     def _get_threshold_metric(self, threshold_method: dict | None) -> BaseAnomalyThreshold:
         """Get instantiated threshold metric.
