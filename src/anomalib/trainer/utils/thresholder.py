@@ -84,13 +84,13 @@ class Thresholder:
             pixel_metric.update(outputs["anomaly_maps"], outputs["mask"].int())
 
     def _get_threshold_metric(self, threshold_method: dict | None) -> BaseAnomalyThreshold:
-        """Get threshold method.
+        """Get instantiated threshold metric.
 
         Args:
             threshold_method (dict | None): Threshold method. Defaults to F1AdaptiveThreshold.
 
         Returns:
-            Instantiated threshold method.
+            Instantiated threshold metric.
         """
         threshold_metric: BaseAnomalyThreshold
         if threshold_method is None:
