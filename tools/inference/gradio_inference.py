@@ -8,7 +8,7 @@ This script provide a gradio web interface
 
 from __future__ import annotations
 
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser
 from importlib import import_module
 from pathlib import Path
 
@@ -20,8 +20,8 @@ import numpy as np
 from anomalib.deploy import Inferencer
 
 
-def get_args() -> Namespace:
-    r"""Get command line arguments.
+def get_parser() -> ArgumentParser:
+    """Get command line arguments.
 
     Example:
 
@@ -30,14 +30,14 @@ def get_args() -> Namespace:
         ...     --weights ./results/padim/mvtec/bottle/weights/torch/model.pt
 
     Returns:
-        Namespace: List of arguments.
+        ArgumentParser: Argument parser for gradio inference.
     """
     parser = ArgumentParser()
     parser.add_argument("--weights", type=Path, required=True, help="Path to model weights")
     parser.add_argument("--metadata", type=Path, required=False, help="Path to a JSON file containing the metadata.")
     parser.add_argument("--share", type=bool, required=False, default=False, help="Share Gradio `share_url`")
 
-    return parser.parse_args()
+    return parser
 
 
 def get_inferencer(weight_path: Path, metadata_path: Path | None = None) -> Inferencer:
@@ -96,7 +96,7 @@ def infer(image: np.ndarray, inferencer: Inferencer) -> tuple[np.ndarray, np.nda
 
 
 if __name__ == "__main__":
-    args = get_args()
+    args = get_parser().parse_args()
     gradio_inferencer = get_inferencer(args.weights, args.metadata)
 
     interface = gr.Interface(

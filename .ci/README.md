@@ -8,7 +8,7 @@
    ```bash
    sudo docker build --build-arg HTTP_PROXY="$http_proxy" --build-arg \
    HTTPS_PROXY="$https_proxy" --build-arg NO_PROXY="$no_proxy" \
-   . -t anomalib-ci -f .ci/cuda11.4.Dockerfile
+   . -t anomalib-ci -f .ci/Dockerfile
    ```
 
    Here, `anomalib-ci` is the name of the image.
