@@ -11,7 +11,7 @@ from pytorch_lightning.utilities.types import STEP_OUTPUT
 
 from anomalib import trainer
 from anomalib.data import TaskType
-from anomalib.utils.metrics import AdaptiveScoreThreshold, BaseAnomalyScoreThreshold
+from anomalib.utils.metrics import BaseAnomalyScoreThreshold, F1AdaptiveThreshold
 
 
 class Thresholder:
@@ -36,22 +36,19 @@ class Thresholder:
         self.trainer = trainer
 
     def initialize(self) -> None:
-        """Assigns pixel and image thresholds to the model.
+        """Assigns pixel and image thresholds to the Anomalib trainer."""
+        trainer_image_threshold = self.trainer.image_threshold
+        trainer_pixel_threshold = self.trainer.pixel_threshold
 
-        This allows us to export the metrics along with the torch model.
-        """
+        image_threshold = self._get_threshold_metric(self.image_threshold_method)
+        pixel_threshold = self._get_threshold_metric(self.pixel_threshold_method)
 
-        self.setup("image_threshold", self.image_threshold_method)
-        self.setup("pixel_threshold", self.pixel_threshold_method)
-
-    def setup(self, attribute: str, threshold_method: dict | None):
-        """Setup thresholds.
-
-        Args:
-            attribute (str): Property to setup.
-        """
-        if not hasattr(self.trainer, attribute) or getattr(self.trainer, attribute) is None:
-            setattr(self.trainer, attribute, self._get_thresholder(threshold_method))
+        # type is used here as isinstance compares the base class and we use baseclass as a placeholder before actual
+        # metric classes are assigned.
+        if type(trainer_image_threshold) != type(image_threshold):
+            self.trainer.image_threshold = image_threshold
+        if type(trainer_pixel_threshold) != type(pixel_threshold):
+            self.trainer.pixel_threshold = pixel_threshold
 
     def compute(self):
         """Compute thresholds.
@@ -86,20 +83,20 @@ class Thresholder:
             # TODO this should use bounding boxes for detection task type
             pixel_metric.update(outputs["anomaly_maps"], outputs["mask"].int())
 
-    def _get_thresholder(self, threshold_method: dict | None) -> BaseAnomalyScoreThreshold:
+    def _get_threshold_metric(self, threshold_method: dict | None) -> BaseAnomalyScoreThreshold:
         """Get threshold method.
 
         Args:
-            threshold_method (dict | None): Threshold method. Defaults to AdaptiveScoreThreshold.
+            threshold_method (dict | None): Threshold method. Defaults to F1AdaptiveThreshold.
 
         Returns:
             Instantiated threshold method.
         """
-        thresholder: BaseAnomalyScoreThreshold
+        threshold_metric: BaseAnomalyScoreThreshold
         if threshold_method is None:
-            thresholder = AdaptiveScoreThreshold()
+            threshold_metric = F1AdaptiveThreshold()
         else:
-            _class_path = threshold_method.get("class_path", "AdaptiveScoreThreshold")
+            _class_path = threshold_method.get("class_path", "F1AdaptiveThreshold")
             try:
                 if len(_class_path.split(".")) > 1:  # When the entire class path is provided
                     threshold_module = import_module(".".join(_class_path.split(".")[:-1]))
@@ -112,6 +109,6 @@ class Thresholder:
 
             init_args = threshold_method.get("init_args")
             init_args = init_args if init_args is not None else {}
-            thresholder = _threshold_class(**init_args)
+            threshold_metric = _threshold_class(**init_args)
 
-        return thresholder
+        return threshold_metric

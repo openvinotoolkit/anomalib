@@ -59,8 +59,8 @@ class AnomalibTrainer(Trainer):
 
         self.task_type = task_type
         # these are part of the trainer as they are used in the metrics-manager, post-processor and thresholder
-        self.image_threshold: BaseAnomalyScoreThreshold
-        self.pixel_threshold: BaseAnomalyScoreThreshold
+        self.image_threshold = BaseAnomalyScoreThreshold()
+        self.pixel_threshold = BaseAnomalyScoreThreshold()
 
         self.thresholder = Thresholder(
             trainer=self,

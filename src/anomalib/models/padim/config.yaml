@@ -38,7 +38,7 @@ post_processing:
   normalization_method: min_max # <null, min_max, cdf>
   image_threshold:
   pixel_threshold:
-    class_path: AdaptiveScoreThreshold
+    class_path: F1AdaptiveThreshold
 
 metrics:
   image:
