@@ -56,5 +56,5 @@ To install Python, Git and other required tools, [OpenVINO Notebooks](https://gi
 
 | Notebook               | GitHub                                                                                                                                                                        | Colab |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| Dobot Dataset Creation | [501a_dataset_creation](https://github.com/openvinotoolkit/anomalib/blob/main/notebooks/500_use_cases/501_dobot/501a_dataset_creation_and_Inference_with_a_robotic_arm.ipynb) |       |
-| Training               | [501b_training](https://github.com/openvinotoolkit/anomalib/blob/main/notebooks/500_use_cases/501_dobot/501b_training_a_model_with_cubes_from_a_robotic_arm.ipynb)            |       |
+| Dobot Dataset Creation | [501a_training](https://github.com/openvinotoolkit/anomalib/blob/main/notebooks/500_use_cases/501_dobot/501a_training_a_model_with_cubes_from_a_robotic_arm.ipynb) |       |
+| Training               | [501b_training](https://github.com/openvinotoolkit/anomalib/blob/main/notebooks/500_use_cases/501_dobot/501b_inference_with_a_robotic_arm.ipynb)            |       |
