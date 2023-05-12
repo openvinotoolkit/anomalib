@@ -11,7 +11,7 @@ from typing import Any
 from torchmetrics import Metric
 
 
-class BaseAnomalyScoreThreshold(Metric, ABC):
+class BaseAnomalyThreshold(Metric, ABC):
     """Base class for thresholding metrics."""
 
     def __init__(self, **kwargs) -> None:

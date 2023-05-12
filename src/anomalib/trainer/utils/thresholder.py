@@ -11,7 +11,7 @@ from pytorch_lightning.utilities.types import STEP_OUTPUT
 
 from anomalib import trainer
 from anomalib.data import TaskType
-from anomalib.utils.metrics import BaseAnomalyScoreThreshold, F1AdaptiveThreshold
+from anomalib.utils.metrics import BaseAnomalyThreshold, F1AdaptiveThreshold
 
 
 class Thresholder:
@@ -45,9 +45,9 @@ class Thresholder:
 
         # type is used here as isinstance compares the base class and we use baseclass as a placeholder before actual
         # metric classes are assigned.
-        if type(trainer_image_threshold) != type(image_threshold):
+        if type(trainer_image_threshold) != type(image_threshold):  # pylint: disable=unidiomatic-typecheck
             self.trainer.image_threshold = image_threshold
-        if type(trainer_pixel_threshold) != type(pixel_threshold):
+        if type(trainer_pixel_threshold) != type(pixel_threshold):  # pylint: disable=unidiomatic-typecheck
             self.trainer.pixel_threshold = pixel_threshold
 
     def compute(self):
@@ -83,7 +83,7 @@ class Thresholder:
             # TODO this should use bounding boxes for detection task type
             pixel_metric.update(outputs["anomaly_maps"], outputs["mask"].int())
 
-    def _get_threshold_metric(self, threshold_method: dict | None) -> BaseAnomalyScoreThreshold:
+    def _get_threshold_metric(self, threshold_method: dict | None) -> BaseAnomalyThreshold:
         """Get threshold method.
 
         Args:
@@ -92,7 +92,7 @@ class Thresholder:
         Returns:
             Instantiated threshold method.
         """
-        threshold_metric: BaseAnomalyScoreThreshold
+        threshold_metric: BaseAnomalyThreshold
         if threshold_method is None:
             threshold_metric = F1AdaptiveThreshold()
         else:

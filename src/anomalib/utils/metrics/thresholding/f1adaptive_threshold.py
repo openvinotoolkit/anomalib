@@ -11,10 +11,10 @@ import torch
 from torch import Tensor
 from torchmetrics import PrecisionRecallCurve
 
-from .base import BaseAnomalyScoreThreshold
+from .base import BaseAnomalyThreshold
 
 
-class F1AdaptiveThreshold(PrecisionRecallCurve, BaseAnomalyScoreThreshold):
+class F1AdaptiveThreshold(PrecisionRecallCurve, BaseAnomalyThreshold):
     """Anomaly Score Threshold.
     This class computes/stores the threshold that determines the anomalous label
     given anomaly scores.

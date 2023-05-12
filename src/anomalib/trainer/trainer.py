@@ -16,7 +16,7 @@ from anomalib.models.components.base.anomaly_module import AnomalyModule
 from anomalib.post_processing import NormalizationMethod
 from anomalib.trainer.loops.one_class import FitLoop, PredictionLoop, TestLoop, ValidationLoop
 from anomalib.trainer.utils import CheckpointConnector, MetricsManager, PostProcessor, Thresholder, get_normalizer
-from anomalib.utils.metrics import BaseAnomalyScoreThreshold
+from anomalib.utils.metrics import BaseAnomalyThreshold
 
 log = logging.getLogger(__name__)
 # warnings to ignore in trainer
@@ -59,8 +59,8 @@ class AnomalibTrainer(Trainer):
 
         self.task_type = task_type
         # these are part of the trainer as they are used in the metrics-manager, post-processor and thresholder
-        self.image_threshold = BaseAnomalyScoreThreshold()
-        self.pixel_threshold = BaseAnomalyScoreThreshold()
+        self.image_threshold = BaseAnomalyThreshold()
+        self.pixel_threshold = BaseAnomalyThreshold()
 
         self.thresholder = Thresholder(
             trainer=self,

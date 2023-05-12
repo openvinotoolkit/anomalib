@@ -7,10 +7,10 @@ from __future__ import annotations
 
 import torch
 
-from .base import BaseAnomalyScoreThreshold
+from .base import BaseAnomalyThreshold
 
 
-class ManualThreshold(BaseAnomalyScoreThreshold):
+class ManualThreshold(BaseAnomalyThreshold):
     def __init__(self, default_value: float = 0.5, **kwargs) -> None:
         """Initialize Manual Threshold.
 
