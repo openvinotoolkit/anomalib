@@ -21,7 +21,7 @@ RUN apt-get update && \
         curl \
         wget \
         ffmpeg \
-        libpython3.8 \
+        libpython3.10 \
         npm \
         pandoc \
         ruby \
@@ -36,6 +36,13 @@ RUN add-apt-repository ppa:git-core/ppa &&\
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+# Prettier requires atleast nodejs 10 and actions/checkout requires nodejs 16
+RUN curl -sL https://deb.nodesource.com/setup_current.x > nodesetup.sh && \
+    bash - nodesetup.sh && \
+    apt-get install --no-install-recommends -y nodejs && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
 # Create a non-root user
 RUN useradd -m user
 USER user
@@ -45,14 +52,7 @@ RUN curl https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh >
     bash ~/miniconda.sh -b -p /home/user/conda && \
     rm ~/miniconda.sh
 ENV PATH "/home/user/conda/bin:${PATH}"
-RUN conda install python=3.8
-
-# Prettier requires atleast nodejs 10 and actions/checkout requires nodejs 16
-RUN curl -sL https://deb.nodesource.com/setup_current.x > nodesetup.sh && \
-    bash - nodesetup.sh && \
-    apt-get install --no-install-recommends -y nodejs && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+RUN conda install python=3.10
 
 
 #########################################################

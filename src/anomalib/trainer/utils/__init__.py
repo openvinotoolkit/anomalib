@@ -12,7 +12,7 @@ from .metrics_manager import MetricsManager
 from .normalizer import get_normalizer
 from .post_processor import PostProcessor
 from .thresholder import Thresholder
-from .visualization_manager import VisualizationManager, VisualizationStage
+from .visualizer import VisualizationStage, Visualizer
 
 __all__ = [
     "get_normalizer",
@@ -20,6 +20,6 @@ __all__ = [
     "MetricsManager",
     "PostProcessor",
     "Thresholder",
-    "VisualizationManager",
+    "Visualizer",
     "VisualizationStage",
 ]
