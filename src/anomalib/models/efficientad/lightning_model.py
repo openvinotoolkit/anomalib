@@ -21,10 +21,7 @@ from torch import Tensor, optim
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 
-from anomalib.data.utils import (
-    DownloadInfo,
-    download_and_extract_gdrive, download_and_extract
-)
+from anomalib.data.utils import DownloadInfo, download_and_extract
 from anomalib.models.components import AnomalyModule
 
 from .torch_model import EfficientADModel
@@ -33,11 +30,8 @@ logger = logging.getLogger(__name__)
 
 IMAGENET_SUBSET_DOWNLOAD_INFO = DownloadInfo(
     name="imagenette2.tgz",
-    #name="imagenet_100k_512px.zip",
     url="https://s3.amazonaws.com/fast-ai-imageclas/imagenette2.tgz",
-    #url="https://drive.google.com/uc?id=1n6RF08sp7RDxzKYuUoMox4RM13hqB1Jo",
-    hash="fe2fc210e6bb7c5664d602c3cd71e612"
-    #hash="d3cafd8d33eaf27ff40036fc62c33e85",
+    hash="fe2fc210e6bb7c5664d602c3cd71e612",
 )
 
 
@@ -146,12 +140,13 @@ class EfficientAD(AnomalyModule):
         maps_ae = []
         logger.info("Calculate Validation Dataset Quantiles")
         for batch in tqdm.tqdm(dataloader, desc="Calculate Validation Dataset Quantiles", position=0, leave=True):
-            if batch["label"] == 0:  # only use good images of validation set!
-                output = self.model(batch["image"].to(self.device))
-                map_st = output["map_st"]
-                map_ae = output["map_ae"]
-                maps_st.append(map_st)
-                maps_ae.append(map_ae)
+            for img, label in zip(batch["image"], batch["label"]):
+                if label == 0:  # only use good images of validation set!
+                    output = self.model(img.to(self.device))
+                    map_st = output["map_st"]
+                    map_ae = output["map_ae"]
+                    maps_st.append(map_st)
+                    maps_ae.append(map_ae)
         maps_st = torch.cat(maps_st)
         maps_ae = torch.cat(maps_ae)
         qa_st = torch.quantile(maps_st, q=0.9).to(self.device)
@@ -189,16 +184,12 @@ class EfficientAD(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        #infinite dataloader
         try:
-            batch_imagenet = next(self.imagenet_iterator)[0]["image"].to(
-                self.device
-            )  # [0] getting the image not the label
-        except:
+            # infinite dataloader; [0] getting the image not the label
+            batch_imagenet = next(self.imagenet_iterator)[0]["image"].to(self.device)
+        except StopIteration:
             self.imagenet_iterator = iter(self.imagenet_loader)
-            batch_imagenet = next(self.imagenet_iterator)[0]["image"].to(
-                self.device
-            ) 
+            batch_imagenet = next(self.imagenet_iterator)[0]["image"].to(self.device)
 
         loss_st, loss_ae, loss_stae = self.model(batch=batch["image"], batch_imagenet=batch_imagenet)
 
@@ -215,7 +206,7 @@ class EfficientAD(AnomalyModule):
         """
         if (self.current_epoch + 1) == self.trainer.max_epochs:
             if not self.model.is_set(self.model.quantiles):
-                map_norm_quantiles = self.map_norm_quantiles(self.trainer.datamodule.train_dataloader())
+                map_norm_quantiles = self.map_norm_quantiles(self.trainer.datamodule.val_dataloader())
                 self.model.quantiles.update(map_norm_quantiles)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:

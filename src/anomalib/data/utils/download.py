@@ -17,7 +17,6 @@ from typing import Iterable
 from urllib.request import urlretrieve
 from zipfile import ZipFile
 
-import gdown
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
@@ -270,27 +269,6 @@ def download_and_extract(root: Path, info: DownloadInfo) -> None:
         hash_check(downloaded_file_path, info.hash)
 
     extract(downloaded_file_path, root)
-
-
-def download_and_extract_gdrive(root: Path, info: DownloadInfo) -> None:
-    """Download and extract a dataset from a google drive link.
-
-    Args:
-        root (Path): Root directory where the dataset will be stored.
-        info (DownloadInfo): Info needed to download the dataset.
-    """
-    root.mkdir(parents=True, exist_ok=True)
-
-    file_path = Path(info.name)
-    if file_path.exists():
-        logger.info("Existing dataset archive found. Skipping download stage.")
-    else:
-        logger.info("Downloading the %s dataset.", file_path)
-        gdown.download(info.url, str(file_path), quiet=False, fuzzy=True)
-        logger.info("Checking file_path hash of the downloaded file.")
-        hash_check(file_path, info.hash)
-
-    extract(file_path, root)
 
 
 def is_within_directory(directory: Path, target: Path):
