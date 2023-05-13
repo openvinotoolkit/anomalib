@@ -28,7 +28,7 @@ from .torch_model import EfficientADModel
 
 logger = logging.getLogger(__name__)
 
-IMAGENET_SUBSET_DOWNLOAD_INFO = DownloadInfo(
+IMAGENETTE_DOWNLOAD_INFO = DownloadInfo(
     name="imagenette2.tgz",
     url="https://s3.amazonaws.com/fast-ai-imageclas/imagenette2.tgz",
     hash="fe2fc210e6bb7c5664d602c3cd71e612",
@@ -91,7 +91,7 @@ class EfficientAD(AnomalyModule):
     def prepare_imagenet_data(self) -> None:
         """Download the imagenet subset if not available."""
         if not self.imagenet_dir.is_dir():
-            download_and_extract(self.imagenet_dir, IMAGENET_SUBSET_DOWNLOAD_INFO)
+            download_and_extract(self.imagenet_dir, IMAGENETTE_DOWNLOAD_INFO)
         else:
             logger.info("Found the dataset.")
 
