@@ -36,7 +36,7 @@ IMAGENET_SUBSET_DOWNLOAD_INFO = DownloadInfo(
     #name="imagenet_100k_512px.zip",
     url="https://s3.amazonaws.com/fast-ai-imageclas/imagenette2.tgz",
     #url="https://drive.google.com/uc?id=1n6RF08sp7RDxzKYuUoMox4RM13hqB1Jo",
-    hash="e793b78cc4c9e9a4ccc0c1155377a412"
+    hash="fe2fc210e6bb7c5664d602c3cd71e612"
     #hash="d3cafd8d33eaf27ff40036fc62c33e85",
 )
 
