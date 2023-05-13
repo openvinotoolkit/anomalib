@@ -231,7 +231,7 @@ def extract(file_name: Path, root: Path) -> None:
     if file_name.suffix == ".zip":
         with ZipFile(file_name, "r") as zip_file:
             zip_file.extractall(root)
-    elif file_name.suffix in (".tar", ".gz", ".xz"):
+    elif file_name.suffix in (".tar", ".gz", ".xz", ".tgz"):
         with tarfile.open(file_name) as tar_file:
             safe_extract(tar_file, root)
     else:

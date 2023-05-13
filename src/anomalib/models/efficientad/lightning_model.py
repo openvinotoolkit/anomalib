@@ -23,7 +23,7 @@ from torchvision.datasets import ImageFolder
 
 from anomalib.data.utils import (
     DownloadInfo,
-    download_and_extract_gdrive,
+    download_and_extract_gdrive, download_and_extract
 )
 from anomalib.models.components import AnomalyModule
 
@@ -32,9 +32,12 @@ from .torch_model import EfficientADModel
 logger = logging.getLogger(__name__)
 
 IMAGENET_SUBSET_DOWNLOAD_INFO = DownloadInfo(
-    name="imagenet_100k_512px.zip",
-    url="https://drive.google.com/uc?id=1n6RF08sp7RDxzKYuUoMox4RM13hqB1Jo",
-    hash="d3cafd8d33eaf27ff40036fc62c33e85",
+    name="imagenette2.tgz",
+    #name="imagenet_100k_512px.zip",
+    url="https://s3.amazonaws.com/fast-ai-imageclas/imagenette2.tgz",
+    #url="https://drive.google.com/uc?id=1n6RF08sp7RDxzKYuUoMox4RM13hqB1Jo",
+    hash="e793b78cc4c9e9a4ccc0c1155377a412"
+    #hash="d3cafd8d33eaf27ff40036fc62c33e85",
 )
 
 
@@ -65,7 +68,7 @@ class EfficientAD(AnomalyModule):
 
         self.category = category_name
         self.pre_trained_dir = Path(pre_trained_dir)
-        self.imagenet_dir = Path("./datasets/imagenet_subset")
+        self.imagenet_dir = Path("./datasets/imagenette")
         self.model: EfficientADModel = EfficientADModel(
             teacher_path=self.pre_trained_dir / teacher_file_name,
             teacher_out_channels=teacher_out_channels,
@@ -87,13 +90,14 @@ class EfficientAD(AnomalyModule):
         self.prepare_imagenet_data()
         imagenet_dataset = ImageFolder(self.imagenet_dir, transform=TransformsWrapper(t=self.data_transforms_imagenet))
         self.imagenet_loader = DataLoader(imagenet_dataset, batch_size=1, shuffle=True, pin_memory=True)
+        self.imagenet_iterator = iter(self.imagenet_loader)
         self.lr = lr
         self.weight_decay = weight_decay
 
     def prepare_imagenet_data(self) -> None:
         """Download the imagenet subset if not available."""
         if not self.imagenet_dir.is_dir():
-            download_and_extract_gdrive(self.imagenet_dir, IMAGENET_SUBSET_DOWNLOAD_INFO)
+            download_and_extract(self.imagenet_dir, IMAGENET_SUBSET_DOWNLOAD_INFO)
         else:
             logger.info("Found the dataset.")
 
@@ -185,9 +189,17 @@ class EfficientAD(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        batch_imagenet = next(iter(self.imagenet_loader))[0]["image"].to(
-            self.device
-        )  # [0] getting the image not the label
+        #infinite dataloader
+        try:
+            batch_imagenet = next(self.imagenet_iterator)[0]["image"].to(
+                self.device
+            )  # [0] getting the image not the label
+        except:
+            self.imagenet_iterator = iter(self.imagenet_loader)
+            batch_imagenet = next(self.imagenet_iterator)[0]["image"].to(
+                self.device
+            ) 
+
         loss_st, loss_ae, loss_stae = self.model(batch=batch["image"], batch_imagenet=batch_imagenet)
 
         loss = loss_st + loss_ae + loss_stae
