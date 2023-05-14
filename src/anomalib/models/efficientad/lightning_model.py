@@ -206,7 +206,7 @@ class EfficientAD(AnomalyModule):
         """
         if (self.current_epoch + 1) == self.trainer.max_epochs:
             if not self.model.is_set(self.model.quantiles):
-                map_norm_quantiles = self.map_norm_quantiles(self.trainer.datamodule.val_dataloader())
+                map_norm_quantiles = self.map_norm_quantiles(self.trainer.datamodule.train_dataloader())
                 self.model.quantiles.update(map_norm_quantiles)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
