@@ -3,17 +3,12 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from anomalib.models.components import (
-    DynamicBufferModule,
-    FeatureExtractor,
-    KCenterGreedy,
-)
+from anomalib.models.components import DynamicBufferModule, FeatureExtractor, KCenterGreedy
 from anomalib.models.patchcore.anomaly_map import AnomalyMapGenerator
 from anomalib.pre_processing import Tiler
 

@@ -3,7 +3,6 @@
 This is responsible for setting up the normalization method.
 """
 
-from __future__ import annotations
 
 from anomalib import trainer
 from anomalib.post_processing import NormalizationMethod
@@ -14,7 +13,7 @@ from .min_max import MinMaxNormalizer
 
 
 def get_normalizer(
-    normalization_method: NormalizationMethod, trainer: trainer.AnomalibTrainer
+    normalization_method: NormalizationMethod, trainer: "trainer.AnomalibTrainer"
 ) -> BaseNormalizer | None:
     """Returns the normalizer class based on the normalization method.
 

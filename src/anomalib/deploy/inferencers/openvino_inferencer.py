@@ -3,7 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 from importlib.util import find_spec
 from pathlib import Path
@@ -19,9 +18,7 @@ from anomalib.data import TaskType
 from .base_inferencer import Inferencer
 
 if find_spec("openvino") is not None:
-    from openvino.inference_engine import (  # type: ignore  # pylint: disable=no-name-in-module
-        IECore,
-    )
+    from openvino.inference_engine import IECore  # type: ignore  # pylint: disable=no-name-in-module
 
 
 class OpenVINOInferencer(Inferencer):

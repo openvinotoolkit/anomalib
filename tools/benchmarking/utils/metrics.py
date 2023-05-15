@@ -3,7 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import random
 import string
@@ -11,9 +10,10 @@ from glob import glob
 from pathlib import Path
 
 import pandas as pd
-import wandb
 from comet_ml import Experiment
 from torch.utils.tensorboard.writer import SummaryWriter
+
+import wandb
 
 
 def write_metrics(
