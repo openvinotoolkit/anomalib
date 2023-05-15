@@ -3,7 +3,6 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 from warnings import warn
 
@@ -29,7 +28,7 @@ class Thresholder:
 
     def __init__(
         self,
-        trainer: trainer.AnomalibTrainer,
+        trainer: "trainer.AnomalibTrainer",
         threshold_method: ThresholdMethod = ThresholdMethod.ADAPTIVE,
         manual_image_threshold: float | None = None,
         manual_pixel_threshold: float | None = None,

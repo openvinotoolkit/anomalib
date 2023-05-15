@@ -3,7 +3,6 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
 from typing import List
@@ -24,7 +23,7 @@ logger = logging.getLogger(__name__)
 class MetricsManager:
     def __init__(
         self,
-        trainer: trainer.AnomalibTrainer,
+        trainer: "trainer.AnomalibTrainer",
         image_metrics: list[str] | None = None,
         pixel_metrics: list[str] | None = None,
     ):

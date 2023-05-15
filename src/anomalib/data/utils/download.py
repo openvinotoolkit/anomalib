@@ -3,7 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import hashlib
 import io
@@ -29,6 +28,7 @@ class DownloadInfo:
     name: str
     url: str
     hash: str
+    filename: str | None = None
 
 
 class DownloadProgressBar(tqdm):
@@ -227,7 +227,11 @@ def download_and_extract(root: Path, info: DownloadInfo) -> None:
     root.mkdir(parents=True, exist_ok=True)
 
     # save the compressed file in the specified root directory, using the same file name as on the server
-    downloaded_file_path = root / info.url.split("/")[-1]
+    if info.filename:
+        downloaded_file_path = root / info.filename
+    else:
+        downloaded_file_path = root / info.url.split("/")[-1]
+
     if downloaded_file_path.exists():
         logger.info("Existing dataset archive found. Skipping download stage.")
     else:

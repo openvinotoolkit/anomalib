@@ -3,7 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
@@ -107,6 +106,7 @@ setup(
     packages=find_packages(where="src", include=["anomalib", "anomalib.*"]),
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRAS_REQUIRE,
+    include_package_data=True,
     package_data={"": ["config.yaml"]},
     entry_points={"console_scripts": ["anomalib=anomalib.utils.cli.cli:main"]},
 )
