@@ -3,7 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
 from abc import ABC
@@ -16,12 +15,7 @@ from torch.utils.data.dataloader import DataLoader, default_collate
 
 from anomalib.data.base.dataset import AnomalibDataset
 from anomalib.data.synthetic import SyntheticAnomalyDataset
-from anomalib.data.utils import (
-    TestSplitMode,
-    ValSplitMode,
-    random_split,
-    split_by_label,
-)
+from anomalib.data.utils import TestSplitMode, ValSplitMode, random_split, split_by_label
 
 logger = logging.getLogger(__name__)
 
@@ -130,7 +124,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
             # when the user did not provide any normal images for testing, we sample some from the training set,
             # except when the user explicitly requested no test splitting.
             logger.info(
-                "No normal test images found. Sampling from training set using a split ratio of %d",
+                "No normal test images found. Sampling from training set using a split ratio of %0.2f",
                 self.test_split_ratio,
             )
             if self.test_split_ratio is not None:

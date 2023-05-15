@@ -1,6 +1,5 @@
 """Utility functions to manipulate feature extractors."""
 
-from __future__ import annotations
 
 import torch
 from torch.fx.graph_module import GraphModule

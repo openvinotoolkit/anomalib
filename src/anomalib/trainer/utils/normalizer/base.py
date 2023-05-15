@@ -2,7 +2,7 @@
 
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-from __future__ import annotations
+
 
 from abc import ABC
 from typing import Type
@@ -20,7 +20,7 @@ class BaseNormalizer(ABC):
         trainer (trainer.AnomalibTrainer): Trainer object.
     """
 
-    def __init__(self, trainer: trainer.AnomalibTrainer):
+    def __init__(self, trainer: "trainer.AnomalibTrainer"):
         self.metric_class: Type[Metric]
         self.trainer = trainer
         self._metric: Metric | None = None

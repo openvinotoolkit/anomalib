@@ -4,15 +4,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from __future__ import annotations
-
 from typing import Sequence
 
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import Callback
 
 from anomalib.models.components import AnomalyModule
-from anomalib.pre_processing.tiler import Tiler
+from anomalib.pre_processing.tiler import ImageUpscaleMode, Tiler
 
 __all__ = ["TilerConfigurationCallback"]
 
@@ -26,7 +24,7 @@ class TilerConfigurationCallback(Callback):
         tile_size: int | Sequence = 256,
         stride: int | Sequence | None = None,
         remove_border_count: int = 0,
-        mode: str = "padding",
+        mode: ImageUpscaleMode = ImageUpscaleMode.PADDING,
         tile_count: int = 4,
     ) -> None:
         """Sets tiling configuration from the command line.

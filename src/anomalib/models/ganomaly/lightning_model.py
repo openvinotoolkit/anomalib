@@ -6,7 +6,6 @@ https://arxiv.org/abs/1805.06725
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
 

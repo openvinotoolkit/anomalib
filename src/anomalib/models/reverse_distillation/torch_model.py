@@ -3,17 +3,15 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 from torch import Tensor, nn
 
 from anomalib.models.components import FeatureExtractor
 from anomalib.models.reverse_distillation.anomaly_map import AnomalyMapGenerator
-from anomalib.models.reverse_distillation.components import (
-    get_bottleneck_layer,
-    get_decoder,
-)
+from anomalib.models.reverse_distillation.components import get_bottleneck_layer, get_decoder
 from anomalib.pre_processing import Tiler
+
+from .anomaly_map import AnomalyMapGenerationMode
 
 
 class ReverseDistillationModel(nn.Module):
@@ -32,7 +30,7 @@ class ReverseDistillationModel(nn.Module):
         backbone: str,
         input_size: tuple[int, int],
         layers: list[str],
-        anomaly_map_mode: str,
+        anomaly_map_mode: AnomalyMapGenerationMode,
         pre_trained: bool = True,
     ) -> None:
         super().__init__()
