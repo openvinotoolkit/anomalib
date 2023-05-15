@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from anomalib.data import TaskType
+from anomalib.data.base.video import VideoTargetFrame
 from anomalib.data.ucsd_ped import (
     UCSDpedClipsIndexer,
     UCSDpedDataset,
@@ -80,3 +81,19 @@ class TestVideoDataset:
         item = next(iter(ucsd_dataset))
         # confirm that all the required keys are there
         assert set(item.keys()) == set(required_keys)
+
+    @pytest.mark.parametrize("split", [Split.TEST])
+    def test_target_frame(self, ucsd_dataset):
+        ucsd_dataset.target_frame = VideoTargetFrame.ALL
+        all_frames_item = ucsd_dataset[0]
+        ucsd_dataset.target_frame = VideoTargetFrame.FIRST
+        first_frame_item = ucsd_dataset[0]
+        ucsd_dataset.target_frame = VideoTargetFrame.LAST
+        last_frame_item = ucsd_dataset[0]
+        ucsd_dataset.target_frame = VideoTargetFrame.MID
+        mid_frame_item = ucsd_dataset[0]
+
+        # check if the correct GT frame is retrieved
+        assert first_frame_item["frames"] == all_frames_item["frames"][0]
+        assert last_frame_item["frames"] == all_frames_item["frames"][-1]
+        assert mid_frame_item["frames"] == all_frames_item["frames"][int(len(all_frames_item["frames"]) / 2)]

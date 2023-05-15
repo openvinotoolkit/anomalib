@@ -13,7 +13,7 @@ from pytorch_lightning.utilities.types import _EVALUATE_OUTPUT, EVAL_DATALOADERS
 
 from anomalib.data import AnomalibDataModule, AnomalibDataset, TaskType
 from anomalib.models.components.base.anomaly_module import AnomalyModule
-from anomalib.post_processing import NormalizationMethod, ThresholdMethod
+from anomalib.post_processing import NormalizationMethod, ThresholdMethod, VisualizationMode
 from anomalib.trainer.loops.one_class import FitLoop, PredictionLoop, TestLoop, ValidationLoop
 from anomalib.trainer.utils import (
     CheckpointConnector,
@@ -61,7 +61,7 @@ class AnomalibTrainer(Trainer):
         manual_pixel_threshold: Optional[float] = None,
         image_metrics: Optional[List[str]] = None,
         pixel_metrics: Optional[List[str]] = None,
-        visualization_mode: str = "full",
+        visualization_mode: VisualizationMode = VisualizationMode.FULL,
         show_images: bool = False,
         log_images: bool = False,
         visualization_stage: VisualizationStage = VisualizationStage.TEST,
@@ -69,6 +69,7 @@ class AnomalibTrainer(Trainer):
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
+        self._checkpoint_connector = CheckpointConnector(self, kwargs.get("resume_from_checkpoint", None))
 
         self._callback_connector = CallbackConnector(self)
         self._checkpoint_connector = CheckpointConnector(self, kwargs.get("resume_from_checkpoint", None))
@@ -103,7 +104,7 @@ class AnomalibTrainer(Trainer):
         )
         self.post_processor = PostProcessor(trainer=self)
         self.normalizer = get_normalizer(trainer=self, normalization_method=normalization_method)
-        self.metrics_manager = MetricsManager(trainer=self, image_metrics=image_metrics, pixel_metrics=pixel_metrics)
+        self.metrics = MetricsManager(trainer=self, image_metrics=image_metrics, pixel_metrics=pixel_metrics)
         self.visualization_manager = VisualizationManager(
             trainer=self,
             mode=visualization_mode,

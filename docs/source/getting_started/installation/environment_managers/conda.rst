@@ -29,7 +29,7 @@ In this tutorial, we use Python 3.8. If you want to use a higher version, that i
 .. code:: bash
 
    cd anomalib
-   conda create -n anomalib_env python=3.8
+   conda create -n anomalib_env python=3.10
 
 Step 3: Activate the Environment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

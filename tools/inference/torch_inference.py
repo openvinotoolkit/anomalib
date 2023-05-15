@@ -13,20 +13,16 @@ from pathlib import Path
 
 import torch
 
-from anomalib.data.utils import (
-    generate_output_image_filename,
-    get_image_filenames,
-    read_image,
-)
+from anomalib.data.utils import generate_output_image_filename, get_image_filenames, read_image
 from anomalib.deploy import TorchInferencer
 from anomalib.post_processing import Visualizer
 
 
-def get_args() -> Namespace:
-    """Get command line arguments.
+def get_parser() -> ArgumentParser:
+    """Get parser.
 
     Returns:
-        Namespace: List of arguments.
+        ArgumentParser: The parser object.
     """
     parser = ArgumentParser()
     parser.add_argument("--weights", type=Path, required=True, help="Path to model weights")
@@ -63,18 +59,17 @@ def get_args() -> Namespace:
         help="Show the visualized predictions on the screen.",
     )
 
-    args = parser.parse_args()
-
-    return args
+    return parser
 
 
-def infer() -> None:
+def infer(args: Namespace) -> None:
     """Infer predictions.
 
     Show/save the output if path is to an image. If the path is a directory, go over each image in the directory.
+
+    Args:
+        args (Namespace): The arguments from the command line.
     """
-    # Get the command line arguments.
-    args = get_args()
 
     torch.set_grad_enabled(False)
 
@@ -103,4 +98,5 @@ def infer() -> None:
 
 
 if __name__ == "__main__":
-    infer()
+    args = get_parser().parse_args()
+    infer(args=args)

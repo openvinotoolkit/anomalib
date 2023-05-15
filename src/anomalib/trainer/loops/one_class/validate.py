@@ -49,7 +49,7 @@ class AnomalibValidationLoop(EvaluationLoop):
 
     def on_run_start(self, *args: Any, **kwargs: Any) -> None:
         self.trainer.thresholder.initialize()
-        self.trainer.metrics_manager.initialize()
+        self.trainer.metrics.initialize()
         return super().on_run_start(*args, **kwargs)
 
     def _evaluation_epoch_end(self, outputs: List[EPOCH_OUTPUT]):

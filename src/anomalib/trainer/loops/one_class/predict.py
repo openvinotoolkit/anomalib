@@ -87,7 +87,7 @@ class AnomalibPredictionLoop(PredictionLoop):
 
         Overrides the default epoch loop with the custom epoch loop.
         """
-        self.trainer.metrics_manager.initialize()
+        self.trainer.metrics.initialize()
         # Reset the image and pixel thresholds to 0.5 at start of the run.
-        self.trainer.metrics_manager.set_threshold()
+        self.trainer.metrics.set_threshold()
         return super().on_run_start()

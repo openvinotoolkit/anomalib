@@ -1,0 +1,85 @@
+# This is a comment.
+# Each line is a file pattern followed by one or more owners.
+
+# These owners will be the default owners for everything in
+# the repo.
+* @samet-akcay
+
+# CI/CD
+/.ci/                                                       @ashwinvaidya17
+/.devcontainer                                              @ashwinvaidya17 @yunchu
+/.github                                                    @ashwinvaidya17 @yunchu
+/.dockerignore                                              @ashwinvaidya17
+
+# Docs
+/docs                                                       @samet-akcay
+
+# Notebooks
+/notebooks/000_getting_started                              @samet-akcay
+/notebooks/100_datamodules                                  @djdameln
+/notebooks/200_models                                       @samet-akcay
+/notebooks/300_benchmarking                                 @ashwinvaidya17
+/notebooks/400_openvino                                     @samet-akcay @paularamo
+/notebooks/500_use_cases                                    @paularamo
+/notebooks/README.md                                        @samet-akcay
+
+# Requirements
+/requirements/                                              @samet-akcay @ashwinvaidya17 @djdameln
+
+# Anomalib
+/src/anomalib/config                                        @ashwinvaidya17
+/src/anomalib/data                                          @djdameln
+/src/anomalib/deploy                                        @samet-akcay @ashwinvaidya17 @djdameln
+/src/anomalib/models/cfa                                    @samet-akcay
+/src/anomalib/models/cflow                                  @ashwinvaidya17
+/src/anomalib/models/csflow                                 @ashwinvaidya17
+/src/anomalib/models/dfkde                                  @djdameln
+/src/anomalib/models/dfm                                    @djdameln @nahuja-intel
+/src/anomalib/models/draem                                  @djdameln
+/src/anomalib/models/fastflow                               @samet-akcay
+/src/anomalib/models/ganomaly                               @ashwinvaidya17
+/src/anomalib/models/padim                                  @samet-akcay
+/src/anomalib/models/patchcore                              @djdameln
+/src/anomalib/models/reverse_distillation                   @ashwinvaidya17
+/src/anomalib/models/rkde                                   @djdameln
+/src/anomalib/models/stfpm                                  @samet-akcay
+
+/src/anomalib/post_processing                               @ashwinvaidya17 @djdameln
+/src/anomalib/pre_processing/tiler.py                       @djdameln
+/src/anomalib/pre_processing/transforms                     @djdameln
+
+/src/anomalib/utils/callbacks                               @ashwinvaidya17
+/src/anomalib/cli                                           @ashwinvaidya17
+/src/anomalib/cv                                            @djdameln
+/src/anomalib/hpo                                           @ashwinvaidya17
+/src/anomalib/loggers                                       @ashwinvaidya17
+/src/anomalib/metrics                                       @djdameln
+/src/anomalib/sweep                                         @ashwinvaidya17
+
+# Anomalib Model Components
+/src/anomalib/models/components/base                        @samet-akcay @ashwinvaidya17 @djdameln
+/src/anomalib/models/components/classification              @djdameln
+/src/anomalib/models/components/dimensionality_reduction    @djdameln @samet-akcay
+/src/anomalib/models/components/feature_extractors          @ashwinvaidya17
+/src/anomalib/models/components/filters                     @samet-akcay
+/src/anomalib/models/components/flow                        @samet-akcay
+/src/anomalib/models/components/layers                      @djdameln
+/src/anomalib/models/components/sampling                    @samet-akcay
+/src/anomalib/models/components/stats                       @djdameln @samet-akcay
+
+# Tests
+/tests/                                                     @samet-akcay @ashwinvaidya17
+
+# Misc
+/pyproject.toml                                             @samet-akcay @yunchu
+/README.md                                                  @samet-akcay @ashwinvaidya17 @djdameln
+/setup.py                                                   @samet-akcay @yunchu
+/third-party-programs.txt                                   @samet-akcay @ashwinvaidya17 @djdameln
+/tox.ini                                                    @samet-akcay @yunchu
+
+# Tools
+/tools/benchmarking                                         @ashwinvaidya17
+/tools/hpo                                                  @ashwinvaidya17
+/tools/inference                                            @samet-akcay @djdameln
+/tools/test.py                                              @samet-akcay @djdameln
+/tools/train.py                                             @samet-akcay @djdameln

@@ -50,11 +50,18 @@ class ValSplitMode(str, Enum):
 def concatenate_datasets(datasets: Sequence["data.AnomalibDataset"]) -> "data.AnomalibDataset":
     """Concatenate multiple datasets into a single dataset object.
 
-    Args:
-        datasets (Sequence["data.AnomalibDataset"]): Sequence of at least two datasets.
+        Args:
+    <<<<<<< HEAD
+            datasets (Sequence["data.AnomalibDataset"]): Sequence of at least two datasets.
 
-    Returns:
-        "data.AnomalibDataset": Dataset that contains the combined samples of all input datasets.
+        Returns:
+            "data.AnomalibDataset": Dataset that contains the combined samples of all input datasets.
+    =======
+            datasets (Sequence[data.AnomalibDataset]): Sequence of at least two datasets.
+
+        Returns:
+            data.AnomalibDataset: Dataset that contains the combined samples of all input datasets.
+    >>>>>>> feature/custom_loops
     """
     concat_dataset = datasets[0]
     for dataset in datasets[1:]:
@@ -71,7 +78,7 @@ def random_split(
     """Perform a random split of a dataset.
 
     Args:
-        dataset ("data.AnomalibDataset"): Source dataset
+        dataset (data.AnomalibDataset): Source dataset
         split_ratio (Union[float, Sequence[float]]): Fractions of the splits that will be produced. The values in the
             sequence must sum to 1. If a single value is passed, the ratio will be converted to
             [1-split_ratio, split_ratio].

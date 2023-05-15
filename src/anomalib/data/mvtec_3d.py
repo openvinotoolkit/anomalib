@@ -33,6 +33,7 @@ from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
     DownloadInfo,
     InputNormalizationMethod,
+    LabelName,
     Split,
     TestSplitMode,
     ValSplitMode,
@@ -134,8 +135,8 @@ def make_mvtec_3d_dataset(
     )
 
     # Create label index for normal (0) and anomalous (1) images.
-    samples.loc[(samples.label == "good"), "label_index"] = 0
-    samples.loc[(samples.label != "good"), "label_index"] = 1
+    samples.loc[(samples.label == "good"), "label_index"] = LabelName.NORMAL
+    samples.loc[(samples.label != "good"), "label_index"] = LabelName.ABNORMAL
     samples.label_index = samples.label_index.astype(int)
 
     # separate masks from samples
@@ -153,7 +154,7 @@ def make_mvtec_3d_dataset(
 
     # assert that the right mask files are associated with the right test images
     assert (
-        samples.loc[samples.label_index == 1]
+        samples.loc[samples.label_index == LabelName.ABNORMAL]
         .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
         .all()
     ), "Mismatch between anomalous images and ground truth masks. Make sure the mask files in 'ground_truth' \
@@ -162,7 +163,7 @@ def make_mvtec_3d_dataset(
 
     # assert that the right depth image files are associated with the right test images
     assert (
-        samples.loc[samples.label_index == 1]
+        samples.loc[samples.label_index == LabelName.ABNORMAL]
         .apply(lambda x: Path(x.image_path).stem in Path(x.depth_path).stem, axis=1)
         .all()
     ), "Mismatch between anomalous images and depth images. Make sure the mask files in 'xyz' \

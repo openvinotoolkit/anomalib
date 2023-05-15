@@ -12,7 +12,7 @@ from .post_process import (
     compute_mask,
     superimpose_anomaly_map,
 )
-from .visualizer import ImageResult, Visualizer
+from .visualizer import ImageResult, VisualizationMode, Visualizer
 
 __all__ = [
     "add_anomalous_label",
@@ -23,5 +23,6 @@ __all__ = [
     "ImageResult",
     "NormalizationMethod",
     "Visualizer",
+    "VisualizationMode",
     "ThresholdMethod",
 ]

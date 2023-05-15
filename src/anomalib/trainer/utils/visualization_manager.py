@@ -16,7 +16,7 @@ from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 from anomalib import trainer
 from anomalib.data import TaskType
 from anomalib.models.components import AnomalyModule
-from anomalib.post_processing import Visualizer
+from anomalib.post_processing import VisualizationMode, Visualizer
 from anomalib.utils.loggers.base import ImageLoggerBase
 
 
@@ -33,7 +33,7 @@ class VisualizationManager:
 
     Args:
         trainer (trainer.AnomalibTrainer): Anomaly trainer.
-        mode (str): The mode of visualization. Can be one of ['full', 'simple'].
+        mode (VisualizationMode): The mode of visualization. Can be one of ['full', 'simple'].
         show_images (bool, optional): Whether to show images. Defaults to False.
         log_images (bool, optional): Whether to log images to available loggers. Defaults to False.
         stage (VisualizationStage, optional): The stage at which to write images to the logger(s).
@@ -43,12 +43,12 @@ class VisualizationManager:
     def __init__(
         self,
         trainer: "trainer.AnomalibTrainer",
-        mode: str,
+        mode: VisualizationMode,
         show_images: bool = False,
         log_images: bool = False,
         stage: VisualizationStage = VisualizationStage.TEST,
     ) -> None:
-        if mode not in ("full", "simple"):
+        if mode not in set(VisualizationMode):
             raise ValueError(f"Unknown visualization mode: {mode}. Please choose one of ['full', 'simple']")
         self.mode = mode
         if trainer.task_type not in (TaskType.CLASSIFICATION, TaskType.DETECTION, TaskType.SEGMENTATION):

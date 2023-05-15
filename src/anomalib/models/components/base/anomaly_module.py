@@ -3,8 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-#
-
 import logging
 from abc import ABC
 from typing import Any, Union

@@ -7,7 +7,7 @@ import pytest
 
 from anomalib.data import TaskType
 from anomalib.data.folder import FolderDataset
-from anomalib.data.utils import get_transforms
+from anomalib.data.utils import get_transforms, LabelName
 from anomalib.data.utils.split import concatenate_datasets, random_split
 from tests.helpers.dataset import get_dataset_path
 
@@ -62,14 +62,14 @@ class TestAnomalibDataset:
 
         # label-aware subset splitting
         samples = folder_dataset.samples
-        normal_samples = samples[samples["label_index"] == 0]
-        anomalous_samples = samples[samples["label_index"] == 1]
+        normal_samples = samples[samples["label_index"] == LabelName.NORMAL]
+        anomalous_samples = samples[samples["label_index"] == LabelName.ABNORMAL]
         samples = pd.concat([normal_samples, anomalous_samples[0:5]])
         folder_dataset.samples = samples
 
         subsets = random_split(folder_dataset, [0.4, 0.4, 0.2], label_aware=True)
 
         # 5 anomalous images in total, so the first two subsets should each have 2, and the last subset 1
-        assert len(subsets[0].samples[subsets[0].samples["label_index"] == 1]) == 2
-        assert len(subsets[1].samples[subsets[1].samples["label_index"] == 1]) == 2
-        assert len(subsets[2].samples[subsets[2].samples["label_index"] == 1]) == 1
+        assert len(subsets[0].samples[subsets[0].samples["label_index"] == LabelName.ABNORMAL]) == 2
+        assert len(subsets[1].samples[subsets[1].samples["label_index"] == LabelName.ABNORMAL]) == 2
+        assert len(subsets[2].samples[subsets[2].samples["label_index"] == LabelName.ABNORMAL]) == 1
