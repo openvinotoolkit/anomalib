@@ -6,7 +6,6 @@ https://arxiv.org/abs/2201.10703v2
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.callbacks import EarlyStopping
@@ -15,6 +14,7 @@ from torch import Tensor, optim
 
 from anomalib.models.components import AnomalyModule
 
+from .anomaly_map import AnomalyMapGenerationMode
 from .loss import ReverseDistillationLoss
 from .torch_model import ReverseDistillationModel
 
@@ -34,7 +34,7 @@ class ReverseDistillation(AnomalyModule):
         input_size: tuple[int, int],
         backbone: str,
         layers: list[str],
-        anomaly_map_mode: str,
+        anomaly_map_mode: AnomalyMapGenerationMode,
         lr: float,
         beta1: float,
         beta2: float,

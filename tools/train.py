@@ -25,24 +25,27 @@ from anomalib.utils.loggers import configure_logger, get_experiment_logger
 logger = logging.getLogger("anomalib")
 
 
-def get_args() -> Namespace:
-    """Get command line arguments.
+def get_parser() -> ArgumentParser:
+    """Get parser.
 
     Returns:
-        Namespace: List of arguments.
+        ArgumentParser: The parser object.
     """
     parser = ArgumentParser()
     parser.add_argument("--model", type=str, default="padim", help="Name of the algorithm to train/test")
     parser.add_argument("--config", type=str, required=False, help="Path to a model config file")
     parser.add_argument("--log-level", type=str, default="INFO", help="<DEBUG, INFO, WARNING, ERROR>")
 
-    args = parser.parse_args()
-    return args
+    return parser
 
 
-def train():
-    """Train an anomaly classification or segmentation model based on a provided configuration file."""
-    args = get_args()
+def train(args: Namespace):
+    """Train an anomaly model.
+
+    Args:
+        args (Namespace): The arguments from the command line.
+    """
+
     configure_logger(level=args.log_level)
 
     if args.log_level == "ERROR":
@@ -60,7 +63,10 @@ def train():
     trainer = AnomalibTrainer(
         **config.trainer,
         **config.post_processing,
-        **config.visualization,
+        show_images=config.visualization.show_images,
+        log_images=config.visualization.log_images,
+        visualization_stage=config.visualization.stage,
+        visualization_mode=config.visualization.mode,
         logger=experiment_logger,
         callbacks=callbacks,
         task_type=config.dataset.task,
@@ -78,4 +84,5 @@ def train():
 
 
 if __name__ == "__main__":
-    train()
+    args = get_parser().parse_args()
+    train(args)

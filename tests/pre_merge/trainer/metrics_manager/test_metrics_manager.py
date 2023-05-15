@@ -17,17 +17,13 @@ def config_from_yaml(request):
     [("data/config-good-00.yaml",), ("data/config-good-01.yaml",)],
     indirect=["config_from_yaml"],
 )
-def test_metrics_manager_initialization(config_from_yaml):
+def test_metrics_initialization(config_from_yaml):
     """Test if metrics are properly instantiated."""
 
     trainer = AnomalibTrainer(
         logger=False, image_metrics=config_from_yaml.metrics.image, pixel_metrics=config_from_yaml.metrics.pixel
     )
-    trainer.metrics_manager.initialize()
+    trainer.metrics.initialize()
 
-    assert isinstance(
-        trainer.metrics_manager.image_metrics, AnomalibMetricCollection
-    ), f"{trainer.metrics_manager.image_metrics}"
-    assert isinstance(
-        trainer.metrics_manager.pixel_metrics, AnomalibMetricCollection
-    ), f"{trainer.metrics_manager.pixel_metrics}"
+    assert isinstance(trainer.metrics.image_metrics, AnomalibMetricCollection), f"{trainer.metrics.image_metrics}"
+    assert isinstance(trainer.metrics.pixel_metrics, AnomalibMetricCollection), f"{trainer.metrics.pixel_metrics}"

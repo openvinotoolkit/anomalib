@@ -62,7 +62,7 @@ class AnomalibPredictionEpochLoop(PredictionEpochLoop):
         self.trainer.post_processor.apply_thresholding(predictions)
         if self.trainer.normalizer:
             self.trainer.normalizer.normalize(predictions)
-        self.trainer.visualization_manager.visualize_images(predictions, VisualizationStage.VAL)
+        self.trainer.visualizer.visualize_images(predictions, VisualizationStage.VAL)
         # --------------------------------------
 
         self.trainer._call_callback_hooks("on_predict_batch_end", predictions, batch, batch_idx, dataloader_idx)
@@ -87,7 +87,7 @@ class AnomalibPredictionLoop(PredictionLoop):
 
         Overrides the default epoch loop with the custom epoch loop.
         """
-        self.trainer.metrics_manager.initialize()
+        self.trainer.metrics.initialize()
         # Reset the image and pixel thresholds to 0.5 at start of the run.
-        self.trainer.metrics_manager.set_threshold()
+        self.trainer.metrics.set_threshold()
         return super().on_run_start()

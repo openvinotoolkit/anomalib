@@ -4,8 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from __future__ import annotations
-
 import logging
 import warnings
 
@@ -14,14 +12,15 @@ from pytorch_lightning import Trainer
 from anomalib.data import TaskType
 from anomalib.models.components.base.anomaly_module import AnomalyModule
 from anomalib.post_processing import NormalizationMethod, ThresholdMethod
+from anomalib.post_processing.visualizer import VisualizationMode
 from anomalib.trainer.loops.one_class import FitLoop, PredictionLoop, TestLoop, ValidationLoop
 from anomalib.trainer.utils import (
     CheckpointConnector,
     MetricsManager,
     PostProcessor,
     Thresholder,
-    VisualizationManager,
     VisualizationStage,
+    Visualizer,
     get_normalizer,
 )
 from anomalib.utils.metrics import AnomalyScoreThreshold
@@ -44,7 +43,7 @@ class AnomalibTrainer(Trainer):
         normalization_method (NormalizationMethod): Normalization method
         manual_image_threshold (Optional[float]): If threshold method is manual, this needs to be set. Defaults to None.
         manual_pixel_threshold (Optional[float]): If threshold method is manual, this needs to be set. Defaults to None.
-        visualization_mode (str): Visualization mode. Options ["full", "simple"]. Defaults to "full".
+        visualization_mode (VisualizationMode): Visualization mode. Options ["full", "simple"]. Defaults to "full".
         show_images (bool): Whether to show images. Defaults to False.
         log_images (bool): Whether to log images. Defaults to False.
         visualization_stage (VisualizationStage): The stage at which to write images to the logger(s).
@@ -59,7 +58,7 @@ class AnomalibTrainer(Trainer):
         manual_pixel_threshold: float | None = None,
         image_metrics: list[str] | None = None,
         pixel_metrics: list[str] | None = None,
-        visualization_mode: str = "full",
+        visualization_mode: VisualizationMode = VisualizationMode.FULL,
         show_images: bool = False,
         log_images: bool = False,
         visualization_stage: VisualizationStage = VisualizationStage.TEST,
@@ -89,11 +88,11 @@ class AnomalibTrainer(Trainer):
         )
         self.post_processor = PostProcessor(trainer=self)
         self.normalizer = get_normalizer(trainer=self, normalization_method=normalization_method)
-        self.metrics_manager = MetricsManager(trainer=self, image_metrics=image_metrics, pixel_metrics=pixel_metrics)
-        self.visualization_manager = VisualizationManager(
+        self.visualizer = Visualizer(
             trainer=self,
             mode=visualization_mode,
             show_images=show_images,
             log_images=log_images,
             stage=visualization_stage,
         )
+        self.metrics = MetricsManager(trainer=self, image_metrics=image_metrics, pixel_metrics=pixel_metrics)
