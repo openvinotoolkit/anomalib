@@ -3,7 +3,6 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 from pytorch_lightning.loops.epoch.training_epoch_loop import TrainingEpochLoop
 from pytorch_lightning.loops.fit_loop import FitLoop

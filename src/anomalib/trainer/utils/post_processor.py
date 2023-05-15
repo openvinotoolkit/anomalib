@@ -2,7 +2,7 @@
 
 This is responsible for setting up and computing thresholds.
 """
-from __future__ import annotations
+
 
 import torch
 from pytorch_lightning.utilities.types import STEP_OUTPUT
@@ -15,7 +15,7 @@ from anomalib.data.utils import boxes_to_anomaly_maps, boxes_to_masks, masks_to_
 class PostProcessor:
     """Post-processor used in AnomalibTrainer."""
 
-    def __init__(self, trainer: trainer.AnomalibTrainer) -> None:
+    def __init__(self, trainer: "trainer.AnomalibTrainer") -> None:
         self.trainer = trainer
 
     @staticmethod

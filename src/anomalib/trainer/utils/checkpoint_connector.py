@@ -4,8 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from __future__ import annotations
-
 from lightning_fabric.utilities.types import _PATH
 from pytorch_lightning.trainer.connectors import checkpoint_connector
 
@@ -21,9 +19,9 @@ class CheckpointConnector(checkpoint_connector.CheckpointConnector):
             and is present only for compatibility.
     """
 
-    def __init__(self, trainer: trainer.AnomalibTrainer, resume_from_checkpoint: _PATH | None = None) -> None:
+    def __init__(self, trainer: "trainer.AnomalibTrainer", resume_from_checkpoint: _PATH | None = None) -> None:
         super().__init__(trainer, resume_from_checkpoint)
-        self.trainer: trainer.AnomalibTrainer  # type: ignore
+        self.trainer: "trainer.AnomalibTrainer"  # type: ignore
 
     def dump_checkpoint(self, weights_only: bool = False) -> dict:
         """Override dump checkpoint to save thresholding and normalization parameters.

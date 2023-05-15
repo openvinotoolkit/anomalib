@@ -3,7 +3,6 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 from importlib import import_module
 
@@ -27,7 +26,7 @@ class Thresholder:
 
     def __init__(
         self,
-        trainer: trainer.AnomalibTrainer,
+        trainer: "trainer.AnomalibTrainer",
         image_threshold_method: dict | None = None,
         pixel_threshold_method: dict | None = None,
     ) -> None:

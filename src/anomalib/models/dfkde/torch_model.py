@@ -3,7 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
 
@@ -12,10 +11,7 @@ import torch.nn.functional as F
 from torch import Tensor, nn
 
 from anomalib.models.components import FeatureExtractor
-from anomalib.models.components.classification import (
-    FeatureScalingMethod,
-    KDEClassifier,
-)
+from anomalib.models.components.classification import FeatureScalingMethod, KDEClassifier
 
 logger = logging.getLogger(__name__)
 
