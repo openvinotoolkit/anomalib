@@ -1,4 +1,4 @@
-"""Methods to compute and save metrics."""
+"""Methods to write and upload metrics."""
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -12,7 +12,11 @@ from warnings import warn
 
 import pandas as pd
 from lightning_utilities.core.imports import module_available
-from torch.utils.tensorboard.writer import SummaryWriter
+
+try:
+    from torch.utils.tensorboard.writer import SummaryWriter
+except ImportError:
+    warn("tensorboard not installed. Please install to write to tensorboard.")
 
 try:
     import wandb

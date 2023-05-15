@@ -13,7 +13,7 @@ import yaml
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 
-from anomalib.deploy import ExportMode
+from anomalib import deploy
 
 from .graph import GraphLogger
 from .tiler_configuration import TilerConfigurationCallback
@@ -78,7 +78,7 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
                     input_size=config.model.input_size,
                     dirpath=config.project.path,
                     filename="model",
-                    export_mode=ExportMode(config.optimization.export_mode),
+                    export_mode=deploy.ExportMode(config.optimization.export_mode),
                 )
             )
         else:

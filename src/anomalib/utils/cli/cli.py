@@ -1,6 +1,6 @@
 """Anomalib CLI."""
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -14,6 +14,7 @@ from anomalib.models import AnomalyModule
 from anomalib.trainer.trainer import AnomalibTrainer
 from anomalib.utils.loggers import configure_logger
 
+from .subcommands import add_benchmarking_parser, add_export_parser, add_hpo_parser
 from .utils import (
     add_logging_arguments,
     add_metrics_arguments,
@@ -46,6 +47,14 @@ class AnomalibCLI(LightningCLI):
             save_config_kwargs=kwargs.pop("save_config_kwargs", {"overwrite": True}),
             **kwargs,
         )
+
+    def _add_subcommands(self, parser: LightningArgumentParser, **kwargs: Any) -> None:
+        """Setup base subcommands and add anomalib specific on top of it."""
+        # Initializes fit, validate, test, predict and tune
+        super()._add_subcommands(parser, **kwargs)
+        add_export_parser(parser)
+        add_hpo_parser(parser)
+        add_benchmarking_parser(parser)
 
     def add_arguments_to_parser(self, parser: LightningArgumentParser) -> None:
         """Add default arguments.

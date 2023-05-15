@@ -132,12 +132,25 @@ def export_to_onnx(model: AnomalyModule, input_size: tuple[int, int], export_pat
     return onnx_path
 
 
-def export_to_openvino(export_path: str | Path, onnx_path: Path) -> None:
+def export_to_openvino(export_path: str | Path | None, input_model: Path, **kwargs) -> None:
     """Convert onnx model to OpenVINO IR.
 
     Args:
         export_path (str | Path): Path to the root folder of the exported model.
-        onnx_path (Path): Path to the exported onnx model.
+        input_model (Path): Path to the exported onnx model.
+        kwargs: Additional arguments to pass to the OpenVINO model optimizer. These are specific to the OpenVINO
+            model optimizer.
     """
-    optimize_command = ["mo", "--input_model", str(onnx_path), "--output_dir", str(export_path)]
+    # Get input model path
+    if input_model is None:
+        raise ValueError("Input model must be specified.")
+
+    # Assign export path from parameters or use the input model's directory
+    export_path = export_path if export_path is not None else input_model.parent
+
+    # Add model optimizer specific arguments
+    optimize_command = ["mo", "--input_model", str(input_model), "--output_dir", str(export_path)]
+    for key, value in kwargs.items():
+        optimize_command.extend(["--" + key, str(value)])
+
     subprocess.run(optimize_command, check=True)  # nosec

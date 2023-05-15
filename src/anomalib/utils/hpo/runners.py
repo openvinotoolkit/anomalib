@@ -36,20 +36,20 @@ class WandbSweep:
     """wandb sweep.
 
     Args:
-        config (DictConfig): Original model configuration.
+        model_config (DictConfig): Original model configuration.
         sweep_config (DictConfig): Sweep configuration.
         entity (str, optional): Username or workspace to send the project to. Defaults to None.
     """
 
     def __init__(
         self,
-        config: DictConfig | ListConfig,
+        model_config: DictConfig | ListConfig,
         sweep_config: DictConfig | ListConfig,
         entity: str | None = None,
     ) -> None:
         if not module_available("wandb"):
             raise ImportError("wandb not installed. Please install to use these features.")
-        self.config = config
+        self.config = model_config
         self.sweep_config = sweep_config
         self.observation_budget = sweep_config.observation_budget
         self.entity = entity
@@ -103,20 +103,20 @@ class CometSweep:
     """comet sweep.
 
     Args:
-        config (DictConfig): Original model configuration.
+        model_config (DictConfig): Original model configuration.
         sweep_config (DictConfig): Sweep configuration.
         entity (str, optional): Username or workspace to send the project to. Defaults to None.
     """
 
     def __init__(
         self,
-        config: DictConfig | ListConfig,
+        model_config: DictConfig | ListConfig,
         sweep_config: DictConfig | ListConfig,
         entity: str | None = None,
     ) -> None:
         if not module_available("comet_ml"):
             raise ImportError("comet_ml not installed. Please install to use these features.")
-        self.config = config
+        self.config = model_config
         self.sweep_config = sweep_config
         self.entity = entity
 
