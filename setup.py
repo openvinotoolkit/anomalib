@@ -107,6 +107,7 @@ setup(
     packages=find_packages(where="src", include=["anomalib", "anomalib.*"]),
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRAS_REQUIRE,
+    include_package_data=True,
     package_data={"": ["config.yaml"]},
     entry_points={"console_scripts": ["anomalib=anomalib.utils.cli.cli:main"]},
 )
