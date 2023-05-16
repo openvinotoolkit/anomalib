@@ -33,6 +33,12 @@ class CheckpointConnector(checkpoint_connector.CheckpointConnector):
             dict: Model checkpoint with image and pixel thresholding and normalization parameters.
         """
         checkpoint = super().dump_checkpoint(weights_only)
+        checkpoint["model_name"] = (
+            f"{self.trainer.lightning_module.__class__.__module__}"
+            f".{self.trainer.lightning_module.__class__.__name__}"
+        )
+        checkpoint["task_type"] = self.trainer.task_type
+        checkpoint["transforms_config"] = self.trainer.datamodule.test_data.transform.to_dict()
         checkpoint["image_threshold"] = self.trainer.image_threshold
         checkpoint["pixel_threshold"] = self.trainer.pixel_threshold
         if self.trainer.normalizer:

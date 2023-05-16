@@ -14,7 +14,14 @@ from anomalib.models import AnomalyModule
 from anomalib.trainer.trainer import AnomalibTrainer
 from anomalib.utils.loggers import configure_logger
 
-from .subcommands import add_benchmarking_parser, add_export_parser, add_hpo_parser
+from .subcommands import (
+    add_benchmarking_parser,
+    add_export_parser,
+    add_hpo_parser,
+    run_benchmarking,
+    run_export,
+    run_hpo,
+)
 from .utils import (
     add_logging_arguments,
     add_metrics_arguments,
@@ -38,6 +45,7 @@ class AnomalibCLI(LightningCLI):
         self,
         **kwargs: Any,  # Remove with deprecations of v2.0.0
     ) -> None:
+        self.anomalib_subcommands = ["export", "hpo", "benchmark", "infer", "install"]
         kwargs.pop("trainer_class", None)
         kwargs.pop("model_class", None)
         super().__init__(
@@ -70,11 +78,36 @@ class AnomalibCLI(LightningCLI):
         parser.link_arguments("data.init_args.image_size", "model.init_args.input_size")
 
     def before_instantiate_classes(self) -> None:
-        # TODO
-        # loggers = get_experiment_logger()
-        config = self.config[self.config.subcommand]
-        self._set_default_root_dir(config)
-        self._set_ckpt_path(config)
+        if self.config.subcommand not in self.anomalib_subcommands:
+            # TODO
+            # loggers = get_experiment_logger()
+            config = self.config[self.config.subcommand]
+            self._set_default_root_dir(config)
+            self._set_ckpt_path(config)
+
+    def instantiate_classes(self) -> None:
+        """Ignore anomalib specific subcommands."""
+        if self.config.subcommand not in self.anomalib_subcommands:
+            super().instantiate_classes()
+
+    def _run_subcommand(self, subcommand: str) -> None:
+        """Run subcommand
+
+        Args:
+            subcommand (str): Subcommand to run.
+        """
+        if subcommand not in self.anomalib_subcommands:
+            super()._run_subcommand(subcommand)
+        else:
+            match subcommand:
+                case "export":
+                    return run_export(self.config.export)
+                case "hpo":
+                    return run_hpo(self.config.hpo)
+                case "benchmark":
+                    return run_benchmarking(self.config.benchmark)
+                case _:
+                    raise NotImplementedError(f"Subcommand {subcommand} not implemented.")
 
     def _set_default_root_dir(self, config):
         if config.trainer.default_root_dir is None:

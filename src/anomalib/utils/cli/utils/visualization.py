@@ -5,6 +5,7 @@
 
 from pytorch_lightning.cli import LightningArgumentParser
 
+from anomalib.post_processing.visualizer import VisualizationMode
 from anomalib.trainer.utils.visualization_manager import VisualizationStage
 
 
@@ -23,10 +24,9 @@ def add_visualization_arguments(parser: LightningArgumentParser):
     )
     visualization_group.add_argument(
         "--visualization.visualization_mode",
-        type=str,
-        default="full",
+        type=VisualizationMode,
+        default=VisualizationMode.FULL,
         help="Visualization mode",
-        choices=["full", "simple"],
     )
     visualization_group.add_argument(
         "--visualization.visualization_stage",

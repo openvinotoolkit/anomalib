@@ -92,10 +92,10 @@ class VisualizationManager:
             stage (VisualizationStage): The stage at which to visualize metrics.
         """
         metrics_list = []
-        if hasattr(self.trainer.metrics_manager, "image_metrics"):
-            metrics_list.append(self.trainer.metrics_manager.image_metrics)
-        if hasattr(self.trainer.metrics_manager, "pixel_metrics"):
-            metrics_list.append(self.trainer.metrics_manager.pixel_metrics)
+        if hasattr(self.trainer.metrics, "image_metrics"):
+            metrics_list.append(self.trainer.metrics.image_metrics)
+        if hasattr(self.trainer.metrics, "pixel_metrics"):
+            metrics_list.append(self.trainer.metrics.pixel_metrics)
 
         if stage == self.stage and (self.show_images or self.log_images):
             for metrics in metrics_list:

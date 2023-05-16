@@ -88,7 +88,6 @@ class WandbSweep:
             **config.trainer,
             **config.post_processing,
             logger=wandb_logger,
-            task_type=config.dataset.task,
             image_metrics=config.metrics.get("image", None),
             pixel_metrics=config.metrics.get("pixel", None),
         )
@@ -154,7 +153,6 @@ class CometSweep:
                 **config.trainer,
                 **config.post_processing,
                 logger=comet_logger,
-                task_type=config.dataset.task,
                 image_metrics=config.metrics.get("image", None),
                 pixel_metrics=config.metrics.get("pixel", None),
             )

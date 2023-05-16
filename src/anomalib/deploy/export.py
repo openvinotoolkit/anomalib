@@ -25,23 +25,39 @@ class ExportMode(str, Enum):
     TORCH = "torch"
 
 
-def get_metadata(trainer: "trainer.AnomalibTrainer", transform: dict[str, Any]) -> dict[str, Any]:
+def get_metadata(trainer: "trainer.AnomalibTrainer | dict") -> dict[str, Any]:
     """Get metadata for the exported model.
 
     Args:
-        trainer (AnomalibTrainer): Trainer used for training the model.
-        transform (dict[str, Any]): Transform used for the model.
+        trainer (AnomalibTrainer | dict): Trainer used for training the model or a dictionary obtained from the
+        checkpoint.
 
     Returns:
         dict[str, Any]: Metadata for the exported model.
     """
-    data_metadata = {"task": trainer.task_type, "transform": transform}
+    normalizer = None
+    if isinstance(trainer, dict):  # dictionary obtained from the checkpoint.
+        task_type = trainer["task_type"]
+        transform = trainer.get("transforms_config", {})
+        image_threshold = trainer["image_threshold"].cpu().value.item()
+        pixel_threshold = trainer["pixel_threshold"].cpu().value.item()
+        if "normalization_metric" in trainer.keys():
+            normalizer = trainer["normalization_metric"].state_dict()
+    else:
+        task_type = trainer.task_type
+        transform = trainer.datamodule.test_data.transform.to_dict()
+        image_threshold = trainer.image_threshold.cpu().value.item()
+        pixel_threshold = trainer.pixel_threshold.cpu().value.item()
+        if trainer.normalizer:
+            normalizer = trainer.normalizer.metric.state_dict()
+
+    data_metadata = {"task": task_type, "transform": transform}
     normalization_metadata = {
-        "image_threshold": trainer.image_threshold.cpu().value.item(),
-        "pixel_threshold": trainer.pixel_threshold.cpu().value.item(),
+        "image_threshold": image_threshold,
+        "pixel_threshold": pixel_threshold,
     }
-    if trainer.normalizer:
-        for key, value in trainer.normalizer.metric.state_dict().items():
+    if normalizer:
+        for key, value in normalizer.items():
             normalization_metadata[key] = value.cpu()
 
     metadata = {**data_metadata, **normalization_metadata}
@@ -54,13 +70,12 @@ def get_metadata(trainer: "trainer.AnomalibTrainer", transform: dict[str, Any]) 
 
 
 def export(
-    transform: dict[str, Any],
     trainer: "trainer.AnomalibTrainer",
     input_size: tuple[int, int],
     model: AnomalyModule,
     export_mode: ExportMode,
     export_root: str | Path,
-) -> None:
+) -> Path:
     """Export the model to onnx format and (optionally) convert to OpenVINO IR if export mode is set to OpenVINO.
 
     Args:
@@ -70,16 +85,19 @@ def export(
         model (AnomalyModule): Anomaly model to export.
         export_mode (ExportMode): Mode to export the model. Torch, ONNX or OpenVINO.
         export_root (str | Path): Path to exported Torch, ONNX or OpenVINO IR.
+
+    Returns:
+        Path: Path to the exported model.
     """
     # Create export directory.
     export_path = Path(export_root) / "weights" / export_mode.value
     export_path.mkdir(parents=True, exist_ok=True)
 
     # Get metadata.
-    metadata = get_metadata(trainer, transform)
+    metadata = get_metadata(trainer)
 
     if export_mode == ExportMode.TORCH:
-        export_to_torch(model, metadata, export_path)
+        result_path = export_to_torch(model, metadata, export_path)
 
     elif export_mode in (ExportMode.ONNX, ExportMode.OPENVINO):
         # Write metadata to json file. The file is written in the same directory as the target model.
@@ -87,25 +105,32 @@ def export(
             json.dump(metadata, metadata_file, ensure_ascii=False, indent=4)
 
         # Export model to onnx and convert to OpenVINO IR if export mode is set to OpenVINO.
-        onnx_path = export_to_onnx(model, input_size, export_path)
+        result_path = export_to_onnx(model, input_size, export_path)
         if export_mode == ExportMode.OPENVINO:
-            export_to_openvino(export_path, onnx_path)
+            result_path = export_to_openvino(export_path, result_path)
 
     else:
         raise ValueError(f"Unknown export mode {export_mode}")
 
+    return result_path
 
-def export_to_torch(model: AnomalyModule, metadata: dict[str, Any], export_path: Path) -> None:
+
+def export_to_torch(model: AnomalyModule, metadata: dict[str, Any], export_path: Path) -> Path:
     """Export AnomalibModel to torch.
 
     Args:
         model (AnomalyModule): Model to export.
         export_path (Path): Path to the folder storing the exported model.
+
+    Returns:
+        Path: Path to the exported torch model.
     """
     torch.save(
         obj={"model": model.model, "metadata": metadata},
         f=export_path / "model.pt",
     )
+
+    return export_path / "model.pt"
 
 
 def export_to_onnx(model: AnomalyModule, input_size: tuple[int, int], export_path: Path) -> Path:
@@ -123,7 +148,7 @@ def export_to_onnx(model: AnomalyModule, input_size: tuple[int, int], export_pat
     torch.onnx.export(
         model.model,
         torch.zeros((1, 3, *input_size)).to(model.device),
-        onnx_path,
+        str(onnx_path),
         opset_version=11,
         input_names=["input"],
         output_names=["output"],
@@ -132,7 +157,7 @@ def export_to_onnx(model: AnomalyModule, input_size: tuple[int, int], export_pat
     return onnx_path
 
 
-def export_to_openvino(export_path: str | Path | None, input_model: Path, **kwargs) -> None:
+def export_to_openvino(export_path: str | Path | None, input_model: Path, **kwargs) -> Path:
     """Convert onnx model to OpenVINO IR.
 
     Args:
@@ -140,6 +165,9 @@ def export_to_openvino(export_path: str | Path | None, input_model: Path, **kwar
         input_model (Path): Path to the exported onnx model.
         kwargs: Additional arguments to pass to the OpenVINO model optimizer. These are specific to the OpenVINO
             model optimizer.
+
+    Returns:
+        Path: Path to the exported OpenVINO IR.
     """
     # Get input model path
     if input_model is None:
@@ -154,3 +182,5 @@ def export_to_openvino(export_path: str | Path | None, input_model: Path, **kwar
         optimize_command.extend(["--" + key, str(value)])
 
     subprocess.run(optimize_command, check=True)  # nosec
+
+    return Path(export_path)

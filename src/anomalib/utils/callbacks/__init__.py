@@ -11,7 +11,7 @@ from importlib import import_module
 
 import yaml
 from omegaconf import DictConfig, ListConfig, OmegaConf
-from pytorch_lightning.callbacks import Callback, ModelCheckpoint
+from pytorch_lightning.callbacks import Callback
 
 from anomalib import deploy
 
@@ -41,20 +41,6 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
     logger.info("Loading the callbacks")
 
     callbacks: list[Callback] = []
-
-    monitor_metric = None if "early_stopping" not in config.model.keys() else config.model.early_stopping.metric
-    monitor_mode = "max" if "early_stopping" not in config.model.keys() else config.model.early_stopping.mode
-
-    checkpoint = ModelCheckpoint(
-        dirpath=os.path.join(config.project.path, "weights", "lightning"),
-        filename="model",
-        monitor=monitor_metric,
-        mode=monitor_mode,
-        auto_insert_metric_name=False,
-        save_on_train_epoch_end=False,  # need to set this as validation loop now runs after train loop.
-    )
-
-    callbacks.extend([checkpoint, TimerCallback()])
 
     if "optimization" in config.keys():
         if "nncf" in config.optimization and config.optimization.nncf.apply:

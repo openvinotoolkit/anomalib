@@ -4,11 +4,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+import os
 import warnings
 from typing import List, Optional
 
-from pytorch_lightning import LightningModule, Trainer
+from pytorch_lightning import Callback, LightningModule, Trainer
+from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from pytorch_lightning.core.datamodule import LightningDataModule
+from pytorch_lightning.trainer.connectors.callback_connector import CallbackConnector
 from pytorch_lightning.utilities.types import _EVALUATE_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
 
 from anomalib.data import AnomalibDataModule, AnomalibDataset, TaskType
@@ -24,9 +27,8 @@ from anomalib.trainer.utils import (
     VisualizationStage,
     get_normalizer,
 )
+from anomalib.utils.callbacks import TimerCallback
 from anomalib.utils.metrics import AnomalyScoreThreshold
-
-from .utils import CallbackConnector
 
 log = logging.getLogger(__name__)
 # warnings to ignore in trainer
@@ -68,28 +70,19 @@ class AnomalibTrainer(Trainer):
         task_type: TaskType = TaskType.SEGMENTATION,
         **kwargs,
     ) -> None:
+        # Since we add our own ModelCheckpoint callback we set enable_checkpointing to False
+        kwargs["enable_checkpointing"] = False
         super().__init__(**kwargs)
-        self._checkpoint_connector = CheckpointConnector(self, kwargs.get("resume_from_checkpoint", None))
-
-        self._callback_connector = CallbackConnector(self)
+        self._setup_callbacks()
         self._checkpoint_connector = CheckpointConnector(self, kwargs.get("resume_from_checkpoint", None))
 
         self.lightning_module: AnomalyModule  # for mypy
+        self.callbacks: List[Callback]  # for mypy
 
         self.fit_loop = FitLoop(min_epochs=kwargs.get("min_epochs", 0), max_epochs=kwargs.get("max_epochs", None))
         self.validate_loop = ValidationLoop()
         self.test_loop = TestLoop()
         self.predict_loop = PredictionLoop()
-
-        self._callback_connector.on_trainer_init(
-            callbacks=kwargs.get("callbacks", None),
-            enable_checkpointing=kwargs.get("enable_checkpointing", True),
-            enable_progress_bar=kwargs.get("enable_progress_bar", True),
-            default_root_dir=kwargs.get("default_root_dir"),
-            enable_model_summary=kwargs.get("enable_model_summary", True),
-            max_time=kwargs.get("max_time", None),
-            accumulate_grad_batches=kwargs.get("accumulate_grad_batches", None),
-        )
 
         self.task_type = task_type
         # these are part of the trainer as they are used in the metrics-manager, post-processor and thresholder
@@ -112,6 +105,28 @@ class AnomalibTrainer(Trainer):
             log_images=log_images,
             stage=visualization_stage,
         )
+
+    def _setup_callbacks(self) -> None:
+        # get early stopping callback if present
+        early_stopping_callback: Optional[Callback] = None
+        for callback in self.callbacks:
+            if isinstance(callback, EarlyStopping):
+                early_stopping_callback = callback
+                break
+        monitor_metric = None if early_stopping_callback is None else early_stopping_callback.monitor
+        monitor_mode = "max" if early_stopping_callback is None else early_stopping_callback.mode
+        self.callbacks.append(
+            ModelCheckpoint(
+                dirpath=os.path.join(self.default_root_dir, "weights", "lightning"),
+                filename="model",
+                monitor=monitor_metric,
+                mode=monitor_mode,
+                auto_insert_metric_name=False,
+                save_on_train_epoch_end=False,  # need to set this as validation loop now runs after train loop.
+            )
+        )
+        self.callbacks.append(TimerCallback())
+        self.callbacks = CallbackConnector._reorder_callbacks(self.callbacks)
 
     def fit(
         self,
