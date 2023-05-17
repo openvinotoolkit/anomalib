@@ -65,7 +65,6 @@ def train(args: Namespace):
         **config.post_processing,
         show_images=config.visualization.show_images,
         log_images=config.visualization.log_images,
-        visualization_stage=config.visualization.stage,
         visualization_mode=config.visualization.mode,
         logger=experiment_logger,
         callbacks=callbacks,

@@ -15,7 +15,7 @@ from anomalib.post_processing import ThresholdMethod
 from anomalib.utils.metrics import AnomalyScoreThreshold
 
 
-class Thresholder:
+class ThresholdingConnector:
     """Computes and updates thresholds.
 
     Used in AnomalibTrainer.
