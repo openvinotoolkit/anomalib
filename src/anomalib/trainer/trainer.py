@@ -13,16 +13,15 @@ from anomalib.data import TaskType
 from anomalib.models.components.base.anomaly_module import AnomalyModule
 from anomalib.post_processing import NormalizationMethod, ThresholdMethod
 from anomalib.post_processing.visualizer import VisualizationMode
-from anomalib.trainer.loops.one_class import FitLoop, PredictionLoop, TestLoop, ValidationLoop
-from anomalib.trainer.utils import (
+from anomalib.trainer.connectors import (
     CheckpointConnector,
-    MetricsManager,
-    PostProcessor,
-    Thresholder,
-    VisualizationStage,
-    Visualizer,
+    MetricsConnector,
+    PostProcessingConnector,
+    ThresholdingConnector,
+    VisualizationConnector,
     get_normalizer,
 )
+from anomalib.trainer.loops.one_class import FitLoop, PredictionLoop, TestLoop, ValidationLoop
 from anomalib.utils.metrics import AnomalyScoreThreshold
 
 log = logging.getLogger(__name__)
@@ -46,8 +45,6 @@ class AnomalibTrainer(Trainer):
         visualization_mode (VisualizationMode): Visualization mode. Options ["full", "simple"]. Defaults to "full".
         show_images (bool): Whether to show images. Defaults to False.
         log_images (bool): Whether to log images. Defaults to False.
-        visualization_stage (VisualizationStage): The stage at which to write images to the logger(s).
-            Defaults to VisualizationStage.TEST.
     """
 
     def __init__(
@@ -61,7 +58,6 @@ class AnomalibTrainer(Trainer):
         visualization_mode: VisualizationMode = VisualizationMode.FULL,
         show_images: bool = False,
         log_images: bool = False,
-        visualization_stage: VisualizationStage = VisualizationStage.TEST,
         task_type: TaskType = TaskType.SEGMENTATION,
         **kwargs,
     ) -> None:
@@ -80,19 +76,20 @@ class AnomalibTrainer(Trainer):
         self.image_threshold = AnomalyScoreThreshold().cpu()
         self.pixel_threshold = AnomalyScoreThreshold().cpu()
 
-        self.thresholder = Thresholder(
+        self.thresholding_connector = ThresholdingConnector(
             trainer=self,
             threshold_method=threshold_method,
             manual_image_threshold=manual_image_threshold,
             manual_pixel_threshold=manual_pixel_threshold,
         )
-        self.post_processor = PostProcessor(trainer=self)
-        self.normalizer = get_normalizer(trainer=self, normalization_method=normalization_method)
-        self.visualizer = Visualizer(
+        self.post_processing_connector = PostProcessingConnector(trainer=self)
+        self.normalization_connector = get_normalizer(trainer=self, normalization_method=normalization_method)
+        self.visualization_connector = VisualizationConnector(
             trainer=self,
             mode=visualization_mode,
             show_images=show_images,
             log_images=log_images,
-            stage=visualization_stage,
         )
-        self.metrics = MetricsManager(trainer=self, image_metrics=image_metrics, pixel_metrics=pixel_metrics)
+        self.metrics_connector = MetricsConnector(
+            trainer=self, image_metrics=image_metrics, pixel_metrics=pixel_metrics
+        )

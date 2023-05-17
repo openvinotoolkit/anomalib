@@ -40,8 +40,8 @@ def get_metadata(trainer: AnomalibTrainer, transform: dict[str, Any]) -> dict[st
         "image_threshold": trainer.image_threshold.cpu().value.item(),
         "pixel_threshold": trainer.pixel_threshold.cpu().value.item(),
     }
-    if trainer.normalizer:
-        for key, value in trainer.normalizer.metric.state_dict().items():
+    if trainer.normalization_connector:
+        for key, value in trainer.normalization_connector.metric.state_dict().items():
             normalization_metadata[key] = value.cpu()
 
     metadata = {**data_metadata, **normalization_metadata}

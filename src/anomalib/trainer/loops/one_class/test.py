@@ -12,7 +12,6 @@ from pytorch_lightning.loops.epoch.evaluation_epoch_loop import EvaluationEpochL
 from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 
 from anomalib import trainer
-from anomalib.trainer.utils import VisualizationStage
 
 
 class AnomalibTestEpochLoop(EvaluationEpochLoop):
@@ -24,10 +23,10 @@ class AnomalibTestEpochLoop(EvaluationEpochLoop):
         """Computes prediction scores, bounding boxes, and applies thresholding before normalization."""
         outputs = super()._evaluation_step_end(*args, **kwargs)
         if outputs is not None:
-            self.trainer.post_processor.apply_predictions(outputs)
-            self.trainer.post_processor.apply_thresholding(outputs)
-            if self.trainer.normalizer:
-                self.trainer.normalizer.normalize(outputs)
+            self.trainer.post_processing_connector.apply_predictions(outputs)
+            self.trainer.post_processing_connector.apply_thresholding(outputs)
+            if self.trainer.normalization_connector:
+                self.trainer.normalization_connector.normalize(outputs)
         return outputs
 
     @lru_cache(1)
@@ -49,10 +48,10 @@ class AnomalibTestLoop(EvaluationLoop):
 
     def on_run_start(self, *args, **kwargs) -> None:
         """Can be used to call setup."""
-        self.trainer.thresholder.initialize()
-        self.trainer.metrics.initialize()
+        self.trainer.thresholding_connector.initialize()
+        self.trainer.metrics_connector.initialize()
         # Reset the image and pixel thresholds to 0.5 at start of the run.
-        self.trainer.metrics.set_threshold()
+        self.trainer.metrics_connector.set_threshold()
         return super().on_run_start(*args, **kwargs)
 
     def _evaluation_epoch_end(self, outputs: List[EPOCH_OUTPUT]) -> None:
@@ -66,10 +65,9 @@ class AnomalibTestLoop(EvaluationLoop):
         output_or_outputs: EPOCH_OUTPUT | list[EPOCH_OUTPUT] = (
             outputs[0] if len(outputs) > 0 and self.num_dataloaders == 1 else outputs
         )
-        self.trainer.metrics.compute(output_or_outputs)
-        self.trainer.metrics.log(self.trainer, "test_epoch_end")
-        self.trainer.visualizer.visualize_images(output_or_outputs, VisualizationStage.TEST)
-        self.trainer.visualizer.visualize_metrics(
-            VisualizationStage.TEST,
-            [self.trainer.metrics.image_metrics, self.trainer.metrics.pixel_metrics],
+        self.trainer.metrics_connector.compute(output_or_outputs)
+        self.trainer.metrics_connector.log(self.trainer, "test_epoch_end")
+        self.trainer.visualization_connector.visualize_images(output_or_outputs)
+        self.trainer.visualization_connector.visualize_metrics(
+            [self.trainer.metrics_connector.image_metrics, self.trainer.metrics_connector.pixel_metrics],
         )

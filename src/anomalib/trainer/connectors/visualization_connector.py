@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import math
-from enum import Enum
 from pathlib import Path
 from typing import Any, cast
 
@@ -17,21 +16,12 @@ from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 from anomalib import trainer
 from anomalib.data import TaskType
 from anomalib.models.components import AnomalyModule
-from anomalib.post_processing import VisualizationMode
-from anomalib.post_processing import Visualizer as _Visualizer
+from anomalib.post_processing import VisualizationMode, Visualizer
 from anomalib.utils.loggers.base import ImageLoggerBase
 from anomalib.utils.metrics.collection import AnomalibMetricCollection
 
 
-class VisualizationStage(str, Enum):
-    """Visualization stage."""
-
-    VAL = "val"
-    TEST = "test"
-    PREDICT = "predict"
-
-
-class Visualizer:
+class VisualizationConnector:
     """Manages visualization.
 
     Args:
@@ -39,8 +29,6 @@ class Visualizer:
         mode (VisualizationMode): The mode of visualization. Can be one of ['full', 'simple'].
         show_images (bool, optional): Whether to show images. Defaults to False.
         log_images (bool, optional): Whether to log images to available loggers. Defaults to False.
-        stage (VisualizationStage, optional): The stage at which to write images to the logger(s).
-            Defaults to VisualizationStage.TEST.
     """
 
     def __init__(
@@ -49,7 +37,6 @@ class Visualizer:
         mode: VisualizationMode,
         show_images: bool = False,
         log_images: bool = False,
-        stage: VisualizationStage = VisualizationStage.TEST,
     ) -> None:
         if mode not in set(VisualizationMode):
             raise ValueError(f"Unknown visualization mode: {mode}. Please choose one of {set(VisualizationMode)}")
@@ -61,22 +48,18 @@ class Visualizer:
         self.trainer = trainer
         self.show_images = show_images
         self.log_images = log_images
-        self.stage = stage
-        self.visualizer = _Visualizer(mode, trainer.task_type)
+        self.visualizer = Visualizer(mode, trainer.task_type)
 
-    def visualize_images(
-        self, outputs: EPOCH_OUTPUT | list[EPOCH_OUTPUT] | STEP_OUTPUT, stage: VisualizationStage
-    ) -> None:
+    def visualize_images(self, outputs: EPOCH_OUTPUT | list[EPOCH_OUTPUT] | STEP_OUTPUT) -> None:
         """Visualize or show the outputs.
 
         Args:
             outputs (EPOCH_OUTPUT, List[EPOCH_OUTPUT]): The outputs to visualize.
-            stage (str): The stage at which to visualize.
         """
-        if stage == self.stage and (self.show_images or self.log_images):
+        if self.show_images or self.log_images:
             if isinstance(outputs, list):
                 for output in outputs:
-                    self.visualize_images(output, stage)
+                    self.visualize_images(output)
             else:
                 for i, image in enumerate(self.visualizer.visualize_batch(outputs)):
                     filename = self._get_filename(outputs, i)
@@ -85,16 +68,16 @@ class Visualizer:
                     if self.log_images:
                         self._add_to_loggers(image, filename=filename)
 
-    def visualize_metrics(self, stage: VisualizationStage, metrics_list: list[AnomalibMetricCollection]) -> None:
+    def visualize_metrics(self, metrics_list: list[AnomalibMetricCollection]) -> None:
         """Visualize metrics.
 
         Note:
             This should only be called after the metrics have been computed. Otherwise, it will log incorrect metrics.
 
         Args:
-            stage (VisualizationStage): The stage at which to visualize metrics.
+            metrics_list (List[AnomalibMetricCollection]): List of metrics.
         """
-        if stage == self.stage and (self.show_images or self.log_images):
+        if self.show_images or self.log_images:
             for metrics in metrics_list:
                 for metric in metrics.values():
                     # `generate_figure` needs to be defined for every metric that should be plotted automatically

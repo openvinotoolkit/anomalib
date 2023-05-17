@@ -20,7 +20,7 @@ from anomalib.utils.metrics.collection import AnomalibMetricCollection
 logger = logging.getLogger(__name__)
 
 
-class MetricsManager:
+class MetricsConnector:
     def __init__(
         self,
         trainer: "trainer.AnomalibTrainer",
@@ -68,7 +68,7 @@ class MetricsManager:
 
         if (
             self.trainer.state.stage in (TrainerFn.TESTING, TrainerFn.PREDICTING)
-            and self.trainer.normalizer is not None
+            and self.trainer.normalization_connector is not None
         ):
             image_metrics_threshold = 0.5
             pixel_metrics_threshold = 0.5
