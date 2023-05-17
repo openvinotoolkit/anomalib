@@ -50,7 +50,9 @@ jobs:
       - name: Install Tox
         run: pip install tox
       - name: Link the dataset path to the dataset directory in the repository root.
-        run: ln -s $ANOMALIB_DATASET_PATH ./datasets
+        run: |
+          ln -s $ANOMALIB_DATASET_PATH ./datasets
+          ln -s $ANOMALIB_DATASET_PATH ./notebooks/datasets
       - name: Coverage
         run: tox -e pre-merge-${{ matrix.tox-env }}
       - name: Upload coverage report
