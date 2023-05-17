@@ -20,14 +20,14 @@ class ThresholdingConnector:
 
     Args:
         trainer (trainer.AnomalibTrainer): Trainer object
-        image_threshold_method (BaseAnomalyThreshold): Thresholding method. If None, adaptive thresholding is used.
-        pixel_threshold_method (BaseAnomalyThreshold): Thresholding method. If None, adaptive thresholding is used.
+        image_threshold_method (dice | None): Thresholding method. If None, adaptive thresholding is used.
+        pixel_threshold_method (dice | None): Thresholding method. If None, adaptive thresholding is used.
     """
 
     def __init__(
         self,
         trainer: "trainer.AnomalibTrainer",
-        image_threshold_method: dict | None = None,
+        image_threshold_method: dict | None = None,  # TODO change this in the CLI
         pixel_threshold_method: dict | None = None,
     ) -> None:
         self.image_threshold_method = image_threshold_method
@@ -36,18 +36,10 @@ class ThresholdingConnector:
 
     def initialize(self) -> None:
         """Assigns pixel and image thresholds to the Anomalib trainer."""
-        trainer_image_threshold = self.trainer.image_threshold
-        trainer_pixel_threshold = self.trainer.pixel_threshold
-
-        image_threshold = self._get_threshold_metric(self.image_threshold_method)
-        pixel_threshold = self._get_threshold_metric(self.pixel_threshold_method)
-
-        # type is used here as isinstance compares the base class and we use baseclass as a placeholder before actual
-        # metric classes are assigned.
-        if type(trainer_image_threshold) != type(image_threshold):  # pylint: disable=unidiomatic-typecheck
-            self.trainer.image_threshold = image_threshold
-        if type(trainer_pixel_threshold) != type(pixel_threshold):  # pylint: disable=unidiomatic-typecheck
-            self.trainer.pixel_threshold = pixel_threshold
+        if not self.trainer.image_threshold:
+            self.trainer.image_threshold = self._get_threshold_metric(self.image_threshold_method)
+        if not self.trainer.pixel_threshold:
+            self.trainer.pixel_threshold = self._get_threshold_metric(self.pixel_threshold_method)
 
     def compute(self):
         """Compute thresholds.
@@ -69,6 +61,8 @@ class ThresholdingConnector:
         Args:
             outputs (STEP_OUTPUT): Step outputs.
         """
+        assert self.trainer.image_threshold is not None, "Image threshold is not initialized"
+        assert self.trainer.pixel_threshold is not None, "Pixel threshold is not initialized"
         image_threshold = self.trainer.image_threshold
         pixel_threshold = self.trainer.pixel_threshold
         image_threshold.cpu()
@@ -91,6 +85,7 @@ class ThresholdingConnector:
         Returns:
             Instantiated threshold metric.
         """
+        # TODO change this in the CLI
         threshold_metric: BaseAnomalyThreshold
         if threshold_method is None:
             threshold_metric = F1AdaptiveThreshold()

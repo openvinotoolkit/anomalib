@@ -41,6 +41,13 @@ class AnomalibTrainer(Trainer):
         image_threshold_method (dict): Thresholding method. If None, adaptive thresholding is used.
         pixel_threshold_method (dict): Thresholding method. If None, adaptive thresholding is used.
         normalization_method (NormalizationMethod): Normalization method
+        image_metrics (list[str] | None): Image metrics to compute. Defaults to None.
+        pixel_metrics (list[str] | None): Pixel metrics to compute. Defaults to None.
+        visualization_mode (VisualizationMode): Visualization mode. Defaults to VisualizationMode.FULL.
+        show_images (bool): Whether to show images during visualization. Defaults to False.
+        log_images (bool): Whether to log images to available loggers during visualization. Defaults to False.
+        task_type (TaskType): Task type. Defaults to TaskType.SEGMENTATION.
+        **kwargs: Additional keyword arguments to pass to the Trainer.
     """
 
     def __init__(
@@ -68,8 +75,8 @@ class AnomalibTrainer(Trainer):
 
         self.task_type = task_type
         # these are part of the trainer as they are used in the metrics-manager, post-processor and thresholder
-        self.image_threshold = BaseAnomalyThreshold()
-        self.pixel_threshold = BaseAnomalyThreshold()
+        self.image_threshold: BaseAnomalyThreshold | None = None
+        self.pixel_threshold: BaseAnomalyThreshold | None = None
 
         self.thresholding_connector = ThresholdingConnector(
             trainer=self,

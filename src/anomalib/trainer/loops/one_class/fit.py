@@ -46,5 +46,5 @@ class AnomalibFitLoop(FitLoop):
         self.epoch_loop._run_validation()
 
     def on_run_start(self) -> None:
-        self.trainer.thresholder.initialize()
+        self.trainer.thresholding_connector.initialize()
         return super().on_run_start()

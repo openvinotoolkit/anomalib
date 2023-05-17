@@ -60,6 +60,8 @@ class MetricsConnector:
             self.image_metrics = create_metric_collection(image_metric_names, "image_")
             self.pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
 
+            assert self.trainer.image_threshold is not None, "Image threshold is not initialized"
+            assert self.trainer.pixel_threshold is not None, "Pixel threshold is not initialized"
             self.image_metrics.set_threshold(self.trainer.image_threshold.value)
             self.pixel_metrics.set_threshold(self.trainer.pixel_threshold.value)
 
@@ -73,6 +75,8 @@ class MetricsConnector:
             image_metrics_threshold = 0.5
             pixel_metrics_threshold = 0.5
         else:
+            assert self.trainer.image_threshold is not None, "Image threshold is not initialized"
+            assert self.trainer.pixel_threshold is not None, "Pixel threshold is not initialized"
             image_metrics_threshold = self.trainer.image_threshold.value
             pixel_metrics_threshold = self.trainer.pixel_threshold.value
 
