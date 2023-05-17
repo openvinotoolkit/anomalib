@@ -2,7 +2,7 @@
 https://arxiv.org/pdf/2303.14535.pdf
 """
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ from torchvision.datasets import ImageFolder
 from anomalib.data.utils import DownloadInfo, download_and_extract
 from anomalib.models.components import AnomalyModule
 
-from .torch_model import EfficientADModel
+from .torch_model import EfficientADModel, EfficientADModelSize
 
 logger = logging.getLogger(__name__)
 
@@ -44,27 +44,35 @@ class TransformsWrapper:
 
 
 class EfficientAD(AnomalyModule):
-    """PL Lightning Module for the EfficientAD algorithm."""
+    """PL Lightning Module for the EfficientAD algorithm.
+
+    Args:
+        teacher_file_name (str): path to the pre-trained teacher model
+        teacher_out_channels (int): number of convolution output channels
+        image_size (tuple): size of input images
+        model_size (str): size of student and teacher model
+        lr (float): learning rate
+        weight_decay (float): optimizer weight decay
+        padding (bool): use padding in convoluional layers
+        batch_size (int): batch size for imagenet dataloader
+    """
 
     def __init__(
         self,
-        category_name: str,
         teacher_file_name: str,
         teacher_out_channels: int,
-        pre_trained_dir: str,
-        image_size: list,
-        model_size: str = "M",
+        image_size: tuple[int, int],
+        model_size: EfficientADModelSize = EfficientADModelSize.M,
         lr: float = 0.0001,
         weight_decay: float = 0.00001,
         padding: bool = False,
+        batch_size: int = 1,
     ) -> None:
         super().__init__()
 
-        self.category = category_name
-        self.pre_trained_dir = Path(pre_trained_dir)
         self.imagenet_dir = Path("./datasets/imagenette")
         self.model: EfficientADModel = EfficientADModel(
-            teacher_path=self.pre_trained_dir / teacher_file_name,
+            teacher_path=Path(teacher_file_name),
             teacher_out_channels=teacher_out_channels,
             input_size=image_size,
             model_size=model_size,
@@ -83,7 +91,7 @@ class EfficientAD(AnomalyModule):
 
         self.prepare_imagenet_data()
         imagenet_dataset = ImageFolder(self.imagenet_dir, transform=TransformsWrapper(t=self.data_transforms_imagenet))
-        self.imagenet_loader = DataLoader(imagenet_dataset, batch_size=1, shuffle=True, pin_memory=True)
+        self.imagenet_loader = DataLoader(imagenet_dataset, batch_size=batch_size, shuffle=True, pin_memory=True)
         self.imagenet_iterator = iter(self.imagenet_loader)
         self.lr = lr
         self.weight_decay = weight_decay
@@ -127,7 +135,7 @@ class EfficientAD(AnomalyModule):
 
     @torch.no_grad()
     def map_norm_quantiles(self, dataloader: DataLoader) -> dict[str, Tensor]:
-        """Calculate 90% andf 99.5% quantiles of the student and autoencoder feature maps.
+        """Calculate 90% and 99.5% quantiles of the student(st) and autoencoder(ae).
 
         Args:
             dataloader (DataLoader): Dataloader of the respective dataset.
@@ -205,9 +213,8 @@ class EfficientAD(AnomalyModule):
         Calculate the feature map quantiles of the validation dataset and push to the model.
         """
         if (self.current_epoch + 1) == self.trainer.max_epochs:
-            if not self.model.is_set(self.model.quantiles):
-                map_norm_quantiles = self.map_norm_quantiles(self.trainer.datamodule.train_dataloader())
-                self.model.quantiles.update(map_norm_quantiles)
+            map_norm_quantiles = self.map_norm_quantiles(self.trainer.datamodule.train_dataloader())
+            self.model.quantiles.update(map_norm_quantiles)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Validation Step of EfficientAD returns anomaly maps for the input image batch
@@ -234,15 +241,14 @@ class EfficientadLightning(EfficientAD):
 
     def __init__(self, hparams: DictConfig | ListConfig) -> None:
         super().__init__(
-            category_name=hparams.dataset.category,
             teacher_file_name=hparams.model.teacher_file_name,
-            pre_trained_dir=hparams.model.pre_trained_dir,
             teacher_out_channels=hparams.model.teacher_out_channels,
             model_size=hparams.model.model_size,
             lr=hparams.model.lr,
             weight_decay=hparams.model.weight_decay,
             padding=hparams.model.padding,
             image_size=hparams.dataset.image_size,
+            batch_size=hparams.dataset.train_batch_size,
         )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)

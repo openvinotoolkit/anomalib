@@ -1,14 +1,14 @@
 """Torch model for student, teacher and autoencoder model in EfficientAD"""
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
 
 import logging
 import random
+from enum import Enum
 from pathlib import Path
-from typing import Union
 
 import torch
 import torch.nn.functional as F
@@ -19,10 +19,17 @@ logger = logging.getLogger(__name__)
 
 
 def imagenet_norm_batch(x):
-    mean = torch.tensor([0.485, 0.456, 0.406])[None, :, None, None].cuda()
-    std = torch.tensor([0.229, 0.224, 0.225])[None, :, None, None].cuda()
+    mean = torch.tensor([0.485, 0.456, 0.406])[None, :, None, None].to(x.device)
+    std = torch.tensor([0.229, 0.224, 0.225])[None, :, None, None].to(x.device)
     x_norm = (x - mean) / std
     return x_norm
+
+
+class EfficientADModelSize(str, Enum):
+    """Supported EfficientAD model sizes"""
+
+    M = "M"
+    S = "S"
 
 
 class PDN_S(nn.Module):
@@ -182,27 +189,29 @@ class EfficientADModel(nn.Module):
     Args:
         teacher_path (Path): path of pre-trained teacher model.
         teacher_out_channels (int): number of convolution output channels of the pre-trained teacher model
-        model_size (str): size of teacher and student model
+        input_size (tuple): size of input images
+        model_size (str): size of student and teacher model
+        padding (bool): use padding in convoluional layers
     """
 
     def __init__(
         self,
         teacher_path: Path,
         teacher_out_channels: int,
-        input_size: list,
-        model_size="M",
+        input_size: tuple[int, int],
+        model_size: EfficientADModelSize = EfficientADModelSize.M,
         padding=False,
     ) -> None:
         super().__init__()
 
-        self.teacher: Union[PDN_M, PDN_S]
-        self.student: Union[PDN_M, PDN_S]
+        self.teacher: PDN_M | PDN_S
+        self.student: PDN_M | PDN_S
 
-        if model_size == "M":
+        if model_size == EfficientADModelSize.M:
             self.teacher = PDN_M(out_channels=teacher_out_channels, padding=padding).eval()
             self.student = PDN_M(out_channels=teacher_out_channels * 2, padding=padding)
 
-        elif model_size == "S":
+        elif model_size == EfficientADModelSize.S:
             self.teacher = PDN_S(out_channels=teacher_out_channels, padding=padding).eval()
             self.student = PDN_S(out_channels=teacher_out_channels * 2, padding=padding)
 
@@ -214,7 +223,7 @@ class EfficientADModel(nn.Module):
 
         self.ae: AutoEncoder = AutoEncoder(out_channels=teacher_out_channels, padding=padding)
         self.teacher_out_channels: int = teacher_out_channels
-        self.input_size: list[int] = input_size
+        self.input_size: tuple[int, int] = input_size
 
         self.mean_std: nn.ParameterDict = nn.ParameterDict(
             {
@@ -249,7 +258,7 @@ class EfficientADModel(nn.Module):
         transform_function = random.choice(transform_functions)
         return transform_function(image, coefficient)
 
-    def forward(self, batch: Tensor, batch_imagenet: Tensor = None) -> Union[Tensor, dict]:
+    def forward(self, batch: Tensor, batch_imagenet: Tensor = None) -> Tensor | dict:
         """Prediction by EfficientAD models.
 
         Args:

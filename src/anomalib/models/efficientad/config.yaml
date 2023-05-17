@@ -20,8 +20,7 @@ dataset:
 
 model:
   name: efficientad
-  pre_trained_dir: src/anomalib/models/efficientad/pre_trained/
-  teacher_file_name: teacher_medium_rximg.pth
+  teacher_file_name: src/anomalib/models/efficientad/pre_trained/teacher_medium_rximg.pth
   teacher_out_channels: 384
   model_size: M
   lr: 0.0001
