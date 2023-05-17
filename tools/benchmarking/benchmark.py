@@ -86,7 +86,13 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_met
         datamodule = get_datamodule(model_config)
         model = get_model(model_config)
 
-        trainer = AnomalibTrainer(**model_config.trainer, logger=None)
+        trainer = AnomalibTrainer(
+            **model_config.trainer,
+            **model_config.post_processing,
+            logger=None,
+            image_metrics=model_config.metrics.get("image", None),
+            pixel_metrics=model_config.metrics.get("pixel", None),
+        )
 
         start_time = time.time()
 
@@ -103,7 +109,16 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_met
         # get testing time
         testing_time = time.time() - start_time
 
-        throughput = get_torch_throughput(model_config, model, datamodule.test_dataloader().dataset)
+        export(
+            transform=trainer.datamodule.test_data.transform.to_dict(),
+            trainer=trainer,
+            input_size=model_config.model.input_size,
+            model=model,
+            export_mode=ExportMode.TORCH,
+            export_root=project_path,
+        )
+
+        throughput = get_torch_throughput(project_path, datamodule.test_dataloader().dataset, device=model.device.type)
 
         # Get OpenVINO metrics
         openvino_throughput = float("nan")
