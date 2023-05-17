@@ -57,10 +57,11 @@ class AnomalibPredictionEpochLoop(PredictionEpochLoop):
             self._warning_cache.warn("predict returned None if it was on purpose, ignore this warning...")
 
         # Call custom methods on the predictions
-        self.trainer.post_processor.apply_predictions(predictions)
-        self.trainer.post_processor.apply_thresholding(predictions)
-        if self.trainer.normalizer:
-            self.trainer.normalizer.normalize(predictions)
+        self.trainer.post_processing_connector.apply_predictions(predictions)
+        self.trainer.post_processing_connector.apply_thresholding(predictions)
+        if self.trainer.normalization_connector:
+            self.trainer.normalization_connector.normalize(predictions)
+        self.trainer.visualization_connector.visualize_images(predictions)
         # --------------------------------------
 
         self.trainer._call_callback_hooks("on_predict_batch_end", predictions, batch, batch_idx, dataloader_idx)
@@ -85,7 +86,7 @@ class AnomalibPredictionLoop(PredictionLoop):
 
         Overrides the default epoch loop with the custom epoch loop.
         """
-        self.trainer.metrics.initialize()
+        self.trainer.metrics_connector.initialize()
         # Reset the image and pixel thresholds to 0.5 at start of the run.
-        self.trainer.metrics.set_threshold()
+        self.trainer.metrics_connector.set_threshold()
         return super().on_run_start()

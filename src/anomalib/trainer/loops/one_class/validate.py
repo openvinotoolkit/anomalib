@@ -23,10 +23,10 @@ class AnomalibValidationEpochLoop(EvaluationEpochLoop):
         """Post-processes outputs and updates normalization metrics after the end of one validation step end."""
         outputs = super()._evaluation_step_end(*args, **kwargs)
         if outputs is not None:
-            self.trainer.post_processor.apply_predictions(outputs)
-            self.trainer.thresholder.update(outputs)
-            if self.trainer.normalizer:
-                self.trainer.normalizer.update(outputs)
+            self.trainer.post_processing_connector.apply_predictions(outputs)
+            self.trainer.thresholding_connector.update(outputs)
+            if self.trainer.normalization_connector:
+                self.trainer.normalization_connector.update(outputs)
         return outputs
 
     @lru_cache(1)
@@ -47,8 +47,8 @@ class AnomalibValidationLoop(EvaluationLoop):
         self.epoch_loop = AnomalibValidationEpochLoop()
 
     def on_run_start(self, *args: Any, **kwargs: Any) -> None:
-        self.trainer.thresholder.initialize()
-        self.trainer.metrics.initialize()
+        self.trainer.thresholding_connector.initialize()
+        self.trainer.metrics_connector.initialize()
         return super().on_run_start(*args, **kwargs)
 
     def _evaluation_epoch_end(self, outputs: List[EPOCH_OUTPUT]):
@@ -63,7 +63,7 @@ class AnomalibValidationLoop(EvaluationLoop):
         )
 
         # keep custom code between these lines
-        self.trainer.thresholder.compute()
-        self.trainer.metrics.set_threshold()
-        self.trainer.metrics.compute(output_or_outputs)
-        self.trainer.metrics.log(self.trainer, "validation_epoch_end")
+        self.trainer.thresholding_connector.compute()
+        self.trainer.metrics_connector.set_threshold()
+        self.trainer.metrics_connector.compute(output_or_outputs)
+        self.trainer.metrics_connector.log(self.trainer, "validation_epoch_end")
