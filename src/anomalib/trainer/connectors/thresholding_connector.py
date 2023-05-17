@@ -36,9 +36,10 @@ class ThresholdingConnector:
 
     def initialize(self) -> None:
         """Assigns pixel and image thresholds to the Anomalib trainer."""
-        if not self.trainer.image_threshold:
+        # Private members are accessed because we don't want to set the thresholds if they are already set
+        if not self.trainer._image_threshold:
             self.trainer.image_threshold = self._get_threshold_metric(self.image_threshold_method)
-        if not self.trainer.pixel_threshold:
+        if not self.trainer._pixel_threshold:
             self.trainer.pixel_threshold = self._get_threshold_metric(self.pixel_threshold_method)
 
     def compute(self):
@@ -61,8 +62,6 @@ class ThresholdingConnector:
         Args:
             outputs (STEP_OUTPUT): Step outputs.
         """
-        assert self.trainer.image_threshold is not None, "Image threshold is not initialized"
-        assert self.trainer.pixel_threshold is not None, "Pixel threshold is not initialized"
         image_threshold = self.trainer.image_threshold
         pixel_threshold = self.trainer.pixel_threshold
         image_threshold.cpu()

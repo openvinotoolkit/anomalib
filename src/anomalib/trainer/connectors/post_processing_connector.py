@@ -60,9 +60,8 @@ class PostProcessingConnector:
     def apply_thresholding(self, outputs: STEP_OUTPUT):
         """Computes masks, box labels after applying thresholding."""
         if outputs is not None and isinstance(outputs, dict):
-            assert self.trainer.image_threshold is not None, "Image threshold is not initialized"
             outputs["pred_labels"] = outputs["pred_scores"] >= self.trainer.image_threshold.value.cpu()
-            if "anomaly_maps" in outputs.keys() and self.trainer.pixel_threshold is not None:
+            if "anomaly_maps" in outputs.keys():
                 outputs["pred_masks"] = outputs["anomaly_maps"] >= self.trainer.pixel_threshold.value.cpu()
                 if "pred_boxes" not in outputs.keys():
                     outputs["pred_boxes"], outputs["box_scores"] = masks_to_boxes(
@@ -70,7 +69,7 @@ class PostProcessingConnector:
                     )
                     outputs["box_labels"] = [torch.ones(boxes.shape[0]) for boxes in outputs["pred_boxes"]]
             # apply thresholding to boxes
-            if "box_scores" in outputs and "box_labels" not in outputs and self.trainer.pixel_threshold is not None:
+            if "box_scores" in outputs and "box_labels" not in outputs:
                 # apply threshold to assign normal/anomalous label to boxes
                 is_anomalous = [scores > self.trainer.pixel_threshold.value.cpu() for scores in outputs["box_scores"]]
                 outputs["box_labels"] = [labels.int() for labels in is_anomalous]

@@ -42,8 +42,6 @@ class CDFNormalizer(BaseNormalizer):
         Args:
             outputs (STEP_OUTPUT): Outputs from the model.
         """
-        assert self.trainer.image_threshold is not None, "Image threshold is not set"
         outputs["pred_scores"] = cdf.normalize(outputs["pred_scores"], self.trainer.image_threshold.value)
         if "anomaly_maps" in outputs.keys():
-            assert self.trainer.pixel_threshold is not None, "Pixel threshold is not set"
             outputs["anomaly_maps"] = cdf.normalize(outputs["anomaly_maps"], self.trainer.pixel_threshold.value)

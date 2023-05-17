@@ -75,8 +75,8 @@ class AnomalibTrainer(Trainer):
 
         self.task_type = task_type
         # these are part of the trainer as they are used in the metrics-manager, post-processor and thresholder
-        self.image_threshold: BaseAnomalyThreshold | None = None
-        self.pixel_threshold: BaseAnomalyThreshold | None = None
+        self._image_threshold: BaseAnomalyThreshold | None = None
+        self._pixel_threshold: BaseAnomalyThreshold | None = None
 
         self.thresholding_connector = ThresholdingConnector(
             trainer=self,
@@ -94,3 +94,43 @@ class AnomalibTrainer(Trainer):
         self.metrics_connector = MetricsConnector(
             trainer=self, image_metrics=image_metrics, pixel_metrics=pixel_metrics
         )
+
+    @property
+    def image_threshold(self) -> BaseAnomalyThreshold:
+        """Image threshold.
+
+        Returns:
+            BaseAnomalyThreshold: Image threshold.
+        """
+        if self._image_threshold is None:
+            raise ValueError("Image threshold is not initialized.")
+        return self._image_threshold
+
+    @image_threshold.setter
+    def image_threshold(self, value: BaseAnomalyThreshold) -> None:
+        """Image threshold.
+
+        Args:
+            value (BaseAnomalyThreshold): Image threshold.
+        """
+        self._image_threshold = value
+
+    @property
+    def pixel_threshold(self) -> BaseAnomalyThreshold:
+        """Pixel threshold.
+
+        Returns:
+            BaseAnomalyThreshold: Pixel threshold.
+        """
+        if self._pixel_threshold is None:
+            raise ValueError("Pixel threshold is not initialized.")
+        return self._pixel_threshold
+
+    @pixel_threshold.setter
+    def pixel_threshold(self, value: BaseAnomalyThreshold) -> None:
+        """Pixel threshold.
+
+        Args:
+            value (BaseAnomalyThreshold): Pixel threshold.
+        """
+        self._pixel_threshold = value
