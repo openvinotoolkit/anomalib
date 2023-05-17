@@ -56,18 +56,19 @@ metrics:
 
 visualization:
   show_images: False # show images on the screen
-  save_images: True # save images to the file system
-  log_images: True # log images to the available loggers (if any)
-  image_save_path: null # path to which images will be saved
+  log_images: True # log images to the logger(s)
   mode: full # options: ["full", "simple"]
 
 project:
-  seed: 0
+  seed: 42
   path: ./results
 
 logging:
-  logger: [] # options: [comet, tensorboard, wandb, csv] or combinations.
-  log_graph: false # Logs the model graph to respective logger.
+  log_graph: false
+  loggers:
+    class_path: anomalib.utils.loggers.FileSystemLogger
+    init_args:
+      save_dir: results/logs
 
 optimization:
   export_mode: null # options: torch, onnx, openvino

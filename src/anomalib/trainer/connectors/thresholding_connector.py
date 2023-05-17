@@ -13,7 +13,7 @@ from anomalib.data import TaskType
 from anomalib.utils.metrics import BaseAnomalyThreshold, F1AdaptiveThreshold
 
 
-class Thresholder:
+class ThresholdingConnector:
     """Computes and updates thresholds.
 
     Used in AnomalibTrainer.

@@ -12,8 +12,16 @@ from pytorch_lightning import Trainer
 from anomalib.data import TaskType
 from anomalib.models.components.base.anomaly_module import AnomalyModule
 from anomalib.post_processing import NormalizationMethod
+from anomalib.post_processing.visualizer import VisualizationMode
+from anomalib.trainer.connectors import (
+    CheckpointConnector,
+    MetricsConnector,
+    PostProcessingConnector,
+    ThresholdingConnector,
+    VisualizationConnector,
+    get_normalizer,
+)
 from anomalib.trainer.loops.one_class import FitLoop, PredictionLoop, TestLoop, ValidationLoop
-from anomalib.trainer.utils import CheckpointConnector, MetricsManager, PostProcessor, Thresholder, get_normalizer
 from anomalib.utils.metrics import BaseAnomalyThreshold
 
 log = logging.getLogger(__name__)
@@ -42,6 +50,9 @@ class AnomalibTrainer(Trainer):
         normalization_method: NormalizationMethod = NormalizationMethod.MIN_MAX,
         image_metrics: list[str] | None = None,
         pixel_metrics: list[str] | None = None,
+        visualization_mode: VisualizationMode = VisualizationMode.FULL,
+        show_images: bool = False,
+        log_images: bool = False,
         task_type: TaskType = TaskType.SEGMENTATION,
         **kwargs,
     ) -> None:
@@ -60,11 +71,19 @@ class AnomalibTrainer(Trainer):
         self.image_threshold = BaseAnomalyThreshold()
         self.pixel_threshold = BaseAnomalyThreshold()
 
-        self.thresholder = Thresholder(
+        self.thresholding_connector = ThresholdingConnector(
             trainer=self,
             image_threshold_method=image_threshold,
             pixel_threshold_method=pixel_threshold,
         )
-        self.post_processor = PostProcessor(trainer=self)
-        self.normalizer = get_normalizer(trainer=self, normalization_method=normalization_method)
-        self.metrics = MetricsManager(trainer=self, image_metrics=image_metrics, pixel_metrics=pixel_metrics)
+        self.post_processing_connector = PostProcessingConnector(trainer=self)
+        self.normalization_connector = get_normalizer(trainer=self, normalization_method=normalization_method)
+        self.visualization_connector = VisualizationConnector(
+            trainer=self,
+            mode=visualization_mode,
+            show_images=show_images,
+            log_images=log_images,
+        )
+        self.metrics_connector = MetricsConnector(
+            trainer=self, image_metrics=image_metrics, pixel_metrics=pixel_metrics
+        )
