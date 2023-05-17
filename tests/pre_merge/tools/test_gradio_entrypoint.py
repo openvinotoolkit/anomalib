@@ -9,7 +9,6 @@ from importlib.util import find_spec
 
 import pytest
 
-from anomalib.data import TaskType
 from anomalib.deploy import ExportMode, OpenVINOInferencer, TorchInferencer, export
 from anomalib.models import get_model
 from anomalib.trainer import AnomalibTrainer
@@ -17,7 +16,7 @@ from anomalib.trainer import AnomalibTrainer
 sys.path.append("tools/inference")
 
 
-@pytest.mark.order(5)
+@pytest.mark.order(6)
 class TestGradioInferenceEntrypoint:
     """This tests whether the entrypoints run without errors without quantitative measure of the outputs.
 
@@ -63,7 +62,7 @@ class TestGradioInferenceEntrypoint:
 
         # export OpenVINO model
         export(
-            task=TaskType.SEGMENTATION,
+            trainer=AnomalibTrainer(),
             transform=transforms_config,
             input_size=(100, 100),
             model=model,

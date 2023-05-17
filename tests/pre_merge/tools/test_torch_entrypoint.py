@@ -16,7 +16,7 @@ from anomalib.trainer import AnomalibTrainer
 sys.path.append("tools/inference")
 
 
-@pytest.mark.order(4)
+@pytest.mark.order(3)
 class TestTorchInferenceEntrypoint:
     """This tests whether the entrypoints run without errors without quantitative measure of the outputs."""
 
@@ -50,7 +50,7 @@ class TestTorchInferenceEntrypoint:
                 "--input",
                 get_dummy_inference_image,
                 "--output",
-                project_path + "/output",
+                project_path + "/output.png",
             ]
         )
         infer(arguments)
