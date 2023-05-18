@@ -28,27 +28,26 @@ def make_csv_dataset(
     csv_file: str | Path,
     root: str | Path | None = None,
     split: str | Split | None = None,
-    extensions: tuple[str, ...] | None = None,
 ) -> DataFrame:
-    """Make Folder Dataset.
+    """Make CSV Dataset.
     Args:
         csv_file (str | Path | None, optional): Path to the CSV file containing abnormal images.
         root (str | Path | None): Path to the root directory of the dataset.
         split (str | Split | None, optional): Dataset split (ie., Split.FULL, Split.TRAIN or Split.TEST).
             Defaults to None.
-        extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
-            file.
     Returns:
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
     csv_file = _resolve_path(csv_file, root)
     assert csv_file.is_file(), "A CSV file must be provided in csv_file."
 
-    samples = _prepare_filemeta_from_csv(csv_file, extensions)
+    samples = _prepare_filemeta_from_csv(csv_file)
     samples = samples.sort_values(by="image_path", ignore_index=True)
 
     # Convert to absolute path if not
     samples.image_path = samples.image_path.apply(lambda path: _resolve_path(path, root))
+    if "mask_path" in samples:
+        samples.mask_path = samples.mask_path.apply(lambda path: _resolve_path(path, root))
 
     # Create label index for normal (0) and abnormal (1) images.
     if "label_index" not in samples:
@@ -127,12 +126,7 @@ class CSVDataset(AnomalibDataset):
 
     def _setup(self) -> None:
         """Assign samples."""
-        self.samples = make_csv_dataset(
-            csv_file=self.csv_file,
-            root=self.root,
-            split=self.split,
-            extensions=self.extensions,
-        )
+        self.samples = make_csv_dataset(csv_file=self.csv_file, root=self.root, split=self.split)
 
 
 class CSV(AnomalibDataModule):

@@ -68,7 +68,7 @@ def _prepare_files_labels(
     return filenames, labels
 
 
-def _prepare_filemeta_from_csv(path: str | Path, extensions: tuple[str, ...] | None = None) -> pd.DataFrame:
+def _prepare_filemeta_from_csv(path: str | Path) -> pd.DataFrame:
     """Return a DataFrame of dataset file metadata from CSV file
 
     Args:
@@ -80,11 +80,6 @@ def _prepare_filemeta_from_csv(path: str | Path, extensions: tuple[str, ...] | N
         pd.DataFrame: Contents of CSV dataset file, with at least `image_path` and `label` columns
     """
     path = _check_and_convert_path(path)
-    if extensions is None:
-        extensions = IMG_EXTENSIONS
-
-    if isinstance(extensions, str):
-        extensions = (extensions,)
 
     csv_data = pd.read_csv(path)
     if len(csv_data) == 0:
@@ -96,8 +91,6 @@ def _prepare_filemeta_from_csv(path: str | Path, extensions: tuple[str, ...] | N
     # Convert to posix path for best compatibility
     csv_data["image_path"] = csv_data.apply(lambda row: Path(PureWindowsPath(row.image_path).as_posix()), axis=1)
 
-    # Filter out unsupported extensions
-    csv_data = csv_data[csv_data.image_path.apply(lambda path: path.suffix in extensions)]
     if len(csv_data) == 0:
         raise RuntimeError(f"Found 0 images in CSV file in {path}")
 
