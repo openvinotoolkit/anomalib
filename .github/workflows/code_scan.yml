@@ -48,4 +48,4 @@ jobs:
           name: trivy-results
           path: |
             .tox/trivy-scan-results.txt
-            .tox/trivy-spdx-otx.json
+            .tox/trivy-spdx-anomalib.json
