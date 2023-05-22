@@ -1,0 +1,11 @@
+ignore-policy: ""
+ignorefile: .trivyignore
+insecure: false
+scan:
+  scanners:
+    - vuln
+    - secret
+  slow: false
+severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+vulnerability:
+  ignore-unfixed: false
