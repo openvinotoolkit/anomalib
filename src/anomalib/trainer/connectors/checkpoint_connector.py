@@ -49,9 +49,9 @@ class CheckpointConnector(checkpoint_connector.CheckpointConnector):
         # get set of normalization keys in state dict
         checkpoint = self._loaded_checkpoint
         if "image_threshold" in checkpoint.keys():
-            self.trainer.image_threshold = checkpoint["image_threshold"]
+            self.trainer.thresholding_connector.image_threshold = checkpoint["image_threshold"]
         if "pixel_threshold" in checkpoint.keys():
-            self.trainer.pixel_threshold = checkpoint["pixel_threshold"]
+            self.trainer.thresholding_connector.pixel_threshold = checkpoint["pixel_threshold"]
         if "normalization_metric" in checkpoint.keys():
             assert (
                 self.trainer.normalization_connector is not None

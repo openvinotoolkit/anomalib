@@ -32,15 +32,17 @@ class ThresholdingConnector:
     ) -> None:
         self.image_threshold_method = image_threshold_method
         self.pixel_threshold_method = pixel_threshold_method
+        self.image_threshold: BaseAnomalyThreshold
+        self.pixel_threshold: BaseAnomalyThreshold
         self.trainer = trainer
 
     def initialize(self) -> None:
         """Assigns pixel and image thresholds to the Anomalib trainer."""
         # Private members are accessed because we don't want to set the thresholds if they are already set
-        if not self.trainer._image_threshold:
-            self.trainer.image_threshold = self._get_threshold_metric(self.image_threshold_method)
-        if not self.trainer._pixel_threshold:
-            self.trainer.pixel_threshold = self._get_threshold_metric(self.pixel_threshold_method)
+        if not hasattr(self, "image_threshold"):
+            self.image_threshold = self._get_threshold_metric(self.image_threshold_method)
+        if not hasattr(self, "pixel_threshold"):
+            self.pixel_threshold = self._get_threshold_metric(self.pixel_threshold_method)
 
     def compute(self):
         """Compute thresholds.
@@ -49,12 +51,12 @@ class ThresholdingConnector:
             outputs (EPOCH_OUTPUT | List[EPOCH_OUTPUT]): Outputs are only used to check if the model has pixel level
                 predictions.
         """
-        if self.trainer.image_threshold is not None:
-            self.trainer.image_threshold.compute()
+        if self.image_threshold is not None:
+            self.image_threshold.compute()
         if self.trainer.task_type in (TaskType.SEGMENTATION, TaskType.DETECTION):
-            self.trainer.pixel_threshold.compute()
+            self.pixel_threshold.compute()
         else:
-            self.trainer.pixel_threshold.value = self.trainer.image_threshold.value
+            self.pixel_threshold.value = self.image_threshold.value
 
     def update(self, outputs: STEP_OUTPUT) -> None:
         """updates adaptive threshold in case thresholding type is ADAPTIVE.
@@ -62,18 +64,16 @@ class ThresholdingConnector:
         Args:
             outputs (STEP_OUTPUT): Step outputs.
         """
-        image_threshold = self.trainer.image_threshold
-        pixel_threshold = self.trainer.pixel_threshold
-        image_threshold.cpu()
-        image_threshold.update(outputs["pred_scores"], outputs["label"].int())
+        self.image_threshold.cpu()
+        self.image_threshold.update(outputs["pred_scores"], outputs["label"].int())
         if (
             self.trainer.task_type != TaskType.CLASSIFICATION
             and "anomaly_maps" in outputs.keys()
             and "mask" in outputs.keys()
         ):
-            pixel_threshold.cpu()
+            self.pixel_threshold.cpu()
             # TODO this should use bounding boxes for detection task type
-            pixel_threshold.update(outputs["anomaly_maps"], outputs["mask"].int())
+            self.pixel_threshold.update(outputs["anomaly_maps"], outputs["mask"].int())
 
     def _get_threshold_metric(self, threshold_method: dict | None) -> BaseAnomalyThreshold:
         """Get instantiated threshold metric.
