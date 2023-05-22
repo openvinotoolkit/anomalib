@@ -62,7 +62,7 @@ class AnomalibPredictionEpochLoop(PredictionEpochLoop):
         self.trainer.post_processor.apply_thresholding(predictions)
         if self.trainer.normalizer:
             self.trainer.normalizer.normalize(predictions)
-        self.trainer.visualization_manager.visualize_images(predictions, VisualizationStage.VAL)
+        self.trainer.visualization_manager.visualize_images(predictions, VisualizationStage.PREDICT)
         # --------------------------------------
 
         self.trainer._call_callback_hooks("on_predict_batch_end", predictions, batch, batch_idx, dataloader_idx)

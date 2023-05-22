@@ -18,9 +18,11 @@ from .subcommands import (
     add_benchmarking_parser,
     add_export_parser,
     add_hpo_parser,
+    add_inference_parser,
     run_benchmarking,
     run_export,
     run_hpo,
+    run_inference,
 )
 from .utils import (
     add_logging_arguments,
@@ -60,9 +62,11 @@ class AnomalibCLI(LightningCLI):
         """Setup base subcommands and add anomalib specific on top of it."""
         # Initializes fit, validate, test, predict and tune
         super()._add_subcommands(parser, **kwargs)
+        # Adds Anomalb specific subcommands
         add_export_parser(parser)
         add_hpo_parser(parser)
         add_benchmarking_parser(parser)
+        add_inference_parser(parser)
 
     def add_arguments_to_parser(self, parser: LightningArgumentParser) -> None:
         """Add default arguments.
@@ -106,6 +110,8 @@ class AnomalibCLI(LightningCLI):
                     return run_hpo(self.config.hpo)
                 case "benchmark":
                     return run_benchmarking(self.config.benchmark)
+                case "infer":
+                    return run_inference(self.config.infer)
                 case _:
                     raise NotImplementedError(f"Subcommand {subcommand} not implemented.")
 
