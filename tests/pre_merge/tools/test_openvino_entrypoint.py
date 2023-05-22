@@ -6,8 +6,9 @@
 
 import sys
 from importlib.util import find_spec
-import torch
+
 import pytest
+import torch
 
 from anomalib.deploy import ExportMode, export
 from anomalib.models import get_model
@@ -29,21 +30,18 @@ class TestOpenVINOInferenceEntrypoint:
             raise Exception("Unable to import openvino_inference.py for testing")
         return get_parser, infer
 
-    def test_openvino_inference(
-        self, get_functions, get_config, project_path, get_dummy_inference_image, transforms_config
-    ):
+    def test_openvino_inference(self, get_functions, get_config, project_path, get_dummy_inference_image, trainer):
         """Test openvino_inference.py"""
         get_parser, infer = get_functions
 
         model = get_model(get_config("padim"))
 
-        trainer = AnomalibTrainer()
+        trainer = trainer
         trainer.normalization_connector.metric.max = torch.tensor(1.0)
         trainer.normalization_connector.metric.min = torch.tensor(0.0)
 
         # export OpenVINO model
         export(
-            transform=transforms_config,
             trainer=trainer,
             input_size=(100, 100),
             model=model,
