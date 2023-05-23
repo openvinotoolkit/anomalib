@@ -48,11 +48,12 @@ class RegionExtractor(nn.Module):
     def post_process_bbox_detections(self, batch_regions):
         filtered_regions = []
         for im_regions in batch_regions:
-            if self.only_persons:
+            if self.persons_only:
                 im_regions = self._keep_only_persons(im_regions)
             im_regions = self._filter_by_area(im_regions, self.min_bbox_area)
             im_regions = self._delete_overlapping_boxes(im_regions, self.max_overlap)
             filtered_regions.append(im_regions)
+        return filtered_regions
 
     def _keep_only_persons(self, regions):
         keep = torch.where(regions["labels"] == PERSON_LABEL)
@@ -65,12 +66,29 @@ class RegionExtractor(nn.Module):
         keep = torch.where(areas > min_area)
         return self.subsample_regions(regions, keep)
 
-    def _delete_overlapping_boxes(regions, threshold):
+    def _delete_overlapping_boxes(self, regions, threshold):
         """Delete overlapping bounding boxes, larger boxes are kept."""
 
+        # sort boxes by area
         areas = box_area(regions["boxes"])
-        # sort by area
-        areas.argsort()
+        indices = areas.argsort()
+
+        keep = []
+        for idx in range(len(indices)):
+            overlap_coords = torch.hstack(
+                [
+                    torch.max(regions["boxes"][indices[idx], :2], regions["boxes"][indices[idx + 1 :], :2]),  # x1, y1
+                    torch.min(regions["boxes"][indices[idx], 2:], regions["boxes"][indices[idx + 1 :], 2:]),  # x2, y2
+                ]
+            )
+            mask = torch.all(overlap_coords[:, :2] < overlap_coords[:, 2:], dim=1)  # filter non-overlapping
+            overlap = box_area(overlap_coords) * mask.int()
+            overlap_ratio = overlap / areas[indices[idx]]
+
+            if not any(overlap_ratio > threshold):
+                keep.append(indices[idx])
+
+        return self.subsample_regions(regions, torch.stack(keep))
 
     @staticmethod
     def subsample_regions(regions, indices):
