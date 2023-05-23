@@ -87,7 +87,8 @@ def make_synthetic_dataset(
         image = read_image(sample.image_path)
 
         if synthetic_type == TestSyntheticType.PERLIN_ROI:
-            image, thresh = augmenter.gaussian_blur(image, transform)
+            # generate region of interest of the image.
+            image, thresh = augmenter.generate_roi(image, transform)
             # apply anomalous perturbation
             aug_im, mask = augmenter.augment_batch(image, thresh)
         else:  # defaults to Perlin Noise

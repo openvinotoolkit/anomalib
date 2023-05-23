@@ -132,7 +132,7 @@ class Augmenter:
 
         Args:
             batch (Tensor): Batch of input images
-            thresh_batch (Tensor | None, optional): Batch of
+            thresh_batch (Tensor | None, optional): Batch of thresholds. Currently used in PerlinROI.
 
         Returns:
             - Augmented image to which anomalous perturbations have been added.
@@ -153,7 +153,10 @@ class Augmenter:
                 )
                 perturbation, mask = self.generate_perturbation(height, width, anomaly_source_path)
                 perturbations_list.append(Tensor(perturbation).permute((2, 0, 1)))
-                masks_list.append(Tensor(mask).permute((2, 0, 1)))
+                if thresh_batch:
+                    masks_list.append((Tensor(mask).permute((2, 0, 1)) * thresh_batch))
+                else:
+                    masks_list.append(Tensor(mask).permute((2, 0, 1)))
 
         perturbations = torch.stack(perturbations_list).to(batch.device)
         masks = torch.stack(masks_list).to(batch.device)
@@ -173,52 +176,19 @@ class Augmenter:
 
 
 class PerlinROIAugmenter(Augmenter):
-    def augment_batch(self, batch: Tensor, thresh_batch: Tensor | None = None) -> tuple[Tensor, Tensor]:
-        """Generate anomalous augmentations for a batch of input images.
+    """Class that generates noisy augmentations of input images based on Region of Interest(ROI).
+    Extracts foreground object based on binary thresholding and limits perlin noise augmentation 
+    to that region.
+    
+    Args:
+        anomaly_source_path (str | None): Path to a folder of images that will be used as source of the anomalous
+        noise. If not specified, random noise will be used instead.
+        p_anomalous (float): Probability that the anomalous perturbation will be applied to a given image.
+        beta (float): Parameter that determines the opacity of the noise mask.
+    """
 
-        Args:
-            batch (Tensor): Batch of input images
-            thresh_batch (Tensor | None, optional): Batch of thresholds
-
-        Returns:
-            - Augmented image to which anomalous perturbations have been added.
-            - Ground truth masks corresponding to the anomalous perturbations.
-        """
-        batch_size, channels, height, width = batch.shape
-
-        # Collect perturbations
-        perturbations_list = []
-        masks_list = []
-        for _ in range(batch_size):
-            if torch.rand(1) > self.p_anomalous:  # include normal samples
-                perturbations_list.append(torch.zeros((channels, height, width)))
-                masks_list.append(torch.zeros((1, height, width)))
-            else:
-                anomaly_source_path = (
-                    random.sample(self.anomaly_source_paths, 1)[0] if len(self.anomaly_source_paths) > 0 else None
-                )
-                perturbation, mask = self.generate_perturbation(height, width, anomaly_source_path)
-                perturbations_list.append(Tensor(perturbation).permute((2, 0, 1)))
-                masks_list.append((Tensor(mask).permute((2, 0, 1)) * thresh_batch))
-
-        perturbations = torch.stack(perturbations_list).to(batch.device)
-        masks = torch.stack(masks_list).to(batch.device)
-
-        # Apply perturbations batch wise
-        if isinstance(self.beta, float):
-            beta = self.beta
-        elif isinstance(self.beta, tuple):
-            beta = torch.rand(batch_size) * (self.beta[1] - self.beta[0]) + self.beta[0]
-            beta = beta.view(batch_size, 1, 1, 1).expand_as(batch).to(batch.device)  # type: ignore
-        else:
-            raise ValueError("Beta must be either float or tuple of floats")
-
-        augmented_batch = batch * (1 - masks) + (beta) * (perturbations * masks) + (1 - beta) * batch * (masks)
-
-        return augmented_batch, masks
-
-    def gaussian_blur(self, image: Tensor, transform: A.Compose) -> tuple[Tensor, Tensor]:
-        """Generate Gaussian Blur.
+    def generate_roi(self, image: Tensor, transform: A.Compose) -> tuple[Tensor, Tensor]:
+        """Generate Region of Interest(ROI) of the image.
 
         Args:
             image (Tensor): Batch of input images
@@ -231,10 +201,9 @@ class PerlinROIAugmenter(Augmenter):
         """
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-        (T, thresh) = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+        (_, thresh) = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
 
-        cv2.bitwise_not(thresh)
-
+        #if all four corners of the image are white, we invert the mask
         if thresh[0, 0] & thresh[-1, -1] & thresh[-1, 0] & thresh[0, -1] == 255:
             thresh = cv2.bitwise_not(thresh)
 
