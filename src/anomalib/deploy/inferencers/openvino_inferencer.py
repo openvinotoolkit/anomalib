@@ -27,7 +27,7 @@ class OpenVINOInferencer(Inferencer):
 
     Args:
         path (str | Path): Path to the openvino onnx, xml or bin file.
-        metadata_path (str | Path | DictConfig, optional): Path to metadata file or a DictConfig object defining the
+        metadata_path (str | Path | dict, optional): Path to metadata file or a dict object defining the
             metadata. Defaults to None.
         device (str | None, optional): Device to run the inference on. Defaults to "CPU".
         task (TaskType | None, optional): Task type. Defaults to None.
@@ -36,13 +36,13 @@ class OpenVINOInferencer(Inferencer):
     def __init__(
         self,
         path: str | Path | tuple[bytes, bytes],
-        metadata: str | Path | DictConfig | None = None,
+        metadata: str | Path | dict | None = None,
         device: str | None = "CPU",
         task: str | None = None,
     ) -> None:
         self.device = device
         self.input_blob, self.output_blob, self.network = self.load_model(path)
-        self.metadata = metadata if isinstance(metadata, DictConfig) else super()._load_metadata(metadata)
+        self.metadata = metadata if isinstance(metadata, dict) else super()._load_metadata(metadata)
         self.task = TaskType(task) if task else TaskType(self.metadata["task"])
 
     def load_model(self, path: str | Path | tuple[bytes, bytes]):
