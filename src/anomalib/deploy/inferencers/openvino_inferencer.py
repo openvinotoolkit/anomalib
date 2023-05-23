@@ -40,7 +40,7 @@ class OpenVINOInferencer(Inferencer):
         metadata_path: str | Path | None = None,
         device: str | None = "CPU",
         task: str | None = None,
-        config: Dict | None = None
+        config: dict | None = None
 
     ) -> None:
         self.device = device
