@@ -71,7 +71,7 @@ def infer(args: Namespace) -> None:
         args (Namespace): The arguments from the command line.
     """
     # Get the inferencer.
-    inferencer = OpenVINOInferencer(path=args.weights, metadata_path=args.metadata, device=args.device)
+    inferencer = OpenVINOInferencer(path=args.weights, metadata=args.metadata, device=args.device)
     visualizer = Visualizer(mode=args.visualization_mode, task=args.task)
 
     filenames = get_image_filenames(path=args.input)
