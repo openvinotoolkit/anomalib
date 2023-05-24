@@ -23,14 +23,24 @@ class RegionExtractor(nn.Module):
         box_score_thresh (float): Confidence threshold for bounding box predictions.
     """
 
-    def __init__(self, box_score_thresh: float = 0.8) -> None:
+    def __init__(
+        self,
+        box_score_thresh: float = 0.8,
+        persons_only: bool = False,
+        min_bbox_area: int = 100,
+        max_bbox_overlap: float = 0.65,
+        enable_foreground_detections: bool = True,
+        foreground_kernel_size: int = 3,
+        foreground_binary_threshold: int = 18,
+    ) -> None:
         super().__init__()
 
-        self.persons_only = False
-        self.min_bbox_area = 100
-        self.max_overlap = 0.65
-        self.binary_threshold = 18
-        self.gaussian_kernel_size = 3
+        self.persons_only = persons_only
+        self.min_bbox_area = min_bbox_area
+        self.max_bbox_overlap = max_bbox_overlap
+        self.enable_foreground_detections = enable_foreground_detections
+        self.foreground_kernel_size = foreground_kernel_size
+        self.foreground_binary_threshold = foreground_binary_threshold
 
         weights = MaskRCNN_ResNet50_FPN_V2_Weights.DEFAULT
         self.backbone = maskrcnn_resnet50_fpn_v2(weights=weights, box_score_thresh=box_score_thresh, rpn_nms_thresh=0.3)
@@ -47,13 +57,22 @@ class RegionExtractor(nn.Module):
         with torch.no_grad():
             regions = self.backbone(last_frame)
 
-        regions = self.add_foreground_boxes(regions, first_frame, last_frame, self.binary_threshold)
+        if self.enable_foreground_detections:
+            regions = self.add_foreground_boxes(
+                regions, first_frame, last_frame, self.foreground_kernel_size, self.foreground_binary_threshold
+            )
+
         regions = self.post_process_bbox_detections(regions)
 
         return regions
 
     def add_foreground_boxes(
-        self, regions: list[dict[str, Tensor]], first_frame: Tensor, last_frame: Tensor, binary_threshold: int
+        self,
+        regions: list[dict[str, Tensor]],
+        first_frame: Tensor,
+        last_frame: Tensor,
+        kernel_size: int,
+        binary_threshold: int,
     ) -> list[dict[str, Tensor]]:
         """Add any foreground regions that were not detected by the region extractor.
 
@@ -67,14 +86,15 @@ class RegionExtractor(nn.Module):
                 extraction module.
             first_frame (Tensor): video frame at time t-1
             last_frame (Tensor): Video frame time t
+            kernel_size (int): Kernel size for Gaussian smoothing applied to input frames
             binary_threshold (int): Binary threshold used in foreground detection, should be in range [0, 255]
 
         Returns:
             list[dict[str, Tensor]]: region detections with foreground regions appended
         """
         # apply gaussian blur to first and last frame
-        first_frame = gaussian_blur(first_frame, [self.gaussian_kernel_size, self.gaussian_kernel_size])
-        last_frame = gaussian_blur(last_frame, [self.gaussian_kernel_size, self.gaussian_kernel_size])
+        first_frame = gaussian_blur(first_frame, [kernel_size, kernel_size])
+        last_frame = gaussian_blur(last_frame, [kernel_size, kernel_size])
 
         # take the abs diff between the blurred images and convert to grayscale
         pixel_diff = torch.abs(first_frame - last_frame)
@@ -134,7 +154,7 @@ class RegionExtractor(nn.Module):
             if self.persons_only:
                 im_regions = self._keep_only_persons(im_regions)
             im_regions = self._filter_by_area(im_regions, self.min_bbox_area)
-            im_regions = self._delete_overlapping_boxes(im_regions, self.max_overlap)
+            im_regions = self._delete_overlapping_boxes(im_regions, self.max_bbox_overlap)
             filtered_regions.append(im_regions)
         return filtered_regions
 

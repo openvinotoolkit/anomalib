@@ -35,6 +35,12 @@ class AiVadModel(nn.Module):
         self,
         # region-extraction params
         box_score_thresh: float = 0.8,
+        persons_only: bool = False,
+        min_bbox_area: int = 100,
+        max_bbox_overlap: float = 0.65,
+        enable_foreground_detections: bool = True,
+        foreground_kernel_size: int = 3,
+        foreground_binary_threshold: int = 18,
         # feature-extraction params
         n_velocity_bins: int = 8,
         use_velocity_features: bool = True,
@@ -52,7 +58,15 @@ class AiVadModel(nn.Module):
         # initialize flow extractor
         self.flow_extractor = FlowExtractor()
         # initialize region extractor
-        self.region_extractor = RegionExtractor(box_score_thresh=box_score_thresh)
+        self.region_extractor = RegionExtractor(
+            box_score_thresh=box_score_thresh,
+            persons_only=persons_only,
+            min_bbox_area=min_bbox_area,
+            max_bbox_overlap=max_bbox_overlap,
+            enable_foreground_detections=enable_foreground_detections,
+            foreground_kernel_size=foreground_kernel_size,
+            foreground_binary_threshold=foreground_binary_threshold,
+        )
         # initialize feature extractor
         self.feature_extractor = FeatureExtractor(
             n_velocity_bins=n_velocity_bins,

@@ -37,6 +37,12 @@ class AiVad(AnomalyModule):
     def __init__(
         self,
         box_score_thresh: float = 0.8,
+        persons_only: bool = False,
+        min_bbox_area: int = 100,
+        max_bbox_overlap: float = 0.65,
+        enable_foreground_detections: bool = True,
+        foreground_kernel_size: int = 3,
+        foreground_binary_threshold: int = 18,
         n_velocity_bins: int = 8,
         use_velocity_features: bool = True,
         use_pose_features: bool = True,
@@ -49,6 +55,12 @@ class AiVad(AnomalyModule):
 
         self.model = AiVadModel(
             box_score_thresh=box_score_thresh,
+            persons_only=persons_only,
+            min_bbox_area=min_bbox_area,
+            max_bbox_overlap=max_bbox_overlap,
+            enable_foreground_detections=enable_foreground_detections,
+            foreground_kernel_size=foreground_kernel_size,
+            foreground_binary_threshold=foreground_binary_threshold,
             n_velocity_bins=n_velocity_bins,
             use_velocity_features=use_velocity_features,
             use_pose_features=use_pose_features,
@@ -112,6 +124,12 @@ class AiVadLightning(AiVad):
     def __init__(self, hparams: DictConfig | ListConfig) -> None:
         super().__init__(
             box_score_thresh=hparams.model.box_score_thresh,
+            persons_only=hparams.model.persons_only,
+            min_bbox_area=hparams.model.min_bbox_area,
+            max_bbox_overlap=hparams.model.max_bbox_overlap,
+            enable_foreground_detections=hparams.model.enable_foreground_detections,
+            foreground_kernel_size=hparams.model.foreground_kernel_size,
+            foreground_binary_threshold=hparams.model.foreground_binary_threshold,
             n_velocity_bins=hparams.model.n_velocity_bins,
             use_velocity_features=hparams.model.use_velocity_features,
             use_pose_features=hparams.model.use_pose_features,
