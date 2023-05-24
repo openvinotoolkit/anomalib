@@ -141,11 +141,6 @@ class RegionExtractor(nn.Module):
         return regions
 
     @staticmethod
-    def remove_boxes_from_mask(mask, boxes):
-        boxes_mask = boxes_to_masks(boxes, mask.shape[-2:]).int()
-        return mask * (-boxes_mask + 1)  # invert mask
-
-    @staticmethod
     def subsample_regions(regions, indices):
         new_regions_dict = {}
         for key, value in regions.items():
