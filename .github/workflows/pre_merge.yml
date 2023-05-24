@@ -61,6 +61,6 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.xml
-          upstream_proxy: http://proxy-mu.intel.com:912
+          upstream_proxy: http://proxy-mu.intel.com:911
           fail_ci_if_error: true
           verbose: true
