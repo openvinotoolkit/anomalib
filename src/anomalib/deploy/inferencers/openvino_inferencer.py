@@ -27,7 +27,7 @@ class OpenVINOInferencer(Inferencer):
 
     Args:
         path (str | Path): Path to the openvino onnx, xml or bin file.
-        metadata_path (str | Path | dict, optional): Path to metadata file or a dict object defining the
+        metadata (str | Path | dict, optional): Path to metadata file or a dict object defining the
             metadata. Defaults to None.
         device (str | None, optional): Device to run the inference on. Defaults to "CPU".
         task (TaskType | None, optional): Task type. Defaults to None.
