@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- Add bounding box post-processing operations in AI-VAD implementation (<https://github.com/openvinotoolkit/anomalib/pull/1103>)
 - 📚 Add OpenVINO Inference to getting started notebook. by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/897
 - Mvtec 3d by @alexriedel1 in https://github.com/openvinotoolkit/anomalib/pull/907
 - MVTec 3D and Folder3D by @alexriedel1 in https://github.com/openvinotoolkit/anomalib/pull/942
