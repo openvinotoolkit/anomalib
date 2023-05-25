@@ -55,6 +55,21 @@ DOWNLOAD_INFO = DownloadInfo(
     hash="ef908989b6dc701fc218f643c127a4de",
 )
 
+CATEGORIES = (
+    "candle",
+    "capsules",
+    "cashew",
+    "chewinggum",
+    "fryum",
+    "macaroni1",
+    "macaroni2",
+    "pcb1",
+    "pcb2",
+    "pcb3",
+    "pcb4",
+    "pipe_fryum",
+)
+
 
 class VisaDataset(AnomalibDataset):
     """VisA dataset class.

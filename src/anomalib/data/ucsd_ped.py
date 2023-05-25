@@ -39,6 +39,8 @@ DOWNLOAD_INFO = DownloadInfo(
     hash="5006421b89885f45a6f93b041145f2eb",
 )
 
+CATEGORIES = ("UCSDped1", "UCSDped2")
+
 
 def make_ucsd_dataset(path: Path, split: str | Split | None = None) -> DataFrame:
     """Create UCSD Pedestrian dataset by parsing the file structure.
@@ -151,7 +153,7 @@ class UCSDpedDataset(AnomalibVideoDataset):
     Args:
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
         root (Path | str): Path to the root of the dataset
-        category (str): Sub-category of the dataset, e.g. 'bottle'
+        category (str): Sub-category of the dataset, e.g. "UCSDped1" or "UCSDped2"
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
         clip_length_in_frames (int, optional): Number of video frames in each clip.
@@ -186,7 +188,7 @@ class UCSDped(AnomalibVideoDataModule):
 
     Args:
         root (Path | str): Path to the root of the dataset
-        category (str): Sub-category of the dataset, e.g. 'bottle'
+        category (str): Sub-category of the dataset, e.g. "UCSDped1" or "UCSDped2"
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
         target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
