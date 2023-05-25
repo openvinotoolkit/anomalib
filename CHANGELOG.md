@@ -4,15 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v0.5.1] - 2023-05-24
 
 ### Added
 
 ### Changed
 
+- Rename `metadata_path` to `metadata` in `OpenvinoInferencer` in https://github.com/openvinotoolkit/anomalib/pull/1101
+
 ### Deprecated
 
 ###  Fixed
+
+- Fix `init_state_dict` bug in `wrap_nncf_model` in https://github.com/openvinotoolkit/anomalib/pull/1101
 
 ## [v0.5.0] - 2023-05-09
 
