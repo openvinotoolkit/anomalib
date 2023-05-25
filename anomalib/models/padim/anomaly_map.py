@@ -26,7 +26,8 @@ class AnomalyMapGenerator(nn.Module):
     def __init__(self, image_size: ListConfig | tuple, sigma: int = 4) -> None:
         super().__init__()
         self.image_size = image_size if isinstance(image_size, tuple) else tuple(image_size)
-        self.sigma = sigma
+        kernel_size = 2 * int(4.0 * sigma + 0.5) + 1
+        self.blur = GaussianBlur2d(kernel_size=(kernel_size, kernel_size), sigma=(sigma, sigma), channels=1)
 
     @staticmethod
     def compute_distance(embedding: Tensor, stats: list[Tensor]) -> Tensor:
@@ -73,9 +74,7 @@ class AnomalyMapGenerator(nn.Module):
         )
         return score_map
 
-    @staticmethod
-    @script_if_tracing
-    def smooth_anomaly_map(anomaly_map: Tensor, sigma: float) -> Tensor:
+    def smooth_anomaly_map(self, anomaly_map: Tensor) -> Tensor:
         """Apply gaussian smoothing to the anomaly map.
 
         Args:
@@ -85,8 +84,8 @@ class AnomalyMapGenerator(nn.Module):
         Returns:
             Filtered anomaly scores
         """
-        kernel_size = 2 * int(4.0 * sigma + 0.5) + 1
-        anomaly_map = gaussian_blur2d(anomaly_map, (kernel_size, kernel_size), sigma=(sigma, sigma))
+        # anomaly_map = gaussian_blur2d(anomaly_map, (kernel_size, kernel_size), sigma=(sigma, sigma))
+        anomaly_map = self.blur(anomaly_map)
 
         return anomaly_map
 
@@ -110,7 +109,7 @@ class AnomalyMapGenerator(nn.Module):
             stats=[mean, inv_covariance],
         )
         up_sampled_score_map = self.up_sample(score_map)
-        smoothed_anomaly_map = self.smooth_anomaly_map(up_sampled_score_map, self.sigma)
+        smoothed_anomaly_map = self.smooth_anomaly_map(up_sampled_score_map)
 
         return smoothed_anomaly_map
 
