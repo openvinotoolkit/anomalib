@@ -59,7 +59,6 @@ class EfficientAD(AnomalyModule):
 
     def __init__(
         self,
-        teacher_file_name: str,
         teacher_out_channels: int,
         image_size: tuple[int, int],
         model_size: EfficientADModelSize = EfficientADModelSize.M,
@@ -72,7 +71,6 @@ class EfficientAD(AnomalyModule):
 
         self.imagenet_dir = Path("./datasets/imagenette")
         self.model: EfficientADModel = EfficientADModel(
-            teacher_path=Path(teacher_file_name),
             teacher_out_channels=teacher_out_channels,
             input_size=image_size,
             model_size=model_size,
@@ -241,7 +239,6 @@ class EfficientadLightning(EfficientAD):
 
     def __init__(self, hparams: DictConfig | ListConfig) -> None:
         super().__init__(
-            teacher_file_name=hparams.model.teacher_file_name,
             teacher_out_channels=hparams.model.teacher_out_channels,
             model_size=hparams.model.model_size,
             lr=hparams.model.lr,

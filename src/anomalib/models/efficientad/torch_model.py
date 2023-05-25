@@ -28,8 +28,8 @@ def imagenet_norm_batch(x):
 class EfficientADModelSize(str, Enum):
     """Supported EfficientAD model sizes"""
 
-    M = "M"
-    S = "S"
+    M = "medium"
+    S = "small"
 
 
 class PDN_S(nn.Module):
@@ -187,7 +187,6 @@ class EfficientADModel(nn.Module):
     """EfficientAD model.
 
     Args:
-        teacher_path (Path): path of pre-trained teacher model.
         teacher_out_channels (int): number of convolution output channels of the pre-trained teacher model
         input_size (tuple): size of input images
         model_size (str): size of student and teacher model
@@ -196,7 +195,6 @@ class EfficientADModel(nn.Module):
 
     def __init__(
         self,
-        teacher_path: Path,
         teacher_out_channels: int,
         input_size: tuple[int, int],
         model_size: EfficientADModelSize = EfficientADModelSize.M,
@@ -218,7 +216,8 @@ class EfficientADModel(nn.Module):
         else:
             raise ValueError(f"Unknown model size {model_size}")
 
-        logger.info(f"Load pretrained Teacher model from {teacher_path}")
+        teacher_path = Path(__file__).parent / f"pre_trained/pretrained_teacher_{model_size}.pth"
+        logger.info(f"Load pretrained teacher model from {teacher_path}")
         self.teacher.load_state_dict(torch.load(teacher_path))
 
         self.ae: AutoEncoder = AutoEncoder(out_channels=teacher_out_channels, padding=padding)
