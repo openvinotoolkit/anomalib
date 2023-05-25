@@ -66,14 +66,12 @@ jobs:
           else
             COMMIT_ID=${{ github.sha }}
           fi
-          # Only pass token if it exists
-          # current version of codecov-action does not support uploading reports through the proxy
-          # so we use the latest version of codecov uploader binary
+          # Pass token from secrets if available. Otherwise it takes it from the environment variable of the CI
           curl -Os https://uploader.codecov.io/latest/linux/codecov
           chmod +x codecov
           if [ -n "${{ secrets.CODECOV_TOKEN }}" ]
           then
             ./codecov -t ${{ secrets.CODECOV_TOKEN }} --sha $COMMIT_ID -U $HTTP_PROXY -f .tox/coverage.xml
           else
-            ./codecov --sha $COMMIT_ID -r openvinotoolkit/anomalib -U $HTTP_PROXY -f .tox/coverage.xml
+            ./codecov -t "${CODECOV_TOKEN}"  --sha $COMMIT_ID -U $HTTP_PROXY -f .tox/coverage.xml
           fi
