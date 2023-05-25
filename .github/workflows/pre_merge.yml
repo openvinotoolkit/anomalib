@@ -57,10 +57,25 @@ jobs:
         # run: tox -e pre-merge-${{ matrix.tox-env }}
         run: touch coverage.xml
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.xml
-          upstream_proxy: http://proxy-mu.intel.com:911
-          fail_ci_if_error: true
-          verbose: true
+        run: |
+          # # If the workflow is triggered from PR then it gets the commit id from the PR.
+          # # else it uses the commit id of the latest commit. This is because the commit
+          # # of the checked-out branch/commit does not exist in the tree as it is grafted.
+          # if [ -n "${{ github.event.pull_request.head.sha }}" ]
+          # then
+          #   COMMIT_ID=${{ github.event.pull_request.head.sha }}
+          # else
+          #   COMMIT_ID=${{ github.sha }}
+          # fi
+          # # Only pass token if it exists
+          # # current version of codecov-action does not support uploading reports through the proxy
+          # # so we use the latest version of codecov uploader binary
+          # curl -Os https://uploader.codecov.io/latest/linux/codecov
+          # chmod +x codecov
+          # if [ -n "${{ secrets.CODECOV_TOKEN }}" ]
+          # then
+          #   ./codecov -t ${{ secrets.CODECOV_TOKEN }} --sha $COMMIT_ID -U $HTTP_PROXY -f .tox/coverage.xml
+          # else
+          #   ./codecov --sha $COMMIT_ID -r openvinotoolkit/anomalib -U $HTTP_PROXY -f .tox/coverage.xml
+          # fi
+          ./codecov -t "${CODECOV_TOKEN}"  --sha $COMMIT_ID -r openvinotoolkit/anomalib -U $HTTP_PROXY -f .tox/coverage.xml
