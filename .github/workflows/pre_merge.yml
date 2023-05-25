@@ -70,8 +70,8 @@ jobs:
           # # Only pass token if it exists
           # # current version of codecov-action does not support uploading reports through the proxy
           # # so we use the latest version of codecov uploader binary
-          # curl -Os https://uploader.codecov.io/latest/linux/codecov
-          # chmod +x codecov
+          curl -Os https://uploader.codecov.io/latest/linux/codecov
+          chmod +x codecov
           # if [ -n "${{ secrets.CODECOV_TOKEN }}" ]
           # then
           #   ./codecov -t ${{ secrets.CODECOV_TOKEN }} --sha $COMMIT_ID -U $HTTP_PROXY -f .tox/coverage.xml
