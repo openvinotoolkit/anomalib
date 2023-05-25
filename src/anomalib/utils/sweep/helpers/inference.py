@@ -61,7 +61,7 @@ def get_openvino_throughput(model_path: str | Path, test_dataset: Dataset) -> fl
 
     inferencer = OpenVINOInferencer(
         path=model_path / "weights" / "openvino" / "model.xml",
-        metadata_path=model_path / "weights" / "openvino" / "metadata.json",
+        metadata=model_path / "weights" / "openvino" / "metadata.json",
     )
     start_time = time.time()
     for image_path in test_dataset.samples.image_path:

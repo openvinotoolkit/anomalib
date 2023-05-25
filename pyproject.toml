@@ -73,7 +73,7 @@ show_error_codes = true
 
 
 [[tool.mypy.overrides]]
-module = "torch.*"
+module = ["torch.*", "wandb.*"]
 follow_imports = "skip"
 follow_imports_for_stubs = true
 

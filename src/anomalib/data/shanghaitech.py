@@ -29,6 +29,7 @@ from torch import Tensor
 
 from anomalib.data.base import AnomalibVideoDataModule, AnomalibVideoDataset
 from anomalib.data.noise_type import NoiseType
+from anomalib.data.base.video import VideoTargetFrame
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
     DownloadInfo,
@@ -188,6 +189,7 @@ class ShanghaiTechDataset(AnomalibVideoDataset):
         split (Split): Split of the dataset, usually Split.TRAIN or Split.TEST
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
+        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
     """
 
     def __init__(
@@ -199,8 +201,9 @@ class ShanghaiTechDataset(AnomalibVideoDataset):
         split: Split,
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
+        target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
     ):
-        super().__init__(task, transform, clip_length_in_frames, frames_between_clips)
+        super().__init__(task, transform, clip_length_in_frames, frames_between_clips, target_frame)
 
         self.root = root
         self.scene = scene
@@ -220,6 +223,7 @@ class ShanghaiTech(AnomalibVideoDataModule):
         scene (int): Index of the dataset scene (category) in range [1, 13]
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
+        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
         task TaskType): Task type, 'classification', 'detection' or 'segmentation'
         image_size (int | tuple[int, int] | None, optional): Size of the input image.
             Defaults to None.
@@ -246,6 +250,7 @@ class ShanghaiTech(AnomalibVideoDataModule):
         scene: int,
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
+        target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
         task: TaskType = TaskType.SEGMENTATION,
         image_size: int | tuple[int, int] | None = None,
         center_crop: int | tuple[int, int] | None = None,
@@ -291,6 +296,7 @@ class ShanghaiTech(AnomalibVideoDataModule):
             transform=transform_train,
             clip_length_in_frames=clip_length_in_frames,
             frames_between_clips=frames_between_clips,
+            target_frame=target_frame,
             root=root,
             scene=scene,
             split=Split.TRAIN,
@@ -301,6 +307,7 @@ class ShanghaiTech(AnomalibVideoDataModule):
             transform=transform_eval,
             clip_length_in_frames=clip_length_in_frames,
             frames_between_clips=frames_between_clips,
+            target_frame=target_frame,
             root=root,
             scene=scene,
             split=Split.TEST,
