@@ -346,7 +346,7 @@ class Tiler:
             image: Input image to tile.
 
         Examples:
-            >>> from anomalib.data.tiler import Tiler
+            >>> from anomalib.pre_processing import Tiler
             >>> tiler = Tiler(tile_size=512,stride=256)
             >>> image = torch.rand(size=(2, 3, 1024, 1024))
             >>> image.shape
@@ -393,7 +393,7 @@ class Tiler:
             tiles: Tiles from the input image, generated via tile()..
 
         Examples:
-            >>> from anomalib.datasets.tiler import Tiler
+            >>> from anomalib.pre_processing import Tiler
             >>> tiler = Tiler(tile_size=512,stride=256)
             >>> image = torch.rand(size=(2, 3, 1024, 1024))
             >>> image.shape
