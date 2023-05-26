@@ -10,7 +10,6 @@ import torch.nn.functional as F
 from omegaconf import ListConfig
 from torch import Tensor, nn
 from torch.jit import script_if_tracing
-from kornia.filters import gaussian_blur2d
 
 from anomalib.models.components import GaussianBlur2d
 
@@ -84,7 +83,6 @@ class AnomalyMapGenerator(nn.Module):
         Returns:
             Filtered anomaly scores
         """
-        # anomaly_map = gaussian_blur2d(anomaly_map, (kernel_size, kernel_size), sigma=(sigma, sigma))
         anomaly_map = self.blur(anomaly_map)
 
         return anomaly_map
