@@ -40,12 +40,12 @@ def get_parser() -> ArgumentParser:
     return parser
 
 
-def get_inferencer(weight_path: Path, metadata_path: Path | None = None) -> Inferencer:
+def get_inferencer(weight_path: Path, metadata: Path | None = None) -> Inferencer:
     """Parse args and open inferencer.
 
     Args:
         weight_path (Path): Path to model weights.
-        metadata_path (Path | None, optional): Metadata is required for OpenVINO models. Defaults to None.
+        metadata (Path | None, optional): Metadata is required for OpenVINO models. Defaults to None.
 
     Raises:
         ValueError: If unsupported model weight is passed.
@@ -64,11 +64,11 @@ def get_inferencer(weight_path: Path, metadata_path: Path | None = None) -> Infe
         inferencer = torch_inferencer(path=weight_path)
 
     elif extension in (".onnx", ".bin", ".xml"):
-        if metadata_path is None:
+        if metadata is None:
             raise ValueError("When using OpenVINO Inferencer, the following arguments are required: --metadata")
 
         openvino_inferencer = getattr(module, "OpenVINOInferencer")
-        inferencer = openvino_inferencer(path=weight_path, metadata_path=metadata_path)
+        inferencer = openvino_inferencer(path=weight_path, metadata=metadata)
 
     else:
         raise ValueError(
