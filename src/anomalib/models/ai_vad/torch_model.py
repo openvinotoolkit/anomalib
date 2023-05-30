@@ -22,6 +22,14 @@ class AiVadModel(nn.Module):
 
     Args:
         box_score_thresh (float): Confidence threshold for region extraction stage.
+        persons_only (bool): When enabled, only regions labeled as person are included.
+        min_bbox_area (int): Minimum bounding box area. Regions with a surface area lower than this value are excluded.
+        max_bbox_overlap (float): Maximum allowed overlap between bounding boxes.
+        enable_foreground_detections (bool): Add additional foreground detections based on pixel difference between
+            consecutive frames.
+        foreground_kernel_size (int): Gaussian kernel size used in foreground detection.
+        foreground_binary_threshold (int): Value between 0 and 255 which acts as binary threshold in foreground
+            detection.
         n_velocity_bins (int): Number of discrete bins used for velocity histogram features.
         use_velocity_features (bool): Flag indicating if velocity features should be used.
         use_pose_features (bool): Flag indicating if pose features should be used.

@@ -21,6 +21,14 @@ class RegionExtractor(nn.Module):
 
     Args:
         box_score_thresh (float): Confidence threshold for bounding box predictions.
+        persons_only (bool): When enabled, only regions labeled as person are included.
+        min_bbox_area (int): Minimum bounding box area. Regions with a surface area lower than this value are excluded.
+        max_bbox_overlap (float): Maximum allowed overlap between bounding boxes.
+        enable_foreground_detections (bool): Add additional foreground detections based on pixel difference between
+            consecutive frames.
+        foreground_kernel_size (int): Gaussian kernel size used in foreground detection.
+        foreground_binary_threshold (int): Value between 0 and 255 which acts as binary threshold in foreground
+            detection.
     """
 
     def __init__(
@@ -50,7 +58,7 @@ class RegionExtractor(nn.Module):
 
         Args:
             first_frame (Tensor): Batch of input images of shape (N, C, H, W) forming the first frames in the clip
-            batch (Tensor): Batch of input images of shape (N, C, H, W) forming the last frame in the clip
+            last_frame (Tensor): Batch of input images of shape (N, C, H, W) forming the last frame in the clip
         Returns:
             list[dict]: List of Mask RCNN predictions for each image in the batch.
         """
@@ -108,7 +116,7 @@ class RegionExtractor(nn.Module):
         boxes_list = [
             clip_boxes_to_image(boxes + Tensor([-2, -2, 2, 2]).to(boxes.device), foreground_map.shape[-2:])
             for boxes in boxes_list
-        ]
+        ]  # extend boxes by 2 in all directions to ensure full object is included
         boxes_mask = boxes_to_masks(boxes_list, foreground_map.shape[-2:]).int()
         foreground_map *= -boxes_mask + 1  # invert mask
 
