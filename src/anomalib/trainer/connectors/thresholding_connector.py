@@ -12,7 +12,6 @@ from pytorch_lightning.utilities.types import STEP_OUTPUT
 from anomalib import trainer
 from anomalib.data import TaskType
 from anomalib.post_processing import ThresholdMethod
-from anomalib.utils.metrics import AnomalyScoreThreshold
 
 
 class ThresholdingConnector:
@@ -72,12 +71,13 @@ class ThresholdingConnector:
             outputs (EPOCH_OUTPUT | List[EPOCH_OUTPUT]): Outputs are only used to check if the model has pixel level
                 predictions.
         """
-        if self.trainer.image_threshold is not None:
-            self.trainer.image_threshold.compute()
-        if self.trainer.task_type in (TaskType.SEGMENTATION, TaskType.DETECTION):
-            self.trainer.pixel_threshold.compute()
-        else:
-            self.trainer.pixel_threshold.value = self.trainer.image_threshold.value
+        if self.threshold_method == ThresholdMethod.ADAPTIVE:
+            if self.trainer.image_threshold is not None:
+                self.trainer.image_threshold.compute()
+            if self.trainer.task_type in (TaskType.SEGMENTATION, TaskType.DETECTION):
+                self.trainer.pixel_threshold.compute()
+            else:
+                self.trainer.pixel_threshold.value = self.trainer.image_threshold.value
 
     def update(self, outputs: STEP_OUTPUT) -> None:
         """updates adaptive threshold in case thresholding type is ADAPTIVE.
@@ -86,16 +86,8 @@ class ThresholdingConnector:
             outputs (STEP_OUTPUT): Step outputs.
         """
         if self.threshold_method == ThresholdMethod.ADAPTIVE:
-            self._update_thresholds(self.trainer.image_threshold, self.trainer.pixel_threshold, outputs)
-
-    @staticmethod
-    def _update_thresholds(
-        image_metric: AnomalyScoreThreshold,
-        pixel_metric: AnomalyScoreThreshold,
-        outputs: STEP_OUTPUT,
-    ) -> None:
-        image_metric.cpu()
-        image_metric.update(outputs["pred_scores"], outputs["label"].int())
-        if "mask" in outputs.keys() and "anomaly_maps" in outputs.keys():
-            pixel_metric.cpu()
-            pixel_metric.update(outputs["anomaly_maps"], outputs["mask"].int())
+            self.trainer.image_threshold.cpu()
+            self.trainer.image_threshold.update(outputs["pred_scores"], outputs["label"].int())
+            if "mask" in outputs.keys() and "anomaly_maps" in outputs.keys():
+                self.trainer.pixel_threshold.cpu()
+                self.trainer.pixel_threshold.update(outputs["anomaly_maps"], outputs["mask"].int())

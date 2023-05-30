@@ -29,8 +29,6 @@ class VisualizationConnector:
         mode (VisualizationMode): The mode of visualization. Can be one of ['full', 'simple'].
         show_images (bool, optional): Whether to show images. Defaults to False.
         log_images (bool, optional): Whether to log images to available loggers. Defaults to False.
-        stage (VisualizationStage, optional): The stage at which to write images to the logger(s).
-            Defaults to VisualizationStage.TEST.
     """
 
     def __init__(
@@ -58,16 +56,17 @@ class VisualizationConnector:
         Args:
             outputs (EPOCH_OUTPUT, List[EPOCH_OUTPUT]): The outputs to visualize.
         """
-        if isinstance(outputs, list):
-            for output in outputs:
-                self.visualize_images(output)
-        else:
-            for i, image in enumerate(self.visualizer.visualize_batch(outputs)):
-                filename = self._get_filename(outputs, i)
-                if self.show_images:
-                    self.visualizer.show(str(filename), image)
-                if self.log_images:
-                    self._add_to_loggers(image, filename=filename)
+        if self.show_images or self.log_images:
+            if isinstance(outputs, list):
+                for output in outputs:
+                    self.visualize_images(output)
+            else:
+                for i, image in enumerate(self.visualizer.visualize_batch(outputs)):
+                    filename = self._get_filename(outputs, i)
+                    if self.show_images:
+                        self.visualizer.show(str(filename), image)
+                    if self.log_images:
+                        self._add_to_loggers(image, filename=filename)
 
     def visualize_metrics(self, metrics_list: list[AnomalibMetricCollection]) -> None:
         """Visualize metrics.
@@ -78,18 +77,19 @@ class VisualizationConnector:
         Args:
             metrics_list (List[AnomalibMetricCollection]): List of metrics.
         """
-        for metrics in metrics_list:
-            for metric in metrics.values():
-                # `generate_figure` needs to be defined for every metric that should be plotted automatically
-                if hasattr(metric, "generate_figure"):
-                    fig, log_name = metric.generate_figure()
-                    file_name = f"{metrics.prefix}{log_name}"
-                    if self.log_images:
-                        self._add_to_loggers(fig, filename=file_name)
-                    if self.show_images:
-                        # TODO: test this
-                        self.visualizer.show(file_name, fig)
-                    plt.close(fig)
+        if self.show_images or self.log_images:
+            for metrics in metrics_list:
+                for metric in metrics.values():
+                    # `generate_figure` needs to be defined for every metric that should be plotted automatically
+                    if hasattr(metric, "generate_figure"):
+                        fig, log_name = metric.generate_figure()
+                        file_name = f"{metrics.prefix}{log_name}"
+                        if self.log_images:
+                            self._add_to_loggers(fig, filename=file_name)
+                        if self.show_images:
+                            # TODO: test this
+                            self.visualizer.show(file_name, fig)
+                        plt.close(fig)
 
     def _get_filename(self, outputs: Any, index: int) -> Path:
         """Gets file name from the outputs corresponding to the index.

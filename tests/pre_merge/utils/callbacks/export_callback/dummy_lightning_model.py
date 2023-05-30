@@ -7,12 +7,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.datasets import FakeData
 
-from anomalib.utils.callbacks import ImageVisualizerCallback
-from anomalib.utils.metrics import (
-    AnomalyScoreDistribution,
-    AnomalyScoreThreshold,
-    MinMax,
-)
+from anomalib.utils.metrics import AnomalyScoreDistribution, AnomalyScoreThreshold, MinMax
 from tests.helpers.models.dummy_model import DummyModel
 
 
@@ -52,15 +47,6 @@ class DummyLightningModule(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters(hparams)
         self.loss_fn = nn.NLLLoss()
-        self.callbacks = [
-            ImageVisualizerCallback(
-                mode="full",
-                task="segmentation",
-                image_save_path=hparams.project.path + "/images",
-                log_images=False,
-                save_images=True,
-            )
-        ]  # test if this is removed
 
         self.image_threshold = AnomalyScoreThreshold(hparams.model.threshold.image_default).cpu()
         self.pixel_threshold = AnomalyScoreThreshold(hparams.model.threshold.pixel_default).cpu()

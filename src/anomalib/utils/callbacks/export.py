@@ -7,11 +7,11 @@
 import logging
 from pathlib import Path
 
-import pytorch_lightning as pl
 from pytorch_lightning import Callback
 
 from anomalib.deploy import ExportMode, export
 from anomalib.models.components import AnomalyModule
+from anomalib.trainer import AnomalibTrainer
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class ExportCallback(Callback):
         self.filename = filename
         self.export_mode = export_mode
 
-    def on_train_end(self, trainer: pl.Trainer, pl_module: AnomalyModule) -> None:
+    def on_train_end(self, trainer: AnomalibTrainer, pl_module: AnomalyModule) -> None:
         """Call when the train ends.
 
         Converts the model to ``onnx`` format and then calls OpenVINO's model optimizer to get the
@@ -43,9 +43,8 @@ class ExportCallback(Callback):
         Path(self.dirpath).mkdir(parents=True, exist_ok=True)
 
         export(
-            task=trainer.datamodule.test_data.task,
+            trainer=trainer,
             input_size=self.input_size,
-            transform=trainer.datamodule.test_data.transform.to_dict(),
             model=pl_module,
             export_root=self.dirpath,
             export_mode=self.export_mode,

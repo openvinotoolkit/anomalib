@@ -8,15 +8,15 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning import LightningDataModule, Trainer
+from pytorch_lightning import LightningDataModule
 from pytorch_lightning.callbacks import ModelCheckpoint
 
 from anomalib.config import get_configurable_parameters, update_nncf_config
 from anomalib.data import TaskType, get_datamodule
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
+from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.callbacks import get_callbacks
-from anomalib.utils.callbacks.visualizer import BaseVisualizerCallback
 
 
 def setup_model_train(
@@ -30,7 +30,7 @@ def setup_model_train(
     dataset_task: Optional[TaskType] = None,
     visualizer_mode: Optional[str] = None,
     device: Union[List[int], int] = [0],
-) -> Tuple[Union[DictConfig, ListConfig], LightningDataModule, AnomalyModule, Trainer]:
+) -> Tuple[Union[DictConfig, ListConfig], LightningDataModule, AnomalyModule, AnomalibTrainer]:
     """Train the model based on the parameters passed.
 
     Args:
@@ -64,8 +64,8 @@ def setup_model_train(
     if dataset_task is not None:
         config.dataset.task = dataset_task
     if visualizer_mode is not None:
-        config.visualization.mode = visualizer_mode
-        config.visualization.save_images = True  # Enforce processing by Visualizer
+        config.visualization.visualization_mode = visualizer_mode
+        config.visualization.log_images = False
         if "pixel" in config.metrics and dataset_task == TaskType.CLASSIFICATION:
             del config.metrics.pixel
 
@@ -100,20 +100,27 @@ def setup_model_train(
             mode="max",
             save_last=True,
             auto_insert_metric_name=False,
+            save_on_train_epoch_end=False,  # need to set this as validation loop now runs after train loop.
         )
         callbacks.append(model_checkpoint)
-
-    for index, callback in enumerate(callbacks):
-        if isinstance(callback, BaseVisualizerCallback):
-            callbacks.pop(index)
-            break
 
     # Train the model.
     if fast_run:
         config.trainer.max_epochs = 1
         config.trainer.check_val_every_n_epoch = 1
 
-    trainer = Trainer(callbacks=callbacks, **config.trainer)
+    trainer = AnomalibTrainer(
+        **config.trainer,
+        **config.post_processing,
+        show_images=config.visualization.show_images,
+        log_images=config.visualization.log_images,
+        visualization_mode=config.visualization.mode,
+        logger=False,
+        callbacks=callbacks,
+        task_type=config.dataset.task,
+        image_metrics=config.metrics.get("image", None),
+        pixel_metrics=config.metrics.get("pixel", None),
+    )
     trainer.fit(model=model, datamodule=datamodule)
     return config, datamodule, model, trainer
 
@@ -134,16 +141,22 @@ def model_load_test(config: Union[DictConfig, ListConfig], datamodule: Lightning
 
     callbacks = get_callbacks(config)
 
-    for index, callback in enumerate(callbacks):
-        # Remove visualizer callback as saving results takes time
-        if isinstance(callback, BaseVisualizerCallback):
-            callbacks.pop(index)
-            break
-
     # create new trainer object with LoadModel callback (assumes it is present)
-    trainer = Trainer(callbacks=callbacks, **config.trainer)
-    # Assumes the new model has LoadModel callback and the old one had ModelCheckpoint callback
-    new_results = trainer.test(model=loaded_model, datamodule=datamodule)[0]
+    trainer = AnomalibTrainer(
+        **config.trainer,
+        **config.post_processing,
+        show_images=config.visualization.show_images,
+        log_images=config.visualization.log_images,
+        visualization_mode=config.visualization.mode,
+        logger=False,
+        callbacks=callbacks,
+        task_type=config.dataset.task,
+        image_metrics=config.metrics.get("image", None),
+        pixel_metrics=config.metrics.get("pixel", None),
+    )
+    new_results = trainer.test(
+        model=loaded_model, datamodule=datamodule, ckpt_path=config.trainer.resume_from_checkpoint
+    )[0]
     assert np.isclose(
         results["image_AUROC"], new_results["image_AUROC"]
     ), f"Loaded model does not yield close performance results. {results['image_AUROC']} : {new_results['image_AUROC']}"

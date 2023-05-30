@@ -63,7 +63,8 @@ class AnomalibValidationLoop(EvaluationLoop):
         )
 
         # keep custom code between these lines
-        self.trainer.thresholding_connector.compute()
-        self.trainer.metrics_connector.set_threshold()
-        self.trainer.metrics_connector.compute(output_or_outputs)
-        self.trainer.metrics_connector.log(self.trainer, "validation_epoch_end")
+        if len(output_or_outputs) > 0:
+            self.trainer.thresholding_connector.compute()
+            self.trainer.metrics_connector.set_threshold()
+            self.trainer.metrics_connector.compute(output_or_outputs)
+            self.trainer.metrics_connector.log(self.trainer, "validation_epoch_end")

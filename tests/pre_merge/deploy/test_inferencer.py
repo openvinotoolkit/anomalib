@@ -10,12 +10,12 @@ from typing import Optional, Union
 import pytest
 import torch
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning import Trainer
 
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
 from anomalib.deploy import OpenVINOInferencer, TorchInferencer
 from anomalib.models import get_model
+from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.callbacks import get_callbacks
 from tests.helpers.dataset import TestDataset, get_dataset_path
 from tests.helpers.inference import MockImageLoader
@@ -65,7 +65,18 @@ def generate_results_dir():
             model = get_model(model_config)
             datamodule = get_datamodule(model_config)
             callbacks = get_callbacks(model_config)
-            trainer = Trainer(**model_config.trainer, logger=False, callbacks=callbacks)
+            trainer = AnomalibTrainer(
+                **model_config.trainer,
+                **model_config.post_processing,
+                show_images=model_config.visualization.show_images,
+                log_images=model_config.visualization.log_images,
+                visualization_mode=model_config.visualization.mode,
+                task_type=model_config.dataset.task,
+                logger=False,
+                callbacks=callbacks,
+                image_metrics=model_config.metrics.get("image", None),
+                pixel_metrics=model_config.metrics.get("pixel", None)
+            )
             trainer.fit(model=model, datamodule=datamodule)
 
             return model_config, model
@@ -79,10 +90,10 @@ def generate_results_dir():
         ("cfa", "segmentation"),
         ("cflow", "segmentation"),
         ("dfm", "segmentation"),
-        ("dfkde", "segmentation"),
+        ("dfkde", "classification"),
         ("draem", "segmentation"),
         ("fastflow", "segmentation"),
-        ("ganomaly", "segmentation"),
+        ("ganomaly", "classification"),
         ("padim", "segmentation"),
         ("patchcore", "segmentation"),
         ("reverse_distillation", "segmentation"),
@@ -122,7 +133,7 @@ def test_torch_inference(
     [
         ("dfm", "classification"),
         ("draem", "segmentation"),
-        ("ganomaly", "segmentation"),
+        ("ganomaly", "classification"),
         ("padim", "segmentation"),
         ("patchcore", "segmentation"),
         ("stfpm", "segmentation"),

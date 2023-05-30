@@ -6,10 +6,10 @@ import random
 
 import pytest
 import torch
-from pytorch_lightning import Trainer
 
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
+from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.callbacks import get_callbacks
 from anomalib.utils.metrics import AnomalyScoreThreshold
 from tests.helpers.config import get_test_configurable_parameters
@@ -40,22 +40,29 @@ def test_manual_threshold():
     config = get_test_configurable_parameters(config_path="src/anomalib/models/padim/config.yaml")
 
     config.dataset.num_workers = 0
-    config.model.normalization_method = "none"
-    config.metrics.threshold.method = "manual"
     config.trainer.fast_dev_run = True
     config.metrics.image = ["F1Score"]
     config.metrics.pixel = ["F1Score"]
 
     image_threshold = random.random()
     pixel_threshold = random.random()
-    config.metrics.threshold.manual_image = image_threshold
-    config.metrics.threshold.manual_pixel = pixel_threshold
+
+    config.post_processing.normalization_method = "none"
+    config.post_processing.threshold_method = "manual"
+    config.post_processing.manual_image_threshold = image_threshold
+    config.post_processing.manual_pixel_threshold = pixel_threshold
 
     model = get_model(config)
     datamodule = get_datamodule(config)
     callbacks = get_callbacks(config)
 
-    trainer = Trainer(**config.trainer, callbacks=callbacks)
+    trainer = AnomalibTrainer(
+        **config.trainer,
+        **config.post_processing,
+        callbacks=callbacks,
+        image_metrics=config.metrics.get("image", None),
+        pixel_metrics=config.metrics.get("pixel", None),
+    )
     trainer.fit(model=model, datamodule=datamodule)
-    assert trainer.model.image_metrics.F1Score.threshold == image_threshold
-    assert trainer.model.pixel_metrics.F1Score.threshold == pixel_threshold
+    assert trainer.metrics_connector.image_metrics.F1Score.threshold == image_threshold
+    assert trainer.metrics_connector.pixel_metrics.F1Score.threshold == pixel_threshold
