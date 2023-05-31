@@ -19,9 +19,11 @@ from anomalib.data import TaskType
 from .base_inferencer import Inferencer
 
 if find_spec("openvino") is not None:
+
     from openvino.runtime import (  # type: ignore  # pylint: disable=no-name-in-module
         Core,
     )
+
 
 
 class OpenVINOInferencer(Inferencer):
@@ -29,7 +31,8 @@ class OpenVINOInferencer(Inferencer):
 
     Args:
         path (str | Path): Path to the openvino onnx, xml or bin file.
-        metadata_path (str | Path, optional): Path to metadata file. Defaults to None.
+        metadata (str | Path | dict, optional): Path to metadata file or a dict object defining the
+            metadata. Defaults to None.
         device (str | None, optional): Device to run the inference on. Defaults to "CPU".
         task (TaskType | None, optional): Task type. Defaults to None.
     """
@@ -37,16 +40,18 @@ class OpenVINOInferencer(Inferencer):
     def __init__(
         self,
         path: str | Path | tuple[bytes, bytes],
-        metadata_path: str | Path | None = None,
+        metadata: str | Path | dict | None = None,
         device: str | None = "CPU",
         task: str | None = None,
         config: dict | None = None
 
     ) -> None:
         self.device = device
+
         self.config = config
         self.input_blob, self.output_blob, self.model = self.load_model(path)
         self.metadata = super()._load_metadata(metadata_path)
+
         self.task = TaskType(task) if task else TaskType(self.metadata["task"])
         
 

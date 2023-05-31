@@ -52,10 +52,10 @@
 
 1. Now the container is ready. Type `exit` to leave the container.
 
-1. Start github actions runner in detached mode in the container and set the
-   the anomalib dataset environment variables.
+1. Start github actions runner in detached mode in the container and set the anomalib dataset and codecov environment
+   variables. The codecov token in the environment variable allows coverage report uploading from the forks.
 
    ```bash
    sudo docker exec -d anomalib-ci-container /bin/bash -c \
-   "export ANOMALIB_DATASET_PATH=/home/user/datasets && /home/user/actions-runner/run.sh"
+   "export ANOMALIB_DATASET_PATH=/home/user/datasets;export CODECOV_TOKEN=XXX && /home/user/actions-runner/run.sh"
    ```
