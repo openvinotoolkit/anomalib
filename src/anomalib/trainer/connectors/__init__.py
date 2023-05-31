@@ -6,21 +6,21 @@ Contains classes that enable the anomaly training pipeline.
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+
 from .callback_connector import CallbackConnector
 from .checkpoint_connector import CheckpointConnector
-from .metrics_manager import MetricsManager
+from .metrics_connector import MetricsConnector
 from .normalizer import get_normalizer
-from .post_processor import PostProcessor
-from .thresholder import Thresholder
-from .visualization_manager import VisualizationManager, VisualizationStage
+from .post_processing_connector import PostProcessingConnector
+from .thresholding_connector import ThresholdingConnector
+from .visualization_connector import VisualizationConnector
 
 __all__ = [
     "get_normalizer",
     "CallbackConnector",
     "CheckpointConnector",
-    "MetricsManager",
-    "PostProcessor",
-    "Thresholder",
-    "VisualizationManager",
-    "VisualizationStage",
+    "MetricsConnector",
+    "PostProcessingConnector",
+    "ThresholdingConnector",
+    "VisualizationConnector",
 ]

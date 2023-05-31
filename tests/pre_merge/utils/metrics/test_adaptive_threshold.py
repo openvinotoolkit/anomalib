@@ -64,5 +64,5 @@ def test_manual_threshold():
         pixel_metrics=config.metrics.get("pixel", None),
     )
     trainer.fit(model=model, datamodule=datamodule)
-    assert trainer.metrics_manager.image_metrics.F1Score.threshold == image_threshold
-    assert trainer.metrics_manager.pixel_metrics.F1Score.threshold == pixel_threshold
+    assert trainer.metrics_connector.image_metrics.F1Score.threshold == image_threshold
+    assert trainer.metrics_connector.pixel_metrics.F1Score.threshold == pixel_threshold

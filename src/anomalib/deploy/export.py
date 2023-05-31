@@ -9,12 +9,13 @@ import subprocess  # nosec
 from enum import Enum
 from pathlib import Path
 from typing import Any
+from warnings import warn
 
 import torch
 from torch import Tensor
 
-from anomalib import trainer
 from anomalib.models.components import AnomalyModule
+from anomalib.trainer import AnomalibTrainer
 
 
 class ExportMode(str, Enum):
@@ -25,23 +26,28 @@ class ExportMode(str, Enum):
     TORCH = "torch"
 
 
-def get_metadata(trainer: "trainer.AnomalibTrainer", transform: dict[str, Any]) -> dict[str, Any]:
+def get_metadata(trainer: AnomalibTrainer) -> dict[str, Any]:
     """Get metadata for the exported model.
 
     Args:
         trainer (AnomalibTrainer): Trainer used for training the model.
-        transform (dict[str, Any]): Transform used for the model.
 
     Returns:
         dict[str, Any]: Metadata for the exported model.
     """
+    transform = {}
+    if trainer.datamodule is not None:
+        transform = trainer.datamodule.test_data.transform.to_dict()
+    else:
+        warn("No datamodule found. Setting transform to empty dict.")
+
     data_metadata = {"task": trainer.task_type, "transform": transform}
     normalization_metadata = {
         "image_threshold": trainer.image_threshold.cpu().value.item(),
         "pixel_threshold": trainer.pixel_threshold.cpu().value.item(),
     }
-    if trainer.normalizer:
-        for key, value in trainer.normalizer.metric.state_dict().items():
+    if trainer.normalization_connector:
+        for key, value in trainer.normalization_connector.metric.state_dict().items():
             normalization_metadata[key] = value.cpu()
 
     metadata = {**data_metadata, **normalization_metadata}
@@ -54,8 +60,7 @@ def get_metadata(trainer: "trainer.AnomalibTrainer", transform: dict[str, Any]) 
 
 
 def export(
-    transform: dict[str, Any],
-    trainer: "trainer.AnomalibTrainer",
+    trainer: AnomalibTrainer,
     input_size: tuple[int, int],
     model: AnomalyModule,
     export_mode: ExportMode,
@@ -65,7 +70,6 @@ def export(
 
     Args:
         trainer (AnomalibTrainer): Trainer used for training the model.
-        transform (dict[str, Any]): Data transforms (augmentatiions) used for the model.
         input_size (tuple[int, int]): Input size of the model.
         model (AnomalyModule): Anomaly model to export.
         export_mode (ExportMode): Mode to export the model. Torch, ONNX or OpenVINO.
@@ -76,7 +80,7 @@ def export(
     export_path.mkdir(parents=True, exist_ok=True)
 
     # Get metadata.
-    metadata = get_metadata(trainer, transform)
+    metadata = get_metadata(trainer)
 
     if export_mode == ExportMode.TORCH:
         export_to_torch(model, metadata, export_path)

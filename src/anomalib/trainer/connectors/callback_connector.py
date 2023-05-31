@@ -1,5 +1,8 @@
 """Subclasses Lightning's callback connector to add necessary callbacks."""
 
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import os
 from datetime import timedelta
 from typing import Dict, List, Optional

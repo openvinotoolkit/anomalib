@@ -13,7 +13,7 @@ from anomalib.data import TaskType
 from anomalib.data.utils import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
 
 
-class PostProcessor:
+class PostProcessingConnector:
     """Post-processor used in AnomalibTrainer."""
 
     def __init__(self, trainer: "trainer.AnomalibTrainer") -> None:
@@ -21,7 +21,7 @@ class PostProcessor:
 
     def apply_predictions(self, outputs: STEP_OUTPUT) -> None:
         """Computes prediction scores and prediction boxes."""
-        self._outputs_to_cpu(outputs)
+        PostProcessingConnector._outputs_to_cpu(outputs)
         if isinstance(outputs, dict):
             if "pred_scores" not in outputs:
                 if "anomaly_maps" in outputs:
@@ -55,9 +55,9 @@ class PostProcessor:
         """Move outputs to CPU."""
         if isinstance(output, dict):
             for key, value in output.items():
-                output[key] = PostProcessor._outputs_to_cpu(value)
+                output[key] = PostProcessingConnector._outputs_to_cpu(value)
         elif isinstance(output, list):
-            output = [PostProcessor._outputs_to_cpu(item) for item in output]
+            output = [PostProcessingConnector._outputs_to_cpu(item) for item in output]
         elif isinstance(output, Tensor):
             output = output.cpu()
         return output

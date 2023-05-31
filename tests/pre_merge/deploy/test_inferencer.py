@@ -68,7 +68,9 @@ def generate_results_dir():
             trainer = AnomalibTrainer(
                 **model_config.trainer,
                 **model_config.post_processing,
-                **model_config.visualization,
+                show_images=model_config.visualization.show_images,
+                log_images=model_config.visualization.log_images,
+                visualization_mode=model_config.visualization.mode,
                 task_type=model_config.dataset.task,
                 logger=False,
                 callbacks=callbacks,

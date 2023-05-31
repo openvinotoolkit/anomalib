@@ -5,7 +5,6 @@
 
 import logging
 import warnings
-from typing import List, Optional
 
 from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.core.datamodule import LightningDataModule
@@ -13,20 +12,19 @@ from pytorch_lightning.utilities.types import _EVALUATE_OUTPUT, EVAL_DATALOADERS
 
 from anomalib.data import AnomalibDataModule, AnomalibDataset, TaskType
 from anomalib.models.components.base.anomaly_module import AnomalyModule
-from anomalib.post_processing import NormalizationMethod, ThresholdMethod, VisualizationMode
-from anomalib.trainer.loops.one_class import FitLoop, PredictionLoop, TestLoop, ValidationLoop
-from anomalib.trainer.utils import (
+from anomalib.post_processing import NormalizationMethod, ThresholdMethod
+from anomalib.post_processing.visualizer import VisualizationMode
+from anomalib.trainer.connectors import (
+    CallbackConnector,
     CheckpointConnector,
-    MetricsManager,
-    PostProcessor,
-    Thresholder,
-    VisualizationManager,
-    VisualizationStage,
+    MetricsConnector,
+    PostProcessingConnector,
+    ThresholdingConnector,
+    VisualizationConnector,
     get_normalizer,
 )
+from anomalib.trainer.loops.one_class import FitLoop, PredictionLoop, TestLoop, ValidationLoop
 from anomalib.utils.metrics import AnomalyScoreThreshold
-
-from .utils import CallbackConnector
 
 log = logging.getLogger(__name__)
 # warnings to ignore in trainer
@@ -46,25 +44,22 @@ class AnomalibTrainer(Trainer):
         normalization_method (NormalizationMethod): Normalization method
         manual_image_threshold (Optional[float]): If threshold method is manual, this needs to be set. Defaults to None.
         manual_pixel_threshold (Optional[float]): If threshold method is manual, this needs to be set. Defaults to None.
-        visualization_mode (str): Visualization mode. Options ["full", "simple"]. Defaults to "full".
+        visualization_mode (VisualizationMode): Visualization mode. Options ["full", "simple"]. Defaults to "full".
         show_images (bool): Whether to show images. Defaults to False.
         log_images (bool): Whether to log images. Defaults to False.
-        visualization_stage (VisualizationStage): The stage at which to write images to the logger(s).
-            Defaults to VisualizationStage.TEST.
     """
 
     def __init__(
         self,
         threshold_method: ThresholdMethod = ThresholdMethod.ADAPTIVE,
         normalization_method: NormalizationMethod = NormalizationMethod.MIN_MAX,
-        manual_image_threshold: Optional[float] = None,
-        manual_pixel_threshold: Optional[float] = None,
-        image_metrics: Optional[List[str]] = None,
-        pixel_metrics: Optional[List[str]] = None,
+        manual_image_threshold: float | None = None,
+        manual_pixel_threshold: float | None = None,
+        image_metrics: list[str] | None = None,
+        pixel_metrics: list[str] | None = None,
         visualization_mode: VisualizationMode = VisualizationMode.FULL,
         show_images: bool = False,
         log_images: bool = False,
-        visualization_stage: VisualizationStage = VisualizationStage.TEST,
         task_type: TaskType = TaskType.SEGMENTATION,
         **kwargs,
     ) -> None:
@@ -96,21 +91,22 @@ class AnomalibTrainer(Trainer):
         self.image_threshold = AnomalyScoreThreshold().cpu()
         self.pixel_threshold = AnomalyScoreThreshold().cpu()
 
-        self.thresholder = Thresholder(
+        self.thresholding_connector = ThresholdingConnector(
             trainer=self,
             threshold_method=threshold_method,
             manual_image_threshold=manual_image_threshold,
             manual_pixel_threshold=manual_pixel_threshold,
         )
-        self.post_processor = PostProcessor(trainer=self)
-        self.normalizer = get_normalizer(trainer=self, normalization_method=normalization_method)
-        self.metrics = MetricsManager(trainer=self, image_metrics=image_metrics, pixel_metrics=pixel_metrics)
-        self.visualization_manager = VisualizationManager(
+        self.post_processing_connector = PostProcessingConnector(trainer=self)
+        self.normalization_connector = get_normalizer(trainer=self, normalization_method=normalization_method)
+        self.visualization_connector = VisualizationConnector(
             trainer=self,
             mode=visualization_mode,
             show_images=show_images,
             log_images=log_images,
-            stage=visualization_stage,
+        )
+        self.metrics_connector = MetricsConnector(
+            trainer=self, image_metrics=image_metrics, pixel_metrics=pixel_metrics
         )
 
     def fit(

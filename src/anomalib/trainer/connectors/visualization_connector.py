@@ -5,7 +5,6 @@
 
 
 import math
-from enum import Enum
 from pathlib import Path
 from typing import Any, cast
 
@@ -20,15 +19,7 @@ from anomalib.post_processing import VisualizationMode, Visualizer
 from anomalib.utils.loggers.base import ImageLoggerBase
 
 
-class VisualizationStage(str, Enum):
-    """Visualization stage."""
-
-    VAL = "val"
-    TEST = "test"
-    PREDICT = "predict"
-
-
-class VisualizationManager:
+class VisualizationConnector:
     """Manages visualization.
 
     Args:
@@ -36,8 +27,6 @@ class VisualizationManager:
         mode (VisualizationMode): The mode of visualization. Can be one of ['full', 'simple'].
         show_images (bool, optional): Whether to show images. Defaults to False.
         log_images (bool, optional): Whether to log images to available loggers. Defaults to False.
-        stage (VisualizationStage, optional): The stage at which to write images to the logger(s).
-            Defaults to VisualizationStage.TEST.
     """
 
     def __init__(
@@ -46,10 +35,9 @@ class VisualizationManager:
         mode: VisualizationMode,
         show_images: bool = False,
         log_images: bool = False,
-        stage: VisualizationStage = VisualizationStage.TEST,
     ) -> None:
         if mode not in set(VisualizationMode):
-            raise ValueError(f"Unknown visualization mode: {mode}. Please choose one of ['full', 'simple']")
+            raise ValueError(f"Unknown visualization mode: {mode}. Please choose one of {set(VisualizationMode)}")
         self.mode = mode
         if trainer.task_type not in (TaskType.CLASSIFICATION, TaskType.DETECTION, TaskType.SEGMENTATION):
             raise ValueError(
@@ -58,22 +46,18 @@ class VisualizationManager:
         self.trainer = trainer
         self.show_images = show_images
         self.log_images = log_images
-        self.stage = stage
         self.visualizer = Visualizer(mode, trainer.task_type)
 
-    def visualize_images(
-        self, outputs: EPOCH_OUTPUT | list[EPOCH_OUTPUT] | STEP_OUTPUT, stage: VisualizationStage
-    ) -> None:
+    def visualize_images(self, outputs: EPOCH_OUTPUT | list[EPOCH_OUTPUT] | STEP_OUTPUT) -> None:
         """Visualize or show the outputs.
 
         Args:
             outputs (EPOCH_OUTPUT, List[EPOCH_OUTPUT]): The outputs to visualize.
-            stage (str): The stage at which to visualize.
         """
-        if stage == self.stage and (self.show_images or self.log_images):
+        if self.show_images or self.log_images:
             if isinstance(outputs, list):
                 for output in outputs:
-                    self.visualize_images(output, stage)
+                    self.visualize_images(output)
             else:
                 for i, image in enumerate(self.visualizer.visualize_batch(outputs)):
                     filename = self._get_filename(outputs, i)
@@ -82,14 +66,11 @@ class VisualizationManager:
                     if self.log_images:
                         self._add_to_loggers(image, filename=filename)
 
-    def visualize_metrics(self, stage: VisualizationStage) -> None:
+    def visualize_metrics(self) -> None:
         """Visualize metrics.
 
         Note:
             This should only be called after the metrics have been computed. Otherwise, it will log incorrect metrics.
-
-        Args:
-            stage (VisualizationStage): The stage at which to visualize metrics.
         """
         metrics_list = []
         if hasattr(self.trainer.metrics_manager, "image_metrics"):
@@ -97,19 +78,18 @@ class VisualizationManager:
         if hasattr(self.trainer.metrics_manager, "pixel_metrics"):
             metrics_list.append(self.trainer.metrics_manager.pixel_metrics)
 
-        if stage == self.stage and (self.show_images or self.log_images):
-            for metrics in metrics_list:
-                for metric in metrics.values():
-                    # `generate_figure` needs to be defined for every metric that should be plotted automatically
-                    if hasattr(metric, "generate_figure"):
-                        fig, log_name = metric.generate_figure()
-                        file_name = f"{metrics.prefix}{log_name}"
-                        if self.log_images:
-                            self._add_to_loggers(fig, filename=file_name)
-                        if self.show_images:
-                            # TODO: test this
-                            self.visualizer.show(file_name, fig)
-                        plt.close(fig)
+        for metrics in metrics_list:
+            for metric in metrics.values():
+                # `generate_figure` needs to be defined for every metric that should be plotted automatically
+                if hasattr(metric, "generate_figure"):
+                    fig, log_name = metric.generate_figure()
+                    file_name = f"{metrics.prefix}{log_name}"
+                    if self.log_images:
+                        self._add_to_loggers(fig, filename=file_name)
+                    if self.show_images:
+                        # TODO: test this
+                        self.visualizer.show(file_name, fig)
+                    plt.close(fig)
 
     def _get_filename(self, outputs: Any, index: int) -> Path:
         """Gets file name from the outputs corresponding to the index.
@@ -157,10 +137,10 @@ class VisualizationManager:
         }
         # save image to respective logger
         if self.log_images:
-            for log_to in available_loggers:
+            for available_logger in available_loggers.values():
                 # check if logger object is same as the requested object
-                if isinstance(available_loggers[log_to], ImageLoggerBase):
-                    logger: ImageLoggerBase = cast(ImageLoggerBase, available_loggers[log_to])  # placate mypy
+                if isinstance(available_logger, ImageLoggerBase):
+                    logger: ImageLoggerBase = cast(ImageLoggerBase, available_logger)  # placate mypy
                     if isinstance(filename, Path):
                         _name = filename.parent.name + "_" + filename.name
                     elif isinstance(filename, str):

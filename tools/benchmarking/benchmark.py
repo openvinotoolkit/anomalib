@@ -110,7 +110,6 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_met
         testing_time = time.time() - start_time
 
         export(
-            transform=trainer.datamodule.test_data.transform.to_dict(),
             trainer=trainer,
             input_size=model_config.model.input_size,
             model=model,
@@ -125,7 +124,6 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_met
         if openvino_metrics:
             # Create dirs for openvino model export
             export(
-                transform=trainer.datamodule.test_data.transform.to_dict(),
                 trainer=trainer,
                 input_size=model_config.model.input_size,
                 model=model,

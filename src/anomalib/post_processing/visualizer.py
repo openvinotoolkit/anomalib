@@ -25,6 +25,13 @@ from anomalib.post_processing.post_process import (
 )
 
 
+class VisualizationMode(str, Enum):
+    """Visualization mode."""
+
+    FULL = "full"
+    SIMPLE = "simple"
+
+
 @dataclass
 class ImageResult:
     """Collection of data needed to visualize the predictions for an image."""
@@ -61,13 +68,6 @@ class ImageResult:
             self.anomalous_boxes = self.pred_boxes[self.box_labels.astype(bool)]
 
 
-class VisualizationMode(str, Enum):
-    """Type of visualization mode."""
-
-    FULL = "full"
-    SIMPLE = "simple"
-
-
 class Visualizer:
     """Class that handles the logic of composing the visualizations.
 
@@ -77,8 +77,8 @@ class Visualizer:
     """
 
     def __init__(self, mode: VisualizationMode, task: TaskType) -> None:
-        if mode not in (VisualizationMode.FULL, VisualizationMode.SIMPLE):
-            raise ValueError(f"Unknown visualization mode: {mode}. Please choose one of ['full', 'simple']")
+        if mode not in set(VisualizationMode):
+            raise ValueError(f"Unknown visualization mode: {mode}. Please choose one of {set(VisualizationMode)}")
         self.mode = mode
         if task not in set(TaskType):
             raise ValueError(

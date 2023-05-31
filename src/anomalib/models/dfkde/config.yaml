@@ -44,8 +44,7 @@ metrics:
 visualization:
   show_images: False # show images on the screen
   log_images: True # log images to the logger(s)
-  visualization_mode: full # options: ["full", "simple"]
-  visualization_stage: test # At which stage should the images get logged. options: ["val", "test", "predict"]
+  mode: full # options: ["full", "simple"]
 
 project:
   seed: 42
@@ -54,7 +53,7 @@ project:
 logging:
   log_graph: false
   loggers:
-    class_path: anomalib.utils.loggers.file_system.FileSystemLogger
+    class_path: anomalib.utils.loggers.FileSystemLogger
     init_args:
       save_dir: results/logs
 

@@ -35,8 +35,8 @@ class CheckpointConnector(checkpoint_connector.CheckpointConnector):
         checkpoint = super().dump_checkpoint(weights_only)
         checkpoint["image_threshold"] = self.trainer.image_threshold
         checkpoint["pixel_threshold"] = self.trainer.pixel_threshold
-        if self.trainer.normalizer:
-            checkpoint["normalization_metric"] = self.trainer.normalizer.metric
+        if self.trainer.normalization_connector:
+            checkpoint["normalization_metric"] = self.trainer.normalization_connector.metric
         return checkpoint
 
     def restore_training_state(self) -> None:
@@ -45,7 +45,7 @@ class CheckpointConnector(checkpoint_connector.CheckpointConnector):
         self._load_metrics()
 
     def _load_metrics(self) -> None:
-        """Loads the thersholding and normalization classes from the checkpoint."""
+        """Loads the thresholding and normalization classes from the checkpoint."""
         # get set of normalization keys in state dict
         checkpoint = self._loaded_checkpoint
         if "image_threshold" in checkpoint.keys():
@@ -53,5 +53,7 @@ class CheckpointConnector(checkpoint_connector.CheckpointConnector):
         if "pixel_threshold" in checkpoint.keys():
             self.trainer.pixel_threshold = checkpoint["pixel_threshold"]
         if "normalization_metric" in checkpoint.keys():
-            assert self.trainer.normalizer is not None, "Normalizer not initialized while the checkpoint has a metric."
-            self.trainer.normalizer.metric = checkpoint["normalization_metric"]
+            assert (
+                self.trainer.normalization_connector is not None
+            ), "Normalizer not initialized while the checkpoint has a metric."
+            self.trainer.normalization_connector.metric = checkpoint["normalization_metric"]
