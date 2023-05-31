@@ -7,11 +7,11 @@
 import gc
 
 import torch
+import wandb
 from comet_ml import Optimizer
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning.loggers import CometLogger, WandbLogger
 
-import wandb
 from anomalib.config import update_input_size_config
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
