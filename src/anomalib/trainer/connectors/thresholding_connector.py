@@ -14,7 +14,7 @@ from anomalib.data import TaskType
 from anomalib.post_processing import ThresholdMethod
 
 
-class Thresholder:
+class ThresholdingConnector:
     """Computes and updates thresholds.
 
     Used in AnomalibTrainer.

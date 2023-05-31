@@ -6,19 +6,16 @@
 
 import sys
 from importlib.util import find_spec
-from unittest.mock import patch
 
 import pytest
 
-from anomalib.data import TaskType
 from anomalib.deploy import ExportMode, OpenVINOInferencer, TorchInferencer, export
 from anomalib.models import get_model
-from anomalib.trainer import AnomalibTrainer
 
 sys.path.append("tools/inference")
 
 
-@pytest.mark.order(5)
+@pytest.mark.order(6)
 class TestGradioInferenceEntrypoint:
     """This tests whether the entrypoints run without errors without quantitative measure of the outputs.
 
@@ -34,15 +31,14 @@ class TestGradioInferenceEntrypoint:
             raise Exception("Unable to import gradio_inference.py for testing")
         return get_parser, get_inferencer
 
-    def test_torch_inference(self, get_functions, project_path, get_config, transforms_config):
+    def test_torch_inference(self, get_functions, project_path, get_config, trainer):
         """Test gradio_inference.py"""
         parser, inferencer = get_functions
         model = get_model(get_config("padim"))
 
         # export torch model
         export(
-            trainer=AnomalibTrainer(),
-            transform=transforms_config,
+            trainer=trainer,
             input_size=(100, 100),
             model=model,
             export_mode=ExportMode.TORCH,
@@ -57,15 +53,14 @@ class TestGradioInferenceEntrypoint:
         )
         assert isinstance(inferencer(arguments.weights, arguments.metadata), TorchInferencer)
 
-    def test_openvino_inference(self, get_functions, project_path, get_config, transforms_config):
+    def test_openvino_inference(self, get_functions, project_path, get_config, trainer):
         """Test gradio_inference.py"""
         parser, inferencer = get_functions
         model = get_model(get_config("padim"))
 
         # export OpenVINO model
         export(
-            task=TaskType.SEGMENTATION,
-            transform=transforms_config,
+            trainer=trainer,
             input_size=(100, 100),
             model=model,
             export_mode=ExportMode.OPENVINO,

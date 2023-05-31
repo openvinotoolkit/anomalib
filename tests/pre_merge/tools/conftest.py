@@ -6,6 +6,7 @@
 
 from tempfile import TemporaryDirectory
 from typing import Generator
+from unittest.mock import Mock
 
 import albumentations as A
 import cv2
@@ -14,6 +15,7 @@ import pytest
 from albumentations.pytorch import ToTensorV2
 
 from anomalib.config import get_configurable_parameters
+from anomalib.trainer import AnomalibTrainer
 
 
 @pytest.fixture(scope="package")
@@ -51,6 +53,11 @@ def get_dummy_inference_image(project_path) -> Generator[str, None, None]:
 
 
 @pytest.fixture(scope="package")
-def transforms_config() -> dict:
-    """Note: this is computed using trainer.datamodule.test_data.transform.to_dict()"""
-    return A.Compose([A.ToFloat(max_value=255), ToTensorV2()]).to_dict()
+def trainer() -> AnomalibTrainer:
+    """Gets a trainer object with test_transforms."""
+    # Note: this is computed using trainer.datamodule.test_data.transform.to_dict()
+    transforms = A.Compose([A.ToFloat(max_value=255), ToTensorV2()])
+    trainer = AnomalibTrainer()
+    trainer.datamodule = Mock(test_data=Mock(transform=transforms))
+
+    return trainer

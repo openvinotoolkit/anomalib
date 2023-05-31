@@ -13,7 +13,7 @@ sys.path.append("tools/inference")
 from unittest.mock import patch
 
 
-@pytest.mark.order(3)
+@pytest.mark.order(4)
 class TestLightningInferenceEntrypoint:
     """This tests whether the entrypoints run without errors without quantitative measure of the outputs."""
 
