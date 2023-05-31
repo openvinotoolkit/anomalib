@@ -14,6 +14,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ###  Fixed
 
+## [v0.5.1] - 2023-05-24
+
+### Added
+
+- 🧪 Add tests for tools by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/1069
+- Add kolektor dataset by @Ravindu987 in https://github.com/openvinotoolkit/anomalib/pull/983
+
+### Changed
+
+- Rename `metadata_path` to `metadata` in `OpenvinoInferencer` in https://github.com/openvinotoolkit/anomalib/pull/1101
+- 📝 [Notebooks] - Simplify the dobot notebooks. by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1084
+- Upgrade python to 3.10 by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1035
+- 📝 [Notebooks] - Install anomalib via pip in the Jupyter Notebooks by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1091
+- Update code-scan workflow to use Trivy by @yunchu in https://github.com/openvinotoolkit/anomalib/pull/1097
+
+### Fixed
+
+- Fix `init_state_dict` bug in `wrap_nncf_model` in https://github.com/openvinotoolkit/anomalib/pull/1101
+- Fix mypy pep561 by @WenjingKangIntel in https://github.com/openvinotoolkit/anomalib/pull/1088
+- 📝 [Notebooks] Fix the broken formatting by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1090
+
 ## [v0.5.0] - 2023-05-09
 
 ### Added

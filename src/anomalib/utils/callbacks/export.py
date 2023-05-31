@@ -45,7 +45,6 @@ class ExportCallback(Callback):
         export(
             trainer=trainer,
             input_size=self.input_size,
-            transform=trainer.datamodule.test_data.transform.to_dict(),
             model=pl_module,
             export_root=self.dirpath,
             export_mode=self.export_mode,
