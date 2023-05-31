@@ -23,7 +23,11 @@ def test_metrics_initialization(config_from_yaml):
     trainer = AnomalibTrainer(
         logger=False, image_metrics=config_from_yaml.metrics.image, pixel_metrics=config_from_yaml.metrics.pixel
     )
-    trainer.metrics.initialize()
+    trainer.metrics_connector.initialize()
 
-    assert isinstance(trainer.metrics.image_metrics, AnomalibMetricCollection), f"{trainer.metrics.image_metrics}"
-    assert isinstance(trainer.metrics.pixel_metrics, AnomalibMetricCollection), f"{trainer.metrics.pixel_metrics}"
+    assert isinstance(
+        trainer.metrics_connector.image_metrics, AnomalibMetricCollection
+    ), f"{trainer.metrics_connector.image_metrics}"
+    assert isinstance(
+        trainer.metrics_connector.pixel_metrics, AnomalibMetricCollection
+    ), f"{trainer.metrics_connector.pixel_metrics}"

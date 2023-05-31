@@ -48,7 +48,7 @@ class TestAnomalibTrainer:
 
             assert trainer.image_threshold.value == 3.0
             assert trainer.pixel_threshold.value == 3.0
-            assert isinstance(trainer.normalizer.metric, MinMax)
+            assert isinstance(trainer.normalization_connector.metric, MinMax)
         elif stage == "test":
             assert "image_F1Score" in outputs[0].keys()
             assert "pixel_F1Score" in outputs[0].keys()
@@ -57,4 +57,4 @@ class TestAnomalibTrainer:
         else:
             assert trainer.image_threshold.value == 3.0
             assert trainer.pixel_threshold.value == 3.0
-            assert isinstance(trainer.normalizer.metric, MinMax)
+            assert isinstance(trainer.normalization_connector.metric, MinMax)
