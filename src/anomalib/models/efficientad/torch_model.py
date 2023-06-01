@@ -8,7 +8,6 @@ from __future__ import annotations
 import logging
 import random
 from enum import Enum
-from pathlib import Path
 
 import torch
 import torch.nn.functional as F
@@ -121,9 +120,10 @@ class Decoder(nn.Module):
         out_channels (int): number of convolution output channels
     """
 
-    def __init__(self, out_channels, padding, *args, **kwargs) -> None:
+    def __init__(self, out_channels, padding, img_size, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.last_upsample = 64 if padding else 56
+        self.last_upsample = int(img_size / 4) if padding else int(img_size / 4) - 8
         self.deconv1 = nn.Conv2d(64, 64, kernel_size=4, stride=1, padding=2)
         self.deconv2 = nn.Conv2d(64, 64, kernel_size=4, stride=1, padding=2)
         self.deconv3 = nn.Conv2d(64, 64, kernel_size=4, stride=1, padding=2)
@@ -140,22 +140,22 @@ class Decoder(nn.Module):
         self.dropout6 = nn.Dropout(p=0.2)
 
     def forward(self, x):
-        x = F.interpolate(x, size=3, mode="bilinear")
+        x = F.interpolate(x, size=int(self.img_size / 64) - 1, mode="bilinear")
         x = F.relu(self.deconv1(x))
         x = self.dropout1(x)
-        x = F.interpolate(x, size=8, mode="bilinear")
+        x = F.interpolate(x, size=int(self.img_size / 32), mode="bilinear")
         x = F.relu(self.deconv2(x))
         x = self.dropout2(x)
-        x = F.interpolate(x, size=15, mode="bilinear")
+        x = F.interpolate(x, size=int(self.img_size / 16) - 1, mode="bilinear")
         x = F.relu(self.deconv3(x))
         x = self.dropout3(x)
-        x = F.interpolate(x, size=32, mode="bilinear")
+        x = F.interpolate(x, size=int(self.img_size / 8), mode="bilinear")
         x = F.relu(self.deconv4(x))
         x = self.dropout4(x)
-        x = F.interpolate(x, size=63, mode="bilinear")
+        x = F.interpolate(x, size=int(self.img_size / 4) - 1, mode="bilinear")
         x = F.relu(self.deconv5(x))
         x = self.dropout5(x)
-        x = F.interpolate(x, size=127, mode="bilinear")
+        x = F.interpolate(x, size=int(self.img_size / 2) - 1, mode="bilinear")
         x = F.relu(self.deconv6(x))
         x = self.dropout6(x)
         x = F.interpolate(x, size=self.last_upsample, mode="bilinear")
@@ -171,10 +171,10 @@ class AutoEncoder(nn.Module):
        out_channels (int): number of convolution output channels
     """
 
-    def __init__(self, out_channels, padding, *args, **kwargs) -> None:
+    def __init__(self, out_channels, padding, img_size, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.encoder = Encoder()
-        self.decoder = Decoder(out_channels, padding)
+        self.decoder = Decoder(out_channels, padding, img_size)
 
     def forward(self, x):
         x = imagenet_norm_batch(x)
@@ -188,9 +188,11 @@ class EfficientADModel(nn.Module):
 
     Args:
         teacher_out_channels (int): number of convolution output channels of the pre-trained teacher model
+        pretrained_models_dir (str): path to the pretrained model weights
         input_size (tuple): size of input images
         model_size (str): size of student and teacher model
         padding (bool): use padding in convoluional layers
+        device (str): which device the model should be loaded on
     """
 
     def __init__(
@@ -216,11 +218,7 @@ class EfficientADModel(nn.Module):
         else:
             raise ValueError(f"Unknown model size {model_size}")
 
-        teacher_path = Path(__file__).parent / f"pre_trained/pretrained_teacher_{model_size}.pth"
-        logger.info(f"Load pretrained teacher model from {teacher_path}")
-        self.teacher.load_state_dict(torch.load(teacher_path))
-
-        self.ae: AutoEncoder = AutoEncoder(out_channels=teacher_out_channels, padding=padding)
+        self.ae: AutoEncoder = AutoEncoder(out_channels=teacher_out_channels, padding=padding, img_size=input_size[0])
         self.teacher_out_channels: int = teacher_out_channels
         self.input_size: tuple[int, int] = input_size
 

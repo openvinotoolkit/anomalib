@@ -34,6 +34,12 @@ IMAGENETTE_DOWNLOAD_INFO = DownloadInfo(
     hash="fe2fc210e6bb7c5664d602c3cd71e612",
 )
 
+WEIGHTS_DOWNLOAD_INFO = DownloadInfo(
+    name="efficientad_pretrained_weights.zip",
+    url="https://github.com/openvinotoolkit/anomalib/releases/download/efficientad_pretrained_weights/efficientad_pretrained_weights.zip",
+    hash="ec6113d728969cd233271eeed7d692f2",
+)
+
 
 class TransformsWrapper:
     def __init__(self, t: A.Compose):
@@ -69,37 +75,48 @@ class EfficientAD(AnomalyModule):
     ) -> None:
         super().__init__()
 
-        self.imagenet_dir = Path("./datasets/imagenette")
+        self.model_size = model_size
         self.model: EfficientADModel = EfficientADModel(
             teacher_out_channels=teacher_out_channels,
             input_size=image_size,
             model_size=model_size,
             padding=padding,
         )
+        self.batch_size = batch_size
+        self.image_size = image_size
+        self.lr = lr
+        self.weight_decay = weight_decay
 
+        self.prepare_pretrained_model()
+        self.prepare_imagenette_data()
+
+    def prepare_pretrained_model(self) -> None:
+        pretrained_models_dir = Path("./pre_trained/")
+        if not pretrained_models_dir.is_dir():
+            download_and_extract(pretrained_models_dir, WEIGHTS_DOWNLOAD_INFO)
+        teacher_path = (
+            pretrained_models_dir / "efficientad_pretrained_weights" / f"pretrained_teacher_{self.model_size}.pth"
+        )
+        logger.info(f"Load pretrained teacher model from {teacher_path}")
+        self.model.teacher.load_state_dict(torch.load(teacher_path, map_location=torch.device(self.device)))
+
+    def prepare_imagenette_data(self) -> None:
         self.data_transforms_imagenet = A.Compose(
             [  # We obtain an image P ∈ R 3×256×256 from ImageNet by choosing a random image,
-                A.Resize(image_size[0] * 2, image_size[1] * 2),  # resizing it to 512 × 512,
+                A.Resize(self.image_size[0] * 2, self.image_size[1] * 2),  # resizing it to 512 × 512,
                 A.ToGray(p=0.3),  # converting it to gray scale with a probability of 0.3
-                A.CenterCrop(image_size[0], image_size[1]),  # and cropping the center 256 × 256 pixels
+                A.CenterCrop(self.image_size[0], self.image_size[1]),  # and cropping the center 256 × 256 pixels
                 A.ToFloat(always_apply=False, p=1.0, max_value=255),
                 ToTensorV2(),
             ]
         )
 
-        self.prepare_imagenet_data()
-        imagenet_dataset = ImageFolder(self.imagenet_dir, transform=TransformsWrapper(t=self.data_transforms_imagenet))
-        self.imagenet_loader = DataLoader(imagenet_dataset, batch_size=batch_size, shuffle=True, pin_memory=True)
+        imagenet_dir = Path("./datasets/imagenette")
+        if not imagenet_dir.is_dir():
+            download_and_extract(imagenet_dir, IMAGENETTE_DOWNLOAD_INFO)
+        imagenet_dataset = ImageFolder(imagenet_dir, transform=TransformsWrapper(t=self.data_transforms_imagenet))
+        self.imagenet_loader = DataLoader(imagenet_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True)
         self.imagenet_iterator = iter(self.imagenet_loader)
-        self.lr = lr
-        self.weight_decay = weight_decay
-
-    def prepare_imagenet_data(self) -> None:
-        """Download the imagenet subset if not available."""
-        if not self.imagenet_dir.is_dir():
-            download_and_extract(self.imagenet_dir, IMAGENETTE_DOWNLOAD_INFO)
-        else:
-            logger.info("Found the dataset.")
 
     @torch.no_grad()
     def teacher_channel_mean_std(self, dataloader: DataLoader) -> dict[str, Tensor]:
