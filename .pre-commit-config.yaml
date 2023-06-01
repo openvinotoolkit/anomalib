@@ -25,6 +25,7 @@ repos:
     hooks:
       - id: ruff
         exclude: "tests"
+        args: ["--fix"]
 
   # python static type checking
   - repo: https://github.com/pre-commit/mirrors-mypy

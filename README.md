@@ -63,7 +63,7 @@ pip install anomalib
 It is highly recommended to use virtual environment when installing anomalib. For instance, with [anaconda](https://www.anaconda.com/products/individual), `anomalib` could be installed as,
 
 ```bash
-yes | conda create -n anomalib_env python=3.8
+yes | conda create -n anomalib_env python=3.10
 conda activate anomalib_env
 git clone https://github.com/openvinotoolkit/anomalib.git
 cd anomalib
@@ -192,7 +192,6 @@ Example OpenVINO Inference:
 
 ```bash
 python tools/inference/openvino_inference.py \
-    --config src/anomalib/models/padim/config.yaml \
     --weights results/padim/mvtec/bottle/run/openvino/model.bin \
     --metadata results/padim/mvtec/bottle/run/openvino/metadata.json \
     --input datasets/MVTec/bottle/test/broken_large/000.png \
@@ -207,7 +206,6 @@ A quick example:
 
 ```bash
 python tools/inference/gradio_inference.py \
-        --config src/anomalib/models/padim/config.yaml \
         --weights results/padim/mvtec/bottle/run/weights/model.ckpt
 ```
 

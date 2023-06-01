@@ -14,7 +14,8 @@ from .image import (
     read_depth_image,
     read_image,
 )
-from .path import _check_and_convert_path, _prepare_files_labels, _resolve_path
+from .label import LabelName
+from .path import DirType, _check_and_convert_path, _prepare_files_labels, _resolve_path
 from .split import (
     Split,
     TestSplitMode,
@@ -38,6 +39,8 @@ __all__ = [
     "Split",
     "ValSplitMode",
     "TestSplitMode",
+    "LabelName",
+    "DirType",
     "Augmenter",
     "masks_to_boxes",
     "boxes_to_masks",
