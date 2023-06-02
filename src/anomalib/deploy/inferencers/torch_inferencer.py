@@ -60,11 +60,11 @@ class TorchInferencer(Inferencer):
             device = "cuda"
         return torch.device(device)
 
-    def _load_metadata(self, path: str | Path | None = None) -> dict | DictConfig:
+    def _load_metadata(self, path: str | Path | dict | None = None) -> dict | DictConfig:
         """Load metadata from file.
 
         Args:
-            path (str | Path): Path to the model pt file.
+            path (str | Path | dict): Path to the model pt file.
 
         Returns:
             dict: Dictionary containing the metadata.
