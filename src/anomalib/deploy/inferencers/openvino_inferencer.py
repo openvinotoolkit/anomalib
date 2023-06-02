@@ -50,7 +50,7 @@ class OpenVINOInferencer(Inferencer):
 
         self.config = config
         self.input_blob, self.output_blob, self.model = self.load_model(path)
-        self.metadata = super()._load_metadata(metadata_path)
+        self.metadata = super()._load_metadata(metadata)
 
         self.task = TaskType(task) if task else TaskType(self.metadata["task"])
         
