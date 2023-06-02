@@ -19,11 +19,9 @@ from anomalib.data import TaskType
 from .base_inferencer import Inferencer
 
 if find_spec("openvino") is not None:
-
-    from openvino.runtime import (  # type: ignore  # pylint: disable=no-name-in-module
-        Core,
-    )
-
+    from openvino.runtime import Core
+else:
+    raise ImportError("OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.")
 
 
 class OpenVINOInferencer(Inferencer):
@@ -43,8 +41,7 @@ class OpenVINOInferencer(Inferencer):
         metadata: str | Path | dict | None = None,
         device: str | None = "CPU",
         task: str | None = None,
-        config: dict | None = None
-
+        config: dict | None = None,
     ) -> None:
         self.device = device
 
@@ -53,7 +50,6 @@ class OpenVINOInferencer(Inferencer):
         self.metadata = super()._load_metadata(metadata)
 
         self.task = TaskType(task) if task else TaskType(self.metadata["task"])
-        
 
     def load_model(self, path: str | Path | tuple[bytes, bytes]):
         """Load the OpenVINO model.
@@ -86,7 +82,7 @@ class OpenVINOInferencer(Inferencer):
         # Create cache folder
         cache_folder = Path("cache")
         cache_folder.mkdir(exist_ok=True)
-        ie_core.set_property({'CACHE_DIR': cache_folder})
+        ie_core.set_property({"CACHE_DIR": cache_folder})
 
         compile_model = ie_core.compile_model(model=model, device_name=self.device, config=self.config)
 
@@ -124,7 +120,7 @@ class OpenVINOInferencer(Inferencer):
         Returns:
             np.ndarray: Output predictions.
         """
-        return self.model(image)  #.infer(inputs={self.input_blob: image})
+        return self.model(image)  # .infer(inputs={self.input_blob: image})
 
     def post_process(self, predictions: np.ndarray, metadata: dict | DictConfig | None = None) -> dict[str, Any]:
         """Post process the output predictions.
@@ -142,7 +138,7 @@ class OpenVINOInferencer(Inferencer):
             metadata = self.metadata
 
         predictions = predictions[self.output_blob]
-        #predictions = predictions
+        # predictions = predictions
 
         # Initialize the result variables.
         anomaly_map: np.ndarray | None = None
