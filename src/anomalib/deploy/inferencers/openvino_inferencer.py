@@ -120,7 +120,7 @@ class OpenVINOInferencer(Inferencer):
         Returns:
             np.ndarray: Output predictions.
         """
-        return self.model(image)  # .infer(inputs={self.input_blob: image})
+        return self.model(image)
 
     def post_process(self, predictions: np.ndarray, metadata: dict | DictConfig | None = None) -> dict[str, Any]:
         """Post process the output predictions.
@@ -138,7 +138,6 @@ class OpenVINOInferencer(Inferencer):
             metadata = self.metadata
 
         predictions = predictions[self.output_blob]
-        # predictions = predictions
 
         # Initialize the result variables.
         anomaly_map: np.ndarray | None = None
