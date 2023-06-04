@@ -19,7 +19,9 @@ from anomalib.data import TaskType
 from .base_inferencer import Inferencer
 
 if find_spec("openvino") is not None:
-    from openvino.inference_engine import IECore  # type: ignore  # pylint: disable=no-name-in-module
+    from openvino.runtime import Core
+else:
+    raise ImportError("OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.")
 
 
 class OpenVINOInferencer(Inferencer):
@@ -39,10 +41,14 @@ class OpenVINOInferencer(Inferencer):
         metadata: str | Path | dict | None = None,
         device: str | None = "CPU",
         task: str | None = None,
+        config: dict | None = None,
     ) -> None:
         self.device = device
-        self.input_blob, self.output_blob, self.network = self.load_model(path)
-        self.metadata = metadata if isinstance(metadata, dict) else super()._load_metadata(metadata)
+
+        self.config = config
+        self.input_blob, self.output_blob, self.model = self.load_model(path)
+        self.metadata = super()._load_metadata(metadata)
+
         self.task = TaskType(task) if task else TaskType(self.metadata["task"])
 
     def load_model(self, path: str | Path | tuple[bytes, bytes]):
@@ -56,11 +62,11 @@ class OpenVINOInferencer(Inferencer):
             [tuple[str, str, ExecutableNetwork]]: Input and Output blob names
                 together with the Executable network.
         """
-        ie_core = IECore()
+        ie_core = Core()
         # If tuple of bytes is passed
 
         if isinstance(path, tuple):
-            network = ie_core.read_network(model=path[0], weights=path[1], init_from_buffer=True)
+            model = ie_core.read_model(model=path[0], weights=path[1], init_from_buffer=True)
         else:
             path = path if isinstance(path, Path) else Path(path)
             if path.suffix in (".bin", ".xml"):
@@ -68,17 +74,22 @@ class OpenVINOInferencer(Inferencer):
                     bin_path, xml_path = path, path.with_suffix(".xml")
                 elif path.suffix == ".xml":
                     xml_path, bin_path = path, path.with_suffix(".bin")
-                network = ie_core.read_network(xml_path, bin_path)
+                model = ie_core.read_model(xml_path, bin_path)
             elif path.suffix == ".onnx":
-                network = ie_core.read_network(path)
+                model = ie_core.read_model(path)
             else:
                 raise ValueError(f"Path must be .onnx, .bin or .xml file. Got {path.suffix}")
+        # Create cache folder
+        cache_folder = Path("cache")
+        cache_folder.mkdir(exist_ok=True)
+        ie_core.set_property({"CACHE_DIR": cache_folder})
 
-        input_blob = next(iter(network.input_info))
-        output_blob = next(iter(network.outputs))
-        executable_network = ie_core.load_network(network=network, device_name=self.device)
+        compile_model = ie_core.compile_model(model=model, device_name=self.device, config=self.config)
 
-        return input_blob, output_blob, executable_network
+        input_blob = compile_model.input(0)
+        output_blob = compile_model.output(0)
+
+        return input_blob, output_blob, compile_model
 
     def pre_process(self, image: np.ndarray) -> np.ndarray:
         """Pre process the input image by applying transformations.
@@ -109,7 +120,7 @@ class OpenVINOInferencer(Inferencer):
         Returns:
             np.ndarray: Output predictions.
         """
-        return self.network.infer(inputs={self.input_blob: image})
+        return self.model(image)
 
     def post_process(self, predictions: np.ndarray, metadata: dict | DictConfig | None = None) -> dict[str, Any]:
         """Post process the output predictions.
