@@ -23,20 +23,36 @@ __all__ = ["AiVad", "AiVadLightning"]
 
 
 class AiVad(AnomalyModule):
-    """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
+    """AI-VAD: Attribute-based Representations for Accurate and Interpretable Video Anomaly Detection.
 
     Args:
-        layers (list[str]): Layers to extract features from the backbone CNN
-        input_size (tuple[int, int]): Size of the model input.
-        backbone (str): Backbone CNN network
-        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
-        n_features (int, optional): Number of features to retain in the dimension reduction step.
-                                Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
+        box_score_thresh (float): Confidence threshold for bounding box predictions.
+        persons_only (bool): When enabled, only regions labeled as person are included.
+        min_bbox_area (int): Minimum bounding box area. Regions with a surface area lower than this value are excluded.
+        max_bbox_overlap (float): Maximum allowed overlap between bounding boxes.
+        enable_foreground_detections (bool): Add additional foreground detections based on pixel difference between
+            consecutive frames.
+        foreground_kernel_size (int): Gaussian kernel size used in foreground detection.
+        foreground_binary_threshold (int): Value between 0 and 255 which acts as binary threshold in foreground
+            detection.
+        n_velocity_bins (int): Number of discrete bins used for velocity histogram features.
+        use_velocity_features (bool): Flag indicating if velocity features should be used.
+        use_pose_features (bool): Flag indicating if pose features should be used.
+        use_deep_features (bool): Flag indicating if deep features should be used.
+        n_components_velocity (int): Number of components used by GMM density estimation for velocity features.
+        n_neighbors_pose (int): Number of neighbors used in KNN density estimation for pose features.
+        n_neighbors_deep (int): Number of neighbors used in KNN density estimation for deep features.
     """
 
     def __init__(
         self,
         box_score_thresh: float = 0.8,
+        persons_only: bool = False,
+        min_bbox_area: int = 100,
+        max_bbox_overlap: float = 0.65,
+        enable_foreground_detections: bool = True,
+        foreground_kernel_size: int = 3,
+        foreground_binary_threshold: int = 18,
         n_velocity_bins: int = 8,
         use_velocity_features: bool = True,
         use_pose_features: bool = True,
@@ -49,6 +65,12 @@ class AiVad(AnomalyModule):
 
         self.model = AiVadModel(
             box_score_thresh=box_score_thresh,
+            persons_only=persons_only,
+            min_bbox_area=min_bbox_area,
+            max_bbox_overlap=max_bbox_overlap,
+            enable_foreground_detections=enable_foreground_detections,
+            foreground_kernel_size=foreground_kernel_size,
+            foreground_binary_threshold=foreground_binary_threshold,
             n_velocity_bins=n_velocity_bins,
             use_velocity_features=use_velocity_features,
             use_pose_features=use_pose_features,
@@ -60,7 +82,7 @@ class AiVad(AnomalyModule):
 
     @staticmethod
     def configure_optimizers() -> None:
-        """TAI-VAD training does not involve fine-tuning of NN weights, no optimizers needed."""
+        """AI-VAD training does not involve fine-tuning of NN weights, no optimizers needed."""
         return None
 
     def training_step(self, batch: dict[str, str | Tensor]) -> None:
@@ -103,7 +125,7 @@ class AiVad(AnomalyModule):
 
 
 class AiVadLightning(AiVad):
-    """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
+    """AI-VAD: Attribute-based Representations for Accurate and Interpretable Video Anomaly Detection.
 
     Args:
         hparams (DictConfig | ListConfig): Model params
@@ -112,6 +134,12 @@ class AiVadLightning(AiVad):
     def __init__(self, hparams: DictConfig | ListConfig) -> None:
         super().__init__(
             box_score_thresh=hparams.model.box_score_thresh,
+            persons_only=hparams.model.persons_only,
+            min_bbox_area=hparams.model.min_bbox_area,
+            max_bbox_overlap=hparams.model.max_bbox_overlap,
+            enable_foreground_detections=hparams.model.enable_foreground_detections,
+            foreground_kernel_size=hparams.model.foreground_kernel_size,
+            foreground_binary_threshold=hparams.model.foreground_binary_threshold,
             n_velocity_bins=hparams.model.n_velocity_bins,
             use_velocity_features=hparams.model.use_velocity_features,
             use_pose_features=hparams.model.use_pose_features,

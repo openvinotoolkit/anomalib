@@ -22,6 +22,14 @@ class AiVadModel(nn.Module):
 
     Args:
         box_score_thresh (float): Confidence threshold for region extraction stage.
+        persons_only (bool): When enabled, only regions labeled as person are included.
+        min_bbox_area (int): Minimum bounding box area. Regions with a surface area lower than this value are excluded.
+        max_bbox_overlap (float): Maximum allowed overlap between bounding boxes.
+        enable_foreground_detections (bool): Add additional foreground detections based on pixel difference between
+            consecutive frames.
+        foreground_kernel_size (int): Gaussian kernel size used in foreground detection.
+        foreground_binary_threshold (int): Value between 0 and 255 which acts as binary threshold in foreground
+            detection.
         n_velocity_bins (int): Number of discrete bins used for velocity histogram features.
         use_velocity_features (bool): Flag indicating if velocity features should be used.
         use_pose_features (bool): Flag indicating if pose features should be used.
@@ -35,6 +43,12 @@ class AiVadModel(nn.Module):
         self,
         # region-extraction params
         box_score_thresh: float = 0.8,
+        persons_only: bool = False,
+        min_bbox_area: int = 100,
+        max_bbox_overlap: float = 0.65,
+        enable_foreground_detections: bool = True,
+        foreground_kernel_size: int = 3,
+        foreground_binary_threshold: int = 18,
         # feature-extraction params
         n_velocity_bins: int = 8,
         use_velocity_features: bool = True,
@@ -52,7 +66,15 @@ class AiVadModel(nn.Module):
         # initialize flow extractor
         self.flow_extractor = FlowExtractor()
         # initialize region extractor
-        self.region_extractor = RegionExtractor(box_score_thresh=box_score_thresh)
+        self.region_extractor = RegionExtractor(
+            box_score_thresh=box_score_thresh,
+            persons_only=persons_only,
+            min_bbox_area=min_bbox_area,
+            max_bbox_overlap=max_bbox_overlap,
+            enable_foreground_detections=enable_foreground_detections,
+            foreground_kernel_size=foreground_kernel_size,
+            foreground_binary_threshold=foreground_binary_threshold,
+        )
         # initialize feature extractor
         self.feature_extractor = FeatureExtractor(
             n_velocity_bins=n_velocity_bins,
@@ -91,7 +113,7 @@ class AiVadModel(nn.Module):
         # 2. extract flows and regions
         with torch.no_grad():
             flows = self.flow_extractor(first_frame, last_frame)
-            regions = self.region_extractor(last_frame)
+            regions = self.region_extractor(first_frame, last_frame)
 
         # 3. extract pose, appearance and velocity features
         features_per_batch = self.feature_extractor(first_frame, flows, regions)
