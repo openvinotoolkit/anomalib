@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- Add bounding box post-processing operations in AI-VAD implementation (<https://github.com/openvinotoolkit/anomalib/pull/1103>)
+
 ### Changed
 
 ### Deprecated

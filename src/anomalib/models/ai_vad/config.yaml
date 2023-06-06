@@ -29,11 +29,20 @@ dataset:
 
 model:
   name: ai_vad
+  # region extraction parameters
   box_score_thresh: 0.7
+  persons_only: false
+  min_bbox_area: 100
+  max_bbox_overlap: 0.65
+  enable_foreground_detections: true
+  foreground_kernel_size: 3
+  foreground_binary_threshold: 18
+  # feature extraction parameters
   n_velocity_bins: 1
   use_velocity_features: True
   use_pose_features: True
   use_deep_features: True
+  # density estimation parameters
   n_components_velocity: 2
   n_neighbors_pose: 1
   n_neighbors_deep: 1
