@@ -1,4 +1,5 @@
 # EfficientAD
+
 This is the implementation of the [EfficientAD](https://arxiv.org/pdf/2303.14535.pdf) paper. It is based on https://github.com/rximg/EfficientAD and https://github.com/nelson1425/EfficientAD/
 
 Model Type: Segmentation
@@ -8,10 +9,11 @@ Model Type: Segmentation
 Fast anomaly segmentation algorithm that consists of a distilled pre-trained teacher model, a student model and an autoencoder. It detects local anomalies via the teacher-student discrepany and global anomalies via the student-autoencoder discrepancy.
 
 ### Feature Extraction
+
 Features are extracted from a pre-trained teacher model and used to train a student model and an autoencoder model. To hinder the student from imitating the teacher on anomalies, Imagenet images are used in the loss function.
 
-
 ### Anomaly Detection
+
 Anomalies are detected as the difference in output feature maps between the student model and the autoencoder model.
 
 ## Usage
