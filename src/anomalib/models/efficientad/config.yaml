@@ -2,14 +2,14 @@ dataset:
   name: mvtec
   format: mvtec
   path: ./datasets/MVTec
-  task: segmentation
   category: bottle
-  train_batch_size: 32
-  eval_batch_size: 32
+  task: segmentation
+  train_batch_size: 1
+  eval_batch_size: 16
   num_workers: 8
   image_size: 256 # dimensions to which images are resized (mandatory)
-  center_crop: 224 # dimensions to which images are center-cropped after resizing (optional)
-  normalization: imagenet # data distribution to which the images will be normalized: [none, imagenet]
+  center_crop: null # dimensions to which images are center-cropped after resizing (optional)
+  normalization: none # data distribution to which the images will be normalized: [none, imagenet]
   transform_config:
     train: null
     eval: null
@@ -17,23 +17,15 @@ dataset:
   test_split_ratio: 0.2 # fraction of train images held out testing (usage depends on test_split_mode)
   val_split_mode: same_as_test # options: [same_as_test, from_test, synthetic]
   val_split_ratio: 0.5 # fraction of train/test images held out for validation (usage depends on val_split_mode)
-  tiling:
-    apply: false
-    tile_size: null
-    stride: null
-    remove_border_count: 0
-    use_random_tiling: False
-    random_tile_count: 16
 
 model:
-  name: patchcore
-  backbone: wide_resnet50_2
-  pre_trained: true
-  layers:
-    - layer2
-    - layer3
-  coreset_sampling_ratio: 0.1
-  num_neighbors: 9
+  name: efficientad
+  teacher_out_channels: 384
+  model_size: medium # options: [small, medium]
+  lr: 0.0001
+  weight_decay: 0.00001
+  padding: true
+  # generic params
   normalization_method: min_max # options: [null, min_max, cdf]
 
 metrics:
@@ -51,12 +43,12 @@ metrics:
 visualization:
   show_images: False # show images on the screen
   save_images: True # save images to the file system
-  log_images: True # log images to the available loggers (if any)
+  log_images: False # log images to the available loggers (if any)
   image_save_path: null # path to which images will be saved
   mode: full # options: ["full", "simple"]
 
 project:
-  seed: 0
+  seed: 42
   path: ./results
 
 logging:
@@ -64,8 +56,7 @@ logging:
   log_graph: false # Logs the model graph to respective logger.
 
 optimization:
-  export_mode: null # options: onnx, openvino
-
+  export_mode: null # options: torch, onnx, openvino
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
   enable_checkpointing: true
@@ -77,10 +68,10 @@ trainer:
   enable_progress_bar: true
   overfit_batches: 0.0
   track_grad_norm: -1
-  check_val_every_n_epoch: 1 # Don't validate before extracting features.
+  check_val_every_n_epoch: 1
   fast_dev_run: false
   accumulate_grad_batches: 1
-  max_epochs: 1
+  max_epochs: 200
   min_epochs: null
   max_steps: -1
   min_steps: null
@@ -89,7 +80,7 @@ trainer:
   limit_val_batches: 1.0
   limit_test_batches: 1.0
   limit_predict_batches: 1.0
-  val_check_interval: 1.0 # Don't validate before extracting features.
+  val_check_interval: 1.0
   log_every_n_steps: 50
   accelerator: auto # <"cpu", "gpu", "tpu", "ipu", "hpu", "auto">
   strategy: null
