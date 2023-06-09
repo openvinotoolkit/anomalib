@@ -82,7 +82,7 @@ class TorchInferencer(Inferencer):
             (AnomalyModule): PyTorch Lightning model.
         """
 
-        model = torch.load(path, map_location=self.device)["model"]
+        model = torch.load(path, map_location=self.device)["state_dict"]
         model.eval()
         return model.to(self.device)
 
