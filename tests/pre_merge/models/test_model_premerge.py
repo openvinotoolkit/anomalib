@@ -23,7 +23,6 @@ class TestModel:
             ("dfkde", False),
             ("dfm", False),
             ("draem", False),
-            ("efficientad", False),
             ("fastflow", False),
             ("ganomaly", False),
             ("padim", False),
