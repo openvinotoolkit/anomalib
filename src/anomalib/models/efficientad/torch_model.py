@@ -122,6 +122,7 @@ class Decoder(nn.Module):
 
     def __init__(self, out_channels, padding, img_size, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+        self.img_size = img_size
         self.last_upsample = 64 if padding else 56
         self.last_upsample = int(img_size / 4) if padding else int(img_size / 4) - 8
         self.deconv1 = nn.Conv2d(64, 64, kernel_size=4, stride=1, padding=2)
