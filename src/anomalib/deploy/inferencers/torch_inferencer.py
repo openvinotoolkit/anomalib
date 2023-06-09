@@ -82,9 +82,16 @@ class TorchInferencer(Inferencer):
             (AnomalyModule): PyTorch Lightning model.
         """
 
-        model = torch.load(path, map_location=self.device)["state_dict"]
-        model.eval()
-        return model.to(self.device)
+        try:
+            model = torch.load(path, map_location=self.device)["model"]
+            model.eval()
+            return model.to(self.device)
+        except Exception as e:
+            raise Exception(
+                f"Error while loading the model: {e}\n"
+                f"Make sure the torch model is exported after training. "
+                f"This is done by setting ``optimization.export_mode: torch`` in the config file."
+            )
 
     def pre_process(self, image: np.ndarray) -> Tensor:
         """Pre process the input image by applying transformations.
