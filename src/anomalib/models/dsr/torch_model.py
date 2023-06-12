@@ -1,9 +1,9 @@
-"""PyTorch model for the DRAEM model implementation."""
+"""PyTorch model for the DSR model implementation."""
 
 # Original Code
-# Copyright (c) 2021 VitjanZ
-# https://github.com/VitjanZ/DRAEM.
-# SPDX-License-Identifier: MIT
+# Copyright (c) 2022 VitjanZ
+# https://github.com/VitjanZ/DSR_anomaly_detection.
+# SPDX-License-Identifier: Apache-2.0
 #
 # Modified
 # Copyright (C) 2023 Intel Corporation
