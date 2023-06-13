@@ -54,7 +54,7 @@ class SubspaceRestrictionModule(nn.Module):
 
         self.unet = SubspaceRestrictionNetwork(in_channels=base_width, out_channels=base_width, base_width=base_width)
 
-    def forward(self, batch : Tensor, quantization : function | object):
+    def forward(self, batch : Tensor, quantization : function | object) -> tuple[Tensor, Tensor]:
         """Generate the quantized anomaly-free representation of an anomalous image.
         
         Args:
@@ -62,11 +62,11 @@ class SubspaceRestrictionModule(nn.Module):
             quantization (function | object): Quantization function.
         
         Returns:
-            Tuple containing reconstructed batch of non-quantized features, quantized features, and quantization loss.
+            Reconstructed batch of non-quantized features and corresponding quantized features.
         """
         batch = self.unet(batch)
-        loss_b, quantized_b, perplexity_b, encodings_b = quantization(batch)
-        return batch, quantized_b, loss_b
+        quantized_b = quantization(batch)
+        return batch, quantized_b
 
 class SubspaceRestrictionNetwork(nn.Module):
     """Subspace restriction network that reconstructs the input image into a
@@ -84,7 +84,7 @@ class SubspaceRestrictionNetwork(nn.Module):
         self.encoder = FeatureEncoder(in_channels, self.base_width)
         self.decoder = FeatureDecoder(self.base_width, out_channels=out_channels)
 
-    def forward(self, batch: Tensor):
+    def forward(self, batch: Tensor) -> Tensor:
         """Generate non-quantized feature maps from potentially anomalous images, to
         be quantized into non-anomalous quantized representations.
         
@@ -132,7 +132,7 @@ class FeatureEncoder(nn.Module):
             nn.InstanceNorm2d(base_width * 4),
             nn.ReLU(inplace=True))
 
-    def forward(self, batch: Tensor):
+    def forward(self, batch: Tensor) -> tuple[Tensor, Tensor, Tensor]:
         """Encode a batch of input features to the latent space.
         
         Args:
@@ -187,7 +187,7 @@ class FeatureDecoder(nn.Module):
 
         self.fin_out = nn.Sequential(nn.Conv2d(base_width, out_channels, kernel_size=3, padding=1))
 
-    def forward(self, b1: Tensor, b2: Tensor, b3: Tensor):
+    def forward(self, b1: Tensor, b2: Tensor, b3: Tensor) -> Tensor:
         """Decode a batch of latent features to a non-quantized representation.
         
         Args:
@@ -229,7 +229,7 @@ class Residual(nn.Module):
                       kernel_size=1, stride=1, bias=False)
         )
 
-    def forward(self, batch: Tensor):
+    def forward(self, batch: Tensor) -> Tensor:
         """Compute residual layer.
         
         Args:
@@ -257,7 +257,7 @@ class ResidualStack(nn.Module):
         self._layers = nn.ModuleList([Residual(in_channels, out_channels, num_residual_hiddens)
                                       for _ in range(self._num_residual_layers)])
 
-    def forward(self, batch: Tensor):
+    def forward(self, batch: Tensor) -> Tensor:
         """Compute residual stack.
         
         Args:
@@ -337,7 +337,7 @@ class ImageReconstructionNetwork(nn.Module):
                                                 kernel_size=4,
                                                 stride=2, padding=1)
 
-    def forward(self, inputs: Tensor):
+    def forward(self, inputs: Tensor) -> Tensor:
         """Reconstructs an image from a quantized representation.
         
         Args:
@@ -411,7 +411,7 @@ class UnetEncoder(nn.Module):
             norm_layer(base_width * 4),
             nn.ReLU(inplace=True))
 
-    def forward(self, batch: Tensor):
+    def forward(self, batch: Tensor) -> tuple[Tensor, Tensor, Tensor, Tensor]:
         """Encodes batch of images into a latent representation.
         
         Args:
@@ -485,7 +485,7 @@ class UnetDecoder(nn.Module):
 
         self.fin_out = nn.Sequential(nn.Conv2d(base_width, out_channels, kernel_size=3, padding=1))
 
-    def forward(self, b1: Tensor, b2: Tensor, b3: Tensor, b4: Tensor):
+    def forward(self, b1: Tensor, b2: Tensor, b3: Tensor, b4: Tensor) -> Tensor:
         """Decodes latent represnetations into an image.
         
         Args:
@@ -528,7 +528,7 @@ class UnetModel(nn.Module):
         self.encoder = UnetEncoder(in_channels, base_width)
         self.decoder = UnetDecoder(base_width, out_channels=out_channels)
 
-    def forward(self, batch: Tensor):
+    def forward(self, batch: Tensor) -> Tensor:
         """Reconstructs an input batch of images.
         
         Args:
@@ -555,7 +555,7 @@ class AnomalyDetectionModule(nn.Module):
         super(AnomalyDetectionModule, self).__init__()
         self.unet = UnetModel(in_channels, out_channels, base_width)
 
-    def forward(self, batch_real: Tensor, batch_anomaly: Tensor):
+    def forward(self, batch_real: Tensor, batch_anomaly: Tensor) -> Tensor:
         """Computes the anomaly map over corresponding real and anomalous images.
         
         Args:
@@ -583,7 +583,7 @@ class UpsamplingModule(nn.Module):
         super(UpsamplingModule, self).__init__()
         self.unet = UnetModel(in_channels, out_channels, base_width)
         
-    def forward(self, batch_real: Tensor, batch_anomaly: Tensor, batch_segmentation_map: Tensor):
+    def forward(self, batch_real: Tensor, batch_anomaly: Tensor, batch_segmentation_map: Tensor) -> Tensor:
         """Computes upsampled segmentation maps.
         
         Args:
@@ -597,3 +597,285 @@ class UpsamplingModule(nn.Module):
         img_x = torch.cat((batch_real, batch_anomaly, batch_segmentation_map),dim=1)
         x = self.unet(img_x)
         return x
+    
+
+class VectorQuantizer(nn.Module):
+    """Module that quantizes a given feature map using learned quantization codebooks.
+    
+    Args:
+        num_embeddings (int): Size of embedding codebook.
+        embedding_dim (int): Dimension of embeddings.
+    """
+    def __init__(self, num_embeddings: int, embedding_dim: int):
+        # Source for the VectorQuantizer module: https://github.com/zalandoresearch/pytorch-vq-vae
+        super(VectorQuantizer, self).__init__()
+
+        self._embedding_dim = embedding_dim
+        self._num_embeddings = num_embeddings
+
+        self._embedding = nn.Embedding(self._num_embeddings, self._embedding_dim)
+        self._embedding.weight.data.normal_()
+
+        # necessary to correctly load the checkpoint file
+        self.register_buffer('_ema_cluster_size', torch.zeros(num_embeddings))
+        self._ema_w = nn.Parameter(torch.Tensor(num_embeddings, self._embedding_dim))
+        self._ema_w.data.normal_()
+
+    def forward(self, inputs: Tensor) -> Tensor:
+        """Calculates quantized feature map.
+        
+        Args:
+            inputs (Tensor): Non-quantized feature maps.
+        
+        Returns:
+            Quantized feature maps.
+        """
+        # convert inputs from BCHW -> BHWC
+        inputs = inputs.permute(0, 2, 3, 1).contiguous()
+        input_shape = inputs.shape
+
+        # Flatten input
+        flat_input = inputs.view(-1, self._embedding_dim)
+
+        # Calculate distances
+        distances = (torch.sum(flat_input ** 2, dim=1, keepdim=True)
+                     + torch.sum(self._embedding.weight ** 2, dim=1)
+                     - 2 * torch.matmul(flat_input, self._embedding.weight.t()))
+
+        # Encoding
+        encoding_indices = torch.argmin(distances, dim=1).unsqueeze(1)
+        encodings = torch.zeros(encoding_indices.shape[0], self._num_embeddings, device=inputs.device)
+        encodings.scatter_(1, encoding_indices, 1)
+
+        # Quantize and unflatten
+        quantized = torch.matmul(encodings, self._embedding.weight).view(input_shape)
+        quantized = inputs + (quantized - inputs).detach()
+
+        # convert quantized from BHWC -> BCHW
+        return quantized.permute(0, 3, 1, 2).contiguous()
+
+
+class EncoderBot(nn.Module):
+    """Encoder module for bottom quantized feature maps.
+    
+    Args:
+        in_channels (int): Number of input channels.
+        num_hiddens (int): Number of hidden channels.
+        num_residual_layers (int): Number of residual layers in residual stacks.
+        num_residual_hiddens (int): Number of channels in residual layers.
+    """
+    def __init__(self, in_channels: int, num_hiddens: int, num_residual_layers: int, num_residual_hiddens: int):
+        super(EncoderBot, self).__init__()
+
+        self._conv_1 = nn.Conv2d(in_channels=in_channels,
+                                 out_channels=num_hiddens // 2,
+                                 kernel_size=4,
+                                 stride=2, padding=1)
+        self._conv_2 = nn.Conv2d(in_channels=num_hiddens // 2,
+                                 out_channels=num_hiddens,
+                                 kernel_size=4,
+                                 stride=2, padding=1)
+        self._conv_3 = nn.Conv2d(in_channels=num_hiddens,
+                                 out_channels=num_hiddens,
+                                 kernel_size=3,
+                                 stride=1, padding=1)
+        self._residual_stack = ResidualStack(in_channels=num_hiddens,
+                                             num_hiddens=num_hiddens,
+                                             num_residual_layers=num_residual_layers,
+                                             num_residual_hiddens=num_residual_hiddens)
+
+    def forward(self, batch: Tensor) -> Tensor:
+        """Encode inputs to be quantized into the bottom feature map.
+        
+        Args:
+            batch (Tensor): Batch of input images.
+        
+        Returns:
+            Encoded feature maps.
+        """
+        x = self._conv_1(batch)
+        x = F.relu(x)
+
+        x = self._conv_2(x)
+        x = F.relu(x)
+
+        x = self._conv_3(x)
+        return self._residual_stack(x)
+
+
+class EncoderTop(nn.Module):
+    """Encoder module for top quantized feature maps.
+    
+    Args:
+        in_channels (int): Number of input channels.
+        num_hiddens (int): Number of hidden channels.
+        num_residual_layers (int): Number of residual layers in residual stacks.
+        num_residual_hiddens (int): Number of channels in residual layers.
+    """
+    def __init__(self, in_channels: int, num_hiddens: int, num_residual_layers: int, num_residual_hiddens: int):
+        super(EncoderTop, self).__init__()
+
+        self._conv_1 = nn.Conv2d(in_channels=in_channels,
+                                 out_channels=num_hiddens,
+                                 kernel_size=4,
+                                 stride=2, padding=1)
+        self._conv_2 = nn.Conv2d(in_channels=num_hiddens,
+                                 out_channels=num_hiddens,
+                                 kernel_size=3,
+                                 stride=1, padding=1)
+        self._residual_stack = ResidualStack(in_channels=num_hiddens,
+                                             num_hiddens=num_hiddens,
+                                             num_residual_layers=num_residual_layers,
+                                             num_residual_hiddens=num_residual_hiddens)
+
+    def forward(self, batch: Tensor) -> Tensor:
+        """Encode inputs to be quantized into the top feature map.
+        
+        Args:
+            batch (Tensor): Batch of input images.
+        
+        Returns:
+            Encoded feature maps.
+        """
+        x = self._conv_1(batch)
+        x = F.relu(x)
+
+        x = self._conv_2(x)
+        x = F.relu(x)
+
+        x = self._residual_stack(x)
+        return x
+
+
+class DecoderBot(nn.Module):
+    """Decoder module for bottom quantized feature maps.
+    
+    Args:
+        in_channels (int): Number of input channels.
+        num_hiddens (int): Number of hidden channels.
+        num_residual_layers (int): Number of residual layers in residual stack.
+        num_residual_hiddens (int): Number of channels in residual layers.
+    """
+    def __init__(self, in_channels: int, num_hiddens: int, num_residual_layers: int, num_residual_hiddens: int):
+        super(DecoderBot, self).__init__()
+
+        self._conv_1 = nn.Conv2d(in_channels=in_channels,
+                                 out_channels=num_hiddens,
+                                 kernel_size=3,
+                                 stride=1, padding=1)
+
+        self._residual_stack = ResidualStack(in_channels=num_hiddens,
+                                             num_hiddens=num_hiddens,
+                                             num_residual_layers=num_residual_layers,
+                                             num_residual_hiddens=num_residual_hiddens)
+
+        self._conv_trans_1 = nn.ConvTranspose2d(in_channels=num_hiddens,
+                                                out_channels=num_hiddens // 2,
+                                                kernel_size=4,
+                                                stride=2, padding=1)
+
+        self._conv_trans_2 = nn.ConvTranspose2d(in_channels=num_hiddens // 2,
+                                                out_channels=3,
+                                                kernel_size=4,
+                                                stride=2, padding=1)
+
+    def forward(self, batch: Tensor) -> Tensor:
+        """Decode bottom feature maps into top feature maps.
+        
+        Args:
+            batch (Tensor): Batch of input images.
+        
+        Returns:
+            Decoded top feature maps.
+        """
+        x = self._conv_1(batch)
+
+        x = self._residual_stack(x)
+
+        x = self._conv_trans_1(x)
+        x = F.relu(x)
+
+        return self._conv_trans_2(x)
+
+class DiscreteLatentModel(nn.Module):
+    """Autoencoder quantized model that encodes the input images into quantized feature maps and generates
+    a reconstructed image using the quantized feature maps.
+    
+    Args:
+        num_hiddens (int): Number of hidden channels.
+        num_residual_layers (int): Number of residual layers in residual stacks.
+        num_residual_hiddens (int): Number of channels in residual layers.
+        num_embeddings (int): Size of embedding dictionary.
+        embedding_dim (int): Dimension of embeddings.
+    """
+    def __init__(self, num_hiddens: int, num_residual_layers: int, num_residual_hiddens: int, num_embeddings: int, embedding_dim: int):
+        super(DiscreteLatentModel, self).__init__()
+
+        self._encoder_t = EncoderTop(num_hiddens, num_hiddens,
+                                     num_residual_layers,
+                                     num_residual_hiddens)
+
+        self._encoder_b = EncoderBot(3, num_hiddens,
+                                     num_residual_layers,
+                                     num_residual_hiddens)
+
+        self._pre_vq_conv_bot = nn.Conv2d(in_channels=num_hiddens + embedding_dim,
+                                          out_channels=embedding_dim,
+                                          kernel_size=1,
+                                          stride=1)
+
+        self._pre_vq_conv_top = nn.Conv2d(in_channels=num_hiddens,
+                                          out_channels=embedding_dim,
+                                          kernel_size=1,
+                                          stride=1)
+
+        self._vq_vae_top = VectorQuantizer(num_embeddings, embedding_dim)
+
+        self._vq_vae_bot = VectorQuantizer(num_embeddings, embedding_dim)
+
+        self._decoder_b = DecoderBot(embedding_dim*2,
+                                     num_hiddens,
+                                     num_residual_layers,
+                                     num_residual_hiddens)
+
+
+        self.upsample_t = nn.ConvTranspose2d(
+            embedding_dim, embedding_dim, 4, stride=2, padding=1
+        )
+
+
+    def forward(self, batch: Tensor) -> tuple[Tensor, Tensor, Tensor]:
+        """Generates quantized feature maps of batch of input images as well as their
+        reconstruction based on its auqntized feature maps.
+        
+        Args:
+            batch (Tensor): Batch of input images.
+        
+        Returns:
+            Tuple of reconstructed images, quantized top feature maps, and quantized
+            bottom feature maps.
+        """
+        #Encoder Hi
+        enc_b = self._encoder_b(batch)
+
+        #Encoder Lo -- F_Lo
+        enc_t = self._encoder_t(enc_b)
+        zt = self._pre_vq_conv_top(enc_t)
+
+        # Quantize F_Lo with K_Lo
+        quantized_t = self._vq_vae_top(zt)
+        # Upsample Q_Lo
+        up_quantized_t = self.upsample_t(quantized_t)
+
+        # Concatenate and transform the output of Encoder_Hi and upsampled Q_lo -- F_Hi
+        feat = torch.cat((enc_b, up_quantized_t), dim=1)
+        zb = self._pre_vq_conv_bot(feat)
+
+        # Quantize F_Hi with K_Hi
+        quantized_b = self._vq_vae_bot(zb)
+
+        # Concatenate Q_Hi and Q_Lo and input it into the General appearance decoder
+        quant_join = torch.cat((up_quantized_t, quantized_b), dim=1)
+        recon_fin = self._decoder_b(quant_join)
+
+        return recon_fin, quantized_t, quantized_b
