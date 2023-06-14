@@ -1,56 +1,39 @@
 dataset:
-  name: ucsd #options: [mvtec, btech, folder]
-  format: ucsdped
-  path: ./datasets/ucsd
-  category: UCSDped2
-  task: detection
-  clip_length_in_frames: 2
-  frames_between_clips: 10
-  target_frame: "last"
-  image_size: [240, 360] # AI-VAD region- and feature extractor apply custom resizing
-  normalization: none # AI-VAD region- and feature extractor apply custom normalization
-  train_batch_size: 8
-  eval_batch_size: 1
+  name: mvtec
+  format: mvtec
+  path: ./datasets/MVTec
+  category: bottle
+  task: segmentation
+  train_batch_size: 1
+  eval_batch_size: 16
   num_workers: 8
+  image_size: 256 # dimensions to which images are resized (mandatory)
+  center_crop: null # dimensions to which images are center-cropped after resizing (optional)
+  normalization: none # data distribution to which the images will be normalized: [none, imagenet]
   transform_config:
     train: null
     eval: null
-  test_split_mode: from_dir
-  test_split_ratio: 0.2
-  val_split_mode: same_as_test # options: [same_as_test, from_test]
-  val_split_ratio: 0.5
-  tiling:
-    apply: false
-    tile_size: null
-    stride: null
-    remove_border_count: 0
-    use_random_tiling: False
-    random_tile_count: 16
+  test_split_mode: from_dir # options: [from_dir, synthetic]
+  test_split_ratio: 0.2 # fraction of train images held out testing (usage depends on test_split_mode)
+  val_split_mode: same_as_test # options: [same_as_test, from_test, synthetic]
+  val_split_ratio: 0.5 # fraction of train/test images held out for validation (usage depends on val_split_mode)
 
 model:
-  name: ai_vad
-  # region extraction parameters
-  box_score_thresh: 0.7
-  persons_only: false
-  min_bbox_area: 100
-  max_bbox_overlap: 0.65
-  enable_foreground_detections: true
-  foreground_kernel_size: 3
-  foreground_binary_threshold: 18
-  # feature extraction parameters
-  n_velocity_bins: 1
-  use_velocity_features: True
-  use_pose_features: True
-  use_deep_features: True
-  # density estimation parameters
-  n_components_velocity: 2
-  n_neighbors_pose: 1
-  n_neighbors_deep: 1
+  name: efficientad
+  teacher_out_channels: 384
+  model_size: medium # options: [small, medium]
+  lr: 0.0001
+  weight_decay: 0.00001
+  padding: true
   # generic params
   normalization_method: min_max # options: [null, min_max, cdf]
 
 metrics:
   image:
+    - F1Score
+    - AUROC
+  pixel:
+    - F1Score
     - AUROC
   threshold:
     method: adaptive #options: [adaptive, manual]
@@ -73,8 +56,7 @@ logging:
   log_graph: false # Logs the model graph to respective logger.
 
 optimization:
-  export_mode: null # options: onnx, openvino
-
+  export_mode: null # options: torch, onnx, openvino
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
   enable_checkpointing: true
@@ -86,10 +68,10 @@ trainer:
   enable_progress_bar: true
   overfit_batches: 0.0
   track_grad_norm: -1
-  check_val_every_n_epoch: 1 # Don't validate before extracting features.
+  check_val_every_n_epoch: 1
   fast_dev_run: false
   accumulate_grad_batches: 1
-  max_epochs: 1
+  max_epochs: 200
   min_epochs: null
   max_steps: -1
   min_steps: null
@@ -98,7 +80,7 @@ trainer:
   limit_val_batches: 1.0
   limit_test_batches: 1.0
   limit_predict_batches: 1.0
-  val_check_interval: 1.0 # Don't validate before extracting features.
+  val_check_interval: 1.0
   log_every_n_steps: 50
   accelerator: auto # <"cpu", "gpu", "tpu", "ipu", "hpu", "auto">
   strategy: null

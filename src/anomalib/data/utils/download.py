@@ -218,6 +218,28 @@ def hash_check(file_path: Path, expected_hash: str) -> None:
         ), f"Downloaded file {file_path} does not match the required hash."
 
 
+def extract(file_name: Path, root: Path) -> None:
+    """Extract a dataset
+
+    Args:
+        file_name (Path): Path of the file to be extracted.
+        root (Path): Root directory where the dataset will be stored.
+
+    """
+    logger.info("Extracting dataset into root folder.")
+    if file_name.suffix == ".zip":
+        with ZipFile(file_name, "r") as zip_file:
+            zip_file.extractall(root)
+    elif file_name.suffix in (".tar", ".gz", ".xz", ".tgz"):
+        with tarfile.open(file_name) as tar_file:
+            safe_extract(tar_file, root)
+    else:
+        raise ValueError(f"Unrecognized file format: {file_name}")
+
+    logger.info("Cleaning up files.")
+    (file_name).unlink()
+
+
 def download_and_extract(root: Path, info: DownloadInfo) -> None:
     """Download and extract a dataset.
 
@@ -246,18 +268,7 @@ def download_and_extract(root: Path, info: DownloadInfo) -> None:
         logger.info("Checking the hash of the downloaded file.")
         hash_check(downloaded_file_path, info.hash)
 
-    logger.info("Extracting dataset into root folder.")
-    if downloaded_file_path.suffix == ".zip":
-        with ZipFile(downloaded_file_path, "r") as zip_file:
-            zip_file.extractall(root)
-    elif downloaded_file_path.suffix in (".tar", ".gz", ".xz"):
-        with tarfile.open(downloaded_file_path) as tar_file:
-            safe_extract(tar_file, root)
-    else:
-        raise ValueError(f"Unrecognized file format: {downloaded_file_path}")
-
-    logger.info("Cleaning up files.")
-    (downloaded_file_path).unlink()
+    extract(downloaded_file_path, root)
 
 
 def is_within_directory(directory: Path, target: Path):
