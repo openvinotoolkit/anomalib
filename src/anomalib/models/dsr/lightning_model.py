@@ -54,7 +54,7 @@ class Dsr(AnomalyModule):
     def on_training_start(self) -> STEP_OUTPUT:
         # TODO: load weights for the discrete latent model, or do it as 'on training start'?
         logger.info("Loading pretrained weights...")
-        self.model.load_pretrained_discrete_model_weights(ckpt)
+        self.model.load_pretrained_discrete_model_weights(self.init_ckpt)
 
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
