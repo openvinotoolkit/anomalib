@@ -144,4 +144,6 @@ class MetricsConnector:
             # NNCF optimization is enabled. This is probably an issue in torch.compile as well.
             # See issue https://github.com/pytorch/pytorch/issues/96197 for more details. This is a temporary fix.
             # TODO: Remove this once we upgrade to torch 2.0
-            trainer._results.log(current_fx_name, name=key, value=value, prog_bar=prog_bar, reduce_fx="mean")
+            trainer._results.log(  # type: ignore[protected-access]
+                current_fx_name, name=key, value=value, prog_bar=prog_bar, reduce_fx="mean"
+            )
