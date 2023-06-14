@@ -9,6 +9,7 @@ Paper https://link.springer.com/chapter/10.1007/978-3-031-19821-2_31
 from __future__ import annotations
 
 from typing import Callable
+from pathlib import Path
 
 import torch
 from omegaconf import DictConfig, ListConfig
@@ -16,10 +17,11 @@ from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor, nn
 
-from anomalib.data.utils import Augmenter
+from anomalib.models.dsr.anomaly_generator import DsrAnomalyGenerator
+from anomalib.data.utils.augmenter import Augmenter
 from anomalib.models.components import AnomalyModule
-from anomalib.models.draem.loss import DraemLoss
-from anomalib.models.draem.torch_model import DraemModel
+from anomalib.models.dsr.loss import DsrLoss
+from anomalib.models.dsr.torch_model import DsrModel
 
 __all__ = ["Dsr", "DsrLightning"]
 
@@ -32,43 +34,25 @@ class Dsr(AnomalyModule):
             be used if left empty.
     """
 
-    def __init__(
-        self, enable_sspcab: bool = False, sspcab_lambda: float = 0.1, anomaly_source_path: str | None = None
-    ) -> None:
+    def __init__(self) -> None:
         super().__init__()
 
-        self.augmenter = Augmenter(anomaly_source_path)
-        self.model = DraemModel(sspcab=enable_sspcab)
-        self.loss = DraemLoss()
-        self.sspcab = enable_sspcab
+        # while "model < objective or end epoch" on train
+        # else train upsampling module till epoch end
 
-        if self.sspcab:
-            self.sspcab_activations: dict = {}
-            self.setup_sspcab()
-            self.sspcab_loss = nn.MSELoss()
-            self.sspcab_lambda = sspcab_lambda
+        self.first_phase: bool = True
+        self.first_phase_augmenter = DsrAnomalyGenerator()
+        self.model = DsrModel()
+        self.loss = DsrLoss()
 
-    def setup_sspcab(self) -> None:
-        """Prepare the model for the SSPCAB training step by adding forward hooks for the SSPCAB layer activations."""
 
-        def get_activation(name: str) -> Callable:
-            """Retrieves the activations.
+    def on_training_start(self) -> STEP_OUTPUT:
+        # TODO: load weights for the discrete latent model, or do it as 'on training start'?
+        pass
 
-            Args:
-                name (str): Identifier for the retrieved activations.
-            """
-
-            def hook(_, __, output: Tensor) -> None:
-                """Hook for retrieving the activations."""
-                self.sspcab_activations[name] = output
-
-            return hook
-
-        self.model.reconstructive_subnetwork.encoder.mp4.register_forward_hook(get_activation("input"))
-        self.model.reconstructive_subnetwork.encoder.block5.register_forward_hook(get_activation("output"))
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Training Step of DRAEM.
+        """Training Step of DSR.
 
         Feeds the original image and the simulated anomaly
         image through the network and computes the training loss.
@@ -81,21 +65,22 @@ class Dsr(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
+        first_phase: bool = True
+
         input_image = batch["image"]
-        # Apply corruption to input image
-        augmented_image, anomaly_mask = self.augmenter.augment_batch(input_image)
-        # Generate model prediction
-        reconstruction, prediction = self.model(augmented_image)
-        # Compute loss
-        loss = self.loss(input_image, reconstruction, anomaly_mask, prediction)
+        if first_phase:
+            # Apply corruption to input image
+            anomaly_mask = self.augmenter.augment_batch(input_image)
+            # Generate model prediction
+            reconstruction, prediction = self.model(augmented_image)
+            # Compute loss
+            loss = self.loss(input_image, reconstruction, anomaly_mask, prediction)
 
-        if self.sspcab:
-            loss += self.sspcab_lambda * self.sspcab_loss(
-                self.sspcab_activations["input"], self.sspcab_activations["output"]
-            )
-
-        self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
-        return {"loss": loss}
+            self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
+            return {"loss": loss}
+        
+        else:
+            pass
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Validation step of DRAEM. The Softmax predictions of the anomalous class are used as anomaly map.

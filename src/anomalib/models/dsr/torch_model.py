@@ -56,11 +56,11 @@ class DsrModel(nn.Module):
                                                   base_width = embedding_dim)
     
 
-    def crop_image(image, img_dim):
+    def crop_image(image, height, width):
         """Crops image NOTE: to be completed"""
         b,c,h,w = image.shape
-        hdif = max(0,h - img_dim) // 2
-        wdif = max(0,w - img_dim) // 2
+        hdif = max(0,h - height) // 2
+        wdif = max(0,w - width) // 2
         image_cropped = image[:,:,hdif:-hdif,wdif:-wdif]
         return image_cropped
 
@@ -75,6 +75,8 @@ class DsrModel(nn.Module):
             Anomaly mask and its predicted confidence values.
         """
         # top == lo
+
+        batch_size, channels, height, width = batch.shape
 
         # Generate latent embeddings decoded image via general object decoder
         gen_image, embeddings_top, embeddings_bot = self.discrete_latent_model(batch)
@@ -110,7 +112,7 @@ class DsrModel(nn.Module):
         # Mask upsampling and score calculation
         upsampled_mask = self.upsampling_module(obj_spec_image.detach(), gen_image.detach(), out_mask_sm)
         out_mask_sm_up = torch.softmax(upsampled_mask, dim=1)
-        out_mask_sm_up = self.crop_image(out_mask_sm_up, GET_IMG_DIMS)
+        out_mask_sm_up = self.crop_image(out_mask_sm_up, height, width)
         out_mask_cv = out_mask_sm_up[0,1,:,:]
         out_mask_averaged = torch.nn.functional.avg_pool2d(out_mask_sm[:,1:,:,:], 21, stride=1,
                                                            padding=21 // 2)
