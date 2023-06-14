@@ -14,32 +14,111 @@ from __future__ import annotations
 import torch
 from torch import Tensor, nn, F
 
-from anomalib.models.components.layers import SSPCAB
-
 
 class DsrModel(nn.Module):
-    """DSR PyTorch model consisting of the quantized encoder and decoder, anomaly detection
-    module, and upsampling module"""
+    """DSR PyTorch model consisting of the discrete latent model, image reconstruction network,
+    subspace restriction modules, anomaly detection module and upsampling module.
+    
+    Args:
+        embedding_dim (int): Dimension of codebook embeddings.
+        num_embeddings (int): Number of embeddings.
+        anom_par (float):
+        num_hiddens (int): Number of output channels in residual layers.
+        num_residual_layers (int): Number of residual layers.
+        num_residual_hiddens (int): Number of intermediate channels.
+    """
 
-    def __init__(self, sspcab: bool = False) -> None:
-        super().__init__()
-        self.quantized_encoder = None
-        self.specific_decoder = None
-        self.general_decoder = None
-        self.anomaly_detection_module = None
-        self.upsampling_module = None
-        self.anomaly_generation_module = None
+    def __init__(self, embedding_dim: int = 128, num_embeddings: int = 4096, anom_par: float = 0.2,
+                 num_hiddens: int = 128, num_residual_layers: int = 2, num_residual_hiddens: int = 64):
+        self.image_dim: int = 3
+        self.anomaly_map_dim: int = 2
+
+        self.discrete_latent_model = DiscreteLatentModel(num_hiddens = num_hiddens,
+                                                         num_residual_layers = num_residual_layers,
+                                                         num_residual_hiddens = num_residual_hiddens,
+                                                         num_embeddings = num_embeddings,
+                                                         embedding_dim = embedding_dim)
+
+        self.image_reconstruction_network = ImageReconstructionNetwork(in_channels = embedding_dim * 2,
+                                                                       num_hiddens = num_hiddens,
+                                                                       num_residual_layers = num_residual_layers,
+                                                                       num_residual_hiddens = num_residual_hiddens)
+        
+        self.subspace_restriction_module_lo = SubspaceRestrictionModule(base_width = embedding_dim)
+        self.subspace_restriction_module_hi = SubspaceRestrictionModule(base_width = embedding_dim)
+
+        self.anomaly_detection_module = AnomalyDetectionModule(in_channels = 2 * self.image_dim,
+                                                               out_channels = self.anomaly_map_dim,
+                                                               base_width = embedding_dim)
+        
+        self.upsampling_module = UpsamplingModule(in_channels = (2*self.image_dim) + self.anomaly_map_dim,
+                                                  out_channels = self.anomaly_map_dim,
+                                                  base_width = embedding_dim)
+    
+
+    def crop_image(image, img_dim):
+        """Crops image NOTE: to be completed"""
+        b,c,h,w = image.shape
+        hdif = max(0,h - img_dim) // 2
+        wdif = max(0,w - img_dim) // 2
+        image_cropped = image[:,:,hdif:-hdif,wdif:-wdif]
+        return image_cropped
+
 
     def forward(self, batch: Tensor) -> Tensor | tuple[Tensor, Tensor]:
-        """Compute the reconstruction and anomaly mask from an input image.
+        """Compute the anomaly mask from an input image.
 
         Args:
-            x (Tensor): batch of input images
+            batch (Tensor): Batch of input images.
 
         Returns:
-            Predicted confidence values of the anomaly mask. During training the reconstructed input images are
-            returned as well.
+            Anomaly mask and its predicted confidence values.
         """
+        # top == lo
+
+        # Generate latent embeddings decoded image via general object decoder
+        gen_image, embeddings_top, embeddings_bot = self.discrete_latent_model(batch)
+        embeddings_bot = embeddings_bot.detach()
+        embeddings_top = embeddings_top.detach()
+
+        # Get embedders from the discrete latent model
+        embedder_bot = self.discrete_latent_model._vq_vae_bot
+        embedder_top = self.discrete_latent_model._vq_vae_top
+
+        # Copy embeddings in order to input them to the subspace restriction module
+        anomaly_embedding_bot_copy = embeddings_bot.clone()
+        anomaly_embedding_top_copy = embeddings_top.clone()
+
+        # Apply subspace restriction module to copied embeddings
+        _, recon_embeddings_bot = self.subspace_restriction_module_hi(anomaly_embedding_bot_copy, embedder_bot)
+        _, recon_embeddings_top = self.subspace_restriction_module_lo(
+                                                                    anomaly_embedding_top_copy,
+                                                                    embedder_top)
+
+        # Upscale top (lo) embedding
+        up_quantized_recon_t = self.discrete_latent_model.upsample_t(recon_embeddings_top)
+
+        # Concat embeddings and reconstruct image (object specific decoder)
+        quant_join = torch.cat((up_quantized_recon_t, recon_embeddings_bot), dim=1)
+        obj_spec_image = self.image_reconstruction_network(quant_join)
+
+        # Anomaly detection module
+        out_mask = self.anomaly_detection_module(obj_spec_image.detach(),
+                               gen_image.detach())
+        out_mask_sm = torch.softmax(out_mask, dim=1)
+
+        # Mask upsampling and score calculation
+        upsampled_mask = self.upsampling_module(obj_spec_image.detach(), gen_image.detach(), out_mask_sm)
+        out_mask_sm_up = torch.softmax(upsampled_mask, dim=1)
+        out_mask_sm_up = self.crop_image(out_mask_sm_up, GET_IMG_DIMS)
+        out_mask_cv = out_mask_sm_up[0,1,:,:]
+        out_mask_averaged = torch.nn.functional.avg_pool2d(out_mask_sm[:,1:,:,:], 21, stride=1,
+                                                           padding=21 // 2)
+        image_score = F.max(out_mask_averaged)
+                       
+        return out_mask_cv, image_score
+
+
 
 class SubspaceRestrictionModule(nn.Module):
     """Subspace restriction module that restricts the appearance subspace into configurations
@@ -49,7 +128,7 @@ class SubspaceRestrictionModule(nn.Module):
         base_width (int): Base dimensionality of the layers of the autoencoder.
     """
 
-    def __init__(self, base_width: int = 64):
+    def __init__(self, base_width: int):
         super(SubspaceRestrictionModule, self).__init__()
 
         self.unet = SubspaceRestrictionNetwork(in_channels=base_width, out_channels=base_width, base_width=base_width)
@@ -551,7 +630,7 @@ class AnomalyDetectionModule(nn.Module):
         base_width (int): Base dimensionality of the layers of the autoencoder.
     """
 
-    def __init__(self, in_channels: int = 6, out_channels: int = 2, base_width: int= 64):
+    def __init__(self, in_channels: int, out_channels: int, base_width: int):
         super(AnomalyDetectionModule, self).__init__()
         self.unet = UnetModel(in_channels, out_channels, base_width)
 
@@ -748,7 +827,7 @@ class EncoderTop(nn.Module):
 
 
 class DecoderBot(nn.Module):
-    """Decoder module for bottom quantized feature maps.
+    """General appearance decoder module to reconstruct images while keeping possible anomalies.
     
     Args:
         in_channels (int): Number of input channels.
@@ -779,16 +858,16 @@ class DecoderBot(nn.Module):
                                                 kernel_size=4,
                                                 stride=2, padding=1)
 
-    def forward(self, batch: Tensor) -> Tensor:
-        """Decode bottom feature maps into top feature maps.
+    def forward(self, inputs: Tensor) -> Tensor:
+        """Decode quantized feature maps into an image.
         
         Args:
-            batch (Tensor): Batch of input images.
+            inputs (Tensor): Quantized feature maps.
         
         Returns:
-            Decoded top feature maps.
+            Decoded image.
         """
-        x = self._conv_1(batch)
+        x = self._conv_1(inputs)
 
         x = self._residual_stack(x)
 
@@ -799,7 +878,7 @@ class DecoderBot(nn.Module):
 
 class DiscreteLatentModel(nn.Module):
     """Autoencoder quantized model that encodes the input images into quantized feature maps and generates
-    a reconstructed image using the quantized feature maps.
+    a reconstructed image using the general appearance decoder.
     
     Args:
         num_hiddens (int): Number of hidden channels.
@@ -842,18 +921,57 @@ class DiscreteLatentModel(nn.Module):
         self.upsample_t = nn.ConvTranspose2d(
             embedding_dim, embedding_dim, 4, stride=2, padding=1
         )
+    
+
+    def generate_fake_anomalies_joined(features, embeddings, memory_torch_original, mask, strength=None):
+        """TODO"""
+        random_embeddings = torch.zeros((embeddings.shape[0],embeddings.shape[2]*embeddings.shape[3], memory_torch_original.shape[1]))
+        inputs = features.permute(0, 2, 3, 1).contiguous()
+
+        for k in range(embeddings.shape[0]):
+            memory_torch = memory_torch_original
+            flat_input = inputs[k].view(-1, memory_torch.shape[1])
+
+            distances_b = (torch.sum(flat_input ** 2, dim=1, keepdim=True)
+                        + torch.sum(memory_torch ** 2, dim=1)
+                        - 2 * torch.matmul(flat_input, memory_torch.t()))
+
+            percentage_vectors = strength[k]
+            topk = max(1, min(int(percentage_vectors * memory_torch.shape[0]) + 1, memory_torch.shape[0] - 1))
+            values, topk_indices = torch.topk(distances_b, topk, dim=1, largest=False)
+            topk_indices = topk_indices[:, int(memory_torch.shape[0] * 0.05):]
+            topk = topk_indices.shape[1]
+
+            random_indices_hik = torch.randint(topk, size=(topk_indices.shape[0],))
+            random_indices_t = topk_indices[torch.arange(random_indices_hik.shape[0]),random_indices_hik]
+            random_embeddings[k] = memory_torch[random_indices_t,:]
+        random_embeddings = random_embeddings.reshape((random_embeddings.shape[0],embeddings.shape[2],embeddings.shape[3],random_embeddings.shape[2]))
+        random_embeddings_tensor = random_embeddings.permute(0,3,1,2).cuda()
+
+        down_ratio_y = int(mask.shape[2]/embeddings.shape[2])
+        down_ratio_x = int(mask.shape[3]/embeddings.shape[3])
+        anomaly_mask = torch.nn.functional.max_pool2d(mask, (down_ratio_y, down_ratio_x)).float()
+
+        anomaly_embedding = anomaly_mask * random_embeddings_tensor + (1.0 - anomaly_mask) * embeddings
+
+        return anomaly_embedding
 
 
-    def forward(self, batch: Tensor) -> tuple[Tensor, Tensor, Tensor]:
+    def forward(self, batch: Tensor, anomaly_mask: Tensor | None = None, anom_str_lo: float = 0,
+                anom_str_hi: float = 0) -> tuple[Tensor, Tensor, Tensor] | tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
         """Generates quantized feature maps of batch of input images as well as their
-        reconstruction based on its auqntized feature maps.
+        reconstruction based on the general appearance decoder.
         
         Args:
             batch (Tensor): Batch of input images.
+            anomaly_mask (Tensor | None): Anomaly mask to be used to generate anomalies on
+            the quantized feature maps.
         
         Returns:
             Tuple of reconstructed images, quantized top feature maps, and quantized
-            bottom feature maps.
+            bottom feature maps. If generating anomalies, returns reconstructed anomaly
+            image through general image decoder, non-defective quantized top and bottom
+            feature maps and defective quantized top and bottom feature maps.
         """
         #Encoder Hi
         enc_b = self._encoder_b(batch)
@@ -864,6 +982,7 @@ class DiscreteLatentModel(nn.Module):
 
         # Quantize F_Lo with K_Lo
         quantized_t = self._vq_vae_top(zt)
+        
         # Upsample Q_Lo
         up_quantized_t = self.upsample_t(quantized_t)
 
@@ -873,6 +992,54 @@ class DiscreteLatentModel(nn.Module):
 
         # Quantize F_Hi with K_Hi
         quantized_b = self._vq_vae_bot(zb)
+
+        # generate anomalies
+        anomaly_embedding_hi = None
+        anomaly_embedding_lo = None
+        recon_defect = None
+
+        if anomaly_mask is not None:
+            # Generate feature-based anomalies on F_lo
+            anomaly_embedding_lo = self.generate_fake_anomalies_joined(zt, quantized_t,
+                                                                self._vq_vae_top._embedding.weight,
+                                                                anomaly_mask, strength=anom_str_lo)
+            
+            up_quantized_t_defect = self.upsample_t(anomaly_embedding_lo)
+            feat_defect = torch.cat((enc_b, up_quantized_t_defect), dim=1)
+            zb_defect = self._pre_vq_conv_bot(feat_defect)
+            quantized_b_defect = self._vq_vae_bot(zb_defect)
+
+            # Generate feature-based anomalies on F_hi
+            anomaly_embedding_hi = self.generate_fake_anomalies_joined(zb_defect, quantized_b_defect,
+                                                                self._vq_vae_bot._embedding.weight,
+                                                                anomaly_mask, strength=anom_str_hi)
+            
+            # get anomaly embeddings
+            use_both = torch.randint(0, 2,(batch.shape[0],1,1,1)).cuda().float()
+            use_lo = torch.randint(0, 2,(batch.shape[0],1,1,1)).cuda().float()
+            use_hi = (1 - use_lo)
+
+            anomaly_embedding_hi_usebot = self.generate_fake_anomalies_joined(zb, quantized_b,
+                                                            self._vq_vae_bot._embedding.weight,
+                                                            anomaly_mask, strength=anom_str_hi)
+
+            anomaly_embedding_lo_usebot = quantized_t
+            anomaly_embedding_hi_usetop = quantized_b
+            anomaly_embedding_lo_usetop = anomaly_embedding_lo
+            anomaly_embedding_hi_not_both =  use_hi * anomaly_embedding_hi_usebot + use_lo * anomaly_embedding_hi_usetop
+            anomaly_embedding_lo_not_both =  use_hi * anomaly_embedding_lo_usebot + use_lo * anomaly_embedding_lo_usetop
+            anomaly_embedding_hi = (anomaly_embedding_hi * use_both + anomaly_embedding_hi_not_both * (1.0 - use_both)).detach().clone()
+            anomaly_embedding_lo = (anomaly_embedding_lo * use_both + anomaly_embedding_lo_not_both * (1.0 - use_both)).detach().clone()
+
+            anomaly_embedding_hi_copy = anomaly_embedding_hi.clone()
+            anomaly_embedding_lo_copy = anomaly_embedding_lo.clone()
+
+            # apply the general appearance decoder to the anomaly embeddings
+            up_quantized_anomaly_t = self.upsample_t(anomaly_embedding_lo_copy)
+            quant_join_anomaly = torch.cat((up_quantized_anomaly_t, anomaly_embedding_hi_copy), dim=1)
+            recon_defect = self._decoder_b(quant_join_anomaly)
+
+            return recon_defect, quantized_t, quantized_b, anomaly_embedding_lo, anomaly_embedding_hi
 
         # Concatenate Q_Hi and Q_Lo and input it into the General appearance decoder
         quant_join = torch.cat((up_quantized_t, quantized_b), dim=1)
