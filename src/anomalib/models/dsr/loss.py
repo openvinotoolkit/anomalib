@@ -10,8 +10,10 @@ from torch import Tensor, nn
 class DsrLoss(nn.Module):
     """Overall loss function of the DSR model.
 
-    The total loss consists of the sum of the L2 loss and Focal loss between the reconstructed image and the input
-    image, and the Structural Similarity loss between the predicted and GT anomaly masks.
+    The total loss consists of:
+        - MSE loss between non-anomalous quantized input image and anomalous subspace-reconstructed non-quantized input (hi and lo)
+        - MSE loss between input image and reconstructed image through image reconstruction module,
+        - Focal loss between computed segmentation mask and ground truth mask.
     """
 
     def __init__(self) -> None:
@@ -19,11 +21,11 @@ class DsrLoss(nn.Module):
 
         self.l2_loss = nn.modules.loss.MSELoss()
         self.focal_loss = FocalLoss(alpha=1, reduction="mean")
-        self.ssim_loss = SSIMLoss(window_size=11)
-
-    def forward(self, input_image: Tensor, reconstruction: Tensor, anomaly_mask: Tensor, prediction: Tensor) -> Tensor:
-        """Compute the loss over a batch for the DRAEM model."""
-        l2_loss_val = self.l2_loss(reconstruction, input_image)
-        focal_loss_val = self.focal_loss(prediction, anomaly_mask.squeeze(1).long())
-        ssim_loss_val = self.ssim_loss(reconstruction, input_image) * 2
-        return l2_loss_val + ssim_loss_val + focal_loss_val
+    
+    def forward(self, recon_nq_hi, recon_nq_lo, qu_hi, qu_lo, input_image, gen_img, seg, anomaly_mask) -> Tensor:
+        """Compute the loss over a batch for the DSR model."""
+        l2_loss_hi_val = self.l2_loss(recon_nq_hi, qu_hi)
+        l2_loss_lo_val = self.l2_loss(recon_nq_lo, qu_lo)
+        l2_loss_img_val = self.l2_loss(input_image, gen_img)
+        focal_loss_val = self.focal_loss(seg, anomaly_mask)
+        return l2_loss_hi_val + l2_loss_lo_val + l2_loss_img_val + focal_loss_val

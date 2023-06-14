@@ -34,16 +34,16 @@ class Dsr(AnomalyModule):
             be used if left empty.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, anom_par: float = 0.2) -> None:
         super().__init__()
 
         # while "model < objective or end epoch" on train
         # else train upsampling module till epoch end
 
-        self.first_phase: bool = True
-        self.first_phase_augmenter = DsrAnomalyGenerator()
-        self.model = DsrModel()
+        self.anomaly_generator = DsrAnomalyGenerator()
+        self.model = DsrModel(anom_par)
         self.loss = DsrLoss()
+        self.anom_par: float = anom_par
 
 
     def on_training_start(self) -> STEP_OUTPUT:
@@ -54,8 +54,8 @@ class Dsr(AnomalyModule):
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Training Step of DSR.
 
-        Feeds the original image and the simulated anomaly
-        image through the network and computes the training loss.
+        Feeds the original image and the simulated anomaly mask during first phase. During
+        second phase, feeds a generated anomalous image to train the upsampling module.
 
         Args:
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
@@ -65,22 +65,32 @@ class Dsr(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        first_phase: bool = True
-
         input_image = batch["image"]
-        if first_phase:
-            # Apply corruption to input image
-            anomaly_mask = self.augmenter.augment_batch(input_image)
-            # Generate model prediction
-            reconstruction, prediction = self.model(augmented_image)
-            # Compute loss
-            loss = self.loss(input_image, reconstruction, anomaly_mask, prediction)
+        # Create anomaly masks
+        anomaly_mask = self.anomaly_generator.augment_batch(input_image)
+        # Generate model prediction
+        """Compute the anomaly mask from an input image.
 
-            self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
-            return {"loss": loss}
-        
-        else:
-            pass
+        Args:
+            batch (Tensor): Batch of input images.
+        return recon_feat_hi, recon_feat_lo, embd_top, embd_bot, gen_image_def, out_mask_sm, anomaly_map
+        Returns:
+            Tuple of :
+                - Reconstructed non-quantized features (high)
+                - Reconstructed non-quantized features (low)
+                - Quantized features (high)
+                - Quantized features (low)
+                - General object decoder-decoded image
+                - Computed segmentation mask
+                - Resized ground-truth anomaly map
+        """
+        recon_nq_hi, recon_nq_lo, qu_hi, qu_lo, gen_img, seg, anomaly_mask = self.model(input_image, anomaly_mask)
+        # Compute loss
+        loss = self.loss(recon_nq_hi, recon_nq_lo, qu_hi, qu_lo, input_image, gen_img, seg, anomaly_mask)
+
+        self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
+        return {"loss": loss}
+    
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Validation step of DRAEM. The Softmax predictions of the anomalous class are used as anomaly map.
