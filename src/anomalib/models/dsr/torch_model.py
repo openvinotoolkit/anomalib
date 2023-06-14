@@ -57,13 +57,18 @@ class DsrModel(nn.Module):
                                                   base_width = embedding_dim)
     
 
-    def crop_image(image, height, width):
+    def crop_image(self, image, height, width):
         """Crops image NOTE: to be completed"""
         b,c,h,w = image.shape
         hdif = max(0,h - height) // 2
         wdif = max(0,w - width) // 2
         image_cropped = image[:,:,hdif:-hdif,wdif:-wdif]
         return image_cropped
+
+
+    def load_pretrained_discrete_model_weights(self, ckpt):
+        """NOTE: to be completed"""
+        self.discrete_latent_model.load_state_dict(ckpt)
 
 
     def forward(self, batch: Tensor, anomaly_map: Tensor | None, upsampling: bool = False) -> Tensor | tuple[Tensor, Tensor]:
@@ -120,6 +125,7 @@ class DsrModel(nn.Module):
             out_mask_sm = torch.softmax(out_mask, dim=1)
 
             # Mask upsampling and score calculation
+            """
             upsampled_mask = self.upsampling_module(obj_spec_image.detach(), gen_image.detach(), out_mask_sm)
             out_mask_sm_up = torch.softmax(upsampled_mask, dim=1)
             out_mask_sm_up = self.crop_image(out_mask_sm_up, height, width)
@@ -128,7 +134,8 @@ class DsrModel(nn.Module):
                                                         padding=21 // 2)
             image_score = F.max(out_mask_averaged)
                     
-            return out_mask_cv, image_score
+            return out_mask_cv, image_score"""
+            return out_mask_sm
 
         else:
             # Generate anomaly strength factors
@@ -136,7 +143,8 @@ class DsrModel(nn.Module):
             anom_str_hi = (torch.rand(batch.shape[0]) * (1.0-self.anom_par) + self.anom_par).cuda()
 
             # Generate image through general object decoder, and defective & non defective quantized feature maps.
-            gen_image_def, anomaly_map, embd_top, embd_bot, embd_top_def, embd_bot_def = self.discrete_latent_model(batch, anomaly_map, anom_str_lo, anom_str_hi)
+            with torch.no_grad():
+                gen_image_def, anomaly_map, embd_top, embd_bot, embd_top_def, embd_bot_def = self.discrete_latent_model(batch, anomaly_map, anom_str_lo, anom_str_hi)
 
             # Restore the features to normality with the Subspace restriction modules
             recon_feat_hi, recon_embeddings_hi = self.subspace_restriction_module_hi(embd_bot_def, self.discrete_latent_model._vq_vae_bot)

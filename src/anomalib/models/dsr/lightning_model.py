@@ -8,6 +8,8 @@ Paper https://link.springer.com/chapter/10.1007/978-3-031-19821-2_31
 
 from __future__ import annotations
 
+import logging
+
 from typing import Callable
 from pathlib import Path
 
@@ -25,6 +27,8 @@ from anomalib.models.dsr.torch_model import DsrModel
 
 __all__ = ["Dsr", "DsrLightning"]
 
+logger = logging.getLogger(__name__)
+
 
 class Dsr(AnomalyModule):
     """DSR: A Dual Subspace Re-Projection Network for Surface Anomaly Detection
@@ -34,7 +38,7 @@ class Dsr(AnomalyModule):
             be used if left empty.
     """
 
-    def __init__(self, anom_par: float = 0.2) -> None:
+    def __init__(self, ckpt, anom_par: float = 0.2) -> None:
         super().__init__()
 
         # while "model < objective or end epoch" on train
@@ -44,11 +48,13 @@ class Dsr(AnomalyModule):
         self.model = DsrModel(anom_par)
         self.loss = DsrLoss()
         self.anom_par: float = anom_par
+        self.init_ckpt = ckpt
 
 
     def on_training_start(self) -> STEP_OUTPUT:
         # TODO: load weights for the discrete latent model, or do it as 'on training start'?
-        pass
+        logger.info("Loading pretrained weights...")
+        self.model.load_pretrained_discrete_model_weights(ckpt)
 
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
@@ -69,21 +75,6 @@ class Dsr(AnomalyModule):
         # Create anomaly masks
         anomaly_mask = self.anomaly_generator.augment_batch(input_image)
         # Generate model prediction
-        """Compute the anomaly mask from an input image.
-
-        Args:
-            batch (Tensor): Batch of input images.
-        return recon_feat_hi, recon_feat_lo, embd_top, embd_bot, gen_image_def, out_mask_sm, anomaly_map
-        Returns:
-            Tuple of :
-                - Reconstructed non-quantized features (high)
-                - Reconstructed non-quantized features (low)
-                - Quantized features (high)
-                - Quantized features (low)
-                - General object decoder-decoded image
-                - Computed segmentation mask
-                - Resized ground-truth anomaly map
-        """
         recon_nq_hi, recon_nq_lo, qu_hi, qu_lo, gen_img, seg, anomaly_mask = self.model(input_image, anomaly_mask)
         # Compute loss
         loss = self.loss(recon_nq_hi, recon_nq_lo, qu_hi, qu_lo, input_image, gen_img, seg, anomaly_mask)
@@ -93,7 +84,7 @@ class Dsr(AnomalyModule):
     
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation step of DRAEM. The Softmax predictions of the anomalous class are used as anomaly map.
+        """Validation step of DSR. The Softmax predictions of the anomalous class are used as anomaly map.
 
         Args:
             batch (dict[str, str | Tensor]): Batch of input images
@@ -109,7 +100,7 @@ class Dsr(AnomalyModule):
 
 
 class DsrLightning(Dsr):
-    """DRÆM: A discriminatively trained reconstruction embedding for surface anomaly detection.
+    """DSR: A Dual Subspace Re-Projection Network for Surface Anomaly Detection
 
     Args:
         hparams (DictConfig | ListConfig): Model parameters
@@ -123,23 +114,3 @@ class DsrLightning(Dsr):
         )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
-
-    def configure_callbacks(self) -> list[EarlyStopping]:
-        """Configure model-specific callbacks.
-
-        Note:
-            This method is used for the existing CLI.
-            When PL CLI is introduced, configure callback method will be
-                deprecated, and callbacks will be configured from either
-                config.yaml file or from CLI.
-        """
-        early_stopping = EarlyStopping(
-            monitor=self.hparams.model.early_stopping.metric,
-            patience=self.hparams.model.early_stopping.patience,
-            mode=self.hparams.model.early_stopping.mode,
-        )
-        return [early_stopping]
-
-    def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configure the Adam optimizer."""
-        return torch.optim.Adam(params=self.model.parameters(), lr=self.hparams.model.lr)
