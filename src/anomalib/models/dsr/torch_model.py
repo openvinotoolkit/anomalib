@@ -90,7 +90,7 @@ class DsrModel(nn.Module):
         self.discrete_latent_model.load_state_dict(torch.load(ckpt))
 
     def forward(
-        self, batch: Tensor, anomaly_map: Tensor | None, upsampling: bool = False
+        self, batch: Tensor, anomaly_map_to_generate: Tensor | None = None, upsampling: bool = False
     ) -> Tensor | tuple[Tensor, Tensor]:
         """Compute the anomaly mask from an input image.
 
@@ -112,7 +112,7 @@ class DsrModel(nn.Module):
         batch_size, channels, height, width = batch.shape
 
         # Generate latent embeddings decoded image via general object decoder
-        if anomaly_map is None:
+        if anomaly_map_to_generate is None:
             gen_image, embd_top, embd_bot = self.discrete_latent_model(batch)
 
             embd_bot = embd_bot.detach()
@@ -152,9 +152,15 @@ class DsrModel(nn.Module):
             image_score = F.max(out_mask_averaged)
                     
             return out_mask_cv, image_score"""
-            return out_mask_sm
+            if self.training:
+                return out_mask_sm
+            return torch.softmax(out_mask_sm, dim=1)[:, 1, ...]
 
         else:
+            # we should be generating anomalies only when we're not training
+            if not self.training:
+                raise Exception("Should not happen")
+            
             # Generate anomaly strength factors
             anom_str_lo = (torch.rand(batch.shape[0]) * (1.0 - self.anom_par) + self.anom_par).cuda()
             anom_str_hi = (torch.rand(batch.shape[0]) * (1.0 - self.anom_par) + self.anom_par).cuda()
@@ -162,7 +168,7 @@ class DsrModel(nn.Module):
             # Generate image through general object decoder, and defective & non defective quantized feature maps.
             with torch.no_grad():
                 gen_image_def, anomaly_map, embd_top, embd_bot, embd_top_def, embd_bot_def = self.discrete_latent_model(
-                    batch, anomaly_map, anom_str_lo, anom_str_hi
+                    batch, anomaly_map_to_generate, anom_str_lo, anom_str_hi
                 )
 
             # Restore the features to normality with the Subspace restriction modules
