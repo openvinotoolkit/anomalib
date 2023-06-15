@@ -4,17 +4,38 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## What's Changed
+
+## [v0.6.0] - 2023-06-15
 
 ### Added
 
-- Add bounding box post-processing operations in AI-VAD implementation (<https://github.com/openvinotoolkit/anomalib/pull/1103>)
+- EfficientAD by @alexriedel1 in https://github.com/openvinotoolkit/anomalib/pull/1073
+- AI-VAD bbox post-processing by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/1103
+- Add dataset categories to data modules by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1105
+- Pass codedov token from environment by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/1102
 
 ### Changed
 
+- OV API2.0 by @paularamo in https://github.com/openvinotoolkit/anomalib/pull/1098
+
 ### Deprecated
 
+- OV API1.0 by @paularamo in https://github.com/openvinotoolkit/anomalib/pull/1098
+
 ###  Fixed
+
+- Fix Fastflow ONNX export. by @jasonvanzelm in https://github.com/openvinotoolkit/anomalib/pull/1108
+- Fix tile import typo by @xbkaishui in https://github.com/openvinotoolkit/anomalib/pull/1106
+- Fix `pre-commit` issues caused by the EfficientAD PR by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1114
+- Bump requests from 2.26.0 to 2.31.0 in /requirements by @dependabot in https://github.com/openvinotoolkit/anomalib/pull/1100
+
+### New Contributors
+
+- @xbkaishui made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/1106
+- @jasonvanzelm made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/1108
+
+**Full Changelog**: https://github.com/openvinotoolkit/anomalib/compare/v0.5.1...v0.6.0
 
 ## [v0.5.1] - 2023-05-24
 
