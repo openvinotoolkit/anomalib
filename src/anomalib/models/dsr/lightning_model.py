@@ -38,7 +38,7 @@ class Dsr(AnomalyModule):
             be used if left empty.
     """
 
-    def __init__(self, ckpt, anom_par: float = 0.2) -> None:
+    def __init__(self, ckpt: str, anom_par: float = 0.2) -> None:
         super().__init__()
 
         # while "model < objective or end epoch" on train
@@ -48,13 +48,13 @@ class Dsr(AnomalyModule):
         self.model = DsrModel(anom_par)
         self.loss = DsrLoss()
         self.anom_par: float = anom_par
-        self.init_ckpt = ckpt
+        self.ckpt_file = ckpt
 
 
     def on_training_start(self) -> STEP_OUTPUT:
         # TODO: load weights for the discrete latent model, or do it as 'on training start'?
         logger.info("Loading pretrained weights...")
-        self.model.load_pretrained_discrete_model_weights(self.init_ckpt)
+        self.model.load_pretrained_discrete_model_weights(self.ckpt_file)
 
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
@@ -108,9 +108,14 @@ class DsrLightning(Dsr):
 
     def __init__(self, hparams: DictConfig | ListConfig) -> None:
         super().__init__(
-            enable_sspcab=hparams.model.enable_sspcab,
-            sspcab_lambda=hparams.model.sspcab_lambda,
-            anomaly_source_path=hparams.model.anomaly_source_path,
+            ckpt=hparams.model.ckpt_path,
+            anom_par=hparams.model.anom_par
         )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
+
+    def configure_optimizers(self) -> torch.optim.Optimizer:
+        """Configure the Adam optimizer. Do not train the discrete model! (or the upsmapler for the time being)"""
+        return torch.optim.Adam(params=self.model.parameters(),
+                                lr=self.hparams.model.lr)
+    

@@ -27,9 +27,9 @@ dataset:
 
 model:
   name: dsr
-  lr: 0.0001
-  enable_sspcab: false
-  sspcab_lambda: 0.1
+  lr: 0.0002
+  ckpt_path: ./src/anomalib/models/dsr/vq_model_pretrained_128_4096.pckl
+  anom_par: 0.2
   early_stopping:
     patience: 20
     metric: pixel_AUROC
@@ -40,6 +40,9 @@ metrics:
   image:
     - F1Score
     - AUROC
+    - Accuracy
+    - Recall
+    - Specificity
   pixel:
     - F1Score
     - AUROC
@@ -58,9 +61,10 @@ visualization:
 project:
   seed: 42
   path: ./results
+  unique_dir: True
 
 logging:
-  logger: [] # options: [comet, tensorboard, wandb, csv] or combinations.
+  logger: [csv] # options: [comet, tensorboard, wandb, csv] or combinations.
   log_graph: false # Logs the model graph to respective logger.
 
 optimization:

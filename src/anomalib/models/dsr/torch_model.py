@@ -12,13 +12,14 @@
 from __future__ import annotations
 
 import torch
-from torch import Tensor, nn, F
+from torch import Tensor, nn
+import torch.nn.functional as F
 
 
 class DsrModel(nn.Module):
     """DSR PyTorch model consisting of the discrete latent model, image reconstruction network,
     subspace restriction modules, anomaly detection module and upsampling module.
-    
+
     Args:
         embedding_dim (int): Dimension of codebook embeddings.
         num_embeddings (int): Number of embeddings.
@@ -28,50 +29,69 @@ class DsrModel(nn.Module):
         num_residual_hiddens (int): Number of intermediate channels.
     """
 
-    def __init__(self, anom_par: float = 0.2, embedding_dim: int = 128, num_embeddings: int = 4096,
-                 num_hiddens: int = 128, num_residual_layers: int = 2, num_residual_hiddens: int = 64):
+    def __init__(
+        self,
+        anom_par: float = 0.2,
+        embedding_dim: int = 128,
+        num_embeddings: int = 4096,
+        num_hiddens: int = 128,
+        num_residual_layers: int = 2,
+        num_residual_hiddens: int = 64,
+    ):
+        super(DsrModel, self).__init__()
+        
         self.image_dim: int = 3
         self.anomaly_map_dim: int = 2
         self.anom_par: float = anom_par
 
-        self.discrete_latent_model = DiscreteLatentModel(num_hiddens = num_hiddens,
-                                                         num_residual_layers = num_residual_layers,
-                                                         num_residual_hiddens = num_residual_hiddens,
-                                                         num_embeddings = num_embeddings,
-                                                         embedding_dim = embedding_dim)
+        self.discrete_latent_model = DiscreteLatentModel(
+            num_hiddens=num_hiddens,
+            num_residual_layers=num_residual_layers,
+            num_residual_hiddens=num_residual_hiddens,
+            num_embeddings=num_embeddings,
+            embedding_dim=embedding_dim,
+        )
 
-        self.image_reconstruction_network = ImageReconstructionNetwork(in_channels = embedding_dim * 2,
-                                                                       num_hiddens = num_hiddens,
-                                                                       num_residual_layers = num_residual_layers,
-                                                                       num_residual_hiddens = num_residual_hiddens)
-        
-        self.subspace_restriction_module_lo = SubspaceRestrictionModule(base_width = embedding_dim)
-        self.subspace_restriction_module_hi = SubspaceRestrictionModule(base_width = embedding_dim)
+        self.image_reconstruction_network = ImageReconstructionNetwork(
+            in_channels=embedding_dim * 2,
+            num_hiddens=num_hiddens,
+            num_residual_layers=num_residual_layers,
+            num_residual_hiddens=num_residual_hiddens,
+        )
 
-        self.anomaly_detection_module = AnomalyDetectionModule(in_channels = 2 * self.image_dim,
-                                                               out_channels = self.anomaly_map_dim,
-                                                               base_width = embedding_dim)
-        
-        self.upsampling_module = UpsamplingModule(in_channels = (2*self.image_dim) + self.anomaly_map_dim,
-                                                  out_channels = self.anomaly_map_dim,
-                                                  base_width = embedding_dim)
-    
+        self.subspace_restriction_module_lo = SubspaceRestrictionModule(base_width=embedding_dim)
+        self.subspace_restriction_module_hi = SubspaceRestrictionModule(base_width=embedding_dim)
+
+        self.anomaly_detection_module = AnomalyDetectionModule(
+            in_channels=2 * self.image_dim, out_channels=self.anomaly_map_dim, base_width=embedding_dim
+        )
+
+        self.upsampling_module = UpsamplingModule(
+            in_channels=(2 * self.image_dim) + self.anomaly_map_dim,
+            out_channels=self.anomaly_map_dim,
+            base_width=embedding_dim,
+        )
+
+        for parameters in self.discrete_latent_model.parameters():
+            parameters.requires_grad = False
+        for parameters in self.upsampling_module.parameters():
+            parameters.requires_grad = False
 
     def crop_image(self, image, height, width):
         """Crops image NOTE: to be completed"""
-        b,c,h,w = image.shape
-        hdif = max(0,h - height) // 2
-        wdif = max(0,w - width) // 2
-        image_cropped = image[:,:,hdif:-hdif,wdif:-wdif]
+        b, c, h, w = image.shape
+        hdif = max(0, h - height) // 2
+        wdif = max(0, w - width) // 2
+        image_cropped = image[:, :, hdif:-hdif, wdif:-wdif]
         return image_cropped
 
-
-    def load_pretrained_discrete_model_weights(self, ckpt):
+    def load_pretrained_discrete_model_weights(self, ckpt: str):
         """NOTE: to be completed"""
-        self.discrete_latent_model.load_state_dict(ckpt)
+        self.discrete_latent_model.load_state_dict(torch.load(ckpt))
 
-
-    def forward(self, batch: Tensor, anomaly_map: Tensor | None, upsampling: bool = False) -> Tensor | tuple[Tensor, Tensor]:
+    def forward(
+        self, batch: Tensor, anomaly_map: Tensor | None, upsampling: bool = False
+    ) -> Tensor | tuple[Tensor, Tensor]:
         """Compute the anomaly mask from an input image.
 
         Args:
@@ -108,9 +128,7 @@ class DsrModel(nn.Module):
 
             # Apply subspace restriction module to copied embeddings
             _, recon_embd_bot = self.subspace_restriction_module_hi(anomaly_embedding_bot_copy, embedder_bot)
-            _, recon_embd_top = self.subspace_restriction_module_lo(
-                                                                        anomaly_embedding_top_copy,
-                                                                        embedder_top)
+            _, recon_embd_top = self.subspace_restriction_module_lo(anomaly_embedding_top_copy, embedder_top)
 
             # Upscale top (lo) embedding
             up_quantized_recon_t = self.discrete_latent_model.upsample_t(recon_embd_top)
@@ -120,8 +138,7 @@ class DsrModel(nn.Module):
             obj_spec_image = self.image_reconstruction_network(quant_join)
 
             # Anomaly detection module
-            out_mask = self.anomaly_detection_module(obj_spec_image.detach(),
-                                gen_image.detach())
+            out_mask = self.anomaly_detection_module(obj_spec_image.detach(), gen_image.detach())
             out_mask_sm = torch.softmax(out_mask, dim=1)
 
             # Mask upsampling and score calculation
@@ -139,16 +156,22 @@ class DsrModel(nn.Module):
 
         else:
             # Generate anomaly strength factors
-            anom_str_lo = (torch.rand(batch.shape[0]) * (1.0-self.anom_par) + self.anom_par).cuda()
-            anom_str_hi = (torch.rand(batch.shape[0]) * (1.0-self.anom_par) + self.anom_par).cuda()
+            anom_str_lo = (torch.rand(batch.shape[0]) * (1.0 - self.anom_par) + self.anom_par).cuda()
+            anom_str_hi = (torch.rand(batch.shape[0]) * (1.0 - self.anom_par) + self.anom_par).cuda()
 
             # Generate image through general object decoder, and defective & non defective quantized feature maps.
             with torch.no_grad():
-                gen_image_def, anomaly_map, embd_top, embd_bot, embd_top_def, embd_bot_def = self.discrete_latent_model(batch, anomaly_map, anom_str_lo, anom_str_hi)
+                gen_image_def, anomaly_map, embd_top, embd_bot, embd_top_def, embd_bot_def = self.discrete_latent_model(
+                    batch, anomaly_map, anom_str_lo, anom_str_hi
+                )
 
             # Restore the features to normality with the Subspace restriction modules
-            recon_feat_hi, recon_embeddings_hi = self.subspace_restriction_module_hi(embd_bot_def, self.discrete_latent_model._vq_vae_bot)
-            recon_feat_lo, recon_embeddings_lo = self.subspace_restriction_module_lo(embd_top_def, self.discrete_latent_model._vq_vae_top)
+            recon_feat_hi, recon_embeddings_hi = self.subspace_restriction_module_hi(
+                embd_bot_def, self.discrete_latent_model._vq_vae_bot
+            )
+            recon_feat_lo, recon_embeddings_lo = self.subspace_restriction_module_lo(
+                embd_top_def, self.discrete_latent_model._vq_vae_top
+            )
 
             # Reconstruct the image from the reconstructed features
             # with the object-specific image reconstruction module
@@ -157,18 +180,16 @@ class DsrModel(nn.Module):
             spec_image_def = self.image_reconstruction_network(quant_join)
 
             # Generate the anomaly segmentation map
-            out_mask = self.anomaly_detection_module(spec_image_def.detach(),gen_image_def.detach())
+            out_mask = self.anomaly_detection_module(spec_image_def.detach(), gen_image_def.detach())
             out_mask_sm = torch.softmax(out_mask, dim=1)
 
             return recon_feat_hi, recon_feat_lo, embd_bot, embd_top, gen_image_def, out_mask_sm, anomaly_map
 
 
-
-
 class SubspaceRestrictionModule(nn.Module):
     """Subspace restriction module that restricts the appearance subspace into configurations
     that agree with normal appearances and applies quantization.
-    
+
     Args:
         base_width (int): Base dimensionality of the layers of the autoencoder.
     """
@@ -178,13 +199,13 @@ class SubspaceRestrictionModule(nn.Module):
 
         self.unet = SubspaceRestrictionNetwork(in_channels=base_width, out_channels=base_width, base_width=base_width)
 
-    def forward(self, batch : Tensor, quantization : function | object) -> tuple[Tensor, Tensor]:
+    def forward(self, batch: Tensor, quantization: function | object) -> tuple[Tensor, Tensor]:
         """Generate the quantized anomaly-free representation of an anomalous image.
-        
+
         Args:
             batch (Tensor): Batch of input images.
             quantization (function | object): Quantization function.
-        
+
         Returns:
             Reconstructed batch of non-quantized features and corresponding quantized features.
         """
@@ -192,10 +213,11 @@ class SubspaceRestrictionModule(nn.Module):
         quantized_b = quantization(batch)
         return batch, quantized_b
 
+
 class SubspaceRestrictionNetwork(nn.Module):
     """Subspace restriction network that reconstructs the input image into a
     non-quantized configuration that agrees with normal appearances.
-    
+
     Args:
         in_channels (int): Number of input channels.
         out_channels (int): Number of output channels.
@@ -211,10 +233,10 @@ class SubspaceRestrictionNetwork(nn.Module):
     def forward(self, batch: Tensor) -> Tensor:
         """Generate non-quantized feature maps from potentially anomalous images, to
         be quantized into non-anomalous quantized representations.
-        
+
         Args:
             batch (Tensor): Batch of input images.
-        
+
         Returns:
             Reconstructed non-quantized representation.
         """
@@ -222,9 +244,10 @@ class SubspaceRestrictionNetwork(nn.Module):
         output = self.decoder(b1, b2, b3)
         return output
 
+
 class FeatureEncoder(nn.Module):
     """Feature encoder for the subspace restriction network.
-    
+
     Args:
         in_channels (int): Number of input channels.
         base_width (int): Base dimensionality of the layers of the autoencoder.
@@ -238,7 +261,8 @@ class FeatureEncoder(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(base_width, base_width, kernel_size=3, padding=1),
             nn.InstanceNorm2d(base_width),
-            nn.ReLU(inplace=True))
+            nn.ReLU(inplace=True),
+        )
         self.mp1 = nn.Sequential(nn.MaxPool2d(2))
         self.block2 = nn.Sequential(
             nn.Conv2d(base_width, base_width * 2, kernel_size=3, padding=1),
@@ -246,7 +270,8 @@ class FeatureEncoder(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(base_width * 2, base_width * 2, kernel_size=3, padding=1),
             nn.InstanceNorm2d(base_width * 2),
-            nn.ReLU(inplace=True))
+            nn.ReLU(inplace=True),
+        )
         self.mp2 = nn.Sequential(nn.MaxPool2d(2))
         self.block3 = nn.Sequential(
             nn.Conv2d(base_width * 2, base_width * 4, kernel_size=3, padding=1),
@@ -254,14 +279,15 @@ class FeatureEncoder(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(base_width * 4, base_width * 4, kernel_size=3, padding=1),
             nn.InstanceNorm2d(base_width * 4),
-            nn.ReLU(inplace=True))
+            nn.ReLU(inplace=True),
+        )
 
     def forward(self, batch: Tensor) -> tuple[Tensor, Tensor, Tensor]:
         """Encode a batch of input features to the latent space.
-        
+
         Args:
             batch (Tensor): Batch of input images.
-        
+
         Returns:
             Encoded feature maps."""
         b1 = self.block1(batch)
@@ -271,9 +297,10 @@ class FeatureEncoder(nn.Module):
         b3 = self.block3(mp2)
         return b1, b2, b3
 
+
 class FeatureDecoder(nn.Module):
     """Feature decoder for the subspace restriction network.
-    
+
     Args:
         base_width (int): Base dimensionality of the layers of the autoencoder.
         out_channels (int): Number of output channels.
@@ -282,10 +309,12 @@ class FeatureDecoder(nn.Module):
     def __init__(self, base_width: int, out_channels: int = 1):
         super().__init__()
 
-        self.up2 = nn.Sequential(nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True),
-                                 nn.Conv2d(base_width * 4, base_width * 2, kernel_size=3, padding=1),
-                                 nn.InstanceNorm2d(base_width * 2),
-                                 nn.ReLU(inplace=True))
+        self.up2 = nn.Sequential(
+            nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True),
+            nn.Conv2d(base_width * 4, base_width * 2, kernel_size=3, padding=1),
+            nn.InstanceNorm2d(base_width * 2),
+            nn.ReLU(inplace=True),
+        )
 
         self.db2 = nn.Sequential(
             nn.Conv2d(base_width * 2, base_width * 2, kernel_size=3, padding=1),
@@ -293,32 +322,34 @@ class FeatureDecoder(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(base_width * 2, base_width * 2, kernel_size=3, padding=1),
             nn.InstanceNorm2d(base_width * 2),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
         )
 
-        self.up3 = nn.Sequential(nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True),
-                                 nn.Conv2d(base_width * 2, base_width, kernel_size=3, padding=1),
-                                 nn.InstanceNorm2d(base_width),
-                                 nn.ReLU(inplace=True))
+        self.up3 = nn.Sequential(
+            nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True),
+            nn.Conv2d(base_width * 2, base_width, kernel_size=3, padding=1),
+            nn.InstanceNorm2d(base_width),
+            nn.ReLU(inplace=True),
+        )
         self.db3 = nn.Sequential(
             nn.Conv2d(base_width, base_width, kernel_size=3, padding=1),
             nn.InstanceNorm2d(base_width),
             nn.ReLU(inplace=True),
             nn.Conv2d(base_width, base_width, kernel_size=3, padding=1),
             nn.InstanceNorm2d(base_width),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
         )
 
         self.fin_out = nn.Sequential(nn.Conv2d(base_width, out_channels, kernel_size=3, padding=1))
 
     def forward(self, b1: Tensor, b2: Tensor, b3: Tensor) -> Tensor:
         """Decode a batch of latent features to a non-quantized representation.
-        
+
         Args:
             b1 (Tensor): Top latent feature layer.
             b2 (Tensor): Middle latent feature layer.
             b3 (Tensor): Bottom latent feature layer.
-        
+
         Returns:
             Decoded non-quantized representation.
         """
@@ -331,9 +362,10 @@ class FeatureDecoder(nn.Module):
         out = self.fin_out(db3)
         return out
 
+
 class Residual(nn.Module):
     """Residual layer.
-    
+
     Args:
         in_channels (int): Number of input channels.
         out_channels (int): Number of output channels.
@@ -344,21 +376,24 @@ class Residual(nn.Module):
         super(Residual, self).__init__()
         self._block = nn.Sequential(
             nn.ReLU(True),
-            nn.Conv2d(in_channels=in_channels,
-                      out_channels=num_residual_hiddens,
-                      kernel_size=3, stride=1, padding=1, bias=False),
+            nn.Conv2d(
+                in_channels=in_channels,
+                out_channels=num_residual_hiddens,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+                bias=False,
+            ),
             nn.ReLU(True),
-            nn.Conv2d(in_channels=num_residual_hiddens,
-                      out_channels=out_channels,
-                      kernel_size=1, stride=1, bias=False)
+            nn.Conv2d(in_channels=num_residual_hiddens, out_channels=out_channels, kernel_size=1, stride=1, bias=False),
         )
 
     def forward(self, batch: Tensor) -> Tensor:
         """Compute residual layer.
-        
+
         Args:
             batch (Tensor): Batch of input images.
-        
+
         Returns:
             Computed feature maps.
         """
@@ -367,26 +402,27 @@ class Residual(nn.Module):
 
 class ResidualStack(nn.Module):
     """Stack of residual layers.
-    
+
     Args:
         in_channels (int): Number of input channels.
-        out_channels (int): Number of output channels.
+        num_hiddens (int): Number of output channels in residual layers.
         num_residual_layers (int): Number of residual layers.
         num_residual_hiddens (int): Number of intermediate channels.
     """
 
-    def __init__(self, in_channels: int, out_channels: int, num_residual_layers: int, num_residual_hiddens: int):
+    def __init__(self, in_channels: int, num_hiddens: int, num_residual_layers: int, num_residual_hiddens: int):
         super(ResidualStack, self).__init__()
         self._num_residual_layers = num_residual_layers
-        self._layers = nn.ModuleList([Residual(in_channels, out_channels, num_residual_hiddens)
-                                      for _ in range(self._num_residual_layers)])
+        self._layers = nn.ModuleList(
+            [Residual(in_channels, num_hiddens, num_residual_hiddens) for _ in range(self._num_residual_layers)]
+        )
 
     def forward(self, batch: Tensor) -> Tensor:
         """Compute residual stack.
-        
+
         Args:
             batch (Tensor): Batch of input images.
-        
+
         Returns:
             Computed feature maps.
         """
@@ -398,7 +434,7 @@ class ResidualStack(nn.Module):
 class ImageReconstructionNetwork(nn.Module):
     """Image reconstruction network that reconstructs the image from a quantized
     representation.
-    
+
     Args:
         in_channels (int): Number of input channels.
         num_hiddens (int): Number of output channels in residual layers.
@@ -413,60 +449,50 @@ class ImageReconstructionNetwork(nn.Module):
             nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1),
             norm_layer(in_channels),
             nn.ReLU(inplace=True),
-            nn.Conv2d(in_channels, in_channels*2, kernel_size=3, padding=1),
-            norm_layer(in_channels*2),
-            nn.ReLU(inplace=True))
+            nn.Conv2d(in_channels, in_channels * 2, kernel_size=3, padding=1),
+            norm_layer(in_channels * 2),
+            nn.ReLU(inplace=True),
+        )
         self.mp1 = nn.Sequential(nn.MaxPool2d(2))
         self.block2 = nn.Sequential(
-            nn.Conv2d(in_channels*2, in_channels * 2, kernel_size=3, padding=1),
+            nn.Conv2d(in_channels * 2, in_channels * 2, kernel_size=3, padding=1),
             norm_layer(in_channels * 2),
             nn.ReLU(inplace=True),
             nn.Conv2d(in_channels * 2, in_channels * 4, kernel_size=3, padding=1),
             norm_layer(in_channels * 4),
-            nn.ReLU(inplace=True))
+            nn.ReLU(inplace=True),
+        )
         self.mp2 = nn.Sequential(nn.MaxPool2d(2))
 
-        self.pre_vq_conv = nn.Conv2d(in_channels=in_channels*4,
-                                 out_channels=64,
-                                 kernel_size=1,
-                                 stride=1)
+        self.pre_vq_conv = nn.Conv2d(in_channels=in_channels * 4, out_channels=64, kernel_size=1, stride=1)
 
-        self.upblock1 = nn.ConvTranspose2d(in_channels=64,
-                                                out_channels=64,
-                                                kernel_size=4,
-                                                stride=2, padding=1)
+        self.upblock1 = nn.ConvTranspose2d(in_channels=64, out_channels=64, kernel_size=4, stride=2, padding=1)
 
-        self.upblock2 = nn.ConvTranspose2d(in_channels=64,
-                                                out_channels=64,
-                                                kernel_size=4,
-                                                stride=2, padding=1)
+        self.upblock2 = nn.ConvTranspose2d(in_channels=64, out_channels=64, kernel_size=4, stride=2, padding=1)
 
-        self._conv_1 = nn.Conv2d(in_channels=64,
-                                 out_channels=num_hiddens,
-                                 kernel_size=3,
-                                 stride=1, padding=1)
+        self._conv_1 = nn.Conv2d(in_channels=64, out_channels=num_hiddens, kernel_size=3, stride=1, padding=1)
 
-        self._residual_stack = ResidualStack(in_channels=num_hiddens,
-                                             num_hiddens=num_hiddens,
-                                             num_residual_layers=num_residual_layers,
-                                             num_residual_hiddens=num_residual_hiddens)
+        self._residual_stack = ResidualStack(
+            in_channels=num_hiddens,
+            num_hiddens=num_hiddens,
+            num_residual_layers=num_residual_layers,
+            num_residual_hiddens=num_residual_hiddens,
+        )
 
-        self._conv_trans_1 = nn.ConvTranspose2d(in_channels=num_hiddens,
-                                                out_channels=num_hiddens // 2,
-                                                kernel_size=4,
-                                                stride=2, padding=1)
+        self._conv_trans_1 = nn.ConvTranspose2d(
+            in_channels=num_hiddens, out_channels=num_hiddens // 2, kernel_size=4, stride=2, padding=1
+        )
 
-        self._conv_trans_2 = nn.ConvTranspose2d(in_channels=num_hiddens // 2,
-                                                out_channels=3,
-                                                kernel_size=4,
-                                                stride=2, padding=1)
+        self._conv_trans_2 = nn.ConvTranspose2d(
+            in_channels=num_hiddens // 2, out_channels=3, kernel_size=4, stride=2, padding=1
+        )
 
     def forward(self, inputs: Tensor) -> Tensor:
         """Reconstructs an image from a quantized representation.
-        
+
         Args:
             inputs (Tensor): Quantized features.
-        
+
         Returns:
             Reconstructed image.
         """
@@ -490,11 +516,9 @@ class ImageReconstructionNetwork(nn.Module):
         return self._conv_trans_2(batch)
 
 
-
-
 class UnetEncoder(nn.Module):
     """Encoder of the Unet network.
-    
+
     Args:
         in_channels (int): Number of input channels.
         base_width (int): Base dimensionality of the layers of the autoencoder.
@@ -509,7 +533,8 @@ class UnetEncoder(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(base_width, base_width, kernel_size=3, padding=1),
             norm_layer(base_width),
-            nn.ReLU(inplace=True))
+            nn.ReLU(inplace=True),
+        )
         self.mp1 = nn.Sequential(nn.MaxPool2d(2))
         self.block2 = nn.Sequential(
             nn.Conv2d(base_width, base_width * 2, kernel_size=3, padding=1),
@@ -517,7 +542,8 @@ class UnetEncoder(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(base_width * 2, base_width * 2, kernel_size=3, padding=1),
             norm_layer(base_width * 2),
-            nn.ReLU(inplace=True))
+            nn.ReLU(inplace=True),
+        )
         self.mp2 = nn.Sequential(nn.MaxPool2d(2))
         self.block3 = nn.Sequential(
             nn.Conv2d(base_width * 2, base_width * 4, kernel_size=3, padding=1),
@@ -525,7 +551,8 @@ class UnetEncoder(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(base_width * 4, base_width * 4, kernel_size=3, padding=1),
             norm_layer(base_width * 4),
-            nn.ReLU(inplace=True))
+            nn.ReLU(inplace=True),
+        )
         self.mp3 = nn.Sequential(nn.MaxPool2d(2))
         self.block4 = nn.Sequential(
             nn.Conv2d(base_width * 4, base_width * 4, kernel_size=3, padding=1),
@@ -533,14 +560,15 @@ class UnetEncoder(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(base_width * 4, base_width * 4, kernel_size=3, padding=1),
             norm_layer(base_width * 4),
-            nn.ReLU(inplace=True))
+            nn.ReLU(inplace=True),
+        )
 
     def forward(self, batch: Tensor) -> tuple[Tensor, Tensor, Tensor, Tensor]:
         """Encodes batch of images into a latent representation.
-        
+
         Args:
             inputs (Tensor): Quantized features.
-        
+
         Returns:
             Latent representations of the input batch.
         """
@@ -556,7 +584,7 @@ class UnetEncoder(nn.Module):
 
 class UnetDecoder(nn.Module):
     """Decoder of the Unet network.
-    
+
     Args:
         base_width (int): Base dimensionality of the layers of the autoencoder.
         out_channels (int): Number of output channels.
@@ -565,10 +593,12 @@ class UnetDecoder(nn.Module):
     def __init__(self, base_width: int, out_channels: int = 1):
         super().__init__()
         norm_layer = nn.InstanceNorm2d
-        self.up1 = nn.Sequential(nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True),
-                                 nn.Conv2d(base_width * 4, base_width * 4, kernel_size=3, padding=1),
-                                 norm_layer(base_width * 4),
-                                 nn.ReLU(inplace=True))
+        self.up1 = nn.Sequential(
+            nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True),
+            nn.Conv2d(base_width * 4, base_width * 4, kernel_size=3, padding=1),
+            norm_layer(base_width * 4),
+            nn.ReLU(inplace=True),
+        )
         # cat with base*4
         self.db1 = nn.Sequential(
             nn.Conv2d(base_width * (4 + 4), base_width * 4, kernel_size=3, padding=1),
@@ -576,13 +606,15 @@ class UnetDecoder(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(base_width * 4, base_width * 4, kernel_size=3, padding=1),
             norm_layer(base_width * 4),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
         )
 
-        self.up2 = nn.Sequential(nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True),
-                                 nn.Conv2d(base_width * 4, base_width * 2, kernel_size=3, padding=1),
-                                 norm_layer(base_width * 2),
-                                 nn.ReLU(inplace=True))
+        self.up2 = nn.Sequential(
+            nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True),
+            nn.Conv2d(base_width * 4, base_width * 2, kernel_size=3, padding=1),
+            norm_layer(base_width * 2),
+            nn.ReLU(inplace=True),
+        )
         # cat with base*2
         self.db2 = nn.Sequential(
             nn.Conv2d(base_width * (2 + 2), base_width * 2, kernel_size=3, padding=1),
@@ -590,13 +622,15 @@ class UnetDecoder(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(base_width * 2, base_width * 2, kernel_size=3, padding=1),
             norm_layer(base_width * 2),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
         )
 
-        self.up3 = nn.Sequential(nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True),
-                                 nn.Conv2d(base_width * 2, base_width, kernel_size=3, padding=1),
-                                 norm_layer(base_width),
-                                 nn.ReLU(inplace=True))
+        self.up3 = nn.Sequential(
+            nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True),
+            nn.Conv2d(base_width * 2, base_width, kernel_size=3, padding=1),
+            norm_layer(base_width),
+            nn.ReLU(inplace=True),
+        )
         # cat with base*1
         self.db3 = nn.Sequential(
             nn.Conv2d(base_width * (1 + 1), base_width, kernel_size=3, padding=1),
@@ -604,20 +638,20 @@ class UnetDecoder(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(base_width, base_width, kernel_size=3, padding=1),
             norm_layer(base_width),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
         )
 
         self.fin_out = nn.Sequential(nn.Conv2d(base_width, out_channels, kernel_size=3, padding=1))
 
     def forward(self, b1: Tensor, b2: Tensor, b3: Tensor, b4: Tensor) -> Tensor:
         """Decodes latent represnetations into an image.
-        
+
         Args:
             b1 (Tensor): First (top level) quantized feature map.
             b2 (Tensor): Second quantized feature map.
             b3 (Tensor): Third quantized feature map.
             b4 (Tensor): Fourth (bottom level) quantized feature map.
-        
+
         Returns:
             Reconstructed image.
         """
@@ -637,7 +671,6 @@ class UnetDecoder(nn.Module):
         return out
 
 
-
 class UnetModel(nn.Module):
     """Autoencoder model that reconstructs the input image.
 
@@ -654,10 +687,10 @@ class UnetModel(nn.Module):
 
     def forward(self, batch: Tensor) -> Tensor:
         """Reconstructs an input batch of images.
-        
+
         Args:
             batch (Tensor): Batch of input images.
-        
+
         Returns:
             Reconstructed images.
         """
@@ -665,10 +698,11 @@ class UnetModel(nn.Module):
         output = self.decoder(b1, b2, b3, b4)
         return output
 
+
 class AnomalyDetectionModule(nn.Module):
     """Module that detects the preence of an anomaly by comparing two images reconstructed by
     the object specific decoder and the general object decoder.
-    
+
     Args:
         in_channels (int): Number of input channels.
         out_channels (int): Number of output channels.
@@ -681,22 +715,22 @@ class AnomalyDetectionModule(nn.Module):
 
     def forward(self, batch_real: Tensor, batch_anomaly: Tensor) -> Tensor:
         """Computes the anomaly map over corresponding real and anomalous images.
-        
+
         Args:
             batch_real (Tensor): Batch of real, non defective images.
             batch_anomaly (Tensor): Batch of potentially anomalous images.
-            
+
         Returns:
             The anomaly segmentation map.
         """
-        img_x = torch.cat((batch_real, batch_anomaly),dim=1)
+        img_x = torch.cat((batch_real, batch_anomaly), dim=1)
         x = self.unet(img_x)
         return x
 
 
 class UpsamplingModule(nn.Module):
     """Module that upsamples the generated anomaly mask to full resolution.
-    
+
     Args:
         in_channels (int): Number of input channels.
         out_channels (int): Number of output channels.
@@ -706,30 +740,31 @@ class UpsamplingModule(nn.Module):
     def __init__(self, in_channels: int = 8, out_channels: int = 2, base_width: int = 64):
         super(UpsamplingModule, self).__init__()
         self.unet = UnetModel(in_channels, out_channels, base_width)
-        
+
     def forward(self, batch_real: Tensor, batch_anomaly: Tensor, batch_segmentation_map: Tensor) -> Tensor:
         """Computes upsampled segmentation maps.
-        
+
         Args:
             batch_real (Tensor): Batch of real, non defective images.
             batch_anomaly (Tensor): Batch of potentially anomalous images.
             batch_segmentation_map (Tensor): Batch of anomaly segmentation maps.
-            
+
         Returns:
             Upsampled anomaly segmentation maps.
         """
-        img_x = torch.cat((batch_real, batch_anomaly, batch_segmentation_map),dim=1)
+        img_x = torch.cat((batch_real, batch_anomaly, batch_segmentation_map), dim=1)
         x = self.unet(img_x)
         return x
-    
+
 
 class VectorQuantizer(nn.Module):
     """Module that quantizes a given feature map using learned quantization codebooks.
-    
+
     Args:
         num_embeddings (int): Size of embedding codebook.
         embedding_dim (int): Dimension of embeddings.
     """
+
     def __init__(self, num_embeddings: int, embedding_dim: int):
         # Source for the VectorQuantizer module: https://github.com/zalandoresearch/pytorch-vq-vae
         super(VectorQuantizer, self).__init__()
@@ -741,16 +776,16 @@ class VectorQuantizer(nn.Module):
         self._embedding.weight.data.normal_()
 
         # necessary to correctly load the checkpoint file
-        self.register_buffer('_ema_cluster_size', torch.zeros(num_embeddings))
+        self.register_buffer("_ema_cluster_size", torch.zeros(num_embeddings))
         self._ema_w = nn.Parameter(torch.Tensor(num_embeddings, self._embedding_dim))
         self._ema_w.data.normal_()
 
     def forward(self, inputs: Tensor) -> Tensor:
         """Calculates quantized feature map.
-        
+
         Args:
             inputs (Tensor): Non-quantized feature maps.
-        
+
         Returns:
             Quantized feature maps.
         """
@@ -762,9 +797,11 @@ class VectorQuantizer(nn.Module):
         flat_input = inputs.view(-1, self._embedding_dim)
 
         # Calculate distances
-        distances = (torch.sum(flat_input ** 2, dim=1, keepdim=True)
-                     + torch.sum(self._embedding.weight ** 2, dim=1)
-                     - 2 * torch.matmul(flat_input, self._embedding.weight.t()))
+        distances = (
+            torch.sum(flat_input**2, dim=1, keepdim=True)
+            + torch.sum(self._embedding.weight**2, dim=1)
+            - 2 * torch.matmul(flat_input, self._embedding.weight.t())
+        )
 
         # Encoding
         encoding_indices = torch.argmin(distances, dim=1).unsqueeze(1)
@@ -781,39 +818,37 @@ class VectorQuantizer(nn.Module):
 
 class EncoderBot(nn.Module):
     """Encoder module for bottom quantized feature maps.
-    
+
     Args:
         in_channels (int): Number of input channels.
         num_hiddens (int): Number of hidden channels.
         num_residual_layers (int): Number of residual layers in residual stacks.
         num_residual_hiddens (int): Number of channels in residual layers.
     """
+
     def __init__(self, in_channels: int, num_hiddens: int, num_residual_layers: int, num_residual_hiddens: int):
         super(EncoderBot, self).__init__()
 
-        self._conv_1 = nn.Conv2d(in_channels=in_channels,
-                                 out_channels=num_hiddens // 2,
-                                 kernel_size=4,
-                                 stride=2, padding=1)
-        self._conv_2 = nn.Conv2d(in_channels=num_hiddens // 2,
-                                 out_channels=num_hiddens,
-                                 kernel_size=4,
-                                 stride=2, padding=1)
-        self._conv_3 = nn.Conv2d(in_channels=num_hiddens,
-                                 out_channels=num_hiddens,
-                                 kernel_size=3,
-                                 stride=1, padding=1)
-        self._residual_stack = ResidualStack(in_channels=num_hiddens,
-                                             num_hiddens=num_hiddens,
-                                             num_residual_layers=num_residual_layers,
-                                             num_residual_hiddens=num_residual_hiddens)
+        self._conv_1 = nn.Conv2d(
+            in_channels=in_channels, out_channels=num_hiddens // 2, kernel_size=4, stride=2, padding=1
+        )
+        self._conv_2 = nn.Conv2d(
+            in_channels=num_hiddens // 2, out_channels=num_hiddens, kernel_size=4, stride=2, padding=1
+        )
+        self._conv_3 = nn.Conv2d(in_channels=num_hiddens, out_channels=num_hiddens, kernel_size=3, stride=1, padding=1)
+        self._residual_stack = ResidualStack(
+            in_channels=num_hiddens,
+            num_hiddens=num_hiddens,
+            num_residual_layers=num_residual_layers,
+            num_residual_hiddens=num_residual_hiddens,
+        )
 
     def forward(self, batch: Tensor) -> Tensor:
         """Encode inputs to be quantized into the bottom feature map.
-        
+
         Args:
             batch (Tensor): Batch of input images.
-        
+
         Returns:
             Encoded feature maps.
         """
@@ -829,35 +864,32 @@ class EncoderBot(nn.Module):
 
 class EncoderTop(nn.Module):
     """Encoder module for top quantized feature maps.
-    
+
     Args:
         in_channels (int): Number of input channels.
         num_hiddens (int): Number of hidden channels.
         num_residual_layers (int): Number of residual layers in residual stacks.
         num_residual_hiddens (int): Number of channels in residual layers.
     """
+
     def __init__(self, in_channels: int, num_hiddens: int, num_residual_layers: int, num_residual_hiddens: int):
         super(EncoderTop, self).__init__()
 
-        self._conv_1 = nn.Conv2d(in_channels=in_channels,
-                                 out_channels=num_hiddens,
-                                 kernel_size=4,
-                                 stride=2, padding=1)
-        self._conv_2 = nn.Conv2d(in_channels=num_hiddens,
-                                 out_channels=num_hiddens,
-                                 kernel_size=3,
-                                 stride=1, padding=1)
-        self._residual_stack = ResidualStack(in_channels=num_hiddens,
-                                             num_hiddens=num_hiddens,
-                                             num_residual_layers=num_residual_layers,
-                                             num_residual_hiddens=num_residual_hiddens)
+        self._conv_1 = nn.Conv2d(in_channels=in_channels, out_channels=num_hiddens, kernel_size=4, stride=2, padding=1)
+        self._conv_2 = nn.Conv2d(in_channels=num_hiddens, out_channels=num_hiddens, kernel_size=3, stride=1, padding=1)
+        self._residual_stack = ResidualStack(
+            in_channels=num_hiddens,
+            num_hiddens=num_hiddens,
+            num_residual_layers=num_residual_layers,
+            num_residual_hiddens=num_residual_hiddens,
+        )
 
     def forward(self, batch: Tensor) -> Tensor:
         """Encode inputs to be quantized into the top feature map.
-        
+
         Args:
             batch (Tensor): Batch of input images.
-        
+
         Returns:
             Encoded feature maps.
         """
@@ -873,42 +905,40 @@ class EncoderTop(nn.Module):
 
 class DecoderBot(nn.Module):
     """General appearance decoder module to reconstruct images while keeping possible anomalies.
-    
+
     Args:
         in_channels (int): Number of input channels.
         num_hiddens (int): Number of hidden channels.
         num_residual_layers (int): Number of residual layers in residual stack.
         num_residual_hiddens (int): Number of channels in residual layers.
     """
+
     def __init__(self, in_channels: int, num_hiddens: int, num_residual_layers: int, num_residual_hiddens: int):
         super(DecoderBot, self).__init__()
 
-        self._conv_1 = nn.Conv2d(in_channels=in_channels,
-                                 out_channels=num_hiddens,
-                                 kernel_size=3,
-                                 stride=1, padding=1)
+        self._conv_1 = nn.Conv2d(in_channels=in_channels, out_channels=num_hiddens, kernel_size=3, stride=1, padding=1)
 
-        self._residual_stack = ResidualStack(in_channels=num_hiddens,
-                                             num_hiddens=num_hiddens,
-                                             num_residual_layers=num_residual_layers,
-                                             num_residual_hiddens=num_residual_hiddens)
+        self._residual_stack = ResidualStack(
+            in_channels=num_hiddens,
+            num_hiddens=num_hiddens,
+            num_residual_layers=num_residual_layers,
+            num_residual_hiddens=num_residual_hiddens,
+        )
 
-        self._conv_trans_1 = nn.ConvTranspose2d(in_channels=num_hiddens,
-                                                out_channels=num_hiddens // 2,
-                                                kernel_size=4,
-                                                stride=2, padding=1)
+        self._conv_trans_1 = nn.ConvTranspose2d(
+            in_channels=num_hiddens, out_channels=num_hiddens // 2, kernel_size=4, stride=2, padding=1
+        )
 
-        self._conv_trans_2 = nn.ConvTranspose2d(in_channels=num_hiddens // 2,
-                                                out_channels=3,
-                                                kernel_size=4,
-                                                stride=2, padding=1)
+        self._conv_trans_2 = nn.ConvTranspose2d(
+            in_channels=num_hiddens // 2, out_channels=3, kernel_size=4, stride=2, padding=1
+        )
 
     def forward(self, inputs: Tensor) -> Tensor:
         """Decode quantized feature maps into an image.
-        
+
         Args:
             inputs (Tensor): Quantized feature maps.
-        
+
         Returns:
             Decoded image.
         """
@@ -921,10 +951,11 @@ class DecoderBot(nn.Module):
 
         return self._conv_trans_2(x)
 
+
 class DiscreteLatentModel(nn.Module):
     """Autoencoder quantized model that encodes the input images into quantized feature maps and generates
     a reconstructed image using the general appearance decoder.
-    
+
     Args:
         num_hiddens (int): Number of hidden channels.
         num_residual_layers (int): Number of residual layers in residual stacks.
@@ -932,102 +963,101 @@ class DiscreteLatentModel(nn.Module):
         num_embeddings (int): Size of embedding dictionary.
         embedding_dim (int): Dimension of embeddings.
     """
-    def __init__(self, num_hiddens: int, num_residual_layers: int, num_residual_hiddens: int, num_embeddings: int, embedding_dim: int):
+
+    def __init__(
+        self,
+        num_hiddens: int,
+        num_residual_layers: int,
+        num_residual_hiddens: int,
+        num_embeddings: int,
+        embedding_dim: int,
+    ):
         super(DiscreteLatentModel, self).__init__()
 
-        self._encoder_t = EncoderTop(num_hiddens, num_hiddens,
-                                     num_residual_layers,
-                                     num_residual_hiddens)
+        self._encoder_t = EncoderTop(num_hiddens, num_hiddens, num_residual_layers, num_residual_hiddens)
 
-        self._encoder_b = EncoderBot(3, num_hiddens,
-                                     num_residual_layers,
-                                     num_residual_hiddens)
+        self._encoder_b = EncoderBot(3, num_hiddens, num_residual_layers, num_residual_hiddens)
 
-        self._pre_vq_conv_bot = nn.Conv2d(in_channels=num_hiddens + embedding_dim,
-                                          out_channels=embedding_dim,
-                                          kernel_size=1,
-                                          stride=1)
+        self._pre_vq_conv_bot = nn.Conv2d(
+            in_channels=num_hiddens + embedding_dim, out_channels=embedding_dim, kernel_size=1, stride=1
+        )
 
-        self._pre_vq_conv_top = nn.Conv2d(in_channels=num_hiddens,
-                                          out_channels=embedding_dim,
-                                          kernel_size=1,
-                                          stride=1)
+        self._pre_vq_conv_top = nn.Conv2d(in_channels=num_hiddens, out_channels=embedding_dim, kernel_size=1, stride=1)
 
         self._vq_vae_top = VectorQuantizer(num_embeddings, embedding_dim)
 
         self._vq_vae_bot = VectorQuantizer(num_embeddings, embedding_dim)
 
-        self._decoder_b = DecoderBot(embedding_dim*2,
-                                     num_hiddens,
-                                     num_residual_layers,
-                                     num_residual_hiddens)
+        self._decoder_b = DecoderBot(embedding_dim * 2, num_hiddens, num_residual_layers, num_residual_hiddens)
 
+        self.upsample_t = nn.ConvTranspose2d(embedding_dim, embedding_dim, 4, stride=2, padding=1)
 
-        self.upsample_t = nn.ConvTranspose2d(
-            embedding_dim, embedding_dim, 4, stride=2, padding=1
-        )
-    
-
-    def generate_fake_anomalies_joined(features, embeddings, memory_torch_original, mask, strength=None):
+    def generate_fake_anomalies_joined(self, features: Tensor, embeddings: Tensor, memory_torch_original: Tensor, mask: Tensor, strength: float = None):
         """TODO"""
-        random_embeddings = torch.zeros((embeddings.shape[0],embeddings.shape[2]*embeddings.shape[3], memory_torch_original.shape[1]))
+        random_embeddings = torch.zeros(
+            (embeddings.shape[0], embeddings.shape[2] * embeddings.shape[3], memory_torch_original.shape[1])
+        )
         inputs = features.permute(0, 2, 3, 1).contiguous()
 
         for k in range(embeddings.shape[0]):
             memory_torch = memory_torch_original
             flat_input = inputs[k].view(-1, memory_torch.shape[1])
 
-            distances_b = (torch.sum(flat_input ** 2, dim=1, keepdim=True)
-                        + torch.sum(memory_torch ** 2, dim=1)
-                        - 2 * torch.matmul(flat_input, memory_torch.t()))
+            distances_b = (
+                torch.sum(flat_input**2, dim=1, keepdim=True)
+                + torch.sum(memory_torch**2, dim=1)
+                - 2 * torch.matmul(flat_input, memory_torch.t())
+            )
 
             percentage_vectors = strength[k]
             topk = max(1, min(int(percentage_vectors * memory_torch.shape[0]) + 1, memory_torch.shape[0] - 1))
             values, topk_indices = torch.topk(distances_b, topk, dim=1, largest=False)
-            topk_indices = topk_indices[:, int(memory_torch.shape[0] * 0.05):]
+            topk_indices = topk_indices[:, int(memory_torch.shape[0] * 0.05) :]
             topk = topk_indices.shape[1]
 
             random_indices_hik = torch.randint(topk, size=(topk_indices.shape[0],))
-            random_indices_t = topk_indices[torch.arange(random_indices_hik.shape[0]),random_indices_hik]
-            random_embeddings[k] = memory_torch[random_indices_t,:]
-        random_embeddings = random_embeddings.reshape((random_embeddings.shape[0],embeddings.shape[2],embeddings.shape[3],random_embeddings.shape[2]))
-        random_embeddings_tensor = random_embeddings.permute(0,3,1,2).cuda()
+            random_indices_t = topk_indices[torch.arange(random_indices_hik.shape[0]), random_indices_hik]
+            random_embeddings[k] = memory_torch[random_indices_t, :]
+        random_embeddings = random_embeddings.reshape(
+            (random_embeddings.shape[0], embeddings.shape[2], embeddings.shape[3], random_embeddings.shape[2])
+        )
+        random_embeddings_tensor = random_embeddings.permute(0, 3, 1, 2).cuda()
 
-        down_ratio_y = int(mask.shape[2]/embeddings.shape[2])
-        down_ratio_x = int(mask.shape[3]/embeddings.shape[3])
+        down_ratio_y = int(mask.shape[2] / embeddings.shape[2])
+        down_ratio_x = int(mask.shape[3] / embeddings.shape[3])
         anomaly_mask = torch.nn.functional.max_pool2d(mask, (down_ratio_y, down_ratio_x)).float()
 
         anomaly_embedding = anomaly_mask * random_embeddings_tensor + (1.0 - anomaly_mask) * embeddings
 
         return anomaly_embedding
 
-
-    def forward(self, batch: Tensor, anomaly_mask: Tensor | None = None,
-                anom_str_lo: float = 0, anom_str_hi: float = 0) -> tuple[Tensor, Tensor, Tensor] | tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
+    def forward(
+        self, batch: Tensor, anomaly_mask: Tensor | None = None, anom_str_lo: float = 0, anom_str_hi: float = 0
+    ) -> tuple[Tensor, Tensor, Tensor] | tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
         """Generates quantized feature maps of batch of input images as well as their
         reconstruction based on the general appearance decoder.
-        
+
         Args:
             batch (Tensor): Batch of input images.
             anomaly_mask (Tensor | None): Anomaly mask to be used to generate anomalies on
             the quantized feature maps.
-        
+
         Returns:
             Tuple of reconstructed images, quantized top feature maps, and quantized
             bottom feature maps. If generating anomalies, returns reconstructed anomaly
             image through general image decoder, non-defective quantized top and bottom
             feature maps and defective quantized top and bottom feature maps.
         """
-        #Encoder Hi
+        # Encoder Hi
         enc_b = self._encoder_b(batch)
 
-        #Encoder Lo -- F_Lo
+        # Encoder Lo -- F_Lo
         enc_t = self._encoder_t(enc_b)
         zt = self._pre_vq_conv_top(enc_t)
 
         # Quantize F_Lo with K_Lo
         quantized_t = self._vq_vae_top(zt)
-        
+
         # Upsample Q_Lo
         up_quantized_t = self.upsample_t(quantized_t)
 
@@ -1045,36 +1075,40 @@ class DiscreteLatentModel(nn.Module):
 
         if anomaly_mask is not None:
             # Generate feature-based anomalies on F_lo
-            anomaly_embedding_lo = self.generate_fake_anomalies_joined(zt, quantized_t,
-                                                                self._vq_vae_top._embedding.weight,
-                                                                anomaly_mask, strength=anom_str_lo)
-            
+            anomaly_embedding_lo = self.generate_fake_anomalies_joined(
+                zt, quantized_t, self._vq_vae_top._embedding.weight, anomaly_mask, anom_str_lo
+            )
+
             up_quantized_t_defect = self.upsample_t(anomaly_embedding_lo)
             feat_defect = torch.cat((enc_b, up_quantized_t_defect), dim=1)
             zb_defect = self._pre_vq_conv_bot(feat_defect)
             quantized_b_defect = self._vq_vae_bot(zb_defect)
 
             # Generate feature-based anomalies on F_hi
-            anomaly_embedding_hi = self.generate_fake_anomalies_joined(zb_defect, quantized_b_defect,
-                                                                self._vq_vae_bot._embedding.weight,
-                                                                anomaly_mask, strength=anom_str_hi)
-            
-            # get anomaly embeddings
-            use_both = torch.randint(0, 2,(batch.shape[0],1,1,1)).cuda().float()
-            use_lo = torch.randint(0, 2,(batch.shape[0],1,1,1)).cuda().float()
-            use_hi = (1 - use_lo)
+            anomaly_embedding_hi = self.generate_fake_anomalies_joined(
+                zb_defect, quantized_b_defect, self._vq_vae_bot._embedding.weight, anomaly_mask, anom_str_hi
+            )
 
-            anomaly_embedding_hi_usebot = self.generate_fake_anomalies_joined(zb, quantized_b,
-                                                            self._vq_vae_bot._embedding.weight,
-                                                            anomaly_mask, strength=anom_str_hi)
+            # get anomaly embeddings
+            use_both = torch.randint(0, 2, (batch.shape[0], 1, 1, 1)).cuda().float()
+            use_lo = torch.randint(0, 2, (batch.shape[0], 1, 1, 1)).cuda().float()
+            use_hi = 1 - use_lo
+
+            anomaly_embedding_hi_usebot = self.generate_fake_anomalies_joined(
+                zb, quantized_b, self._vq_vae_bot._embedding.weight, anomaly_mask, anom_str_hi
+            )
 
             anomaly_embedding_lo_usebot = quantized_t
             anomaly_embedding_hi_usetop = quantized_b
             anomaly_embedding_lo_usetop = anomaly_embedding_lo
-            anomaly_embedding_hi_not_both =  use_hi * anomaly_embedding_hi_usebot + use_lo * anomaly_embedding_hi_usetop
-            anomaly_embedding_lo_not_both =  use_hi * anomaly_embedding_lo_usebot + use_lo * anomaly_embedding_lo_usetop
-            anomaly_embedding_hi = (anomaly_embedding_hi * use_both + anomaly_embedding_hi_not_both * (1.0 - use_both)).detach().clone()
-            anomaly_embedding_lo = (anomaly_embedding_lo * use_both + anomaly_embedding_lo_not_both * (1.0 - use_both)).detach().clone()
+            anomaly_embedding_hi_not_both = use_hi * anomaly_embedding_hi_usebot + use_lo * anomaly_embedding_hi_usetop
+            anomaly_embedding_lo_not_both = use_hi * anomaly_embedding_lo_usebot + use_lo * anomaly_embedding_lo_usetop
+            anomaly_embedding_hi = (
+                (anomaly_embedding_hi * use_both + anomaly_embedding_hi_not_both * (1.0 - use_both)).detach().clone()
+            )
+            anomaly_embedding_lo = (
+                (anomaly_embedding_lo * use_both + anomaly_embedding_lo_not_both * (1.0 - use_both)).detach().clone()
+            )
 
             anomaly_embedding_hi_copy = anomaly_embedding_hi.clone()
             anomaly_embedding_lo_copy = anomaly_embedding_lo.clone()
@@ -1086,15 +1120,14 @@ class DiscreteLatentModel(nn.Module):
 
             # Resize the ground truth anomaly map to closely match the augmented features
             down_ratio_x_hi = int(anomaly_mask.shape[3] / quantized_b_defect.shape[3])
-            anomaly_mask_hi = torch.nn.functional.max_pool2d(anomaly_mask,
-                                                                (down_ratio_x_hi, down_ratio_x_hi)).float()
+            anomaly_mask_hi = torch.nn.functional.max_pool2d(anomaly_mask, (down_ratio_x_hi, down_ratio_x_hi)).float()
             anomaly_mask_hi = torch.nn.functional.interpolate(anomaly_mask_hi, scale_factor=down_ratio_x_hi)
             down_ratio_x_lo = int(anomaly_mask.shape[3] / quantized_t.shape[3])
-            anomaly_mask_lo = torch.nn.functional.max_pool2d(anomaly_mask,
-                                                                (down_ratio_x_lo, down_ratio_x_lo)).float()
+            anomaly_mask_lo = torch.nn.functional.max_pool2d(anomaly_mask, (down_ratio_x_lo, down_ratio_x_lo)).float()
             anomaly_mask_lo = torch.nn.functional.interpolate(anomaly_mask_lo, scale_factor=down_ratio_x_lo)
-            anomaly_mask = anomaly_mask_lo * use_both + (
-                            anomaly_mask_lo * use_lo + anomaly_mask_hi * use_hi) * (1.0 - use_both)
+            anomaly_mask = anomaly_mask_lo * use_both + (anomaly_mask_lo * use_lo + anomaly_mask_hi * use_hi) * (
+                1.0 - use_both
+            )
 
             # reminder : top = lo, bot = hi!
             return recon_defect, anomaly_mask, quantized_t, quantized_b, anomaly_embedding_lo, anomaly_embedding_hi
