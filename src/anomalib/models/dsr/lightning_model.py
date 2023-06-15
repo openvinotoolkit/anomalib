@@ -9,9 +9,8 @@ Paper https://link.springer.com/chapter/10.1007/978-3-031-19821-2_31
 from __future__ import annotations
 
 import logging
-
-from typing import Callable
 from pathlib import Path
+from typing import Callable
 
 import torch
 from omegaconf import DictConfig, ListConfig
@@ -19,9 +18,9 @@ from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor, nn
 
-from anomalib.models.dsr.anomaly_generator import DsrAnomalyGenerator
 from anomalib.data.utils.augmenter import Augmenter
 from anomalib.models.components import AnomalyModule
+from anomalib.models.dsr.anomaly_generator import DsrAnomalyGenerator
 from anomalib.models.dsr.loss import DsrLoss
 from anomalib.models.dsr.torch_model import DsrModel
 
@@ -51,10 +50,11 @@ class Dsr(AnomalyModule):
         self.ckpt_file = ckpt
 
 
-    def on_training_start(self) -> STEP_OUTPUT:
+    def on_train_start(self) -> STEP_OUTPUT:
         # TODO: load weights for the discrete latent model, or do it as 'on training start'?
         logger.info("Loading pretrained weights...")
         self.model.load_pretrained_discrete_model_weights(self.ckpt_file)
+        logger.info("Pretrained weights loaded.")
 
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
