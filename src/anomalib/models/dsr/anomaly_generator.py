@@ -3,12 +3,11 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import torch
-from torch import Tensor, nn
-import random
 
 import imgaug.augmenters as iaa
 import numpy as np
+import torch
+from torch import Tensor, nn
 
 from anomalib.data.utils.generators.perlin import _rand_perlin_2d_np
 
@@ -35,9 +34,7 @@ class DsrAnomalyGenerator(nn.Module):
         perlin_scalex = 2 ** (torch.randint(min_perlin_scale, perlin_scale, (1,)).numpy()[0])
         perlin_scaley = 2 ** (torch.randint(min_perlin_scale, perlin_scale, (1,)).numpy()[0])
         threshold = 0.5
-        perlin_noise_np = _rand_perlin_2d_np(
-            (height, width), (perlin_scalex, perlin_scaley)
-        )
+        perlin_noise_np = _rand_perlin_2d_np((height, width), (perlin_scalex, perlin_scaley))
         perlin_noise_np = self.rot(image=perlin_noise_np)
         mask = np.where(perlin_noise_np > threshold, np.ones_like(perlin_noise_np), np.zeros_like(perlin_noise_np))
         mask = np.expand_dims(mask, axis=2).astype(np.float32)

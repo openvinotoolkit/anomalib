@@ -9,16 +9,12 @@ Paper https://link.springer.com/chapter/10.1007/978-3-031-19821-2_31
 from __future__ import annotations
 
 import logging
-from pathlib import Path
-from typing import Callable
 
 import torch
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.utilities.types import STEP_OUTPUT
-from torch import Tensor, nn
+from torch import Tensor
 
-from anomalib.data.utils.augmenter import Augmenter
 from anomalib.models.components import AnomalyModule
 from anomalib.models.dsr.anomaly_generator import DsrAnomalyGenerator
 from anomalib.models.dsr.loss import DsrLoss
@@ -49,13 +45,11 @@ class Dsr(AnomalyModule):
         self.anom_par: float = anom_par
         self.ckpt_file = ckpt
 
-
     def on_train_start(self) -> STEP_OUTPUT:
         # TODO: load weights for the discrete latent model, or do it as 'on training start'?
         logger.info("Loading pretrained weights...")
         self.model.load_pretrained_discrete_model_weights(self.ckpt_file)
         logger.info("Pretrained weights loaded.")
-
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Training Step of DSR.
@@ -81,7 +75,6 @@ class Dsr(AnomalyModule):
 
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
-    
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Validation step of DSR. The Softmax predictions of the anomalous class are used as anomaly map.
@@ -107,15 +100,10 @@ class DsrLightning(Dsr):
     """
 
     def __init__(self, hparams: DictConfig | ListConfig) -> None:
-        super().__init__(
-            ckpt=hparams.model.ckpt_path,
-            anom_par=hparams.model.anom_par
-        )
+        super().__init__(ckpt=hparams.model.ckpt_path, anom_par=hparams.model.anom_par)
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """Configure the Adam optimizer. Do not train the discrete model! (or the upsmapler for the time being)"""
-        return torch.optim.Adam(params=self.model.parameters(),
-                                lr=self.hparams.model.lr)
-    
+        return torch.optim.Adam(params=self.model.parameters(), lr=self.hparams.model.lr)

@@ -12,8 +12,8 @@
 from __future__ import annotations
 
 import torch
-from torch import Tensor, nn
 import torch.nn.functional as F
+from torch import Tensor, nn
 
 
 class DsrModel(nn.Module):
@@ -39,7 +39,7 @@ class DsrModel(nn.Module):
         num_residual_hiddens: int = 64,
     ):
         super(DsrModel, self).__init__()
-        
+
         self.image_dim: int = 3
         self.anomaly_map_dim: int = 2
         self.anom_par: float = anom_par
@@ -150,7 +150,7 @@ class DsrModel(nn.Module):
             out_mask_averaged = torch.nn.functional.avg_pool2d(out_mask_sm[:,1:,:,:], 21, stride=1,
                                                         padding=21 // 2)
             image_score = F.max(out_mask_averaged)
-                    
+
             return out_mask_cv, image_score"""
             if self.training:
                 return out_mask_sm
@@ -160,7 +160,7 @@ class DsrModel(nn.Module):
             # we should be generating anomalies only when we're not training
             if not self.training:
                 raise Exception("Should not happen")
-            
+
             # Generate anomaly strength factors
             anom_str_lo = (torch.rand(batch.shape[0]) * (1.0 - self.anom_par) + self.anom_par).cuda()
             anom_str_hi = (torch.rand(batch.shape[0]) * (1.0 - self.anom_par) + self.anom_par).cuda()
@@ -998,7 +998,9 @@ class DiscreteLatentModel(nn.Module):
 
         self.upsample_t = nn.ConvTranspose2d(embedding_dim, embedding_dim, 4, stride=2, padding=1)
 
-    def generate_fake_anomalies_joined(self, features: Tensor, embeddings: Tensor, memory_torch_original: Tensor, mask: Tensor, strength: float = None):
+    def generate_fake_anomalies_joined(
+        self, features: Tensor, embeddings: Tensor, memory_torch_original: Tensor, mask: Tensor, strength: float = None
+    ):
         """TODO"""
         random_embeddings = torch.zeros(
             (embeddings.shape[0], embeddings.shape[2] * embeddings.shape[3], memory_torch_original.shape[1])

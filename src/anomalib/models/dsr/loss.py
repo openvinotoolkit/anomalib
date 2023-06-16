@@ -3,7 +3,7 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from kornia.losses import FocalLoss, SSIMLoss
+from kornia.losses import FocalLoss
 from torch import Tensor, nn
 
 
@@ -21,7 +21,7 @@ class DsrLoss(nn.Module):
 
         self.l2_loss = nn.modules.loss.MSELoss()
         self.focal_loss = FocalLoss(alpha=1, reduction="mean")
-    
+
     def forward(self, recon_nq_hi, recon_nq_lo, qu_hi, qu_lo, input_image, gen_img, seg, anomaly_mask) -> Tensor:
         """Compute the loss over a batch for the DSR model."""
         l2_loss_hi_val = self.l2_loss(recon_nq_hi, qu_hi)
