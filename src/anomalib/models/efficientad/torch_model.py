@@ -200,7 +200,7 @@ class EfficientADModel(nn.Module):
         self,
         teacher_out_channels: int,
         input_size: tuple[int, int],
-        model_size: EfficientADModelSize = EfficientADModelSize.M,
+        model_size: EfficientADModelSize = EfficientADModelSize.S,
         padding=False,
     ) -> None:
         super().__init__()
@@ -308,6 +308,8 @@ class EfficientADModel(nn.Module):
                 (ae_output - student_output[:, self.teacher_out_channels :]) ** 2, dim=1, keepdim=True
             )
 
+            map_st = F.pad(map_st, (4, 4, 4, 4))
+            map_stae = F.pad(map_stae, (4, 4, 4, 4))
             map_st = F.interpolate(map_st, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
             map_stae = F.interpolate(map_stae, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
 

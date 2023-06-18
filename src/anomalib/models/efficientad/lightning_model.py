@@ -67,7 +67,7 @@ class EfficientAD(AnomalyModule):
         self,
         teacher_out_channels: int,
         image_size: tuple[int, int],
-        model_size: EfficientADModelSize = EfficientADModelSize.M,
+        model_size: EfficientADModelSize = EfficientADModelSize.S,
         lr: float = 0.0001,
         weight_decay: float = 0.00001,
         padding: bool = False,
@@ -120,7 +120,7 @@ class EfficientAD(AnomalyModule):
 
     @torch.no_grad()
     def teacher_channel_mean_std(self, dataloader: DataLoader) -> dict[str, Tensor]:
-        """Calculate the the mean and std of the teacher models activations.
+        """Calculate the mean and std of the teacher models activations.
 
         Args:
             dataloader (DataLoader): Dataloader of the respective dataset.
@@ -170,16 +170,43 @@ class EfficientAD(AnomalyModule):
                     map_ae = output["map_ae"]
                     maps_st.append(map_st)
                     maps_ae.append(map_ae)
-        maps_st = torch.cat(maps_st)
-        maps_ae = torch.cat(maps_ae)
-        qa_st = torch.quantile(maps_st, q=0.9).to(self.device)
-        qb_st = torch.quantile(maps_st, q=0.995).to(self.device)
-        qa_ae = torch.quantile(maps_ae, q=0.9).to(self.device)
-        qb_ae = torch.quantile(maps_ae, q=0.995).to(self.device)
+
+        qa_st, qb_st = self.get_quantiles_of_maps(maps_st)
+        qa_ae, qb_ae = self.get_quantiles_of_maps(maps_ae)
         return {"qa_st": qa_st, "qa_ae": qa_ae, "qb_st": qb_st, "qb_ae": qb_ae}
 
+    def _get_quantiles_of_maps(self, maps: list[Tensor]) -> tuple[Tensor, Tensor]:
+        """Calculate 90% and 99.5% quantiles of the given anomaly maps.
+
+        If the total number of elements in the given maps is larger than 16777216
+        the returned quantiles are computed on a random subset of the given
+        elements.
+
+        Args:
+            maps (list[Tensor]): List of anomaly maps.
+
+        Returns:
+            tuple[Tensor, Tensor]: Two scalars - the 90% and the 99.5% quantile.
+        """
+        maps_flat = torch.flatten(torch.cat(maps))
+        # torch.quantile only works with input size up to 16777216 elements
+        # (16777216 is 16 * 1024 * 1024)
+        # if we have more elements we need to decrease the size
+        # we do this by sampling random elements of maps_flat because then
+        # the locations of the quantiles (90% and 99.5%) will still be
+        # valid even though they might not be the exact quantiles.
+        max_input_size = 16777216
+        if len(maps_flat) > max_input_size:
+            # select a random subset with max_input_size elements.
+            perm = torch.randperm(len(maps_flat), device=self.device)
+            idx = perm[:max_input_size]
+            maps_flat = maps_flat[idx]
+        qa = torch.quantile(maps_flat, q=0.9).to(self.device)
+        qb = torch.quantile(maps_flat, q=0.995).to(self.device)
+        return qa, qb
+
     def configure_optimizers(self) -> optim.Optimizer:
-        optimizer = optim.AdamW(
+        optimizer = optim.Adam(
             list(self.model.student.parameters()) + list(self.model.ae.parameters()),
             lr=self.lr,
             weight_decay=self.weight_decay,
@@ -197,7 +224,7 @@ class EfficientAD(AnomalyModule):
             self.model.mean_std.update(channel_mean_std)
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> dict[str, Tensor]:
-        """Training step for EfficintAD returns the  student, autoencoder and combined loss.
+        """Training step for EfficientAD returns the student, autoencoder and combined loss.
 
         Args:
             batch (batch: dict[str, str | Tensor]): Batch containing image filename, image, label and mask
@@ -228,7 +255,7 @@ class EfficientAD(AnomalyModule):
         Calculate the feature map quantiles of the validation dataset and push to the model.
         """
         if (self.current_epoch + 1) == self.trainer.max_epochs:
-            map_norm_quantiles = self.map_norm_quantiles(self.trainer.datamodule.train_dataloader())
+            map_norm_quantiles = self.map_norm_quantiles(self.trainer.datamodule.val_dataloader())
             self.model.quantiles.update(map_norm_quantiles)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
