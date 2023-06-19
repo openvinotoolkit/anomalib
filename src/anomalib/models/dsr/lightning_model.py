@@ -9,6 +9,7 @@ Paper https://link.springer.com/chapter/10.1007/978-3-031-19821-2_31
 from __future__ import annotations
 
 import logging
+from os.path import isfile
 
 import torch
 from omegaconf import DictConfig, ListConfig
@@ -17,6 +18,7 @@ from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
 from anomalib.models.dsr.anomaly_generator import DsrAnomalyGenerator
+from anomalib.models.dsr.download_weights import DsrWeightDownloader
 from anomalib.models.dsr.loss import DsrLoss
 from anomalib.models.dsr.torch_model import DsrModel
 
@@ -42,8 +44,12 @@ class Dsr(AnomalyModule):
         self.anomaly_generator = DsrAnomalyGenerator()
         self.model = DsrModel(anom_par)
         self.loss = DsrLoss()
+        self.downloader = DsrWeightDownloader()
         self.anom_par: float = anom_par
         self.ckpt_file = ckpt
+
+        if not isfile("src/anomalib/models/dsr/vq_model_pretrained_128_4096.pckl"):
+            self.downloader.download()
 
     def on_train_start(self) -> STEP_OUTPUT:
         # TODO: load weights for the discrete latent model, or do it as 'on training start'?
