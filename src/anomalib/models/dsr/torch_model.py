@@ -63,13 +63,13 @@ class DsrModel(nn.Module):
         self.subspace_restriction_module_hi = SubspaceRestrictionModule(base_width=embedding_dim)
 
         self.anomaly_detection_module = AnomalyDetectionModule(
-            in_channels=2 * self.image_dim, out_channels=self.anomaly_map_dim, base_width=embedding_dim
+            in_channels=2 * self.image_dim, out_channels=self.anomaly_map_dim, base_width=64
         )
 
         self.upsampling_module = UpsamplingModule(
             in_channels=(2 * self.image_dim) + self.anomaly_map_dim,
             out_channels=self.anomaly_map_dim,
-            base_width=embedding_dim,
+            base_width=64,
         )
 
         for parameters in self.discrete_latent_model.parameters():
@@ -142,19 +142,15 @@ class DsrModel(nn.Module):
             out_mask_sm = torch.softmax(out_mask, dim=1)
 
             # Mask upsampling and score calculation
-            """
-            upsampled_mask = self.upsampling_module(obj_spec_image.detach(), gen_image.detach(), out_mask_sm)
-            out_mask_sm_up = torch.softmax(upsampled_mask, dim=1)
-            out_mask_sm_up = self.crop_image(out_mask_sm_up, height, width)
-            out_mask_cv = out_mask_sm_up[0,1,:,:]
+            # upsampled_mask = self.upsampling_module(obj_spec_image.detach(), gen_image.detach(), out_mask_sm)
+            # out_mask_sm_up = torch.softmax(upsampled_mask, dim=1)
+            # out_mask_sm_up = self.crop_image(out_mask_sm_up, height, width)
+            # out_mask_cv = out_mask_sm_up[0,1,:,:]
             out_mask_averaged = torch.nn.functional.avg_pool2d(out_mask_sm[:,1:,:,:], 21, stride=1,
-                                                        padding=21 // 2)
-            image_score = F.max(out_mask_averaged)
+                                                        padding=21 // 2).detach()
+            image_score = torch.max(out_mask_averaged).unsqueeze(0)
 
-            return out_mask_cv, image_score"""
-            if self.training:
-                return out_mask_sm
-            return torch.softmax(out_mask_sm, dim=1)[:, 1, ...]
+            return out_mask_averaged, image_score
 
         else:
             # we should be generating anomalies only when we're not training
@@ -1140,7 +1136,6 @@ class DiscreteLatentModel(nn.Module):
             # reminder : top = lo, bot = hi!
             return recon_defect, anomaly_mask, quantized_t, quantized_b, anomaly_embedding_lo, anomaly_embedding_hi
 
-        # NOTE: Should not be used at the moment
         # Concatenate Q_Hi and Q_Lo and input it into the General appearance decoder
         quant_join = torch.cat((up_quantized_t, quantized_b), dim=1)
         recon_fin = self._decoder_b(quant_join)

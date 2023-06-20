@@ -49,7 +49,10 @@ class Dsr(AnomalyModule):
         self.ckpt_file = ckpt
 
         if not isfile("src/anomalib/models/dsr/vq_model_pretrained_128_4096.pckl"):
+            logger.info("Pretrained weights not found.")
             self.downloader.download()
+        else:
+            logger.info("Pretrained checkpoint file found.")
 
     def on_train_start(self) -> STEP_OUTPUT:
         # TODO: load weights for the discrete latent model, or do it as 'on training start'?
@@ -93,8 +96,9 @@ class Dsr(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        prediction = self.model(batch["image"])
+        prediction, anomaly_scores = self.model(batch["image"])
         batch["anomaly_maps"] = prediction
+        batch["pred_scores"] = anomaly_scores
         return batch
 
 

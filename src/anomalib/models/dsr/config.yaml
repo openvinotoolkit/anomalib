@@ -5,7 +5,7 @@ dataset:
   category: bottle
   task: segmentation
   train_batch_size: 8
-  eval_batch_size: 32
+  eval_batch_size: 1
   num_workers: 8
   image_size: 256 # dimensions to which images are resized (mandatory)
   center_crop: null # dimensions to which images are center-cropped after resizing (optional)
@@ -30,7 +30,7 @@ model:
   lr: 0.0002
   ckpt_path: ./src/anomalib/models/dsr/vq_model_pretrained_128_4096.pckl
   anom_par: 0.2
-  normalization_method: min_max # options: [none, min_max, cdf]
+  normalization_method: none # options: [none, min_max, cdf]
 
 metrics:
   image:
