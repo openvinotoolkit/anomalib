@@ -31,6 +31,7 @@ class DsrModel(nn.Module):
 
     def __init__(
         self,
+        ckpt,
         anom_par: float = 0.2,
         embedding_dim: int = 128,
         num_embeddings: int = 4096,
@@ -71,6 +72,12 @@ class DsrModel(nn.Module):
             out_channels=self.anomaly_map_dim,
             base_width=64,
         )
+
+        self.discrete_latent_model.load_state_dict(torch.load(ckpt + "/vq_model_pretrained_128_4096.pckl"))
+        self.subspace_restriction_module_hi.load_state_dict(torch.load(ckpt+"/DSR_subspace_restriction_hi_bottle.pckl"))
+        self.subspace_restriction_module_lo.load_state_dict(torch.load(ckpt+"/DSR_subspace_restriction_lo_bottle.pckl"))
+        self.anomaly_detection_module.load_state_dict(torch.load(ckpt+"/DSR_anomaly_det_module_bottle.pckl"))
+        self.image_reconstruction_network.load_state_dict(torch.load(ckpt+"/DSR_image_recon_module_bottle.pckl"), strict=False)
 
         for parameters in self.discrete_latent_model.parameters():
             parameters.requires_grad = False

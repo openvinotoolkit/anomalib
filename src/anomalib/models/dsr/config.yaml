@@ -9,7 +9,7 @@ dataset:
   num_workers: 8
   image_size: 256 # dimensions to which images are resized (mandatory)
   center_crop: null # dimensions to which images are center-cropped after resizing (optional)
-  normalization: imagenet # data distribution to which the images will be normalized: [none, imagenet]
+  normalization: none # data distribution to which the images will be normalized: [none, imagenet]
   transform_config:
     train: null
     eval: null
@@ -30,7 +30,7 @@ model:
   lr: 0.0002
   ckpt_path: ./src/anomalib/models/dsr/checkpoints
   anom_par: 0.2
-  normalization_method: min_max # options: [none, min_max, cdf]
+  normalization_method: none # options: [none, min_max, cdf]
 
 metrics:
   image:

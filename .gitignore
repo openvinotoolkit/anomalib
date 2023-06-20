@@ -10,6 +10,7 @@ results
 notebooks/500_use_cases/501_dobot/
 !notebooks/500_use_cases/501_dobot/*.ipynb
 
+temp/
 # VENV
 .python-version
 .anomalib

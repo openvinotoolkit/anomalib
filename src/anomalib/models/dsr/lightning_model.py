@@ -42,23 +42,16 @@ class Dsr(AnomalyModule):
         # else train upsampling module till epoch end
 
         self.anomaly_generator = DsrAnomalyGenerator()
-        self.model = DsrModel(anom_par)
+        self.model = DsrModel(ckpt, anom_par)
         self.loss = DsrLoss()
         self.downloader = DsrWeightDownloader()
         self.anom_par: float = anom_par
-        self.ckpt_file = ckpt
 
         if not isfile("src/anomalib/models/dsr/vq_model_pretrained_128_4096.pckl"):
             logger.info("Pretrained weights not found.")
             self.downloader.download()
         else:
             logger.info("Pretrained checkpoint file found.")
-
-    def on_train_start(self) -> STEP_OUTPUT:
-        # TODO: load weights for the discrete latent model, or do it as 'on training start'?
-        logger.info("Loading pretrained weights...")
-        self.model.load_pretrained_discrete_model_weights(self.ckpt_file)
-        logger.info("Pretrained weights loaded.")
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Training Step of DSR.
