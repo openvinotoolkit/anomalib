@@ -70,5 +70,3 @@ def test_pro(labels, preds, thresholds, fpr_limit, aupro):
 
     assert computed_binned_aupro != computed_aupro
     assert torch.allclose(computed_aupro, aupro, atol=TOL)
-
-
