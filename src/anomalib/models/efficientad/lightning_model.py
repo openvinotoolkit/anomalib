@@ -172,7 +172,7 @@ class EfficientAD(AnomalyModule):
                     maps_ae.append(map_ae)
 
         qa_st, qb_st = self._get_quantiles_of_maps(maps_st)
-        qa_ae, qb_ae = self.get_quantiles_of_maps(maps_ae)
+        qa_ae, qb_ae = self._get_quantiles_of_maps(maps_ae)
         return {"qa_st": qa_st, "qa_ae": qa_ae, "qb_st": qb_st, "qb_ae": qb_ae}
 
     def _get_quantiles_of_maps(self, maps: list[Tensor]) -> tuple[Tensor, Tensor]:
