@@ -41,11 +41,16 @@ def pytest_generate_tests(metafunc):
         fpr_limit.append(float(np.mean(fpr_limit)))
         aupro.append(torch.tensor(np.mean(aupro)))
 
-        vals = list(zip(labels, preds, fpr_limit, aupro))
-        metafunc.parametrize(argnames=("labels", "preds", "fpr_limit", "aupro"), argvalues=vals)
+        thresholds = [
+            torch.linspace(0, 1, steps=50),
+            torch.linspace(0, 1, steps=50),
+        ]
+        vals = list(zip(labels, preds, thresholds, fpr_limit, aupro))
+
+        metafunc.parametrize(argnames=("labels", "preds", "thresholds", "fpr_limit", "aupro"), argvalues=vals)
 
 
-def test_pro(labels, preds, fpr_limit, aupro):
+def test_pro(labels, preds, thresholds, fpr_limit, aupro):
     pro = AUPRO(fpr_limit=fpr_limit)
     pro.update(preds, labels)
     computed_aupro = pro.compute()
@@ -58,3 +63,12 @@ def test_pro(labels, preds, fpr_limit, aupro):
     assert torch.allclose(computed_aupro, aupro, atol=TOL)
     assert torch.allclose(computed_aupro, ref_pro, atol=TOL)
     assert torch.allclose(aupro, ref_pro, atol=TOL)
+
+    binned_pro = AUPRO(fpr_limit=fpr_limit, thresholds=thresholds)
+    binned_pro.update(preds, labels)
+    computed_binned_aupro = binned_pro.compute()
+
+    assert computed_binned_aupro != computed_aupro
+    assert torch.allclose(computed_aupro, aupro, atol=TOL)
+
+

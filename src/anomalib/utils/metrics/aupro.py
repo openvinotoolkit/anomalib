@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from functools import partial
 from typing import Any, Callable
 
 import torch
@@ -30,6 +31,11 @@ class AUPRO(Metric):
     full_state_update: bool = False
     preds: list[Tensor]
     target: list[Tensor]
+    # The threshold used to compute the binned version of the AUPRO which is less accurate
+    # but more memory efficient. Warning: Contrary to AUROC or AUPR, here the predictions
+    # are not scaled between 0 and 1 by self calling the sigmoid function if some predictions
+    # are greater than 1.
+    thresholds: Tensor | None
 
     def __init__(
         self,
@@ -38,6 +44,7 @@ class AUPRO(Metric):
         process_group: Any | None = None,
         dist_sync_fn: Callable | None = None,
         fpr_limit: float = 0.3,
+        thresholds: int | list[float] | Tensor | None = None,
     ) -> None:
         super().__init__(
             compute_on_step=compute_on_step,
@@ -49,6 +56,11 @@ class AUPRO(Metric):
         self.add_state("preds", default=[], dist_reduce_fx="cat")  # pylint: disable=not-callable
         self.add_state("target", default=[], dist_reduce_fx="cat")  # pylint: disable=not-callable
         self.register_buffer("fpr_limit", torch.tensor(fpr_limit))
+
+        if thresholds is None:
+            self.thresholds = thresholds
+        else:
+            self.register_buffer("thresholds", thresholds)
 
     def update(self, preds: Tensor, target: Tensor) -> None:  # type: ignore
         """Update state with new values.
@@ -96,9 +108,12 @@ class AUPRO(Metric):
         Returns:
             tuple[Tensor, Tensor]: tuple containing final fpr and tpr values.
         """
+        # initialize the roc curve with the specified thresholds
+        # target being forced to be 0 or 1, we can use the binary roc curve
+        roc_in_pro = partial(roc, task="binary", thresholds=self.thresholds)
 
         # compute the global fpr-size
-        fpr: Tensor = roc(preds, target)[0]  # only need fpr
+        fpr: Tensor = roc_in_pro(preds, target)[0]  # only need fpr
         output_size = torch.where(fpr <= self.fpr_limit)[0].size(0)
 
         # compute the PRO curve by aggregating per-region tpr/fpr curves/values.
@@ -120,7 +135,7 @@ class AUPRO(Metric):
             mask = cca == label
             # Need to calculate label-wise roc on union of background & mask, as otherwise we wrongly consider other
             # label in labels as FPs. We also don't need to return the thresholds
-            _fpr, _tpr = roc(preds[background | mask], mask[background | mask])[:-1]
+            _fpr, _tpr = roc_in_pro(preds[background | mask], mask[background | mask])[:-1]
 
             # catch edge-case where ROC only has fpr vals > self.fpr_limit
             if _fpr[_fpr <= self.fpr_limit].max() == 0:
