@@ -99,13 +99,13 @@ class DsrModel(nn.Module):
         return recon_feat_hi, recon_feat_lo, embd_top, embd_bot, gen_image_def, out_mask_sm, anomaly_map
         Returns:
             Tuple of :
-                - Reconstructed non-quantized features (high)
-                - Reconstructed non-quantized features (low)
-                - Quantized features (high)
-                - Quantized features (low)
-                - General object decoder-decoded image
-                - Computed segmentation mask
-                - Resized ground-truth anomaly map
+                - Reconstructed non-quantized hi features of defect (F~_hi)
+                - Reconstructed non-quantized lo features of defect (F~_lo)
+                - Quantized features of non defective img (Q_hi)
+                - Quantized features of non defective img (Q_lo)
+                - Object-specific-decoded image (I_spc)
+                - Computed segmentation mask (M)
+                - Resized ground-truth anomaly map (M_gt)
         """
         # top == lo
 
@@ -146,8 +146,9 @@ class DsrModel(nn.Module):
             # out_mask_sm_up = torch.softmax(upsampled_mask, dim=1)
             # out_mask_sm_up = self.crop_image(out_mask_sm_up, height, width)
             # out_mask_cv = out_mask_sm_up[0,1,:,:]
-            out_mask_averaged = torch.nn.functional.avg_pool2d(out_mask_sm[:,1:,:,:], 21, stride=1,
-                                                        padding=21 // 2).detach()
+            out_mask_averaged = torch.nn.functional.avg_pool2d(
+                out_mask_sm[:, 1:, :, :], 21, stride=1, padding=21 // 2
+            ).detach()
             image_score = torch.max(out_mask_averaged).unsqueeze(0)
 
             return out_mask_averaged, image_score
@@ -185,7 +186,7 @@ class DsrModel(nn.Module):
             out_mask = self.anomaly_detection_module(spec_image_def.detach(), gen_image_def.detach())
             out_mask_sm = torch.softmax(out_mask, dim=1)
 
-            return recon_feat_hi, recon_feat_lo, embd_bot, embd_top, gen_image_def, out_mask_sm, anomaly_map
+            return recon_feat_hi, recon_feat_lo, embd_bot, embd_top, spec_image_def, out_mask_sm, anomaly_map
 
 
 class SubspaceRestrictionModule(nn.Module):
