@@ -7,11 +7,12 @@ from kornia.losses import FocalLoss
 from torch import Tensor, nn
 
 
-class DsrLoss(nn.Module):
+class DsrSecondLoss(nn.Module):
     """Overall loss function of the DSR model.
 
     The total loss consists of:
-        - MSE loss between non-anomalous quantized input image and anomalous subspace-reconstructed non-quantized input (hi and lo)
+        - MSE loss between non-anomalous quantized input image and anomalous subspace-reconstructed
+          non-quantized input (hi and lo)
         - MSE loss between input image and reconstructed image through object-specific decoder,
         - Focal loss between computed segmentation mask and ground truth mask.
     """
@@ -29,3 +30,14 @@ class DsrLoss(nn.Module):
         l2_loss_img_val = self.l2_loss(input_image, gen_img) * 10
         focal_loss_val = self.focal_loss(seg, anomaly_mask.squeeze(1).long())
         return l2_loss_hi_val + l2_loss_lo_val + l2_loss_img_val + focal_loss_val
+
+
+class DsrThirdLoss(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+
+        self.focal_loss = FocalLoss(alpha=1, reduction="mean")
+
+    def forward(self, gen_mask, anomaly_mask):
+        focal_loss = self.focal_loss(gen_mask, anomaly_mask.squeeze(1).long())
+        return focal_loss
