@@ -23,7 +23,6 @@ def get_parser() -> ArgumentParser:
         ArgumentParser: The parser object.
     """
     parser = ArgumentParser()
-    parser.add_argument("--config", type=Path, required=True, help="Path to a config file")
     parser.add_argument("--weights", type=Path, required=True, help="Path to model weights")
     parser.add_argument("--metadata", type=Path, required=True, help="Path to a JSON file containing the metadata.")
     parser.add_argument("--input", type=Path, required=True, help="Path to an image to infer.")
@@ -71,7 +70,7 @@ def infer(args: Namespace) -> None:
         args (Namespace): The arguments from the command line.
     """
     # Get the inferencer.
-    inferencer = OpenVINOInferencer(path=args.weights, metadata=args.metadata, device=args.device)
+    inferencer = OpenVINOInferencer(path=args.weights, device=args.device, task=args.task)
     visualizer = Visualizer(mode=args.visualization_mode, task=args.task)
 
     filenames = get_image_filenames(path=args.input)

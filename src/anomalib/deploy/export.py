@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import json
 import subprocess  # nosec
 from enum import Enum
 from pathlib import Path
@@ -18,6 +17,8 @@ from torch.types import Number
 
 from anomalib.data.task_type import TaskType
 from anomalib.models.components import AnomalyModule
+
+from .model import ExportModel
 
 
 class ExportMode(str, Enum):
@@ -101,17 +102,14 @@ def export(
 
     # Get metadata.
     metadata = get_metadata(task, transform, model)
+    export_model = ExportModel(model, input_size, metadata)
 
     if export_mode == ExportMode.TORCH:
-        export_to_torch(model, metadata, export_path)
+        export_to_torch(export_model, export_path)
 
     elif export_mode in (ExportMode.ONNX, ExportMode.OPENVINO):
-        # Write metadata to json file. The file is written in the same directory as the target model.
-        with (Path(export_path) / "metadata.json").open("w", encoding="utf-8") as metadata_file:
-            json.dump(metadata, metadata_file, ensure_ascii=False, indent=4)
-
         # Export model to onnx and convert to OpenVINO IR if export mode is set to OpenVINO.
-        onnx_path = export_to_onnx(model, input_size, export_path)
+        onnx_path = export_to_onnx(export_model, export_path)
         if export_mode == ExportMode.OPENVINO:
             export_to_openvino(export_path, onnx_path)
 
@@ -119,24 +117,24 @@ def export(
         raise ValueError(f"Unknown export mode {export_mode}")
 
 
-def export_to_torch(model: AnomalyModule, metadata: dict[str, Any], export_path: Path) -> None:
+def export_to_torch(model: ExportModel, export_path: Path) -> None:
     """Export AnomalibModel to torch.
 
     Args:
-        model (AnomalyModule): Model to export.
+        model (ExportModel): Model to export.
         export_path (Path): Path to the folder storing the exported model.
     """
     torch.save(
-        obj={"model": model.model, "metadata": metadata},
+        obj={"model": model, "input_size": model.input_size},
         f=export_path / "model.pt",
     )
 
 
-def export_to_onnx(model: AnomalyModule, input_size: tuple[int, int], export_path: Path) -> Path:
+def export_to_onnx(model: ExportModel, export_path: Path) -> Path:
     """Export model to onnx.
 
     Args:
-        model (AnomalyModule): Model to export.
+        model (ExportModel): Model to export.
         input_size (list[int] | tuple[int, int]): Image size used as the input for onnx converter.
         export_path (Path): Path to the root folder of the exported model.
 
@@ -144,13 +142,17 @@ def export_to_onnx(model: AnomalyModule, input_size: tuple[int, int], export_pat
         Path: Path to the exported onnx model.
     """
     onnx_path = export_path / "model.onnx"
+    input_tensor = torch.zeros((1, 3, *model.input_size)).to(model.device)
+    dummy_output = model(input_tensor)
+    output_keys = [key for key, value in zip(dummy_output._fields, dummy_output) if value is not None]
+
     torch.onnx.export(
-        model.model,
-        torch.zeros((1, 3, *input_size)).to(model.device),
+        model,
+        input_tensor,
         onnx_path,
-        opset_version=11,
         input_names=["input"],
-        output_names=["output"],
+        output_names=output_keys,
+        dynamic_axes={"input": {0: "batch_size"}},
     )
 
     return onnx_path

@@ -8,38 +8,36 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import albumentations as A
 import cv2
 import numpy as np
 import torch
-from omegaconf import DictConfig
 from torch import Tensor, nn
+from torchvision.transforms.functional import resize
 
-from anomalib.data import TaskType
-from anomalib.data.utils.boxes import masks_to_boxes
+from anomalib.data.utils import read_image
+from anomalib.post_processing import ImageResult
 
-from .base_inferencer import Inferencer
+LABEL_MAPPING = {0: "normal", 1: "anomaly"}
 
 
-class TorchInferencer(Inferencer):
+class TorchInferencer:
     """PyTorch implementation for the inference.
 
     Args:
         path (str | Path): Path to Torch model weights.
         device (str): Device to use for inference. Options are auto, cpu, cuda. Defaults to "auto".
+        task (str): Task type. Defaults to "classification".
     """
 
-    def __init__(
-        self,
-        path: str | Path,
-        device: str = "auto",
-    ) -> None:
+    def __init__(self, path: str | Path, device: str = "auto", task: str = "classification") -> None:
         self.device = self._get_device(device)
 
         # Load the model weights.
         self.model = self.load_model(path)
-        self.metadata = self._load_metadata(path)
-        self.transform = A.from_dict(self.metadata["transform"])
+        self.input_size = torch.load(
+            path,
+        )["input_size"]
+        self.task = task
 
     @staticmethod
     def _get_device(device: str) -> torch.device:
@@ -59,18 +57,6 @@ class TorchInferencer(Inferencer):
         elif device == "gpu":
             device = "cuda"
         return torch.device(device)
-
-    def _load_metadata(self, path: str | Path | dict | None = None) -> dict | DictConfig:
-        """Load metadata from file.
-
-        Args:
-            path (str | Path | dict): Path to the model pt file.
-
-        Returns:
-            dict: Dictionary containing the metadata.
-        """
-        metadata = torch.load(path, map_location=self.device)["metadata"] if path else {}
-        return metadata
 
     def load_model(self, path: str | Path) -> nn.Module:
         """Load the PyTorch model.
@@ -95,10 +81,12 @@ class TorchInferencer(Inferencer):
         Returns:
             Tensor: pre-processed image.
         """
-        processed_image = self.transform(image=image)["image"]
+        processed_image = torch.from_numpy(image).to(self.device)
 
-        if len(processed_image) == 3:
+        if len(processed_image.shape) == 3:
+            processed_image = processed_image.permute(2, 0, 1)
             processed_image = processed_image.unsqueeze(0)
+            processed_image = resize(processed_image, size=self.input_size)
 
         return processed_image.to(self.device)
 
@@ -113,75 +101,72 @@ class TorchInferencer(Inferencer):
         """
         return self.model(image)
 
-    def post_process(self, predictions: Tensor, metadata: dict | DictConfig | None = None) -> dict[str, Any]:
+    def post_process(self, predictions: dict[str, Any], image_shape: tuple[int, int]) -> dict[str, Any]:
         """Post process the output predictions.
 
         Args:
             predictions (Tensor): Raw output predicted by the model.
-            metadata (dict, optional): Meta data. Post-processing step sometimes requires
-                additional meta data such as image shape. This variable comprises such info.
-                Defaults to None.
+            image_shape (tuple[int, int]): Shape of the input image.
 
         Returns:
             dict[str, str | float | np.ndarray]: Post processed prediction results.
         """
-        if metadata is None:
-            metadata = self.metadata
+        for key, value in predictions.items():
+            if isinstance(value, Tensor):
+                predictions[key] = value.detach().cpu().numpy()
 
-        if isinstance(predictions, Tensor):
-            anomaly_map = predictions.detach().cpu().numpy()
-            pred_score = anomaly_map.reshape(-1).max()
-        else:
-            # NOTE: Patchcore `forward`` returns heatmap and score.
-            #   We need to add the following check to ensure the variables
-            #   are properly assigned. Without this check, the code
-            #   throws an error regarding type mismatch torch vs np.
-            if isinstance(predictions[1], (Tensor)):
-                anomaly_map, pred_score = predictions
-                anomaly_map = anomaly_map.detach().cpu().numpy()
-                pred_score = pred_score.detach().cpu().numpy()
-            else:
-                anomaly_map, pred_score = predictions
-                pred_score = pred_score.detach()
+        # reshape output to original image size
+        for key, value in predictions.items():
+            if key in ("anomaly_map", "pred_mask") and value is not None:
+                predictions[key] = cv2.resize(value, dsize=image_shape[::-1])
 
-        # Common practice in anomaly detection is to assign anomalous
-        # label to the prediction if the prediction score is greater
-        # than the image threshold.
-        pred_label: str | None = None
-        if "image_threshold" in metadata:
-            pred_idx = pred_score >= metadata["image_threshold"]
-            pred_label = "Anomalous" if pred_idx else "Normal"
+        if predictions["pred_label"] is not None:
+            predictions["pred_label"] = LABEL_MAPPING[predictions["pred_label"].item()]
 
-        pred_mask: np.ndarray | None = None
-        if "pixel_threshold" in metadata:
-            pred_mask = (anomaly_map >= metadata["pixel_threshold"]).squeeze().astype(np.uint8)
+        return predictions
 
-        anomaly_map = anomaly_map.squeeze()
-        anomaly_map, pred_score = self._normalize(anomaly_maps=anomaly_map, pred_scores=pred_score, metadata=metadata)
+    def predict(
+        self,
+        image: str | Path | np.ndarray,
+    ) -> ImageResult:
+        """Perform a prediction for a given input image.
 
-        if isinstance(anomaly_map, Tensor):
-            anomaly_map = anomaly_map.detach().cpu().numpy()
+        The main workflow is (i) pre-processing, (ii) forward-pass, (iii) post-process.
 
-        if "image_shape" in metadata and anomaly_map.shape != metadata["image_shape"]:
-            image_height = metadata["image_shape"][0]
-            image_width = metadata["image_shape"][1]
-            anomaly_map = cv2.resize(anomaly_map, (image_width, image_height))
+        Args:
+            image (Union[str, np.ndarray]): Input image whose output is to be predicted.
+                It could be either a path to image or numpy array itself.
 
-            if pred_mask is not None:
-                pred_mask = cv2.resize(pred_mask, (image_width, image_height))
+        Returns:
+            ImageResult: Prediction results to be visualized.
+        """
+        if isinstance(image, (str, Path)):
+            image_arr: np.ndarray = read_image(image)
+        else:  # image is already a numpy array. Kept for mypy compatibility.
+            image_arr = image
+        image_shape = image_arr.shape[:2]
 
-        if self.metadata["task"] == TaskType.DETECTION:
-            pred_boxes = masks_to_boxes(torch.from_numpy(pred_mask))[0][0].numpy()
-            box_labels = np.ones(pred_boxes.shape[0])
-        else:
-            pred_boxes = None
-            box_labels = None
+        processed_image = self.pre_process(image_arr)
+        predictions = self.forward(processed_image)
+        output = self.post_process(predictions, image_shape=image_shape)
 
-        return {
-            "anomaly_map": anomaly_map,
-            "pred_label": pred_label,
-            "pred_score": pred_score,
-            "pred_mask": pred_mask,
-            "pred_boxes": pred_boxes,
-            "box_labels": box_labels,
-        }
+        return ImageResult(
+            image=image_arr,
+            pred_score=output.get("pred_score", None),
+            pred_label=output.get("pred_label", None),
+            anomaly_map=output.get("anomaly_map", None),
+            pred_mask=output.get("pred_mask", None),
+            pred_boxes=output.get("pred_boxes", None),
+            box_labels=output.get("box_labels", None),
+        )
+
+    def __call__(self, image: np.ndarray) -> ImageResult:
+        """Call predict on the Image.
+
+        Args:
+            image (np.ndarray): Input Image
+
+        Returns:
+            ImageResult: Prediction results to be visualized.
+        """
+        return self.predict(image)
