@@ -76,6 +76,10 @@ class Dsr(AnomalyModule):
 
     def on_train_start(self) -> None:
         self.model.load_pretrained_discrete_model_weights(self.ckpt)
+    
+    def on_train_epoch_start(self) -> None:
+        if self.current_epoch == self.second_phase:
+            logger.info("Now training upsampling module.")
 
     def training_step(
         self, batch: dict[str, str | Tensor], batch_idx: int, optimizer_idx: int, *args, **kwargs
@@ -92,10 +96,7 @@ class Dsr(AnomalyModule):
             Loss dictionary
         """
         del batch_idx, args, kwargs  # These variables are not used.
-
-        if self.current_epoch == self.second_phase:
-            logger.info("Now training upsampling module.")
-
+        
         if self.current_epoch < self.second_phase:
             if optimizer_idx == 0:
                 input_image = batch["image"]

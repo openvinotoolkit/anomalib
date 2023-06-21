@@ -146,7 +146,7 @@ class DsrModel(nn.Module):
             else:
                 return out_mask_sm_up
 
-        elif anomaly_map_to_generate and self.training:
+        elif anomaly_map_to_generate is not None and self.training:
             # we are in phase two
 
             # Generate anomaly strength factors
