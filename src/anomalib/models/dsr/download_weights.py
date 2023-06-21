@@ -33,7 +33,7 @@ class DsrWeightDownloader:
 
         Args:
             url (str, optional): URL to download from. Defaults to "https://docs.google.com/uc?export=download".
-            file_id (str, optional): File ID to download (Google Drive). Defaults to "15plhikrUjYCcx23JVxxBKb-HBwKAb8UK".
+            file_id (str, optional): File ID (Google Drive). Defaults to "15plhikrUjYCcx23JVxxBKb-HBwKAb8UK".
             dest (str, optional): Folder to extract the ckpt file to. Defaults to "./src/anomalib/models/dsr/".
             temp (str, optional): Temporary zip file location. Defaults to "./src/anomalib/models/dsr/checkpoints.zip".
         """
@@ -67,7 +67,7 @@ class DsrWeightDownloader:
 
         return None
 
-    def _save_response_content(self, response: requests.Response, destination: str):
+    def _save_response_content(self, response: requests.Response, destination: str) -> None:
         """Download and save response content.
 
         Args:
@@ -90,7 +90,7 @@ class DsrWeightDownloader:
 
         print("Weights downloaded.")
 
-    def _extract_weights(self, source: str, destination: str):
+    def _extract_weights(self, source: str, destination: str) -> None:
         """Extract the weights file from the archive.
 
         Args:
@@ -104,7 +104,7 @@ class DsrWeightDownloader:
             file.extract(checkpoint, destination)
         print("Weights extracted.")
 
-    def _delete_zip(self, source: str):
+    def _delete_zip(self, source: str) -> None:
         """Deleted temporary zip archive.
 
         Args:

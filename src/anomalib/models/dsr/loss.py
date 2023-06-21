@@ -8,7 +8,7 @@ from torch import Tensor, nn
 
 
 class DsrSecondLoss(nn.Module):
-    """Overall loss function of the DSR model.
+    """Overall loss function of the second training phase of the DSR model.
 
     The total loss consists of:
         - MSE loss between non-anomalous quantized input image and anomalous subspace-reconstructed
@@ -23,8 +23,32 @@ class DsrSecondLoss(nn.Module):
         self.l2_loss = nn.modules.loss.MSELoss()
         self.focal_loss = FocalLoss(alpha=1, reduction="mean")
 
-    def forward(self, recon_nq_hi, recon_nq_lo, qu_hi, qu_lo, input_image, gen_img, seg, anomaly_mask) -> Tensor:
-        """Compute the loss over a batch for the DSR model."""
+    def forward(
+        self,
+        recon_nq_hi: Tensor,
+        recon_nq_lo: Tensor,
+        qu_hi: Tensor,
+        qu_lo: Tensor,
+        input_image: Tensor,
+        gen_img: Tensor,
+        seg: Tensor,
+        anomaly_mask: Tensor,
+    ) -> Tensor:
+        """Compute the loss over a batch for the DSR model.
+
+        Args:
+            recon_nq_hi (Tensor): Reconstructed non-quantized hi feature
+            recon_nq_lo (Tensor): Reconstructed non-quantized lo feature
+            qu_hi (Tensor): Non-defective quantized hi feature
+            qu_lo (Tensor): Non-defective quantized lo feature
+            input_image (Tensor): Original image
+            gen_img (Tensor): Object-specific decoded image
+            seg (Tensor): Computed anomaly map
+            anomaly_mask (Tensor): Ground truth anomaly map
+
+        Returns:
+            Tensor: Total loss
+        """
         l2_loss_hi_val = self.l2_loss(recon_nq_hi, qu_hi)
         l2_loss_lo_val = self.l2_loss(recon_nq_lo, qu_lo)
         l2_loss_img_val = self.l2_loss(input_image, gen_img) * 10
@@ -33,11 +57,25 @@ class DsrSecondLoss(nn.Module):
 
 
 class DsrThirdLoss(nn.Module):
+    """Overall loss function of the third training phase of the DSR model.
+
+    The loss consists of a focal loss between the computed segmentation mask and the ground truth mask.
+    """
+
     def __init__(self) -> None:
         super().__init__()
 
         self.focal_loss = FocalLoss(alpha=1, reduction="mean")
 
-    def forward(self, gen_mask, anomaly_mask):
+    def forward(self, gen_mask: Tensor, anomaly_mask: Tensor) -> Tensor:
+        """Compute the loss over a batch for the DSR model.
+
+        Args:
+            gen_mask (Tensor): Computed anomaly map
+            anomaly_mask (Tensor): Ground truth anomaly map
+
+        Returns:
+            Tensor: Total loss
+        """
         focal_loss = self.focal_loss(gen_mask, anomaly_mask.squeeze(1).long())
         return focal_loss

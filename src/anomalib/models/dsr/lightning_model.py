@@ -32,15 +32,13 @@ class Dsr(AnomalyModule):
     """DSR: A Dual Subspace Re-Projection Network for Surface Anomaly Detection
 
     Args:
-        anomaly_source_path (str | None): Path to folder that contains the anomaly source images. Random noise will
-            be used if left empty.
+        ckpt (str): Path to checkpoint file containing the pretrained weights for the discrete
+        model.
+        anom_par (float, optional): Parameter determining the strength of the generated anomalies.
     """
 
     def __init__(self, ckpt: str, anom_par: float = 0.2) -> None:
         super().__init__()
-
-        # while "model < objective or end epoch" on train
-        # else train upsampling module till epoch end
 
         self.quantized_anomaly_generator = DsrAnomalyGenerator()
         self.perlin_generator = Augmenter()
@@ -57,8 +55,16 @@ class Dsr(AnomalyModule):
         else:
             logger.info("Pretrained checkpoint file found.")
 
-    def configure_optimizers(self) -> dict[str, torch.optim.Optimizer | torch.optim.LRScheduler]:
-        """Configure the Adam optimizer for training phases 2 and 3. Does not train the discrete model (phase 1)"""
+    def configure_optimizers(
+        self,
+    ) -> tuple[dict[str, torch.optim.Optimizer | torch.optim.LRScheduler], dict[str, torch.optim.Optimizer]]:
+        """Configure the Adam optimizer for training phases 2 and 3. Does not train the discrete
+        model (phase 1)
+
+        Returns:
+            dict[str, torch.optim.Optimizer | torch.optim.LRScheduler]: Dictionary of optimizers
+        (the first one having a schedule)
+        """
         self.second_phase = int(10 * self.trainer.max_epochs / 12)
         anneal = int(0.8 * self.second_phase)
         optimizer_d = torch.optim.Adam(
@@ -75,9 +81,11 @@ class Dsr(AnomalyModule):
         return ({"optimizer": optimizer_d, "lr_scheduler": scheduler_d}, {"optimizer": optimizer_u})
 
     def on_train_start(self) -> None:
+        """Load pretrained weights of the discrete model when starting training."""
         self.model.load_pretrained_discrete_model_weights(self.ckpt)
-    
+
     def on_train_epoch_start(self) -> None:
+        """Display a message when starting to train the upsampling module."""
         if self.current_epoch == self.second_phase:
             logger.info("Now training upsampling module.")
 
@@ -93,12 +101,14 @@ class Dsr(AnomalyModule):
             batch (dict[str, str | Tensor]): Batch containing image filename, image, label and mask
 
         Returns:
-            Loss dictionary
+            STEP_OUTPUT: Loss dictionary
         """
         del batch_idx, args, kwargs  # These variables are not used.
-        
+
         if self.current_epoch < self.second_phase:
+            # we are not yet training the upsampling module
             if optimizer_idx == 0:
+                # we are only using the first optimizer
                 input_image = batch["image"]
                 # Create anomaly masks
                 anomaly_mask = self.quantized_anomaly_generator.augment_batch(input_image)
@@ -109,13 +119,16 @@ class Dsr(AnomalyModule):
                 # Compute loss
                 loss = self.second_loss(recon_nq_hi, recon_nq_lo, qu_hi, qu_lo, input_image, gen_img, seg, anomaly_mask)
             elif optimizer_idx == 1:
+                # we are not training the upsampling module
                 return
             else:
-                raise Exception("Should not happen")
+                raise Exception(f"Unknown optimizer_idx {optimizer_idx}.")
         else:
             if optimizer_idx == 0:
+                # we are not training the anomaly detection and object specific modules
                 return
             elif optimizer_idx == 1:
+                # we are training the upsampling module
                 input_image = batch["image"]
                 # Generate anomalies
                 input_image, anomaly_maps = self.perlin_generator.augment_batch(input_image)
@@ -124,7 +137,7 @@ class Dsr(AnomalyModule):
                 # Calculate loss
                 loss = self.third_loss(gen_masks, anomaly_maps)
             else:
-                raise Exception("Should not happen")
+                raise Exception(f"Unknown optimizer_idx {optimizer_idx}.")
 
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
@@ -136,7 +149,7 @@ class Dsr(AnomalyModule):
             batch (dict[str, str | Tensor]): Batch of input images
 
         Returns:
-            Dictionary to which predicted anomaly maps have been added.
+            STEP_OUTPUT: Dictionary to which predicted anomaly maps have been added.
         """
         del args, kwargs  # These variables are not used.
 

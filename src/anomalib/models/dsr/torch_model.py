@@ -11,6 +11,8 @@
 
 from __future__ import annotations
 
+from typing import Callable
+
 import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
@@ -78,14 +80,22 @@ class DsrModel(nn.Module):
     def load_pretrained_discrete_model_weights(self, ckpt: str) -> None:
         self.discrete_latent_model.load_state_dict(torch.load(ckpt))
 
-    def forward(self, batch: Tensor, anomaly_map_to_generate: Tensor | None = None) -> Tensor | tuple[Tensor, Tensor]:
+    def forward(
+        self, batch: Tensor, anomaly_map_to_generate: Tensor | None = None
+    ) -> Tensor | tuple[Tensor, Tensor] | tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
         """Compute the anomaly mask from an input image.
 
         Args:
             batch (Tensor): Batch of input images.
-        return recon_feat_hi, recon_feat_lo, embd_top, embd_bot, gen_image_def, out_mask_sm, anomaly_map
+            anomaly_map_to_generate (Tensor | None): anomaly map to use to generate quantized defects.
+            If not training phase 2, should be None.
+
         Returns:
-            Tuple of :
+            If training phase 3, tensor of reconstructed anomaly map
+            If testing, tuple of:
+                - Upsampled anomaly map
+                - Image score
+            If training phase 2, tuple of:
                 - Reconstructed non-quantized hi features of defect (F~_hi)
                 - Reconstructed non-quantized lo features of defect (F~_lo)
                 - Quantized features of non defective img (Q_hi)
@@ -180,7 +190,7 @@ class DsrModel(nn.Module):
             return recon_feat_hi, recon_feat_lo, embd_bot, embd_top, spec_image_def, out_mask_sm, anomaly_map
 
         else:
-            raise Exception("Should not happen")
+            raise Exception("There should not be an anomaly map to generate when not training")
 
 
 class SubspaceRestrictionModule(nn.Module):
@@ -196,7 +206,7 @@ class SubspaceRestrictionModule(nn.Module):
 
         self.unet = SubspaceRestrictionNetwork(in_channels=base_width, out_channels=base_width, base_width=base_width)
 
-    def forward(self, batch: Tensor, quantization: function | object) -> tuple[Tensor, Tensor]:
+    def forward(self, batch: Tensor, quantization: Callable) -> tuple[Tensor, Tensor]:
         """Generate the quantized anomaly-free representation of an anomalous image.
 
         Args:
@@ -990,9 +1000,20 @@ class DiscreteLatentModel(nn.Module):
         self.upsample_t = nn.ConvTranspose2d(embedding_dim, embedding_dim, 4, stride=2, padding=1)
 
     def generate_fake_anomalies_joined(
-        self, features: Tensor, embeddings: Tensor, memory_torch_original: Tensor, mask: Tensor, strength: float = None
-    ):
-        """TODO"""
+        self, features: Tensor, embeddings: Tensor, memory_torch_original: Tensor, mask: Tensor, strength: Tensor
+    ) -> Tensor:
+        """Generate quantized anomalies.
+
+        Args:
+            features (Tensor): Features on which the anomalies will be generated.
+            embeddings (Tensor): Embeddings to use to generate the anomalies.
+            memory_torch_original (Tensor): Weight of embeddings.
+            mask (Tensor): Original anomaly mask.
+            strength (float): Strength of generated anomaly.
+
+        Returns:
+            Tensor: Anomalous embedding.
+        """
         random_embeddings = torch.zeros(
             (embeddings.shape[0], embeddings.shape[2] * embeddings.shape[3], memory_torch_original.shape[1])
         )
@@ -1031,8 +1052,12 @@ class DiscreteLatentModel(nn.Module):
         return anomaly_embedding
 
     def forward(
-        self, batch: Tensor, anomaly_mask: Tensor | None = None, anom_str_lo: float = 0, anom_str_hi: float = 0
-    ) -> tuple[Tensor, Tensor, Tensor] | tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
+        self,
+        batch: Tensor,
+        anomaly_mask: Tensor | None = None,
+        anom_str_lo: Tensor | None = None,
+        anom_str_hi: Tensor | None = None,
+    ) -> tuple[Tensor, Tensor, Tensor] | tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
         """Generates quantized feature maps of batch of input images as well as their
         reconstruction based on the general appearance decoder.
 
@@ -1042,10 +1067,17 @@ class DiscreteLatentModel(nn.Module):
             the quantized feature maps.
 
         Returns:
-            Tuple of reconstructed images, quantized top feature maps, and quantized
-            bottom feature maps. If generating anomalies, returns reconstructed anomaly
-            image through general image decoder, non-defective quantized top and bottom
-            feature maps and defective quantized top and bottom feature maps.
+            If generating an anomaly mask:
+                - General object decoder-decoded anomalous image
+                - Reshaped ground truth anomaly map
+                - Non defective quantized lo feature
+                - Non defective quantized hi feature
+                - Non quantized subspace encoded defective lo feature
+                - Non quantized subspace encoded defective hi feature
+            Else:
+                - General object decoder-decoded image
+                - Quantized lo feature
+                - Quantized hi feature
         """
         # Encoder Hi
         enc_b = self._encoder_b(batch)

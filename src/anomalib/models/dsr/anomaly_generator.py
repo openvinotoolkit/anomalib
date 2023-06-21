@@ -17,6 +17,9 @@ class DsrAnomalyGenerator(nn.Module):
     noise generator on the two quantized representations of an image. This generator
     is only used during the second phase of training! The third phase requires generating
     smudges over the input images.
+
+    Args:
+        p_anomalous (float, optional): Probability to generate an anomalous image.
     """
 
     def __init__(
@@ -29,6 +32,15 @@ class DsrAnomalyGenerator(nn.Module):
         self.rot = iaa.Sequential([iaa.Affine(rotate=(-90, 90))])
 
     def generate_anomaly(self, height: int, width: int) -> Tensor:
+        """Generate an anomalous mask.
+
+        Args:
+            height (int): Height of generated mask.
+            width (int): Width of generated mask.
+
+        Returns:
+            Tensor: Generated mask.
+        """
         min_perlin_scale = 0
         perlin_scale = 6
         perlin_scalex = 2 ** (torch.randint(min_perlin_scale, perlin_scale, (1,)).numpy()[0])
@@ -42,14 +54,14 @@ class DsrAnomalyGenerator(nn.Module):
 
         return mask
 
-    def augment_batch(self, batch: Tensor) -> tuple[Tensor, Tensor]:
+    def augment_batch(self, batch: Tensor) -> Tensor:
         """Generate anomalous augmentations for a batch of input images.
 
         Args:
             batch (Tensor): Batch of input images
 
         Returns:
-            Ground truth masks corresponding to the anomalous perturbations.
+            Tensor: Ground truth masks corresponding to the anomalous perturbations.
         """
         batch_size, _, height, width = batch.shape
 
