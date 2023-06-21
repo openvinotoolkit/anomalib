@@ -21,7 +21,7 @@ from .base_inferencer import Inferencer
 if find_spec("openvino") is not None:
     from openvino.runtime import Core
 else:
-    raise ImportError("OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.")
+    raise ImportWarning("OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.")
 
 
 class OpenVINOInferencer(Inferencer):

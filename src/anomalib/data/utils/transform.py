@@ -86,6 +86,12 @@ def get_transforms(
         if isinstance(config, DictConfig):
             logger.info("Loading transforms from config File")
             transforms_list = []
+
+            if "Resize" not in config.keys():
+                 resize_height, resize_width = get_image_height_and_width(image_size)
+                 transforms_list.append(A.Resize(height=resize_height, width=resize_width, always_apply=True))
+                 logger.info(f"Resize {resize_height, resize_width} added!")
+
             for key, value in config.items():
                 if hasattr(A, key):
                     transform = getattr(A, key)(**value)
