@@ -73,11 +73,13 @@ class DsrModel(nn.Module):
             base_width=64,
         )
 
+        self.i = 0
+
         self.discrete_latent_model.load_state_dict(torch.load(ckpt + "/vq_model_pretrained_128_4096.pckl"))
-        self.subspace_restriction_module_hi.load_state_dict(torch.load(ckpt+"/DSR_subspace_restriction_hi_bottle.pckl"))
+        """self.subspace_restriction_module_hi.load_state_dict(torch.load(ckpt+"/DSR_subspace_restriction_hi_bottle.pckl"))
         self.subspace_restriction_module_lo.load_state_dict(torch.load(ckpt+"/DSR_subspace_restriction_lo_bottle.pckl"))
         self.anomaly_detection_module.load_state_dict(torch.load(ckpt+"/DSR_anomaly_det_module_bottle.pckl"))
-        self.image_reconstruction_network.load_state_dict(torch.load(ckpt+"/DSR_image_recon_module_bottle.pckl"), strict=False)
+        self.image_reconstruction_network.load_state_dict(torch.load(ckpt+"/DSR_image_recon_module_bottle.pckl"), strict=False)"""
 
         for parameters in self.discrete_latent_model.parameters():
             parameters.requires_grad = False
@@ -92,14 +94,6 @@ class DsrModel(nn.Module):
         image_cropped = image[:, :, hdif:-hdif, wdif:-wdif]
         return image_cropped
 
-    def load_pretrained_discrete_model_weights(self, ckpt: str):
-        """NOTE: to be completed"""
-        self.discrete_latent_model.load_state_dict(torch.load(ckpt + "/vq_model_pretrained_128_4096.pckl"))
-        self.subspace_restriction_module_hi.load_state_dict(torch.load(ckpt+"/DSR_subspace_restriction_hi_bottle.pckl"))
-        self.subspace_restriction_module_lo.load_state_dict(torch.load(ckpt+"/DSR_subspace_restriction_lo_bottle.pckl"))
-        self.anomaly_detection_module.load_state_dict(torch.load(ckpt+"/DSR_anomaly_det_module_bottle.pckl"))
-        self.image_reconstruction_network.load_state_dict(torch.load(ckpt+"/DSR_image_recon_module_bottle.pckl"), strict=False)
-
     def forward(
         self, batch: Tensor, anomaly_map_to_generate: Tensor | None = None, upsampling: bool = False
     ) -> Tensor | tuple[Tensor, Tensor]:
@@ -110,13 +104,13 @@ class DsrModel(nn.Module):
         return recon_feat_hi, recon_feat_lo, embd_top, embd_bot, gen_image_def, out_mask_sm, anomaly_map
         Returns:
             Tuple of :
-                - Reconstructed non-quantized features (high)
-                - Reconstructed non-quantized features (low)
-                - Quantized features (high)
-                - Quantized features (low)
-                - General object decoder-decoded image
-                - Computed segmentation mask
-                - Resized ground-truth anomaly map
+                - Reconstructed non-quantized hi features of defect (F~_hi)
+                - Reconstructed non-quantized lo features of defect (F~_lo)
+                - Quantized features of non defective img (Q_hi)
+                - Quantized features of non defective img (Q_lo)
+                - Object-specific-decoded image (I_spc)
+                - Computed segmentation mask (M)
+                - Resized ground-truth anomaly map (M_gt)
         """
         # top == lo
 
@@ -177,7 +171,11 @@ class DsrModel(nn.Module):
                 gen_image_def, anomaly_map, embd_top, embd_bot, embd_top_def, embd_bot_def = self.discrete_latent_model(
                     batch, anomaly_map_to_generate, anom_str_lo, anom_str_hi
                 )
-
+            from anomalib.post_processing.visualizer import Visualizer, VisualizationMode
+            from anomalib.data import TaskType
+            v = Visualizer(VisualizationMode.SIMPLE, TaskType.SEGMENTATION)
+            from pathlib import Path
+            
             # Restore the features to normality with the Subspace restriction modules
             recon_feat_hi, recon_embeddings_hi = self.subspace_restriction_module_hi(
                 embd_bot_def, self.discrete_latent_model._vq_vae_bot
@@ -192,11 +190,19 @@ class DsrModel(nn.Module):
             quant_join = torch.cat((up_quantized_recon_t, recon_embeddings_hi), dim=1)
             spec_image_def = self.image_reconstruction_network(quant_join)
 
+            
+
             # Generate the anomaly segmentation map
             out_mask = self.anomaly_detection_module(spec_image_def.detach(), gen_image_def.detach())
             out_mask_sm = torch.softmax(out_mask, dim=1)
 
-            return recon_feat_hi, recon_feat_lo, embd_bot, embd_top, gen_image_def, out_mask_sm, anomaly_map
+            v.save(Path("temp/defect" + str(self.i) + ".png"), gen_image_def[0].detach().cpu().numpy().transpose(1,2,0)*255)
+            v.save(Path("temp/recon" + str(self.i) + ".png"), spec_image_def[0].detach().cpu().numpy().transpose(1,2,0)*255)
+            v.save(Path("temp/anom" + str(self.i) + ".png"), anomaly_map[0].detach().cpu().numpy().transpose(1,2,0)*255)
+            v.save(Path("temp/anom_detection" + str(self.i) + ".png"), out_mask_sm[0,0].detach().cpu().numpy()*255)
+            self.i = self.i + 1
+
+            return recon_feat_hi, recon_feat_lo, embd_bot, embd_top, spec_image_def, out_mask_sm, anomaly_map
 
 
 class SubspaceRestrictionModule(nn.Module):

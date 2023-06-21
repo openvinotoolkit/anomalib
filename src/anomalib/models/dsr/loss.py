@@ -12,7 +12,7 @@ class DsrLoss(nn.Module):
 
     The total loss consists of:
         - MSE loss between non-anomalous quantized input image and anomalous subspace-reconstructed non-quantized input (hi and lo)
-        - MSE loss between input image and reconstructed image through image reconstruction module,
+        - MSE loss between input image and reconstructed image through object-specific decoder,
         - Focal loss between computed segmentation mask and ground truth mask.
     """
 
@@ -26,6 +26,10 @@ class DsrLoss(nn.Module):
         """Compute the loss over a batch for the DSR model."""
         l2_loss_hi_val = self.l2_loss(recon_nq_hi, qu_hi)
         l2_loss_lo_val = self.l2_loss(recon_nq_lo, qu_lo)
-        l2_loss_img_val = self.l2_loss(input_image, gen_img)
+        l2_loss_img_val = self.l2_loss(input_image, gen_img)*10
         focal_loss_val = self.focal_loss(seg, anomaly_mask.squeeze(1).long())
+        print("hi loss: ", str(l2_loss_hi_val))
+        print("lo loss: ", str(l2_loss_lo_val))
+        print("img loss: ", str(l2_loss_img_val))
+        print("focal loss", str(focal_loss_val))
         return l2_loss_hi_val + l2_loss_lo_val + l2_loss_img_val + focal_loss_val

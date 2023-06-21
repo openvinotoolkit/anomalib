@@ -72,14 +72,14 @@ trainer:
   gradient_clip_val: 0
   gradient_clip_algorithm: norm
   num_nodes: 1
-  devices: 1
+  devices: [1] 
   enable_progress_bar: true
   overfit_batches: 0.0
   track_grad_norm: -1
   check_val_every_n_epoch: 1 # Don't validate before extracting features.
   fast_dev_run: false
   accumulate_grad_batches: 1
-  max_epochs: 100
+  max_epochs: 5
   min_epochs: null
   max_steps: -1
   min_steps: null
