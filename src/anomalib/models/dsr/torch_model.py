@@ -80,10 +80,9 @@ class DsrModel(nn.Module):
         self.subspace_restriction_module_lo.load_state_dict(torch.load(ckpt+"/DSR_subspace_restriction_lo_bottle.pckl"))
         self.anomaly_detection_module.load_state_dict(torch.load(ckpt+"/DSR_anomaly_det_module_bottle.pckl"))
         self.image_reconstruction_network.load_state_dict(torch.load(ckpt+"/DSR_image_recon_module_bottle.pckl"), strict=False)
+        # self.upsampling_module.load_state_dict(torch.load(ckpt+"/DSR_upsample_module_bottle.pckl"))
 
         for parameters in self.discrete_latent_model.parameters():
-            parameters.requires_grad = False
-        for parameters in self.upsampling_module.parameters():
             parameters.requires_grad = False
 
     def forward(
@@ -105,6 +104,11 @@ class DsrModel(nn.Module):
                 - Resized ground-truth anomaly map (M_gt)
         """
         # top == lo
+
+        from anomalib.post_processing.visualizer import Visualizer, VisualizationMode
+        from anomalib.data import TaskType
+        v = Visualizer(VisualizationMode.SIMPLE, TaskType.SEGMENTATION)
+        from pathlib import Path
 
         # Generate latent embeddings decoded image via general object decoder
         if anomaly_map_to_generate is None:
@@ -141,7 +145,7 @@ class DsrModel(nn.Module):
             upsampled_mask = self.upsampling_module(obj_spec_image.detach(), gen_image.detach(), out_mask_sm.detach())
             out_mask_sm_up = torch.softmax(upsampled_mask, dim=1)
 
-            # if testing, crop and pool segmentation mask
+            # if testing, extract image score
             if not self.training:
                 out_mask_averaged = torch.nn.functional.avg_pool2d(out_mask_sm[:,1:,:,:], 21, stride=1,
                                                             padding=21 // 2).detach()
@@ -153,6 +157,8 @@ class DsrModel(nn.Module):
             
             # else, return upsampled softmax mask 
             else:
+                v.save(Path("temp/upsampled" + str(self.i) + ".png"), out_mask_sm_up[0,0].detach().cpu().numpy()*255)
+                self.i = self.i + 1
                 return out_mask_sm_up
 
         elif anomaly_map_to_generate and self.training:
@@ -167,10 +173,7 @@ class DsrModel(nn.Module):
                 gen_image_def, anomaly_map, embd_top, embd_bot, embd_top_def, embd_bot_def = self.discrete_latent_model(
                     batch, anomaly_map_to_generate, anom_str_lo, anom_str_hi
                 )
-            from anomalib.post_processing.visualizer import Visualizer, VisualizationMode
-            from anomalib.data import TaskType
-            v = Visualizer(VisualizationMode.SIMPLE, TaskType.SEGMENTATION)
-            from pathlib import Path
+            
             
             # Restore the features to normality with the Subspace restriction modules
             recon_feat_hi, recon_embeddings_hi = self.subspace_restriction_module_hi(

@@ -93,7 +93,8 @@ class Dsr(AnomalyModule):
         """
         del batch_idx, args, kwargs  # These variables are not used.
 
-        if self.current_epoch < self.second_phase:
+        if False:
+        # if self.current_epoch < self.second_phase:
             if optimizer_idx == 0:
                 input_image = batch["image"]
                 # Create anomaly masks
@@ -115,11 +116,11 @@ class Dsr(AnomalyModule):
             elif optimizer_idx == 1:
                 input_image = batch["image"]
                 # Generate anomalies
-                input_image, anomaly_maps = self.perlin_generator(input_image)
+                input_image, anomaly_maps = self.perlin_generator.augment_batch(input_image)
                 # Get model prediction
                 gen_masks = self.model(input_image)
                 # Calculate loss
-                loss = self.third_loss(anomaly_maps, gen_masks)
+                loss = self.third_loss(gen_masks, anomaly_maps)
 
                 self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
                 return {"loss": loss}

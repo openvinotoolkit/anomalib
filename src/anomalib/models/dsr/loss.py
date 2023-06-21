@@ -37,10 +37,10 @@ class DsrSecondLoss(nn.Module):
 class DsrThirdLoss(nn.Module):
     def __init__(self) -> None:
         super().__init__()
-        
+
         self.focal_loss = FocalLoss(alpha=1, reduction="mean")
 
-    def forward(self, truc):
-        focal_loss = self.focal_loss()
+    def forward(self, gen_mask, anomaly_mask):
+        focal_loss = self.focal_loss(gen_mask, anomaly_mask.squeeze(1).long())
         print("focal loss", str(focal_loss))
         return focal_loss
