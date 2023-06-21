@@ -36,7 +36,7 @@ def test(args: Namespace):
     config = get_configurable_parameters(
         model_name=args.model,
         config_path=args.config,
-        weight_file=args.weight_file,
+        weight_file=None,
     )
 
     if config.project.seed:

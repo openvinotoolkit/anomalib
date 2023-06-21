@@ -19,8 +19,9 @@ from torch import Tensor
 from anomalib.models.components import AnomalyModule
 from anomalib.models.dsr.anomaly_generator import DsrAnomalyGenerator
 from anomalib.models.dsr.download_weights import DsrWeightDownloader
-from anomalib.models.dsr.loss import DsrLoss
+from anomalib.models.dsr.loss import DsrSecondLoss, DsrThirdLoss
 from anomalib.models.dsr.torch_model import DsrModel
+from anomalib.data.utils.augmenter import Augmenter
 
 __all__ = ["Dsr", "DsrLightning"]
 
@@ -41,9 +42,11 @@ class Dsr(AnomalyModule):
         # while "model < objective or end epoch" on train
         # else train upsampling module till epoch end
 
-        self.anomaly_generator = DsrAnomalyGenerator()
+        self.quantized_anomaly_generator = DsrAnomalyGenerator()
+        self.perlin_generator = Augmenter()
         self.model = DsrModel(ckpt, anom_par)
-        self.loss = DsrLoss()
+        self.second_loss = DsrSecondLoss()
+        self.third_loss = DsrThirdLoss() 
         self.downloader = DsrWeightDownloader()
         self.anom_par: float = anom_par
 
@@ -53,7 +56,30 @@ class Dsr(AnomalyModule):
         else:
             logger.info("Pretrained checkpoint file found.")
 
-    def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def configure_optimizers(self) -> dict[str, torch.optim.Optimizer | torch.optim.LRScheduler]:
+        """Configure the Adam optimizer for training phases 2 and 3. Does not train the discrete model (phase 1)"""
+        self.second_phase = int(10 * self.trainer.max_epochs / 12)
+        anneal = int(0.8 * self.second_phase)
+        optimizer_d = torch.optim.Adam(params=
+            list(self.model.image_reconstruction_network.parameters()) +
+            list(self.model.subspace_restriction_module_hi.parameters()) +
+            list(self.model.subspace_restriction_module_lo.parameters()) +
+            list(self.model.anomaly_detection_module.parameters()),
+            lr=self.hparams.model.lr)
+        scheduler_d = torch.optim.lr_scheduler.StepLR(optimizer_d, anneal, gamma=0.1)
+
+        optimizer_u = torch.optim.Adam(params=self.model.upsampling_module.parameters(),
+                                       lr=self.hparams.model.lr)
+        
+        return (
+            {
+                "optimizer": optimizer_d,
+                "lr_scheduler": scheduler_d
+            },
+            {"optimizer": optimizer_u}
+        )
+
+    def training_step(self, batch: dict[str, str | Tensor], batch_idx: int, optimizer_idx: int, *args, **kwargs) -> STEP_OUTPUT:
         """Training Step of DSR.
 
         Feeds the original image and the simulated anomaly mask during first phase. During
@@ -65,18 +91,40 @@ class Dsr(AnomalyModule):
         Returns:
             Loss dictionary
         """
-        del args, kwargs  # These variables are not used.
+        del batch_idx, args, kwargs  # These variables are not used.
 
-        input_image = batch["image"]
-        # Create anomaly masks
-        anomaly_mask = self.anomaly_generator.augment_batch(input_image)
-        # Generate model prediction
-        recon_nq_hi, recon_nq_lo, qu_hi, qu_lo, gen_img, seg, anomaly_mask = self.model(input_image, anomaly_mask)
-        # Compute loss
-        loss = self.loss(recon_nq_hi, recon_nq_lo, qu_hi, qu_lo, input_image, gen_img, seg, anomaly_mask)
+        if self.current_epoch < self.second_phase:
+            if optimizer_idx == 0:
+                input_image = batch["image"]
+                # Create anomaly masks
+                anomaly_mask = self.quantized_anomaly_generator.augment_batch(input_image)
+                # Generate model prediction
+                recon_nq_hi, recon_nq_lo, qu_hi, qu_lo, gen_img, seg, anomaly_mask = self.model(input_image, anomaly_mask)
+                # Compute loss
+                loss = self.second_loss(recon_nq_hi, recon_nq_lo, qu_hi, qu_lo, input_image, gen_img, seg, anomaly_mask)
 
-        self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
-        return {"loss": loss}
+                self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
+                return {"loss": loss}
+            elif optimizer_idx == 1:
+                return
+            else:
+                raise Exception("Should not happen")
+        else:
+            if optimizer_idx == 0:
+                return
+            elif optimizer_idx == 1:
+                input_image = batch["image"]
+                # Generate anomalies
+                input_image, anomaly_maps = self.perlin_generator(input_image)
+                # Get model prediction
+                gen_masks = self.model(input_image)
+                # Calculate loss
+                loss = self.third_loss(anomaly_maps, gen_masks)
+
+                self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
+                return {"loss": loss}
+            else:
+                raise Exception("Should not happen")
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Validation step of DSR. The Softmax predictions of the anomalous class are used as anomaly map.
@@ -106,7 +154,3 @@ class DsrLightning(Dsr):
         super().__init__(ckpt=hparams.model.ckpt_path, anom_par=hparams.model.anom_par)
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
-
-    def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Configure the Adam optimizer. Do not train the discrete model! (or the upsmapler for the time being)"""
-        return torch.optim.Adam(params=self.model.parameters(), lr=self.hparams.model.lr)

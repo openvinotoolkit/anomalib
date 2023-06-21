@@ -7,7 +7,7 @@ from kornia.losses import FocalLoss
 from torch import Tensor, nn
 
 
-class DsrLoss(nn.Module):
+class DsrSecondLoss(nn.Module):
     """Overall loss function of the DSR model.
 
     The total loss consists of:
@@ -33,3 +33,14 @@ class DsrLoss(nn.Module):
         print("img loss: ", str(l2_loss_img_val))
         print("focal loss", str(focal_loss_val))
         return l2_loss_hi_val + l2_loss_lo_val + l2_loss_img_val + focal_loss_val
+    
+class DsrThirdLoss(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        
+        self.focal_loss = FocalLoss(alpha=1, reduction="mean")
+
+    def forward(self, truc):
+        focal_loss = self.focal_loss()
+        print("focal loss", str(focal_loss))
+        return focal_loss

@@ -76,26 +76,18 @@ class DsrModel(nn.Module):
         self.i = 0
 
         self.discrete_latent_model.load_state_dict(torch.load(ckpt + "/vq_model_pretrained_128_4096.pckl"))
-        """self.subspace_restriction_module_hi.load_state_dict(torch.load(ckpt+"/DSR_subspace_restriction_hi_bottle.pckl"))
+        self.subspace_restriction_module_hi.load_state_dict(torch.load(ckpt+"/DSR_subspace_restriction_hi_bottle.pckl"))
         self.subspace_restriction_module_lo.load_state_dict(torch.load(ckpt+"/DSR_subspace_restriction_lo_bottle.pckl"))
         self.anomaly_detection_module.load_state_dict(torch.load(ckpt+"/DSR_anomaly_det_module_bottle.pckl"))
-        self.image_reconstruction_network.load_state_dict(torch.load(ckpt+"/DSR_image_recon_module_bottle.pckl"), strict=False)"""
+        self.image_reconstruction_network.load_state_dict(torch.load(ckpt+"/DSR_image_recon_module_bottle.pckl"), strict=False)
 
         for parameters in self.discrete_latent_model.parameters():
             parameters.requires_grad = False
         for parameters in self.upsampling_module.parameters():
             parameters.requires_grad = False
 
-    def crop_image(self, image, height, width):
-        """Crops image NOTE: to be completed"""
-        b, c, h, w = image.shape
-        hdif = max(0, h - height) // 2
-        wdif = max(0, w - width) // 2
-        image_cropped = image[:, :, hdif:-hdif, wdif:-wdif]
-        return image_cropped
-
     def forward(
-        self, batch: Tensor, anomaly_map_to_generate: Tensor | None = None, upsampling: bool = False
+        self, batch: Tensor, anomaly_map_to_generate: Tensor | None = None
     ) -> Tensor | tuple[Tensor, Tensor]:
         """Compute the anomaly mask from an input image.
 
@@ -114,10 +106,9 @@ class DsrModel(nn.Module):
         """
         # top == lo
 
-        batch_size, channels, height, width = batch.shape
-
         # Generate latent embeddings decoded image via general object decoder
         if anomaly_map_to_generate is None:
+            # either evaluating or training phase 3 
             gen_image, embd_top, embd_bot = self.discrete_latent_model(batch)
 
             embd_bot = embd_bot.detach()
@@ -147,20 +138,25 @@ class DsrModel(nn.Module):
             out_mask_sm = torch.softmax(out_mask, dim=1)
 
             # Mask upsampling and score calculation
-            # upsampled_mask = self.upsampling_module(obj_spec_image.detach(), gen_image.detach(), out_mask_sm)
-            # out_mask_sm_up = torch.softmax(upsampled_mask, dim=1)
-            # out_mask_sm_up = self.crop_image(out_mask_sm_up, height, width)
-            # out_mask_cv = out_mask_sm_up[0,1,:,:]
-            out_mask_averaged = torch.nn.functional.avg_pool2d(out_mask_sm[:,1:,:,:], 21, stride=1,
-                                                        padding=21 // 2).detach()
-            image_score = torch.max(out_mask_averaged).unsqueeze(0)
+            upsampled_mask = self.upsampling_module(obj_spec_image.detach(), gen_image.detach(), out_mask_sm.detach())
+            out_mask_sm_up = torch.softmax(upsampled_mask, dim=1)
 
-            return out_mask_averaged, image_score
-
-        else:
-            # we should be generating anomalies only when we're not training
+            # if testing, crop and pool segmentation mask
             if not self.training:
-                raise Exception("Should not happen")
+                out_mask_averaged = torch.nn.functional.avg_pool2d(out_mask_sm[:,1:,:,:], 21, stride=1,
+                                                            padding=21 // 2).detach()
+                image_score = torch.max(out_mask_averaged).unsqueeze(0)
+                
+                out_mask_cv = out_mask_sm_up[:,1,:,:]
+
+                return out_mask_cv, image_score
+            
+            # else, return upsampled softmax mask 
+            else:
+                return out_mask_sm_up
+
+        elif anomaly_map_to_generate and self.training:
+            # we are in phase two
 
             # Generate anomaly strength factors
             anom_str_lo = (torch.rand(batch.shape[0]) * (1.0 - self.anom_par) + self.anom_par).cuda()
@@ -204,6 +200,8 @@ class DsrModel(nn.Module):
 
             return recon_feat_hi, recon_feat_lo, embd_bot, embd_top, spec_image_def, out_mask_sm, anomaly_map
 
+        else:
+            raise Exception("Should not happen")
 
 class SubspaceRestrictionModule(nn.Module):
     """Subspace restriction module that restricts the appearance subspace into configurations
