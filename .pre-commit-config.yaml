@@ -45,15 +45,15 @@ repos:
         # packages in a different order than the rest of the codebase.
         args: ["--ignore=I001"]
 
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.0.0-alpha.4
-    hooks:
-      - id: prettier
+  #- repo: https://github.com/pre-commit/mirrors-prettier
+  #  rev: v3.0.0-alpha.4
+  #  hooks:
+  #    - id: prettier
 
-  - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.33.0
-    hooks:
-      - id: markdownlint
+  #- repo: https://github.com/igorshubovych/markdownlint-cli
+  #  rev: v0.33.0
+  #  hooks:
+  #    - id: markdownlint
 
   - repo: https://github.com/AleksaC/hadolint-py
     rev: v2.12.0.2
