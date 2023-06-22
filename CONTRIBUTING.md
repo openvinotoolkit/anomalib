@@ -40,7 +40,7 @@ We actively welcome your pull requests:
 To setup the development environment, you will need to install development requirements, as well as the base requirements of the library.
 
 ```bash
-conda create -n anomalib_dev python=3.8
+conda create -n anomalib_dev python=3.10
 conda activate anomalib_dev
 pip install -r requirements/base.txt -r requirements/dev.txt
 pre-commit install

@@ -37,6 +37,7 @@ from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
     DownloadInfo,
     InputNormalizationMethod,
+    LabelName,
     Split,
     TestSplitMode,
     ValSplitMode,
@@ -47,13 +48,31 @@ from anomalib.data.utils import (
 logger = logging.getLogger(__name__)
 
 
-IMG_EXTENSIONS = [".png", ".PNG"]
+IMG_EXTENSIONS = (".png", ".PNG")
 
 DOWNLOAD_INFO = DownloadInfo(
     name="mvtec",
     url="https://www.mydrive.ch/shares/38536/3830184030e49fe74747669442f0f282/download/420938113-1629952094"
     "/mvtec_anomaly_detection.tar.xz",
     hash="eefca59f2cede9c3fc5b6befbfec275e",
+)
+
+CATEGORIES = (
+    "bottle",
+    "cable",
+    "capsule",
+    "carpet",
+    "grid",
+    "hazelnut",
+    "leather",
+    "metal_nut",
+    "pill",
+    "screw",
+    "tile",
+    "toothbrush",
+    "transistor",
+    "wood",
+    "zipper",
 )
 
 
@@ -119,8 +138,8 @@ def make_mvtec_dataset(
     samples["image_path"] = samples.path + "/" + samples.split + "/" + samples.label + "/" + samples.image_path
 
     # Create label index for normal (0) and anomalous (1) images.
-    samples.loc[(samples.label == "good"), "label_index"] = 0
-    samples.loc[(samples.label != "good"), "label_index"] = 1
+    samples.loc[(samples.label == "good"), "label_index"] = LabelName.NORMAL
+    samples.loc[(samples.label != "good"), "label_index"] = LabelName.ABNORMAL
     samples.label_index = samples.label_index.astype(int)
 
     # separate masks from samples
@@ -129,11 +148,13 @@ def make_mvtec_dataset(
 
     # assign mask paths to anomalous test images
     samples["mask_path"] = ""
-    samples.loc[(samples.split == "test") & (samples.label_index == 1), "mask_path"] = mask_samples.image_path.values
+    samples.loc[
+        (samples.split == "test") & (samples.label_index == LabelName.ABNORMAL), "mask_path"
+    ] = mask_samples.image_path.values
 
     # assert that the right mask files are associated with the right test images
     assert (
-        samples.loc[samples.label_index == 1]
+        samples.loc[samples.label_index == LabelName.ABNORMAL]
         .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
         .all()
     ), "Mismatch between anomalous images and ground truth masks. Make sure the mask files in 'ground_truth' \

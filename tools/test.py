@@ -13,27 +13,26 @@ from anomalib.models import get_model
 from anomalib.utils.callbacks import get_callbacks
 
 
-def get_args() -> Namespace:
-    """Get CLI arguments.
+def get_parser() -> ArgumentParser:
+    """Get parser.
 
     Returns:
-        Namespace: CLI arguments.
+        ArgumentParser: The parser object.
     """
     parser = ArgumentParser()
     parser.add_argument("--model", type=str, default="stfpm", help="Name of the algorithm to train/test")
     parser.add_argument("--config", type=str, required=False, help="Path to a model config file")
     parser.add_argument("--weight_file", type=str, default="weights/model.ckpt")
 
-    args = parser.parse_args()
-    return args
+    return parser
 
 
-def test():
-    """Test an anomaly classification and segmentation model that is initially trained via `tools/train.py`.
+def test(args: Namespace):
+    """Test an anomaly model.
 
-    The script is able to write the results into both filesystem and a logger such as Tensorboard.
+    Args:
+        args (Namespace): The arguments from the command line.
     """
-    args = get_args()
     config = get_configurable_parameters(
         model_name=args.model,
         config_path=args.config,
@@ -53,4 +52,5 @@ def test():
 
 
 if __name__ == "__main__":
-    test()
+    args = get_parser().parse_args()
+    test(args)

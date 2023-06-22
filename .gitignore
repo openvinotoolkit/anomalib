@@ -1,5 +1,6 @@
 # Project related
 datasets
+pre_trained
 !anomalib/datasets
 !tests/pre_merge/datasets
 results
