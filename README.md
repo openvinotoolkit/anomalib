@@ -107,6 +107,7 @@ where the currently available models are:
 - [DFKDE](src/anomalib/models/dfkde)
 - [DFM](src/anomalib/models/dfm)
 - [DRAEM](src/anomalib/models/draem)
+- [DSR](src/anomalib/models/dsr)
 - [FastFlow](src/anomalib/models/fastflow)
 - [GANomaly](src/anomalib/models/ganomaly)
 - [PADIM](src/anomalib/models/padim)
