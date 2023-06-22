@@ -65,7 +65,10 @@ class Dsr(AnomalyModule):
             dict[str, torch.optim.Optimizer | torch.optim.LRScheduler]: Dictionary of optimizers
         (the first one having a schedule)
         """
-        self.second_phase = int(10 * self.trainer.max_epochs / 12)
+        num_steps = max(
+            self.trainer.max_steps // len(self.trainer.datamodule.train_dataloader(), self.trainer.max_epochs)
+        )
+        self.second_phase = int(10 * num_steps / 12)
         anneal = int(0.8 * self.second_phase)
         optimizer_d = torch.optim.Adam(
             params=list(self.model.image_reconstruction_network.parameters())
