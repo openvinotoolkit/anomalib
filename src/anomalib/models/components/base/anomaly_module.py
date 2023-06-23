@@ -19,12 +19,7 @@ from torchmetrics import Metric
 
 from anomalib.data.utils import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
 from anomalib.post_processing import ThresholdMethod
-from anomalib.utils.metrics import (
-    AnomalibMetricCollection,
-    AnomalyScoreDistribution,
-    AnomalyScoreThreshold,
-    MinMax,
-)
+from anomalib.utils.metrics import AnomalibMetricCollection, AnomalyScoreDistribution, AnomalyScoreThreshold, MinMax
 
 logger = logging.getLogger(__name__)
 

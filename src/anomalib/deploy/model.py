@@ -101,7 +101,8 @@ class ExportModel(nn.Module):
         outputs = self.model(image)
         return self.post_process(predictions=outputs, metadata=self.metadata)
 
-    def batch_mask_to_boxes(self, pred_mask: Tensor):
+    @staticmethod
+    def batch_mask_to_boxes(pred_mask: torch.Tensor):
         """Converts a batch of masks to bounding boxes.
 
         Args:
@@ -109,8 +110,6 @@ class ExportModel(nn.Module):
 
         Returns:
             Tensor: Bounding boxes
-            Tensor: Boxes per image. Since the bounding boxes are of shape N x 4, this informs how many boxes are
-                present in each image.
         """
         height, width = pred_mask.shape[-2:]
         pred_mask = pred_mask.view((-1, 1, height, width)).float()  # reshape to (B, 1, H, W) and cast to float
@@ -118,15 +117,16 @@ class ExportModel(nn.Module):
         batch_comps = connected_components(pred_mask, num_iterations=1000).squeeze(1).int()
         B, H, W = batch_comps.shape
 
+        labels = torch.unique(batch_comps)[1:]
+
+        masks = batch_comps.unsqueeze(1).repeat(1, labels.shape[0], 1, 1)
+        masks = masks == labels.view(-1, 1, 1)
+
         # split the boxes later on based on this
         # since torch.count_nonzero is not supported in onnx, we use torch.sum with non equality
-        boxes_per_image = torch.sum(torch.unique(batch_comps.view(B, -1), dim=1) != 0, dim=1) - 1
-
-        labels = torch.unique(batch_comps)[1:]
-        masks = torch.ones((B, labels.size(0), H, W), device=pred_mask.device, dtype=torch.int64)
-        # multipy labels to masks along channel dimension to get each category in a different channel
-        masks = masks * labels.unsqueeze(1).unsqueeze(2)
-        masks = masks == batch_comps.unsqueeze(1)  # B x N x H x W
+        # since mask is of shape B x N x H x W and N dimension has True values only in the mask of the corresponding
+        # label in that image
+        boxes_per_image = masks.view(B, labels.shape[0], -1).any(dim=-1).sum(dim=-1)
 
         bboxes = torch.full(
             (labels.shape[0], 4), fill_value=-1.0, device=pred_mask.device, dtype=torch.int64
@@ -145,6 +145,8 @@ class ExportModel(nn.Module):
         masks_[masks_ == 0] = H + 1
         bboxes[:, 0] = torch.min(masks_[:, 1], dim=1)[0]
         bboxes[:, 1] = torch.min(masks_[:, 0], dim=1)[0]
+
+        # TODO return batch scores
         return bboxes, boxes_per_image
 
     def post_process(self, predictions: Tensor, metadata: dict | DictConfig | None = None) -> Result:
