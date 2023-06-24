@@ -189,13 +189,13 @@ class EfficientAD(AnomalyModule):
             tuple[Tensor, Tensor]: Two scalars - the 90% and the 99.5% quantile.
         """
         maps_flat = torch.flatten(torch.cat(maps))
-        # torch.quantile only works with input size up to 16777216 elements
-        # (16777216 is 16 * 1024 * 1024)
+        # torch.quantile only works with input size up to 2**24 elements, see
+        # https://github.com/pytorch/pytorch/blob/b9f81a483a7879cd3709fd26bcec5f1ee33577e6/aten/src/ATen/native/Sorting.cpp#L291
         # if we have more elements we need to decrease the size
         # we do this by sampling random elements of maps_flat because then
         # the locations of the quantiles (90% and 99.5%) will still be
         # valid even though they might not be the exact quantiles.
-        max_input_size = 16777216
+        max_input_size = 2**24
         if len(maps_flat) > max_input_size:
             # select a random subset with max_input_size elements.
             perm = torch.randperm(len(maps_flat), device=self.device)
