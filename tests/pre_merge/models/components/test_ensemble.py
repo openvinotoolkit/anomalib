@@ -4,27 +4,20 @@ import pytest
 
 import torch
 
-from omegaconf import DictConfig
+from anomalib.models.ensemble.model_ensemble import EnsembleTiler
 
-from anomalib.models.ensemble import Ensemble
+tiler_config = {
+    "tile_size": 256,
+    "stride": 256,
+    "remove_border_count": 0
+}
 
-tiler_config = DictConfig(
-    {
-         "tiler": {
-             "tile_size": 256,
-             "stride": 256,
-             "remove_border_count": 0
-         }
-    })
+tiler_config_overlap = {
+    "tile_size": 256,
+    "stride": 128,
+    "remove_border_count": 0
+}
 
-tiler_config_overlap = DictConfig(
-    {
-         "tiler": {
-             "tile_size": 256,
-             "stride": 128,
-             "remove_border_count": 0
-         }
-    })
 
 @pytest.mark.parametrize(
     "images_shape, config, expected_shape",
@@ -32,10 +25,10 @@ tiler_config_overlap = DictConfig(
      (torch.Size([5, 3, 512, 512]), tiler_config_overlap, torch.Size([3, 3, 5, 3, 256, 256]))]
 )
 def test_basic_tile_for_ensemble(images_shape, config, expected_shape):
-    ens = Ensemble(config)
+    tiler = EnsembleTiler(**config)
 
     images = torch.rand(size=images_shape)
-    tiled = ens.pre_process(images)
+    tiled = tiler.tile(images)
 
     assert tiled.shape == expected_shape
 
@@ -46,11 +39,11 @@ def test_basic_tile_for_ensemble(images_shape, config, expected_shape):
      (torch.Size([5, 3, 512, 512]), tiler_config_overlap)]
 )
 def test_basic_ensemble_reconstruction(images_shape, config):
-    ens = Ensemble(config)
+    tiler = EnsembleTiler(**config)
 
     images = torch.rand(size=images_shape)
-    tiled = ens.pre_process(images.clone())
-    untiled = ens.post_process(tiled)
+    tiled = tiler.tile(images.clone())
+    untiled = tiler.untile(tiled)
 
     assert images.shape == untiled.shape
 
