@@ -14,16 +14,14 @@ class EnsembleTiler(Tiler):
         super().__init__(tile_size=tile_size, stride=stride, remove_border_count=remove_border_count)
 
     def tile(self, images: Tensor) -> Tensor:
-        batch, channels, _, _ = images.shape
-
         # tiles are returned in order [tile_count * batch, channels, tile_height, tile_width]
         combined_tiles = super().tile(images)
 
         # rearrange to [num_h, num_w, batch, channel, tile_height, tile_width]
-        tiles = combined_tiles.contiguous().view(batch,
+        tiles = combined_tiles.contiguous().view(self.batch_size,
                                                  self.num_patches_h,
                                                  self.num_patches_w,
-                                                 channels,
+                                                 self.num_channels,
                                                  self.tile_size_h,
                                                  self.tile_size_w)
         tiles = tiles.permute(1, 2, 0, 3, 4, 5)
