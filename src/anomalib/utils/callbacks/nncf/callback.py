@@ -94,4 +94,5 @@ class NNCFCallback(Callback):
         onnx_path = os.path.join(self.export_dir, "model_nncf.onnx")
         self.nncf_ctrl.export_model(onnx_path)
         optimize_command = "mo --input_model " + onnx_path + " --output_dir " + self.export_dir
-        os.system(optimize_command)
+        # this is a subprocess call to run openvino, so it is safe to use os.system
+        os.system(optimize_command)  # nosec

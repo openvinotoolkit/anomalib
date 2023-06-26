@@ -108,7 +108,15 @@ source = [
     ".tox/*/site-packages",
 ]
 
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # NBQA CONFIGURATION                                                          #
 [tool.nbqa.addopts]
 ruff = ["--ignore=E402"]
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# BANDIT CONFIGURATION                                                        #
+[tool.bandit]
+exclude_dirs = ["tests"]
+skips = ["B101", "B311"]
