@@ -76,9 +76,9 @@ def _download(url: str, root: str):
             raise FileExistsError(f"{download_target} exists and is not a regular file")
         if _verify_checksum(download_target, url):
             return download_target
-        else:
-            logger.warning(f"{download_target} exists, but the checksum does not match; re-downloading the file")
-            os.remove(download_target)
+
+        logger.warning("%s exists, but the checksum does not match; re-downloading the file", download_target)
+        os.remove(download_target)
 
     response = requests.get(url, stream=True, timeout=10.0)  # Timeout is for bandit security linter
     response.raise_for_status()
