@@ -15,6 +15,7 @@ from torch import Tensor, nn
 from torchvision.transforms.functional import resize
 
 from anomalib.data.utils import read_image
+from anomalib.deploy.model import Result
 from anomalib.post_processing import ImageResult
 
 LABEL_MAPPING = {0: "normal", 1: "anomaly"}
@@ -101,19 +102,32 @@ class TorchInferencer:
         """
         return self.model(image)
 
-    def post_process(self, predictions: dict[str, Any], image_shape: tuple[int, int]) -> dict[str, Any]:
+    def post_process(self, predictions: dict[str, Any] | Result, image_shape: tuple[int, int]) -> dict[str, Any]:
         """Post process the output predictions.
 
         Args:
-            predictions (Tensor): Raw output predicted by the model.
+            predictions (dict[str, Any], Result): Output predicted by the model.
             image_shape (tuple[int, int]): Shape of the input image.
 
         Returns:
             dict[str, str | float | np.ndarray]: Post processed prediction results.
         """
+        if isinstance(predictions, Result):
+            predictions = predictions._asdict()
+
         for key, value in predictions.items():
             if isinstance(value, Tensor):
                 predictions[key] = value.detach().cpu().numpy()
+
+        if "pred_boxes" in predictions:
+            # convert boxes to original image size
+            current_image_size = predictions["anomaly_map"].shape[:2]
+            scale_ratio = np.array(image_shape) / np.array(current_image_size)
+            for pred_box in predictions["pred_boxes"]:
+                pred_box[0] = pred_box[0] * scale_ratio[1]
+                pred_box[1] = pred_box[1] * scale_ratio[0]
+                pred_box[2] = pred_box[2] * scale_ratio[1]
+                pred_box[3] = pred_box[3] * scale_ratio[0]
 
         # reshape output to original image size
         for key, value in predictions.items():

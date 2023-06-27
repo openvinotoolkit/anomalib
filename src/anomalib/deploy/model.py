@@ -23,9 +23,10 @@ from anomalib.post_processing.normalization.min_max import normalize as normaliz
 
 ANOMALY_CLASS = torch.tensor(1, dtype=torch.uint8)
 NORMAL_CLASS = torch.tensor(0, dtype=torch.uint8)
+# A named tuple is required as the onnx export complains when using a dict or any other mutable data structure.
 Result = namedtuple(
     "Result",
-    ["anomaly_map", "pred_label", "pred_score", "pred_mask", "pred_boxes", "box_labels"],
+    ["anomaly_map", "pred_label", "pred_score", "pred_mask", "pred_boxes", "pred_boxes_per_image", "box_labels"],
 )
 
 
@@ -102,11 +103,12 @@ class ExportModel(nn.Module):
         return self.post_process(predictions=outputs, metadata=self.metadata)
 
     @staticmethod
-    def batch_mask_to_boxes(pred_mask: torch.Tensor):
+    def batch_mask_to_boxes(pred_mask: torch.Tensor, num_iterations: int = 1000) -> tuple[torch.Tensor, torch.Tensor]:
         """Converts a batch of masks to bounding boxes.
 
         Args:
             pred_mask (Tensor): Batch of masks
+            num_iterations (int, optional): Number of iterations for connected components. Defaults to 1000.
 
         Returns:
             Tensor: Bounding boxes
@@ -114,10 +116,12 @@ class ExportModel(nn.Module):
         height, width = pred_mask.shape[-2:]
         pred_mask = pred_mask.view((-1, 1, height, width)).float()  # reshape to (B, 1, H, W) and cast to float
 
-        batch_comps = connected_components(pred_mask, num_iterations=1000).squeeze(1).int()
+        batch_comps = connected_components(pred_mask, num_iterations=num_iterations).squeeze(1).int()
         B, H, W = batch_comps.shape
 
-        labels = torch.unique(batch_comps)[1:]
+        labels = torch.unique(batch_comps)
+        # Assign background (0) to -1
+        labels[0] = -1.0
 
         masks = batch_comps.unsqueeze(1).repeat(1, labels.shape[0], 1, 1)
         masks = masks == labels.view(-1, 1, 1)
@@ -133,7 +137,7 @@ class ExportModel(nn.Module):
         )  # N-1 x 4, since lables are unique and 0 is background
 
         # since the mask categories are mutually exclusive across batch, we can sum them to remove the batch dimension
-        masks = torch.sum(masks, dim=0)  # N-1 x H x W
+        masks = torch.sum(masks, dim=0)  # N x H x W
         # Get the max and min values of the masks by multiplying each mask by a grid of its coordinates
         masks_ = masks.unsqueeze(1) * torch.stack(torch.meshgrid(torch.arange(H), torch.arange(W)), dim=0).to(
             pred_mask.device
@@ -146,7 +150,8 @@ class ExportModel(nn.Module):
         bboxes[:, 0] = torch.min(masks_[:, 1], dim=1)[0]
         bboxes[:, 1] = torch.min(masks_[:, 0], dim=1)[0]
 
-        # TODO return batch scores
+        # remove the first bounding box since it is background
+        bboxes = bboxes[1:]
         return bboxes, boxes_per_image
 
     def post_process(self, predictions: Tensor, metadata: dict | DictConfig | None = None) -> Result:
@@ -209,15 +214,13 @@ class ExportModel(nn.Module):
             image_width = self.input_size[1]
             anomaly_map = Resize((image_height, image_width))(anomaly_map.unsqueeze(0)).squeeze()
 
-            # if pred_mask is not None:
-            #     pred_mask = Resize((image_height, image_width))(pred_mask.unsqueeze(0)).squeeze()
-
-        if metadata["task"] == "detection":
-            pred_boxes = self.batch_mask_to_boxes(pred_mask)[0]
+        if metadata["task"] == "detection" and pred_mask is not None:
+            pred_boxes, pred_boxes_per_image = self.batch_mask_to_boxes(pred_mask)
             box_labels = torch.ones(pred_boxes.shape[0])
         else:
             pred_boxes = None
             box_labels = None
+            pred_boxes_per_image = None
 
         return Result(
             anomaly_map=anomaly_map,
@@ -225,6 +228,7 @@ class ExportModel(nn.Module):
             pred_score=pred_score,
             pred_mask=pred_mask,
             pred_boxes=pred_boxes,
+            pred_boxes_per_image=pred_boxes_per_image,  # currently unused in the inferencers
             box_labels=box_labels,
         )
 
