@@ -13,8 +13,6 @@ from anomalib.deploy import ExportMode
 from anomalib.utils.sweep.helpers import get_torch_throughput, get_openvino_throughput
 
 from tests.helpers.dataset import TestDataset
-# fixture used by tests
-from tests.pre_merge.deploy.test_inferencer import generate_results_dir
 
 
 transforms = A.Compose([A.ToFloat(max_value=255), ToTensorV2()])
