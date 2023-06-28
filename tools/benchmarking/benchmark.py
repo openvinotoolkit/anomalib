@@ -121,9 +121,11 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_met
             export_root=project_path,
         )
 
-        throughput = get_torch_throughput(model_path=project_path,
-                                          test_dataset=datamodule.test_dataloader().dataset,
-                                          device=model_config.trainer.accelerator)
+        throughput = get_torch_throughput(
+            model_path=project_path,
+            test_dataset=datamodule.test_dataloader().dataset,
+            device=model_config.trainer.accelerator,
+        )
 
         # Get OpenVINO metrics
         openvino_throughput = float("nan")
