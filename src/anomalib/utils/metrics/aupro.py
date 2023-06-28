@@ -12,7 +12,8 @@ import torch
 from matplotlib.figure import Figure
 from torch import Tensor
 from torchmetrics import Metric
-from torchmetrics.functional import auc, roc
+from torchmetrics.functional import auc
+from torchmetrics.functional.classification import binary_roc
 from torchmetrics.utilities.data import dim_zero_cat
 
 from anomalib.utils.metrics.pro import (
@@ -110,7 +111,7 @@ class AUPRO(Metric):
         """
         # initialize the roc curve with the specified thresholds
         # target being forced to be 0 or 1, we can use the binary roc curve
-        roc_in_pro = partial(roc, task="binary", thresholds=self.thresholds)
+        roc_in_pro = partial(binary_roc, thresholds=self.thresholds)
 
         # compute the global fpr-size
         fpr: Tensor = roc_in_pro(preds, target)[0]  # only need fpr
