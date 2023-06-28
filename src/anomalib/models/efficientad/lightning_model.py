@@ -60,6 +60,8 @@ class EfficientAD(AnomalyModule):
         lr (float): learning rate
         weight_decay (float): optimizer weight decay
         padding (bool): use padding in convoluional layers
+        pad_maps (bool): relevant if padding is set to False. In this case, pad_maps = True pads the
+            output anomaly maps so that their size matches the size in the padding = True case.
         batch_size (int): batch size for imagenet dataloader
     """
 
@@ -71,6 +73,7 @@ class EfficientAD(AnomalyModule):
         lr: float = 0.0001,
         weight_decay: float = 0.00001,
         padding: bool = False,
+        pad_maps: bool = True,
         batch_size: int = 1,
     ) -> None:
         super().__init__()
@@ -81,6 +84,7 @@ class EfficientAD(AnomalyModule):
             input_size=image_size,
             model_size=model_size,
             padding=padding,
+            pad_maps=pad_maps,
         )
         self.batch_size = batch_size
         self.image_size = image_size
@@ -288,6 +292,7 @@ class EfficientadLightning(EfficientAD):
             lr=hparams.model.lr,
             weight_decay=hparams.model.weight_decay,
             padding=hparams.model.padding,
+            pad_maps=hparams.model.pad_maps,
             image_size=hparams.dataset.image_size,
             batch_size=hparams.dataset.train_batch_size,
         )
