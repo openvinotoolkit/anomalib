@@ -119,7 +119,7 @@ class TorchInferencer:
             if isinstance(value, Tensor):
                 predictions[key] = value.detach().cpu().numpy()
 
-        if "pred_boxes" in predictions:
+        if "pred_boxes" in predictions and predictions["pred_boxes"] is not None:
             # convert boxes to original image size
             current_image_size = predictions["anomaly_map"].shape[:2]
             scale_ratio = np.array(image_shape) / np.array(current_image_size)
@@ -132,7 +132,7 @@ class TorchInferencer:
         # reshape output to original image size
         for key, value in predictions.items():
             if key in ("anomaly_map", "pred_mask") and value is not None:
-                predictions[key] = cv2.resize(value, dsize=image_shape[::-1])
+                predictions[key] = cv2.resize(value.squeeze(), dsize=image_shape[::-1])
 
         if predictions["pred_label"] is not None:
             predictions["pred_label"] = LABEL_MAPPING[predictions["pred_label"].item()]
@@ -166,7 +166,7 @@ class TorchInferencer:
 
         return ImageResult(
             image=image_arr,
-            pred_score=output.get("pred_score", None),
+            pred_score=output.get("pred_score", np.float64("nan")).item(),
             pred_label=output.get("pred_label", None),
             anomaly_map=output.get("anomaly_map", None),
             pred_mask=output.get("pred_mask", None),

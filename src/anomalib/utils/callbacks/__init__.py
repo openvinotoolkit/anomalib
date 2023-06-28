@@ -125,14 +125,12 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
                 )
             )
         if config.optimization.export_mode is not None:
-            from .export import (  # pylint: disable=import-outside-toplevel
-                ExportCallback,
-            )
+            from .export import ExportCallback  # pylint: disable=import-outside-toplevel
 
             logger.info("Setting model export to %s", config.optimization.export_mode)
             callbacks.append(
                 ExportCallback(
-                    input_size=config.model.input_size,
+                    input_size=config.dataset.image_size,  # use dataset size as transforms is part of the model
                     dirpath=config.project.path,
                     filename="model",
                     export_mode=ExportMode(config.optimization.export_mode),

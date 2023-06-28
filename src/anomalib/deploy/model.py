@@ -13,9 +13,10 @@ from albumentations.pytorch import ToTensorV2
 from kornia.contrib import connected_components
 from omegaconf import DictConfig
 from torch import Tensor, nn
-from torchvision.transforms import CenterCrop, Compose, Normalize, Resize
-from torchvision.transforms.functional import InterpolationMode
+from torchvision.transforms import Compose, Normalize, Resize
+from torchvision.transforms.functional import InterpolationMode, pad
 
+from anomalib.deploy.transforms import CenterCrop
 from anomalib.models import AnomalyModule
 from anomalib.post_processing.normalization.cdf import normalize as normalize_cdf
 from anomalib.post_processing.normalization.cdf import standardize
@@ -48,6 +49,9 @@ class ExportModel(nn.Module):
         self.device = model.device
         self.metadata = metadata
         self.input_size = input_size
+        # in models like patchcore, center crop reduces the size of the outputs. This is used to resize the outputs.
+        self.reverse_center_crop = False
+        self.crop_size: tuple[int, int] | None = None
 
         transform = A.from_dict(metadata["transform"])
         self.transform = self.albumentations_to_torch_vision(transform)  # convert transform for jit
@@ -66,6 +70,8 @@ class ExportModel(nn.Module):
                 torch_transforms.append(Normalize(mean=transform.mean, std=transform.std))
             elif isinstance(transform, A.CenterCrop):
                 torch_transforms.append(CenterCrop(size=(transform.height, transform.width)))
+                self.reverse_center_crop = True
+                self.crop_size = (transform.height, transform.width)
             else:
                 raise NotImplementedError(f"Transform {transform} not supported")
 
@@ -83,9 +89,6 @@ class ExportModel(nn.Module):
         # convert image in range 0-255 to 0-1
         image = image.div(255.0)
         processed_image = self.transform(image)
-
-        # if len(processed_image) == 3:
-        #     processed_image = processed_image.unsqueeze(0)
 
         return processed_image
 
@@ -164,28 +167,23 @@ class ExportModel(nn.Module):
                 Defaults to None.
 
         Returns:
-            dict[str, str | float | np.ndarray]: Post processed prediction results.
+            dict[str, str | float | torch.Tensor]: Post processed prediction results.
         """
+        pred_mask: torch.Tensor | None = None
+        anomaly_map: torch.Tensor | None = None
         if metadata is None:
             metadata = self.metadata
 
         if isinstance(predictions, Tensor):
-            anomaly_map = predictions
-            pred_score = anomaly_map.reshape(-1).max()
-            if len(anomaly_map.shape) <= 1:
-                anomaly_map = None  # models like dfkde return a scalar
-        else:
-            # NOTE: Patchcore `forward`` returns heatmap and score.
-            #   We need to add the following check to ensure the variables
-            #   are properly assigned. Without this check, the code
-            #   throws an error regarding type mismatch torch vs np.
-            if isinstance(predictions[1], (Tensor)):
-                anomaly_map, pred_score = predictions
-                anomaly_map = anomaly_map
-                pred_score = pred_score
+            if len(predictions.shape) == 1:  # classification models return only scores
+                pred_score = predictions
             else:
-                anomaly_map, pred_score = predictions
-                pred_score = pred_score
+                anomaly_map = predictions
+                pred_score = predictions.reshape(predictions.shape[0], -1).max(dim=1)[0]
+        else:
+            anomaly_map, pred_score = predictions
+            anomaly_map = anomaly_map
+            pred_score = pred_score
 
         # Common practice in anomaly detection is to assign anomalous
         # label to the prediction if the prediction score is greater
@@ -198,21 +196,31 @@ class ExportModel(nn.Module):
                 NORMAL_CLASS,
             )
 
-        pred_mask: np.ndarray | None = None
+        if metadata["task"] == "classification":
+            if self.reverse_center_crop:
+                anomaly_map = self.pad_to_input_size(anomaly_map)
+            else:
+                anomaly_map = self.resize_to_input_size(anomaly_map)
+            anomaly_map, pred_score = self._normalize(
+                pred_scores=pred_score, metadata=metadata, anomaly_maps=anomaly_map
+            )
 
-        # TODO select based on task type
-        if anomaly_map is not None:
+        if anomaly_map is not None and metadata["task"] in ("segmentation", "detection"):
             if "pixel_threshold" in metadata:
                 pred_mask = (anomaly_map >= metadata["pixel_threshold"]).squeeze().type(torch.uint8)
 
             anomaly_map = anomaly_map.squeeze()
+
+            if self.reverse_center_crop:
+                anomaly_map = self.pad_to_input_size(anomaly_map)
+                pred_mask = self.pad_to_input_size(pred_mask)
+            else:
+                anomaly_map = self.resize_to_input_size(anomaly_map)
+                pred_mask = self.resize_to_input_size(pred_mask)
+
             anomaly_map, pred_score = self._normalize(
                 anomaly_maps=anomaly_map, pred_scores=pred_score, metadata=metadata
             )
-
-            image_height = self.input_size[0]
-            image_width = self.input_size[1]
-            anomaly_map = Resize((image_height, image_width))(anomaly_map.unsqueeze(0)).squeeze()
 
         if metadata["task"] == "detection" and pred_mask is not None:
             pred_boxes, pred_boxes_per_image = self.batch_mask_to_boxes(pred_mask)
@@ -231,6 +239,37 @@ class ExportModel(nn.Module):
             pred_boxes_per_image=pred_boxes_per_image,  # currently unused in the inferencers
             box_labels=box_labels,
         )
+
+    def pad_to_input_size(self, tensor: torch.Tensor | None) -> torch.Tensor | None:
+        """Pads the tensor map to input tensor size.
+
+        This is used when center crop is used to reduce the size of the image.
+        First resizes the tensor to the crop size. Then pads to the input size.
+
+        Args:
+            tensor (torch.Tensor | None): Input tensor.
+
+        Returns:
+            torch.Tensor | None: Padded tensor
+        """
+        if tensor is not None:
+            tensor = Resize(self.crop_size)(tensor.unsqueeze(0)).squeeze()
+            h, w = (torch.tensor(self.input_size) - torch.tensor(tensor.shape)) // 2
+            tensor = pad(tensor, [w, h], fill=0)
+        return tensor
+
+    def resize_to_input_size(self, tensor: torch.Tensor | None) -> torch.Tensor | None:
+        """Resizes tensor map to size of the input image
+
+        Args:
+            tensor (torch.Tensor | None): Input tensor
+
+        Returns:
+            torch.Tensor|None: Resized tensor
+        """
+        if tensor is not None:
+            tensor = Resize(self.input_size)(tensor.unsqueeze(0)).squeeze()
+        return tensor
 
     @staticmethod
     def _normalize(

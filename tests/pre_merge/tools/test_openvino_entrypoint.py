@@ -26,16 +26,16 @@ class TestOpenVINOInferenceEntrypoint:
     def get_functions(self):
         """Get functions from openvino_inference.py"""
         if find_spec("openvino_inference") is not None:
-            from tools.inference.openvino_inference import get_parser, infer
+            from tools.inference.openvino_inference import Runner, get_parser
         else:
             raise Exception("Unable to import openvino_inference.py for testing")
-        return get_parser, infer
+        return get_parser, Runner
 
     def test_openvino_inference(
         self, get_functions, get_config, project_path, get_dummy_inference_image, transforms_config
     ):
         """Test openvino_inference.py"""
-        get_parser, infer = get_functions
+        get_parser, Runner = get_functions
 
         model = get_model(get_config("padim"))
 
@@ -49,18 +49,22 @@ class TestOpenVINOInferenceEntrypoint:
             export_root=project_path,
         )
 
-        arguments = get_parser().parse_args(
+        args = get_parser().parse_args(
             [
-                "--config",
-                "src/anomalib/models/padim/config.yaml",
                 "--weights",
                 project_path + "/weights/openvino/model.bin",
-                "--metadata",
-                project_path + "/weights/openvino/metadata.json",
                 "--input",
                 get_dummy_inference_image,
                 "--output",
-                project_path + "/output",
+                project_path + "/output.png",
             ]
         )
-        infer(arguments)
+        runner = Runner(
+            weights=args.weights,
+            visualization_mode="simple",
+            device="CPU",
+            inputs=args.input,
+            outputs=args.output,
+            show=False,
+        )
+        runner.run()

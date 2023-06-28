@@ -53,4 +53,4 @@ def get_dummy_inference_image(project_path) -> Generator[str, None, None]:
 @pytest.fixture(scope="package")
 def transforms_config() -> dict:
     """Note: this is computed using trainer.datamodule.test_data.transform.to_dict()"""
-    return A.Compose([A.ToFloat(max_value=255), ToTensorV2()]).to_dict()
+    return A.Compose([ToTensorV2()]).to_dict()

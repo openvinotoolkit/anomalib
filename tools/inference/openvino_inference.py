@@ -118,7 +118,7 @@ class Visualizer:
             self.superimpose_pred_mask(image, outputs["pred_mask"])
         if "pred_label" in outputs:
             pred_label = LABEL_MAPPING[outputs["pred_label"].item()]
-            pred_label += f" ({outputs.get('pred_score',None):.2f})"
+            pred_label += f" ({outputs['pred_score'].item():.2f})"
             image = cv2.putText(
                 image,
                 pred_label,
@@ -171,7 +171,7 @@ class Visualizer:
         label = ""
         if "pred_label" in outputs:
             label = LABEL_MAPPING[outputs["pred_label"].item()]
-            label += f" (Pred Score: {outputs.get('pred_score',None):.2f})"
+            label += f" (Pred Score: {outputs['pred_score'].item():.2f})"
         fig.suptitle(label)
         fig.canvas.draw()
         img = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)

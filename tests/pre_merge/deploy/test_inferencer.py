@@ -149,5 +149,6 @@ def test_openvino_inference(
     openvino_inferencer = OpenVINOInferencer(export_path / "weights/openvino/model.xml")
     openvino_dataloader = MockImageLoader(model_config.dataset.image_size, total_count=1)
     for image in openvino_dataloader():
+        image = image.reshape(1, *image.shape[::-1])
         prediction = openvino_inferencer.predict(image)
-        assert 0.0 <= prediction.pred_score <= 1.0  # confirm if predicted scores are normalized
+        assert 0.0 <= prediction["pred_score"] <= 1.0  # confirm if predicted scores are normalized

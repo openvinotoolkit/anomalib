@@ -143,13 +143,14 @@ def export_to_onnx(model: ExportModel, export_path: Path) -> Path:
     """
     onnx_path = export_path / "model.onnx"
     input_tensor = torch.zeros((1, 3, *model.input_size)).to(model.device)
+    # get output keys by running the model once
     dummy_output = model(input_tensor)
     output_keys = [key for key, value in zip(dummy_output._fields, dummy_output) if value is not None]
 
     torch.onnx.export(
         model,
         input_tensor,
-        onnx_path,
+        str(onnx_path),
         input_names=["input"],
         output_names=output_keys,
         dynamic_axes={"input": {0: "batch_size"}},

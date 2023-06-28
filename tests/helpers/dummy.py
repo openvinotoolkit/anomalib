@@ -51,10 +51,8 @@ class DummyModel(nn.Module):
         x = self.conv3(x)
         x = x.view(batch_size, -1)
         x = self.fc1(x)
-        x = F.dropout(x, p=0.2)
         x = self.fc2(x)
-        x = F.log_softmax(x, dim=1)
-        return x
+        return x.sum(dim=1)  # dummy classification score
 
 
 class DummyLogger(AnomalibTensorBoardLogger):
