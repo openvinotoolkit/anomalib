@@ -51,9 +51,6 @@ def train(args: Namespace):
         warnings.filterwarnings("ignore")
 
     config = get_configurable_parameters(model_name=args.model, config_path=args.config)
-
-    config.model.input_size = (300, 300)
-
     if config.project.get("seed") is not None:
         seed_everything(config.project.seed)
 
