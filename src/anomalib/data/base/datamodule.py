@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABC
-from typing import Any
+from typing import Any, Callable
 
 from pandas import DataFrame
 from pytorch_lightning import LightningDataModule
@@ -75,6 +75,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         test_split_mode: TestSplitMode | None = None,
         test_split_ratio: float | None = None,
         seed: int | None = None,
+        custom_collate_fn=None
     ) -> None:
         super().__init__()
         self.train_batch_size = train_batch_size
@@ -91,6 +92,10 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self.test_data: AnomalibDataset
 
         self._samples: DataFrame | None = None
+
+        self.custom_collate_fn: Callable
+        if custom_collate_fn is None:
+            self.custom_collate_fn = collate_fn
 
     def setup(self, stage: str | None = None) -> None:
         """Setup train, validation and test data.
@@ -177,7 +182,8 @@ class AnomalibDataModule(LightningDataModule, ABC):
     def train_dataloader(self) -> TRAIN_DATALOADERS:
         """Get train dataloader."""
         return DataLoader(
-            dataset=self.train_data, shuffle=True, batch_size=self.train_batch_size, num_workers=self.num_workers
+            dataset=self.train_data, shuffle=True, batch_size=self.train_batch_size, num_workers=self.num_workers,
+            collate_fn=self.custom_collate_fn
         )
 
     def val_dataloader(self) -> EVAL_DATALOADERS:
@@ -187,7 +193,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
             shuffle=False,
             batch_size=self.eval_batch_size,
             num_workers=self.num_workers,
-            collate_fn=collate_fn,
+            collate_fn=self.custom_collate_fn,
         )
 
     def test_dataloader(self) -> EVAL_DATALOADERS:
@@ -197,5 +203,5 @@ class AnomalibDataModule(LightningDataModule, ABC):
             shuffle=False,
             batch_size=self.eval_batch_size,
             num_workers=self.num_workers,
-            collate_fn=collate_fn,
+            collate_fn=self.custom_collate_fn,
         )

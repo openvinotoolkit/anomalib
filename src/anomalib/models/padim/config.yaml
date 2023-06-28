@@ -1,6 +1,6 @@
 dataset:
-  name: mvtec_ens
-  format: mvtec_ens
+  name: mvtec_ens_collate
+  format: mvtec
   path: ./datasets/MVTec
   category: bottle
   task: segmentation

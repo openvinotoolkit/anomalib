@@ -1,12 +1,16 @@
-"""Tiler used with ensemble of models"""
+"""Tiler used with ensemble of models."""
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+
+from typing import Any, Callable
 
 from torch import Tensor
 
 from anomalib.pre_processing.tiler import Tiler
+
+from anomalib.data.base.datamodule import collate_fn
 
 
 class EnsembleTiler(Tiler):
@@ -40,3 +44,33 @@ class EnsembleTiler(Tiler):
         untiled = super().untile(tiles)
 
         return untiled
+
+
+class TileTransform(object):
+    """Tile the image and return tile
+
+    Args:
+        output_size (tuple or int): Desired output size. If tuple, output is
+            matched to output_size. If int, smaller of image edges is matched
+            to output_size keeping aspect ratio the same.
+    """
+
+    def __init__(self, output_size):
+        assert isinstance(output_size, (int, tuple))
+        self.output_size = output_size
+
+
+def make_tile_colalte_fn(tiler: EnsembleTiler, index: (int, int)) -> Callable:
+    def tile_collate_fn(batch: list) -> dict[str, Any]:
+        coll_batch = collate_fn(batch)
+
+        tiled_images = tiler.tile(coll_batch["image"])
+        # insert channel (as mask has just one)
+        tiled_masks = tiler.tile(coll_batch["mask"].unsqueeze(1))
+
+        # remove batch
+        batch["image"] = tiled_images[index]
+        # remove channel
+        batch["mask"] = tiled_masks[index].squeeze(1)
+
+        return batch
