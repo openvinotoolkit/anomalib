@@ -60,17 +60,21 @@ class TileTransform(object):
         self.output_size = output_size
 
 
-def make_tile_colalte_fn(tiler: EnsembleTiler, index: (int, int)) -> Callable:
-    def tile_collate_fn(batch: list) -> dict[str, Any]:
+class TileCollater:
+    def __init__(self, tiler, tile_index):
+        self.tiler = tiler
+        self.index = tile_index
+
+    def __call__(self, batch: list) -> dict[str, Any]:
         coll_batch = collate_fn(batch)
 
-        tiled_images = tiler.tile(coll_batch["image"])
+        tiled_images = self.tiler.tile(coll_batch["image"])
         # insert channel (as mask has just one)
-        tiled_masks = tiler.tile(coll_batch["mask"].unsqueeze(1))
+        tiled_masks = self.tiler.tile(coll_batch["mask"].unsqueeze(1))
 
         # remove batch
-        batch["image"] = tiled_images[index]
+        coll_batch["image"] = tiled_images[self.index]
         # remove channel
-        batch["mask"] = tiled_masks[index].squeeze(1)
+        coll_batch["mask"] = tiled_masks[self.index].squeeze(1)
 
-        return batch
+        return coll_batch
