@@ -22,7 +22,7 @@ transforms = A.Compose([A.ToFloat(max_value=255), ToTensorV2()])
 def test_torch_throughput(generate_results_dir, path: str = None, category: str = "shapes"):
     """Test get_torch_throughput from utils/sweep/inference.py"""
     # generate results with torch model exported
-    model_config, _ = generate_results_dir(
+    model_config = generate_results_dir(
         model_name="padim",
         dataset_path=path,
         task=TaskType.CLASSIFICATION,
@@ -44,7 +44,7 @@ def test_torch_throughput(generate_results_dir, path: str = None, category: str 
 def test_openvino_throughput(generate_results_dir, path: str = None, category: str = "shapes"):
     """Test get_openvino_throughput from utils/sweep/inference.py"""
     # generate results with torch model exported
-    model_config, _ = generate_results_dir(
+    model_config = generate_results_dir(
         model_name="padim",
         dataset_path=path,
         task=TaskType.CLASSIFICATION,
