@@ -13,6 +13,7 @@ This code is currently not very clean as it's in prototyping stage.
 import logging
 import warnings
 from argparse import ArgumentParser, Namespace
+from itertools import product
 
 from pytorch_lightning import Trainer, seed_everything
 
@@ -61,36 +62,37 @@ def train(args: Namespace):
         seed_everything(config.project.seed)
 
     config.model.input_size = (300, 300)
-
-    datamodule = get_datamodule(config)
-
     tiler = EnsembleTiler(
         tile_size=config.dataset.tiling.tile_size,
         stride=config.dataset.tiling.stride,
         image_size=config.dataset.image_size,
         remove_border_count=config.dataset.tiling.remove_border_count
     )
-    tile_index = (0, 0)
 
-    datamodule.custom_collate_fn = TileCollater(tiler, tile_index)
+    # go over all tile positions and train
+    for tile_index in product(range(tiler.num_patches_h), range(tiler.num_patches_w)):
+        logger.info(f"Start of procedure for tile {tile_index}")
+        datamodule = get_datamodule(config)
 
-    model = get_model(config)
-    experiment_logger = get_experiment_logger(config)
-    callbacks = get_callbacks(config)
+        datamodule.custom_collate_fn = TileCollater(tiler, tile_index)
 
-    trainer = Trainer(**config.trainer, logger=experiment_logger, callbacks=callbacks)
-    logger.info("Training the model.")
-    trainer.fit(model=model, datamodule=datamodule)
+        model = get_model(config)
+        experiment_logger = get_experiment_logger(config)
+        callbacks = get_callbacks(config)
 
-    logger.info("Loading the best model weights.")
-    load_model_callback = LoadModelCallback(weights_path=trainer.checkpoint_callback.best_model_path)
-    trainer.callbacks.insert(0, load_model_callback)  # pylint: disable=no-member
+        trainer = Trainer(**config.trainer, logger=experiment_logger, callbacks=callbacks)
+        logger.info("Training the model.")
+        trainer.fit(model=model, datamodule=datamodule)
 
-    if config.dataset.test_split_mode == TestSplitMode.NONE:
-        logger.info("No test set provided. Skipping test stage.")
-    else:
-        logger.info("Testing the model.")
-        trainer.test(model=model, datamodule=datamodule)
+        logger.info("Loading the best model weights.")
+        load_model_callback = LoadModelCallback(weights_path=trainer.checkpoint_callback.best_model_path)
+        trainer.callbacks.insert(0, load_model_callback)  # pylint: disable=no-member
+
+        if config.dataset.test_split_mode == TestSplitMode.NONE:
+            logger.info("No test set provided. Skipping test stage.")
+        else:
+            logger.info("Testing the model.")
+            trainer.test(model=model, datamodule=datamodule)
 
 
 if __name__ == "__main__":
