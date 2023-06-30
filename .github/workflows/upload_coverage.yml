@@ -1,0 +1,28 @@
+name: Upload coverage
+on:
+  workflow_run:
+    workflows: ["Pre-Merge Checks"]
+    types:
+      - completed
+
+jobs:
+  Upload-Coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ github.event.workflow_run.artifact_url }}
+          path: coverage
+      - name: Upload coverage report
+        run: |
+          COMMIT_ID=${{ github.event.workflow_run.head_sha }}
+          # Pass token from secrets if available. Otherwise it takes it from the environment variable of the CI
+          curl -Os https://uploader.codecov.io/latest/linux/codecov
+          chmod +x codecov
+          if [ -n "${{ secrets.CODECOV_TOKEN }}" ]
+          then
+            ./codecov -t ${{ secrets.CODECOV_TOKEN }} --sha $COMMIT_ID -U $HTTP_PROXY -f coverage/coverage.xml
+          else
+            ./codecov -t "${CODECOV_TOKEN}"  --sha $COMMIT_ID -U $HTTP_PROXY -f coverage/coverage.xml
+          fi
