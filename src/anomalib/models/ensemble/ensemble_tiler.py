@@ -4,18 +4,35 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import Any, Callable
+from typing import Any, Sequence
 
 from torch import Tensor
 
-from anomalib.pre_processing.tiler import Tiler
+from anomalib.pre_processing.tiler import Tiler, compute_new_image_size
 
 from anomalib.data.base.datamodule import collate_fn
 
 
 class EnsembleTiler(Tiler):
-    def __init__(self, tile_size, stride, remove_border_count):
+    def __init__(
+            self,
+            tile_size: int | Sequence,
+            stride: int | Sequence,
+            image_size: int | Sequence,
+            remove_border_count: int = 0,
+    ):
         super().__init__(tile_size=tile_size, stride=stride, remove_border_count=remove_border_count)
+
+        image_size = self._validate_size_type(image_size)
+
+        self.resized_h, self.resized_w = compute_new_image_size(
+            image_size=image_size,
+            tile_size=(self.tile_size_h, self.tile_size_w),
+            stride=(self.stride_h, self.stride_w),
+        )
+
+        self.num_patches_h = int((self.resized_h - self.tile_size_h) / self.stride_h) + 1
+        self.num_patches_w = int((self.resized_w - self.tile_size_w) / self.stride_w) + 1
 
     def tile(self, images: Tensor) -> Tensor:
         # tiles are returned in order [tile_count * batch, channels, tile_height, tile_width]
