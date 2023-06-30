@@ -14,7 +14,7 @@ Features are extracted from a pre-trained teacher model and used to train a stud
 
 ### Anomaly Detection
 
-Anomalies are detected as the difference in output feature maps between the student model and the autoencoder model.
+Anomalies are detected as the difference in output feature maps between the teacher model, the student model and the autoencoder model.
 
 ## Usage
 
@@ -28,12 +28,14 @@ All results gathered with seed `42`.
 
 ### Image-Level AUC
 
-|                          |  Avg  | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
-| ------------------------ | :---: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
-| Distilled Teacher Medium | 0.000 | 0.000  | 0.000 |  0.000  | 0.000 | 0.000 | 0.000  | 0.000 |  0.000  |  0.000   |   0.000   | 0.000 | 0.000 |   0.000    |   0.000    | 0.000  |
+|               |  Avg  | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
+| ------------- | :---: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
+| EfficientAD-S | 0.982 | 0.982  | 1.000 |  0.997  | 1.000 | 0.986 | 1.000  | 0.952 |  0.950  |  0.952   |   0.979   | 0.987 | 0.960 |   0.997    |   0.999    | 0.994  |
+| EfficientAD-M | 0.975 | 0.972  | 0.998 |  1.000  | 0.999 | 0.984 | 0.991  | 0.945 |  0.957  |  0.948   |   0.989   | 0.926 | 0.975 |   1.000    |   0.965    | 0.971  |
 
 ### Image F1 Score
 
-|                          |  Avg  | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
-| ------------------------ | :---: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
-| Distilled Teacher Medium | 0.000 | 0.000  | 0.000 |  0.000  | 0.000 | 0.000 | 0.000  | 0.000 |  0.000  |  0.000   |   0.000   | 0.000 | 0.000 |   0.000    |   0.000    | 0.000  |
+|               |  Avg  | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
+| ------------- | :---: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
+| EfficientAD-S | 0.970 | 0.966  | 1.000 |  0.995  | 1.000 | 0.975 | 1.000  | 0.907 |  0.956  |  0.897   |   0.978   | 0.982 | 0.944 |   0.984    |   0.988    | 0.983  |
+| EfficientAD-M | 0.966 | 0.977  | 0.991 |  1.000  | 0.994 | 0.967 | 0.984  | 0.922 |  0.969  |  0.884   |   0.984   | 0.952 | 0.955 |   1.000    |   0.929    | 0.979  |
