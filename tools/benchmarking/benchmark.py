@@ -111,7 +111,21 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_met
         # get testing time
         testing_time = time.time() - start_time
 
-        throughput = get_torch_throughput(model_config, model, datamodule.test_dataloader().dataset)
+        # Create dirs for torch export (as default only lighting model is produced)
+        export(
+            task=model_config.dataset.task,
+            transform=trainer.datamodule.test_data.transform.to_dict(),
+            input_size=model_config.model.input_size,
+            model=model,
+            export_mode=ExportMode.TORCH,
+            export_root=project_path,
+        )
+
+        throughput = get_torch_throughput(
+            model_path=project_path,
+            test_dataset=datamodule.test_dataloader().dataset,
+            device=model_config.trainer.accelerator,
+        )
 
         # Get OpenVINO metrics
         openvino_throughput = float("nan")
