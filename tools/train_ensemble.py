@@ -23,7 +23,8 @@ from anomalib.models import get_model
 from anomalib.utils.callbacks import LoadModelCallback, get_callbacks
 from anomalib.utils.loggers import configure_logger, get_experiment_logger
 
-from anomalib.models.ensemble.ensemble_tiler import TileCollater, EnsembleTiler
+from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
+from anomalib.models.ensemble.ensemble_functions import TileCollater
 
 
 logger = logging.getLogger("anomalib")
@@ -63,8 +64,12 @@ def train(args: Namespace):
 
     datamodule = get_datamodule(config)
 
-    tiler = EnsembleTiler(tile_size=config.dataset.tiling.tile_size, stride=config.dataset.tiling.stride,
-                          remove_border_count=config.dataset.tiling.remove_border_count)
+    tiler = EnsembleTiler(
+        tile_size=config.dataset.tiling.tile_size,
+        stride=config.dataset.tiling.stride,
+        image_size=config.dataset.image_size,
+        remove_border_count=config.dataset.tiling.remove_border_count
+    )
     tile_index = (0, 0)
 
     datamodule.custom_collate_fn = TileCollater(tiler, tile_index)

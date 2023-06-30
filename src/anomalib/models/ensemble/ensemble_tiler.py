@@ -10,10 +10,17 @@ from torch import Tensor
 
 from anomalib.pre_processing.tiler import Tiler, compute_new_image_size
 
-from anomalib.data.base.datamodule import collate_fn
-
 
 class EnsembleTiler(Tiler):
+    """
+    Tile Image into (non)overlapping Patches which are then used for ensemble training.
+
+    Args:
+        tile_size: Tile dimension for each patch.
+        stride: Stride length between patches.
+        image_size: Size of images that will be tiled.
+        remove_border_count: Number of border pixels to be removed from tile before untiling.
+    """
     def __init__(
             self,
             tile_size: int | Sequence,
@@ -23,18 +30,28 @@ class EnsembleTiler(Tiler):
     ):
         super().__init__(tile_size=tile_size, stride=stride, remove_border_count=remove_border_count)
 
+        # calculate final image size
         image_size = self._validate_size_type(image_size)
-
         self.resized_h, self.resized_w = compute_new_image_size(
             image_size=image_size,
             tile_size=(self.tile_size_h, self.tile_size_w),
             stride=(self.stride_h, self.stride_w),
         )
 
+        # get number of patches in both dimensions
         self.num_patches_h = int((self.resized_h - self.tile_size_h) / self.stride_h) + 1
         self.num_patches_w = int((self.resized_w - self.tile_size_w) / self.stride_w) + 1
 
     def tile(self, images: Tensor) -> Tensor:
+        """
+        Tiles an input image to either overlapping or non-overlapping patches.
+
+        Args:
+            images: Input images.
+
+        Returns:
+            Tiles generated from images. Returned shape: [num_h, num_w, batch, channel, tile_height, tile_width].
+        """
         # tiles are returned in order [tile_count * batch, channels, tile_height, tile_width]
         combined_tiles = super().tile(images)
 
@@ -50,6 +67,14 @@ class EnsembleTiler(Tiler):
         return tiles
 
     def untile(self, tiles: Tensor) -> Tensor:
+        """
+
+        Args:
+            tiles: Tiles in shape: [num_h, num_w, batch, channel, tile_height, tile_width].
+
+        Returns:
+            Image constructed from input tiles. Shape: [B, C, H, W].
+        """
         # [num_h, num_w, batch, channel, tile_height, tile_width]
         _, _, _, channels, tile_size_h, tile_size_w = tiles.shape
 
@@ -61,37 +86,3 @@ class EnsembleTiler(Tiler):
         untiled = super().untile(tiles)
 
         return untiled
-
-
-class TileTransform(object):
-    """Tile the image and return tile
-
-    Args:
-        output_size (tuple or int): Desired output size. If tuple, output is
-            matched to output_size. If int, smaller of image edges is matched
-            to output_size keeping aspect ratio the same.
-    """
-
-    def __init__(self, output_size):
-        assert isinstance(output_size, (int, tuple))
-        self.output_size = output_size
-
-
-class TileCollater:
-    def __init__(self, tiler, tile_index):
-        self.tiler = tiler
-        self.index = tile_index
-
-    def __call__(self, batch: list) -> dict[str, Any]:
-        coll_batch = collate_fn(batch)
-
-        tiled_images = self.tiler.tile(coll_batch["image"])
-        # insert channel (as mask has just one)
-        tiled_masks = self.tiler.tile(coll_batch["mask"].unsqueeze(1))
-
-        # remove batch
-        coll_batch["image"] = tiled_images[self.index]
-        # remove channel
-        coll_batch["mask"] = tiled_masks[self.index].squeeze(1)
-
-        return coll_batch
