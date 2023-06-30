@@ -66,7 +66,7 @@ class DsrAnomalyGenerator(nn.Module):
         batch_size, _, height, width = batch.shape
 
         # Collect perturbations
-        masks_list = []
+        masks_list: List[Tensor] = []
         for _ in range(batch_size):
             if torch.rand(1) > self.p_anomalous:  # include normal samples
                 masks_list.append(torch.zeros((1, height, width)))

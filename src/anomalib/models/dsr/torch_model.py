@@ -40,7 +40,7 @@ class DsrModel(nn.Module):
         num_residual_layers: int = 2,
         num_residual_hiddens: int = 64,
     ):
-        super(DsrModel, self).__init__()
+        super().__init__()
 
         self.image_dim: int = 3
         self.anomaly_map_dim: int = 2
@@ -774,7 +774,7 @@ class VectorQuantizer(nn.Module):
 
     def __init__(self, num_embeddings: int, embedding_dim: int):
         # Source for the VectorQuantizer module: https://github.com/zalandoresearch/pytorch-vq-vae
-        super(VectorQuantizer, self).__init__()
+        super().__init__()
 
         self._embedding_dim = embedding_dim
         self._num_embeddings = num_embeddings
@@ -979,7 +979,7 @@ class DiscreteLatentModel(nn.Module):
         num_embeddings: int,
         embedding_dim: int,
     ):
-        super(DiscreteLatentModel, self).__init__()
+        super().__init__()
 
         self._encoder_t = EncoderTop(num_hiddens, num_hiddens, num_residual_layers, num_residual_hiddens)
 
@@ -1031,7 +1031,7 @@ class DiscreteLatentModel(nn.Module):
 
             percentage_vectors = strength[k]
             topk = max(1, min(int(percentage_vectors * memory_torch.shape[0]) + 1, memory_torch.shape[0] - 1))
-            values, topk_indices = torch.topk(distances_b, topk, dim=1, largest=False)
+            _, topk_indices = torch.topk(distances_b, topk, dim=1, largest=False)
             topk_indices = topk_indices[:, int(memory_torch.shape[0] * 0.05) :]
             topk = topk_indices.shape[1]
 

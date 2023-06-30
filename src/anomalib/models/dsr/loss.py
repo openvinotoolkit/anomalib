@@ -67,7 +67,7 @@ class DsrThirdLoss(nn.Module):
 
         self.focal_loss = FocalLoss(alpha=1, reduction="mean")
 
-    def forward(self, gen_mask: Tensor, anomaly_mask: Tensor) -> Tensor:
+    def forward(self, pred_mask: Tensor, true_mask: Tensor) -> Tensor:
         """Compute the loss over a batch for the DSR model.
 
         Args:
