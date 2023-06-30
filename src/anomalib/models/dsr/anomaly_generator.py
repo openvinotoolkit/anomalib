@@ -26,7 +26,7 @@ class DsrAnomalyGenerator(nn.Module):
         self,
         p_anomalous: float = 0.5,
     ):
-        super(DsrAnomalyGenerator, self).__init__()
+        super().__init__()
 
         self.p_anomalous = p_anomalous
         self.rot = iaa.Sequential([iaa.Affine(rotate=(-90, 90))])
