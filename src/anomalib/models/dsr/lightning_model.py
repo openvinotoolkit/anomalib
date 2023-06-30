@@ -116,29 +116,36 @@ class Dsr(AnomalyModule):
                 # Create anomaly masks
                 anomaly_mask = self.quantized_anomaly_generator.augment_batch(input_image)
                 # Generate model prediction
-                recon_nq_hi, recon_nq_lo, qu_hi, qu_lo, gen_img, seg, anomaly_mask = self.model(
-                    input_image, anomaly_mask
-                )
+                model_outputs = self.model(input_image, anomaly_mask)
                 # Compute loss
-                loss = self.second_loss(recon_nq_hi, recon_nq_lo, qu_hi, qu_lo, input_image, gen_img, seg, anomaly_mask)
+                loss = self.second_loss(
+                    model_outputs["recon_feat_hi"],
+                    model_outputs["recon_feat_lo"],
+                    model_outputs["embedding_bot"],
+                    model_outputs["embedding_top"],
+                    input_image,
+                    model_outputs["obj_spec_image"],
+                    model_outputs["pred_mask"],
+                    model_outputs["true_mask"]
+                )
             elif optimizer_idx == 1:
                 # we are not training the upsampling module
-                return
+                return None
             else:
                 raise Exception(f"Unknown optimizer_idx {optimizer_idx}.")
         else:
             if optimizer_idx == 0:
                 # we are not training the anomaly detection and object specific modules
-                return
+                return None
             elif optimizer_idx == 1:
                 # we are training the upsampling module
                 input_image = batch["image"]
                 # Generate anomalies
                 input_image, anomaly_maps = self.perlin_generator.augment_batch(input_image)
                 # Get model prediction
-                gen_masks = self.model(input_image)
+                model_outputs = self.model(input_image)
                 # Calculate loss
-                loss = self.third_loss(gen_masks, anomaly_maps)
+                loss = self.third_loss(model_outputs["pred_mask"], anomaly_maps)
             else:
                 raise Exception(f"Unknown optimizer_idx {optimizer_idx}.")
 
@@ -156,9 +163,9 @@ class Dsr(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        prediction, anomaly_scores = self.model(batch["image"])
-        batch["anomaly_maps"] = prediction
-        batch["pred_scores"] = anomaly_scores
+        model_outputs = self.model(batch["image"])
+        batch["anomaly_maps"] = model_outputs["pred_mask"]
+        batch["pred_scores"] = model_outputs["score"]
         return batch
 
 

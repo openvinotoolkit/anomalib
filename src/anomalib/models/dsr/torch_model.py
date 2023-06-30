@@ -106,10 +106,15 @@ class DsrModel(nn.Module):
         """
         # top == lo
 
+        outputs = None
+
         # Generate latent embeddings decoded image via general object decoder
         if anomaly_map_to_generate is None:
             # either evaluating or training phase 3
-            gen_image, embd_top, embd_bot = self.discrete_latent_model(batch)
+            latent_model_outputs = self.discrete_latent_model(batch)
+            gen_image = latent_model_outputs["recon_image"]
+            embd_top = latent_model_outputs["quantized_t"]
+            embd_bot = latent_model_outputs["quantized_b"]
 
             embd_bot = embd_bot.detach()
             embd_top = embd_top.detach()
@@ -150,11 +155,16 @@ class DsrModel(nn.Module):
 
                 out_mask_cv = out_mask_sm_up[:, 1, :, :]
 
-                return out_mask_cv, image_score
+                outputs = {
+                    "pred_mask": out_mask_cv,
+                    "score": image_score
+                }
 
             # else, return upsampled softmax mask
             else:
-                return out_mask_sm_up
+                outputs = {
+                    "pred_mask": out_mask_sm_up
+                }
 
         elif anomaly_map_to_generate is not None and self.training:
             # we are in phase two
@@ -165,9 +175,15 @@ class DsrModel(nn.Module):
 
             # Generate image through general object decoder, and defective & non defective quantized feature maps.
             with torch.no_grad():
-                gen_image_def, anomaly_map, embd_top, embd_bot, embd_top_def, embd_bot_def = self.discrete_latent_model(
+                latent_model_outputs = self.discrete_latent_model(
                     batch, anomaly_map_to_generate, anom_str_lo, anom_str_hi
                 )
+            gen_image_def = latent_model_outputs["recon_image"]
+            anomaly_map = latent_model_outputs["anomaly_mask"]
+            embd_top = latent_model_outputs["quantized_t"]
+            embd_bot = latent_model_outputs["quantized_b"]
+            embd_top_def = latent_model_outputs["anomaly_embedding_lo"]
+            embd_bot_def = latent_model_outputs["anomaly_embedding_hi"]
 
             # Restore the features to normality with the Subspace restriction modules
             recon_feat_hi, recon_embeddings_hi = self.subspace_restriction_module_hi(
@@ -187,10 +203,20 @@ class DsrModel(nn.Module):
             out_mask = self.anomaly_detection_module(spec_image_def.detach(), gen_image_def.detach())
             out_mask_sm = torch.softmax(out_mask, dim=1)
 
-            return recon_feat_hi, recon_feat_lo, embd_bot, embd_top, spec_image_def, out_mask_sm, anomaly_map
-
+            # Outputs
+            outputs = {
+                "recon_feat_hi": recon_feat_hi,
+                "recon_feat_lo": recon_feat_lo,
+                "embedding_bot": embd_bot,
+                "embedding_top": embd_top,
+                "obj_spec_image": spec_image_def,
+                "pred_mask": out_mask_sm,
+                "true_mask": anomaly_map
+            }
         else:
             raise Exception("There should not be an anomaly map to generate when not training")
+
+        return outputs
 
 
 class SubspaceRestrictionModule(nn.Module):
@@ -1102,7 +1128,12 @@ class DiscreteLatentModel(nn.Module):
         # generate anomalies
         anomaly_embedding_hi = None
         anomaly_embedding_lo = None
-        recon_defect = None
+
+        # define outputs
+        outputs = {
+            "quantized_b": quantized_b,
+            "quantized_t": quantized_t
+        }
 
         if anomaly_mask is not None:
             # Generate feature-based anomalies on F_lo
@@ -1147,7 +1178,7 @@ class DiscreteLatentModel(nn.Module):
             # apply the general appearance decoder to the anomaly embeddings
             up_quantized_anomaly_t = self.upsample_t(anomaly_embedding_lo_copy)
             quant_join_anomaly = torch.cat((up_quantized_anomaly_t, anomaly_embedding_hi_copy), dim=1)
-            recon_defect = self._decoder_b(quant_join_anomaly)
+            recon_image = self._decoder_b(quant_join_anomaly)
 
             # Resize the ground truth anomaly map to closely match the augmented features
             down_ratio_x_hi = int(anomaly_mask.shape[3] / quantized_b_defect.shape[3])
@@ -1161,10 +1192,16 @@ class DiscreteLatentModel(nn.Module):
             )
 
             # reminder : top = lo, bot = hi!
-            return recon_defect, anomaly_mask, quantized_t, quantized_b, anomaly_embedding_lo, anomaly_embedding_hi
+            outputs["recon_image"] = recon_image
+            outputs["anomaly_mask"] = anomaly_mask
+            outputs["anomaly_embedding_lo"] = anomaly_embedding_lo
+            outputs["anomaly_embedding_hi"] = anomaly_embedding_hi
 
-        # Concatenate Q_Hi and Q_Lo and input it into the General appearance decoder
-        quant_join = torch.cat((up_quantized_t, quantized_b), dim=1)
-        recon_fin = self._decoder_b(quant_join)
+        else:
+            # Concatenate Q_Hi and Q_Lo and input it into the General appearance decoder
+            quant_join = torch.cat((up_quantized_t, quantized_b), dim=1)
+            recon_image = self._decoder_b(quant_join)
 
-        return recon_fin, quantized_t, quantized_b
+            outputs["recon_image"] = recon_image
+
+        return outputs
