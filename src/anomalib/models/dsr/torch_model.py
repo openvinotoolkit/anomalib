@@ -228,7 +228,7 @@ class SubspaceRestrictionModule(nn.Module):
     """
 
     def __init__(self, base_width: int):
-        super(SubspaceRestrictionModule, self).__init__()
+        super().__init__()
 
         self.unet = SubspaceRestrictionNetwork(in_channels=base_width, out_channels=base_width, base_width=base_width)
 
@@ -406,7 +406,7 @@ class Residual(nn.Module):
     """
 
     def __init__(self, in_channels: int, out_channels: int, num_residual_hiddens: int):
-        super(Residual, self).__init__()
+        super().__init__()
         self._block = nn.Sequential(
             nn.ReLU(True),
             nn.Conv2d(
@@ -444,7 +444,7 @@ class ResidualStack(nn.Module):
     """
 
     def __init__(self, in_channels: int, num_hiddens: int, num_residual_layers: int, num_residual_hiddens: int):
-        super(ResidualStack, self).__init__()
+        super().__init__()
         self._num_residual_layers = num_residual_layers
         self._layers = nn.ModuleList(
             [Residual(in_channels, num_hiddens, num_residual_hiddens) for _ in range(self._num_residual_layers)]
@@ -476,7 +476,7 @@ class ImageReconstructionNetwork(nn.Module):
     """
 
     def __init__(self, in_channels: int, num_hiddens: int, num_residual_layers: int, num_residual_hiddens: int):
-        super(ImageReconstructionNetwork, self).__init__()
+        super().__init__()
         norm_layer = nn.InstanceNorm2d
         self.block1 = nn.Sequential(
             nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1),
@@ -743,7 +743,7 @@ class AnomalyDetectionModule(nn.Module):
     """
 
     def __init__(self, in_channels: int, out_channels: int, base_width: int):
-        super(AnomalyDetectionModule, self).__init__()
+        super().__init__()
         self.unet = UnetModel(in_channels, out_channels, base_width)
 
     def forward(self, batch_real: Tensor, batch_anomaly: Tensor) -> Tensor:
@@ -771,7 +771,7 @@ class UpsamplingModule(nn.Module):
     """
 
     def __init__(self, in_channels: int = 8, out_channels: int = 2, base_width: int = 64):
-        super(UpsamplingModule, self).__init__()
+        super().__init__()
         self.unet = UnetModel(in_channels, out_channels, base_width)
 
     def forward(self, batch_real: Tensor, batch_anomaly: Tensor, batch_segmentation_map: Tensor) -> Tensor:
@@ -860,7 +860,7 @@ class EncoderBot(nn.Module):
     """
 
     def __init__(self, in_channels: int, num_hiddens: int, num_residual_layers: int, num_residual_hiddens: int):
-        super(EncoderBot, self).__init__()
+        super().__init__()
 
         self._conv_1 = nn.Conv2d(
             in_channels=in_channels, out_channels=num_hiddens // 2, kernel_size=4, stride=2, padding=1
@@ -906,7 +906,7 @@ class EncoderTop(nn.Module):
     """
 
     def __init__(self, in_channels: int, num_hiddens: int, num_residual_layers: int, num_residual_hiddens: int):
-        super(EncoderTop, self).__init__()
+        super().__init__()
 
         self._conv_1 = nn.Conv2d(in_channels=in_channels, out_channels=num_hiddens, kernel_size=4, stride=2, padding=1)
         self._conv_2 = nn.Conv2d(in_channels=num_hiddens, out_channels=num_hiddens, kernel_size=3, stride=1, padding=1)
@@ -947,7 +947,7 @@ class DecoderBot(nn.Module):
     """
 
     def __init__(self, in_channels: int, num_hiddens: int, num_residual_layers: int, num_residual_hiddens: int):
-        super(DecoderBot, self).__init__()
+        super().__init__()
 
         self._conv_1 = nn.Conv2d(in_channels=in_channels, out_channels=num_hiddens, kernel_size=3, stride=1, padding=1)
 
