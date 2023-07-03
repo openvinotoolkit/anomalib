@@ -25,7 +25,7 @@ from anomalib.utils.callbacks import LoadModelCallback, get_callbacks
 from anomalib.utils.loggers import configure_logger, get_experiment_logger
 
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
-from anomalib.models.ensemble.ensemble_functions import TileCollater
+from anomalib.models.ensemble.ensemble_functions import TileCollater, update_ensemble_input_size_config
 
 
 logger = logging.getLogger("anomalib")
@@ -61,7 +61,7 @@ def train(args: Namespace):
     if config.project.get("seed") is not None:
         seed_everything(config.project.seed)
 
-    config.model.input_size = (300, 300)
+    config = update_ensemble_input_size_config(config)
     tiler = EnsembleTiler(
         tile_size=config.dataset.tiling.tile_size,
         stride=config.dataset.tiling.stride,

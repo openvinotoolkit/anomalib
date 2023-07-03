@@ -5,6 +5,9 @@
 
 
 from typing import Any
+
+from omegaconf import DictConfig, ListConfig
+
 from anomalib.data.base.datamodule import collate_fn
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
 
@@ -46,3 +49,9 @@ class TileCollater:
             coll_batch["mask"] = tiled_masks[self.tile_index].squeeze(1)
 
         return coll_batch
+
+
+def update_ensemble_input_size_config(config: DictConfig | ListConfig) -> DictConfig | ListConfig:
+    tile_size = (config.dataset.tiling.tile_size, ) * 2
+    config.model.input_size = tile_size
+    return config
