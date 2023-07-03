@@ -16,13 +16,12 @@ from .btech import BTech
 from .folder import Folder
 from .folder_3d import Folder3D
 from .inference import InferenceDataset
-from .mvtec import MVTec, MVTecEnsemble
+from .mvtec import MVTec
 from .mvtec_3d import MVTec3D
 from .shanghaitech import ShanghaiTech
 from .task_type import TaskType
 from .ucsd_ped import UCSDped
 from .visa import Visa
-from ..models.ensemble.ensemble_tiler import EnsembleTiler
 
 logger = logging.getLogger(__name__)
 
@@ -61,26 +60,6 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
 
     if config.dataset.format.lower() == DataFormat.MVTEC:
         datamodule = MVTec(
-            root=config.dataset.path,
-            category=config.dataset.category,
-            image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
-            center_crop=center_crop,
-            normalization=config.dataset.normalization,
-            train_batch_size=config.dataset.train_batch_size,
-            eval_batch_size=config.dataset.eval_batch_size,
-            num_workers=config.dataset.num_workers,
-            task=config.dataset.task,
-            transform_config_train=config.dataset.transform_config.train,
-            transform_config_eval=config.dataset.transform_config.eval,
-            test_split_mode=config.dataset.test_split_mode,
-            test_split_ratio=config.dataset.test_split_ratio,
-            val_split_mode=config.dataset.val_split_mode,
-            val_split_ratio=config.dataset.val_split_ratio,
-        )
-    elif config.dataset.format.lower() == "mvtec_ens":
-        datamodule = MVTecEnsemble(
-            tiler=EnsembleTiler(tile_size=config.dataset.tiling.tile_size, stride=config.dataset.tiling.stride, remove_border_count=config.dataset.tiling.remove_border_count),
-            tile_index=(0, 0),
             root=config.dataset.path,
             category=config.dataset.category,
             image_size=(config.dataset.image_size[0], config.dataset.image_size[1]),
