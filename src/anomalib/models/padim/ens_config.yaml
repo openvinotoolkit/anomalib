@@ -1,13 +1,13 @@
 dataset:
-  name: mvtec
+  name: mvtec_ens_train
   format: mvtec
   path: ./datasets/MVTec
   category: bottle
   task: segmentation
   train_batch_size: 32
   eval_batch_size: 32
-  num_workers: 8
-  image_size: 256 # dimensions to which images are resized (mandatory)
+  num_workers: 4
+  image_size: 600 # dimensions to which images are resized (mandatory)
   center_crop: null # dimensions to which images are center-cropped after resizing (optional)
   normalization: imagenet # data distribution to which the images will be normalized: [none, imagenet]
   transform_config:
@@ -19,8 +19,8 @@ dataset:
   val_split_ratio: 0.5 # fraction of train/test images held out for validation (usage depends on val_split_mode)
   tiling:
     apply: false
-    tile_size: null
-    stride: null
+    tile_size: 300
+    stride: 300
     remove_border_count: 0
     use_random_tiling: False
     random_tile_count: 16
@@ -57,6 +57,7 @@ visualization:
 project:
   seed: 42
   path: ./results
+  unique_dir: True
 
 logging:
   logger: [] # options: [comet, tensorboard, wandb, csv] or combinations.
