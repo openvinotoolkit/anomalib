@@ -31,9 +31,6 @@ from typing import Sequence
 
 import albumentations as A
 from pandas import DataFrame
-from pytorch_lightning.utilities.types import TRAIN_DATALOADERS, EVAL_DATALOADERS
-from torch import Tensor
-from torch.utils.data.dataloader import DataLoader, default_collate
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.task_type import TaskType
