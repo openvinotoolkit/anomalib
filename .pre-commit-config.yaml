@@ -66,5 +66,5 @@ repos:
     rev: 1.7.5
     hooks:
       - id: bandit
-        args: ["-c", "pyproject.toml"]
-        additional_dependencies: ["bandit[toml]"]
+        args: ["-c", ".ci/ipas_default.config"]
+        additional_dependencies: ["bandit"]
