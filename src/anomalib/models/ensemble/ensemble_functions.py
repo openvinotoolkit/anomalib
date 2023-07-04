@@ -71,6 +71,17 @@ def update_ensemble_input_size_config(config: DictConfig | ListConfig) -> DictCo
 
 
 def join_tile_predictions(tile_predictions: dict, tiler: EnsembleTiler) -> list[Tensor]:
+    """
+    Join predictions from ensemble into whole image level representation.
+
+    TODO: return list of dict with all data
+    Args:
+        tile_predictions: Dictionary containing batched predictions.
+        tiler: Tiler used to transform tiles back to image level representation.
+
+    Returns:
+        List of tensors for each batch of masks
+    """
     assert (0, 0) in tile_predictions.keys(), "Tile prediction dictionary should always have at least one tile"
 
     batch_count = len(tile_predictions[(0, 0)])
@@ -83,15 +94,19 @@ def join_tile_predictions(tile_predictions: dict, tiler: EnsembleTiler) -> list[
         batch_size, num_channels, _, _ = tile_predictions[(0, 0)][batch_index]["pred_masks"].shape
         device = tile_predictions[(0, 0)][batch_index]["pred_masks"].device
 
+        # create new empty tensor for combined tiles
         joined_masks = torch.zeros(
             (tiler.num_patches_h, tiler.num_patches_w, batch_size, num_channels, tiler.tile_size_h, tiler.tile_size_w),
             device=device,
         )
 
+        # insert tile into combined tensor
         for tile_i, tile_j in product(range(tiler.num_patches_h), range(tiler.num_patches_w)):
             joined_masks[tile_i, tile_j, ...] = tile_predictions[(tile_i, tile_j)][batch_index]["pred_masks"]
 
-        untiled_masks = tiler.untile(joined_masks)
-        batch_masks.append(untiled_masks)
+        # stitch tiles back into images
+        masks = tiler.untile(joined_masks)
+
+        batch_masks.append(masks)
 
     return batch_masks
