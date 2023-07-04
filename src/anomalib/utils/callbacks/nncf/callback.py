@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import os
-import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -95,4 +94,4 @@ class NNCFCallback(Callback):
         onnx_path = os.path.join(self.export_dir, "model_nncf.onnx")
         self.nncf_ctrl.export_model(onnx_path)
         optimize_command = "mo --input_model " + onnx_path + " --output_dir " + self.export_dir
-        subprocess.call(optimize_command)
+        os.system(optimize_command)
