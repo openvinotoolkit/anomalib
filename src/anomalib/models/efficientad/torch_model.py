@@ -193,6 +193,8 @@ class EfficientADModel(nn.Module):
         input_size (tuple): size of input images
         model_size (str): size of student and teacher model
         padding (bool): use padding in convoluional layers
+        pad_maps (bool): relevant if padding is set to False. In this case, pad_maps = True pads the
+            output anomaly maps so that their size matches the size in the padding = True case.
         device (str): which device the model should be loaded on
     """
 
@@ -200,11 +202,13 @@ class EfficientADModel(nn.Module):
         self,
         teacher_out_channels: int,
         input_size: tuple[int, int],
-        model_size: EfficientADModelSize = EfficientADModelSize.M,
+        model_size: EfficientADModelSize = EfficientADModelSize.S,
         padding=False,
+        pad_maps=True,
     ) -> None:
         super().__init__()
 
+        self.pad_maps = pad_maps
         self.teacher: PDN_M | PDN_S
         self.student: PDN_M | PDN_S
 
@@ -308,6 +312,9 @@ class EfficientADModel(nn.Module):
                 (ae_output - student_output[:, self.teacher_out_channels :]) ** 2, dim=1, keepdim=True
             )
 
+            if self.pad_maps:
+                map_st = F.pad(map_st, (4, 4, 4, 4))
+                map_stae = F.pad(map_stae, (4, 4, 4, 4))
             map_st = F.interpolate(map_st, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
             map_stae = F.interpolate(map_stae, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
 
