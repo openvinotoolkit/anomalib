@@ -76,7 +76,10 @@ class EnsembleTiler(Tiler):
             Image constructed from input tiles. Shape: [B, C, H, W].
         """
         # [num_h, num_w, batch, channel, tile_height, tile_width]
-        _, _, _, channels, tile_size_h, tile_size_w = tiles.shape
+        _, _, batch, channels, tile_size_h, tile_size_w = tiles.shape
+
+        # set tilers batch size as it might have been changed by previous tiling
+        self.batch_size = batch
 
         # rearrange the tiles in order [tile_count * batch, channels, tile_height, tile_width]
         # the required shape for untiling
