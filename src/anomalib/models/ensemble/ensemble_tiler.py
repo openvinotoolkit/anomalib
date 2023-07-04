@@ -21,12 +21,13 @@ class EnsembleTiler(Tiler):
         image_size: Size of images that will be tiled.
         remove_border_count: Number of border pixels to be removed from tile before untiling.
     """
+
     def __init__(
-            self,
-            tile_size: int | Sequence,
-            stride: int | Sequence,
-            image_size: int | Sequence,
-            remove_border_count: int = 0,
+        self,
+        tile_size: int | Sequence,
+        stride: int | Sequence,
+        image_size: int | Sequence,
+        remove_border_count: int = 0,
     ):
         super().__init__(tile_size=tile_size, stride=stride, remove_border_count=remove_border_count)
 
@@ -56,12 +57,14 @@ class EnsembleTiler(Tiler):
         combined_tiles = super().tile(images)
 
         # rearrange to [num_h, num_w, batch, channel, tile_height, tile_width]
-        tiles = combined_tiles.contiguous().view(self.batch_size,
-                                                 self.num_patches_h,
-                                                 self.num_patches_w,
-                                                 self.num_channels,
-                                                 self.tile_size_h,
-                                                 self.tile_size_w)
+        tiles = combined_tiles.contiguous().view(
+            self.batch_size,
+            self.num_patches_h,
+            self.num_patches_w,
+            self.num_channels,
+            self.tile_size_h,
+            self.tile_size_w,
+        )
         tiles = tiles.permute(1, 2, 0, 3, 4, 5)
 
         return tiles

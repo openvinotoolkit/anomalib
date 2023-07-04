@@ -25,7 +25,11 @@ from anomalib.utils.callbacks import LoadModelCallback, get_callbacks
 from anomalib.utils.loggers import configure_logger, get_experiment_logger
 
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
-from anomalib.models.ensemble.ensemble_functions import TileCollater, update_ensemble_input_size_config
+from anomalib.models.ensemble.ensemble_functions import (
+    TileCollater,
+    update_ensemble_input_size_config,
+    join_tile_predictions,
+)
 
 
 logger = logging.getLogger("anomalib")
@@ -66,8 +70,10 @@ def train(args: Namespace):
         tile_size=config.dataset.tiling.tile_size,
         stride=config.dataset.tiling.stride,
         image_size=config.dataset.image_size,
-        remove_border_count=config.dataset.tiling.remove_border_count
+        remove_border_count=config.dataset.tiling.remove_border_count,
     )
+
+    tile_predictions = {}
 
     # go over all tile positions and train
     for tile_index in product(range(tiler.num_patches_h), range(tiler.num_patches_w)):
@@ -84,15 +90,16 @@ def train(args: Namespace):
         logger.info("Training the model.")
         trainer.fit(model=model, datamodule=datamodule)
 
-        logger.info("Loading the best model weights.")
-        load_model_callback = LoadModelCallback(weights_path=trainer.checkpoint_callback.best_model_path)
-        trainer.callbacks.insert(0, load_model_callback)  # pylint: disable=no-member
+        predictions = trainer.predict(model=model, datamodule=datamodule, ckpt_path="best")
+        tile_predictions[tile_index] = predictions
 
         if config.dataset.test_split_mode == TestSplitMode.NONE:
             logger.info("No test set provided. Skipping test stage.")
         else:
             logger.info("Testing the model.")
             trainer.test(model=model, datamodule=datamodule)
+
+    masks = join_tile_predictions(tile_predictions, tiler)
 
 
 if __name__ == "__main__":

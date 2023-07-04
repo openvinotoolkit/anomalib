@@ -205,3 +205,13 @@ class AnomalibDataModule(LightningDataModule, ABC):
             num_workers=self.num_workers,
             collate_fn=self.custom_collate_fn,
         )
+
+    def predict_dataloader(self) -> EVAL_DATALOADERS:
+        """Get predict datalaoder (same as test)"""
+        return DataLoader(
+            dataset=self.test_data,
+            shuffle=False,
+            batch_size=self.eval_batch_size,
+            num_workers=self.num_workers,
+            collate_fn=self.custom_collate_fn
+        )

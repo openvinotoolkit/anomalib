@@ -5,8 +5,11 @@
 
 
 from typing import Any
+from itertools import product
 
+import torch
 from omegaconf import DictConfig, ListConfig
+from torch import Tensor
 
 from anomalib.data.base.datamodule import collate_fn
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
@@ -20,6 +23,7 @@ class TileCollater:
         tiler: Tiler used to split the images to tiles.
         tile_index: Index of tile we want to return.
     """
+
     def __init__(self, tiler: EnsembleTiler, tile_index: (int, int)) -> None:
         self.tiler = tiler
         self.tile_index = tile_index
@@ -52,6 +56,42 @@ class TileCollater:
 
 
 def update_ensemble_input_size_config(config: DictConfig | ListConfig) -> DictConfig | ListConfig:
-    tile_size = (config.dataset.tiling.tile_size, ) * 2
+    """
+    Update input size of model to match tile size.
+
+    Args:
+        config: Configurable parameters object
+
+    Returns:
+        Configurable parameters with updated values
+    """
+    tile_size = (config.dataset.tiling.tile_size,) * 2
     config.model.input_size = tile_size
     return config
+
+
+def join_tile_predictions(tile_predictions: dict, tiler: EnsembleTiler) -> list[Tensor]:
+    assert (0, 0) in tile_predictions.keys(), "Tile prediction dictionary should always have at least one tile"
+
+    batch_count = len(tile_predictions[(0, 0)])
+
+    batch_masks = []
+
+    # dict contains predictions for each tile location, and prediction is list of batches
+    for batch_index in range(batch_count):
+        # get batch, channels and device from first tile (0, 0) that should always exist
+        batch_size, num_channels, _, _ = tile_predictions[(0, 0)][batch_index]["pred_masks"].shape
+        device = tile_predictions[(0, 0)][batch_index]["pred_masks"].device
+
+        joined_masks = torch.zeros(
+            (tiler.num_patches_h, tiler.num_patches_w, batch_size, num_channels, tiler.tile_size_h, tiler.tile_size_w),
+            device=device,
+        )
+
+        for tile_i, tile_j in product(range(tiler.num_patches_h), range(tiler.num_patches_w)):
+            joined_masks[tile_i, tile_j, ...] = tile_predictions[(tile_i, tile_j)][batch_index]["pred_masks"]
+
+        untiled_masks = tiler.untile(joined_masks)
+        batch_masks.append(untiled_masks)
+
+    return batch_masks
