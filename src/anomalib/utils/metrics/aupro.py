@@ -20,6 +20,7 @@ from anomalib.utils.metrics.pro import (
     connected_components_cpu,
     connected_components_gpu,
 )
+from .binning import thresholds_between_min_and_max, thresholds_between_0_and_1
 
 from .plotting_utils import plot_figure
 
@@ -32,11 +33,13 @@ class AUPRO(Metric):
     full_state_update: bool = False
     preds: list[Tensor]
     target: list[Tensor]
-    # The threshold used to compute the binned version of the AUPRO which is less accurate
-    # but more memory efficient. Warning: Contrary to AUROC or AUPR, here the predictions
-    # are not scaled between 0 and 1 by self calling the sigmoid function if some predictions
-    # are greater than 1.
-    thresholds: Tensor | None
+    # When not None, the computation is performed in constant-memory by computing the roc curve
+    # for fixed thresholds buckets/thresholds.
+    # Warning: The thresholds are evenly distributed between the min and max predictions
+    # if all predictions are inside [0, 1]. Otherwise, the thresholds are evenly distributed between 0 and 1.
+    # This warning can be removed when https://github.com/Lightning-AI/torchmetrics/issues/1526 is fixed
+    # and the roc curve is computed with deactivated formatting
+    num_thresholds: int | None
 
     def __init__(
         self,
@@ -45,7 +48,7 @@ class AUPRO(Metric):
         process_group: Any | None = None,
         dist_sync_fn: Callable | None = None,
         fpr_limit: float = 0.3,
-        thresholds: int | list[float] | Tensor | None = None,
+        num_thresholds: int | None = None,
     ) -> None:
         super().__init__(
             compute_on_step=compute_on_step,
@@ -57,11 +60,7 @@ class AUPRO(Metric):
         self.add_state("preds", default=[], dist_reduce_fx="cat")  # pylint: disable=not-callable
         self.add_state("target", default=[], dist_reduce_fx="cat")  # pylint: disable=not-callable
         self.register_buffer("fpr_limit", torch.tensor(fpr_limit))
-
-        if thresholds is None:
-            self.thresholds = thresholds
-        else:
-            self.register_buffer("thresholds", thresholds)
+        self.num_thresholds = num_thresholds
 
     def update(self, preds: Tensor, target: Tensor) -> None:  # type: ignore
         """Update state with new values.
@@ -109,9 +108,22 @@ class AUPRO(Metric):
         Returns:
             tuple[Tensor, Tensor]: tuple containing final fpr and tpr values.
         """
-        # initialize the roc curve with the specified thresholds
-        # target being forced to be 0 or 1, we can use the binary roc curve
-        roc_in_pro = partial(binary_roc, thresholds=self.thresholds)
+        if self.num_thresholds is not None:
+            # binary_roc is applying a sigmoid on the predictions before computing the roc curve
+            # when some predictions are out of [0, 1], the binning between min and max predictions
+            # cannot be applied in that case. This can be removed when
+            #  https://github.com/Lightning-AI/torchmetrics/issues/1526 is fixed and
+            #  the roc curve is computed with deactivated formatting.
+
+            if all((0 <= preds) * (preds <= 1)):
+                thresholds = thresholds_between_min_and_max(preds, self.num_thresholds)
+            else:
+                thresholds = thresholds_between_0_and_1(self.num_thresholds)
+        else:
+            thresholds = None
+
+        # initialize the roc curve from the specified threshold count
+        roc_in_pro = partial(binary_roc, thresholds=thresholds,)
 
         # compute the global fpr-size
         fpr: Tensor = roc_in_pro(preds, target)[0]  # only need fpr

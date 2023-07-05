@@ -40,18 +40,18 @@ def pytest_generate_tests(metafunc):
     fpr_limit.append(float(np.mean(fpr_limit)))
     expected_aupro.append(torch.tensor(np.mean(expected_aupro)))
 
-    thresholds = [
-        torch.linspace(0, 1, steps=200),
-        torch.linspace(0, 1, steps=200),
-        torch.linspace(0, 1, steps=200),
+    threshold_count = [
+        200,
+        200,
+        200,
     ]
 
     if metafunc.function is test_aupro:
         vals = list(zip(labels, preds, fpr_limit, expected_aupro))
-        metafunc.parametrize(argnames=("labels", "preds", "fpr_limit", "aupro"), argvalues=vals)
+        metafunc.parametrize(argnames=("labels", "preds", "fpr_limit", "expected_aupro"), argvalues=vals)
     elif metafunc.function is test_binned_aupro:
-        vals = list(zip(labels, preds, thresholds))
-        metafunc.parametrize(argnames=("labels", "preds", "thresholds"), argvalues=vals)
+        vals = list(zip(labels, preds, threshold_count))
+        metafunc.parametrize(argnames=("labels", "preds", "threshold_count"), argvalues=vals)
 
 
 def test_aupro(labels, preds, fpr_limit, expected_aupro):
@@ -66,17 +66,26 @@ def test_aupro(labels, preds, fpr_limit, expected_aupro):
     TOL = 0.001
     assert torch.allclose(computed_aupro, expected_aupro, atol=TOL)
     assert torch.allclose(computed_aupro, ref_aupro, atol=TOL)
-    assert torch.allclose(aupro, ref_aupro, atol=TOL)
 
 
-def test_binned_aupro(labels, preds, thresholds):
+def test_binned_aupro(labels, preds, threshold_count):
     aupro = AUPRO()
     computed_not_binned_aupro = aupro(preds, labels)
 
-    binned_pro = AUPRO(thresholds=thresholds)
+    binned_pro = AUPRO(num_thresholds=threshold_count)
     computed_binned_aupro = binned_pro(preds, labels)
 
     TOL = 0.001
+    # with threshold binning the roc curve computed within the metric is more memory efficient
+    # but a bit less accurate. So we check the difference in order to validate the binning effect.
+    assert computed_binned_aupro != computed_not_binned_aupro
+    assert torch.allclose(computed_not_binned_aupro, computed_binned_aupro, atol=TOL)
+
+    # test with prediction higher than 1
+    preds = preds * 2
+    computed_binned_aupro = binned_pro(preds, labels)
+    computed_not_binned_aupro = aupro(preds, labels)
+
     # with threshold binning the roc curve computed within the metric is more memory efficient
     # but a bit less accurate. So we check the difference in order to validate the binning effect.
     assert computed_binned_aupro != computed_not_binned_aupro
