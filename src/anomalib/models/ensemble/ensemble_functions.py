@@ -77,7 +77,7 @@ def join_tiles(tile_predictions: dict, tiler: EnsembleTiler, batch_index: int, t
     Args:
         tile_predictions: Dictionary containing batched predictions.
         tiler: Tiler used to transform tiles back to image level representation.
-        batch_index: index of current batch.
+        batch_index: Index of current batch.
         tile_key: Key used in dictionary for tiles that we want to join
 
     Returns:
@@ -126,6 +126,34 @@ def join_tiles(tile_predictions: dict, tiler: EnsembleTiler, batch_index: int, t
     return joined_output
 
 
+def join_boxes(tile_predictions: dict, tiler: EnsembleTiler, batch_index: int) -> dict:
+    """
+    Join boxes data from all tiles. This includes pred_boxes, box_scores and box_labels.
+    TODO: not sure if joining is correct
+
+    Args:
+        tile_predictions: Dictionary containing batched predictions.
+        tiler: Tiler used to transform tiles back to image level representation.
+        batch_index: Index of current batch.
+
+    Returns:
+        Dictionary with joined boxes, box scores and box labels.
+    """
+    joined_boxes = {
+        "pred_boxes": [],
+        "box_scores": [],
+        "box_labels": []
+    }
+
+    # insert tile into joined tensor at right locations
+    for tile_i, tile_j in product(range(tiler.num_patches_h), range(tiler.num_patches_w)):
+        joined_boxes["pred_boxes"].extend(tile_predictions[(tile_i, tile_j)][batch_index]["pred_boxes"])
+        joined_boxes["box_scores"].extend(tile_predictions[(tile_i, tile_j)][batch_index]["box_scores"])
+        joined_boxes["box_labels"].extend(tile_predictions[(tile_i, tile_j)][batch_index]["box_labels"])
+
+    return joined_boxes
+
+
 def join_tile_predictions(tile_predictions: dict, tiler: EnsembleTiler) -> list[Tensor]:
     """
     Join predictions from ensemble into whole image level representation.
@@ -156,7 +184,13 @@ def join_tile_predictions(tile_predictions: dict, tiler: EnsembleTiler) -> list[
         for t_key in tiled_keys:
             batch_predictions[t_key] = join_tiles(tile_predictions, tiler, batch_index, t_key)
 
-        # TODO: box joining, label joining
+        # join all box data from all tiles
+        joined_box_data = join_boxes(tile_predictions, tiler, batch_index)
+        batch_predictions["pred_boxes"] = joined_box_data["pred_boxes"]
+        batch_predictions["box_scores"] = joined_box_data["box_scores"]
+        batch_predictions["box_labels"] = joined_box_data["box_labels"]
+
+        # label joining
 
         joined_predictions.append(batch_predictions)
 
