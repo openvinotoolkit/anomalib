@@ -97,9 +97,9 @@ def train(args: Namespace):
             logger.info("No test set provided. Skipping test stage.")
         else:
             logger.info("Testing the model.")
-            trainer.test(model=model, datamodule=datamodule)
+            #trainer.test(model=model, datamodule=datamodule)
 
-    masks = join_tile_predictions(tile_predictions, tiler)
+    all_predictions = join_tile_predictions(tile_predictions, tiler)
 
 
 if __name__ == "__main__":
