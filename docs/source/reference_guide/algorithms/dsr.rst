@@ -39,11 +39,6 @@ Usage
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: anomalib.models.dsr.download_weights
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 .. automodule:: anomalib.models.dsr.loss
    :members:
    :undoc-members:

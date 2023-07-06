@@ -209,7 +209,7 @@ class DsrModel(nn.Module):
                 "true_mask": anomaly_map,
             }
         else:
-            raise Exception("There should not be an anomaly map to generate when not training")
+            raise RuntimeError("There should not be an anomaly map to generate when not training")
 
         return outputs
 

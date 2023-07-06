@@ -137,7 +137,7 @@ class Dsr(AnomalyModule):
                 # we are not training the upsampling module
                 return None
             else:
-                raise Exception(f"Unknown optimizer_idx {optimizer_idx}.")
+                raise RuntimeError(f"Unknown optimizer_idx {optimizer_idx}.")
         else:
             if optimizer_idx == 0:
                 # we are not training the anomaly detection and object specific modules
@@ -152,7 +152,7 @@ class Dsr(AnomalyModule):
                 # Calculate loss
                 loss = self.third_loss(model_outputs["pred_mask"], anomaly_maps)
             else:
-                raise Exception(f"Unknown optimizer_idx {optimizer_idx}.")
+                raise RuntimeError(f"Unknown optimizer_idx {optimizer_idx}.")
 
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
