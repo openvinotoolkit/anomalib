@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-from functools import partial
 from typing import Any, Callable
 
 import torch
@@ -116,14 +115,17 @@ class AUPRO(Metric):
             #  the roc curve is computed with deactivated formatting.
 
             if all((0 <= preds) * (preds <= 1)):
-                thresholds = thresholds_between_min_and_max(preds, self.num_thresholds)
+                thresholds = thresholds_between_min_and_max(
+                    preds, self.num_thresholds, self.device
+                )
             else:
-                thresholds = thresholds_between_0_and_1(self.num_thresholds)
+                thresholds = thresholds_between_0_and_1(self.num_thresholds, self.device)
+
         else:
             thresholds = None
 
         # compute the global fpr-size
-        fpr: Tensor = binary_roc(preds, target, thresholds=thresholds,)[0]  # only need fpr
+        fpr: Tensor = binary_roc(preds=preds, target=target, thresholds=thresholds,)[0]  # only need fpr
         output_size = torch.where(fpr <= self.fpr_limit)[0].size(0)
 
         # compute the PRO curve by aggregating per-region tpr/fpr curves/values.
@@ -145,7 +147,11 @@ class AUPRO(Metric):
             mask = cca == label
             # Need to calculate label-wise roc on union of background & mask, as otherwise we wrongly consider other
             # label in labels as FPs. We also don't need to return the thresholds
-            _fpr, _tpr = binary_roc(preds[background | mask], mask[background | mask], thresholds=thresholds,)[:-1]
+            _fpr, _tpr = binary_roc(
+                preds=preds[background | mask],
+                target=mask[background | mask],
+                thresholds=thresholds,
+            )[:-1]
 
             # catch edge-case where ROC only has fpr vals > self.fpr_limit
             if _fpr[_fpr <= self.fpr_limit].max() == 0:
