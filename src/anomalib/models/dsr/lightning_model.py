@@ -38,12 +38,10 @@ class Dsr(AnomalyModule):
     """DSR: A Dual Subspace Re-Projection Network for Surface Anomaly Detection
 
     Args:
-        ckpt (str): Path to checkpoint file containing the pretrained weights for the discrete
-        model.
         anom_par (float, optional): Parameter determining the strength of the generated anomalies.
     """
 
-    def __init__(self, ckpt: str, anom_par: float = 0.2) -> None:
+    def __init__(self, anom_par: float = 0.2) -> None:
         super().__init__()
 
         self.quantized_anomaly_generator = DsrAnomalyGenerator()
@@ -184,6 +182,6 @@ class DsrLightning(Dsr):
     """
 
     def __init__(self, hparams: DictConfig | ListConfig) -> None:
-        super().__init__(ckpt=hparams.model.ckpt_path, anom_par=hparams.model.anom_par)
+        super().__init__(anom_par=hparams.model.anom_par)
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
