@@ -122,11 +122,8 @@ class AUPRO(Metric):
         else:
             thresholds = None
 
-        # initialize the roc curve from the specified threshold count
-        roc_in_pro = partial(binary_roc, thresholds=thresholds,)
-
         # compute the global fpr-size
-        fpr: Tensor = roc_in_pro(preds, target)[0]  # only need fpr
+        fpr: Tensor = binary_roc(preds, target, thresholds=thresholds,)[0]  # only need fpr
         output_size = torch.where(fpr <= self.fpr_limit)[0].size(0)
 
         # compute the PRO curve by aggregating per-region tpr/fpr curves/values.
@@ -148,7 +145,7 @@ class AUPRO(Metric):
             mask = cca == label
             # Need to calculate label-wise roc on union of background & mask, as otherwise we wrongly consider other
             # label in labels as FPs. We also don't need to return the thresholds
-            _fpr, _tpr = roc_in_pro(preds[background | mask], mask[background | mask])[:-1]
+            _fpr, _tpr = binary_roc(preds[background | mask], mask[background | mask], thresholds=thresholds,)[:-1]
 
             # catch edge-case where ROC only has fpr vals > self.fpr_limit
             if _fpr[_fpr <= self.fpr_limit].max() == 0:
