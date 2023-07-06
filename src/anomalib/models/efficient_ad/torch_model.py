@@ -1,4 +1,4 @@
-"""Torch model for student, teacher and autoencoder model in EfficientAD"""
+"""Torch model for student, teacher and autoencoder model in EfficientAd"""
 
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -24,8 +24,8 @@ def imagenet_norm_batch(x):
     return x_norm
 
 
-class EfficientADModelSize(str, Enum):
-    """Supported EfficientAD model sizes"""
+class EfficientAdModelSize(str, Enum):
+    """Supported EfficientAd model sizes"""
 
     M = "medium"
     S = "small"
@@ -166,7 +166,7 @@ class Decoder(nn.Module):
 
 
 class AutoEncoder(nn.Module):
-    """EfficientAD Autoencoder.
+    """EfficientAd Autoencoder.
 
     Args:
        out_channels (int): number of convolution output channels
@@ -184,8 +184,8 @@ class AutoEncoder(nn.Module):
         return x
 
 
-class EfficientADModel(nn.Module):
-    """EfficientAD model.
+class EfficientAdModel(nn.Module):
+    """EfficientAd model.
 
     Args:
         teacher_out_channels (int): number of convolution output channels of the pre-trained teacher model
@@ -202,7 +202,7 @@ class EfficientADModel(nn.Module):
         self,
         teacher_out_channels: int,
         input_size: tuple[int, int],
-        model_size: EfficientADModelSize = EfficientADModelSize.S,
+        model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         padding=False,
         pad_maps=True,
     ) -> None:
@@ -212,11 +212,11 @@ class EfficientADModel(nn.Module):
         self.teacher: PDN_M | PDN_S
         self.student: PDN_M | PDN_S
 
-        if model_size == EfficientADModelSize.M:
+        if model_size == EfficientAdModelSize.M:
             self.teacher = PDN_M(out_channels=teacher_out_channels, padding=padding).eval()
             self.student = PDN_M(out_channels=teacher_out_channels * 2, padding=padding)
 
-        elif model_size == EfficientADModelSize.S:
+        elif model_size == EfficientAdModelSize.S:
             self.teacher = PDN_S(out_channels=teacher_out_channels, padding=padding).eval()
             self.student = PDN_S(out_channels=teacher_out_channels * 2, padding=padding)
 
@@ -261,7 +261,7 @@ class EfficientADModel(nn.Module):
         return transform_function(image, coefficient)
 
     def forward(self, batch: Tensor, batch_imagenet: Tensor = None) -> Tensor | dict:
-        """Prediction by EfficientAD models.
+        """Prediction by EfficientAd models.
 
         Args:
             batch (Tensor): Input images.

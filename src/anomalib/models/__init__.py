@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from importlib import import_module
 
 from omegaconf import DictConfig, ListConfig
@@ -20,7 +21,7 @@ from anomalib.models.csflow import Csflow
 from anomalib.models.dfkde import Dfkde
 from anomalib.models.dfm import Dfm
 from anomalib.models.draem import Draem
-from anomalib.models.efficientad import EfficientAD
+from anomalib.models.efficient_ad import EfficientAd
 from anomalib.models.fastflow import Fastflow
 from anomalib.models.ganomaly import Ganomaly
 from anomalib.models.padim import Padim
@@ -44,22 +45,64 @@ __all__ = [
     "Rkde",
     "Stfpm",
     "AiVad",
-    "EfficientAD",
+    "EfficientAd",
 ]
 
 logger = logging.getLogger(__name__)
 
 
-def _snake_to_pascal_case(model_name: str) -> str:
-    """Convert model name from snake case to Pascal case.
+def convert_snake_to_pascal_case(snake_case: str) -> str:
+    """Convert snake_case to PascalCase.
 
     Args:
-        model_name (str): Model name in snake case.
+        snake_case (str): Input string in snake_case
 
     Returns:
-        str: Model name in Pascal case.
+        str: Output string in PascalCase
+
+    Examples:
+        >>> convert_snake_to_pascal_case("efficient_ad")
+        EfficientAd
+
+        >>> convert_snake_to_pascal_case("patchcore")
+        Patchcore
     """
-    return "".join([split.capitalize() for split in model_name.split("_")])
+    pascal_case = "".join(word.capitalize() for word in snake_case.split("_"))
+    return pascal_case
+
+
+def convert_pascal_to_snake_case(pascal_case: str) -> str:
+    """Convert PascalCase to snake_case.
+
+    Args:
+        pascal_case (str): Input string in PascalCase
+
+    Returns:
+        str: Output string in snake_case
+
+    Examples:
+        >>> convert_pascal_to_snake_case("EfficientAd")
+        efficient_ad
+
+        >>> convert_pascal_to_snake_case("Patchcore")
+        patchcore
+    """
+    snake_case = re.sub(r"(?<!^)(?=[A-Z])", "_", pascal_case).lower()
+    return snake_case
+
+
+def get_available_models() -> list[str]:
+    """Get list of available models.
+
+    Returns:
+        list[str]: List of available models.
+
+    Example:
+        >>> get_available_models()
+        ['ai_vad', 'cfa', 'cflow', 'csflow', 'dfkde', 'dfm', 'draem', 'efficient_ad', 'fastflow', ...]
+    """
+    available_models = [convert_pascal_to_snake_case(cls.__name__) for cls in AnomalyModule.__subclasses__()]
+    return available_models
 
 
 def get_model(config: DictConfig | ListConfig) -> AnomalyModule:
@@ -82,28 +125,11 @@ def get_model(config: DictConfig | ListConfig) -> AnomalyModule:
     """
     logger.info("Loading the model.")
 
-    model_list: list[str] = [
-        "cfa",
-        "cflow",
-        "csflow",
-        "dfkde",
-        "dfm",
-        "draem",
-        "fastflow",
-        "ganomaly",
-        "padim",
-        "patchcore",
-        "reverse_distillation",
-        "rkde",
-        "stfpm",
-        "ai_vad",
-        "efficientad",
-    ]
     model: AnomalyModule
 
-    if config.model.name in model_list:
+    if config.model.name in get_available_models():
         module = import_module(f"anomalib.models.{config.model.name}")
-        model = getattr(module, f"{_snake_to_pascal_case(config.model.name)}Lightning")(config)
+        model = getattr(module, f"{convert_snake_to_pascal_case(config.model.name)}Lightning")(config)
 
     else:
         raise ValueError(f"Unknown model {config.model.name}!")
