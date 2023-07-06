@@ -10,22 +10,29 @@ from __future__ import annotations
 
 import logging
 from os.path import isfile
+from pathlib import Path
 
 import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
+from anomalib.data.utils import DownloadInfo, download_and_extract
 from anomalib.data.utils.augmenter import Augmenter
 from anomalib.models.components import AnomalyModule
 from anomalib.models.dsr.anomaly_generator import DsrAnomalyGenerator
-from anomalib.models.dsr.download_weights import DsrWeightDownloader
 from anomalib.models.dsr.loss import DsrSecondLoss, DsrThirdLoss
 from anomalib.models.dsr.torch_model import DsrModel
 
 __all__ = ["Dsr", "DsrLightning"]
 
 logger = logging.getLogger(__name__)
+
+WEIGHTS_DOWNLOAD_INFO = DownloadInfo(
+    name="vq_model_pretrained_128_4096.pckl",
+    url="https://github.com/openvinotoolkit/anomalib/releases/download/dsr_pretrained_weights/dsr_vq_model_pretrained.zip",
+    hash="927f6b40841a7c885d12217c922b2bba",
+)
 
 
 class Dsr(AnomalyModule):
@@ -45,15 +52,15 @@ class Dsr(AnomalyModule):
         self.model = DsrModel(anom_par)
         self.second_loss = DsrSecondLoss()
         self.third_loss = DsrThirdLoss()
-        self.downloader = DsrWeightDownloader()
         self.anom_par: float = anom_par
-        self.ckpt = ckpt
 
-        if not isfile("src/anomalib/models/dsr/vq_model_pretrained_128_4096.pckl"):
-            logger.info("Pretrained weights not found.")
-            self.downloader.download()
-        else:
-            logger.info("Pretrained checkpoint file found.")
+        self.second_phase: int = None
+
+    def prepare_pretrained_model(self) -> Path:
+        pretrained_models_dir = Path("./pre_trained/")
+        if not (pretrained_models_dir / "vq_model_pretrained_128_4096.pckl").is_file():
+            download_and_extract(pretrained_models_dir, WEIGHTS_DOWNLOAD_INFO)
+        return pretrained_models_dir / "vq_model_pretrained_128_4096.pckl"
 
     def configure_optimizers(
         self,
@@ -85,7 +92,8 @@ class Dsr(AnomalyModule):
 
     def on_train_start(self) -> None:
         """Load pretrained weights of the discrete model when starting training."""
-        self.model.load_pretrained_discrete_model_weights(self.ckpt)
+        ckpt: Path = self.prepare_pretrained_model()
+        self.model.load_pretrained_discrete_model_weights(str(ckpt))
 
     def on_train_epoch_start(self) -> None:
         """Display a message when starting to train the upsampling module."""
@@ -126,7 +134,7 @@ class Dsr(AnomalyModule):
                     input_image,
                     model_outputs["obj_spec_image"],
                     model_outputs["pred_mask"],
-                    model_outputs["true_mask"]
+                    model_outputs["true_mask"],
                 )
             elif optimizer_idx == 1:
                 # we are not training the upsampling module

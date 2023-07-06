@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from typing import List
+
 import imgaug.augmenters as iaa
 import numpy as np
 import torch
