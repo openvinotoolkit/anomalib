@@ -141,7 +141,6 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
     def join_boxes(self, batch_index: int) -> dict:
         """
         Join boxes data from all tiles. This includes pred_boxes, box_scores and box_labels.
-        TODO: not correct joining, fix this!!
 
         Args:
             batch_index: Index of current batch.
@@ -149,12 +148,27 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
         Returns:
             Dictionary with joined boxes, box scores and box labels.
         """
-        joined_boxes = {"pred_boxes": [], "box_scores": [], "box_labels": []}
+        batch_size = len(self.tile_predictions[(0, 0)][batch_index]["pred_boxes"])
 
-        # insert tile into joined tensor at right locations
+        # create placeholder arrays, that will contain box data fro each image
+        boxes = [[] for _ in range(batch_size)]
+        scores = [[] for _ in range(batch_size)]
+        labels = [[] for _ in range(batch_size)]
+
+        # go over all tiles and add box data tensor to belonging array
         for tile_i, tile_j in product(range(self.tiler.num_patches_h), range(self.tiler.num_patches_w)):
-            joined_boxes["pred_boxes"].extend(self.tile_predictions[(tile_i, tile_j)][batch_index]["pred_boxes"])
-            joined_boxes["box_scores"].extend(self.tile_predictions[(tile_i, tile_j)][batch_index]["box_scores"])
-            joined_boxes["box_labels"].extend(self.tile_predictions[(tile_i, tile_j)][batch_index]["box_labels"])
+            curr_pred = self.tile_predictions[(tile_i, tile_j)][batch_index]
+            for i in range(batch_size):
+                boxes[i].append(curr_pred["pred_boxes"][i])
+                scores[i].append(curr_pred["box_scores"][i])
+                labels[i].append(curr_pred["box_labels"][i])
+
+        joined_boxes = {"pred_boxes": [], "box_scores": [], "box_labels": []}
+        for i in range(batch_size):
+            # stack boxes into form [n, 4] (vertical stack)
+            joined_boxes["pred_boxes"].append(torch.vstack(boxes[i]))
+            # stack scores and labels into form [n] (horizontal stack)
+            joined_boxes["box_scores"].append(torch.hstack(scores[i]))
+            joined_boxes["box_labels"].append(torch.hstack(labels[i]))
 
         return joined_boxes
