@@ -1,4 +1,4 @@
-from torch import Tensor, linspace, all
+from torch import Tensor, linspace
 
 
 def thresholds_between_min_and_max(preds: Tensor, num_thresholds: int = 100) -> Tensor:
