@@ -77,5 +77,5 @@ class DsrThirdLoss(nn.Module):
         Returns:
             Tensor: Total loss
         """
-        focal_loss = self.focal_loss(gen_mask, anomaly_mask.squeeze(1).long())
+        focal_loss = self.focal_loss(pred_mask, true_mask.squeeze(1).long())
         return focal_loss

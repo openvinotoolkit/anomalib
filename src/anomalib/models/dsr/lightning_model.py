@@ -9,7 +9,6 @@ Paper https://link.springer.com/chapter/10.1007/978-3-031-19821-2_31
 from __future__ import annotations
 
 import logging
-from os.path import isfile
 from pathlib import Path
 
 import torch
@@ -54,7 +53,7 @@ class Dsr(AnomalyModule):
         self.third_loss = DsrThirdLoss()
         self.anom_par: float = anom_par
 
-        self.second_phase: int = None
+        self.second_phase: int
 
     def prepare_pretrained_model(self) -> Path:
         pretrained_models_dir = Path("./pre_trained/")

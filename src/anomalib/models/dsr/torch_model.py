@@ -11,7 +11,7 @@
 
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable, Dict
 
 import torch
 import torch.nn.functional as F
@@ -155,16 +155,11 @@ class DsrModel(nn.Module):
 
                 out_mask_cv = out_mask_sm_up[:, 1, :, :]
 
-                outputs = {
-                    "pred_mask": out_mask_cv,
-                    "score": image_score
-                }
+                outputs = {"pred_mask": out_mask_cv, "score": image_score}
 
             # else, return upsampled softmax mask
             else:
-                outputs = {
-                    "pred_mask": out_mask_sm_up
-                }
+                outputs = {"pred_mask": out_mask_sm_up}
 
         elif anomaly_map_to_generate is not None and self.training:
             # we are in phase two
@@ -211,7 +206,7 @@ class DsrModel(nn.Module):
                 "embedding_top": embd_top,
                 "obj_spec_image": spec_image_def,
                 "pred_mask": out_mask_sm,
-                "true_mask": anomaly_map
+                "true_mask": anomaly_map,
             }
         else:
             raise Exception("There should not be an anomaly map to generate when not training")
@@ -1083,7 +1078,7 @@ class DiscreteLatentModel(nn.Module):
         anomaly_mask: Tensor | None = None,
         anom_str_lo: Tensor | None = None,
         anom_str_hi: Tensor | None = None,
-    ) -> tuple[Tensor, Tensor, Tensor] | tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
+    ) -> Dict[str, Tensor]:
         """Generates quantized feature maps of batch of input images as well as their
         reconstruction based on the general appearance decoder.
 
@@ -1130,10 +1125,7 @@ class DiscreteLatentModel(nn.Module):
         anomaly_embedding_lo = None
 
         # define outputs
-        outputs = {
-            "quantized_b": quantized_b,
-            "quantized_t": quantized_t
-        }
+        outputs = {"quantized_b": quantized_b, "quantized_t": quantized_t}
 
         if anomaly_mask is not None:
             # Generate feature-based anomalies on F_lo
