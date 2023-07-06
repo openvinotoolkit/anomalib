@@ -12,6 +12,7 @@ from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
 from anomalib.data.base.datamodule import collate_fn
+from anomalib.models.ensemble.ensemble_prediction_joiner import EnsemblePredictionJoiner
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
 
 
@@ -70,128 +71,90 @@ def update_ensemble_input_size_config(config: DictConfig | ListConfig) -> DictCo
     return config
 
 
-def join_tiles(tile_predictions: dict, tiler: EnsembleTiler, batch_index: int, tile_key: str) -> Tensor:
+class BasicPredictionJoiner(EnsemblePredictionJoiner):
     """
-    Join tiles back into one tensor and perform untiling with tiler.
+    Basic implementation of ensemble prediction joiner.
+    Tiles are put together and untiled.
+    Boxes are stacked per image.
+    Labels are combined with OR operator, meaning one anomalous tile -> anomalous image
 
-    Args:
-        tile_predictions: Dictionary containing batched predictions.
-        tiler: Tiler used to transform tiles back to image level representation.
-        batch_index: Index of current batch.
-        tile_key: Key used in dictionary for tiles that we want to join
-
-    Returns:
-        Tensor of tiles in original (stitched) shape.
     """
-    # tiles with index (0, 0) should always exist
-    first_tiles = tile_predictions[(0, 0)][batch_index][tile_key]
+    def join_tiles(self, batch_index: int, tile_key: str) -> Tensor:
+        """
+        Join tiles back into one tensor and perform untiling with tiler.
 
-    # get batch and device from tiles
-    batch_size = first_tiles.shape[0]
-    device = first_tiles.device
+        Args:
+            batch_index: Index of current batch.
+            tile_key: Key used in prediction dictionary for tiles that we want to join
 
-    if tile_key == "mask":
-        # in case of ground truth masks, we don't have channels
-        joined_size = (tiler.num_patches_h, tiler.num_patches_w, batch_size, tiler.tile_size_h, tiler.tile_size_w)
-    else:
-        # all tiles beside masks also have channels
-        num_channels = first_tiles.shape[1]
-        joined_size = (
-            tiler.num_patches_h,
-            tiler.num_patches_w,
-            batch_size,
-            num_channels,
-            tiler.tile_size_h,
-            tiler.tile_size_w,
-        )
+        Returns:
+            Tensor of tiles in original (stitched) shape.
+        """
+        # tiles with index (0, 0) should always exist
+        first_tiles = self.tile_predictions[(0, 0)][batch_index][tile_key]
 
-    # create new empty tensor for joined tiles
-    joined_masks = torch.zeros(size=joined_size, device=device)
+        # get batch and device from tiles
+        batch_size = first_tiles.shape[0]
+        device = first_tiles.device
 
-    # insert tile into joined tensor at right locations
-    for tile_i, tile_j in product(range(tiler.num_patches_h), range(tiler.num_patches_w)):
-        joined_masks[tile_i, tile_j, ...] = tile_predictions[(tile_i, tile_j)][batch_index][tile_key]
+        if tile_key == "mask":
+            # in case of ground truth masks, we don't have channels
+            joined_size = (
+                self.tiler.num_patches_h,
+                self.tiler.num_patches_w,
+                batch_size,
+                self.tiler.tile_size_h,
+                self.tiler.tile_size_w,
+            )
+        else:
+            # all tiles beside masks also have channels
+            num_channels = first_tiles.shape[1]
+            joined_size = (
+                self.tiler.num_patches_h,
+                self.tiler.num_patches_w,
+                batch_size,
+                num_channels,
+                self.tiler.tile_size_h,
+                self.tiler.tile_size_w,
+            )
 
-    if tile_key == "mask":
-        # add channel as tiler needs it
-        joined_masks = joined_masks.unsqueeze(3)
+        # create new empty tensor for joined tiles
+        joined_masks = torch.zeros(size=joined_size, device=device)
 
-    # stitch tiles back into whole, output is [B, C, H, W]
-    joined_output = tiler.untile(joined_masks)
+        # insert tile into joined tensor at right locations
+        for tile_i, tile_j in product(range(self.tiler.num_patches_h), range(self.tiler.num_patches_w)):
+            joined_masks[tile_i, tile_j, ...] = self.tile_predictions[(tile_i, tile_j)][batch_index][tile_key]
 
-    if tile_key == "mask":
-        # remove previously added channels
-        joined_output = joined_output.squeeze(1)
+        if tile_key == "mask":
+            # add channel as tiler needs it
+            joined_masks = joined_masks.unsqueeze(3)
 
-    return joined_output
+        # stitch tiles back into whole, output is [B, C, H, W]
+        joined_output = self.tiler.untile(joined_masks)
 
+        if tile_key == "mask":
+            # remove previously added channels
+            joined_output = joined_output.squeeze(1)
 
-def join_boxes(tile_predictions: dict, tiler: EnsembleTiler, batch_index: int) -> dict:
-    """
-    Join boxes data from all tiles. This includes pred_boxes, box_scores and box_labels.
-    TODO: not sure if joining is correct
+        return joined_output
 
-    Args:
-        tile_predictions: Dictionary containing batched predictions.
-        tiler: Tiler used to transform tiles back to image level representation.
-        batch_index: Index of current batch.
+    def join_boxes(self, batch_index: int) -> dict:
+        """
+        Join boxes data from all tiles. This includes pred_boxes, box_scores and box_labels.
+        TODO: not correct joining, fix this!!
 
-    Returns:
-        Dictionary with joined boxes, box scores and box labels.
-    """
-    joined_boxes = {
-        "pred_boxes": [],
-        "box_scores": [],
-        "box_labels": []
-    }
+        Args:
+            batch_index: Index of current batch.
 
-    # insert tile into joined tensor at right locations
-    for tile_i, tile_j in product(range(tiler.num_patches_h), range(tiler.num_patches_w)):
-        joined_boxes["pred_boxes"].extend(tile_predictions[(tile_i, tile_j)][batch_index]["pred_boxes"])
-        joined_boxes["box_scores"].extend(tile_predictions[(tile_i, tile_j)][batch_index]["box_scores"])
-        joined_boxes["box_labels"].extend(tile_predictions[(tile_i, tile_j)][batch_index]["box_labels"])
+        Returns:
+            Dictionary with joined boxes, box scores and box labels.
+        """
+        joined_boxes = {"pred_boxes": [], "box_scores": [], "box_labels": []}
 
-    return joined_boxes
+        # insert tile into joined tensor at right locations
+        for tile_i, tile_j in product(range(self.tiler.num_patches_h), range(self.tiler.num_patches_w)):
+            joined_boxes["pred_boxes"].extend(self.tile_predictions[(tile_i, tile_j)][batch_index]["pred_boxes"])
+            joined_boxes["box_scores"].extend(self.tile_predictions[(tile_i, tile_j)][batch_index]["box_scores"])
+            joined_boxes["box_labels"].extend(self.tile_predictions[(tile_i, tile_j)][batch_index]["box_labels"])
 
-
-def join_tile_predictions(tile_predictions: dict, tiler: EnsembleTiler) -> list[Tensor]:
-    """
-    Join predictions from ensemble into whole image level representation.
-
-    TODO: return list of dict with all data
-    Args:
-        tile_predictions: Dictionary containing batched predictions.
-        tiler: Tiler used to transform tiles back to image level representation.
-
-    Returns:
-        List of joined predictions for each batch
-    """
-    assert (0, 0) in tile_predictions.keys(), "Tile prediction dictionary should always have at least one tile"
-    assert tile_predictions[(0, 0)], "There should be at least one batch for each tile prediction."
-
-    batch_count = len(tile_predictions[(0, 0)])
-
-    joined_predictions = []
-
-    tiled_keys = ["image", "mask", "anomaly_maps", "pred_masks"]
-    # dict contains predictions for each tile location, and prediction is list of batches
-    for batch_index in range(batch_count):
-        # take first tile as base prediction, keep items that are the same over all tiles:
-        # image_path, label, mask_path
-        batch_predictions = tile_predictions[(0, 0)][batch_index]
-
-        # join all tiled data
-        for t_key in tiled_keys:
-            batch_predictions[t_key] = join_tiles(tile_predictions, tiler, batch_index, t_key)
-
-        # join all box data from all tiles
-        joined_box_data = join_boxes(tile_predictions, tiler, batch_index)
-        batch_predictions["pred_boxes"] = joined_box_data["pred_boxes"]
-        batch_predictions["box_scores"] = joined_box_data["box_scores"]
-        batch_predictions["box_labels"] = joined_box_data["box_labels"]
-
-        # label joining
-
-        joined_predictions.append(batch_predictions)
-
-    return joined_predictions
+        return joined_boxes

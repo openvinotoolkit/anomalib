@@ -21,14 +21,14 @@ from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
 from anomalib.data.utils import TestSplitMode
 from anomalib.models import get_model
-from anomalib.utils.callbacks import LoadModelCallback, get_callbacks
+from anomalib.utils.callbacks import get_callbacks
 from anomalib.utils.loggers import configure_logger, get_experiment_logger
 
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
 from anomalib.models.ensemble.ensemble_functions import (
     TileCollater,
     update_ensemble_input_size_config,
-    join_tile_predictions,
+    BasicPredictionJoiner,
 )
 
 
@@ -97,9 +97,11 @@ def train(args: Namespace):
             logger.info("No test set provided. Skipping test stage.")
         else:
             logger.info("Testing the model.")
-            #trainer.test(model=model, datamodule=datamodule)
+            # trainer.test(model=model, datamodule=datamodule)
 
-    all_predictions = join_tile_predictions(tile_predictions, tiler)
+    joiner = BasicPredictionJoiner(tile_predictions, tiler)
+
+    all_predictions = joiner.join_tile_predictions()
 
 
 if __name__ == "__main__":
