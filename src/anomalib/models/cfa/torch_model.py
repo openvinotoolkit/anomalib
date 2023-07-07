@@ -82,24 +82,24 @@ class CfaModel(DynamicBufferModule):
     """Torch implementation of the CFA Model.
 
     Args:
-        input_size: (tuple[int, int]): Input size of the image tensor.
-        backbone (str): Backbone CNN network.
-        gamma_c (int): gamma_c parameter from the paper.
-        gamma_d (int): gamma_d parameter from the paper.
-        num_nearest_neighbors (int): Number of nearest neighbors.
-        num_hard_negative_features (int): Number of hard negative features.
-        radius (float): Radius of the hypersphere to search the soft boundary.
+        input_size: (tuple[int, int], optional): Input size of the image tensor. Defaults to (224, 224).
+        backbone (str, optional): Backbone CNN network. Defaults to "wide_resnet50_2".
+        gamma_c (int, optional): gamma_c parameter from the paper. Defaults to 1.
+        gamma_d (int, optional): gamma_d parameter from the paper. Defaults to 1.
+        num_nearest_neighbors (int, optional): Number of nearest neighbors. Defaults to 3.
+        num_hard_negative_features (int, optional): Number of hard negative features. Defaults to 3.
+        radius (float, optional): Radius of the hypersphere to search the soft boundary. Defaults to 1e-5.
     """
 
     def __init__(
         self,
-        input_size: tuple[int, int],
-        backbone: str,
-        gamma_c: int,
-        gamma_d: int,
-        num_nearest_neighbors: int,
-        num_hard_negative_features: int,
-        radius: float,
+        input_size: tuple[int, int] = (224, 224),
+        backbone: str = "wide_resnet50_2",
+        gamma_c: int = 1,
+        gamma_d: int = 1,
+        num_nearest_neighbors: int = 3,
+        num_hard_negative_features: int = 3,
+        radius: float = 1e-5,
     ) -> None:
         super().__init__()
         self.input_size = torch.Size(input_size)
