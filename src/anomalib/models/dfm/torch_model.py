@@ -75,9 +75,9 @@ class DFMModel(nn.Module):
     """Model for the DFM algorithm.
 
     Args:
-        backbone (str): Pre-trained model backbone.
-        layer (str): Layer from which to extract features.
-        input_size (tuple[int, int]): Input size for the model.
+        input_size (tuple[int, int], optional): Input size for the model. Defaults to (256, 256).
+        backbone (str, optional): Backbone CNN network. Defaults to "resnet50".
+        layer (str, optional): Layer to extract features from the backbone CNN. Defaults to "layer3".
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         pooling_kernel_size (int, optional): Kernel size to pool features extracted from the CNN.
         n_comps (float, optional): Ratio from which number of components for PCA are calculated. Defaults to 0.97.
@@ -87,14 +87,14 @@ class DFMModel(nn.Module):
 
     def __init__(
         self,
-        backbone: str,
-        layer: str,
-        input_size: tuple[int, int],
+        input_size: tuple[int, int] = (256, 256),
+        backbone: str = "resnet50",
+        layer: str = "layer3",
         pre_trained: bool = True,
         pooling_kernel_size: int = 4,
         n_comps: float = 0.97,
         score_type: str = "fre",
-    ):
+    ) -> None:
         super().__init__()
         self.backbone = backbone
         self.pooling_kernel_size = pooling_kernel_size

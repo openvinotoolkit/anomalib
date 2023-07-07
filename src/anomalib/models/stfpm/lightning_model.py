@@ -25,16 +25,17 @@ class Stfpm(AnomalyModule):
     """PL Lightning Module for the STFPM algorithm.
 
     Args:
-        input_size (tuple[int, int]): Size of the model input.
-        backbone (str): Backbone CNN network
-        layers (list[str]): Layers to extract features from the backbone CNN
+        input_size (tuple[int, int], optional): Size of the model input. Defaults to (256, 256).
+        backbone (str, optional): Backbone CNN network. Defaults to "wide_resnet50_2".
+        layers (list[str], optional): Layers to extract features from the backbone CNN.
+            Defaults to ["layer1", "layer2", "layer3"].
     """
 
     def __init__(
         self,
-        input_size: tuple[int, int],
-        backbone: str,
-        layers: list[str],
+        input_size: tuple[int, int] = (256, 256),
+        backbone: str = "wide_resnet50_2",
+        layers: list[str] = ["layer1", "layer2", "layer3"],
     ) -> None:
         super().__init__()
 
