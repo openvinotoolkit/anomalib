@@ -19,8 +19,8 @@ from anomalib.utils.metrics.pro import (
     connected_components_cpu,
     connected_components_gpu,
 )
-from .binning import thresholds_between_min_and_max, thresholds_between_0_and_1
 
+from .binning import thresholds_between_0_and_1, thresholds_between_min_and_max
 from .plotting_utils import plot_figure
 
 
@@ -115,9 +115,7 @@ class AUPRO(Metric):
             #  the roc curve is computed with deactivated formatting.
 
             if all((0 <= preds) * (preds <= 1)):
-                thresholds = thresholds_between_min_and_max(
-                    preds, self.num_thresholds, self.device
-                )
+                thresholds = thresholds_between_min_and_max(preds, self.num_thresholds, self.device)
             else:
                 thresholds = thresholds_between_0_and_1(self.num_thresholds, self.device)
 
@@ -125,7 +123,13 @@ class AUPRO(Metric):
             thresholds = None
 
         # compute the global fpr-size
-        fpr: Tensor = binary_roc(preds=preds, target=target, thresholds=thresholds,)[0]  # only need fpr
+        fpr: Tensor = binary_roc(
+            preds=preds,
+            target=target,
+            thresholds=thresholds,
+        )[
+            0
+        ]  # only need fpr
         output_size = torch.where(fpr <= self.fpr_limit)[0].size(0)
 
         # compute the PRO curve by aggregating per-region tpr/fpr curves/values.
