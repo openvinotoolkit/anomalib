@@ -12,10 +12,7 @@ import torch.nn.functional as F
 from torch import Tensor, nn
 
 from anomalib.models.components import FeatureExtractor
-from anomalib.models.components.classification import (
-    FeatureScalingMethod,
-    KDEClassifier,
-)
+from anomalib.models.components.classification import FeatureScalingMethod, KDEClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +21,9 @@ class DfkdeModel(nn.Module):
     """Normality Model for the DFKDE algorithm.
 
     Args:
-        backbone (str): Pre-trained model backbone.
-        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+        backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
+        layers (list[str], optional): List of layers to extract features from. Defaults to ["layer4"].
+        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone. Defaults to True.
         n_comps (int, optional): Number of PCA components. Defaults to 16.
         pre_processing (str, optional): Preprocess features before passing to KDE.
             Options are between `norm` and `scale`. Defaults to "scale".
@@ -36,8 +34,8 @@ class DfkdeModel(nn.Module):
 
     def __init__(
         self,
-        layers: list[str],
-        backbone: str,
+        backbone: str = "resnet18",
+        layers: list[str] = ["layer4"],
         pre_trained: bool = True,
         n_pca_components: int = 16,
         feature_scaling_method: FeatureScalingMethod = FeatureScalingMethod.SCALE,
