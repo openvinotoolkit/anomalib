@@ -147,7 +147,7 @@ def export_to_onnx(model: AnomalyModule, input_size: tuple[int, int], export_pat
     torch.onnx.export(
         model.model,
         torch.zeros((1, 3, *input_size)).to(model.device),
-        onnx_path,
+        str(onnx_path),
         opset_version=11,
         input_names=["input"],
         output_names=["output"],
