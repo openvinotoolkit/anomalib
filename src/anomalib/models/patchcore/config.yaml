@@ -38,11 +38,11 @@ model:
 
 metrics:
   image:
-    - F1Score
     - AUROC
+    - F1Score
   pixel:
-    - F1Score
     - AUROC
+    - AUPRO
   threshold:
     method: adaptive #options: [adaptive, manual]
     manual_image: null

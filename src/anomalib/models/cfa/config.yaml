@@ -39,8 +39,10 @@ model:
 metrics:
   image:
     - AUROC
+    - F1Score
   pixel:
     - AUROC
+    - AUPRO
   threshold:
     adaptive: true
     image_default: null
