@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import time
+from contextlib import contextmanager
 from typing import Any, Callable
 
 import torch
@@ -22,6 +24,14 @@ from anomalib.utils.metrics.pro import (
 
 from .binning import thresholds_between_0_and_1, thresholds_between_min_and_max
 from .plotting_utils import plot_figure
+
+
+@contextmanager
+def observe_execution_time(description):
+    start = time.monotonic()
+    yield
+    delta = time.monotonic() - start
+    print(f"{description}: took {delta} seconds")
 
 
 class AUPRO(Metric):
@@ -201,12 +211,15 @@ class AUPRO(Metric):
         Returns:
             tuple[Tensor, Tensor]: tuple containing final fpr and tpr values.
         """
-
-        cca = self.perform_cca().flatten()
+        with observe_execution_time("cca"):
+            cca = self.perform_cca().flatten()
         target = dim_zero_cat(self.target).flatten()
         preds = dim_zero_cat(self.preds).flatten()
 
-        return self.compute_pro(cca=cca, target=target, preds=preds)
+        with observe_execution_time("pro"):
+            pro = self.compute_pro(cca=cca, target=target, preds=preds)
+
+        return pro
 
     def compute(self) -> Tensor:
         """Fist compute PRO curve, then compute and scale area under the curve.
@@ -216,8 +229,9 @@ class AUPRO(Metric):
         """
         fpr, tpr = self._compute()
 
-        aupro = auc(fpr, tpr, reorder=True)
-        aupro = aupro / fpr[-1]  # normalize the area
+        with observe_execution_time("aupro"):
+            aupro = auc(fpr, tpr, reorder=True)
+            aupro = aupro / fpr[-1]  # normalize the area
 
         return aupro
 
