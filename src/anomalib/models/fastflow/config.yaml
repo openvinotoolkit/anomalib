@@ -7,7 +7,7 @@ dataset:
   train_batch_size: 32
   eval_batch_size: 32
   num_workers: 8
-  image_size: 256 # dimensions to which images are resized (mandatory) options: [256, 256, 448, 384]
+  image_size: 384 # dimensions to which images are resized (mandatory) options: [256, 256, 448, 384]
   center_crop: null # dimensions to which images are center-cropped after resizing (optional)
   normalization: imagenet # data distribution to which the images will be normalized: [none, imagenet]
   transform_config:
@@ -27,11 +27,11 @@ dataset:
 
 model:
   name: fastflow
-  backbone: resnet18 # options: [resnet18, wide_resnet50_2, cait_m48_448, deit_base_distilled_patch16_384]
+  backbone: deit_base_distilled_patch16_384 # options: [resnet18, wide_resnet50_2, cait_m48_448, deit_base_distilled_patch16_384]
   pre_trained: true
-  flow_steps: 8 # options: [8, 8, 20, 20] - for each supported backbone
-  hidden_ratio: 1.0 # options: [1.0, 1.0, 0.16, 0.16] - for each supported backbone
-  conv3x3_only: True # options: [True, False, False, False] - for each supported backbone
+  flow_steps: 20 # options: [8, 8, 20, 20] - for each supported backbone
+  hidden_ratio: 0.16 # options: [1.0, 1.0, 0.16, 0.16] - for each supported backbone
+  conv3x3_only: False # options: [True, False, False, False] - for each supported backbone
   lr: 0.001
   weight_decay: 0.00001
   early_stopping:
