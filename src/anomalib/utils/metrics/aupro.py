@@ -114,7 +114,7 @@ class AUPRO(Metric):
             #  https://github.com/Lightning-AI/torchmetrics/issues/1526 is fixed and
             #  the roc curve is computed with deactivated formatting.
 
-            if all((0 <= preds) * (preds <= 1)):
+            if torch.all((0 <= preds) * (preds <= 1)):
                 thresholds = thresholds_between_min_and_max(preds, self.num_thresholds, self.device)
             else:
                 thresholds = thresholds_between_0_and_1(self.num_thresholds, self.device)
