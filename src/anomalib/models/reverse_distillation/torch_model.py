@@ -9,10 +9,7 @@ from torch import Tensor, nn
 
 from anomalib.models.components import FeatureExtractor
 from anomalib.models.reverse_distillation.anomaly_map import AnomalyMapGenerator
-from anomalib.models.reverse_distillation.components import (
-    get_bottleneck_layer,
-    get_decoder,
-)
+from anomalib.models.reverse_distillation.components import get_bottleneck_layer, get_decoder
 from anomalib.pre_processing import Tiler
 
 from .anomaly_map import AnomalyMapGenerationMode
@@ -22,19 +19,19 @@ class ReverseDistillationModel(nn.Module):
     """Reverse Distillation Model.
 
     Args:
-        backbone (str): Name of the backbone used for encoder and decoder
-        input_size (tuple[int, int]): Size of input image
-        layers (list[str]): Name of layers from which the features are extracted.
-        anomaly_map_mode (str): Mode used to generate anomaly map. Options are between ``multiply`` and ``add``.
-        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+        input_size (tuple[int, int], optional): Size of model input. Defaults to (256, 256).
+        backbone (str, optional): Backbone of CNN network. Defaults to "wide_resnet50_2".
+        layers (list[str], optional): Layers to extract features from the backbone CNN.
+            Defaults to ["layer1", "layer2", "layer3"].
+        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone. Defaults to True.
     """
 
     def __init__(
         self,
-        backbone: str,
-        input_size: tuple[int, int],
-        layers: list[str],
-        anomaly_map_mode: AnomalyMapGenerationMode,
+        input_size: tuple[int, int] = (256, 256),
+        backbone: str = "wide_resnet50_2",
+        layers: list[str] = ["layer1", "layer2", "layer3"],
+        anomaly_map_mode: AnomalyMapGenerationMode = AnomalyMapGenerationMode.MULTIPLY,
         pre_trained: bool = True,
     ) -> None:
         super().__init__()

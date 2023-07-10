@@ -33,19 +33,19 @@ class Cfa(AnomalyModule):
     """CFA: Coupled-hypersphere-based Feature Adaptation for Target-Oriented Anomaly Localization.
 
     Args:
-        input_size (tuple[int, int]): Size of the model input.
-        backbone (str): Backbone CNN network
+        input_size (tuple[int, int], optional): Size of the model input. Defaults to (224, 224).
+        backbone (str, optional): Backbone CNN network. Defaults to "wide_resnet50_2".
         gamma_c (int, optional): gamma_c value from the paper. Defaults to 1.
         gamma_d (int, optional): gamma_d value from the paper. Defaults to 1.
-        num_nearest_neighbors (int): Number of nearest neighbors.
-        num_hard_negative_features (int): Number of hard negative features.
-        radius (float): Radius of the hypersphere to search the soft boundary.
+        num_nearest_neighbors (int, optional): Number of nearest neighbors. Defaults to 3.
+        num_hard_negative_features (int, optional): Number of hard negative features. Defaults to 3.
+        radius (float, optional): Radius of the hypersphere to search the soft boundary. Defaults to 1e-5.
     """
 
     def __init__(
         self,
-        input_size: tuple[int, int],
-        backbone: str,
+        input_size: tuple[int, int] = (224, 224),
+        backbone: str = "wide_resnet50_2",
         gamma_c: int = 1,
         gamma_d: int = 1,
         num_nearest_neighbors: int = 3,

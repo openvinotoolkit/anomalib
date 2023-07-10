@@ -23,9 +23,9 @@ class STFPMModel(nn.Module):
 
     def __init__(
         self,
-        layers: list[str],
-        input_size: tuple[int, int],
-        backbone: str = "resnet18",
+        input_size: tuple[int, int] = (256, 256),
+        backbone: str = "wide_resnet50_2",
+        layers: list[str] = ["layer1", "layer2", "layer3"],
     ) -> None:
         super().__init__()
         self.tiler: Tiler | None = None

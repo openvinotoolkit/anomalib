@@ -504,17 +504,18 @@ class CsFlowModel(nn.Module):
     """CS Flow Module.
 
     Args:
-        input_size (tuple[int, int]): Input image size.
-        cross_conv_hidden_channels (int): Number of hidden channels in the cross convolution.
-        n_coupling_blocks (int): Number of coupling blocks.
-        clamp (float): Clamp value for the coupling blocks.
-        num_channels (int): Number of channels in the input image.
+        input_size (tuple[int, int], optional): Size of the model input. Defaults to (768, 768).
+        cross_conv_hidden_channels (int, optional): Number of hidden channels in the cross convolution.
+            Defaults to 1024.
+        n_coupling_blocks (int, optional): Number of coupling blocks in the model. Defaults to 4.
+        clamp (int, optional): Clamp value for glow layer. Defaults to 3.
+        num_channels (int, optional): Number of channels in the model. Defaults to 3.
     """
 
     def __init__(
         self,
-        input_size: tuple[int, int],
-        cross_conv_hidden_channels: int,
+        input_size: tuple[int, int] = (768, 768),
+        cross_conv_hidden_channels: int = 1024,
         n_coupling_blocks: int = 4,
         clamp: int = 3,
         num_channels: int = 3,

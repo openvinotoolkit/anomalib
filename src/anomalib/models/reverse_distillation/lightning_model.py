@@ -24,22 +24,26 @@ class ReverseDistillation(AnomalyModule):
     """PL Lightning Module for Reverse Distillation Algorithm.
 
     Args:
-        input_size (tuple[int, int]): Size of model input
-        backbone (str): Backbone of CNN network
-        layers (list[str]): Layers to extract features from the backbone CNN
-        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+        input_size (tuple[int, int], optional): Size of model input. Defaults to (256, 256).
+        backbone (str, optional): Backbone of CNN network. Defaults to "wide_resnet50_2".
+        layers (list[str], optional): Layers to extract features from the backbone CNN.
+            Defaults to ["layer1", "layer2", "layer3"].
+        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone. Defaults to True.
+        lr (float, optional): Learning rate for the optimizer. Defaults to 0.005.
+        beta1 (float, optional): Beta1 for the optimizer. Defaults to 0.5.
+        beta2 (float, optional): Beta2 for the optimizer. Defaults to 0.99.
     """
 
     def __init__(
         self,
-        input_size: tuple[int, int],
-        backbone: str,
-        layers: list[str],
-        anomaly_map_mode: AnomalyMapGenerationMode,
-        lr: float,
-        beta1: float,
-        beta2: float,
+        input_size: tuple[int, int] = (256, 256),
+        backbone: str = "wide_resnet50_2",
+        layers: list[str] = ["layer1", "layer2", "layer3"],
+        anomaly_map_mode: AnomalyMapGenerationMode = AnomalyMapGenerationMode.MULTIPLY,
         pre_trained: bool = True,
+        lr: float = 0.005,
+        beta1: float = 0.5,
+        beta2: float = 0.99,
     ) -> None:
         super().__init__()
         self.model = ReverseDistillationModel(

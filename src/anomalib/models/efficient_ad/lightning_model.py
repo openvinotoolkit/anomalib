@@ -1,4 +1,4 @@
-"""EfficientAD: Accurate Visual Anomaly Detection at Millisecond-Level Latencies.
+"""EfficientAd: Accurate Visual Anomaly Detection at Millisecond-Level Latencies.
 https://arxiv.org/pdf/2303.14535.pdf
 """
 
@@ -24,7 +24,7 @@ from torchvision.datasets import ImageFolder
 from anomalib.data.utils import DownloadInfo, download_and_extract
 from anomalib.models.components import AnomalyModule
 
-from .torch_model import EfficientADModel, EfficientADModelSize
+from .torch_model import EfficientAdModel, EfficientAdModelSize
 
 logger = logging.getLogger(__name__)
 
@@ -49,13 +49,12 @@ class TransformsWrapper:
         return self.transforms(image=np.array(img))
 
 
-class EfficientAD(AnomalyModule):
-    """PL Lightning Module for the EfficientAD algorithm.
+class EfficientAd(AnomalyModule):
+    """PL Lightning Module for the EfficientAd algorithm.
 
     Args:
-        teacher_file_name (str): path to the pre-trained teacher model
-        teacher_out_channels (int): number of convolution output channels
-        image_size (tuple): size of input images
+        image_size (tuple): size of input images. Defaults to (256, 256).
+        teacher_out_channels (int): number of convolution output channels. Defaults to 384.
         model_size (str): size of student and teacher model
         lr (float): learning rate
         weight_decay (float): optimizer weight decay
@@ -67,9 +66,9 @@ class EfficientAD(AnomalyModule):
 
     def __init__(
         self,
-        teacher_out_channels: int,
-        image_size: tuple[int, int],
-        model_size: EfficientADModelSize = EfficientADModelSize.S,
+        image_size: tuple[int, int] = (256, 256),
+        teacher_out_channels: int = 384,
+        model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         lr: float = 0.0001,
         weight_decay: float = 0.00001,
         padding: bool = False,
@@ -79,7 +78,7 @@ class EfficientAD(AnomalyModule):
         super().__init__()
 
         self.model_size = model_size
-        self.model: EfficientADModel = EfficientADModel(
+        self.model: EfficientAdModel = EfficientAdModel(
             teacher_out_channels=teacher_out_channels,
             input_size=image_size,
             model_size=model_size,
@@ -228,7 +227,7 @@ class EfficientAD(AnomalyModule):
             self.model.mean_std.update(channel_mean_std)
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> dict[str, Tensor]:
-        """Training step for EfficientAD returns the student, autoencoder and combined loss.
+        """Training step for EfficientAd returns the student, autoencoder and combined loss.
 
         Args:
             batch (batch: dict[str, str | Tensor]): Batch containing image filename, image, label and mask
@@ -263,7 +262,7 @@ class EfficientAD(AnomalyModule):
             self.model.quantiles.update(map_norm_quantiles)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of EfficientAD returns anomaly maps for the input image batch
+        """Validation Step of EfficientAd returns anomaly maps for the input image batch
 
         Args:
           batch (dict[str, str | Tensor]): Input batch
@@ -278,8 +277,8 @@ class EfficientAD(AnomalyModule):
         return batch
 
 
-class EfficientadLightning(EfficientAD):
-    """PL Lightning Module for the EfficientAD Algorithm.
+class EfficientAdLightning(EfficientAd):
+    """PL Lightning Module for the EfficientAd Algorithm.
 
     Args:
         hparams (DictConfig | ListConfig): Model params
