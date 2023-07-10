@@ -281,20 +281,20 @@ class GanomalyModel(nn.Module):
     """Ganomaly Model.
 
     Args:
-        input_size (tuple[int, int]): Input dimension.
-        num_input_channels (int): Number of input channels.
-        n_features (int): Number of features layers in the CNNs.
-        latent_vec_size (int): Size of autoencoder latent vector.
+        input_size (tuple[int, int], optional): Input dimension. Defaults to (32, 32).
+        num_input_channels (int, optional): Number of input channels. Defaults to 3.
+        n_features (int, optional): Number of features layers in the CNNs. Defaults to 64.
+        latent_vec_size (int, optional): Size of autoencoder latent vector. Defaults to 100.
         extra_layers (int, optional): Number of extra layers for encoder/decoder. Defaults to 0.
         add_final_conv_layer (bool, optional): Add convolution layer at the end. Defaults to True.
     """
 
     def __init__(
         self,
-        input_size: tuple[int, int],
-        num_input_channels: int,
-        n_features: int,
-        latent_vec_size: int,
+        input_size: tuple[int, int] = (32, 32),
+        num_input_channels: int = 3,
+        n_features: int = 64,
+        latent_vec_size: int = 100,
         extra_layers: int = 0,
         add_final_conv_layer: bool = True,
     ) -> None:

@@ -50,19 +50,19 @@ class PadimModel(nn.Module):
     """Padim Module.
 
     Args:
-        input_size (tuple[int, int]): Input size for the model.
-        layers (list[str]): Layers used for feature extraction
-        backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
-        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
+        input_size (tuple[int, int] optional): Input size for the model. Defaults to (256, 256).
+        backbone (str, optional): Pre-trained model backbone. Defaults to "wide_resnet50_2".
+        layers (list[str], optional): Layers used for feature extraction. Defaults to ["layer1", "layer2", "layer3"].
+        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone. Defaults to True.
         n_features (int, optional): Number of features to retain in the dimension reduction step.
-                                Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
+            Default values from the paper are available for: resnet18 (100), wide_resnet50_2 (550).
     """
 
     def __init__(
         self,
-        input_size: tuple[int, int],
-        layers: list[str],
-        backbone: str = "resnet18",
+        input_size: tuple[int, int] = (256, 256),
+        backbone: str = "wide_resnet50_2",
+        layers: list[str] = ["layer1", "layer2", "layer3"],
         pre_trained: bool = True,
         n_features: int | None = None,
     ) -> None:
