@@ -7,7 +7,7 @@ dataset:
   train_batch_size: 32
   eval_batch_size: 32
   num_workers: 0
-  image_size: 100 # dimensions to which images are resized (mandatory)
+  image_size: 200 # dimensions to which images are resized (mandatory)
   center_crop: null # dimensions to which images are center-cropped after resizing (optional)
   normalization: imagenet # data distribution to which the images will be normalized: [none, imagenet]
   transform_config:
@@ -49,7 +49,7 @@ metrics:
 
 visualization:
   show_images: False # show images on the screen
-  save_images: False # save images to the file system
+  save_images: True # save images to the file system
   log_images: True # log images to the available loggers (if any)
   image_save_path: null # path to which images will be saved
   mode: full # options: ["full", "simple"]

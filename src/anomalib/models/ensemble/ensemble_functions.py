@@ -4,6 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from __future__ import annotations
+
+from pathlib import Path
 from typing import Any, List
 from itertools import product
 
@@ -14,6 +17,7 @@ from torch import Tensor
 from anomalib.data.base.datamodule import collate_fn
 from anomalib.models.ensemble.ensemble_prediction_joiner import EnsemblePredictionJoiner
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
+from anomalib.post_processing import Visualizer
 
 
 class TileCollater:
@@ -79,6 +83,7 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
     Labels are combined with OR operator, meaning one anomalous tile -> anomalous image
 
     """
+
     def join_tiles(self, batch_index: int, tile_key: str) -> Tensor:
         """
         Join tiles back into one tensor and perform untiling with tiler.
@@ -196,11 +201,31 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
             labels = labels.logical_or(curr_labels)
             scores += curr_scores
 
-        scores /= (self.tiler.num_patches_h * self.tiler.num_patches_w)
+        scores /= self.tiler.num_patches_h * self.tiler.num_patches_w
 
-        joined = {
-            "pred_labels": labels,
-            "pred_scores": scores
-        }
+        joined = {"pred_labels": labels, "pred_scores": scores}
 
         return joined
+
+
+def visualize_results(predictions: List, config: DictConfig | ListConfig) -> None:
+    """
+    Visualize joined predictions using Visualizer class.
+
+    Args:
+        predictions: List of batches containing joined predictions.
+        config: Config file, used to set up visualization.
+    """
+    visualizer = Visualizer(mode=config.visualization.mode, task=config.dataset.task)
+
+    image_save_path = config.visualization.image_save_path or config.project.path + "/images"
+    image_save_path = Path(image_save_path)
+
+    for batch in predictions:
+        for i, image in enumerate(visualizer.visualize_batch(batch)):
+            filename = Path(batch["image_path"][i])
+            if config.visualization.save_images:
+                file_path = image_save_path / filename.parent.name / filename.name
+                visualizer.save(file_path, image)
+            if config.visualization.show_images:
+                visualizer.show(str(filename), image)

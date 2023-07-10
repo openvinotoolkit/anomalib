@@ -29,6 +29,7 @@ from anomalib.models.ensemble.ensemble_functions import (
     TileCollater,
     update_ensemble_input_size_config,
     BasicPredictionJoiner,
+    visualize_results,
 )
 
 
@@ -102,6 +103,9 @@ def train(args: Namespace):
     joiner = BasicPredictionJoiner(tile_predictions, tiler)
 
     all_predictions = joiner.join_tile_predictions()
+
+    logger.info("Visualizing the results.")
+    visualize_results(all_predictions, config)
 
 
 if __name__ == "__main__":

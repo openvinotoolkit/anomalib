@@ -84,7 +84,7 @@ class EnsemblePredictionJoiner(ABC):
             batch_predictions = {
                 "image_path": self.tile_predictions[(0, 0)][batch_index]["image_path"],
                 "label": self.tile_predictions[(0, 0)][batch_index]["label"],
-                "mask_path": self.tile_predictions[(0, 0)][batch_index]["mask_path"]
+                "mask_path": self.tile_predictions[(0, 0)][batch_index]["mask_path"],
             }
 
             # join all tiled data
