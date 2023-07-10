@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import Any
+from typing import Any, List
 from itertools import product
 
 import torch
@@ -141,6 +141,7 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
     def join_boxes(self, batch_index: int) -> dict:
         """
         Join boxes data from all tiles. This includes pred_boxes, box_scores and box_labels.
+        Joining is done by stacking boxes from all tiles.
 
         Args:
             batch_index: Index of current batch.
@@ -172,3 +173,34 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
             joined_boxes["box_labels"].append(torch.hstack(labels[i]))
 
         return joined_boxes
+
+    def join_labels_and_scores(self, batch_index: int) -> dict[str, Tensor]:
+        """
+        Join scores and their corresponding label predictions from all tiles for each image.
+        Label joining is done by rule where one anomalous tile in image results in whole image being anomalous.
+        Scores are averaged over tiles.
+
+        Args:
+            batch_index: Index of current batch.
+
+        Returns:
+            Dictionary with "pred_labels" and "pred_scores"
+        """
+        labels = torch.empty(self.tile_predictions[(0, 0)][batch_index]["pred_labels"].shape, dtype=torch.bool)
+        scores = torch.zeros(self.tile_predictions[(0, 0)][batch_index]["pred_scores"].shape)
+
+        for tile_i, tile_j in product(range(self.tiler.num_patches_h), range(self.tiler.num_patches_w)):
+            curr_labels = self.tile_predictions[(tile_i, tile_j)][batch_index]["pred_labels"]
+            curr_scores = self.tile_predictions[(tile_i, tile_j)][batch_index]["pred_scores"]
+
+            labels = labels.logical_or(curr_labels)
+            scores += curr_scores
+
+        scores /= (self.tiler.num_patches_h * self.tiler.num_patches_w)
+
+        joined = {
+            "pred_labels": labels,
+            "pred_scores": scores
+        }
+
+        return joined

@@ -55,23 +55,21 @@ class EnsemblePredictionJoiner(ABC):
         """
         raise NotImplementedError
 
-    def join_labels(self, batch_index: int) -> List:
+    def join_labels_and_scores(self, batch_index: int) -> dict[str, Tensor]:
         """
-        Join label predictions from all tiles for each image.
+        Join scores and their corresponding label predictions from all tiles for each image.
 
         Args:
             batch_index: Index of current batch.
 
         Returns:
-
+            Dictionary with "pred_labels" and "pred_scores"
         """
         raise NotImplementedError
 
     def join_tile_predictions(self) -> list[dict[str, Tensor | List | str]]:
         """
         Join predictions from ensemble into whole image level representation.
-
-        TODO: return list of dict with all data
 
         Returns:
             List of joined predictions for each batch
@@ -99,7 +97,10 @@ class EnsemblePredictionJoiner(ABC):
             batch_predictions["box_scores"] = joined_box_data["box_scores"]
             batch_predictions["box_labels"] = joined_box_data["box_labels"]
 
-            # label joining
+            # label and score joining
+            joined_scores_and_labels = self.join_labels_and_scores(batch_index)
+            batch_predictions["pred_labels"] = joined_scores_and_labels["pred_labels"]
+            batch_predictions["pred_scores"] = joined_scores_and_labels["pred_scores"]
 
             joined_predictions.append(batch_predictions)
 
