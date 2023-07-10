@@ -188,9 +188,8 @@ class EfficientAdModel(nn.Module):
     """EfficientAd model.
 
     Args:
-        teacher_out_channels (int): number of convolution output channels of the pre-trained teacher model
-        pretrained_models_dir (str): path to the pretrained model weights
-        input_size (tuple): size of input images
+        input_size (tuple): size of input images. Default: (256, 256)
+        teacher_out_channels (int): number of convolution output channels of the pre-trained teacher model. Default: 384
         model_size (str): size of student and teacher model
         padding (bool): use padding in convoluional layers
         pad_maps (bool): relevant if padding is set to False. In this case, pad_maps = True pads the
@@ -200,8 +199,8 @@ class EfficientAdModel(nn.Module):
 
     def __init__(
         self,
-        teacher_out_channels: int,
-        input_size: tuple[int, int],
+        input_size: tuple[int, int] = (256, 256),
+        teacher_out_channels: int = 384,
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         padding=False,
         pad_maps=True,

@@ -20,22 +20,22 @@ class Fastflow(AnomalyModule):
     """PL Lightning Module for the FastFlow algorithm.
 
     Args:
-        input_size (tuple[int, int]): Model input size.
-        backbone (str): Backbone CNN network
-        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
-        flow_steps (int, optional): Flow steps.
+        input_size (tuple[int, int]): Model input size. Defaults to (384, 384).
+        backbone (str): Backbone CNN network. Defaults to "deit_base_distilled_patch16_384".
+        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone. Defaults to True.
+        flow_steps (int, optional): Flow steps. Defaults to 20.
+        hidden_ratio (float, optional): Ratio to calculate hidden var channels. Defaults to 0.16.
         conv3x3_only (bool, optinoal): Use only conv3x3 in fast_flow model. Defaults to False.
-        hidden_ratio (float, optional): Ratio to calculate hidden var channels. Defaults to 1.0.
     """
 
     def __init__(
         self,
-        input_size: tuple[int, int],
-        backbone: str,
+        input_size: tuple[int, int] = (384, 384),
+        backbone: str = "deit_base_distilled_patch16_384",
         pre_trained: bool = True,
-        flow_steps: int = 8,
+        flow_steps: int = 20,
+        hidden_ratio: float = 0.16,
         conv3x3_only: bool = False,
-        hidden_ratio: float = 1.0,
     ) -> None:
         super().__init__()
 

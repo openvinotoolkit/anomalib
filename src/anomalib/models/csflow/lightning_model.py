@@ -30,20 +30,21 @@ class Csflow(AnomalyModule):
     """Fully Convolutional Cross-Scale-Flows for Image-based Defect Detection.
 
     Args:
-        input_size (tuple[int, int]): Size of the model input.
-        n_coupling_blocks (int): Number of coupling blocks in the model.
-        cross_conv_hidden_channels (int): Number of hidden channels in the cross convolution.
-        clamp (int): Clamp value for glow layer.
-        num_channels (int): Number of channels in the model.
+        input_size (tuple[int, int], optional): Size of the model input. Defaults to (768, 768).
+        cross_conv_hidden_channels (int, optional): Number of hidden channels in the cross convolution.
+            Defaults to 1024.
+        n_coupling_blocks (int, optional): Number of coupling blocks in the model. Defaults to 4.
+        clamp (int, optional): Clamp value for glow layer. Defaults to 3.
+        num_channels (int, optional): Number of channels in the model. Defaults to 3.
     """
 
     def __init__(
         self,
-        input_size: tuple[int, int],
-        cross_conv_hidden_channels: int,
-        n_coupling_blocks: int,
-        clamp: int,
-        num_channels: int,
+        input_size: tuple[int, int] = (768, 768),
+        cross_conv_hidden_channels: int = 1024,
+        n_coupling_blocks: int = 4,
+        clamp: int = 3,
+        num_channels: int = 3,
     ) -> None:
         super().__init__()
         self.model: CsFlowModel = CsFlowModel(
