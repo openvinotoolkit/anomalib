@@ -49,7 +49,6 @@ class Dsr(AnomalyModule):
         self.model = DsrModel(anom_par)
         self.second_loss = DsrSecondLoss()
         self.third_loss = DsrThirdLoss()
-        self.anom_par: float = anom_par
 
         self.second_phase: int
 
@@ -72,7 +71,7 @@ class Dsr(AnomalyModule):
         num_steps = max(
             self.trainer.max_steps // len(self.trainer.datamodule.train_dataloader()), self.trainer.max_epochs
         )
-        self.second_phase = int(10 * num_steps / 12)
+        self.second_phase = int(num_steps * self.hparams.model.upsampling_train_ratio)
         anneal = int(0.8 * self.second_phase)
         optimizer_d = torch.optim.Adam(
             params=list(self.model.image_reconstruction_network.parameters())

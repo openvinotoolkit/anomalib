@@ -29,6 +29,7 @@ model:
   name: dsr
   lr: 0.0002
   anom_par: 0.2
+  upsampling_train_ratio: 0.83
   normalization_method: none # options: [none, min_max, cdf]
 
 metrics:
@@ -74,7 +75,7 @@ trainer:
   check_val_every_n_epoch: 1 # Don't validate before extracting features.
   fast_dev_run: false
   accumulate_grad_batches: 1
-  max_epochs: null
+  max_epochs: -1
   min_epochs: null
   max_steps: 120000
   min_steps: null
