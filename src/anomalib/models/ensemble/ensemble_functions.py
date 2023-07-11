@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any, List
 from itertools import product
@@ -14,10 +15,16 @@ import torch
 from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
+from anomalib.data import TaskType
 from anomalib.data.base.datamodule import collate_fn
+from anomalib.models import AnomalyModule
 from anomalib.models.ensemble.ensemble_prediction_joiner import EnsemblePredictionJoiner
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
 from anomalib.post_processing import Visualizer
+from anomalib.utils.metrics import create_metric_collection
+
+
+logger = logging.getLogger(__name__)
 
 
 class TileCollater:
@@ -229,3 +236,61 @@ def visualize_results(predictions: List, config: DictConfig | ListConfig) -> Non
                 visualizer.save(file_path, image)
             if config.visualization.show_images:
                 visualizer.show(str(filename), image)
+
+
+def configure_ensemble_metrics(
+    task: TaskType = TaskType.SEGMENTATION,
+    image_metric_names: list[str] | None = None,
+    pixel_metric_names: list[str] | None = None,
+):
+    image_metric_names = [] if image_metric_names is None else image_metric_names
+
+    pixel_metric_names: list[str]
+    if pixel_metric_names is None:
+        pixel_metric_names = []
+    elif task == TaskType.CLASSIFICATION:
+        pixel_metric_names = []
+        logger.warning(
+            "Cannot perform pixel-level evaluation when task type is classification. "
+            "Ignoring the following pixel-level metrics: %s",
+            pixel_metric_names,
+        )
+    else:
+        pixel_metric_names = pixel_metric_names
+
+    image_metrics = create_metric_collection(image_metric_names, "image_")
+    pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
+
+    return image_metrics, pixel_metrics
+
+
+def compute_metrics(
+    results: List,
+    config: DictConfig | ListConfig,
+    image_threshold: float,
+    pixel_threshold: float,
+) -> None:
+    image_metrics, pixel_metrics = configure_ensemble_metrics(
+        config.dataset.task,
+        config.metrics.get("image", None),
+        config.metrics.get("pixel", None),
+    )
+    image_metrics.set_threshold(image_threshold)
+    pixel_metrics.set_threshold(pixel_threshold)
+
+    image_metrics.cpu()
+    pixel_metrics.cpu()
+
+    # TODO: thresholded metrics don't work????
+    for batch in results:
+        image_metrics.update(batch["pred_scores"], batch["label"].int())
+        if "mask" in batch.keys() and "anomaly_maps" in batch.keys():
+            pixel_metrics.update(batch["anomaly_maps"], batch["mask"].int())
+
+    for name, val in image_metrics.items():
+        print(f"{name}: {val.compute()}")
+
+    if pixel_metrics.update_called:
+        for name, val in pixel_metrics.items():
+            print(f"{name}: {val.compute()}")
+

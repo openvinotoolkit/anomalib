@@ -30,6 +30,7 @@ from anomalib.models.ensemble.ensemble_functions import (
     update_ensemble_input_size_config,
     BasicPredictionJoiner,
     visualize_results,
+    compute_metrics,
 )
 
 
@@ -105,7 +106,12 @@ def train(args: Namespace):
     all_predictions = joiner.join_tile_predictions()
 
     logger.info("Visualizing the results.")
-    visualize_results(all_predictions, config)
+    # visualize_results(all_predictions, config)
+
+    image_threshold = model.image_threshold.value
+    pixel_threshold = model.pixel_threshold.value
+
+    compute_metrics(all_predictions, config, image_threshold, pixel_threshold)
 
 
 if __name__ == "__main__":
