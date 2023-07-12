@@ -21,7 +21,7 @@ from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
 from anomalib.data.utils import TestSplitMode
 from anomalib.models import get_model
-from anomalib.utils.callbacks import get_callbacks, LoadModelCallback
+from anomalib.utils.callbacks import get_callbacks, LoadModelCallback, ImageVisualizerCallback, MetricVisualizerCallback
 from anomalib.utils.loggers import configure_logger, get_experiment_logger
 
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
@@ -88,7 +88,13 @@ def train(args: Namespace):
         experiment_logger = get_experiment_logger(config)
         callbacks = get_callbacks(config)
 
-        trainer = Trainer(**config.trainer, logger=experiment_logger, callbacks=callbacks)
+        ensemble_callbacks = []
+        # temporary removing for ensemble
+        for callback in callbacks:
+            if not isinstance(callback, (ImageVisualizerCallback, MetricVisualizerCallback)):
+                ensemble_callbacks.append(callback)
+
+        trainer = Trainer(**config.trainer, logger=experiment_logger, callbacks=ensemble_callbacks)
         logger.info("Training the model.")
         trainer.fit(model=model, datamodule=datamodule)
 
@@ -103,7 +109,7 @@ def train(args: Namespace):
             logger.info("No test set provided. Skipping test stage.")
         else:
             logger.info("Testing the model.")
-            trainer.test(model=model, datamodule=datamodule)
+            # trainer.test(model=model, datamodule=datamodule)
 
     joiner = BasicPredictionJoiner(tile_predictions, tiler)
 
