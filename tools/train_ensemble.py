@@ -21,7 +21,7 @@ from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
 from anomalib.data.utils import TestSplitMode
 from anomalib.models import get_model
-from anomalib.utils.callbacks import get_callbacks
+from anomalib.utils.callbacks import get_callbacks, LoadModelCallback
 from anomalib.utils.loggers import configure_logger, get_experiment_logger
 
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
@@ -92,14 +92,18 @@ def train(args: Namespace):
         logger.info("Training the model.")
         trainer.fit(model=model, datamodule=datamodule)
 
-        predictions = trainer.predict(model=model, datamodule=datamodule, ckpt_path="best")
+        logger.info("Loading the best model weights.")
+        load_model_callback = LoadModelCallback(weights_path=trainer.checkpoint_callback.best_model_path)
+        trainer.callbacks.insert(0, load_model_callback)  # pylint: disable=no-member
+
+        predictions = trainer.predict(model=model, datamodule=datamodule)
         tile_predictions[tile_index] = predictions
 
         if config.dataset.test_split_mode == TestSplitMode.NONE:
             logger.info("No test set provided. Skipping test stage.")
         else:
             logger.info("Testing the model.")
-            # trainer.test(model=model, datamodule=datamodule)
+            trainer.test(model=model, datamodule=datamodule)
 
     joiner = BasicPredictionJoiner(tile_predictions, tiler)
 
@@ -108,8 +112,8 @@ def train(args: Namespace):
     logger.info("Visualizing the results.")
     # visualize_results(all_predictions, config)
 
-    image_threshold = model.image_threshold.value
-    pixel_threshold = model.pixel_threshold.value
+    image_threshold = model.image_metrics.threshold
+    pixel_threshold = model.pixel_metrics.threshold
 
     compute_metrics(all_predictions, config, image_threshold, pixel_threshold)
 
