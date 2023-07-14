@@ -84,7 +84,6 @@ class EfficientAd(AnomalyModule):
             model_size=model_size,
             padding=padding,
             pad_maps=pad_maps,
-            device=self.device,
         )
         self.batch_size = batch_size
         self.image_size = image_size
@@ -193,13 +192,7 @@ class EfficientAd(AnomalyModule):
             tuple[Tensor, Tensor]: Two scalars - the 90% and the 99.5% quantile.
         """
 
-        # torch.quantile only works with input size up to 2**24 elements, see
-        # https://github.com/pytorch/pytorch/blob/b9f81a483a7879cd3709fd26bcec5f1ee33577e6/aten/src/ATen/native/Sorting.cpp#L291
-        # if we have more elements we need to decrease the size
-        # we do this by sampling random elements of maps_flat because then
-        # the locations of the quantiles (90% and 99.5%) will still be
-        # valid even though they might not be the exact quantiles.
-        maps_flat = reduce_tensor_elems(torch.cat(maps), self.device)
+        maps_flat = reduce_tensor_elems(torch.cat(maps))
         qa = torch.quantile(maps_flat, q=0.9).to(self.device)
         qb = torch.quantile(maps_flat, q=0.995).to(self.device)
         return qa, qb

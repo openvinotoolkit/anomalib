@@ -24,12 +24,25 @@ def imagenet_norm_batch(x):
     return x_norm
 
 
-def reduce_tensor_elems(tensor: torch.Tensor, device, max_input_size=2**24) -> torch.Tensor:
+def reduce_tensor_elems(tensor: torch.Tensor, m=2**24) -> torch.Tensor:
+    """Flattens n-dimensional tensors,  selects m elements from it
+    and returns the selected elements as tensor. It is used to select
+    at most 2**24 for torch.quantile operation, as it is the maximum
+    supported number of elements.
+    https://github.com/pytorch/pytorch/blob/b9f81a483a7879cd3709fd26bcec5f1ee33577e6/aten/src/ATen/native/Sorting.cpp#L291
+
+    Args:
+        tensor (torch.Tensor): input tensor from which elements are selected
+        m (int): number of maximum tensor elements. Default: 2**24
+
+    Returns:
+            Tensor: reduced tensor
+    """
     tensor = torch.flatten(tensor)
-    if len(tensor) > max_input_size:
-        # select a random subset with max_input_size elements.
-        perm = torch.randperm(len(tensor), device=device)
-        idx = perm[:max_input_size]
+    if len(tensor) > m:
+        # select a random subset with m elements.
+        perm = torch.randperm(len(tensor), device=tensor.device)
+        idx = perm[:m]
         tensor = tensor[idx]
     return tensor
 
@@ -213,7 +226,6 @@ class EfficientAdModel(nn.Module):
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         padding=False,
         pad_maps=True,
-        device="cuda",
     ) -> None:
         super().__init__()
 
@@ -235,7 +247,6 @@ class EfficientAdModel(nn.Module):
         self.ae: AutoEncoder = AutoEncoder(out_channels=teacher_out_channels, padding=padding, img_size=input_size[0])
         self.teacher_out_channels: int = teacher_out_channels
         self.input_size: tuple[int, int] = input_size
-        self.device: str = device
 
         self.mean_std: nn.ParameterDict = nn.ParameterDict(
             {
@@ -289,7 +300,7 @@ class EfficientAdModel(nn.Module):
 
         if self.training:
             # Student loss
-            distance_st = reduce_tensor_elems(distance_st, self.device)
+            distance_st = reduce_tensor_elems(distance_st)
             d_hard = torch.quantile(distance_st, 0.999)
             loss_hard = torch.mean(distance_st[distance_st >= d_hard])
             student_output_penalty = self.student(batch_imagenet)[:, : self.teacher_out_channels, :, :]
