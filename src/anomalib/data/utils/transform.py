@@ -90,15 +90,15 @@ def get_transforms(
             if "Resize" not in config.keys() and image_size is not None:
                 resize_height, resize_width = get_image_height_and_width(image_size)
                 transforms_list.append(A.Resize(height=resize_height, width=resize_width, always_apply=True))
-                logger.info("Resize {} added!".format((resize_height, resize_width)))
+                logger.info("Resize %s added!", (resize_height, resize_width))
 
             for key, value in config.items():
                 if hasattr(A, key):
                     transform = getattr(A, key)(**value)
-                    logger.info("Transform {} added!".format(transform))
+                    logger.info("Transform %s added!", transform)
                     transforms_list.append(transform)
                 else:
-                    raise ValueError("Transformation {} is not part of albumentations".format(key))
+                    raise ValueError(f"Transformation {key} is not part of albumentations")
 
             transforms_list.append(ToTensorV2())
             transforms = A.Compose(transforms_list, additional_targets={"image": "image", "depth_image": "image"})
