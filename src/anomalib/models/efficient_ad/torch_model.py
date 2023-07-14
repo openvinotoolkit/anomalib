@@ -24,6 +24,16 @@ def imagenet_norm_batch(x):
     return x_norm
 
 
+def reduce_tensor_elems(tensor: torch.Tensor, device, max_input_size=2**24) -> torch.Tensor:
+    tensor = torch.flatten(tensor)
+    if len(tensor) > max_input_size:
+        # select a random subset with max_input_size elements.
+        perm = torch.randperm(len(tensor), device=device)
+        idx = perm[:max_input_size]
+        tensor = tensor[idx]
+    return tensor
+
+
 class EfficientAdModelSize(str, Enum):
     """Supported EfficientAd model sizes"""
 
@@ -203,6 +213,7 @@ class EfficientAdModel(nn.Module):
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         padding=False,
         pad_maps=True,
+        device="cuda",
     ) -> None:
         super().__init__()
 
@@ -224,6 +235,7 @@ class EfficientAdModel(nn.Module):
         self.ae: AutoEncoder = AutoEncoder(out_channels=teacher_out_channels, padding=padding, img_size=input_size[0])
         self.teacher_out_channels: int = teacher_out_channels
         self.input_size: tuple[int, int] = input_size
+        self.device: str = device
 
         self.mean_std: nn.ParameterDict = nn.ParameterDict(
             {
@@ -277,6 +289,7 @@ class EfficientAdModel(nn.Module):
 
         if self.training:
             # Student loss
+            distance_st = reduce_tensor_elems(distance_st, self.device)
             d_hard = torch.quantile(distance_st, 0.999)
             loss_hard = torch.mean(distance_st[distance_st >= d_hard])
             student_output_penalty = self.student(batch_imagenet)[:, : self.teacher_out_channels, :, :]
