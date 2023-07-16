@@ -111,55 +111,54 @@ class DsrModel(nn.Module):
         # Generate latent embeddings decoded image via general object decoder
         if anomaly_map_to_generate is None:
             # either evaluating or training phase 3
-            latent_model_outputs = self.discrete_latent_model(batch)
-            gen_image = latent_model_outputs["recon_image"]
-            embd_top = latent_model_outputs["quantized_t"]
-            embd_bot = latent_model_outputs["quantized_b"]
+            with torch.no_grad():
+                latent_model_outputs = self.discrete_latent_model(batch)
+                gen_image = latent_model_outputs["recon_image"]
+                embd_top = latent_model_outputs["quantized_t"]
+                embd_bot = latent_model_outputs["quantized_b"]
 
-            embd_bot = embd_bot.detach()
-            embd_top = embd_top.detach()
+                # Get embedders from the discrete latent model
+                embedder_bot = self.discrete_latent_model._vq_vae_bot
+                embedder_top = self.discrete_latent_model._vq_vae_top
 
-            # Get embedders from the discrete latent model
-            embedder_bot = self.discrete_latent_model._vq_vae_bot
-            embedder_top = self.discrete_latent_model._vq_vae_top
+                # Copy embeddings in order to input them to the subspace restriction module
+                anomaly_embedding_bot_copy = embd_bot.clone()
+                anomaly_embedding_top_copy = embd_top.clone()
 
-            # Copy embeddings in order to input them to the subspace restriction module
-            anomaly_embedding_bot_copy = embd_bot.clone()
-            anomaly_embedding_top_copy = embd_top.clone()
+                # Apply subspace restriction module to copied embeddings
+                _, recon_embd_bot = self.subspace_restriction_module_hi(anomaly_embedding_bot_copy, embedder_bot)
+                _, recon_embd_top = self.subspace_restriction_module_lo(anomaly_embedding_top_copy, embedder_top)
 
-            # Apply subspace restriction module to copied embeddings
-            _, recon_embd_bot = self.subspace_restriction_module_hi(anomaly_embedding_bot_copy, embedder_bot)
-            _, recon_embd_top = self.subspace_restriction_module_lo(anomaly_embedding_top_copy, embedder_top)
+                # Upscale top (lo) embedding
+                up_quantized_recon_t = self.discrete_latent_model.upsample_t(recon_embd_top)
 
-            # Upscale top (lo) embedding
-            up_quantized_recon_t = self.discrete_latent_model.upsample_t(recon_embd_top)
+                # Concat embeddings and reconstruct image (object specific decoder)
+                quant_join = torch.cat((up_quantized_recon_t, recon_embd_bot), dim=1)
+                obj_spec_image = self.image_reconstruction_network(quant_join)
 
-            # Concat embeddings and reconstruct image (object specific decoder)
-            quant_join = torch.cat((up_quantized_recon_t, recon_embd_bot), dim=1)
-            obj_spec_image = self.image_reconstruction_network(quant_join)
-
-            # Anomaly detection module
-            out_mask = self.anomaly_detection_module(obj_spec_image.detach(), gen_image.detach())
-            out_mask_sm = torch.softmax(out_mask, dim=1)
+                # Anomaly detection module
+                out_mask = self.anomaly_detection_module(obj_spec_image, gen_image)
+                out_mask_sm = torch.softmax(out_mask, dim=1)
 
             # Mask upsampling and score calculation
-            upsampled_mask = self.upsampling_module(obj_spec_image.detach(), gen_image.detach(), out_mask_sm.detach())
+            upsampled_mask = self.upsampling_module(obj_spec_image, gen_image, out_mask_sm)
             out_mask_sm_up = torch.softmax(upsampled_mask, dim=1)
 
+            # if training phase 3, return upsampled softmax mask
+            if self.training:
+                outputs = {"pred_mask": out_mask_sm_up}
             # if testing, extract image score
-            if not self.training:
+            else:
                 out_mask_averaged = torch.nn.functional.avg_pool2d(
                     out_mask_sm[:, 1:, :, :], 21, stride=1, padding=21 // 2
                 ).detach()
-                image_score = torch.max(out_mask_averaged).unsqueeze(0)
+                image_score = torch.amax(out_mask_averaged, dim=(2,3))
 
                 out_mask_cv = out_mask_sm_up[:, 1, :, :]
 
                 outputs = {"pred_mask": out_mask_cv, "score": image_score}
 
-            # else, return upsampled softmax mask
-            else:
-                outputs = {"pred_mask": out_mask_sm_up}
+            
 
         elif anomaly_map_to_generate is not None and self.training:
             # we are in phase two
