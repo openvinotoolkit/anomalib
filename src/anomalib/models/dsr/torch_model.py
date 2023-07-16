@@ -152,13 +152,11 @@ class DsrModel(nn.Module):
                 out_mask_averaged = torch.nn.functional.avg_pool2d(
                     out_mask_sm[:, 1:, :, :], 21, stride=1, padding=21 // 2
                 ).detach()
-                image_score = torch.amax(out_mask_averaged, dim=(2,3))
+                image_score = torch.amax(out_mask_averaged, dim=(2, 3))
 
                 out_mask_cv = out_mask_sm_up[:, 1, :, :]
 
                 outputs = {"pred_mask": out_mask_cv, "score": image_score}
-
-            
 
         elif anomaly_map_to_generate is not None and self.training:
             # we are in phase two
