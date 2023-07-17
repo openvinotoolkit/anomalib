@@ -105,23 +105,24 @@ def train(args: Namespace):
         predictions = trainer.predict(model=model, datamodule=datamodule)
         tile_predictions[tile_index] = predictions
 
-        if config.dataset.test_split_mode == TestSplitMode.NONE:
-            logger.info("No test set provided. Skipping test stage.")
-        else:
-            logger.info("Testing the model.")
-            # trainer.test(model=model, datamodule=datamodule)
+    #        if config.dataset.test_split_mode == TestSplitMode.NONE:
+    #            logger.info("No test set provided. Skipping test stage.")
+    #        else:
+    #            logger.info("Testing the model.")
+    #            trainer.test(model=model, datamodule=datamodule)
 
     joiner = BasicPredictionJoiner(tile_predictions, tiler)
 
+    logger.info("Joining predictions")
     all_predictions = joiner.join_tile_predictions()
 
-    logger.info("Visualizing the results.")
-    # visualize_results(all_predictions, config)
-
-    image_threshold = model.image_metrics.threshold
-    pixel_threshold = model.pixel_metrics.threshold
-
+    logger.info("Computing metrics.")
+    image_threshold = 0.5
+    pixel_threshold = 0.5
     compute_metrics(all_predictions, config, image_threshold, pixel_threshold)
+
+    logger.info("Visualizing the results.")
+    visualize_results(all_predictions, config)
 
 
 if __name__ == "__main__":

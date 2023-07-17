@@ -17,12 +17,10 @@ from torch import Tensor
 
 from anomalib.data import TaskType
 from anomalib.data.base.datamodule import collate_fn
-from anomalib.models import AnomalyModule
 from anomalib.models.ensemble.ensemble_prediction_joiner import EnsemblePredictionJoiner
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
 from anomalib.post_processing import Visualizer
-from anomalib.utils.metrics import create_metric_collection
-
+from anomalib.utils.metrics import create_metric_collection, AnomalibMetricCollection
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +70,7 @@ def update_ensemble_input_size_config(config: DictConfig | ListConfig) -> DictCo
     Update input size of model to match tile size.
 
     Args:
-        config: Configurable parameters object
+        config: Configurable parameters object.
 
     Returns:
         Configurable parameters with updated values
@@ -88,6 +86,8 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
     Tiles are put together and untiled.
     Boxes are stacked per image.
     Labels are combined with OR operator, meaning one anomalous tile -> anomalous image
+    Scores are averaged
+
 
     """
 
@@ -242,7 +242,17 @@ def configure_ensemble_metrics(
     task: TaskType = TaskType.SEGMENTATION,
     image_metric_names: list[str] | None = None,
     pixel_metric_names: list[str] | None = None,
-):
+) -> (AnomalibMetricCollection, AnomalibMetricCollection):
+    """
+    Configure image and pixel metrics and put them into a collection.
+    Args:
+        task: Task type of the current run.
+        image_metric_names: List of image-level metric names.
+        pixel_metric_names: List of pixel-level metric names.
+
+    Returns:
+        image metrics collection and pixel metrics collection
+    """
     image_metric_names = [] if image_metric_names is None else image_metric_names
 
     pixel_metric_names: list[str]
@@ -270,18 +280,27 @@ def compute_metrics(
     image_threshold: float,
     pixel_threshold: float,
 ) -> None:
+    """
+    Compute metrics specified in config for given ensemble results.
+
+    Args:
+        results: Joined results produced by model ensemble.
+        config: Configurable parameters object.
+        image_threshold: Threshold used for image metrics.
+        pixel_threshold: Threshold used for pixel metrics.
+    """
     image_metrics, pixel_metrics = configure_ensemble_metrics(
         config.dataset.task,
         config.metrics.get("image", None),
         config.metrics.get("pixel", None),
     )
+    # update threshold for metrics that require it
     image_metrics.set_threshold(image_threshold)
     pixel_metrics.set_threshold(pixel_threshold)
 
     image_metrics.cpu()
     pixel_metrics.cpu()
 
-    # TODO: thresholded metrics don't work????
     for batch in results:
         image_metrics.update(batch["pred_scores"], batch["label"].int())
         if "mask" in batch.keys() and "anomaly_maps" in batch.keys():
@@ -293,4 +312,3 @@ def compute_metrics(
     if pixel_metrics.update_called:
         for name, val in pixel_metrics.items():
             print(f"{name}: {val.compute()}")
-
