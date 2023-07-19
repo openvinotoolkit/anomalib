@@ -23,25 +23,24 @@ class Dfm(AnomalyModule):
     """DFM: Deep Featured Kernel Density Estimation.
 
     Args:
-        input_size (tuple[int, int], optional): Input size for the model. Defaults to (256, 256).
-        backbone (str, optional): Backbone CNN network. Defaults to "resnet50".
-        layer (str, optional): Layer to extract features from the backbone CNN. Defaults to "layer3".
+        backbone (str): Backbone CNN network
+        layer (str): Layer to extract features from the backbone CNN
+        input_size (tuple[int, int]): Input size for the model.
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         pooling_kernel_size (int, optional): Kernel size to pool features extracted from the CNN.
             Defaults to 4.
         pca_level (float, optional): Ratio from which number of components for PCA are calculated.
             Defaults to 0.97.
-        score_type (str, optional): Scoring type. Options are `fre` and `nll`.
-            nll: for Gaussian modeling, fre: pca feature-reconstruction error. Anomaly segmentation is
-            supported with `fre` only. If using `nll`, set `task` in config.yaml to classification
-            Defaults to "fre".
+        score_type (str, optional): Scoring type. Options are `fre` and `nll`. Defaults to "fre".
+        nll: for Gaussian modeling, fre: pca feature-reconstruction error. Anomaly segmentation is
+        supported with `fre` only. If using `nll`, set `task` in config.yaml to classification
     """
 
     def __init__(
         self,
-        input_size: tuple[int, int] = (256, 256),
-        backbone: str = "resnet50",
-        layer: str = "layer3",
+        backbone: str,
+        layer: str,
+        input_size: tuple[int, int],
         pre_trained: bool = True,
         pooling_kernel_size: int = 4,
         pca_level: float = 0.97,

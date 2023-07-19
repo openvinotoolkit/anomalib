@@ -27,7 +27,7 @@ dataset:
 
 model:
   name: padim
-  backbone: wide_resnet50_2
+  backbone: resnet18
   pre_trained: true
   layers:
     - layer1

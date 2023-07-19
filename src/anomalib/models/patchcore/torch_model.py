@@ -9,7 +9,11 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from anomalib.models.components import DynamicBufferModule, FeatureExtractor, KCenterGreedy
+from anomalib.models.components import (
+    DynamicBufferModule,
+    FeatureExtractor,
+    KCenterGreedy,
+)
 from anomalib.models.patchcore.anomaly_map import AnomalyMapGenerator
 from anomalib.pre_processing import Tiler
 
@@ -19,9 +23,9 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
 
     def __init__(
         self,
-        input_size: tuple[int, int] = (224, 224),
+        input_size: tuple[int, int],
+        layers: list[str],
         backbone: str = "wide_resnet50_2",
-        layers: list[str] = ["layer2", "layer3"],
         pre_trained: bool = True,
         num_neighbors: int = 9,
     ) -> None:
