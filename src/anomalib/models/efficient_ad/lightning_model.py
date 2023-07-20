@@ -53,8 +53,9 @@ class EfficientAd(AnomalyModule):
     """PL Lightning Module for the EfficientAd algorithm.
 
     Args:
-        image_size (tuple): size of input images. Defaults to (256, 256).
-        teacher_out_channels (int): number of convolution output channels. Defaults to 384.
+        teacher_file_name (str): path to the pre-trained teacher model
+        teacher_out_channels (int): number of convolution output channels
+        image_size (tuple): size of input images
         model_size (str): size of student and teacher model
         lr (float): learning rate
         weight_decay (float): optimizer weight decay
@@ -66,8 +67,8 @@ class EfficientAd(AnomalyModule):
 
     def __init__(
         self,
-        image_size: tuple[int, int] = (256, 256),
-        teacher_out_channels: int = 384,
+        teacher_out_channels: int,
+        image_size: tuple[int, int],
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         lr: float = 0.0001,
         weight_decay: float = 0.00001,
