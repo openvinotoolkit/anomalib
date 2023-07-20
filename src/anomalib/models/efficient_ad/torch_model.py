@@ -278,8 +278,8 @@ class EfficientAdModel(nn.Module):
             transforms.functional.adjust_saturation,
         ]
         # Sample an augmentation coefficient λ from the uniform distribution U(0.8, 1.2)
-        coefficient = random.uniform(0.8, 1.2)
-        transform_function = random.choice(transform_functions)
+        coefficient = random.uniform(0.8, 1.2)  # nosec: B311
+        transform_function = random.choice(transform_functions)  # nosec: B311
         return transform_function(image, coefficient)
 
     def forward(self, batch: Tensor, batch_imagenet: Tensor = None) -> Tensor | dict:

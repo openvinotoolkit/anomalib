@@ -10,17 +10,20 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import hashlib
+import logging
 import os
-import urllib
 import warnings
 from typing import List, Union
+from urllib.parse import urlparse
 
+import requests
 import torch
 from PIL import Image
 from pkg_resources import packaging
 from torchvision.transforms import CenterCrop, Compose, Normalize, Resize, ToTensor
 from tqdm import tqdm
 
+logger = logging.getLogger(__name__)
 from .model import build_model
 
 try:
@@ -50,36 +53,48 @@ _MODELS = {
 }
 
 
+def _verify_checksum(file_path: str, url: str) -> bool:
+    expected_sha256 = url.split("/")[-2]
+    sha256_hash = hashlib.sha256()
+
+    with open(file_path, "rb") as file:
+        for chunk in iter(lambda: file.read(4096), b""):
+            sha256_hash.update(chunk)
+
+    file_hash = sha256_hash.hexdigest()
+
+    return file_hash == expected_sha256
+
+
 def _download(url: str, root: str):
     os.makedirs(root, exist_ok=True)
-    filename = os.path.basename(url)
-
-    expected_sha256 = url.split("/")[-2]
+    filename = os.path.basename(urlparse(url).path)
     download_target = os.path.join(root, filename)
 
-    if os.path.exists(download_target) and not os.path.isfile(download_target):
-        raise RuntimeError(f"{download_target} exists and is not a regular file")
-
-    if os.path.isfile(download_target):
-        if hashlib.sha256(open(download_target, "rb").read()).hexdigest() == expected_sha256:
+    if os.path.exists(download_target):
+        if not os.path.isfile(download_target):
+            raise FileExistsError(f"{download_target} exists and is not a regular file")
+        if _verify_checksum(download_target, url):
             return download_target
-        else:
-            warnings.warn(f"{download_target} exists, but the SHA256 checksum does not match; re-downloading the file")
 
-    with urllib.request.urlopen(url) as source, open(download_target, "wb") as output:
-        with tqdm(
-            total=int(source.info().get("Content-Length")), ncols=80, unit="iB", unit_scale=True, unit_divisor=1024
-        ) as loop:
-            while True:
-                buffer = source.read(8192)
-                if not buffer:
-                    break
+        logger.warning("%s exists, but the checksum does not match; re-downloading the file", download_target)
+        os.remove(download_target)
 
-                output.write(buffer)
-                loop.update(len(buffer))
+    response = requests.get(url, stream=True, timeout=10.0)  # Timeout is for bandit security linter
+    response.raise_for_status()
 
-    if hashlib.sha256(open(download_target, "rb").read()).hexdigest() != expected_sha256:
-        raise RuntimeError("Model has been downloaded but the SHA256 checksum does not not match")
+    total_size = int(response.headers.get("Content-Length", 0))
+
+    with open(download_target, "wb") as file, tqdm(
+        total=total_size, ncols=80, unit="iB", unit_scale=True, unit_divisor=1024
+    ) as loop:
+        for chunk in response.iter_content(chunk_size=8192):
+            if chunk:
+                file.write(chunk)
+                loop.update(len(chunk))
+
+    if not _verify_checksum(download_target, url):
+        raise RuntimeError("Model has been downloaded but the checksum does not match")
 
     return download_target
 
