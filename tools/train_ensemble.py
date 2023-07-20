@@ -16,6 +16,7 @@ from argparse import ArgumentParser, Namespace
 from itertools import product
 
 from pytorch_lightning import Trainer, seed_everything
+from tqdm import tqdm
 
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
@@ -30,8 +31,9 @@ from anomalib.models.ensemble.ensemble_functions import (
     update_ensemble_input_size_config,
     BasicPredictionJoiner,
     visualize_results,
-    compute_metrics,
 )
+from anomalib.models.ensemble.ensemble_prediction_data import BasicEnsemblePredictionData
+from anomalib.models.ensemble.ensemble_metrics import EnsembleMetrics
 
 
 logger = logging.getLogger("anomalib")
@@ -75,7 +77,7 @@ def train(args: Namespace):
         remove_border_count=config.dataset.tiling.remove_border_count,
     )
 
-    tile_predictions = {}
+    ensemble_predictions = BasicEnsemblePredictionData()
 
     # go over all tile positions and train
     for tile_index in product(range(tiler.num_patches_h), range(tiler.num_patches_w)):
@@ -103,7 +105,7 @@ def train(args: Namespace):
         trainer.callbacks.insert(0, load_model_callback)  # pylint: disable=no-member
 
         predictions = trainer.predict(model=model, datamodule=datamodule)
-        tile_predictions[tile_index] = predictions
+        ensemble_predictions.add_tile_prediction(tile_index, predictions)
 
     #        if config.dataset.test_split_mode == TestSplitMode.NONE:
     #            logger.info("No test set provided. Skipping test stage.")
@@ -111,18 +113,22 @@ def train(args: Namespace):
     #            logger.info("Testing the model.")
     #            trainer.test(model=model, datamodule=datamodule)
 
-    joiner = BasicPredictionJoiner(tile_predictions, tiler)
+    joiner = BasicPredictionJoiner(ensemble_predictions, tiler)
+    metrics = EnsembleMetrics(config, 0.5, 0.5)
 
-    logger.info("Joining predictions")
-    all_predictions = joiner.join_tile_predictions()
+    logger.info("Processing predictions for all batches.")
+    for batch_index in tqdm(range(ensemble_predictions.num_batches)):
+        logger.info("Joining predictions")
+        joined_batch = joiner.join_tile_predictions(batch_index)
 
-    logger.info("Computing metrics.")
-    image_threshold = 0.5
-    pixel_threshold = 0.5
-    compute_metrics(all_predictions, config, image_threshold, pixel_threshold)
+        logger.info("Updating metrics.")
+        metrics.update_metrics(joined_batch)
 
-    logger.info("Visualizing the results.")
-    visualize_results(all_predictions, config)
+        logger.info("Visualizing the results.")
+        visualize_results(joined_batch, config)
+
+    logger.info("Computing metrics for all data.")
+    metrics.compute_metrics()
 
 
 if __name__ == "__main__":

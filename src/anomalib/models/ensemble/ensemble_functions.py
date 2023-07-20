@@ -8,19 +8,16 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any, List
-from itertools import product
+from typing import Any
 
 import torch
 from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
-from anomalib.data import TaskType
 from anomalib.data.base.datamodule import collate_fn
 from anomalib.models.ensemble.ensemble_prediction_joiner import EnsemblePredictionJoiner
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
 from anomalib.post_processing import Visualizer
-from anomalib.utils.metrics import create_metric_collection, AnomalibMetricCollection
 
 logger = logging.getLogger(__name__)
 
@@ -91,19 +88,19 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
 
     """
 
-    def join_tiles(self, batch_index: int, tile_key: str) -> Tensor:
+    def join_tiles(self, batch_data: dict, tile_key: str) -> Tensor:
         """
         Join tiles back into one tensor and perform untiling with tiler.
 
         Args:
-            batch_index: Index of current batch.
+            batch_data: Dictionary containing all tile predictions of current batch.
             tile_key: Key used in prediction dictionary for tiles that we want to join
 
         Returns:
             Tensor of tiles in original (stitched) shape.
         """
-        # tiles with index (0, 0) should always exist
-        first_tiles = self.tile_predictions[(0, 0)][batch_index][tile_key]
+        # tiles with index (0, 0) always exists
+        first_tiles = batch_data[(0, 0)][tile_key]
 
         # get batch and device from tiles
         batch_size = first_tiles.shape[0]
@@ -134,8 +131,8 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
         joined_masks = torch.zeros(size=joined_size, device=device)
 
         # insert tile into joined tensor at right locations
-        for tile_i, tile_j in product(range(self.tiler.num_patches_h), range(self.tiler.num_patches_w)):
-            joined_masks[tile_i, tile_j, ...] = self.tile_predictions[(tile_i, tile_j)][batch_index][tile_key]
+        for (tile_i, tile_j), tile_data in batch_data.items():
+            joined_masks[tile_i, tile_j, ...] = tile_data[tile_key]
 
         if tile_key == "mask":
             # add channel as tiler needs it
@@ -150,18 +147,18 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
 
         return joined_output
 
-    def join_boxes(self, batch_index: int) -> dict:
+    def join_boxes(self, batch_data: dict) -> dict:
         """
         Join boxes data from all tiles. This includes pred_boxes, box_scores and box_labels.
         Joining is done by stacking boxes from all tiles.
 
         Args:
-            batch_index: Index of current batch.
+            batch_data: Dictionary containing all tile predictions of current batch.
 
         Returns:
             Dictionary with joined boxes, box scores and box labels.
         """
-        batch_size = len(self.tile_predictions[(0, 0)][batch_index]["pred_boxes"])
+        batch_size = len(batch_data[(0, 0)]["pred_boxes"])
 
         # create placeholder arrays, that will contain box data fro each image
         boxes = [[] for _ in range(batch_size)]
@@ -169,8 +166,7 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
         labels = [[] for _ in range(batch_size)]
 
         # go over all tiles and add box data tensor to belonging array
-        for tile_i, tile_j in product(range(self.tiler.num_patches_h), range(self.tiler.num_patches_w)):
-            curr_pred = self.tile_predictions[(tile_i, tile_j)][batch_index]
+        for curr_pred in batch_data.values():
             for i in range(batch_size):
                 boxes[i].append(curr_pred["pred_boxes"][i])
                 scores[i].append(curr_pred["box_scores"][i])
@@ -186,24 +182,24 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
 
         return joined_boxes
 
-    def join_labels_and_scores(self, batch_index: int) -> dict[str, Tensor]:
+    def join_labels_and_scores(self, batch_data: dict) -> dict[str, Tensor]:
         """
         Join scores and their corresponding label predictions from all tiles for each image.
         Label joining is done by rule where one anomalous tile in image results in whole image being anomalous.
         Scores are averaged over tiles.
 
         Args:
-            batch_index: Index of current batch.
+            batch_data: Dictionary containing all tile predictions of current batch.
 
         Returns:
             Dictionary with "pred_labels" and "pred_scores"
         """
-        labels = torch.empty(self.tile_predictions[(0, 0)][batch_index]["pred_labels"].shape, dtype=torch.bool)
-        scores = torch.zeros(self.tile_predictions[(0, 0)][batch_index]["pred_scores"].shape)
+        labels = torch.empty(batch_data[(0, 0)]["pred_labels"].shape, dtype=torch.bool)
+        scores = torch.zeros(batch_data[(0, 0)]["pred_scores"].shape)
 
-        for tile_i, tile_j in product(range(self.tiler.num_patches_h), range(self.tiler.num_patches_w)):
-            curr_labels = self.tile_predictions[(tile_i, tile_j)][batch_index]["pred_labels"]
-            curr_scores = self.tile_predictions[(tile_i, tile_j)][batch_index]["pred_scores"]
+        for curr_tile_data in batch_data.values():
+            curr_labels = curr_tile_data["pred_labels"]
+            curr_scores = curr_tile_data["pred_scores"]
 
             labels = labels.logical_or(curr_labels)
             scores += curr_scores
@@ -215,12 +211,12 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
         return joined
 
 
-def visualize_results(predictions: List, config: DictConfig | ListConfig) -> None:
+def visualize_results(prediction_batch: dict, config: DictConfig | ListConfig) -> None:
     """
     Visualize joined predictions using Visualizer class.
 
     Args:
-        predictions: List of batches containing joined predictions.
+        prediction_batch: Batch of predictions.
         config: Config file, used to set up visualization.
     """
     visualizer = Visualizer(mode=config.visualization.mode, task=config.dataset.task)
@@ -228,87 +224,10 @@ def visualize_results(predictions: List, config: DictConfig | ListConfig) -> Non
     image_save_path = config.visualization.image_save_path or config.project.path + "/images"
     image_save_path = Path(image_save_path)
 
-    for batch in predictions:
-        for i, image in enumerate(visualizer.visualize_batch(batch)):
-            filename = Path(batch["image_path"][i])
-            if config.visualization.save_images:
-                file_path = image_save_path / filename.parent.name / filename.name
-                visualizer.save(file_path, image)
-            if config.visualization.show_images:
-                visualizer.show(str(filename), image)
-
-
-def configure_ensemble_metrics(
-    task: TaskType = TaskType.SEGMENTATION,
-    image_metric_names: list[str] | None = None,
-    pixel_metric_names: list[str] | None = None,
-) -> (AnomalibMetricCollection, AnomalibMetricCollection):
-    """
-    Configure image and pixel metrics and put them into a collection.
-    Args:
-        task: Task type of the current run.
-        image_metric_names: List of image-level metric names.
-        pixel_metric_names: List of pixel-level metric names.
-
-    Returns:
-        image metrics collection and pixel metrics collection
-    """
-    image_metric_names = [] if image_metric_names is None else image_metric_names
-
-    pixel_metric_names: list[str]
-    if pixel_metric_names is None:
-        pixel_metric_names = []
-    elif task == TaskType.CLASSIFICATION:
-        pixel_metric_names = []
-        logger.warning(
-            "Cannot perform pixel-level evaluation when task type is classification. "
-            "Ignoring the following pixel-level metrics: %s",
-            pixel_metric_names,
-        )
-    else:
-        pixel_metric_names = pixel_metric_names
-
-    image_metrics = create_metric_collection(image_metric_names, "image_")
-    pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
-
-    return image_metrics, pixel_metrics
-
-
-def compute_metrics(
-    results: List,
-    config: DictConfig | ListConfig,
-    image_threshold: float,
-    pixel_threshold: float,
-) -> None:
-    """
-    Compute metrics specified in config for given ensemble results.
-
-    Args:
-        results: Joined results produced by model ensemble.
-        config: Configurable parameters object.
-        image_threshold: Threshold used for image metrics.
-        pixel_threshold: Threshold used for pixel metrics.
-    """
-    image_metrics, pixel_metrics = configure_ensemble_metrics(
-        config.dataset.task,
-        config.metrics.get("image", None),
-        config.metrics.get("pixel", None),
-    )
-    # update threshold for metrics that require it
-    image_metrics.set_threshold(image_threshold)
-    pixel_metrics.set_threshold(pixel_threshold)
-
-    image_metrics.cpu()
-    pixel_metrics.cpu()
-
-    for batch in results:
-        image_metrics.update(batch["pred_scores"], batch["label"].int())
-        if "mask" in batch.keys() and "anomaly_maps" in batch.keys():
-            pixel_metrics.update(batch["anomaly_maps"], batch["mask"].int())
-
-    for name, val in image_metrics.items():
-        print(f"{name}: {val.compute()}")
-
-    if pixel_metrics.update_called:
-        for name, val in pixel_metrics.items():
-            print(f"{name}: {val.compute()}")
+    for i, image in enumerate(visualizer.visualize_batch(prediction_batch)):
+        filename = Path(prediction_batch["image_path"][i])
+        if config.visualization.save_images:
+            file_path = image_save_path / filename.parent.name / filename.name
+            visualizer.save(file_path, image)
+        if config.visualization.show_images:
+            visualizer.show(str(filename), image)
