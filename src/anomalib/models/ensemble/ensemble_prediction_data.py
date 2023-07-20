@@ -9,7 +9,7 @@ from typing import List
 from torch import Tensor
 
 
-class EnsemblePredictionData(ABC):
+class EnsemblePredictions(ABC):
     """
     Abstract class used as template for different ways of storing ensemble predictions.
     """
@@ -42,7 +42,7 @@ class EnsemblePredictionData(ABC):
         raise NotImplementedError
 
 
-class BasicEnsemblePredictionData(EnsemblePredictionData):
+class BasicEnsemblePredictions(EnsemblePredictions):
     """
     Basic implementation of EnsemblePredictionData that keeps all predictions in memory as they are.
     """
