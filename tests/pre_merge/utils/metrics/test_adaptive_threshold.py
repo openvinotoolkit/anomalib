@@ -46,8 +46,8 @@ def test_manual_threshold():
     config.metrics.image = ["F1Score"]
     config.metrics.pixel = ["F1Score"]
 
-    image_threshold = random.random()
-    pixel_threshold = random.random()
+    image_threshold = random.random()  # nosec: B311
+    pixel_threshold = random.random()  # nosec: B311
     config.metrics.threshold.manual_image = image_threshold
     config.metrics.threshold.manual_pixel = pixel_threshold
 

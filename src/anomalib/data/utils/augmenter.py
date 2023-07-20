@@ -97,8 +97,8 @@ class Augmenter:
         perlin_scale = 6
         min_perlin_scale = 0
 
-        perlin_scalex = 2 ** random.randint(min_perlin_scale, perlin_scale)
-        perlin_scaley = 2 ** random.randint(min_perlin_scale, perlin_scale)
+        perlin_scalex = 2 ** random.randint(min_perlin_scale, perlin_scale)  # nosec: B311
+        perlin_scaley = 2 ** random.randint(min_perlin_scale, perlin_scale)  # nosec: B311
 
         perlin_noise = random_2d_perlin((nextpow2(height), nextpow2(width)), (perlin_scalex, perlin_scaley))[
             :height, :width

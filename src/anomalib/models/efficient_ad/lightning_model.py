@@ -24,7 +24,7 @@ from torchvision.datasets import ImageFolder
 from anomalib.data.utils import DownloadInfo, download_and_extract
 from anomalib.models.components import AnomalyModule
 
-from .torch_model import EfficientAdModel, EfficientAdModelSize
+from .torch_model import EfficientAdModel, EfficientAdModelSize, reduce_tensor_elems
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +53,9 @@ class EfficientAd(AnomalyModule):
     """PL Lightning Module for the EfficientAd algorithm.
 
     Args:
-        image_size (tuple): size of input images. Defaults to (256, 256).
-        teacher_out_channels (int): number of convolution output channels. Defaults to 384.
+        teacher_file_name (str): path to the pre-trained teacher model
+        teacher_out_channels (int): number of convolution output channels
+        image_size (tuple): size of input images
         model_size (str): size of student and teacher model
         lr (float): learning rate
         weight_decay (float): optimizer weight decay
@@ -66,8 +67,8 @@ class EfficientAd(AnomalyModule):
 
     def __init__(
         self,
-        image_size: tuple[int, int] = (256, 256),
-        teacher_out_channels: int = 384,
+        teacher_out_channels: int,
+        image_size: tuple[int, int],
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         lr: float = 0.0001,
         weight_decay: float = 0.00001,
@@ -191,19 +192,8 @@ class EfficientAd(AnomalyModule):
         Returns:
             tuple[Tensor, Tensor]: Two scalars - the 90% and the 99.5% quantile.
         """
-        maps_flat = torch.flatten(torch.cat(maps))
-        # torch.quantile only works with input size up to 2**24 elements, see
-        # https://github.com/pytorch/pytorch/blob/b9f81a483a7879cd3709fd26bcec5f1ee33577e6/aten/src/ATen/native/Sorting.cpp#L291
-        # if we have more elements we need to decrease the size
-        # we do this by sampling random elements of maps_flat because then
-        # the locations of the quantiles (90% and 99.5%) will still be
-        # valid even though they might not be the exact quantiles.
-        max_input_size = 2**24
-        if len(maps_flat) > max_input_size:
-            # select a random subset with max_input_size elements.
-            perm = torch.randperm(len(maps_flat), device=self.device)
-            idx = perm[:max_input_size]
-            maps_flat = maps_flat[idx]
+
+        maps_flat = reduce_tensor_elems(torch.cat(maps))
         qa = torch.quantile(maps_flat, q=0.9).to(self.device)
         qb = torch.quantile(maps_flat, q=0.995).to(self.device)
         return qa, qb
