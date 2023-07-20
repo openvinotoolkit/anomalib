@@ -28,7 +28,7 @@ dataset:
 
 model:
   name: stfpm
-  backbone: wide_resnet50_2
+  backbone: resnet18
   layers:
     - layer1
     - layer2
