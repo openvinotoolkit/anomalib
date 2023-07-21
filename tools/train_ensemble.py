@@ -32,7 +32,11 @@ from anomalib.models.ensemble.ensemble_functions import (
     BasicPredictionJoiner,
     visualize_results,
 )
-from anomalib.models.ensemble.ensemble_prediction_data import BasicEnsemblePredictions, FileSystemEnsemblePredictions
+from anomalib.models.ensemble.ensemble_prediction_data import (
+    BasicEnsemblePredictions,
+    FileSystemEnsemblePredictions,
+    RescaledEnsemblePredictions,
+)
 from anomalib.models.ensemble.ensemble_metrics import EnsembleMetrics
 
 
@@ -77,7 +81,7 @@ def train(args: Namespace):
         remove_border_count=config.dataset.tiling.remove_border_count,
     )
 
-    ensemble_predictions = FileSystemEnsemblePredictions(config)
+    ensemble_predictions = BasicEnsemblePredictions()
 
     # go over all tile positions and train
     for tile_index in product(range(tiler.num_patches_h), range(tiler.num_patches_w)):
