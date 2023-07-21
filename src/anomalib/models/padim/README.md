@@ -12,7 +12,7 @@ During inference, Mahalanobis distance is used to score each patch position of t
 
 ## Architecture
 
-![PaDiM Architecture](../../../docs/source/images/padim/architecture.jpg "PaDiM Architecture")
+![PaDiM Architecture](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/padim/architecture.jpg "PaDiM Architecture")
 
 ## Usage
 
@@ -24,31 +24,56 @@ All results gathered with seed `42`.
 
 ## [MVTec AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 
-### Image-Level AUC
+| Model      | Image AUROC | Image F1 | Pixel AUROC | Pixel AUPRO |
+| ---------- | ----------- | -------- | ----------- | ----------- |
+| Bottle     |             |          |             |             |
+| Cable      |             |          |             |             |
+| Capsule    |             |          |             |             |
+| Carpet     |             |          |             |             |
+| Grid       |             |          |             |             |
+| Hazelnut   |             |          |             |             |
+| Leather    |             |          |             |             |
+| Metal_nut  |             |          |             |             |
+| Pill       |             |          |             |             |
+| Screw      |             |          |             |             |
+| Tile       |             |          |             |             |
+| Toothbrush |             |          |             |             |
+| Transistor |             |          |             |             |
+| Wood       |             |          |             |             |
+| Zipper     |             |          |             |             |
+| Average    |             |          |             |             |
 
-|                |  Avg  | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
-| -------------- | :---: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
-| ResNet-18      | 0.891 | 0.945  | 0.857 |  0.982  | 0.950 | 0.976 | 0.994  | 0.844 |  0.901  |  0.750   |   0.961   | 0.863 | 0.759 |   0.889    |   0.920    | 0.780  |
-| Wide ResNet-50 | 0.950 | 0.995  | 0.942 |   1.0   | 0.974 | 0.993 | 0.999  | 0.878 |  0.927  |  0.964   |   0.989   | 0.939 | 0.845 |   0.942    |   0.976    | 0.882  |
+## [BTAD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 
-### Pixel-Level AUC
+| Model   | Image AUROC | Image F1 | Pixel AUROC | Pixel AUPRO |
+| ------- | ----------- | -------- | ----------- | ----------- |
+| 01      |             |          |             |             |
+| 02      |             |          |             |             |
+| 03      |             |          |             |             |
+| Average |             |          |             |             |
 
-|                |  Avg  | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
-| -------------- | :---: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
-| ResNet-18      | 0.968 | 0.984  | 0.918 |  0.994  | 0.934 | 0.947 | 0.983  | 0.965 |  0.984  |  0.978   |   0.970   | 0.957 | 0.978 |   0.988    |   0.968    | 0.979  |
-| Wide ResNet-50 | 0.979 | 0.991  | 0.970 |  0.993  | 0.955 | 0.957 | 0.985  | 0.970 |  0.988  |  0.985   |   0.982   | 0.966 | 0.988 |   0.991    |   0.976    | 0.986  |
+## [Visa Dataset](https://github.com/amazon-science/spot-diff)
 
-### Image F1 Score
-
-|                |  Avg  | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
-| -------------- | :---: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
-| ResNet-18      | 0.916 | 0.930  | 0.893 |  0.984  | 0.934 | 0.952 | 0.976  | 0.858 |  0.960  |  0.836   |   0.974   | 0.932 | 0.879 |   0.923    |   0.796    | 0.915  |
-| Wide ResNet-50 | 0.951 | 0.989  | 0.930 |   1.0   | 0.960 | 0.983 | 0.992  | 0.856 |  0.982  |  0.937   |   0.978   | 0.946 | 0.895 |   0.952    |   0.914    | 0.947  |
+| Model      | Image AUROC | Image F1 | Pixel AUROC | Pixel AUPRO |
+| ---------- | ----------- | -------- | ----------- | ----------- |
+| candle     |             |          |             |             |
+| capsules   |             |          |             |             |
+| cashew     |             |          |             |             |
+| chewinggum |             |          |             |             |
+| fryum      |             |          |             |             |
+| macaroni1  |             |          |             |             |
+| macaroni2  |             |          |             |             |
+| pcb1       |             |          |             |             |
+| pcb2       |             |          |             |             |
+| pcb3       |             |          |             |             |
+| pcb4       |             |          |             |             |
+| pipe_fryum |             |          |             |             |
+| Average    |             |          |             |             |
 
 ### Sample Results
 
-![Sample Result 1](../../../docs/source/images/padim/results/0.png "Sample Result 1")
+![Sample Result 1](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/padim/results/0.png "Sample Result 1")
 
-![Sample Result 2](../../../docs/source/images/padim/results/1.png "Sample Result 2")
+![Sample Result 2](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/padim/results/1.png "Sample Result 2")
 
-![Sample Result 3](../../../docs/source/images/padim/results/2.png "Sample Result 3")
+![Sample Result 3](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/padim/results/2.png "Sample Result 3")

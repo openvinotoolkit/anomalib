@@ -26,18 +26,48 @@ All results gathered with seed `42`.
 
 ## [MVTec AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 
-> Note: Metrics for ResNet 18 were calculated with pooling kernel size of 2 while for Wide ResNet 50, kernel size of 4 was used.
+| Model      | Image AUROC | Image F1 | Pixel AUROC | Pixel AUPRO |
+| ---------- | ----------- | -------- | ----------- | ----------- |
+| Bottle     |             |          |             |             |
+| Cable      |             |          |             |             |
+| Capsule    |             |          |             |             |
+| Carpet     |             |          |             |             |
+| Grid       |             |          |             |             |
+| Hazelnut   |             |          |             |             |
+| Leather    |             |          |             |             |
+| Metal_nut  |             |          |             |             |
+| Pill       |             |          |             |             |
+| Screw      |             |          |             |             |
+| Tile       |             |          |             |             |
+| Toothbrush |             |          |             |             |
+| Transistor |             |          |             |             |
+| Wood       |             |          |             |             |
+| Zipper     |             |          |             |             |
+| Average    |             |          |             |             |
 
-### Image-Level AUC
+## [BTAD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 
-|                |  Avg  | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
-| -------------- | :---: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
-| ResNet-18      | 0.936 | 0.817  | 0.736 |  0.993  | 0.966 | 0.977 |   1    | 0.956 |  0.944  |  0.994   |   0.922   | 0.961 | 0.89  |   0.969    |   0.939    | 0.969  |
-| Wide ResNet-50 | 0.943 | 0.855  | 0.784 |  0.997  | 0.995 | 0.975 | 0.999  | 0.969 |  0.924  |  0.978   |   0.939   | 0.962 | 0.873 |   0.969    |   0.971    | 0.961  |
+| Model   | Image AUROC | Image F1 | Pixel AUROC | Pixel AUPRO |
+| ------- | ----------- | -------- | ----------- | ----------- |
+| 01      |             |          |             |             |
+| 02      |             |          |             |             |
+| 03      |             |          |             |             |
+| Average |             |          |             |             |
 
-### Image F1 Score
+## [Visa Dataset](https://github.com/amazon-science/spot-diff)
 
-|                |  Avg  | Carpet | Grid  | Leather | Tile  | Wood | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
-| -------------- | :---: | :----: | :---: | :-----: | :---: | :--: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
-| ResNet-18      | 0.943 | 0.895  | 0.871 |  0.978  | 0.958 | 0.96 |   1    | 0.935 |  0.965  |  0.966   |   0.942   | 0.956 | 0.914 |   0.966    |   0.868    | 0.964  |
-| Wide ResNet-50 | 0.950 | 0.915  | 0.87  |  0.995  | 0.988 | 0.96 | 0.992  | 0.939 |  0.965  |  0.971   |   0.942   | 0.956 | 0.906 |   0.966    |   0.914    | 0.971  |
+| Model      | Image AUROC | Image F1 | Pixel AUROC | Pixel AUPRO |
+| ---------- | ----------- | -------- | ----------- | ----------- |
+| candle     |             |          |             |             |
+| capsules   |             |          |             |             |
+| cashew     |             |          |             |             |
+| chewinggum |             |          |             |             |
+| fryum      |             |          |             |             |
+| macaroni1  |             |          |             |             |
+| macaroni2  |             |          |             |             |
+| pcb1       |             |          |             |             |
+| pcb2       |             |          |             |             |
+| pcb3       |             |          |             |             |
+| pcb4       |             |          |             |             |
+| pipe_fryum |             |          |             |             |
+| Average    |             |          |             |             |

@@ -23,11 +23,11 @@ The anomaly score for each local position $(i,j)$ of the feature map $y^s$ at sc
 
 ## Architecture
 
-![CS-Flow Architecture](../../../docs/source/images/cs_flow/architecture1.jpg "CS-Flow Architecture")
+![CS-Flow Architecture](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/cs_flow/architecture1.jpg "CS-Flow Architecture")
 
-![Architecture of a Coupling Block](../../../docs/source/images/cs_flow/architecture2.jpg "Architecture of a Coupling Block")
+![Architecture of a Coupling Block](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/cs_flow/architecture2.jpg "Architecture of a Coupling Block")
 
-![Architecture of network predicting scale and shift parameters.](../../../docs/source/images/cs_flow/architecture3.jpg "Architecture of network predicting scale and shift parameters.")
+![Architecture of network predicting scale and shift parameters.](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/cs_flow/architecture3.jpg "Architecture of network predicting scale and shift parameters.")
 
 ## Usage
 
@@ -39,62 +39,48 @@ All results gathered with seed `42`.
 
 ## [MVTec AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 
-> The following table is generated with image size of 768 and generating the anomaly map from all the three scales unlike the paper. Initial experiments showed that the anomaly map from all the three scales gives better results than the one from the largest scale.
+| Model      | Image AUROC | Image F1 | Pixel AUROC | Pixel AUPRO |
+| ---------- | ----------- | -------- | ----------- | ----------- |
+| Bottle     |             |          |             |             |
+| Cable      |             |          |             |             |
+| Capsule    |             |          |             |             |
+| Carpet     |             |          |             |             |
+| Grid       |             |          |             |             |
+| Hazelnut   |             |          |             |             |
+| Leather    |             |          |             |             |
+| Metal_nut  |             |          |             |             |
+| Pill       |             |          |             |             |
+| Screw      |             |          |             |             |
+| Tile       |             |          |             |             |
+| Toothbrush |             |          |             |             |
+| Transistor |             |          |             |             |
+| Wood       |             |          |             |             |
+| Zipper     |             |          |             |             |
+| Average    |             |          |             |             |
 
-### Image AUROC - 768 Image Size
+## [BTAD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 
-|                 | Average | Carpet |  Grid | Leather |  Tile |  Wood | Bottle | Cable | Capsule | Hazelnut | Metal_nut | Pill | Screw | Toothbrush | Transistor | Zipper |
-| :-------------- | ------: | -----: | ----: | ------: | ----: | ----: | -----: | ----: | ------: | -------: | --------: | ---: | ----: | ---------: | ---------: | -----: |
-| EfficientNet-B5 |   0.987 |      1 | 0.989 |       1 | 0.998 | 0.998 |      1 | 0.996 |   0.981 |    0.994 |         1 | 0.98 |  0.95 |      0.919 |          1 |  0.999 |
+| Model   | Image AUROC | Image F1 | Pixel AUROC | Pixel AUPRO |
+| ------- | ----------- | -------- | ----------- | ----------- |
+| 01      |             |          |             |             |
+| 02      |             |          |             |             |
+| 03      |             |          |             |             |
+| Average |             |          |             |             |
 
-### Pixel AUROC - 768 Image Size
+## [Visa Dataset](https://github.com/amazon-science/spot-diff)
 
-|                 | Average | Carpet |  Grid | Leather |  Tile |  Wood | Bottle | Cable | Capsule | Hazelnut | Metal_nut | Pill | Screw | Toothbrush | Transistor | Zipper |
-| :-------------- | ------: | -----: | ----: | ------: | ----: | ----: | -----: | ----: | ------: | -------: | --------: | ---: | ----: | ---------: | ---------: | -----: |
-| EfficientNet-B5 |   0.921 |  0.936 | 0.878 |   0.917 | 0.872 | 0.782 |  0.889 | 0.935 |   0.961 |    0.957 |     0.953 | 0.95 | 0.947 |      0.951 |      0.974 |  0.919 |
-
-### Pixel F1Score - 768 Image Size
-
-|                 | Average | Carpet |  Grid | Leather | Tile |  Wood | Bottle | Cable | Capsule | Hazelnut | Metal_nut |  Pill | Screw | Toothbrush | Transistor | Zipper |
-| :-------------- | ------: | -----: | ----: | ------: | ---: | ----: | -----: | ----: | ------: | -------: | --------: | ----: | ----: | ---------: | ---------: | -----: |
-| EfficientNet-B5 |    0.33 |  0.219 | 0.104 |   0.144 | 0.41 | 0.211 |  0.357 | 0.375 |   0.333 |    0.375 |     0.689 | 0.458 | 0.094 |      0.342 |      0.597 |  0.238 |
-
-### Image F1 Score - 768 Image Size
-
-|                 | Average | Carpet |  Grid | Leather |  Tile |  Wood | Bottle | Cable | Capsule | Hazelnut | Metal_nut |  Pill | Screw | Toothbrush | Transistor | Zipper |
-| :-------------- | ------: | -----: | ----: | ------: | ----: | ----: | -----: | ----: | ------: | -------: | --------: | ----: | ----: | ---------: | ---------: | -----: |
-| EfficientNet-B5 |   0.985 |      1 | 0.991 |       1 | 0.988 | 0.992 |      1 | 0.973 |   0.977 |    0.979 |     0.995 | 0.975 | 0.975 |      0.952 |      0.988 |  0.996 |
-
-> For fair comparison with other algorithms, the following results are computed with image size of 256.
-
-### Image AUROC - 256 Image Size
-
-|                 | Average | Carpet |  Grid | Leather |  Tile |  Wood | Bottle | Cable | Capsule | Hazelnut | Metal_nut |  Pill | Screw | Toothbrush | Transistor | Zipper |
-| :-------------- | ------: | -----: | ----: | ------: | ----: | ----: | -----: | ----: | ------: | -------: | --------: | ----: | ----: | ---------: | ---------: | -----: |
-| EfficientNet-B5 |   0.972 |  0.995 | 0.982 |       1 | 0.972 | 0.988 |      1 |  0.97 |   0.907 |    0.995 |     0.972 | 0.953 | 0.896 |      0.969 |      0.987 |  0.987 |
-
-### Pixel AUROC - 256 Image Size
-
-|                 | Average | Carpet |  Grid | Leather |  Tile |  Wood | Bottle | Cable | Capsule | Hazelnut | Metal_nut | Pill | Screw | Toothbrush | Transistor | Zipper |
-| :-------------- | ------: | -----: | ----: | ------: | ----: | ----: | -----: | ----: | ------: | -------: | --------: | ---: | ----: | ---------: | ---------: | -----: |
-| EfficientNet B5 |   0.845 |  0.847 | 0.746 |   0.851 | 0.775 | 0.677 |  0.853 | 0.863 |   0.882 |    0.895 |     0.932 | 0.92 | 0.779 |      0.892 |       0.96 |  0.803 |
-
-### Pixel F1Score - 256 Image Size
-
-|                 | Average | Carpet |  Grid | Leather |  Tile |  Wood | Bottle | Cable | Capsule | Hazelnut | Metal_nut |  Pill | Screw | Toothbrush | Transistor | Zipper |
-| :-------------- | ------: | -----: | ----: | ------: | ----: | ----: | -----: | ----: | ------: | -------: | --------: | ----: | ----: | ---------: | ---------: | -----: |
-| EfficientNet B5 |   0.231 |  0.108 | 0.069 |   0.048 | 0.306 | 0.127 |  0.303 |  0.21 |   0.165 |    0.215 |     0.659 | 0.412 | 0.017 |      0.214 |      0.513 |  0.106 |
-
-### Image F1 Score - 256 Image Size
-
-|                 | Average | Carpet |  Grid | Leather |  Tile |  Wood | Bottle | Cable | Capsule | Hazelnut | Metal_nut |  Pill | Screw | Toothbrush | Transistor | Zipper |
-| :-------------- | ------: | -----: | ----: | ------: | ----: | ----: | -----: | ----: | ------: | -------: | --------: | ----: | ----: | ---------: | ---------: | -----: |
-| EfficientNet B5 |   0.965 |  0.983 | 0.982 |       1 | 0.957 | 0.966 |      1 | 0.945 |   0.944 |    0.986 |     0.963 | 0.965 | 0.906 |      0.949 |      0.938 |  0.987 |
-
-### Sample Results
-
-![Sample Result 1](../../../docs/source/images/csflow/results/0.png "Sample Result 1")
-
-![Sample Result 2](../../../docs/source/images/csflow/results/1.png "Sample Result 2")
-
-![Sample Result 3](../../../docs/source/images/csflow/results/2.png "Sample Result 3")
+| Model      | Image AUROC | Image F1 | Pixel AUROC | Pixel AUPRO |
+| ---------- | ----------- | -------- | ----------- | ----------- |
+| candle     |             |          |             |             |
+| capsules   |             |          |             |             |
+| cashew     |             |          |             |             |
+| chewinggum |             |          |             |             |
+| fryum      |             |          |             |             |
+| macaroni1  |             |          |             |             |
+| macaroni2  |             |          |             |             |
+| pcb1       |             |          |             |             |
+| pcb2       |             |          |             |             |
+| pcb3       |             |          |             |             |
+| pcb4       |             |          |             |             |
+| pipe_fryum |             |          |             |             |
+| Average    |             |          |             |             |

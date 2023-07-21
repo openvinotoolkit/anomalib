@@ -12,7 +12,7 @@ For optimal results, DRAEM requires specifying the path to a folder of image dat
 
 ## Architecture
 
-![DRAEM Architecture](../../../docs/source/images/draem/architecture.png "DRAEM Architecture")
+![DRAEM Architecture](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/draem/architecture.png "DRAEM Architecture")
 
 ## Usage
 
@@ -20,4 +20,52 @@ For optimal results, DRAEM requires specifying the path to a folder of image dat
 
 ## Benchmark
 
-Benchmarking results are not yet available for this algorithm. Please check again later.
+All results gathered with seed `42`.
+
+## [MVTec AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
+
+| Model      | Image AUROC | Image F1 | Pixel AUROC | Pixel AUPRO |
+| ---------- | ----------- | -------- | ----------- | ----------- |
+| Bottle     |             |          |             |             |
+| Cable      |             |          |             |             |
+| Capsule    |             |          |             |             |
+| Carpet     |             |          |             |             |
+| Grid       |             |          |             |             |
+| Hazelnut   |             |          |             |             |
+| Leather    |             |          |             |             |
+| Metal_nut  |             |          |             |             |
+| Pill       |             |          |             |             |
+| Screw      |             |          |             |             |
+| Tile       |             |          |             |             |
+| Toothbrush |             |          |             |             |
+| Transistor |             |          |             |             |
+| Wood       |             |          |             |             |
+| Zipper     |             |          |             |             |
+| Average    |             |          |             |             |
+
+## [BTAD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
+
+| Model   | Image AUROC | Image F1 | Pixel AUROC | Pixel AUPRO |
+| ------- | ----------- | -------- | ----------- | ----------- |
+| 01      |             |          |             |             |
+| 02      |             |          |             |             |
+| 03      |             |          |             |             |
+| Average |             |          |             |             |
+
+## [Visa Dataset](https://github.com/amazon-science/spot-diff)
+
+| Model      | Image AUROC | Image F1 | Pixel AUROC | Pixel AUPRO |
+| ---------- | ----------- | -------- | ----------- | ----------- |
+| candle     |             |          |             |             |
+| capsules   |             |          |             |             |
+| cashew     |             |          |             |             |
+| chewinggum |             |          |             |             |
+| fryum      |             |          |             |             |
+| macaroni1  |             |          |             |             |
+| macaroni2  |             |          |             |             |
+| pcb1       |             |          |             |             |
+| pcb2       |             |          |             |             |
+| pcb3       |             |          |             |             |
+| pcb4       |             |          |             |             |
+| pipe_fryum |             |          |             |             |
+| Average    |             |          |             |             |
