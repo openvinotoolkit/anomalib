@@ -12,7 +12,7 @@ The key idea here is that, during inference, when an anomalous image is passed t
 
 ## Architecture
 
-![GANomaly Architecture](../../../docs/source/images/ganomaly/architecture.jpg "GANomaly Architecture")
+![GANomaly Architecture](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/ganomaly/architecture.jpg "GANomaly Architecture")
 
 ## Usage
 
@@ -24,14 +24,48 @@ All results gathered with seed `42`.
 
 ## [MVTec AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 
-### Image-Level AUC
+| Model      | Image AUROC | Image F1 |
+| ---------- | ----------- | -------- |
+| Bottle     |             |          |
+| Cable      |             |          |
+| Capsule    |             |          |
+| Carpet     |             |          |
+| Grid       |             |          |
+| Hazelnut   |             |          |
+| Leather    |             |          |
+| Metal_nut  |             |          |
+| Pill       |             |          |
+| Screw      |             |          |
+| Tile       |             |          |
+| Toothbrush |             |          |
+| Transistor |             |          |
+| Wood       |             |          |
+| Zipper     |             |          |
+| Average    |             |          |
 
-|     |  Avg  | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
-| --- | :---: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
-|     | 0.421 | 0.203  | 0.404 |  0.413  | 0.408 | 0.744 | 0.251  | 0.457 |  0.682  |  0.537   |   0.270   | 0.472 | 0.231 |   0.372    |   0.440    | 0.434  |
+## [BTAD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 
-### Image F1 Score
+| Model   | Image AUROC | Image F1 |
+| ------- | ----------- | -------- |
+| 01      |             |          |
+| 02      |             |          |
+| 03      |             |          |
+| Average |             |          |
 
-|     |  Avg  | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
-| --- | :---: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
-|     | 0.834 | 0.864  | 0.844 |  0.852  | 0.836 | 0.863 | 0.863  | 0.760 |  0.905  |  0.777   |   0.894   | 0.916 | 0.853 |   0.833    |   0.571    | 0.881  |
+## [Visa Dataset](https://github.com/amazon-science/spot-diff)
+
+| Model      | Image AUROC | Image F1 |
+| ---------- | ----------- | -------- |
+| candle     |             |          |
+| capsules   |             |          |
+| cashew     |             |          |
+| chewinggum |             |          |
+| fryum      |             |          |
+| macaroni1  |             |          |
+| macaroni2  |             |          |
+| pcb1       |             |          |
+| pcb2       |             |          |
+| pcb3       |             |          |
+| pcb4       |             |          |
+| pipe_fryum |             |          |
+| Average    |             |          |
