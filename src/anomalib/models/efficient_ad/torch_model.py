@@ -24,6 +24,29 @@ def imagenet_norm_batch(x):
     return x_norm
 
 
+def reduce_tensor_elems(tensor: torch.Tensor, m=2**24) -> torch.Tensor:
+    """Flattens n-dimensional tensors,  selects m elements from it
+    and returns the selected elements as tensor. It is used to select
+    at most 2**24 for torch.quantile operation, as it is the maximum
+    supported number of elements.
+    https://github.com/pytorch/pytorch/blob/b9f81a483a7879cd3709fd26bcec5f1ee33577e6/aten/src/ATen/native/Sorting.cpp#L291
+
+    Args:
+        tensor (torch.Tensor): input tensor from which elements are selected
+        m (int): number of maximum tensor elements. Default: 2**24
+
+    Returns:
+            Tensor: reduced tensor
+    """
+    tensor = torch.flatten(tensor)
+    if len(tensor) > m:
+        # select a random subset with m elements.
+        perm = torch.randperm(len(tensor), device=tensor.device)
+        idx = perm[:m]
+        tensor = tensor[idx]
+    return tensor
+
+
 class EfficientAdModelSize(str, Enum):
     """Supported EfficientAd model sizes"""
 
@@ -123,7 +146,6 @@ class Decoder(nn.Module):
     def __init__(self, out_channels, padding, img_size, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.img_size = img_size
-        self.last_upsample = 64 if padding else 56
         self.last_upsample = int(img_size / 4) if padding else int(img_size / 4) - 8
         self.deconv1 = nn.Conv2d(64, 64, kernel_size=4, stride=1, padding=2)
         self.deconv2 = nn.Conv2d(64, 64, kernel_size=4, stride=1, padding=2)
@@ -188,8 +210,9 @@ class EfficientAdModel(nn.Module):
     """EfficientAd model.
 
     Args:
-        input_size (tuple): size of input images. Default: (256, 256)
-        teacher_out_channels (int): number of convolution output channels of the pre-trained teacher model. Default: 384
+        teacher_out_channels (int): number of convolution output channels of the pre-trained teacher model
+        pretrained_models_dir (str): path to the pretrained model weights
+        input_size (tuple): size of input images
         model_size (str): size of student and teacher model
         padding (bool): use padding in convoluional layers
         pad_maps (bool): relevant if padding is set to False. In this case, pad_maps = True pads the
@@ -199,8 +222,8 @@ class EfficientAdModel(nn.Module):
 
     def __init__(
         self,
-        input_size: tuple[int, int] = (256, 256),
-        teacher_out_channels: int = 384,
+        teacher_out_channels: int,
+        input_size: tuple[int, int],
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         padding=False,
         pad_maps=True,
@@ -255,8 +278,8 @@ class EfficientAdModel(nn.Module):
             transforms.functional.adjust_saturation,
         ]
         # Sample an augmentation coefficient λ from the uniform distribution U(0.8, 1.2)
-        coefficient = random.uniform(0.8, 1.2)
-        transform_function = random.choice(transform_functions)
+        coefficient = random.uniform(0.8, 1.2)  # nosec: B311
+        transform_function = random.choice(transform_functions)  # nosec: B311
         return transform_function(image, coefficient)
 
     def forward(self, batch: Tensor, batch_imagenet: Tensor = None) -> Tensor | dict:
@@ -278,6 +301,7 @@ class EfficientAdModel(nn.Module):
 
         if self.training:
             # Student loss
+            distance_st = reduce_tensor_elems(distance_st)
             d_hard = torch.quantile(distance_st, 0.999)
             loss_hard = torch.mean(distance_st[distance_st >= d_hard])
             student_output_penalty = self.student(batch_imagenet)[:, : self.teacher_out_channels, :, :]

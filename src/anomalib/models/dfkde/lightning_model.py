@@ -24,9 +24,8 @@ class Dfkde(AnomalyModule):
     """DFKDE: Deep Feature Kernel Density Estimation.
 
     Args:
-        backbone (str, optional): Pre-trained model backbone. Defaults to "resnet18".
-        layers (list[str], optional): List of layers to extract features from. Defaults to ["layer4"].
-        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone. Defaults to True.
+        backbone (str): Pre-trained model backbone.
+        pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         max_training_points (int, optional): Number of training points to fit the KDE model.
             Defaults to 40000.
         pre_processing (str, optional): Preprocess features before passing to KDE.
@@ -39,8 +38,8 @@ class Dfkde(AnomalyModule):
 
     def __init__(
         self,
-        backbone: str = "resnet18",
-        layers: list[str] = ["layer4"],
+        layers: list[str],
+        backbone: str,
         pre_trained: bool = True,
         n_pca_components: int = 16,
         feature_scaling_method: FeatureScalingMethod = FeatureScalingMethod.SCALE,
