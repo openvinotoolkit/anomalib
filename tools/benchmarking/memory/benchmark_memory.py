@@ -72,7 +72,7 @@ def run_mem_benchmark(args):
         # create csv file and write header
         with open(result_file_path, "w", encoding="utf-8", newline="") as f:
             writer = csv.writer(f, delimiter=",")
-            writer.writerow(["tracemalloc", "cuda", "psutil"])
+            writer.writerow(["tracemalloc", "cuda", "psutil_peak", "psutil_page_peak"])
 
         # repeat measurement for provided number of times
         for _ in tqdm(range(args.number)):

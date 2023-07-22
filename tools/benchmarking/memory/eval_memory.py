@@ -33,12 +33,14 @@ def benchmark(train_fn, args, csv_file):
     # get process peak memory (peak_wset work only on windows)
     p = psutil.Process()
     ps_peak = p.memory_info().peak_wset
+    ps_peak_page = p.memory_info().peak_pagefile
     psutil_peak_mb = round(ps_peak / 10**6, 3)
+    psutil_peak_page_mb = round(ps_peak_page / 10**6, 3)
 
     # write results to csv created by parent benchmark script
     with open(csv_file, "a", encoding="utf-8", newline="") as f:
         writer = csv.writer(f, delimiter=",")
-        writer.writerow([trml_peak_mb, cuda_mb, psutil_peak_mb])
+        writer.writerow([trml_peak_mb, cuda_mb, psutil_peak_mb, psutil_peak_page_mb])
         f.flush()
 
 
