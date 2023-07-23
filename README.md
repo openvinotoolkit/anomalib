@@ -291,11 +291,10 @@ For more details see the [Discussion forum](https://github.com/openvinotoolkit/a
 | Draem                |             |          |             |             |
 | Efficient AD         |             |          |             |             |
 | FastFlow             | 0.9653      | 0.9569   | 0.9723      | 0.8928      |
-| GANomaly             |             |          |             |             |
 | Padim                |             |          |             |             |
 | PatchCore            |             |          |             |             |
 | Reverse Distillation |             |          |             |             |
-| Stfpm                |             |          |             |             |
+| Stfpm                | 0.9037      | 0.9305   | 0.9553      | 0.8813      |
 
 ### [BTAD Dataset](https://github.com/pankajmishra000/VT-ADL)
 
