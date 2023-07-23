@@ -315,20 +315,20 @@ For more details see the [Discussion forum](https://github.com/openvinotoolkit/a
 
 ### [Visa Dataset](https://github.com/amazon-science/spot-diff)
 
-| Model                | Image AUROC | Image F1   | Pixel AUROC | Pixel AUPRO |
-| -------------------- | ----------- | ---------- | ----------- | ----------- |
-| Cfa                  |             |            |             |             |
-| CFlow                |             |            |             |             |
-| CsFlow               |             |            |             |             |
-| Dfkde                |             |            |             |             |
-| Dfm                  | 0.86385383  | 0.84523837 | 0.96729492  | 0.77898552  |
-| Draem                |             |            |             |             |
-| Efficient AD         |             |            |             |             |
-| FastFlow             | 0.9080      | 0.8659     | 0.9677      | 0.8293      |
-| Padim                |             |            |             |             |
-| PatchCore            |             |            |             |             |
-| Reverse Distillation |             |            |             |             |
-| Stfpm                | 0.9006      | 0.8693     | 0.9643      | 0.8608      |
+| Model                | Image AUROC | Image F1 | Pixel AUROC | Pixel AUPRO |
+| -------------------- | ----------- | -------- | ----------- | ----------- |
+| Cfa                  |             |          |             |             |
+| CFlow                |             |          |             |             |
+| CsFlow               |             |          |             |             |
+| Dfkde                |             |          |             |             |
+| Dfm                  | 0.8639      | 0.8452   | 0.9673      | 0.7790      |
+| Draem                |             |          |             |             |
+| Efficient AD         |             |          |             |             |
+| FastFlow             | 0.9080      | 0.8659   | 0.9677      | 0.8293      |
+| Padim                |             |          |             |             |
+| PatchCore            |             |          |             |             |
+| Reverse Distillation |             |          |             |             |
+| Stfpm                | 0.9006      | 0.8693   | 0.9643      | 0.8608      |
 
 ## Video Datasets
 
