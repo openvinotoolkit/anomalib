@@ -26,7 +26,7 @@ All results gathered with seed `42`.
 
 ## [MVTec AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 
-| Model      | Image AUROC | Image F1Score | Pixel AUROC | Pixel AUPRO |
+| Category   | Image AUROC | Image F1Score | Pixel AUROC | Pixel AUPRO |
 | ---------- | ----------- | ------------- | ----------- | ----------- |
 | bottle     | 0.9984      | 0.9920        | 0.9717      | 0.8778      |
 | pill       | 0.9536      | 0.9455        | 0.9703      | 0.8849      |
