@@ -39,6 +39,9 @@ class TorchFXFeatureExtractor(nn.Module):
             path for custom models.
         requires_grad (bool): Models like ``stfpm`` use the feature extractor for training. In such cases we should
             set ``requires_grad`` to ``True``. Default is ``False``.
+        tracer_kwargs (dict | None): a dictionary of keyword arguments for NodePathTracer (which passes them onto
+            it's parent class torch.fx.Tracer). Can be used to allow not tracing through a list of problematic
+            modules, by passing a list of `leaf_modules` as one of the `tracer_kwargs`.
 
     Example:
         With torchvision models:
