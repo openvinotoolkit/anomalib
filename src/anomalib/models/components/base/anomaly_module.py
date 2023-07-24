@@ -179,7 +179,7 @@ class AnomalyModule(pl.LightningModule, ABC):
             image_metric.update(output["pred_scores"], output["label"].int())
             if "mask" in output.keys() and "anomaly_maps" in output.keys():
                 pixel_metric.cpu()
-                pixel_metric.update(output["anomaly_maps"], output["mask"].int())
+                pixel_metric.update(torch.squeeze(output["anomaly_maps"]), torch.squeeze(output["mask"].int()))
 
     @staticmethod
     def _post_process(outputs: STEP_OUTPUT) -> None:
