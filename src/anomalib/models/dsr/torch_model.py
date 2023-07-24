@@ -152,7 +152,7 @@ class DsrModel(nn.Module):
                 out_mask_averaged = torch.nn.functional.avg_pool2d(
                     out_mask_sm[:, 1:, :, :], 21, stride=1, padding=21 // 2
                 ).detach()
-                image_score = torch.amax(out_mask_averaged, dim=(2, 3))
+                image_score = torch.amax(out_mask_averaged, dim=(2, 3)).squeeze()
 
                 out_mask_cv = out_mask_sm_up[:, 1, :, :]
 
