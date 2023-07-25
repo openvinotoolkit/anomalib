@@ -5,21 +5,25 @@
 
 from __future__ import annotations
 
+import logging
 import random
 import string
 from glob import glob
 from pathlib import Path
 
 import pandas as pd
-import wandb
 from comet_ml import Experiment
 from torch.utils.tensorboard.writer import SummaryWriter
+
+import wandb
+
+logger = logging.getLogger(__name__)
 
 
 def write_metrics(
     model_metrics: dict[str, str | float],
     writers: list[str],
-    folder: str | None = None,
+    folder: str,
 ):
     """Writes metrics to destination provided in the sweep config.
 
@@ -32,22 +36,26 @@ def write_metrics(
     if model_metrics == {} or model_metrics is None:
         return
 
+    result_folder = Path(folder)
     # Write to CSV
-    metrics_df = pd.DataFrame(model_metrics, index=[0])
-    result_folder = Path("runs") if folder is None else Path(f"runs/{folder}")
-    result_path = result_folder / f"{model_metrics['model_name']}_{model_metrics['device']}.csv"
-    Path.mkdir(result_path.parent, parents=True, exist_ok=True)
-    if not result_path.is_file():
-        metrics_df.to_csv(result_path)
-    else:
-        metrics_df.to_csv(result_path, mode="a", header=False)
+    try:
+        metrics_df = pd.DataFrame(model_metrics, index=[0])
+        result_path = result_folder / f"{model_metrics['model_name']}_{model_metrics['device']}.csv"
+        Path.mkdir(result_path.parent, parents=True, exist_ok=True)
+        if not result_path.is_file():
+            metrics_df.to_csv(result_path)
+        else:
+            metrics_df.to_csv(result_path, mode="a", header=False)
+    except Exception as exception:
+        logger.exception(f"Could not write to csv. Exception: {exception}")
 
     if "tensorboard" in writers:
-        write_to_tensorboard(model_metrics)
+        write_to_tensorboard(model_metrics, result_folder)
 
 
 def write_to_tensorboard(
     model_metrics: dict[str, str | float],
+    folder: Path,
 ):
     """Write model_metrics to tensorboard.
 
@@ -63,7 +71,7 @@ def write_to_tensorboard(
         else:
             string_metrics[key] = metric
             scalar_prefixes.append(metric)
-    writer = SummaryWriter(f"runs/{model_metrics['model_name']}_{model_metrics['device']}")
+    writer = SummaryWriter(folder / "tfevents")
     for key, metric in model_metrics.items():
         if isinstance(metric, (int, float, bool)):
             scalar_metrics[key.replace(".", "/")] = metric  # need to join by / for tensorboard grouping
