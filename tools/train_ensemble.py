@@ -71,11 +71,13 @@ def train(args: Namespace):
     if args.log_level == "ERROR":
         warnings.filterwarnings("ignore")
 
+    # TODO: refactor into ensemble suitable
     config = get_configurable_parameters(model_name=args.model, config_path=args.config)
     if config.project.get("seed") is not None:
         seed_everything(config.project.seed)
 
     config = update_ensemble_input_size_config(config)
+    # TODO: refactor where it accepts config
     tiler = EnsembleTiler(
         tile_size=config.dataset.tiling.tile_size,
         stride=config.dataset.tiling.stride,
@@ -86,6 +88,7 @@ def train(args: Namespace):
     experiment_logger = get_experiment_logger(config)
 
     # prepare datamodule and set collate function that performs tiling
+    # TODO: refactor into one function
     datamodule = get_datamodule(config)
     tile_collater = TileCollater(tiler, (0, 0))
     datamodule.custom_collate_fn = tile_collater
@@ -100,6 +103,7 @@ def train(args: Namespace):
     for tile_index in product(range(tiler.num_patches_h), range(tiler.num_patches_w)):
         logger.info(f"Start of procedure for tile {tile_index}")
 
+        # TODO: refactor into separate function
         # configure callbacks for ensemble
         callbacks = get_callbacks(config)
         ensemble_callbacks = []
@@ -129,6 +133,10 @@ def train(args: Namespace):
         if validation_predictions:
             current_val_predictions = trainer.predict(model=model, dataloaders=datamodule.val_dataloader())
             validation_predictions.add_tile_prediction(tile_index, current_val_predictions)
+
+    # TODO: refactor into pipeline
+    # stats: (data) -> joiner, post, stats -> img_t, pxl_t, min, max
+    # final: (data, stats) -> joiner, post, thresh, norm, visual, metric
 
     # get normalization and threshold
     if not validation_predictions:

@@ -36,7 +36,13 @@ class EnsemblePostProcessPipeline:
 
 
 class PostProcessStats:
-    def __init__(self, prediction_joiner: EnsemblePredictionJoiner):
+    """
+    Class used to obtain threshold and normalization statistics.
+
+    Args:
+        prediction_joiner: class used to join tiled data, already containing predictions. #TODO: refactor pipeline
+    """
+    def __init__(self, prediction_joiner: EnsemblePredictionJoiner) -> None:
         self.image_threshold = AnomalyScoreThreshold().cpu()
         self.pixel_threshold = AnomalyScoreThreshold().cpu()
         self.pixel_update_called = False
@@ -44,7 +50,13 @@ class PostProcessStats:
         self.minmax = MinMax().cpu()
         self.joiner = prediction_joiner
 
-    def _update(self, output: Any):
+    def _update(self, output: Any) -> None:
+        """
+        Add current data to statistics accumulator.
+
+        Args:
+            output: Prediction data.
+        """
         if "anomaly_maps" in output:
             self.minmax(output["anomaly_maps"])
         elif "box_scores" in output:
@@ -60,6 +72,10 @@ class PostProcessStats:
             self.pixel_update_called = True
 
     def compute(self) -> None:
+        """
+        At the end, compute actual values from all input data.
+
+        """
 
         for batch_index in range(self.joiner.ensemble_predictions.num_batches):
             joined_batch = self.joiner.join_tile_predictions(batch_index=batch_index)
