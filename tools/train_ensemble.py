@@ -20,9 +20,11 @@ from tqdm import tqdm
 
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
-from anomalib.data.utils import TestSplitMode
+from anomalib.data.utils import TestSplitMode, ValSplitMode
 from anomalib.models import get_model
-from anomalib.utils.callbacks import get_callbacks, LoadModelCallback, ImageVisualizerCallback, MetricVisualizerCallback
+from anomalib.models.ensemble.ensemble_postprocess import PostProcessStats
+from anomalib.utils.callbacks import get_callbacks, LoadModelCallback, ImageVisualizerCallback, \
+    MetricVisualizerCallback, MinMaxNormalizationCallback
 from anomalib.utils.loggers import configure_logger, get_experiment_logger
 
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
@@ -81,26 +83,39 @@ def train(args: Namespace):
         remove_border_count=config.dataset.tiling.remove_border_count,
     )
 
+    experiment_logger = get_experiment_logger(config)
+
+    # prepare datamodule and set collate function that performs tiling
+    datamodule = get_datamodule(config)
+    tile_collater = TileCollater(tiler, (0, 0))
+    datamodule.custom_collate_fn = tile_collater
+
     ensemble_predictions = BasicEnsemblePredictions()
+    if config.dataset.val_split_mode == ValSplitMode.SAME_AS_TEST:
+        validation_predictions = None
+    else:
+        validation_predictions = BasicEnsemblePredictions()
 
     # go over all tile positions and train
     for tile_index in product(range(tiler.num_patches_h), range(tiler.num_patches_w)):
         logger.info(f"Start of procedure for tile {tile_index}")
-        datamodule = get_datamodule(config)
 
-        datamodule.custom_collate_fn = TileCollater(tiler, tile_index)
-
-        model = get_model(config)
-        experiment_logger = get_experiment_logger(config)
+        # configure callbacks for ensemble
         callbacks = get_callbacks(config)
-
         ensemble_callbacks = []
         # temporary removing for ensemble
         for callback in callbacks:
-            if not isinstance(callback, (ImageVisualizerCallback, MetricVisualizerCallback)):
+            if not isinstance(callback, (ImageVisualizerCallback,
+                                         MetricVisualizerCallback,
+                                         MinMaxNormalizationCallback)):
                 ensemble_callbacks.append(callback)
 
-        trainer = Trainer(**config.trainer, logger=experiment_logger, callbacks=ensemble_callbacks)
+        # set tile position inside dataloader
+        tile_collater.tile_index = tile_index
+
+        model = get_model(config)
+
+        trainer = Trainer(**config.trainer, logger=experiment_logger, callbacks=ensemble_callbacks.copy())
         logger.info("Training the model.")
         trainer.fit(model=model, datamodule=datamodule)
 
@@ -108,14 +123,19 @@ def train(args: Namespace):
         load_model_callback = LoadModelCallback(weights_path=trainer.checkpoint_callback.best_model_path)
         trainer.callbacks.insert(0, load_model_callback)  # pylint: disable=no-member
 
-        predictions = trainer.predict(model=model, datamodule=datamodule)
-        ensemble_predictions.add_tile_prediction(tile_index, predictions)
+        current_predictions = trainer.predict(model=model, datamodule=datamodule)
+        ensemble_predictions.add_tile_prediction(tile_index, current_predictions)
 
-    #        if config.dataset.test_split_mode == TestSplitMode.NONE:
-    #            logger.info("No test set provided. Skipping test stage.")
-    #        else:
-    #            logger.info("Testing the model.")
-    #            trainer.test(model=model, datamodule=datamodule)
+        if validation_predictions:
+            current_val_predictions = trainer.predict(model=model, dataloaders=datamodule.val_dataloader())
+            validation_predictions.add_tile_prediction(tile_index, current_val_predictions)
+
+    # get normalization and threshold
+    if not validation_predictions:
+        validation_predictions = ensemble_predictions
+    val_joiner = BasicPredictionJoiner(validation_predictions, tiler)
+    post_process_stats = PostProcessStats(val_joiner)
+    post_process_stats.compute()
 
     joiner = BasicPredictionJoiner(ensemble_predictions, tiler)
     metrics = EnsembleMetrics(config, 0.5, 0.5)
@@ -124,6 +144,10 @@ def train(args: Namespace):
     for batch_index in tqdm(range(ensemble_predictions.num_batches)):
         logger.info("Joining predictions")
         joined_batch = joiner.join_tile_predictions(batch_index)
+
+        # post_process
+        # normalize
+        # threshold
 
         logger.info("Updating metrics.")
         metrics.update_metrics(joined_batch)
