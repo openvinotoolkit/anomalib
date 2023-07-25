@@ -26,22 +26,22 @@ All results gathered with seed `42`.
 
 | Model      | Image AUROC | Image F1 | Pixel AUROC | Pixel AUPRO |
 | ---------- | ----------- | -------- | ----------- | ----------- |
-| Bottle     |             |          |             |             |
-| Cable      |             |          |             |             |
-| Capsule    |             |          |             |             |
-| Carpet     |             |          |             |             |
-| Grid       |             |          |             |             |
-| Hazelnut   |             |          |             |             |
-| Leather    |             |          |             |             |
-| Metal_nut  |             |          |             |             |
-| Pill       |             |          |             |             |
-| Screw      |             |          |             |             |
-| Tile       |             |          |             |             |
-| Toothbrush |             |          |             |             |
-| Transistor |             |          |             |             |
-| Wood       |             |          |             |             |
-| Zipper     |             |          |             |             |
-| Average    |             |          |             |             |
+| Bottle     | 1.0000      | 1.0000   | 0.9796      | 0.9207      |
+| Cable      | 0.9871      | 0.9783   | 0.9795      | 0.9036      |
+| Capsule    | 0.9761      | 0.9774   | 0.9873      | 0.9187      |
+| Carpet     | 0.9779      | 0.9714   | 0.9866      | 0.9279      |
+| Grid       | 0.9724      | 0.9649   | 0.9790      | 0.8986      |
+| Hazelnut   | 1.0000      | 1.0000   | 0.9841      | 0.9429      |
+| Leather    | 1.0000      | 1.0000   | 0.9884      | 0.9630      |
+| Metal_nut  | 0.9971      | 0.9892   | 0.9844      | 0.9154      |
+| Pill       | 0.9370      | 0.9534   | 0.9736      | 0.9365      |
+| Screw      | 0.9762      | 0.9661   | 0.9908      | 0.9423      |
+| Tile       | 0.9874      | 0.9880   | 0.9471      | 0.7902      |
+| Toothbrush | 1.0000      | 1.0000   | 0.9866      | 0.8594      |
+| Transistor | 1.0000      | 1.0000   | 0.9648      | 0.9378      |
+| Wood       | 0.9930      | 0.9831   | 0.9310      | 0.8441      |
+| Zipper     | 0.9937      | 0.9874   | 0.9799      | 0.9216      |
+| Average    | 0.9865      | 0.9839   | 0.9762      | 0.9082      |
 
 ## [BTAD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 

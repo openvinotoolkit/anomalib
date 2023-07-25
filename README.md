@@ -292,8 +292,8 @@ For more details see the [Discussion forum](https://github.com/openvinotoolkit/a
 | Efficient AD         |             |          |             |             |
 | FastFlow             |             |          |             |             |
 | GANomaly             |             |          |             |             |
-| Padim                |             |          |             |             |
-| PatchCore            |             |          |             |             |
+| Padim                | 0.8915      | 0.9162   | 0.9684      | 0.9163      |
+| PatchCore            | 0.9865      | 0.9839   | 0.9762      | 0.9082      |
 | Reverse Distillation |             |          |             |             |
 | Stfpm                |             |          |             |             |
 
