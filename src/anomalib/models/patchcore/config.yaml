@@ -41,8 +41,8 @@ metrics:
     - F1Score
     - AUROC
   pixel:
-    - F1Score
     - AUROC
+    - AUPRO
   threshold:
     method: adaptive #options: [adaptive, manual]
     manual_image: null
@@ -56,7 +56,7 @@ visualization:
   mode: full # options: ["full", "simple"]
 
 project:
-  seed: 0
+  seed: 42
   path: ./results
 
 logging:
