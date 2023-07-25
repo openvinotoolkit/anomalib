@@ -292,8 +292,8 @@ For more details see the [Discussion forum](https://github.com/openvinotoolkit/a
 | Efficient AD         |             |          |             |             |
 | FastFlow             |             |          |             |             |
 | GANomaly             |             |          |             |             |
-| Padim                | 0.8915      | 0.9162   | 0.9684      | 0.9163      |
-| PatchCore            | 0.9865      | 0.9839   | 0.9762      | 0.9082      |
+| Padim                | 0.892       | 0.916    | 0.968       | 0.916       |
+| PatchCore            | 0.987       | 0.984    | 0.976       | 0.908       |
 | Reverse Distillation |             |          |             |             |
 | Stfpm                |             |          |             |             |
 
@@ -310,8 +310,8 @@ For more details see the [Discussion forum](https://github.com/openvinotoolkit/a
 | Efficient AD         |             |          |             |             |
 | FastFlow             |             |          |             |             |
 | GANomaly             |             |          |             |             |
-| Padim                | 0.9443      | 0.8936   | 0.9740      | 0.7851      |
-| PatchCore            | 0.9302      | 0.9626   | 0.9689      | 0.7207      |
+| Padim                | 0.944       | 0.894    | 0.974       | 0.785       |
+| PatchCore            | 0.930       | 0.963    | 0.969       | 0.721       |
 | Reverse Distillation |             |          |             |             |
 | Stfpm                |             |          |             |             |
 
@@ -328,8 +328,8 @@ For more details see the [Discussion forum](https://github.com/openvinotoolkit/a
 | Efficient AD         |             |          |             |             |
 | FastFlow             |             |          |             |             |
 | GANomaly             |             |          |             |             |
-| Padim                | 0.8295      | 0.8263   | 0.9729      | 0.8129      |
-| PatchCore            | 0.9117      | 0.8831   | 0.9800      | 0.8522      |
+| Padim                | 0.830       | 0.826    | 0.973       | 0.813       |
+| PatchCore            | 0.912       | 0.883    | 0.980       | 0.852       |
 | Reverse Distillation |             |          |             |             |
 | Stfpm                |             |          |             |             |
 
