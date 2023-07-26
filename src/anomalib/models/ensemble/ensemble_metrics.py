@@ -4,16 +4,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+from typing import Any
 
 from omegaconf import DictConfig, ListConfig
 
 from anomalib.data import TaskType
+from anomalib.models.ensemble.ensemble_postprocess import EnsemblePostProcess
 from anomalib.utils.metrics import AnomalibMetricCollection, create_metric_collection
 
 logger = logging.getLogger(__name__)
 
 
-class EnsembleMetrics:
+class EnsembleMetrics(EnsemblePostProcess):
     """
     Args:
         config: Configurable parameters object.
@@ -22,6 +24,8 @@ class EnsembleMetrics:
     """
 
     def __init__(self, config: DictConfig | ListConfig, image_threshold: float, pixel_threshold: float):
+        super().__init__(final_compute=True, name="metrics")
+
         self.image_metrics, self.pixel_metrics = self.configure_ensemble_metrics(
             config.dataset.task,
             config.metrics.get("image", None),
@@ -71,7 +75,7 @@ class EnsembleMetrics:
 
         return image_metrics, pixel_metrics
 
-    def update_metrics(self, batch_results: dict) -> None:
+    def process(self, batch_results: dict) -> None:
         """
         Compute metrics specified in config for given ensemble results.
 
@@ -83,13 +87,30 @@ class EnsembleMetrics:
         if "mask" in batch_results.keys() and "anomaly_maps" in batch_results.keys():
             self.pixel_metrics.update(batch_results["anomaly_maps"], batch_results["mask"].int())
 
-    def compute_metrics(self) -> None:
+    def compute(self) -> Any:
         """
         Compute metrics for entire ensemble.
+
+        Returns:
+            Dictionary containing calculated metric data.
         """
-        for name, val in self.image_metrics.items():
-            print(f"{name}: {val.compute()}")
+        out = {}
+        for name, metric in self.image_metrics.items():
+            out[name] = metric.compute().item()
 
         if self.pixel_metrics.update_called:
-            for name, val in self.pixel_metrics.items():
-                print(f"{name}: {val.compute()}")
+            for name, metric in self.pixel_metrics.items():
+                out[name] = metric.compute().item()
+
+        return out
+
+
+def log_metrics(metric_dict: dict[str, float]) -> None:
+    """
+    Log computed metrics.
+
+    Args:
+        metric_dict: Dictionary containing all metrics info.
+    """
+    for name, value in metric_dict.items():
+        logger.info(f"{name}: {value}")

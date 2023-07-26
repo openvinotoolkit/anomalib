@@ -39,8 +39,7 @@ from anomalib.models.ensemble.ensemble_prediction_data import (
     FileSystemEnsemblePredictions,
     RescaledEnsemblePredictions,
 )
-from anomalib.models.ensemble.ensemble_metrics import EnsembleMetrics
-
+from anomalib.models.ensemble.ensemble_metrics import EnsembleMetrics, log_metrics
 
 logger = logging.getLogger("anomalib")
 
@@ -160,13 +159,15 @@ def train(args: Namespace):
         # threshold
 
         logger.info("Updating metrics.")
-        metrics.update_metrics(joined_batch)
+        metrics.process(joined_batch)
 
         logger.info("Visualizing the results.")
         visualize_results(joined_batch, config)
 
     logger.info("Computing metrics for all data.")
-    metrics.compute_metrics()
+    computed_metrics = metrics.compute()
+
+    log_metrics(computed_metrics)
 
 
 if __name__ == "__main__":
