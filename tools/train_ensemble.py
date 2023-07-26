@@ -110,8 +110,7 @@ def train(args: Namespace):
         # temporary removing for ensemble
         for callback in callbacks:
             if not isinstance(callback, (ImageVisualizerCallback,
-                                         MetricVisualizerCallback,
-                                         MinMaxNormalizationCallback)):
+                                         MetricVisualizerCallback,)):
                 ensemble_callbacks.append(callback)
 
         # set tile position inside dataloader
@@ -138,18 +137,22 @@ def train(args: Namespace):
     # stats: (data) -> joiner, post, stats -> img_t, pxl_t, min, max
     # final: (data, stats) -> joiner, post, thresh, norm, visual, metric
 
+    joiner = BasicPredictionJoiner(tiler)
+
     # get normalization and threshold
-    if not validation_predictions:
-        validation_predictions = ensemble_predictions
-    val_joiner = BasicPredictionJoiner(validation_predictions, tiler)
-    post_process_stats = PostProcessStats(val_joiner)
+    if validation_predictions:
+        joiner.setup(validation_predictions)
+    else:
+        joiner.setup(ensemble_predictions)
+
+    post_process_stats = PostProcessStats(joiner)
     post_process_stats.compute()
 
-    joiner = BasicPredictionJoiner(ensemble_predictions, tiler)
     metrics = EnsembleMetrics(config, 0.5, 0.5)
 
+    joiner.setup(ensemble_predictions)
     logger.info("Processing predictions for all batches.")
-    for batch_index in tqdm(range(ensemble_predictions.num_batches)):
+    for batch_index in tqdm(range(joiner.num_batches)):
         logger.info("Joining predictions")
         joined_batch = joiner.join_tile_predictions(batch_index)
 

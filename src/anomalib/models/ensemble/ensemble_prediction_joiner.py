@@ -18,18 +18,29 @@ class EnsemblePredictionJoiner(ABC):
     Override methods to change how joining is done.
 
     Args:
-        ensemble_predictions: Dictionary containing batched predictions for each tile.
         tiler: Tiler used to transform tiles back to image level representation.
     """
 
-    def __init__(self, ensemble_predictions: EnsemblePredictions, tiler: EnsembleTiler) -> None:
+    def __init__(self, tiler: EnsembleTiler) -> None:
+        self.tiler = tiler
+
+        self.ensemble_predictions = None
+        self.num_batches = 0
+
+    def setup(self, ensemble_predictions: EnsemblePredictions) -> None:
+        """
+        Prepare the joiner for given prediction data.
+
+        Args:
+            ensemble_predictions: Dictionary containing batched predictions for each tile.
+        """
         assert ensemble_predictions.num_batches > 0, "There should be at least one batch for each tile prediction."
         assert (0, 0) in ensemble_predictions.get_batch_tiles(
             0
         ), "Tile prediction dictionary should always have at least one tile"
 
         self.ensemble_predictions = ensemble_predictions
-        self.tiler = tiler
+        self.num_batches = self.ensemble_predictions.num_batches
 
     def join_tiles(self, batch_data: dict, tile_key: str) -> Tensor:
         """
