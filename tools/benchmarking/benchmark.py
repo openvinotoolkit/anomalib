@@ -10,7 +10,7 @@ from pathlib import Path
 
 # E402 Module level import not at top of file. Disabled as we need to redirect all outputs during the runs.
 # ruff: noqa: E402
-
+# pylint: disable=wrong-import-position
 
 # File cannot be unique because if we create a unique name based on time,
 # each process will create a new file
@@ -45,7 +45,7 @@ from typing import cast
 import torch
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning import Trainer, seed_everything
-from rich import print
+from rich import print  # pylint: disable=W0622 | disable redefine print warning
 from rich.console import Console
 from rich.progress import Progress, TaskID
 from rich.table import Table
@@ -99,8 +99,12 @@ def redirect_output(func):
             logger.info(value)
         except Exception as exp:
             logger.exception(
-                f"Error occurred while computing benchmark {exp}. Buffer: {buf.getvalue()}."
-                f"\n Method {func}, args {args}, kwargs {kwargs}"
+                "Error occurred while computing benchmark %s. Buffer: %s." "\n Method %s, args %s, kwargs %s",
+                exp,
+                buf.getvalue(),
+                func,
+                args,
+                kwargs,
             )
             value = ""
         sys.stdout = std_out
@@ -165,58 +169,6 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig) -> dict:
             data[key] = float(val)
 
     return data
-
-
-def compute_on_gpu(
-    run_configs: list[DictConfig],
-    device: int,
-    seed: int,
-    writers: list[str],
-    folder: str,
-    compute_openvino: bool = False,
-):
-    """Go over each run config and collect the result.
-
-    Args:
-        run_configs (DictConfig | ListConfig): List of run configurations.
-        device (int): The GPU id used for running the sweep.
-        seed (int): Fix a seed.
-        writers (list[str]): Destinations to write to.
-        folder (optional, str): Sub-directory to which runs are written to. Defaults to None. If none writes to root.
-        compute_openvino (bool, optional): Compute OpenVINO throughput. Defaults to False.
-    """
-    for run_config in run_configs:
-        if isinstance(run_config, (DictConfig, ListConfig)):
-            model_metrics = sweep(run_config, device, seed, compute_openvino)
-            write_metrics(model_metrics, writers, folder)
-        else:
-            raise ValueError(
-                f"Expecting `run_config` of type DictConfig or ListConfig. Got {type(run_config)} instead."
-            )
-
-
-def distribute_over_gpus(sweep_config: DictConfig | ListConfig, folder: str):
-    """Distribute metric collection over all available GPUs. This is done by splitting the list of configurations."""
-    with ProcessPoolExecutor(max_workers=1, mp_context=multiprocessing.get_context("spawn")) as executor:
-        run_configs = list(get_run_config(sweep_config.grid_search))
-        jobs = []
-        for device_id, run_split in enumerate(range(0, len(run_configs), math.ceil(len(run_configs) / 1))):
-            jobs.append(
-                executor.submit(
-                    compute_on_gpu,
-                    run_configs[run_split : run_split + math.ceil(len(run_configs) / 1)],
-                    device_id + 1,
-                    sweep_config.seed,
-                    sweep_config.writer,
-                    folder,
-                    sweep_config.compute_openvino,
-                )
-            )
-        for job in jobs:
-            try:
-                job.result()
-            except Exception as exc:
-                raise Exception(f"Error occurred while computing benchmark on GPU {job}") from exc
 
 
 def sweep(
@@ -359,8 +311,11 @@ class Benchmark:
                 progress[str(task_id)] = {"completed": idx + 1, "total": len(run_configs)}
             except Exception as exception:
                 logger.exception(
-                    f"Error occurred while computing benchmark on GPU {device} with config {config}, {exception}"
-                    f"\nLocals {locals()}"
+                    "Error occurred while computing benchmark on GPU %d with config %s, %s" "\nLocals %s",
+                    device,
+                    config,
+                    exception,
+                    locals(),
                 )
         # convert list of dicts to dict of lists
         return {key: [dic[key] for dic in result] for key in result[0]}
@@ -403,7 +358,7 @@ class Benchmark:
                             results.append(job.result())
                         except Exception as exception:
                             logger.exception(
-                                f"Error occurred while collecting benchmark {exception}\nLocals {locals()}"
+                                "Error occurred while collecting benchmark %s\nLocals %s", exception, locals()
                             )
 
                     try:
@@ -414,7 +369,7 @@ class Benchmark:
                                 result[key].extend(value)
                     except Exception as exception:
                         logger.exception(
-                            f"Error occurred while merging benchmark results {exception}\nResult {results}"
+                            "Error occurred while merging benchmark results %s\nResult %s", exception, results
                         )
                         status = Status.FAILED
 
@@ -427,16 +382,16 @@ class Benchmark:
                 table.add_row(*[str(value) for value in row])
             console.print(table)
         except Exception as exception:
-            logger.exception(f"Error occurred while printing benchmarking results {exception}. Result: {result}")
+            logger.exception("Error occurred while printing benchmarking results %s. Result: %s", exception, result)
             status = Status.FAILED
         return status
 
     def run(self):
         """Run the benchmarking."""
         logger.info(
-            f"\n{'-'*120}\n"
-            f"Starting benchmarking. {datetime.strftime(datetime.now(), '%Y %m %d-%H %M %S')}"
-            f"\nDistributing benchmark collection over {self.n_gpus} GPUs."
+            "\n%s\n" "Starting benchmarking. %s" "\nDistributing benchmark collection over {self.n_gpus} GPUs.",
+            "-" * 120,
+            datetime.strftime(datetime.now(), "%Y %m %d-%H %M %S"),
         )
         if not torch.cuda.is_available():
             logger.warning("Could not detect any cuda enabled devices")
@@ -451,7 +406,7 @@ class Benchmark:
                 upload_to_wandb(team="anomalib", folder=self.runs_folder)
             if "comet" in self.config.writer:
                 upload_to_comet(folder=self.runs_folder)
-        logger.info("Benchmarking complete" f"\n{'-'*120}")
+        logger.info("Benchmarking complete \n%s", "-" * 120)
 
 
 if __name__ == "__main__":
