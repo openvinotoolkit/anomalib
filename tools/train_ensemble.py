@@ -20,12 +20,23 @@ from tqdm import tqdm
 
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
-from anomalib.data.utils import TestSplitMode, ValSplitMode
+from anomalib.data.utils import ValSplitMode
 from anomalib.models import get_model
-from anomalib.models.ensemble.ensemble_postprocess import PostProcessStats, EnsemblePostProcessPipeline, SmoothJoins
+from anomalib.models.ensemble.ensemble_postprocess import (
+    PostProcessStats,
+    EnsemblePostProcessPipeline,
+    SmoothJoins,
+    MinMaxNormalize,
+    Threshold,
+)
 from anomalib.models.ensemble.ensemble_visualization import EnsembleVisualization
-from anomalib.utils.callbacks import get_callbacks, LoadModelCallback, ImageVisualizerCallback, \
-    MetricVisualizerCallback, MinMaxNormalizationCallback
+from anomalib.utils.callbacks import (
+    get_callbacks,
+    LoadModelCallback,
+    ImageVisualizerCallback,
+    MetricVisualizerCallback,
+    MinMaxNormalizationCallback,
+)
 from anomalib.utils.loggers import configure_logger, get_experiment_logger
 
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
@@ -108,8 +119,13 @@ def train(args: Namespace):
         ensemble_callbacks = []
         # temporary removing for ensemble
         for callback in callbacks:
-            if not isinstance(callback, (ImageVisualizerCallback,
-                                         MetricVisualizerCallback,)):
+            if not isinstance(
+                callback,
+                (
+                    ImageVisualizerCallback,
+                    MetricVisualizerCallback,
+                ),
+            ):
                 ensemble_callbacks.append(callback)
 
         # set tile position inside dataloader
@@ -132,10 +148,6 @@ def train(args: Namespace):
             current_val_predictions = trainer.predict(model=model, dataloaders=datamodule.val_dataloader())
             validation_predictions.add_tile_prediction(tile_index, current_val_predictions)
 
-    # TODO: refactor into pipeline
-    # stats: (data) -> joiner, post, stats -> img_t, pxl_t, min, max
-    # final: (data, stats) -> joiner, post, thresh, norm, visual, metric
-
     joiner = BasicPredictionJoiner(tiler)
 
     if not validation_predictions:
@@ -144,29 +156,21 @@ def train(args: Namespace):
     # get normalization and threshold
     stats_pipeline = EnsemblePostProcessPipeline(validation_predictions, joiner)
     stats_pipeline.add_steps([SmoothJoins(), PostProcessStats()])
-    stats = stats_pipeline.execute()
+    stats = stats_pipeline.execute()["stats"]
 
-    metrics = EnsembleMetrics(config, 0.5, 0.5)
-    visualizer = EnsembleVisualization(config)
-
-    joiner.setup(ensemble_predictions)
-    logger.info("Processing predictions for all batches.")
-    for batch_index in tqdm(range(joiner.num_batches)):
-        logger.info("Joining predictions")
-        joined_batch = joiner.join_tile_predictions(batch_index)
-
-        # post_process
-        # normalize
-        # threshold
-
-        logger.info("Updating metrics.")
-        metrics.process(joined_batch)
-
-        logger.info("Visualizing the results.")
-        visualizer.process(joined_batch)
-
-    logger.info("Computing metrics for all data.")
-    computed_metrics = metrics.compute()
+    # build postprocess, visualization and metric pipeline
+    post_pipeline = EnsemblePostProcessPipeline(ensemble_predictions, joiner)
+    post_pipeline.add_steps(
+        [
+            SmoothJoins(),
+            MinMaxNormalize(stats),
+            Threshold(0.5, 0.5),
+            EnsembleVisualization(config),
+            EnsembleMetrics(config, 0.5, 0.5),
+        ]
+    )
+    # execute pipeline and take metric results
+    computed_metrics = post_pipeline.execute()["metrics"]
 
     log_metrics(computed_metrics)
 

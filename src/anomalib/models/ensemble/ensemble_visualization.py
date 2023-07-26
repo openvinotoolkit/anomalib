@@ -18,6 +18,7 @@ class EnsembleVisualization(EnsemblePostProcess):
     Args:
         config: Configurable parameters object, used to set up visualization.
     """
+
     def __init__(self, config: DictConfig | ListConfig):
         super().__init__(final_compute=False, name="visualize")
         self.visualizer = Visualizer(mode=config.visualization.mode, task=config.dataset.task)
@@ -28,10 +29,10 @@ class EnsembleVisualization(EnsemblePostProcess):
         image_save_path = config.visualization.image_save_path or config.project.path + "/images"
         self.image_save_path = Path(image_save_path)
 
-    def process(self, prediction_batch: dict, ) -> None:
+    def process(self, prediction_batch: dict) -> dict:
         """
         Visualize joined predictions using Visualizer class.
-    
+
         Args:
             prediction_batch: Batch of predictions.
         """
@@ -42,3 +43,5 @@ class EnsembleVisualization(EnsemblePostProcess):
                 self.visualizer.save(file_path, image)
             if self.show:
                 self.visualizer.show(str(filename), image)
+
+        return prediction_batch

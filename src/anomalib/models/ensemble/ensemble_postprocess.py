@@ -25,6 +25,7 @@ class EnsemblePostProcess(ABC):
         final_compute: Flag if this block produces values that are computed at the end.
         name: Name of block, that will be used in pipeline output dictionary.
     """
+
     def __init__(self, final_compute: bool, name: str) -> None:
         self.final_compute = final_compute
         self.name = name
@@ -56,8 +57,9 @@ class SmoothJoins(EnsemblePostProcess):
     Smooth the regions where tiles join in ensemble.
 
     """
+
     def __init__(self):
-        super().__init__(final_compute=False, name="SmoothJoins")
+        super().__init__(final_compute=False, name="smooth_joins")
 
 
 class MinMaxNormalize(EnsemblePostProcess):
@@ -67,8 +69,9 @@ class MinMaxNormalize(EnsemblePostProcess):
     Args:
         stats: dictionary containing statistics used for normalization (min, max, image threshold, pixel threshold).
     """
+
     def __init__(self, stats: dict[str, float]):
-        super().__init__(final_compute=False, name="Normalize")
+        super().__init__(final_compute=False, name="minmax_normalize")
 
 
 class Threshold(EnsemblePostProcess):
@@ -79,8 +82,9 @@ class Threshold(EnsemblePostProcess):
         image_threshold: Threshold used for image-level thresholding.
         pixel_threshold: Threshold used for pixel-level thresholding.
     """
+
     def __init__(self, image_threshold: float, pixel_threshold: float):
-        super().__init__(final_compute=False, name="Threshold")
+        super().__init__(final_compute=False, name="threshold")
 
 
 class PostProcessStats(EnsemblePostProcess):
@@ -88,8 +92,9 @@ class PostProcessStats(EnsemblePostProcess):
     Class used to obtain threshold and normalization statistics: (min, max, image threshold, pixel threshold).
 
     """
+
     def __init__(self):
-        super().__init__(final_compute=True, name="PostProcess stats")
+        super().__init__(final_compute=True, name="stats")
 
         # adaptive threshold used for image and pixel level thresholding.
         self.image_threshold = AnomalyScoreThreshold().cpu()
@@ -139,7 +144,7 @@ class PostProcessStats(EnsemblePostProcess):
             "min": self.minmax.min.item(),
             "max": self.minmax.max.item(),
             "image_threshold": self.image_threshold.value.item(),
-            "pixel_threshold": self.pixel_threshold.value.item()
+            "pixel_threshold": self.pixel_threshold.value.item(),
         }
 
         return out
@@ -153,6 +158,7 @@ class EnsemblePostProcessPipeline:
         data: Class containing all tile predictions.
         joiner: Class used to join tiled data, already containing predictions.
     """
+
     def __init__(self, data: EnsemblePredictions, joiner: EnsemblePredictionJoiner):
         self.data = data
         self.joiner = joiner
