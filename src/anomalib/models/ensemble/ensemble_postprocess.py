@@ -13,6 +13,8 @@ from tqdm import tqdm
 from anomalib.models.ensemble.ensemble_prediction_data import EnsemblePredictions
 from anomalib.models.ensemble.ensemble_prediction_joiner import EnsemblePredictionJoiner
 from anomalib.utils.metrics import AnomalyScoreThreshold, MinMax
+from anomalib.post_processing.normalization.min_max import normalize
+
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +75,31 @@ class MinMaxNormalize(EnsemblePostProcess):
     def __init__(self, stats: dict[str, float]):
         super().__init__(final_compute=False, name="minmax_normalize")
 
+        self.image_threshold = stats["image_threshold"]
+        self.pixel_threshold = stats["pixel_threshold"]
+        self.min_val = stats["min"]
+        self.max_val = stats["max"]
+
+    def process(self, data: dict) -> dict:
+        """
+        Normalize predictions using minmax normalization.
+
+        Args:
+            data: Predictions from ensemble pipeline.
+
+        Returns:
+            Normalized predictions.
+        """
+        data["pred_scores"] = normalize(data["pred_scores"], self.image_threshold, self.min_val, self.max_val)
+        if "anomaly_maps" in data:
+            data["anomaly_maps"] = normalize(data["anomaly_maps"], self.pixel_threshold, self.min_val, self.max_val)
+        if "box_scores" in data:
+            data["box_scores"] = [
+                normalize(scores, self.pixel_threshold, self.min_val, self.max_val) for scores in data["box_scores"]
+            ]
+
+        return data
+
 
 class Threshold(EnsemblePostProcess):
     """
@@ -85,6 +112,29 @@ class Threshold(EnsemblePostProcess):
 
     def __init__(self, image_threshold: float, pixel_threshold: float):
         super().__init__(final_compute=False, name="threshold")
+        self.image_threshold = image_threshold
+        self.pixel_threshold = pixel_threshold
+
+    def process(self, data: dict) -> dict:
+        """
+        Threshold all prediction data: labels, pixels and boxes.
+
+        Args:
+            data: Predictions from ensemble pipeline.
+
+        Returns:
+            Predictions with threshold applied.
+        """
+        data["pred_labels"] = data["pred_scores"] >= self.image_threshold
+        if "anomaly_maps" in data.keys():
+            data["pred_masks"] = data["anomaly_maps"] >= self.pixel_threshold
+        # apply thresholding to boxes
+        if "box_scores" in data:
+            # apply threshold to assign normal/anomalous label to boxes
+            is_anomalous = [scores > self.pixel_threshold for scores in data["box_scores"]]
+            data["box_labels"] = [labels.int() for labels in is_anomalous]
+
+        return data
 
 
 class PostProcessStats(EnsemblePostProcess):
@@ -186,8 +236,9 @@ class EnsemblePostProcessPipeline:
         for batch_index in tqdm(range(self.joiner.num_batches)):
             # first join every batch of tiles
             batch = self.joiner.join_tile_predictions(batch_index)
+
             # process the data through the pipeline.
-            for step in tqdm(self.steps):
+            for step in self.steps:
                 batch = step.process(batch)
 
         # construct return dictionary with results of each block that has compute function.

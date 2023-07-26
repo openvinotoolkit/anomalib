@@ -124,6 +124,7 @@ def train(args: Namespace):
                 (
                     ImageVisualizerCallback,
                     MetricVisualizerCallback,
+                    MinMaxNormalizationCallback,
                 ),
             ):
                 ensemble_callbacks.append(callback)
@@ -153,11 +154,12 @@ def train(args: Namespace):
     if not validation_predictions:
         validation_predictions = ensemble_predictions
 
-    # get normalization and threshold
+    logger.info("Computing normalization and threshold statistics.")
     stats_pipeline = EnsemblePostProcessPipeline(validation_predictions, joiner)
     stats_pipeline.add_steps([SmoothJoins(), PostProcessStats()])
     stats = stats_pipeline.execute()["stats"]
 
+    logger.info("Post processing batches.")
     # build postprocess, visualization and metric pipeline
     post_pipeline = EnsemblePostProcessPipeline(ensemble_predictions, joiner)
     post_pipeline.add_steps(
