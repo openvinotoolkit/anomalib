@@ -22,7 +22,7 @@ from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
 from anomalib.data.utils import TestSplitMode, ValSplitMode
 from anomalib.models import get_model
-from anomalib.models.ensemble.ensemble_postprocess import PostProcessStats
+from anomalib.models.ensemble.ensemble_postprocess import PostProcessStats, EnsemblePostProcessPipeline, SmoothJoins
 from anomalib.utils.callbacks import get_callbacks, LoadModelCallback, ImageVisualizerCallback, \
     MetricVisualizerCallback, MinMaxNormalizationCallback
 from anomalib.utils.loggers import configure_logger, get_experiment_logger
@@ -139,14 +139,13 @@ def train(args: Namespace):
 
     joiner = BasicPredictionJoiner(tiler)
 
-    # get normalization and threshold
-    if validation_predictions:
-        joiner.setup(validation_predictions)
-    else:
-        joiner.setup(ensemble_predictions)
+    if not validation_predictions:
+        validation_predictions = ensemble_predictions
 
-    post_process_stats = PostProcessStats(joiner)
-    post_process_stats.compute()
+    # get normalization and threshold
+    stats_pipeline = EnsemblePostProcessPipeline(validation_predictions, joiner)
+    stats_pipeline.add_steps([SmoothJoins(), PostProcessStats()])
+    stats = stats_pipeline.execute()
 
     metrics = EnsembleMetrics(config, 0.5, 0.5)
 
