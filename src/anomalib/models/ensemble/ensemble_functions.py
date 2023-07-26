@@ -3,11 +3,9 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from typing import Any
 
 import torch
@@ -17,7 +15,7 @@ from torch import Tensor
 from anomalib.data.base.datamodule import collate_fn
 from anomalib.models.ensemble.ensemble_prediction_joiner import EnsemblePredictionJoiner
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
-from anomalib.post_processing import Visualizer
+
 
 logger = logging.getLogger(__name__)
 
@@ -209,25 +207,3 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
         joined = {"pred_labels": labels, "pred_scores": scores}
 
         return joined
-
-
-def visualize_results(prediction_batch: dict, config: DictConfig | ListConfig) -> None:
-    """
-    Visualize joined predictions using Visualizer class.
-
-    Args:
-        prediction_batch: Batch of predictions.
-        config: Config file, used to set up visualization.
-    """
-    visualizer = Visualizer(mode=config.visualization.mode, task=config.dataset.task)
-
-    image_save_path = config.visualization.image_save_path or config.project.path + "/images"
-    image_save_path = Path(image_save_path)
-
-    for i, image in enumerate(visualizer.visualize_batch(prediction_batch)):
-        filename = Path(prediction_batch["image_path"][i])
-        if config.visualization.save_images:
-            file_path = image_save_path / filename.parent.name / filename.name
-            visualizer.save(file_path, image)
-        if config.visualization.show_images:
-            visualizer.show(str(filename), image)

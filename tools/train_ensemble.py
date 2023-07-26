@@ -23,6 +23,7 @@ from anomalib.data import get_datamodule
 from anomalib.data.utils import TestSplitMode, ValSplitMode
 from anomalib.models import get_model
 from anomalib.models.ensemble.ensemble_postprocess import PostProcessStats, EnsemblePostProcessPipeline, SmoothJoins
+from anomalib.models.ensemble.ensemble_visualization import EnsembleVisualization
 from anomalib.utils.callbacks import get_callbacks, LoadModelCallback, ImageVisualizerCallback, \
     MetricVisualizerCallback, MinMaxNormalizationCallback
 from anomalib.utils.loggers import configure_logger, get_experiment_logger
@@ -32,7 +33,6 @@ from anomalib.models.ensemble.ensemble_functions import (
     TileCollater,
     update_ensemble_input_size_config,
     BasicPredictionJoiner,
-    visualize_results,
 )
 from anomalib.models.ensemble.ensemble_prediction_data import (
     BasicEnsemblePredictions,
@@ -147,6 +147,7 @@ def train(args: Namespace):
     stats = stats_pipeline.execute()
 
     metrics = EnsembleMetrics(config, 0.5, 0.5)
+    visualizer = EnsembleVisualization(config)
 
     joiner.setup(ensemble_predictions)
     logger.info("Processing predictions for all batches.")
@@ -162,7 +163,7 @@ def train(args: Namespace):
         metrics.process(joined_batch)
 
         logger.info("Visualizing the results.")
-        visualize_results(joined_batch, config)
+        visualizer.process(joined_batch)
 
     logger.info("Computing metrics for all data.")
     computed_metrics = metrics.compute()
