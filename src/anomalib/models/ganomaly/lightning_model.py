@@ -179,7 +179,7 @@ class Ganomaly(AnomalyModule):
         """Normalize outputs based on min/max values."""
         # logger.info("Normalizing test outputs based on min/max values.")
         prediction["pred_scores"] = self._normalize(prediction["pred_scores"])
-        super().on_test_batch_end()
+        super().on_test_batch_end(prediction)
 
     def _normalize(self, scores: Tensor) -> Tensor:
         """Normalize the scores based on min/max of entire dataset.
