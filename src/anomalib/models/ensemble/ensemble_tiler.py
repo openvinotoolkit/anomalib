@@ -6,6 +6,7 @@
 
 from typing import Any, Sequence
 
+from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
 from anomalib.pre_processing.tiler import Tiler, compute_new_image_size
@@ -16,23 +17,18 @@ class EnsembleTiler(Tiler):
     Tile Image into (non)overlapping Patches which are then used for ensemble training.
 
     Args:
-        tile_size: Tile dimension for each patch.
-        stride: Stride length between patches.
-        image_size: Size of images that will be tiled.
-        remove_border_count: Number of border pixels to be removed from tile before untiling.
+        config: Configuration of the anomaly model.
     """
 
-    def __init__(
-        self,
-        tile_size: int | Sequence,
-        stride: int | Sequence,
-        image_size: int | Sequence,
-        remove_border_count: int = 0,
-    ):
-        super().__init__(tile_size=tile_size, stride=stride, remove_border_count=remove_border_count)
+    def __init__(self, config: DictConfig | ListConfig):
+        super().__init__(
+            tile_size=config.dataset.tiling.tile_size,
+            stride=config.dataset.tiling.stride,
+            remove_border_count=config.dataset.tiling.remove_border_count,
+        )
 
         # calculate final image size
-        image_size = self._validate_size_type(image_size)
+        image_size = self._validate_size_type(config.dataset.image_size)
         self.resized_h, self.resized_w = compute_new_image_size(
             image_size=image_size,
             tile_size=(self.tile_size_h, self.tile_size_w),
@@ -71,6 +67,7 @@ class EnsembleTiler(Tiler):
 
     def untile(self, tiles: Tensor) -> Tensor:
         """
+        Reassemble the tiled tensor into image level representation.
 
         Args:
             tiles: Tiles in shape: [num_h, num_w, batch, channel, tile_height, tile_width].

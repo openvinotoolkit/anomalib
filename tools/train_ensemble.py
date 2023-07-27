@@ -87,15 +87,10 @@ def train(args: Namespace):
         seed_everything(config.project.seed)
 
     config = update_ensemble_input_size_config(config)
-    # TODO: refactor where it accepts config
-    tiler = EnsembleTiler(
-        tile_size=config.dataset.tiling.tile_size,
-        stride=config.dataset.tiling.stride,
-        image_size=config.dataset.image_size,
-        remove_border_count=config.dataset.tiling.remove_border_count,
-    )
 
     experiment_logger = get_experiment_logger(config)
+
+    tiler = EnsembleTiler(config)
 
     # prepare datamodule and set collate function that performs tiling
     # TODO: refactor into one function
