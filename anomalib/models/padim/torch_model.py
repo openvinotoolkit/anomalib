@@ -83,7 +83,9 @@ class PadimModel(nn.Module):
         self.layers = layers
         self.backbone = backbone
 
-        self.feature_extractor = FeatureExtractor(backbone=self.backbone, layers=layers, pre_trained=pre_trained, pretrained_weights=pretrained_weights)
+        self.feature_extractor = FeatureExtractor(
+            backbone=self.backbone, layers=layers, pre_trained=pre_trained, pretrained_weights=pretrained_weights
+        )
         self.n_features_original, self.n_patches = _deduce_dims(self.feature_extractor, input_size, self.layers)
 
         n_features = n_features or _N_FEATURES_DEFAULTS.get(self.backbone)
