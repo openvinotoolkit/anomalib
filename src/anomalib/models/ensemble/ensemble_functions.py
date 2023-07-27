@@ -12,7 +12,8 @@ import torch
 from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
-from anomalib.data.base.datamodule import collate_fn
+from anomalib.data import get_datamodule
+from anomalib.data.base.datamodule import collate_fn, AnomalibDataModule
 from anomalib.models.ensemble.ensemble_prediction_joiner import EnsemblePredictionJoiner
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
 
@@ -58,6 +59,21 @@ class TileCollater:
             coll_batch["mask"] = tiled_masks[self.tile_index].squeeze(1)
 
         return coll_batch
+
+
+def get_ensemble_datamodule(config: DictConfig | ListConfig, tiler: EnsembleTiler) -> AnomalibDataModule:
+    """
+    Get Anomaly Datamodule adjusted for use in ensemble.
+
+    Args:
+        config: Configuration of the anomaly model.
+        tiler: Tiler used to split the images to tiles for use in ensemble.
+    Returns:
+        PyTorch Lightning DataModule
+    """
+    datamodule = get_datamodule(config)
+    datamodule.custom_collate_fn = TileCollater(tiler, (0, 0))
+    return datamodule
 
 
 def update_ensemble_input_size_config(config: DictConfig | ListConfig) -> DictConfig | ListConfig:

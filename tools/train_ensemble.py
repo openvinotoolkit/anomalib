@@ -43,7 +43,7 @@ from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
 from anomalib.models.ensemble.ensemble_functions import (
     TileCollater,
     update_ensemble_input_size_config,
-    BasicPredictionJoiner,
+    BasicPredictionJoiner, get_ensemble_datamodule,
 )
 from anomalib.models.ensemble.ensemble_prediction_data import (
     BasicEnsemblePredictions,
@@ -81,22 +81,17 @@ def train(args: Namespace):
     if args.log_level == "ERROR":
         warnings.filterwarnings("ignore")
 
-    # TODO: refactor into ensemble suitable
     config = get_configurable_parameters(model_name=args.model, config_path=args.config)
     if config.project.get("seed") is not None:
         seed_everything(config.project.seed)
-
+    # TODO: refactor into ensemble suitable
     config = update_ensemble_input_size_config(config)
 
     experiment_logger = get_experiment_logger(config)
 
     tiler = EnsembleTiler(config)
 
-    # prepare datamodule and set collate function that performs tiling
-    # TODO: refactor into one function
-    datamodule = get_datamodule(config)
-    tile_collater = TileCollater(tiler, (0, 0))
-    datamodule.custom_collate_fn = tile_collater
+    datamodule = get_ensemble_datamodule(config, tiler)
 
     ensemble_predictions = BasicEnsemblePredictions()
     validation_predictions = BasicEnsemblePredictions()
@@ -122,7 +117,7 @@ def train(args: Namespace):
                 ensemble_callbacks.append(callback)
 
         # set tile position inside dataloader
-        tile_collater.tile_index = tile_index
+        datamodule.custom_collate_fn.tile_index = tile_index
 
         model = get_model(config)
 
