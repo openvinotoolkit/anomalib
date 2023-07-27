@@ -5,8 +5,8 @@
 
 import logging
 import time
-import torch
 
+import torch
 from pytorch_lightning import Callback, LightningModule, Trainer
 
 logger = logging.getLogger(__name__)

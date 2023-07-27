@@ -119,10 +119,8 @@ class AnomalyModule(pl.LightningModule, ABC):
 
         return self.predict_step(batch, batch_idx)
 
-    def on_validation_batch_end(self, val_step_outputs: STEP_OUTPUT, *args, **kwargs):
+    def on_validation_batch_end(self, val_step_outputs: STEP_OUTPUT):
         """Called at the end of each validation step."""
-        del args, kwargs  # These variables are not used.
-
         self._outputs_to_cpu(val_step_outputs)
         self._post_process(val_step_outputs)
 
