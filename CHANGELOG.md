@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.4.0+obx.1.0.2]
+
+### Updated
+
+- Update anomaly map computation for padim and patchcore to make it compliant with onnx export
+
 ## [v0.4.0+obx.1.0.1]
 
 ### Fixed
