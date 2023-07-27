@@ -8,10 +8,14 @@ from abc import ABC
 from typing import Any, List
 
 import torch
+import torch.nn.functional as F
+from torch import Tensor
 from tqdm import tqdm
 
+from anomalib.models.components import GaussianBlur2d
 from anomalib.models.ensemble.ensemble_prediction_data import EnsemblePredictions
 from anomalib.models.ensemble.ensemble_prediction_joiner import EnsemblePredictionJoiner
+from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
 from anomalib.utils.metrics import AnomalyScoreThreshold, MinMax
 from anomalib.post_processing.normalization.min_max import normalize
 
@@ -57,11 +61,64 @@ class EnsemblePostProcess(ABC):
 class SmoothJoins(EnsemblePostProcess):
     """
     Smooth the regions where tiles join in ensemble.
+    It is recommended that thresholding is done again after smoothing to obtain new masks.
 
+    Args:
+        tiler: Tiler object used to get tile dimension data.
     """
 
-    def __init__(self):
+    def __init__(self, tiler: EnsembleTiler):
         super().__init__(final_compute=False, name="smooth_joins")
+
+        # offset in pixels of region around tile join that will be smoothed
+        self.height_offset = int(tiler.tile_size_h * 0.05)
+        self.width_offset = int(tiler.tile_size_w * 0.05)
+        self.tiler = tiler
+
+        self.join_mask = self.prepare_join_mask()
+
+        self.blur = GaussianBlur2d(sigma=3)
+
+    def prepare_join_mask(self) -> Tensor:
+        """
+        Prepare boolean mask of regions around the part where tiles join in ensemble.
+
+        Returns:
+            Tensor representation of boolean mask where filtered joins should be used.
+        """
+        img_h, img_w = self.tiler.image_size
+        tile_h, tile_w = self.tiler.tile_size_h, self.tiler.tile_size_w
+
+        mask = torch.zeros(img_h, img_w, dtype=torch.bool)
+
+        # prepare mask strip on vertical joins
+        for i in range(1, self.tiler.num_patches_w):
+            start_i = i * tile_w - self.width_offset
+            end_i = i * tile_w + self.width_offset
+            mask[:, start_i:end_i] = 1
+
+        # prepare mask strip on horizontal joins
+        for i in range(1, self.tiler.num_patches_h):
+            start_i = i * tile_h - self.height_offset
+            end_i = i * tile_h + self.height_offset
+            mask[start_i:end_i, :] = True
+
+        return mask
+
+    def process(self, data: dict) -> dict:
+        """
+        Smooth the parts where tiles join in anomaly maps.
+
+        Args:
+            data: Predictions from ensemble pipeline.
+
+        Returns:
+            Predictions where anomaly maps are smoothed on tile joins.
+        """
+        smoothed = self.blur(data["anomaly_maps"])
+        data["anomaly_maps"][:, :, self.join_mask] = smoothed[:, :, self.join_mask]
+
+        return data
 
 
 class MinMaxNormalize(EnsemblePostProcess):

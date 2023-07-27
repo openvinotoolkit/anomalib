@@ -28,9 +28,9 @@ class EnsembleTiler(Tiler):
         )
 
         # calculate final image size
-        image_size = self._validate_size_type(config.dataset.image_size)
+        self.image_size = self._validate_size_type(config.dataset.image_size)
         self.resized_h, self.resized_w = compute_new_image_size(
-            image_size=image_size,
+            image_size=self.image_size,
             tile_size=(self.tile_size_h, self.tile_size_w),
             stride=(self.stride_h, self.stride_w),
         )

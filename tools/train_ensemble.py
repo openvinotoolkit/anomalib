@@ -99,10 +99,7 @@ def train(args: Namespace):
     datamodule.custom_collate_fn = tile_collater
 
     ensemble_predictions = BasicEnsemblePredictions()
-    if config.dataset.val_split_mode == ValSplitMode.SAME_AS_TEST:
-        validation_predictions = None
-    else:
-        validation_predictions = BasicEnsemblePredictions()
+    validation_predictions = BasicEnsemblePredictions()
 
     # go over all tile positions and train
     for tile_index in product(range(tiler.num_patches_h), range(tiler.num_patches_w)):
@@ -140,26 +137,22 @@ def train(args: Namespace):
         current_predictions = trainer.predict(model=model, datamodule=datamodule)
         ensemble_predictions.add_tile_prediction(tile_index, current_predictions)
 
-        if validation_predictions:
-            current_val_predictions = trainer.predict(model=model, dataloaders=datamodule.val_dataloader())
-            validation_predictions.add_tile_prediction(tile_index, current_val_predictions)
+        current_val_predictions = trainer.predict(model=model, dataloaders=datamodule.val_dataloader())
+        validation_predictions.add_tile_prediction(tile_index, current_val_predictions)
 
     joiner = BasicPredictionJoiner(tiler)
 
-    if not validation_predictions:
-        validation_predictions = ensemble_predictions
-
     logger.info("Computing normalization and threshold statistics.")
     stats_pipeline = EnsemblePostProcessPipeline(validation_predictions, joiner)
-    stats_pipeline.add_steps([SmoothJoins(), PostProcessStats()])
+    stats_pipeline.add_steps([SmoothJoins(tiler), PostProcessStats()])
     stats = stats_pipeline.execute()["stats"]
 
-    logger.info("Post processing batches.")
+    logger.info("Post processing predictions.")
     # build postprocess, visualization and metric pipeline
     post_pipeline = EnsemblePostProcessPipeline(ensemble_predictions, joiner)
     post_pipeline.add_steps(
         [
-            SmoothJoins(),
+            SmoothJoins(tiler),
             MinMaxNormalize(stats),
             Threshold(0.5, 0.5),
             EnsembleVisualization(config),
