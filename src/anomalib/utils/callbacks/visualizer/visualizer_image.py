@@ -65,7 +65,7 @@ class ImageVisualizerCallback(BaseVisualizerCallback):
         outputs: STEP_OUTPUT | None,
         batch: Any,
         batch_idx: int,
-        dataloader_idx: int,
+        dataloader_idx: int = 0,
     ) -> None:
         """Log images at the end of every batch.
 

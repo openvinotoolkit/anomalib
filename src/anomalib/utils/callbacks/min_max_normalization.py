@@ -46,7 +46,7 @@ class MinMaxNormalizationCallback(Callback):
         outputs: STEP_OUTPUT,
         batch: Any,
         batch_idx: int,
-        dataloader_idx: int,
+        dataloader_idx: int = 0,
     ) -> None:
         """Called when the validation batch ends, update the min and max observed values."""
         del trainer, batch, batch_idx, dataloader_idx  # These variables are not used.
@@ -67,7 +67,7 @@ class MinMaxNormalizationCallback(Callback):
         outputs: STEP_OUTPUT | None,
         batch: Any,
         batch_idx: int,
-        dataloader_idx: int,
+        dataloader_idx: int = 0,
     ) -> None:
         """Called when the test batch ends, normalizes the predicted scores and anomaly maps."""
         del trainer, batch, batch_idx, dataloader_idx  # These variables are not used.

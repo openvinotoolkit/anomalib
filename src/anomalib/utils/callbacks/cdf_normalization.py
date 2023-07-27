@@ -66,7 +66,7 @@ class CdfNormalizationCallback(Callback):
         outputs: STEP_OUTPUT | None,
         batch: Any,
         batch_idx: int,
-        dataloader_idx: int,
+        dataloader_idx: int = 0,
     ) -> None:
         """Called when the validation batch ends, standardizes the predicted scores and anomaly maps."""
         del trainer, batch, batch_idx, dataloader_idx  # These variables are not used.
@@ -80,7 +80,7 @@ class CdfNormalizationCallback(Callback):
         outputs: STEP_OUTPUT | None,
         batch: Any,
         batch_idx: int,
-        dataloader_idx: int,
+        dataloader_idx: int = 0,
     ) -> None:
         """Called when the test batch ends, normalizes the predicted scores and anomaly maps."""
         del trainer, batch, batch_idx, dataloader_idx  # These variables are not used.
