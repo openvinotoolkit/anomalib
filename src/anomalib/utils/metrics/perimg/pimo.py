@@ -26,15 +26,11 @@ import numpy as np
 import torch
 from matplotlib.axes import Axes
 from matplotlib.pyplot import Figure
-from matplotlib.ticker import FixedLocator
+from matplotlib.ticker import FixedLocator, LogFormatter, PercentFormatter
 from torch import Tensor
 
 from .binclf_curve import PerImageBinClfCurve
 from .common import _validate_image_classes, _validate_perimg_rate_curves, _validate_rate_curve
-
-LOG_FPR_EPSILON_ORDER = -5
-LOG_FPR_EPSILON = 10**LOG_FPR_EPSILON_ORDER
-
 
 # =========================================== VALIDATIONS ===========================================
 
@@ -58,6 +54,7 @@ def plot_pimo_curves(
     image_classes: Tensor,
     ax: Axes | None = None,
     logfpr: bool = False,
+    logfpr_epsilon: float = 1e-6,
     *kwargs_perimg,
     **kwargs_shared,
 ) -> tuple[Figure | None, Axes]:
@@ -72,6 +69,7 @@ def plot_pimo_curves(
         image_classes: shape (num_images,)
         ax: matplotlib Axes
         logfpr: whether to use log scale for the FPR axis
+        logfpr_epsilon: small positive number to avoid `log(0)`; used only if `logfpr` is True
 
         *kwargs_perimg: keyword arguments passed to `ax.plot()` and SPECIFIC to each curve
                             if provided it should be a list of dicts of length `num_images`
@@ -140,17 +138,24 @@ def plot_pimo_curves(
     ax.set_xlabel("Shared FPR")
 
     if logfpr:
+        if logfpr_epsilon <= 0:
+            raise ValueError(f"Expected argument `logfpr_epsilon` to be positive, but got {logfpr_epsilon}.")
+
+        if logfpr_epsilon >= 1:
+            raise ValueError(f"Expected argument `logfpr_epsilon` to be less than 1, but got {logfpr_epsilon}.")
+
         ax.set_xscale("log")
-        ax.set_xlim(LOG_FPR_EPSILON, 1)
-        ticks_major = np.logspace(LOG_FPR_EPSILON_ORDER, 0, abs(LOG_FPR_EPSILON_ORDER) + 1)
-        formatter_major = lambda val, pos: f"{val:.0e}"  # noqa: E731
-        ticks_minor = np.logspace(LOG_FPR_EPSILON_ORDER, 0, 2 * abs(LOG_FPR_EPSILON_ORDER) + 1)
+        ax.set_xlim(logfpr_epsilon, 1)
+        eps_round_exponent = np.floor(np.log10(logfpr_epsilon))
+        ticks_major = np.logspace(eps_round_exponent, 0, abs(eps_round_exponent) + 1)
+        formatter_major = LogFormatter()
+        ticks_minor = np.logspace(eps_round_exponent, 0, 2 * abs(eps_round_exponent) + 1)
 
     else:
         XLIM_EPSILON = 0.01
         ax.set_xlim(0 - XLIM_EPSILON, 1 + XLIM_EPSILON)
         ticks_major = np.linspace(0, 1, 6)
-        formatter_major = lambda val, pos: f"{val:.0%}"  # noqa: E731
+        formatter_major = PercentFormatter(1, decimals=0)
         ticks_minor = np.linspace(0, 1, 11)
 
     ax.xaxis.set_major_locator(FixedLocator(ticks_major))
@@ -161,7 +166,7 @@ def plot_pimo_curves(
     YLIM_EPSILON = 0.01
     ax.set_ylim(0 - YLIM_EPSILON, 1 + YLIM_EPSILON)
     ax.yaxis.set_major_locator(FixedLocator(np.linspace(0, 1, 6)))
-    ax.yaxis.set_major_formatter(lambda val, pos: f"{val:.0%}")
+    ax.yaxis.set_major_formatter(PercentFormatter(1, decimals=0))
     ax.yaxis.set_minor_locator(FixedLocator(np.linspace(0, 1, 11)))
 
     ax.set_title("Per-Image Overlap Curves")
