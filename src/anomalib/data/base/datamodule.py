@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABC
-from typing import Any, Callable
+from typing import Any
 
 from pandas import DataFrame
 from pytorch_lightning import LightningDataModule
@@ -75,7 +75,6 @@ class AnomalibDataModule(LightningDataModule, ABC):
         test_split_mode: TestSplitMode | None = None,
         test_split_ratio: float | None = None,
         seed: int | None = None,
-        custom_collate_fn=None
     ) -> None:
         super().__init__()
         self.train_batch_size = train_batch_size
@@ -93,9 +92,8 @@ class AnomalibDataModule(LightningDataModule, ABC):
 
         self._samples: DataFrame | None = None
 
-        self.custom_collate_fn: Callable
-        if custom_collate_fn is None:
-            self.custom_collate_fn = collate_fn
+        # custom function used to collate batch from dataloader before it is passed to trainer
+        self.custom_collate_fn = collate_fn
 
     def setup(self, stage: str | None = None) -> None:
         """Setup train, validation and test data.
