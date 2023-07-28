@@ -119,24 +119,22 @@ class AnomalyModule(pl.LightningModule, ABC):
 
         return self.predict_step(batch, batch_idx)
 
-    def on_validation_batch_end(self, val_step_outputs: STEP_OUTPUT):
+    def on_validation_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):
         """Called at the end of each validation step."""
-        self._outputs_to_cpu(val_step_outputs)
-        self._post_process(val_step_outputs)
+        self._outputs_to_cpu(outputs)
+        self._post_process(outputs)
 
         if self.threshold_method == ThresholdMethod.ADAPTIVE:
-            self._collect_output(self.image_threshold, self.pixel_threshold, val_step_outputs)
+            self._collect_output(self.image_threshold, self.pixel_threshold, outputs)
 
-        self._collect_output(self.image_metrics, self.pixel_metrics, val_step_outputs)
+        self._collect_output(self.image_metrics, self.pixel_metrics, outputs)
 
-    def on_test_batch_end(self, test_step_outputs: STEP_OUTPUT, *args, **kwargs) -> STEP_OUTPUT:
+    def on_test_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):
         """Called at the end of each test step."""
-        del args, kwargs  # These variables are not used.
+        self._outputs_to_cpu(outputs)
+        self._post_process(outputs)
 
-        self._outputs_to_cpu(test_step_outputs)
-        self._post_process(test_step_outputs)
-
-        self._collect_output(self.image_metrics, self.pixel_metrics, test_step_outputs)
+        self._collect_output(self.image_metrics, self.pixel_metrics, outputs)
 
     def on_validation_epoch_start(self):
         if self.threshold_method == ThresholdMethod.ADAPTIVE:

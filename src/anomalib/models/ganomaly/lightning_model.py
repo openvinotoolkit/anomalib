@@ -157,11 +157,11 @@ class Ganomaly(AnomalyModule):
         self.min_scores = min(self.min_scores, torch.min(batch["pred_scores"]))
         return batch
 
-    def on_validation_batch_end(self, prediction: STEP_OUTPUT):
+    def on_validation_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):
         """Normalize outputs based on min/max values."""
         # logger.info("Normalizing validation outputs based on min/max values.")
-        prediction["pred_scores"] = self._normalize(prediction["pred_scores"])
-        super().on_validation_batch_end(prediction)
+        outputs["pred_scores"] = self._normalize(outputs["pred_scores"])
+        super().on_validation_batch_end(outputs, batch, batch_idx, dataloader_idx=dataloader_idx)
 
     def on_test_start(self) -> None:
         """Reset min max values before test batch starts."""
@@ -175,11 +175,11 @@ class Ganomaly(AnomalyModule):
         self.min_scores = min(self.min_scores, torch.min(batch["pred_scores"]))
         return batch
 
-    def on_test_batch_end(self, prediction):
+    def on_test_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):
         """Normalize outputs based on min/max values."""
         # logger.info("Normalizing test outputs based on min/max values.")
-        prediction["pred_scores"] = self._normalize(prediction["pred_scores"])
-        super().on_test_batch_end(prediction)
+        outputs["pred_scores"] = self._normalize(outputs["pred_scores"])
+        super().on_test_batch_end(outputs, batch, batch_idx, dataloader_idx=dataloader_idx)
 
     def _normalize(self, scores: Tensor) -> Tensor:
         """Normalize the scores based on min/max of entire dataset.
