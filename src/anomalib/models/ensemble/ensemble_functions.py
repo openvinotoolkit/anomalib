@@ -6,17 +6,28 @@
 from __future__ import annotations
 
 import logging
+import os
+import warnings
 from typing import Any
 
 import torch
 from omegaconf import DictConfig, ListConfig
+from pytorch_lightning import Callback
+from pytorch_lightning.callbacks import ModelCheckpoint
 from torch import Tensor
 
 from anomalib.data import get_datamodule
 from anomalib.data.base.datamodule import collate_fn, AnomalibDataModule
+from anomalib.deploy import ExportMode
 from anomalib.models.ensemble.ensemble_prediction_joiner import EnsemblePredictionJoiner
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
-
+from anomalib.utils.callbacks import (
+    TimerCallback,
+    LoadModelCallback,
+    PostProcessingConfigurationCallback,
+    MinMaxNormalizationCallback,
+    GraphLogger, MetricsConfigurationCallback,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +100,97 @@ def update_ensemble_input_size_config(config: DictConfig | ListConfig) -> DictCo
     tile_size = (config.dataset.tiling.tile_size,) * 2
     config.model.input_size = tile_size
     return config
+
+
+def get_ensemble_callbacks(config: DictConfig | ListConfig, tile_index: (int, int)) -> list[Callback]:
+    """Return base callbacks for ensemble.
+
+    Args:
+        config: Model config file.
+        tile_index: Index of current tile in ensemble.
+
+    Return:
+        List of callbacks.
+    """
+    logger.info("Loading the ensemble callbacks")
+
+    callbacks: list[Callback] = []
+
+    monitor_metric = None if "early_stopping" not in config.model.keys() else config.model.early_stopping.metric
+    monitor_mode = "max" if "early_stopping" not in config.model.keys() else config.model.early_stopping.mode
+
+    checkpoint = ModelCheckpoint(
+        dirpath=os.path.join(config.project.path, "weights", "lightning"),
+        filename=f"model{tile_index[0]}_{tile_index[1]}",
+        monitor=monitor_metric,
+        mode=monitor_mode,
+        auto_insert_metric_name=False,
+    )
+
+    callbacks.extend([checkpoint, TimerCallback()])
+
+    if "resume_from_checkpoint" in config.trainer.keys() and config.trainer.resume_from_checkpoint is not None:
+        load_model = LoadModelCallback(config.trainer.resume_from_checkpoint)
+        callbacks.append(load_model)
+
+    # Add post-processing configurations to AnomalyModule.
+    image_threshold = (
+        config.metrics.threshold.manual_image if "manual_image" in config.metrics.threshold.keys() else None
+    )
+    pixel_threshold = (
+        config.metrics.threshold.manual_pixel if "manual_pixel" in config.metrics.threshold.keys() else None
+    )
+
+    post_processing_callback = PostProcessingConfigurationCallback(
+        threshold_method=config.metrics.threshold.method if config.model.ensemble.thresholding == "tile" else "none",
+        manual_image_threshold=image_threshold,
+        manual_pixel_threshold=pixel_threshold,
+    )
+    callbacks.append(post_processing_callback)
+
+    # Add metric configuration to the model via MetricsConfigurationCallback
+    metrics_callback = MetricsConfigurationCallback(
+        config.dataset.task,
+        config.metrics.get("image", None),
+        config.metrics.get("pixel", None),
+    )
+    callbacks.append(metrics_callback)
+
+    if config.model.ensemble.normalization == "tile":
+        if "normalization_method" in config.model.keys() and not config.model.normalization_method == "none":
+            if config.model.normalization_method == "min_max":
+                callbacks.append(MinMaxNormalizationCallback())
+            else:
+                raise ValueError(
+                    f"Ensemble only supports MinMax normalization. Normalization method not recognized: {config.model.normalization_method}"
+                )
+
+    if "optimization" in config.keys():
+        if "nncf" in config.optimization and config.optimization.nncf.apply:
+            warnings.warn(f"NNCF is not supported with ensemble.")
+
+        if config.optimization.export_mode is not None:
+            from src.anomalib.utils.callbacks.export import (  # pylint: disable=import-outside-toplevel
+                ExportCallback,
+            )
+
+            logger.info("Setting model export to %s", config.optimization.export_mode)
+            callbacks.append(
+                ExportCallback(
+                    input_size=config.model.input_size,
+                    dirpath=config.project.path,
+                    filename=f"model{tile_index[0]}_{tile_index[1]}",
+                    export_mode=ExportMode(config.optimization.export_mode),
+                )
+            )
+        else:
+            warnings.warn(f"Export option: {config.optimization.export_mode} not found. Defaulting to no model export")
+
+    # Add callback to log graph to loggers
+    if config.logging.log_graph not in (None, False):
+        callbacks.append(GraphLogger())
+
+    return callbacks
 
 
 class BasicPredictionJoiner(EnsemblePredictionJoiner):

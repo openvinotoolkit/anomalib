@@ -19,6 +19,7 @@ class ThresholdMethod(str, Enum):
 
     ADAPTIVE = "adaptive"
     MANUAL = "manual"
+    NONE = "none"
 
 
 def add_label(

@@ -43,7 +43,9 @@ from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
 from anomalib.models.ensemble.ensemble_functions import (
     TileCollater,
     update_ensemble_input_size_config,
-    BasicPredictionJoiner, get_ensemble_datamodule,
+    BasicPredictionJoiner,
+    get_ensemble_datamodule,
+    get_ensemble_callbacks,
 )
 from anomalib.models.ensemble.ensemble_prediction_data import (
     BasicEnsemblePredictions,
@@ -100,21 +102,8 @@ def train(args: Namespace):
     for tile_index in product(range(tiler.num_patches_h), range(tiler.num_patches_w)):
         logger.info(f"Start of procedure for tile {tile_index}")
 
-        # TODO: refactor into separate function
         # configure callbacks for ensemble
-        callbacks = get_callbacks(config)
-        ensemble_callbacks = []
-        # temporary removing for ensemble
-        for callback in callbacks:
-            if not isinstance(
-                callback,
-                (
-                    ImageVisualizerCallback,
-                    MetricVisualizerCallback,
-                    MinMaxNormalizationCallback,
-                ),
-            ):
-                ensemble_callbacks.append(callback)
+        ensemble_callbacks = get_ensemble_callbacks(config, tile_index)
 
         # set tile position inside dataloader
         datamodule.custom_collate_fn.tile_index = tile_index
@@ -125,14 +114,14 @@ def train(args: Namespace):
         logger.info("Training the model.")
         trainer.fit(model=model, datamodule=datamodule)
 
-        logger.info("Loading the best model weights.")
-        load_model_callback = LoadModelCallback(weights_path=trainer.checkpoint_callback.best_model_path)
-        trainer.callbacks.insert(0, load_model_callback)  # pylint: disable=no-member
-
-        current_predictions = trainer.predict(model=model, datamodule=datamodule)
+        logger.info("Predicting on predict (test) data.")
+        current_predictions = trainer.predict(model=model, datamodule=datamodule, ckpt_path="best")
         ensemble_predictions.add_tile_prediction(tile_index, current_predictions)
 
-        current_val_predictions = trainer.predict(model=model, dataloaders=datamodule.val_dataloader())
+        logger.info("Predicting on validation data.")
+        current_val_predictions = trainer.predict(
+            model=model, dataloaders=datamodule.val_dataloader(), ckpt_path="best"
+        )
         validation_predictions.add_tile_prediction(tile_index, current_val_predictions)
 
     joiner = BasicPredictionJoiner(tiler)
@@ -149,9 +138,9 @@ def train(args: Namespace):
         [
             SmoothJoins(tiler),
             MinMaxNormalize(stats),
-            Threshold(0.5, 0.5),
+            Threshold(image_threshold=0.5, pixel_threshold=0.5),
             EnsembleVisualization(config),
-            EnsembleMetrics(config, 0.5, 0.5),
+            EnsembleMetrics(config, image_threshold=0.5, pixel_threshold=0.5),
         ]
     )
     # execute pipeline and take metric results
