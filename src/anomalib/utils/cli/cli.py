@@ -12,8 +12,8 @@ from datetime import datetime
 from importlib import import_module
 from pathlib import Path
 
+from lightning.pytorch.cli import LightningArgumentParser, LightningCLI
 from omegaconf.omegaconf import OmegaConf
-from pytorch_lightning.cli import LightningArgumentParser, LightningCLI
 
 from anomalib.utils.callbacks import (
     CdfNormalizationCallback,
@@ -135,7 +135,7 @@ class AnomalibCLI(LightningCLI):
         if config.trainer.callbacks is not None:
             # If trainer has callbacks defined from the config file, they have the
             # following format:
-            # [{'class_path': 'pytorch_lightning.ca...lyStopping', 'init_args': {...}}]
+            # [{'class_path': 'lightning.pytorch.ca...lyStopping', 'init_args': {...}}]
             callbacks = config.trainer.callbacks
 
             # Convert to the following format to get `monitor` and `mode` variables

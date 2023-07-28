@@ -10,10 +10,10 @@ from abc import ABC
 from typing import Any, OrderedDict
 from warnings import warn
 
-import pytorch_lightning as pl
+import lightning.pytorch as pl
 import torch
-from pytorch_lightning.callbacks import Callback
-from pytorch_lightning.utilities.types import STEP_OUTPUT
+from lightning.pytorch.callbacks import Callback
+from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import Tensor, nn
 from torchmetrics import Metric
 
@@ -71,9 +71,9 @@ class AnomalyModule(pl.LightningModule, ABC):
         raise NotImplementedError
 
     def predict_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> Any:
-        """Step function called during :meth:`~pytorch_lightning.trainer.trainer.Trainer.predict`.
+        """Step function called during :meth:`~lightning.pytorch.trainer.trainer.Trainer.predict`.
 
-        By default, it calls :meth:`~pytorch_lightning.core.lightning.LightningModule.forward`.
+        By default, it calls :meth:`~lightning.pytorch.core.lightning.LightningModule.forward`.
         Override to add any processing logic.
 
         Args:

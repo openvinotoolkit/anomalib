@@ -8,8 +8,8 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-import pytorch_lightning as pl
-from pytorch_lightning import Callback
+import lightning.pytorch as pl
+from lightning.pytorch import Callback
 
 from anomalib.deploy import ExportMode, export
 from anomalib.models.components import AnomalyModule

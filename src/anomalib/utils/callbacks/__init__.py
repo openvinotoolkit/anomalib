@@ -12,8 +12,8 @@ from importlib import import_module
 
 import yaml
 from jsonargparse.namespace import Namespace
+from lightning.pytorch.callbacks import Callback, ModelCheckpoint
 from omegaconf import DictConfig, ListConfig, OmegaConf
-from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 
 from anomalib.deploy import ExportMode
 

@@ -6,8 +6,8 @@
 
 from __future__ import annotations
 
+from lightning.pytorch import Callback
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning import Callback
 
 from anomalib.utils.callbacks import (
     MetricsConfigurationCallback,

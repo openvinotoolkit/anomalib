@@ -8,9 +8,9 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-import pytorch_lightning as pl
-from pytorch_lightning import Callback, Trainer
-from pytorch_lightning.utilities.types import STEP_OUTPUT
+import lightning.pytorch as pl
+from lightning.pytorch import Callback, Trainer
+from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch.distributions import LogNormal
 
 from anomalib.models import get_model

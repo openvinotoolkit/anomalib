@@ -11,9 +11,9 @@ import warnings
 from pathlib import Path
 from typing import Iterable
 
+from lightning.pytorch.loggers import CSVLogger, Logger
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
-from pytorch_lightning.loggers import CSVLogger, Logger
 
 from .comet import AnomalibCometLogger
 from .tensorboard import AnomalibTensorBoardLogger
@@ -55,7 +55,7 @@ def configure_logger(level: int | str = logging.INFO) -> None:
     logging.basicConfig(format=format_string, level=level)
 
     # Set Pytorch Lightning logs to have a the consistent formatting with anomalib.
-    for handler in logging.getLogger("pytorch_lightning").handlers:
+    for handler in logging.getLogger("lightning.pytorch").handlers:
         handler.setFormatter(logging.Formatter(format_string))
         handler.setLevel(level)
 
