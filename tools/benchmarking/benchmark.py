@@ -1,6 +1,6 @@
 """Benchmark all the algorithms in the repo."""
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
@@ -26,21 +26,17 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(logger_file_handler)
 
-import functools
-import io
+# End of warnings capture | Rest of the imports follow
+
 import math
 import multiprocessing
-import sys
 import time
 from argparse import ArgumentParser
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
-from enum import Enum
-
-# End of warnings capture | Rest of the imports follow
 from multiprocessing.managers import DictProxy
 from tempfile import TemporaryDirectory
-from typing import cast
+from typing import Any, cast
 
 import torch
 from omegaconf import DictConfig, ListConfig, OmegaConf
@@ -49,72 +45,36 @@ from rich import print  # pylint: disable=W0622 | disable redefine print warning
 from rich.console import Console
 from rich.progress import Progress, TaskID
 from rich.table import Table
-from utils import upload_to_comet, upload_to_wandb, write_metrics
+from utils import write_metrics
 
+import wandb
 from anomalib.config import get_configurable_parameters, update_input_size_config
 from anomalib.data import get_datamodule
 from anomalib.deploy import export
 from anomalib.deploy.export import ExportMode
 from anomalib.models import get_model
-from anomalib.utils.sweep import get_run_config, get_sweep_callbacks, set_in_nested_config
+from anomalib.utils.sweep import (
+    exception_wrapper,
+    get_run_config,
+    get_sweep_callbacks,
+    redirect_output,
+    set_in_nested_config,
+)
 
 # TODO add torch and openvino throughputs.
 
 # Redirect future warnings and logs to file from all the imports
-loggers = [name for name in logging.root.manager.loggerDict if ("lightning" in name or "anomalib" in name)]
-for logger_name in loggers + ["py.warnings"]:
-    _logger = logging.getLogger(logger_name)
-    _logger.setLevel(logging.WARNING)
-    _logger.handlers = []
-    _logger.addHandler(logger_file_handler)
-
-
-class Status(str, Enum):
-    """Status of the benchmarking run."""
-
-    SUCCESS = "success"
-    FAILED = "failed"
-
-
-def redirect_output(func):
-    """Decorator to redirect output of the function.
-
-    Args:
-        func (function): Hides output of this function.
-
-    Raises:
-        Exception: Incase the execution of function fails, it raises an exception.
-
-    Returns:
-        object of the called function
-    """
-
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        std_out = sys.stdout
-        sys.stdout = buf = io.StringIO()
-        try:
-            value = func(*args, **kwargs)
-            logger.info(buf.getvalue())
-            logger.info(value)
-        except Exception as exp:
-            logger.exception(
-                "Error occurred while computing benchmark %s. Buffer: %s." "\n Method %s, args %s, kwargs %s",
-                exp,
-                buf.getvalue(),
-                func,
-                args,
-                kwargs,
-            )
-            value = ""
-        sys.stdout = std_out
-        return value
-
-    return wrapper
+for name in logging.root.manager.loggerDict:
+    for filter_keys in ["lightning", "anomalib", "wandb", "comet", "py.warnings"]:
+        if filter_keys in name:
+            _logger = logging.getLogger(name)
+            _logger.setLevel(logging.WARNING)
+            _logger.handlers = []
+            _logger.addHandler(logger_file_handler)
 
 
 @redirect_output
-def get_single_model_metrics(model_config: DictConfig | ListConfig) -> dict:
+def get_single_model_metrics(model_config: DictConfig | ListConfig) -> dict[str, Any]:
     """Collects metrics for `model_name` and returns a dict of results.
 
     Args:
@@ -167,65 +127,7 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig) -> dict:
         }
         for key, val in test_results[0].items():
             data[key] = float(val)
-
     return data
-
-
-def sweep(
-    run_config: DictConfig | ListConfig, device: int = 0, seed: int = 42, convert_openvino: bool = False
-) -> dict[str, str | float]:
-    """Go over all the values mentioned in `grid_search` parameter of the benchmarking config.
-
-    Args:
-        run_config: (DictConfig | ListConfig, optional): Configuration for current run.
-        device (int, optional): Name of the device on which the model is trained. Defaults to 0 "cpu".
-        convert_openvino (bool, optional): Whether to convert the model to openvino format. Defaults to False.
-
-    Returns:
-        dict[str, str | float]: Dictionary containing the metrics gathered from the sweep.
-    """
-    seed_everything(seed, workers=True)
-    # This assumes that `model_name` is always present in the sweep config.
-    model_config = get_configurable_parameters(model_name=run_config.model_name)
-    model_config.project.seed = seed
-
-    model_config = cast(DictConfig, model_config)  # placate mypy
-    for param in run_config.keys():
-        # grid search keys are always assumed to be strings
-        param = cast(str, param)  # placate mypy
-        set_in_nested_config(model_config, param.split("."), run_config[param])  # type: ignore
-
-    # convert image size to tuple in case it was updated by run config
-    model_config = update_input_size_config(model_config)
-
-    # Set device in config. 0 - cpu, [0], [1].. - gpu id
-    if device != 0:
-        model_config.trainer.devices = [device - 1]
-        model_config.trainer.accelerator = "gpu"
-
-    # Remove legacy flags
-    for legacy_device in ["num_processes", "gpus", "ipus", "tpu_cores"]:
-        if legacy_device in model_config.trainer:
-            model_config.trainer[legacy_device] = None
-
-    # Run benchmarking for current config
-    model_metrics = get_single_model_metrics(model_config=model_config, openvino_metrics=convert_openvino)
-    output = f"One sweep run complete for model {model_config.model.name}"
-    output += f" On category {model_config.dataset.category}" if model_config.dataset.category is not None else ""
-    output += str(model_metrics)
-    logger.info(output)
-
-    # Append configuration of current run to the collected metrics
-    for key, value in run_config.items():
-        # Skip adding model name to the dataframe
-        if key != "model_name":
-            model_metrics[key] = value
-
-    # Add device name to list
-    model_metrics["device"] = "gpu" if device > 0 else "cpu"
-    model_metrics["model_name"] = run_config.model_name
-
-    return model_metrics
 
 
 class Benchmark:
@@ -242,8 +144,10 @@ class Benchmark:
         self.n_gpus = min(n_gpus, torch.cuda.device_count()) if n_gpus > 0 else torch.cuda.device_count()
         self.runs_folder = f"runs/{datetime.strftime(datetime.now(), '%Y_%m_%d-%H_%M_%S')}"
         Path(self.runs_folder).mkdir(exist_ok=True, parents=True)
+        self.run_failures: bool = False
 
-    def _sweep(self, device: int, run_config: DictConfig, seed: int = 42) -> dict:
+    @exception_wrapper
+    def _sweep(self, device: int, run_config: DictConfig, seed: int = 42) -> dict[str, Any]:
         """Run a single sweep on a device."""
         seed_everything(seed, workers=True)
         # This assumes that `model_name` is always present in the sweep config.
@@ -269,7 +173,7 @@ class Benchmark:
                 model_config.trainer[legacy_device] = None
 
         # Run benchmarking for current config
-        model_metrics = get_single_model_metrics(model_config=model_config)
+        model_metrics: dict[str, Any] = get_single_model_metrics(model_config=model_config)
         output = f"One sweep run complete for model {model_config.model.name}"
         output += f" On category {model_config.dataset.category}" if model_config.dataset.category is not None else ""
         output += str(model_metrics)
@@ -287,6 +191,7 @@ class Benchmark:
 
         return model_metrics
 
+    @exception_wrapper
     def _compute(
         self, progress: DictProxy, task_id: TaskID, device: int, run_configs: list[DictConfig]
     ) -> dict[str, list[str]]:
@@ -303,29 +208,23 @@ class Benchmark:
         """
         result = []
         for idx, config in enumerate(run_configs):
-            try:
-                output = self._sweep(device, config)
-                write_metrics(output, self.config.writer, self.runs_folder)
-                result.append(output)
+            output = self._sweep(device, config)
+            if output:
+                write_metrics(output.value, self.config.writer, self.runs_folder)
+                result.append(output.value)
+            else:
+                self.run_failures = True
 
-                progress[str(task_id)] = {"completed": idx + 1, "total": len(run_configs)}
-            except Exception as exception:
-                logger.exception(
-                    "Error occurred while computing benchmark on GPU %d with config %s, %s" "\nLocals %s",
-                    device,
-                    config,
-                    exception,
-                    locals(),
-                )
+            progress[str(task_id)] = {"completed": idx + 1, "total": len(run_configs)}
         # convert list of dicts to dict of lists
         return {key: [dic[key] for dic in result] for key in result[0]}
 
-    def _distribute(self) -> Status:
+    @exception_wrapper
+    def _distribute(self):
         run_configs = list(get_run_config(self.config.grid_search))
         step_size = math.ceil(len(run_configs) / self.n_gpus)
         jobs = []
         results: list[dict[str, list[str]]] = []
-        status = Status.SUCCESS
         with Progress() as progress:
             overall_progress_task = progress.add_task("[green]Overall Progress")
             with multiprocessing.Manager() as manager:
@@ -348,64 +247,78 @@ class Benchmark:
                         )
 
                     # monitor the progress:
-                    while (n_finished := sum([job.done() for job in jobs])) < len(jobs):
-                        progress.update(overall_progress_task, completed=n_finished, total=self.n_gpus)
+                    while (sum([job.done() for job in jobs])) < len(jobs):
+                        progress.update(
+                            overall_progress_task,
+                            completed=sum([task["completed"] for task in _progress.values()]),
+                            total=len(run_configs),
+                        )
                         for task_id, params in _progress.items():
                             progress.update(TaskID(int(task_id)), completed=params["completed"], total=params["total"])
 
                     for job in jobs:
-                        try:
-                            results.append(job.result())
-                        except Exception as exception:
-                            logger.exception(
-                                "Error occurred while collecting benchmark %s\nLocals %s", exception, locals()
-                            )
+                        _result = job.result()
+                        if _result:
+                            results.append(_result.value)
+                        else:
+                            self.run_failures = True
 
-                    try:
-                        progress.update(overall_progress_task, completed=self.n_gpus, total=self.n_gpus)
-                        result: dict[str, list] = {key: [] for key in results[0].keys()}
-                        for _result in results:
-                            for key, value in _result.items():
-                                result[key].extend(value)
-                    except Exception as exception:
-                        logger.exception(
-                            "Error occurred while merging benchmark results %s\nResult %s", exception, results
-                        )
-                        status = Status.FAILED
+                    progress.update(overall_progress_task, completed=len(run_configs), total=len(run_configs))
+        result = self._gather_results(results)
+        if result:
+            self._print_results(result.value)
+        else:
+            self.run_failures = True
 
-        try:
-            console = Console()
-            table = Table(title="Benchmarking Results", show_header=True, header_style="bold magenta")
-            for column in result.keys():
-                table.add_column(column)
-            for row in [*zip(*result.values())]:
-                table.add_row(*[str(value) for value in row])
-            console.print(table)
-        except Exception as exception:
-            logger.exception("Error occurred while printing benchmarking results %s. Result: %s", exception, result)
-            status = Status.FAILED
-        return status
+    @exception_wrapper
+    def _gather_results(self, results: list[dict[str, list[str]]]) -> dict:
+        """Gather results from all processes.
+
+        Args:
+            results (dict): Dictionary containing the results from all processes.
+
+        Returns:
+            dict: Dictionary containing the results from all processes.
+        """
+        result: dict[str, list] = {key: [] for key in results[0].keys()}
+        for _result in results:
+            for key, value in _result.items():
+                result[key].extend(value)
+        return result
+
+    @exception_wrapper
+    def _print_results(self, result: dict) -> None:
+        """Print the results in a tabular format.
+
+        Args:
+            result (dict): Dictionary containing the results from all processes.
+        """
+        console = Console()
+        table = Table(title="Benchmarking Results", show_header=True, header_style="bold magenta")
+        for column in result.keys():
+            table.add_column(column)
+        for row in [*zip(*result.values())]:
+            table.add_row(*[str(value) for value in row])
+        console.print(table)
 
     def run(self):
         """Run the benchmarking."""
         logger.info(
-            "\n%s\n" "Starting benchmarking. %s" "\nDistributing benchmark collection over {self.n_gpus} GPUs.",
+            "\n%s\n" "Starting benchmarking. %s" "\nDistributing benchmark collection over %s GPUs.",
             "-" * 120,
             datetime.strftime(datetime.now(), "%Y %m %d-%H %M %S"),
+            self.n_gpus,
         )
         if not torch.cuda.is_available():
             logger.warning("Could not detect any cuda enabled devices")
-        if self._distribute() != Status.SUCCESS:
+
+        self._distribute()
+        if self.run_failures:
             print(
                 "[bold red]There were some errors while collecting benchmark[/bold red]"
-                f"\nPlease check the log file [magenta]{self.runs_folder}/benchmark.log[/magenta]"
+                "\nPlease check the log file [magenta]runs/benchmark.log[/magenta]"
                 " for more details."
             )
-        else:
-            if "wandb" in self.config.writer:
-                upload_to_wandb(team="anomalib", folder=self.runs_folder)
-            if "comet" in self.config.writer:
-                upload_to_comet(folder=self.runs_folder)
         logger.info("Benchmarking complete \n%s", "-" * 120)
 
 
@@ -415,7 +328,10 @@ if __name__ == "__main__":
     _args = parser.parse_args()
 
     print("[royal_blue1]Benchmarking started. This will take a while depending on your configuration.[/royal_blue1]")
+
     _sweep_config = OmegaConf.load(_args.config)
-    runner = Benchmark(_sweep_config, 0)
+    if "wandb" in _sweep_config.writer:
+        wandb.setup()  # this is required when using multiprocessing otherwise wandb hangs
+    runner = Benchmark(_sweep_config, n_gpus=0)
     runner.run()
     print("[royal_blue1]Finished gathering results[/royal_blue1] ⚡")
