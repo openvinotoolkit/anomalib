@@ -42,33 +42,33 @@ class EnsembleMetrics(EnsemblePostProcess):
     def configure_ensemble_metrics(
         self,
         task: TaskType = TaskType.SEGMENTATION,
-        image_metric_names: list[str] | None = None,
-        pixel_metric_names: list[str] | None = None,
+        image_metrics: list[str] | None = None,
+        pixel_metrics: list[str] | None = None,
     ) -> (AnomalibMetricCollection, AnomalibMetricCollection):
         """
         Configure image and pixel metrics and put them into a collection.
         Args:
             task: Task type of the current run.
-            image_metric_names: List of image-level metric names.
-            pixel_metric_names: List of pixel-level metric names.
+            image_metrics: List of image-level metric names.
+            pixel_metrics: List of pixel-level metric names.
 
         Returns:
             image metrics collection and pixel metrics collection
         """
-        image_metric_names = [] if image_metric_names is None else image_metric_names
+        image_metric_names = [] if image_metrics is None else image_metrics
 
         pixel_metric_names: list[str]
-        if pixel_metric_names is None:
+        if pixel_metrics is None:
             pixel_metric_names = []
         elif task == TaskType.CLASSIFICATION:
             pixel_metric_names = []
             logger.warning(
                 "Cannot perform pixel-level evaluation when task type is classification. "
                 "Ignoring the following pixel-level metrics: %s",
-                pixel_metric_names,
+                pixel_metrics,
             )
         else:
-            pixel_metric_names = pixel_metric_names
+            pixel_metric_names = pixel_metrics
 
         image_metrics = create_metric_collection(image_metric_names, "image_")
         pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
