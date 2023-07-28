@@ -146,7 +146,7 @@ def plot_pimo_curves(
 
         ax.set_xscale("log")
         ax.set_xlim(logfpr_epsilon, 1)
-        eps_round_exponent = np.floor(np.log10(logfpr_epsilon))
+        eps_round_exponent = int(np.floor(np.log10(logfpr_epsilon)))
         ticks_major = np.logspace(eps_round_exponent, 0, abs(eps_round_exponent) + 1)
         formatter_major = LogFormatter()
         ticks_minor = np.logspace(eps_round_exponent, 0, 2 * abs(eps_round_exponent) + 1)
