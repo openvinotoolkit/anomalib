@@ -224,8 +224,16 @@ def _add_metadata_to_ir(xml_file: str, metadata: dict[str, Any], input_size: tup
     tmp_xml_path = Path(Path(xml_file).parent) / "tmp.xml"
     serialize(model, str(tmp_xml_path))
     tmp_xml_path.rename(xml_file)
-    Path(str(tmp_xml_path.parent / tmp_xml_path.stem) + ".bin").unlink()
+    tmp_xml_path.with_suffix(".bin").unlink()
 
 
-def _serialize_list(arr):
+def _serialize_list(arr: list[int] | list[float] | tuple[int, int]) -> str:
+    """Serializes the list to a string.
+
+    Args:
+        arr (list[int] | list[float] | tuple[int, int]): List to serialize.
+
+    Returns:
+        str: Serialized list.
+    """
     return " ".join(map(str, arr))
