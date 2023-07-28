@@ -12,6 +12,7 @@ import torch.nn.functional as F
 from torch import Tensor
 from tqdm import tqdm
 
+from anomalib.data.utils import masks_to_boxes
 from anomalib.models.components import GaussianBlur2d
 from anomalib.models.ensemble.ensemble_prediction_data import EnsemblePredictions
 from anomalib.models.ensemble.ensemble_prediction_joiner import EnsemblePredictionJoiner
@@ -185,8 +186,14 @@ class Threshold(EnsemblePostProcess):
         data["pred_labels"] = data["pred_scores"] >= self.image_threshold
         if "anomaly_maps" in data.keys():
             data["pred_masks"] = data["anomaly_maps"] >= self.pixel_threshold
+
+            # also make boxes from predicted masks
+            data["pred_boxes"], data["box_scores"] = masks_to_boxes(
+                data["pred_masks"], data["anomaly_maps"]
+            )
+            data["box_labels"] = [torch.ones(boxes.shape[0]) for boxes in data["pred_boxes"]]
         # apply thresholding to boxes
-        if "box_scores" in data:
+        if "box_scores" in data and "box_labels" not in data:
             # apply threshold to assign normal/anomalous label to boxes
             is_anomalous = [scores > self.pixel_threshold for scores in data["box_scores"]]
             data["box_labels"] = [labels.int() for labels in is_anomalous]
