@@ -174,20 +174,37 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
         """
         batch_size = len(batch_data[(0, 0)]["pred_boxes"])
 
-        # create placeholder arrays, that will contain box data fro each image
+        # create array of placeholder arrays, that will contain all boxes for each image
         boxes = [[] for _ in range(batch_size)]
         scores = [[] for _ in range(batch_size)]
         labels = [[] for _ in range(batch_size)]
 
         # go over all tiles and add box data tensor to belonging array
-        for curr_pred in batch_data.values():
+        for (tile_i, tile_j), curr_tile_pred in batch_data.items():
             for i in range(batch_size):
-                boxes[i].append(curr_pred["pred_boxes"][i])
-                scores[i].append(curr_pred["box_scores"][i])
-                labels[i].append(curr_pred["box_labels"][i])
+                # boxes have form [x_1, y_1, x_2, y_2]
+                curr_boxes = curr_tile_pred["pred_boxes"][i]
 
+                # tile position offset
+                offset_w = self.tiler.tile_size_w * tile_j
+                offset_h = self.tiler.tile_size_h * tile_i
+
+                # offset in x-axis
+                curr_boxes[:, 0] += offset_w
+                curr_boxes[:, 2] += offset_w
+
+                # offset in y-axis
+                curr_boxes[:, 1] += offset_h
+                curr_boxes[:, 3] += offset_h
+
+                boxes[i].append(curr_boxes)
+                scores[i].append(curr_tile_pred["box_scores"][i])
+                labels[i].append(curr_tile_pred["box_labels"][i])
+
+        # arrays with box data for each batch
         joined_boxes = {"pred_boxes": [], "box_scores": [], "box_labels": []}
         for i in range(batch_size):
+            # n in this case represents number of predicted boxes
             # stack boxes into form [n, 4] (vertical stack)
             joined_boxes["pred_boxes"].append(torch.vstack(boxes[i]))
             # stack scores and labels into form [n] (horizontal stack)

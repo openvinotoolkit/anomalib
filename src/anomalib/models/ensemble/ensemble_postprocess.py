@@ -282,6 +282,7 @@ class EnsemblePostProcessPipeline:
         """
         self.steps = steps
 
+    @torch.inference_mode()
     def execute(self) -> dict[str, Any]:
         """
         Execute the pipeline. For each batch go through all steps of pipeline.

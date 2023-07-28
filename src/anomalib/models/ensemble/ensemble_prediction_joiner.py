@@ -100,6 +100,8 @@ class EnsemblePredictionJoiner(ABC):
         }
         if "mask_path" in current_batch_data[(0, 0)].keys():
             joined_predictions["mask_path"] = current_batch_data[(0, 0)]["mask_path"]
+        if "boxes" in current_batch_data[(0, 0)].keys():
+            joined_predictions["boxes"] = current_batch_data[(0, 0)]["boxes"]
 
         # join all tiled data
         for t_key in tiled_keys:
