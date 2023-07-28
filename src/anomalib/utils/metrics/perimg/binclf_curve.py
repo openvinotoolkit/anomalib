@@ -314,6 +314,11 @@ class PerImageBinClfCurve(Metric):
     ) -> None:
         super().__init__(**kwargs)
 
+        warnings.warn(
+            f"Metric `{self.__class__.__name__}` will save all targets and predictions in buffer."
+            " For large datasets this may lead to large memory footprint."
+        )
+
         _validate_num_thresholds(num_thresholds)
         self.register_buffer("num_thresholds", torch.tensor(num_thresholds))
 
