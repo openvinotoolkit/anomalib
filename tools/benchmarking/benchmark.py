@@ -39,6 +39,7 @@ from tempfile import TemporaryDirectory
 from typing import Any, cast
 
 import torch
+import wandb
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning import Trainer, seed_everything
 from rich import print  # pylint: disable=W0622 | disable redefine print warning
@@ -47,7 +48,6 @@ from rich.progress import Progress, TaskID
 from rich.table import Table
 from utils import write_metrics
 
-import wandb
 from anomalib.config import get_configurable_parameters, update_input_size_config
 from anomalib.data import get_datamodule
 from anomalib.deploy import export
