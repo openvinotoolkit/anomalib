@@ -22,13 +22,12 @@ class EnsembleTiler(Tiler):
 
     def __init__(self, config: DictConfig | ListConfig):
         super().__init__(
-            tile_size=config.dataset.tiling.tile_size,
-            stride=config.dataset.tiling.stride,
-            remove_border_count=config.dataset.tiling.remove_border_count,
+            tile_size=config.ensemble.tiling.tile_size,
+            stride=config.ensemble.tiling.stride,
         )
 
         # calculate final image size
-        self.image_size = self._validate_size_type(config.dataset.image_size)
+        self.image_size = self.validate_size_type(config.dataset.image_size)
         self.resized_h, self.resized_w = compute_new_image_size(
             image_size=self.image_size,
             tile_size=(self.tile_size_h, self.tile_size_w),

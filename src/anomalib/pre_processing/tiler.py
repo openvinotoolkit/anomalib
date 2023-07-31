@@ -162,11 +162,11 @@ class Tiler:
         mode: ImageUpscaleMode = ImageUpscaleMode.PADDING,
         tile_count: int = 4,
     ) -> None:
-        self.tile_size_h, self.tile_size_w = self._validate_size_type(tile_size)
+        self.tile_size_h, self.tile_size_w = self.validate_size_type(tile_size)
         self.tile_count = tile_count
 
         if stride is not None:
-            self.stride_h, self.stride_w = self._validate_size_type(stride)
+            self.stride_h, self.stride_w = self.validate_size_type(stride)
 
         self.remove_border_count = remove_border_count
         self.overlapping = not (self.stride_h == self.tile_size_h and self.stride_w == self.tile_size_w)
@@ -197,7 +197,7 @@ class Tiler:
         self.num_patches_w: int
 
     @staticmethod
-    def _validate_size_type(parameter: int | Sequence) -> tuple[int, ...]:
+    def validate_size_type(parameter: int | Sequence) -> tuple[int, ...]:
         if isinstance(parameter, int):
             output = (parameter, parameter)
         elif isinstance(parameter, Sequence):

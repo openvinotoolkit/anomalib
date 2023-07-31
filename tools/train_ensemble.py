@@ -16,43 +16,23 @@ from argparse import ArgumentParser, Namespace
 from itertools import product
 
 from pytorch_lightning import Trainer, seed_everything
-from tqdm import tqdm
 
 from anomalib.config import get_configurable_parameters
-from anomalib.data import get_datamodule
-from anomalib.data.utils import ValSplitMode
 from anomalib.models import get_model
-from anomalib.models.ensemble.ensemble_postprocess import (
-    PostProcessStats,
-    EnsemblePostProcessPipeline,
-    SmoothJoins,
-    MinMaxNormalize,
-    Threshold,
-)
-from anomalib.models.ensemble.ensemble_visualization import EnsembleVisualization
-from anomalib.utils.callbacks import (
-    get_callbacks,
-    LoadModelCallback,
-    ImageVisualizerCallback,
-    MetricVisualizerCallback,
-    MinMaxNormalizationCallback,
-)
 from anomalib.utils.loggers import configure_logger, get_experiment_logger
 
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
 from anomalib.models.ensemble.ensemble_functions import (
-    TileCollater,
-    update_ensemble_input_size_config,
     BasicPredictionJoiner,
     get_ensemble_datamodule,
     get_ensemble_callbacks,
+    prepare_ensemble_configurable_parameters,
+    get_prediction_storage,
+    get_stats_pipelines,
+    get_post_process_pipelines,
 )
-from anomalib.models.ensemble.ensemble_prediction_data import (
-    BasicEnsemblePredictions,
-    FileSystemEnsemblePredictions,
-    RescaledEnsemblePredictions,
-)
-from anomalib.models.ensemble.ensemble_metrics import EnsembleMetrics, log_metrics
+
+from anomalib.models.ensemble.ensemble_metrics import log_metrics
 
 logger = logging.getLogger("anomalib")
 
@@ -66,6 +46,7 @@ def get_parser() -> ArgumentParser:
     parser = ArgumentParser()
     parser.add_argument("--model", type=str, default="padim", help="Name of the algorithm to train/test")
     parser.add_argument("--config", type=str, required=False, help="Path to a model config file")
+    parser.add_argument("--ens_config", type=str, required=True, help="Path to an ensemble configuration file")
     parser.add_argument("--log-level", type=str, default="INFO", help="<DEBUG, INFO, WARNING, ERROR>")
 
     return parser
@@ -86,8 +67,9 @@ def train(args: Namespace):
     config = get_configurable_parameters(model_name=args.model, config_path=args.config)
     if config.project.get("seed") is not None:
         seed_everything(config.project.seed)
-    # TODO: refactor into ensemble suitable
-    config = update_ensemble_input_size_config(config)
+
+    # update and prepare config for ensemble
+    config = prepare_ensemble_configurable_parameters(ens_config_path=args.ens_config, config=config)
 
     experiment_logger = get_experiment_logger(config)
 
@@ -95,8 +77,7 @@ def train(args: Namespace):
 
     datamodule = get_ensemble_datamodule(config, tiler)
 
-    ensemble_predictions = BasicEnsemblePredictions()
-    validation_predictions = BasicEnsemblePredictions()
+    ensemble_predictions, validation_predictions = get_prediction_storage(config)
 
     # go over all tile positions and train
     for tile_index in product(range(tiler.num_patches_h), range(tiler.num_patches_w)):
@@ -124,25 +105,14 @@ def train(args: Namespace):
         )
         validation_predictions.add_tile_prediction(tile_index, current_val_predictions)
 
-    joiner = BasicPredictionJoiner(tiler)
-
     logger.info("Computing normalization and threshold statistics.")
-    stats_pipeline = EnsemblePostProcessPipeline(validation_predictions, joiner)
-    stats_pipeline.add_steps([SmoothJoins(tiler), PostProcessStats()])
-    stats = stats_pipeline.execute()["stats"]
+    # get statistics pipeline
+    stats_pipeline = get_stats_pipelines(config, tiler, validation_predictions)
+    stats = stats_pipeline.execute().get("stats", None)
 
     logger.info("Post processing predictions.")
-    # build postprocess, visualization and metric pipeline
-    post_pipeline = EnsemblePostProcessPipeline(ensemble_predictions, joiner)
-    post_pipeline.add_steps(
-        [
-            SmoothJoins(tiler),
-            MinMaxNormalize(stats),
-            Threshold(image_threshold=0.5, pixel_threshold=0.5),
-            EnsembleVisualization(config),
-            EnsembleMetrics(config, image_threshold=0.5, pixel_threshold=0.5),
-        ]
-    )
+    # get postprocess, visualization and metric pipeline
+    post_pipeline = get_post_process_pipelines(config, stats, tiler, ensemble_predictions)
     # execute pipeline and take metric results
     computed_metrics = post_pipeline.execute()["metrics"]
 

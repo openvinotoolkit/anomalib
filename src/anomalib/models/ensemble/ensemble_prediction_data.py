@@ -176,7 +176,7 @@ class RescaledEnsemblePredictions(EnsemblePredictions):
     def __init__(self, config: DictConfig | ListConfig) -> None:
         super().__init__()
         self.all_data = {}
-        self.downscale_factor = config.dataset.tiling.downscale_factor
+        self.downscale_factor = config.ensemble.tiling.downscale_factor
         self.upscale_factor = 1 / self.downscale_factor
 
         self.upscale_called = set()

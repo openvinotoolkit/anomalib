@@ -8,7 +8,6 @@ from abc import ABC
 from typing import Any, List
 
 import torch
-import torch.nn.functional as F
 from torch import Tensor
 from tqdm import tqdm
 
@@ -188,9 +187,7 @@ class Threshold(EnsemblePostProcess):
             data["pred_masks"] = data["anomaly_maps"] >= self.pixel_threshold
 
             # also make boxes from predicted masks
-            data["pred_boxes"], data["box_scores"] = masks_to_boxes(
-                data["pred_masks"], data["anomaly_maps"]
-            )
+            data["pred_boxes"], data["box_scores"] = masks_to_boxes(data["pred_masks"], data["anomaly_maps"])
             data["box_labels"] = [torch.ones(boxes.shape[0]) for boxes in data["pred_boxes"]]
         # apply thresholding to boxes
         if "box_scores" in data and "box_labels" not in data:

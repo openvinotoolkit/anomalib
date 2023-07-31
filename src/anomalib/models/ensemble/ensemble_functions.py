@@ -11,7 +11,7 @@ import warnings
 from typing import Any
 
 import torch
-from omegaconf import DictConfig, ListConfig
+from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning import Callback
 from pytorch_lightning.callbacks import ModelCheckpoint
 from torch import Tensor
@@ -19,14 +19,30 @@ from torch import Tensor
 from anomalib.data import get_datamodule
 from anomalib.data.base.datamodule import collate_fn, AnomalibDataModule
 from anomalib.deploy import ExportMode
+from anomalib.models.ensemble.ensemble_metrics import EnsembleMetrics
+from anomalib.models.ensemble.ensemble_postprocess import (
+    EnsemblePostProcessPipeline,
+    SmoothJoins,
+    PostProcessStats,
+    MinMaxNormalize,
+    Threshold,
+)
+from anomalib.models.ensemble.ensemble_prediction_data import EnsemblePredictions
 from anomalib.models.ensemble.ensemble_prediction_joiner import EnsemblePredictionJoiner
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
+from anomalib.models.ensemble.ensemble_visualization import EnsembleVisualization
 from anomalib.utils.callbacks import (
     TimerCallback,
     LoadModelCallback,
     PostProcessingConfigurationCallback,
     MinMaxNormalizationCallback,
-    GraphLogger, MetricsConfigurationCallback,
+    GraphLogger,
+    MetricsConfigurationCallback,
+)
+from anomalib.models.ensemble.ensemble_prediction_data import (
+    BasicEnsemblePredictions,
+    FileSystemEnsemblePredictions,
+    RescaledEnsemblePredictions,
 )
 
 logger = logging.getLogger(__name__)
@@ -72,6 +88,29 @@ class TileCollater:
         return coll_batch
 
 
+def prepare_ensemble_configurable_parameters(
+    ens_config_path, config: DictConfig | ListConfig
+) -> DictConfig | ListConfig:
+    """
+    Add all ensemble configuration parameters to config object
+
+    Args:
+        ens_config_path: Path to ensemble configuration.
+        config: Configurable parameters object.
+
+    Returns:
+        Configurable parameters object with ensemble parameters.
+    """
+    ens_config = OmegaConf.load(ens_config_path)
+    config["ensemble"] = ens_config
+
+    config.ensemble.tiling.tile_size = EnsembleTiler.validate_size_type(ens_config.tiling.tile_size)
+    # update model input size
+    config.model.input_size = config.ensemble.tiling.tile_size
+
+    return config
+
+
 def get_ensemble_datamodule(config: DictConfig | ListConfig, tiler: EnsembleTiler) -> AnomalibDataModule:
     """
     Get Anomaly Datamodule adjusted for use in ensemble.
@@ -87,19 +126,18 @@ def get_ensemble_datamodule(config: DictConfig | ListConfig, tiler: EnsembleTile
     return datamodule
 
 
-def update_ensemble_input_size_config(config: DictConfig | ListConfig) -> DictConfig | ListConfig:
-    """
-    Update input size of model to match tile size.
-
-    Args:
-        config: Configurable parameters object.
-
-    Returns:
-        Configurable parameters with updated values
-    """
-    tile_size = (config.dataset.tiling.tile_size,) * 2
-    config.model.input_size = tile_size
-    return config
+def get_prediction_storage(config: DictConfig | ListConfig) -> (EnsemblePredictions, EnsemblePredictions):
+    if config.ensemble.predictions.storage == "direct":
+        return BasicEnsemblePredictions(), BasicEnsemblePredictions()
+    elif config.ensemble.predictions.storage == "file_system":
+        return FileSystemEnsemblePredictions(config), FileSystemEnsemblePredictions(config)
+    elif config.ensemble.predictions.storage == "rescaled":
+        return RescaledEnsemblePredictions(config), RescaledEnsemblePredictions(config)
+    else:
+        raise ValueError(
+            f"Prediction storage not recognized: {config.ensemble.predictions.storage}."
+            f" Possible values: [direct, file_system, rescaled]."
+        )
 
 
 def get_ensemble_callbacks(config: DictConfig | ListConfig, tile_index: (int, int)) -> list[Callback]:
@@ -135,14 +173,15 @@ def get_ensemble_callbacks(config: DictConfig | ListConfig, tile_index: (int, in
 
     # Add post-processing configurations to AnomalyModule.
     image_threshold = (
-        config.metrics.threshold.manual_image if "manual_image" in config.metrics.threshold.keys() else None
+        config.ensemble.metrics.threshold.manual_image if "manual_image" in config.metrics.threshold.keys() else None
     )
     pixel_threshold = (
-        config.metrics.threshold.manual_pixel if "manual_pixel" in config.metrics.threshold.keys() else None
+        config.ensemble.metrics.threshold.manual_pixel if "manual_pixel" in config.metrics.threshold.keys() else None
     )
 
+    # even if we threshold at the end, we want to have this here due to some models that need early stopping criteria
     post_processing_callback = PostProcessingConfigurationCallback(
-        threshold_method=config.metrics.threshold.method if config.model.ensemble.thresholding == "tile" else "none",
+        threshold_method=config.metrics.threshold.method,
         manual_image_threshold=image_threshold,
         manual_pixel_threshold=pixel_threshold,
     )
@@ -151,12 +190,12 @@ def get_ensemble_callbacks(config: DictConfig | ListConfig, tile_index: (int, in
     # Add metric configuration to the model via MetricsConfigurationCallback
     metrics_callback = MetricsConfigurationCallback(
         config.dataset.task,
-        config.metrics.get("image", None),
-        config.metrics.get("pixel", None),
+        config.ensemble.metrics.get("image", None),
+        config.ensemble.metrics.get("pixel", None),
     )
     callbacks.append(metrics_callback)
 
-    if config.model.ensemble.normalization == "tile":
+    if config.ensemble.post_processing.normalization == "tile":
         if "normalization_method" in config.model.keys() and not config.model.normalization_method == "none":
             if config.model.normalization_method == "min_max":
                 callbacks.append(MinMaxNormalizationCallback())
@@ -342,3 +381,76 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
         joined = {"pred_labels": labels, "pred_scores": scores}
 
         return joined
+
+
+def get_stats_pipelines(
+    config: DictConfig | ListConfig, tiler: EnsembleTiler, validation_predictions: EnsemblePredictions
+) -> (EnsemblePostProcessPipeline, EnsemblePostProcessPipeline):
+    """
+    Build and return pipeline used to obtain stats used for postprocessing.
+
+    Args:
+        config: Configurable parameters object.
+        tiler: Tiler used by some steps of pipeline.
+        validation_predictions: Predictions used to calculate stats.
+
+    Returns:
+        Pipeline object with stats steps added.
+    """
+    joiner = BasicPredictionJoiner(tiler)
+
+    stats_pipeline = EnsemblePostProcessPipeline(validation_predictions, joiner)
+
+    steps = []
+
+    if config.ensemble.post_processing.smooth_joins:
+        steps.append(SmoothJoins(tiler))
+    if config.ensemble.metrics.threshold.stage == "final" or config.ensemble.post_processing.normalization == "final":
+        # thresholding and normalization need joined image-level statistics
+        steps.append(PostProcessStats())
+
+    stats_pipeline.add_steps(steps)
+
+    return stats_pipeline
+
+
+def get_post_process_pipelines(
+    config: DictConfig | ListConfig, stats: dict | None, tiler: EnsembleTiler, ensemble_predictions: EnsemblePredictions
+) -> (EnsemblePostProcessPipeline, EnsemblePostProcessPipeline):
+    """
+    Build and return pipeline used to postprocess, visualize and calculate metrics.
+
+    Args:
+        config: Configurable parameters object.
+        stats: Statistics such as min, max and thresholds calculated on validation data.
+        tiler: Tiler used for untiling of predictions.
+        ensemble_predictions: Predictions to be joined and processed.
+
+    Returns:
+        Pipeline object with all post-processing steps.
+    """
+    joiner = BasicPredictionJoiner(tiler)
+
+    post_pipeline = EnsemblePostProcessPipeline(ensemble_predictions, joiner)
+
+    steps = []
+    if config.ensemble.post_processing.smooth_joins:
+        steps.append(SmoothJoins(tiler))
+
+    if config.ensemble.post_processing.normalization == "final":
+        steps.append(MinMaxNormalize(stats))
+        # with minmax normalization, values are normalized such that the threshold value is centered at 0.5
+        stats["image_threshold"] = 0.5
+        stats["pixel_threshold"] = 0.5
+
+    if config.ensemble.metrics.threshold.stage == "final":
+        steps.append(Threshold(stats["image_threshold"], stats["pixel_threshold"]))
+
+    if config.ensemble.visualization.show_images or config.ensemble.visualization.save_images:
+        steps.append(EnsembleVisualization(config))
+
+    steps.append(EnsembleMetrics(config, stats["image_threshold"], stats["pixel_threshold"]))
+
+    post_pipeline.add_steps(steps)
+
+    return post_pipeline
