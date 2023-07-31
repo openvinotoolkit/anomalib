@@ -23,13 +23,11 @@ from anomalib.utils.loggers import configure_logger, get_experiment_logger
 
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
 from anomalib.models.ensemble.ensemble_functions import (
-    BasicPredictionJoiner,
     get_ensemble_datamodule,
     get_ensemble_callbacks,
     prepare_ensemble_configurable_parameters,
     get_prediction_storage,
-    get_stats_pipelines,
-    get_post_process_pipelines,
+    post_process,
 )
 
 from anomalib.models.ensemble.ensemble_metrics import log_metrics
@@ -67,16 +65,13 @@ def train(args: Namespace):
     config = get_configurable_parameters(model_name=args.model, config_path=args.config)
     if config.project.get("seed") is not None:
         seed_everything(config.project.seed)
-
     # update and prepare config for ensemble
     config = prepare_ensemble_configurable_parameters(ens_config_path=args.ens_config, config=config)
 
     experiment_logger = get_experiment_logger(config)
 
     tiler = EnsembleTiler(config)
-
     datamodule = get_ensemble_datamodule(config, tiler)
-
     ensemble_predictions, validation_predictions = get_prediction_storage(config)
 
     # go over all tile positions and train
@@ -85,7 +80,6 @@ def train(args: Namespace):
 
         # configure callbacks for ensemble
         ensemble_callbacks = get_ensemble_callbacks(config, tile_index)
-
         # set tile position inside dataloader
         datamodule.custom_collate_fn.tile_index = tile_index
 
@@ -105,17 +99,13 @@ def train(args: Namespace):
         )
         validation_predictions.add_tile_prediction(tile_index, current_val_predictions)
 
-    logger.info("Computing normalization and threshold statistics.")
-    # get statistics pipeline
-    stats_pipeline = get_stats_pipelines(config, tiler, validation_predictions)
-    stats = stats_pipeline.execute().get("stats", None)
-
-    logger.info("Post processing predictions.")
-    # get postprocess, visualization and metric pipeline
-    post_pipeline = get_post_process_pipelines(config, stats, tiler, ensemble_predictions)
-    # execute pipeline and take metric results
-    computed_metrics = post_pipeline.execute()["metrics"]
-
+    # postprocess, visualization and metric pipeline
+    computed_metrics = post_process(
+        config=config,
+        tiler=tiler,
+        ensemble_predictions=ensemble_predictions,
+        validation_predictions=validation_predictions,
+    )
     log_metrics(computed_metrics)
 
 

@@ -7,7 +7,7 @@ predictions:
   rescale_factor: 0.5
 
 post_processing:
-  normalization: tile # [tile, final, none]
+  normalization: final # [tile, final, none]
   smooth_joins: True
 
 metrics:

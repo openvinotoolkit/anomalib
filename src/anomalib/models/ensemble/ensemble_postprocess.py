@@ -266,14 +266,11 @@ class EnsemblePostProcessPipeline:
     Pipeline used to perform various post-processing of ensemble predictions.
 
     Args:
-        data: Class containing all tile predictions.
         joiner: Class used to join tiled data, already containing predictions.
     """
 
-    def __init__(self, data: EnsemblePredictions, joiner: EnsemblePredictionJoiner):
-        self.data = data
+    def __init__(self, joiner: EnsemblePredictionJoiner):
         self.joiner = joiner
-        self.joiner.setup(self.data)
 
         self.steps: List[EnsemblePostProcess] = []
 
@@ -287,13 +284,18 @@ class EnsemblePostProcessPipeline:
         self.steps = steps
 
     @torch.inference_mode()
-    def execute(self) -> dict[str, Any]:
+    def execute(self, data: EnsemblePredictions) -> dict[str, Any]:
         """
         Execute the pipeline. For each batch go through all steps of pipeline.
+
+        Args:
+            data: Class containing all tile predictions.
 
         Returns:
             Dictionary containing results of `compute` function called for each step that has it.
         """
+        # setup joiner to process given tiled data
+        self.joiner.setup(data)
 
         for batch_index in tqdm(range(self.joiner.num_batches)):
             # first join every batch of tiles

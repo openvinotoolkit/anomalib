@@ -8,7 +8,7 @@ from __future__ import annotations
 import logging
 import os
 import warnings
-from typing import Any
+from typing import Any, List
 
 import torch
 from omegaconf import DictConfig, ListConfig, OmegaConf
@@ -25,7 +25,7 @@ from anomalib.models.ensemble.ensemble_postprocess import (
     SmoothJoins,
     PostProcessStats,
     MinMaxNormalize,
-    Threshold,
+    Threshold, EnsemblePostProcess,
 )
 from anomalib.models.ensemble.ensemble_prediction_data import EnsemblePredictions
 from anomalib.models.ensemble.ensemble_prediction_joiner import EnsemblePredictionJoiner
@@ -383,11 +383,11 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
         return joined
 
 
-def get_stats_pipelines(
+def get_stats(
     config: DictConfig | ListConfig, tiler: EnsembleTiler, validation_predictions: EnsemblePredictions
-) -> (EnsemblePostProcessPipeline, EnsemblePostProcessPipeline):
+) -> dict:
     """
-    Build and return pipeline used to obtain stats used for postprocessing.
+    Get statistics used for postprocessing.
 
     Args:
         config: Configurable parameters object.
@@ -395,11 +395,9 @@ def get_stats_pipelines(
         validation_predictions: Predictions used to calculate stats.
 
     Returns:
-        Pipeline object with stats steps added.
+        Dictionary with calculated statistics.
     """
-    joiner = BasicPredictionJoiner(tiler)
-
-    stats_pipeline = EnsemblePostProcessPipeline(validation_predictions, joiner)
+    stats_pipeline = EnsemblePostProcessPipeline(BasicPredictionJoiner(tiler))
 
     steps = []
 
@@ -411,27 +409,49 @@ def get_stats_pipelines(
 
     stats_pipeline.add_steps(steps)
 
-    return stats_pipeline
+    pipe_out = stats_pipeline.execute(validation_predictions)
+
+    return pipe_out.get("stats", None)
 
 
-def get_post_process_pipelines(
-    config: DictConfig | ListConfig, stats: dict | None, tiler: EnsembleTiler, ensemble_predictions: EnsemblePredictions
-) -> (EnsemblePostProcessPipeline, EnsemblePostProcessPipeline):
+def log_postprocess_steps(steps: List[EnsemblePostProcess]) -> None:
     """
-    Build and return pipeline used to postprocess, visualize and calculate metrics.
+    Log steps used in post-processing pipeline.
+
+    Args:
+        steps: List of steps in pipeline.
+
+    """
+    logger.info("-" * 42)
+    logger.info("Steps in post processing pipeline:")
+    for step in steps:
+        logger.info(step.name)
+    logger.info("-" * 42)
+
+
+def post_process(
+    config: DictConfig | ListConfig,
+    tiler: EnsembleTiler,
+    ensemble_predictions: EnsemblePredictions,
+    validation_predictions: EnsemblePredictions,
+) -> dict:
+    """
+    Postprocess, visualize and calculate metrics.
 
     Args:
         config: Configurable parameters object.
-        stats: Statistics such as min, max and thresholds calculated on validation data.
         tiler: Tiler used for untiling of predictions.
         ensemble_predictions: Predictions to be joined and processed.
+        validation_predictions: Predictions used to calculate stats.
 
     Returns:
-        Pipeline object with all post-processing steps.
+        Dictionary with calculated metrics data.
     """
-    joiner = BasicPredictionJoiner(tiler)
+    logger.info("Computing normalization and threshold statistics.")
+    # get statistics, calculated on validation dataset
+    stats = get_stats(config, tiler, validation_predictions)
 
-    post_pipeline = EnsemblePostProcessPipeline(ensemble_predictions, joiner)
+    post_pipeline = EnsemblePostProcessPipeline(BasicPredictionJoiner(tiler))
 
     steps = []
     if config.ensemble.post_processing.smooth_joins:
@@ -451,6 +471,11 @@ def get_post_process_pipelines(
 
     steps.append(EnsembleMetrics(config, stats["image_threshold"], stats["pixel_threshold"]))
 
-    post_pipeline.add_steps(steps)
+    log_postprocess_steps(steps)
 
-    return post_pipeline
+    logger.info("Executing pipeline.")
+    # add all above configured steps to pipeline and execute
+    post_pipeline.add_steps(steps)
+    pipe_out = post_pipeline.execute(ensemble_predictions)
+
+    return pipe_out["metrics"]
