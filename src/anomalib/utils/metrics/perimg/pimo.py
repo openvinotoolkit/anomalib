@@ -297,14 +297,16 @@ class AUPImO(PImO):
     def plot_pimo_curves(
         self,
         ax: Axes | None = None,
-    ) -> tuple[Figure | None, Axes]:
+    ) -> tuple[Figure | None, Axes] | tuple[None, None]:
         """Plot shared FPR vs Per-Image Overlap (PImO) curves."""
+        if self.is_empty:
+            return None, None
         thresholds, shared_fpr, tprs, image_classes, aucs = self.compute()
         # TODO customize special cases
         fig, ax = plot_pimo_curves(
             shared_fpr=shared_fpr,
             tprs=tprs,
-            image_classes=self._image_classes_tensor,
+            image_classes=image_classes,
             ax=ax,
             logfpr=False,
         )
