@@ -20,7 +20,7 @@ class EnsembleTiler(Tiler):
         config: Configuration of the anomaly model.
     """
 
-    def __init__(self, config: DictConfig | ListConfig):
+    def __init__(self, config: DictConfig | ListConfig) -> None:
         super().__init__(
             tile_size=config.ensemble.tiling.tile_size,
             stride=config.ensemble.tiling.stride,

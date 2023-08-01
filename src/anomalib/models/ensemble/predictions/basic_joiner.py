@@ -18,7 +18,6 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
     Labels are combined with OR operator, meaning one anomalous tile -> anomalous image
     Scores are averaged
 
-
     """
 
     def join_tiles(self, batch_data: dict, tile_key: str) -> Tensor:

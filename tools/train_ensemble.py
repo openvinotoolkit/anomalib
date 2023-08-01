@@ -1,10 +1,8 @@
 """Anomalib Training Script for ensemble of models.
 
 This script reads the name of the model or config file from command
-line, train/test the anomaly model to get quantitative and qualitative
+line, trains and evaluates ensemble of anomaly models to get quantitative and qualitative
 results.
-
-This code is currently not very clean as it's in prototyping stage.
 """
 
 # Copyright (C) 2023 Intel Corporation
@@ -20,17 +18,15 @@ from pytorch_lightning import Trainer, seed_everything
 from anomalib.config import get_configurable_parameters
 from anomalib.models import get_model
 from anomalib.utils.loggers import configure_logger, get_experiment_logger
-
-from anomalib.models.ensemble.post_processing import post_process
-from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
-from anomalib.models.ensemble.ensemble_functions import (
+from anomalib.models.ensemble import (
     get_ensemble_datamodule,
     get_ensemble_callbacks,
     prepare_ensemble_configurable_parameters,
     get_prediction_storage,
+    EnsembleTiler,
+    post_process,
+    log_metrics,
 )
-
-from anomalib.models.ensemble.post_processing.metrics import log_metrics
 
 logger = logging.getLogger("anomalib")
 

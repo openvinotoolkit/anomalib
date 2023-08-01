@@ -66,6 +66,7 @@ class BasicEnsemblePredictions(EnsemblePredictions):
         Args:
             tile_index: Index of tile that we are adding in form (row, column).
             tile_prediction: List of batches containing all predicted data for current tile.
+
         """
         self.num_batches = len(tile_prediction)
 
@@ -171,6 +172,7 @@ class RescaledEnsemblePredictions(EnsemblePredictions):
 
     Args:
         config: Config file with all parameters.
+
     """
 
     def __init__(self, config: DictConfig | ListConfig) -> None:
@@ -181,7 +183,8 @@ class RescaledEnsemblePredictions(EnsemblePredictions):
 
         self.upscale_called = set()
 
-    def _rescale(self, batch: dict, scale_factor: float, mode: str) -> dict:
+    @staticmethod
+    def _rescale(batch: dict, scale_factor: float, mode: str) -> dict:
         """
         Rescale all tile data in batch for specified factor.
 
@@ -215,6 +218,7 @@ class RescaledEnsemblePredictions(EnsemblePredictions):
         Args:
             tile_index: Index of tile that we are adding in form (row, column).
             tile_prediction: List of batches containing all predicted data for current tile.
+
         """
         self.num_batches = len(tile_prediction)
 

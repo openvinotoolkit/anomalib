@@ -12,8 +12,7 @@ from tqdm import tqdm
 
 from anomalib.data.utils import masks_to_boxes
 from anomalib.models.components import GaussianBlur2d
-from anomalib.models.ensemble.predictions.prediction_data import EnsemblePredictions
-from anomalib.models.ensemble.predictions.prediction_joiner import EnsemblePredictionJoiner
+from anomalib.models.ensemble.predictions import EnsemblePredictions, EnsemblePredictionJoiner
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
 from anomalib.utils.metrics import AnomalyScoreThreshold, MinMax
 from anomalib.post_processing.normalization.min_max import normalize
@@ -63,7 +62,7 @@ class SmoothJoins(EnsemblePostProcess):
         tiler: Tiler object used to get tile dimension data.
     """
 
-    def __init__(self, tiler: EnsembleTiler):
+    def __init__(self, tiler: EnsembleTiler) -> None:
         super().__init__(final_compute=False, name="smooth_joins")
 
         # offset in pixels of region around tile join that will be smoothed
@@ -125,7 +124,7 @@ class MinMaxNormalize(EnsemblePostProcess):
         stats: dictionary containing statistics used for normalization (min, max, image threshold, pixel threshold).
     """
 
-    def __init__(self, stats: dict[str, float]):
+    def __init__(self, stats: dict[str, float]) -> None:
         super().__init__(final_compute=False, name="minmax_normalize")
 
         self.image_threshold = stats["image_threshold"]
@@ -163,7 +162,7 @@ class Threshold(EnsemblePostProcess):
         pixel_threshold: Threshold used for pixel-level thresholding.
     """
 
-    def __init__(self, image_threshold: float, pixel_threshold: float):
+    def __init__(self, image_threshold: float, pixel_threshold: float) -> None:
         super().__init__(final_compute=False, name="threshold")
         self.image_threshold = image_threshold
         self.pixel_threshold = pixel_threshold
@@ -200,7 +199,7 @@ class PostProcessStats(EnsemblePostProcess):
 
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(final_compute=True, name="stats")
 
         # adaptive threshold used for image and pixel level thresholding.
@@ -217,6 +216,7 @@ class PostProcessStats(EnsemblePostProcess):
 
         Args:
             data: Joined tile prediction data.
+
         """
         # update minmax
         if "anomaly_maps" in data:
@@ -265,7 +265,7 @@ class EnsemblePostProcessPipeline:
         joiner: Class used to join tiled data, already containing predictions.
     """
 
-    def __init__(self, joiner: EnsemblePredictionJoiner):
+    def __init__(self, joiner: EnsemblePredictionJoiner) -> None:
         self.joiner = joiner
 
         self.steps: List[EnsemblePostProcess] = []

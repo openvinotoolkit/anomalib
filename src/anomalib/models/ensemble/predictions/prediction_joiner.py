@@ -8,7 +8,7 @@ from typing import List
 
 from torch import Tensor
 
-from anomalib.models.ensemble.predictions.prediction_data import EnsemblePredictions
+from anomalib.models.ensemble.predictions import EnsemblePredictions
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
 
 
@@ -19,6 +19,7 @@ class EnsemblePredictionJoiner(ABC):
 
     Args:
         tiler: Tiler used to transform tiles back to image level representation.
+
     """
 
     def __init__(self, tiler: EnsembleTiler) -> None:
@@ -33,6 +34,7 @@ class EnsemblePredictionJoiner(ABC):
 
         Args:
             ensemble_predictions: Dictionary containing batched predictions for each tile.
+
         """
         assert ensemble_predictions.num_batches > 0, "There should be at least one batch for each tile prediction."
         assert (0, 0) in ensemble_predictions.get_batch_tiles(

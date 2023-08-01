@@ -10,17 +10,13 @@ import os
 import warnings
 from typing import Any
 
-import torch
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning import Callback
 from pytorch_lightning.callbacks import ModelCheckpoint
-from torch import Tensor
 
 from anomalib.data import get_datamodule
 from anomalib.data.base.datamodule import collate_fn, AnomalibDataModule
 from anomalib.deploy import ExportMode
-from anomalib.models.ensemble.predictions.prediction_data import EnsemblePredictions
-from anomalib.models.ensemble.predictions.prediction_joiner import EnsemblePredictionJoiner
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
 from anomalib.utils.callbacks import (
     TimerCallback,
@@ -30,7 +26,8 @@ from anomalib.utils.callbacks import (
     GraphLogger,
     MetricsConfigurationCallback,
 )
-from anomalib.models.ensemble.predictions.prediction_data import (
+from anomalib.models.ensemble.predictions import (
+    EnsemblePredictions,
     BasicEnsemblePredictions,
     FileSystemEnsemblePredictions,
     RescaledEnsemblePredictions,
@@ -113,15 +110,28 @@ def get_ensemble_datamodule(config: DictConfig | ListConfig, tiler: EnsembleTile
         PyTorch Lightning DataModule
     """
     datamodule = get_datamodule(config)
+    # set custom collate function that does the tiling
     datamodule.custom_collate_fn = TileCollater(tiler, (0, 0))
     return datamodule
 
 
 def get_prediction_storage(config: DictConfig | ListConfig) -> (EnsemblePredictions, EnsemblePredictions):
+    """
+    Return prediction storage class as set in config.
+
+    Args:
+        config: Configurable parameters object.
+
+    Returns:
+        Tuple for storage of ensemble and validation predictions.
+    """
+    # store predictions in memory
     if config.ensemble.predictions.storage == "direct":
         return BasicEnsemblePredictions(), BasicEnsemblePredictions()
+    # store predictions on file system
     elif config.ensemble.predictions.storage == "file_system":
         return FileSystemEnsemblePredictions(config), FileSystemEnsemblePredictions(config)
+    # store downscaled predictions in memory
     elif config.ensemble.predictions.storage == "rescaled":
         return RescaledEnsemblePredictions(config), RescaledEnsemblePredictions(config)
     else:
@@ -132,7 +142,8 @@ def get_prediction_storage(config: DictConfig | ListConfig) -> (EnsemblePredicti
 
 
 def get_ensemble_callbacks(config: DictConfig | ListConfig, tile_index: (int, int)) -> list[Callback]:
-    """Return base callbacks for ensemble.
+    """
+    Return base callbacks for ensemble.
 
     Args:
         config: Model config file.
@@ -186,13 +197,15 @@ def get_ensemble_callbacks(config: DictConfig | ListConfig, tile_index: (int, in
     )
     callbacks.append(metrics_callback)
 
+    # if we normalize each tile separately
     if config.ensemble.post_processing.normalization == "tile":
         if "normalization_method" in config.model.keys() and not config.model.normalization_method == "none":
             if config.model.normalization_method == "min_max":
                 callbacks.append(MinMaxNormalizationCallback())
             else:
                 raise ValueError(
-                    f"Ensemble only supports MinMax normalization. Normalization method not recognized: {config.model.normalization_method}"
+                    f"Ensemble only supports MinMax normalization. "
+                    f"Normalization method not recognized: {config.model.normalization_method}"
                 )
 
     if "optimization" in config.keys():

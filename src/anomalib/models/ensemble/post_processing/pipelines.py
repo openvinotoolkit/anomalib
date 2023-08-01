@@ -3,8 +3,7 @@ from typing import List
 
 from omegaconf import DictConfig, ListConfig
 
-from anomalib.models.ensemble.predictions import BasicPredictionJoiner
-from anomalib.models.ensemble.predictions.prediction_data import EnsemblePredictions
+from anomalib.models.ensemble.predictions import BasicPredictionJoiner, EnsemblePredictions
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
 from anomalib.models.ensemble.post_processing import (
     EnsembleMetrics,
@@ -54,7 +53,7 @@ def get_stats_pipeline(config: DictConfig | ListConfig, tiler: EnsembleTiler) ->
 
 def get_stats(
     config: DictConfig | ListConfig, tiler: EnsembleTiler, validation_predictions: EnsemblePredictions
-) -> dict:
+) -> dict | None:
     """
     Get statistics used for postprocessing.
 

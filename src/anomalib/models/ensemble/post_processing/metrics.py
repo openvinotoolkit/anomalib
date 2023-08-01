@@ -17,13 +17,15 @@ logger = logging.getLogger(__name__)
 
 class EnsembleMetrics(EnsemblePostProcess):
     """
+    Class that works as block in ensemble pipeline used to calcualte metrics.
+
     Args:
         config: Configurable parameters object.
         image_threshold: Threshold used for image metrics.
         pixel_threshold: Threshold used for pixel metrics.
     """
 
-    def __init__(self, config: DictConfig | ListConfig, image_threshold: float, pixel_threshold: float):
+    def __init__(self, config: DictConfig | ListConfig, image_threshold: float, pixel_threshold: float) -> None:
         super().__init__(final_compute=True, name="metrics")
 
         self.image_metrics, self.pixel_metrics = self.configure_ensemble_metrics(
@@ -39,21 +41,22 @@ class EnsembleMetrics(EnsemblePostProcess):
         self.image_metrics.cpu()
         self.pixel_metrics.cpu()
 
+    @staticmethod
     def configure_ensemble_metrics(
-        self,
         task: TaskType = TaskType.SEGMENTATION,
         image_metrics: list[str] | None = None,
         pixel_metrics: list[str] | None = None,
     ) -> (AnomalibMetricCollection, AnomalibMetricCollection):
         """
         Configure image and pixel metrics and put them into a collection.
+
         Args:
             task: Task type of the current run.
             image_metrics: List of image-level metric names.
             pixel_metrics: List of pixel-level metric names.
 
         Returns:
-            image metrics collection and pixel metrics collection
+            Image-metrics collection and pixel-metrics collection
         """
         image_metric_names = [] if image_metrics is None else image_metrics
 
@@ -81,6 +84,9 @@ class EnsembleMetrics(EnsemblePostProcess):
 
         Args:
             batch_results: Joined batch of results produced by model ensemble.
+
+        Returns:
+            Unchanged input.
         """
 
         self.image_metrics.update(batch_results["pred_scores"], batch_results["label"].int())
@@ -89,7 +95,7 @@ class EnsembleMetrics(EnsemblePostProcess):
 
         return batch_results
 
-    def compute(self) -> Any:
+    def compute(self) -> dict:
         """
         Compute metrics for entire ensemble.
 

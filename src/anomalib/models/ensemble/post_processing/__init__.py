@@ -15,7 +15,7 @@ from .postprocess import (
     MinMaxNormalize,
     Threshold,
 )
-from .metrics import EnsembleMetrics
+from .metrics import EnsembleMetrics, log_metrics
 from .visualization import EnsembleVisualization
 from .pipelines import post_process
 
@@ -30,4 +30,5 @@ __all__ = [
     "MinMaxNormalize",
     "Threshold",
     "post_process",
+    "log_metrics",
 ]
