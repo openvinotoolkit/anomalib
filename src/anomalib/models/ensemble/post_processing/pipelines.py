@@ -39,12 +39,7 @@ def get_stats_pipeline(config: DictConfig | ListConfig, tiler: EnsembleTiler) ->
     if config.ensemble.post_processing.smooth_joins.apply:
         steps.append(SmoothJoins(config, tiler))
     if config.ensemble.metrics.threshold.method == ThresholdMethod.ADAPTIVE:
-        if (
-            config.ensemble.metrics.threshold.stage == "final"
-            or config.ensemble.post_processing.normalization == "final"
-        ):
-            # thresholding and normalization need joined image-level statistics
-            steps.append(PostProcessStats())
+        steps.append(PostProcessStats())
 
     stats_pipeline.add_steps(steps)
 
@@ -53,7 +48,7 @@ def get_stats_pipeline(config: DictConfig | ListConfig, tiler: EnsembleTiler) ->
 
 def get_stats(
     config: DictConfig | ListConfig, tiler: EnsembleTiler, validation_predictions: EnsemblePredictions
-) -> dict | None:
+) -> dict:
     """
     Get statistics used for postprocessing.
 
@@ -69,7 +64,7 @@ def get_stats(
 
     pipe_out = stats_pipeline.execute(validation_predictions)
 
-    return pipe_out.get("stats", None)
+    return pipe_out.get("stats", {})
 
 
 def log_postprocess_steps(steps: List[EnsemblePostProcess]) -> None:
