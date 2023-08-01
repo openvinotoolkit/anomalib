@@ -89,11 +89,13 @@ def train(args: Namespace):
         current_predictions = trainer.predict(model=model, datamodule=datamodule, ckpt_path="best")
         ensemble_predictions.add_tile_prediction(tile_index, current_predictions)
 
-        logger.info("Predicting on validation data.")
-        current_val_predictions = trainer.predict(
-            model=model, dataloaders=datamodule.val_dataloader(), ckpt_path="best"
-        )
-        validation_predictions.add_tile_prediction(tile_index, current_val_predictions)
+        # if val data == test data, don't recompute
+        if config.dataset.val_split_mode != "same_as_test":
+            logger.info("Predicting on validation data.")
+            current_val_predictions = trainer.predict(
+                model=model, dataloaders=datamodule.val_dataloader(), ckpt_path="best"
+            )
+            validation_predictions.add_tile_prediction(tile_index, current_val_predictions)
 
     # postprocess, visualization and metric pipeline
     computed_metrics = post_process(

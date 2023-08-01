@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import copy
 import logging
 import os
 import warnings
@@ -127,18 +128,26 @@ def get_prediction_storage(config: DictConfig | ListConfig) -> (EnsemblePredicti
     """
     # store predictions in memory
     if config.ensemble.predictions.storage == "direct":
-        return BasicEnsemblePredictions(), BasicEnsemblePredictions()
+        ensemble_pred = BasicEnsemblePredictions()
     # store predictions on file system
     elif config.ensemble.predictions.storage == "file_system":
-        return FileSystemEnsemblePredictions(config), FileSystemEnsemblePredictions(config)
+        ensemble_pred = FileSystemEnsemblePredictions(config)
     # store downscaled predictions in memory
     elif config.ensemble.predictions.storage == "rescaled":
-        return RescaledEnsemblePredictions(config), RescaledEnsemblePredictions(config)
+        ensemble_pred = RescaledEnsemblePredictions(config)
     else:
         raise ValueError(
             f"Prediction storage not recognized: {config.ensemble.predictions.storage}."
             f" Possible values: [direct, file_system, rescaled]."
         )
+
+    # if val is same as test, don't process twice
+    if config.dataset.val_split_mode == "same_as_test":
+        validation_pred = ensemble_pred
+    else:
+        validation_pred = copy.deepcopy(ensemble_pred)
+
+    return ensemble_pred, validation_pred
 
 
 def get_ensemble_callbacks(config: DictConfig | ListConfig, tile_index: (int, int)) -> list[Callback]:

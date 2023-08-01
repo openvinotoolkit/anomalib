@@ -1,5 +1,5 @@
 """Classes used to store ensemble predictions."""
-
+import copy
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
@@ -86,6 +86,8 @@ class BasicEnsemblePredictions(EnsemblePredictions):
 
         for index, batches in self.all_data.items():
             batch_data[index] = batches[batch_index]
+            # copy anomaly maps, since in case of test data == val data, post-processing might change them
+            batch_data[index]["anomaly_maps"] = batch_data[index]["anomaly_maps"].clone()
 
         return batch_data
 
@@ -178,10 +180,8 @@ class RescaledEnsemblePredictions(EnsemblePredictions):
     def __init__(self, config: DictConfig | ListConfig) -> None:
         super().__init__()
         self.all_data = {}
-        self.downscale_factor = config.ensemble.tiling.downscale_factor
+        self.downscale_factor = config.ensemble.predictions.rescale_factor
         self.upscale_factor = 1 / self.downscale_factor
-
-        self.upscale_called = set()
 
     @staticmethod
     def _rescale(batch: dict, scale_factor: float, mode: str) -> dict:
@@ -196,6 +196,9 @@ class RescaledEnsemblePredictions(EnsemblePredictions):
         Returns:
             Dictionary of all predicted data with all tiles rescaled.
         """
+        # copy data
+        batch = copy.copy(batch)
+
         # downscale following but NOT gt mask
         tiled_keys = ["image", "anomaly_maps", "pred_masks"]
 
@@ -243,11 +246,7 @@ class RescaledEnsemblePredictions(EnsemblePredictions):
         for tile_index, batches in self.all_data.items():
             current_batch_data = batches[batch_index]
 
-            # check if upscale was already performed for current batch and tile
-            if (tile_index, batch_index) not in self.upscale_called:
-                # if not, rescale
-                current_batch_data = self._rescale(current_batch_data, scale_factor=self.upscale_factor, mode="bicubic")
-                self.upscale_called.add((tile_index, batch_index))
+            current_batch_data = self._rescale(current_batch_data, scale_factor=self.upscale_factor, mode="bicubic")
 
             batch_data[tile_index] = current_batch_data
 
