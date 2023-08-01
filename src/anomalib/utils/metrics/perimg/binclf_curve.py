@@ -115,6 +115,45 @@ def _validate_tensor_in_cpu(tensor: Tensor) -> None:
         raise ValueError(f"Expected argument `tensor` to be on cpu, but got {tensor.device.type}")
 
 
+def _validate_atleast_one_anomalous_image(image_classes: Tensor):
+    if (image_classes == 1).sum() == 0:
+        raise ValueError("Expected argument at least one anomalous image, but found none.")
+
+
+def _validate_atleast_one_normal_image(image_classes: Tensor):
+    if (image_classes == 0).sum() == 0:
+        raise ValueError("Expected argument at least one normal image, but found none.")
+
+
+def _validated_binclf_curves(binclf_curves: Tensor):
+    if not isinstance(binclf_curves, Tensor):
+        raise ValueError(f"Expected argument `binclf_curves` to be a Tensor, but got {type(binclf_curves)}.")
+
+    if binclf_curves.ndim != 4:
+        raise ValueError(f"Expected argument `binclf_curves` to be a 4D tensor, but got {binclf_curves.ndim}D tensor.")
+
+    if binclf_curves.shape[-2:] != (2, 2):
+        raise ValueError(f"Expected argument `binclf_curves` to have shape (..., 2, 2), but got {binclf_curves.shape}.")
+
+    if binclf_curves.dtype != torch.int64:
+        raise ValueError(f"Expected argument `binclf_curves` to have dtype int64, but got {binclf_curves.dtype}.")
+
+    if (binclf_curves < 0).any():
+        raise ValueError("Expected argument `binclf_curves` to have non-negative values, but got negative values.")
+
+    neg = binclf_curves[:, :, 0, :].sum(dim=-1)  # (num_images, num_thresholds)
+    if (neg != neg[:, 0].unsqueeze(1)).any():
+        raise ValueError(
+            "Expected argument `binclf_curves` to have the same number of negatives per image for every threshold."
+        )
+
+    pos = binclf_curves[:, :, 1, :].sum(dim=-1)  # (num_images, num_thresholds)
+    if (pos != pos[:, 0].unsqueeze(1)).any():
+        raise ValueError(
+            "Expected argument `binclf_curves` to have the same number of positives per image for every threshold."
+        )
+
+
 # =========================================== FUNCTIONAL ===========================================
 
 
@@ -225,7 +264,7 @@ _binclf_curves_ndarray_itertools = np.vectorize(
 )
 
 
-def binclf_curves_linspace_thresholds_cpu(
+def _perimg_binclf_curve_compute_cpu(
     anomaly_maps: Tensor,
     masks: Tensor,
     threshold_bounds: Tensor | tuple[float, float],
@@ -272,7 +311,8 @@ def binclf_curves_linspace_thresholds_cpu(
     _validate_tensor_in_cpu(masks)
 
     # *** format() ***
-    # dim=0 is the batch dimension, all other dimensions can be flattened
+    # `flatten(1)` will keep the batch dimension and flatten the rest
+    # dim=0 is the batch dimension
     anomaly_maps = anomaly_maps.flatten(1)
     masks = masks.flatten(1)
     thresholds = torch.linspace(
@@ -302,10 +342,14 @@ class PerImageBinClfCurve(Metric):
 
     is_differentiable: bool = False
     higher_is_better: bool | None = None
-    full_state_update: bool = True  # TODO verify this (keep images ordered?)
+    full_state_update: bool = False
+
+    num_thresholds: Tensor
+    threshold_bounds: Tensor
 
     anomaly_maps: list[Tensor]
     masks: list[Tensor]
+    image_classes: list[Tensor]
 
     def __init__(
         self,
@@ -322,6 +366,7 @@ class PerImageBinClfCurve(Metric):
         _validate_num_thresholds(num_thresholds)
         self.register_buffer("num_thresholds", torch.tensor(num_thresholds))
 
+        # deduced from the anomaly maps in `compute()`
         self.register_buffer("threshold_bounds", torch.empty(2, dtype=torch.float32, device=torch.device("cpu")))
 
         self.add_state("anomaly_maps", default=[], dist_reduce_fx="cat")  # pylint: disable=not-callable
@@ -342,42 +387,102 @@ class PerImageBinClfCurve(Metric):
             # an image is anomalous if it has at least one anomaly pixel
             (masks.flatten(1) == 1)
             .any(dim=1)
-            .to(torch.int64)
+            .to(torch.int32)
         )
 
     @property
-    def _image_classes_tensor(self) -> Tensor:
-        if len(self.image_classes) == 0:
-            return torch.tensor([], dtype=torch.int64)
-        return dim_zero_cat(self.image_classes)
+    def is_empty(self) -> bool:
+        """Return True if the metric has not been updated yet."""
+        return len(self.image_classes) == 0
 
-    def compute(self):
+    def compute(self) -> tuple[Tensor, Tensor, Tensor]:
         """
         Returns:
-        (Tensor, Tensor[int64]):
+        (Tensor[float], Tensor[int64], Tensor[int64]):
 
             [0] Thresholds of shape (num_thresholds,) and dtype equals to the anomaly maps from update().
 
-            [1] Binary classification matrices of shape (N, num_thresholds, 2, 2)
-            N: number of images/instances seen during update() calls
-            The last two dimensions are the confusion matrix for each threshold, organized as:
-                - `tps`: `[... , 1, 1]`
-                - `fps`: `[... , 0, 1]`
-                - `fns`: `[... , 1, 0]`
-                - `tns`: `[... , 0, 0]`
+            [1] Binary classification matrices of shape (N, num_thresholds, 2, 2), dtype float64
+                N: number of images/instances seen during update() calls
+                The last two dimensions are the confusion matrix for each threshold, organized as:
+                    - `tps`: `[... , 1, 1]`
+                    - `fps`: `[... , 0, 1]`
+                    - `fns`: `[... , 1, 0]`
+                    - `tns`: `[... , 0, 0]`
+            [2] Image classes of shape (N,), dtype int32
         """
 
-        # `flatten(1)` will keep the batch dimension and flatten the rest
-        anomaly_maps = dim_zero_cat(self.anomaly_maps).detach().flatten(1)
-        masks = dim_zero_cat(self.masks).detach().flatten(1)
+        if self.is_empty:
+            return (
+                torch.empty(0, dtype=torch.float32),
+                torch.empty(0, 2, 2, dtype=torch.int64),
+                torch.empty(0, dtype=torch.int32),
+            )
+
+        anomaly_maps = dim_zero_cat(self.anomaly_maps).detach()
+        masks = dim_zero_cat(self.masks).detach()
+        image_classes = dim_zero_cat(self.image_classes).detach()
 
         self.threshold_bounds = torch.tensor((anomaly_maps.min(), anomaly_maps.max()))
 
-        thresholds, binclf_curves = binclf_curves_linspace_thresholds_cpu(
+        # TODO decide method for GPU
+        thresholds, binclf_curves = _perimg_binclf_curve_compute_cpu(
             anomaly_maps=anomaly_maps.cpu(),
             masks=masks.cpu(),
             threshold_bounds=self.threshold_bounds,
             num_thresholds=self.num_thresholds.item(),
         )
 
-        return thresholds, binclf_curves
+        return thresholds, binclf_curves, image_classes
+
+    @staticmethod
+    def tprs(binclf_curves: Tensor) -> Tensor:
+        """True positive rates (TPR) for image for each threshold.
+
+        TPR = TP / P = TP / (TP + FN)
+
+        Args:
+            binclf_curves (Tensor): shape (N, num_thresholds, 2, 2), dtype int64
+                                    output of PerImageBinClfCurve.compute()
+
+        Returns:
+            Tensor: shape (N, num_thresholds), dtype float64
+            N: number of images/instances seen during update() calls
+        """
+        _validated_binclf_curves(binclf_curves)
+
+        # (num_images, num_thresholds)
+        tps = binclf_curves[..., 1, 1]
+        pos = binclf_curves[..., 1, :].sum(dim=-1)
+
+        # tprs will be nan if pos == 0 (normal image), which is expected
+        tprs = tps.to(torch.float64) / pos.to(torch.float64)
+
+        # (num_images, num_thresholds)
+        return tprs
+
+    @staticmethod
+    def fprs(binclf_curves: Tensor) -> Tensor:
+        """False positive rates (TPR) for image for each threshold.
+
+        FPR = FP / N = FP / (FP + TN)
+
+        Args:
+            binclf_curves (Tensor): shape (N, num_thresholds, 2, 2), dtype int64
+                                    output of PerImageBinClfCurve.compute()
+
+        Returns:
+            Tensor: shape (N, num_thresholds), dtype float64
+            N: number of images/instances seen during update() calls
+        """
+        _validated_binclf_curves(binclf_curves)
+
+        # (num_images, num_thresholds)
+        fps = binclf_curves[..., 0, 1]
+        neg = binclf_curves[..., 0, :].sum(dim=-1)
+
+        # it can be `nan` if an anomalous image is fully covered by the mask
+        fprs = fps.to(torch.float64) / neg.to(torch.float64)
+
+        # (num_images, num_thresholds)
+        return fprs

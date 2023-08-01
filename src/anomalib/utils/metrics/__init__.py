@@ -20,9 +20,22 @@ from .auroc import AUROC
 from .collection import AnomalibMetricCollection
 from .min_max import MinMax
 from .optimal_f1 import OptimalF1
+from .perimg import AUPImO, PerImageBinClfCurve, PImO
 from .pro import PRO
 
-__all__ = ["AUROC", "AUPR", "AUPRO", "OptimalF1", "AnomalyScoreThreshold", "AnomalyScoreDistribution", "MinMax", "PRO"]
+__all__ = [
+    "AUROC",
+    "AUPR",
+    "AUPRO",
+    "OptimalF1",
+    "AnomalyScoreThreshold",
+    "AnomalyScoreDistribution",
+    "MinMax",
+    "PRO",
+    "PerImageBinClfCurve",
+    "PImO",
+    "AUPImO",
+]
 
 
 def metric_collection_from_names(metric_names: list[str], prefix: str | None) -> AnomalibMetricCollection:

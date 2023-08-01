@@ -8,7 +8,6 @@ Metrics here are based on binary classification metrics (e.g. FPR, TPR, Precisio
 from .binclf_curve import PerImageBinClfCurve
 from .pimo import AUPImO, PImO
 
-# TODO import in the parent module
 __all__ = [
     "PerImageBinClfCurve",
     "PImO",
