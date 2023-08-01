@@ -1,6 +1,6 @@
 tiling:
-  tile_size: 50
-  stride: 50
+  tile_size: 128
+  stride: 128
 
 predictions:
   storage: direct # [direct, file_system, rescaled]
@@ -8,7 +8,10 @@ predictions:
 
 post_processing:
   normalization: final # [tile, final, none]
-  smooth_joins: True
+  smooth_joins:
+    apply: True
+    sigma: 2
+    width: 0.1
 
 metrics:
   image:
