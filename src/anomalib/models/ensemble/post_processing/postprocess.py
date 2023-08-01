@@ -20,9 +20,6 @@ from anomalib.utils.metrics import AnomalyScoreThreshold, MinMax
 from anomalib.post_processing.normalization.min_max import normalize
 
 
-logger = logging.getLogger(__name__)
-
-
 class EnsemblePostProcess(ABC):
     """
     Abstract class for use as building block of post-processing pipeline.

@@ -7,7 +7,7 @@ from pathlib import Path
 
 from omegaconf import DictConfig, ListConfig
 
-from anomalib.models.ensemble.ensemble_postprocess import EnsemblePostProcess
+from anomalib.models.ensemble.post_processing import EnsemblePostProcess
 from anomalib.post_processing import Visualizer
 
 

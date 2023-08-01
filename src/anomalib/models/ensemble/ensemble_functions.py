@@ -8,7 +8,7 @@ from __future__ import annotations
 import logging
 import os
 import warnings
-from typing import Any, List
+from typing import Any
 
 import torch
 from omegaconf import DictConfig, ListConfig, OmegaConf
@@ -19,18 +19,9 @@ from torch import Tensor
 from anomalib.data import get_datamodule
 from anomalib.data.base.datamodule import collate_fn, AnomalibDataModule
 from anomalib.deploy import ExportMode
-from anomalib.models.ensemble.ensemble_metrics import EnsembleMetrics
-from anomalib.models.ensemble.ensemble_postprocess import (
-    EnsemblePostProcessPipeline,
-    SmoothJoins,
-    PostProcessStats,
-    MinMaxNormalize,
-    Threshold, EnsemblePostProcess,
-)
 from anomalib.models.ensemble.ensemble_prediction_data import EnsemblePredictions
 from anomalib.models.ensemble.ensemble_prediction_joiner import EnsemblePredictionJoiner
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
-from anomalib.models.ensemble.ensemble_visualization import EnsembleVisualization
 from anomalib.utils.callbacks import (
     TimerCallback,
     LoadModelCallback,
@@ -381,101 +372,3 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
         joined = {"pred_labels": labels, "pred_scores": scores}
 
         return joined
-
-
-def get_stats(
-    config: DictConfig | ListConfig, tiler: EnsembleTiler, validation_predictions: EnsemblePredictions
-) -> dict:
-    """
-    Get statistics used for postprocessing.
-
-    Args:
-        config: Configurable parameters object.
-        tiler: Tiler used by some steps of pipeline.
-        validation_predictions: Predictions used to calculate stats.
-
-    Returns:
-        Dictionary with calculated statistics.
-    """
-    stats_pipeline = EnsemblePostProcessPipeline(BasicPredictionJoiner(tiler))
-
-    steps = []
-
-    if config.ensemble.post_processing.smooth_joins:
-        steps.append(SmoothJoins(tiler))
-    if config.ensemble.metrics.threshold.stage == "final" or config.ensemble.post_processing.normalization == "final":
-        # thresholding and normalization need joined image-level statistics
-        steps.append(PostProcessStats())
-
-    stats_pipeline.add_steps(steps)
-
-    pipe_out = stats_pipeline.execute(validation_predictions)
-
-    return pipe_out.get("stats", None)
-
-
-def log_postprocess_steps(steps: List[EnsemblePostProcess]) -> None:
-    """
-    Log steps used in post-processing pipeline.
-
-    Args:
-        steps: List of steps in pipeline.
-
-    """
-    logger.info("-" * 42)
-    logger.info("Steps in post processing pipeline:")
-    for step in steps:
-        logger.info(step.name)
-    logger.info("-" * 42)
-
-
-def post_process(
-    config: DictConfig | ListConfig,
-    tiler: EnsembleTiler,
-    ensemble_predictions: EnsemblePredictions,
-    validation_predictions: EnsemblePredictions,
-) -> dict:
-    """
-    Postprocess, visualize and calculate metrics.
-
-    Args:
-        config: Configurable parameters object.
-        tiler: Tiler used for untiling of predictions.
-        ensemble_predictions: Predictions to be joined and processed.
-        validation_predictions: Predictions used to calculate stats.
-
-    Returns:
-        Dictionary with calculated metrics data.
-    """
-    logger.info("Computing normalization and threshold statistics.")
-    # get statistics, calculated on validation dataset
-    stats = get_stats(config, tiler, validation_predictions)
-
-    post_pipeline = EnsemblePostProcessPipeline(BasicPredictionJoiner(tiler))
-
-    steps = []
-    if config.ensemble.post_processing.smooth_joins:
-        steps.append(SmoothJoins(tiler))
-
-    if config.ensemble.post_processing.normalization == "final":
-        steps.append(MinMaxNormalize(stats))
-        # with minmax normalization, values are normalized such that the threshold value is centered at 0.5
-        stats["image_threshold"] = 0.5
-        stats["pixel_threshold"] = 0.5
-
-    if config.ensemble.metrics.threshold.stage == "final":
-        steps.append(Threshold(stats["image_threshold"], stats["pixel_threshold"]))
-
-    if config.ensemble.visualization.show_images or config.ensemble.visualization.save_images:
-        steps.append(EnsembleVisualization(config))
-
-    steps.append(EnsembleMetrics(config, stats["image_threshold"], stats["pixel_threshold"]))
-
-    log_postprocess_steps(steps)
-
-    logger.info("Executing pipeline.")
-    # add all above configured steps to pipeline and execute
-    post_pipeline.add_steps(steps)
-    pipe_out = post_pipeline.execute(ensemble_predictions)
-
-    return pipe_out["metrics"]

@@ -9,7 +9,7 @@ from typing import Any
 from omegaconf import DictConfig, ListConfig
 
 from anomalib.data import TaskType
-from anomalib.models.ensemble.ensemble_postprocess import EnsemblePostProcess
+from anomalib.models.ensemble.post_processing import EnsemblePostProcess
 from anomalib.utils.metrics import AnomalibMetricCollection, create_metric_collection
 
 logger = logging.getLogger(__name__)
