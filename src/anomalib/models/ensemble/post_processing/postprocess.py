@@ -7,6 +7,7 @@ from abc import ABC
 from typing import Any, List
 
 import torch
+from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 from tqdm import tqdm
 
@@ -59,20 +60,22 @@ class SmoothJoins(EnsemblePostProcess):
     It is recommended that thresholding is done again after smoothing to obtain new masks.
 
     Args:
+        config: Configurable parameters object, used to set smoothing params.
         tiler: Tiler object used to get tile dimension data.
     """
 
-    def __init__(self, tiler: EnsembleTiler) -> None:
+    def __init__(self, config: DictConfig | ListConfig, tiler: EnsembleTiler) -> None:
         super().__init__(final_compute=False, name="smooth_joins")
+        factor = config.ensemble.post_processing.smooth_joins.width
 
         # offset in pixels of region around tile join that will be smoothed
-        self.height_offset = int(tiler.tile_size_h * 0.05)
-        self.width_offset = int(tiler.tile_size_w * 0.05)
+        self.height_offset = int(tiler.tile_size_h * factor)
+        self.width_offset = int(tiler.tile_size_w * factor)
         self.tiler = tiler
 
         self.join_mask = self.prepare_join_mask()
 
-        self.blur = GaussianBlur2d(sigma=3)
+        self.blur = GaussianBlur2d(sigma=config.ensemble.post_processing.smooth_joins.sigma)
 
     def prepare_join_mask(self) -> Tensor:
         """

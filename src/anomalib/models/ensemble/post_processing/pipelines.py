@@ -36,8 +36,8 @@ def get_stats_pipeline(config: DictConfig | ListConfig, tiler: EnsembleTiler) ->
 
     steps = []
 
-    if config.ensemble.post_processing.smooth_joins:
-        steps.append(SmoothJoins(tiler))
+    if config.ensemble.post_processing.smooth_joins.apply:
+        steps.append(SmoothJoins(config, tiler))
     if config.ensemble.metrics.threshold.method == ThresholdMethod.ADAPTIVE:
         if (
             config.ensemble.metrics.threshold.stage == "final"
@@ -104,8 +104,8 @@ def get_postprocessing_pipeline(
     post_pipeline = EnsemblePostProcessPipeline(BasicPredictionJoiner(tiler))
 
     steps = []
-    if config.ensemble.post_processing.smooth_joins:
-        steps.append(SmoothJoins(tiler))
+    if config.ensemble.post_processing.smooth_joins.apply:
+        steps.append(SmoothJoins(config, tiler))
 
     # if normalization is done at the end on image-level
     if config.ensemble.post_processing.normalization == "final":

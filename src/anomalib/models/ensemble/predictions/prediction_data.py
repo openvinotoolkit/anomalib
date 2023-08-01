@@ -1,10 +1,11 @@
 """Classes used to store ensemble predictions."""
-import copy
+
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from abc import ABC
 from pathlib import Path
+import copy
 
 from typing import List
 
