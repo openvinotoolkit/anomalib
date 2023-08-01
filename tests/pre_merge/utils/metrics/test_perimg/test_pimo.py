@@ -1,6 +1,3 @@
-# plot_piwith pytest.raisesmo_curves
-
-import pytest
 import torch
 
 from anomalib.utils.metrics.perimg.pimo import AUPImO, PImO
