@@ -3,7 +3,6 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import logging
 from abc import ABC
 from typing import Any, List
 
@@ -13,8 +12,8 @@ from tqdm import tqdm
 
 from anomalib.data.utils import masks_to_boxes
 from anomalib.models.components import GaussianBlur2d
-from anomalib.models.ensemble.ensemble_prediction_data import EnsemblePredictions
-from anomalib.models.ensemble.ensemble_prediction_joiner import EnsemblePredictionJoiner
+from anomalib.models.ensemble.predictions.prediction_data import EnsemblePredictions
+from anomalib.models.ensemble.predictions.prediction_joiner import EnsemblePredictionJoiner
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
 from anomalib.utils.metrics import AnomalyScoreThreshold, MinMax
 from anomalib.post_processing.normalization.min_max import normalize

@@ -19,9 +19,9 @@ from pytorch_lightning import Trainer, seed_everything
 
 from anomalib.config import get_configurable_parameters
 from anomalib.models import get_model
-from anomalib.models.ensemble.post_processing import post_process
 from anomalib.utils.loggers import configure_logger, get_experiment_logger
 
+from anomalib.models.ensemble.post_processing import post_process
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
 from anomalib.models.ensemble.ensemble_functions import (
     get_ensemble_datamodule,

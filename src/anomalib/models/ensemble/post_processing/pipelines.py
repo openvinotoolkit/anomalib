@@ -3,8 +3,8 @@ from typing import List
 
 from omegaconf import DictConfig, ListConfig
 
-from anomalib.models.ensemble.ensemble_functions import BasicPredictionJoiner
-from anomalib.models.ensemble.ensemble_prediction_data import EnsemblePredictions
+from anomalib.models.ensemble.predictions import BasicPredictionJoiner
+from anomalib.models.ensemble.predictions.prediction_data import EnsemblePredictions
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
 from anomalib.models.ensemble.post_processing import (
     EnsembleMetrics,
