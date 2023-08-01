@@ -29,21 +29,12 @@ from matplotlib.pyplot import Figure
 from matplotlib.ticker import FixedLocator, LogFormatter, PercentFormatter
 from torch import Tensor
 
-from .binclf_curve import PerImageBinClfCurve
-from .common import _validate_image_classes, _validate_perimg_rate_curves, _validate_rate_curve
-
-# =========================================== VALIDATIONS ===========================================
-
-
-def _validate_atleast_one_anomalous_image(image_classes: Tensor):
-    if (image_classes == 1).sum() == 0:
-        raise ValueError("Expected argument at least one anomalous image, but found none.")
-
-
-def _validate_atleast_one_normal_image(image_classes: Tensor):
-    if (image_classes == 0).sum() == 0:
-        raise ValueError("Expected argument at least one normal image, but found none.")
-
+from .binclf_curve import PerImageBinClfCurve, _validate_atleast_one_anomalous_image, _validate_atleast_one_normal_image
+from .common import (
+    _validate_image_classes,
+    _validate_perimg_rate_curves,
+    _validate_rate_curve,
+)
 
 # =========================================== PLOT ===========================================
 
@@ -199,47 +190,43 @@ class PImO(PerImageBinClfCurve):
     TPR: True Positive Rate
     """
 
-    def compute(self) -> tuple[Tensor, Tensor, Tensor]:  # type: ignore
+    def compute(self) -> tuple[Tensor, Tensor, Tensor, Tensor]:  # type: ignore
         """Compute the PImO curve.
 
 
-        Returns:
-            thresholds: shape (num_thresholds,), dtype as given in update()
-            shared_fpr: shape (num_thresholds,), dtype float64, \in [0, 1]
-            tprs: shape (num_images, num_thresholds), dtype float64,
-                \in [0, 1] for anomalous images, `nan` for normal images
+        Returns: (thresholds, shared_fpr, tprs, image_classes)
+            [0] thresholds: shape (num_thresholds,), dtype as given in update()
+            [1] shared_fpr: shape (num_thresholds,), dtype float64, \in [0, 1]
+            [2] tprs: shape (num_images, num_thresholds), dtype float64,
+                        \in [0, 1] for anomalous images, `nan` for normal images
+            [3] image_classes: shape (num_images,), dtype int32, \in {0, 1}
 
-            `num_thresholds` is an attribute of the parent class.
-            `num_images` depends on the data seen by the model at the update() calls.
-
+                `num_thresholds` is an attribute of the parent class.
+                `num_images` depends on the data seen by the model at the update() calls.
         """
+        if self.is_empty:
+            return (
+                torch.empty(0, dtype=torch.float32),
+                torch.empty(0, dtype=torch.float64),
+                torch.empty(0, dtype=torch.float64),
+                torch.empty(0, dtype=torch.int64),
+            )
 
-        # shape: (num_images, num_thresholds, 2, 2), where (2, 2) is (true class, predicted class)
-        thresholds, binclf_curves = super().compute()
+        thresholds, binclf_curves, image_classes = super().compute()
 
-        image_class = self._image_classes_tensor
-        _validate_atleast_one_normal_image(image_class)  # necessary for the FPR
-        _validate_atleast_one_anomalous_image(image_class)  # necessary for the TPR
+        _validate_atleast_one_anomalous_image(image_classes)  # necessary for the TPR
+        _validate_atleast_one_normal_image(image_classes)  # necessary for the shared FPR
 
-        # the next tensors have shape (num_images, num_thresholds)
-        tps = binclf_curves[..., 1, 1]
-        pos = binclf_curves[..., 1, :].sum(dim=-1)
-
-        # tprs will be nan if pos == 0 (normal image), which is expected
-        tprs = tps.to(torch.float64) / pos.to(torch.float64)
-
-        # the next tensors have shape (num_images, num_thresholds)
-        fps = binclf_curves[..., 0, 1]
-        neg = binclf_curves[..., 0, :].sum(dim=-1)
-
-        # it can be `nan` if an anomalous image is fully covered by the mask
+        # (num_images, num_thresholds); from the parent class
+        # fprs can be `nan` if an anomalous image is fully covered by the mask
         # but it's ok because we will use only the normal images
-        fprs = fps.to(torch.float64) / neg.to(torch.float64)
+        tprs = PerImageBinClfCurve.tprs(binclf_curves)
+        fprs = PerImageBinClfCurve.fprs(binclf_curves)
 
         # see note about shared FPR alternatives in the class's docstring
-        shared_fpr = fprs[image_class == 0].mean(dim=0)  # shape: (num_thresholds,)
+        shared_fpr = fprs[image_classes == 0].mean(dim=0)  # shape: (num_thresholds,)
 
-        return thresholds, shared_fpr, tprs
+        return thresholds, shared_fpr, tprs, image_classes
 
     def plot(
         self,
@@ -254,11 +241,14 @@ class PImO(PerImageBinClfCurve):
         Returns:
             fig, ax
         """
-        _, shared_fpr, tprs = self.compute()
+        if self.is_empty:
+            raise RuntimeError("No data to plot.")
+
+        _, shared_fpr, tprs, image_classes = self.compute()
         fig, ax = plot_pimo_curves(
             shared_fpr=shared_fpr,
             tprs=tprs,
-            image_classes=self._image_classes_tensor,
+            image_classes=image_classes,
             ax=ax,
             logfpr=logfpr,
         )
@@ -275,33 +265,41 @@ class AUPImO(PImO):
         --> (1) add class attribute, (2) add integration range at plot, (3) filter curves before intergration
     """
 
-    def compute(self) -> tuple[Tensor, Tensor, Tensor, Tensor]:  # type: ignore
+    def compute(self) -> tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:  # type: ignore
         """Compute the Area Under the Per-Image Overlap curves (AUPImO).
 
-        Returns:
-            (thresholds, shared_fpr, tprs, aucs)
-            (thresholds, shared_fpr, tprs): same as in PImO.compute()
-            aucs: shape (num_images,), dtype float64, \in [0, 1]
+        Returns: (thresholds, shared_fpr, tprs, image_classes, aucs)
+            [0] thresholds: shape (num_thresholds,), dtype as given in update()
+            [1] shared_fpr: shape (num_thresholds,), dtype float64, \in [0, 1]
+            [2] tprs: shape (num_images, num_thresholds), dtype float64,
+                        \in [0, 1] for anomalous images, `nan` for normal images
+            [3] image_classes: shape (num_images,), dtype int32, \in {0, 1}
+            [4] aucs: shape (num_images,), dtype float64, \in [0, 1]
         """
 
-        thresholds: Tensor  # (num_thresholds,)
-        shared_fpr: Tensor  # (num_thresholds,)
-        tprs: Tensor  # (num_images, num_thresholds)
-        thresholds, shared_fpr, tprs = super().compute()
+        if self.is_empty:
+            return (
+                torch.empty(0, dtype=torch.float32),
+                torch.empty(0, dtype=torch.float64),
+                torch.empty(0, dtype=torch.float64),
+                torch.empty(0, dtype=torch.int64),
+                torch.empty(0, dtype=torch.float64),
+            )
+
+        thresholds, shared_fpr, tprs, image_classes = super().compute()
 
         # TODO find lower bound from shared fpr
 
-        # `shared_fpr` and `tprs` are in descending order; revert to ascending order
+        # `shared_fpr` and `tprs` are in descending order; `flip()` reverts to ascending order
         aucs: Tensor = torch.trapezoid(tprs.flip(dims=(1,)), x=shared_fpr.flip(dims=(0,)), dim=1)
-
-        return thresholds, shared_fpr, tprs, aucs
+        return thresholds, shared_fpr, tprs, image_classes, aucs
 
     def plot_pimo_curves(
         self,
         ax: Axes | None = None,
     ) -> tuple[Figure | None, Axes]:
         """Plot shared FPR vs Per-Image Overlap (PImO) curves."""
-        thresholds, shared_fpr, tprs, aucs = self.compute()
+        thresholds, shared_fpr, tprs, image_classes, aucs = self.compute()
         # TODO customize special cases
         fig, ax = plot_pimo_curves(
             shared_fpr=shared_fpr,
