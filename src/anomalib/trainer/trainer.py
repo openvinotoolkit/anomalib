@@ -3,15 +3,17 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import logging
 from collections.abc import Mapping
-from functools import partial
 from pathlib import Path
 from typing import Any, Iterable, Literal, Optional, Tuple, Union, cast
 
 import lightning as L
 import torch
 from lightning import seed_everything
+from lightning.fabric.accelerators.accelerator import Accelerator
 from lightning.fabric.loggers import Logger
+from lightning.fabric.strategies import Strategy
 from lightning.fabric.wrappers import _unwrap_objects
 from lightning.pytorch.utilities.model_helpers import is_overridden
 from lightning_utilities import apply_to_collection
@@ -24,6 +26,10 @@ from anomalib.post_processing import NormalizationMethod, ThresholdMethod
 from anomalib.post_processing.visualizer import VisualizationMode
 
 from .connectors import CheckpointConnector
+from .loops.one_class.fit import FitLoop
+from .loops.one_class.validation import ValidationLoop
+
+log = logging.getLogger(__name__)
 
 
 class AnomalibTrainer:
@@ -44,22 +50,28 @@ class AnomalibTrainer:
         ckpt_path: Path | str | None = None,
         project_path: Path | str | None = None,
         seed: None | int = None,
-        max_epochs: Optional[int] = 1000,
-        max_steps: Optional[int] = None,
+        min_epochs: int | None = None,
+        max_epochs: int | None = 1000,
+        max_steps: int | None = None,
         grad_accum_steps: int = 1,
         limit_train_batches: Union[int, float] = float("inf"),
         limit_val_batches: Union[int, float] = float("inf"),
         limit_test_batches: int | float = float("inf"),
         validation_frequency: int = 1,
         use_distributed_sampler: bool = True,
+        accelerator: Union[str, Accelerator] = "auto",
+        strategy: Union[str, Strategy] = "auto",
+        devices: list[int] | str | int = "auto",
+        fast_dev_run: int | bool = False,
     ) -> None:
         """ """
         self.loggers = loggers
         self.fabric = L.Fabric(
-            accelerator="gpu",
-            devices=1,
+            accelerator=accelerator,
+            devices=devices,
             callbacks=callbacks,
             loggers=loggers,
+            strategy=strategy,
         )
         self.global_step = 0
         self.grad_accum_steps: int = grad_accum_steps
@@ -94,6 +106,13 @@ class AnomalibTrainer:
             self.project_dir / ckpt_path if ckpt_path is not None else self.project_dir / "weights" / "lightning"
         )
         self.checkpoint_connector = CheckpointConnector(self, self.ckpt_path)
+        self.model: AnomalyModule | None = None
+        self.training: bool = False
+        self.optimizer: torch.optim.Optimizer | None = None
+        self.fit_loop = FitLoop(self, min_epochs, max_epochs)
+        self.validation_loop = ValidationLoop(self)
+        self.fast_dev_run = fast_dev_run  # TODO
+        # TODO use state as modelcheckpoint relies on Trainfn
 
     def _get_project_dir(self) -> Path:
         return Path("results") / "custom_trainer" / "padim" / "runs"
@@ -114,20 +133,40 @@ class AnomalibTrainer:
             ckpt_path: Path to previous checkpoints to resume training from.
                 If specified, will always look for the latest checkpoint within the given directory.
         """
+        log.info("Starting training run")
+        self.training = True
+
         self.fabric.launch()
 
         # setup dataloaders
-        if datamodule is not None:
-            datamodule.prepare_data()
-            # TODO add a barrier that checks if all processes have finished preparing data
-            datamodule.setup("fit")
-        train_loader = model.train_dataloader() if datamodule is None else datamodule.train_dataloader()
-        val_loader = model.val_dataloader() if datamodule is None else datamodule.val_dataloader()
-        train_loader = self.fabric.setup_dataloaders(train_loader, use_distributed_sampler=self.use_distributed_sampler)
-        if val_loader is not None:
-            val_loader = self.fabric.setup_dataloaders(val_loader, use_distributed_sampler=self.use_distributed_sampler)
+        train_loader, val_loader, _ = self._setup_dataloaders(model, datamodule, stage="fit")
 
         # setup model and optimizer
+        self._setup(model)
+
+        # load checkpoint
+        self.checkpoint_connector.restore()
+
+        self.fit_loop.run(train_loader, val_loader)
+
+        # reset for next fit call
+        self._teardown(datamodule, "fit")
+        self.should_stop = False
+
+        self.training = False
+        return
+
+    def _teardown(self, datamodule, stage: str):
+        if datamodule is not None:
+            datamodule.teardown(stage)
+        self.fabric.call("teardown", trainer=self, pl_module=_unwrap_objects(self.model), stage=stage)
+
+    def _setup(self, model: AnomalyModule):
+        """Setup model and optimizer using fabric.
+
+        Args:
+            model: the AnomalyModule to train.
+        """
         if isinstance(self.fabric.strategy, L.fabric.strategies.fsdp.FSDPStrategy):
             # currently, there is no way to support fsdp with model.configure_optimizers in fabric
             # as it would require fabric to hold a reference to the model, which we don't want to.
@@ -135,125 +174,53 @@ class AnomalibTrainer:
 
         optimizer, scheduler_cfg = self._parse_optimizers_schedulers(model.configure_optimizers())
         if optimizer is None:
-            model = self.fabric.setup(model)
+            self.model = self.fabric.setup(model)
         else:
-            model, optimizer = self.fabric.setup(model, optimizer)
+            self.model, self.optimizer = self.fabric.setup(model, optimizer)
 
-        # assemble state (current epoch and global step will be added in save)
-        state = {"model": model, "optim": optimizer, "scheduler": scheduler_cfg}  # todo move to dump checkpoint
+        self.scheduler_cfg = scheduler_cfg
 
-        # load best checkpoint if available
-        self.checkpoint_connector.restore(state, self.ckpt_path)
-
-        # check if we even need to train here
-        if self.max_epochs is not None and self.current_epoch >= self.max_epochs:
-            self.should_stop = True
-
-        # setup train callback
-        self.fabric.call("setup", trainer=self, pl_module=_unwrap_objects(model), stage="fit")
-
-        while not self.should_stop:
-            self.train_loop(
-                model, optimizer, train_loader, limit_batches=self.limit_train_batches, scheduler_cfg=scheduler_cfg
-            )
-
-            if self.should_validate:
-                self.val_loop(model, val_loader, limit_batches=self.limit_val_batches)
-
-            self.step_scheduler(model, scheduler_cfg, level="epoch", current_value=self.current_epoch)
-
-            self.current_epoch += 1
-
-            # stopping condition on epoch level
-            if self.max_epochs is not None and self.current_epoch >= self.max_epochs:
-                self.should_stop = True
-
-            self.checkpoint_connector.save(state)
-
-        # reset for next fit call
-        if datamodule is not None:
-            datamodule.teardown("fit")
-        self.fabric.call("teardown", trainer=self, pl_module=_unwrap_objects(model), stage="fit")
-        self.should_stop = False
-
-    def train_loop(
-        self,
-        model: L.LightningModule,
-        optimizer: torch.optim.Optimizer,
-        train_loader: torch.utils.data.DataLoader,
-        limit_batches: Union[int, float] = float("inf"),
-        scheduler_cfg: Optional[Mapping[str, Union[L.fabric.utilities.types.LRScheduler, bool, str, int]]] = None,
-    ):
-        """The training loop running a single training epoch.
+    def _setup_dataloaders(
+        self, model: AnomalyModule, datamodule: AnomalibDataModule, stage: str
+    ) -> tuple[AnomalibDataModule | None, AnomalibDataModule | None, AnomalibDataModule | None]:
+        """Setup dataloaders using fabric.
 
         Args:
-            model: the LightningModule to train
-            optimizer: the optimizer, optimizing the LightningModule.
-            train_loader: The dataloader yielding the training batches.
-            limit_batches: Limits the batches during this training epoch.
-                If greater then the number of batches in the ``train_loader``, this has no effect.
-            scheduler_cfg: The learning rate scheduler configuration.
-                Have a look at :meth:`lightning.pytorch.LightninModule.configure_optimizers` for supported values.
+            model (AnomalyModule): AnomalyModule
+            datamodule (AnomalibDataModule): Datamodule
+            stage (str): Training Stage
+
+        Returns:
+            tuple[AnomalibDataModule | None, AnomalibDataModule | None, AnomalibDataModule | None]: Dataloaders
         """
-        self.fabric.call("on_train_epoch_start", trainer=self, pl_module=_unwrap_objects(model))
-        iterable = self.progbar_wrapper(
-            train_loader, total=min(len(train_loader), limit_batches), desc=f"Epoch {self.current_epoch}"
-        )
-        for batch_idx, batch in enumerate(iterable):
-            # end epoch if stopping training completely or max batches for this epoch reached
-            if self.should_stop or batch_idx >= limit_batches:
-                self.fabric.call("on_train_epoch_end", trainer=self.fabric, pl_module=_unwrap_objects(model))
-                return
+        if datamodule is not None:
+            datamodule.prepare_data()
+            # TODO add a barrier that checks if all processes have finished preparing data
+            datamodule.setup(stage)
 
-            self.fabric.call(
-                "on_train_batch_start",
-                batch=batch,
-                batch_idx=batch_idx,
-                trainer=self.fabric,
-                pl_module=_unwrap_objects(model),
+        train_loader = model.train_dataloader() if datamodule is None else datamodule.train_dataloader()
+        if train_loader is not None:
+            train_loader = self.fabric.setup_dataloaders(
+                train_loader, use_distributed_sampler=self.use_distributed_sampler
             )
+        else:
+            train_loader = None
 
-            # check if optimizer should step in gradient accumulation
-            should_optim_step = self.global_step % self.grad_accum_steps == 0 and optimizer is not None
-            if should_optim_step:
-                # currently only supports a single optimizer
-                self.fabric.call("on_before_optimizer_step", optimizer, 0)
+        val_loader = model.val_dataloader() if datamodule is None else datamodule.val_dataloader()
+        if val_loader is not None:
+            val_loader = self.fabric.setup_dataloaders(val_loader, use_distributed_sampler=self.use_distributed_sampler)
+        else:
+            val_loader = None
 
-                # optimizer step runs train step internally through closure
-                optimizer.step(partial(self.training_step, model=model, batch=batch, batch_idx=batch_idx))
-                self.fabric.call("on_before_zero_grad", optimizer)
-
-                optimizer.zero_grad()
-
-            else:
-                # gradient accumulation -> no optimizer step
-                self.training_step(model=model, batch=batch, batch_idx=batch_idx)
-
-            self.fabric.call(
-                "on_train_batch_end",
-                outputs=self._current_train_return,
-                batch=batch,
-                batch_idx=batch_idx,
-                trainer=self,
-                pl_module=_unwrap_objects(model),
+        test_dataloader = model.test_dataloader() if datamodule is None else datamodule.test_dataloader()
+        if test_dataloader is not None:
+            test_dataloader = self.fabric.setup_dataloaders(
+                test_dataloader, use_distributed_sampler=self.use_distributed_sampler
             )
+        else:
+            test_dataloader = None
 
-            # this guard ensures, we only step the scheduler once per global step
-            if should_optim_step:
-                self.step_scheduler(model, scheduler_cfg, level="step", current_value=self.global_step)
-
-            # add output values to progress bar
-            self._format_iterable(iterable, self._current_train_return, "train")
-
-            # only increase global step if optimizer stepped
-            self.global_step += int(should_optim_step)
-
-            # stopping criterion on step level
-            if self.max_steps is not None and self.global_step >= self.max_steps:
-                self.should_stop = True
-                break
-
-        self.fabric.call("on_train_epoch_end", trainer=self.fabric, pl_module=_unwrap_objects(model))
+        return train_loader, val_loader, test_dataloader
 
     def val_loop(
         self,
@@ -334,30 +301,6 @@ class AnomalibTrainer:
         # teardown callbacks
         self.fabric.call("teardown", trainer=self, pl_module=_unwrap_objects(model), stage="validate")
         torch.set_grad_enabled(True)
-
-    def training_step(self, model: L.LightningModule, batch: Any, batch_idx: int) -> torch.Tensor | None:
-        """A single training step, running forward and backward. The optimizer step is called separately, as this
-        is given as a closure to the optimizer step.
-
-        Args:
-            model: the lightning module to train
-            batch: the batch to run the forward on
-            batch_idx: index of the current batch w.r.t the current epoch
-        """
-        outputs: Union[torch.Tensor, Mapping[str, Any]] = model.training_step(batch, batch_idx=batch_idx)
-        if outputs is None:
-            return None
-
-        loss = outputs if isinstance(outputs, torch.Tensor) else outputs["loss"]
-
-        self.fabric.call("on_before_backward", loss)
-        self.fabric.backward(loss)
-        self.fabric.call("on_after_backward")
-
-        # avoid gradients in stored/accumulated values -> prevents potential OOM
-        self._current_train_return = apply_to_collection(outputs, dtype=torch.Tensor, function=lambda x: x.detach())
-
-        return loss
 
     def step_scheduler(
         self,
@@ -601,3 +544,25 @@ class AnomalibTrainer:
     @property
     def test_dataloaders(self):
         return None  # TODO
+
+    def save_checkpoint(self, filepath, weights_only: bool = False):
+        """Saves the model and trainer state to a checkpoint file.
+
+        The signature is kept same as the Lightning Trainer as `ModelCheckpointCallback` calls this method.
+
+        Args:
+            filepath: Write-target.
+            weights_only: If True, then only the model weights will be saved.
+        """
+        # TODO
+        # if self.fabric.is_global_zero:
+        #     self.checkpoint_connector.save(filepath, weights_only=weights_only)
+        pass
+
+    @property
+    def strategy(self):
+        return self.fabric.strategy
+
+    @property
+    def is_global_zero(self):
+        return self.fabric.is_global_zero

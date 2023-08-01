@@ -4,34 +4,70 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+import logging
 from pathlib import Path
 
-from lightning_utilities.core.rank_zero import rank_zero_info
+from lightning_utilities.core.rank_zero import rank_zero_info, rank_zero_warn
 
+import anomalib
 from anomalib import trainer
+
+log = logging.getLogger(__name__)
 
 
 class CheckpointConnector:
-    def __init__(self, trainer: "trainer.AnomalibTrainer", checkpoint_dir: Path) -> None:
+    """Handles saving and loading checkpoints.
+
+    Args:
+        trainer: The trainer instance.
+        ckpt_path: If path to the weights is given, it loads the weights from the path.
+    """
+
+    def __init__(self, trainer: "trainer.AnomalibTrainer", ckpt_path: Path) -> None:
         self.trainer = trainer
-        self.checkpoint_dir = checkpoint_dir
+        self.ckpt_path = ckpt_path
+        self._initialize()
 
-    # def dump_checkpoint(self) -> dict:
-    #     pass
+    def _initialize(self) -> None:
+        """Creates checkpoint directory if it doesn't exist."""
+        if not self.ckpt_path.exists():
+            self.ckpt_path.mkdir(parents=True, exist_ok=True)
 
-    def restore(self, state: dict | None, filepath: Path | None = None) -> None:
+    def dump_checkpoint(self) -> dict:
+        """Create a checkpoint dictionary of the current state.
+
+        Return:
+            A dictionary containing the current state of the trainer.
+        """
+        assert self.trainer.model is not None, "Model is not initialized."
+        checkpoint = {
+            "anomalib_version": anomalib.__version__,
+            "model": self.trainer.model.state_dict(),
+        }
+        # TODO add loops
+        return checkpoint
+
+    def restore(self) -> None:
+        filepath = self._select_ckpt_path()
         if filepath is None:
-            filepath = self._select_ckpt_path()
-
-        if filepath is None or not filepath.exists():
-            rank_zero_info(f"No checkpoint found at {filepath}. Skipping restore.")
+            if self.trainer.training:
+                rank_zero_info("Training called without existing checkpoint. Skipping restore.")
+            else:
+                # TODO get trainer stage and use it's value in the message
+                raise RuntimeError("No checkpoint found. Checkpoint is necessary when not training.")
         else:
-            if state is None:
-                state = dict()
+            rank_zero_info("Restoring checkpoint from %s", filepath)
+
+            state = self.dump_checkpoint()
             remainder = self.trainer.fabric.load(filepath, state)
-            self.trainer.global_step = remainder.pop("global_step")
-            self.trainer.current_epoch = remainder.pop("current_epoch")
-            rank_zero_info(f"Restored checkpoint from {filepath}.")
+            # self.trainer.global_step = remainder.pop("global_step")
+            # self.trainer.current_epoch = remainder.pop("current_epoch")
+            checkpoint_anomalib_version = remainder.pop("anomalib_version")
+            if checkpoint_anomalib_version != anomalib.__version__:
+                rank_zero_warn(
+                    f"Current Anomalib version {anomalib.__version__} is different from the checkpoint version"
+                    f" {checkpoint_anomalib_version}."
+                )
 
             if remainder:
                 raise RuntimeError(f"Unused Checkpoint Values: {remainder}")
@@ -39,22 +75,21 @@ class CheckpointConnector:
     def _select_ckpt_path(self) -> Path | None:
         # Intended to be similar to lightning's checkpoint connector
         file_path = None
-        if (self.checkpoint_dir / "best.ckpt").exists():
-            file_path = self.checkpoint_dir / "best.ckpt"
-        else:
-            # get the latest checkpoint of format epoch-num.ckpt
-            file_path = max(self.checkpoint_dir.glob("*.ckpt"), key=lambda x: int(x.stem.split("-")[1]), default=None)
+        if self.ckpt_path.is_file():
+            file_path = self.ckpt_path
+        elif self.ckpt_path.is_dir():
+            if (self.ckpt_path / "best.ckpt").exists():
+                file_path = self.ckpt_path / "best.ckpt"
+            else:
+                # get the latest checkpoint of format epoch-num.ckpt
+                file_path = max(self.ckpt_path.glob("*.ckpt"), key=lambda x: int(x.stem.split("-")[1]), default=None)
         return file_path
 
-    def save(self, state: dict | None) -> None:
-        """Saves a checkpoint to the ``checkpoint_dir``
+    def save(self) -> None:
+        """Saves a checkpoint to the ``checkpoint_dir``"""
 
-        Args:
-            state: A mapping containing model, optimizer and lr scheduler.
-        """
-        if state is None:
-            state = dict()
-
-        state.update(global_step=self.trainer.global_step, current_epoch=self.trainer.current_epoch)
-
-        self.trainer.fabric.save(self.checkpoint_dir / f"epoch-{self.trainer.current_epoch:04d}.ckpt", state)
+        ckpt_path = self.ckpt_path
+        if ckpt_path.is_file():
+            ckpt_path = ckpt_path.parent
+        state = self.dump_checkpoint()
+        self.trainer.fabric.save(ckpt_path / f"epoch-{self.trainer.current_epoch:04d}.ckpt", state)

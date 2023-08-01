@@ -13,7 +13,7 @@ def train(name: str):
     model = get_model(config)
     callbacks = get_callbacks(config)
     print(callbacks)
-    trainer = AnomalibTrainer(max_epochs=1, callbacks=callbacks)
+    trainer = AnomalibTrainer(max_epochs=1, callbacks=callbacks, accelerator="gpu", devices=1)
     trainer.fit(model, datamodule)
     trainer.test(model, datamodule)
 
