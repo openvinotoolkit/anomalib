@@ -72,7 +72,7 @@ def train(args: Namespace):
 
     # go over all tile positions and train
     for tile_index in product(range(tiler.num_patches_h), range(tiler.num_patches_w)):
-        logger.info("Start of procedure for tile %s" % (tile_index, ))
+        logger.info("Start of procedure for tile %s" % (tile_index,))
 
         # configure callbacks for ensemble
         ensemble_callbacks = get_ensemble_callbacks(config, tile_index)

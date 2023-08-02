@@ -32,8 +32,9 @@ def memory_arg_parser() -> ArgumentParser:
         ArgumentParser: The parser object.
     """
     parser = ArgumentParser()
-    parser.add_argument("--one_config", type=str, required=True, help="Path to a one model config file")
-    parser.add_argument("--ens_config", type=str, required=True, help="Path to a ensemble of models config file")
+    parser.add_argument("--config_one", type=str, required=True, help="Path to a base config for one model")
+    parser.add_argument("--config_ens", type=str, required=True, help="Path to a base config for ensemble of models")
+    parser.add_argument("--ens_config", type=str, required=True, help="Path to a config for ensemble parameters")
     parser.add_argument("--number", type=int, required=True, help="Number of repetitions")
 
     return parser
@@ -46,8 +47,8 @@ def run_mem_benchmark(args):
     parent_dir.mkdir(parents=True, exist_ok=True)
 
     models = {
-        "one": {"train_name": "train.py", "config": Path(args.one_config)},
-        "ens": {"train_name": "train_ensemble.py", "config": Path(args.ens_config)},
+        "one": {"train_name": "train.py", "config": args.config_one},
+        "ens": {"train_name": "train_ensemble.py", "config": args.config_ens, "ens_config": args.ens_config},
     }
     for model, properties in models.items():
         logger.info("Running memory benchmark for %s." % model)
@@ -64,10 +65,14 @@ def run_mem_benchmark(args):
             properties["train_name"],
             result_file_path,
             "--config",
-            str(properties["config"]),
+            properties["config"],
             "--log-level",
             "ERROR",
         ]
+
+        if model == "ens":
+            call_args += ["--ens_config", properties["ens_config"]]
+            shutil.copy(properties["ens_config"], parent_dir)
 
         # create csv file and write header
         with open(result_file_path, "w", encoding="utf-8", newline="") as f:
