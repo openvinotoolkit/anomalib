@@ -50,7 +50,7 @@ def run_mem_benchmark(args):
         "ens": {"train_name": "train_ensemble.py", "config": Path(args.ens_config)},
     }
     for model, properties in models.items():
-        logger.info(f"Running memory benchmark for {model}.")
+        logger.info("Running memory benchmark for %s." % model)
 
         # copy config to current dir
         shutil.copy(properties["config"], parent_dir)
@@ -80,7 +80,7 @@ def run_mem_benchmark(args):
                 # call fresh process where training is done and logged to csv
                 subprocess.run(call_args, check=True)
             except subprocess.CalledProcessError as e:
-                logger.error(f"Run failed: {e}")
+                logger.error("Run failed: %s", e)
                 return
 
 

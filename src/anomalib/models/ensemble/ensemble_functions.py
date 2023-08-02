@@ -219,7 +219,7 @@ def get_ensemble_callbacks(config: DictConfig | ListConfig, tile_index: (int, in
 
     if "optimization" in config.keys():
         if "nncf" in config.optimization and config.optimization.nncf.apply:
-            warnings.warn(f"NNCF is not supported with ensemble.")
+            warnings.warn("NNCF is not supported with ensemble.")
 
         if config.optimization.export_mode is not None:
             from src.anomalib.utils.callbacks.export import (  # pylint: disable=import-outside-toplevel
