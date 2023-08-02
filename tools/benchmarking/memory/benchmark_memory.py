@@ -51,7 +51,7 @@ def run_mem_benchmark(args):
         "ens": {"train_name": "train_ensemble.py", "config": args.config_ens, "ens_config": args.ens_config},
     }
     for model, properties in models.items():
-        logger.info("Running memory benchmark for %s." % model)
+        logger.info("Running memory benchmark for %s.", model)
 
         # copy config to current dir
         shutil.copy(properties["config"], parent_dir)

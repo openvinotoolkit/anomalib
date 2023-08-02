@@ -120,4 +120,4 @@ def log_metrics(metric_dict: dict[str, float]) -> None:
         metric_dict: Dictionary containing all metrics info.
     """
     for name, value in metric_dict.items():
-        logger.info("%s: %f" % (name, value))
+        logger.info("%s: %f", name, value)
