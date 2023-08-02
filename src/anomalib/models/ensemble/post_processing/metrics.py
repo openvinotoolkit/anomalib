@@ -77,22 +77,22 @@ class EnsembleMetrics(EnsemblePostProcess):
 
         return image_metrics, pixel_metrics
 
-    def process(self, batch_results: dict) -> dict:
+    def process(self, data: dict) -> dict:
         """
         Compute metrics specified in config for given ensemble results.
 
         Args:
-            batch_results: Joined batch of results produced by model ensemble.
+            data: Joined batch of results produced by model ensemble.
 
         Returns:
             Unchanged input.
         """
 
-        self.image_metrics.update(batch_results["pred_scores"], batch_results["label"].int())
-        if "mask" in batch_results.keys() and "anomaly_maps" in batch_results.keys():
-            self.pixel_metrics.update(batch_results["anomaly_maps"], batch_results["mask"].int())
+        self.image_metrics.update(data["pred_scores"], data["label"].int())
+        if "mask" in data.keys() and "anomaly_maps" in data.keys():
+            self.pixel_metrics.update(data["anomaly_maps"], data["mask"].int())
 
-        return batch_results
+        return data
 
     def compute(self) -> dict:
         """

@@ -29,22 +29,22 @@ class EnsembleVisualization(EnsemblePostProcess):
         image_save_path = config.visualization.image_save_path or config.project.path + "/images"
         self.image_save_path = Path(image_save_path)
 
-    def process(self, prediction_batch: dict) -> dict:
+    def process(self, data: dict) -> dict:
         """
         Visualize joined predictions using Visualizer class.
 
         Args:
-            prediction_batch: Batch of predictions.
+            data: Batch of predictions.
 
         Returns:
             Unchanged input data.
         """
-        for i, image in enumerate(self.visualizer.visualize_batch(prediction_batch)):
-            filename = Path(prediction_batch["image_path"][i])
+        for i, image in enumerate(self.visualizer.visualize_batch(data)):
+            filename = Path(data["image_path"][i])
             if self.save:
                 file_path = self.image_save_path / filename.parent.name / filename.name
                 self.visualizer.save(file_path, image)
             if self.show:
                 self.visualizer.show(str(filename), image)
 
-        return prediction_batch
+        return data
