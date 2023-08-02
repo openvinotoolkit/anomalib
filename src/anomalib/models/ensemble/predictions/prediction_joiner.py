@@ -8,7 +8,7 @@ from typing import List
 
 from torch import Tensor
 
-from anomalib.models.ensemble.predictions import EnsemblePredictions
+from anomalib.models.ensemble.predictions.prediction_data import EnsemblePredictions
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
 
 

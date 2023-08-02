@@ -1,3 +1,8 @@
+"""Functions used to obtain and execute ensemble post-processing pipelines"""
+
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import logging
 from typing import List
 
@@ -5,9 +10,7 @@ from omegaconf import DictConfig, ListConfig
 
 from anomalib.models.ensemble.predictions import BasicPredictionJoiner, EnsemblePredictions
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
-from anomalib.models.ensemble.post_processing import (
-    EnsembleMetrics,
-    EnsembleVisualization,
+from anomalib.models.ensemble.post_processing.postprocess import (
     EnsemblePostProcessPipeline,
     SmoothJoins,
     PostProcessStats,
@@ -15,6 +18,8 @@ from anomalib.models.ensemble.post_processing import (
     MinMaxNormalize,
     Threshold,
 )
+from anomalib.models.ensemble.post_processing.metrics import EnsembleMetrics
+from anomalib.models.ensemble.post_processing.visualization import EnsembleVisualization
 from anomalib.post_processing import ThresholdMethod
 
 

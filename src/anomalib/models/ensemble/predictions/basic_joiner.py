@@ -7,7 +7,7 @@
 import torch
 from torch import Tensor
 
-from anomalib.models.ensemble.predictions import EnsemblePredictionJoiner
+from anomalib.models.ensemble.predictions.prediction_joiner import EnsemblePredictionJoiner
 
 
 class BasicPredictionJoiner(EnsemblePredictionJoiner):
