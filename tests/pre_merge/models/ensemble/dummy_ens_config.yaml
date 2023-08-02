@@ -1,0 +1,34 @@
+tiling:
+  tile_size: 50
+  stride: 50
+
+predictions:
+  storage: direct # [direct, file_system, rescaled]
+  rescale_factor: 0.5
+
+post_processing:
+  normalization: tile # [tile, final, none]
+  smooth_joins:
+    apply: True
+    sigma: 2
+    width: 0.1
+
+metrics:
+  image:
+    - F1Score
+    - AUROC
+  pixel:
+    - F1Score
+    - AUROC
+  threshold:
+      stage: tile # options: [tile, final]
+      method: adaptive #options: [adaptive, manual]
+      manual_image: null
+      manual_pixel: null
+
+visualization:
+  show_images: False # show images on the screen
+  save_images: True # save images to the file system
+  image_save_path: null # path to which images will be saved
+  mode: full # options: ["full", "simple"]
+

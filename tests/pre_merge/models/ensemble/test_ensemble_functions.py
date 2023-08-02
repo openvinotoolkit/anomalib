@@ -1,4 +1,5 @@
 """Test ensemble helper functions"""
+
 from tempfile import TemporaryDirectory
 from typing import List
 
@@ -90,17 +91,16 @@ class TestHelperFunctions:
     def test_ensemble_config(self):
         config = get_configurable_parameters(config_path="src/anomalib/models/padim/config.yaml")
         prepare_ensemble_configurable_parameters(
-            ens_config_path="src/anomalib/models/ensemble/ens_config.yaml", config=config
+            ens_config_path="tests/pre_merge/models/ensemble/dummy_ens_config.yaml", config=config
         )
 
         assert "ensemble" in config
         assert config.model.input_size == config.ensemble.tiling.tile_size
 
     def test_ensemble_datamodule(self):
-        tiler = EnsembleTiler(mock_config)
-
         config = get_configurable_parameters(config_path="src/anomalib/models/padim/config.yaml")
 
+        tiler = EnsembleTiler(mock_config)
         datamodule = get_ensemble_datamodule(config, tiler)
 
         assert isinstance(datamodule.custom_collate_fn, TileCollater)
@@ -146,7 +146,7 @@ class TestHelperFunctions:
     def test_ensemble_callbacks(self):
         config = get_configurable_parameters(config_path="src/anomalib/models/padim/config.yaml")
         prepare_ensemble_configurable_parameters(
-            ens_config_path="src/anomalib/models/ensemble/ens_config.yaml", config=config
+            ens_config_path="tests/pre_merge/models/ensemble/dummy_ens_config.yaml", config=config
         )
         config.ensemble.post_processing.normalization = "final"
 
