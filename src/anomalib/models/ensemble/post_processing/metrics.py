@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import Any
 
 from omegaconf import DictConfig, ListConfig
 

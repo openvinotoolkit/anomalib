@@ -11,7 +11,6 @@ from .postprocess import (
     EnsemblePostProcessPipeline,
     SmoothJoins,
     PostProcessStats,
-    EnsemblePostProcess,
     MinMaxNormalize,
     Threshold,
 )
