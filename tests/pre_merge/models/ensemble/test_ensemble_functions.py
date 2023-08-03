@@ -3,14 +3,11 @@
 from tempfile import TemporaryDirectory
 from typing import List
 
-import pytest
 from torch import Tensor
 
-from anomalib.config import get_configurable_parameters
 from anomalib.models.ensemble import EnsembleTiler
 from anomalib.models.ensemble.ensemble_functions import (
     TileCollater,
-    prepare_ensemble_configurable_parameters,
     get_ensemble_datamodule,
     get_prediction_storage,
     get_ensemble_callbacks,
@@ -23,29 +20,10 @@ from anomalib.models.ensemble.predictions import (
 from anomalib.utils.callbacks import MinMaxNormalizationCallback
 
 
-def get_datamodule(config, task):
-    tiler = EnsembleTiler(config)
-    config.dataset.task = task
-
-    datamodule = get_ensemble_datamodule(config, tiler)
-
-    datamodule.prepare_data()
-    datamodule.setup()
-
-    return datamodule
-
-@pytest.fixture
-def get_config():
-    config = get_configurable_parameters(config_path="tests/pre_merge/models/ensemble/dummy_padim_config.yaml")
-    prepare_ensemble_configurable_parameters(
-        ens_config_path="tests/pre_merge/models/ensemble/dummy_ens_config.yaml", config=config
-    )
-    return config
-
 class TestTileCollater:
     """Test tile collater"""
 
-    def test_collate_tile_shape(self, get_config):
+    def test_collate_tile_shape(self, get_config, get_datamodule):
         config = get_config
         # datamodule with tile collater
         datamodule = get_datamodule(config, "segmentation")
@@ -57,7 +35,7 @@ class TestTileCollater:
         assert batch["image"].shape == (batch_size, 3, tile_w, tile_h)
         assert batch["mask"].shape == (batch_size, tile_w, tile_h)
 
-    def test_collate_box_data(self, get_config):
+    def test_collate_box_data(self, get_config, get_datamodule):
         config = get_config
         # datamodule with tile collater
         datamodule = get_datamodule(config, "detection")
