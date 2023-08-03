@@ -1,8 +1,8 @@
-black==22.6.0
-isort==5.11.5
-pylint>=2.14.5
-flake8>=4.0.1
+pre-commit
 pytest
-pre-commit>=2.15.0
-tox>=3.24.3
-nbmake>=1.3.5
+pytest-cov
+pytest-order
+pytest-sugar
+pytest-xdist
+coverage[toml]
+tox

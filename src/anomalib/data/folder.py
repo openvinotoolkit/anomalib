@@ -1,5 +1,4 @@
 """Custom Folder Dataset.
-
 This script creates a custom dataset from a folder.
 """
 
@@ -12,85 +11,19 @@ from pathlib import Path
 
 import albumentations as A
 from pandas import DataFrame
-from torchvision.datasets.folder import IMG_EXTENSIONS
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
+    DirType,
     InputNormalizationMethod,
+    LabelName,
     Split,
     TestSplitMode,
     ValSplitMode,
     get_transforms,
 )
-
-
-def _check_and_convert_path(path: str | Path) -> Path:
-    """Check an input path, and convert to Pathlib object.
-
-    Args:
-        path (str | Path): Input path.
-
-    Returns:
-        Path: Output path converted to pathlib object.
-    """
-    if not isinstance(path, Path):
-        path = Path(path)
-    return path
-
-
-def _prepare_files_labels(
-    path: str | Path, path_type: str, extensions: tuple[str, ...] | None = None
-) -> tuple[list, list]:
-    """Return a list of filenames and list corresponding labels.
-
-    Args:
-        path (str | Path): Path to the directory containing images.
-        path_type (str): Type of images in the provided path ("normal", "abnormal", "normal_test")
-        extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
-            directory.
-
-    Returns:
-        List, List: Filenames of the images provided in the paths, labels of the images provided in the paths
-    """
-    path = _check_and_convert_path(path)
-    if extensions is None:
-        extensions = IMG_EXTENSIONS
-
-    if isinstance(extensions, str):
-        extensions = (extensions,)
-
-    filenames = [f for f in path.glob(r"**/*") if f.suffix in extensions and not f.is_dir()]
-    if not filenames:
-        raise RuntimeError(f"Found 0 {path_type} images in {path}")
-
-    labels = [path_type] * len(filenames)
-
-    return filenames, labels
-
-
-def _resolve_path(folder: str | Path, root: str | Path | None = None) -> Path:
-    """Combines root and folder and returns the absolute path.
-
-    This allows users to pass either a root directory and relative paths, or absolute paths to each of the
-    image sources. This function makes sure that the samples dataframe always contains absolute paths.
-
-    Args:
-        folder (str | Path | None): Folder location containing image or mask data.
-        root (str | Path | None): Root directory for the dataset.
-    """
-    folder = Path(folder)
-    if folder.is_absolute():
-        # path is absolute; return unmodified
-        path = folder
-    # path is relative.
-    elif root is None:
-        # no root provided; return absolute path
-        path = folder.resolve()
-    else:
-        # root provided; prepend root and return absolute path
-        path = (Path(root) / folder).resolve()
-    return path
+from anomalib.data.utils.path import _prepare_files_labels, _resolve_path
 
 
 def make_folder_dataset(
@@ -103,7 +36,6 @@ def make_folder_dataset(
     extensions: tuple[str, ...] | None = None,
 ) -> DataFrame:
     """Make Folder Dataset.
-
     Args:
         normal_dir (str | Path): Path to the directory containing normal images.
         root (str | Path | None): Path to the root directory of the dataset.
@@ -117,7 +49,6 @@ def make_folder_dataset(
             Defaults to None.
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
             directory.
-
     Returns:
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
@@ -129,39 +60,56 @@ def make_folder_dataset(
 
     filenames = []
     labels = []
-    dirs = {"normal": normal_dir}
+    dirs = {DirType.NORMAL: normal_dir}
 
     if abnormal_dir:
-        dirs = {**dirs, **{"abnormal": abnormal_dir}}
+        dirs = {**dirs, **{DirType.ABNORMAL: abnormal_dir}}
 
     if normal_test_dir:
-        dirs = {**dirs, **{"normal_test": normal_test_dir}}
+        dirs = {**dirs, **{DirType.NORMAL_TEST: normal_test_dir}}
+
+    if mask_dir:
+        dirs = {**dirs, **{DirType.MASK: mask_dir}}
 
     for dir_type, path in dirs.items():
         filename, label = _prepare_files_labels(path, dir_type, extensions)
         filenames += filename
         labels += label
 
-    samples = DataFrame({"image_path": filenames, "label": labels, "mask_path": ""})
+    samples = DataFrame({"image_path": filenames, "label": labels})
+    samples = samples.sort_values(by="image_path", ignore_index=True)
 
     # Create label index for normal (0) and abnormal (1) images.
-    samples.loc[(samples.label == "normal") | (samples.label == "normal_test"), "label_index"] = 0
-    samples.loc[(samples.label == "abnormal"), "label_index"] = 1
-    samples.label_index = samples.label_index.astype(int)
+    samples.loc[
+        (samples.label == DirType.NORMAL) | (samples.label == DirType.NORMAL_TEST), "label_index"
+    ] = LabelName.NORMAL
+    samples.loc[(samples.label == DirType.ABNORMAL), "label_index"] = LabelName.ABNORMAL
+    samples.label_index = samples.label_index.astype("Int64")
 
     # If a path to mask is provided, add it to the sample dataframe.
-    if mask_dir is not None:
-        mask_dir = _check_and_convert_path(mask_dir)
-        for index, row in samples.iterrows():
-            if row.label_index == 1:
-                rel_image_path = row.image_path.relative_to(abnormal_dir)
-                samples.loc[index, "mask_path"] = str(mask_dir / rel_image_path)
 
-        # make sure all the files exist
-        # samples.image_path does NOT need to be checked because we build the df based on that
-        assert samples.mask_path.apply(
-            lambda x: Path(x).exists() if x != "" else True
-        ).all(), f"missing mask files, mask_dir={mask_dir}"
+    if mask_dir is not None and abnormal_dir is not None:
+        samples.loc[samples.label == DirType.ABNORMAL, "mask_path"] = samples.loc[
+            samples.label == DirType.MASK
+        ].image_path.values
+        samples["mask_path"].fillna("", inplace=True)
+        samples = samples.astype({"mask_path": "str"})
+
+        # make sure all every rgb image has a corresponding mask image.
+        assert (
+            samples.loc[samples.label_index == LabelName.ABNORMAL]
+            .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
+            .all()
+        ), "Mismatch between anomalous images and mask images. Make sure the mask files \
+            folder follow the same naming convention as the anomalous images in the dataset \
+            (e.g. image: '000.png', mask: '000.png')."
+    else:
+        samples["mask_path"] = ""
+
+    # remove all the rows with temporal image samples that have already been assigned
+    samples = samples.loc[
+        (samples.label == DirType.NORMAL) | (samples.label == DirType.ABNORMAL) | (samples.label == DirType.NORMAL_TEST)
+    ]
 
     # Ensure the pathlib objects are converted to str.
     # This is because torch dataloader doesn't like pathlib.
@@ -170,8 +118,8 @@ def make_folder_dataset(
     # Create train/test split.
     # By default, all the normal samples are assigned as train.
     #   and all the abnormal samples are test.
-    samples.loc[(samples.label == "normal"), "split"] = "train"
-    samples.loc[(samples.label == "abnormal") | (samples.label == "normal_test"), "split"] = "test"
+    samples.loc[(samples.label == DirType.NORMAL), "split"] = Split.TRAIN
+    samples.loc[(samples.label == DirType.ABNORMAL) | (samples.label == DirType.NORMAL_TEST), "split"] = Split.TEST
 
     # Get the data frame for the split.
     if split:
@@ -183,7 +131,6 @@ def make_folder_dataset(
 
 class FolderDataset(AnomalibDataset):
     """Folder dataset.
-
     Args:
         task (TaskType): Task type. (``classification``, ``detection`` or ``segmentation``).
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
@@ -196,11 +143,9 @@ class FolderDataset(AnomalibDataset):
             normal images for the test dataset. Defaults to None.
         mask_dir (str | Path | None, optional): Path to the directory containing
             the mask annotations. Defaults to None.
-
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
             directory.
         val_split_mode (ValSplitMode): Setting that determines how the validation subset is obtained.
-
     Raises:
         ValueError: When task is set to classification and `mask_dir` is provided. When `mask_dir` is
             provided, `task` should be set to `segmentation`.
@@ -243,7 +188,6 @@ class FolderDataset(AnomalibDataset):
 
 class Folder(AnomalibDataModule):
     """Folder DataModule.
-
     Args:
         normal_dir (str | Path): Name of the directory containing normal images.
             Defaults to "normal".

@@ -8,7 +8,7 @@
    ```bash
    sudo docker build --build-arg HTTP_PROXY="$http_proxy" --build-arg \
    HTTPS_PROXY="$https_proxy" --build-arg NO_PROXY="$no_proxy" \
-   . -t anomalib-ci -f .ci/cuda11.4.Dockerfile
+   . -t anomalib-ci -f .ci/Dockerfile
    ```
 
    Here, `anomalib-ci` is the name of the image.
@@ -17,7 +17,7 @@
 
    ```bash
    sudo docker run --gpus all \
-   --shm-size=256M\
+   --shm-size=2G\
     -i -t --mount type=bind,source=<path-to-datasets>,target=/home/user/datasets,readonly\
     -d --name anomalib-ci-container anomalib-ci
    ```
@@ -52,10 +52,10 @@
 
 1. Now the container is ready. Type `exit` to leave the container.
 
-1. Start github actions runner in detached mode in the container and set the
-   codacy token and the anomalib dataset environment variables.
+1. Start github actions runner in detached mode in the container and set the anomalib dataset and codecov environment
+   variables. The codecov token in the environment variable allows coverage report uploading from the forks.
 
    ```bash
    sudo docker exec -d anomalib-ci-container /bin/bash -c \
-   "export ANOMALIB_DATASET_PATH=/home/user/datasets;export CODACY_PROJECT_TOKEN=<codacy-project-token> && /home/user/actions-runner/run.sh"
+   "export ANOMALIB_DATASET_PATH=/home/user/datasets;export CODECOV_TOKEN=XXX && /home/user/actions-runner/run.sh"
    ```

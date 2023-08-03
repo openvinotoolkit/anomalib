@@ -11,6 +11,7 @@ import torch.nn.functional as F
 from torch import Tensor, nn
 from omegaconf import ListConfig
 
+
 from anomalib.models.components import (
     DynamicBufferModule,
     FeatureExtractor,

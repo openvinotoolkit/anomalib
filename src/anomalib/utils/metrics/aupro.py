@@ -37,7 +37,7 @@ class AUPRO(Metric):
         compute_on_step: bool = True,
         dist_sync_on_step: bool = False,
         process_group: Any | None = None,
-        dist_sync_fn: Callable = None,
+        dist_sync_fn: Callable | None = None,
         fpr_limit: float = 0.3,
     ) -> None:
         super().__init__(
@@ -61,21 +61,17 @@ class AUPRO(Metric):
         self.target.append(target)
         self.preds.append(preds)
 
-    def _compute(self) -> tuple[Tensor, Tensor]:
-        """Compute the pro/fpr value-pairs until the fpr specified by self.fpr_limit.
-
-        It leverages the fact that the overlap corresponds to the tpr, and thus computes the overall
-        PRO curve by aggregating per-region tpr/fpr values produced by ROC-construction.
+    def perform_cca(self) -> Tensor:
+        """Perform the Connected Component Analysis on the self.target tensor.
 
         Raises:
             ValueError: ValueError is raised if self.target doesn't conform with requirements imposed by kornia for
                         connected component analysis.
 
         Returns:
-            tuple[Tensor, Tensor]: tuple containing final fpr and tpr values.
+            Tensor: Components labeled from 0 to N.
         """
         target = dim_zero_cat(self.target)
-        preds = dim_zero_cat(self.preds)
 
         # check and prepare target for labeling via kornia
         if target.min() < 0 or target.max() > 1:
@@ -90,9 +86,17 @@ class AUPRO(Metric):
         else:
             cca = connected_components_cpu(target)
 
-        preds = preds.flatten()
-        cca = cca.flatten()
-        target = target.flatten()
+        return cca
+
+    def compute_pro(self, cca: Tensor, target: Tensor, preds: Tensor) -> tuple[Tensor, Tensor]:
+        """Compute the pro/fpr value-pairs until the fpr specified by self.fpr_limit.
+
+        It leverages the fact that the overlap corresponds to the tpr, and thus computes the overall
+        PRO curve by aggregating per-region tpr/fpr values produced by ROC-construction.
+
+        Returns:
+            tuple[Tensor, Tensor]: tuple containing final fpr and tpr values.
+        """
 
         # compute the global fpr-size
         fpr: Tensor = roc(preds, target)[0]  # only need fpr
@@ -155,6 +159,21 @@ class AUPRO(Metric):
         fpr /= labels.size(0)
         return fpr, tpr
 
+    def _compute(self) -> tuple[Tensor, Tensor]:
+        """Compute the PRO curve.
+
+        Perform the Connected Component Analysis first then compute the PRO curve.
+
+        Returns:
+            tuple[Tensor, Tensor]: tuple containing final fpr and tpr values.
+        """
+
+        cca = self.perform_cca().flatten()
+        target = dim_zero_cat(self.target).flatten()
+        preds = dim_zero_cat(self.preds).flatten()
+
+        return self.compute_pro(cca=cca, target=target, preds=preds)
+
     def compute(self) -> Tensor:
         """Fist compute PRO curve, then compute and scale area under the curve.
 
@@ -163,7 +182,7 @@ class AUPRO(Metric):
         """
         fpr, tpr = self._compute()
 
-        aupro = auc(fpr, tpr)
+        aupro = auc(fpr, tpr, reorder=True)
         aupro = aupro / fpr[-1]  # normalize the area
 
         return aupro

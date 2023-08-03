@@ -5,7 +5,7 @@ ARG HTTP_PROXY
 ARG HTTPS_PROXY
 ARG NO_PROXY
 
-FROM nvidia/cuda:10.2-devel-ubuntu18.04 AS python_base_cuda10.2
+FROM nvidia/cuda:11.4.0-devel-ubuntu20.04 AS python_base_cuda11.4
 LABEL maintainer="Anomalib Development Team"
 
 # Setup proxies
@@ -21,7 +21,7 @@ RUN apt-get update && \
         curl \
         wget \
         ffmpeg \
-        libpython3.8 \
+        libpython3.10 \
         npm \
         pandoc \
         ruby \
@@ -36,8 +36,8 @@ RUN add-apt-repository ppa:git-core/ppa &&\
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Prettier requires atleast nodejs 10
-RUN curl -sL https://deb.nodesource.com/setup_14.x > nodesetup.sh && \
+# Prettier requires atleast nodejs 10 and actions/checkout requires nodejs 16
+RUN curl -sL https://deb.nodesource.com/setup_current.x > nodesetup.sh && \
     bash - nodesetup.sh && \
     apt-get install --no-install-recommends -y nodejs && \
     apt-get clean && \
@@ -52,14 +52,14 @@ RUN curl https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh >
     bash ~/miniconda.sh -b -p /home/user/conda && \
     rm ~/miniconda.sh
 ENV PATH "/home/user/conda/bin:${PATH}"
-RUN conda install python=3.8
+RUN conda install python=3.10
 
 
 #########################################################
 ## Anomalib Development Env
 #########################################################
 
-FROM python_base_cuda10.2 as anomalib_development_env
+FROM python_base_cuda11.4 as anomalib_development_env
 
 # Install all anomalib requirements
 COPY ./requirements/base.txt /tmp/anomalib/requirements/base.txt

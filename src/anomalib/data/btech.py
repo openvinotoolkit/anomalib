@@ -26,6 +26,7 @@ from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
     DownloadInfo,
     InputNormalizationMethod,
+    LabelName,
     Split,
     TestSplitMode,
     ValSplitMode,
@@ -38,6 +39,8 @@ logger = logging.getLogger(__name__)
 DOWNLOAD_INFO = DownloadInfo(
     name="btech", url="https://avires.dimi.uniud.it/papers/btad/btad.zip", hash="c1fa4d56ac50dd50908ce04e81037a8e"
 )
+
+CATEGORIES = ("01", "02", "03")
 
 
 def make_btech_dataset(path: Path, split: str | Split | None = None) -> DataFrame:
@@ -104,8 +107,8 @@ def make_btech_dataset(path: Path, split: str | Split | None = None) -> DataFram
     samples.loc[(samples.split == "test") & (samples.label == "ok"), "mask_path"] = ""
 
     # Create label index for normal (0) and anomalous (1) images.
-    samples.loc[(samples.label == "ok"), "label_index"] = 0
-    samples.loc[(samples.label != "ok"), "label_index"] = 1
+    samples.loc[(samples.label == "ok"), "label_index"] = LabelName.NORMAL
+    samples.loc[(samples.label != "ok"), "label_index"] = LabelName.ABNORMAL
     samples.label_index = samples.label_index.astype(int)
 
     # Get the data frame for the split.
@@ -133,7 +136,7 @@ class BTechDataset(AnomalibDataset):
         >>> transform = get_transforms(image_size=256)
         >>> dataset = BTechDataset(
         ...     root='./datasets/BTech',
-        ...     category='leather',
+        ...     category='01',
         ...     transform=transform,
         ...     task="classification",
         ...     is_train=True,
@@ -214,13 +217,13 @@ class BTech(AnomalibDataModule):
         >>> from anomalib.data import BTech
         >>> datamodule = BTech(
         ...     root="./datasets/BTech",
-        ...     category="leather",
+        ...     category="01",
         ...     image_size=256,
         ...     train_batch_size=32,
-        ...     test_batch_size=32,
+        ...     eval_batch_size=32,
         ...     num_workers=8,
         ...     transform_config_train=None,
-        ...     transform_config_val=None,
+        ...     transform_config_eval=None,
         ... )
         >>> datamodule.setup()
 

@@ -78,7 +78,7 @@ def trapezoid(x, y, x_max=None):
     finite_mask = np.logical_and(np.isfinite(x), np.isfinite(y))
     if not finite_mask.all():
         print(
-            """WARNING: Not all x and y values passed to trapezoid are finite. Will continue with only the finite values."""
+            "WARNING: Not all x and y values passed to trapezoid are finite. Will continue with only the finite values."
         )
     x = x[finite_mask]
     y = y[finite_mask]
@@ -110,16 +110,17 @@ def collect_anomaly_scores(anomaly_maps, ground_truth_maps):
     """
     Extract anomaly scores for each ground truth connected component as well as anomaly scores for each potential false
     positive pixel from anomaly maps.
+
     Args:
-        anomaly_maps:      List of anomaly maps (2D numpy arrays) that contain a real-valued anomaly score at each pixel.
+        anomaly_maps: List of anomaly maps (2D numpy arrays) that contain a real-valued anomaly score at each pixel.
         ground_truth_maps: List of ground truth maps (2D numpy arrays) that contain binary-valued ground truth labels
                            for each pixel. 0 indicates that a pixel is anomaly-free. 1 indicates that a pixel contains
                            an anomaly.
     Returns:
-        ground_truth_components: A list of all ground truth connected components that appear in the dataset. For each
-                                 component, a sorted list of its anomaly scores is stored.
-        anomaly_scores_ok_pixels: A sorted list of anomaly scores of all anomaly-free pixels of the dataset. This list
-                                  can be used to quickly select thresholds that fix a certain false positive rate.
+        ground_truth_components: A list of all ground truth connected components that appear in the dataset.
+            For each component, a sorted list of its anomaly scores is stored.
+        anomaly_scores_ok_pixels: A sorted list of anomaly scores of all anomaly-free pixels of the dataset.
+            This list can be used to quickly select thresholds that fix a certain false positive rate.
     """
     # Make sure an anomaly map is present for each ground truth map.
     assert len(anomaly_maps) == len(ground_truth_maps)
@@ -134,7 +135,6 @@ def collect_anomaly_scores(anomaly_maps, ground_truth_maps):
     # Collect anomaly scores within each ground truth region and for all potential fp pixels.
     ok_index = 0
     for gt_map, prediction in zip(ground_truth_maps, anomaly_maps):
-
         # Compute the connected components in the ground truth map.
         labeled, n_components = label(gt_map, structure)
 
@@ -159,12 +159,13 @@ def compute_pro(anomaly_maps, ground_truth_maps, num_thresholds):
     """
     Compute the PRO curve at equidistant interpolation points for a set of anomaly maps with corresponding ground
     truth maps. The number of interpolation points can be set manually.
+
     Args:
-        anomaly_maps:      List of anomaly maps (2D numpy arrays) that contain a real-valued anomaly score at each pixel.
+        anomaly_maps: List of anomaly maps (2D numpy arrays) that contain a real-valued anomaly score at each pixel.
         ground_truth_maps: List of ground truth maps (2D numpy arrays) that contain binary-valued ground truth labels
-                           for each pixel. 0 indicates that a pixel is anomaly-free. 1 indicates that a pixel contains
-                           an anomaly.
-        num_thresholds:    Number of thresholds to compute the PRO curve.
+            for each pixel. 0 indicates that a pixel is anomaly-free. 1 indicates that a pixel contains an anomaly.
+        num_thresholds: Number of thresholds to compute the PRO curve.
+
     Returns:
         fprs: List of false positive rates.
         pros: List of correspoding PRO values.

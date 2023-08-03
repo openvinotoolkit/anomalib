@@ -8,7 +8,7 @@ This script provide a gradio web interface
 
 from __future__ import annotations
 
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser
 from importlib import import_module
 from pathlib import Path
 
@@ -20,35 +20,32 @@ import numpy as np
 from anomalib.deploy import Inferencer
 
 
-def get_args() -> Namespace:
-    r"""Get command line arguments.
+def get_parser() -> ArgumentParser:
+    """Get command line arguments.
 
     Example:
 
         Example for Torch Inference.
-        >>> python tools/inference/gradio_inference.py  \                                                                                     ─╯
-        ...     --config ./anomalib/models/padim/config.yaml    \
-        ...     --weights ./results/padim/mvtec/bottle/weights/model.ckpt   # noqa: E501    #pylint: disable=line-too-long
+        >>> python tools/inference/gradio_inference.py  \
+        ...     --weights ./results/padim/mvtec/bottle/weights/torch/model.pt
 
     Returns:
-        Namespace: List of arguments.
+        ArgumentParser: Argument parser for gradio inference.
     """
     parser = ArgumentParser()
-    parser.add_argument("--config", type=Path, required=True, help="Path to a config file")
     parser.add_argument("--weights", type=Path, required=True, help="Path to model weights")
-    parser.add_argument("--meta_data", type=Path, required=False, help="Path to a JSON file containing the metadata.")
+    parser.add_argument("--metadata", type=Path, required=False, help="Path to a JSON file containing the metadata.")
     parser.add_argument("--share", type=bool, required=False, default=False, help="Share Gradio `share_url`")
 
-    return parser.parse_args()
+    return parser
 
 
-def get_inferencer(config_path: Path, weight_path: Path, meta_data_path: Path | None = None) -> Inferencer:
+def get_inferencer(weight_path: Path, metadata: Path | None = None) -> Inferencer:
     """Parse args and open inferencer.
 
     Args:
-        config_path (Path): Path to model configuration file or the name of the model.
         weight_path (Path): Path to model weights.
-        meta_data_path (Path | None, optional): Metadata is required for OpenVINO models. Defaults to None.
+        metadata (Path | None, optional): Metadata is required for OpenVINO models. Defaults to None.
 
     Raises:
         ValueError: If unsupported model weight is passed.
@@ -62,13 +59,16 @@ def get_inferencer(config_path: Path, weight_path: Path, meta_data_path: Path | 
     extension = weight_path.suffix
     inferencer: Inferencer
     module = import_module("anomalib.deploy")
-    if extension in (".ckpt"):
+    if extension in (".pt", ".pth", ".ckpt"):
         torch_inferencer = getattr(module, "TorchInferencer")
-        inferencer = torch_inferencer(config=config_path, model_source=weight_path, meta_data_path=meta_data_path)
+        inferencer = torch_inferencer(path=weight_path)
 
     elif extension in (".onnx", ".bin", ".xml"):
+        if metadata is None:
+            raise ValueError("When using OpenVINO Inferencer, the following arguments are required: --metadata")
+
         openvino_inferencer = getattr(module, "OpenVINOInferencer")
-        inferencer = openvino_inferencer(config=config_path, path=weight_path, meta_data_path=meta_data_path)
+        inferencer = openvino_inferencer(path=weight_path, metadata=metadata)
 
     else:
         raise ValueError(
@@ -96,8 +96,8 @@ def infer(image: np.ndarray, inferencer: Inferencer) -> tuple[np.ndarray, np.nda
 
 
 if __name__ == "__main__":
-    args = get_args()
-    gradio_inferencer = get_inferencer(args.config, args.weights, args.meta_data)
+    args = get_parser().parse_args()
+    gradio_inferencer = get_inferencer(args.weights, args.metadata)
 
     interface = gr.Interface(
         fn=lambda image: infer(image, gradio_inferencer),

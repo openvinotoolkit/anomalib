@@ -40,13 +40,14 @@ class ExportCallback(Callback):
         Converts the model to ``onnx`` format and then calls OpenVINO's model optimizer to get the
         ``.xml`` and ``.bin`` IR files.
         """
-        del trainer  # `trainer` variable is not used.
-
         logger.info("Exporting the model")
         Path(self.dirpath).mkdir(parents=True, exist_ok=True)
+
         export(
-            model=pl_module,
+            task=trainer.datamodule.test_data.task,
             input_size=self.input_size,
+            transform=trainer.datamodule.test_data.transform.to_dict(),
+            model=pl_module,
             export_root=self.dirpath,
             export_mode=self.export_mode,
         )

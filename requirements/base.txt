@@ -13,6 +13,7 @@ wandb==0.12.17
 matplotlib==3.6.*
 gradio==3.0.2
 imgaug==0.4.0
+<<<<<<< HEAD
 line-profiler==3.5.1
 jsonargparse[signatures]~=4.3.0
 

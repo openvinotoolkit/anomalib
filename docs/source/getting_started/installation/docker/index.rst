@@ -1,7 +1,7 @@
-.. _developing_on_docker:
+.. _docker:
 
-Developing on Docker
-======================
+Docker
+======
 
 .. note::
 	You need a CUDA-capable GPU with suitable drivers installed
@@ -11,7 +11,7 @@ Developing on Docker
 
 
 Build the Docker Image
-======================
+----------------------
 
 To use anomalib with Docker, you can build a Docker image containing anomalib all its dependencies from the provided Dockerfile. To this end, navigate to the anomalib root directory (the one containing the Dockerfile) and build the Docker image with
 
@@ -21,22 +21,22 @@ To use anomalib with Docker, you can build a Docker image containing anomalib al
 
 
 Run the Docker Image
-====================
+--------------------
 
 After building the image, you can run it as follows
 
 .. code-block:: console
 
 	docker run \
-	-it --rm \
-	--ipc=host \
-	--env="DISPLAY" \
-	--gpus=all \
-	-w /anomalib \
-	-v /tmp/.X11-unix:/tmp/.X11-unix:rw \
-	-v "$(pwd)":/anomalib \
-	anomalib \
-	/bin/bash
+		-it --rm \
+		--ipc=host \
+		--env="DISPLAY" \
+		--gpus=all \
+		-w /anomalib \
+		-v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+		-v "$(pwd)":/anomalib \
+		anomalib \
+		/bin/bash
 
 This creates an interactive bash session inside the Docker container, in which you can run all anomalib commands as described in the `readme <https://github.com/openvinotoolkit/anomalib/blob/main/README.md>`_.
 
@@ -47,7 +47,7 @@ The source code is mapped into the running container by means of the `-v "$(pwd)
 
 
 Using VSCode
-============
+------------
 
 You may also use the Remote-Containers extension for VSCode for deployment with Docker, which can be set up as follows:
 

@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import torch
 from matplotlib.figure import Figure
 from torch import Tensor
 from torchmetrics import ROC
@@ -27,10 +26,7 @@ class AUROC(ROC):
         fpr: Tensor
 
         fpr, tpr = self._compute()
-        # TODO: use stable sort after upgrading to pytorch 1.9.x (https://github.com/openvinotoolkit/anomalib/issues/92)
-        if not (torch.all(fpr.diff() <= 0) or torch.all(fpr.diff() >= 0)):
-            return auc(fpr, tpr, reorder=True)  # only reorder if fpr is not increasing or decreasing
-        return auc(fpr, tpr)
+        return auc(fpr, tpr, reorder=True)
 
     def update(self, preds: Tensor, target: Tensor) -> None:  # type: ignore
         """Update state with new values.

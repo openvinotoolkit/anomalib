@@ -3,7 +3,7 @@ default_language_version:
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.3.0
+    rev: v4.4.0
     hooks:
       # list of supported hooks: https://pre-commit.com/hooks.html
       - id: trailing-whitespace
@@ -15,80 +15,48 @@ repos:
 
   # python code formatting
   - repo: https://github.com/psf/black
-    rev: 22.6.0
+    rev: 23.1.0
     hooks:
       - id: black
 
-  # python import sorting
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.11.5
+  # Ruff version.
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: "v0.0.253"
     hooks:
-      - id: isort
-
-  # python code analysis
-  - repo: https://github.com/PyCQA/flake8
-    rev: 4.0.1
-    hooks:
-      - id: flake8
-        args: ["--max-line-length=120", "--ignore=E203,W503"]
+      - id: ruff
         exclude: "tests"
-
-  # python linting
-  - repo: https://github.com/PyCQA/pylint
-    rev: v2.14.5
-    hooks:
-      - id: pylint
-        name: pylint
-        entry: pylint --score=no
-        language: system
-        types: [python]
-        exclude: "tests|docs"
+        args: ["--fix"]
 
   # python static type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v0.971"
+    rev: "v1.0.1"
     hooks:
       - id: mypy
         additional_dependencies: [types-PyYAML]
         exclude: "tests"
 
-  - repo: https://github.com/PyCQA/pydocstyle
-    rev: 6.1.1
-    hooks:
-      - id: pydocstyle
-        additional_dependencies: [toml]
-        name: pydocstyle
-        entry: pydocstyle
-        language: python
-        types: [python]
-        exclude: "tests|docs"
-
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v3.3.1
-    hooks:
-      - id: pyupgrade
-
   # notebooks.
   - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.4.0
+    rev: 1.6.3
     hooks:
       - id: nbqa-black
-      - id: nbqa-isort
-      - id: nbqa-flake8
-      - id: nbqa-pylint
+      - id: nbqa-ruff
+        # Ignore unsorted imports. This is because jupyter notebooks can import
+        # packages in a different order than the rest of the codebase.
+        args: ["--ignore=I001"]
 
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v2.7.1
+    rev: v3.0.0-alpha.4
     hooks:
       - id: prettier
 
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.32.2
+    rev: v0.33.0
     hooks:
       - id: markdownlint
 
   - repo: https://github.com/AleksaC/hadolint-py
-    rev: v2.10.0
+    rev: v2.12.0.2
     hooks:
       - id: hadolint
         name: Lint Dockerfiles
