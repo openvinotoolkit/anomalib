@@ -5,6 +5,7 @@ pre_trained
 !tests/pre_merge/datasets
 results
 !anomalib/core/results
+runs
 
 # Jupyter Notebooks
 notebooks/500_use_cases/501_dobot/
