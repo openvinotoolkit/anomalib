@@ -321,14 +321,14 @@ For more details see the [Discussion forum](https://github.com/openvinotoolkit/a
 | CFlow                |             |          |             |             |
 | CsFlow               |             |          |             |             |
 | Dfkde                |             |          |             |             |
-| Dfm                  | 0.8639      | 0.8452   | 0.9673      | 0.7790      |
+| Dfm                  | 0.864       | 0.845    | 0.967       | 0.779       |
 | Draem                |             |          |             |             |
 | Efficient AD         |             |          |             |             |
-| FastFlow             | 0.9080      | 0.8659   | 0.9677      | 0.8293      |
+| FastFlow             | 0.908       | 0.866    | 0.968       | 0.829       |
 | Padim                |             |          |             |             |
 | PatchCore            |             |          |             |             |
 | Reverse Distillation |             |          |             |             |
-| Stfpm                | 0.9006      | 0.8693   | 0.9643      | 0.8608      |
+| Stfpm                | 0.901       | 0.869    | 0.964       | 0.861       |
 
 ## Video Datasets
 
