@@ -273,7 +273,6 @@ def _perimg_binclf_curve_compute_cpu(
     """Compute the binary classification matrix for a range of thresholds.
 
     This function expects the inputs to be on the CPU.
-    # TODO: verify best option on GPU
 
     Inspired on `binary_precision_recall_curve` and `_binary_clf_curve`,
     from `torchmetrics.functional.classification.precision_recall_curve`.
@@ -425,13 +424,15 @@ class PerImageBinClfCurve(Metric):
 
         self.threshold_bounds = torch.tensor((anomaly_maps.min(), anomaly_maps.max()))
 
-        # TODO decide method for GPU
+        # even if the data is on GPU, this CPU-based method is faster
         thresholds, binclf_curves = _perimg_binclf_curve_compute_cpu(
             anomaly_maps=anomaly_maps.cpu(),
             masks=masks.cpu(),
             threshold_bounds=self.threshold_bounds,
             num_thresholds=self.num_thresholds.item(),
         )
+        thresholds = thresholds.to(image_classes.device)
+        masks = masks.to(image_classes.device)
 
         return thresholds, binclf_curves, image_classes
 
