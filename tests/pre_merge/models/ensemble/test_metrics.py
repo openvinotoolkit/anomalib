@@ -4,12 +4,11 @@ from torch import Tensor
 
 from anomalib.utils.metrics import AnomalibMetricCollection
 
-
 mock_predictions = {
     "pred_scores": torch.ones(50),
     "label": torch.ones(50),
     "anomaly_maps": torch.ones(10, 50),
-    "mask": torch.ones(10, 50)
+    "mask": torch.ones(10, 50),
 }
 
 
