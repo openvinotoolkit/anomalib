@@ -4,6 +4,7 @@ import pytest
 
 from anomalib.config import get_configurable_parameters
 from anomalib.models.ensemble import EnsembleTiler, get_ensemble_datamodule, prepare_ensemble_configurable_parameters
+from anomalib.models.ensemble.post_processing import EnsembleMetrics
 from anomalib.models.ensemble.predictions import BasicEnsemblePredictions, BasicPredictionJoiner
 
 
@@ -70,3 +71,11 @@ def get_ensemble_predictions(get_datamodule, get_config):
         data.add_tile_prediction(tile_index, tile_prediction)
 
     return data
+
+
+@pytest.fixture(scope="module")
+def get_ens_metrics(get_config):
+    config = get_config
+    metrics = EnsembleMetrics(config, 0.5, 0.5)
+
+    return metrics
