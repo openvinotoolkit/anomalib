@@ -8,9 +8,9 @@ from torch import Tensor
 from anomalib.models.ensemble import EnsembleTiler
 from anomalib.models.ensemble.ensemble_functions import (
     TileCollater,
+    get_ensemble_callbacks,
     get_ensemble_datamodule,
     get_prediction_storage,
-    get_ensemble_callbacks,
 )
 from anomalib.models.ensemble.predictions import (
     BasicEnsemblePredictions,

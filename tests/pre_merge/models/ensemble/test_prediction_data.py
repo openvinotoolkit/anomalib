@@ -11,9 +11,9 @@ from torchmetrics import StructuralSimilarityIndexMeasure
 from anomalib.data import AnomalibDataModule
 from anomalib.models.ensemble.predictions import (
     BasicEnsemblePredictions,
+    EnsemblePredictions,
     FileSystemEnsemblePredictions,
     RescaledEnsemblePredictions,
-    EnsemblePredictions,
 )
 
 
@@ -90,12 +90,12 @@ class TestPredictionData:
         # we want rescaled to be close to original, but we lose some information in scaling
         ssim = StructuralSimilarityIndexMeasure()
 
-        def rescale_eq(input, other):
+        def rescale_eq(input_tensor, other_tensor):
             # check if all zero
-            if not (torch.any(input) and torch.any(other)):
+            if not (torch.any(input_tensor) and torch.any(other_tensor)):
                 return True
 
-            return ssim(input, other) > 0.8
+            return ssim(input_tensor, other_tensor) > 0.8
 
         for name in original[(0, 0)][0].keys():
             if name in ["image", "anomaly_maps", "pred_masks"]:

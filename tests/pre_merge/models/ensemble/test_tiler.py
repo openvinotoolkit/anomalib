@@ -1,7 +1,6 @@
 """EnsembleTiler tests"""
 
 import pytest
-
 import torch
 from omegaconf import OmegaConf
 

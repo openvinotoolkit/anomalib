@@ -1,5 +1,4 @@
 """Test working of tile joiner"""
-import pytest
 import torch
 
 from anomalib.data import get_datamodule
@@ -42,7 +41,7 @@ class TestBasicJoiner:
 
         assert joined["pred_labels"].equal(labels.any(dim=0))
 
-    def test_box_joining(self, get_joiner, box_dict, expected_shapes):
+    def test_box_joining(self, get_joiner):
         joiner = get_joiner
 
         mock_data = {

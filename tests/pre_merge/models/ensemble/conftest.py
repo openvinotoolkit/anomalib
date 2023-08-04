@@ -4,7 +4,7 @@ import pytest
 
 from anomalib.config import get_configurable_parameters
 from anomalib.models.ensemble import EnsembleTiler, get_ensemble_datamodule, prepare_ensemble_configurable_parameters
-from anomalib.models.ensemble.predictions import BasicPredictionJoiner, BasicEnsemblePredictions
+from anomalib.models.ensemble.predictions import BasicEnsemblePredictions, BasicPredictionJoiner
 
 
 @pytest.fixture(scope="module")
