@@ -1,4 +1,4 @@
-"""Functions used to obtain and execute ensemble post-processing pipelines"""
+"""Functions used to obtain and execute ensemble post-processing pipelines."""
 
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -8,20 +8,19 @@ from typing import List
 
 from omegaconf import DictConfig, ListConfig
 
-from anomalib.models.ensemble.predictions import BasicPredictionJoiner, EnsemblePredictions
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
+from anomalib.models.ensemble.post_processing.metrics import EnsembleMetrics
 from anomalib.models.ensemble.post_processing.postprocess import (
-    EnsemblePostProcessPipeline,
-    SmoothJoins,
-    PostProcessStats,
     EnsemblePostProcess,
+    EnsemblePostProcessPipeline,
     MinMaxNormalize,
+    PostProcessStats,
+    SmoothJoins,
     Threshold,
 )
-from anomalib.models.ensemble.post_processing.metrics import EnsembleMetrics
 from anomalib.models.ensemble.post_processing.visualization import EnsembleVisualization
+from anomalib.models.ensemble.predictions import BasicPredictionJoiner, EnsemblePredictions
 from anomalib.post_processing import ThresholdMethod
-
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +38,7 @@ def get_stats_pipeline(config: DictConfig | ListConfig, tiler: EnsembleTiler) ->
     """
     stats_pipeline = EnsemblePostProcessPipeline(BasicPredictionJoiner(tiler))
 
-    steps = []
+    steps: List[EnsemblePostProcess] = []
 
     if config.ensemble.post_processing.smooth_joins.apply:
         steps.append(SmoothJoins(config, tiler))
@@ -106,7 +105,7 @@ def get_postprocessing_pipeline(
     """
     post_pipeline = EnsemblePostProcessPipeline(BasicPredictionJoiner(tiler))
 
-    steps = []
+    steps: List[EnsemblePostProcess] = []
     if config.ensemble.post_processing.smooth_joins.apply:
         steps.append(SmoothJoins(config, tiler))
 

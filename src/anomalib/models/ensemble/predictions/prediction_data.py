@@ -3,30 +3,24 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import copy
 from abc import ABC
 from pathlib import Path
-import copy
-
-from typing import List
-
-from omegaconf import DictConfig, ListConfig
+from typing import Dict, List, Tuple
 
 import torch
-from torch import Tensor
 import torch.nn.functional as F
+from omegaconf import DictConfig, ListConfig
+from torch import Tensor
 
 
 class EnsemblePredictions(ABC):
-    """
-    Abstract class used as template for different ways of storing ensemble predictions.
-    """
+    """Abstract class used as template for different ways of storing ensemble predictions."""
 
     def __init__(self) -> None:
         self.num_batches = 0
 
-    def add_tile_prediction(
-        self, tile_index: (int, int), tile_prediction: list[dict[str, Tensor | List | str]]
-    ) -> None:
+    def add_tile_prediction(self, tile_index: Tuple[int, int], tile_prediction: List[Dict[str, Tensor | List]]) -> None:
         """
         Add tile prediction data at specified tile index.
 
@@ -36,7 +30,7 @@ class EnsemblePredictions(ABC):
         """
         raise NotImplementedError
 
-    def get_batch_tiles(self, batch_index: int) -> dict[(int, int), dict]:
+    def get_batch_tiles(self, batch_index: int) -> Dict[Tuple[int, int], Dict]:
         """
         Get all tiles of current batch.
 
@@ -50,17 +44,13 @@ class EnsemblePredictions(ABC):
 
 
 class BasicEnsemblePredictions(EnsemblePredictions):
-    """
-    Basic implementation of EnsemblePredictionData that keeps all predictions in memory as they are.
-    """
+    """Basic implementation of EnsemblePredictionData that keeps all predictions in memory as they are."""
 
     def __init__(self) -> None:
         super().__init__()
-        self.all_data = {}
+        self.all_data: Dict[Tuple[int, int], List] = {}
 
-    def add_tile_prediction(
-        self, tile_index: (int, int), tile_prediction: list[dict[str, Tensor | List | str]]
-    ) -> None:
+    def add_tile_prediction(self, tile_index: Tuple[int, int], tile_prediction: List[Dict[str, Tensor | List]]) -> None:
         """
         Add tile prediction data at provided index to class dictionary in main memory.
 
@@ -73,7 +63,7 @@ class BasicEnsemblePredictions(EnsemblePredictions):
 
         self.all_data[tile_index] = tile_prediction
 
-    def get_batch_tiles(self, batch_index: int) -> dict[(int, int), dict]:
+    def get_batch_tiles(self, batch_index: int) -> Dict[Tuple[int, int], Dict]:
         """
         Get all tiles of current batch from class dictionary.
 
@@ -103,18 +93,16 @@ class FileSystemEnsemblePredictions(EnsemblePredictions):
 
     def __init__(self, config: DictConfig | ListConfig) -> None:
         super().__init__()
-        self.tile_indices = []
+        self.tile_indices: List[Tuple[int, int]] = []
 
         project_path = Path(config.project.path)
         self.tiles_path = project_path / "tile_predictions"
 
         self.tiles_path.mkdir()
 
-    def add_tile_prediction(
-        self, tile_index: (int, int), tile_prediction: list[dict[str, Tensor | List | str]]
-    ) -> None:
+    def add_tile_prediction(self, tile_index: Tuple[int, int], tile_prediction: List[Dict[str, Tensor | List]]) -> None:
         """
-        Save predictions from current position to file system in following hierarchy:
+        Save predictions from current position to file system in following hierarchy.
 
         tile_predictions
         ...0_0
@@ -148,7 +136,7 @@ class FileSystemEnsemblePredictions(EnsemblePredictions):
             # clear from dict (GC will remove from memory)
             batch.clear()
 
-    def get_batch_tiles(self, batch_index: int) -> dict[(int, int), dict]:
+    def get_batch_tiles(self, batch_index: int) -> Dict[Tuple[int, int], Dict]:
         """
         Load batches from file system and assemble into dict.
 
@@ -171,7 +159,7 @@ class FileSystemEnsemblePredictions(EnsemblePredictions):
 
 class RescaledEnsemblePredictions(EnsemblePredictions):
     """
-    Implementation of EnsemblePredictionData that keeps all predictions in memory but scaled down
+    Implementation of EnsemblePredictionData that keeps all predictions in memory but scaled down.
 
     Args:
         config: Config file with all parameters.
@@ -180,12 +168,12 @@ class RescaledEnsemblePredictions(EnsemblePredictions):
 
     def __init__(self, config: DictConfig | ListConfig) -> None:
         super().__init__()
-        self.all_data = {}
+        self.all_data: Dict[Tuple[int, int], List] = {}
         self.downscale_factor = config.ensemble.predictions.rescale_factor
         self.upscale_factor = 1 / self.downscale_factor
 
     @staticmethod
-    def _rescale(batch: dict, scale_factor: float, mode: str) -> dict:
+    def _rescale(batch: Dict, scale_factor: float, mode: str) -> Dict:
         """
         Rescale all tile data in batch for specified factor.
 
@@ -213,9 +201,7 @@ class RescaledEnsemblePredictions(EnsemblePredictions):
 
         return batch
 
-    def add_tile_prediction(
-        self, tile_index: (int, int), tile_prediction: list[dict[str, Tensor | List | str]]
-    ) -> None:
+    def add_tile_prediction(self, tile_index: Tuple[int, int], tile_prediction: List[Dict[str, Tensor | List]]) -> None:
         """
         Rescale tile prediction data and add it at provided index to class dictionary in main memory.
 
@@ -232,7 +218,7 @@ class RescaledEnsemblePredictions(EnsemblePredictions):
 
         self.all_data[tile_index] = rescaled
 
-    def get_batch_tiles(self, batch_index: int) -> dict[(int, int), dict]:
+    def get_batch_tiles(self, batch_index: int) -> Dict[Tuple[int, int], Dict]:
         """
         Get all tiles of current batch from class dictionary, rescaled to original size.
 

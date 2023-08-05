@@ -9,29 +9,29 @@ import copy
 import logging
 import os
 import warnings
-from typing import Any
+from typing import Any, Dict, List, Tuple
 
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning import Callback
 from pytorch_lightning.callbacks import ModelCheckpoint
 
 from anomalib.data import get_datamodule
-from anomalib.data.base.datamodule import collate_fn, AnomalibDataModule
+from anomalib.data.base.datamodule import AnomalibDataModule, collate_fn
 from anomalib.deploy import ExportMode
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
-from anomalib.utils.callbacks import (
-    TimerCallback,
-    LoadModelCallback,
-    PostProcessingConfigurationCallback,
-    MinMaxNormalizationCallback,
-    GraphLogger,
-    MetricsConfigurationCallback,
-)
 from anomalib.models.ensemble.predictions import (
-    EnsemblePredictions,
     BasicEnsemblePredictions,
+    EnsemblePredictions,
     FileSystemEnsemblePredictions,
     RescaledEnsemblePredictions,
+)
+from anomalib.utils.callbacks import (
+    GraphLogger,
+    LoadModelCallback,
+    MetricsConfigurationCallback,
+    MinMaxNormalizationCallback,
+    PostProcessingConfigurationCallback,
+    TimerCallback,
 )
 
 logger = logging.getLogger(__name__)
@@ -46,11 +46,11 @@ class TileCollater:
         tile_index: Index of tile we want to return.
     """
 
-    def __init__(self, tiler: EnsembleTiler, tile_index: (int, int)) -> None:
+    def __init__(self, tiler: EnsembleTiler, tile_index: Tuple[int, int]) -> None:
         self.tiler = tiler
         self.tile_index = tile_index
 
-    def __call__(self, batch: list) -> dict[str, Any]:
+    def __call__(self, batch: list) -> Dict[str, Any]:
         """
         Collate batch and tile images + masks from batch.
 
@@ -80,8 +80,7 @@ class TileCollater:
 def prepare_ensemble_configurable_parameters(
     ens_config_path, config: DictConfig | ListConfig
 ) -> DictConfig | ListConfig:
-    """
-    Add all ensemble configuration parameters to config object
+    """Add all ensemble configuration parameters to config object.
 
     Args:
         ens_config_path: Path to ensemble configuration.
@@ -116,7 +115,7 @@ def get_ensemble_datamodule(config: DictConfig | ListConfig, tiler: EnsembleTile
     return datamodule
 
 
-def get_prediction_storage(config: DictConfig | ListConfig) -> (EnsemblePredictions, EnsemblePredictions):
+def get_prediction_storage(config: DictConfig | ListConfig) -> Tuple[EnsemblePredictions, EnsemblePredictions]:
     """
     Return prediction storage class as set in config.
 
@@ -150,7 +149,7 @@ def get_prediction_storage(config: DictConfig | ListConfig) -> (EnsemblePredicti
     return ensemble_pred, validation_pred
 
 
-def get_ensemble_callbacks(config: DictConfig | ListConfig, tile_index: (int, int)) -> list[Callback]:
+def get_ensemble_callbacks(config: DictConfig | ListConfig, tile_index: Tuple[int, int]) -> List[Callback]:
     """
     Return base callbacks for ensemble.
 
@@ -226,9 +225,7 @@ def get_ensemble_callbacks(config: DictConfig | ListConfig, tile_index: (int, in
             warnings.warn("NNCF is not supported with ensemble.")
 
         if config.optimization.export_mode is not None:
-            from src.anomalib.utils.callbacks.export import (  # pylint: disable=import-outside-toplevel
-                ExportCallback,
-            )
+            from src.anomalib.utils.callbacks.export import ExportCallback  # pylint: disable=import-outside-toplevel
 
             logger.info("Setting model export to %s", config.optimization.export_mode)
             callbacks.append(

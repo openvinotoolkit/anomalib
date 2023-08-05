@@ -13,10 +13,10 @@ from tqdm import tqdm
 
 from anomalib.data.utils import masks_to_boxes
 from anomalib.models.components import GaussianBlur2d
-from anomalib.models.ensemble.predictions import EnsemblePredictions, EnsemblePredictionJoiner
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
-from anomalib.utils.metrics import AnomalyScoreThreshold, MinMax
+from anomalib.models.ensemble.predictions import EnsemblePredictionJoiner, EnsemblePredictions
 from anomalib.post_processing.normalization.min_max import normalize
+from anomalib.utils.metrics import AnomalyScoreThreshold, MinMax
 
 
 class EnsemblePostProcess(ABC):
@@ -55,8 +55,8 @@ class EnsemblePostProcess(ABC):
 
 
 class SmoothJoins(EnsemblePostProcess):
-    """
-    Smooth the regions where tiles join in ensemble.
+    """Smooth the regions where tiles join in ensemble.
+
     It is recommended that thresholding is done again after smoothing to obtain new masks.
 
     Args:
@@ -197,10 +197,7 @@ class Threshold(EnsemblePostProcess):
 
 
 class PostProcessStats(EnsemblePostProcess):
-    """
-    Class used to obtain threshold and normalization statistics: (min, max, image threshold, pixel threshold).
-
-    """
+    """Class used to obtain threshold and normalization statistics: (min, max, image threshold, pixel threshold)."""
 
     def __init__(self) -> None:
         super().__init__(final_compute=True, name="stats")

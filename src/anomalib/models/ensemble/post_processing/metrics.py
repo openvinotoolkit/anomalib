@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+from typing import List, Tuple
 
 from omegaconf import DictConfig, ListConfig
 
@@ -43,9 +44,9 @@ class EnsembleMetrics(EnsemblePostProcess):
     @staticmethod
     def configure_ensemble_metrics(
         task: TaskType = TaskType.SEGMENTATION,
-        image_metrics: list[str] | None = None,
-        pixel_metrics: list[str] | None = None,
-    ) -> (AnomalibMetricCollection, AnomalibMetricCollection):
+        image_metrics: List[str] | None = None,
+        pixel_metrics: List[str] | None = None,
+    ) -> Tuple[AnomalibMetricCollection, AnomalibMetricCollection]:
         """
         Configure image and pixel metrics and put them into a collection.
 
@@ -87,7 +88,6 @@ class EnsembleMetrics(EnsemblePostProcess):
         Returns:
             Unchanged input.
         """
-
         self.image_metrics.update(data["pred_scores"], data["label"].int())
         if "mask" in data.keys() and "anomaly_maps" in data.keys():
             self.pixel_metrics.update(data["anomaly_maps"], data["mask"].int())

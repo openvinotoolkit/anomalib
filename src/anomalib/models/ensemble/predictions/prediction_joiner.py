@@ -4,17 +4,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from abc import ABC
-from typing import List
+from typing import Dict, List
 
 from torch import Tensor
 
-from anomalib.models.ensemble.predictions.prediction_data import EnsemblePredictions
 from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
+from anomalib.models.ensemble.predictions.prediction_data import EnsemblePredictions
 
 
 class EnsemblePredictionJoiner(ABC):
     """
     Class used for joining/combining the data predicted by each separate model of ensemble.
+
     Override methods to change how joining is done.
 
     Args:
@@ -25,7 +26,7 @@ class EnsemblePredictionJoiner(ABC):
     def __init__(self, tiler: EnsembleTiler) -> None:
         self.tiler = tiler
 
-        self.ensemble_predictions = None
+        self.ensemble_predictions: EnsemblePredictions = None
         self.num_batches = 0
 
     def setup(self, ensemble_predictions: EnsemblePredictions) -> None:
@@ -57,7 +58,7 @@ class EnsemblePredictionJoiner(ABC):
         """
         raise NotImplementedError
 
-    def join_boxes(self, batch_data: dict) -> dict[str, List[Tensor]]:
+    def join_boxes(self, batch_data: dict) -> Dict[str, List[Tensor]]:
         """
         Join boxes data from all tiles. This includes pred_boxes, box_scores and box_labels.
 
@@ -69,7 +70,7 @@ class EnsemblePredictionJoiner(ABC):
         """
         raise NotImplementedError
 
-    def join_labels_and_scores(self, batch_data: dict) -> dict[str, Tensor]:
+    def join_labels_and_scores(self, batch_data: dict) -> Dict[str, Tensor]:
         """
         Join scores and their corresponding label predictions from all tiles for each image.
 
@@ -81,7 +82,7 @@ class EnsemblePredictionJoiner(ABC):
         """
         raise NotImplementedError
 
-    def join_tile_predictions(self, batch_index: int) -> dict[str, Tensor | List | str]:
+    def join_tile_predictions(self, batch_index: int) -> Dict[str, Tensor | List]:
         """
         Join predictions from ensemble into whole image level representation.
 
