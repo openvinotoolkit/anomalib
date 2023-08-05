@@ -184,15 +184,19 @@ def get_ensemble_callbacks(config: DictConfig | ListConfig, tile_index: (int, in
 
     # Add post-processing configurations to AnomalyModule.
     image_threshold = (
-        config.ensemble.metrics.threshold.manual_image if "manual_image" in config.metrics.threshold.keys() else None
+        config.ensemble.metrics.threshold.manual_image
+        if "manual_image" in config.ensemble.metrics.threshold.keys()
+        else None
     )
     pixel_threshold = (
-        config.ensemble.metrics.threshold.manual_pixel if "manual_pixel" in config.metrics.threshold.keys() else None
+        config.ensemble.metrics.threshold.manual_pixel
+        if "manual_pixel" in config.ensemble.metrics.threshold.keys()
+        else None
     )
 
     # even if we threshold at the end, we want to have this here due to some models that need early stopping criteria
     post_processing_callback = PostProcessingConfigurationCallback(
-        threshold_method=config.metrics.threshold.method,
+        threshold_method=config.ensemble.metrics.threshold.method,
         manual_image_threshold=image_threshold,
         manual_pixel_threshold=pixel_threshold,
     )

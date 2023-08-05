@@ -43,7 +43,10 @@ def get_stats_pipeline(config: DictConfig | ListConfig, tiler: EnsembleTiler) ->
 
     if config.ensemble.post_processing.smooth_joins.apply:
         steps.append(SmoothJoins(config, tiler))
-    if config.ensemble.metrics.threshold.method == ThresholdMethod.ADAPTIVE:
+    if (
+        config.ensemble.metrics.threshold.method == ThresholdMethod.ADAPTIVE
+        or config.ensemble.post_processing.normalization == "final"
+    ):
         steps.append(PostProcessStats())
 
     stats_pipeline.add_steps(steps)
@@ -107,17 +110,17 @@ def get_postprocessing_pipeline(
     if config.ensemble.post_processing.smooth_joins.apply:
         steps.append(SmoothJoins(config, tiler))
 
+    # override threshold if it's set manually
+    if config.ensemble.metrics.threshold.method == ThresholdMethod.MANUAL:
+        stats["image_threshold"] = config.ensemble.metrics.threshold.manual_image
+        stats["pixel_threshold"] = config.ensemble.metrics.threshold.manual_pixel
+
     # if normalization is done at the end on image-level
     if config.ensemble.post_processing.normalization == "final":
         steps.append(MinMaxNormalize(stats))
         # with minmax normalization, values are normalized such that the threshold value is centered at 0.5
         stats["image_threshold"] = 0.5
         stats["pixel_threshold"] = 0.5
-
-    # override threshold if it's set manually
-    if config.ensemble.metrics.threshold.method == ThresholdMethod.MANUAL:
-        stats["image_threshold"] = config.ensemble.metrics.threshold.manual_image
-        stats["pixel_threshold"] = config.ensemble.metrics.threshold.manual_pixel
 
     # if thresholding is done at the end on image-level
     if config.ensemble.metrics.threshold.stage == "final":
