@@ -3,16 +3,26 @@ import copy
 
 import pytest
 
-from anomalib.models.ensemble.post_processing import SmoothJoins, PostProcessStats, Threshold, MinMaxNormalize, \
-    EnsembleVisualization, EnsembleMetrics
-from anomalib.models.ensemble.post_processing.pipelines import get_stats_pipeline, get_stats, \
-    get_postprocessing_pipeline, post_process
+from anomalib.models.ensemble.post_processing import (
+    SmoothJoins,
+    PostProcessStats,
+    Threshold,
+    MinMaxNormalize,
+    EnsembleVisualization,
+    EnsembleMetrics,
+)
+from anomalib.models.ensemble.post_processing.pipelines import (
+    get_stats_pipeline,
+    get_stats,
+    get_postprocessing_pipeline,
+    post_process,
+)
 
 
 class TestStatsPipeline:
     @pytest.mark.parametrize("smooth, present", ([True, True], [True, True]))
     def test_stats_smooth(self, smooth, present, get_ens_config, get_tiler):
-        config = get_ens_config
+        config = copy.deepcopy(get_ens_config)
         tiler = get_tiler
 
         config.ensemble.post_processing.smooth_joins.apply = smooth
@@ -24,7 +34,7 @@ class TestStatsPipeline:
     @pytest.mark.parametrize("threshold, t_present", (["adaptive", True], ["manual", False], ["none", False]))
     @pytest.mark.parametrize("normalization, n_present", (["tile", False], ["final", True]))
     def test_stats_pipeline(self, threshold, t_present, normalization, n_present, get_ens_config, get_tiler):
-        config = get_ens_config
+        config = copy.deepcopy(get_ens_config)
         tiler = get_tiler
 
         config.ensemble.metrics.threshold.method = threshold
@@ -57,10 +67,9 @@ mock_stats = {
 
 
 class TestPostProcess:
-
     @pytest.mark.parametrize("smooth, present", ([True, True], [True, True]))
     def test_stats_smooth(self, smooth, present, get_ens_config, get_tiler):
-        config = get_ens_config
+        config = copy.deepcopy(get_ens_config)
         tiler = get_tiler
         stats = copy.deepcopy(mock_stats)
 
@@ -69,12 +78,14 @@ class TestPostProcess:
 
         assert isinstance(pipe.steps[0], SmoothJoins) == present
 
-    @pytest.mark.parametrize("normalization, thresholds, threshold_index", (["final", [0.5, 0.5], 2], ["none", [42, 13], 1]))
+    @pytest.mark.parametrize(
+        "normalization, thresholds, threshold_index", (["final", [0.5, 0.5], 2], ["none", [42, 13], 1])
+    )
     def test_threshold_manual(self, normalization, thresholds, threshold_index, get_ens_config, get_tiler):
-        config = get_ens_config
+        config = copy.deepcopy(get_ens_config)
         tiler = get_tiler
         stats = copy.deepcopy(mock_stats)
-        
+
         config.ensemble.metrics.threshold.method = "manual"
         config.ensemble.post_processing.normalization = normalization
 
@@ -86,7 +97,7 @@ class TestPostProcess:
         # if minmax present -> 0.5, else unchanged
         assert pipe.steps[threshold_index].image_threshold == thresholds[0]
         assert pipe.steps[threshold_index].pixel_threshold == thresholds[1]
-        
+
     def test_step_order(self, get_ens_config, get_tiler):
         config = get_ens_config
         tiler = get_tiler
@@ -112,7 +123,7 @@ class TestPostProcess:
 
         pipe_out = post_process(config, tiler, validation_predictions=val_pred, ensemble_predictions=ens_pred)
 
-        after_pipe = val_pred.get_batch_tiles(0)[(0, 0)]["anomaly_maps"].clone()
+        after_pipe = val_pred.get_batch_tiles(0)[(0, 0)]["anomaly_maps"]
 
         # stats pipeline shouldn't change data
         assert original.equal(after_pipe)
