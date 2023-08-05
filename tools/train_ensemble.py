@@ -59,8 +59,6 @@ def train(args: Namespace):
         warnings.filterwarnings("ignore")
 
     config = get_configurable_parameters(model_name=args.model, config_path=args.config)
-    if config.project.get("seed") is not None:
-        seed_everything(config.project.seed)
     # update and prepare config for ensemble
     config = prepare_ensemble_configurable_parameters(ens_config_path=args.ens_config, config=config)
 
@@ -74,6 +72,9 @@ def train(args: Namespace):
     for tile_index in product(range(tiler.num_patches_h), range(tiler.num_patches_w)):
         logger.info("Start of procedure for tile %s", tile_index)
 
+        if config.project.get("seed") is not None:
+            seed_everything(config.project.seed)
+
         # configure callbacks for ensemble
         ensemble_callbacks = get_ensemble_callbacks(config, tile_index)
         # set tile position inside dataloader
@@ -81,7 +82,7 @@ def train(args: Namespace):
 
         model = get_model(config)
 
-        trainer = Trainer(**config.trainer, logger=experiment_logger, callbacks=ensemble_callbacks.copy())
+        trainer = Trainer(**config.trainer, logger=experiment_logger, callbacks=ensemble_callbacks)
         logger.info("Training the model.")
         trainer.fit(model=model, datamodule=datamodule)
 
