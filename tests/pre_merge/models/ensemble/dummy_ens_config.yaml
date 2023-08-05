@@ -7,7 +7,7 @@ predictions:
   rescale_factor: 0.5
 
 post_processing:
-  normalization: tile # [tile, final, none]
+  normalization: final # [tile, final, none]
   smooth_joins:
     apply: True
     sigma: 2
@@ -21,7 +21,7 @@ metrics:
     - F1Score
     - AUROC
   threshold:
-      stage: tile # options: [tile, final]
+      stage: final # options: [tile, final]
       method: adaptive #options: [adaptive, manual]
       manual_image: null
       manual_pixel: null

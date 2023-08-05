@@ -27,8 +27,8 @@ mock_data = {
 
 
 @pytest.fixture()
-def get_smooth_joins(get_tiler, get_config):
-    config = get_config
+def get_smooth_joins(get_tiler, get_ens_config):
+    config = get_ens_config
     tiler = get_tiler
 
     return SmoothJoins(config, tiler)
@@ -169,8 +169,8 @@ class TestThreshold:
 
 
 class TestPostProcessPipeline:
-    def test_execute(self, get_config, get_ensemble_predictions, get_joiner):
-        config = get_config
+    def test_execute(self, get_ens_config, get_ensemble_predictions, get_joiner):
+        config = get_ens_config
         joiner = get_joiner
         data = get_ensemble_predictions
 

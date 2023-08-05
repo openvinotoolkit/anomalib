@@ -23,8 +23,8 @@ from anomalib.utils.callbacks import MinMaxNormalizationCallback
 class TestTileCollater:
     """Test tile collater"""
 
-    def test_collate_tile_shape(self, get_config, get_datamodule):
-        config = get_config
+    def test_collate_tile_shape(self, get_ens_config, get_datamodule):
+        config = get_ens_config
         # datamodule with tile collater
         datamodule = get_datamodule(config, "segmentation")
 
@@ -35,8 +35,8 @@ class TestTileCollater:
         assert batch["image"].shape == (batch_size, 3, tile_w, tile_h)
         assert batch["mask"].shape == (batch_size, tile_w, tile_h)
 
-    def test_collate_box_data(self, get_config, get_datamodule):
-        config = get_config
+    def test_collate_box_data(self, get_ens_config, get_datamodule):
+        config = get_ens_config
         # datamodule with tile collater
         datamodule = get_datamodule(config, "detection")
 
@@ -50,22 +50,22 @@ class TestTileCollater:
 class TestHelperFunctions:
     """Test other ensemble helper functions"""
 
-    def test_ensemble_config(self, get_config):
-        config = get_config
+    def test_ensemble_config(self, get_ens_config):
+        config = get_ens_config
 
         assert "ensemble" in config
         assert config.model.input_size == config.ensemble.tiling.tile_size
 
-    def test_ensemble_datamodule(self, get_config):
-        config = get_config
+    def test_ensemble_datamodule(self, get_ens_config):
+        config = get_ens_config
 
         tiler = EnsembleTiler(config)
         datamodule = get_ensemble_datamodule(config, tiler)
 
         assert isinstance(datamodule.custom_collate_fn, TileCollater)
 
-    def test_ensemble_prediction_storage_type(self, get_config):
-        config = get_config
+    def test_ensemble_prediction_storage_type(self, get_ens_config):
+        config = get_ens_config
 
         config.ensemble.predictions.storage = "direct"
         pred_direct = get_prediction_storage(config)
@@ -88,8 +88,8 @@ class TestHelperFunctions:
         assert isinstance(pred_rescale[0], RescaledEnsemblePredictions)
         assert isinstance(pred_rescale[1], RescaledEnsemblePredictions)
 
-    def test_ensemble_prediction_storage_reference(self, get_config):
-        config = get_config
+    def test_ensemble_prediction_storage_reference(self, get_ens_config):
+        config = get_ens_config
 
         config.dataset.val_split_mode = "same_as_test"
         pred_same = get_prediction_storage(config)
@@ -103,8 +103,8 @@ class TestHelperFunctions:
         # if test data is NOT same as validation, storage should be separate object
         assert pred_from[0] is not pred_from[1]
 
-    def test_ensemble_callbacks(self, get_config):
-        config = get_config
+    def test_ensemble_callbacks(self, get_ens_config):
+        config = get_ens_config
         config.ensemble.post_processing.normalization = "final"
 
         callbacks = get_ensemble_callbacks(config, (0, 0))

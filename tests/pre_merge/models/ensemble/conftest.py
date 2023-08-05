@@ -10,7 +10,7 @@ from anomalib.models.ensemble.predictions import BasicEnsemblePredictions, Basic
 
 
 @pytest.fixture(scope="module")
-def get_config():
+def get_ens_config():
     config = get_configurable_parameters(config_path="tests/pre_merge/models/ensemble/dummy_padim_config.yaml")
     prepare_ensemble_configurable_parameters(
         ens_config_path="tests/pre_merge/models/ensemble/dummy_ens_config.yaml", config=config
@@ -19,12 +19,12 @@ def get_config():
 
 
 @pytest.fixture(scope="module")
-def get_tiler(get_config):
-    return EnsembleTiler(get_config)
+def get_tiler(get_ens_config):
+    return EnsembleTiler(get_ens_config)
 
 
 @pytest.fixture(scope="module")
-def get_datamodule(get_config, get_tiler):
+def get_datamodule(get_ens_config, get_tiler):
     tiler = get_tiler
 
     def get_datamodule(config, task):
@@ -41,7 +41,7 @@ def get_datamodule(get_config, get_tiler):
 
 
 @pytest.fixture(scope="module")
-def get_joiner(get_config, get_tiler):
+def get_joiner(get_ens_config, get_tiler):
     tiler = get_tiler
 
     joiner = BasicPredictionJoiner(tiler)
@@ -50,8 +50,8 @@ def get_joiner(get_config, get_tiler):
 
 
 @pytest.fixture(scope="module")
-def get_ensemble_predictions(get_datamodule, get_config):
-    config = get_config
+def get_ensemble_predictions(get_datamodule, get_ens_config):
+    config = get_ens_config
     datamodule = get_datamodule(config, "segmentation")
 
     data = BasicEnsemblePredictions()
@@ -86,8 +86,8 @@ def get_ensemble_predictions(get_datamodule, get_config):
 
 
 @pytest.fixture(scope="module")
-def get_ens_metrics(get_config):
-    config = get_config
+def get_ens_metrics(get_ens_config):
+    config = get_ens_config
     metrics = EnsembleMetrics(config, 0.5, 0.5)
 
     return metrics
