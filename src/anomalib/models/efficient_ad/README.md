@@ -26,24 +26,24 @@ All results gathered with seed `42`.
 
 ## [MVTec AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 
-| Model      | Image AUROC | Image F1 | Pixel AUROC | Pixel AUPRO |
+| Category   | Image AUROC | Image F1 | Pixel AUROC | Pixel AUPRO |
 | ---------- | ----------- | -------- | ----------- | ----------- |
-| Bottle     |             |          |             |             |
-| Cable      |             |          |             |             |
-| Capsule    |             |          |             |             |
-| Carpet     |             |          |             |             |
-| Grid       |             |          |             |             |
-| Hazelnut   |             |          |             |             |
-| Leather    |             |          |             |             |
-| Metal_nut  |             |          |             |             |
-| Pill       |             |          |             |             |
-| Screw      |             |          |             |             |
-| Tile       |             |          |             |             |
-| Toothbrush |             |          |             |             |
-| Transistor |             |          |             |             |
-| Wood       |             |          |             |             |
-| Zipper     |             |          |             |             |
-| Average    |             |          |             |             |
+| bottle     | 1.000       | 1.000    | 0.984       | 0.944       |
+| pill       | 0.986       | 0.975    | 0.985       | 0.956       |
+| cable      | 0.942       | 0.919    | 0.982       | 0.916       |
+| screw      | 0.973       | 0.952    | 0.985       | 0.959       |
+| capsule    | 0.939       | 0.941    | 0.963       | 0.853       |
+| tile       | 1.000       | 1.000    | 0.906       | 0.826       |
+| toothbrush | 0.997       | 0.984    | 0.962       | 0.923       |
+| carpet     | 0.990       | 0.978    | 0.965       | 0.929       |
+| transistor | 0.947       | 0.900    | 0.946       | 0.819       |
+| grid       | 0.999       | 0.991    | 0.937       | 0.889       |
+| wood       | 0.968       | 0.952    | 0.870       | 0.778       |
+| hazelnut   | 0.932       | 0.886    | 0.970       | 0.882       |
+| zipper     | 0.971       | 0.975    | 0.960       | 0.930       |
+| leather    | 0.999       | 0.995    | 0.976       | 0.975       |
+| metalNut   | 0.979       | 0.978    | 0.978       | 0.917       |
+| Average    | 0.975       | 0.962    | 0.958       | 0.900       |
 
 ## [BTAD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 
