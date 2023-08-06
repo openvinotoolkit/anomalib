@@ -304,7 +304,7 @@ For more details see the [Discussion forum](https://github.com/openvinotoolkit/a
 | CFlow                |             |          |             |             |
 | CsFlow               |             |          |             |             |
 | Dfkde                |             |          |             |             |
-| Dfm                  |             |          |             |             |
+| Dfm                  | 0.952       | 0.967    | 0.968       | 0.725       |
 | Draem                |             |          |             |             |
 | Efficient AD         |             |          |             |             |
 | FastFlow             |             |          |             |             |
