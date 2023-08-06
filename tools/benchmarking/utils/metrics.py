@@ -5,9 +5,9 @@
 
 from __future__ import annotations
 
+import logging
 import random
 import string
-from glob import glob
 from pathlib import Path
 
 import pandas as pd
@@ -15,11 +15,13 @@ import wandb
 from comet_ml import Experiment
 from torch.utils.tensorboard.writer import SummaryWriter
 
+logger = logging.getLogger(__name__)
+
 
 def write_metrics(
     model_metrics: dict[str, str | float],
     writers: list[str],
-    folder: str | None = None,
+    folder: str,
 ):
     """Writes metrics to destination provided in the sweep config.
 
@@ -32,22 +34,36 @@ def write_metrics(
     if model_metrics == {} or model_metrics is None:
         return
 
+    result_folder = Path(folder)
     # Write to CSV
-    metrics_df = pd.DataFrame(model_metrics, index=[0])
-    result_folder = Path("runs") if folder is None else Path(f"runs/{folder}")
-    result_path = result_folder / f"{model_metrics['model_name']}_{model_metrics['device']}.csv"
-    Path.mkdir(result_path.parent, parents=True, exist_ok=True)
-    if not result_path.is_file():
-        metrics_df.to_csv(result_path)
-    else:
-        metrics_df.to_csv(result_path, mode="a", header=False)
+    try:
+        metrics_df = pd.DataFrame(model_metrics, index=[0])
+        result_path = result_folder / f"{model_metrics['model_name']}_{model_metrics['device']}.csv"
+        Path.mkdir(result_path.parent, parents=True, exist_ok=True)
+        if not result_path.is_file():
+            metrics_df.to_csv(result_path)
+        else:
+            metrics_df.to_csv(result_path, mode="a", header=False)
+    except Exception as exception:
+        logger.exception(f"Could not write to csv. Exception: {exception}")
+
+    project_name = f"benchmarking_{result_folder.name}"
+    tags = []
+    for key, value in model_metrics.items():
+        if all(name not in key.lower() for name in ["time", "image", "pixel", "throughput"]):
+            tags.append(str(value))
 
     if "tensorboard" in writers:
-        write_to_tensorboard(model_metrics)
+        write_to_tensorboard(model_metrics, result_folder)
+    if "wandb" in writers:
+        write_to_wandb(model_metrics, project_name, tags)
+    if "comet" in writers:
+        write_to_comet(model_metrics, project_name, tags)
 
 
 def write_to_tensorboard(
     model_metrics: dict[str, str | float],
+    folder: Path,
 ):
     """Write model_metrics to tensorboard.
 
@@ -63,7 +79,7 @@ def write_to_tensorboard(
         else:
             string_metrics[key] = metric
             scalar_prefixes.append(metric)
-    writer = SummaryWriter(f"runs/{model_metrics['model_name']}_{model_metrics['device']}")
+    writer = SummaryWriter(folder / "tfevents")
     for key, metric in model_metrics.items():
         if isinstance(metric, (int, float, bool)):
             scalar_metrics[key.replace(".", "/")] = metric  # need to join by / for tensorboard grouping
@@ -90,56 +106,57 @@ def get_unique_key(str_len: int) -> str:
     return "".join([random.choice(string.ascii_lowercase) for _ in range(str_len)])  # nosec: B311
 
 
-def upload_to_wandb(
+def write_to_wandb(
+    model_metrics: dict[str, str | float],
+    project_name: str,
+    tags: list[str],
     team: str = "anomalib",
-    folder: str | None = None,
 ):
-    """Upload the data in csv files to wandb.
+    """Write model_metrics to wandb.
 
-    Creates a project named benchmarking_[two random characters]. This is so that the project names are unique.
-    One issue is that it does not check for collision
+    > _Note:_ It is observed that any failure in wandb causes the run to hang. Use wandb writer with caution.
 
     Args:
+        model_metrics (dict[str, str | float]): Dictionary containing collected results.
+        project_name (str): Name of the project on wandb.
+        tags (list[str]): List of tags for the run.
         team (str, optional): Name of the team on wandb. This can also be the id of your personal account.
-        Defaults to "anomalib".
-        folder (optional, str): Sub-directory from which runs are picked up. Defaults to None. If none picks from runs.
+            Defaults to "anomalib".
     """
-    project = f"benchmarking_{get_unique_key(2)}"
-    tag_list = ["dataset.category", "model_name", "dataset.image_size", "model.backbone", "device"]
-    search_path = "runs/*.csv" if folder is None else f"runs/{folder}/*.csv"
-    for csv_file in glob(search_path):
-        table = pd.read_csv(csv_file)
-        for index, row in table.iterrows():
-            row = dict(row[1:])  # remove index column
-            tags = [str(row[column]) for column in tag_list if column in row.keys()]
-            wandb.init(
-                entity=team, project=project, name=f"{row['model_name']}_{row['dataset.category']}_{index}", tags=tags
-            )
-            wandb.log(row)
-            wandb.finish()
+    for key, value in model_metrics.items():
+        if all(name not in key.lower() for name in ["time", "image", "pixel", "throughput"]):
+            tags.append(str(value))
+    run = wandb.init(
+        entity=team,
+        project=project_name,
+        name=f"{'_'.join(tags)}",
+        tags=tags,
+        settings={"silent": True, "show_info": False, "show_warnings": False, "show_errors": False},
+    )
+    run.log(model_metrics)
+    logger.info(f"Run logged at {run.url}")
+    run.finish(quiet=True)
 
 
-def upload_to_comet(
-    folder: str | None = None,
+def write_to_comet(
+    model_metrics: dict[str, str | float],
+    project_name: str,
+    tags: list[str],
+    team: str = "anomalib",
 ):
-    """Upload the data in csv files to comet.
+    """Write model_metrics to wandb.
 
-    Creates a project named benchmarking_[two random characters]. This is so that the project names are unique.
-    One issue is that it does not check for collision
 
     Args:
-        folder (optional, str): Sub-directory from which runs are picked up. Defaults to None. If none picks from runs.
+        model_metrics (dict[str, str | float]): Dictionary containing collected results.
+        project_name (str): Name of the project on comet.
+        tags (list[str]): List of tags for the run.
+        team (str, optional): Name of the team on wandb. This can also be the id of your personal account.
+            Defaults to "anomalib".
     """
-    project = f"benchmarking_{get_unique_key(2)}"
-    tag_list = ["dataset.category", "model_name", "dataset.image_size", "model.backbone", "device"]
-    search_path = "runs/*.csv" if folder is None else f"runs/{folder}/*.csv"
-    for csv_file in glob(search_path):
-        table = pd.read_csv(csv_file)
-        for index, row in table.iterrows():
-            row = dict(row[1:])  # remove index column
-            tags = [str(row[column]) for column in tag_list if column in row.keys()]
-            experiment = Experiment(project_name=project)
-            experiment.set_name(f"{row['model_name']}_{row['dataset.category']}_{index}")
-            experiment.log_metrics(row, step=1, epoch=1)  # populates auto-generated charts on panel view
-            experiment.add_tags(tags)
-            experiment.log_table(filename=csv_file)
+    experiment = Experiment(project_name=project_name, workspace=team)
+    experiment.set_name(f"{'_'.join(tags)}")
+    experiment.log_metrics(model_metrics, step=1, epoch=1)  # populates auto-generated charts on panel view
+    experiment.add_tags(tags)
+    logger.info(f"Run logged at {experiment.url}")
+    experiment.end()
