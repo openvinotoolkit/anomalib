@@ -311,7 +311,7 @@ For more details see the [Discussion forum](https://github.com/openvinotoolkit/a
 | Padim                |             |          |             |             |
 | PatchCore            |             |          |             |             |
 | Reverse Distillation |             |          |             |             |
-| Stfpm                |             |          |             |             |
+| Stfpm                | 0.916       | 0.932    | 0.968       | 0.774       |
 
 ### [Visa Dataset](https://github.com/amazon-science/spot-diff)
 
