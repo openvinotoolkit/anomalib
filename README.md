@@ -306,7 +306,7 @@ For more details see the [Discussion forum](https://github.com/openvinotoolkit/a
 | Dfkde                |             |          |             |             |
 | Dfm                  | 0.952       | 0.967    | 0.968       | 0.725       |
 | Draem                |             |          |             |             |
-| Efficient AD         |             |          |             |             |
+| Efficient AD         | 0.904       | 0.921    | 0.825       | 0.539       |
 | FastFlow             |             |          |             |             |
 | Padim                |             |          |             |             |
 | PatchCore            |             |          |             |             |
