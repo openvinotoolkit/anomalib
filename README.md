@@ -307,7 +307,7 @@ For more details see the [Discussion forum](https://github.com/openvinotoolkit/a
 | Dfm                  | 0.952       | 0.967    | 0.968       | 0.725       |
 | Draem                |             |          |             |             |
 | Efficient AD         | 0.904       | 0.921    | 0.825       | 0.539       |
-| FastFlow             |             |          |             |             |
+| FastFlow             | 0.921       | 0.905    | 0.946       | 0.638       |
 | Padim                |             |          |             |             |
 | PatchCore            |             |          |             |             |
 | Reverse Distillation |             |          |             |             |
