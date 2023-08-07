@@ -1,13 +1,13 @@
 """Concrete implementation of basic prediction joiner."""
-from typing import Dict, List
-
-import torch
-from torch import Tensor
-
-from tools.tiled_ensemble.predictions.prediction_joiner import EnsemblePredictionJoiner
 
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
+
+from typing import Dict, List
+
+import torch
+from tools.tiled_ensemble.predictions.prediction_joiner import EnsemblePredictionJoiner
+from torch import Tensor
 
 
 class BasicPredictionJoiner(EnsemblePredictionJoiner):
@@ -146,7 +146,7 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
         Returns:
             Dictionary with "pred_labels" and "pred_scores"
         """
-        labels = torch.empty(batch_data[(0, 0)]["pred_labels"].shape, dtype=torch.bool)
+        labels = torch.zeros(batch_data[(0, 0)]["pred_labels"].shape, dtype=torch.bool)
         scores = torch.zeros(batch_data[(0, 0)]["pred_scores"].shape)
 
         for curr_tile_data in batch_data.values():
