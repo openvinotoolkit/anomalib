@@ -8,9 +8,9 @@ from typing import List
 
 from omegaconf import DictConfig, ListConfig
 
-from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
-from anomalib.models.ensemble.post_processing.metrics import EnsembleMetrics
-from anomalib.models.ensemble.post_processing.postprocess import (
+from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
+from tools.tiled_ensemble.post_processing.metrics import EnsembleMetrics
+from tools.tiled_ensemble.post_processing.postprocess import (
     EnsemblePostProcess,
     EnsemblePostProcessPipeline,
     MinMaxNormalize,
@@ -18,8 +18,8 @@ from anomalib.models.ensemble.post_processing.postprocess import (
     SmoothJoins,
     Threshold,
 )
-from anomalib.models.ensemble.post_processing.visualization import EnsembleVisualization
-from anomalib.models.ensemble.predictions import BasicPredictionJoiner, EnsemblePredictions
+from tools.tiled_ensemble.post_processing.visualization import EnsembleVisualization
+from tools.tiled_ensemble.predictions import BasicPredictionJoiner, EnsemblePredictions
 from anomalib.post_processing import ThresholdMethod
 
 logger = logging.getLogger(__name__)

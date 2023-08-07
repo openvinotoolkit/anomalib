@@ -3,7 +3,7 @@ import copy
 
 import pytest
 
-from anomalib.models.ensemble.post_processing import (
+from tools.tiled_ensemble.post_processing import (
     SmoothJoins,
     PostProcessStats,
     Threshold,
@@ -11,7 +11,7 @@ from anomalib.models.ensemble.post_processing import (
     EnsembleVisualization,
     EnsembleMetrics,
 )
-from anomalib.models.ensemble.post_processing.pipelines import (
+from tools.tiled_ensemble.post_processing.pipelines import (
     get_stats_pipeline,
     get_stats,
     get_postprocessing_pipeline,

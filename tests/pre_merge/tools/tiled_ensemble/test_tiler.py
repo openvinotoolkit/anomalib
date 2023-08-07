@@ -6,7 +6,7 @@ import pytest
 import torch
 from omegaconf import OmegaConf
 
-from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
+from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
 
 tiler_config = OmegaConf.create(
     {

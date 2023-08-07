@@ -5,14 +5,14 @@ from typing import List
 
 from torch import Tensor
 
-from anomalib.models.ensemble import EnsembleTiler
-from anomalib.models.ensemble.ensemble_functions import (
+from tools.tiled_ensemble import EnsembleTiler
+from tools.tiled_ensemble.ensemble_functions import (
     TileCollater,
     get_ensemble_callbacks,
     get_ensemble_datamodule,
     get_prediction_storage,
 )
-from anomalib.models.ensemble.predictions import (
+from tools.tiled_ensemble.predictions import (
     BasicEnsemblePredictions,
     FileSystemEnsemblePredictions,
     RescaledEnsemblePredictions,

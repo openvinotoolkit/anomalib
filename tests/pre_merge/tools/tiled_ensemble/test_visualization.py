@@ -7,7 +7,7 @@ import pytest
 import torch
 from torch import Tensor
 
-from anomalib.models.ensemble.post_processing import EnsembleVisualization
+from tools.tiled_ensemble.post_processing import EnsembleVisualization
 from tests.helpers.dataset import get_dataset_path
 
 mock_result = {

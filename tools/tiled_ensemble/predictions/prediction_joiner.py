@@ -8,8 +8,8 @@ from typing import Dict, List
 
 from torch import Tensor
 
-from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
-from anomalib.models.ensemble.predictions.prediction_data import EnsemblePredictions
+from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
+from tools.tiled_ensemble.predictions.prediction_data import EnsemblePredictions
 
 
 class EnsemblePredictionJoiner(ABC):

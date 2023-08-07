@@ -13,8 +13,8 @@ from tqdm import tqdm
 
 from anomalib.data.utils import masks_to_boxes
 from anomalib.models.components import GaussianBlur2d
-from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
-from anomalib.models.ensemble.predictions import EnsemblePredictionJoiner, EnsemblePredictions
+from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
+from tools.tiled_ensemble.predictions import EnsemblePredictionJoiner, EnsemblePredictions
 from anomalib.post_processing.normalization.min_max import normalize
 from anomalib.utils.metrics import AnomalyScoreThreshold, MinMax
 

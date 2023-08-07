@@ -9,7 +9,7 @@ from torch import Tensor
 from torchmetrics import StructuralSimilarityIndexMeasure
 
 from anomalib.data import AnomalibDataModule
-from anomalib.models.ensemble.predictions import (
+from tools.tiled_ensemble.predictions import (
     BasicEnsemblePredictions,
     EnsemblePredictions,
     FileSystemEnsemblePredictions,

@@ -18,8 +18,8 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from anomalib.data import get_datamodule
 from anomalib.data.base.datamodule import AnomalibDataModule, collate_fn
 from anomalib.deploy import ExportMode
-from anomalib.models.ensemble.ensemble_tiler import EnsembleTiler
-from anomalib.models.ensemble.predictions import (
+from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
+from tools.tiled_ensemble.predictions import (
     BasicEnsemblePredictions,
     EnsemblePredictions,
     FileSystemEnsemblePredictions,

@@ -4,16 +4,16 @@ import pytest
 import torch
 
 from anomalib.config import get_configurable_parameters
-from anomalib.models.ensemble import EnsembleTiler, get_ensemble_datamodule, prepare_ensemble_configurable_parameters
-from anomalib.models.ensemble.post_processing import EnsembleMetrics
-from anomalib.models.ensemble.predictions import BasicEnsemblePredictions, BasicPredictionJoiner
+from tools.tiled_ensemble import EnsembleTiler, get_ensemble_datamodule, prepare_ensemble_configurable_parameters
+from tools.tiled_ensemble.post_processing import EnsembleMetrics
+from tools.tiled_ensemble.predictions import BasicEnsemblePredictions, BasicPredictionJoiner
 
 
 @pytest.fixture(scope="module")
 def get_ens_config():
-    config = get_configurable_parameters(config_path="tests/pre_merge/models/ensemble/dummy_padim_config.yaml")
+    config = get_configurable_parameters(config_path="tests/pre_merge/tools/tiled_ensemble/dummy_padim_config.yaml")
     prepare_ensemble_configurable_parameters(
-        ens_config_path="tests/pre_merge/models/ensemble/dummy_ens_config.yaml", config=config
+        ens_config_path="tests/pre_merge/tools/tiled_ensemble/dummy_ens_config.yaml", config=config
     )
     return config
 

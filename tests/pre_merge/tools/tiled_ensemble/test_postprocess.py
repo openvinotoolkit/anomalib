@@ -4,7 +4,7 @@ import copy
 import pytest
 import torch
 
-from anomalib.models.ensemble.post_processing import (
+from tools.tiled_ensemble.post_processing import (
     EnsemblePostProcessPipeline,
     MinMaxNormalize,
     PostProcessStats,

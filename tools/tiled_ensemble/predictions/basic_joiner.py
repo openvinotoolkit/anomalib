@@ -4,7 +4,7 @@ from typing import Dict, List
 import torch
 from torch import Tensor
 
-from anomalib.models.ensemble.predictions.prediction_joiner import EnsemblePredictionJoiner
+from tools.tiled_ensemble.predictions.prediction_joiner import EnsemblePredictionJoiner
 
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
