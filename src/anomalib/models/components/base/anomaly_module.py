@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABC
-from typing import Any, OrderedDict, Optional
+from typing import Any, Optional, OrderedDict
 from warnings import warn
 
 import pytorch_lightning as pl

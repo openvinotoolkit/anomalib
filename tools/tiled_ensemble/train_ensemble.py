@@ -14,19 +14,19 @@ from argparse import ArgumentParser, Namespace
 from itertools import product
 
 from pytorch_lightning import Trainer, seed_everything
+from tools.tiled_ensemble import (
+    EnsembleTiler,
+    get_ensemble_callbacks,
+    get_ensemble_datamodule,
+    get_prediction_storage,
+    log_metrics,
+    post_process,
+    prepare_ensemble_configurable_parameters,
+)
 
 from anomalib.config import get_configurable_parameters
 from anomalib.models import get_model
 from anomalib.utils.loggers import configure_logger, get_experiment_logger
-from tools.tiled_ensemble import (
-    get_ensemble_datamodule,
-    get_ensemble_callbacks,
-    prepare_ensemble_configurable_parameters,
-    get_prediction_storage,
-    EnsembleTiler,
-    post_process,
-    log_metrics,
-)
 
 logger = logging.getLogger("anomalib")
 

@@ -7,7 +7,6 @@ import logging
 from typing import List
 
 from omegaconf import DictConfig, ListConfig
-
 from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
 from tools.tiled_ensemble.post_processing.metrics import EnsembleMetrics
 from tools.tiled_ensemble.post_processing.postprocess import (
@@ -20,6 +19,7 @@ from tools.tiled_ensemble.post_processing.postprocess import (
 )
 from tools.tiled_ensemble.post_processing.visualization import EnsembleVisualization
 from tools.tiled_ensemble.predictions import BasicPredictionJoiner, EnsemblePredictions
+
 from anomalib.post_processing import ThresholdMethod
 
 logger = logging.getLogger(__name__)

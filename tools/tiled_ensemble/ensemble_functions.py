@@ -14,10 +14,6 @@ from typing import Any, Dict, List, Tuple
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning import Callback
 from pytorch_lightning.callbacks import ModelCheckpoint
-
-from anomalib.data import get_datamodule
-from anomalib.data.base.datamodule import AnomalibDataModule, collate_fn
-from anomalib.deploy import ExportMode
 from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
 from tools.tiled_ensemble.predictions import (
     BasicEnsemblePredictions,
@@ -25,6 +21,10 @@ from tools.tiled_ensemble.predictions import (
     FileSystemEnsemblePredictions,
     RescaledEnsemblePredictions,
 )
+
+from anomalib.data import get_datamodule
+from anomalib.data.base.datamodule import AnomalibDataModule, collate_fn
+from anomalib.deploy import ExportMode
 from anomalib.utils.callbacks import (
     GraphLogger,
     LoadModelCallback,

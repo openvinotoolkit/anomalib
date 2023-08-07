@@ -8,13 +8,13 @@ from typing import Any, List
 
 import torch
 from omegaconf import DictConfig, ListConfig
+from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
+from tools.tiled_ensemble.predictions import EnsemblePredictionJoiner, EnsemblePredictions
 from torch import Tensor
 from tqdm import tqdm
 
 from anomalib.data.utils import masks_to_boxes
 from anomalib.models.components import GaussianBlur2d
-from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
-from tools.tiled_ensemble.predictions import EnsemblePredictionJoiner, EnsemblePredictions
 from anomalib.post_processing.normalization.min_max import normalize
 from anomalib.utils.metrics import AnomalyScoreThreshold, MinMax
 

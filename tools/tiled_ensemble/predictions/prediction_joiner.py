@@ -6,10 +6,9 @@
 from abc import ABC
 from typing import Dict, List
 
-from torch import Tensor
-
 from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
 from tools.tiled_ensemble.predictions.prediction_data import EnsemblePredictions
+from torch import Tensor
 
 
 class EnsemblePredictionJoiner(ABC):
