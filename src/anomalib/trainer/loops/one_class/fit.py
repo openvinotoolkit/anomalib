@@ -1,8 +1,14 @@
+"""Fit loop for one-class anomaly detection."""
+
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from functools import partial
 from typing import Any
 
 import torch
-from lightning.fabric.wrappers import _unwrap_objects
+from lightning.fabric.wrappers import _FabricDataLoader, _unwrap_objects
+from lightning.pytorch.trainer.states import TrainerStatus
 from lightning_utilities import apply_to_collection
 
 from anomalib import trainer
@@ -12,10 +18,18 @@ from anomalib.trainer.loops.base import BaseLoop
 
 class FitLoop(BaseLoop):
     def __init__(self, trainer: "trainer.AnomalibTrainer", min_epochs: int | None = 0, max_epochs: int | None = None):
-        super().__init__(trainer)
+        super().__init__(trainer, "fit")
         self.min_epochs = min_epochs
         self.max_epochs = max_epochs
         self.val_loop: BaseLoop
+
+    @property
+    def current_epoch(self):
+        return self.trainer.current_epoch
+
+    @current_epoch.setter
+    def current_epoch(self, value):
+        self.trainer.current_epoch = value
 
     def run_epoch_loop(
         self,
@@ -23,47 +37,43 @@ class FitLoop(BaseLoop):
         val_dataloader,
     ):
         # check if we even need to train here
-        if self.max_epochs is not None and self.trainer.current_epoch >= self.max_epochs:
+        if self.max_epochs is not None and self.current_epoch >= self.max_epochs:
             self.trainer.should_stop = True
-        # setup train callback
-        self.trainer.fabric.call(
-            "setup", trainer=self.trainer, pl_module=_unwrap_objects(self.trainer.model), stage="fit"
-        )
-        # TODO check for exception and safely abort training.
+
         while not self.trainer.should_stop:
-            self.trainer.fabric.call(
-                "on_train_epoch_start", trainer=self, pl_module=_unwrap_objects(self.trainer.model)
-            )
-            self.run_batch_loop(train_dataloader, self.trainer.limit_train_batches)
-            if self.trainer.should_validate:
-                self.val_loop.run_epoch_loop()
+            self.trainer.num_training_batches = min(len(train_dataloader), self.trainer.limit_train_batches)
+            self.trainer.fabric.call("on_train_epoch_start", trainer=self, pl_module=self.model)
+            self.run_batch_loop(train_dataloader)
+
             self.trainer.step_scheduler(
-                self.trainer.model, self.trainer.scheduler_cfg, level="epoch", current_value=self.trainer.current_epoch
+                self.trainer.model, self.trainer.scheduler_cfg, level="epoch", current_value=self.current_epoch
             )
-
-            self.trainer.current_epoch += 1
-
-            # stopping condition on epoch level
-            if self.max_epochs is not None and self.trainer.current_epoch >= self.max_epochs:
-                self.trainer.should_stop = True
 
             self.trainer.checkpoint_connector.save()
-            self.trainer.fabric.call(
-                "on_train_epoch_end", trainer=self.trainer.fabric, pl_module=_unwrap_objects(self.trainer.model)
-            )
+            self.trainer.fabric.call("on_train_epoch_end", trainer=self.trainer, pl_module=self.model)
 
-    def run_batch_loop(self, train_dataloader, limit_batches: int | float):
-        iterable = self.trainer.progbar_wrapper(
-            train_dataloader,
-            total=min(len(train_dataloader), limit_batches),
-            desc=f"Epoch {self.trainer.current_epoch}",
-        )
+            if len(self.trainer._current_train_return) > 0:
+                self.trainer._current_train_return = self.model.training_epoch_end(self.trainer._current_train_return)
+            # run validation at end of training
+            if self.trainer.should_validate:
+                # self.trainer.validating = True
+                with torch.no_grad():
+                    self.trainer.validating = True
+                    self.val_loop.run(val_dataloader)
+                    self.trainer.training = True
+
+            self.current_epoch += 1
+            # stopping condition on epoch level
+            if self.max_epochs is not None and self.current_epoch >= self.max_epochs:
+                self.trainer.should_stop = True
+
+        self.trainer.state.status = TrainerStatus.FINISHED
+
+    def run_batch_loop(self, train_dataloader: _FabricDataLoader):
+        iterable = train_dataloader
         for batch_idx, batch in enumerate(iterable):
             # end epoch if stopping training completely or max batches for this epoch reached
-            if self.trainer.should_stop or batch_idx >= limit_batches:
-                self.trainer.fabric.call(
-                    "on_train_epoch_end", trainer=self.trainer, pl_module=_unwrap_objects(self.trainer.model)
-                )
+            if self.trainer.should_stop or batch_idx >= self.trainer.limit_train_batches:
                 return
 
             self.trainer.fabric.call(
@@ -71,7 +81,7 @@ class FitLoop(BaseLoop):
                 batch=batch,
                 batch_idx=batch_idx,
                 trainer=self.trainer,
-                pl_module=_unwrap_objects(self.trainer.model),
+                pl_module=self.model,
             )
 
             # check if optimizer should step in gradient accumulation
@@ -99,8 +109,8 @@ class FitLoop(BaseLoop):
                 outputs=self.trainer._current_train_return,
                 batch=batch,
                 batch_idx=batch_idx,
-                trainer=self,
-                pl_module=_unwrap_objects(self.trainer.model),
+                trainer=self.trainer,
+                pl_module=self.model,
             )
 
             # this guard ensures, we only step the scheduler once per global step
@@ -109,14 +119,11 @@ class FitLoop(BaseLoop):
                     self.trainer.model, self.trainer.scheduler_cfg, level="step", current_value=self.trainer.global_step
                 )
 
-            # add output values to progress bar
-            self.trainer._format_iterable(iterable, self._current_train_return, "train")
-
             # only increase global step if optimizer stepped
             self.trainer.global_step += int(should_optim_step)
 
             # stopping criterion on step level
-            if self.max_steps is not None and self.trainer.global_step >= self.max_steps:
+            if self.trainer.max_steps is not None and self.trainer.global_step >= self.trainer.max_steps:
                 self.should_stop = True
                 break
 
@@ -140,10 +147,20 @@ class FitLoop(BaseLoop):
         self.trainer.fabric.call("on_after_backward")
 
         # avoid gradients in stored/accumulated values -> prevents potential OOM
-        self._current_train_return = apply_to_collection(outputs, dtype=torch.Tensor, function=lambda x: x.detach())
+        self.trainer._current_train_return = apply_to_collection(
+            outputs, dtype=torch.Tensor, function=lambda x: x.detach()
+        )
 
         return loss
 
-    def _setup(self):
+    def setup(self):
         """Connects the validation loop to the fit loop."""
-        self.val_loop = self.trainer.val_loop
+        super().setup()
+        torch.set_grad_enabled(True)
+        self.trainer.model.train()
+        self.val_loop = self.trainer.validation_loop
+        self.trainer.fabric.call("on_train_start", trainer=self.trainer, pl_module=self.model)
+
+    def teardown(self):
+        super().teardown()
+        self.trainer.fabric.call("on_train_end", trainer=self.trainer, pl_module=self.model)

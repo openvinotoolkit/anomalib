@@ -16,6 +16,7 @@ from omegaconf.listconfig import ListConfig
 from pytorch_lightning.loggers import CSVLogger, Logger
 
 from .comet import AnomalibCometLogger
+from .progress_bar import ProgressBarMetricLogger
 from .tensorboard import AnomalibTensorBoardLogger
 from .wandb import AnomalibWandbLogger
 
@@ -23,6 +24,7 @@ __all__ = [
     "AnomalibCometLogger",
     "AnomalibTensorBoardLogger",
     "AnomalibWandbLogger",
+    "ProgressBarMetricLogger",
     "configure_logger",
     "get_experiment_logger",
 ]

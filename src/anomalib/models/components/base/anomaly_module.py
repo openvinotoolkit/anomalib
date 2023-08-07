@@ -19,12 +19,7 @@ from torchmetrics import Metric
 
 from anomalib.data.utils import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
 from anomalib.post_processing import ThresholdMethod
-from anomalib.utils.metrics import (
-    AnomalibMetricCollection,
-    AnomalyScoreDistribution,
-    AnomalyScoreThreshold,
-    MinMax,
-)
+from anomalib.utils.metrics import AnomalibMetricCollection, AnomalyScoreDistribution, AnomalyScoreThreshold, MinMax
 
 logger = logging.getLogger(__name__)
 
@@ -220,10 +215,10 @@ class AnomalyModule(pl.LightningModule, ABC):
     def _log_metrics(self) -> None:
         """Log computed performance metrics."""
         if self.pixel_metrics.update_called:
-            self.log_dict(self.pixel_metrics, prog_bar=True)
-            self.log_dict(self.image_metrics, prog_bar=False)
+            self.log_dict(self.pixel_metrics.compute(), prog_bar=True)
+            self.log_dict(self.image_metrics.compute(), prog_bar=False)
         else:
-            self.log_dict(self.image_metrics, prog_bar=True)
+            self.log_dict(self.image_metrics.compute(), prog_bar=True)
 
     def _load_normalization_class(self, state_dict: OrderedDict[str, Tensor]) -> None:
         """Assigns the normalization method to use."""

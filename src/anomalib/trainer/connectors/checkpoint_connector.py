@@ -43,6 +43,17 @@ class CheckpointConnector:
         checkpoint = {
             "anomalib_version": anomalib.__version__,
             "model": self.trainer.model.state_dict(),
+            "loggers": self.trainer.loggers,
+            "callbacks": self.trainer.callbacks,
+            "global_step": self.trainer.global_step,
+            "current_epoch": self.trainer.current_epoch,
+            "grad_accum_steps": self.trainer.grad_accum_steps,
+            "seed": self.trainer.seed,
+            "max_epochs": self.trainer.max_epochs,
+            "max_steps": self.trainer.max_steps,
+            "limit_train_batches": self.trainer.limit_train_batches,
+            "limit_val_batches": self.trainer.limit_validation_batches,
+            "limit_test_batches": self.trainer.limit_test_batches,
         }
         # TODO add loops
         return checkpoint
@@ -60,15 +71,14 @@ class CheckpointConnector:
 
             state = self.dump_checkpoint()
             remainder = self.trainer.fabric.load(filepath, state)
-            # self.trainer.global_step = remainder.pop("global_step")
-            # self.trainer.current_epoch = remainder.pop("current_epoch")
-            checkpoint_anomalib_version = remainder.pop("anomalib_version")
+            self.trainer.global_step = state.pop("global_step")
+            self.trainer.current_epoch = state.pop("current_epoch")
+            checkpoint_anomalib_version = state.pop("anomalib_version")
             if checkpoint_anomalib_version != anomalib.__version__:
                 rank_zero_warn(
                     f"Current Anomalib version {anomalib.__version__} is different from the checkpoint version"
                     f" {checkpoint_anomalib_version}."
                 )
-
             if remainder:
                 raise RuntimeError(f"Unused Checkpoint Values: {remainder}")
 
