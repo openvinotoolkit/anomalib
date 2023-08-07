@@ -58,9 +58,6 @@ target-version = "py38"
 # Allow imports relative to the "src" and "tests" directories.
 src = ["src", "tests"]
 
-[tool.ruff.isort]
-known-third-party = ["wandb", "comet_ml"]
-
 [tool.ruff.mccabe]
 # Unlike Flake8, default to a complexity level of 10.
 max-complexity = 10
