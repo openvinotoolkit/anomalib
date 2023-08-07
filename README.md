@@ -289,7 +289,7 @@ For more details see the [Discussion forum](https://github.com/openvinotoolkit/a
 | Dfkde                |             |          |             |             |
 | Dfm                  | 0.948       | 0.945    | 0.966       | 0.870       |
 | Draem                |             |          |             |             |
-| Efficient AD         |             |          |             |             |
+| Efficient AD         | 0.975       | 0.962    | 0.958       | 0.900       |
 | FastFlow             | 0.965       | 0.957    | 0.972       | 0.893       |
 | Padim                |             |          |             |             |
 | PatchCore            |             |          |             |             |
@@ -304,14 +304,14 @@ For more details see the [Discussion forum](https://github.com/openvinotoolkit/a
 | CFlow                |             |          |             |             |
 | CsFlow               |             |          |             |             |
 | Dfkde                |             |          |             |             |
-| Dfm                  |             |          |             |             |
+| Dfm                  | 0.952       | 0.967    | 0.968       | 0.725       |
 | Draem                |             |          |             |             |
-| Efficient AD         |             |          |             |             |
-| FastFlow             |             |          |             |             |
+| Efficient AD         | 0.904       | 0.921    | 0.825       | 0.539       |
+| FastFlow             | 0.921       | 0.905    | 0.946       | 0.638       |
 | Padim                |             |          |             |             |
 | PatchCore            |             |          |             |             |
 | Reverse Distillation |             |          |             |             |
-| Stfpm                |             |          |             |             |
+| Stfpm                | 0.916       | 0.932    | 0.968       | 0.774       |
 
 ### [Visa Dataset](https://github.com/amazon-science/spot-diff)
 
@@ -323,7 +323,7 @@ For more details see the [Discussion forum](https://github.com/openvinotoolkit/a
 | Dfkde                |             |          |             |             |
 | Dfm                  | 0.864       | 0.845    | 0.967       | 0.779       |
 | Draem                |             |          |             |             |
-| Efficient AD         |             |          |             |             |
+| Efficient AD         | 0.803       | 0.807    | 0.956       | 0.793       |
 | FastFlow             | 0.908       | 0.866    | 0.968       | 0.829       |
 | Padim                |             |          |             |             |
 | PatchCore            |             |          |             |             |

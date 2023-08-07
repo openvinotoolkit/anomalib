@@ -43,12 +43,12 @@ All results gathered with seed `42`.
 
 ## [BTAD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 
-| Model   | Image AUROC | Image F1 | Pixel AUROC | Pixel AUPRO |
-| ------- | ----------- | -------- | ----------- | ----------- |
-| 01      |             |          |             |             |
-| 02      |             |          |             |             |
-| 03      |             |          |             |             |
-| Average |             |          |             |             |
+| Category | image AUROC | image F1Score | pixel AUROC | pixel AUPRO |
+| :------: | :---------: | :-----------: | :---------: | :---------: |
+|    1     |    0.991    |     0.970     |    0.929    |    0.538    |
+|    2     |    0.791    |     0.930     |    0.932    |    0.488    |
+|    3     |    0.980    |     0.814     |    0.978    |    0.888    |
+| Average  |    0.921    |     0.905     |    0.946    |    0.638    |
 
 ## [Visa Dataset](https://github.com/amazon-science/spot-diff)
 
