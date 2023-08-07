@@ -73,6 +73,7 @@ class CheckpointConnector:
             remainder = self.trainer.fabric.load(filepath, state)
             self.trainer.global_step = state.pop("global_step")
             self.trainer.current_epoch = state.pop("current_epoch")
+            # TODO refactor to save and load trainer state
             checkpoint_anomalib_version = state.pop("anomalib_version")
             if checkpoint_anomalib_version != anomalib.__version__:
                 rank_zero_warn(

@@ -6,6 +6,7 @@ from typing import Any
 
 import torch
 from lightning.fabric.wrappers import _FabricDataLoader, _unwrap_objects
+from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from lightning_utilities import apply_to_collection
 from torch.utils.data import DataLoader
@@ -17,20 +18,22 @@ logger = logging.getLogger(__name__)
 
 
 class EvaluationLoop(BaseLoop):
-    def __init__(self, trainer: "trainer.AnomalibTrainer", stage: str, verbose: bool = True):
+    def __init__(self, trainer: "trainer.AnomalibTrainer", stage: TrainerFn, verbose: bool = True):
         super().__init__(trainer, stage)
-        self.stage = stage
         self.verbose = verbose
+        self.dataloader: _FabricDataLoader
 
-    def run_epoch_loop(self, dataloaders: list[_FabricDataLoader]) -> list[STEP_OUTPUT]:
+    def run_epoch_loop(self) -> list[STEP_OUTPUT]:
         """Currently only runs one epoch."""
-        self.trainer.fabric.call(f"on_{self.stage}_epoch_start", trainer=self, pl_module=self.model)
-        dataloader = dataloaders[0]  # currently only one dataloader is supported
 
-        outputs = self.run_batch_loop(dataloader)
+        if self.stage != TrainerFn.PREDICTING:
+            self.trainer.fabric.call(f"on_{self.stage}_epoch_start", trainer=self, pl_module=self.model)
 
-        self._call_impl(self.model, f"{self.stage}_epoch_end", outputs=outputs)
-        self.trainer.fabric.call(f"{self.stage}_epoch_end", trainer=self, pl_module=self.model)
+        outputs = self.run_batch_loop(self.dataloader)
+
+        if self.stage != TrainerFn.PREDICTING:
+            self._call_impl(self.model, f"{self.stage}_epoch_end", outputs=outputs)
+            self.trainer.fabric.call(f"{self.stage}_epoch_end", trainer=self, pl_module=self.model)
 
         return outputs
 
@@ -55,7 +58,8 @@ class EvaluationLoop(BaseLoop):
             output = self._call_impl(self.model, f"{self.stage}_step", batch, batch_idx)
             output = apply_to_collection(output, torch.Tensor, lambda x: x.detach())
 
-            output = self._call_impl(self.model, f"{self.stage}_step_end", output)  # TODO change this
+            if self.stage != TrainerFn.PREDICTING:
+                output = self._call_impl(self.model, f"{self.stage}_step_end", output)
 
             self.trainer.fabric.call(
                 f"on_{self.stage}_batch_end",
@@ -73,6 +77,7 @@ class EvaluationLoop(BaseLoop):
     def setup(self):
         """Setup the evaluation loop."""
         super().setup()
+        self._connect_dataloader()
         torch.set_grad_enabled(False)
         self.model.eval()
         self.trainer.fabric.call(f"on_{self.stage}_start", trainer=self.trainer, pl_module=self.model)
@@ -87,8 +92,13 @@ class EvaluationLoop(BaseLoop):
 
     def _call_impl(self, module: Any, method: str, *args, **kwargs):
         """Call a method on a module."""
-        _method = getattr(module, method)
+        _method = getattr(module, method, None)
+        value = None
         if method is None:
             logger.error(f"Method {method} not found on {module}. Skipping.")
-            return
-        return _method(*args, **kwargs)
+        else:
+            value = _method(*args, **kwargs)
+        return value
+
+    def _connect_dataloader(self):
+        self.dataloader = getattr(self.trainer, f"{self.stage}_dataloaders")[0]

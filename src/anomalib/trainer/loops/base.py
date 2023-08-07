@@ -2,6 +2,7 @@ import logging
 from abc import ABC, abstractmethod
 
 from lightning.fabric.wrappers import _unwrap_objects
+from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib import trainer
@@ -11,16 +12,16 @@ logger = logging.getLogger(__name__)
 
 
 class BaseLoop(ABC):
-    def __init__(self, trainer: "trainer.AnomalibTrainer", stage: str):
+    def __init__(self, trainer: "trainer.AnomalibTrainer", stage: TrainerFn):
         self.trainer = trainer
-        self.stage = stage
+        self.stage: str = stage.value if stage != TrainerFn.VALIDATING else "validation"
 
-    def run(self, *args, **kwargs) -> list[STEP_OUTPUT] | None:
+    def run(self) -> list[STEP_OUTPUT] | None:
         outputs = None
         self.setup()
 
         try:
-            outputs = self.run_epoch_loop(*args, **kwargs)
+            outputs = self.run_epoch_loop()
         except Exception as exception:
             outputs = exception
         finally:

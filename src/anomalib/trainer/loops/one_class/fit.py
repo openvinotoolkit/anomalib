@@ -8,7 +8,7 @@ from typing import Any
 
 import torch
 from lightning.fabric.wrappers import _FabricDataLoader, _unwrap_objects
-from lightning.pytorch.trainer.states import TrainerStatus
+from lightning.pytorch.trainer.states import TrainerFn, TrainerStatus
 from lightning_utilities import apply_to_collection
 
 from anomalib import trainer
@@ -18,7 +18,7 @@ from anomalib.trainer.loops.base import BaseLoop
 
 class FitLoop(BaseLoop):
     def __init__(self, trainer: "trainer.AnomalibTrainer", min_epochs: int | None = 0, max_epochs: int | None = None):
-        super().__init__(trainer, "fit")
+        super().__init__(trainer, TrainerFn.FITTING)
         self.min_epochs = min_epochs
         self.max_epochs = max_epochs
         self.val_loop: BaseLoop
@@ -33,17 +33,17 @@ class FitLoop(BaseLoop):
 
     def run_epoch_loop(
         self,
-        train_dataloader,
-        val_dataloader,
     ):
         # check if we even need to train here
         if self.max_epochs is not None and self.current_epoch >= self.max_epochs:
             self.trainer.should_stop = True
 
         while not self.trainer.should_stop:
-            self.trainer.num_training_batches = min(len(train_dataloader), self.trainer.limit_train_batches)
+            self.trainer.num_training_batches = min(
+                len(self.trainer.train_dataloader), self.trainer.limit_train_batches
+            )
             self.trainer.fabric.call("on_train_epoch_start", trainer=self, pl_module=self.model)
-            self.run_batch_loop(train_dataloader)
+            self.run_batch_loop(self.trainer.train_dataloader)
 
             self.trainer.step_scheduler(
                 self.trainer.model, self.trainer.scheduler_cfg, level="epoch", current_value=self.current_epoch
@@ -59,7 +59,7 @@ class FitLoop(BaseLoop):
                 # self.trainer.validating = True
                 with torch.no_grad():
                     self.trainer.validating = True
-                    self.val_loop.run(val_dataloader)
+                    self.val_loop.run()
                     self.trainer.training = True
 
             self.current_epoch += 1
@@ -93,16 +93,14 @@ class FitLoop(BaseLoop):
                 self.trainer.fabric.call("on_before_optimizer_step", self.trainer.optimizer, 0)
 
                 # optimizer step runs train step internally through closure
-                self.trainer.optimizer.step(
-                    partial(self.step, model=self.trainer.model, batch=batch, batch_idx=batch_idx)
-                )
+                self.trainer.optimizer.step(partial(self.step, model=self.model, batch=batch, batch_idx=batch_idx))
                 self.trainer.fabric.call("on_before_zero_grad", self.trainer.optimizer)
 
                 self.trainer.optimizer.zero_grad()
 
             else:
                 # gradient accumulation -> no optimizer step
-                self.step(model=self.trainer.model, batch=batch, batch_idx=batch_idx)
+                self.step(model=self.model, batch=batch, batch_idx=batch_idx)
 
             self.trainer.fabric.call(
                 "on_train_batch_end",
@@ -116,7 +114,7 @@ class FitLoop(BaseLoop):
             # this guard ensures, we only step the scheduler once per global step
             if should_optim_step:
                 self.trainer.step_scheduler(
-                    self.trainer.model, self.trainer.scheduler_cfg, level="step", current_value=self.trainer.global_step
+                    self.model, self.trainer.scheduler_cfg, level="step", current_value=self.trainer.global_step
                 )
 
             # only increase global step if optimizer stepped
@@ -156,9 +154,11 @@ class FitLoop(BaseLoop):
     def setup(self):
         """Connects the validation loop to the fit loop."""
         super().setup()
+        assert self.trainer.train_dataloader is not None
+        assert self.trainer.validation_dataloaders is not None
         torch.set_grad_enabled(True)
-        self.trainer.model.train()
-        self.val_loop = self.trainer.validation_loop
+        self.model.train()
+        self.val_loop = self.trainer.validate_loop
         self.trainer.fabric.call("on_train_start", trainer=self.trainer, pl_module=self.model)
 
     def teardown(self):

@@ -15,7 +15,7 @@ from lightning import seed_everything
 from lightning.fabric.accelerators.accelerator import Accelerator
 from lightning.fabric.loggers import Logger
 from lightning.fabric.strategies import Strategy
-from lightning.fabric.wrappers import _unwrap_objects
+from lightning.fabric.wrappers import _FabricDataLoader, _unwrap_objects
 from lightning.pytorch.callbacks.progress import ProgressBar
 from lightning.pytorch.callbacks.progress.rich_progress import RichProgressBar
 from lightning.pytorch.trainer.states import RunningStage, TrainerFn, TrainerState, TrainerStatus
@@ -72,6 +72,7 @@ class AnomalibTrainer:
         limit_train_batches: Union[int, float] = float("inf"),
         limit_val_batches: Union[int, float] = float("inf"),
         limit_test_batches: int | float = float("inf"),
+        limit_predict_batches: int | float = float("inf"),
         validation_frequency: int = 1,
         use_distributed_sampler: bool = True,
         accelerator: Union[str, Accelerator] = "auto",
@@ -108,16 +109,10 @@ class AnomalibTrainer:
         self.max_steps = max_steps
         self.should_stop = False
 
-        # ensures limit_X_batches is either int or inf
-        if not isinstance(limit_train_batches, int):
-            assert limit_train_batches == float("inf")
-
-        if not isinstance(limit_val_batches, int):
-            assert limit_val_batches == float("inf")
-
         self.limit_train_batches = limit_train_batches
         self.limit_validation_batches = limit_val_batches
         self.limit_test_batches = limit_test_batches
+        self.limit_predict_batches = limit_predict_batches
         self.validation_frequency = validation_frequency
         self.use_distributed_sampler = use_distributed_sampler
         self._current_train_return = []
@@ -132,10 +127,9 @@ class AnomalibTrainer:
         self.model: AnomalyModule | None = None
         self.optimizer: torch.optim.Optimizer | None = None
         self.fit_loop = FitLoop(self, min_epochs, max_epochs)
-        # self.validation_loop = ValidationLoop(self)
-        self.validation_loop = EvaluationLoop(self, "validation")
-        self.test_loop = EvaluationLoop(self, "test")
-        self.predict_loop = EvaluationLoop(self, "predict")
+        self.validate_loop = EvaluationLoop(self, TrainerFn.VALIDATING)
+        self.test_loop = EvaluationLoop(self, TrainerFn.TESTING)
+        self.predict_loop = EvaluationLoop(self, TrainerFn.PREDICTING)
         self.fast_dev_run = fast_dev_run  # TODO. Compatibility
         self.state = TrainerState()
         self.sanity_checking = False  # TODO compatibility for Lightning Trainer. Does not do anything
@@ -143,9 +137,10 @@ class AnomalibTrainer:
         self._current_eval_dataloader_idx = 0  # compatibility for Lightning Trainer
         # self.num_val_batches = []  # compatibility for Lightning Trainer.
         self.num_validation_batches = []  # Currently only single dataloader is supported
-        self.train_dataloader: DataLoader | list[DataLoader] | None = None
+        self.train_dataloader: DataLoader | None = None
         self.test_dataloaders: list[DataLoader] | None = None
         self.validation_dataloaders: list[DataLoader] | None = None
+        self.predict_dataloaders: list[DataLoader] | None = None
 
     def fit(
         self,
@@ -163,10 +158,7 @@ class AnomalibTrainer:
             ckpt_path: Path to previous checkpoints to resume training from.
                 If specified, will always look for the latest checkpoint within the given directory.
         """
-        with self._run(stage="fit", model=model, datamodule=datamodule):
-            self.fabric.call("on_fit_start", trainer=self, pl_module=_unwrap_objects(self.model))
-            self.fit_loop.run(self.train_dataloader, self.validation_dataloaders)
-            self.fabric.call("on_fit_end", trainer=self, pl_module=_unwrap_objects(self.model))
+        self._run(TrainerFn.FITTING, model, datamodule)
 
     def validate(
         self,
@@ -179,11 +171,8 @@ class AnomalibTrainer:
             model: the LightningModule to evaluate
             val_loader: The dataloader yielding the validation batches.
         """
-        with self._run(stage="validate", model=model, datamodule=datamodule):
-            outputs = self.validation_loop.run(self.validation_dataloaders)
-            self._current_validation_return = outputs
 
-        return outputs
+        return self._run(TrainerFn.VALIDATING, model=model, datamodule=datamodule)
 
     def test(
         self,
@@ -196,59 +185,72 @@ class AnomalibTrainer:
             model: the LightningModule to evaluate
             test_loader: The dataloader yielding the test batches.
         """
-        with self._run(stage="test", model=model, datamodule=datamodule):
-            outputs = self.test_loop.run(self.test_dataloaders)
-            self._current_test_return = outputs
+        return self._run(stage=TrainerFn.TESTING, model=model, datamodule=datamodule)
 
-        return outputs
+    def predict(
+        self,
+        model: AnomalyModule,
+        datamodule: AnomalibDataModule | None = None,
+    ) -> list[STEP_OUTPUT] | None:
+        """The predict loop running a single predict epoch.
 
-    @contextmanager
-    def _run(self, stage: str, model: AnomalyModule, datamodule: AnomalibDataModule | None):
+        Args:
+            model: the LightningModule to evaluate
+            predict_loader: The dataloader yielding the predict batches.
+        """
+        return self._run(stage=TrainerFn.PREDICTING, model=model, datamodule=datamodule)
+
+    def _run(
+        self, stage: TrainerFn, model: AnomalyModule, datamodule: AnomalibDataModule | None
+    ) -> list[STEP_OUTPUT] | None:
         """Wraps setup and teardown code"""
+        outputs: list[STEP_OUTPUT] | None = None
         try:
             logger.info("Starting %s run", stage)
+            self.state.fn = stage
+            if stage == TrainerFn.FITTING:
+                self.training = True
+            elif stage == TrainerFn.VALIDATING:
+                self.validating = True
+            elif stage == TrainerFn.TESTING:
+                self.testing = True
+            elif stage == TrainerFn.PREDICTING:
+                self.predicting = True
+
             self.fabric.launch()
-            self._setup_dataloaders(model, datamodule, stage=stage)
+            self._setup_dataloaders(model, datamodule)
             self._setup(model)
             self.state.status = TrainerStatus.RUNNING
 
-            if stage == "fit":
-                self.state.fn = TrainerFn.FITTING
-                self.training = True
-            elif stage == "validate":
-                self.state.fn = TrainerFn.VALIDATING
-                self.validating = True
-            elif stage == "test":
-                self.state.fn = TrainerFn.TESTING
-                self.testing = True
-            elif stage == "predict":
-                self.state.fn = TrainerFn.PREDICTING
-                self.predicting = True
-
             self.checkpoint_connector.restore()
-            yield
+
+            if stage == TrainerFn.FITTING:
+                self.fabric.call("on_fit_start", trainer=self, pl_module=_unwrap_objects(self.model))
+            outputs = getattr(self, f"{stage}_loop").run()
         except Exception as exception:
             logger.exception(exception)
             self.state.status = TrainerStatus.INTERRUPTED
         else:
-            self._teardown(datamodule, stage)
             self.state.status = TrainerStatus.FINISHED
             self.state.stage = None
 
-            if stage == "fit":
+            if stage == TrainerFn.FITTING:
+                self.fabric.call("on_fit_end", trainer=self, pl_module=_unwrap_objects(self.model))
                 self.should_stop = False
                 assert self.state.stopped
         finally:
-            if stage == "fit":
+            if stage == TrainerFn.FITTING:
                 self.training = False
-            elif stage == "validate":
+            elif stage == TrainerFn.VALIDATING:
                 self.validating = False
-            elif stage == "test":
+            elif stage == TrainerFn.TESTING:
                 self.testing = False
-            elif stage == "predict":
-                self.predcting = False
+            elif stage == TrainerFn.PREDICTING:
+                self.predicting = False
             else:
                 raise ValueError(f"Unknown stage {stage}")
+        if outputs is not None:
+            return outputs
 
     def _get_project_dir(self) -> Path:
         return Path("results") / "custom_trainer" / "padim" / "runs"
@@ -345,11 +347,6 @@ class AnomalibTrainer:
         # TODO
         if self.fabric.is_global_zero:
             self.checkpoint_connector.save()
-        pass
-
-    def _teardown(self, datamodule, stage: str):
-        if datamodule is not None:
-            datamodule.teardown(stage)
 
     def _setup(self, model: AnomalyModule):
         """Setup model and optimizer using fabric.
@@ -370,13 +367,12 @@ class AnomalibTrainer:
 
         self.scheduler_cfg = scheduler_cfg
 
-    def _setup_dataloaders(self, model: AnomalyModule, datamodule: AnomalibDataModule | None, stage: str) -> None:
+    def _setup_dataloaders(self, model: AnomalyModule, datamodule: AnomalibDataModule | None) -> None:
         """Setup dataloaders using fabric.
 
         Args:
             model (AnomalyModule): AnomalyModule
             datamodule (AnomalibDataModule): Datamodule
-            stage (str): Training Stage
 
         Returns:
             None
@@ -384,33 +380,32 @@ class AnomalibTrainer:
         if datamodule is not None:
             datamodule.prepare_data()
             # TODO add a barrier that checks if all processes have finished preparing data
-            datamodule.setup(stage)
+            datamodule.setup(stage=None)  # stage is unused in AnomalibDataModule
 
-        train_loader = model.train_dataloader() if datamodule is None else datamodule.train_dataloader()
-        if train_loader is not None:
-            train_loader = self.fabric.setup_dataloaders(
+        if self.state.stage == RunningStage.TRAINING:
+            train_loader = model.train_dataloader() if datamodule is None else datamodule.train_dataloader()
+            self.train_dataloader = self.fabric.setup_dataloaders(
                 train_loader, use_distributed_sampler=self.use_distributed_sampler
             )
-        else:
-            train_loader = None
+        elif self.state.stage == RunningStage.TESTING:
+            test_loader = model.test_dataloader() if datamodule is None else datamodule.test_dataloader()
+            self.test_dataloaders = [
+                self.fabric.setup_dataloaders(test_loader, use_distributed_sampler=self.use_distributed_sampler)
+            ]
+        elif self.state.stage == RunningStage.PREDICTING:
+            predict_loader = model.predict_dataloader() if datamodule is None else datamodule.predict_dataloader()
+            self.predict_dataloaders = [
+                self.fabric.setup_dataloaders(predict_loader, use_distributed_sampler=self.use_distributed_sampler)
+            ]
 
-        val_loader = model.val_dataloader() if datamodule is None else datamodule.val_dataloader()
-        if val_loader is not None:
-            val_loader = self.fabric.setup_dataloaders(val_loader, use_distributed_sampler=self.use_distributed_sampler)
-        else:
-            val_loader = None
-
-        test_dataloader = model.test_dataloader() if datamodule is None else datamodule.test_dataloader()
-        if test_dataloader is not None:
-            test_dataloader = self.fabric.setup_dataloaders(
-                test_dataloader, use_distributed_sampler=self.use_distributed_sampler
-            )
-        else:
-            test_dataloader = None
-
-        self.train_dataloader = train_loader
-        self.validation_dataloaders = [val_loader]
-        self.test_dataloaders = [test_dataloader]
+        if self.state.stage in (RunningStage.VALIDATING, RunningStage.TRAINING):
+            val_loader = model.val_dataloader() if datamodule is None else datamodule.val_dataloader()
+            self.validation_dataloaders = [
+                self.fabric.setup_dataloaders(val_loader, use_distributed_sampler=self.use_distributed_sampler)
+            ]
+        # self.predict_dataloaders = [self.fabric.setup_dataloaders(
+        #         datamodule, use_distributed_sampler=self.use_distributed_sampler
+        #     )]
 
     def step_scheduler(
         self,
