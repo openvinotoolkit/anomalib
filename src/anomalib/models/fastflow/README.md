@@ -10,7 +10,7 @@ FastFlow is a two-dimensional normalizing flow-based probability distribution es
 
 ## Architecture
 
-![FastFlow Architecture](../../../docs/source/images/fastflow/architecture.jpg "FastFlow Architecture")
+![FastFlow Architecture](../../../../docs/source/images/fastflow/architecture.jpg "FastFlow Architecture")
 
 ## Usage
 

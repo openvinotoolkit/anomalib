@@ -10,7 +10,7 @@ CFLOW model is based on a conditional normalizing flow framework adopted for ano
 
 ## Architecture
 
-![CFlow Architecture](../../../docs/source/images/cflow/architecture.jpg "CFlow Architecture")
+![CFlow Architecture](../../../../docs/source/images/cflow/architecture.jpg "CFlow Architecture")
 
 ## Usage
 

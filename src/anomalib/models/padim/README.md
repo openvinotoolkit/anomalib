@@ -12,7 +12,7 @@ During inference, Mahalanobis distance is used to score each patch position of t
 
 ## Architecture
 
-![PaDiM Architecture](../../../docs/source/images/padim/architecture.jpg "PaDiM Architecture")
+![PaDiM Architecture](../../../../docs/source/images/padim/architecture.jpg "PaDiM Architecture")
 
 ## Usage
 
