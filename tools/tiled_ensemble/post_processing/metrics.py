@@ -30,8 +30,8 @@ class EnsembleMetrics(EnsemblePostProcess):
 
         self.image_metrics, self.pixel_metrics = self.configure_ensemble_metrics(
             config.dataset.task,
-            config.metrics.get("image", None),
-            config.metrics.get("pixel", None),
+            config.ensemble.metrics.get("image", None),
+            config.ensemble.metrics.get("pixel", None),
         )
 
         # set threshold for metrics that require it
