@@ -6,7 +6,7 @@ import random
 
 import pytest
 import torch
-from pytorch_lightning import Trainer
+from lightning.pytorch import Trainer
 
 from anomalib.data import get_datamodule
 from anomalib.models import get_model

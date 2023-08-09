@@ -109,8 +109,6 @@ class Cfa(AnomalyModule):
             optimizer (Optimizer | None): Optimizer.
             optimizer_idx (int | None): Optimizer index.
         """
-        del optimizer, optimizer_idx, args, kwargs  # These variables are not used.
-
         # TODO: Investigate why retain_graph is needed.
         loss.backward(retain_graph=True)
 

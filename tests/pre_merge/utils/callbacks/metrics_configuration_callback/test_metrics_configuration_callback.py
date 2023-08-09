@@ -1,7 +1,7 @@
 from pathlib import Path
 
+import lightning.pytorch as pl
 import pytest
-import pytorch_lightning as pl
 from omegaconf import OmegaConf
 
 from anomalib.models.components import AnomalyModule

@@ -16,8 +16,8 @@ from typing import Dict, List, Union
 import numpy as np
 import pandas as pd
 import torch
+from lightning.pytorch import seed_everything
 from omegaconf import DictConfig, ListConfig, OmegaConf
-from pytorch_lightning import seed_everything
 
 from anomalib.utils.sweep.config import flatten_sweep_params
 from tests.helpers.dataset import get_dataset_path

@@ -17,7 +17,7 @@ except ImportError:
 
 if wandb_installed:
     with patch("wandb.init"):
-        from pytorch_lightning.loggers import CSVLogger
+        from lightning.pytorch.loggers import CSVLogger
 
         from anomalib.utils.loggers import (
             AnomalibCometLogger,
@@ -27,7 +27,7 @@ if wandb_installed:
             get_experiment_logger,
         )
 else:
-    from pytorch_lightning.loggers import CSVLogger
+    from lightning.pytorch.loggers import CSVLogger
 
     from anomalib.utils.loggers import (
         AnomalibCometLogger,
@@ -50,8 +50,8 @@ def test_get_experiment_logger():
     )
 
     with patch("anomalib.utils.loggers.wandb.AnomalibWandbLogger.experiment"), patch(
-        "pytorch_lightning.loggers.wandb.wandb"
-    ), patch("pytorch_lightning.loggers.comet.comet_ml"):
+        "lightning.pytorch.loggers.wandb.wandb"
+    ), patch("lightning.pytorch.loggers.comet.comet_ml"):
         # get no logger
         logger = get_experiment_logger(config=config)
         assert isinstance(logger, bool)

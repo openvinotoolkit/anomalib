@@ -48,7 +48,6 @@ def get_parser() -> ArgumentParser:
 def infer(args: Namespace):
     """Run inference."""
     config = get_configurable_parameters(config_path=args.config)
-    config.trainer.resume_from_checkpoint = str(args.weights)
     config.visualization.show_images = args.show
     config.visualization.mode = args.visualization_mode
     if args.output:  # overwrite save path
@@ -80,7 +79,7 @@ def infer(args: Namespace):
     dataloader = DataLoader(dataset)
 
     # generate predictions
-    trainer.predict(model=model, dataloaders=[dataloader])
+    trainer.predict(model=model, dataloaders=[dataloader], ckpt_path=str(args.weights))
 
 
 if __name__ == "__main__":

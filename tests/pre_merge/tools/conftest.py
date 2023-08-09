@@ -27,10 +27,9 @@ def get_config(project_path):
     def get_config(
         model_name: str | None = None,
         config_path: str | None = None,
-        weight_file: str | None = None,
     ):
         """Gets config for testing."""
-        config = get_configurable_parameters(model_name, config_path, weight_file)
+        config = get_configurable_parameters(model_name, config_path)
         config.dataset.image_size = (100, 100)
         config.model.input_size = (100, 100)
         config.project.path = project_path
