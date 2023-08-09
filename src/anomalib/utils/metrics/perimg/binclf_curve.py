@@ -343,9 +343,8 @@ class PerImageBinClfCurve(Metric):
     def __init__(
         self,
         num_thresholds: int = 10_000,
-        **kwargs,
     ) -> None:
-        super().__init__(**kwargs)
+        super().__init__()
 
         warnings.warn(
             f"Metric `{self.__class__.__name__}` will save all targets and predictions in buffer."

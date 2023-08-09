@@ -151,8 +151,6 @@ class AUPImO(PImO):
         self,
         num_thresholds: int = 10_000,
         ubound: float | Tensor = 1.0,
-        **kwargs,
-        # TODO remove **kwargs from all metrics (silent bug if not used)
     ) -> None:
         """Area Under the Per-Image Overlap (PImO) curve.
 
@@ -162,7 +160,7 @@ class AUPImO(PImO):
             ubound: upper bound of the FPR range to compute the AUC
 
         """
-        super().__init__(num_thresholds=num_thresholds, **kwargs)
+        super().__init__(num_thresholds=num_thresholds)
 
         _validate_nonzero_rate(ubound)
         self.register_buffer("ubound", torch.as_tensor(ubound, dtype=torch.float64))
@@ -392,7 +390,6 @@ class AULogPImO(PImO):
         num_thresholds: int = 10_000,
         lbound: float | Tensor = 1e-3,
         ubound: float | Tensor = 1.0,
-        **kwargs,
     ) -> None:
         """Area Under the Per-Image Overlap (PImO) curve.
 
@@ -406,7 +403,7 @@ class AULogPImO(PImO):
                 in the range [lbound, ubound].
 
         """
-        super().__init__(num_thresholds=num_thresholds, **kwargs)
+        super().__init__(num_thresholds=num_thresholds)
 
         _validate_nonzero_rate(lbound)
         _validate_nonzero_rate(ubound)
