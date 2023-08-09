@@ -6,10 +6,11 @@ Metrics here are based on binary classification metrics (e.g. FPR, TPR, Precisio
 """
 
 from .binclf_curve import PerImageBinClfCurve
-from .pimo import AUPImO, PImO
+from .pimo import AULogPImO, AUPImO, PImO
 
 __all__ = [
     "PerImageBinClfCurve",
     "PImO",
     "AUPImO",
+    "AULogPImO",
 ]
