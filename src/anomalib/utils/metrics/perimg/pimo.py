@@ -344,9 +344,9 @@ class AUPImO(PImO):
         th_lbound = thresholds[thidx_lbound]
 
         plot_th_fpr_curves_norm_only(fprs, shared_fpr, thresholds, image_classes, th_lbound, self.ubound, ax=axes[0])
-        _add_integration_range_to_pimo_curves(axes[0], (None, self.ubound))
 
         plot_pimfpr_curves_norm_only(fprs, shared_fpr, image_classes, ax=axes[1])
+        _add_integration_range_to_pimo_curves(axes[1], (None, self.ubound))
 
         return fig, axes
 
