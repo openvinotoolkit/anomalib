@@ -199,7 +199,7 @@ def _add_metadata_to_ir(xml_file: str, metadata: dict[str, Any], input_size: tup
     # Add transforms
     if "transform" in metadata:
         for transform_dict in metadata["transform"]["transform"]["transforms"]:
-            transform = transform_dict.pop("__class_fullname__")
+            transform = transform_dict["__class_fullname__"]
             if transform == "Normalize":
                 _metadata[("model_info", "mean_values")] = _serialize_list([x * 255.0 for x in transform_dict["mean"]])
                 _metadata[("model_info", "scale_values")] = _serialize_list([x * 255.0 for x in transform_dict["std"]])
@@ -224,6 +224,7 @@ def _add_metadata_to_ir(xml_file: str, metadata: dict[str, Any], input_size: tup
     tmp_xml_path = Path(Path(xml_file).parent) / "tmp.xml"
     serialize(model, str(tmp_xml_path))
     tmp_xml_path.rename(xml_file)
+    # since we create new openvino IR files, we don't need the bin file. So we delete it.
     tmp_xml_path.with_suffix(".bin").unlink()
 
 
