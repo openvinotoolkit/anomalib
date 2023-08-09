@@ -78,6 +78,10 @@ def _validate_thresholds(thresholds: Tensor):
     if not torch.is_floating_point(thresholds):
         raise ValueError(f"Expected argument `thresholds` to have dtype float, but got {thresholds.dtype}.")
 
+    diffs = thresholds.diff()
+    if (diffs <= 0).any():
+        raise ValueError("Expected argument `thresholds` to be strictly increasing (thresholds[k+1] > thresholds[k]), ")
+
 
 def _validate_image_classes(image_classes: Tensor):
     if not isinstance(image_classes, Tensor):
@@ -98,3 +102,13 @@ def _validate_image_classes(image_classes: Tensor):
             "Expected argument `image_classes` to be a *binary* tensor with ground truth labels, "
             f"but got a tensor with values {unique_values}."
         )
+
+
+def _validate_atleast_one_anomalous_image(image_classes: Tensor):
+    if (image_classes == 1).sum() == 0:
+        raise ValueError("Expected argument at least one anomalous image, but found none.")
+
+
+def _validate_atleast_one_normal_image(image_classes: Tensor):
+    if (image_classes == 0).sum() == 0:
+        raise ValueError("Expected argument at least one normal image, but found none.")

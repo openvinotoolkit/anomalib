@@ -115,16 +115,6 @@ def _validate_tensor_in_cpu(tensor: Tensor) -> None:
         raise ValueError(f"Expected argument `tensor` to be on cpu, but got {tensor.device.type}")
 
 
-def _validate_atleast_one_anomalous_image(image_classes: Tensor):
-    if (image_classes == 1).sum() == 0:
-        raise ValueError("Expected argument at least one anomalous image, but found none.")
-
-
-def _validate_atleast_one_normal_image(image_classes: Tensor):
-    if (image_classes == 0).sum() == 0:
-        raise ValueError("Expected argument at least one normal image, but found none.")
-
-
 def _validated_binclf_curves(binclf_curves: Tensor):
     if not isinstance(binclf_curves, Tensor):
         raise ValueError(f"Expected argument `binclf_curves` to be a Tensor, but got {type(binclf_curves)}.")
