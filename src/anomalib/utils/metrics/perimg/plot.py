@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import numpy
 import torch
 from matplotlib.axes import Axes
+from matplotlib.patches import Rectangle
 from matplotlib.pyplot import Figure
 from matplotlib.ticker import FixedLocator, LogFormatter, PercentFormatter
 from torch import Tensor
@@ -16,11 +17,14 @@ from torch import Tensor
 from .common import (
     _perimg_boxplot_stats,
     _validate_atleast_one_anomalous_image,
+    _validate_atleast_one_normal_image,
     _validate_aucs,
     _validate_image_class,
     _validate_image_classes,
+    _validate_nonzero_rate,
     _validate_perimg_rate_curves,
     _validate_rate_curve,
+    _validate_thresholds,
 )
 
 # =========================================== FORMAT ===========================================
@@ -67,10 +71,6 @@ def _format_axis_rate_metric_linear(
 
 
 def _format_axis_rate_metric_log(ax: Axes, axis: int, lower_lim: float = 1e-3, num_ticks_major: int = 6) -> None:
-    """will be used in a later PR
-    TODO remove this comment
-    """
-
     if not isinstance(ax, Axes) or not isinstance(axis, int):
         raise ValueError("Expected arguments `ax` to be an Axes and `axis` to be an integer.")
 
@@ -472,5 +472,330 @@ def plot_boxplot_pimo_curves(
     _format_axis_rate_metric_linear(ax, axis=1)
     ax.set_ylabel("Per-Image Overlap (in-image TPR)")
     ax.set_title("Per-Image Overlap Curves (AUC boxplot statistics)")
+
+    return fig, ax
+
+
+def _add_integration_range_to_pimo_curves(
+    ax: Axes,
+    bounds: tuple[float | None, float | None] = (None, None),
+):
+    """TODO docstring"""
+    current_legend = ax.get_legend()
+
+    if len(bounds) != 2:
+        raise ValueError(f"Expected argument `bounds` to be a tuple of size 2, but got size {len(bounds)}.")
+
+    lbound, ubound = bounds
+
+    if lbound is not None:
+        _validate_nonzero_rate(lbound)
+
+    if ubound is not None:
+        _validate_nonzero_rate(ubound)
+
+    if lbound is not None and ubound is not None and lbound >= ubound:
+        raise ValueError(
+            f"Expected argument `bounds` to be (lbound, ubound), such that lbound < ubound, but got {bounds}."
+        )
+
+    handles = [
+        ax.axvspan(
+            lbound if lbound is not None else 0,
+            ubound if ubound is not None else 1,
+            label="FPR Interval",
+            color="cyan",
+            alpha=0.2,
+        ),
+    ]
+
+    if ubound is not None:
+        handles.append(
+            ax.axvline(
+                ubound,
+                label=f"Upper Bound ({float(100 * ubound):.2g}%)",
+                linestyle="--",
+                color="black",
+            )
+        )
+
+    if lbound is not None:
+        handles.append(
+            ax.axvline(
+                lbound,
+                label=f"Lower Bound ({float(100 * lbound):.2g}%)",
+                linestyle="--",
+                color="gray",
+            )
+        )
+
+    ax.legend(
+        handles,
+        [h.get_label() for h in handles],
+        title="AUC integration",
+        loc="center right",
+        fontsize="small",
+        title_fontsize="small",
+    )
+
+    if current_legend is not None:
+        ax.add_artist(current_legend)
+
+
+# =========================================== PImFPR ===========================================
+
+
+def plot_pimfpr_curves_norm_vs_anom(
+    fprs: Tensor,
+    shared_fpr: Tensor,
+    image_classes: Tensor,
+    ax: Axes | None = None,
+) -> tuple[Figure | None, Axes]:
+    """Plot shared FPR vs in-image FPR curves, normal image (in blue) VS anomalous images (in red).
+
+    Args:
+        ax: matplotlib Axes
+        shared_fpr: shape (num_thresholds,)
+        fprs: shape (num_images, num_thresholds)
+        image_classes: shape (num_images,)
+    """
+
+    # ** validate ** [GENERIC]
+    _validate_rate_curve(shared_fpr)
+    _validate_perimg_rate_curves(fprs, nan_allowed=True)  # anomalous images may have `nan`s if all pixels are anomalous
+    _validate_image_classes(image_classes)
+
+    if fprs.shape[0] != image_classes.shape[0]:
+        raise ValueError(
+            f"Expected argument `fprs` to have the same number of images as argument `image_classes`, "
+            f"but got {fprs.shape[0]} images and {image_classes.shape[0]} images, respectively."
+        )
+
+    # there may be `nan`s but only in the anomalous images
+    # in the curves of normal images, there should NOT be `nan`s
+    if (image_classes == 0).any():
+        _validate_perimg_rate_curves(fprs[image_classes == 0], nan_allowed=False)
+
+    # ** validate ** [SPECIFIC]
+    # it's a normal vs. anomalous plot, so there should be at least one of each
+    _validate_atleast_one_anomalous_image(image_classes)
+    _validate_atleast_one_normal_image(image_classes)
+
+    fig, ax = plt.subplots(figsize=(7, 7)) if ax is None else (None, ax)
+
+    # ** plot **
+    kwargs_perimg = [
+        dict(
+            # color the lines by the image class; normal = blue, anomalous = red
+            color="blue" if img_cls == 0 else "red",
+            # make the legend only show one normal and one anomalous line by passing `label=None`
+            # and just modifying the first of each class in the lines below
+            label=None,
+        )
+        for imgidx, img_cls in enumerate(image_classes)
+    ]
+    # `[0][0]`: first `[0]` is for the tuple from `numpy.where()`, second `[0]` is for the first index
+    kwargs_perimg[numpy.where(image_classes == 0)[0][0]]["label"] = "Normal (blue)"
+    kwargs_perimg[numpy.where(image_classes == 1)[0][0]]["label"] = "Anomalous (red)"
+
+    _plot_perimg_curves(
+        ax,
+        shared_fpr,
+        fprs,
+        *kwargs_perimg,
+        # shared kwargs
+        alpha=0.3,
+    )
+
+    # ** format **
+    _format_axis_rate_metric_linear(ax, axis=0)
+    ax.set_xlabel("Shared FPR")
+    _format_axis_rate_metric_linear(ax, axis=1)
+    ax.set_ylabel("In-Image FPR")
+    ax.set_title("FPR: Shared vs In-Image Curves (Norm. vs Anom. Images)")
+    ax.legend(loc="lower right", fontsize="small", title_fontsize="small", title="Image Class")
+    # TODO change alpha of the legend's handles
+
+    return fig, ax
+
+
+def plot_pimfpr_curves_norm_only(
+    fprs: Tensor,
+    shared_fpr: Tensor,
+    image_classes: Tensor,
+    ax: Axes | None = None,
+) -> tuple[Figure | None, Axes]:
+    """Plot shared FPR vs in-image FPR curves, only from normal images along with their statistics across the images.
+
+    The statistics curves corresponds to taking (for ex) the mean along the y axis at a given x value in the plot.
+    Statistics: min(), max(), and mean() wiht 3 SEM interval.
+
+    Args:
+        ax: matplotlib Axes
+        shared_fpr: shape (num_thresholds,)
+        fprs: shape (num_images, num_thresholds)
+        image_classes: shape (num_images,)
+    """
+
+    # ** validate **
+    _validate_rate_curve(shared_fpr)
+    _validate_perimg_rate_curves(fprs, nan_allowed=True)  # anomalous images may have `nan`s if all pixels are anomalous
+    _validate_image_classes(image_classes)
+
+    if fprs.shape[0] != image_classes.shape[0]:
+        raise ValueError(
+            f"Expected argument `fprs` to have the same number of images as argument `image_classes`, "
+            f"but got {fprs.shape[0]} images and {image_classes.shape[0]} images, respectively."
+        )
+
+    # it's a normal-only plot, so there should be at least one normal image
+    _validate_atleast_one_normal_image(image_classes)
+    _validate_perimg_rate_curves(fprs[image_classes == 0], nan_allowed=False)
+
+    # ** compute **
+
+    # there may be `nan`s but only in the anomalous images
+    # in the curves of normal images, there should NOT be `nan`s
+    if (image_classes == 0).any():
+        _validate_perimg_rate_curves(fprs[image_classes == 0], nan_allowed=False)
+
+    fprs_norm = fprs[image_classes == 0]
+    mean = fprs_norm.mean(dim=0)
+    min_ = fprs_norm.min(dim=0)[0]
+    max_ = fprs_norm.max(dim=0)[0]
+    num_norm_images = fprs_norm.shape[0]
+    sem = fprs.std(dim=0) / torch.sqrt(torch.tensor(num_norm_images))
+
+    fig, ax = plt.subplots(figsize=(7, 7)) if ax is None else (None, ax)
+
+    # ** plot [perimg] **
+    _plot_perimg_curves(
+        ax,
+        shared_fpr,
+        fprs,
+        *[
+            # don't show in the legend
+            dict(label=None) if imgclass == 0 else
+            # don't plot anomalous images
+            None
+            for imgclass in image_classes
+        ],
+        # shared kwargs
+        linewidth=0.5,
+        alpha=0.3,
+    )
+
+    # ** plot [stats] **
+    ax.plot(shared_fpr, mean, color="black", linewidth=2, linestyle="--", label="mean")
+    ax.plot(shared_fpr, min_, color="green", linewidth=2, linestyle="--", label="min")
+    ax.plot(shared_fpr, max_, color="orange", linewidth=2, linestyle="--", label="max")
+    ax.fill_between(shared_fpr, mean - 3 * sem, mean + 3 * sem, color="black", alpha=0.3, label="3 SEM (mean's 99% CI)")
+
+    # ** format **
+    _format_axis_rate_metric_linear(ax, axis=0)
+    ax.set_xlabel("Shared FPR")
+    _format_axis_rate_metric_linear(ax, axis=1)
+    ax.set_ylabel("In-Image FPR (or Y-axis-wise Statistic)")
+    ax.set_title("FPR: Shared vs In-Image Curves (Norm. Images Only)")
+    ax.legend(loc="lower right", fontsize="small", title_fontsize="small", title="Stats across images")
+
+    return fig, ax
+
+
+def plot_th_fpr_curves_norm_only(
+    fprs: Tensor,
+    shared_fpr: Tensor,
+    thresholds: Tensor,
+    image_classes: Tensor,
+    th_lbound: Tensor,
+    fpr_ubound: Tensor | float,
+    ax: Axes | None = None,
+) -> tuple[Figure | None, Axes]:
+    # ** validate **
+    _validate_thresholds(thresholds)
+    _validate_rate_curve(shared_fpr)
+    _validate_perimg_rate_curves(fprs, nan_allowed=True)  # anomalous images may have `nan`s if all pixels are anomalous
+    _validate_image_classes(image_classes)
+
+    if fprs.shape[0] != image_classes.shape[0]:
+        raise ValueError(
+            f"Expected argument `fprs` to have the same number of images as argument `image_classes`, "
+            f"but got {fprs.shape[0]} images and {image_classes.shape[0]} images, respectively."
+        )
+
+    # it's a normal-only plot, so there should be at least one normal image
+    _validate_atleast_one_normal_image(image_classes)
+    _validate_perimg_rate_curves(fprs[image_classes == 0], nan_allowed=False)
+
+    fpr_ubound = torch.tensor(fpr_ubound) if isinstance(fpr_ubound, float) else fpr_ubound
+
+    if not (isinstance(fpr_ubound, Tensor) and fpr_ubound.ndim == 0 and 0 < fpr_ubound and fpr_ubound <= 1):
+        raise ValueError("Expected argument `fpr_ubound` to be a float or a 0D tensor in (0, 1].")
+
+    if not (
+        isinstance(th_lbound, Tensor)
+        and th_lbound.ndim == 0
+        and thresholds[0] <= th_lbound
+        and th_lbound <= thresholds[-1]
+    ):
+        raise ValueError(
+            "Expected argument `th_lbound` to be a 0D tensor in the range of `thresholds`: "
+            f"[{thresholds[0]}, {thresholds[-1]}], "
+        )
+
+    fig, ax = plt.subplots(figsize=(7, 7)) if ax is None else (None, ax)
+
+    # ** plot [curves] **
+    _plot_perimg_curves(
+        ax,
+        thresholds,
+        fprs,
+        *[
+            # don't show in the legend
+            dict(label=None) if imgclass == 0 else
+            # don't plot anomalous images
+            None
+            for imgclass in image_classes
+        ],
+        # shared kwargs
+        linewidth=0.5,
+        alpha=0.3,
+        color="gray",
+    )
+    ax.plot(thresholds, shared_fpr, color="black", linewidth=2, linestyle="--", label="Mean")
+
+    # ** plot [bounds] **
+    ax.axhline(
+        fpr_ubound,
+        label=f"Shared FPR upper bound ({float(100 * fpr_ubound):.2g}%)",
+        linestyle="--",
+        color="red",
+    )
+    ax.axvline(
+        th_lbound,
+        label="Threshold lower bound (@ FPR upper bound)",
+        linestyle="--",
+        color="blue",
+    )
+    ax.add_patch(
+        Rectangle(
+            (th_lbound, 0),
+            thresholds[-1] - th_lbound,
+            fpr_ubound,
+            facecolor="cyan",
+            alpha=0.2,
+        )
+    )
+
+    # ** format **
+    ax.set_xlim(thresholds[0], thresholds[-1])
+    ax.set_xlabel("Thresholds")
+
+    _format_axis_rate_metric_linear(ax, axis=1)
+    ax.set_ylabel("False Positive Rate (FPR)")
+
+    ax.set_title("Thresholds vs FPR on Normal Images")
+
+    ax.legend(loc="upper right", fontsize="small", title_fontsize="small")
 
     return fig, ax

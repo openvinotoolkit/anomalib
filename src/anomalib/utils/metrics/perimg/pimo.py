@@ -29,11 +29,15 @@ from .common import (
     _perimg_boxplot_stats,
     _validate_atleast_one_anomalous_image,
     _validate_atleast_one_normal_image,
+    _validate_nonzero_rate,
 )
 from .plot import (
+    _add_integration_range_to_pimo_curves,
     plot_all_pimo_curves,
     plot_aupimo_boxplot,
     plot_boxplot_pimo_curves,
+    plot_pimfpr_curves_norm_only,
+    plot_th_fpr_curves_norm_only,
 )
 
 # =========================================== METRICS ===========================================
@@ -143,6 +147,29 @@ class AUPImO(PImO):
     AU is computed by the trapezoidal rule, each curve being treated separately.
     """
 
+    def __init__(
+        self,
+        num_thresholds: int = 10_000,
+        ubound: float | Tensor = 1.0,
+        **kwargs,
+        # TODO remove **kwargs from all metrics (silent bug if not used)
+    ) -> None:
+        """Area Under the Per-Image Overlap (PImO) curve.
+
+        Args:
+            num_thresholds: number of thresholds to use for the binclf curves
+                            refer to `anomalib.utils.metrics.perimg.binclf_curve.PerImageBinClfCurve`
+            ubound: upper bound of the FPR range to compute the AUC
+
+        """
+        super().__init__(num_thresholds=num_thresholds, **kwargs)
+
+        _validate_nonzero_rate(ubound)
+        self.register_buffer("ubound", torch.as_tensor(ubound, dtype=torch.float64))
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(ubound={self.ubound})"
+
     def compute(self) -> tuple[PImOResult, Tensor]:  # type: ignore
         """Compute the Area Under the Per-Image Overlap curves (AUPImO).
 
@@ -162,11 +189,21 @@ class AUPImO(PImO):
 
         pimoresult = thresholds, fprs, shared_fpr, tprs, image_classes = super().compute()
 
+        # get the index of the value in `shared_fpr` that is closest to `self.ubound in abs value
+        # knwon issue: `shared_fpr[ubound_idx]` might not be exactly `self.ubound`
+        # but it's ok because `num_thresholds` should be large enough so that the error is negligible
+        ubound_idx = torch.argmin(torch.abs(shared_fpr - self.ubound))
+
+        # limit the curves to the integration range [0, ubound]
         # `shared_fpr` and `tprs` are in descending order; `flip()` reverts to ascending order
-        tprs_auc: Tensor = tprs.flip(dims=(1,))
-        shared_fpr_auc: Tensor = shared_fpr.flip(dims=(0,))
+        tprs_auc: Tensor = tprs[:, ubound_idx:].flip(dims=(1,))
+        shared_fpr_auc: Tensor = shared_fpr[ubound_idx:].flip(dims=(0,))
 
         aucs: Tensor = torch.trapezoid(tprs_auc, x=shared_fpr_auc, dim=1)
+
+        # normalize the size of `aucs` by dividing by the x-range size
+        # clip(0, 1) makes sure that the values are in [0, 1] (in case of numerical errors)
+        aucs = (aucs / self.ubound).clip(0, 1)
 
         return pimoresult, aucs
 
@@ -190,6 +227,9 @@ class AUPImO(PImO):
             ax=ax,
         )
         ax.set_xlabel("Mean FPR on Normal Images")
+
+        if self.ubound < 1:
+            _add_integration_range_to_pimo_curves(ax, (None, self.ubound))
 
         return fig, ax
 
@@ -225,6 +265,9 @@ class AUPImO(PImO):
             ax=ax,
         )
         ax.set_xlabel("Mean FPR on Normal Images")
+
+        if self.ubound < 1:
+            _add_integration_range_to_pimo_curves(ax, (None, self.ubound))
 
         return fig, ax
 
@@ -273,6 +316,40 @@ class AUPImO(PImO):
         axes[0].set_title("AUC Boxplot")
         self.plot_boxplot_pimo_curves(ax=axes[1])
         axes[1].set_title("Curves")
+        return fig, axes
+
+    def plot_perimg_fprs(
+        self,
+        axes: ndarray | None = None,
+    ) -> tuple[Figure | None, ndarray]:
+        """Plot the AUC boundary conditions based on FPR metrics on normal images.
+        TODO review docstring
+        """
+
+        if axes is None:
+            fig, axes = plt.subplots(1, 2, figsize=(14, 6), width_ratios=[6, 8])
+            fig.suptitle("AUPImO Integration Boundary Conditions")
+            fig.set_tight_layout(True)
+        elif not isinstance(axes, ndarray):
+            raise ValueError(f"Expected argument `axes` to be an ndarray of matplotlib Axes, but got {type(axes)}.")
+        elif axes.size != 2:
+            raise ValueError(f"Expected argument `axes` to be of size 2, but got size {axes.size}.")
+        else:
+            fig, axes = (None, axes)
+
+        axes = axes.flatten()
+
+        (thresholds, fprs, shared_fpr, tprs, image_classes), aucs = self.compute()
+
+        # FRP upper bound is threshold lower bound
+        thidx_lbound = torch.argmin(torch.abs(shared_fpr - self.ubound))
+        th_lbound = thresholds[thidx_lbound]
+
+        plot_th_fpr_curves_norm_only(fprs, shared_fpr, thresholds, image_classes, th_lbound, self.ubound, ax=axes[0])
+        _add_integration_range_to_pimo_curves(axes[0], (None, self.ubound))
+
+        plot_pimfpr_curves_norm_only(fprs, shared_fpr, image_classes, ax=axes[1])
+
         return fig, axes
 
 

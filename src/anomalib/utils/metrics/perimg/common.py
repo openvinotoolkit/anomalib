@@ -146,6 +146,20 @@ def _validate_atleast_one_normal_image(image_classes: Tensor):
         raise ValueError("Expected argument at least one normal image, but found none.")
 
 
+def _validate_nonzero_rate(fpr: float | Tensor) -> None:
+    if isinstance(fpr, float):
+        fpr = torch.as_tensor(fpr)
+
+    elif not isinstance(fpr, Tensor):
+        raise ValueError(f"Expected argument `fpr` to be a float or torch.Tensor, but got {type(fpr)}.")
+
+    if fpr.dim() != 0:
+        raise ValueError(f"Expected argument `fpr` to be a scalar, but got a tensor of shape {fpr.shape}.")
+
+    if fpr <= 0 or fpr > 1:
+        raise ValueError(f"Expected argument `fpr` to be in (0, 1], but got {fpr}.")
+
+
 # =========================================== FUNCTIONAL ===========================================
 
 
