@@ -82,11 +82,19 @@ def _format_axis_rate_metric_log(
     ), f"Expected `upper_lim` > `lower_lim`, but got {upper_lim} and {lower_lim}, respectively."
 
     lims = (lower_lim, upper_lim)
+
+    lims = (lower_lim, upper_lim)
     lower_lim_rounded_exponent = int(numpy.floor(numpy.log10(lower_lim)))
     upper_lim_rounded_exponent = int(numpy.ceil(numpy.log10(upper_lim)))
     num_exponents = upper_lim_rounded_exponent - lower_lim_rounded_exponent + 1
 
     ticks_major = numpy.logspace(lower_lim_rounded_exponent, upper_lim_rounded_exponent, num_exponents)
+
+    lims_epsilon = 0.1
+    lims = (
+        (10**lower_lim_rounded_exponent) * (1 - lims_epsilon),
+        (10**upper_lim_rounded_exponent) * (1 + lims_epsilon),
+    )
 
     def formatter_major(x, pos):
         return f"{100 * x}%" if x < 0.01 else f"{100 * x:.0f}%"
@@ -444,7 +452,6 @@ def plot_boxplot_pimo_curves(
     # ** plot **
 
     fig, ax = plt.subplots(figsize=(7, 6)) if ax is None else (None, ax)
-    # TODO add suptitle when creating the figure
 
     _plot_perimg_curves(ax, shared_fpr, tprs, *kwargs_perimg)
 
@@ -484,7 +491,7 @@ def plot_boxplot_pimo_curves(
     ax.set_xlabel("Shared FPR")
     _format_axis_rate_metric_linear(ax, axis=1)
     ax.set_ylabel("Per-Image Overlap (in-image TPR)")
-    ax.set_title("Per-Image Overlap Curves (AUC boxplot statistics)")
+    ax.set_title("Per-Image Overlap (PImO) Curves (AUC boxplot statistics)")
 
     return fig, ax
 
@@ -492,8 +499,16 @@ def plot_boxplot_pimo_curves(
 def _add_integration_range_to_pimo_curves(
     ax: Axes,
     bounds: tuple[float | None, float | None] = (None, None),
-):
-    """TODO docstring"""
+    span: bool = True,
+) -> None:
+    """Add a vertical span and two vertical lines to the plot to indicate the integration range.
+
+    Args:
+        ax: matplotlib Axes
+        bounds: (lbound, ubound) where both are floats in [0, 1]
+                when None, the corresponding vertical line will not be added
+        span: whether to add a vertical span
+    """
     current_legend = ax.get_legend()
 
     if len(bounds) != 2:
@@ -512,21 +527,27 @@ def _add_integration_range_to_pimo_curves(
             f"Expected argument `bounds` to be (lbound, ubound), such that lbound < ubound, but got {bounds}."
         )
 
-    handles = [
-        ax.axvspan(
-            lbound if lbound is not None else 0,
-            ubound if ubound is not None else 1,
-            label="FPR Interval",
-            color="cyan",
-            alpha=0.2,
-        ),
-    ]
+    handles = []
+
+    if span:
+        handles.append(
+            ax.axvspan(
+                lbound if lbound is not None else 0,
+                ubound if ubound is not None else 1,
+                label="FPR Interval",
+                color="cyan",
+                alpha=0.2,
+            )
+        )
+
+    def bound2str(bound: float) -> str:
+        return f"{100 * bound}%" if bound < 0.01 else f"{100 * bound:.0f}%"
 
     if ubound is not None:
         handles.append(
             ax.axvline(
                 ubound,
-                label=f"Upper Bound ({float(100 * ubound):.2g}%)",
+                label=f"Upper Bound ({bound2str(ubound)})",
                 linestyle="--",
                 color="black",
             )
@@ -536,7 +557,7 @@ def _add_integration_range_to_pimo_curves(
         handles.append(
             ax.axvline(
                 lbound,
-                label=f"Lower Bound ({float(100 * lbound):.2g}%)",
+                label=f"Lower Bound ({bound2str(lbound)})",
                 linestyle="--",
                 color="gray",
             )
@@ -549,6 +570,31 @@ def _add_integration_range_to_pimo_curves(
         loc="center right",
         fontsize="small",
         title_fontsize="small",
+    )
+
+    if current_legend is not None:
+        ax.add_artist(current_legend)
+
+
+def _add_avline_at_score_random_model(ax: Axes, score: float) -> None:
+    """Add a vertical line at the score of the random model."""
+    current_legend = ax.get_legend()
+
+    def auc2str(bound: float) -> str:
+        return f"{bound:.2%}"
+
+    handle = ax.axvline(
+        score,
+        label=f"Random Model ({auc2str(score)})",
+        linestyle="--",
+        color="red",
+    )
+
+    ax.legend(
+        [handle],
+        [handle.get_label()],
+        loc="lower right",
+        fontsize="small",
     )
 
     if current_legend is not None:

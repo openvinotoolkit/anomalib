@@ -32,6 +32,7 @@ from .common import (
     _validate_nonzero_rate,
 )
 from .plot import (
+    _add_avline_at_score_random_model,
     _add_integration_range_to_pimo_curves,
     _format_axis_rate_metric_log,
     plot_all_pimo_curves,
@@ -281,6 +282,7 @@ class AUPImO(PImO):
 
         (thresholds, fprs, shared_fpr, tprs, image_classes), aucs = self.compute()
         fig, ax = plot_aupimo_boxplot(aucs, image_classes, ax=ax)
+        _add_avline_at_score_random_model(ax, 0.5)
         return fig, ax
 
     def plot(
@@ -503,8 +505,11 @@ class AULogPImO(PImO):
         ax.set_xlabel("Log10 of Mean FPR on Normal Images")
         ax.set_title("Log Per-Image Overlap (LogPImO) Curves")
         _format_axis_rate_metric_log(ax, axis=0, lower_lim=self.lbound, upper_lim=self.ubound)
-
-        # TODO ADD UPPER/LOWER BOUND TO THE PLOT WHEN DIFFERENT FROM 0/1
+        # they are not exactly the same as the input because the function above rounds them
+        xtickmin, xtickmax = ax.xaxis.get_ticklocs()[[0, -1]]
+        _add_integration_range_to_pimo_curves(
+            ax, (self.lbound, self.ubound), span=(xtickmin < self.lbound or xtickmax > self.ubound)
+        )
 
         return fig, ax
 
@@ -541,8 +546,12 @@ class AULogPImO(PImO):
         ax.set_xlabel("Log10 of Mean FPR on Normal Images")
         ax.set_title("Log Per-Image Overlap (LogPImO) Curves (AUC boxplot statistics)")
         _format_axis_rate_metric_log(ax, axis=0, lower_lim=self.lbound, upper_lim=self.ubound)
-        # TODO modify suptitle when figure is created here
-        # TODO ADD UPPER/LOWER BOUND TO THE PLOT WHEN DIFFERENT FROM 0/1
+        # they are not exactly the same as the input because the function above rounds them
+        xtickmin, xtickmax = ax.xaxis.get_ticklocs()[[0, -1]]
+        _add_integration_range_to_pimo_curves(
+            ax, (self.lbound, self.ubound), span=(xtickmin < self.lbound or xtickmax > self.ubound)
+        )
+
         return fig, ax
 
     def plot_boxplot(
@@ -556,6 +565,9 @@ class AULogPImO(PImO):
 
         (thresholds, fprs, shared_fpr, tprs, image_classes), aucs = self.compute()
         fig, ax = plot_aupimo_boxplot(aucs, image_classes, ax=ax)
+        ax.set_xlabel("AULogPImO [%]")
+        ax.set_title("Area Under the Log Per-Image Overlap (AULogPImO) Boxplot")
+        _add_avline_at_score_random_model(ax, self.random_model_auc)
         return fig, ax
 
     def plot(
@@ -587,7 +599,10 @@ class AULogPImO(PImO):
 
         axes = axes.flatten()
         self.plot_boxplot(ax=axes[0])
-        axes[0].set_title("AUC Boxplot")
         self.plot_boxplot_logpimo_curves(ax=axes[1])
-        axes[1].set_title("Curves")
+
+        if fig is not None:  # it means the axes were created by this function (and so was the suptitle)
+            axes[0].set_title("AUC Boxplot")
+            axes[1].set_title("Curves")
+
         return fig, axes
