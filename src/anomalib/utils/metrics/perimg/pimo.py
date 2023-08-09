@@ -354,14 +354,133 @@ class AUPImO(PImO):
 
 
 class AULogPImO(PImO):
-    """Area Under the Per-Image Overlap (PIMO, pronounced pee-mo) curves with log(FPR) (instead of FPR) in the X-axis
+    """Area Under the Log Per-Image Overlap (LogPIMO, pronounced log pee-mo).
 
-    This will further give more importance/visibility to the low FPR region.
+    LogPImO curves have log(FPR) in the X-axis (instead of FPR).
+
+    AULogPImO's primitive (to be normalized) is
+
+        \integral_{L}^{U} TPR(FPR) dlog(FPR) = \integral_{log(L)}^{log(U)} TPR(FPR) FPR^{-1} dFPR
+
+    L: FPR lower bound \in (0, 1)
+    U: FPR upper bound \in (0, 1] such that U > L
+    FPR: False Positive Rate
+    TPR: True Positive Rate
+
+    F \in [L, U]^N is a sequence of `N` FPRs, and T \in [0, 1]^N is a vector of `N` TPRs,
+    such that F_{i+1} > F_i for all i \in [1, N-1], and T_i = TPR(F_i) for i = 1, ..., N.
+
+    LogF \in (-inf, 1]^N is a sequence of `N` log(FPR)s; i.e. LogF_i = log(F_i) for i = 1, ..., N.
+
+    The integral is computed by the trapezoidal rule, each curve being treated separately.
+
+    It can be computed in two ways:
+        (1) trapezoid(F, T / F), where / is element-wise division
+        (2) trapezoid(LogF, T)
+
+    We use (2) and normalize the value to have a score that is in [0, 1].
+    The normalization constant is the score of the perfect model (TPR = 1 for all FPRs):
+
+    MAXAUC = \integral_{U}^{L} FRP^{-1} dFPR = log(U) - log(L) = log(U/L)
+    MAXAUC = log(U/L)
+
+    AULogPImO = trapezoid(LogF, T) / log(U/L)
     """
 
-    def __init__(self, *args, **kwargs):
-        raise NotImplementedError("**coming up later**")
-        # # TODO log fpr option here
-        # # logfpr: whether to use log scale for the FPR axis
-        # # logfpr_epsilon: small positive number to avoid `log(0)`; used only if `logfpr` is True
-        # _format_axis_rate_metric_log(ax, axis=0, lower_limit=logfpr_epsilon)
+    def __init__(
+        self,
+        num_thresholds: int = 10_000,
+        lbound: float | Tensor = 1e-3,
+        ubound: float | Tensor = 1.0,
+        **kwargs,
+    ) -> None:
+        """Area Under the Per-Image Overlap (PImO) curve.
+
+        Args:
+            num_thresholds: number of thresholds to use for the binclf curves
+                            refer to `anomalib.utils.metrics.perimg.binclf_curve.PerImageBinClfCurve`
+            lbound: lower bound of the FPR range to compute the AUC
+            ubound: upper bound of the FPR range to compute the AUC
+
+                AUC is computed by the trapezoidal rule, each curve being treated separately,
+                in the range [lbound, ubound].
+
+        """
+        super().__init__(num_thresholds=num_thresholds, **kwargs)
+
+        _validate_nonzero_rate(lbound)
+        _validate_nonzero_rate(ubound)
+
+        if lbound >= ubound:
+            raise ValueError(f"Expected argument `lbound` to be < `ubound`, but got {lbound} >= {ubound}.")
+
+        self.register_buffer("lbound", torch.as_tensor(lbound, dtype=torch.float64))
+        self.register_buffer("ubound", torch.as_tensor(ubound, dtype=torch.float64))
+        # TODO add a warning for FPR lower bound too low compared to the inputs' resolution
+        # if that's the case, the FPR levels will jump too much, the error when finding the numerical
+        # `fpr[argmin(abs(fpr - FPR))]` will be important
+
+    @property
+    def max_primitive_auc(self) -> float:
+        """Maximum AUC value of the primitive integral (before normalization)."""
+        return torch.log(self.ubound / self.lbound).item()
+
+    @property
+    def random_model_primitive_auc(self) -> float:
+        """AUC value of the primitive integral (before normalization) of a random model.
+        Random model: TPR = FPR for all FPRs.
+        """
+        return self.ubound.item() - self.lbound.item()
+
+    @property
+    def random_model_auc(self) -> float:
+        """AUC value of a random model.
+        Random model: TPR = FPR for all FPRs.
+        """
+        return self.random_model_primitive_auc / self.max_primitive_auc
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(lbound={self.lbound}, ubound={self.ubound})"
+
+    def compute(self) -> tuple[PImOResult, Tensor]:  # type: ignore
+        """Compute the Area Under the Log Per-Image Overlap curves (AULogPImO).
+
+        Returns: (PImOResult, aucs)
+            [0] PImOResult: PImOResult, see `anomalib.utils.metrics.perimg.pimo.PImOResult` for details.
+            [1] aucs: shape (num_images,), dtype `float64`, \in [0, 1]
+        """
+
+        if self.is_empty:
+            return PImOResult(
+                torch.empty(0, dtype=torch.float32),
+                torch.empty(0, dtype=torch.float64),
+                torch.empty(0, dtype=torch.float64),
+                torch.empty(0, dtype=torch.float64),
+                torch.empty(0, dtype=torch.int32),
+            ), torch.empty(0, dtype=torch.float64)
+
+        pimoresult = thresholds, fprs, shared_fpr, tprs, image_classes = super().compute()
+
+        # get the index of the value in `shared_fpr` that is closest to `self.ubound in abs value
+        # knwon issue: `shared_fpr[ubound_idx]` might not be exactly `self.ubound`
+        # but it's ok because `num_thresholds` should be large enough so that the error is negligible
+        ubound_idx = torch.argmin(torch.abs(shared_fpr - self.ubound))
+        lbound_idx = torch.argmin(torch.abs(shared_fpr - self.lbound))
+
+        # deal with edge cases
+        if ubound_idx == lbound_idx:
+            raise
+
+        # limit the curves to the integration range [lbound, ubound]
+        # `shared_fpr` and `tprs` are in descending order; `flip()` reverts to ascending order
+        tprs_auc: Tensor = tprs[:, ubound_idx:lbound_idx].flip(dims=(1,))
+        shared_fpr_auc: Tensor = shared_fpr[ubound_idx:lbound_idx].flip(dims=(0,))
+        # as described in the class's docstring:
+        shared_fpr_auc = shared_fpr_auc.log()
+
+        aucs: Tensor = torch.trapezoid(tprs_auc, x=shared_fpr_auc, dim=1)
+
+        # normalize, then clip(0, 1) makes sure that the values are in [0, 1] in case of numerical errors
+        aucs = (aucs / self.max_primitive_auc).clip(0, 1)
+
+        return pimoresult, aucs
