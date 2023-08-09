@@ -33,6 +33,7 @@ from .common import (
 )
 from .plot import (
     _add_integration_range_to_pimo_curves,
+    _format_axis_rate_metric_log,
     plot_all_pimo_curves,
     plot_aupimo_boxplot,
     plot_boxplot_pimo_curves,
@@ -481,3 +482,112 @@ class AULogPImO(PImO):
         aucs = (aucs / self.max_primitive_auc).clip(0, 1)
 
         return pimoresult, aucs
+
+    def plot_all_logpimo_curves(
+        self,
+        ax: Axes | None = None,
+    ) -> tuple[Figure | None, Axes]:
+        """Plot log10( shared FPR ) vs Per-Image Overlap (LogPImO) curves (all curves)."""
+
+        if self.is_empty:
+            return None, None
+
+        (thresholds, fprs, shared_fpr, tprs, image_classes), aucs = self.compute()
+
+        fig, ax = plot_all_pimo_curves(
+            shared_fpr,
+            tprs,
+            image_classes,
+            ax=ax,
+        )
+        ax.set_xlabel("Log10 of Mean FPR on Normal Images")
+        ax.set_title("Log Per-Image Overlap (LogPImO) Curves")
+        _format_axis_rate_metric_log(ax, axis=0, lower_lim=self.lbound, upper_lim=self.ubound)
+
+        # TODO ADD UPPER/LOWER BOUND TO THE PLOT WHEN DIFFERENT FROM 0/1
+
+        return fig, ax
+
+    def boxplot_stats(self) -> list[dict[str, str | int | float | None]]:
+        """Compute boxplot stats of AULogPImO values (e.g. median, mean, quartiles, etc.).
+
+        Returns:
+            list[dict[str, str | int | float | None]]: List of AUCs statistics from a boxplot.
+            refer to `anomalib.utils.metrics.perimg.common._perimg_boxplot_stats()` for the keys and values.
+        """
+        (_, __, ___, ____, image_classes), aucs = self.compute()
+        stats = _perimg_boxplot_stats(values=aucs, image_classes=image_classes, only_class=1)
+        return stats
+
+    def plot_boxplot_logpimo_curves(
+        self,
+        ax: Axes | None = None,
+    ) -> tuple[Figure | None, Axes]:
+        """Plot log10( shared FPR ) vs Per-Image Overlap (LogPImO) curves (boxplot images only).
+        The 'boxplot images' are those from the boxplot of AULogPImO values (see `AULogPImO.boxplot_stats()`).
+        """
+
+        if self.is_empty:
+            return None, None
+
+        (thresholds, fprs, shared_fpr, tprs, image_classes), aucs = self.compute()
+        fig, ax = plot_boxplot_pimo_curves(
+            shared_fpr,
+            tprs,
+            image_classes,
+            self.boxplot_stats(),
+            ax=ax,
+        )
+        ax.set_xlabel("Log10 of Mean FPR on Normal Images")
+        ax.set_title("Log Per-Image Overlap (LogPImO) Curves (AUC boxplot statistics)")
+        _format_axis_rate_metric_log(ax, axis=0, lower_lim=self.lbound, upper_lim=self.ubound)
+        # TODO modify suptitle when figure is created here
+        # TODO ADD UPPER/LOWER BOUND TO THE PLOT WHEN DIFFERENT FROM 0/1
+        return fig, ax
+
+    def plot_boxplot(
+        self,
+        ax: Axes | None = None,
+    ) -> tuple[Figure | None, Axes]:
+        """Plot boxplot of AULogPImO values."""
+
+        if self.is_empty:
+            return None, None
+
+        (thresholds, fprs, shared_fpr, tprs, image_classes), aucs = self.compute()
+        fig, ax = plot_aupimo_boxplot(aucs, image_classes, ax=ax)
+        return fig, ax
+
+    def plot(
+        self,
+        axes: Axes | ndarray | None = None,
+    ) -> tuple[Figure | None, Axes | ndarray]:
+        """Plot AULogPImO boxplot with its statistics' LogPImO curves."""
+
+        if self.is_empty:
+            return None, None
+
+        if axes is None:
+            fig, axes = plt.subplots(1, 2, figsize=(14, 6), width_ratios=[6, 8])
+            fig.suptitle("Area Under the Log Per-Image Overlap (AULogPImO) Curves")
+            fig.set_tight_layout(True)
+        else:
+            fig, axes = (None, axes)
+
+        if isinstance(axes, Axes):
+            return self.plot_boxplot_logpimo_curves(ax=axes)
+
+        if not isinstance(axes, ndarray):
+            raise ValueError(f"Expected argument `axes` to be a matplotlib Axes or ndarray, but got {type(axes)}.")
+
+        if axes.size != 2:
+            raise ValueError(
+                f"Expected argument `axes` , when type `ndarray`, to be of size 2, but got size {axes.size}."
+            )
+
+        axes = axes.flatten()
+        self.plot_boxplot(ax=axes[0])
+        axes[0].set_title("AUC Boxplot")
+        self.plot_boxplot_logpimo_curves(ax=axes[1])
+        axes[1].set_title("Curves")
+        return fig, axes

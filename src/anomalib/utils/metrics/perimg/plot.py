@@ -11,7 +11,7 @@ import torch
 from matplotlib.axes import Axes
 from matplotlib.patches import Rectangle
 from matplotlib.pyplot import Figure
-from matplotlib.ticker import FixedLocator, LogFormatter, PercentFormatter
+from matplotlib.ticker import FixedLocator, PercentFormatter
 from torch import Tensor
 
 from .common import (
@@ -70,16 +70,28 @@ def _format_axis_rate_metric_linear(
         raise ValueError(f"`axis` must be 0 (X-axis) or 1 (Y-axis), but got {axis}.")
 
 
-def _format_axis_rate_metric_log(ax: Axes, axis: int, lower_lim: float = 1e-3, num_ticks_major: int = 6) -> None:
+def _format_axis_rate_metric_log(
+    ax: Axes, axis: int, lower_lim: float = 1e-3, upper_lim: float = 1, num_ticks_major: int = 6
+) -> None:
     if not isinstance(ax, Axes) or not isinstance(axis, int):
         raise ValueError("Expected arguments `ax` to be an Axes and `axis` to be an integer.")
 
-    lims = (lower_lim, 1)
-    lower_lim_rounded_exponent = int(numpy.floor(numpy.log10(lower_lim)))
+    assert lower_lim > 0, f"Expected argument `lower_lim` to be positive, but got {lower_lim}."
+    assert (
+        upper_lim > lower_lim
+    ), f"Expected `upper_lim` > `lower_lim`, but got {upper_lim} and {lower_lim}, respectively."
 
-    ticks_major = numpy.logspace(lower_lim_rounded_exponent, 0, abs(lower_lim_rounded_exponent) + 1)
-    formatter_major = LogFormatter()
-    ticks_minor = numpy.logspace(lower_lim_rounded_exponent, 0, 2 * abs(lower_lim_rounded_exponent) + 1)
+    lims = (lower_lim, upper_lim)
+    lower_lim_rounded_exponent = int(numpy.floor(numpy.log10(lower_lim)))
+    upper_lim_rounded_exponent = int(numpy.ceil(numpy.log10(upper_lim)))
+    num_exponents = upper_lim_rounded_exponent - lower_lim_rounded_exponent + 1
+
+    ticks_major = numpy.logspace(lower_lim_rounded_exponent, upper_lim_rounded_exponent, num_exponents)
+
+    def formatter_major(x, pos):
+        return f"{100 * x}%" if x < 0.01 else f"{100 * x:.0f}%"
+
+    ticks_minor = numpy.logspace(lower_lim_rounded_exponent, upper_lim_rounded_exponent, 3 * (num_exponents - 1) + 1)
 
     if axis == 0:
         ax.set_xscale("log")
@@ -341,7 +353,7 @@ def plot_all_pimo_curves(
     ax.set_xlabel("Shared FPR")
     _format_axis_rate_metric_linear(ax, axis=1)
     ax.set_ylabel("Per-Image Overlap (in-image TPR)")
-    ax.set_title("Per-Image Overlap Curves")
+    ax.set_title("Per-Image Overlap (PImO) Curves")
 
     return fig, ax
 
@@ -432,6 +444,7 @@ def plot_boxplot_pimo_curves(
     # ** plot **
 
     fig, ax = plt.subplots(figsize=(7, 6)) if ax is None else (None, ax)
+    # TODO add suptitle when creating the figure
 
     _plot_perimg_curves(ax, shared_fpr, tprs, *kwargs_perimg)
 
