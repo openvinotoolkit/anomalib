@@ -11,10 +11,10 @@ import numpy as np
 from matplotlib.figure import Figure
 
 try:
-    from pytorch_lightning.loggers.comet import CometLogger
+    from lightning.pytorch.loggers.comet import CometLogger
 except ModuleNotFoundError:
     print("To use comet logger install it using `pip install comet-ml`")
-from pytorch_lightning.utilities import rank_zero_only
+from lightning.pytorch.utilities import rank_zero_only
 
 from .base import ImageLoggerBase
 
@@ -65,7 +65,7 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
             If neither ``api_key`` nor ``save_dir`` are passed as arguments.
     Example:
         >>> from anomalib.utils.loggers import AnomalibCometLogger
-        >>> from pytorch_lightning import Trainer
+        >>> from lightning.pytorch import Trainer
         >>> comet_logger = AnomalibCometLogger()
         >>> trainer = Trainer(logger=comet_logger)
 

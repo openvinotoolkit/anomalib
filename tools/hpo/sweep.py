@@ -8,8 +8,8 @@ from __future__ import annotations
 from argparse import ArgumentParser
 from pathlib import Path
 
+from lightning.pytorch import seed_everything
 from omegaconf import OmegaConf
-from pytorch_lightning import seed_everything
 
 from anomalib.config import get_configurable_parameters
 from anomalib.utils.hpo import CometSweep, WandbSweep

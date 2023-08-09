@@ -6,7 +6,8 @@
 import logging
 import time
 
-from pytorch_lightning import Callback, LightningModule, Trainer
+import torch
+from lightning.pytorch import Callback, LightningModule, Trainer
 
 logger = logging.getLogger(__name__)
 
@@ -65,8 +66,11 @@ class TimerCallback(Callback):
         self.num_images = 0
 
         if trainer.test_dataloaders is not None:  # Check to placate Mypy.
-            for dataloader in trainer.test_dataloaders:
-                self.num_images += len(dataloader.dataset)
+            if isinstance(trainer.test_dataloaders, torch.utils.data.dataloader.DataLoader):
+                self.num_images += len(trainer.test_dataloaders.dataset)
+            else:
+                for dataloader in trainer.test_dataloaders:
+                    self.num_images += len(dataloader.dataset)
 
     def on_test_end(self, trainer: Trainer, pl_module: LightningModule) -> None:  # pylint: disable=W0613
         """Call when the test ends.
@@ -83,6 +87,10 @@ class TimerCallback(Callback):
         testing_time = time.time() - self.start
         output = f"Testing took {testing_time} seconds\nThroughput "
         if trainer.test_dataloaders is not None:
-            output += f"(batch_size={trainer.test_dataloaders[0].batch_size})"
+            if isinstance(trainer.test_dataloaders, torch.utils.data.dataloader.DataLoader):
+                test_data_loader = trainer.test_dataloaders
+            else:
+                test_data_loader = trainer.test_dataloaders[0]
+            output += f"(batch_size={test_data_loader.batch_size})"
         output += f" : {self.num_images/testing_time} FPS"
         logger.info(output)

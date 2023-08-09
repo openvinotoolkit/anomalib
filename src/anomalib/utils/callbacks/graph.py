@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import torch
-from pytorch_lightning import Callback, LightningModule, Trainer
+from lightning.pytorch import Callback, LightningModule, Trainer
 
 from anomalib.utils.loggers import (
     AnomalibCometLogger,

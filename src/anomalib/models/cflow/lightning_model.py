@@ -11,9 +11,9 @@ from __future__ import annotations
 import einops
 import torch
 import torch.nn.functional as F
+from lightning.pytorch.callbacks import EarlyStopping
+from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.callbacks import EarlyStopping
-from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor, optim
 from torch.optim import Optimizer
 

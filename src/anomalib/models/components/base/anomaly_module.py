@@ -10,10 +10,10 @@ from abc import ABC
 from typing import Any, OrderedDict
 from warnings import warn
 
-import pytorch_lightning as pl
+import lightning.pytorch as pl
 import torch
-from pytorch_lightning.callbacks import Callback
-from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
+from lightning.pytorch.callbacks import Callback
+from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import Tensor, nn
 from torchmetrics import Metric
 
@@ -71,9 +71,9 @@ class AnomalyModule(pl.LightningModule, ABC):
         raise NotImplementedError
 
     def predict_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> Any:
-        """Step function called during :meth:`~pytorch_lightning.trainer.trainer.Trainer.predict`.
+        """Step function called during :meth:`~lightning.pytorch.trainer.trainer.Trainer.predict`.
 
-        By default, it calls :meth:`~pytorch_lightning.core.lightning.LightningModule.forward`.
+        By default, it calls :meth:`~lightning.pytorch.core.lightning.LightningModule.forward`.
         Override to add any processing logic.
 
         Args:
@@ -119,48 +119,49 @@ class AnomalyModule(pl.LightningModule, ABC):
 
         return self.predict_step(batch, batch_idx)
 
-    def validation_step_end(self, val_step_outputs: STEP_OUTPUT, *args, **kwargs) -> STEP_OUTPUT:
+    def on_validation_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):
         """Called at the end of each validation step."""
-        del args, kwargs  # These variables are not used.
+        self._outputs_to_cpu(outputs)
+        self._post_process(outputs)
 
-        self._outputs_to_cpu(val_step_outputs)
-        self._post_process(val_step_outputs)
-        return val_step_outputs
-
-    def test_step_end(self, test_step_outputs: STEP_OUTPUT, *args, **kwargs) -> STEP_OUTPUT:
-        """Called at the end of each test step."""
-        del args, kwargs  # These variables are not used.
-
-        self._outputs_to_cpu(test_step_outputs)
-        self._post_process(test_step_outputs)
-        return test_step_outputs
-
-    def validation_epoch_end(self, outputs: EPOCH_OUTPUT) -> None:
-        """Compute threshold and performance metrics.
-
-        Args:
-          outputs: Batch of outputs from the validation step
-        """
         if self.threshold_method == ThresholdMethod.ADAPTIVE:
-            self._compute_adaptive_threshold(outputs)
-        self._collect_outputs(self.image_metrics, self.pixel_metrics, outputs)
+            self._collect_output(self.image_threshold, self.pixel_threshold, outputs)
+
+        self._collect_output(self.image_metrics, self.pixel_metrics, outputs)
+
+    def on_test_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):
+        """Called at the end of each test step."""
+        self._outputs_to_cpu(outputs)
+        self._post_process(outputs)
+
+        self._collect_output(self.image_metrics, self.pixel_metrics, outputs)
+
+    def on_validation_epoch_start(self):
+        if self.threshold_method == ThresholdMethod.ADAPTIVE:
+            self.image_threshold.reset()
+            self.pixel_threshold.reset()
+
+        self.image_metrics.reset()
+        self.pixel_metrics.reset()
+
+    def on_validation_epoch_end(self):
+        if self.threshold_method == ThresholdMethod.ADAPTIVE:
+            # Calculate thresholds before computing metrics.
+            self._compute_adaptive_threshold()
+
         self._log_metrics()
 
-    def test_epoch_end(self, outputs: EPOCH_OUTPUT) -> None:
-        """Compute and save anomaly scores of the test set.
+    def on_test_epoch_start(self):
+        self.image_metrics.reset()
+        self.pixel_metrics.reset()
 
-        Args:
-            outputs: Batch of outputs from the validation step
-        """
-        self._collect_outputs(self.image_metrics, self.pixel_metrics, outputs)
+    def on_test_epoch_end(self):
         self._log_metrics()
 
-    def _compute_adaptive_threshold(self, outputs: EPOCH_OUTPUT) -> None:
-        self.image_threshold.reset()
-        self.pixel_threshold.reset()
-        self._collect_outputs(self.image_threshold, self.pixel_threshold, outputs)
+    def _compute_adaptive_threshold(self) -> None:
         self.image_threshold.compute()
-        if "mask" in outputs[0].keys() and "anomaly_maps" in outputs[0].keys():
+
+        if self.pixel_threshold._update_called:
             self.pixel_threshold.compute()
         else:
             self.pixel_threshold.value = self.image_threshold.value
@@ -169,17 +170,16 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.pixel_metrics.set_threshold(self.pixel_threshold.value.item())
 
     @staticmethod
-    def _collect_outputs(
+    def _collect_output(
         image_metric: AnomalibMetricCollection,
         pixel_metric: AnomalibMetricCollection,
-        outputs: EPOCH_OUTPUT,
+        output: STEP_OUTPUT,
     ) -> None:
-        for output in outputs:
-            image_metric.cpu()
-            image_metric.update(output["pred_scores"], output["label"].int())
-            if "mask" in output.keys() and "anomaly_maps" in output.keys():
-                pixel_metric.cpu()
-                pixel_metric.update(torch.squeeze(output["anomaly_maps"]), torch.squeeze(output["mask"].int()))
+        image_metric.cpu()
+        image_metric.update(output["pred_scores"], output["label"].int())
+        if "mask" in output.keys() and "anomaly_maps" in output.keys():
+            pixel_metric.cpu()
+            pixel_metric.update(torch.squeeze(output["anomaly_maps"]), torch.squeeze(output["mask"].int()))
 
     @staticmethod
     def _post_process(outputs: STEP_OUTPUT) -> None:
@@ -219,7 +219,7 @@ class AnomalyModule(pl.LightningModule, ABC):
 
     def _log_metrics(self) -> None:
         """Log computed performance metrics."""
-        if self.pixel_metrics.update_called:
+        if self.pixel_metrics._update_called:
             self.log_dict(self.pixel_metrics, prog_bar=True)
             self.log_dict(self.image_metrics, prog_bar=False)
         else:

@@ -7,8 +7,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import lightning.pytorch as pl
 import numpy as np
-import pytorch_lightning as pl
 from matplotlib import pyplot as plt
 
 from anomalib.models.components import AnomalyModule

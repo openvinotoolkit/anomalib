@@ -5,7 +5,7 @@
 
 from argparse import ArgumentParser, Namespace
 
-from pytorch_lightning import Trainer, seed_everything
+from lightning.pytorch import Trainer, seed_everything
 
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule

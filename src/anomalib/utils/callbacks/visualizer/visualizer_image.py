@@ -9,8 +9,8 @@ import math
 from pathlib import Path
 from typing import Any
 
-import pytorch_lightning as pl
-from pytorch_lightning.utilities.types import STEP_OUTPUT
+import lightning.pytorch as pl
+from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from anomalib.models.components import AnomalyModule
 
@@ -65,7 +65,7 @@ class ImageVisualizerCallback(BaseVisualizerCallback):
         outputs: STEP_OUTPUT | None,
         batch: Any,
         batch_idx: int,
-        dataloader_idx: int,
+        dataloader_idx: int = 0,
     ) -> None:
         """Log images at the end of every batch.
 
