@@ -41,7 +41,12 @@ def get_stats_pipeline(config: DictConfig | ListConfig, tiler: EnsembleTiler) ->
     steps: List[EnsemblePostProcess] = []
 
     if config.ensemble.post_processing.smooth_joins.apply:
-        steps.append(SmoothJoins(config, tiler))
+        smooth_joins = SmoothJoins(
+            width_factor=config.ensemble.post_processing.smooth_joins.width,
+            filter_sigma=config.ensemble.post_processing.smooth_joins.sigma,
+            tiler=tiler,
+        )
+        steps.append(smooth_joins)
     if (
         config.ensemble.metrics.threshold.method == ThresholdMethod.ADAPTIVE
         or config.ensemble.post_processing.normalization == "final"
@@ -107,7 +112,12 @@ def get_postprocessing_pipeline(
 
     steps: List[EnsemblePostProcess] = []
     if config.ensemble.post_processing.smooth_joins.apply:
-        steps.append(SmoothJoins(config, tiler))
+        smooth_joins = SmoothJoins(
+            width_factor=config.ensemble.post_processing.smooth_joins.width,
+            filter_sigma=config.ensemble.post_processing.smooth_joins.sigma,
+            tiler=tiler,
+        )
+        steps.append(smooth_joins)
 
     # override threshold if it's set manually
     if config.ensemble.metrics.threshold.method == ThresholdMethod.MANUAL:

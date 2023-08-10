@@ -35,7 +35,11 @@ def get_smooth_joins(get_tiler, get_ensemble_config):
     config = get_ensemble_config
     tiler = get_tiler
 
-    return SmoothJoins(config, tiler)
+    return SmoothJoins(
+        width_factor=config.ensemble.post_processing.smooth_joins.width,
+        filter_sigma=config.ensemble.post_processing.smooth_joins.sigma,
+        tiler=tiler,
+    )
 
 
 class TestSmoothJoins:
@@ -173,14 +177,14 @@ class TestThreshold:
 
 
 class TestPostProcessPipeline:
-    def test_execute(self, get_ensemble_config, get_ensemble_predictions, get_joiner):
-        config = get_ensemble_config
+    def test_execute(self, get_ensemble_config, get_ensemble_predictions, get_joiner, get_smooth_joins):
         joiner = get_joiner
         data = get_ensemble_predictions
+        smooth_joins = get_smooth_joins
 
         pipeline = EnsemblePostProcessPipeline(joiner)
 
-        pipeline.add_steps([SmoothJoins(config, joiner.tiler), Threshold(0.5, 0.5)])
+        pipeline.add_steps([smooth_joins, Threshold(0.5, 0.5)])
 
         pipeline.execute(data)
 

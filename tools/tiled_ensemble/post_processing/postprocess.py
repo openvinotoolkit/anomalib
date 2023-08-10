@@ -7,7 +7,6 @@ from abc import ABC
 from typing import Any, List
 
 import torch
-from omegaconf import DictConfig, ListConfig
 from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
 from tools.tiled_ensemble.predictions import EnsemblePredictionJoiner, EnsemblePredictions
 from torch import Tensor
@@ -60,22 +59,21 @@ class SmoothJoins(EnsemblePostProcess):
     It is recommended that thresholding is done again after smoothing to obtain new masks.
 
     Args:
-        config: Configurable parameters object, used to set smoothing params.
-        tiler: Tiler object used to get tile dimension data.
+        width_factor (float):  Factor multiplied by tile dimension to get the region around join which will be smoothed.
+        filter_sigma (float): Sigma of filter used for smoothing the joins.
+        tiler (EnsembleTiler): Tiler object used to get tile dimension data.
     """
 
-    def __init__(self, config: DictConfig | ListConfig, tiler: EnsembleTiler) -> None:
+    def __init__(self, width_factor: float, filter_sigma: float, tiler: EnsembleTiler) -> None:
         super().__init__(final_compute=False, name="smooth_joins")
-        factor = config.ensemble.post_processing.smooth_joins.width
-
         # offset in pixels of region around tile join that will be smoothed
-        self.height_offset = int(tiler.tile_size_h * factor)
-        self.width_offset = int(tiler.tile_size_w * factor)
+        self.height_offset = int(tiler.tile_size_h * width_factor)
+        self.width_offset = int(tiler.tile_size_w * width_factor)
         self.tiler = tiler
 
         self.join_mask = self.prepare_join_mask()
 
-        self.blur = GaussianBlur2d(sigma=config.ensemble.post_processing.smooth_joins.sigma)
+        self.blur = GaussianBlur2d(sigma=filter_sigma)
 
     def prepare_join_mask(self) -> Tensor:
         """
