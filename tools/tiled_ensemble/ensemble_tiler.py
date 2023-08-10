@@ -3,8 +3,6 @@ from typing import Sequence
 
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-
-
 from torch import Tensor
 
 from anomalib.pre_processing.tiler import Tiler, compute_new_image_size

@@ -5,10 +5,10 @@
 
 from pathlib import Path
 
-from anomalib.data import TaskType
 from tools.tiled_ensemble.post_processing.postprocess import EnsemblePostProcess
 
-from anomalib.post_processing import Visualizer, VisualizationMode
+from anomalib.data import TaskType
+from anomalib.post_processing import VisualizationMode, Visualizer
 
 
 class EnsembleVisualization(EnsemblePostProcess):
