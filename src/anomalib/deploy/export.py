@@ -221,7 +221,7 @@ def _add_metadata_to_ir(xml_file: str, metadata: dict[str, Any], input_size: tup
     for k, data in _metadata.items():
         model.set_rt_info(data, list(k))
 
-    tmp_xml_path = Path(Path(xml_file).parent) / "tmp.xml"
+    tmp_xml_path = Path(xml_file).parent / "tmp.xml"
     serialize(model, str(tmp_xml_path))
     tmp_xml_path.rename(xml_file)
     # since we create new openvino IR files, we don't need the bin file. So we delete it.
