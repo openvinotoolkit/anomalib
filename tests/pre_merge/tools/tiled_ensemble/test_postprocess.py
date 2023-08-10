@@ -8,6 +8,7 @@ import copy
 import pytest
 import torch
 
+from tools.tiled_ensemble import EnsembleTiler
 from tools.tiled_ensemble.post_processing import (
     EnsemblePostProcessPipeline,
     MinMaxNormalize,
@@ -53,6 +54,25 @@ class TestSmoothJoins:
 
         # non-join region should be false
         assert not smooth.join_mask[0, 0]
+        assert not smooth.join_mask[-1, -1]
+
+    def test_mask_overlapping(self):
+        tiler = EnsembleTiler(tile_size=256, stride=128, image_size=512)
+        smooth = SmoothJoins(
+            width_factor=0.1,
+            filter_sigma=2,
+            tiler=tiler,
+        )
+
+        join_index = smooth.tiler.stride_h, smooth.tiler.stride_w
+
+        # overlap join should be covered by True
+        assert smooth.join_mask[join_index]
+        assert smooth.join_mask[-join_index[0], -join_index[1]]
+
+        # non-join region should be false
+        assert not smooth.join_mask[0, 0]
+        assert not smooth.join_mask[-1, -1]
 
     def test_smoothing(self, get_smooth_joins):
         smooth = get_smooth_joins

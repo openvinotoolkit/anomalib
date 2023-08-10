@@ -83,21 +83,25 @@ class SmoothJoins(EnsemblePostProcess):
             Tensor representation of boolean mask where filtered joins should be used.
         """
         img_h, img_w = self.tiler.image_size
-        tile_h, tile_w = self.tiler.tile_size_h, self.tiler.tile_size_w
+        stride_h, stride_w = self.tiler.stride_h, self.tiler.stride_w
 
         mask = torch.zeros(img_h, img_w, dtype=torch.bool)
 
         # prepare mask strip on vertical joins
-        for i in range(1, self.tiler.num_patches_w):
-            start_i = i * tile_w - self.width_offset
-            end_i = i * tile_w + self.width_offset
+        curr_w = stride_w
+        while curr_w < img_w:
+            start_i = curr_w - self.width_offset
+            end_i = curr_w + self.width_offset
             mask[:, start_i:end_i] = 1
+            curr_w += stride_w
 
         # prepare mask strip on horizontal joins
-        for i in range(1, self.tiler.num_patches_h):
-            start_i = i * tile_h - self.height_offset
-            end_i = i * tile_h + self.height_offset
+        curr_h = stride_h
+        while curr_h < img_h:
+            start_i = curr_h - self.height_offset
+            end_i = curr_h + self.height_offset
             mask[start_i:end_i, :] = True
+            curr_h += stride_h
 
         return mask
 
