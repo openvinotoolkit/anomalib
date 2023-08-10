@@ -12,7 +12,7 @@ Coupled-hypersphere-based Feature Adaptation (CFA) localizes anomalies using fea
 
 ## Architecture
 
-![Cfa Architecture](../../../docs/source/images/cfa/architecture.png "Cfa Architecture")
+![Cfa Architecture](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/cfa/architecture.png "Cfa Architecture")
 
 ## Usage
 
