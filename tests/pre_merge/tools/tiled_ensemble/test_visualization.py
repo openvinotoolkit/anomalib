@@ -34,7 +34,13 @@ def test_save_image(task, get_ensemble_config):
     with TemporaryDirectory() as temp_dir:
         config.project.path = temp_dir
         config.dataset.task = task
-        visualization = EnsembleVisualization(config)
+        visualization = EnsembleVisualization(
+            mode=config.visualization.mode,
+            task=config.dataset.task,
+            save_images=config.visualization.save_images,
+            show_images=config.visualization.show_images,
+            save_path=config.visualization.image_save_path or config.project.path + "/images",
+        )
         visualization.process(copy.deepcopy(mock_result))
 
         assert (Path(temp_dir) / "images/broken_large/000.png").exists()
@@ -44,7 +50,13 @@ def test_data_unchanged(get_ensemble_config):
     config = get_ensemble_config
     with TemporaryDirectory() as temp_dir:
         config.project.path = temp_dir
-        visualization = EnsembleVisualization(config)
+        visualization = EnsembleVisualization(
+            mode=config.visualization.mode,
+            task=config.dataset.task,
+            save_images=config.visualization.save_images,
+            show_images=config.visualization.show_images,
+            save_path=config.visualization.image_save_path or config.project.path + "/images",
+        )
         vis_output = visualization.process(copy.deepcopy(mock_result))
 
         for name, values in vis_output.items():

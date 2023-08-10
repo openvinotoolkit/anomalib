@@ -6,7 +6,6 @@
 import logging
 from typing import List, Tuple
 
-from omegaconf import DictConfig, ListConfig
 from tools.tiled_ensemble.post_processing.postprocess import EnsemblePostProcess
 
 from anomalib.data import TaskType

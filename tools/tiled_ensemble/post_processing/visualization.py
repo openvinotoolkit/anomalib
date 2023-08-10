@@ -5,10 +5,10 @@
 
 from pathlib import Path
 
-from omegaconf import DictConfig, ListConfig
+from anomalib.data import TaskType
 from tools.tiled_ensemble.post_processing.postprocess import EnsemblePostProcess
 
-from anomalib.post_processing import Visualizer
+from anomalib.post_processing import Visualizer, VisualizationMode
 
 
 class EnsembleVisualization(EnsemblePostProcess):
@@ -16,18 +16,23 @@ class EnsembleVisualization(EnsemblePostProcess):
     Visualize predictions obtained using ensemble.
 
     Args:
-        config: Configurable parameters object, used to set up visualization.
+        mode (VisualizationMode): Mode of visualisation (simple, full).
+        task (TaskType): Task of current run.
+        save_images (bool): Flag to indicating if images need to be saved.
+        show_images (bool): Flag indicating if images will be shown.
+        save_path (str): Path to where images will be saved.
     """
 
-    def __init__(self, config: DictConfig | ListConfig) -> None:
+    def __init__(
+        self, mode: VisualizationMode, task: TaskType, save_images: bool, show_images: bool, save_path: str
+    ) -> None:
         super().__init__(final_compute=False, name="visualize")
-        self.visualizer = Visualizer(mode=config.visualization.mode, task=config.dataset.task)
+        self.visualizer = Visualizer(mode=mode, task=task)
 
-        self.save = config.visualization.save_images
-        self.show = config.visualization.show_images
+        self.save = save_images
+        self.show = show_images
 
-        image_save_path = config.visualization.image_save_path or config.project.path + "/images"
-        self.image_save_path = Path(image_save_path)
+        self.image_save_path = Path(save_path)
 
     def process(self, data: dict) -> dict:
         """

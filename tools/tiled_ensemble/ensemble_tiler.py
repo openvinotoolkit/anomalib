@@ -5,7 +5,6 @@ from typing import Sequence
 # SPDX-License-Identifier: Apache-2.0
 
 
-from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
 from anomalib.pre_processing.tiler import Tiler, compute_new_image_size
