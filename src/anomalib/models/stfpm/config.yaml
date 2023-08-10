@@ -37,18 +37,18 @@ model:
   momentum: 0.9
   weight_decay: 0.0001
   early_stopping:
-    patience: 5
+    patience: 10
     metric: pixel_AUROC
     mode: max
   normalization_method: min_max # options: [null, min_max, cdf]
 
 metrics:
   image:
-    - F1Score
     - AUROC
+    - F1Score
   pixel:
-    - F1Score
     - AUROC
+    - AUPRO
   threshold:
     method: adaptive #options: [adaptive, manual]
     manual_image: null

@@ -26,49 +26,49 @@ All results gathered with seed `42`.
 
 | Model      | Image AUROC | Image F1 | Pixel AUROC | Pixel AUPRO |
 | ---------- | ----------- | -------- | ----------- | ----------- |
-| Bottle     |             |          |             |             |
-| Cable      |             |          |             |             |
-| Capsule    |             |          |             |             |
-| Carpet     |             |          |             |             |
-| Grid       |             |          |             |             |
-| Hazelnut   |             |          |             |             |
-| Leather    |             |          |             |             |
-| Metal_nut  |             |          |             |             |
-| Pill       |             |          |             |             |
-| Screw      |             |          |             |             |
-| Tile       |             |          |             |             |
-| Toothbrush |             |          |             |             |
-| Transistor |             |          |             |             |
-| Wood       |             |          |             |             |
-| Zipper     |             |          |             |             |
-| Average    |             |          |             |             |
+| bottle     | 0.925       | 0.915    | 0.952       | 0.830       |
+| cable      | 0.879       | 0.851    | 0.937       | 0.856       |
+| capsule    | 0.897       | 0.922    | 0.974       | 0.898       |
+| carpet     | 0.968       | 0.954    | 0.985       | 0.958       |
+| grid       | 0.983       | 0.974    | 0.990       | 0.965       |
+| hazelnut   | 1.000       | 1.000    | 0.988       | 0.969       |
+| leather    | 1.000       | 1.000    | 0.996       | 0.988       |
+| metal_nut  | 0.989       | 0.979    | 0.969       | 0.939       |
+| pill       | 0.533       | 0.916    | 0.839       | 0.499       |
+| screw      | 0.886       | 0.902    | 0.986       | 0.936       |
+| tile       | 0.951       | 0.955    | 0.971       | 0.903       |
+| toothbrush | 0.825       | 0.875    | 0.989       | 0.924       |
+| transistor | 0.908       | 0.829    | 0.809       | 0.668       |
+| wood       | 0.979       | 0.966    | 0.965       | 0.948       |
+| zipper     | 0.832       | 0.920    | 0.979       | 0.940       |
+| Average    | 0.904       | 0.931    | 0.955       | 0.881       |
 
 ## [BTAD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 
-| Model   | Image AUROC | Image F1 | Pixel AUROC | Pixel AUPRO |
-| ------- | ----------- | -------- | ----------- | ----------- |
-| 01      |             |          |             |             |
-| 02      |             |          |             |             |
-| 03      |             |          |             |             |
-| Average |             |          |             |             |
+| Category | image AUROC | image F1Score | pixel AUROC | pixel AUPRO |
+| :------: | :---------: | :-----------: | :---------: | :---------: |
+|    1     |    0.914    |     0.911     |    0.940    |    0.649    |
+|    2     |    0.836    |     0.932     |    0.973    |    0.696    |
+|    3     |    0.997    |     0.953     |    0.993    |    0.978    |
+| Average  |    0.916    |     0.932     |    0.968    |    0.774    |
 
 ## [Visa Dataset](https://github.com/amazon-science/spot-diff)
 
 | Model      | Image AUROC | Image F1 | Pixel AUROC | Pixel AUPRO |
 | ---------- | ----------- | -------- | ----------- | ----------- |
-| candle     |             |          |             |             |
-| capsules   |             |          |             |             |
-| cashew     |             |          |             |             |
-| chewinggum |             |          |             |             |
-| fryum      |             |          |             |             |
-| macaroni1  |             |          |             |             |
-| macaroni2  |             |          |             |             |
-| pcb1       |             |          |             |             |
-| pcb2       |             |          |             |             |
-| pcb3       |             |          |             |             |
-| pcb4       |             |          |             |             |
-| pipe_fryum |             |          |             |             |
-| Average    |             |          |             |             |
+| candle     | 0.905       | 0.853    | 0.973       | 0.925       |
+| capsules   | 0.820       | 0.822    | 0.964       | 0.909       |
+| cashew     | 0.883       | 0.865    | 0.864       | 0.769       |
+| chewinggum | 0.957       | 0.954    | 0.973       | 0.717       |
+| fryum      | 0.835       | 0.847    | 0.923       | 0.803       |
+| macaroni1  | 0.889       | 0.820    | 0.995       | 0.947       |
+| macaroni2  | 0.854       | 0.789    | 0.991       | 0.945       |
+| pcb1       | 0.923       | 0.893    | 0.992       | 0.926       |
+| pcb2       | 0.920       | 0.880    | 0.983       | 0.850       |
+| pcb3       | 0.896       | 0.818    | 0.981       | 0.899       |
+| pcb4       | 0.972       | 0.951    | 0.947       | 0.720       |
+| pipe_fryum | 0.954       | 0.938    | 0.986       | 0.920       |
+| Average    | 0.901       | 0.869    | 0.964       | 0.861       |
 
 ### Sample Results
 
