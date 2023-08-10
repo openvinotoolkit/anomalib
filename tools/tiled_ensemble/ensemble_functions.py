@@ -130,10 +130,10 @@ def get_prediction_storage(config: DictConfig | ListConfig) -> Tuple[EnsemblePre
         ensemble_pred = BasicEnsemblePredictions()
     # store predictions on file system
     elif config.ensemble.predictions.storage == "file_system":
-        ensemble_pred = FileSystemEnsemblePredictions(config)
+        ensemble_pred = FileSystemEnsemblePredictions(storage_path=config.project.path)
     # store downscaled predictions in memory
     elif config.ensemble.predictions.storage == "rescaled":
-        ensemble_pred = RescaledEnsemblePredictions(config)
+        ensemble_pred = RescaledEnsemblePredictions(config.ensemble.predictions.rescale_factor)
     else:
         raise ValueError(
             f"Prediction storage not recognized: {config.ensemble.predictions.storage}."

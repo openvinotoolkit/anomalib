@@ -88,14 +88,14 @@ class FileSystemEnsemblePredictions(EnsemblePredictions):
     Implementation of EnsemblePredictionData that stores all predictions to file system.
 
     Args:
-        config: Config file with all parameters.
+        storage_path (str): Path to directory where predictions will be saved.
     """
 
-    def __init__(self, config: DictConfig | ListConfig) -> None:
+    def __init__(self, storage_path: str) -> None:
         super().__init__()
         self.tile_indices: List[Tuple[int, int]] = []
 
-        project_path = Path(config.project.path)
+        project_path = Path(storage_path)
         self.tiles_path = project_path / "tile_predictions"
 
         self.tiles_path.mkdir()
@@ -162,14 +162,13 @@ class RescaledEnsemblePredictions(EnsemblePredictions):
     Implementation of EnsemblePredictionData that keeps all predictions in memory but scaled down.
 
     Args:
-        config: Config file with all parameters.
-
+        rescale_factor (float): Factor by which the tile based predictions (image, maps..) will be downscaled.
     """
 
-    def __init__(self, config: DictConfig | ListConfig) -> None:
+    def __init__(self, rescale_factor: float) -> None:
         super().__init__()
         self.all_data: Dict[Tuple[int, int], List] = {}
-        self.downscale_factor = config.ensemble.predictions.rescale_factor
+        self.downscale_factor = rescale_factor
         self.upscale_factor = 1 / self.downscale_factor
 
     @staticmethod

@@ -78,7 +78,7 @@ class TestPredictionData:
         with TemporaryDirectory() as project_dir:
             config.project.path = project_dir
             datamodule = get_datamodule(config, "segmentation")
-            storage = FileSystemEnsemblePredictions(config)
+            storage = FileSystemEnsemblePredictions(storage_path=config.project.path)
             original = self.store_all(storage, datamodule)
 
             for name in original[(0, 0)][0].keys():
@@ -87,7 +87,7 @@ class TestPredictionData:
     def test_rescaled(self, get_ensemble_config, get_datamodule):
         config = get_ensemble_config
         datamodule = get_datamodule(config, "segmentation")
-        storage = RescaledEnsemblePredictions(config)
+        storage = RescaledEnsemblePredictions(config.ensemble.predictions.rescale_factor)
         original = self.store_all(storage, datamodule)
 
         # we want rescaled to be close to original, but we lose some information in scaling
