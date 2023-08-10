@@ -71,6 +71,10 @@ def train(args: Namespace):
     # prepare storage objects that handle storage of tiled predictions
     ensemble_predictions, validation_predictions = get_prediction_storage(config)
 
+    logger.info(
+        "Tiled ensemble training started. Separate models will be trained for %d tile locations.",
+        tiler.num_patches_h * tiler.num_patches_w,
+    )
     # go over all tile positions and train
     for tile_index in product(range(tiler.num_patches_h), range(tiler.num_patches_w)):
         logger.info("Start of procedure for tile %s", tile_index)
