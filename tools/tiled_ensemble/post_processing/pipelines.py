@@ -3,7 +3,9 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import json
 import logging
+from pathlib import Path
 from typing import List
 
 from omegaconf import DictConfig, ListConfig
@@ -165,7 +167,8 @@ def post_process(
     config: DictConfig | ListConfig,
     tiler: EnsembleTiler,
     ensemble_predictions: EnsemblePredictions,
-    validation_predictions: EnsemblePredictions,
+    validation_predictions: EnsemblePredictions | None,
+    stats: dict | None = None,
 ) -> dict:
     """
     Postprocess, visualize and calculate metrics.
@@ -175,13 +178,23 @@ def post_process(
         tiler: Tiler used for untiling of predictions.
         ensemble_predictions: Predictions to be joined and processed.
         validation_predictions: Predictions used to calculate stats.
+        stats: Dictionary containing statistics used for postprocessing. If None, run stats pipeline.
 
     Returns:
         Dictionary with calculated metrics data.
     """
-    logger.info("Computing normalization and threshold statistics.")
-    # get statistics, calculated on validation dataset
-    stats = get_stats(config, tiler, validation_predictions)
+    if stats is None:
+        logger.info("Computing normalization and threshold statistics.")
+        # get statistics, calculated on validation dataset
+        stats = get_stats(config, tiler, validation_predictions)
+
+        # save stats to json for later use in inference
+        logger.info("Saving statistics to project directory.")
+        stats_path = Path(config.project.path) / "weights" / "lightning" / "stats.json"
+        with open(stats_path, "w", encoding="utf-8") as stats_file:
+            json.dump(stats, stats_file, ensure_ascii=False, indent=4)
+    else:
+        logger.info("Using the provided normalization and threshold statistics.")
 
     post_pipeline = get_postprocessing_pipeline(config, tiler, stats)
 
