@@ -1,4 +1,5 @@
 """Tiler used with ensemble of models."""
+from typing import Sequence
 
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -15,17 +16,19 @@ class EnsembleTiler(Tiler):
     Tile Image into (non)overlapping Patches which are then used for ensemble training.
 
     Args:
-        config: Configuration of the anomaly model.
+        tile_size (int | Sequence): Tile dimension for each patch.
+        stride (int | Sequence): Stride length between patches.
+        image_size (int | Sequence): Size of input image that will be tiled.
     """
 
-    def __init__(self, config: DictConfig | ListConfig) -> None:
+    def __init__(self, tile_size: int | Sequence, stride: int | Sequence, image_size: int | Sequence) -> None:
         super().__init__(
-            tile_size=config.ensemble.tiling.tile_size,
-            stride=config.ensemble.tiling.stride,
+            tile_size=tile_size,
+            stride=stride,
         )
 
         # calculate final image size
-        self.image_size = self.validate_size_type(config.dataset.image_size)
+        self.image_size = self.validate_size_type(image_size)
         self.input_h, self.input_w = self.image_size
         self.resized_h, self.resized_w = compute_new_image_size(
             image_size=self.image_size,

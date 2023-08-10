@@ -59,10 +59,9 @@ class TestHelperFunctions:
         assert "ensemble" in config
         assert config.model.input_size == config.ensemble.tiling.tile_size
 
-    def test_ensemble_datamodule(self, get_ensemble_config):
+    def test_ensemble_datamodule(self, get_ensemble_config, get_tiler):
         config = get_ensemble_config
-
-        tiler = EnsembleTiler(config)
+        tiler = get_tiler
         datamodule = get_ensemble_datamodule(config, tiler)
 
         assert isinstance(datamodule.collate_fn, TileCollater)

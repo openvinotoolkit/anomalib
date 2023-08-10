@@ -65,7 +65,11 @@ def train(args: Namespace):
     experiment_logger = get_experiment_logger(config)
 
     # instantiate tiler used for splitting images into tiles
-    tiler = EnsembleTiler(config)
+    tiler = EnsembleTiler(
+        tile_size=config.ensemble.tiling.tile_size,
+        stride=config.ensemble.tiling.stride,
+        image_size=config.dataset.image_size,
+    )
     # prepare datamodule with tiling mechanism
     datamodule = get_ensemble_datamodule(config, tiler)
     # prepare storage objects that handle storage of tiled predictions

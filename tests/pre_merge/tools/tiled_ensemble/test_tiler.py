@@ -48,7 +48,11 @@ tiler_config_overlap = OmegaConf.create(
 def test_basic_tile_for_ensemble(input_shape, config, expected_shape):
     config = copy.deepcopy(config)
     config.dataset.image_size = input_shape[-1]
-    tiler = EnsembleTiler(config)
+    tiler = EnsembleTiler(
+        tile_size=config.ensemble.tiling.tile_size,
+        stride=config.ensemble.tiling.stride,
+        image_size=config.dataset.image_size,
+    )
 
     images = torch.rand(size=input_shape)
     tiled = tiler.tile(images)
@@ -69,7 +73,11 @@ def test_basic_tile_reconstruction(input_shape, config):
     config = copy.deepcopy(config)
     config.dataset.image_size = input_shape[-1]
 
-    tiler = EnsembleTiler(config)
+    tiler = EnsembleTiler(
+        tile_size=config.ensemble.tiling.tile_size,
+        stride=config.ensemble.tiling.stride,
+        image_size=config.dataset.image_size,
+    )
 
     images = torch.rand(size=input_shape)
     tiled = tiler.tile(images.clone())
@@ -89,9 +97,17 @@ def test_basic_tile_reconstruction(input_shape, config):
 def test_untile_different_instance(input_shape, config):
     config = copy.deepcopy(config)
     config.dataset.image_size = input_shape[-1]
-    tiler_1 = EnsembleTiler(config)
+    tiler_1 = EnsembleTiler(
+        tile_size=config.ensemble.tiling.tile_size,
+        stride=config.ensemble.tiling.stride,
+        image_size=config.dataset.image_size,
+    )
 
-    tiler_2 = EnsembleTiler(config)
+    tiler_2 = EnsembleTiler(
+        tile_size=config.ensemble.tiling.tile_size,
+        stride=config.ensemble.tiling.stride,
+        image_size=config.dataset.image_size,
+    )
 
     images = torch.rand(size=input_shape)
     tiled = tiler_1.tile(images.clone())

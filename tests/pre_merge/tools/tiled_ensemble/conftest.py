@@ -23,7 +23,12 @@ def get_ensemble_config():
 
 @pytest.fixture(scope="module")
 def get_tiler(get_ensemble_config):
-    return EnsembleTiler(get_ensemble_config)
+    config = get_ensemble_config
+    return EnsembleTiler(
+        tile_size=config.ensemble.tiling.tile_size,
+        stride=config.ensemble.tiling.stride,
+        image_size=config.dataset.image_size,
+    )
 
 
 @pytest.fixture(scope="module")
