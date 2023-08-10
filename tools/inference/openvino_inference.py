@@ -1,7 +1,7 @@
-"""Anomalib Inferencer Script.
+"""Anomalib OpenVINO Inferencer Script.
 
-This script performs inference by reading a model config file from
-command line, and show the visualization results.
+This script performs OpenVINO inference by reading a model from
+file system, and show the visualization results.
 """
 
 # Copyright (C) 2022 Intel Corporation
@@ -23,7 +23,6 @@ def get_parser() -> ArgumentParser:
         ArgumentParser: The parser object.
     """
     parser = ArgumentParser()
-    parser.add_argument("--config", type=Path, required=True, help="Path to a config file")
     parser.add_argument("--weights", type=Path, required=True, help="Path to model weights")
     parser.add_argument("--metadata", type=Path, required=True, help="Path to a JSON file containing the metadata.")
     parser.add_argument("--input", type=Path, required=True, help="Path to an image to infer.")
