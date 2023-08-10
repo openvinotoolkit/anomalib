@@ -12,7 +12,7 @@ During testing, a similar step is followed but this time the cosine distance bet
 
 ## Architecture
 
-![Anomaly Detection via Reverse Distillation from One-Class Embedding Architecture](../../../docs/source/images/reverse_distillation/architecture.png "Reverse Distillation Architecture")
+![Anomaly Detection via Reverse Distillation from One-Class Embedding Architecture](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/reverse_distillation/architecture.png "Reverse Distillation Architecture")
 
 ## Usage
 
