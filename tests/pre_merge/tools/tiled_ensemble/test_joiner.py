@@ -1,4 +1,8 @@
 """Test working of tile joiner"""
+
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import torch
 
 from anomalib.data import get_datamodule

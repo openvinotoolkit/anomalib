@@ -1,4 +1,8 @@
 """Test for ensemble visualizer"""
+
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import copy
 from pathlib import Path
 from tempfile import TemporaryDirectory

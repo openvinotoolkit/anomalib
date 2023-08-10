@@ -1,5 +1,8 @@
 """Test tiled ensemble training script"""
 
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import sys
 from tools.tiled_ensemble.train_ensemble import get_parser, train
 

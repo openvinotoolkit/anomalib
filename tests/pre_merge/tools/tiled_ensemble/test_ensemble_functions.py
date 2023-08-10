@@ -1,5 +1,8 @@
 """Test ensemble helper functions"""
 
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from tempfile import TemporaryDirectory
 from typing import List
 
