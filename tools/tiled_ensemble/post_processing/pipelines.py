@@ -128,7 +128,15 @@ def get_postprocessing_pipeline(
     if config.ensemble.visualization.show_images or config.ensemble.visualization.save_images:
         steps.append(EnsembleVisualization(config))
 
-    steps.append(EnsembleMetrics(config, stats["image_threshold"], stats["pixel_threshold"]))
+    steps.append(
+        EnsembleMetrics(
+            config.dataset.task,
+            config.ensemble.metrics.get("image", None),
+            config.ensemble.metrics.get("pixel", None),
+            stats["image_threshold"],
+            stats["pixel_threshold"],
+        )
+    )
     post_pipeline.add_steps(steps)
 
     log_postprocess_steps(steps)

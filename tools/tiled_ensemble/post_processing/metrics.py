@@ -17,21 +17,28 @@ logger = logging.getLogger(__name__)
 
 class EnsembleMetrics(EnsemblePostProcess):
     """
-    Class that works as block in ensemble pipeline used to calcualte metrics.
+    Class that works as block in ensemble pipeline used to calculate metrics.
 
     Args:
-        config: Configurable parameters object.
-        image_threshold: Threshold used for image metrics.
-        pixel_threshold: Threshold used for pixel metrics.
+        task (TaskType): Task type of the current run.
+        image_metric_names (List): List of image metric names.
+        pixel_metric_names (List): List of pixel metric names.
+        image_threshold (float): Threshold used for image metrics.
+        pixel_threshold (float): Threshold used for pixel metrics.
     """
 
-    def __init__(self, config: DictConfig | ListConfig, image_threshold: float, pixel_threshold: float) -> None:
+    def __init__(
+        self,
+        task: TaskType,
+        image_metric_names: List,
+        pixel_metric_names: List,
+        image_threshold: float,
+        pixel_threshold: float,
+    ) -> None:
         super().__init__(final_compute=True, name="metrics")
 
         self.image_metrics, self.pixel_metrics = self.configure_ensemble_metrics(
-            config.dataset.task,
-            config.ensemble.metrics.get("image", None),
-            config.ensemble.metrics.get("pixel", None),
+            task, image_metric_names, pixel_metric_names
         )
 
         # set threshold for metrics that require it

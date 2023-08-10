@@ -96,6 +96,12 @@ def get_ensemble_predictions(get_datamodule, get_ensemble_config):
 @pytest.fixture(scope="module")
 def get_ensemble_metrics(get_ensemble_config):
     config = get_ensemble_config
-    metrics = EnsembleMetrics(config, 0.5, 0.5)
+    metrics = EnsembleMetrics(
+        config.dataset.task,
+        config.ensemble.metrics.get("image", None),
+        config.ensemble.metrics.get("pixel", None),
+        0.5,
+        0.5,
+    )
 
     return metrics
