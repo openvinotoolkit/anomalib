@@ -25,8 +25,8 @@ from tools.tiled_ensemble.post_processing.pipelines import (
 
 class TestStatsPipeline:
     @pytest.mark.parametrize("smooth, present", ([True, True], [True, True]))
-    def test_stats_smooth(self, smooth, present, get_ens_config, get_tiler):
-        config = copy.deepcopy(get_ens_config)
+    def test_stats_smooth(self, smooth, present, get_ensemble_config, get_tiler):
+        config = copy.deepcopy(get_ensemble_config)
         tiler = get_tiler
 
         config.ensemble.post_processing.smooth_joins.apply = smooth
@@ -37,8 +37,8 @@ class TestStatsPipeline:
 
     @pytest.mark.parametrize("threshold, t_present", (["adaptive", True], ["manual", False], ["none", False]))
     @pytest.mark.parametrize("normalization, n_present", (["tile", False], ["final", True]))
-    def test_stats_pipeline(self, threshold, t_present, normalization, n_present, get_ens_config, get_tiler):
-        config = copy.deepcopy(get_ens_config)
+    def test_stats_pipeline(self, threshold, t_present, normalization, n_present, get_ensemble_config, get_tiler):
+        config = copy.deepcopy(get_ensemble_config)
         tiler = get_tiler
 
         config.ensemble.metrics.threshold.method = threshold
@@ -49,8 +49,8 @@ class TestStatsPipeline:
         # if either threshold requires it or norm requires it, it should be present
         assert isinstance(pipe.steps[-1], PostProcessStats) == (t_present or n_present)
 
-    def test_get_stats(self, get_ens_config, get_tiler, get_ensemble_predictions):
-        config = get_ens_config
+    def test_get_stats(self, get_ensemble_config, get_tiler, get_ensemble_predictions):
+        config = get_ensemble_config
         tiler = get_tiler
         val_pred = get_ensemble_predictions
 
@@ -72,8 +72,8 @@ mock_stats = {
 
 class TestPostProcess:
     @pytest.mark.parametrize("smooth, present", ([True, True], [True, True]))
-    def test_stats_smooth(self, smooth, present, get_ens_config, get_tiler):
-        config = copy.deepcopy(get_ens_config)
+    def test_stats_smooth(self, smooth, present, get_ensemble_config, get_tiler):
+        config = copy.deepcopy(get_ensemble_config)
         tiler = get_tiler
         stats = copy.deepcopy(mock_stats)
 
@@ -85,8 +85,8 @@ class TestPostProcess:
     @pytest.mark.parametrize(
         "normalization, thresholds, threshold_index", (["final", [0.5, 0.5], 2], ["none", [42, 13], 1])
     )
-    def test_threshold_manual(self, normalization, thresholds, threshold_index, get_ens_config, get_tiler):
-        config = copy.deepcopy(get_ens_config)
+    def test_threshold_manual(self, normalization, thresholds, threshold_index, get_ensemble_config, get_tiler):
+        config = copy.deepcopy(get_ensemble_config)
         tiler = get_tiler
         stats = copy.deepcopy(mock_stats)
 
@@ -102,8 +102,8 @@ class TestPostProcess:
         assert pipe.steps[threshold_index].image_threshold == thresholds[0]
         assert pipe.steps[threshold_index].pixel_threshold == thresholds[1]
 
-    def test_step_order(self, get_ens_config, get_tiler):
-        config = get_ens_config
+    def test_step_order(self, get_ensemble_config, get_tiler):
+        config = get_ensemble_config
         tiler = get_tiler
         stats = copy.deepcopy(mock_stats)
 
@@ -117,8 +117,8 @@ class TestPostProcess:
         assert isinstance(steps[3], EnsembleVisualization)
         assert isinstance(steps[4], EnsembleMetrics)
 
-    def test_postprocess_pipeline(self, get_ens_config, get_tiler, get_ensemble_predictions):
-        config = get_ens_config
+    def test_postprocess_pipeline(self, get_ensemble_config, get_tiler, get_ensemble_predictions):
+        config = get_ensemble_config
         tiler = get_tiler
         val_pred = get_ensemble_predictions
         ens_pred = get_ensemble_predictions

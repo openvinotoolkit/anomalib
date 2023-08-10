@@ -29,8 +29,8 @@ mock_result = {
 
 
 @pytest.mark.parametrize("task", ["segmentation", "classification", "detection"])
-def test_save_image(task, get_ens_config):
-    config = get_ens_config
+def test_save_image(task, get_ensemble_config):
+    config = get_ensemble_config
     with TemporaryDirectory() as temp_dir:
         config.project.path = temp_dir
         config.dataset.task = task
@@ -40,8 +40,8 @@ def test_save_image(task, get_ens_config):
         assert (Path(temp_dir) / "images/broken_large/000.png").exists()
 
 
-def test_data_unchanged(get_ens_config):
-    config = get_ens_config
+def test_data_unchanged(get_ensemble_config):
+    config = get_ensemble_config
     with TemporaryDirectory() as temp_dir:
         config.project.path = temp_dir
         visualization = EnsembleVisualization(config)

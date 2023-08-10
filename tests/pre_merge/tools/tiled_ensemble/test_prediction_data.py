@@ -64,8 +64,8 @@ class TestPredictionData:
 
         return True
 
-    def test_basic(self, get_ens_config, get_datamodule):
-        config = get_ens_config
+    def test_basic(self, get_ensemble_config, get_datamodule):
+        config = get_ensemble_config
         datamodule = get_datamodule(config, "segmentation")
         storage = BasicEnsemblePredictions()
         original = self.store_all(storage, datamodule)
@@ -73,8 +73,8 @@ class TestPredictionData:
         for name in original[(0, 0)][0].keys():
             assert self.verify_equal(name, original, storage, torch.equal), f"{name} doesn't match"
 
-    def test_fs(self, get_ens_config, get_datamodule):
-        config = get_ens_config
+    def test_fs(self, get_ensemble_config, get_datamodule):
+        config = get_ensemble_config
         with TemporaryDirectory() as project_dir:
             config.project.path = project_dir
             datamodule = get_datamodule(config, "segmentation")
@@ -84,8 +84,8 @@ class TestPredictionData:
             for name in original[(0, 0)][0].keys():
                 assert self.verify_equal(name, original, storage, torch.equal), f"{name} doesn't match"
 
-    def test_rescaled(self, get_ens_config, get_datamodule):
-        config = get_ens_config
+    def test_rescaled(self, get_ensemble_config, get_datamodule):
+        config = get_ensemble_config
         datamodule = get_datamodule(config, "segmentation")
         storage = RescaledEnsemblePredictions(config)
         original = self.store_all(storage, datamodule)

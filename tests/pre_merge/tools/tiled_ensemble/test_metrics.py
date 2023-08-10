@@ -16,15 +16,15 @@ mock_predictions = {
 }
 
 
-def test_metrics_setup(get_ens_metrics):
-    metrics = get_ens_metrics
+def test_metrics_setup(get_ensemble_metrics):
+    metrics = get_ensemble_metrics
 
     assert isinstance(metrics.image_metrics, AnomalibMetricCollection)
     assert isinstance(metrics.pixel_metrics, AnomalibMetricCollection)
 
 
-def test_data_unchanged(get_ens_metrics):
-    metrics = get_ens_metrics
+def test_data_unchanged(get_ensemble_metrics):
+    metrics = get_ensemble_metrics
 
     metric_out = metrics.process(mock_predictions)
 
@@ -37,8 +37,8 @@ def test_data_unchanged(get_ens_metrics):
             assert values == mock_predictions[name], f"{name} changed"
 
 
-def test_metric_compute(get_ens_metrics):
-    metrics = get_ens_metrics
+def test_metric_compute(get_ensemble_metrics):
+    metrics = get_ensemble_metrics
 
     metrics.process(mock_predictions)
 

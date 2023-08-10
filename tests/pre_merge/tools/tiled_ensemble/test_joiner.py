@@ -9,8 +9,8 @@ from anomalib.data import get_datamodule
 
 
 class TestBasicJoiner:
-    def test_tile_joining(self, get_ens_config, get_joiner, get_ensemble_predictions):
-        config = get_ens_config
+    def test_tile_joining(self, get_ensemble_config, get_joiner, get_ensemble_predictions):
+        config = get_ensemble_config
         joiner = get_joiner
         predictions = get_ensemble_predictions
 

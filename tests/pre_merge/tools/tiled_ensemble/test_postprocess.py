@@ -31,8 +31,8 @@ mock_data = {
 
 
 @pytest.fixture()
-def get_smooth_joins(get_tiler, get_ens_config):
-    config = get_ens_config
+def get_smooth_joins(get_tiler, get_ensemble_config):
+    config = get_ensemble_config
     tiler = get_tiler
 
     return SmoothJoins(config, tiler)
@@ -173,8 +173,8 @@ class TestThreshold:
 
 
 class TestPostProcessPipeline:
-    def test_execute(self, get_ens_config, get_ensemble_predictions, get_joiner):
-        config = get_ens_config
+    def test_execute(self, get_ensemble_config, get_ensemble_predictions, get_joiner):
+        config = get_ensemble_config
         joiner = get_joiner
         data = get_ensemble_predictions
 
@@ -184,10 +184,10 @@ class TestPostProcessPipeline:
 
         pipeline.execute(data)
 
-    def test_results(self, get_joiner, get_ensemble_predictions, get_ens_metrics):
+    def test_results(self, get_joiner, get_ensemble_predictions, get_ensemble_metrics):
         pipeline = EnsemblePostProcessPipeline(get_joiner)
 
-        pipeline.add_steps([Threshold(0.5, 0.5), get_ens_metrics])
+        pipeline.add_steps([Threshold(0.5, 0.5), get_ensemble_metrics])
 
         pipe_out = pipeline.execute(get_ensemble_predictions)
 
