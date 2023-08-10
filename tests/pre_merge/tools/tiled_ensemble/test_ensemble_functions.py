@@ -62,7 +62,7 @@ class TestHelperFunctions:
         tiler = EnsembleTiler(config)
         datamodule = get_ensemble_datamodule(config, tiler)
 
-        assert isinstance(datamodule.custom_collate_fn, TileCollater)
+        assert isinstance(datamodule.collate_fn, TileCollater)
 
     def test_ensemble_prediction_storage_type(self, get_ens_config):
         config = get_ens_config

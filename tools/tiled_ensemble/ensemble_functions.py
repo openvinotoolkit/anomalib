@@ -111,7 +111,7 @@ def get_ensemble_datamodule(config: DictConfig | ListConfig, tiler: EnsembleTile
     """
     datamodule = get_datamodule(config)
     # set custom collate function that does the tiling
-    datamodule.custom_collate_fn = TileCollater(tiler, (0, 0))
+    datamodule.collate_fn = TileCollater(tiler, (0, 0))
     return datamodule
 
 

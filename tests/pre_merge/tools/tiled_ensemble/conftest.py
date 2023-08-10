@@ -58,7 +58,7 @@ def get_ensemble_predictions(get_datamodule, get_ens_config):
 
     for tile_index in [(0, 0), (0, 1), (1, 0), (1, 1)]:
         datamodule.setup()
-        datamodule.custom_collate_fn.tile_index = tile_index
+        datamodule.collate_fn.tile_index = tile_index
 
         tile_prediction = []
         batch = next(iter(datamodule.test_dataloader()))

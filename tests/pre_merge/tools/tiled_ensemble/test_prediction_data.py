@@ -22,7 +22,7 @@ class TestPredictionData:
     def store_all(data: EnsemblePredictions, datamodule: AnomalibDataModule):
         tile_dict = {}
         for tile_index in [(0, 0), (0, 1), (1, 0), (1, 1)]:
-            datamodule.custom_collate_fn.tile_index = tile_index
+            datamodule.collate_fn.tile_index = tile_index
 
             tile_prediction = []
             for batch in iter(datamodule.train_dataloader()):

@@ -78,7 +78,7 @@ def train(args: Namespace):
         # configure callbacks for ensemble
         ensemble_callbacks = get_ensemble_callbacks(config, tile_index)
         # set tile position inside dataloader
-        datamodule.custom_collate_fn.tile_index = tile_index
+        datamodule.collate_fn.tile_index = tile_index
 
         model = get_model(config)
 
