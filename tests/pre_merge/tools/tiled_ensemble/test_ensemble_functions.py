@@ -8,7 +8,6 @@ from typing import List
 
 from torch import Tensor
 
-from tools.tiled_ensemble import EnsembleTiler
 from tools.tiled_ensemble.ensemble_functions import (
     TileCollater,
     get_ensemble_callbacks,
