@@ -16,6 +16,22 @@ class EnsembleTiler(Tiler):
         tile_size (int | Sequence): Tile dimension for each patch.
         stride (int | Sequence): Stride length between patches.
         image_size (int | Sequence): Size of input image that will be tiled.
+
+    Examples:
+        >>> import torch
+        >>> tiler = EnsembleTiler(tile_size=256, stride=128, image_size=512)
+        >>>
+        >>> # random images, shape:  [B, C, H, W]
+        >>> images = torch.rand(32, 5, 512, 512)
+        >>> # once tiled, the shape is [tile_count_H, tile_count_W, B, C, tile_H, tile_W]
+        >>> tiled = tiler.tile(images)
+        >>> tiled.shape
+        torch.Size([3, 3, 32, 5, 256, 256])
+
+        >>> # assemble the tiles back together
+        >>> untiled = tiler.untile(tiled)
+        >>> untiled.shape
+        torch.Size([32, 5, 512, 512])
     """
 
     def __init__(self, tile_size: int | Sequence, stride: int | Sequence, image_size: int | Sequence) -> None:

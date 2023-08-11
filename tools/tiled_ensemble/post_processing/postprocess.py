@@ -62,6 +62,20 @@ class SmoothJoins(EnsemblePostProcess):
         width_factor (float):  Factor multiplied by tile dimension to get the region around join which will be smoothed.
         filter_sigma (float): Sigma of filter used for smoothing the joins.
         tiler (EnsembleTiler): Tiler object used to get tile dimension data.
+
+    Example:
+        >>> from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
+        >>> from tools.tiled_ensemble.predictions.basic_joiner import BasicPredictionJoiner
+        >>>
+        >>> tiler = EnsembleTiler(tile_size=256, stride=128, image_size=512)
+        >>> joiner = BasicPredictionJoiner(tiler)
+        >>> pipeline = EnsemblePostProcessPipeline(joiner)
+        >>>
+        >>> # This will smooth 10% on each side of join with gaussian filter that has sigma=2
+        >>> smooth = SmoothJoins(width_factor=0.1, filter_sigma=2, tiler=tiler)
+        >>>
+        >>> # this block can then be added to pipeline
+        >>> pipeline.add_steps([smooth])
     """
 
     def __init__(self, width_factor: float, filter_sigma: float, tiler: EnsembleTiler) -> None:
@@ -127,6 +141,23 @@ class MinMaxNormalize(EnsemblePostProcess):
 
     Args:
         stats: dictionary containing statistics used for normalization (min, max, image threshold, pixel threshold).
+
+    Example:
+        >>> from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
+        >>> from tools.tiled_ensemble.predictions.basic_joiner import BasicPredictionJoiner
+        >>> from tools.tiled_ensemble.post_processing.pipelines import get_stats
+        >>>
+        >>> tiler = EnsembleTiler(tile_size=256, stride=128, image_size=512)
+        >>> joiner = BasicPredictionJoiner(tiler)
+        >>> pipeline = EnsemblePostProcessPipeline(joiner)
+        >>>
+        >>> # get statistics on validation data
+        >>> stats = get_stats(...)
+        >>> # based on stats (min, max & thresholds of validation data) this block will normalize input data
+        >>> normalization = MinMaxNormalize(stats)
+        >>>
+        >>> # this block can then be added to pipeline
+        >>> pipeline.add_steps([normalization])
     """
 
     def __init__(self, stats: dict[str, float]) -> None:
@@ -165,6 +196,23 @@ class Threshold(EnsemblePostProcess):
     Args:
         image_threshold: Threshold used for image-level thresholding.
         pixel_threshold: Threshold used for pixel-level thresholding.
+
+    Example:
+        >>> from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
+        >>> from tools.tiled_ensemble.predictions.basic_joiner import BasicPredictionJoiner
+        >>> from tools.tiled_ensemble.post_processing.pipelines import get_stats
+        >>>
+        >>> tiler = EnsembleTiler(tile_size=256, stride=128, image_size=512)
+        >>> joiner = BasicPredictionJoiner(tiler)
+        >>> pipeline = EnsemblePostProcessPipeline(joiner)
+        >>>
+        >>> # get statistics on validation data
+        >>> stats = get_stats(...)
+        >>> # based on stats (image & pixel threshold) this block will threshold the data to get labels, masks and boxes
+        >>> threshold = Threshold(stats["image_threshold"], stats["pixel_threshold"])
+        >>>
+        >>> # this block can then be added to pipeline
+        >>> pipeline.add_steps([threshold])
     """
 
     def __init__(self, image_threshold: float, pixel_threshold: float) -> None:
@@ -199,7 +247,22 @@ class Threshold(EnsemblePostProcess):
 
 
 class PostProcessStats(EnsemblePostProcess):
-    """Class used to obtain threshold and normalization statistics: (min, max, image threshold, pixel threshold)."""
+    """Class used to obtain threshold and normalization statistics: (min, max, image threshold, pixel threshold).
+
+    Example:
+        >>> from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
+        >>> from tools.tiled_ensemble.predictions.basic_joiner import BasicPredictionJoiner
+        >>>
+        >>> tiler = EnsembleTiler(tile_size=256, stride=128, image_size=512)
+        >>> joiner = BasicPredictionJoiner(tiler)
+        >>> pipeline = EnsemblePostProcessPipeline(joiner)
+        >>>
+        >>> # this block calculates min, max and image & pixel threshold on validation data.
+        >>> stats_block = PostProcessStats()
+        >>>
+        >>> # this block can then be added to pipeline
+        >>> pipeline.add_steps([stats_block])
+    """
 
     def __init__(self) -> None:
         super().__init__(final_compute=True, name="stats")
@@ -265,6 +328,32 @@ class EnsemblePostProcessPipeline:
 
     Args:
         joiner: Class used to join tiled data, already containing predictions.
+
+    Example:
+        >>> from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
+        >>> from tools.tiled_ensemble.predictions.basic_joiner import BasicPredictionJoiner
+        >>> from tools.tiled_ensemble.predictions.prediction_data import BasicEnsemblePredictions
+        >>> from tools.tiled_ensemble.post_processing.metrics import EnsembleMetrics
+
+        >>> tiler = EnsembleTiler(tile_size=256, stride=128, image_size=512)
+        >>> joiner = BasicPredictionJoiner(tiler)
+        >>> data = BasicEnsemblePredictions()
+        >>> # ... data is then filed with predictions from ensemble
+        >>>
+        >>> # make instance of pipeline with joiner
+        >>> pipeline = EnsemblePostProcessPipeline(joiner)
+        >>>
+        >>> # steps can then be added in order which they will be executed in
+        >>> pipeline.add_steps([SmoothJoins(...), MinMaxNormalize(...), Threshold(...), EnsembleMetrics(...)])
+        >>>
+        >>> # pipeline is then execute on given data
+        >>> pipe_out = pipeline.execute(data)
+        >>> pipe_out
+        {'metrics': {'image_F1Score': 0.42,
+                     'image_AUROC': 0.42,
+                     'pixel_F1Score': 0.42,
+                     'pixel_AUROC': 0.42,
+                     'pixel_AUPRO': 0.42}}
     """
 
     def __init__(self, joiner: EnsemblePredictionJoiner) -> None:

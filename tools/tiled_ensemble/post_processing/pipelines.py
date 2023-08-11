@@ -73,6 +73,18 @@ def get_stats(
 
     Returns:
         Dictionary with calculated statistics.
+
+    Example:
+        >>> from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
+        >>> from tools.tiled_ensemble.predictions.prediction_data import BasicEnsemblePredictions
+        >>>
+        >>> tiler = EnsembleTiler(tile_size=256, stride=128, image_size=512)
+        >>> # this data should be from validation dataloader predictions, as stats are usually obtained on validation.
+        >>> data = BasicEnsemblePredictions()
+        >>>
+        >>> stats = get_stats(config, tiler, data)
+        >>> stats
+        {"min": 0, "max": 1, "image_threshold": 0.42, "pixel_threshold": 0.13,}
     """
     stats_pipeline = get_stats_pipeline(config, tiler)
 
@@ -101,6 +113,9 @@ def get_postprocessing_pipeline(
 ) -> EnsemblePostProcessPipeline:
     """
     Construct pipeline used to post process ensemble predictions.
+
+    Blocks of pipeline are determined based on config file since some steps can be done tile wise,
+    or on final step when tiles are joined. Visualization and metrics are also configured here.
 
     Args:
         config: Configurable parameters object.
@@ -173,6 +188,8 @@ def post_process(
     """
     Postprocess, visualize and calculate metrics.
 
+    Steps in postprocessing are determined from config file, check `get_postprocessing_pipeline` for more details.
+
     Args:
         config: Configurable parameters object.
         tiler: Tiler used for untiling of predictions.
@@ -182,6 +199,25 @@ def post_process(
 
     Returns:
         Dictionary with calculated metrics data.
+
+    Examples:
+        >>> # example of post_processing in train run
+        >>> from tools.tiled_ensemble.ensemble_functions import get_prediction_storage
+        >>> pred, val_pred = get_prediction_storage(config)
+        >>> # ... pred and val_pred are filled during training
+        >>> # post-processing with steps based on config file
+        >>> post_process(config, tiler, ensemble_predictions=pred, validation_predictions=val_pred)
+        {'image_F1Score': 0.42, 'image_AUROC': 0.42, 'pixel_F1Score': 0.42, 'pixel_AUROC': 0.42}
+
+        >>> # example of post_processing in test run
+        >>> from tools.tiled_ensemble.ensemble_functions import get_prediction_storage
+        >>> pred, _ = get_prediction_storage(config)
+        >>> # ... pred is filled during test prediction
+        >>> # stats are loaded from json
+        >>> # post-processing with steps based on config file
+        >>> post_process(config, tiler, ensemble_predictions=pred, validation_predictions=None, stats=stats)
+        {'image_F1Score': 0.42, 'image_AUROC': 0.42, 'pixel_F1Score': 0.42, 'pixel_AUROC': 0.42}
+
     """
     if stats is None:
         logger.info("Computing normalization and threshold statistics.")

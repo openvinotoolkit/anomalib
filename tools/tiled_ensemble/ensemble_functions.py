@@ -103,6 +103,8 @@ def get_ensemble_datamodule(config: DictConfig | ListConfig, tiler: EnsembleTile
     """
     Get Anomaly Datamodule adjusted for use in ensemble.
 
+    Datamodule collate function gets replaced by TileCollater in order to tile all images before they are passed on.
+
     Args:
         config: Configuration of the anomaly model.
         tiler: Tiler used to split the images to tiles for use in ensemble.
@@ -118,6 +120,9 @@ def get_ensemble_datamodule(config: DictConfig | ListConfig, tiler: EnsembleTile
 def get_prediction_storage(config: DictConfig | ListConfig) -> Tuple[EnsemblePredictions, EnsemblePredictions]:
     """
     Return prediction storage class as set in config.
+
+    Predictions can be stored directly in memory (direct), on file system (file_system)
+    or downscaled in memory (rescaled).
 
     Args:
         config: Configurable parameters object.
@@ -152,6 +157,14 @@ def get_prediction_storage(config: DictConfig | ListConfig) -> Tuple[EnsemblePre
 def get_ensemble_callbacks(config: DictConfig | ListConfig, tile_index: Tuple[int, int]) -> List[Callback]:
     """
     Return base callbacks for ensemble.
+
+    Thresholding is added everytime, even if the thresholding is set to final, joined level thresholding
+    as it is required by some metrics for early stopping.
+
+    Only valid normalization for ensemble is MinMax that can be either applied on tile level, which means it is
+    included as part of this callback. If it's used at the end when images are joined, it's not included in callbacks.
+
+    Ensemble doesn't support nncf optimization, so it can't be added as a callback.
 
     Args:
         config: Model config file.

@@ -16,9 +16,22 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
 
     Tiles are put together and untiled.
     Boxes are stacked per image.
-    Labels are combined with OR operator, meaning one anomalous tile -> anomalous image
-    Scores are averaged
+    Labels are combined with OR operator, meaning one anomalous tile -> anomalous image.
+    Scores are averaged.
 
+    Example:
+        >>> from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
+        >>> from tools.tiled_ensemble.predictions.prediction_data import BasicEnsemblePredictions
+        >>>
+        >>> tiler = EnsembleTiler(tile_size=256, stride=128, image_size=512)
+        >>> joiner = BasicPredictionJoiner(tiler)
+        >>> data = BasicEnsemblePredictions()
+        >>>
+        >>> # joiner needs to be setup with ensemble predictions storage object
+        >>> joiner.setup(data)
+        >>>
+        >>> # we can then start joining procedure for each batch
+        >>> joiner.join_tile_predictions(0)
     """
 
     def join_tiles(self, batch_data: dict, tile_key: str) -> Tensor:

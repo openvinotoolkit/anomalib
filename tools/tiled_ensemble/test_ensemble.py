@@ -50,7 +50,9 @@ def get_parser() -> ArgumentParser:
 
 
 def test(args: Namespace):
-    """Test an anomaly model.
+    """Test a tiled ensemble.
+
+    Images are split to tiles and separate model is used to predict for each tile location.
 
     Args:
         args (Namespace): The arguments from the command line.

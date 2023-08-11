@@ -43,7 +43,23 @@ class EnsemblePredictions(ABC):
 
 
 class BasicEnsemblePredictions(EnsemblePredictions):
-    """Basic implementation of EnsemblePredictionData that keeps all predictions in memory as they are."""
+    """Basic implementation of EnsemblePredictionData that keeps all predictions in memory as they are.
+
+    Examples:
+        >>> from pytorch_lightning import Trainer
+        >>> data = BasicEnsemblePredictions()
+        >>> trainer = Trainer(...)
+        >>>
+        >>> # predictions for all batches for tile location can be added
+        >>> curr_predictions = trainer.predict()
+        >>> # curr_predictions is list of batches predicted for index
+        >>> data.add_tile_prediction((0, 0), curr_predictions)
+
+        >>> # all tile location predictions can then be obtained for each batch
+        >>> batch_data = data.get_batch_tiles(0)
+        >>> # batch_data is dictionary where keys are all stored tile indices, and values are batch
+        >>> # of predictions at tile location for current index
+    """
 
     def __init__(self) -> None:
         super().__init__()
@@ -88,6 +104,22 @@ class FileSystemEnsemblePredictions(EnsemblePredictions):
 
     Args:
         storage_path (str): Path to directory where predictions will be saved.
+
+    Examples:
+        >>> from pytorch_lightning import Trainer
+        >>> data = FileSystemEnsemblePredictions("path_to_project_or_other")
+        >>> trainer = Trainer(...)
+        >>>
+        >>> # predictions for all batches for tile location can be added
+        >>> curr_predictions = trainer.predict()
+        >>> # curr_predictions is list of batches predicted for index
+        >>> data.add_tile_prediction((0, 0), curr_predictions)
+        >>> # behind the scenes the predictions are saved to FS and are then loaded when needed
+
+        >>> # all tile location predictions can then be obtained for each batch
+        >>> batch_data = data.get_batch_tiles(0)
+        >>> # batch_data is dictionary where keys are all stored tile indices, and values are batch
+        >>> # of predictions at tile location for current index
     """
 
     def __init__(self, storage_path: str) -> None:
@@ -162,6 +194,22 @@ class RescaledEnsemblePredictions(EnsemblePredictions):
 
     Args:
         rescale_factor (float): Factor by which the tile based predictions (image, maps..) will be downscaled.
+
+    Examples:
+        >>> from pytorch_lightning import Trainer
+        >>> data = RescaledEnsemblePredictions(0.5)
+        >>> trainer = Trainer(...)
+        >>>
+        >>> # predictions for all batches for tile location can be added
+        >>> curr_predictions = trainer.predict()
+        >>> # curr_predictions is list of batches predicted for index
+        >>> data.add_tile_prediction((0, 0), curr_predictions)
+        >>> # behind the scenes the predictions are downscaled and then upscaled again when needed
+
+        >>> # all tile location predictions can then be obtained for each batch
+        >>> batch_data = data.get_batch_tiles(0)
+        >>> # batch_data is dictionary where keys are all stored tile indices, and values are batch
+        >>> # of predictions at tile location for current index
     """
 
     def __init__(self, rescale_factor: float) -> None:

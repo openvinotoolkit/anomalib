@@ -47,7 +47,9 @@ def get_parser() -> ArgumentParser:
 
 
 def train(args: Namespace):
-    """Train an anomaly model.
+    """Train a tiled ensemble.
+
+    Images are split to tiles and separate model is trained for each tile location.
 
     Args:
         args (Namespace): The arguments from the command line.
