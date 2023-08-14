@@ -61,9 +61,9 @@ def make_folder_dataset(
         Returns:
             ListConfig: The result of path replaced by ListConfig.
         """
-        if not isinstance(path, ListConfig):
-            return ListConfig(content=[_resolve_path(path, root)] if path is not None else [])
-        return ListConfig(content=[_resolve_path(dir_path, root) for dir_path in path])
+        if isinstance(path, ListConfig):
+            return ListConfig(content=[_resolve_path(dir_path, root) for dir_path in path])
+        return ListConfig(content=[_resolve_path(path, root)] if path is not None else [])
 
     # All paths are changed to the ListConfig type and used.
     normal_dir = _path_to_list_config_with_resolve_path(normal_dir)
