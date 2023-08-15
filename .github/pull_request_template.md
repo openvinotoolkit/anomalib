@@ -11,7 +11,6 @@ Provide a summary of the modification as well as the issue that has been resolve
 
 - [ ] Bug fix (non-breaking change which fixes an issue)
 - [ ] Refactor (non-breaking change which refactors the code base)
-- [ ] Enhancement (non-breaking change which improves the code base)
 - [ ] New feature (non-breaking change which adds functionality)
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] Documentation update
