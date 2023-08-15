@@ -10,6 +10,9 @@ from anomalib.utils.metrics.perimg.plot import (
     plot_all_pimo_curves,
     plot_aupimo_boxplot,
     plot_boxplot_pimo_curves,
+    plot_pimfpr_curves_norm_only,
+    plot_pimfpr_curves_norm_vs_anom,
+    plot_th_fpr_curves_norm_only,
 )
 
 
@@ -56,6 +59,14 @@ def pytest_generate_tests(metafunc):
             ],
         )
 
+    if "thresholds" in metafunc.fixturenames:
+        metafunc.parametrize(
+            ("thresholds",),
+            [
+                (th,),
+            ],
+        )
+
 
 def test__plot_perimg_curves(x, ys):
     fig, ax = plt.subplots()
@@ -99,3 +110,35 @@ def test_plot_boxplot_pimo_curves(aucs, rates, image_classes):
     assert fig is not None
     assert ax is not None
     plot_boxplot_pimo_curves(rates[0], rates, image_classes, bp_stats, ax=ax)
+
+
+def test_plot_pimfpr_curves_norm_vs_anom(rates, image_classes):
+    fig, ax = plot_pimfpr_curves_norm_vs_anom(rates, rates[0], image_classes)
+    assert fig is not None
+    assert ax is not None
+    plot_pimfpr_curves_norm_vs_anom(rates, rates[0], image_classes, ax=ax)
+
+
+def test_plot_pimfpr_curves_norm_only(rates, image_classes):
+    fig, ax = plot_pimfpr_curves_norm_only(rates, rates[0], image_classes)
+    assert fig is not None
+    assert ax is not None
+    plot_pimfpr_curves_norm_only(rates, rates[0], image_classes, ax=ax)
+
+
+def test_plot_th_fpr_curves_norm_only(rates, thresholds, image_classes):
+    bound_idx = len(thresholds) // 2
+    fig, ax = plot_th_fpr_curves_norm_only(
+        rates, rates[0], thresholds, image_classes, th_lbound=thresholds[bound_idx], fpr_ubound=rates[0, bound_idx]
+    )
+    assert fig is not None
+    assert ax is not None
+    plot_th_fpr_curves_norm_only(
+        rates,
+        rates[0],
+        thresholds,
+        image_classes,
+        th_lbound=thresholds[bound_idx],
+        fpr_ubound=rates[0, bound_idx],
+        ax=ax,
+    )
