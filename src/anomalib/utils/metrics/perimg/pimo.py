@@ -51,10 +51,10 @@ PImOResult = namedtuple(
 PImOResult.__doc__ = """PImO result (from `PImO.compute()`).
 
 [0] thresholds: shape (num_thresholds,), a `float` dtype as given in update()
-[1] fprs: shape (num_images, num_thresholds), dtype `float64`, \in [0, 1]
-[2] shared_fpr: shape (num_thresholds,), dtype `float64`, \in [0, 1]
-[3] tprs: shape (num_images, num_thresholds), dtype `float64`, \in [0, 1] for anom images, `nan` for norm images
-[4] image_classes: shape (num_images,), dtype `int32`, \in {0, 1}
+[1] fprs: shape (num_images, num_thresholds), dtype `float64`, \\in [0, 1]
+[2] shared_fpr: shape (num_thresholds,), dtype `float64`, \\in [0, 1]
+[3] tprs: shape (num_images, num_thresholds), dtype `float64`, \\in [0, 1] for anom images, `nan` for norm images
+[4] image_classes: shape (num_images,), dtype `int32`, \\in {0, 1}
 
 - `num_thresholds` is an attribute of `PImO` and is given in the constructor (from parent class).
 - `num_images` depends on the data seen by the model at the update() calls.
@@ -148,7 +148,7 @@ class AUPImO(PImO):
 
         Returns: (PImOResult, aucs)
             [0] PImOResult: PImOResult, see `anomalib.utils.metrics.perimg.pimo.PImOResult` for details.
-            [1] aucs: shape (num_images,), dtype `float64`, \in [0, 1]
+            [1] aucs: shape (num_images,), dtype `float64`, \\in [0, 1]
         """
 
         if self.is_empty:
