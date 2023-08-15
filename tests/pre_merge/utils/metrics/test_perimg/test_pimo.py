@@ -80,7 +80,12 @@ def test_pimo(anomaly_maps, masks):
     # the expected values are already tested in test_aupimo
     pimo = PImO()
     pimo.update(anomaly_maps, masks)
-    pimo.compute()
+    pimoresult = pimo.compute()
+    assert pimoresult.thresholds.ndim == 1
+    assert pimoresult.fprs.ndim == 2
+    assert pimoresult.shared_fpr.ndim == 1
+    assert pimoresult.tprs.ndim == 2
+    assert pimoresult.image_classes.ndim == 1
     pimo.plot()
 
 
@@ -89,21 +94,50 @@ def test_aupimo(
 ):
     aupimo = AUPImO(num_thresholds=expected_thresholds.shape[0])
     aupimo.update(anomaly_maps, masks)
-    computed_thresholds, computed_fpr, computed_tprs, image_classes, computed_aupimos = aupimo.compute()
+    # `com` stands for `computed`
+    pimoresult, com_aupimos = aupimo.compute()
+    (com_thresholds, com_fprs, com_shared_fpr, com_tprs, com_image_classes) = pimoresult
+    assert pimoresult.thresholds.ndim == 1
+    assert pimoresult.fprs.ndim == 2
+    assert pimoresult.shared_fpr.ndim == 1
+    assert pimoresult.tprs.ndim == 2
+    assert pimoresult.image_classes.ndim == 1
+    assert com_aupimos.ndim == 1
+    assert (com_thresholds == expected_thresholds).all()
+    assert (com_shared_fpr == expected_fpr).all()
+    assert com_tprs[:2].isnan().all()
+    assert (com_tprs[2:] == expected_tprs[2:]).all()
+    assert (com_image_classes == expected_image_classes).all()
+    assert com_aupimos[:2].isnan().all()
+    assert (com_aupimos[2:] == expected_aupimos[2:]).all()
 
-    assert (computed_thresholds == expected_thresholds).all()
-    assert (computed_fpr == expected_fpr).all()
-    assert computed_tprs[:2].isnan().all()
-    assert (computed_tprs[2:] == expected_tprs[2:]).all()
-    assert (image_classes == expected_image_classes).all()
-    assert computed_aupimos[:2].isnan().all()
-    assert (computed_aupimos[2:] == expected_aupimos[2:]).all()
+    stats = aupimo.boxplot_stats()
+    assert len(stats) > 0
 
 
-def test_aupimo_plot(
-    anomaly_maps, masks, expected_thresholds, expected_fpr, expected_tprs, expected_image_classes, expected_aupimos
-):
-    aupimo = AUPImO(num_thresholds=expected_thresholds.shape[0])
-    aupimo.plot_pimo_curves()  # should not break
+def test_aupimo_plots(anomaly_maps, masks):
+    aupimo = AUPImO(num_thresholds=1000)
     aupimo.update(anomaly_maps, masks)
-    aupimo.plot_pimo_curves()
+    aupimo.compute()
+
+    aupimo.plot()
+
+    fig, ax = aupimo.plot_all_pimo_curves()
+    assert fig is not None
+    assert ax is not None
+    aupimo.plot_all_pimo_curves(ax=ax)
+
+    fig, ax = aupimo.plot_boxplot()
+    assert fig is not None
+    assert ax is not None
+    aupimo.plot_boxplot(ax=ax)
+
+    fig, ax = aupimo.plot_boxplot_pimo_curves()
+    assert fig is not None
+    assert ax is not None
+    aupimo.plot_boxplot_pimo_curves(ax=ax)
+
+    fig, ax = aupimo.plot_boxplot_pimo_curves()
+    assert fig is not None
+    assert ax is not None
+    aupimo.plot_boxplot_pimo_curves(ax=ax)

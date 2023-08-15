@@ -153,7 +153,7 @@ def _plot_perimg_metric_boxplot(
             f"but got {values.shape} and {image_classes.shape}."
         )
 
-    if only_class is None and only_class not in image_classes:
+    if only_class is not None and only_class not in image_classes:
         raise ValueError(f"Argument `only_class` is {only_class}, but `image_classes` does not contain this class.")
 
     # only consider images of the given class
