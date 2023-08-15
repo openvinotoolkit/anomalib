@@ -203,5 +203,8 @@ def test_perimgbinclfcurve_class(preds, masks, expected_images_classes, expected
     assert (computed_images_classes == expected_images_classes).all()
 
     # just execute
-    metric.tprs(computed)
-    metric.fprs(computed)
+    tprs = metric.tprs(computed)
+    fprs = metric.fprs(computed)
+
+    assert tprs.ndim == 2
+    assert fprs.ndim == 2
