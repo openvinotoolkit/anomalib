@@ -51,8 +51,6 @@ class TestOpenVINOInferenceEntrypoint:
 
         arguments = get_parser().parse_args(
             [
-                "--config",
-                "src/anomalib/models/padim/config.yaml",
                 "--weights",
                 project_path + "/weights/openvino/model.bin",
                 "--metadata",
