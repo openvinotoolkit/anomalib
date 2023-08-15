@@ -11,7 +11,7 @@ def test__perimg_boxplot_stats():
     stats = _perimg_boxplot_stats(data, img_cls)
     assert len(stats) > 0
     statdic = stats[0]
-    assert "statisic" in statdic
+    assert "statistic" in statdic
     assert "value" in statdic
     assert "nearest" in statdic
     assert "imgidx" in statdic
