@@ -147,7 +147,10 @@ def _validate_atleast_one_normal_image(image_classes: Tensor):
 
 
 def _validate_nonzero_rate(fpr: float | Tensor) -> None:
-    if isinstance(fpr, float):
+    if isinstance(fpr, int) and fpr != 1:
+        raise ValueError(f"Expected argument `fpr` to be in (0, 1], but got {fpr}.")
+
+    if isinstance(fpr, (float, int)):
         fpr = torch.as_tensor(fpr)
 
     elif not isinstance(fpr, Tensor):
