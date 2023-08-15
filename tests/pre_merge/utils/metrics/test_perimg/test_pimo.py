@@ -110,4 +110,34 @@ def test_aupimo(
     assert (com_image_classes == expected_image_classes).all()
     assert com_aupimos[:2].isnan().all()
     assert (com_aupimos[2:] == expected_aupimos[2:]).all()
-    aupimo.plot_all_pimo_curves()  # should not break
+
+    stats = aupimo.boxplot_stats()
+    assert len(stats) > 0
+
+
+def test_aupimo_plots(anomaly_maps, masks):
+    aupimo = AUPImO(num_thresholds=1000)
+    aupimo.update(anomaly_maps, masks)
+    aupimo.compute()
+
+    aupimo.plot()
+
+    fig, ax = aupimo.plot_all_pimo_curves()
+    assert fig is not None
+    assert ax is not None
+    aupimo.plot_all_pimo_curves(ax=ax)
+
+    fig, ax = aupimo.plot_boxplot()
+    assert fig is not None
+    assert ax is not None
+    aupimo.plot_boxplot(ax=ax)
+
+    fig, ax = aupimo.plot_boxplot_pimo_curves()
+    assert fig is not None
+    assert ax is not None
+    aupimo.plot_boxplot_pimo_curves(ax=ax)
+
+    fig, ax = aupimo.plot_boxplot_pimo_curves()
+    assert fig is not None
+    assert ax is not None
+    aupimo.plot_boxplot_pimo_curves(ax=ax)
