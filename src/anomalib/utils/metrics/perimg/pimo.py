@@ -253,7 +253,7 @@ class AUPImO(PImO):
         if axes is None:
             fig, axes = plt.subplots(1, 2, figsize=(14, 6), width_ratios=[6, 8])
             fig.suptitle("Area Under the Per-Image Overlap (AUPImO) Curves")
-            fig.set_tight_layout(True)
+            fig.set_layout_engine("tight")
         else:
             fig, axes = (None, axes)
 
