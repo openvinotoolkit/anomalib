@@ -184,7 +184,7 @@ def _perimg_boxplot_stats(
             f"but got {values.shape} and {image_classes.shape}."
         )
 
-    if only_class not in image_classes:
+    if only_class is not None and only_class not in image_classes:
         raise ValueError(f"Argument `only_class` is {only_class}, but `image_classes` does not contain this class.")
 
     # convert to numpy because of `matplotlib.cbook.boxplot_stats`
