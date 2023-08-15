@@ -23,7 +23,6 @@ Provide a summary of the modification as well as the issue that has been resolve
 <summary>Ensure that you followed the following</summary>
 
 - [ ] I have added a summary of my changes to the [CHANGELOG](https://github.com/openvinotoolkit/anomalib/blob/main/CHANGELOG.md) (not for minor changes, docs and tests).
-- [ ] My code follows the [pre-commit style and check guidelines](https://github.com/openvinotoolkit/anomalib/blob/main/CONTRIBUTING.md) of this project.
 - [ ] I have performed a self-review of my code
 - [ ] I have commented my code, particularly in hard-to-understand areas (If applicable)
 - [ ] I have made corresponding changes to the documentation (If applicable)
