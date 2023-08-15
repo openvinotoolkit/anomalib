@@ -261,8 +261,11 @@ class Folder(AnomalibDataModule):
             seed=seed,
         )
 
-        self.normal_split_ratio = normal_split_ratio
+        if task == TaskType.SEGMENTATION and mask_dir is None:
+            if val_split_mode != ValSplitMode.SYNTHETIC or test_split_mode != TestSplitMode.SYNTHETIC:
+                raise ValueError(f"Mask directory must be provided for {task} task. but got {mask_dir}")
 
+        self.normal_split_ratio = normal_split_ratio
         transform_train = get_transforms(
             config=transform_config_train,
             image_size=image_size,
