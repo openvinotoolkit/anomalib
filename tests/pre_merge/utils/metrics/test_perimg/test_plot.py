@@ -67,6 +67,20 @@ def pytest_generate_tests(metafunc):
             ],
         )
 
+    if "th_lb_fpr_ub" in metafunc.fixturenames and "th_ub_fpr_lb" in metafunc.fixturenames:
+        bound_13_idx = len(th) // 3
+        bound_23_idx = 2 * bound_13_idx
+        bound_13 = (th[bound_13_idx], rates[0, bound_13_idx])
+        bound_23 = (th[bound_23_idx], rates[0, bound_23_idx])
+        metafunc.parametrize(
+            ("th_lb_fpr_ub", "th_ub_fpr_lb"),
+            [
+                (bound_13, None),
+                (None, bound_23),
+                (bound_13, bound_23),
+            ],
+        )
+
 
 def test__plot_perimg_curves(x, ys):
     fig, ax = plt.subplots()
@@ -126,10 +140,9 @@ def test_plot_pimfpr_curves_norm_only(rates, image_classes):
     plot_pimfpr_curves_norm_only(rates, rates[0], image_classes, ax=ax)
 
 
-def test_plot_th_fpr_curves_norm_only(rates, thresholds, image_classes):
-    bound_idx = len(thresholds) // 2
+def test_plot_th_fpr_curves_norm_only(rates, thresholds, image_classes, th_lb_fpr_ub, th_ub_fpr_lb):
     fig, ax = plot_th_fpr_curves_norm_only(
-        rates, rates[0], thresholds, image_classes, th_lbound=thresholds[bound_idx], fpr_ubound=rates[0, bound_idx]
+        rates, rates[0], thresholds, image_classes, th_lb_fpr_ub=th_lb_fpr_ub, th_ub_fpr_lb=th_ub_fpr_lb
     )
     assert fig is not None
     assert ax is not None
@@ -138,7 +151,7 @@ def test_plot_th_fpr_curves_norm_only(rates, thresholds, image_classes):
         rates[0],
         thresholds,
         image_classes,
-        th_lbound=thresholds[bound_idx],
-        fpr_ubound=rates[0, bound_idx],
+        th_lb_fpr_ub=th_lb_fpr_ub,
+        th_ub_fpr_lb=th_ub_fpr_lb,
         ax=ax,
     )
