@@ -27,9 +27,9 @@ from torch import Tensor
 from .binclf_curve import PerImageBinClfCurve
 from .common import (
     _perimg_boxplot_stats,
+    _validate_and_convert_rate,
     _validate_atleast_one_anomalous_image,
     _validate_atleast_one_normal_image,
-    _validate_nonzero_rate,
 )
 from .plot import (
     _add_avline_at_score_random_model,
@@ -164,7 +164,7 @@ class AUPImO(PImO):
         """
         super().__init__(num_thresholds=num_thresholds)
 
-        _validate_nonzero_rate(ubound)
+        _validate_and_convert_rate(ubound)
         self.register_buffer("ubound", torch.as_tensor(ubound, dtype=torch.float64))
 
     def __repr__(self) -> str:
@@ -324,7 +324,14 @@ class AUPImO(PImO):
         axes: ndarray | None = None,
     ) -> tuple[Figure | None, ndarray]:
         """Plot the AUC boundary conditions based on FPR metrics on normal images.
-        TODO review docstring
+
+        Args:
+            axes: ndarray of matplotlib Axes of size 2, or None.
+                If None, the function will create the axes.
+        Returns:
+            tuple[Figure | None, ndarray]: (fig, axes)
+                fig: matplotlib Figure
+                axes: ndarray of matplotlib Axes of size 2
         """
 
         if axes is None:
@@ -346,7 +353,9 @@ class AUPImO(PImO):
         thidx_lbound = torch.argmin(torch.abs(shared_fpr - self.ubound))
         th_lbound = thresholds[thidx_lbound]
 
-        plot_th_fpr_curves_norm_only(fprs, shared_fpr, thresholds, image_classes, th_lbound, self.ubound, ax=axes[0])
+        plot_th_fpr_curves_norm_only(
+            fprs, shared_fpr, thresholds, image_classes, th_lb_fpr_ub=(th_lbound, self.ubound), ax=axes[0]
+        )
 
         plot_pimfpr_curves_norm_only(fprs, shared_fpr, image_classes, ax=axes[1])
         _add_integration_range_to_pimo_curves(axes[1], (None, self.ubound))
@@ -408,8 +417,8 @@ class AULogPImO(PImO):
         """
         super().__init__(num_thresholds=num_thresholds)
 
-        _validate_nonzero_rate(lbound)
-        _validate_nonzero_rate(ubound)
+        _validate_and_convert_rate(lbound)
+        _validate_and_convert_rate(ubound)
 
         if lbound >= ubound:
             raise ValueError(f"Expected argument `lbound` to be < `ubound`, but got {lbound} >= {ubound}.")
@@ -604,5 +613,57 @@ class AULogPImO(PImO):
         if fig is not None:  # it means the axes were created by this function (and so was the suptitle)
             axes[0].set_title("AUC Boxplot")
             axes[1].set_title("Curves")
+
+        return fig, axes
+
+    def plot_perimg_fprs(
+        self,
+        axes: ndarray | None = None,
+    ) -> tuple[Figure | None, ndarray]:
+        """Plot the AUC boundary conditions based on log(FPR) on normal images.
+        Args:
+            axes: ndarray of matplotlib Axes of size 2, or None.
+                If None, the function will create the axes.
+        Returns:
+            tuple[Figure | None, ndarray]: (fig, axes)
+                fig: matplotlib Figure
+                axes: ndarray of matplotlib Axes of size 2
+        """
+
+        if axes is None:
+            fig, axes = plt.subplots(1, 2, figsize=(14, 6), width_ratios=[6, 8])
+            fig.suptitle("AULogPImO Integration Boundary Conditions")
+            fig.set_tight_layout(True)
+        elif not isinstance(axes, ndarray):
+            raise ValueError(f"Expected argument `axes` to be an ndarray of matplotlib Axes, but got {type(axes)}.")
+        elif axes.size != 2:
+            raise ValueError(f"Expected argument `axes` to be of size 2, but got size {axes.size}.")
+        else:
+            fig, axes = (None, axes)
+
+        axes = axes.flatten()
+
+        (thresholds, fprs, shared_fpr, tprs, image_classes), aucs = self.compute()
+
+        # FRP upper bound is threshold lower bound
+        thidx_lbound = torch.argmin(torch.abs(shared_fpr - self.ubound))
+        th_lbound = thresholds[thidx_lbound]
+
+        # FPR lower bound is threshold upper bound
+        thidx_ubound = torch.argmin(torch.abs(shared_fpr - self.lbound))
+        th_ubound = thresholds[thidx_ubound]
+
+        plot_th_fpr_curves_norm_only(
+            fprs,
+            shared_fpr,
+            thresholds,
+            image_classes,
+            th_lb_fpr_ub=(th_lbound, self.ubound),
+            th_ub_fpr_lb=(th_ubound, self.lbound),
+            ax=axes[0],
+        )
+
+        plot_pimfpr_curves_norm_only(fprs, shared_fpr, image_classes, ax=axes[1])
+        _add_integration_range_to_pimo_curves(axes[1], (self.lbound, self.ubound))
 
         return fig, axes

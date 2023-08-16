@@ -146,21 +146,45 @@ def _validate_atleast_one_normal_image(image_classes: Tensor):
         raise ValueError("Expected argument at least one normal image, but found none.")
 
 
-def _validate_nonzero_rate(fpr: float | Tensor) -> None:
-    if isinstance(fpr, int) and fpr != 1:
-        raise ValueError(f"Expected argument `fpr` to be in (0, 1], but got {fpr}.")
+def _validate_and_convert_rate(rate: float | int | Tensor, nonzero: bool = True, nonone: bool = False) -> Tensor:
+    """Validate a rate (e.g. FPR, TPR) to be in [0, 1], (0, 1), [0, 1), or (0, 1] and convert it to a tensor.
+    nonzero/nonone defaults are True/False for backward compatibility.
+    """
 
-    if isinstance(fpr, (float, int)):
-        fpr = torch.as_tensor(fpr)
+    if isinstance(rate, (float, int)):
+        rate = torch.as_tensor(rate)
 
-    elif not isinstance(fpr, Tensor):
-        raise ValueError(f"Expected argument `fpr` to be a float or torch.Tensor, but got {type(fpr)}.")
+    elif not isinstance(rate, Tensor):
+        raise ValueError(f"Expected argument to be a float, int, or torch.Tensor, but got {type(rate)}.")
 
-    if fpr.dim() != 0:
-        raise ValueError(f"Expected argument `fpr` to be a scalar, but got a tensor of shape {fpr.shape}.")
+    if rate.dim() != 0:
+        raise ValueError(f"Expected argument to be a scalar, but got a tensor of shape {rate.shape}.")
 
-    if fpr <= 0 or fpr > 1:
-        raise ValueError(f"Expected argument `fpr` to be in (0, 1], but got {fpr}.")
+    if rate < 0 or rate > 1:
+        raise ValueError(f"Argument `rate={rate}` is not a rate.")
+
+    if nonzero and rate == 0:
+        raise ValueError("Expected argument to be > 0.")
+
+    if nonone and rate == 1:
+        raise ValueError("Expected argument to be < 1.")
+
+    return rate
+
+
+def _validate_and_convert_threshold(threshold: float | int | Tensor) -> Tensor:
+    """Validate a threshold and convert it to a tensor."""
+
+    if isinstance(threshold, (float, int)):
+        threshold = torch.as_tensor(threshold)
+
+    elif not isinstance(threshold, Tensor):
+        raise ValueError(f"Expected argument to be a float, int, or torch.Tensor, but got {type(threshold)}.")
+
+    if threshold.dim() != 0:
+        raise ValueError(f"Expected argument to be a scalar, but got a tensor of shape {threshold.shape}.")
+
+    return threshold
 
 
 # =========================================== FUNCTIONAL ===========================================

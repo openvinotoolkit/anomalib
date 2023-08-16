@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
 import matplotlib.pyplot as plt
@@ -16,12 +17,13 @@ from torch import Tensor
 
 from .common import (
     _perimg_boxplot_stats,
+    _validate_and_convert_rate,
+    _validate_and_convert_threshold,
     _validate_atleast_one_anomalous_image,
     _validate_atleast_one_normal_image,
     _validate_aucs,
     _validate_image_class,
     _validate_image_classes,
-    _validate_nonzero_rate,
     _validate_perimg_rate_curves,
     _validate_rate_curve,
     _validate_thresholds,
@@ -517,10 +519,10 @@ def _add_integration_range_to_pimo_curves(
     lbound, ubound = bounds
 
     if lbound is not None:
-        _validate_nonzero_rate(lbound)
+        _validate_and_convert_rate(lbound)
 
     if ubound is not None:
-        _validate_nonzero_rate(ubound)
+        _validate_and_convert_rate(ubound)
 
     if lbound is not None and ubound is not None and lbound >= ubound:
         raise ValueError(
@@ -766,10 +768,26 @@ def plot_th_fpr_curves_norm_only(
     shared_fpr: Tensor,
     thresholds: Tensor,
     image_classes: Tensor,
-    th_lbound: Tensor,
-    fpr_ubound: Tensor | float,
+    th_lb_fpr_ub: tuple[Tensor | float, Tensor | float] | None = None,
+    th_ub_fpr_lb: tuple[Tensor | float, Tensor | float] | None = None,
     ax: Axes | None = None,
 ) -> tuple[Figure | None, Axes]:
+    """Plot thresholds vs FPR curves, only from normal images along with their shared fpr metric.
+
+    Args:
+        fprs: shape (num_images, num_thresholds) monotonically decreasing
+        shared_fpr: shape (num_thresholds,) monotonically decreasing
+        thresholds: shape (num_thresholds,) strictly increasing
+        image_classes: shape (num_images,)
+        th_lb_fpr_ub: (th_lower_bound, fpr_upper_bound)
+        th_ub_fpr_lb: (th_upper_bound, fpr_lower_bound)
+        ax: matplotlib Axes
+    Returns:
+        fig, ax
+            fig: matplotlib Figure
+            ax: matplotlib Axes
+    """
+
     # ** validate **
     _validate_thresholds(thresholds)
     _validate_rate_curve(shared_fpr)
@@ -786,21 +804,41 @@ def plot_th_fpr_curves_norm_only(
     _validate_atleast_one_normal_image(image_classes)
     _validate_perimg_rate_curves(fprs[image_classes == 0], nan_allowed=False)
 
-    fpr_ubound = torch.tensor(fpr_ubound) if isinstance(fpr_ubound, float) else fpr_ubound
+    def _validate_and_convert_bound_tuple(tup: tuple[Tensor | float, Tensor | float | int]) -> tuple[Tensor, Tensor]:
+        if not isinstance(tup, Sequence):
+            raise TypeError(f"Expected argument to be a sequence, but got {type(tup)}.")
 
-    if not (isinstance(fpr_ubound, Tensor) and fpr_ubound.ndim == 0 and 0 < fpr_ubound and fpr_ubound <= 1):
-        raise ValueError("Expected argument `fpr_ubound` to be a float or a 0D tensor in (0, 1].")
+        if len(tup) != 2:
+            raise ValueError(f"Expected argument to be of size 2, but got size {len(tup)}.")
 
-    if not (
-        isinstance(th_lbound, Tensor)
-        and th_lbound.ndim == 0
-        and thresholds[0] <= th_lbound
-        and th_lbound <= thresholds[-1]
-    ):
+        th: Tensor | float
+        fpr: Tensor | float | int
+        th, fpr = tup  # type: ignore
+        th = _validate_and_convert_threshold(th)
+        fpr = _validate_and_convert_rate(fpr, nonzero=False, nonone=False)
+        return th, fpr
+
+    if th_lb_fpr_ub is None:
+        # default lower/upper bound is the lowest threshold / 1
+        th_lbound = thresholds[0]
+        fpr_ubound = torch.as_tensor(1.0)
+    else:
+        th_lbound, fpr_ubound = _validate_and_convert_bound_tuple(th_lb_fpr_ub)
+
+    if th_ub_fpr_lb is None:
+        # default upper/lower bound is the highest threshold / 0
+        th_ubound = thresholds[-1]
+        fpr_lbound = torch.as_tensor(0.0)
+    else:
+        th_ubound, fpr_lbound = _validate_and_convert_bound_tuple(th_ub_fpr_lb)
+
+    if th_lbound > th_ubound:
         raise ValueError(
-            "Expected argument `th_lbound` to be a 0D tensor in the range of `thresholds`: "
-            f"[{thresholds[0]}, {thresholds[-1]}], "
+            f"Expected threshold lower bound to be less than upper bound, but got {th_lbound} > {th_ubound}."
         )
+
+    if fpr_lbound > fpr_ubound:
+        raise ValueError(f"Expected FPR lower bound to be less than upper bound, but got {fpr_lbound} > {fpr_ubound}.")
 
     fig, ax = plt.subplots(figsize=(7, 7)) if ax is None else (None, ax)
 
@@ -824,23 +862,40 @@ def plot_th_fpr_curves_norm_only(
     ax.plot(thresholds, shared_fpr, color="black", linewidth=2, linestyle="--", label="Mean")
 
     # ** plot [bounds] **
-    ax.axhline(
-        fpr_ubound,
-        label=f"Shared FPR upper bound ({float(100 * fpr_ubound):.2g}%)",
-        linestyle="--",
-        color="red",
-    )
-    ax.axvline(
-        th_lbound,
-        label="Threshold lower bound (@ FPR upper bound)",
-        linestyle="--",
-        color="blue",
-    )
+    if th_lb_fpr_ub is not None:
+        ax.axhline(
+            fpr_ubound,
+            label=f"Shared FPR upper bound ({float(100 * fpr_ubound):.2g}%)",
+            linestyle="--",
+            color="red",
+        )
+        ax.axvline(
+            th_lbound,
+            label="Threshold lower bound (@ FPR upper bound)",
+            linestyle="-.",
+            color="red",
+        )
+
+    if th_ub_fpr_lb is not None:
+        ax.axhline(
+            fpr_lbound,
+            label=f"Shared FPR lower bound ({float(100 * fpr_lbound):.2g}%)",
+            linestyle="--",
+            color="blue",
+        )
+        ax.axvline(
+            th_ubound,
+            label="Threshold upper bound (@ FPR lower bound)",
+            linestyle="-.",
+            color="blue",
+        )
+
+    # ** plot [rectangle] **
     ax.add_patch(
         Rectangle(
-            (th_lbound, 0),
-            thresholds[-1] - th_lbound,
-            fpr_ubound,
+            (th_lbound, fpr_lbound),
+            th_ubound - th_lbound,
+            fpr_ubound - fpr_lbound,
             facecolor="cyan",
             alpha=0.2,
         )
