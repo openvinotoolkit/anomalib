@@ -8,6 +8,7 @@ from __future__ import annotations
 import math
 import warnings
 from pathlib import Path
+from warnings import warn
 
 import cv2
 import numpy as np
@@ -210,7 +211,7 @@ def read_image(
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
     if image_size is not None and resize is None:
-        raise DeprecationWarning("``image_size`` is deprecated. Please use ``resize`` instead.")
+        warn(message="``image_size`` is deprecated. Please use ``resize`` instead.", category=DeprecationWarning)
         resize = image_size
 
     if resize:
