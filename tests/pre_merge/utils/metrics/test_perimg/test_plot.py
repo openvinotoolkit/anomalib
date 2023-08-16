@@ -58,12 +58,13 @@ def pytest_generate_tests(metafunc):
 
 
 def test__plot_perimg_curves(x, ys):
-    fig, ax = plt.subplots()
+    """Test _plot_perimg_curves."""
+    _, ax = plt.subplots()
     _plot_perimg_curves(ax, x, ys, *[{} for _ in range(ys.shape[0])])
 
 
 def test__plot_perimg_curves_kwargs(x, ys):
-    fig, ax = plt.subplots()
+    _, ax = plt.subplots()
     _plot_perimg_curves(
         ax,
         ys[0],
@@ -77,12 +78,14 @@ def test__plot_perimg_curves_kwargs(x, ys):
 
 def test_plot_all_pimo_curves(rates, image_classes):
     fig, ax = plot_all_pimo_curves(rates[0], rates, image_classes)
+    assert fig is not None
+    assert ax is not None
     plot_all_pimo_curves(rates[0], rates, image_classes, ax=ax)
 
 
 def test__plot_perimg_metric_boxplot(aucs, image_classes, only_class):
     bp_stats = _perimg_boxplot_stats(aucs, image_classes)
-    fig, ax = plt.subplots()
+    _, ax = plt.subplots()
     _plot_perimg_metric_boxplot(ax, aucs, image_classes, bp_stats, only_class=only_class)
 
 

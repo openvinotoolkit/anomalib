@@ -204,7 +204,7 @@ class EfficientAd(AnomalyModule):
             lr=self.lr,
             weight_decay=self.weight_decay,
         )
-        num_steps = max(
+        num_steps = min(
             self.trainer.max_steps, self.trainer.max_epochs * len(self.trainer.datamodule.train_dataloader())
         )
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=int(0.95 * num_steps), gamma=0.1)

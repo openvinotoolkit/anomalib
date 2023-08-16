@@ -66,7 +66,7 @@ def _format_axis_rate_metric_linear(
         raise ValueError(f"`axis` must be 0 (X-axis) or 1 (Y-axis), but got {axis}.")
 
 
-def _format_axis_rate_metric_log(ax: Axes, axis: int, lower_lim: float = 1e-3, num_ticks_major: int = 6) -> None:
+def _format_axis_rate_metric_log(ax: Axes, axis: int, lower_lim: float = 1e-3) -> None:
     """will be used in a later PR
     TODO remove this comment
     """
@@ -329,7 +329,7 @@ def plot_all_pimo_curves(
         shared_fpr,
         tprs,
         *[
-            (dict(label=f"idx={imgidx:03}") if img_cls == 1 else None)  # a generic label  # don't plot this curve
+            ({"label": f"idx={imgidx:03}"} if img_cls == 1 else None)  # a generic label  # don't plot this curve
             for imgidx, img_cls in enumerate(image_classes)
         ],  # type: ignore
         # shared kwargs
