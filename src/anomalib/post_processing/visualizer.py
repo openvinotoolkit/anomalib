@@ -14,7 +14,6 @@ import cv2
 import matplotlib.figure
 import matplotlib.pyplot as plt
 import numpy as np
-from skimage.segmentation import mark_boundaries
 
 from anomalib.data import TaskType
 from anomalib.data.utils import read_image
@@ -22,6 +21,7 @@ from anomalib.post_processing.post_process import (
     add_anomalous_label,
     add_normal_label,
     draw_boxes,
+    draw_contours,
     superimpose_anomaly_map,
 )
 
@@ -49,13 +49,13 @@ class ImageResult:
         """Generate heatmap overlay and segmentations, convert masks to images."""
         if self.anomaly_map is not None:
             self.heat_map = superimpose_anomaly_map(self.anomaly_map, self.image, normalize=False)
-        if self.pred_mask is not None and self.pred_mask.max() <= 1.0:
-            self.pred_mask *= 255
-            self.segmentations = mark_boundaries(self.image, self.pred_mask, color=(1, 0, 0), mode="thick")
-            if self.segmentations.max() <= 1.0:
-                self.segmentations = (self.segmentations * 255).astype(np.uint8)
+
+        if self.pred_mask is not None:
+            self.segmentations = draw_contours(self.image, self.pred_mask)
+
         if self.gt_mask is not None and self.gt_mask.max() <= 1.0:
             self.gt_mask *= 255
+
         if self.pred_boxes is not None:
             assert self.box_labels is not None, "Box labels must be provided when box locations are provided."
             self.normal_boxes = self.pred_boxes[~self.box_labels.astype(bool)]
@@ -100,7 +100,7 @@ class Visualizer:
         for i in range(batch_size):
             if "image_path" in batch:
                 height, width = batch["image"].shape[-2:]
-                image = read_image(path=batch["image_path"][i], image_size=(height, width))
+                image = read_image(path=batch["image_path"][i], resize=(height, width))
             elif "video_path" in batch:
                 height, width = batch["original_image"].shape[1:3]
                 image = batch["original_image"][i].squeeze().numpy()
@@ -161,6 +161,7 @@ class Visualizer:
             pred_image = draw_boxes(np.copy(image_result.image), image_result.normal_boxes, color=(0, 255, 0))
             pred_image = draw_boxes(pred_image, image_result.anomalous_boxes, color=(255, 0, 0))
             visualization.add_image(pred_image, "Predictions")
+
         if self.task == TaskType.SEGMENTATION:
             assert image_result.pred_mask is not None
             visualization.add_image(image_result.image, "Image")
@@ -169,6 +170,7 @@ class Visualizer:
             visualization.add_image(image_result.heat_map, "Predicted Heat Map")
             visualization.add_image(image=image_result.pred_mask, color_map="gray", title="Predicted Mask")
             visualization.add_image(image=image_result.segmentations, title="Segmentation Result")
+
         elif self.task == TaskType.CLASSIFICATION:
             visualization.add_image(image_result.image, title="Image")
             if hasattr(image_result, "heat_map"):
@@ -200,11 +202,11 @@ class Visualizer:
             if image_result.gt_boxes is not None:
                 image_with_boxes = draw_boxes(image=image_with_boxes, boxes=image_result.gt_boxes, color=(255, 0, 0))
             return image_with_boxes
+
         if self.task == TaskType.SEGMENTATION:
-            visualization = mark_boundaries(
-                image_result.heat_map, image_result.pred_mask, color=(1, 0, 0), mode="thick"
-            )
-            return (visualization * 255).astype(np.uint8)
+            visualization = draw_contours(image_result.heat_map, image_result.pred_mask, color=(0, 0, 1))
+            return visualization
+
         if self.task == TaskType.CLASSIFICATION:
             if image_result.pred_label:
                 image_classified = add_anomalous_label(image_result.image, image_result.pred_score)
@@ -222,7 +224,6 @@ class Visualizer:
             image (np.ndarray): Image that will be shown in the window.
             delay (int): Delay in milliseconds to wait for keystroke. 0 for infinite.
         """
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         cv2.imshow(title, image)
         cv2.waitKey(delay)
         cv2.destroyAllWindows()
@@ -236,7 +237,6 @@ class Visualizer:
             image (np.ndarray): Image that will be saved to the file system.
         """
         file_path.parent.mkdir(parents=True, exist_ok=True)
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         cv2.imwrite(str(file_path), image)
 
 
