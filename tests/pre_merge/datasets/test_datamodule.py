@@ -252,7 +252,7 @@ class TestDataModule:
         )
 
     def test_folder_sequence_inputs(self, make_data_module, dataset):
-        """This test ensures that val and test split are equal when split mode == same_as_test."""
+        """This test ensures that the list folder input is working well."""
         if dataset == "folder":
             _colour = make_data_module(dataset=dataset, abnormal_dir="colour", dataset_name="hazelnut_toy")
             len_colour = len(_colour.val_data.samples.loc[_colour.val_data.samples.label == DirType.ABNORMAL])
