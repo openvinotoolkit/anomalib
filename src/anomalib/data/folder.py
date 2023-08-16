@@ -59,9 +59,9 @@ def make_folder_dataset(
         Args:
             path (str | Path | Sequence | None): Path to replace with Sequence[str | Path].
         Examples:
-            >>> _path_to_list_config_with_resolve_path("dir")
+            >>> _resolve_path_and_convert_to_list("dir")
             [Path("path/to/dir")]
-            >>> _path_to_list_config_with_resolve_path(["dir1", "dir2"])
+            >>> _resolve_path_and_convert_to_list(["dir1", "dir2"])
             [Path("path/to/dir1"), Path("path/to/dir2")]
         Returns:
             list[Path]: The result of path replaced by Sequence[str | Path].
