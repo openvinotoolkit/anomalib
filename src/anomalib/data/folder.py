@@ -8,7 +8,7 @@ This script creates a custom dataset from a folder.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List, Sequence
+from typing import Sequence
 
 import albumentations as A
 from pandas import DataFrame
@@ -54,22 +54,27 @@ def make_folder_dataset(
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
 
-    def _path_to_list_config_with_resolve_path(path: str | Path | Sequence[str | Path] | None) -> List[Path]:
-        """Function for changing path to List[Path].
+    def _resolve_path_and_convert_to_list(path: str | Path | Sequence[str | Path] | None) -> list[Path]:
+        """Convert path to list of paths.
         Args:
             path (str | Path | Sequence | None): Path to replace with Sequence[str | Path].
+        Examples:
+            >>> _path_to_list_config_with_resolve_path("dir")
+            [Path("path/to/dir")]
+            >>> _path_to_list_config_with_resolve_path(["dir1", "dir2"])
+            [Path("path/to/dir1"), Path("path/to/dir2")]
         Returns:
-            List[Path]: The result of path replaced by Sequence[str | Path].
+            list[Path]: The result of path replaced by Sequence[str | Path].
         """
         if isinstance(path, Sequence) and not isinstance(path, str):
             return [_resolve_path(dir_path, root) for dir_path in path]
         return [_resolve_path(path, root)] if path is not None else []
 
     # All paths are changed to the List[Path] type and used.
-    normal_dir = _path_to_list_config_with_resolve_path(normal_dir)
-    abnormal_dir = _path_to_list_config_with_resolve_path(abnormal_dir)
-    normal_test_dir = _path_to_list_config_with_resolve_path(normal_test_dir)
-    mask_dir = _path_to_list_config_with_resolve_path(mask_dir)
+    normal_dir = _resolve_path_and_convert_to_list(normal_dir)
+    abnormal_dir = _resolve_path_and_convert_to_list(abnormal_dir)
+    normal_test_dir = _resolve_path_and_convert_to_list(normal_test_dir)
+    mask_dir = _resolve_path_and_convert_to_list(mask_dir)
     assert len(normal_dir) > 0, "A folder location must be provided in normal_dir."
 
     filenames = []
