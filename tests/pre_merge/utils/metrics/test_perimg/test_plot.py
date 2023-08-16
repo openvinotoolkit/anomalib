@@ -33,7 +33,7 @@ def pytest_generate_tests(metafunc):
 
 def test__plot_perimg_curves(x, ys):
     """Test _plot_perimg_curves."""
-    fig, ax = plt.subplots()
+    _, ax = plt.subplots()
     _plot_perimg_curves(ax, x, ys, *[{} for _ in range(ys.shape[0])])
 
 
@@ -55,4 +55,6 @@ def test_plot_all_pimo_curves():
     rates = (torch.linspace(-10, 10, 300)[None, :] + torch.arange(1, 5)[:, None]).sigmoid().flip(1)
     img_cls = (torch.arange(1, 5) % 2).to(torch.int32)
     fig, ax = plot_all_pimo_curves(rates[0], rates, img_cls)
+    assert fig is not None
+    assert ax is not None
     plot_all_pimo_curves(rates[0], rates, img_cls, ax=ax)
