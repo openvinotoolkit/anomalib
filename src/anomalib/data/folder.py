@@ -262,8 +262,6 @@ class Folder(AnomalibDataModule):
         )
 
         self.normal_split_ratio = normal_split_ratio
-
-        self.normal_split_ratio = normal_split_ratio
         transform_train = get_transforms(
             config=transform_config_train,
             image_size=image_size,
