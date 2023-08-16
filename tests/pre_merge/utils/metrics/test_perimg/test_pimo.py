@@ -125,7 +125,7 @@ def test_aupimo(
     aupimo.update(anomaly_maps, masks)
     # `com` stands for `computed`
     pimoresult, com_aupimos = aupimo.compute()
-    (com_thresholds, com_fprs, com_shared_fpr, com_tprs, com_image_classes) = pimoresult
+    (com_thresholds, _, com_shared_fpr, com_tprs, com_image_classes) = pimoresult
     assert pimoresult.thresholds.ndim == 1
     assert pimoresult.fprs.ndim == 2
     assert pimoresult.shared_fpr.ndim == 1

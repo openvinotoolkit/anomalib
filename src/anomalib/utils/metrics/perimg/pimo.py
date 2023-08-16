@@ -187,7 +187,7 @@ class AUPImO(PImO):
                 torch.empty(0, dtype=torch.int32),
             ), torch.empty(0, dtype=torch.float64)
 
-        pimoresult = thresholds, fprs, shared_fpr, tprs, image_classes = super().compute()
+        pimoresult = _, __, shared_fpr, tprs, ___ = super().compute()
 
         # get the index of the value in `shared_fpr` that is closest to `self.ubound in abs value
         # knwon issue: `shared_fpr[ubound_idx]` might not be exactly `self.ubound`
@@ -218,7 +218,7 @@ class AUPImO(PImO):
         if self.is_empty:
             return None, None
 
-        (thresholds, fprs, shared_fpr, tprs, image_classes), aucs = self.compute()
+        (_, __, shared_fpr, tprs, image_classes), ___ = self.compute()
 
         fig, ax = plot_all_pimo_curves(
             shared_fpr,
@@ -286,37 +286,37 @@ class AUPImO(PImO):
 
     def plot(
         self,
-        axes: Axes | ndarray | None = None,
+        ax: Axes | ndarray | None = None,
     ) -> tuple[Figure | None, Axes | ndarray]:
         """Plot AUPImO boxplot with its statistics' PImO curves."""
 
         if self.is_empty:
             return None, None
 
-        if axes is None:
-            fig, axes = plt.subplots(1, 2, figsize=(14, 6), width_ratios=[6, 8])
+        if ax is None:
+            fig, ax = plt.subplots(1, 2, figsize=(14, 6), width_ratios=[6, 8])
             fig.suptitle("Area Under the Per-Image Overlap (AUPImO) Curves")
             fig.set_layout_engine("tight")
         else:
-            fig, axes = (None, axes)
+            fig, ax = (None, ax)
 
-        if isinstance(axes, Axes):
-            return self.plot_boxplot_pimo_curves(ax=axes)
+        if isinstance(ax, Axes):
+            return self.plot_boxplot_pimo_curves(ax=ax)
 
-        if not isinstance(axes, ndarray):
-            raise ValueError(f"Expected argument `axes` to be a matplotlib Axes or ndarray, but got {type(axes)}.")
+        if not isinstance(ax, ndarray):
+            raise ValueError(f"Expected argument `axes` to be a matplotlib Axes or ndarray, but got {type(ax)}.")
 
-        if axes.size != 2:
+        if ax.size != 2:
             raise ValueError(
-                f"Expected argument `axes` , when type `ndarray`, to be of size 2, but got size {axes.size}."
+                f"Expected argument `axes` , when type `ndarray`, to be of size 2, but got size {ax.size}."
             )
 
-        axes = axes.flatten()
-        self.plot_boxplot(ax=axes[0])
-        axes[0].set_title("AUC Boxplot")
-        self.plot_boxplot_pimo_curves(ax=axes[1])
-        axes[1].set_title("Curves")
-        return fig, axes
+        ax = ax.flatten()
+        self.plot_boxplot(ax=ax[0])
+        ax[0].set_title("AUC Boxplot")
+        self.plot_boxplot_pimo_curves(ax=ax[1])
+        ax[1].set_title("Curves")
+        return fig, ax
 
     def plot_perimg_fprs(
         self,

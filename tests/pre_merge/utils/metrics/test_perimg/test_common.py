@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import torch
 
 from anomalib.utils.metrics.perimg.common import _perimg_boxplot_stats
