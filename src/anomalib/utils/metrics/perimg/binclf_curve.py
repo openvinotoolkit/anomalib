@@ -38,7 +38,7 @@ def _validate_num_thresholds(num_thresholds: int) -> None:
             f"If argument `num_thresholds` is an integer, expected it to be larger than 1, but got {num_thresholds}"
         )
 
-    elif num_thresholds < NUM_THRESHOLDS_WARNING_LOW:
+    if num_thresholds < NUM_THRESHOLDS_WARNING_LOW:
         warnings.warn(
             f"Argument `num_thresholds` ({num_thresholds}) is lower than {NUM_THRESHOLDS_WARNING_LOW}. "
             "This may lead to inaccurate results."
@@ -179,6 +179,7 @@ def __binclf_curves_ndarray_itertools(scores: ndarray, mask: ndarray, thresholds
             - `fns`: `[... , 1, 0]`
             - `tns`: `[... , 0, 0]`
     """
+    # pylint: disable-msg=too-many-locals
 
     if scores.ndim != 1:
         raise ValueError(f"Expected argument `scores` to be 1D, but got {scores.ndim}")
@@ -211,18 +212,24 @@ def __binclf_curves_ndarray_itertools(scores: ndarray, mask: ndarray, thresholds
     # `fp` stands for `false positive`
     fps = np.empty((num_th,), dtype=np.int64)
 
+    def x_less_than_th(th):
+        def func(x):
+            return x < th
+
+        return func
+
     # it will progressively drop the scores that are below the current threshold
     for thidx, th in enumerate(thresholds):
         # UPDATE POSITIVES
         # < becasue it is the same as ~(>=)
-        num_drop = sum(1 for _ in itertools.takewhile(lambda x: x < th, scores_positives))
+        num_drop = sum(1 for _ in itertools.takewhile(x_less_than_th(th), scores_positives))
         scores_positives = scores_positives[num_drop:]
         current_count_tp -= num_drop
         tps[thidx] = current_count_tp
 
         # UPDATE NEGATIVES
         # same with the negatives
-        num_drop = sum(1 for _ in itertools.takewhile(lambda x: x < th, scores_negatives))
+        num_drop = sum(1 for _ in itertools.takewhile(x_less_than_th(th), scores_negatives))
         scores_negatives = scores_negatives[num_drop:]
         current_count_fp -= num_drop
         fps[thidx] = current_count_fp
@@ -358,9 +365,9 @@ class PerImageBinClfCurve(Metric):
         # deduced from the anomaly maps in `compute()`
         self.register_buffer("threshold_bounds", torch.empty(2, dtype=torch.float32, device=torch.device("cpu")))
 
-        self.add_state("anomaly_maps", default=[], dist_reduce_fx="cat")  # pylint: disable=not-callable
-        self.add_state("masks", default=[], dist_reduce_fx="cat")  # pylint: disable=not-callable
-        self.add_state("image_classes", default=[], dist_reduce_fx="cat")  # pylint: disable=not-callable
+        self.add_state("anomaly_maps", default=[], dist_reduce_fx="cat")
+        self.add_state("masks", default=[], dist_reduce_fx="cat")
+        self.add_state("image_classes", default=[], dist_reduce_fx="cat")
 
     def update(self, anomaly_maps: Tensor, masks: Tensor) -> None:  # type: ignore
         """Update state with new values.

@@ -38,7 +38,7 @@ def test__plot_perimg_curves(x, ys):
 
 
 def test__plot_perimg_curves_kwargs(x, ys):
-    fig, ax = plt.subplots()
+    _, ax = plt.subplots()
     _plot_perimg_curves(
         ax,
         x,

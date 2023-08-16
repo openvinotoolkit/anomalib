@@ -156,7 +156,7 @@ class AUPImO(PImO):
                 torch.empty(0, dtype=torch.int32),
             ), torch.empty(0, dtype=torch.float64)
 
-        pimoresult = thresholds, fprs, shared_fpr, tprs, image_classes = super().compute()
+        pimoresult = _, __, shared_fpr, tprs, ___ = super().compute()
 
         # `shared_fpr` and `tprs` are in descending order; `flip()` reverts to ascending order
         tprs_auc: Tensor = tprs.flip(dims=(1,))
@@ -177,7 +177,7 @@ class AUPImO(PImO):
         if self.is_empty:
             return None, None
 
-        (thresholds, fprs, shared_fpr, tprs, image_classes), aucs = self.compute()
+        (_, __, shared_fpr, tprs, image_classes), ___ = self.compute()
 
         fig, ax = plot_all_pimo_curves(
             shared_fpr,
@@ -190,11 +190,11 @@ class AUPImO(PImO):
 
     def plot(
         self,
-        axes: Axes | ndarray | None = None,
+        ax: Axes | ndarray | None = None,
     ) -> tuple[Figure | None, Axes | ndarray]:
         """Plot AUPImO boxplot with its statistics' PImO curves."""
 
-        return self.plot_all_pimo_curves(axes)
+        return self.plot_all_pimo_curves(ax)
 
 
 class AULogPImO(PImO):
