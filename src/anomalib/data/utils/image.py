@@ -181,27 +181,43 @@ def get_image_height_and_width(image_size: int | tuple[int, int]) -> tuple[int, 
     return height_and_width
 
 
-def read_image(path: str | Path, image_size: int | tuple[int, int] | None = None) -> np.ndarray:
-    """Read image from disk in RGB format.
+def read_image(
+    path: str | Path,
+    bgr2rgb: bool = False,
+    resize: int | tuple[int, int] | None = None,
+    image_size: int | tuple[int, int] | None = None,  # Deprecated
+) -> np.ndarray:
+    """Read image from file system.
 
     Args:
         path (str, Path): path to the image file
+        bgr2rgb (bool, optional): convert image from BGR to RGB. Defaults to False.
+        resize (int | tuple[int, int] | None, optional): Resize image to this size. Defaults to None.
+        image_size (int | tuple[int, int] | None, optional): Input image size. Defaults to None. Deprecated.
 
-    Example:
+    Examples:
         >>> image = read_image("test_image.jpg")
+        >>> image = read_image("test_image.jpg", bgr2rgb=True)
+        >>> image = read_image("test_image.jpg", image_size=256)
 
     Returns:
         image as numpy array
     """
     path = path if isinstance(path, str) else str(path)
-    image = cv2.imread(path)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image = cv2.imread(path, cv2.IMREAD_UNCHANGED)
 
-    if image_size:
+    if bgr2rgb:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    if image_size is not None and resize is None:
+        raise DeprecationWarning("``image_size`` is deprecated. Please use ``resize`` instead.")
+        resize = image_size
+
+    if resize:
         # This part is optional, where the user wants to quickly resize the image
         # with a one-liner code. This would particularly be useful especially when
         # prototyping new ideas.
-        height, width = get_image_height_and_width(image_size)
+        height, width = get_image_height_and_width(resize)
         image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
 
     return image
