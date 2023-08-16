@@ -473,17 +473,22 @@ class AULogPImO(PImO):
         # get the index of the value in `shared_fpr` that is closest to `self.ubound in abs value
         # knwon issue: `shared_fpr[ubound_idx]` might not be exactly `self.ubound`
         # but it's ok because `num_thresholds` should be large enough so that the error is negligible
-        ubound_idx = torch.argmin(torch.abs(shared_fpr - self.ubound))
-        lbound_idx = torch.argmin(torch.abs(shared_fpr - self.lbound))
+        ubound_th_idx = torch.argmin(torch.abs(shared_fpr - self.ubound))
+        lbound_th_idx = torch.argmin(torch.abs(shared_fpr - self.lbound))
 
         # deal with edge cases
-        if ubound_idx == lbound_idx:
-            raise
+        # reminder: fpr lower/upper bound is threshold upper/lower bound
+        if ubound_th_idx >= lbound_th_idx:
+            raise RuntimeError(
+                "Expected `lbound` and `ubound` to be such that `threshold(ubound) < threshold(lbound)`, "
+                f"but got `threshold(ubound) = {thresholds[ubound_th_idx]}` >= "
+                f"`threshold(lbound) = {thresholds[lbound_th_idx]}`."
+            )
 
         # limit the curves to the integration range [lbound, ubound]
         # `shared_fpr` and `tprs` are in descending order; `flip()` reverts to ascending order
-        tprs_auc: Tensor = tprs[:, ubound_idx:lbound_idx].flip(dims=(1,))
-        shared_fpr_auc: Tensor = shared_fpr[ubound_idx:lbound_idx].flip(dims=(0,))
+        tprs_auc: Tensor = tprs[:, ubound_th_idx : (lbound_th_idx + 1)].flip(dims=(1,))
+        shared_fpr_auc: Tensor = shared_fpr[ubound_th_idx : (lbound_th_idx + 1)].flip(dims=(0,))
         # as described in the class's docstring:
         shared_fpr_auc = shared_fpr_auc.log()
 

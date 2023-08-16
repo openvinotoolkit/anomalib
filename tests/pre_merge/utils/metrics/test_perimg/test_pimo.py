@@ -172,9 +172,10 @@ def pytest_generate_tests(metafunc):
                         torch.as_tensor(
                             [
                                 torch.nan,
-                                0,
-                                0,
-                            ]
+                                sum([0.011 / 2, 0.11 / 2, 1.1 / 2]) / 3,
+                                sum([0.11 / 2, 1.1 / 2, 1]) / 3,
+                            ],
+                            dtype=torch.float64,
                         ),
                     ),
                     (
@@ -183,9 +184,10 @@ def pytest_generate_tests(metafunc):
                         torch.as_tensor(
                             [
                                 torch.nan,
-                                0,
-                                0,
-                            ]
+                                sum([0.011 / 2, 0.11 / 2]) / 2,
+                                sum([0.11 / 2, 1.1 / 2]) / 2,
+                            ],
+                            dtype=torch.float64,
                         ),
                     ),
                     (
@@ -194,9 +196,10 @@ def pytest_generate_tests(metafunc):
                         torch.as_tensor(
                             [
                                 torch.nan,
-                                0,
-                                0,
-                            ]
+                                1.1 / 2,
+                                1.0,
+                            ],
+                            dtype=torch.float64,
                         ),
                     ),
                 ],
@@ -239,23 +242,24 @@ def test_aupimo(
     ubound,
 ):
     aupimo = AUPImO(num_thresholds=expected_thresholds.shape[0], ubound=ubound)
+    str(aupimo)
     aupimo.update(anomaly_maps, masks)
     # `com` stands for `computed`
-    pimoresult, com_aupimos = aupimo.compute()
+    pimoresult, com_aulogpimos = aupimo.compute()
     (com_thresholds, com_fprs, com_shared_fpr, com_tprs, com_image_classes) = pimoresult
     assert pimoresult.thresholds.ndim == 1
     assert pimoresult.fprs.ndim == 2
     assert pimoresult.shared_fpr.ndim == 1
     assert pimoresult.tprs.ndim == 2
     assert pimoresult.image_classes.ndim == 1
-    assert com_aupimos.ndim == 1
+    assert com_aulogpimos.ndim == 1
     assert (com_thresholds == expected_thresholds).all()
     assert (com_shared_fpr == expected_fpr).all()
     assert com_tprs[:2].isnan().all()
     assert (com_tprs[2:] == expected_tprs[2:]).all()
     assert (com_image_classes == expected_image_classes).all()
-    assert com_aupimos[:2].isnan().all()
-    assert (com_aupimos[2:] == expected_aupimos[2:]).all()
+    assert com_aulogpimos[:2].isnan().all()
+    assert (com_aulogpimos[2:] == expected_aupimos[2:]).all()
 
     stats = aupimo.boxplot_stats()
     assert len(stats) > 0
@@ -266,7 +270,10 @@ def test_aupimo_plots(anomaly_maps, masks, ubound):
     aupimo.update(anomaly_maps, masks)
     aupimo.compute()
 
-    aupimo.plot()
+    fig, axes = aupimo.plot()
+    assert fig is not None
+    assert axes is not None
+    aupimo.plot(axes=axes)
 
     fig, ax = aupimo.plot_all_pimo_curves()
     assert fig is not None
@@ -301,23 +308,28 @@ def test_aulogpimo(
     ubound,
 ):
     aulogpimo = AULogPImO(num_thresholds=expected_thresholds.shape[0], lbound=lbound, ubound=ubound)
+    str(aulogpimo)
+    assert 0 < aulogpimo.max_primitive_auc
+    assert 0 < aulogpimo.random_model_primitive_auc < aulogpimo.max_primitive_auc
+    assert 0 < aulogpimo.random_model_auc < 1
+
     aulogpimo.update(anomaly_maps, masks)
     # `com` stands for `computed`
-    pimoresult, com_aupimos = aulogpimo.compute()
+    pimoresult, com_aulogpimos = aulogpimo.compute()
     (com_thresholds, com_fprs, com_shared_fpr, com_tprs, com_image_classes) = pimoresult
     assert pimoresult.thresholds.ndim == 1
     assert pimoresult.fprs.ndim == 2
     assert pimoresult.shared_fpr.ndim == 1
     assert pimoresult.tprs.ndim == 2
     assert pimoresult.image_classes.ndim == 1
-    assert com_aupimos.ndim == 1
+    assert com_aulogpimos.ndim == 1
     assert (com_thresholds == expected_thresholds).all()
     assert (com_shared_fpr == expected_fpr).all()
     assert com_tprs[:1].isnan().all()
     assert (com_tprs[1:] == expected_tprs[1:]).all()
     assert (com_image_classes == expected_image_classes).all()
-    # assert com_aupimos[:2].isnan().all()
-    # assert (com_aupimos[2:] == expected_aulogpimos[2:]).all()
+    assert com_aulogpimos[:1].isnan().all()
+    assert torch.allclose(com_aulogpimos[1:], expected_aulogpimos[1:], atol=1e-6)
 
     stats = aulogpimo.boxplot_stats()
     assert len(stats) > 0
@@ -328,7 +340,10 @@ def test_aulogpimo_plots(anomaly_maps, masks, lbound, ubound):
     aulogpimo.update(anomaly_maps, masks)
     aulogpimo.compute()
 
-    aulogpimo.plot()
+    fig, axes = aulogpimo.plot()
+    assert fig is not None
+    assert axes is not None
+    aulogpimo.plot(axes=axes)
 
     fig, ax = aulogpimo.plot_all_logpimo_curves()
     assert fig is not None
