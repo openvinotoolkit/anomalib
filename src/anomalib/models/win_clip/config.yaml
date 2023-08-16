@@ -27,6 +27,7 @@ dataset:
 
 model:
   name: win_clip
+  class_name: object
   normalization_method: min_max
 
 metrics:

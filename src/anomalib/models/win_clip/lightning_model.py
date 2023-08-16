@@ -14,11 +14,10 @@ import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
-from anomalib.models.win_clip.torch_model import WinClipAD
 from torchvision.transforms.functional import resize
 
 from anomalib.models.components import AnomalyModule
-from anomalib.models.win_clip.third_party.utils.eval_utils import specify_resolution
+from anomalib.models.win_clip.torch_model import WinClipAD
 
 logger = logging.getLogger(__name__)
 
@@ -26,17 +25,18 @@ __all__ = ["WinClip", "WinClipLightning"]
 
 
 class WinClip(AnomalyModule):
-    """WinCLIP
-    """
+    """WinCLIP"""
 
     def __init__(
-        self
+        self,
+        class_name: str,
     ) -> None:
         super().__init__()
         self.model = WinClipAD(torch.device("cuda"))
+        self.class_name = class_name
 
     def on_train_start(self) -> None:
-        self.model.build_text_feature_gallery("hazelnut")
+        self.model.build_text_feature_gallery(self.class_name)
 
     @staticmethod
     def configure_optimizers() -> None:  # pylint: disable=arguments-differ
@@ -44,8 +44,7 @@ class WinClip(AnomalyModule):
         return None
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
-        """Training Step of WinCLIP
-        """
+        """Training Step of WinCLIP"""
         del args, kwargs  # These variables are not used.
         pass
 
@@ -53,8 +52,7 @@ class WinClip(AnomalyModule):
         pass
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of WinCLIP
-        """
+        """Validation Step of WinCLIP"""
         del args, kwargs  # These variables are not used.
         scores = self.model(batch["image"])
         scores = [resize(torch.tensor(score).unsqueeze(0), batch["image"].shape[-2:]).squeeze() for score in scores]
@@ -62,12 +60,12 @@ class WinClip(AnomalyModule):
         return batch
 
 
-
 class WinClipLightning(WinClip):
-    """WinCLIP
-    """
+    """WinCLIP"""
 
     def __init__(self, hparams: DictConfig | ListConfig) -> None:
-        super().__init__()
+        super().__init__(
+            class_name=hparams.model.class_name,
+        )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
