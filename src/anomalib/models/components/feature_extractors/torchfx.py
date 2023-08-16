@@ -39,6 +39,9 @@ class TorchFXFeatureExtractor(nn.Module):
             path for custom models.
         requires_grad (bool): Models like ``stfpm`` use the feature extractor for training. In such cases we should
             set ``requires_grad`` to ``True``. Default is ``False``.
+        tracer_kwargs (dict | None): a dictionary of keyword arguments for NodePathTracer (which passes them onto
+            it's parent class torch.fx.Tracer). Can be used to allow not tracing through a list of problematic
+            modules, by passing a list of `leaf_modules` as one of the `tracer_kwargs`.
 
     Example:
         With torchvision models:
@@ -91,6 +94,7 @@ class TorchFXFeatureExtractor(nn.Module):
         return_nodes: list[str],
         weights: str | WeightsEnum | None = None,
         requires_grad: bool = False,
+        tracer_kwargs: dict | None = None,
     ):
         super().__init__()
         if isinstance(backbone, dict):
@@ -102,7 +106,9 @@ class TorchFXFeatureExtractor(nn.Module):
                 f"backbone needs to be of type str | BackboneParams | dict | nn.Module, but was type {type(backbone)}"
             )
 
-        self.feature_extractor = self.initialize_feature_extractor(backbone, return_nodes, weights, requires_grad)
+        self.feature_extractor = self.initialize_feature_extractor(
+            backbone, return_nodes, weights, requires_grad, tracer_kwargs
+        )
 
     def initialize_feature_extractor(
         self,
@@ -110,6 +116,7 @@ class TorchFXFeatureExtractor(nn.Module):
         return_nodes: list[str],
         weights: str | WeightsEnum | None = None,
         requires_grad: bool = False,
+        tracer_kwargs: dict | None = None,
     ) -> GraphModule:
         """Extract features from a CNN.
 
@@ -125,6 +132,9 @@ class TorchFXFeatureExtractor(nn.Module):
                 path for custom models.
             requires_grad (bool): Models like ``stfpm`` use the feature extractor for training. In such cases we should
                 set ``requires_grad`` to ``True``. Default is ``False``.
+            tracer_kwargs (dict | None): a dictionary of keyword arguments for NodePathTracer (which passes them onto
+                it's parent class torch.fx.Tracer). Can be used to allow not tracing through a list of problematic
+                modules, by passing a list of `leaf_modules` as one of the `tracer_kwargs`.
 
         Returns:
             Feature Extractor based on TorchFX.
@@ -148,7 +158,7 @@ class TorchFXFeatureExtractor(nn.Module):
                         model_weights = model_weights["state_dict"]
                     backbone_model.load_state_dict(model_weights)
 
-        feature_extractor = create_feature_extractor(backbone_model, return_nodes)
+        feature_extractor = create_feature_extractor(backbone_model, return_nodes, tracer_kwargs=tracer_kwargs)
 
         if not requires_grad:
             feature_extractor.eval()

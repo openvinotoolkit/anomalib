@@ -245,21 +245,21 @@ def test_aupimo(
     str(aupimo)
     aupimo.update(anomaly_maps, masks)
     # `com` stands for `computed`
-    pimoresult, com_aulogpimos = aupimo.compute()
-    (com_thresholds, com_fprs, com_shared_fpr, com_tprs, com_image_classes) = pimoresult
+    pimoresult, com_aupimos = aupimo.compute()
+    (com_thresholds, _, com_shared_fpr, com_tprs, com_image_classes) = pimoresult
     assert pimoresult.thresholds.ndim == 1
     assert pimoresult.fprs.ndim == 2
     assert pimoresult.shared_fpr.ndim == 1
     assert pimoresult.tprs.ndim == 2
     assert pimoresult.image_classes.ndim == 1
-    assert com_aulogpimos.ndim == 1
+    assert com_aupimos.ndim == 1
     assert (com_thresholds == expected_thresholds).all()
     assert (com_shared_fpr == expected_fpr).all()
     assert com_tprs[:2].isnan().all()
     assert (com_tprs[2:] == expected_tprs[2:]).all()
     assert (com_image_classes == expected_image_classes).all()
-    assert com_aulogpimos[:2].isnan().all()
-    assert (com_aulogpimos[2:] == expected_aupimos[2:]).all()
+    assert com_aupimos[:2].isnan().all()
+    assert (com_aupimos[2:] == expected_aupimos[2:]).all()
 
     stats = aupimo.boxplot_stats()
     assert len(stats) > 0
@@ -316,7 +316,7 @@ def test_aulogpimo(
     aulogpimo.update(anomaly_maps, masks)
     # `com` stands for `computed`
     pimoresult, com_aulogpimos = aulogpimo.compute()
-    (com_thresholds, com_fprs, com_shared_fpr, com_tprs, com_image_classes) = pimoresult
+    (com_thresholds, _, com_shared_fpr, com_tprs, com_image_classes) = pimoresult
     assert pimoresult.thresholds.ndim == 1
     assert pimoresult.fprs.ndim == 2
     assert pimoresult.shared_fpr.ndim == 1
