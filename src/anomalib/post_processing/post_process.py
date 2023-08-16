@@ -99,7 +99,6 @@ def anomaly_map_to_color_map(anomaly_map: np.ndarray, normalize: bool = True) ->
     anomaly_map = anomaly_map.astype(np.uint8)
 
     anomaly_map = cv2.applyColorMap(anomaly_map, cv2.COLORMAP_JET)
-    anomaly_map = cv2.cvtColor(anomaly_map, cv2.COLOR_BGR2RGB)
     return anomaly_map
 
 
@@ -169,3 +168,42 @@ def draw_boxes(image: np.ndarray, boxes: np.ndarray, color: tuple[int, int, int]
         x_1, y_1, x_2, y_2 = box.astype(int)
         image = cv2.rectangle(image, (x_1, y_1), (x_2, y_2), color=color, thickness=2)
     return image
+
+
+def draw_contours(
+    image: np.ndarray, mask: np.ndarray, color: tuple[int, int, int] = (0, 0, 255), thickness: int = 2
+) -> np.ndarray:
+    """Draw polygons on an image.
+
+    Args:
+        image (np.ndarray): Input image.
+        mask (np.ndarray): Mask of the contours to draw.
+        color (tuple[int, int, int], optional): Color to draw contours. Defaults to (0, 0, 255).
+        thickness (int, optional): Thickness of the contours. Defaults to 2.
+
+    Examples:
+        >>> image = np.zeros((256, 256, 3))
+        >>> mask = np.zeros((256, 256))
+        >>> mask[100:150, 100:150] = 1
+        >>> image = draw_contours(image, mask)
+        >>> image.shape
+        (256, 256, 3)
+
+        >>> image = np.zeros((256, 256, 3))
+        >>> mask = np.zeros((256, 256))
+        >>> mask[100:150, 100:150] = 1
+        >>> image = draw_contours(image, mask, color=(255, 0, 0), thickness=4)
+        >>> image.shape
+        (256, 256, 3)
+
+    Returns:
+        np.ndarray: Output image with contours drawn on top of it.
+    """
+    # Mask could be either 0-1 or 0-255
+    if mask.max() <= 1.0:
+        mask *= 255
+        mask = mask.astype(np.uint8)
+
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    output_image = cv2.drawContours(image.copy(), contours, -1, color, thickness)
+    return output_image
