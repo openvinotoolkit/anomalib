@@ -84,7 +84,6 @@ def make_synthetic_dataset(
         file_name = f"{str(sample.name).zfill(int(math.log10(n_anomalous)) + 1)}.png"
         # write image
         aug_im = (aug_im.squeeze().permute((1, 2, 0)) * 255).numpy()
-        aug_im = cv2.cvtColor(aug_im, cv2.COLOR_RGB2BGR)
         im_path = image_dir / file_name
         cv2.imwrite(str(im_path), aug_im)
         # write mask
