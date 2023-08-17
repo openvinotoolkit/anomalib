@@ -12,4 +12,3 @@ Tutorials
    benchmarking
    logging
    hyperparameter_optimization
-   tiled_ensemble
