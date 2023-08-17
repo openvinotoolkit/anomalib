@@ -202,6 +202,8 @@ def draw_contours(
     # Mask could be either 0-1 or 0-255
     if mask.max() <= 1.0:
         mask *= 255
+
+    if mask.dtype != np.uint8:
         mask = mask.astype(np.uint8)
 
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
