@@ -44,7 +44,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.loss: nn.Module
         self.callbacks: list[Callback]
 
-        self.threshold_method: ThresholdMethod = ThresholdMethod.NONE
+        self.threshold_method: ThresholdMethod
         self.image_threshold = AnomalyScoreThreshold().cpu()
         self.pixel_threshold = AnomalyScoreThreshold().cpu()
 
