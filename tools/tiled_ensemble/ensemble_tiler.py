@@ -56,6 +56,7 @@ class EnsembleTiler(Tiler):
         # get number of patches in both dimensions
         self.num_patches_h = int((self.resized_h - self.tile_size_h) / self.stride_h) + 1
         self.num_patches_w = int((self.resized_w - self.tile_size_w) / self.stride_w) + 1
+        self.num_tiles = self.num_patches_h * self.num_patches_w
 
     def tile(self, image: Tensor, use_random_tiling=False) -> Tensor:
         """

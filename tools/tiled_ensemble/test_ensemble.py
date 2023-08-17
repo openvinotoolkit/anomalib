@@ -82,11 +82,13 @@ def test(args: Namespace):
 
     logger.info(
         "Tiled ensemble testing started. Separate models will be evaluated for %d tile locations.",
-        tiler.num_patches_h * tiler.num_patches_w,
+        tiler.num_tiles,
     )
     # go over all tile positions and test
-    for tile_index in product(range(tiler.num_patches_h), range(tiler.num_patches_w)):
-        logger.info("Start of procedure for tile %s", tile_index)
+    for i, tile_index in enumerate(product(range(tiler.num_patches_h), range(tiler.num_patches_w))):
+        logger.info(
+            "Start of procedure for tile at position %s. Progress: %d/%d positions.", tile_index, i, tiler.num_tiles
+        )
 
         if config.project.get("seed") is not None:
             seed_everything(config.project.seed)
