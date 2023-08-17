@@ -87,7 +87,7 @@ class EnsembleMetrics(EnsemblePostProcess):
 
     def process(self, data: dict) -> dict:
         """
-        Compute metrics specified in config for given ensemble results.
+        Update metrics with given predictions and targets.
 
         Args:
             data: Joined batch of results produced by model ensemble.
