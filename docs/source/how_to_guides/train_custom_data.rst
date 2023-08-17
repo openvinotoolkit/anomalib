@@ -107,6 +107,20 @@ Let's choose `Padim algorithm <https://arxiv.org/pdf/2011.08785.pdf>`_, copy the
         ...
 
 
+.. note::
+
+    Each dir value can take multiple folder inputs in the form of a list as shown below.
+
+    .. code-block:: yaml
+        dataset:
+        normal_dir: ["normal_1", "normal_2"] # Reads the images in the folders in the list.
+        abnormal_dir: # List configurations in the universal YAML format can also be used.
+            - abnormal_1
+            - abnormal_2
+        mask_dir: ["mask_1", "mask_2"] # optional
+        normal_test_dir: null # optional
+
+
 Step 5: Run Training
 --------------------
 
