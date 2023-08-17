@@ -9,7 +9,7 @@ import copy
 import logging
 import os
 import warnings
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning import Callback
@@ -43,23 +43,23 @@ class TileCollater:
     Class serving as collate function to perform tiling on batch of images from Dataloader.
 
     Args:
-        tiler: Tiler used to split the images to tiles.
-        tile_index: Index of tile we want to return.
+        tiler (EnsembleTiler): Tiler used to split the images to tiles.
+        tile_index (tuple[int, int]): Index of tile we want to return.
     """
 
-    def __init__(self, tiler: EnsembleTiler, tile_index: Tuple[int, int]) -> None:
+    def __init__(self, tiler: EnsembleTiler, tile_index: tuple[int, int]) -> None:
         self.tiler = tiler
         self.tile_index = tile_index
 
-    def __call__(self, batch: list) -> Dict[str, Any]:
+    def __call__(self, batch: list) -> dict[str, Any]:
         """
         Collate batch and tile images + masks from batch.
 
         Args:
-            batch: Batch of elements from data, also including images.
+            batch (list): Batch of elements from data, also including images.
 
         Returns:
-            Collated batch dictionary with tiled images.
+            dict[str, Any]: Collated batch dictionary with tiled images.
         """
         # use default collate
         coll_batch = collate_fn(batch)
@@ -79,16 +79,16 @@ class TileCollater:
 
 
 def prepare_ensemble_configurable_parameters(
-    ens_config_path, config: DictConfig | ListConfig
+    ens_config_path: str, config: DictConfig | ListConfig
 ) -> DictConfig | ListConfig:
     """Add all ensemble configuration parameters to config object.
 
     Args:
-        ens_config_path: Path to ensemble configuration.
-        config: Configurable parameters object.
+        ens_config_path (str): Path to ensemble configuration.
+        config (DictConfig | ListConfig): Configurable parameters object.
 
     Returns:
-        Configurable parameters object with ensemble parameters.
+        DictConfig | ListConfig: Configurable parameters object with ensemble parameters.
     """
     ens_config = OmegaConf.load(ens_config_path)
     config["ensemble"] = ens_config
@@ -107,10 +107,10 @@ def get_ensemble_datamodule(config: DictConfig | ListConfig, tiler: EnsembleTile
     Datamodule collate function gets replaced by TileCollater in order to tile all images before they are passed on.
 
     Args:
-        config: Configuration of the anomaly model.
-        tiler: Tiler used to split the images to tiles for use in ensemble.
+        config (DictConfig | ListConfig): Configuration of the anomaly model.
+        tiler (EnsembleTiler): Tiler used to split the images to tiles for use in ensemble.
     Returns:
-        PyTorch Lightning DataModule
+        AnomalibDataModule: Anomalib Lightning DataModule
     """
     datamodule = get_datamodule(config)
     # set custom collate function that does the tiling
@@ -118,7 +118,7 @@ def get_ensemble_datamodule(config: DictConfig | ListConfig, tiler: EnsembleTile
     return datamodule
 
 
-def get_prediction_storage(config: DictConfig | ListConfig) -> Tuple[EnsemblePredictions, EnsemblePredictions]:
+def get_prediction_storage(config: DictConfig | ListConfig) -> tuple[EnsemblePredictions, EnsemblePredictions]:
     """
     Return prediction storage class as set in config.
 
@@ -126,10 +126,10 @@ def get_prediction_storage(config: DictConfig | ListConfig) -> Tuple[EnsemblePre
     or downscaled in memory (rescaled).
 
     Args:
-        config: Configurable parameters object.
+        config (DictConfig | ListConfig): Configurable parameters object.
 
     Returns:
-        Tuple for storage of ensemble and validation predictions.
+        tuple[EnsemblePredictions, EnsemblePredictions]: Storage of ensemble and validation predictions.
     """
     # store predictions in memory
     if config.ensemble.predictions.storage == "direct":
@@ -155,7 +155,7 @@ def get_prediction_storage(config: DictConfig | ListConfig) -> Tuple[EnsemblePre
     return ensemble_pred, validation_pred
 
 
-def get_ensemble_callbacks(config: DictConfig | ListConfig, tile_index: Tuple[int, int]) -> List[Callback]:
+def get_ensemble_callbacks(config: DictConfig | ListConfig, tile_index: tuple[int, int]) -> list[Callback]:
     """
     Return base callbacks for ensemble.
 
@@ -168,11 +168,11 @@ def get_ensemble_callbacks(config: DictConfig | ListConfig, tile_index: Tuple[in
     Ensemble doesn't support nncf optimization, so it can't be added as a callback.
 
     Args:
-        config: Model config file.
-        tile_index: Index of current tile in ensemble.
+        config (DictConfig | ListConfig): Model config file.
+        tile_index (tuple[int, int]): Index of current tile in ensemble.
 
     Return:
-        List of callbacks.
+        list[Callback]: List of callbacks.
     """
     logger.info("Loading the ensemble callbacks")
 

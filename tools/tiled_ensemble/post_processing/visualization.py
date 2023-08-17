@@ -39,10 +39,10 @@ class EnsembleVisualization(EnsemblePostProcess):
         Visualize joined predictions using Visualizer class.
 
         Args:
-            data: Batch of predictions.
+            data (dict): Batch of predictions.
 
         Returns:
-            Unchanged input data.
+            dict: Unchanged input data.
         """
         for i, image in enumerate(self.visualizer.visualize_batch(data)):
             filename = Path(data["image_path"][i])

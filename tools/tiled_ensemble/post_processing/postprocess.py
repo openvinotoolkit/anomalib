@@ -50,8 +50,8 @@ class EnsemblePostProcess(ABC):
     Abstract class for use as building block of post-processing pipeline.
 
     Args:
-        final_compute: Flag if this block produces values that are computed at the end.
-        name: Name of block, that will be used in pipeline output dictionary.
+        final_compute (bool): Flag if this block produces values that are computed at the end.
+        name (str): Name of block, that will be used in pipeline output dictionary.
     """
 
     def __init__(self, final_compute: bool, name: str) -> None:
@@ -63,10 +63,10 @@ class EnsemblePostProcess(ABC):
         Process data as part of pipeline.
 
         Args:
-            data: Prediction data to be processed.
+            data (Any): Prediction data to be processed.
 
         Returns:
-            Processed data.
+            Any: Processed data.
         """
         return data
 
@@ -75,7 +75,7 @@ class EnsemblePostProcess(ABC):
         Once all data is processed, compute additional information.
 
         Returns:
-            Computed data.
+            Any: Computed data.
         """
         raise NotImplementedError
 
@@ -121,7 +121,7 @@ class SmoothJoins(EnsemblePostProcess):
         Prepare boolean mask of regions around the part where tiles join in ensemble.
 
         Returns:
-            Tensor representation of boolean mask where filtered joins should be used.
+            Tensor: Representation of boolean mask where filtered joins should be used.
         """
         img_h, img_w = self.tiler.image_size
         stride_h, stride_w = self.tiler.stride_h, self.tiler.stride_w
@@ -151,10 +151,10 @@ class SmoothJoins(EnsemblePostProcess):
         Smooth the parts where tiles join in anomaly maps.
 
         Args:
-            data: Predictions from ensemble pipeline.
+            data (dict): Predictions from ensemble pipeline.
 
         Returns:
-            Predictions where anomaly maps are smoothed on tile joins.
+            dict: Predictions where anomaly maps are smoothed on tile joins.
         """
         smoothed = self.blur(data["anomaly_maps"])
         data["anomaly_maps"][:, :, self.join_mask] = smoothed[:, :, self.join_mask]
@@ -167,7 +167,8 @@ class MinMaxNormalize(EnsemblePostProcess):
     Normalize images using min max normalization.
 
     Args:
-        stats: dictionary containing statistics used for normalization (min, max, image threshold, pixel threshold).
+        stats (dict[str, float]): dictionary containing statistics used for normalization:
+            (min, max, image threshold, pixel threshold).
 
     Example:
         >>> from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
@@ -200,10 +201,10 @@ class MinMaxNormalize(EnsemblePostProcess):
         Normalize predictions using minmax normalization.
 
         Args:
-            data: Predictions from ensemble pipeline.
+            data (dict): Predictions from ensemble pipeline.
 
         Returns:
-            Normalized predictions.
+            dict: Normalized predictions.
         """
         data["pred_scores"] = normalize(data["pred_scores"], self.image_threshold, self.min_val, self.max_val)
         if "anomaly_maps" in data:
@@ -221,8 +222,8 @@ class Threshold(EnsemblePostProcess):
     Threshold the predictions using provided thresholds.
 
     Args:
-        image_threshold: Threshold used for image-level thresholding.
-        pixel_threshold: Threshold used for pixel-level thresholding.
+        image_threshold (float): Threshold used for image-level thresholding.
+        pixel_threshold (float): Threshold used for pixel-level thresholding.
 
     Example:
         >>> from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
@@ -252,10 +253,10 @@ class Threshold(EnsemblePostProcess):
         Threshold all prediction data: labels, pixels and boxes.
 
         Args:
-            data: Predictions from ensemble pipeline.
+            data (dict): Predictions from ensemble pipeline.
 
         Returns:
-            Predictions with threshold applied.
+            dict: Predictions with threshold applied.
         """
         data["pred_labels"] = data["pred_scores"] >= self.image_threshold
         if "anomaly_maps" in data.keys():
@@ -307,7 +308,7 @@ class PostProcessStats(EnsemblePostProcess):
         Add current data to statistics accumulator.
 
         Args:
-            data: Joined tile prediction data.
+            data (dict): Joined tile prediction data.
 
         """
         # update minmax
@@ -331,7 +332,7 @@ class PostProcessStats(EnsemblePostProcess):
         At the end, compute actual values from all input data.
 
         Returns:
-            Dictionary containing computed statistics: (min, max, image threshold, pixel threshold).
+            dict[str, float]: Dictionary containing computed statistics: (min, max, image threshold, pixel threshold).
         """
         self.image_threshold.compute()
         if self.pixel_update_called:
@@ -354,7 +355,7 @@ class EnsemblePostProcessPipeline:
     Pipeline used to perform various post-processing of ensemble predictions.
 
     Args:
-        joiner: Class used to join tiled data, already containing predictions.
+        joiner (EnsemblePredictionJoiner): Class used to join tiled data, already containing predictions.
 
     Example:
         >>> from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
@@ -393,7 +394,7 @@ class EnsemblePostProcessPipeline:
         Add list of sequential steps to pipeline.
 
         Args:
-            steps: List containing blocks of pipeline.
+            steps (list[EnsemblePostProcess]): List containing blocks of pipeline.
         """
         self.steps = steps
 
@@ -403,10 +404,10 @@ class EnsemblePostProcessPipeline:
         Execute the pipeline. For each batch go through all steps of pipeline.
 
         Args:
-            data: Class containing all tile predictions.
+            data (EnsemblePredictions): Class containing all tile predictions.
 
         Returns:
-            Dictionary containing results of `compute` function called for each step that has it.
+            dict[str, Any]: Dictionary containing results of `compute` function called for each step that has it.
         """
         # setup joiner to process given tiled data
         self.joiner.setup(data)

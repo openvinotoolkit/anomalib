@@ -25,8 +25,9 @@ class EnsemblePredictions(ABC):
         Add tile prediction data at specified tile index.
 
         Args:
-            tile_index: Index of tile that we are adding in form (row, column).
-            tile_prediction: List of batches containing all predicted data for current tile.
+            tile_index (tuple[int, int]): Index of tile that we are adding in form (row, column).
+            tile_prediction (tile_prediction: list[dict[str, Tensor | list]]):
+                List of batches containing all predicted data for current tile position.
         """
         raise NotImplementedError
 
@@ -35,10 +36,10 @@ class EnsemblePredictions(ABC):
         Get all tiles of current batch.
 
         Args:
-            batch_index: Index of current batch of tiles to be returned.
+            batch_index (int): Index of current batch of tiles to be returned.
 
         Returns:
-            Dictionary mapping tile index to predicted data, for provided batch index.
+            dict[tuple[int, int], dict]: Dictionary mapping tile index to predicted data, for provided batch index.
         """
         raise NotImplementedError
 
@@ -71,8 +72,9 @@ class BasicEnsemblePredictions(EnsemblePredictions):
         Add tile prediction data at provided index to class dictionary in main memory.
 
         Args:
-            tile_index: Index of tile that we are adding in form (row, column).
-            tile_prediction: List of batches containing all predicted data for current tile.
+            tile_index (tuple[int, int]): Index of tile that we are adding in form (row, column).
+            tile_prediction (list[dict[str, Tensor | list]]):
+                List of batches containing all predicted data for current tile position.
 
         """
         self.num_batches = len(tile_prediction)
@@ -84,10 +86,10 @@ class BasicEnsemblePredictions(EnsemblePredictions):
         Get all tiles of current batch from class dictionary.
 
         Args:
-            batch_index: Index of current batch of tiles to be returned.
+            batch_index (int): Index of current batch of tiles to be returned.
 
         Returns:
-            Dictionary mapping tile index to predicted data, for provided batch index.
+            dict[tuple[int, int], dict]: Dictionary mapping tile index to predicted data, for provided batch index.
         """
         batch_data = {}
 
@@ -148,8 +150,9 @@ class FileSystemEnsemblePredictions(EnsemblePredictions):
         .
 
         Args:
-            tile_index: Index of current tile position that we are saving.
-            tile_prediction: Predictions at tile position.
+            tile_index (tuple[int, int]): Index of tile that we are adding in form (row, column).
+            tile_prediction (list[dict[str, Tensor | list]]):
+                List of batches containing all predicted data for current tile position.
 
         """
         self.num_batches = len(tile_prediction)
@@ -174,10 +177,10 @@ class FileSystemEnsemblePredictions(EnsemblePredictions):
         Load batches from file system and assemble into dict.
 
         Args:
-            batch_index: Index of current batch of tiles to be returned.
+            batch_index (int): Index of current batch of tiles to be returned.
 
         Returns:
-            Dictionary mapping tile index to predicted data, for provided batch index.
+            dict[tuple[int, int], dict]: Dictionary mapping tile index to predicted data, for provided batch index.
         """
         batch_data = {}
 
@@ -226,12 +229,12 @@ class RescaledEnsemblePredictions(EnsemblePredictions):
         Rescale all tile data in batch for specified factor.
 
         Args:
-            batch: Dictionary of all predicted data.
-            scale_factor: Factor by which scaling will be done.
-            mode:
+            batch (dict): Dictionary of all predicted data.
+            scale_factor (float): Factor by which scaling will be done.
+            mode (str): Rescaling mode used for interpolation.
 
         Returns:
-            Dictionary of all predicted data with all tiles rescaled.
+            dict: Dictionary of all predicted data with all tiles rescaled.
         """
         # copy data
         batch = copy.copy(batch)
@@ -254,8 +257,9 @@ class RescaledEnsemblePredictions(EnsemblePredictions):
         Rescale tile prediction data and add it at provided index to class dictionary in main memory.
 
         Args:
-            tile_index: Index of tile that we are adding in form (row, column).
-            tile_prediction: List of batches containing all predicted data for current tile.
+            tile_index (tuple[int, int]): Index of tile that we are adding in form (row, column).
+            tile_prediction (list[dict[str, Tensor | list]]):
+                List of batches containing all predicted data for current tile position.
 
         """
         self.num_batches = len(tile_prediction)
@@ -271,10 +275,10 @@ class RescaledEnsemblePredictions(EnsemblePredictions):
         Get all tiles of current batch from class dictionary, rescaled to original size.
 
         Args:
-            batch_index: Index of current batch of tiles to be returned.
+            batch_index (int): Index of current batch of tiles to be returned.
 
         Returns:
-            Dictionary mapping tile index to predicted data, for provided batch index.
+            dict[tuple[int, int], dict]: Dictionary mapping tile index to predicted data, for provided batch index.
         """
         batch_data = {}
 

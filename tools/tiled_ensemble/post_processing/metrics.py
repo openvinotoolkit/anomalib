@@ -58,12 +58,13 @@ class EnsembleMetrics(EnsemblePostProcess):
         Configure image and pixel metrics and put them into a collection.
 
         Args:
-            task: Task type of the current run.
-            image_metrics: List of image-level metric names.
-            pixel_metrics: List of pixel-level metric names.
+            task (TaskType): Task type of the current run.
+            image_metrics (list[str] | None): List of image-level metric names.
+            pixel_metrics (list[str] | None): List of pixel-level metric names.
 
         Returns:
-            Image-metrics collection and pixel-metrics collection
+            tuple[AnomalibMetricCollection, AnomalibMetricCollection]:
+                Image-metrics collection and pixel-metrics collection
         """
         image_metric_names = [] if image_metrics is None else image_metrics
 
@@ -90,10 +91,10 @@ class EnsembleMetrics(EnsemblePostProcess):
         Update metrics with given predictions and targets.
 
         Args:
-            data: Joined batch of results produced by model ensemble.
+            data (dict): Joined batch of results produced by model ensemble.
 
         Returns:
-            Unchanged input.
+            dict: Unchanged input.
         """
         self.image_metrics.update(data["pred_scores"], data["label"].int())
         if "mask" in data.keys() and "anomaly_maps" in data.keys():
@@ -106,7 +107,7 @@ class EnsembleMetrics(EnsemblePostProcess):
         Compute metrics for entire ensemble.
 
         Returns:
-            Dictionary containing calculated metric data.
+            dict: Dictionary containing calculated metric data.
         """
         out = {}
         for name, metric in self.image_metrics.items():

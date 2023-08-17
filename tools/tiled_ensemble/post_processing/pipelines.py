@@ -16,9 +16,10 @@ from tools.tiled_ensemble.post_processing.postprocess import (
     EnsemblePostProcess,
     EnsemblePostProcessPipeline,
     MinMaxNormalize,
+    NormalizationStage,
     PostProcessStats,
     SmoothJoins,
-    Threshold, NormalizationStage,
+    Threshold,
 )
 from tools.tiled_ensemble.post_processing.visualization import EnsembleVisualization
 from tools.tiled_ensemble.predictions import BasicPredictionJoiner, EnsemblePredictions
@@ -30,14 +31,16 @@ logger = logging.getLogger(__name__)
 
 def get_stats_pipeline(config: DictConfig | ListConfig, tiler: EnsembleTiler) -> EnsemblePostProcessPipeline:
     """
-    Construct pipeline used to obtain prediction statistics.
+    Construct pipeline used to obtain prediction statistics, like min & max and image & pixel thresholds.
+
+    Stats are usually obtained from validation set.
 
     Args:
-        config: Configurable parameters object.
-        tiler: Tiler used by some steps of pipeline.
+        config (DictConfig | ListConfig): Configurable parameters object.
+        tiler (EnsembleTiler): Tiler used by some steps of pipeline.
 
     Returns:
-        Constructed pipeline.
+        EnsemblePostProcessPipeline: Constructed pipeline.
     """
     stats_pipeline = EnsemblePostProcessPipeline(BasicPredictionJoiner(tiler))
 
@@ -65,15 +68,15 @@ def get_stats(
     config: DictConfig | ListConfig, tiler: EnsembleTiler, validation_predictions: EnsemblePredictions
 ) -> dict:
     """
-    Get statistics used for postprocessing.
+    Get statistics used for postprocessing. This includes min & max and image & pixel thresholds.
 
     Args:
-        config: Configurable parameters object.
-        tiler: Tiler used by some steps of pipeline.
-        validation_predictions: Predictions used to calculate stats.
+        config (DictConfig | ListConfig): Configurable parameters object.
+        tiler (EnsembleTiler): Tiler used by some steps of pipeline.
+        validation_predictions (EnsemblePredictions): Predictions used to calculate stats.
 
     Returns:
-        Dictionary with calculated statistics.
+        dict: Dictionary with calculated statistics.
 
     Example:
         >>> from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
@@ -99,7 +102,7 @@ def log_postprocess_steps(steps: list[EnsemblePostProcess]) -> None:
     Log steps used in post-processing pipeline.
 
     Args:
-        steps: List of steps in pipeline.
+        steps (list[EnsemblePostProcess]): List of steps in pipeline.
 
     """
     logger.info("-" * 42)
@@ -115,16 +118,16 @@ def get_postprocessing_pipeline(
     """
     Construct pipeline used to post process ensemble predictions.
 
-    Blocks of pipeline are determined based on config file since some steps can be done tile wise,
-    or on final step when tiles are joined. Visualization and metrics are also configured here.
+    Blocks of pipeline are determined based on ensemble config file since some steps can be done tile wise,
+    or on joined images. Visualization and metrics are also configured here.
 
     Args:
-        config: Configurable parameters object.
-        tiler: Tiler used by some steps of pipeline.
-        stats: Statistics of predictions (min, max, thresholds).
+        config (DictConfig | ListConfig): Configurable parameters object.
+        tiler (EnsembleTiler): Tiler used by some steps of pipeline.
+        stats (dict): Statistics of predictions (min, max, thresholds).
 
     Returns:
-        Constructed pipeline.
+        EnsemblePostProcessPipeline: Constructed pipeline.
     """
     post_pipeline = EnsemblePostProcessPipeline(BasicPredictionJoiner(tiler))
 
@@ -189,17 +192,18 @@ def post_process(
     """
     Postprocess, visualize and calculate metrics.
 
-    Steps in postprocessing are determined from config file, check `get_postprocessing_pipeline` for more details.
+    Steps in postprocessing are determined from ensemble config file.
+    Check `get_postprocessing_pipeline` for more details.
 
     Args:
-        config: Configurable parameters object.
-        tiler: Tiler used for untiling of predictions.
-        ensemble_predictions: Predictions to be joined and processed.
-        validation_predictions: Predictions used to calculate stats.
-        stats: Dictionary containing statistics used for postprocessing. If None, run stats pipeline.
+        config (DictConfig | ListConfig): Configurable parameters object.
+        tiler (EnsembleTiler): Tiler used for untiling of predictions.
+        ensemble_predictions (EnsemblePredictions): Predictions to be joined and processed.
+        validation_predictions (EnsemblePredictions | None): Predictions used to calculate stats.
+        stats (dict | None): Dictionary containing statistics used for postprocessing. If None, run stats pipeline.
 
     Returns:
-        Dictionary with calculated metrics data.
+        dict: Dictionary with calculated metrics data.
 
     Examples:
         >>> # example of post_processing in train run

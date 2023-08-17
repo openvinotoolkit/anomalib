@@ -19,7 +19,7 @@ class EnsemblePredictionJoiner(ABC):
     Override methods to change how joining is done.
 
     Args:
-        tiler: Tiler used to transform tiles back to image level representation.
+        tiler (EnsembleTiler): Tiler used to transform tiles back to image level representation.
 
     """
 
@@ -34,7 +34,7 @@ class EnsemblePredictionJoiner(ABC):
         Prepare the joiner for given prediction data.
 
         Args:
-            ensemble_predictions: Dictionary containing batched predictions for each tile.
+            ensemble_predictions (EnsemblePredictions): Dictionary containing batched predictions for each tile.
 
         """
         assert ensemble_predictions.num_batches > 0, "There should be at least one batch for each tile prediction."
@@ -50,11 +50,11 @@ class EnsemblePredictionJoiner(ABC):
         Join tiles back into one tensor and perform untiling with tiler.
 
         Args:
-            batch_data: Dictionary containing all tile predictions of current batch.
-            tile_key: Key used in prediction dictionary for tiles that we want to join.
+            batch_data (dict): Dictionary containing all tile predictions of current batch.
+            tile_key (str): Key used in prediction dictionary for tiles that we want to join.
 
         Returns:
-            Tensor of tiles in original (stitched) shape.
+            Tensor: Tensor of tiles in original (stitched) shape.
         """
         raise NotImplementedError
 
@@ -63,10 +63,10 @@ class EnsemblePredictionJoiner(ABC):
         Join boxes data from all tiles. This includes pred_boxes, box_scores and box_labels.
 
         Args:
-            batch_data: Dictionary containing all tile predictions of current batch.
+            batch_data (dict): Dictionary containing all tile predictions of current batch.
 
         Returns:
-            Dictionary with joined boxes, box scores and box labels.
+            dict[str, list[Tensor]]: Dictionary with joined boxes, box scores and box labels.
         """
         raise NotImplementedError
 
@@ -75,22 +75,22 @@ class EnsemblePredictionJoiner(ABC):
         Join scores and their corresponding label predictions from all tiles for each image.
 
         Args:
-            batch_data: Dictionary containing all tile predictions of current batch.
+            batch_data (dict): Dictionary containing all tile predictions of current batch.
 
         Returns:
-            Dictionary with "pred_labels" and "pred_scores"
+            dict[str, Tensor]: Dictionary with "pred_labels" and "pred_scores"
         """
         raise NotImplementedError
 
     def join_tile_predictions(self, batch_index: int) -> dict[str, Tensor | list]:
         """
-        Join predictions from ensemble into whole image level representation.
+        Join predictions from ensemble into whole image level representation for batch at index batch_index.
 
         Args:
-            batch_index: Index of current batch.
+            batch_index (int): Index of current batch.
 
         Returns:
-            List of joined predictions for each batch
+            dict[str, Tensor | list]: List of joined predictions for specified batch.
         """
         current_batch_data = self.ensemble_predictions.get_batch_tiles(batch_index)
 

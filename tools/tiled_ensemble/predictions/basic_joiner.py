@@ -37,11 +37,11 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
         Join tiles back into one tensor and perform untiling with tiler.
 
         Args:
-            batch_data: Dictionary containing all tile predictions of current batch.
-            tile_key: Key used in prediction dictionary for tiles that we want to join
+            batch_data (dict): Dictionary containing all tile predictions of current batch.
+            tile_key (str): Key used in prediction dictionary for tiles that we want to join
 
         Returns:
-            Tensor of tiles in original (stitched) shape.
+            Tensor: Tensor of tiles in original (stitched) shape.
         """
         # batch of tiles with index (0, 0) always exists, so we use it to get some basic information
         first_tiles = batch_data[(0, 0)][tile_key]
@@ -96,10 +96,10 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
         Joining is done by stacking boxes from all tiles.
 
         Args:
-            batch_data: Dictionary containing all tile predictions of current batch.
+            batch_data (dict): Dictionary containing all tile predictions of current batch.
 
         Returns:
-            Dictionary with joined boxes, box scores and box labels.
+            dict: Dictionary with joined boxes, box scores and box labels.
         """
         # batch of tiles with index (0, 0) always exists, so we use it to get some basic information
         batch_size = len(batch_data[(0, 0)]["pred_boxes"])
@@ -151,10 +151,10 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
         Scores are averaged over tiles.
 
         Args:
-            batch_data: Dictionary containing all tile predictions of current batch.
+            batch_data (dict): Dictionary containing all tile predictions of current batch.
 
         Returns:
-            Dictionary with "pred_labels" and "pred_scores"
+            dict[str, Tensor]: Dictionary with "pred_labels" and "pred_scores"
         """
         # create accumulator with same shape as original
         labels = torch.zeros(batch_data[(0, 0)]["pred_labels"].shape, dtype=torch.bool)

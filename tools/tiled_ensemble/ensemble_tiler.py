@@ -58,16 +58,17 @@ class EnsembleTiler(Tiler):
         self.num_patches_w = int((self.resized_w - self.tile_size_w) / self.stride_w) + 1
         self.num_tiles = self.num_patches_h * self.num_patches_w
 
-    def tile(self, image: Tensor, use_random_tiling=False) -> Tensor:
+    def tile(self, image: Tensor, use_random_tiling: bool = False) -> Tensor:
         """
         Tiles an input image to either overlapping or non-overlapping patches.
 
         Args:
-            image: Input images.
-            use_random_tiling: Random tiling, which is part of original tiler but is unused here.
+            image (Tensor): Input images.
+            use_random_tiling (bool): Random tiling, which is part of original tiler but is unused here.
 
         Returns:
-            Tiles generated from images. Returned shape: [num_h, num_w, batch, channel, tile_height, tile_width].
+            Tensor: Tiles generated from images.
+                Returned shape: [num_h, num_w, batch, channel, tile_height, tile_width].
         """
         # tiles are returned in order [tile_count * batch, channels, tile_height, tile_width]
         combined_tiles = super().tile(image, use_random_tiling)
@@ -90,10 +91,10 @@ class EnsembleTiler(Tiler):
         Reassemble the tiled tensor into image level representation.
 
         Args:
-            tiles: Tiles in shape: [num_h, num_w, batch, channel, tile_height, tile_width].
+            tiles (Tensor): Tiles in shape: [num_h, num_w, batch, channel, tile_height, tile_width].
 
         Returns:
-            Image constructed from input tiles. Shape: [B, C, H, W].
+            Tensor: Image constructed from input tiles. Shape: [B, C, H, W].
         """
         # [num_h, num_w, batch, channel, tile_height, tile_width]
         _, _, batch, channels, tile_size_h, tile_size_w = tiles.shape
