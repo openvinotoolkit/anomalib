@@ -3,10 +3,11 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import json
 import logging
 from pathlib import Path
-from typing import List
 
 from omegaconf import DictConfig, ListConfig
 from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
@@ -40,7 +41,7 @@ def get_stats_pipeline(config: DictConfig | ListConfig, tiler: EnsembleTiler) ->
     """
     stats_pipeline = EnsemblePostProcessPipeline(BasicPredictionJoiner(tiler))
 
-    steps: List[EnsemblePostProcess] = []
+    steps: list[EnsemblePostProcess] = []
 
     if config.ensemble.post_processing.smooth_joins.apply:
         smooth_joins = SmoothJoins(
@@ -93,7 +94,7 @@ def get_stats(
     return pipe_out.get("stats", {})
 
 
-def log_postprocess_steps(steps: List[EnsemblePostProcess]) -> None:
+def log_postprocess_steps(steps: list[EnsemblePostProcess]) -> None:
     """
     Log steps used in post-processing pipeline.
 
@@ -127,7 +128,7 @@ def get_postprocessing_pipeline(
     """
     post_pipeline = EnsemblePostProcessPipeline(BasicPredictionJoiner(tiler))
 
-    steps: List[EnsemblePostProcess] = []
+    steps: list[EnsemblePostProcess] = []
     if config.ensemble.post_processing.smooth_joins.apply:
         smooth_joins = SmoothJoins(
             width_factor=config.ensemble.post_processing.smooth_joins.width,

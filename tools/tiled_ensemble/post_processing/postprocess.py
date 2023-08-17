@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from abc import ABC
-from typing import Any, List
+from typing import Any
 
 import torch
 from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
@@ -359,9 +359,9 @@ class EnsemblePostProcessPipeline:
     def __init__(self, joiner: EnsemblePredictionJoiner) -> None:
         self.joiner = joiner
 
-        self.steps: List[EnsemblePostProcess] = []
+        self.steps: list[EnsemblePostProcess] = []
 
-    def add_steps(self, steps: List[EnsemblePostProcess]) -> None:
+    def add_steps(self, steps: list[EnsemblePostProcess]) -> None:
         """
         Add list of sequential steps to pipeline.
 

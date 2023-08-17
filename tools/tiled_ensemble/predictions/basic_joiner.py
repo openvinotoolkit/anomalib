@@ -3,8 +3,6 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, List
-
 import torch
 from tools.tiled_ensemble.predictions.prediction_joiner import EnsemblePredictionJoiner
 from torch import Tensor
@@ -108,9 +106,9 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
         batch_size = len(batch_data[(0, 0)]["pred_boxes"])
 
         # create array of placeholder arrays, that will contain all boxes for each image
-        boxes: List[List[Tensor]] = [[] for _ in range(batch_size)]
-        scores: List[List[Tensor]] = [[] for _ in range(batch_size)]
-        labels: List[List[Tensor]] = [[] for _ in range(batch_size)]
+        boxes: list[list[Tensor]] = [[] for _ in range(batch_size)]
+        scores: list[list[Tensor]] = [[] for _ in range(batch_size)]
+        labels: list[list[Tensor]] = [[] for _ in range(batch_size)]
 
         # go over all tiles and add box data tensor to belonging array
         for (tile_i, tile_j), curr_tile_pred in batch_data.items():
@@ -135,7 +133,7 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
                 labels[i].append(curr_tile_pred["box_labels"][i])
 
         # arrays with box data for each batch
-        joined_boxes: Dict[str, List[Tensor]] = {"pred_boxes": [], "box_scores": [], "box_labels": []}
+        joined_boxes: dict[str, list[Tensor]] = {"pred_boxes": [], "box_scores": [], "box_labels": []}
         for i in range(batch_size):
             # n in this case represents number of predicted boxes
             # stack boxes into form [n, 4] (vertical stack)

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABC
-from typing import Any, Optional, OrderedDict
+from typing import Any, OrderedDict
 from warnings import warn
 
 import pytorch_lightning as pl
@@ -155,7 +155,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         self._collect_outputs(self.image_metrics, self.pixel_metrics, outputs)
         self._log_metrics()
 
-    def on_predict_batch_end(self, outputs: Optional[Any], batch: Any, batch_idx: int, dataloader_idx: int) -> None:
+    def on_predict_batch_end(self, outputs: Any | None, batch: Any, batch_idx: int, dataloader_idx: int) -> None:
         """Called in the predict loop after the batch.
 
         Args:

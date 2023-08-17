@@ -1,8 +1,12 @@
 """Tiler used with ensemble of models."""
-from typing import Sequence
 
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
+
+from __future__ import annotations
+
+from typing import Sequence
+
 from torch import Tensor
 
 from anomalib.pre_processing.tiler import Tiler, compute_new_image_size
@@ -44,7 +48,7 @@ class EnsembleTiler(Tiler):
         self.image_size = self.validate_size_type(image_size)
         self.input_h, self.input_w = self.image_size
         self.resized_h, self.resized_w = compute_new_image_size(
-            image_size=self.image_size,
+            image_size=(self.input_h, self.input_w),
             tile_size=(self.tile_size_h, self.tile_size_w),
             stride=(self.stride_h, self.stride_w),
         )

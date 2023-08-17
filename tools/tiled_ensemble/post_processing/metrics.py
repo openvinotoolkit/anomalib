@@ -3,8 +3,9 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
-from typing import List, Tuple
 
 from tools.tiled_ensemble.post_processing.postprocess import EnsemblePostProcess
 
@@ -29,8 +30,8 @@ class EnsembleMetrics(EnsemblePostProcess):
     def __init__(
         self,
         task: TaskType,
-        image_metric_names: List,
-        pixel_metric_names: List,
+        image_metric_names: list,
+        pixel_metric_names: list,
         image_threshold: float,
         pixel_threshold: float,
     ) -> None:
@@ -50,9 +51,9 @@ class EnsembleMetrics(EnsemblePostProcess):
     @staticmethod
     def configure_ensemble_metrics(
         task: TaskType = TaskType.SEGMENTATION,
-        image_metrics: List[str] | None = None,
-        pixel_metrics: List[str] | None = None,
-    ) -> Tuple[AnomalibMetricCollection, AnomalibMetricCollection]:
+        image_metrics: list[str] | None = None,
+        pixel_metrics: list[str] | None = None,
+    ) -> tuple[AnomalibMetricCollection, AnomalibMetricCollection]:
         """
         Configure image and pixel metrics and put them into a collection.
 

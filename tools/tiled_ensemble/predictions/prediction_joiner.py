@@ -3,8 +3,9 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 from abc import ABC
-from typing import Dict, List
 
 from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
 from tools.tiled_ensemble.predictions.prediction_data import EnsemblePredictions
@@ -57,7 +58,7 @@ class EnsemblePredictionJoiner(ABC):
         """
         raise NotImplementedError
 
-    def join_boxes(self, batch_data: dict) -> Dict[str, List[Tensor]]:
+    def join_boxes(self, batch_data: dict) -> dict[str, list[Tensor]]:
         """
         Join boxes data from all tiles. This includes pred_boxes, box_scores and box_labels.
 
@@ -69,7 +70,7 @@ class EnsemblePredictionJoiner(ABC):
         """
         raise NotImplementedError
 
-    def join_labels_and_scores(self, batch_data: dict) -> Dict[str, Tensor]:
+    def join_labels_and_scores(self, batch_data: dict) -> dict[str, Tensor]:
         """
         Join scores and their corresponding label predictions from all tiles for each image.
 
@@ -81,7 +82,7 @@ class EnsemblePredictionJoiner(ABC):
         """
         raise NotImplementedError
 
-    def join_tile_predictions(self, batch_index: int) -> Dict[str, Tensor | List]:
+    def join_tile_predictions(self, batch_index: int) -> dict[str, Tensor | list]:
         """
         Join predictions from ensemble into whole image level representation.
 
