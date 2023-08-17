@@ -39,8 +39,8 @@ def get_parser() -> ArgumentParser:
     """
     parser = ArgumentParser()
     parser.add_argument("--model", type=str, default="padim", help="Name of the algorithm to train/test")
-    parser.add_argument("--config", type=str, required=False, help="Path to a model config file")
-    parser.add_argument("--ens_config", type=str, required=True, help="Path to an ensemble configuration file")
+    parser.add_argument("--model_config", type=str, required=False, help="Path to a model config file")
+    parser.add_argument("--ensemble_config", type=str, required=True, help="Path to an ensemble configuration file")
     parser.add_argument("--log-level", type=str, default="INFO", help="<DEBUG, INFO, WARNING, ERROR>")
 
     return parser
@@ -60,9 +60,9 @@ def train(args: Namespace):
     if args.log_level == "ERROR":
         warnings.filterwarnings("ignore")
 
-    config = get_configurable_parameters(model_name=args.model, config_path=args.config)
+    config = get_configurable_parameters(model_name=args.model, config_path=args.model_config)
     # update and prepare config for ensemble
-    config = prepare_ensemble_configurable_parameters(ens_config_path=args.ens_config, config=config)
+    config = prepare_ensemble_configurable_parameters(ens_config_path=args.ensemble_config, config=config)
 
     experiment_logger = get_experiment_logger(config)
 

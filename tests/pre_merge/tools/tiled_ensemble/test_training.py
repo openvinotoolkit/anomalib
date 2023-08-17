@@ -14,9 +14,9 @@ def test_train():
     # Test when model key is passed
     args = get_parser().parse_args(
         [
-            "--config",
+            "--model_config",
             "tests/pre_merge/tools/tiled_ensemble/dummy_padim_config.yaml",
-            "--ens_config",
+            "--ensemble_config",
             "tests/pre_merge/tools/tiled_ensemble/dummy_ens_config.yaml",
         ]
     )
