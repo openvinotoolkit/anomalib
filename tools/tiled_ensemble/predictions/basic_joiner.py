@@ -43,10 +43,8 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
         Returns:
             Tensor of tiles in original (stitched) shape.
         """
-        # tiles with index (0, 0) always exists
+        # batch of tiles with index (0, 0) always exists, so we use it to get some basic information
         first_tiles = batch_data[(0, 0)][tile_key]
-
-        # get batch and device from tiles
         batch_size = first_tiles.shape[0]
         device = first_tiles.device
 
@@ -103,6 +101,7 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
         Returns:
             Dictionary with joined boxes, box scores and box labels.
         """
+        # batch of tiles with index (0, 0) always exists, so we use it to get some basic information
         batch_size = len(batch_data[(0, 0)]["pred_boxes"])
 
         # create array of placeholder arrays, that will contain all boxes for each image
@@ -157,6 +156,7 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
         Returns:
             Dictionary with "pred_labels" and "pred_scores"
         """
+        # create accumulator with same shape as original
         labels = torch.zeros(batch_data[(0, 0)]["pred_labels"].shape, dtype=torch.bool)
         scores = torch.zeros(batch_data[(0, 0)]["pred_scores"].shape)
 
@@ -167,7 +167,7 @@ class BasicPredictionJoiner(EnsemblePredictionJoiner):
             labels = labels.logical_or(curr_labels)
             scores += curr_scores
 
-        scores /= self.tiler.num_patches_h * self.tiler.num_patches_w
+        scores /= self.tiler.num_tiles
 
         joined = {"pred_labels": labels, "pred_scores": scores}
 
