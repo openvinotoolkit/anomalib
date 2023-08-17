@@ -106,16 +106,16 @@ class EnsemblePredictionJoiner(ABC):
         if "boxes" in current_batch_data[(0, 0)].keys():
             joined_predictions["boxes"] = current_batch_data[(0, 0)]["boxes"]
 
+            # join all box data from all tiles
+            joined_box_data = self.join_boxes(current_batch_data)
+            joined_predictions["pred_boxes"] = joined_box_data["pred_boxes"]
+            joined_predictions["box_scores"] = joined_box_data["box_scores"]
+            joined_predictions["box_labels"] = joined_box_data["box_labels"]
+
         # join all tiled data
         for t_key in tiled_keys:
             if t_key in current_batch_data[(0, 0)].keys():
                 joined_predictions[t_key] = self.join_tiles(current_batch_data, t_key)
-
-        # join all box data from all tiles
-        joined_box_data = self.join_boxes(current_batch_data)
-        joined_predictions["pred_boxes"] = joined_box_data["pred_boxes"]
-        joined_predictions["box_scores"] = joined_box_data["box_scores"]
-        joined_predictions["box_labels"] = joined_box_data["box_labels"]
 
         # label and score joining
         joined_scores_and_labels = self.join_labels_and_scores(current_batch_data)

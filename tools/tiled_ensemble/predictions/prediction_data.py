@@ -93,8 +93,9 @@ class BasicEnsemblePredictions(EnsemblePredictions):
 
         for index, batches in self.all_data.items():
             batch_data[index] = batches[batch_index]
-            # copy anomaly maps, since in case of test data == val data, post-processing might change them
-            batch_data[index]["anomaly_maps"] = batch_data[index]["anomaly_maps"].clone()
+            if "anomaly_maps" in batch_data.keys():
+                # copy anomaly maps, since in case of test data == val data, post-processing might change them
+                batch_data[index]["anomaly_maps"] = batch_data[index]["anomaly_maps"].clone()
 
         return batch_data
 
