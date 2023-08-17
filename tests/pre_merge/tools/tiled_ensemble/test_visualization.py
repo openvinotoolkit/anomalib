@@ -36,7 +36,7 @@ def test_save_image(task, get_ensemble_config):
         config.dataset.task = task
         visualization = EnsembleVisualization(
             mode=config.ensemble.visualization.mode,
-            task=config.ensemble.dataset.task,
+            task=config.dataset.task,
             save_images=config.ensemble.visualization.save_images,
             show_images=config.ensemble.visualization.show_images,
             save_path=config.ensemble.visualization.image_save_path or config.project.path + "/images",

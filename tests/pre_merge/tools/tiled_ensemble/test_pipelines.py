@@ -141,6 +141,7 @@ class TestPostProcess:
         self, get_ensemble_config, get_tiler, show_image, show_present, save_image, save_present
     ):
         config = get_ensemble_config
+        config = copy.deepcopy(config)
         config.ensemble.visualization.save_images = save_image
         config.ensemble.visualization.show_images = show_image
 
