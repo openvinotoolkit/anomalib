@@ -35,11 +35,11 @@ def test_save_image(task, get_ensemble_config):
         config.project.path = temp_dir
         config.dataset.task = task
         visualization = EnsembleVisualization(
-            mode=config.visualization.mode,
-            task=config.dataset.task,
-            save_images=config.visualization.save_images,
-            show_images=config.visualization.show_images,
-            save_path=config.visualization.image_save_path or config.project.path + "/images",
+            mode=config.ensemble.visualization.mode,
+            task=config.ensemble.dataset.task,
+            save_images=config.ensemble.visualization.save_images,
+            show_images=config.ensemble.visualization.show_images,
+            save_path=config.ensemble.visualization.image_save_path or config.project.path + "/images",
         )
         visualization.process(copy.deepcopy(mock_result))
 

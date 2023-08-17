@@ -155,11 +155,11 @@ def get_postprocessing_pipeline(
 
     if config.ensemble.visualization.show_images or config.ensemble.visualization.save_images:
         visualizer = EnsembleVisualization(
-            mode=config.visualization.mode,
+            mode=config.ensemble.visualization.mode,
             task=config.dataset.task,
-            save_images=config.visualization.save_images,
-            show_images=config.visualization.show_images,
-            save_path=config.visualization.image_save_path or config.project.path + "/images",
+            save_images=config.ensemble.visualization.save_images,
+            show_images=config.ensemble.visualization.show_images,
+            save_path=config.ensemble.visualization.image_save_path or config.project.path + "/images",
         )
         steps.append(visualizer)
 

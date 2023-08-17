@@ -83,7 +83,7 @@ mock_stats = {
 
 class TestPostProcess:
     @pytest.mark.parametrize("smooth, present", ([True, True], [True, True]))
-    def test_stats_smooth(self, smooth, present, get_ensemble_config, get_tiler):
+    def test_postprocess_smooth(self, smooth, present, get_ensemble_config, get_tiler):
         config = copy.deepcopy(get_ensemble_config)
         tiler = get_tiler
         stats = copy.deepcopy(mock_stats)
@@ -128,6 +128,31 @@ class TestPostProcess:
         assert isinstance(steps[2], Threshold)
         assert isinstance(steps[3], EnsembleVisualization)
         assert isinstance(steps[4], EnsembleMetrics)
+
+    @pytest.mark.parametrize(
+        "show_image, show_present",
+        ([True, True], [False, False]),
+    )
+    @pytest.mark.parametrize(
+        "save_image, save_present",
+        ([True, True], [False, False]),
+    )
+    def test_postprocess_visualizer(
+        self, get_ensemble_config, get_tiler, show_image, show_present, save_image, save_present
+    ):
+        config = get_ensemble_config
+        config.ensemble.visualization.save_images = save_image
+        config.ensemble.visualization.show_images = show_image
+
+        tiler = get_tiler
+        stats = copy.deepcopy(mock_stats)
+
+        pipe = get_postprocessing_pipeline(config, tiler, stats)
+
+        steps = pipe.steps
+
+        # visualization should be present in pipeline if images are either saved or shown
+        assert isinstance(steps[3], EnsembleVisualization) == (show_present or save_present)
 
     def test_postprocess_pipeline(self, get_ensemble_config, get_tiler, get_ensemble_predictions):
         config = get_ensemble_config
