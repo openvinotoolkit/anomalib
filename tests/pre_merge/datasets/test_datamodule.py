@@ -6,16 +6,7 @@ import numpy as np
 import pytest
 
 from anomalib.config import update_input_size_config
-from anomalib.data import (
-    Avenue,
-    BTech,
-    Folder,
-    MVTec,
-    ShanghaiTech,
-    UCSDped,
-    Visa,
-    get_datamodule,
-)
+from anomalib.data import Avenue, BTech, Folder, MVTec, ShanghaiTech, UCSDped, Visa, get_datamodule
 from anomalib.data.utils import DirType
 from anomalib.pre_processing.transforms import Denormalize, ToNumpy
 from tests.helpers.config import get_test_configurable_parameters
@@ -254,6 +245,10 @@ class TestDataModule:
     def test_folder_sequence_inputs(self, make_data_module, dataset):
         """This test ensures that the list folder input is working well."""
         if dataset == "folder":
+            get_length = lambda datamodule: len(
+                datamodule.val_data.samples.loc[datamodule.val_data.samples.label == DirType.ABNORMAL]
+            ) + len(datamodule.test_data.samples.loc[datamodule.test_data.samples.label == DirType.ABNORMAL])
+
             _colour = make_data_module(
                 dataset=dataset,
                 abnormal_dir="colour",
@@ -261,7 +256,7 @@ class TestDataModule:
                 normal_test_dir="good",
                 mask_dir=None,
             )
-            len_colour = len(_colour.val_data.samples.loc[_colour.val_data.samples.label == DirType.ABNORMAL])
+            len_colour = get_length(_colour)
             _crack = make_data_module(
                 dataset=dataset,
                 abnormal_dir="crack",
@@ -269,8 +264,7 @@ class TestDataModule:
                 normal_test_dir="good",
                 mask_dir=None,
             )
-            len_crack = len(_crack.val_data.samples.loc[_crack.val_data.samples.label == DirType.ABNORMAL])
-
+            len_crack = get_length(_crack)
             data_module = make_data_module(
                 dataset=dataset,
                 abnormal_dir=["colour", "crack"],
@@ -278,7 +272,7 @@ class TestDataModule:
                 normal_test_dir="good",
                 mask_dir=None,
             )
-            len_merged = len(data_module.val_data.samples.loc[data_module.val_data.samples.label == DirType.ABNORMAL])
+            len_merged = get_length(data_module)
             assert len_merged == len_colour + len_crack
 
 
