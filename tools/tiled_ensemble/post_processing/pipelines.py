@@ -143,14 +143,14 @@ def get_postprocessing_pipeline(
         stats["pixel_threshold"] = config.ensemble.metrics.threshold.manual_pixel
 
     # if normalization is done at the end on image-level
-    if config.ensemble.post_processing.normalization == "joined_image":
+    if config.ensemble.post_processing.normalization == NormalizationStage.JOINED_IMAGE:
         steps.append(MinMaxNormalize(stats))
         # with minmax normalization, values are normalized such that the threshold value is centered at 0.5
         stats["image_threshold"] = 0.5
         stats["pixel_threshold"] = 0.5
 
     # if thresholding is done at the end on image-level
-    if config.ensemble.metrics.threshold.stage == "joined_image":
+    if config.ensemble.metrics.threshold.stage == NormalizationStage.JOINED_IMAGE:
         steps.append(Threshold(stats["image_threshold"], stats["pixel_threshold"]))
 
     if config.ensemble.visualization.show_images or config.ensemble.visualization.save_images:
