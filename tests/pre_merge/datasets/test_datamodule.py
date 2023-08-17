@@ -254,13 +254,29 @@ class TestDataModule:
     def test_folder_sequence_inputs(self, make_data_module, dataset):
         """This test ensures that the list folder input is working well."""
         if dataset == "folder":
-            _colour = make_data_module(dataset=dataset, abnormal_dir="colour", dataset_name="hazelnut_toy")
+            _colour = make_data_module(
+                dataset=dataset,
+                abnormal_dir="colour",
+                dataset_name="hazelnut_toy",
+                normal_test_dir="good",
+                mask_dir="mask",
+            )
             len_colour = len(_colour.val_data.samples.loc[_colour.val_data.samples.label == DirType.ABNORMAL])
-            _crack = make_data_module(dataset=dataset, abnormal_dir="crack", dataset_name="hazelnut_toy")
+            _crack = make_data_module(
+                dataset=dataset,
+                abnormal_dir="crack",
+                dataset_name="hazelnut_toy",
+                normal_test_dir="good",
+                mask_dir="mask",
+            )
             len_crack = len(_crack.val_data.samples.loc[_crack.val_data.samples.label == DirType.ABNORMAL])
 
             data_module = make_data_module(
-                dataset=dataset, abnormal_dir=["colour", "crack"], dataset_name="hazelnut_toy"
+                dataset=dataset,
+                abnormal_dir=["colour", "crack"],
+                dataset_name="hazelnut_toy",
+                normal_test_dir="good",
+                mask_dir="mask",
             )
             len_merged = len(data_module.val_data.samples.loc[data_module.val_data.samples.label == DirType.ABNORMAL])
             assert len_merged == len_colour + len_crack
