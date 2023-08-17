@@ -7,6 +7,7 @@ import copy
 
 import pytest
 
+from anomalib.post_processing import ThresholdMethod
 from tools.tiled_ensemble.post_processing import (
     SmoothJoins,
     PostProcessStats,
@@ -21,6 +22,7 @@ from tools.tiled_ensemble.post_processing.pipelines import (
     get_postprocessing_pipeline,
     post_process,
 )
+from tools.tiled_ensemble.post_processing.postprocess import NormalizationStage
 
 
 class TestStatsPipeline:
@@ -30,13 +32,22 @@ class TestStatsPipeline:
         tiler = get_tiler
 
         config.ensemble.post_processing.smooth_joins.apply = smooth
-        config.ensemble.metrics.threshold.method = "adaptive"
+        config.ensemble.metrics.threshold.method = ThresholdMethod.ADAPTIVE
         pipe = get_stats_pipeline(config, tiler)
 
         assert isinstance(pipe.steps[0], SmoothJoins) == present
 
-    @pytest.mark.parametrize("threshold, t_present", (["adaptive", True], ["manual", False], ["none", False]))
-    @pytest.mark.parametrize("normalization, n_present", (["tile", False], ["final", True]))
+    @pytest.mark.parametrize(
+        "threshold, t_present", ([ThresholdMethod.ADAPTIVE, True], [ThresholdMethod.MANUAL, False])
+    )
+    @pytest.mark.parametrize(
+        "normalization, n_present",
+        (
+            [NormalizationStage.INDIVIDUAL_TILE, False],
+            [NormalizationStage.JOINED_IMAGE, True],
+            [NormalizationStage.NONE, False],
+        ),
+    )
     def test_stats_pipeline(self, threshold, t_present, normalization, n_present, get_ensemble_config, get_tiler):
         config = copy.deepcopy(get_ensemble_config)
         tiler = get_tiler
@@ -83,7 +94,8 @@ class TestPostProcess:
         assert isinstance(pipe.steps[0], SmoothJoins) == present
 
     @pytest.mark.parametrize(
-        "normalization, thresholds, threshold_index", (["final", [0.5, 0.5], 2], ["none", [42, 13], 1])
+        "normalization, thresholds, threshold_index",
+        ([NormalizationStage.JOINED_IMAGE, [0.5, 0.5], 2], [NormalizationStage.NONE, [42, 13], 1]),
     )
     def test_threshold_manual(self, normalization, thresholds, threshold_index, get_ensemble_config, get_tiler):
         config = copy.deepcopy(get_ensemble_config)

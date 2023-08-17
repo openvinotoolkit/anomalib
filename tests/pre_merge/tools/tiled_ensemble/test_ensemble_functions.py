@@ -14,6 +14,7 @@ from tools.tiled_ensemble.ensemble_functions import (
     get_ensemble_datamodule,
     get_prediction_storage,
 )
+from tools.tiled_ensemble.post_processing.postprocess import NormalizationStage
 from tools.tiled_ensemble.predictions import (
     BasicEnsemblePredictions,
     FileSystemEnsemblePredictions,
@@ -106,9 +107,10 @@ class TestHelperFunctions:
 
     def test_ensemble_callbacks(self, get_ensemble_config):
         config = get_ensemble_config
-        config.ensemble.post_processing.normalization = "final"
+        config.ensemble.post_processing.normalization = NormalizationStage.JOINED_IMAGE
 
         callbacks = get_ensemble_callbacks(config, (0, 0))
 
+        # if we normalize joined images, minmax callback shouldn't be present here
         for callback in callbacks:
             assert not isinstance(callback, MinMaxNormalizationCallback)

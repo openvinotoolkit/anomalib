@@ -15,6 +15,7 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning import Callback
 from pytorch_lightning.callbacks import ModelCheckpoint
 from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
+from tools.tiled_ensemble.post_processing.postprocess import NormalizationStage
 from tools.tiled_ensemble.predictions import (
     BasicEnsemblePredictions,
     EnsemblePredictions,
@@ -223,7 +224,7 @@ def get_ensemble_callbacks(config: DictConfig | ListConfig, tile_index: Tuple[in
     callbacks.append(metrics_callback)
 
     # if we normalize each tile separately
-    if config.ensemble.post_processing.normalization == "tile":
+    if config.ensemble.post_processing.normalization == NormalizationStage.INDIVIDUAL_TILE:
         if "normalization_method" in config.model.keys() and not config.model.normalization_method == "none":
             if config.model.normalization_method == "min_max":
                 callbacks.append(MinMaxNormalizationCallback())

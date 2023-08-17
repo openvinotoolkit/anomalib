@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from abc import ABC
+from enum import Enum
 from typing import Any
 
 import torch
@@ -16,6 +17,32 @@ from anomalib.data.utils import masks_to_boxes
 from anomalib.models.components import GaussianBlur2d
 from anomalib.post_processing.normalization.min_max import normalize
 from anomalib.utils.metrics import AnomalyScoreThreshold, MinMax
+
+
+class ThresholdStage(str, Enum):
+    """
+    Enum signaling at which stage the thresholding is applied.
+
+    In case of individual_tile, thresholding is applied for each tile location separately.
+    In case of joined_image, thresholding is applied at the end when images are joined back together.
+    """
+
+    INDIVIDUAL_TILE = "individual_tile"
+    JOINED_IMAGE = "joined_image"
+
+
+class NormalizationStage(str, Enum):
+    """
+    Enum signaling at which stage the normalization is done.
+
+    In case of individual_tile, tiles are normalized for each tile position separately.
+    In case of joined_image, normalization is done at the end when images are joined back together.
+    In case of none, output is not normalized.
+    """
+
+    INDIVIDUAL_TILE = "individual_tile"
+    JOINED_IMAGE = "joined_image"
+    NONE = "none"
 
 
 class EnsemblePostProcess(ABC):
