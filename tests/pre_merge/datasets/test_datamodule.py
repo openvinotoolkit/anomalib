@@ -259,7 +259,7 @@ class TestDataModule:
                 abnormal_dir="colour",
                 dataset_name="hazelnut_toy",
                 normal_test_dir="good",
-                mask_dir="mask",
+                mask_dir=None,
             )
             len_colour = len(_colour.val_data.samples.loc[_colour.val_data.samples.label == DirType.ABNORMAL])
             _crack = make_data_module(
@@ -267,7 +267,7 @@ class TestDataModule:
                 abnormal_dir="crack",
                 dataset_name="hazelnut_toy",
                 normal_test_dir="good",
-                mask_dir="mask",
+                mask_dir=None,
             )
             len_crack = len(_crack.val_data.samples.loc[_crack.val_data.samples.label == DirType.ABNORMAL])
 
@@ -276,7 +276,7 @@ class TestDataModule:
                 abnormal_dir=["colour", "crack"],
                 dataset_name="hazelnut_toy",
                 normal_test_dir="good",
-                mask_dir="mask",
+                mask_dir=None,
             )
             len_merged = len(data_module.val_data.samples.loc[data_module.val_data.samples.label == DirType.ABNORMAL])
             assert len_merged == len_colour + len_crack
