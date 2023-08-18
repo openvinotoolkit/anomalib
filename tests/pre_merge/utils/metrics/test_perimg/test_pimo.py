@@ -1,3 +1,6 @@
+import tempfile
+from pathlib import Path
+
 import torch
 
 from anomalib.utils.metrics.perimg.pimo import AULogPImO, AUPImO, PImO
@@ -229,6 +232,16 @@ def test_pimo(anomaly_maps, masks):
     assert pimoresult.tprs.ndim == 2
     assert pimoresult.image_classes.ndim == 1
     pimo.plot()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        fpath = Path(tmpdir) / "pimo.json"
+        pimo.save(fpath)
+        assert fpath.exists()
+        pimoresult_loaded = pimo.load(tmpdir)
+    assert (pimoresult.thresholds == pimoresult_loaded.thresholds).all()
+    assert (pimoresult.fprs == pimoresult_loaded.fprs).all()
+    assert (pimoresult.shared_fpr == pimoresult_loaded.shared_fpr).all()
+    assert (pimoresult.tprs == pimoresult_loaded.tprs).all()
+    assert (pimoresult.image_classes == pimoresult_loaded.image_classes).all()
 
 
 def test_aupimo(

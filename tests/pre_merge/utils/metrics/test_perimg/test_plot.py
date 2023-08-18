@@ -3,12 +3,13 @@
 import matplotlib.pyplot as plt
 import torch
 
-from anomalib.utils.metrics.perimg.common import _perimg_boxplot_stats
+from anomalib.utils.metrics.perimg.common import perimg_boxplot_stats
 from anomalib.utils.metrics.perimg.plot import (
     _plot_perimg_curves,
     _plot_perimg_metric_boxplot,
     plot_all_pimo_curves,
     plot_aupimo_boxplot,
+    plot_boxplot_logpimo_curves,
     plot_boxplot_pimo_curves,
     plot_pimfpr_curves_norm_only,
     plot_pimfpr_curves_norm_vs_anom,
@@ -109,7 +110,7 @@ def test_plot_all_pimo_curves(rates, image_classes):
 
 
 def test__plot_perimg_metric_boxplot(aucs, image_classes, only_class):
-    bp_stats = _perimg_boxplot_stats(aucs, image_classes)
+    bp_stats = perimg_boxplot_stats(aucs, image_classes)
     _, ax = plt.subplots()
     _plot_perimg_metric_boxplot(ax, aucs, image_classes, bp_stats, only_class=only_class)
 
@@ -122,11 +123,19 @@ def test_plot_aupimo_boxplot(aucs, image_classes):
 
 
 def test_plot_boxplot_pimo_curves(aucs, rates, image_classes):
-    bp_stats = _perimg_boxplot_stats(aucs, image_classes)
+    bp_stats = perimg_boxplot_stats(aucs, image_classes)
     fig, ax = plot_boxplot_pimo_curves(rates[0], rates, image_classes, bp_stats)
     assert fig is not None
     assert ax is not None
     plot_boxplot_pimo_curves(rates[0], rates, image_classes, bp_stats, ax=ax)
+
+
+def test_plot_boxplot_logpimo_curves(aucs, rates, image_classes):
+    bp_stats = perimg_boxplot_stats(aucs, image_classes)
+    fig, ax = plot_boxplot_logpimo_curves(rates[0], rates, image_classes, bp_stats, 0.001, 0.03)
+    assert fig is not None
+    assert ax is not None
+    plot_boxplot_logpimo_curves(rates[0], rates, image_classes, bp_stats, 0.001, 0.03, ax=ax)
 
 
 def test_plot_pimfpr_curves_norm_vs_anom(rates, image_classes):

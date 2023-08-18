@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
+from pathlib import Path
+
 import matplotlib as mpl
 import numpy
 import torch
@@ -106,9 +109,12 @@ def _validate_image_classes(image_classes: Tensor):
         )
 
 
-def _validate_aucs(aucs: Tensor, nan_allowed: bool = False):
+def _validate_and_convert_aucs(aucs: Tensor | Sequence, nan_allowed: bool = False):
+    if isinstance(aucs, Sequence):
+        aucs = torch.as_tensor(aucs)
+
     if not isinstance(aucs, Tensor):
-        raise ValueError(f"Expected argument `aucs` to be a Tensor, but got {type(aucs)}.")
+        raise ValueError(f"Expected argument `aucs` to be a Tensor or Sequence, but got {type(aucs)}.")
 
     if aucs.ndim != 1:
         raise ValueError(f"Expected argument `aucs` to be a 1D tensor, but got {aucs.ndim}D tensor.")
@@ -120,6 +126,8 @@ def _validate_aucs(aucs: Tensor, nan_allowed: bool = False):
 
     if torch.any((valid_aucs < 0) | (valid_aucs > 1)):
         raise ValueError("Expected argument `aucs` to be in [0, 1], but got values outside this range.")
+
+    return aucs
 
 
 def _validate_image_class(image_class: int | None):
@@ -187,10 +195,30 @@ def _validate_and_convert_threshold(threshold: float | int | Tensor) -> Tensor:
     return threshold
 
 
+def _validate_and_convert_fpath(fpath: str | Path, extension: str | None) -> Path:
+    if isinstance(fpath, str):
+        fpath = Path(fpath)
+
+    if not isinstance(fpath, Path):
+        raise ValueError(f"Expected argument to be a str or Path, but got {type(fpath)}.")
+
+    if fpath.is_dir():
+        raise ValueError("Expected argument to be a file, but got a directory.")
+
+    if extension is not None:
+        if len(fpath.suffix) == 0:
+            fpath = fpath.with_suffix(extension)
+
+        elif fpath.suffix != extension:
+            raise ValueError(f"Expected argument to have extension {extension}, but got {fpath.suffix}.")
+
+    return fpath
+
+
 # =========================================== FUNCTIONAL ===========================================
 
 
-def _perimg_boxplot_stats(
+def perimg_boxplot_stats(
     values: Tensor, image_classes: Tensor, only_class: int | None = None
 ) -> list[dict[str, str | int | float | None]]:
     """Compute boxplot statistics for a given tensor of values.

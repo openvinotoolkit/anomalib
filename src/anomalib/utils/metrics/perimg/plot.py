@@ -16,17 +16,17 @@ from matplotlib.ticker import FixedLocator, PercentFormatter
 from torch import Tensor
 
 from .common import (
-    _perimg_boxplot_stats,
+    _validate_and_convert_aucs,
     _validate_and_convert_rate,
     _validate_and_convert_threshold,
     _validate_atleast_one_anomalous_image,
     _validate_atleast_one_normal_image,
-    _validate_aucs,
     _validate_image_class,
     _validate_image_classes,
     _validate_perimg_rate_curves,
     _validate_rate_curve,
     _validate_thresholds,
+    perimg_boxplot_stats,
 )
 
 # =========================================== FORMAT ===========================================
@@ -280,12 +280,12 @@ def plot_aupimo_boxplot(
     image_classes: Tensor,
     ax: Axes | None = None,
 ) -> tuple[Figure | None, Axes]:
-    _validate_aucs(aucs, nan_allowed=True)
+    _validate_and_convert_aucs(aucs, nan_allowed=True)
     _validate_atleast_one_anomalous_image(image_classes)
 
     fig, ax = plt.subplots() if ax is None else (None, ax)
 
-    bp_stats = _perimg_boxplot_stats(aucs, image_classes, only_class=1)
+    bp_stats = perimg_boxplot_stats(aucs, image_classes, only_class=1)
 
     _plot_perimg_metric_boxplot(
         ax=ax,
@@ -384,7 +384,7 @@ def plot_boxplot_pimo_curves(
             keep the indices of the anomalous images.
 
         bp_stats: list of dicts, each dict is a boxplot stat of AUPImO values
-                  refer to `anomalib.utils.metrics.perimg.common._perimg_boxplot_stats()`
+                  refer to `anomalib.utils.metrics.perimg.common.perimg_boxplot_stats()`
 
     Returns:
         fig, ax
@@ -493,6 +493,54 @@ def plot_boxplot_pimo_curves(
     ax.set_ylabel("Per-Image Overlap (in-image TPR)")
     ax.set_title("Per-Image Overlap (PImO) Curves (AUC boxplot statistics)")
 
+    return fig, ax
+
+
+def plot_boxplot_logpimo_curves(
+    shared_fpr,
+    tprs,
+    image_classes,
+    bp_stats: list[dict[str, str | int | float | None]],
+    lbound: float,
+    ubound: float,
+    ax: Axes | None = None,
+) -> tuple[Figure | None, Axes]:
+    """Plot shared FPR vs Log Per-Image Overlap (LogPImO) curves only for the boxplot stats cases.
+
+    Args:
+        ax: matplotlib Axes
+        shared_fpr: shape (num_thresholds,)
+        tprs: shape (num_images, num_thresholds)
+        image_classes: shape (num_images,)
+            The `image_classes` tensor is used to filter out the normal images, while making it possible to
+            keep the indices of the anomalous images.
+
+        bp_stats: list of dicts, each dict is a boxplot stat of AULogPImO values
+                  refer to `anomalib.utils.metrics.perimg.common.perimg_boxplot_stats()`
+
+    Returns:
+        fig, ax
+    """
+    lbound = _validate_and_convert_rate(lbound)
+    ubound = _validate_and_convert_rate(ubound)
+
+    if lbound >= ubound:
+        raise ValueError(f"Expected `lbound` < `ubound`, but got {lbound} and {ubound}, respectively.")
+
+    # other args are validated in `plot_boxplot_pimo_curves()`
+    fig, ax = plot_boxplot_pimo_curves(
+        shared_fpr,
+        tprs,
+        image_classes,
+        bp_stats,
+        ax=ax,
+    )
+    ax.set_xlabel("Log10 of Shared FPR")
+    ax.set_title("Log Per-Image Overlap (LogPImO) Curves (AUC boxplot statistics)")
+    _format_axis_rate_metric_log(ax, axis=0, lower_lim=lbound, upper_lim=ubound)
+    # they are not exactly the same as the input because the function above rounds them
+    xtickmin, xtickmax = ax.xaxis.get_ticklocs()[[0, -1]]
+    _add_integration_range_to_pimo_curves(ax, (lbound, ubound), span=(xtickmin < lbound or xtickmax > ubound))
     return fig, ax
 
 

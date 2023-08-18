@@ -15,7 +15,9 @@ further: also choose the th upper bound to be the max score at normal pixels
 
 from __future__ import annotations
 
+import json
 from collections import namedtuple
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import torch
@@ -26,10 +28,16 @@ from torch import Tensor
 
 from .binclf_curve import PerImageBinClfCurve
 from .common import (
-    _perimg_boxplot_stats,
+    _validate_and_convert_aucs,
+    _validate_and_convert_fpath,
     _validate_and_convert_rate,
     _validate_atleast_one_anomalous_image,
     _validate_atleast_one_normal_image,
+    _validate_image_classes,
+    _validate_perimg_rate_curves,
+    _validate_rate_curve,
+    _validate_thresholds,
+    perimg_boxplot_stats,
 )
 from .plot import (
     _add_avline_at_score_random_model,
@@ -37,6 +45,7 @@ from .plot import (
     _format_axis_rate_metric_log,
     plot_all_pimo_curves,
     plot_aupimo_boxplot,
+    plot_boxplot_logpimo_curves,
     plot_boxplot_pimo_curves,
     plot_pimfpr_curves_norm_only,
     plot_th_fpr_curves_norm_only,
@@ -65,6 +74,23 @@ PImOResult.__doc__ = """PImO result (from `PImO.compute()`).
 - `num_thresholds` is an attribute of `PImO` and is given in the constructor (from parent class).
 - `num_images` depends on the data seen by the model at the update() calls.
 """
+
+
+def _validate_pimoresult(pimoresult: PImOResult):
+    if len(pimoresult) != 5:
+        raise ValueError(
+            f"Expected argument `pimoresult` to be a namedtuple with 5 elements, but got {len(pimoresult)}."
+        )
+
+    thresholds, fprs, shared_fpr, tprs, image_classes = pimoresult
+    _validate_thresholds(thresholds)
+    _validate_perimg_rate_curves(fprs, nan_allowed=False)
+    _validate_rate_curve(shared_fpr, nan_allowed=False)
+    _validate_perimg_rate_curves(tprs, nan_allowed=True)
+    _validate_image_classes(image_classes)
+    _validate_atleast_one_anomalous_image(image_classes)
+    _validate_atleast_one_normal_image(image_classes)
+    _validate_perimg_rate_curves(tprs[image_classes == 1], nan_allowed=False)
 
 
 class PImO(PerImageBinClfCurve):
@@ -141,6 +167,54 @@ class PImO(PerImageBinClfCurve):
         ax.set_xlabel("Mean FPR on Normal Images")
 
         return fig, ax
+
+    @staticmethod
+    def _save(pimoresult: PImOResult, fpath: str | Path):
+        """Statict method, functional method so children classes can use it."""
+        fpath = _validate_and_convert_fpath(fpath, extension=".pt")
+        payload_curves = {
+            "shared_fpr_metric": "mean_inimage_fpr",
+            "thresholds": pimoresult.thresholds,
+            "fprs": pimoresult.fprs,
+            "shared_fpr": pimoresult.shared_fpr,
+            "tprs": pimoresult.tprs,
+            "image_classes": pimoresult.image_classes,
+        }
+        torch.save(payload_curves, fpath)
+
+    def save(self, fpath: str | Path):
+        """Save the PImO curve to a `.pt` file.
+
+        Args:
+            fpath: path to the file where to save the curve.
+        """
+        pimoresult = self.compute()
+        self._save(pimoresult, fpath)
+
+    @staticmethod
+    def load(fpath: str | Path) -> PImOResult:
+        """Private method so children classes can use it.
+        Args:
+            fpath: path to the `.pt` file where to load the PImOResult.
+        """
+        fpath = _validate_and_convert_fpath(fpath, extension=".pt")
+        payload_curves = torch.load(fpath)
+        try:
+            pimoresult = PImOResult(
+                payload_curves["thresholds"],
+                payload_curves["fprs"],
+                payload_curves["shared_fpr"],
+                payload_curves["tprs"],
+                payload_curves["image_classes"],
+            )
+        except KeyError as ex:
+            raise KeyError(f"Invalid {PImOResult.__name__}, expected key {ex} in file {fpath}.") from ex
+        try:
+            _validate_pimoresult(pimoresult)
+        except Exception as ex:
+            raise RuntimeError(f"Invalid {PImOResult.__name__} in file {fpath}.") from ex
+
+        return pimoresult
 
 
 class AUPImO(PImO):
@@ -238,10 +312,10 @@ class AUPImO(PImO):
 
         Returns:
             list[dict[str, str | int | float | None]]: List of AUCs statistics from a boxplot.
-            refer to `anomalib.utils.metrics.perimg.common._perimg_boxplot_stats()` for the keys and values.
+            refer to `anomalib.utils.metrics.perimg.common.perimg_boxplot_stats()` for the keys and values.
         """
         (_, __, ___, ____, image_classes), aucs = self.compute()
-        stats = _perimg_boxplot_stats(values=aucs, image_classes=image_classes, only_class=1)
+        stats = perimg_boxplot_stats(values=aucs, image_classes=image_classes, only_class=1)
         return stats
 
     def plot_boxplot_pimo_curves(
@@ -360,6 +434,63 @@ class AUPImO(PImO):
 
         return fig, ax
 
+    @staticmethod
+    def _deduce_curves_fpath(fpath: Path):
+        return fpath.parent / f"{fpath.stem}_curves.pt"
+
+    def save(self, fpath: str | Path, curve: bool = True):
+        """Save the AUPImO values (AUCs) in a JSON file.
+        Optionally, save the AUPImO curves in a `.pt` file.
+
+        Args:
+            fpath: path to the file where to save the AUPImO values.
+            curve: whether to save the AUPImO curves in a `.pt` file.
+        """
+        fpath = _validate_and_convert_fpath(fpath, extension=".json")
+        pimoresult, aucs = self.compute()
+        payload = {
+            "ubound": self.ubound.item(),
+            "aupimo": aucs.tolist(),
+        }
+        with fpath.open("w") as f:
+            json.dump(payload, f, indent=4)
+        if curve:
+            fpath_curves = AUPImO._deduce_curves_fpath(fpath)
+            PImO._save(pimoresult, fpath_curves)
+
+    @staticmethod
+    def load(fpath: str | Path, curve: bool = True) -> Tensor | tuple[PImOResult, Tensor]:  # type: ignore
+        """Load the AUPImO values (AUCs) from a JSON file.
+        Optionally, load the PImO curves from a `.pt` file (file name is deduced from the JSON file name).
+
+        Args:
+            fpath: path to the file where to load the AUPImO values.
+            curve: whether to load the PImO curves from a `.pt` file.
+        Returns:
+            Tensor: AUPImO values (AUCs)
+            or
+            tuple[PImOResult, Tensor]: (PImOResult, AUPImO values (AUCs)).
+        """
+
+        fpath = _validate_and_convert_fpath(fpath, extension=".json")
+        with fpath.open("r") as f:
+            loaded = json.load(f)
+        try:
+            ubound = loaded["ubound"]
+            aupimo = loaded["aupimo"]
+        except KeyError as ex:
+            raise KeyError(f"Invalid {AUPImO.__name__} saved AUCs, expected key {ex} in file {fpath}.") from ex
+        try:
+            loaded["ubound"] = _validate_and_convert_rate(ubound, nonzero=True)
+            loaded["aupimo"] = _validate_and_convert_aucs(aupimo, nan_allowed=True)
+        except Exception as ex:
+            raise RuntimeError(f"Invalid {AUPImO.__name__} saved AUCs in file {fpath}.") from ex
+        if curve:
+            curves_fpath = AUPImO._deduce_curves_fpath(fpath)
+            pimoresult = PImO.load(curves_fpath)
+            return pimoresult, loaded
+        return loaded
+
 
 class AULogPImO(PImO):
     """Area Under the Log Per-Image Overlap (LogPIMO, pronounced log pee-mo).
@@ -368,17 +499,17 @@ class AULogPImO(PImO):
 
     AULogPImO's primitive (to be normalized) is
 
-        \integral_{L}^{U} TPR(FPR) dlog(FPR) = \integral_{log(L)}^{log(U)} TPR(FPR) FPR^{-1} dFPR
+        \\integral_{L}^{U} TPR(FPR) dlog(FPR) = \\integral_{log(L)}^{log(U)} TPR(FPR) FPR^{-1} dFPR
 
-    L: FPR lower bound \in (0, 1)
-    U: FPR upper bound \in (0, 1] such that U > L
+    L: FPR lower bound \\in (0, 1)
+    U: FPR upper bound \\in (0, 1] such that U > L
     FPR: False Positive Rate
     TPR: True Positive Rate
 
-    F \in [L, U]^N is a sequence of `N` FPRs, and T \in [0, 1]^N is a vector of `N` TPRs,
-    such that F_{i+1} > F_i for all i \in [1, N-1], and T_i = TPR(F_i) for i = 1, ..., N.
+    F \\in [L, U]^N is a sequence of `N` FPRs, and T \\in [0, 1]^N is a vector of `N` TPRs,
+    such that F_{i+1} > F_i for all i \\in [1, N-1], and T_i = TPR(F_i) for i = 1, ..., N.
 
-    LogF \in (-inf, 1]^N is a sequence of `N` log(FPR)s; i.e. LogF_i = log(F_i) for i = 1, ..., N.
+    LogF \\in (-inf, 1]^N is a sequence of `N` log(FPR)s; i.e. LogF_i = log(F_i) for i = 1, ..., N.
 
     The integral is computed by the trapezoidal rule, each curve being treated separately.
 
@@ -389,10 +520,12 @@ class AULogPImO(PImO):
     We use (2) and normalize the value to have a score that is in [0, 1].
     The normalization constant is the score of the perfect model (TPR = 1 for all FPRs):
 
-    MAXAUC = \integral_{U}^{L} FRP^{-1} dFPR = log(U) - log(L) = log(U/L)
+    MAXAUC = \\integral_{U}^{L} FRP^{-1} dFPR = log(U) - log(L) = log(U/L)
     MAXAUC = log(U/L)
 
     AULogPImO = trapezoid(LogF, T) / log(U/L)
+
+    TODO make functional of random model score
     """
 
     def __init__(
@@ -454,7 +587,7 @@ class AULogPImO(PImO):
 
         Returns: (PImOResult, aucs)
             [0] PImOResult: PImOResult, see `anomalib.utils.metrics.perimg.pimo.PImOResult` for details.
-            [1] aucs: shape (num_images,), dtype `float64`, \in [0, 1]
+            [1] aucs: shape (num_images,), dtype `float64`, \\in [0, 1]
         """
 
         if self.is_empty:
@@ -530,10 +663,10 @@ class AULogPImO(PImO):
 
         Returns:
             list[dict[str, str | int | float | None]]: List of AUCs statistics from a boxplot.
-            refer to `anomalib.utils.metrics.perimg.common._perimg_boxplot_stats()` for the keys and values.
+            refer to `anomalib.utils.metrics.perimg.common.perimg_boxplot_stats()` for the keys and values.
         """
         (_, __, ___, ____, image_classes), aucs = self.compute()
-        stats = _perimg_boxplot_stats(values=aucs, image_classes=image_classes, only_class=1)
+        stats = perimg_boxplot_stats(values=aucs, image_classes=image_classes, only_class=1)
         return stats
 
     def plot_boxplot_logpimo_curves(
@@ -548,22 +681,16 @@ class AULogPImO(PImO):
             return None, None
 
         (_, __, shared_fpr, tprs, image_classes), ___ = self.compute()
-        fig, ax = plot_boxplot_pimo_curves(
+        fig, ax = plot_boxplot_logpimo_curves(
             shared_fpr,
             tprs,
             image_classes,
             self.boxplot_stats(),
+            self.lbound,
+            self.ubound,
             ax=ax,
         )
         ax.set_xlabel("Log10 of Mean FPR on Normal Images")
-        ax.set_title("Log Per-Image Overlap (LogPImO) Curves (AUC boxplot statistics)")
-        _format_axis_rate_metric_log(ax, axis=0, lower_lim=self.lbound, upper_lim=self.ubound)
-        # they are not exactly the same as the input because the function above rounds them
-        xtickmin, xtickmax = ax.xaxis.get_ticklocs()[[0, -1]]
-        _add_integration_range_to_pimo_curves(
-            ax, (self.lbound, self.ubound), span=(xtickmin < self.lbound or xtickmax > self.ubound)
-        )
-
         return fig, ax
 
     def plot_boxplot(
@@ -668,3 +795,65 @@ class AULogPImO(PImO):
         _add_integration_range_to_pimo_curves(ax[1], (self.lbound, self.ubound))
 
         return fig, ax
+
+    @staticmethod
+    def _deduce_curves_fpath(fpath: Path):
+        return fpath.parent / f"{fpath.stem}_curves.pt"
+
+    def save(self, fpath: str | Path, curve: bool = True):
+        """Save the AULogPImO values (AUCs) in a JSON file.
+        Optionally, save the AUPImO curves in a `.pt` file.
+
+        Args:
+            fpath: path to the file where to save the AULogPImO values.
+            curve: whether to save the AUPImO curves in a `.pt` file.
+        """
+        fpath = _validate_and_convert_fpath(fpath, extension=".json")
+        pimoresult, aucs = self.compute()
+        payload = {
+            "lbound": self.lbound.item(),
+            "ubound": self.ubound.item(),
+            "aulogpimo": aucs.tolist(),
+        }
+        with fpath.open("w") as f:
+            json.dump(payload, f, indent=4)
+        if curve:
+            fpath_curves = AULogPImO._deduce_curves_fpath(fpath)
+            PImO._save(pimoresult, fpath_curves)
+
+    @staticmethod
+    def load(fpath: str | Path, curve: bool = True) -> Tensor | tuple[PImOResult, Tensor]:  # type: ignore
+        """Load the AULogPImO values (AUCs) from a JSON file.
+        Optionally, load the PImO curves from a `.pt` file (file name is deduced from the JSON file name).
+
+        Args:
+            fpath: path to the file where to load the AULogPImO values.
+            curve: whether to load the PImO curves from a `.pt` file.
+        Returns:
+            Tensor: AULogPImO values (AUCs)
+            or
+            tuple[PImOResult, Tensor]: (PImOResult, AULogPImO values (AUCs)).
+        """
+
+        fpath = _validate_and_convert_fpath(fpath, extension=".json")
+        with fpath.open("r") as f:
+            loaded = json.load(f)
+        try:
+            lbound = loaded["lbound"]
+            ubound = loaded["ubound"]
+            aulogpimo = loaded["aulogpimo"]
+        except KeyError as ex:
+            raise KeyError(f"Invalid {AULogPImO.__name__} saved AUCs, expected key {ex} in file {fpath}.") from ex
+        try:
+            loaded["lbound"] = lbound = _validate_and_convert_rate(lbound, nonzero=True, nonone=True)
+            loaded["ubound"] = ubound = _validate_and_convert_rate(ubound, nonzero=True)
+            if lbound >= ubound:
+                raise ValueError(f"Expected argument `lbound` to be < `ubound`, but got {lbound} >= {ubound}.")
+            loaded["aulogpimo"] = _validate_and_convert_aucs(aulogpimo, nan_allowed=True)
+        except Exception as ex:
+            raise RuntimeError(f"Invalid {AULogPImO.__name__} saved AUCs in file {fpath}.") from ex
+        if curve:
+            curves_fpath = AULogPImO._deduce_curves_fpath(fpath)
+            pimoresult = PImO.load(curves_fpath)
+            return pimoresult, loaded
+        return loaded
