@@ -270,10 +270,10 @@ def test_aupimo_plots(anomaly_maps, masks, ubound):
     aupimo.update(anomaly_maps, masks)
     aupimo.compute()
 
-    fig, axes = aupimo.plot()
+    fig, ax = aupimo.plot()
     assert fig is not None
-    assert axes is not None
-    aupimo.plot(axes=axes)
+    assert ax is not None
+    aupimo.plot(ax=ax)
 
     fig, ax = aupimo.plot_all_pimo_curves()
     assert fig is not None
@@ -290,10 +290,10 @@ def test_aupimo_plots(anomaly_maps, masks, ubound):
     assert ax is not None
     aupimo.plot_boxplot_pimo_curves(ax=ax)
 
-    fig, axes = aupimo.plot_perimg_fprs()
+    fig, ax = aupimo.plot_perimg_fprs()
     assert fig is not None
     assert ax is not None
-    aupimo.plot_perimg_fprs(axes=axes)
+    aupimo.plot_perimg_fprs(ax=ax)
 
 
 def test_aulogpimo(
@@ -340,10 +340,10 @@ def test_aulogpimo_plots(anomaly_maps, masks, lbound, ubound):
     aulogpimo.update(anomaly_maps, masks)
     aulogpimo.compute()
 
-    fig, axes = aulogpimo.plot()
+    fig, ax = aulogpimo.plot()
     assert fig is not None
-    assert axes is not None
-    aulogpimo.plot(axes=axes)
+    assert ax is not None
+    aulogpimo.plot(ax=ax)
 
     fig, ax = aulogpimo.plot_all_logpimo_curves()
     assert fig is not None
@@ -360,7 +360,7 @@ def test_aulogpimo_plots(anomaly_maps, masks, lbound, ubound):
     assert ax is not None
     aulogpimo.plot_boxplot_logpimo_curves(ax=ax)
 
-    fig, axes = aulogpimo.plot_perimg_fprs()
+    fig, ax = aulogpimo.plot_perimg_fprs()
     assert fig is not None
     assert ax is not None
-    aulogpimo.plot_perimg_fprs(axes=axes)
+    aulogpimo.plot_perimg_fprs(ax=ax)

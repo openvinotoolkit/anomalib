@@ -305,12 +305,10 @@ class AUPImO(PImO):
             return self.plot_boxplot_pimo_curves(ax=ax)
 
         if not isinstance(ax, ndarray):
-            raise ValueError(f"Expected argument `axes` to be a matplotlib Axes or ndarray, but got {type(ax)}.")
+            raise ValueError(f"Expected argument `ax` to be a matplotlib Axes or ndarray, but got {type(ax)}.")
 
         if ax.size != 2:
-            raise ValueError(
-                f"Expected argument `axes` , when type `ndarray`, to be of size 2, but got size {ax.size}."
-            )
+            raise ValueError(f"Expected argument `ax` , when type `ndarray`, to be of size 2, but got size {ax.size}.")
 
         ax = ax.flatten()
         self.plot_boxplot(ax=ax[0])
@@ -321,31 +319,31 @@ class AUPImO(PImO):
 
     def plot_perimg_fprs(
         self,
-        axes: ndarray | None = None,
+        ax: ndarray | None = None,
     ) -> tuple[Figure | None, ndarray]:
         """Plot the AUC boundary conditions based on FPR metrics on normal images.
 
         Args:
-            axes: ndarray of matplotlib Axes of size 2, or None.
-                If None, the function will create the axes.
+            ax: ndarray of matplotlib Axes of size 2, or None.
+                If None, the function will create the ax.
         Returns:
-            tuple[Figure | None, ndarray]: (fig, axes)
+            tuple[Figure | None, ndarray]: (fig, ax)
                 fig: matplotlib Figure
-                axes: ndarray of matplotlib Axes of size 2
+                ax: ndarray of matplotlib Axes of size 2
         """
 
-        if axes is None:
-            fig, axes = plt.subplots(1, 2, figsize=(14, 6), width_ratios=[6, 8])
+        if ax is None:
+            fig, ax = plt.subplots(1, 2, figsize=(14, 6), width_ratios=[6, 8])
             fig.suptitle("AUPImO Integration Boundary Conditions")
             fig.set_tight_layout(True)
-        elif not isinstance(axes, ndarray):
-            raise ValueError(f"Expected argument `axes` to be an ndarray of matplotlib Axes, but got {type(axes)}.")
-        elif axes.size != 2:
-            raise ValueError(f"Expected argument `axes` to be of size 2, but got size {axes.size}.")
+        elif not isinstance(ax, ndarray):
+            raise ValueError(f"Expected argument `ax` to be an ndarray of matplotlib Axes, but got {type(ax)}.")
+        elif ax.size != 2:
+            raise ValueError(f"Expected argument `ax` to be of size 2, but got size {ax.size}.")
         else:
-            fig, axes = (None, axes)
+            fig, ax = (None, ax)
 
-        axes = axes.flatten()
+        ax = ax.flatten()
 
         (thresholds, fprs, shared_fpr, tprs, image_classes), aucs = self.compute()
 
@@ -354,13 +352,13 @@ class AUPImO(PImO):
         th_lbound = thresholds[thidx_lbound]
 
         plot_th_fpr_curves_norm_only(
-            fprs, shared_fpr, thresholds, image_classes, th_lb_fpr_ub=(th_lbound, self.ubound), ax=axes[0]
+            fprs, shared_fpr, thresholds, image_classes, th_lb_fpr_ub=(th_lbound, self.ubound), ax=ax[0]
         )
 
-        plot_pimfpr_curves_norm_only(fprs, shared_fpr, image_classes, ax=axes[1])
-        _add_integration_range_to_pimo_curves(axes[1], (None, self.ubound))
+        plot_pimfpr_curves_norm_only(fprs, shared_fpr, image_classes, ax=ax[1])
+        _add_integration_range_to_pimo_curves(ax[1], (None, self.ubound))
 
-        return fig, axes
+        return fig, ax
 
 
 class AULogPImO(PImO):
@@ -604,49 +602,47 @@ class AULogPImO(PImO):
             return self.plot_boxplot_logpimo_curves(ax=ax)
 
         if not isinstance(ax, ndarray):
-            raise ValueError(f"Expected argument `axes` to be a matplotlib Axes or ndarray, but got {type(ax)}.")
+            raise ValueError(f"Expected argument `ax` to be a matplotlib Axes or ndarray, but got {type(ax)}.")
 
         if ax.size != 2:
-            raise ValueError(
-                f"Expected argument `axes` , when type `ndarray`, to be of size 2, but got size {ax.size}."
-            )
+            raise ValueError(f"Expected argument `ax` , when type `ndarray`, to be of size 2, but got size {ax.size}.")
 
-        axes = ax.flatten()
-        self.plot_boxplot(ax=axes[0])
-        self.plot_boxplot_logpimo_curves(ax=axes[1])
+        ax = ax.flatten()
+        self.plot_boxplot(ax=ax[0])
+        self.plot_boxplot_logpimo_curves(ax=ax[1])
 
-        if fig is not None:  # it means the axes were created by this function (and so was the suptitle)
-            axes[0].set_title("AUC Boxplot")
-            axes[1].set_title("Curves")
+        if fig is not None:  # it means the ax were created by this function (and so was the suptitle)
+            ax[0].set_title("AUC Boxplot")
+            ax[1].set_title("Curves")
 
-        return fig, axes
+        return fig, ax
 
     def plot_perimg_fprs(
         self,
-        axes: ndarray | None = None,
+        ax: ndarray | None = None,
     ) -> tuple[Figure | None, ndarray]:
         """Plot the AUC boundary conditions based on log(FPR) on normal images.
         Args:
-            axes: ndarray of matplotlib Axes of size 2, or None.
-                If None, the function will create the axes.
+            ax: ndarray of matplotlib Axes of size 2, or None.
+                If None, the function will create the ax.
         Returns:
-            tuple[Figure | None, ndarray]: (fig, axes)
+            tuple[Figure | None, ndarray]: (fig, ax)
                 fig: matplotlib Figure
-                axes: ndarray of matplotlib Axes of size 2
+                ax: ndarray of matplotlib Axes of size 2
         """
 
-        if axes is None:
-            fig, axes = plt.subplots(1, 2, figsize=(14, 6), width_ratios=[6, 8])
+        if ax is None:
+            fig, ax = plt.subplots(1, 2, figsize=(14, 6), width_ratios=[6, 8])
             fig.suptitle("AULogPImO Integration Boundary Conditions")
             fig.set_tight_layout(True)
-        elif not isinstance(axes, ndarray):
-            raise ValueError(f"Expected argument `axes` to be an ndarray of matplotlib Axes, but got {type(axes)}.")
-        elif axes.size != 2:
-            raise ValueError(f"Expected argument `axes` to be of size 2, but got size {axes.size}.")
+        elif not isinstance(ax, ndarray):
+            raise ValueError(f"Expected argument `ax` to be an ndarray of matplotlib Axes, but got {type(ax)}.")
+        elif ax.size != 2:
+            raise ValueError(f"Expected argument `ax` to be of size 2, but got size {ax.size}.")
         else:
-            fig, axes = (None, axes)
+            fig, ax = (None, ax)
 
-        axes = axes.flatten()
+        ax = ax.flatten()
 
         (thresholds, fprs, shared_fpr, _, image_classes), __ = self.compute()
 
@@ -665,10 +661,10 @@ class AULogPImO(PImO):
             image_classes,
             th_lb_fpr_ub=(th_lbound, self.ubound),
             th_ub_fpr_lb=(th_ubound, self.lbound),
-            ax=axes[0],
+            ax=ax[0],
         )
 
-        plot_pimfpr_curves_norm_only(fprs, shared_fpr, image_classes, ax=axes[1])
-        _add_integration_range_to_pimo_curves(axes[1], (self.lbound, self.ubound))
+        plot_pimfpr_curves_norm_only(fprs, shared_fpr, image_classes, ax=ax[1])
+        _add_integration_range_to_pimo_curves(ax[1], (self.lbound, self.ubound))
 
-        return fig, axes
+        return fig, ax
