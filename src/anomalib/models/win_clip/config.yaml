@@ -28,6 +28,7 @@ dataset:
 model:
   name: win_clip
   class_name: object
+  n_shot: 0
   normalization_method: min_max
 
 metrics:
@@ -79,7 +80,7 @@ trainer:
   max_steps: -1
   min_steps: null
   max_time: null
-  limit_train_batches: 1.0
+  limit_train_batches: 1
   limit_val_batches: 1.0
   limit_test_batches: 1.0
   limit_predict_batches: 1.0

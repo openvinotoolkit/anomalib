@@ -30,12 +30,14 @@ class WinClip(AnomalyModule):
     def __init__(
         self,
         class_name: str,
+        n_shot: int,
     ) -> None:
         super().__init__()
         self.model = WinClipAD(torch.device("cuda"))
         self.class_name = class_name
+        self.n_shot = n_shot
 
-    def on_train_start(self) -> None:
+    def on_fit_start(self) -> None:
         self.model.build_text_feature_gallery(self.class_name)
 
     @staticmethod
@@ -46,7 +48,9 @@ class WinClip(AnomalyModule):
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
         """Training Step of WinCLIP"""
         del args, kwargs  # These variables are not used.
-        pass
+        if self.n_shot:
+            self.model.build_image_feature_gallery(batch["image"][: self.n_shot])
+        return
 
     def on_validation_start(self) -> None:
         pass
@@ -66,6 +70,7 @@ class WinClipLightning(WinClip):
     def __init__(self, hparams: DictConfig | ListConfig) -> None:
         super().__init__(
             class_name=hparams.model.class_name,
+            n_shot=hparams.model.n_shot,
         )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
