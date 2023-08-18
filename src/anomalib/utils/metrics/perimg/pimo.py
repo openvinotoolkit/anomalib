@@ -84,12 +84,13 @@ def _validate_pimoresult(pimoresult: PImOResult):
 
     thresholds, fprs, shared_fpr, tprs, image_classes = pimoresult
     _validate_thresholds(thresholds)
-    _validate_perimg_rate_curves(fprs, nan_allowed=False)
+    _validate_perimg_rate_curves(fprs, nan_allowed=True)  # anomalous images can have nan fprs if fully covered by 1s
     _validate_rate_curve(shared_fpr, nan_allowed=False)
-    _validate_perimg_rate_curves(tprs, nan_allowed=True)
+    _validate_perimg_rate_curves(tprs, nan_allowed=True)  # normal images have nan tprs by definition
     _validate_image_classes(image_classes)
     _validate_atleast_one_anomalous_image(image_classes)
     _validate_atleast_one_normal_image(image_classes)
+    _validate_perimg_rate_curves(fprs[image_classes == 0], nan_allowed=False)
     _validate_perimg_rate_curves(tprs[image_classes == 1], nan_allowed=False)
 
 
@@ -457,6 +458,7 @@ class AUPImO(PImO):
         if curve:
             fpath_curves = AUPImO._deduce_curves_fpath(fpath)
             PImO._save(pimoresult, fpath_curves)
+            return fpath_curves
 
     @staticmethod
     def load(fpath: str | Path, curve: bool = True) -> Tensor | tuple[PImOResult, Tensor]:  # type: ignore
@@ -482,7 +484,7 @@ class AUPImO(PImO):
             raise KeyError(f"Invalid {AUPImO.__name__} saved AUCs, expected key {ex} in file {fpath}.") from ex
         try:
             loaded["ubound"] = _validate_and_convert_rate(ubound, nonzero=True)
-            loaded["aupimo"] = _validate_and_convert_aucs(aupimo, nan_allowed=True)
+            loaded["aupimo"] = _validate_and_convert_aucs(aupimo, nan_allowed=True).to(torch.float64)
         except Exception as ex:
             raise RuntimeError(f"Invalid {AUPImO.__name__} saved AUCs in file {fpath}.") from ex
         if curve:
@@ -820,6 +822,7 @@ class AULogPImO(PImO):
         if curve:
             fpath_curves = AULogPImO._deduce_curves_fpath(fpath)
             PImO._save(pimoresult, fpath_curves)
+            return fpath_curves
 
     @staticmethod
     def load(fpath: str | Path, curve: bool = True) -> Tensor | tuple[PImOResult, Tensor]:  # type: ignore
@@ -849,7 +852,7 @@ class AULogPImO(PImO):
             loaded["ubound"] = ubound = _validate_and_convert_rate(ubound, nonzero=True)
             if lbound >= ubound:
                 raise ValueError(f"Expected argument `lbound` to be < `ubound`, but got {lbound} >= {ubound}.")
-            loaded["aulogpimo"] = _validate_and_convert_aucs(aulogpimo, nan_allowed=True)
+            loaded["aulogpimo"] = _validate_and_convert_aucs(aulogpimo, nan_allowed=True).to(torch.float64)
         except Exception as ex:
             raise RuntimeError(f"Invalid {AULogPImO.__name__} saved AUCs in file {fpath}.") from ex
         if curve:

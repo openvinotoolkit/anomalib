@@ -53,11 +53,11 @@ def pytest_generate_tests(metafunc):
         expected_fpr = expected_fpr_mean
         expected_tprs = torch.stack(
             [expected_tpr_norm1, expected_tpr_norm2, expected_tpr_anom1, expected_tpr_anom2], axis=0
-        )
+        ).to(torch.float64)
         expected_image_classes = torch.tensor([0, 0, 1, 1])
         expected_aupimos = torch.stack(
             [expected_aupimo_norm1, expected_aupimo_norm2, expected_aupimo_anom1, expected_aupimo_anom2], axis=0
-        )
+        ).to(torch.float64)
         expected_aupimos_ubound05 = torch.stack(
             [
                 expected_aupimo_norm1,
@@ -66,7 +66,7 @@ def pytest_generate_tests(metafunc):
                 expected_aupimo_anom2_ubound05,
             ],
             axis=0,
-        )
+        ).to(torch.float64)
 
         metafunc.parametrize(
             argnames=(
@@ -87,8 +87,22 @@ def pytest_generate_tests(metafunc):
                     "ubound",
                 ),
                 argvalues=[
-                    (thresholds, expected_fpr, expected_tprs, expected_image_classes, expected_aupimos, 1),
-                    (thresholds, expected_fpr, expected_tprs, expected_image_classes, expected_aupimos_ubound05, 0.5),
+                    (
+                        thresholds,
+                        expected_fpr,
+                        expected_tprs,
+                        expected_image_classes,
+                        expected_aupimos,
+                        torch.tensor(1),
+                    ),
+                    (
+                        thresholds,
+                        expected_fpr,
+                        expected_tprs,
+                        expected_image_classes,
+                        expected_aupimos_ubound05,
+                        torch.tensor(0.5),
+                    ),
                 ],
             )
 
@@ -96,8 +110,8 @@ def pytest_generate_tests(metafunc):
             metafunc.parametrize(
                 argnames=("ubound",),
                 argvalues=[
-                    (1,),
-                    (0.5,),
+                    (torch.tensor(1),),
+                    (torch.tensor(0.5),),
                 ],
             )
 
@@ -138,7 +152,9 @@ def pytest_generate_tests(metafunc):
 
         anomaly_maps = torch.stack([pred_norm, pred_anom1, pred_anom2], axis=0)
         masks = torch.stack([mask_norm, mask_anom1, mask_anom2], axis=0)
-        expected_tprs = torch.stack([expected_tpr_norm, expected_tpr_anom1, expected_tpr_anom2], axis=0)
+        expected_tprs = torch.stack([expected_tpr_norm, expected_tpr_anom1, expected_tpr_anom2], axis=0).to(
+            torch.float64
+        )
         expected_image_classes = torch.tensor([0, 1, 1])
 
         metafunc.parametrize(
@@ -170,8 +186,8 @@ def pytest_generate_tests(metafunc):
                 ),
                 argvalues=[
                     (
-                        0.001,
-                        1,
+                        torch.tensor(0.001),
+                        torch.tensor(1),
                         torch.as_tensor(
                             [
                                 torch.nan,
@@ -182,8 +198,8 @@ def pytest_generate_tests(metafunc):
                         ),
                     ),
                     (
-                        0.001,
-                        0.1,
+                        torch.tensor(0.001),
+                        torch.tensor(0.1),
                         torch.as_tensor(
                             [
                                 torch.nan,
@@ -194,8 +210,8 @@ def pytest_generate_tests(metafunc):
                         ),
                     ),
                     (
-                        0.1,
-                        1,
+                        torch.tensor(0.1),
+                        torch.tensor(1),
                         torch.as_tensor(
                             [
                                 torch.nan,
@@ -214,9 +230,9 @@ def pytest_generate_tests(metafunc):
                     "ubound",
                 ),
                 argvalues=[
-                    (0.001, 1),
-                    (0.001, 0.1),
-                    (0.1, 1),
+                    (torch.tensor(0.001), torch.tensor(1)),
+                    (torch.tensor(0.001), torch.tensor(0.1)),
+                    (torch.tensor(0.1), torch.tensor(1)),
                 ],
             )
 
@@ -233,15 +249,15 @@ def test_pimo(anomaly_maps, masks):
     assert pimoresult.image_classes.ndim == 1
     pimo.plot()
     with tempfile.TemporaryDirectory() as tmpdir:
-        fpath = Path(tmpdir) / "pimo.json"
+        fpath = Path(tmpdir) / "pimo.pt"
         pimo.save(fpath)
         assert fpath.exists()
-        pimoresult_loaded = pimo.load(tmpdir)
-    assert (pimoresult.thresholds == pimoresult_loaded.thresholds).all()
-    assert (pimoresult.fprs == pimoresult_loaded.fprs).all()
-    assert (pimoresult.shared_fpr == pimoresult_loaded.shared_fpr).all()
-    assert (pimoresult.tprs == pimoresult_loaded.tprs).all()
-    assert (pimoresult.image_classes == pimoresult_loaded.image_classes).all()
+        pimoresult_loaded = pimo.load(fpath)
+    assert torch.allclose(pimoresult.thresholds, pimoresult_loaded.thresholds)
+    assert torch.allclose(pimoresult.fprs, pimoresult_loaded.fprs, equal_nan=True)
+    assert torch.allclose(pimoresult.shared_fpr, pimoresult_loaded.shared_fpr)
+    assert torch.allclose(pimoresult.tprs, pimoresult_loaded.tprs, equal_nan=True)
+    assert torch.allclose(pimoresult.image_classes, pimoresult_loaded.image_classes)
 
 
 def test_aupimo(
@@ -268,14 +284,29 @@ def test_aupimo(
     assert com_aupimos.ndim == 1
     assert (com_thresholds == expected_thresholds).all()
     assert (com_shared_fpr == expected_fpr).all()
-    assert com_tprs[:2].isnan().all()
-    assert (com_tprs[2:] == expected_tprs[2:]).all()
+    assert torch.allclose(com_tprs, expected_tprs, equal_nan=True)
     assert (com_image_classes == expected_image_classes).all()
-    assert com_aupimos[:2].isnan().all()
-    assert (com_aupimos[2:] == expected_aupimos[2:]).all()
+    assert torch.allclose(com_aupimos, expected_aupimos, equal_nan=True)
 
     stats = aupimo.boxplot_stats()
     assert len(stats) > 0
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        fpath = Path(tmpdir) / "aupimo.json"
+        fpath_curve = aupimo.save(fpath, curve=True)
+        assert fpath.exists()
+        assert fpath_curve is not None
+        assert fpath_curve.exists()
+        pimoresult_loaded, aupimo_loaded = aupimo.load(fpath, curve=True)
+    assert torch.allclose(pimoresult.thresholds, pimoresult_loaded.thresholds)
+    assert torch.allclose(pimoresult.fprs, pimoresult_loaded.fprs, equal_nan=True)
+    assert torch.allclose(pimoresult.shared_fpr, pimoresult_loaded.shared_fpr)
+    assert torch.allclose(pimoresult.tprs, pimoresult_loaded.tprs, equal_nan=True)
+    assert torch.allclose(pimoresult.image_classes, pimoresult_loaded.image_classes)
+    ubound_loaded = aupimo_loaded["ubound"]
+    assert ubound == ubound_loaded
+    aupimo_loaded = aupimo_loaded["aupimo"]
+    assert torch.allclose(com_aupimos, aupimo_loaded, equal_nan=True)
 
 
 def test_aupimo_plots(anomaly_maps, masks, ubound):
@@ -338,14 +369,29 @@ def test_aulogpimo(
     assert com_aulogpimos.ndim == 1
     assert (com_thresholds == expected_thresholds).all()
     assert (com_shared_fpr == expected_fpr).all()
-    assert com_tprs[:1].isnan().all()
-    assert (com_tprs[1:] == expected_tprs[1:]).all()
+    assert torch.allclose(com_tprs, expected_tprs, equal_nan=True)
     assert (com_image_classes == expected_image_classes).all()
-    assert com_aulogpimos[:1].isnan().all()
-    assert torch.allclose(com_aulogpimos[1:], expected_aulogpimos[1:], atol=1e-6)
+    assert torch.allclose(com_aulogpimos, expected_aulogpimos, equal_nan=True)
 
     stats = aulogpimo.boxplot_stats()
     assert len(stats) > 0
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        fpath = Path(tmpdir) / "aulogpimo.json"
+        fpath_curve = aulogpimo.save(fpath, curve=True)
+        assert fpath.exists()
+        assert fpath_curve is not None
+        assert fpath_curve.exists()
+        pimoresult_loaded, aulogpimo_loaded = aulogpimo.load(fpath, curve=True)
+    assert torch.allclose(pimoresult.thresholds, pimoresult_loaded.thresholds)
+    assert torch.allclose(pimoresult.fprs, pimoresult_loaded.fprs, equal_nan=True)
+    assert torch.allclose(pimoresult.shared_fpr, pimoresult_loaded.shared_fpr)
+    assert torch.allclose(pimoresult.tprs, pimoresult_loaded.tprs, equal_nan=True)
+    assert torch.allclose(pimoresult.image_classes, pimoresult_loaded.image_classes)
+    ubound_loaded = aulogpimo_loaded["ubound"]
+    assert ubound == ubound_loaded
+    aulogpimo_loaded = aulogpimo_loaded["aulogpimo"]
+    assert torch.allclose(com_aulogpimos, aulogpimo_loaded, equal_nan=True)
 
 
 def test_aulogpimo_plots(anomaly_maps, masks, lbound, ubound):
