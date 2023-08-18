@@ -351,6 +351,8 @@ def test_aulogpimo(
     lbound,
     ubound,
 ):
+    AULogPImO.random_model_auc_from_bounds(lbound, ubound)
+
     aulogpimo = AULogPImO(num_thresholds=expected_thresholds.shape[0], lbound=lbound, ubound=ubound)
     str(aulogpimo)
     assert 0 < aulogpimo.max_primitive_auc

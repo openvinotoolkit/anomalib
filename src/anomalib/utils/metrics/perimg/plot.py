@@ -304,6 +304,22 @@ def plot_aupimo_boxplot(
     return fig, ax
 
 
+def plot_aulogpimo_boxplot(
+    aucs: Tensor,
+    image_classes: Tensor,
+    random_model_auc: float | None = None,
+    ax: Axes | None = None,
+) -> tuple[Figure | None, Axes]:
+    if random_model_auc is not None:
+        _validate_and_convert_rate(random_model_auc, nonzero=True, nonone=True)
+    fig, ax = plot_aupimo_boxplot(aucs, image_classes, ax=ax)
+    ax.set_xlabel("AULogPImO [%]")
+    ax.set_title("Area Under the Log Per-Image Overlap (AULogPImO) Boxplot")
+    if random_model_auc is not None:
+        _add_avline_at_score_random_model(ax, random_model_auc)
+    return fig, ax
+
+
 # =========================================== PImO ===========================================
 
 

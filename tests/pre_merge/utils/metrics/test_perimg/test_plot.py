@@ -8,6 +8,7 @@ from anomalib.utils.metrics.perimg.plot import (
     _plot_perimg_curves,
     _plot_perimg_metric_boxplot,
     plot_all_pimo_curves,
+    plot_aulogpimo_boxplot,
     plot_aupimo_boxplot,
     plot_boxplot_logpimo_curves,
     plot_boxplot_pimo_curves,
@@ -120,6 +121,23 @@ def test_plot_aupimo_boxplot(aucs, image_classes):
     assert fig is not None
     assert ax is not None
     plot_aupimo_boxplot(aucs, image_classes, ax=ax)
+
+
+def test_plot_aulogpimo_boxplot(aucs, image_classes):
+    fig, ax = plot_aulogpimo_boxplot(aucs, image_classes)
+    assert fig is not None
+    assert ax is not None
+    plot_aulogpimo_boxplot(aucs, image_classes, ax=ax)
+
+    fig, ax = plot_aulogpimo_boxplot(
+        aucs,
+        image_classes,
+        # actual value doesn't matter for this test
+        random_model_auc=0.5,
+    )
+    assert fig is not None
+    assert ax is not None
+    plot_aulogpimo_boxplot(aucs, image_classes, ax=ax)
 
 
 def test_plot_boxplot_pimo_curves(aucs, rates, image_classes):

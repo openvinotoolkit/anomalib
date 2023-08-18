@@ -169,7 +169,7 @@ def _validate_and_convert_rate(rate: float | int | Tensor, nonzero: bool = True,
         raise ValueError(f"Expected argument to be a scalar, but got a tensor of shape {rate.shape}.")
 
     if rate < 0 or rate > 1:
-        raise ValueError(f"Argument `rate={rate}` is not a rate.")
+        raise ValueError(f"Argument `{rate}` is not a valid because it is <0 or >1.")
 
     if nonzero and rate == 0:
         raise ValueError("Expected argument to be > 0.")

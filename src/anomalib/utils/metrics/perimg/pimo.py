@@ -44,6 +44,7 @@ from .plot import (
     _add_integration_range_to_pimo_curves,
     _format_axis_rate_metric_log,
     plot_all_pimo_curves,
+    plot_aulogpimo_boxplot,
     plot_aupimo_boxplot,
     plot_boxplot_logpimo_curves,
     plot_boxplot_pimo_curves,
@@ -581,6 +582,18 @@ class AULogPImO(PImO):
         """
         return self.random_model_primitive_auc / self.max_primitive_auc
 
+    @staticmethod
+    def random_model_auc_from_bounds(lbound: float, ubound: float) -> float:
+        lbound = _validate_and_convert_rate(lbound)
+        ubound = _validate_and_convert_rate(ubound)
+
+        if lbound >= ubound:
+            raise ValueError(f"Expected argument `lbound` to be < `ubound`, but got {lbound} >= {ubound}.")
+
+        max_primitive_auc = torch.log(ubound / lbound)
+        random_model_primitive_auc = ubound - lbound
+        return (random_model_primitive_auc / max_primitive_auc).item()
+
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(lbound={self.lbound}, ubound={self.ubound})"
 
@@ -705,10 +718,7 @@ class AULogPImO(PImO):
             return None, None
 
         (_, __, ___, ____, image_classes), aucs = self.compute()
-        fig, ax = plot_aupimo_boxplot(aucs, image_classes, ax=ax)
-        ax.set_xlabel("AULogPImO [%]")
-        ax.set_title("Area Under the Log Per-Image Overlap (AULogPImO) Boxplot")
-        _add_avline_at_score_random_model(ax, self.random_model_auc)
+        fig, ax = plot_aulogpimo_boxplot(aucs, image_classes, self.random_model_auc, ax=ax)
         return fig, ax
 
     def plot(
