@@ -95,7 +95,7 @@ class BasicEnsemblePredictions(EnsemblePredictions):
 
         for index, batches in self.all_data.items():
             batch_data[index] = batches[batch_index]
-            if "anomaly_maps" in batch_data.keys():
+            if "anomaly_maps" in batch_data[index]:
                 # copy anomaly maps, since in case of test data == val data, post-processing might change them
                 batch_data[index]["anomaly_maps"] = batch_data[index]["anomaly_maps"].clone()
 
@@ -236,18 +236,18 @@ class RescaledEnsemblePredictions(EnsemblePredictions):
         Returns:
             dict: Dictionary of all predicted data with all tiles rescaled.
         """
-        # copy data
+        # copy dictionary, but not underlying data, so other data still stays downscaled in memory
         batch = copy.copy(batch)
 
         # downscale following but NOT gt mask
         tiled_keys = ["image", "anomaly_maps", "pred_masks"]
 
         # change bool to float32
-        if "pred_masks" in batch.keys():
+        if "pred_masks" in batch:
             batch["pred_masks"] = batch["pred_masks"].type(torch.float32)
 
         for key in tiled_keys:
-            if key in batch.keys():
+            if key in batch:
                 batch[key] = F.interpolate(batch[key], scale_factor=scale_factor, mode=mode)
 
         return batch
