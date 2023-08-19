@@ -9,6 +9,7 @@ import copy
 import logging
 import os
 import warnings
+from pathlib import Path
 from typing import Any
 
 from omegaconf import DictConfig, ListConfig, OmegaConf
@@ -96,6 +97,8 @@ def prepare_ensemble_configurable_parameters(
     config.ensemble.tiling.tile_size = EnsembleTiler.validate_size_type(ens_config.tiling.tile_size)
     # update model input size
     config.model.input_size = config.ensemble.tiling.tile_size
+
+    (Path(config.project.path) / "config_tiled_ensemble.yaml").write_text(OmegaConf.to_yaml(config))
 
     return config
 
