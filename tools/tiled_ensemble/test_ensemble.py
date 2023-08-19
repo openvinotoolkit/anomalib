@@ -41,8 +41,8 @@ def get_parser() -> ArgumentParser:
     """
     parser = ArgumentParser()
     parser.add_argument("--model", type=str, default="padim", help="Name of the algorithm to train/test")
-    parser.add_argument("--config", type=str, required=False, help="Path to a model config file")
-    parser.add_argument("--ens_config", type=str, required=True, help="Path to an ensemble configuration file")
+    parser.add_argument("--model_config", type=str, required=False, help="Path to a model config file")
+    parser.add_argument("--ensemble_config", type=str, required=True, help="Path to an ensemble configuration file")
     parser.add_argument("--weight_folder", type=str, required=True, help="Path to directory with saved weight files")
     parser.add_argument("--log-level", type=str, default="INFO", help="<DEBUG, INFO, WARNING, ERROR>")
 
@@ -63,9 +63,9 @@ def test(args: Namespace):
     if args.log_level == "ERROR":
         warnings.filterwarnings("ignore")
 
-    config = get_configurable_parameters(model_name=args.model, config_path=args.config)
+    config = get_configurable_parameters(model_name=args.model, config_path=args.model_config)
     # update and prepare config for ensemble
-    config = prepare_ensemble_configurable_parameters(ens_config_path=args.ens_config, config=config)
+    config = prepare_ensemble_configurable_parameters(ens_config_path=args.ensemble_config, config=config)
 
     experiment_logger = get_experiment_logger(config)
 
@@ -108,7 +108,7 @@ def test(args: Namespace):
         current_predictions = trainer.predict(model=model, datamodule=datamodule, ckpt_path=weight_path)
         ensemble_predictions.add_tile_prediction(tile_index, current_predictions)
 
-    # load stats from file
+    # load stats, used for normalization and thresholding, from file
     stats_path = Path(args.weight_folder) / "stats.json"
     stats = dict(OmegaConf.load(stats_path))
 
