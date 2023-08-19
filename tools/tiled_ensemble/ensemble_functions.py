@@ -26,7 +26,6 @@ from tools.tiled_ensemble.predictions import (
 
 from anomalib.data import get_datamodule
 from anomalib.data.base.datamodule import AnomalibDataModule, collate_fn
-from anomalib.deploy import ExportMode
 from anomalib.utils.callbacks import (
     GraphLogger,
     LoadModelCallback,
@@ -242,19 +241,7 @@ def get_ensemble_callbacks(config: DictConfig | ListConfig, tile_index: tuple[in
             warnings.warn("NNCF is not supported with ensemble.")
 
         if config.optimization.export_mode is not None:
-            from src.anomalib.utils.callbacks.export import ExportCallback  # pylint: disable=import-outside-toplevel
-
-            logger.info("Setting model export to %s", config.optimization.export_mode)
-            callbacks.append(
-                ExportCallback(
-                    input_size=config.model.input_size,
-                    dirpath=config.project.path,
-                    filename=f"model{tile_index[0]}_{tile_index[1]}",
-                    export_mode=ExportMode(config.optimization.export_mode),
-                )
-            )
-        else:
-            warnings.warn(f"Export option: {config.optimization.export_mode} not found. Defaulting to no model export")
+            warnings.warn("Exporting tiled ensemble is currently not supported.")
 
     # Add callback to log graph to loggers
     if config.logging.log_graph not in (None, False):
