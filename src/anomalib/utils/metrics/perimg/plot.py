@@ -1023,6 +1023,20 @@ def compare_models_perimg(
     random_model_score: float | Tensor | None = None,
     ax: Axes | None = None,
 ) -> tuple[Figure, Axes]:
+    """Plot image index vs metric scatter plot for each model.
+
+    The average of the metric is also plotted as a horizontal line.
+
+    Args:
+        models: dict of (model_name, metric_tensor) pairs
+        metric_name: name of the metric
+        random_model_score: score of the random model (for reference; ex: 0.5 for AUROC)
+                            if given, a horizontal line will be added at this score
+        ax: matplotlib Axes
+
+    Returns:
+        fig, ax
+    """
     MARKERS = [
         "o",
         "X",
@@ -1042,9 +1056,9 @@ def compare_models_perimg(
 
     # ** plot **
 
+    num_imgs = next(iter(models.values())).shape[0]
     if ax is None:
         # get the number of images from an arbitrary model (they all have the same number of images)
-        num_imgs = next(iter(models.values())).shape[0]
         fig, ax = plt.subplots(figsize=(min(num_imgs / 7, 20), 7))
     else:
         fig, ax = None, ax
@@ -1093,6 +1107,22 @@ def compare_models_perimg_rank(
     atol: float | None = 0.001,
     ax: Axes | None = None,
 ) -> tuple[Figure, Axes]:
+    """Plot image index vs rank scatter plot for each model.
+
+    Rank is from 1 to `num_models`, where 1 is the best model.
+    Average rank is also plotted as a horizontal line.
+    Red lines are drawn between adjacent ranks whose metric values are within `atol` of each other.
+
+    Args:
+        models: dict of (model_name, metric_tensor) pairs
+        metric_name: name of the metric
+        higher_is_better: whether a higher metric value means "better model"
+        atol: absolute tolerance for the metric values to be considered "equal"
+        ax: matplotlib Axes
+    Returns:
+        fig, ax
+    """
+
     MARKERS = [
         "o",
         "X",

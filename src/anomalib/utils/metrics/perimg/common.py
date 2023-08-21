@@ -428,7 +428,13 @@ def compare_models_parametric(
 
     cmap = cm.inferno
     cmap.set_bad("black")
-    confidence_table = df.style.format("{:.1%}").background_gradient(cmap=cmap, vmin=0, vmax=1)
+
+    def fmt(x):
+        if numpy.isnan(x):
+            return "."
+        return f"{x:.1%}"
+
+    confidence_table = df.style.format(fmt).background_gradient(cmap=cmap, vmin=0, vmax=1)
 
     return confidence_table
 
@@ -506,7 +512,7 @@ def compare_models_nonparametric(
 
         # extreme case
         if (diff == 0).all():
-            test_results[(model_i, model_j)] = scipy.stats._morestats.WilcoxonResult(numpy.nan, 0.0)
+            test_results[(model_i, model_j)] = scipy.stats._morestats.WilcoxonResult(numpy.nan, 1.0)
             continue
 
         # assume `model_i` is greater than `model_j` (assume less if `higher_is_better=False``)
@@ -531,6 +537,12 @@ def compare_models_nonparametric(
 
     cmap = cm.inferno
     cmap.set_bad("black")
-    confidence_table = df.style.format("{:.1%}").background_gradient(cmap=cmap, vmin=0, vmax=1)
+
+    def fmt(x):
+        if numpy.isnan(x):
+            return "."
+        return f"{x:.1%}"
+
+    confidence_table = df.style.format(fmt).background_gradient(cmap=cmap, vmin=0, vmax=1)
 
     return confidence_table
