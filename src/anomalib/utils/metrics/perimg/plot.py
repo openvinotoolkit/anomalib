@@ -8,11 +8,12 @@ from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy
+import pandas as pd
 import torch
 from matplotlib.axes import Axes
 from matplotlib.patches import Rectangle
 from matplotlib.pyplot import Figure
-from matplotlib.ticker import FixedLocator, PercentFormatter
+from matplotlib.ticker import FixedLocator, IndexLocator, PercentFormatter
 from torch import Tensor
 
 from .common import (
@@ -149,6 +150,17 @@ def _bounded_lims(
         ax.set_xlim(newlims)
     else:
         ax.set_ylim(newlims)
+
+
+def _format_axis_imgidx(ax, num_imgs: int):
+    assert num_imgs > 0
+    ax.set_xlabel("Image Index")
+    EPSILON = 0.01
+    ax.set_xlim(0 - EPSILON * num_imgs, num_imgs - 1 + EPSILON * num_imgs)
+    ax.xaxis.set_major_locator(IndexLocator(5, 0))
+    ax.xaxis.set_minor_locator(IndexLocator(1, 0))
+    ax.grid(axis="x", which="major")
+    ax.grid(axis="x", which="minor", linestyle="--", alpha=0.5)
 
 
 # =========================================== GENERIC ===========================================
@@ -640,19 +652,41 @@ def _add_integration_range_to_pimo_curves(
         ax.add_artist(current_legend)
 
 
-def _add_avline_at_score_random_model(ax: Axes, score: float) -> None:
-    """Add a vertical line at the score of the random model."""
+def _add_avline_at_score_random_model(ax: Axes, score: float, axis: int = 1, add_legend: bool = True) -> None:
+    """Add a horizontal or vertical line at the score of the random model.
+    `axis=0` means X-axis, so horizontal line.
+    `axis=1` means Y-axis, so vertical line.
+    `axis=1` is the default for backward compatibility.
+    """
+
+    if not isinstance(ax, Axes) or not isinstance(axis, int):
+        raise ValueError("Expected arguments `ax` to be an Axes and `axis` to be an integer.")
+
     current_legend = ax.get_legend()
 
     def auc2str(bound: float) -> str:
-        return f"{bound:.2%}"
+        return f"{bound:.1%}"
 
-    handle = ax.axvline(
-        score,
-        label=f"Random Model ({auc2str(score)})",
-        linestyle="--",
-        color="red",
-    )
+    if axis == 0:
+        handle = ax.axhline(
+            score,
+            label=f"Random Model ({auc2str(score)})",
+            linestyle="--",
+            color="red",
+        )
+
+    elif axis == 1:
+        handle = ax.axvline(
+            score,
+            label=f"Random Model ({auc2str(score)})",
+            linestyle="--",
+            color="red",
+        )
+    else:
+        raise ValueError(f"`axis` must be 0 (X-axis, horizontal line) or 1 (Y-axis, vertical line), but got {axis}.")
+
+    if not add_legend:
+        return
 
     ax.legend(
         [handle],
@@ -973,5 +1007,195 @@ def plot_th_fpr_curves_norm_only(
     ax.set_title("Thresholds vs FPR on Normal Images")
 
     ax.legend(loc="upper right", fontsize="small", title_fontsize="small")
+
+    return fig, ax
+
+
+# =========================================== COMPARE ===========================================
+
+
+def compare_models_perimg(
+    models: dict[str, Tensor],
+    metric_name: str,
+    random_model_score: float | Tensor | None = None,
+    ax: Axes | None = None,
+) -> tuple[Figure, Axes]:
+    MAX_WIDTH = 20
+    MARKERS = [
+        "o",
+        "X",
+        "s",
+        "P",
+        "*",
+        "D",
+        "v",
+        "^",
+        "<",
+        ">",
+        "p",
+    ]
+
+    # ** validate **
+
+    if not isinstance(models, dict):
+        raise TypeError(f"Expected argument `models` to be a dict, but got {type(models)}.")
+
+    if len(models) == 0:
+        raise ValueError("Expected argument `models` to have at least one key, but got none.")
+
+    # make sure all keys are strings
+    if not all(isinstance(k, str) for k in models.keys()):
+        raise TypeError("Expected argument `models` to have all keys of type str.")
+
+    for k in models.keys():
+        try:
+            models[k] = _validate_and_convert_aucs(models[k], nan_allowed=True)
+        except Exception as ex:
+            raise ValueError(
+                f"Expected argument `models` to have all sequences of floats \\in [0, 1]. Key {k}."
+            ) from ex
+
+    unique_shapes = sorted({t.shape for t in models.values()})
+    if len(unique_shapes) != 1:
+        raise ValueError(f"Expected argument `models` to have all tensors of the same shape. But found {unique_shapes}")
+
+        random_model_score = _validate_and_convert_rate(random_model_score, nonzero=False, nonone=False)
+
+    # ** plot **
+
+    if ax is None:
+        # first [0] is for list of shapes, second [0] is for the first dim (only one == num_imgs)
+        num_imgs = unique_shapes[0][0]
+        fig, ax = plt.subplots(figsize=(min(num_imgs / 7, MAX_WIDTH), 7))
+    else:
+        fig, ax = None, ax
+
+    df = pd.DataFrame(models).reset_index()  # column `index` is the image index
+    df = df.melt(id_vars=["index"], value_vars=list(models.keys()), var_name="model", value_name="metric")
+    df.sort_values("model", inplace=True)
+
+    for modelidx, (model, df_model) in enumerate(df.groupby("model")):
+        avg = df_model["metric"].mean()
+        scatter = ax.scatter(
+            df_model["index"],
+            df_model["metric"],
+            label=f"{model} (avg={avg:.2%})",
+            marker=MARKERS[modelidx % len(MARKERS)],
+            alpha=0.8,
+        )
+        ax.axhline(avg, color=scatter.get_facecolor(), linestyle="--")
+
+    # ** format **
+
+    if random_model_score is not None:
+        _add_avline_at_score_random_model(ax, random_model_score, axis=0, add_legend=False)
+
+    ax.legend(loc="lower right", title="Model")
+
+    # Y-axis
+    _format_axis_rate_metric_linear(ax, axis=1)
+    _format_axis_rate_metric_linear(ax.twinx(), axis=1)  # for the right axis
+    ax.grid(axis="y", which="major")
+    ax.grid(axis="y", which="minor", linestyle="--", alpha=0.5)
+    ax.set_ylabel(f"{metric_name} [%]")
+
+    # X-axis
+    _format_axis_imgidx(ax, num_imgs)
+
+    ax.set_title(f"Image Index vs. {metric_name}")
+
+    return fig, ax
+
+
+def compare_models_perimg_rank(
+    models: dict[str, Tensor], metric_name: str, higher_is_better: bool = True, ax: Axes | None = None
+) -> tuple[Figure, Axes]:
+    MAX_WIDTH = 20
+    MARKERS = [
+        "o",
+        "X",
+        "s",
+        "P",
+        "*",
+        "D",
+        "v",
+        "^",
+        "<",
+        ">",
+        "p",
+    ]
+
+    # ** validate **
+
+    if not isinstance(models, dict):
+        raise TypeError(f"Expected argument `models` to be a dict, but got {type(models)}.")
+
+    if len(models) == 0:
+        raise ValueError("Expected argument `models` to have at least one key, but got none.")
+
+    # make sure all keys are strings
+    if not all(isinstance(k, str) for k in models.keys()):
+        raise TypeError("Expected argument `models` to have all keys of type str.")
+
+    for k in models.keys():
+        try:
+            models[k] = _validate_and_convert_aucs(models[k], nan_allowed=True)
+        except Exception as ex:
+            raise ValueError(
+                f"Expected argument `models` to have all sequences of floats \\in [0, 1]. Key {k}."
+            ) from ex
+
+    unique_shapes = sorted({t.shape for t in models.values()})
+    if len(unique_shapes) != 1:
+        raise ValueError(f"Expected argument `models` to have all tensors of the same shape. But found {unique_shapes}")
+
+    if not higher_is_better:
+        raise NotImplementedError("`higher_is_better=False`")
+
+    # ** plot **
+
+    if ax is None:
+        # first [0] is for list of shapes, second [0] is for the first dim (only one == num_imgs)
+        num_imgs = unique_shapes[0][0]
+        num_models = len(models)
+        fig, ax = plt.subplots(figsize=(min(num_imgs / 8, MAX_WIDTH), min(10, max(3, num_models))))
+    else:
+        fig, ax = None, ax
+
+    def get_rank(row, higher_is_better):
+        argsort = row.values.argsort()
+        argsort = argsort if not higher_is_better else argsort[::-1]
+        rank = argsort + 1
+        return dict(zip(row.index, rank))
+
+    df = pd.DataFrame(models)
+    df.dropna(inplace=True, how="any", axis=0)
+    df = df.apply(get_rank, higher_is_better=higher_is_better, axis=1, result_type="expand")
+    df = df.reset_index()  # column `index` is the image index
+    df = df.melt(id_vars=["index"], value_vars=list(models.keys()), var_name="model", value_name="rank")
+    df.sort_values("model", inplace=True)
+
+    for modelidx, (model, df_model) in enumerate(df.groupby("model")):
+        avg = df_model["rank"].mean()
+        scatter = ax.scatter(
+            df_model["index"],
+            df_model["rank"],
+            label=f"{model} (avg={avg:.1f})",
+            marker=MARKERS[modelidx % len(MARKERS)],
+        )
+        ax.axhline(avg, color=scatter.get_facecolor(), linestyle="--")
+
+    # ** format **
+    ax.legend(loc="upper right", title="Model", ncol=len(models))
+
+    # Y-axis
+    ax.yaxis.set_major_locator(IndexLocator(1, 0))
+    ax.set_ylim(0, len(models) + 1)
+    ax.set_ylabel(f"{metric_name} Rank (lower is better)")
+
+    # X-axis
+    _format_axis_imgidx(ax, num_imgs)
+
+    ax.set_title(f"Image Index vs. {metric_name} Rank")
 
     return fig, ax

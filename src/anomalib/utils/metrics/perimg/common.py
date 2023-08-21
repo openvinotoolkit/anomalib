@@ -110,6 +110,7 @@ def _validate_image_classes(image_classes: Tensor):
 
 
 def _validate_and_convert_aucs(aucs: Tensor | Sequence, nan_allowed: bool = False):
+    """TODO rename to 'rates' with nonzero nonone allowed"""
     if isinstance(aucs, Sequence):
         aucs = torch.as_tensor(aucs)
 
