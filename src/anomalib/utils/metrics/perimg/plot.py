@@ -18,6 +18,7 @@ from torch import Tensor
 
 from .common import (
     _validate_and_convert_aucs,
+    _validate_and_convert_models_dict,
     _validate_and_convert_rate,
     _validate_and_convert_threshold,
     _validate_atleast_one_anomalous_image,
@@ -1036,36 +1037,13 @@ def compare_models_perimg(
     ]
 
     # ** validate **
-
-    if not isinstance(models, dict):
-        raise TypeError(f"Expected argument `models` to be a dict, but got {type(models)}.")
-
-    if len(models) == 0:
-        raise ValueError("Expected argument `models` to have at least one key, but got none.")
-
-    # make sure all keys are strings
-    if not all(isinstance(k, str) for k in models.keys()):
-        raise TypeError("Expected argument `models` to have all keys of type str.")
-
-    for k in models.keys():
-        try:
-            models[k] = _validate_and_convert_aucs(models[k], nan_allowed=True)
-        except Exception as ex:
-            raise ValueError(
-                f"Expected argument `models` to have all sequences of floats \\in [0, 1]. Key {k}."
-            ) from ex
-
-    unique_shapes = sorted({t.shape for t in models.values()})
-    if len(unique_shapes) != 1:
-        raise ValueError(f"Expected argument `models` to have all tensors of the same shape. But found {unique_shapes}")
-
-        random_model_score = _validate_and_convert_rate(random_model_score, nonzero=False, nonone=False)
+    models = _validate_and_convert_models_dict(models)
 
     # ** plot **
 
     if ax is None:
-        # first [0] is for list of shapes, second [0] is for the first dim (only one == num_imgs)
-        num_imgs = unique_shapes[0][0]
+        # get the number of images from an arbitrary model (they all have the same number of images)
+        num_imgs = next(iter(models.values())).shape[0]
         fig, ax = plt.subplots(figsize=(min(num_imgs / 7, MAX_WIDTH), 7))
     else:
         fig, ax = None, ax
@@ -1126,28 +1104,7 @@ def compare_models_perimg_rank(
     ]
 
     # ** validate **
-
-    if not isinstance(models, dict):
-        raise TypeError(f"Expected argument `models` to be a dict, but got {type(models)}.")
-
-    if len(models) == 0:
-        raise ValueError("Expected argument `models` to have at least one key, but got none.")
-
-    # make sure all keys are strings
-    if not all(isinstance(k, str) for k in models.keys()):
-        raise TypeError("Expected argument `models` to have all keys of type str.")
-
-    for k in models.keys():
-        try:
-            models[k] = _validate_and_convert_aucs(models[k], nan_allowed=True)
-        except Exception as ex:
-            raise ValueError(
-                f"Expected argument `models` to have all sequences of floats \\in [0, 1]. Key {k}."
-            ) from ex
-
-    unique_shapes = sorted({t.shape for t in models.values()})
-    if len(unique_shapes) != 1:
-        raise ValueError(f"Expected argument `models` to have all tensors of the same shape. But found {unique_shapes}")
+    models = _validate_and_convert_models_dict(models)
 
     if not higher_is_better:
         raise NotImplementedError("`higher_is_better=False`")
@@ -1155,8 +1112,8 @@ def compare_models_perimg_rank(
     # ** plot **
 
     if ax is None:
-        # first [0] is for list of shapes, second [0] is for the first dim (only one == num_imgs)
-        num_imgs = unique_shapes[0][0]
+        # get the number of images from an arbitrary model (they all have the same number of images)
+        num_imgs = next(iter(models.values())).shape[0]
         num_models = len(models)
         fig, ax = plt.subplots(figsize=(min(num_imgs / 8, MAX_WIDTH), min(10, max(3, num_models))))
     else:

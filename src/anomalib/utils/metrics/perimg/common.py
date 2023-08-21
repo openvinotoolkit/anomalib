@@ -305,3 +305,51 @@ def perimg_boxplot_stats(
 
     records = sorted(records, key=lambda r: r["value"])
     return records
+
+
+def _validate_and_convert_models_dict(models: dict[str, Tensor | Sequence]):
+    """
+    `models` is expected to be a dict of tensors of shape (num_images,) with
+    the per-image metric value \\in [0, 1] for each image.
+
+    key: model name
+    value: tensor of shape (num_images,)
+
+    if they have `nan` values, all of them must have `nan` at the same indices.
+    i.e. if one tensor has `nan` at index i, all tensors must have `nan` at index i
+
+    if the values are sequences, they are converted to tensors
+    """
+
+    if not isinstance(models, dict):
+        raise TypeError(f"Expected argument `models` to be a dict, but got {type(models)}.")
+
+    if len(models) < 2:
+        raise ValueError("Expected argument `models` to have at least one key, but got none.")
+
+    # make sure all keys are strings (the model names)
+    if not all(isinstance(k, str) for k in models.keys()):
+        raise TypeError("Expected argument `models` to have all keys of type str.")
+
+    tmp = {}
+    for k in models.keys():
+        try:
+            tmp[k] = _validate_and_convert_aucs(models[k], nan_allowed=True)
+        except Exception as ex:
+            raise ValueError(
+                f"Expected argument `models` to have all sequences of floats \\in [0, 1]. Key {k}."
+            ) from ex
+    models = tmp
+
+    unique_shapes = sorted({t.shape for t in models.values()})
+    if len(unique_shapes) != 1:
+        raise ValueError(f"Expected argument `models` to have all tensors of the same shape. But found {unique_shapes}")
+
+    # make sure all tensors have `nan` at the same indices
+    # nan values mask of an arbitrary tensor
+    nan_mask = torch.isnan(next(iter(models.values())))
+    for t in models.values():
+        if (torch.isnan(t) != nan_mask).any():
+            raise ValueError("Expected argument `models` to have all tensors with `nan` at the same indices.")
+
+    return models
