@@ -250,11 +250,11 @@ def post_process(
     if config.dataset.test_split_mode == TestSplitMode.NONE:
         logger.info("No test set provided. Skipping post-processing of test data.")
         return {}
-    else:
-        post_pipeline = get_postprocessing_pipeline(config, tiler, stats)
 
-        logger.info("Executing post-processing pipeline on test data.")
-        # add all above configured steps to pipeline and execute
-        pipe_out = post_pipeline.execute(ensemble_predictions)
+    post_pipeline = get_postprocessing_pipeline(config, tiler, stats)
 
-        return pipe_out["metrics"]
+    logger.info("Executing post-processing pipeline on test data.")
+    # add all above configured steps to pipeline and execute
+    pipe_out = post_pipeline.execute(ensemble_predictions)
+
+    return pipe_out["metrics"]
