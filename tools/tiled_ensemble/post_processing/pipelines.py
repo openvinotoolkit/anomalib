@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import logging
+import warnings
 from pathlib import Path
 
 from omegaconf import DictConfig, ListConfig
@@ -24,6 +25,7 @@ from tools.tiled_ensemble.post_processing.postprocess import (
 from tools.tiled_ensemble.post_processing.visualization import EnsembleVisualization
 from tools.tiled_ensemble.predictions import BasicPredictionJoiner, EnsemblePredictions
 
+from anomalib.data.utils import TestSplitMode
 from anomalib.post_processing import ThresholdMethod
 
 logger = logging.getLogger(__name__)
@@ -65,15 +67,18 @@ def get_stats_pipeline(config: DictConfig | ListConfig, tiler: EnsembleTiler) ->
 
 
 def get_stats(
-    config: DictConfig | ListConfig, tiler: EnsembleTiler, validation_predictions: EnsemblePredictions
+    config: DictConfig | ListConfig, tiler: EnsembleTiler, validation_predictions: EnsemblePredictions | None
 ) -> dict:
     """
     Get statistics used for postprocessing. This includes min & max and image & pixel thresholds.
 
+    If validation data is none, then defaults are retunred:
+    {"min": float("inf"), "max": float("-inf"), "image_threshold": 0.5, "pixel_threshold": 0.5}
+
     Args:
         config (DictConfig | ListConfig): Configurable parameters object.
         tiler (EnsembleTiler): Tiler used by some steps of pipeline.
-        validation_predictions (EnsemblePredictions): Predictions used to calculate stats.
+        validation_predictions (EnsemblePredictions | None): Predictions used to calculate stats.
 
     Returns:
         dict: Dictionary with calculated statistics.
@@ -90,6 +95,11 @@ def get_stats(
         >>> stats
         {"min": 0, "max": 1, "image_threshold": 0.42, "pixel_threshold": 0.13,}
     """
+    # if no validation set was provided
+    if validation_predictions is None:
+        warnings.warn("No validation set provided. Proceeding with default post-processing statistics.")
+        return {"min": float("inf"), "max": float("-inf"), "image_threshold": 0.5, "pixel_threshold": 0.5}
+
     stats_pipeline = get_stats_pipeline(config, tiler)
 
     pipe_out = stats_pipeline.execute(validation_predictions)
@@ -185,7 +195,7 @@ def get_postprocessing_pipeline(
 def post_process(
     config: DictConfig | ListConfig,
     tiler: EnsembleTiler,
-    ensemble_predictions: EnsemblePredictions,
+    ensemble_predictions: EnsemblePredictions | None,
     validation_predictions: EnsemblePredictions | None,
     stats: dict | None = None,
 ) -> dict:
@@ -198,7 +208,7 @@ def post_process(
     Args:
         config (DictConfig | ListConfig): Configurable parameters object.
         tiler (EnsembleTiler): Tiler used for untiling of predictions.
-        ensemble_predictions (EnsemblePredictions): Predictions to be joined and processed.
+        ensemble_predictions (EnsemblePredictions | None): Predictions to be joined and processed.
         validation_predictions (EnsemblePredictions | None): Predictions used to calculate stats.
         stats (dict | None): Dictionary containing statistics used for postprocessing. If None, run stats pipeline.
 
@@ -237,10 +247,14 @@ def post_process(
     else:
         logger.info("Using the provided normalization and threshold statistics.")
 
-    post_pipeline = get_postprocessing_pipeline(config, tiler, stats)
+    if config.dataset.test_split_mode == TestSplitMode.NONE:
+        logger.info("No test set provided. Skipping post-processing of test data.")
+        return {}
+    else:
+        post_pipeline = get_postprocessing_pipeline(config, tiler, stats)
 
-    logger.info("Executing pipeline.")
-    # add all above configured steps to pipeline and execute
-    pipe_out = post_pipeline.execute(ensemble_predictions)
+        logger.info("Executing post-processing pipeline on test data.")
+        # add all above configured steps to pipeline and execute
+        pipe_out = post_pipeline.execute(ensemble_predictions)
 
-    return pipe_out["metrics"]
+        return pipe_out["metrics"]

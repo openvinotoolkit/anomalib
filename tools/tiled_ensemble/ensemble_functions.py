@@ -26,6 +26,7 @@ from tools.tiled_ensemble.predictions import (
 
 from anomalib.data import get_datamodule
 from anomalib.data.base.datamodule import AnomalibDataModule, collate_fn
+from anomalib.data.utils import TestSplitMode, ValSplitMode
 from anomalib.utils.callbacks import (
     GraphLogger,
     LoadModelCallback,
@@ -120,7 +121,9 @@ def get_ensemble_datamodule(config: DictConfig | ListConfig, tiler: EnsembleTile
     return datamodule
 
 
-def get_prediction_storage(config: DictConfig | ListConfig) -> tuple[EnsemblePredictions, EnsemblePredictions]:
+def get_prediction_storage(
+    config: DictConfig | ListConfig,
+) -> tuple[EnsemblePredictions | None, EnsemblePredictions | None]:
     """
     Return prediction storage class as set in config.
 
@@ -131,8 +134,11 @@ def get_prediction_storage(config: DictConfig | ListConfig) -> tuple[EnsemblePre
         config (DictConfig | ListConfig): Configurable parameters object.
 
     Returns:
-        tuple[EnsemblePredictions, EnsemblePredictions]: Storage of ensemble and validation predictions.
+        tuple[EnsemblePredictions | None, EnsemblePredictions | None]: Storage of ensemble and validation predictions.
     """
+    if config.dataset.val_split_mode == ValSplitMode.NONE and config.dataset.test_split_mode == TestSplitMode.NONE:
+        return None, None
+
     # store predictions in memory
     if config.ensemble.predictions.storage == "direct":
         ensemble_pred = BasicEnsemblePredictions()
@@ -149,8 +155,10 @@ def get_prediction_storage(config: DictConfig | ListConfig) -> tuple[EnsemblePre
         )
 
     # if val is same as test, don't process twice
-    if config.dataset.val_split_mode == "same_as_test":
+    if config.dataset.val_split_mode == ValSplitMode.SAME_AS_TEST:
         validation_pred = ensemble_pred
+    elif config.dataset.val_split_mode == ValSplitMode.NONE:
+        validation_pred = None
     else:
         validation_pred = copy.deepcopy(ensemble_pred)
 

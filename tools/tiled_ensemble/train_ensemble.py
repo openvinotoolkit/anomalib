@@ -25,6 +25,7 @@ from tools.tiled_ensemble import (
 )
 
 from anomalib.config import get_configurable_parameters
+from anomalib.data.utils import TestSplitMode, ValSplitMode
 from anomalib.models import get_model
 from anomalib.utils.loggers import configure_logger, get_experiment_logger
 
@@ -101,12 +102,17 @@ def train(args: Namespace):
         logger.info("Training the model.")
         trainer.fit(model=model, datamodule=datamodule)
 
-        logger.info("Predicting on predict (test) data.")
-        current_predictions = trainer.predict(model=model, datamodule=datamodule, ckpt_path="best")
-        ensemble_predictions.add_tile_prediction(tile_index, current_predictions)
+        if config.dataset.test_split_mode == TestSplitMode.NONE:
+            logger.info("No test set provided. Skipping prediction on test data.")
+        else:
+            logger.info("Predicting on predict test data.")
+            current_predictions = trainer.predict(
+                model=model, dataloaders=datamodule.test_dataloader(), ckpt_path="best"
+            )
+            ensemble_predictions.add_tile_prediction(tile_index, current_predictions)
 
-        # if val data == test data, don't recompute
-        if config.dataset.val_split_mode != "same_as_test":
+        # if val data == test data, or no validation data is provided - don't compute
+        if config.dataset.val_split_mode not in [ValSplitMode.SAME_AS_TEST, ValSplitMode.NONE]:
             logger.info("Predicting on validation data.")
             current_val_predictions = trainer.predict(
                 model=model, dataloaders=datamodule.val_dataloader(), ckpt_path="best"
