@@ -3,12 +3,14 @@
 
 from __future__ import annotations
 
+import itertools
 from collections.abc import Sequence
 from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy
 import pandas as pd
+import scipy
 import torch
 from matplotlib.axes import Axes
 from matplotlib.patches import Rectangle
@@ -161,7 +163,7 @@ def _format_axis_imgidx(ax, num_imgs: int):
     ax.xaxis.set_major_locator(IndexLocator(5, 0))
     ax.xaxis.set_minor_locator(IndexLocator(1, 0))
     ax.grid(axis="x", which="major")
-    ax.grid(axis="x", which="minor", linestyle="--", alpha=0.5)
+    ax.grid(axis="x", which="minor", linestyle="--", alpha=0.3)
 
 
 # =========================================== GENERIC ===========================================
@@ -1021,7 +1023,6 @@ def compare_models_perimg(
     random_model_score: float | Tensor | None = None,
     ax: Axes | None = None,
 ) -> tuple[Figure, Axes]:
-    MAX_WIDTH = 20
     MARKERS = [
         "o",
         "X",
@@ -1044,7 +1045,7 @@ def compare_models_perimg(
     if ax is None:
         # get the number of images from an arbitrary model (they all have the same number of images)
         num_imgs = next(iter(models.values())).shape[0]
-        fig, ax = plt.subplots(figsize=(min(num_imgs / 7, MAX_WIDTH), 7))
+        fig, ax = plt.subplots(figsize=(min(num_imgs / 7, 20), 7))
     else:
         fig, ax = None, ax
 
@@ -1086,9 +1087,12 @@ def compare_models_perimg(
 
 
 def compare_models_perimg_rank(
-    models: dict[str, Tensor], metric_name: str, higher_is_better: bool = True, ax: Axes | None = None
+    models: dict[str, Tensor],
+    metric_name: str,
+    higher_is_better: bool = True,
+    atol: float | None = 0.001,
+    ax: Axes | None = None,
 ) -> tuple[Figure, Axes]:
-    MAX_WIDTH = 20
     MARKERS = [
         "o",
         "X",
@@ -1108,18 +1112,18 @@ def compare_models_perimg_rank(
 
     # ** plot **
 
+    # get the number of images from an arbitrary model (they all have the same number of images)
+    num_imgs = next(iter(models.values())).shape[0]
+    num_models = len(models)
+
     if ax is None:
-        # get the number of images from an arbitrary model (they all have the same number of images)
-        num_imgs = next(iter(models.values())).shape[0]
-        num_models = len(models)
-        fig, ax = plt.subplots(figsize=(min(num_imgs / 8, MAX_WIDTH), min(10, max(3, num_models))))
+        fig, ax = plt.subplots(figsize=(min(num_imgs / 7, 20), min(10, 2 * max(3, num_models))))
     else:
         fig, ax = None, ax
 
+    # TODO test this
     def get_rank(row, higher_is_better):
-        argsort = row.values.argsort()
-        argsort = argsort if not higher_is_better else argsort[::-1]
-        rank = argsort + 1
+        rank = scipy.stats.rankdata(-row.values if higher_is_better else row.values, method="average")
         return dict(zip(row.index, rank))
 
     df = pd.DataFrame(models)
@@ -1136,11 +1140,62 @@ def compare_models_perimg_rank(
             df_model["rank"],
             label=f"{model} (avg={avg:.2f})",
             marker=MARKERS[modelidx % len(MARKERS)],
+            zorder=2.1,  # above lines, including grid, default is `2`
         )
         ax.axhline(avg, color=scatter.get_facecolor(), linestyle="--")
 
+    if atol is not None:
+        # add a red line between adjacent ranks that are within `atol` of each other
+
+        # get all comparisons of all models (not against oneself), and the difference in metric
+        # `within_tolerance[imgidx, model1, model2]` = True if within tolerance, False otherwise
+        # where model1 and model2 are keys in `models`
+        # `tmp` is just to make the code below easier to read
+        tmp = pd.DataFrame(models)
+        tmp.dropna(inplace=True, how="any", axis=0)
+        tmp = tmp.reset_index()  # column `index` is the image index
+        tmp = tmp.melt(id_vars=["index"], value_vars=list(models.keys()), var_name="model", value_name="metric")
+        tmp = tmp.merge(tmp, on="index", suffixes=("_1", "_2"))
+        tmp["difference"] = (tmp["metric_1"] - tmp["metric_2"]).abs()
+        tmp["within_tolerance"] = tmp["difference"] <= atol
+        tmp = tmp.set_index(["index", "model_1", "model_2"])
+        within_tolerance = tmp
+
+        # map (imgidx, rank) -> model name
+        imgidx_rank_2_model = df.set_index(["index", "rank"]).sort_index()
+
+        # # at each image, consider all rank comparisons: (1, 2), (1, 3), ..., (2, 3), ..., (num_models - 1, num_models)
+        # rank_comparisons = list(itertools.combinations(range(1, num_models + 1), 2))
+
+        # excluding the `nan`s
+        imgidxs = df["index"].unique()
+
+        atleast_one_tie = False
+        for imgidx in imgidxs:
+            rank_2_model = imgidx_rank_2_model.loc[imgidx]
+            # it can be (1, 2, 3), but also (1.5, 1.5, 3) for example
+            ranks = rank_2_model.index.unique()
+            for rank1, rank2 in itertools.combinations(ranks, 2):
+                model1 = rank_2_model.loc[rank1, "model"]
+                model2 = rank_2_model.loc[rank2, "model"]
+                # get an arbitrary choice in case of ties
+                model1 = model1.iloc[0] if not isinstance(model1, str) else model1
+                model2 = model2.iloc[0] if not isinstance(model2, str) else model2
+                is_within = within_tolerance.loc[(imgidx, model1, model2)]["within_tolerance"]
+                if is_within:
+                    ax.plot(
+                        [imgidx, imgidx],
+                        [rank1, rank2],
+                        color="red",
+                        linewidth=2,
+                        label=f"Within Tolerance ({atol:.2%})" if not atleast_one_tie else None,
+                    )
+                    atleast_one_tie = True
+
     # ** format **
-    ax.legend(loc="upper right", title="Model", ncol=len(models))
+    ax.legend(
+        loc="upper right", title="Model", ncol=len(models) + atleast_one_tie, fontsize="small", title_fontsize="small"
+    )
 
     # Y-axis
     ax.yaxis.set_major_locator(IndexLocator(1, 0))
