@@ -1110,6 +1110,9 @@ def compare_models_perimg_rank(
     # ** validate **
     models = _validate_and_convert_models_dict(models)
 
+    if atol is not None:
+        atol = float(_validate_and_convert_rate(atol, nonzero=True, nonone=False))
+
     # ** plot **
 
     # get the number of images from an arbitrary model (they all have the same number of images)
@@ -1121,7 +1124,6 @@ def compare_models_perimg_rank(
     else:
         fig, ax = None, ax
 
-    # TODO test this
     def get_rank(row, higher_is_better):
         rank = scipy.stats.rankdata(-row.values if higher_is_better else row.values, method="average")
         return dict(zip(row.index, rank))

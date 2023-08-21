@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import itertools
 from collections.abc import Sequence
 from pathlib import Path
 
 import matplotlib as mpl
 import numpy
+import pandas
+import scipy.stats
 import torch
+from matplotlib import cm
 from torch import Tensor
 
 # =========================================== ARGS VALIDATION ===========================================
@@ -353,3 +357,180 @@ def _validate_and_convert_models_dict(models: dict[str, Tensor | Sequence]):
             raise ValueError("Expected argument `models` to have all tensors with `nan` at the same indices.")
 
     return models
+
+
+def compare_models_parametric(
+    models: dict[str, Tensor],
+    higher_is_better: bool = True,
+    return_test_results: bool = False,
+):
+    """Compare all pairs of models using a parametric test (paired t-test).
+
+    Models are sorted by average value of the metric, then compared pairwise assuming that
+    the first model is better than the second model, and better than third one, and second is better than third one ...
+
+    Each comparison of two models is a paired t-test with the alternative hypothesis that
+    the first model is better than the second model (null hypothesis is that they are equal).
+
+    Args:
+        models (dict[str, Tensor]): Dictionary of models and the per-image values of the metric.
+        higher_is_better (bool): Whether higher values of the metric are better. Defaults to True.
+        return_test_results (bool):
+            `True`: (sorted_models, test_results)
+                sorted_models: list of model names sorted by average value of the metric
+                test_results: dict of (model1, model2) -> ttest_rel result (from scipy)
+            `False`: confidence_table
+                confidence_table: pandas DataFrame of confidence that model1 > model2 (higher means more confident)
+    """
+
+    # ** validate **
+    _validate_and_convert_models_dict(models)
+
+    # ** compute **
+
+    # remove nan values
+    models = {k: v[~torch.isnan(v)] for k, v in models.items()}
+
+    # sort models by average value
+    sorted_models_items = sorted(models.items(), key=lambda kv: kv[1].mean(), reverse=higher_is_better)
+
+    # model[0] > model[1], model[0] > model[2], model[1] > model[2], ...
+    num_models = len(models)
+    comparisons = list(itertools.combinations(range(num_models), 2))
+
+    # for each comparison, compute the confidence (1 - p-value) that model[i] > model[j]
+    test_results = {}
+
+    # `i` and `j` are indices of the sorted models
+    for i, j in comparisons:
+        (model_i, model_i_values), (model_j, model_j_values) = sorted_models_items[i], sorted_models_items[j]
+
+        # assume `model_i` is greater than `model_j` (assume less if `higher_is_better=False``)
+        test_results[(model_i, model_j)] = scipy.stats.ttest_rel(
+            model_i_values,
+            model_j_values,
+            alternative="greater" if higher_is_better else "less",
+        )
+
+    sorted_models = [m for m, _ in sorted_models_items]
+
+    if return_test_results:
+        return sorted_models, test_results
+
+    confidences = {(model1, model2): 1 - tr.pvalue for (model1, model2), tr in test_results.items()}
+    confidences.update({(i, i): numpy.nan for i in sorted_models})
+
+    df = pandas.DataFrame(confidences, index=["confidence"]).T
+    df.index.names = ["model1", "model2"]
+    df = df.pivot_table(index="model1", columns="model2", values="confidence", dropna=False)
+    df = df[sorted_models]  # sort columns
+    df = df.T[sorted_models].T  # sort rows
+
+    cmap = cm.inferno
+    cmap.set_bad("black")
+    confidence_table = df.style.format("{:.1%}").background_gradient(cmap=cmap, vmin=0, vmax=1)
+
+    return confidence_table
+
+
+def compare_models_nonparametric(
+    models: dict[str, Tensor],
+    higher_is_better: bool = True,
+    return_test_results: bool = False,
+    atol: float | None = 0.001,
+):
+    """Compare all pairs of models using a non-parametric test (wilcoxon signed rank test).
+
+    Models are sorted by average rank (`atol` ignored), then compared pairwise assuming that
+    the first model is better than the second model, and better than third one, and second is better than third one ...
+
+    Each comparison of two models is a [paired] wilcoxon signed rank test with the alternative hypothesis that
+    the first model is better than the second model (null hypothesis is that they are equal).
+
+    Args:
+        models (dict[str, Tensor]): Dictionary of models and the per-image values of the metric.
+        higher_is_better (bool): Whether higher values of the metric are better. Defaults to True.
+        return_test_results (bool):
+            `True`: (sorted_models, test_results)
+                sorted_models: list of model names sorted by average rank
+                test_results: dict of (model1, model2) -> wilcoxon result (from scipy)
+            `False`: confidence_table
+                confidence_table: pandas DataFrame of confidence that model1 > model2 (higher means more confident)
+    """
+
+    # ** validate **
+    _validate_and_convert_models_dict(models)
+
+    if atol is not None:
+        atol = float(_validate_and_convert_rate(atol, nonzero=True, nonone=False))
+
+    # ** compute **
+
+    # remove nan values
+    models = {k: v[~torch.isnan(v)] for k, v in models.items()}
+
+    models_sorted_abc = sorted(models.keys())
+
+    # index is not the image index! because the `nan`s were removed
+    df = pandas.DataFrame(models)[models_sorted_abc]
+
+    # these average ranks will NOT consider `atol` because we want to rank the models anyway
+    models_avgranks_abc = scipy.stats.rankdata(
+        -df.values if higher_is_better else df.values, method="average", axis=1
+    ).mean(axis=0)
+
+    avgrank_permodel = dict(zip(models_sorted_abc, models_avgranks_abc))
+
+    # sort models by average value
+    avgrank_permodel_sorted = sorted(avgrank_permodel.items(), key=lambda kv: kv[1], reverse=False)
+
+    # model[0] > model[1], model[0] > model[2], model[1] > model[2], ...
+    num_models = len(models)
+    comparisons = list(itertools.combinations(range(num_models), 2))
+
+    # for each comparison, compute the confidence (1 - p-value) that model[i] > model[j]
+    test_results = {}
+
+    # `i` and `j` are indices of the sorted models
+    for i, j in comparisons:
+        # _ is the average rank
+        (model_i, _), (model_j, _) = avgrank_permodel_sorted[i], avgrank_permodel_sorted[j]
+        model_i_values = models[model_i]
+        model_j_values = models[model_j]
+
+        diff = model_i_values - model_j_values
+
+        if atol is not None:
+            # make the difference null if below the tolerance
+            diff[diff.abs() <= atol] = 0.0
+
+        # extreme case
+        if (diff == 0).all():
+            test_results[(model_i, model_j)] = scipy.stats._morestats.WilcoxonResult(numpy.nan, 0.0)
+            continue
+
+        # assume `model_i` is greater than `model_j` (assume less if `higher_is_better=False``)
+        test_results[(model_i, model_j)] = scipy.stats.wilcoxon(
+            diff,
+            alternative="greater" if higher_is_better else "less",
+        )
+
+    sorted_models = [m for m, _ in avgrank_permodel_sorted]
+
+    if return_test_results:
+        return sorted_models, test_results
+
+    confidences = {(model1, model2): 1 - tr.pvalue for (model1, model2), tr in test_results.items()}
+    confidences.update({(i, i): numpy.nan for i in sorted_models})
+
+    df = pandas.DataFrame(confidences, index=["confidence"]).T
+    df.index.names = ["model1", "model2"]
+    df = df.pivot_table(index="model1", columns="model2", values="confidence", dropna=False)
+    df = df[sorted_models]  # sort columns
+    df = df.T[sorted_models].T  # sort rows
+
+    cmap = cm.inferno
+    cmap.set_bad("black")
+    confidence_table = df.style.format("{:.1%}").background_gradient(cmap=cmap, vmin=0, vmax=1)
+
+    return confidence_table
