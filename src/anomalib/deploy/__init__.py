@@ -4,12 +4,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from .export import ExportMode, export, get_metadata, get_model_metadata
-from .inferencers import Inferencer, OpenVINOInferencer, TorchInferencer
+from .inferencers import TorchInferencer
 
 __all__ = [
     "ExportMode",
-    "Inferencer",
-    "OpenVINOInferencer",
     "TorchInferencer",
     "export",
     "get_model_metadata",

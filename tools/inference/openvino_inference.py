@@ -4,16 +4,145 @@ This script performs OpenVINO inference by reading a model from
 file system, and show the visualization results.
 """
 
-# Copyright (C) 2022 Intel Corporation
+# Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
+
+from __future__ import annotations
 
 import warnings
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
+from typing import Iterator, Tuple
 
-from anomalib.data.utils import generate_output_image_filename, get_image_filenames, read_image
-from anomalib.deploy import OpenVINOInferencer
-from anomalib.post_processing import Visualizer
+import cv2
+import numpy as np
+
+try:
+    from openvino.model_api.models import AnomalyDetection, AnomalyResult
+except ImportError:
+    raise ImportError("Ensure that OpenVINO model zoo is installed in your environment.")
+
+
+class Visualizer:
+    @staticmethod
+    def superimpose_pred_boxes(image: np.ndarray, pred_boxes: np.ndarray) -> np.ndarray:
+        """Superimpose predicted boxes on image.
+
+        Args:
+            image (np.ndarray): Input image.
+            pred_boxes (np.ndarray): Predicted boxes.
+
+        Returns:
+            np.ndarray: Image with superimposed boxes.
+        """
+        for box in pred_boxes:
+            if len(box) == 4:
+                image = cv2.rectangle(
+                    image,
+                    (box[0], box[1]),
+                    (box[2], box[3]),
+                    (0, 255, 0),
+                    2,
+                )
+        return image
+
+    @staticmethod
+    def superimpose_anomaly_map(anomaly_map: np.ndarray, image: np.ndarray) -> np.ndarray:
+        """Superimpose anomaly map on the input image.
+
+        Args:
+            anomaly_map (np.ndarray): Anomaly map.
+            image (np.ndarray): Input image.
+
+        Returns:
+            np.ndarray: Superimposed image.
+        """
+        # convert to color map
+        anomaly_map *= 255
+        anomaly_map = anomaly_map.astype(np.uint8)
+        anomaly_map = cv2.applyColorMap(anomaly_map, cv2.COLORMAP_JET)
+        # anomaly_map = cv2.cvtColor(anomaly_map, cv2.COLOR_RGB2BGR)
+
+        superimposed_map = cv2.addWeighted(image, 0.5, anomaly_map, 0.5, 0)
+        return superimposed_map
+
+    @staticmethod
+    def superimpose_pred_mask(image: np.ndarray, mask: np.ndarray) -> np.ndarray:
+        """Superimpose predicted mask on image.
+
+        Args:
+            image (np.ndarray): Input image.
+            mask (np.ndarray): Predicted mask.
+
+        Returns:
+            np.ndarray: Image with superimposed mask.
+        """
+        if mask.max() <= 1.0:
+            mask *= 255
+            contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            image = cv2.drawContours(image, contours, -1, (0, 0, 255), 5)
+        return image
+
+    def visualize(self, image: np.ndarray, outputs: AnomalyResult) -> np.ndarray:
+        """Simple visualization of the inference results.
+
+        Results are superimposed over each other.
+
+
+        Args:
+            image (np.ndarray): Input image.
+            outputs (AnomalyResult): Inference results.
+
+        Returns:
+            np.ndarray: Visualized image.
+        """
+        if outputs.anomaly_map is not None:
+            image = self.superimpose_anomaly_map(outputs.anomaly_map, image)
+        if outputs.pred_mask is not None:
+            self.superimpose_pred_mask(image, outputs.pred_mask)
+        if outputs.pred_label is not None:
+            pred_label = outputs.pred_label
+            pred_label += f" ({outputs.pred_score:.2f})"
+            image = cv2.putText(
+                image,
+                pred_label,
+                (10, 20),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (0, 0, 255),
+                2,
+                cv2.LINE_AA,
+            )
+        if outputs.pred_boxes is not None:
+            self.superimpose_pred_boxes(image, outputs.pred_boxes)
+        return image
+
+
+class ImageReader:
+    IMG_EXTENSIONS = (".jpg", ".jpeg", ".png", ".ppm", ".bmp", ".pgm", ".tif", ".tiff", ".webp")
+
+    def __init__(self, image_path: str | Path):
+        """Image reader.
+
+        Args:
+            image_path (str | Path): Path to the image or folder containing image.
+        """
+        self.image_path = Path(image_path)
+
+    def __iter__(self) -> Iterator[Tuple[Path, np.ndarray]]:
+        """Iterate over the image path.
+
+        Yields:
+            Path: Path to the image.
+            np.ndarray: Image as numpy array.
+        """
+        if self.image_path.is_file():
+            yield self.image_path, cv2.imread(str(self.image_path))
+
+        if self.image_path.is_dir():
+            for path in self.image_path.glob("**/*"):
+                if path.suffix in self.IMG_EXTENSIONS:
+                    yield path, cv2.imread(str(path))
 
 
 def get_parser() -> ArgumentParser:
@@ -24,17 +153,8 @@ def get_parser() -> ArgumentParser:
     """
     parser = ArgumentParser()
     parser.add_argument("--weights", type=Path, required=True, help="Path to model weights")
-    parser.add_argument("--metadata", type=Path, required=True, help="Path to a JSON file containing the metadata.")
     parser.add_argument("--input", type=Path, required=True, help="Path to an image to infer.")
     parser.add_argument("--output", type=Path, required=False, help="Path to save the output image.")
-    parser.add_argument(
-        "--task",
-        type=str,
-        required=False,
-        help="Task type.",
-        default="classification",
-        choices=["classification", "detection", "segmentation"],
-    )
     parser.add_argument(
         "--device",
         type=str,
@@ -42,14 +162,6 @@ def get_parser() -> ArgumentParser:
         help="Hardware device on which the model will be deployed",
         default="CPU",
         choices=["CPU", "GPU", "VPU"],
-    )
-    parser.add_argument(
-        "--visualization_mode",
-        type=str,
-        required=False,
-        default="simple",
-        help="Visualization mode.",
-        choices=["full", "simple"],
     )
     parser.add_argument(
         "--show",
@@ -70,14 +182,15 @@ def infer(args: Namespace) -> None:
         args (Namespace): The arguments from the command line.
     """
     # Get the inferencer.
-    inferencer = OpenVINOInferencer(path=args.weights, metadata=args.metadata, device=args.device)
-    visualizer = Visualizer(mode=args.visualization_mode, task=args.task)
+    weights_path = args.weights.with_suffix(".xml")
+    model = AnomalyDetection.create_model(model=weights_path, device=args.device)
+    visualizer = Visualizer()
 
-    filenames = get_image_filenames(path=args.input)
-    for filename in filenames:
-        image = read_image(filename)
-        predictions = inferencer.predict(image=image)
-        output = visualizer.visualize_image(predictions)
+    images = ImageReader(args.input)
+
+    for image_path, image in images:
+        prediction: AnomalyResult = model(image)
+        output = visualizer.visualize(image, prediction)
 
         if args.output is None and args.show is False:
             warnings.warn(
@@ -85,12 +198,15 @@ def infer(args: Namespace) -> None:
             )
 
         if args.output:
-            file_path = generate_output_image_filename(input_path=filename, output_path=args.output)
-            visualizer.save(file_path=file_path, image=output)
+            if args.output.is_dir():
+                file_path = args.output / image_path.parent.name / image_path.name
+            else:
+                file_path = args.output
+            cv2.imwrite(str(file_path), output)
 
         # Show the image in case the flag is set by the user.
         if args.show:
-            visualizer.show(title="Output Image", image=output)
+            cv2.imshow("Output Image", output)
 
 
 if __name__ == "__main__":
