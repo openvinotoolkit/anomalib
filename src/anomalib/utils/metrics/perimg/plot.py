@@ -1106,9 +1106,6 @@ def compare_models_perimg_rank(
     # ** validate **
     models = _validate_and_convert_models_dict(models)
 
-    if not higher_is_better:
-        raise NotImplementedError("`higher_is_better=False`")
-
     # ** plot **
 
     if ax is None:
@@ -1137,7 +1134,7 @@ def compare_models_perimg_rank(
         scatter = ax.scatter(
             df_model["index"],
             df_model["rank"],
-            label=f"{model} (avg={avg:.1f})",
+            label=f"{model} (avg={avg:.2f})",
             marker=MARKERS[modelidx % len(MARKERS)],
         )
         ax.axhline(avg, color=scatter.get_facecolor(), linestyle="--")
@@ -1148,7 +1145,8 @@ def compare_models_perimg_rank(
     # Y-axis
     ax.yaxis.set_major_locator(IndexLocator(1, 0))
     ax.set_ylim(0, len(models) + 1)
-    ax.set_ylabel(f"{metric_name} Rank (lower is better)")
+    ax.set_ylabel("Rank (lower is better)")
+    ax.invert_yaxis()
 
     # X-axis
     _format_axis_imgidx(ax, num_imgs)
