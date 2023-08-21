@@ -8,6 +8,11 @@ Anomalib provides tiled ensemble training. Images are split into tiles and separ
 .. image:: ../images/tiled_ensemble/design.png
     :alt: Tiled ensemble design
 
+The flow of the entire procedure can be seen on the image below.
+
+.. image:: ../images/tiled_ensemble/ensemble_flow.png
+    :alt: Tiled ensemble flow
+
 Training
 ========
 
@@ -42,9 +47,9 @@ To evaluate the trained tiled ensemble on test data, run the following script:
 
 .. code-block:: bash
 
-    python tools/tiled_ensemble/test_ensemble.py
-    --ensemble_config tools/tiled_ensemble/ens_config.yaml
-    --weight_folder path_to_weights
+    python tools/tiled_ensemble/test_ensemble.py \
+        --ensemble_config tools/tiled_ensemble/ens_config.yaml \
+        --weight_folder path_to_weights
 
 In this case, path to weights should be the one inside results, where checkpoints are saved. Usually that is inside ``results/padim/mvtec/bottle/run/weights/lightning``.
 
@@ -68,7 +73,7 @@ Having image_size: 512, tile_size: 256, and stride: 256, results in 4 non-overla
 .. code-block:: yaml
 
     predictions:
-        storage: direct # [direct, file_system, rescaled]
+        storage: direct # options: [direct, file_system, rescaled]
         rescale_factor: 0.5
 
 Predictions section determines how ensemble predictions are stored.
@@ -83,7 +88,7 @@ More details about storage can be found in ``prediction_data`` docstrings.
 .. code-block:: yaml
 
     post_processing:
-        normalization: joined_image # on what level we normalize, options: [individual_tile, joined_image, none]
+        normalization: joined_image # options: [individual_tile, joined_image, none]
         smooth_joins:
             apply: True
             sigma: 2
@@ -93,7 +98,7 @@ Post processing section determines how normalization and smoothing of tile joins
 
 Predictions can either be normalized by each tile location separately (``individual_tile`` option), when all predictions are joined (``joined_image`` option), or normalization can be skipped (with ``none`` option).
 
-There is an option to apply tile join smoothing, where width determines percentage of region around the join where smoothing by Gaussian filter with given sigma will be applied.
+There is an option to apply tile join smoothing, where ``width`` determines percentage of region around the join where smoothing by Gaussian filter with given ``sigma`` will be applied.
 
 .. code-block:: yaml
 
@@ -104,9 +109,8 @@ There is an option to apply tile join smoothing, where width determines percenta
         pixel:
             - F1Score
             - AUROC
-            - AUPRO
         threshold:
-            stage: joined_image # stage at which we apply threshold, options: [individual_tile, joined_image]
+            stage: joined_image # options: [individual_tile, joined_image]
             method: adaptive #options: [adaptive, manual]
             manual_image: null
             manual_pixel: null
