@@ -10,9 +10,10 @@ import sys
 from importlib.util import find_spec
 
 import pytest
+from openvino.model_api.models import AnomalyDetection
 
 from anomalib.data import TaskType
-from anomalib.deploy import ExportMode, OpenVINOInferencer, TorchInferencer, export
+from anomalib.deploy import ExportMode, TorchInferencer, export
 from anomalib.models import get_model
 
 sys.path.append("tools/inference")
@@ -76,11 +77,9 @@ class TestGradioInferenceEntrypoint:
             [
                 "--weights",
                 project_path + "/weights/openvino/model.bin",
-                "--metadata",
-                project_path + "/weights/openvino/metadata.json",
             ]
         )
-        assert isinstance(inferencer(arguments.weights, arguments.metadata), OpenVINOInferencer)
+        assert isinstance(inferencer(arguments.weights), AnomalyDetection)
 
         # test error is raised when metadata is not provided to openvino model
         with pytest.raises(ValueError):

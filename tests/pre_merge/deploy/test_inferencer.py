@@ -10,11 +10,12 @@ from typing import Optional, Union
 import pytest
 import torch
 from omegaconf import DictConfig, ListConfig
+from openvino.model_api.models import AnomalyDetection, AnomalyResult
 from pytorch_lightning import Trainer
 
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
-from anomalib.deploy import OpenVINOInferencer, TorchInferencer
+from anomalib.deploy import TorchInferencer
 from anomalib.models import get_model
 from anomalib.utils.callbacks import get_callbacks
 from tests.helpers.dataset import TestDataset, get_dataset_path
@@ -146,10 +147,9 @@ def test_openvino_inference(
     export_path = Path(model_config.project.path)
 
     # Test OpenVINO inferencer
-    openvino_inferencer = OpenVINOInferencer(
-        export_path / "weights/openvino/model.xml", export_path / "weights/openvino/metadata.json"
-    )
+    openvino_model = AnomalyDetection.create_model(str(export_path / "weights/openvino/model.xml"))
     openvino_dataloader = MockImageLoader(model_config.dataset.image_size, total_count=1)
     for image in openvino_dataloader():
-        prediction = openvino_inferencer.predict(image)
+        prediction: AnomalyResult = openvino_model(image)
+        assert prediction.pred_score is not None
         assert 0.0 <= prediction.pred_score <= 1.0  # confirm if predicted scores are normalized
