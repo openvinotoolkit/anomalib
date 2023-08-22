@@ -23,6 +23,7 @@ from typing import cast
 import torch
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pytorch_lightning import Trainer, seed_everything
+from utils import upload_to_comet, upload_to_wandb, write_metrics
 
 from anomalib.config import get_configurable_parameters, update_input_size_config
 from anomalib.data import get_datamodule
@@ -31,7 +32,6 @@ from anomalib.deploy.export import ExportMode
 from anomalib.models import get_model
 from anomalib.utils.loggers import configure_logger
 from anomalib.utils.sweep import get_run_config, get_sweep_callbacks, get_torch_throughput, set_in_nested_config
-from utils import upload_to_comet, upload_to_wandb, write_metrics
 
 warnings.filterwarnings("ignore")
 
