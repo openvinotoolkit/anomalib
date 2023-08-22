@@ -6,20 +6,28 @@
 from __future__ import annotations
 
 import json
+import logging
 import subprocess  # nosec
 from enum import Enum
+from importlib.util import find_spec
 from pathlib import Path
 from typing import Any
 from warnings import warn
 
 import numpy as np
 import torch
-from openvino.runtime import Core, serialize
 from torch import Tensor
 from torch.types import Number
 
 from anomalib.data.task_type import TaskType
 from anomalib.models.components import AnomalyModule
+
+logger = logging.getLogger("anomalib")
+
+if find_spec("openvino") is not None:
+    from openvino.runtime import Core, serialize
+else:
+    logger.warning("OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.")
 
 
 class ExportMode(str, Enum):
