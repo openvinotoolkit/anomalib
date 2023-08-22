@@ -11,7 +11,8 @@ import torch
 from matplotlib.figure import Figure
 from torch import Tensor
 from torchmetrics import Metric
-from torchmetrics.functional import auc, roc
+from torchmetrics.functional import auc
+from torchmetrics.functional.classification import binary_roc
 from torchmetrics.utilities.data import dim_zero_cat
 
 from anomalib.utils.metrics.pro import (
@@ -19,6 +20,7 @@ from anomalib.utils.metrics.pro import (
     connected_components_gpu,
 )
 
+from .binning import thresholds_between_0_and_1, thresholds_between_min_and_max
 from .plotting_utils import plot_figure
 
 
@@ -30,6 +32,13 @@ class AUPRO(Metric):
     full_state_update: bool = False
     preds: list[Tensor]
     target: list[Tensor]
+    # When not None, the computation is performed in constant-memory by computing the roc curve
+    # for fixed thresholds buckets/thresholds.
+    # Warning: The thresholds are evenly distributed between the min and max predictions
+    # if all predictions are inside [0, 1]. Otherwise, the thresholds are evenly distributed between 0 and 1.
+    # This warning can be removed when https://github.com/Lightning-AI/torchmetrics/issues/1526 is fixed
+    # and the roc curve is computed with deactivated formatting
+    num_thresholds: int | None
 
     def __init__(
         self,
@@ -38,6 +47,7 @@ class AUPRO(Metric):
         process_group: Any | None = None,
         dist_sync_fn: Callable | None = None,
         fpr_limit: float = 0.3,
+        num_thresholds: int | None = None,
     ) -> None:
         super().__init__(
             compute_on_step=compute_on_step,
@@ -49,6 +59,7 @@ class AUPRO(Metric):
         self.add_state("preds", default=[], dist_reduce_fx="cat")  # pylint: disable=not-callable
         self.add_state("target", default=[], dist_reduce_fx="cat")  # pylint: disable=not-callable
         self.register_buffer("fpr_limit", torch.tensor(fpr_limit))
+        self.num_thresholds = num_thresholds
 
     def update(self, preds: Tensor, target: Tensor) -> None:  # type: ignore
         """Update state with new values.
@@ -96,9 +107,29 @@ class AUPRO(Metric):
         Returns:
             tuple[Tensor, Tensor]: tuple containing final fpr and tpr values.
         """
+        if self.num_thresholds is not None:
+            # binary_roc is applying a sigmoid on the predictions before computing the roc curve
+            # when some predictions are out of [0, 1], the binning between min and max predictions
+            # cannot be applied in that case. This can be removed when
+            #  https://github.com/Lightning-AI/torchmetrics/issues/1526 is fixed and
+            #  the roc curve is computed with deactivated formatting.
+
+            if torch.all((0 <= preds) * (preds <= 1)):
+                thresholds = thresholds_between_min_and_max(preds, self.num_thresholds, self.device)
+            else:
+                thresholds = thresholds_between_0_and_1(self.num_thresholds, self.device)
+
+        else:
+            thresholds = None
 
         # compute the global fpr-size
-        fpr: Tensor = roc(preds, target)[0]  # only need fpr
+        fpr: Tensor = binary_roc(
+            preds=preds,
+            target=target,
+            thresholds=thresholds,
+        )[
+            0
+        ]  # only need fpr
         output_size = torch.where(fpr <= self.fpr_limit)[0].size(0)
 
         # compute the PRO curve by aggregating per-region tpr/fpr curves/values.
@@ -120,7 +151,11 @@ class AUPRO(Metric):
             mask = cca == label
             # Need to calculate label-wise roc on union of background & mask, as otherwise we wrongly consider other
             # label in labels as FPs. We also don't need to return the thresholds
-            _fpr, _tpr = roc(preds[background | mask], mask[background | mask])[:-1]
+            _fpr, _tpr = binary_roc(
+                preds=preds[background | mask],
+                target=mask[background | mask],
+                thresholds=thresholds,
+            )[:-1]
 
             # catch edge-case where ROC only has fpr vals > self.fpr_limit
             if _fpr[_fpr <= self.fpr_limit].max() == 0:

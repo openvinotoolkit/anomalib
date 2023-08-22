@@ -58,7 +58,7 @@ class TestOpenVINOInferenceEntrypoint:
                 "--input",
                 get_dummy_inference_image,
                 "--output",
-                project_path + "/output",
+                project_path + "/output.png",
             ]
         )
         infer(arguments)
