@@ -73,15 +73,15 @@ Having image_size: 512, tile_size: 256, and stride: 256, results in 4 non-overla
 .. code-block:: yaml
 
     predictions:
-        storage: direct # options: [direct, file_system, rescaled]
-        rescale_factor: 0.5
+        storage: memory # options: [memory, file_system, memory_downscaled]
+        downscale_factor: 0.5
 
 Predictions section determines how ensemble predictions are stored.
 There are 3 options for storage:
 
-* direct - predictions are stored in memory,
+* memory - predictions are stored in memory,
 * file_system - predictions are stored in the file system,
-* rescaled - predictions are downscaled and stored in memory, where ``rescale_factor`` determines downscaling.
+* memory_downscaled - predictions are downscaled and stored in memory where ``downscale_factor`` determines downscaling.
 
 More details about storage can be found in ``prediction_data`` docstrings.
 

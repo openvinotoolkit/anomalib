@@ -13,10 +13,10 @@ from torchmetrics import StructuralSimilarityIndexMeasure
 
 from anomalib.data import AnomalibDataModule
 from tools.tiled_ensemble.predictions import (
-    BasicEnsemblePredictions,
+    MemoryEnsemblePredictions,
     EnsemblePredictions,
     FileSystemEnsemblePredictions,
-    RescaledEnsemblePredictions,
+    DownscaledEnsemblePredictions,
 )
 
 
@@ -64,10 +64,10 @@ class TestPredictionData:
 
         return True
 
-    def test_basic(self, get_ensemble_config, get_datamodule):
+    def test_memory(self, get_ensemble_config, get_datamodule):
         config = get_ensemble_config
         datamodule = get_datamodule(config, "segmentation")
-        storage = BasicEnsemblePredictions()
+        storage = MemoryEnsemblePredictions()
         original = self.store_all(storage, datamodule)
 
         for name in original[(0, 0)][0].keys():
@@ -84,10 +84,10 @@ class TestPredictionData:
             for name in original[(0, 0)][0].keys():
                 assert self.verify_equal(name, original, storage, torch.equal), f"{name} doesn't match"
 
-    def test_rescaled(self, get_ensemble_config, get_datamodule):
+    def test_downscaled(self, get_ensemble_config, get_datamodule):
         config = get_ensemble_config
         datamodule = get_datamodule(config, "segmentation")
-        storage = RescaledEnsemblePredictions(config.ensemble.predictions.rescale_factor)
+        storage = DownscaledEnsemblePredictions(config.ensemble.predictions.downscale_factor)
         original = self.store_all(storage, datamodule)
 
         # we want rescaled to be close to original, but we lose some information in scaling

@@ -27,11 +27,11 @@ class EnsemblePredictionJoiner:
 
     Example:
         >>> from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
-        >>> from tools.tiled_ensemble.predictions.prediction_data import BasicEnsemblePredictions
+        >>> from tools.tiled_ensemble.predictions.prediction_data import MemoryEnsemblePredictions
         >>>
         >>> tiler = EnsembleTiler(tile_size=256, stride=128, image_size=512)
         >>> joiner = EnsemblePredictionJoiner(tiler)
-        >>> data = BasicEnsemblePredictions()
+        >>> data = MemoryEnsemblePredictions()
         >>>
         >>> # joiner needs to be setup with ensemble predictions storage object
         >>> joiner.setup(data)

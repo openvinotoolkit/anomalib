@@ -3,8 +3,8 @@ tiling:
   stride: 128
 
 predictions:
-  storage: direct # how the predictions are stored, options: [direct, file_system, rescaled]
-  rescale_factor: 0.5 # factor by which data is downscaled in case of "rescaled" storage
+  storage: memory # how the predictions are stored, options: [memory, file_system, memory_downscaled]
+  downscale_factor: 0.5 # factor by which data is downscaled in case of "memory_downscaled" storage
 
 post_processing:
   normalization: joined_image # on what level we normalize, options: [individual_tile, joined_image, none]

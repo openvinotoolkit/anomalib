@@ -3,20 +3,18 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from .basic_joiner import BasicPredictionJoiner
 from .prediction_data import (
-    BasicEnsemblePredictions,
+    DownscaledEnsemblePredictions,
     EnsemblePredictions,
     FileSystemEnsemblePredictions,
-    RescaledEnsemblePredictions,
+    MemoryEnsemblePredictions,
 )
 from .prediction_joiner import EnsemblePredictionJoiner
 
 __all__ = [
     "EnsemblePredictions",
-    "BasicEnsemblePredictions",
+    "MemoryEnsemblePredictions",
     "FileSystemEnsemblePredictions",
-    "RescaledEnsemblePredictions",
+    "DownscaledEnsemblePredictions",
     "EnsemblePredictionJoiner",
-    "BasicPredictionJoiner",
 ]

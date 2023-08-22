@@ -18,11 +18,12 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
 from tools.tiled_ensemble.post_processing.postprocess import NormalizationStage
 from tools.tiled_ensemble.predictions import (
-    BasicEnsemblePredictions,
+    DownscaledEnsemblePredictions,
     EnsemblePredictions,
     FileSystemEnsemblePredictions,
-    RescaledEnsemblePredictions,
+    MemoryEnsemblePredictions,
 )
+from tools.tiled_ensemble.predictions.prediction_data import PredictionStorageType
 
 from anomalib.data import get_datamodule
 from anomalib.data.base.datamodule import AnomalibDataModule, collate_fn
@@ -127,8 +128,10 @@ def get_prediction_storage(
     """
     Return prediction storage class as set in config.
 
-    Predictions can be stored directly in memory (direct), on file system (file_system)
-    or downscaled in memory (rescaled).
+    Prediction storage has the following options:
+    memory - predictions are stored in memory,
+    file_system - predictions are stored in the file system,
+    memory_downscaled - predictions are downscaled and stored in memory.
 
     Args:
         config (DictConfig | ListConfig): Configurable parameters object.
@@ -140,14 +143,14 @@ def get_prediction_storage(
         return None, None
 
     # store predictions in memory
-    if config.ensemble.predictions.storage == "direct":
-        ensemble_pred = BasicEnsemblePredictions()
+    if config.ensemble.predictions.storage == PredictionStorageType.MEMORY:
+        ensemble_pred = MemoryEnsemblePredictions()
     # store predictions on file system
-    elif config.ensemble.predictions.storage == "file_system":
+    elif config.ensemble.predictions.storage == PredictionStorageType.FILE_SYSTEM:
         ensemble_pred = FileSystemEnsemblePredictions(storage_path=config.project.path)
     # store downscaled predictions in memory
-    elif config.ensemble.predictions.storage == "rescaled":
-        ensemble_pred = RescaledEnsemblePredictions(config.ensemble.predictions.rescale_factor)
+    elif config.ensemble.predictions.storage == PredictionStorageType.MEMORY_DOWNSCALED:
+        ensemble_pred = DownscaledEnsemblePredictions(config.ensemble.predictions.downscale_factor)
     else:
         raise ValueError(
             f"Prediction storage not recognized: {config.ensemble.predictions.storage}."

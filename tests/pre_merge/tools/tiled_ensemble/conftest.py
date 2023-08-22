@@ -9,7 +9,7 @@ import torch
 from anomalib.config import get_configurable_parameters
 from tools.tiled_ensemble import EnsembleTiler, get_ensemble_datamodule, prepare_ensemble_configurable_parameters
 from tools.tiled_ensemble.post_processing import EnsembleMetrics
-from tools.tiled_ensemble.predictions import BasicEnsemblePredictions, EnsemblePredictionJoiner
+from tools.tiled_ensemble.predictions import MemoryEnsemblePredictions, EnsemblePredictionJoiner
 
 
 @pytest.fixture(scope="module")
@@ -62,7 +62,7 @@ def get_ensemble_predictions(get_datamodule, get_ensemble_config):
     config = get_ensemble_config
     datamodule = get_datamodule(config, "segmentation")
 
-    data = BasicEnsemblePredictions()
+    data = MemoryEnsemblePredictions()
 
     for tile_index in [(0, 0), (0, 1), (1, 0), (1, 1)]:
         datamodule.setup()

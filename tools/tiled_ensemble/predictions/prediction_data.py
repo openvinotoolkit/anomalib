@@ -7,11 +7,26 @@ from __future__ import annotations
 
 import copy
 from abc import ABC
+from enum import Enum
 from pathlib import Path
 
 import torch
 import torch.nn.functional as F
 from torch import Tensor
+
+
+class PredictionStorageType(str, Enum):
+    """
+    Enum signaling how tiled ensemble predictions are stored.
+
+    memory - predictions are stored in memory,
+    file_system - predictions are stored in the file system,
+    memory_downscaled - predictions are downscaled and stored in memory.
+    """
+
+    MEMORY = "memory"
+    FILE_SYSTEM = "file_system"
+    MEMORY_DOWNSCALED = "memory_downscaled"
 
 
 class EnsemblePredictions(ABC):
@@ -44,12 +59,12 @@ class EnsemblePredictions(ABC):
         raise NotImplementedError
 
 
-class BasicEnsemblePredictions(EnsemblePredictions):
+class MemoryEnsemblePredictions(EnsemblePredictions):
     """Basic implementation of EnsemblePredictionData that keeps all predictions in memory as they are.
 
     Examples:
         >>> from pytorch_lightning import Trainer
-        >>> data = BasicEnsemblePredictions()
+        >>> data = MemoryEnsemblePredictions()
         >>> trainer = Trainer(...)
         >>>
         >>> # predictions for all batches for tile location can be added
@@ -193,16 +208,16 @@ class FileSystemEnsemblePredictions(EnsemblePredictions):
         return batch_data
 
 
-class RescaledEnsemblePredictions(EnsemblePredictions):
+class DownscaledEnsemblePredictions(EnsemblePredictions):
     """
     Implementation of EnsemblePredictionData that keeps all predictions in memory but scaled down.
 
     Args:
-        rescale_factor (float): Factor by which the tile based predictions (image, maps..) will be downscaled.
+        downscale_factor (float): Factor by which the tile based predictions (image, maps..) will be downscaled.
 
     Examples:
         >>> from pytorch_lightning import Trainer
-        >>> data = RescaledEnsemblePredictions(0.5)
+        >>> data = DownscaledEnsemblePredictions(0.5)
         >>> trainer = Trainer(...)
         >>>
         >>> # predictions for all batches for tile location can be added
@@ -217,10 +232,10 @@ class RescaledEnsemblePredictions(EnsemblePredictions):
         >>> # of predictions at tile location for current index
     """
 
-    def __init__(self, rescale_factor: float) -> None:
+    def __init__(self, downscale_factor: float) -> None:
         super().__init__()
         self.all_data: dict[tuple[int, int], list] = {}
-        self.downscale_factor = rescale_factor
+        self.downscale_factor = downscale_factor
         self.upscale_factor = 1 / self.downscale_factor
 
     @staticmethod

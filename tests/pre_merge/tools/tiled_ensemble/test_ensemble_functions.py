@@ -16,11 +16,12 @@ from tools.tiled_ensemble.ensemble_functions import (
 )
 from tools.tiled_ensemble.post_processing.postprocess import NormalizationStage
 from tools.tiled_ensemble.predictions import (
-    BasicEnsemblePredictions,
+    MemoryEnsemblePredictions,
     FileSystemEnsemblePredictions,
-    RescaledEnsemblePredictions,
+    DownscaledEnsemblePredictions,
 )
 from anomalib.utils.callbacks import MinMaxNormalizationCallback
+from tools.tiled_ensemble.predictions.prediction_data import PredictionStorageType
 
 
 class TestTileCollater:
@@ -69,13 +70,13 @@ class TestHelperFunctions:
     def test_ensemble_prediction_storage_type(self, get_ensemble_config):
         config = get_ensemble_config
 
-        config.ensemble.predictions.storage = "direct"
+        config.ensemble.predictions.storage = PredictionStorageType.MEMORY
         pred_direct = get_prediction_storage(config)
 
-        assert isinstance(pred_direct[0], BasicEnsemblePredictions)
-        assert isinstance(pred_direct[1], BasicEnsemblePredictions)
+        assert isinstance(pred_direct[0], MemoryEnsemblePredictions)
+        assert isinstance(pred_direct[1], MemoryEnsemblePredictions)
 
-        config.ensemble.predictions.storage = "file_system"
+        config.ensemble.predictions.storage = PredictionStorageType.FILE_SYSTEM
 
         with TemporaryDirectory() as project_dir:
             config.project.path = project_dir
@@ -84,11 +85,11 @@ class TestHelperFunctions:
             assert isinstance(pred_fs[0], FileSystemEnsemblePredictions)
             assert isinstance(pred_fs[1], FileSystemEnsemblePredictions)
 
-        config.ensemble.predictions.storage = "rescaled"
+        config.ensemble.predictions.storage = PredictionStorageType.MEMORY_DOWNSCALED
         pred_rescale = get_prediction_storage(config)
 
-        assert isinstance(pred_rescale[0], RescaledEnsemblePredictions)
-        assert isinstance(pred_rescale[1], RescaledEnsemblePredictions)
+        assert isinstance(pred_rescale[0], DownscaledEnsemblePredictions)
+        assert isinstance(pred_rescale[1], DownscaledEnsemblePredictions)
 
     def test_ensemble_prediction_storage_reference(self, get_ensemble_config):
         config = get_ensemble_config

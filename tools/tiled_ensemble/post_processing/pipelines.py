@@ -85,11 +85,11 @@ def get_stats(
 
     Example:
         >>> from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
-        >>> from tools.tiled_ensemble.predictions.prediction_data import BasicEnsemblePredictions
+        >>> from tools.tiled_ensemble.predictions.prediction_data import MemoryEnsemblePredictions
         >>>
         >>> tiler = EnsembleTiler(tile_size=256, stride=128, image_size=512)
         >>> # this data should be from validation dataloader predictions, as stats are usually obtained on validation.
-        >>> data = BasicEnsemblePredictions()
+        >>> data = MemoryEnsemblePredictions()
         >>>
         >>> stats = get_stats(config, tiler, data)
         >>> stats

@@ -360,12 +360,12 @@ class EnsemblePostProcessPipeline:
     Example:
         >>> from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
         >>> from tools.tiled_ensemble.predictions.prediction_joiner import EnsemblePredictionJoiner
-        >>> from tools.tiled_ensemble.predictions.prediction_data import BasicEnsemblePredictions
+        >>> from tools.tiled_ensemble.predictions.prediction_data import MemoryEnsemblePredictions
         >>> from tools.tiled_ensemble.post_processing.metrics import EnsembleMetrics
 
         >>> tiler = EnsembleTiler(tile_size=256, stride=128, image_size=512)
         >>> joiner = EnsemblePredictionJoiner(tiler)
-        >>> data = BasicEnsemblePredictions()
+        >>> data = MemoryEnsemblePredictions()
         >>> # ... data is then filed with predictions from ensemble
         >>>
         >>> # make instance of pipeline with joiner
