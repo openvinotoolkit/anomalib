@@ -1,4 +1,4 @@
-"""Torch model for student, teacher and autoencoder model in EfficientAD"""
+"""Torch model for student, teacher and autoencoder model in EfficientAd"""
 
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -24,8 +24,31 @@ def imagenet_norm_batch(x):
     return x_norm
 
 
-class EfficientADModelSize(str, Enum):
-    """Supported EfficientAD model sizes"""
+def reduce_tensor_elems(tensor: torch.Tensor, m=2**24) -> torch.Tensor:
+    """Flattens n-dimensional tensors,  selects m elements from it
+    and returns the selected elements as tensor. It is used to select
+    at most 2**24 for torch.quantile operation, as it is the maximum
+    supported number of elements.
+    https://github.com/pytorch/pytorch/blob/b9f81a483a7879cd3709fd26bcec5f1ee33577e6/aten/src/ATen/native/Sorting.cpp#L291
+
+    Args:
+        tensor (torch.Tensor): input tensor from which elements are selected
+        m (int): number of maximum tensor elements. Default: 2**24
+
+    Returns:
+            Tensor: reduced tensor
+    """
+    tensor = torch.flatten(tensor)
+    if len(tensor) > m:
+        # select a random subset with m elements.
+        perm = torch.randperm(len(tensor), device=tensor.device)
+        idx = perm[:m]
+        tensor = tensor[idx]
+    return tensor
+
+
+class EfficientAdModelSize(str, Enum):
+    """Supported EfficientAd model sizes"""
 
     M = "medium"
     S = "small"
@@ -165,7 +188,7 @@ class Decoder(nn.Module):
 
 
 class AutoEncoder(nn.Module):
-    """EfficientAD Autoencoder.
+    """EfficientAd Autoencoder.
 
     Args:
        out_channels (int): number of convolution output channels
@@ -183,8 +206,8 @@ class AutoEncoder(nn.Module):
         return x
 
 
-class EfficientADModel(nn.Module):
-    """EfficientAD model.
+class EfficientAdModel(nn.Module):
+    """EfficientAd model.
 
     Args:
         teacher_out_channels (int): number of convolution output channels of the pre-trained teacher model
@@ -201,7 +224,7 @@ class EfficientADModel(nn.Module):
         self,
         teacher_out_channels: int,
         input_size: tuple[int, int],
-        model_size: EfficientADModelSize = EfficientADModelSize.S,
+        model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         padding=False,
         pad_maps=True,
     ) -> None:
@@ -211,11 +234,11 @@ class EfficientADModel(nn.Module):
         self.teacher: PDN_M | PDN_S
         self.student: PDN_M | PDN_S
 
-        if model_size == EfficientADModelSize.M:
+        if model_size == EfficientAdModelSize.M:
             self.teacher = PDN_M(out_channels=teacher_out_channels, padding=padding).eval()
             self.student = PDN_M(out_channels=teacher_out_channels * 2, padding=padding)
 
-        elif model_size == EfficientADModelSize.S:
+        elif model_size == EfficientAdModelSize.S:
             self.teacher = PDN_S(out_channels=teacher_out_channels, padding=padding).eval()
             self.student = PDN_S(out_channels=teacher_out_channels * 2, padding=padding)
 
@@ -255,12 +278,12 @@ class EfficientADModel(nn.Module):
             transforms.functional.adjust_saturation,
         ]
         # Sample an augmentation coefficient λ from the uniform distribution U(0.8, 1.2)
-        coefficient = random.uniform(0.8, 1.2)
-        transform_function = random.choice(transform_functions)
+        coefficient = random.uniform(0.8, 1.2)  # nosec: B311
+        transform_function = random.choice(transform_functions)  # nosec: B311
         return transform_function(image, coefficient)
 
     def forward(self, batch: Tensor, batch_imagenet: Tensor = None) -> Tensor | dict:
-        """Prediction by EfficientAD models.
+        """Prediction by EfficientAd models.
 
         Args:
             batch (Tensor): Input images.
@@ -278,6 +301,7 @@ class EfficientADModel(nn.Module):
 
         if self.training:
             # Student loss
+            distance_st = reduce_tensor_elems(distance_st)
             d_hard = torch.quantile(distance_st, 0.999)
             loss_hard = torch.mean(distance_st[distance_st >= d_hard])
             student_output_penalty = self.student(batch_imagenet)[:, : self.teacher_out_channels, :, :]

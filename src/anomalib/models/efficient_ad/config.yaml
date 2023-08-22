@@ -19,13 +19,13 @@ dataset:
   val_split_ratio: 0.5 # fraction of train/test images held out for validation (usage depends on val_split_mode)
 
 model:
-  name: efficientad
+  name: efficient_ad
   teacher_out_channels: 384
   model_size: small # options: [small, medium]
   lr: 0.0001
   weight_decay: 0.00001
   padding: false
-  pad_maps: true # relevant for "padding: false", see EfficientAD in lightning_model.py
+  pad_maps: true # relevant for "padding: false", see EfficientAd in lightning_model.py
   # generic params
   normalization_method: min_max # options: [null, min_max, cdf]
 

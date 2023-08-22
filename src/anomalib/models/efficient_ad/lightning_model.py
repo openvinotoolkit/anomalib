@@ -1,4 +1,4 @@
-"""EfficientAD: Accurate Visual Anomaly Detection at Millisecond-Level Latencies.
+"""EfficientAd: Accurate Visual Anomaly Detection at Millisecond-Level Latencies.
 https://arxiv.org/pdf/2303.14535.pdf
 """
 
@@ -24,7 +24,7 @@ from torchvision.datasets import ImageFolder
 from anomalib.data.utils import DownloadInfo, download_and_extract
 from anomalib.models.components import AnomalyModule
 
-from .torch_model import EfficientADModel, EfficientADModelSize
+from .torch_model import EfficientAdModel, EfficientAdModelSize, reduce_tensor_elems
 
 logger = logging.getLogger(__name__)
 
@@ -49,8 +49,8 @@ class TransformsWrapper:
         return self.transforms(image=np.array(img))
 
 
-class EfficientAD(AnomalyModule):
-    """PL Lightning Module for the EfficientAD algorithm.
+class EfficientAd(AnomalyModule):
+    """PL Lightning Module for the EfficientAd algorithm.
 
     Args:
         teacher_file_name (str): path to the pre-trained teacher model
@@ -69,7 +69,7 @@ class EfficientAD(AnomalyModule):
         self,
         teacher_out_channels: int,
         image_size: tuple[int, int],
-        model_size: EfficientADModelSize = EfficientADModelSize.S,
+        model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         lr: float = 0.0001,
         weight_decay: float = 0.00001,
         padding: bool = False,
@@ -79,7 +79,7 @@ class EfficientAD(AnomalyModule):
         super().__init__()
 
         self.model_size = model_size
-        self.model: EfficientADModel = EfficientADModel(
+        self.model: EfficientAdModel = EfficientAdModel(
             teacher_out_channels=teacher_out_channels,
             input_size=image_size,
             model_size=model_size,
@@ -192,19 +192,8 @@ class EfficientAD(AnomalyModule):
         Returns:
             tuple[Tensor, Tensor]: Two scalars - the 90% and the 99.5% quantile.
         """
-        maps_flat = torch.flatten(torch.cat(maps))
-        # torch.quantile only works with input size up to 2**24 elements, see
-        # https://github.com/pytorch/pytorch/blob/b9f81a483a7879cd3709fd26bcec5f1ee33577e6/aten/src/ATen/native/Sorting.cpp#L291
-        # if we have more elements we need to decrease the size
-        # we do this by sampling random elements of maps_flat because then
-        # the locations of the quantiles (90% and 99.5%) will still be
-        # valid even though they might not be the exact quantiles.
-        max_input_size = 2**24
-        if len(maps_flat) > max_input_size:
-            # select a random subset with max_input_size elements.
-            perm = torch.randperm(len(maps_flat), device=self.device)
-            idx = perm[:max_input_size]
-            maps_flat = maps_flat[idx]
+
+        maps_flat = reduce_tensor_elems(torch.cat(maps))
         qa = torch.quantile(maps_flat, q=0.9).to(self.device)
         qb = torch.quantile(maps_flat, q=0.995).to(self.device)
         return qa, qb
@@ -215,7 +204,7 @@ class EfficientAD(AnomalyModule):
             lr=self.lr,
             weight_decay=self.weight_decay,
         )
-        num_steps = max(
+        num_steps = min(
             self.trainer.max_steps, self.trainer.max_epochs * len(self.trainer.datamodule.train_dataloader())
         )
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=int(0.95 * num_steps), gamma=0.1)
@@ -228,7 +217,7 @@ class EfficientAD(AnomalyModule):
             self.model.mean_std.update(channel_mean_std)
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> dict[str, Tensor]:
-        """Training step for EfficientAD returns the student, autoencoder and combined loss.
+        """Training step for EfficientAd returns the student, autoencoder and combined loss.
 
         Args:
             batch (batch: dict[str, str | Tensor]): Batch containing image filename, image, label and mask
@@ -263,7 +252,7 @@ class EfficientAD(AnomalyModule):
             self.model.quantiles.update(map_norm_quantiles)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of EfficientAD returns anomaly maps for the input image batch
+        """Validation Step of EfficientAd returns anomaly maps for the input image batch
 
         Args:
           batch (dict[str, str | Tensor]): Input batch
@@ -278,8 +267,8 @@ class EfficientAD(AnomalyModule):
         return batch
 
 
-class EfficientadLightning(EfficientAD):
-    """PL Lightning Module for the EfficientAD Algorithm.
+class EfficientAdLightning(EfficientAd):
+    """PL Lightning Module for the EfficientAd Algorithm.
 
     Args:
         hparams (DictConfig | ListConfig): Model params
