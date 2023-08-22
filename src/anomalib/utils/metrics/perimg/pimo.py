@@ -1,15 +1,26 @@
-"""Per-Image Overlap (PIMO, pronounced pee-mo) curve.
+"""Per-Image Overlap curve (PImO, pronounced pee-mo).
+
+PImO is a measure of average True Positive (TP) level across multiple anomaly score thresholds.
+The anomaly score thresholds are indexed by a False Positive (FP) measure on the normal images.
+
+Each *anomalous* image has its own curve such that the X-axis is shared by all of them.
+
+At a given threshold:
+    X-axis: False Positive metric shared across images.
+        1. Average of per-image FP Rate (FPR) on normal images.
+        2. Log10 of the above -- curve referred to as `LogPImO`.
+    Y-axis: per-image TP Rate (TPR), or "Overlap" between the ground truth and the predicted masks.
 
 Two variants of AUCs are implemented:
-    - AUPImO: Area Under the Per-Image Overlap (PIMO) curves.
-              I.e. a metric of per-image average TPR.
+    - AUPImO: Area Under the PImO curves.
+    - AULogPImO: Area Under the LogPIMO curves.
 
-for shared fpr = mean( perimg fpr ) == set fpr
-    find the th = fpr^-1( MAX_FPR ) with a binary search on the pixels of the norm images
-    i.e. it's not necessary to compute the perimg fpr curves (tf. binclf curves) in advance
-for other shared fpr alternatives, it's necessary to compute the perimg fpr curves first anyway
+`AUPImO` can be (optinally) bounded by a maximum shared FPR value (e.g. 30%, default is 100%),
+    and the final score is normalized to [0, 1]. The score of a random model is 50%.
 
-further: also choose the th upper bound to be the max score at normal pixels
+`AULogPImO` *can* be (optinally) bounded by a maximum shared FPR value (e.g. 30%, default is 100%),
+    it *has* to be bounded by a minimum shared FPR value (e.g. 0.1%), and the final score is normalized to [0, 1].
+    The score of a random model depends on the bounds and a helper function in the class is provided to compute it.
 """
 
 

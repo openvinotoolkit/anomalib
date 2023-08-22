@@ -1,3 +1,26 @@
+"""Common utilities (e.g. validations) and x-metric functionalities (boxplot statistics, statistical comparisons).
+
+Boxplot statistics
+
+    For a single per-image metric collection (1 model, 1 dataset), compute statistics and find the closest image
+    to each statistic.
+
+Statistical tests
+
+    For two or more per-image metric collections (2+ models, 1 dataset), compare all pairs of models using a
+    parametric or non-parametric test over the paired per-image metric values.
+
+    Parametric test: paired t-test.
+
+        Refs:
+            - `scipy.stats.ttest_rel`: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ttest_rel.html
+            - Wikipedia page: https://en.wikipedia.org/wiki/Student's_t-test#Dependent_t-test_for_paired_samples
+
+    Non-parametric test: Wilcoxon signed rank test.
+            - `scipy.stats.wilcoxon`: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.wilcoxon.html#scipy.stats.wilcoxon
+            - Wikipedia page: https://en.wikipedia.org/wiki/Wilcoxon_signed-rank_test
+"""
+
 from __future__ import annotations
 
 import itertools

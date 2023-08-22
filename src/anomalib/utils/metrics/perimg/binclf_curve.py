@@ -1,15 +1,10 @@
-"""Per-Image Binary Classification Curve.
+"""Per-Image Binary Classification (BinClf) Curve.
 
-Binary classification (threshold-dependent) matrix with shared thresholds but per-image counts/rates.
+This is a generalization of the binary classification matrix (TP, FP, FN, TN) to a range of thresholds.
 
-Known issue:
+At each threshold (shared by all images), the binary classification matrix is computed for each image independently.
 
-Computing the binary classification matrix curve depends on knowing the min and max anomaly scores across all images,
-and the current approach is to just stock all anomaly maps and masks in memory and compute the min and max at the end;
-a better approach would be to do the computation in two phases/epochs:
-    1. compute the min and max anomaly scores across all images (no need to stock the anomaly maps and masks)
-    2. do the actual computation of the binary classification matrix curve, which can actually be done in batches
-        once the thresholds are known
+This module is used as a building block for other modules like `pimo`.
 """
 
 from __future__ import annotations
