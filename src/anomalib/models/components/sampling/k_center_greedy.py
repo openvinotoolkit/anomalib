@@ -101,7 +101,7 @@ class KCenterGreedy:
 
         selected_coreset_idxs: list[int] = []
         idx = int(torch.randint(high=self.n_observations, size=(1,)).item())
-        for _ in tqdm(range(self.coreset_size), "Selecting Coreset Inices."):
+        for _ in tqdm(range(self.coreset_size), "Selecting Coreset Indices."):
             self.update_distances(cluster_centers=[idx])
             idx = self.get_new_idx()
             if idx in selected_idxs:
