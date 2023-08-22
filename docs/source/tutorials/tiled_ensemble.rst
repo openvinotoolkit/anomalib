@@ -88,7 +88,7 @@ More details about storage can be found in ``prediction_data`` docstrings.
 .. code-block:: yaml
 
     post_processing:
-        normalization: joined_image # options: [individual_tile, joined_image, none]
+        normalization: image # options: [tile, image, none]
         smooth_joins:
             apply: True
             sigma: 2
@@ -96,7 +96,7 @@ More details about storage can be found in ``prediction_data`` docstrings.
 
 Post processing section determines how normalization and smoothing of tile joins is handled.
 
-Predictions can either be normalized by each tile location separately (``individual_tile`` option), when all predictions are joined (``joined_image`` option), or normalization can be skipped (with ``none`` option).
+Predictions can either be normalized by each tile location separately (``tile`` option), when all predictions are joined (``image`` option), or normalization can be skipped (with ``none`` option).
 
 There is an option to apply tile join smoothing, where ``width`` determines percentage of region around the join where smoothing by Gaussian filter with given ``sigma`` will be applied.
 
@@ -110,13 +110,13 @@ There is an option to apply tile join smoothing, where ``width`` determines perc
             - F1Score
             - AUROC
         threshold:
-            stage: joined_image # options: [individual_tile, joined_image]
+            stage: image # options: [tile, image]
             method: adaptive #options: [adaptive, manual]
             manual_image: null
             manual_pixel: null
 
 Metrics section overrides the one in model config. It works in the same way but in this case thresholding stage is also determined.
-Thresholding is done during training tile wise in every case. But we can also re-do it once all the tiles are joined with ``joined_image`` option.
+Thresholding is done during training tile wise in every case. But we can also re-do it once all the tiles are joined with ``image`` option.
 
 .. code-block:: yaml
 

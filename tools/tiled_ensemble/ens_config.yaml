@@ -7,7 +7,7 @@ predictions:
   downscale_factor: 0.5 # factor by which data is downscaled in case of "memory_downscaled" storage
 
 post_processing:
-  normalization: joined_image # on what level we normalize, options: [individual_tile, joined_image, none]
+  normalization: image # on what level we normalize, options: [tile, image, none]
   smooth_joins:
     apply: True # if this is applied, area around tile joins are is smoothed
     sigma: 2 # sigma of gaussian filter used to smooth this area
@@ -22,7 +22,7 @@ metrics:
     - F1Score
     - AUROC
   threshold:
-    stage: joined_image # stage at which we apply threshold, options: [individual_tile, joined_image]
+    stage: image # stage at which we apply threshold, options: [tile, image]
     method: adaptive # options: [adaptive, manual]
     manual_image: null
     manual_pixel: null

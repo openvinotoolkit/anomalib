@@ -43,8 +43,8 @@ class TestStatsPipeline:
     @pytest.mark.parametrize(
         "normalization, n_present",
         (
-            [NormalizationStage.INDIVIDUAL_TILE, False],
-            [NormalizationStage.JOINED_IMAGE, True],
+            [NormalizationStage.TILE, False],
+            [NormalizationStage.IMAGE, True],
             [NormalizationStage.NONE, False],
         ),
     )
@@ -95,7 +95,7 @@ class TestPostProcess:
 
     @pytest.mark.parametrize(
         "normalization, thresholds, threshold_index",
-        ([NormalizationStage.JOINED_IMAGE, [0.5, 0.5], 2], [NormalizationStage.NONE, [42, 13], 1]),
+        ([NormalizationStage.IMAGE, [0.5, 0.5], 2], [NormalizationStage.NONE, [42, 13], 1]),
     )
     def test_threshold_manual(self, normalization, thresholds, threshold_index, get_ensemble_config, get_tiler):
         config = copy.deepcopy(get_ensemble_config)

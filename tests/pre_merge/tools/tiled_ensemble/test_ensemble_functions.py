@@ -108,7 +108,7 @@ class TestHelperFunctions:
 
     def test_ensemble_callbacks(self, get_ensemble_config):
         config = get_ensemble_config
-        config.ensemble.post_processing.normalization = NormalizationStage.JOINED_IMAGE
+        config.ensemble.post_processing.normalization = NormalizationStage.IMAGE
 
         callbacks = get_ensemble_callbacks(config, (0, 0))
 

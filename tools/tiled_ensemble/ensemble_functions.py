@@ -237,7 +237,7 @@ def get_ensemble_callbacks(config: DictConfig | ListConfig, tile_index: tuple[in
     callbacks.append(metrics_callback)
 
     # if we normalize each tile separately
-    if config.ensemble.post_processing.normalization == NormalizationStage.INDIVIDUAL_TILE:
+    if config.ensemble.post_processing.normalization == NormalizationStage.TILE:
         if "normalization_method" in config.model.keys() and not config.model.normalization_method == "none":
             if config.model.normalization_method == "min_max":
                 callbacks.append(MinMaxNormalizationCallback())
