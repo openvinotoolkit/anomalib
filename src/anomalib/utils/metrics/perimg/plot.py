@@ -1225,8 +1225,14 @@ def compare_models_perimg_rank(
                     atleast_one_tie = True
 
     # ** format **
+
+    add_legend_entry_for_ties = (atol is not None) and atleast_one_tie
     ax.legend(
-        loc="upper right", title="Model", ncol=len(models) + atleast_one_tie, fontsize="small", title_fontsize="small"
+        loc="upper right",
+        title="Model",
+        ncol=len(models) + add_legend_entry_for_ties,
+        fontsize="small",
+        title_fontsize="small",
     )
 
     # Y-axis
