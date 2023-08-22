@@ -9,7 +9,7 @@ import torch
 from anomalib.config import get_configurable_parameters
 from tools.tiled_ensemble import EnsembleTiler, get_ensemble_datamodule, prepare_ensemble_configurable_parameters
 from tools.tiled_ensemble.post_processing import EnsembleMetrics
-from tools.tiled_ensemble.predictions import BasicEnsemblePredictions, BasicPredictionJoiner
+from tools.tiled_ensemble.predictions import BasicEnsemblePredictions, EnsemblePredictionJoiner
 
 
 @pytest.fixture(scope="module")
@@ -52,7 +52,7 @@ def get_datamodule(get_ensemble_config, get_tiler):
 def get_joiner(get_ensemble_config, get_tiler):
     tiler = get_tiler
 
-    joiner = BasicPredictionJoiner(tiler)
+    joiner = EnsemblePredictionJoiner(tiler)
 
     return joiner
 

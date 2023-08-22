@@ -23,7 +23,7 @@ from tools.tiled_ensemble.post_processing.postprocess import (
     Threshold,
 )
 from tools.tiled_ensemble.post_processing.visualization import EnsembleVisualization
-from tools.tiled_ensemble.predictions import BasicPredictionJoiner, EnsemblePredictions
+from tools.tiled_ensemble.predictions import EnsemblePredictionJoiner, EnsemblePredictions
 
 from anomalib.data.utils import TestSplitMode
 from anomalib.post_processing import ThresholdMethod
@@ -44,7 +44,7 @@ def get_stats_pipeline(config: DictConfig | ListConfig, tiler: EnsembleTiler) ->
     Returns:
         EnsemblePostProcessPipeline: Constructed pipeline.
     """
-    stats_pipeline = EnsemblePostProcessPipeline(BasicPredictionJoiner(tiler))
+    stats_pipeline = EnsemblePostProcessPipeline(EnsemblePredictionJoiner(tiler))
 
     steps: list[EnsemblePostProcess] = []
 
@@ -139,7 +139,7 @@ def get_postprocessing_pipeline(
     Returns:
         EnsemblePostProcessPipeline: Constructed pipeline.
     """
-    post_pipeline = EnsemblePostProcessPipeline(BasicPredictionJoiner(tiler))
+    post_pipeline = EnsemblePostProcessPipeline(EnsemblePredictionJoiner(tiler))
 
     steps: list[EnsemblePostProcess] = []
     if config.ensemble.post_processing.smooth_joins.apply:

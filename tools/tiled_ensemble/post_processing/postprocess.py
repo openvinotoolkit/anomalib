@@ -92,10 +92,10 @@ class SmoothJoins(EnsemblePostProcess):
 
     Example:
         >>> from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
-        >>> from tools.tiled_ensemble.predictions.basic_joiner import BasicPredictionJoiner
+        >>> from tools.tiled_ensemble.predictions.prediction_joiner import EnsemblePredictionJoiner
         >>>
         >>> tiler = EnsembleTiler(tile_size=256, stride=128, image_size=512)
-        >>> joiner = BasicPredictionJoiner(tiler)
+        >>> joiner = EnsemblePredictionJoiner(tiler)
         >>> pipeline = EnsemblePostProcessPipeline(joiner)
         >>>
         >>> # This will smooth 10% on each side of join with gaussian filter that has sigma=2
@@ -172,11 +172,11 @@ class MinMaxNormalize(EnsemblePostProcess):
 
     Example:
         >>> from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
-        >>> from tools.tiled_ensemble.predictions.basic_joiner import BasicPredictionJoiner
+        >>> from tools.tiled_ensemble.predictions.prediction_joiner import EnsemblePredictionJoiner
         >>> from tools.tiled_ensemble.post_processing.pipelines import get_stats
         >>>
         >>> tiler = EnsembleTiler(tile_size=256, stride=128, image_size=512)
-        >>> joiner = BasicPredictionJoiner(tiler)
+        >>> joiner = EnsemblePredictionJoiner(tiler)
         >>> pipeline = EnsemblePostProcessPipeline(joiner)
         >>>
         >>> # get statistics on validation data
@@ -227,11 +227,11 @@ class Threshold(EnsemblePostProcess):
 
     Example:
         >>> from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
-        >>> from tools.tiled_ensemble.predictions.basic_joiner import BasicPredictionJoiner
+        >>> from tools.tiled_ensemble.predictions.prediction_joiner import EnsemblePredictionJoiner
         >>> from tools.tiled_ensemble.post_processing.pipelines import get_stats
         >>>
         >>> tiler = EnsembleTiler(tile_size=256, stride=128, image_size=512)
-        >>> joiner = BasicPredictionJoiner(tiler)
+        >>> joiner = EnsemblePredictionJoiner(tiler)
         >>> pipeline = EnsemblePostProcessPipeline(joiner)
         >>>
         >>> # get statistics on validation data
@@ -279,10 +279,10 @@ class PostProcessStats(EnsemblePostProcess):
 
     Example:
         >>> from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
-        >>> from tools.tiled_ensemble.predictions.basic_joiner import BasicPredictionJoiner
+        >>> from tools.tiled_ensemble.predictions.prediction_joiner import EnsemblePredictionJoiner
         >>>
         >>> tiler = EnsembleTiler(tile_size=256, stride=128, image_size=512)
-        >>> joiner = BasicPredictionJoiner(tiler)
+        >>> joiner = EnsemblePredictionJoiner(tiler)
         >>> pipeline = EnsemblePostProcessPipeline(joiner)
         >>>
         >>> # this block calculates min, max and image & pixel threshold on validation data.
@@ -355,16 +355,16 @@ class EnsemblePostProcessPipeline:
     Pipeline used to perform various post-processing of ensemble predictions.
 
     Args:
-        joiner (EnsemblePredictionJoiner): Class used to join tiled data, already containing predictions.
+        joiner (BaseEnsemblePredictionJoiner): Class used to join tiled data, already containing predictions.
 
     Example:
         >>> from tools.tiled_ensemble.ensemble_tiler import EnsembleTiler
-        >>> from tools.tiled_ensemble.predictions.basic_joiner import BasicPredictionJoiner
+        >>> from tools.tiled_ensemble.predictions.prediction_joiner import EnsemblePredictionJoiner
         >>> from tools.tiled_ensemble.predictions.prediction_data import BasicEnsemblePredictions
         >>> from tools.tiled_ensemble.post_processing.metrics import EnsembleMetrics
 
         >>> tiler = EnsembleTiler(tile_size=256, stride=128, image_size=512)
-        >>> joiner = BasicPredictionJoiner(tiler)
+        >>> joiner = EnsemblePredictionJoiner(tiler)
         >>> data = BasicEnsemblePredictions()
         >>> # ... data is then filed with predictions from ensemble
         >>>
