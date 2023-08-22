@@ -966,13 +966,13 @@ def plot_th_fpr_curves_norm_only(
             fpr_ubound,
             label=f"Shared FPR upper bound ({float(100 * fpr_ubound):.2g}%)",
             linestyle="--",
-            color="red",
+            color="black",
         )
         ax.axvline(
             th_lbound,
             label="Threshold lower bound (@ FPR upper bound)",
             linestyle="-.",
-            color="red",
+            color="black",
         )
 
     if th_ub_fpr_lb is not None:
@@ -980,13 +980,13 @@ def plot_th_fpr_curves_norm_only(
             fpr_lbound,
             label=f"Shared FPR lower bound ({float(100 * fpr_lbound):.2g}%)",
             linestyle="--",
-            color="blue",
+            color="gray",
         )
         ax.axvline(
             th_ubound,
             label="Threshold upper bound (@ FPR lower bound)",
             linestyle="-.",
-            color="blue",
+            color="gray",
         )
 
     # ** plot [rectangle] **
