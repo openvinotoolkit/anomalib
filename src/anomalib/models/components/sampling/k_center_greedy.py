@@ -10,6 +10,7 @@ from __future__ import annotations
 import torch
 import torch.nn.functional as F
 from torch import Tensor
+from tqdm import tqdm
 
 from anomalib.models.components.dimensionality_reduction import SparseRandomProjection
 
@@ -100,7 +101,7 @@ class KCenterGreedy:
 
         selected_coreset_idxs: list[int] = []
         idx = int(torch.randint(high=self.n_observations, size=(1,)).item())
-        for _ in range(self.coreset_size):
+        for _ in tqdm(range(self.coreset_size), "Selecting Coreset Indices."):
             self.update_distances(cluster_centers=[idx])
             idx = self.get_new_idx()
             if idx in selected_idxs:
