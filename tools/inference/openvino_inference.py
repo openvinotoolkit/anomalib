@@ -19,8 +19,8 @@ import numpy as np
 
 try:
     from openvino.model_api.models import AnomalyDetection, AnomalyResult
-except ImportError:
-    raise ImportError("Ensure that OpenVINO model zoo is installed in your environment.")
+except ImportError as exception:
+    raise ImportError("Ensure that OpenVINO model zoo is installed in your environment.") from exception
 
 
 class Visualizer:
@@ -58,10 +58,9 @@ class Visualizer:
             np.ndarray: Superimposed image.
         """
         # convert to color map
-        anomaly_map *= 255
-        anomaly_map = anomaly_map.astype(np.uint8)
+        if anomaly_map.max() <= 1.0:
+            anomaly_map = (anomaly_map * 255).astype(np.uint8)
         anomaly_map = cv2.applyColorMap(anomaly_map, cv2.COLORMAP_JET)
-        # anomaly_map = cv2.cvtColor(anomaly_map, cv2.COLOR_RGB2BGR)
 
         superimposed_map = cv2.addWeighted(image, 0.5, anomaly_map, 0.5, 0)
         return superimposed_map
