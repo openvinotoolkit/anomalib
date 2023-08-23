@@ -8,7 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- AUPRO binning capability by @yann-cv
+- Add support for receiving dataset paths as a list by @harimkang in https://github.com/openvinotoolkit/anomalib/pull/1265
+
 ### Changed
+
+- Enable training with only normal images for MVTecv in https://github.com/openvinotoolkit/anomalib/pull/1241
+- Improve default settings of EfficientAD
 
 ### Deprecated
 

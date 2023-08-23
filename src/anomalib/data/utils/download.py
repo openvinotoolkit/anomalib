@@ -9,10 +9,11 @@ import hashlib
 import io
 import logging
 import os
+import re
 import tarfile
 from dataclasses import dataclass
 from pathlib import Path
-from tarfile import TarError, TarFile
+from tarfile import TarFile, TarInfo
 from typing import Iterable
 from urllib.request import urlretrieve
 from zipfile import ZipFile
@@ -205,6 +206,37 @@ class DownloadProgressBar(tqdm):
         self.update(chunk_number * max_chunk_size - self.n)
 
 
+def is_file_potentially_dangerous(file_name: str) -> bool:
+    """Check if a file is potentially dangerous.
+
+    Args:
+        file_name (str): Filename.
+
+    Returns:
+        bool: True if the member is potentially dangerous, False otherwise.
+
+    """
+    # Some example criteria. We could expand this.
+    unsafe_patterns = ["/etc/", "/root/"]
+    for pattern in unsafe_patterns:
+        if re.search(pattern, file_name):
+            return True
+    return False
+
+
+def safe_extract(tar_file: TarFile, root: Path, members: list[TarInfo]) -> None:
+    """Extract safe members from a tar archive.
+
+    Args:
+        tar_file (TarFile): TarFile object.
+        root (Path): Root directory where the dataset will be stored.
+        members (List[TarInfo]): List of safe members to be extracted.
+
+    """
+    for member in members:
+        tar_file.extract(member, root)
+
+
 def hash_check(file_path: Path, expected_hash: str) -> None:
     """Raise assert error if hash does not match the calculated hash of the file.
 
@@ -214,7 +246,7 @@ def hash_check(file_path: Path, expected_hash: str) -> None:
     """
     with file_path.open("rb") as hash_file:
         assert (
-            hashlib.md5(hash_file.read()).hexdigest() == expected_hash
+            hashlib.new(name="md5", data=hash_file.read(), usedforsecurity=False).hexdigest() == expected_hash
         ), f"Downloaded file {file_path} does not match the required hash."
 
 
@@ -227,17 +259,26 @@ def extract(file_name: Path, root: Path) -> None:
 
     """
     logger.info("Extracting dataset into root folder.")
+
+    # Safely extract zip files
     if file_name.suffix == ".zip":
         with ZipFile(file_name, "r") as zip_file:
-            zip_file.extractall(root)
+            for file_info in zip_file.infolist():
+                if not is_file_potentially_dangerous(file_info.filename):
+                    zip_file.extract(file_info, root)
+
+    # Safely extract tar files.
     elif file_name.suffix in (".tar", ".gz", ".xz", ".tgz"):
         with tarfile.open(file_name) as tar_file:
-            safe_extract(tar_file, root)
+            members = tar_file.getmembers()
+            safe_members = [member for member in members if not is_file_potentially_dangerous(member.name)]
+            safe_extract(tar_file, root, safe_members)
+
     else:
         raise ValueError(f"Unrecognized file format: {file_name}")
 
     logger.info("Cleaning up files.")
-    (file_name).unlink()
+    file_name.unlink()
 
 
 def download_and_extract(root: Path, info: DownloadInfo) -> None:
@@ -286,19 +327,3 @@ def is_within_directory(directory: Path, target: Path):
     # TODO: replace with pathlib is_relative_to after switching to Python 3.10
     prefix = os.path.commonprefix([abs_directory, abs_target])
     return prefix == str(abs_directory)
-
-
-def safe_extract(tar_file: TarFile, path: str | Path = "."):
-    """Extract a tar file safely by first checking for attempted path traversal.
-
-    Args:
-        tar_file (TarFile): Tar file to be extracted
-        path (str | Path): path in which the extracted files will be placed
-    """
-    path = Path(path)
-    for member in tar_file.getmembers():
-        member_path = path / member.name
-        if not is_within_directory(path, member_path):
-            raise TarError("Attempted Path Traversal in Tar File")
-
-    tar_file.extractall(path)

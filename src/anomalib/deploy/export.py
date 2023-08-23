@@ -6,10 +6,13 @@
 from __future__ import annotations
 
 import json
+import logging
 import subprocess  # nosec
 from enum import Enum
+from importlib.util import find_spec
 from pathlib import Path
 from typing import Any
+from warnings import warn
 
 import numpy as np
 import torch
@@ -18,6 +21,13 @@ from torch.types import Number
 
 from anomalib.data.task_type import TaskType
 from anomalib.models.components import AnomalyModule
+
+logger = logging.getLogger("anomalib")
+
+if find_spec("openvino") is not None:
+    from openvino.runtime import Core, serialize
+else:
+    logger.warning("OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.")
 
 
 class ExportMode(str, Enum):
@@ -113,7 +123,7 @@ def export(
         # Export model to onnx and convert to OpenVINO IR if export mode is set to OpenVINO.
         onnx_path = export_to_onnx(model, input_size, export_path)
         if export_mode == ExportMode.OPENVINO:
-            export_to_openvino(export_path, onnx_path)
+            export_to_openvino(export_path, onnx_path, metadata, input_size)
 
     else:
         raise ValueError(f"Unknown export mode {export_mode}")
@@ -156,12 +166,83 @@ def export_to_onnx(model: AnomalyModule, input_size: tuple[int, int], export_pat
     return onnx_path
 
 
-def export_to_openvino(export_path: str | Path, onnx_path: Path) -> None:
+def export_to_openvino(
+    export_path: str | Path, onnx_path: Path, metadata: dict[str, Any], input_size: tuple[int, int]
+) -> None:
     """Convert onnx model to OpenVINO IR.
 
     Args:
         export_path (str | Path): Path to the root folder of the exported model.
         onnx_path (Path): Path to the exported onnx model.
+        metadata (dict[str, Any]): Metadata for the exported model.
+        input_size (tuple[int, int]): Input size of the model. Used for adding metadata to the IR.
     """
     optimize_command = ["mo", "--input_model", str(onnx_path), "--output_dir", str(export_path)]
     subprocess.run(optimize_command, check=True)  # nosec
+    _add_metadata_to_ir(str(export_path) + f"/{onnx_path.with_suffix('.xml').name}", metadata, input_size)
+
+
+def _add_metadata_to_ir(xml_file: str, metadata: dict[str, Any], input_size: tuple[int, int]) -> None:
+    """Adds the metadata to the model IR.
+
+    Adds the metadata to the model IR. So that it can be used with the new modelAPI.
+    This is because the metadata.json is not used by the new modelAPI.
+    # TODO CVS-114640
+    # TODO: Remove this function when Anomalib is upgraded as the model graph will contain the required ops
+
+    Args:
+        xml_file (str): Path to the xml file.
+        metadata (dict[str, Any]): Metadata to add to the model.
+        input_size (tuple[int, int]): Input size of the model.
+    """
+    core = Core()
+    model = core.read_model(xml_file)
+
+    _metadata = {}
+    for key, value in metadata.items():
+        if key in ("transform", "min", "max"):
+            continue
+        _metadata[("model_info", key)] = value
+
+    # Add transforms
+    if "transform" in metadata:
+        for transform_dict in metadata["transform"]["transform"]["transforms"]:
+            transform = transform_dict["__class_fullname__"]
+            if transform == "Normalize":
+                _metadata[("model_info", "mean_values")] = _serialize_list([x * 255.0 for x in transform_dict["mean"]])
+                _metadata[("model_info", "scale_values")] = _serialize_list([x * 255.0 for x in transform_dict["std"]])
+            elif transform == "Resize":
+                _metadata[("model_info", "orig_height")] = transform_dict["height"]
+                _metadata[("model_info", "orig_width")] = transform_dict["width"]
+            else:
+                warn(f"Transform {transform} is not supported currently")
+
+    # Since we only need the diff of max and min, we fuse the min and max into one op
+    if "min" in metadata and "max" in metadata:
+        _metadata[("model_info", "normalization_scale")] = metadata["max"] - metadata["min"]
+
+    _metadata[("model_info", "reverse_input_channels")] = True
+    _metadata[("model_info", "model_type")] = "AnomalyDetection"
+    _metadata[("model_info", "labels")] = ["Normal", "Anomaly"]
+    _metadata[("model_info", "image_shape")] = _serialize_list(input_size)
+
+    for k, data in _metadata.items():
+        model.set_rt_info(data, list(k))
+
+    tmp_xml_path = Path(xml_file).parent / "tmp.xml"
+    serialize(model, str(tmp_xml_path))
+    tmp_xml_path.rename(xml_file)
+    # since we create new openvino IR files, we don't need the bin file. So we delete it.
+    tmp_xml_path.with_suffix(".bin").unlink()
+
+
+def _serialize_list(arr: list[int] | list[float] | tuple[int, int]) -> str:
+    """Serializes the list to a string.
+
+    Args:
+        arr (list[int] | list[float] | tuple[int, int]): List to serialize.
+
+    Returns:
+        str: Serialized list.
+    """
+    return " ".join(map(str, arr))

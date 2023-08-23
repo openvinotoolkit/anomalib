@@ -108,6 +108,7 @@ source = [
     ".tox/*/site-packages",
 ]
 
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # NBQA CONFIGURATION                                                          #
 [tool.nbqa.addopts]

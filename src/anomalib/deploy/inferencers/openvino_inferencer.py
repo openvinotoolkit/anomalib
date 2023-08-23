@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import logging
 from importlib.util import find_spec
 from pathlib import Path
 from typing import Any
@@ -18,10 +19,12 @@ from anomalib.data import TaskType
 
 from .base_inferencer import Inferencer
 
+logger = logging.getLogger("anomalib")
+
 if find_spec("openvino") is not None:
     from openvino.runtime import Core
 else:
-    raise ImportError("OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.")
+    logger.warning("OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.")
 
 
 class OpenVINOInferencer(Inferencer):
