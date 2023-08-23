@@ -9,8 +9,8 @@ Paper https://arxiv.org/abs/2106.08265.
 from __future__ import annotations
 
 import logging
+from typing import Any
 
-import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
@@ -74,25 +74,27 @@ class Patchcore(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
+        # Model is in eval mode to avoid updating the weights.
         self.model.feature_extractor.eval()
-        embedding = self.model(batch["image"])
 
-        # NOTE: `self.embedding` appends each batch embedding to
-        #   store the training set embedding. We manually append these
-        #   values mainly due to the new order of hooks introduced after PL v1.4.0
-        #   https://github.com/PyTorchLightning/pytorch-lightning/pull/7357
+        # Generate embedding
+        embedding = self.model(batch["image"])
         self.embeddings.append(embedding)
 
-    def on_validation_start(self) -> None:
-        """Apply subsampling to the embedding collected from the training set."""
-        # NOTE: Previous anomalib versions fit subsampling at the end of the epoch.
-        #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
-        #   is run within train epoch.
-        logger.info("Aggregating the embedding extracted from the training set.")
-        embeddings = torch.vstack(self.embeddings)
+    def on_save_checkpoint(self, checkpoint: dict[str, Any]) -> None:
+        """Fit the model when there is no validation set."""
+        # `on_save_checkpoint` is called at the `on_train_epoch_end` hook.
+        # This hook fits the model, and save the memory_bank when there is no validation set.
+        if hasattr(self.model, "is_fitted"):
+            if not self.model._is_fitted:
+                self.model.fit(self.embeddings, self.coreset_sampling_ratio)
 
-        logger.info("Applying core-set subsampling to get the embedding.")
-        self.model.subsample_embedding(embeddings, self.coreset_sampling_ratio)
+        # Save the memory bank to the checkpoint.
+        checkpoint["state_dict"]["model.memory_bank"] = self.model.memory_bank
+
+    def on_validation_start(self) -> None:
+        if not self.model._is_fitted:
+            self.model.fit(self.embeddings, self.coreset_sampling_ratio)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Get batch of anomaly maps from input image batch.

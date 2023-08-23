@@ -5,17 +5,17 @@
 
 from __future__ import annotations
 
+import logging
+
 import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from anomalib.models.components import (
-    DynamicBufferModule,
-    FeatureExtractor,
-    KCenterGreedy,
-)
+from anomalib.models.components import DynamicBufferModule, FeatureExtractor, KCenterGreedy
 from anomalib.models.patchcore.anomaly_map import AnomalyMapGenerator
 from anomalib.pre_processing import Tiler
+
+logger = logging.getLogger(__name__)
 
 
 class PatchcoreModel(DynamicBufferModule, nn.Module):
@@ -43,6 +43,12 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
 
         self.register_buffer("memory_bank", Tensor())
         self.memory_bank: Tensor
+
+        self._is_fitted: bool = False
+
+    @property
+    def is_fitted(self) -> bool:
+        return self._is_fitted
 
     def forward(self, input_tensor: Tensor) -> Tensor | tuple[Tensor, Tensor]:
         """Return Embedding during training, or a tuple of anomaly map and anomaly score during testing.
@@ -129,18 +135,26 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         embedding = embedding.permute(0, 2, 3, 1).reshape(-1, embedding_size)
         return embedding
 
-    def subsample_embedding(self, embedding: Tensor, sampling_ratio: float) -> None:
-        """Subsample embedding based on coreset sampling and store to memory.
+    def fit(self, embedding: Tensor | list[Tensor], sampling_ratio: float) -> None:
+        """Fit the PatchCore model via coreset sampling.
 
         Args:
-            embedding (np.ndarray): Embedding tensor from the CNN
+            embedding (Tensor | list[Tensor]): Embedding tensor from the CNN
             sampling_ratio (float): Coreset sampling ratio
         """
+        if isinstance(embedding, list):
+            if not isinstance(embedding[0], Tensor):
+                raise TypeError("Embedding must be a Tensor or a list of Tensors")
+            embedding = torch.vstack(embedding)
 
         # Coreset Subsampling
+        logger.info("Fitting the PatchCore model via core-set sampling.")
         sampler = KCenterGreedy(embedding=embedding, sampling_ratio=sampling_ratio)
         coreset = sampler.sample_coreset()
         self.memory_bank = coreset
+
+        # Model is now fitted.
+        self._is_fitted = True
 
     @staticmethod
     def euclidean_dist(x: Tensor, y: Tensor) -> Tensor:
