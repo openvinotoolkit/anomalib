@@ -86,14 +86,14 @@ class Patchcore(AnomalyModule):
         # `on_save_checkpoint` is called at the `on_train_epoch_end` hook.
         # This hook fits the model, and save the memory_bank when there is no validation set.
         if hasattr(self.model, "is_fitted"):
-            if not self.model._is_fitted:
+            if not self.model.is_fitted:
                 self.model.fit(self.embeddings, self.coreset_sampling_ratio)
 
         # Save the memory bank to the checkpoint.
         checkpoint["state_dict"]["model.memory_bank"] = self.model.memory_bank
 
     def on_validation_start(self) -> None:
-        if not self.model._is_fitted:
+        if not self.model.is_fitted:
             self.model.fit(self.embeddings, self.coreset_sampling_ratio)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
