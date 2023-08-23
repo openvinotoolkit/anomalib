@@ -96,7 +96,7 @@ class EfficientAd(AnomalyModule):
 
     def prepare_pretrained_model(self) -> None:
         pretrained_models_dir = Path("./pre_trained/")
-        if not pretrained_models_dir.is_dir():
+        if not (pretrained_models_dir / "efficientad_pretrained_weights").is_dir():
             download_and_extract(pretrained_models_dir, WEIGHTS_DOWNLOAD_INFO)
         teacher_path = (
             pretrained_models_dir / "efficientad_pretrained_weights" / f"pretrained_teacher_{self.model_size}.pth"
