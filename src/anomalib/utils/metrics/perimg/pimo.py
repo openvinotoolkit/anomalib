@@ -1,0 +1,211 @@
+"""Per-Image Overlap (PIMO, pronounced pee-mo) curve.
+
+Two variants of AUCs are implemented:
+    - AUPImO: Area Under the Per-Image Overlap (PIMO) curves.
+              I.e. a metric of per-image average TPR.
+
+for shared fpr = mean( perimg fpr ) == set fpr
+    find the th = fpr^-1( MAX_FPR ) with a binary search on the pixels of the norm images
+    i.e. it's not necessary to compute the perimg fpr curves (tf. binclf curves) in advance
+for other shared fpr alternatives, it's necessary to compute the perimg fpr curves first anyway
+
+further: also choose the th upper bound to be the max score at normal pixels
+"""
+
+
+from __future__ import annotations
+
+from collections import namedtuple
+
+import torch
+from matplotlib.axes import Axes
+from matplotlib.pyplot import Figure
+from numpy import ndarray
+from torch import Tensor
+
+from .binclf_curve import PerImageBinClfCurve
+from .common import (
+    _validate_atleast_one_anomalous_image,
+    _validate_atleast_one_normal_image,
+)
+from .plot import (
+    plot_all_pimo_curves,
+)
+
+# =========================================== METRICS ===========================================
+
+PImOResult = namedtuple(
+    "PImOResult",
+    [
+        "thresholds",
+        "fprs",
+        "shared_fpr",
+        "tprs",
+        "image_classes",
+    ],
+)
+PImOResult.__doc__ = """PImO result (from `PImO.compute()`).
+
+[0] thresholds: shape (num_thresholds,), a `float` dtype as given in update()
+[1] fprs: shape (num_images, num_thresholds), dtype `float64`, \in [0, 1]
+[2] shared_fpr: shape (num_thresholds,), dtype `float64`, \in [0, 1]
+[3] tprs: shape (num_images, num_thresholds), dtype `float64`, \in [0, 1] for anom images, `nan` for norm images
+[4] image_classes: shape (num_images,), dtype `int32`, \in {0, 1}
+
+- `num_thresholds` is an attribute of `PImO` and is given in the constructor (from parent class).
+- `num_images` depends on the data seen by the model at the update() calls.
+"""
+
+
+class PImO(PerImageBinClfCurve):
+    """Per-Image Overlap (PIMO, pronounced pee-mo) curve.
+
+    PImO a measure of TP level across multiple thresholds,
+        which are indexed by an FP measure on the normal images.
+
+    At a given threshold:
+        X-axis: False Positive metric shared across images:
+            1. In-image FPR average on normal images (equivalent to the set FPR of normal images).
+        Y-axis: Overlap between the class 'anomalous' in the ground truth and the predicted masks (in-image TPR).
+
+    Note about other shared FPR alternatives:
+        It can be made harder by using the cross-image max (or high-percentile) FPRs instead of the mean.
+        I.e. the shared-fp axis (x-axies) is a statistic (across normal images) at each threshold.
+        Rationale: this will further punish models that have exceptional FPs in normal images.
+        Rationale: this will further punish models that have exceptional FPs in normal images.
+
+    FP: False Positive
+    FPR: False Positive Rate
+    TP: True Positive
+    TPR: True Positive Rate
+    """
+
+    def compute(self) -> PImOResult:  # type: ignore
+        """Compute the PImO curve.
+
+        Returns: PImOResult
+        See `anomalib.utils.metrics.perimg.pimo.PImOResult` for details.
+        """
+        if self.is_empty:
+            return PImOResult(
+                torch.empty(0, dtype=torch.float32),
+                torch.empty(0, dtype=torch.float64),
+                torch.empty(0, dtype=torch.float64),
+                torch.empty(0, dtype=torch.float64),
+                torch.empty(0, dtype=torch.int32),
+            )
+
+        thresholds, binclf_curves, image_classes = super().compute()
+
+        _validate_atleast_one_anomalous_image(image_classes)  # necessary for the TPR
+        _validate_atleast_one_normal_image(image_classes)  # necessary for the shared FPR
+
+        # (num_images, num_thresholds); from the parent class
+        # fprs can be `nan` if an anomalous image is fully covered by the mask
+        # but it's ok because we will use only the normal images
+        tprs = PerImageBinClfCurve.tprs(binclf_curves)
+        fprs = PerImageBinClfCurve.fprs(binclf_curves)
+
+        # see note about shared FPR alternatives in the class's docstring
+        shared_fpr = fprs[image_classes == 0].mean(dim=0)  # shape: (num_thresholds,)
+
+        return PImOResult(thresholds, fprs, shared_fpr, tprs, image_classes)
+
+    def plot(
+        self,
+        ax: Axes | None = None,
+    ) -> tuple[Figure | None, Axes]:
+        """Plot shared FPR vs Per-Image Overlap (PImO) curves."""
+
+        if self.is_empty:
+            return None, None
+
+        _, __, shared_fpr, tprs, image_classes = self.compute()
+
+        fig, ax = plot_all_pimo_curves(
+            shared_fpr,
+            tprs,
+            image_classes,
+            ax=ax,
+        )
+        ax.set_xlabel("Mean FPR on Normal Images")
+
+        return fig, ax
+
+
+class AUPImO(PImO):
+    """Area Under the Per-Image Overlap (PImO) curve.
+
+    AU is computed by the trapezoidal rule, each curve being treated separately.
+    """
+
+    def compute(self) -> tuple[PImOResult, Tensor]:  # type: ignore
+        """Compute the Area Under the Per-Image Overlap curves (AUPImO).
+
+        Returns: (PImOResult, aucs)
+            [0] PImOResult: PImOResult, see `anomalib.utils.metrics.perimg.pimo.PImOResult` for details.
+            [1] aucs: shape (num_images,), dtype `float64`, \in [0, 1]
+        """
+
+        if self.is_empty:
+            return PImOResult(
+                torch.empty(0, dtype=torch.float32),
+                torch.empty(0, dtype=torch.float64),
+                torch.empty(0, dtype=torch.float64),
+                torch.empty(0, dtype=torch.float64),
+                torch.empty(0, dtype=torch.int32),
+            ), torch.empty(0, dtype=torch.float64)
+
+        pimoresult = _, __, shared_fpr, tprs, ___ = super().compute()
+
+        # `shared_fpr` and `tprs` are in descending order; `flip()` reverts to ascending order
+        tprs_auc: Tensor = tprs.flip(dims=(1,))
+        shared_fpr_auc: Tensor = shared_fpr.flip(dims=(0,))
+
+        aucs: Tensor = torch.trapezoid(tprs_auc, x=shared_fpr_auc, dim=1)
+
+        return pimoresult, aucs
+
+    def plot_all_pimo_curves(
+        self,
+        ax: Axes | None = None,
+    ) -> tuple[Figure | None, Axes]:
+        """Plot shared FPR vs Per-Image Overlap (PImO) curves (all curves).
+        Integration range is shown when `self.ubound < 1`.
+        """
+
+        if self.is_empty:
+            return None, None
+
+        (_, __, shared_fpr, tprs, image_classes), ___ = self.compute()
+
+        fig, ax = plot_all_pimo_curves(
+            shared_fpr,
+            tprs,
+            image_classes,
+            ax=ax,
+        )
+        ax.set_xlabel("Mean FPR on Normal Images")
+        return fig, ax
+
+    def plot(
+        self,
+        ax: Axes | ndarray | None = None,
+    ) -> tuple[Figure | None, Axes | ndarray]:
+        """Plot AUPImO boxplot with its statistics' PImO curves."""
+
+        return self.plot_all_pimo_curves(ax)
+
+
+class AULogPImO(PImO):
+    """Area Under the Per-Image Overlap (PIMO, pronounced pee-mo) curves with log(FPR) (instead of FPR) in the X-axis
+
+    This will further give more importance/visibility to the low FPR region.
+    """
+
+    def __init__(self, *args, **kwargs):
+        raise NotImplementedError("**coming up later**")
+        # # TODO log fpr option here
+        # # logfpr: whether to use log scale for the FPR axis
+        # # logfpr_epsilon: small positive number to avoid `log(0)`; used only if `logfpr` is True
+        # _format_axis_rate_metric_log(ax, axis=0, lower_limit=logfpr_epsilon)
