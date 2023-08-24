@@ -12,7 +12,7 @@ During inference, the feature pyramids of teacher and student networks are compa
 
 ## Architecture
 
-![STFPM Architecture](../../../docs/source/images/stfpm/architecture.jpg "STFPM Architecture")
+![STFPM Architecture](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/stfpm/architecture.jpg "STFPM Architecture")
 
 ## Usage
 
