@@ -60,3 +60,6 @@ class AnomalyScoreThreshold(PrecisionRecallCurve):
         else:
             self.value = thresholds[torch.argmax(f1_score)]
         return self.value
+
+    def __repr__(self) -> str:
+        return f"{super().__repr__()} (value={self.value:.2f})"
