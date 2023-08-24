@@ -9,7 +9,6 @@ Paper https://arxiv.org/abs/2106.08265.
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.types import STEP_OUTPUT
@@ -80,17 +79,6 @@ class Patchcore(AnomalyModule):
         # Generate embedding
         embedding = self.model(batch["image"])
         self.embeddings.append(embedding)
-
-    def on_save_checkpoint(self, checkpoint: dict[str, Any]) -> None:
-        """Fit the model when there is no validation set."""
-        # `on_save_checkpoint` is called at the `on_train_epoch_end` hook.
-        # This hook fits the model, and save the memory_bank when there is no validation set.
-        if hasattr(self.model, "is_fitted"):
-            if not self.model.is_fitted:
-                self.model.fit(self.embeddings, self.coreset_sampling_ratio)
-
-        # Save the memory bank to the checkpoint.
-        checkpoint["state_dict"]["model.memory_bank"] = self.model.memory_bank
 
     def on_validation_start(self) -> None:
         if not self.model.is_fitted:

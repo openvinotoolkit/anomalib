@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import logging
 
-import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
@@ -54,7 +53,6 @@ class Padim(AnomalyModule):
             n_features=n_features,
         ).eval()
 
-        self.stats: list[Tensor] = []
         self.embeddings: list[Tensor] = []
 
     @staticmethod
@@ -84,15 +82,8 @@ class Padim(AnomalyModule):
         self.embeddings.append(embedding.cpu())
 
     def on_validation_start(self) -> None:
-        """Fit a Gaussian to the embedding collected from the training set."""
-        # NOTE: Previous anomalib versions fit Gaussian at the end of the epoch.
-        #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
-        #   is run within train epoch.
-        logger.info("Aggregating the embedding extracted from the training set.")
-        embeddings = torch.vstack(self.embeddings)
-
-        logger.info("Fitting a Gaussian to the embedding collected from the training set.")
-        self.stats = self.model.gaussian.fit(embeddings)
+        if not self.model.is_fitted:
+            self.model.fit(self.embeddings)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Validation Step of PADIM.
