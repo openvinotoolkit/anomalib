@@ -6,9 +6,9 @@
 from __future__ import annotations
 
 import torch
+from lightning.pytorch.callbacks import EarlyStopping
+from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.callbacks import EarlyStopping
-from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor, optim
 
 from anomalib.models.components import AnomalyModule

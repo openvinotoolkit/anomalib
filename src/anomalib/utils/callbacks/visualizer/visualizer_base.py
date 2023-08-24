@@ -8,9 +8,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import cast
 
+import lightning.pytorch as pl
 import numpy as np
-import pytorch_lightning as pl
-from pytorch_lightning import Callback
+from lightning.pytorch import Callback
 
 from anomalib.data import TaskType
 from anomalib.models.components import AnomalyModule

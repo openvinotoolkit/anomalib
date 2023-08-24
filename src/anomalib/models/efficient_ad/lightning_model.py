@@ -15,8 +15,8 @@ import numpy as np
 import torch
 import tqdm
 from albumentations.pytorch import ToTensorV2
+from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor, optim
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder

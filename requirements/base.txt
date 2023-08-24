@@ -9,6 +9,6 @@ matplotlib>=3.4.3
 omegaconf>=2.1.1
 opencv-python>=4.5.3.56
 pandas>=1.1.0
-pytorch-lightning>=1.7.0,<1.10.0
+lightning
 timm>=0.5.4,<=0.6.12
 torchmetrics==0.10.3

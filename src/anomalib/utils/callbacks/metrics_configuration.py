@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import logging
 
-import pytorch_lightning as pl
-from pytorch_lightning.callbacks import Callback
+import lightning.pytorch as pl
+from lightning.pytorch.callbacks import Callback
 
 from anomalib.data import TaskType
 from anomalib.models.components.base.anomaly_module import AnomalyModule

@@ -6,7 +6,7 @@
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
-from pytorch_lightning import Trainer
+from lightning.pytorch import Trainer
 from torch.utils.data import DataLoader
 
 from anomalib.config import get_configurable_parameters

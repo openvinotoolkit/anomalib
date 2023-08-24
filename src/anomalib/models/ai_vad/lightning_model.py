@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import logging
 
+from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
 from anomalib.models.ai_vad.torch_model import AiVadModel

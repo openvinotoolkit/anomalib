@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from typing import Sequence
 
-import pytorch_lightning as pl
-from pytorch_lightning.callbacks import Callback
+import lightning.pytorch as pl
+from lightning.pytorch.callbacks import Callback
 
 from anomalib.models.components import AnomalyModule
 from anomalib.pre_processing.tiler import ImageUpscaleMode, Tiler

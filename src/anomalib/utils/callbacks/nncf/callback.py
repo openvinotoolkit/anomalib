@@ -9,11 +9,11 @@ import os
 from pathlib import Path
 from typing import Any
 
-import pytorch_lightning as pl
+import lightning.pytorch as pl
+from lightning.pytorch import Callback
 from nncf import NNCFConfig
 from nncf.api.compression import CompressionAlgorithmController
 from nncf.torch import register_default_init_args
-from pytorch_lightning import Callback
 
 from anomalib.utils.callbacks.nncf.utils import InitLoader, wrap_nncf_model
 

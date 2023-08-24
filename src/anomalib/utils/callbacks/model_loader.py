@@ -8,7 +8,7 @@ from __future__ import annotations
 import logging
 
 import torch
-from pytorch_lightning import Callback, Trainer
+from lightning.pytorch import Callback, Trainer
 
 from anomalib.models.components import AnomalyModule
 

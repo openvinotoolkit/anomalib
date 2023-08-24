@@ -11,10 +11,10 @@ import numpy as np
 from matplotlib.figure import Figure
 
 try:
-    from pytorch_lightning.loggers.tensorboard import TensorBoardLogger
+    from lightning.pytorch.loggers.tensorboard import TensorBoardLogger
 except ModuleNotFoundError:
     print("To use tensorboard logger install it using `pip install tensorboard`")
-from pytorch_lightning.utilities import rank_zero_only
+from lightning.pytorch.utilities import rank_zero_only
 
 from .base import ImageLoggerBase
 
@@ -32,7 +32,7 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
     preinstalled.
 
     Example:
-        >>> from pytorch_lightning import Trainer
+        >>> from lightning.pytorch import Trainer
         >>> from anomalib.utils.loggers import AnomalibTensorBoardLogger
         >>> logger = AnomalibTensorBoardLogger("tb_logs", name="my_model")
         >>> trainer = Trainer(logger=logger)

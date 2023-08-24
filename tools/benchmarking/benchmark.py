@@ -21,8 +21,8 @@ from tempfile import TemporaryDirectory
 from typing import cast
 
 import torch
+from lightning.pytorch import Trainer, seed_everything
 from omegaconf import DictConfig, ListConfig, OmegaConf
-from pytorch_lightning import Trainer, seed_everything
 from utils import upload_to_comet, upload_to_wandb, write_metrics
 
 from anomalib.config import get_configurable_parameters, update_input_size_config
@@ -44,7 +44,7 @@ warnings.filterwarnings("ignore")
 logger = logging.getLogger(__name__)
 configure_logger()
 pl_logger = logging.getLogger(__file__)
-for logger_name in ["pytorch_lightning", "torchmetrics", "os"]:
+for logger_name in ["lightning.pytorch", "torchmetrics", "os"]:
     logging.getLogger(logger_name).setLevel(logging.ERROR)
 
 

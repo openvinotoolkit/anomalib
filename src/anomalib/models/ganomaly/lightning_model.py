@@ -11,9 +11,9 @@ from __future__ import annotations
 import logging
 
 import torch
+from lightning.pytorch.callbacks import Callback, EarlyStopping
+from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.callbacks import Callback, EarlyStopping
-from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 from torch import Tensor, optim
 
 from anomalib.models.components import AnomalyModule
@@ -157,13 +157,11 @@ class Ganomaly(AnomalyModule):
         self.min_scores = min(self.min_scores, torch.min(batch["pred_scores"]))
         return batch
 
-    def validation_epoch_end(self, outputs: EPOCH_OUTPUT) -> EPOCH_OUTPUT:
+    def on_validation_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):
         """Normalize outputs based on min/max values."""
-        logger.info("Normalizing validation outputs based on min/max values.")
-        for prediction in outputs:
-            prediction["pred_scores"] = self._normalize(prediction["pred_scores"])
-        super().validation_epoch_end(outputs)
-        return outputs
+        # logger.info("Normalizing validation outputs based on min/max values.")
+        outputs["pred_scores"] = self._normalize(outputs["pred_scores"])
+        super().on_validation_batch_end(outputs, batch, batch_idx, dataloader_idx=dataloader_idx)
 
     def on_test_start(self) -> None:
         """Reset min max values before test batch starts."""
@@ -177,13 +175,11 @@ class Ganomaly(AnomalyModule):
         self.min_scores = min(self.min_scores, torch.min(batch["pred_scores"]))
         return batch
 
-    def test_epoch_end(self, outputs: EPOCH_OUTPUT) -> EPOCH_OUTPUT:
+    def on_test_batch_end(self, outputs, batch, batch_idx, dataloader_idx=0):
         """Normalize outputs based on min/max values."""
-        logger.info("Normalizing test outputs based on min/max values.")
-        for prediction in outputs:
-            prediction["pred_scores"] = self._normalize(prediction["pred_scores"])
-        super().test_epoch_end(outputs)
-        return outputs
+        # logger.info("Normalizing test outputs based on min/max values.")
+        outputs["pred_scores"] = self._normalize(outputs["pred_scores"])
+        super().on_test_batch_end(outputs, batch, batch_idx, dataloader_idx=dataloader_idx)
 
     def _normalize(self, scores: Tensor) -> Tensor:
         """Normalize the scores based on min/max of entire dataset.

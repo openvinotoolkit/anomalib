@@ -8,9 +8,9 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
+from lightning.pytorch.loggers.wandb import WandbLogger
+from lightning.pytorch.utilities import rank_zero_only
 from matplotlib.figure import Figure
-from pytorch_lightning.loggers.wandb import WandbLogger
-from pytorch_lightning.utilities import rank_zero_only
 
 try:
     import wandb
@@ -57,7 +57,7 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
 
     Example:
         >>> from anomalib.utils.loggers import AnomalibWandbLogger
-        >>> from pytorch_lightning import Trainer
+        >>> from lightning.pytorch import Trainer
         >>> wandb_logger = AnomalibWandbLogger()
         >>> trainer = Trainer(logger=wandb_logger)
 

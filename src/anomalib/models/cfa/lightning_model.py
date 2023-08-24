@@ -13,10 +13,10 @@ from __future__ import annotations
 import logging
 
 import torch
+from lightning.pytorch import Callback
+from lightning.pytorch.callbacks import EarlyStopping
+from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning import Callback
-from pytorch_lightning.callbacks import EarlyStopping
-from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch import Tensor
 from torch.optim.optimizer import Optimizer
 
