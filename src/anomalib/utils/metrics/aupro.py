@@ -3,7 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 from typing import Any, Callable
 
@@ -15,10 +14,7 @@ from torchmetrics.functional import auc
 from torchmetrics.functional.classification import binary_roc
 from torchmetrics.utilities.data import dim_zero_cat
 
-from anomalib.utils.metrics.pro import (
-    connected_components_cpu,
-    connected_components_gpu,
-)
+from anomalib.utils.metrics.pro import connected_components_cpu, connected_components_gpu
 
 from .binning import thresholds_between_0_and_1, thresholds_between_min_and_max
 from .plotting_utils import plot_figure

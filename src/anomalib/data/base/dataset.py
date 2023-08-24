@@ -3,7 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import copy
 import logging
@@ -51,7 +50,7 @@ class AnomalibDataset(Dataset, ABC):
         """Get length of the dataset."""
         return len(self.samples)
 
-    def subsample(self, indices: Sequence[int], inplace: bool = False) -> AnomalibDataset:
+    def subsample(self, indices: Sequence[int], inplace: bool = False) -> "AnomalibDataset":
         """Subsamples the dataset at the provided indices.
 
         Args:
@@ -147,7 +146,7 @@ class AnomalibDataset(Dataset, ABC):
 
         return item
 
-    def __add__(self, other_dataset: AnomalibDataset) -> AnomalibDataset:
+    def __add__(self, other_dataset: "AnomalibDataset") -> "AnomalibDataset":
         """Concatenate this dataset with another dataset."""
         assert isinstance(other_dataset, self.__class__), "Cannot concatenate datasets that are not of the same type."
         assert self.is_setup, "Cannot concatenate uninitialized datasets. Call setup first."

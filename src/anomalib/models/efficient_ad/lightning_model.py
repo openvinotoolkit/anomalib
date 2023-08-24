@@ -5,7 +5,6 @@ https://arxiv.org/pdf/2303.14535.pdf
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
 from pathlib import Path

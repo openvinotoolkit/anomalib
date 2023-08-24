@@ -3,7 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
 import os
@@ -181,9 +180,7 @@ class AnomalibCLI(LightningCLI):
 
         # Export to OpenVINO
         if config.export_mode is not None:
-            from anomalib.utils.callbacks.export import (  # pylint: disable=import-outside-toplevel
-                ExportCallback,
-            )
+            from anomalib.utils.callbacks.export import ExportCallback  # pylint: disable=import-outside-toplevel
 
             logger.info("Setting model export to %s", config.export_mode)
             callbacks.append(

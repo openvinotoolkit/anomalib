@@ -6,7 +6,6 @@ https://arxiv.org/abs/2201.10703v2
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 from lightning.pytorch.callbacks import EarlyStopping
 from lightning.pytorch.utilities.types import STEP_OUTPUT

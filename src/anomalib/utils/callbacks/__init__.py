@@ -3,7 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
 import os
@@ -125,9 +124,7 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
                 )
             )
         if config.optimization.export_mode is not None:
-            from .export import (  # pylint: disable=import-outside-toplevel
-                ExportCallback,
-            )
+            from .export import ExportCallback  # pylint: disable=import-outside-toplevel
 
             logger.info("Setting model export to %s", config.optimization.export_mode)
             callbacks.append(
