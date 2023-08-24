@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import logging
 from random import sample
 
 import torch
@@ -15,6 +16,8 @@ from anomalib.models.components import FeatureExtractor, MultiVariateGaussian
 from anomalib.models.components.feature_extractors import dryrun_find_featuremap_dims
 from anomalib.models.padim.anomaly_map import AnomalyMapGenerator
 from anomalib.pre_processing import Tiler
+
+logger = logging.getLogger(__name__)
 
 # defaults from the paper
 _N_FEATURES_DEFAULTS = {
@@ -99,6 +102,32 @@ class PadimModel(nn.Module):
         self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
 
         self.gaussian = MultiVariateGaussian(self.n_features, self.n_patches)
+        self._is_fitted: bool = False
+
+    @property
+    def is_fitted(self) -> bool:
+        return self._is_fitted
+
+    def generate_embedding(self, features: dict[str, Tensor]) -> Tensor:
+        """Generate embedding from hierarchical feature map.
+
+        Args:
+            features (dict[str, Tensor]): Hierarchical feature map from a CNN (ResNet18 or WideResnet)
+
+        Returns:
+            Embedding vector
+        """
+
+        embeddings = features[self.layers[0]]
+        for layer in self.layers[1:]:
+            layer_embedding = features[layer]
+            layer_embedding = F.interpolate(layer_embedding, size=embeddings.shape[-2:], mode="nearest")
+            embeddings = torch.cat((embeddings, layer_embedding), 1)
+
+        # subsample embeddings
+        idx = self.idx.to(embeddings.device)
+        embeddings = torch.index_select(embeddings, 1, idx)
+        return embeddings
 
     def forward(self, input_tensor: Tensor) -> Tensor:
         """Forward-pass image-batch (N, C, H, W) into model to extract features.
@@ -140,23 +169,17 @@ class PadimModel(nn.Module):
             )
         return output
 
-    def generate_embedding(self, features: dict[str, Tensor]) -> Tensor:
-        """Generate embedding from hierarchical feature map.
+    def fit(self, embedding: Tensor | list[Tensor]) -> None:
+        """Fit the model with embedding.
 
         Args:
-            features (dict[str, Tensor]): Hierarchical feature map from a CNN (ResNet18 or WideResnet)
-
-        Returns:
-            Embedding vector
+            embedding (embedding: Tensor | list[Tensor]): Embedding vector
         """
+        if isinstance(embedding, list):
+            if not isinstance(embedding[0], Tensor):
+                raise TypeError("Embedding must be a Tensor or a list of Tensors")
+            embedding = torch.vstack(embedding)
 
-        embeddings = features[self.layers[0]]
-        for layer in self.layers[1:]:
-            layer_embedding = features[layer]
-            layer_embedding = F.interpolate(layer_embedding, size=embeddings.shape[-2:], mode="nearest")
-            embeddings = torch.cat((embeddings, layer_embedding), 1)
-
-        # subsample embeddings
-        idx = self.idx.to(embeddings.device)
-        embeddings = torch.index_select(embeddings, 1, idx)
-        return embeddings
+        logger.info("Fitting a Gaussian to the embedding collected from the training set.")
+        self.gaussian.fit(embedding)
+        self._is_fitted = True
