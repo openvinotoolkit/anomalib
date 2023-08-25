@@ -13,6 +13,7 @@ from albumentations.pytorch import ToTensorV2
 from omegaconf import DictConfig
 
 from anomalib.data.utils.image import get_image_height_and_width
+from anomalib.pre_processing.transforms import BGRToRGB
 
 logger = logging.getLogger(__name__)
 
@@ -146,5 +147,9 @@ def get_transforms(
             transforms_list.append(ToTensorV2())
 
         transforms = A.Compose(transforms_list, additional_targets={"image": "image", "depth_image": "image"})
+
+    # Check if BGRToRGB is already in the transforms. If not add it to the beginning.
+    if not any(isinstance(t, BGRToRGB) for t in transforms.transforms):
+        transforms.transforms.insert(0, BGRToRGB())
 
     return transforms
