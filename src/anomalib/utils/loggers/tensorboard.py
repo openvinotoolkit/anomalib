@@ -31,10 +31,10 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
     preinstalled.
 
     Example:
-        >>> from lightning.pytorch import Trainer
+        >>> from anomalib.trainer import AnomalibTrainer
         >>> from anomalib.utils.loggers import AnomalibTensorBoardLogger
         >>> logger = AnomalibTensorBoardLogger("tb_logs", name="my_model")
-        >>> trainer = Trainer(logger=logger)
+        >>> trainer =  AnomalibTrainer(logger=logger)
 
     Args:
         save_dir (str): Save directory

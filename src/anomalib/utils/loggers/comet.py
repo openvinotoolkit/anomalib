@@ -64,9 +64,9 @@ class AnomalibCometLogger(ImageLoggerBase, CometLogger):
             If neither ``api_key`` nor ``save_dir`` are passed as arguments.
     Example:
         >>> from anomalib.utils.loggers import AnomalibCometLogger
-        >>> from lightning.pytorch import Trainer
+        >>> from anomalib.trainer import AnomalibTrainer
         >>> comet_logger = AnomalibCometLogger()
-        >>> trainer = Trainer(logger=comet_logger)
+        >>> trainer =  AnomalibTrainer(logger=comet_logger)
 
     See Also:
         - `Comet Documentation <https://www.comet.com/docs/v2/integrations/ml-frameworks/pytorch-lightning/>`__

@@ -4,9 +4,9 @@ import tempfile
 from pathlib import Path
 
 import pytest
-import pytorch_lightning as pl
 from omegaconf.omegaconf import OmegaConf
 
+from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.loggers import AnomalibTensorBoardLogger
 from tests.helpers.dummy import DummyDataModule
 
@@ -38,7 +38,7 @@ def test_add_images(task):
         )
         logger = get_dummy_logger(config, dir_loc)
         model = get_dummy_module(config)
-        trainer = pl.Trainer(
+        trainer = AnomalibTrainer(
             callbacks=model.callbacks, logger=logger, enable_checkpointing=False, default_root_dir=config.project.path
         )
         trainer.test(model=model, datamodule=DummyDataModule())

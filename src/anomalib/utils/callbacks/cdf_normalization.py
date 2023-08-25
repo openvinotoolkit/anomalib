@@ -8,13 +8,14 @@ import logging
 from typing import Any
 
 import lightning.pytorch as pl
-from lightning.pytorch import Callback, Trainer
+from lightning.pytorch import Callback
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch.distributions import LogNormal
 
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
 from anomalib.post_processing.normalization.cdf import normalize, standardize
+from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.metrics import AnomalyScoreDistribution
 
 logger = logging.getLogger(__name__)
@@ -110,7 +111,7 @@ class CdfNormalizationCallback(Callback):
          estimate the distribution of anomaly scores for normal data at the image and pixel level by computing
          the mean and standard deviations. A dictionary containing the computed statistics is stored in self.stats.
         """
-        predictions = Trainer(accelerator=trainer.accelerator, devices=trainer.num_devices).predict(
+        predictions = AnomalibTrainer(accelerator=trainer.accelerator, devices=trainer.num_devices).predict(
             model=self._create_inference_model(pl_module), dataloaders=trainer.datamodule.train_dataloader()
         )
         pl_module.normalization_metrics.reset()

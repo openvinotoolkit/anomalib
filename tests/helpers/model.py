@@ -7,14 +7,15 @@ import os
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
+from lightning.pytorch import LightningDataModule
+from lightning.pytorch.callbacks import ModelCheckpoint
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning import LightningDataModule, Trainer
-from pytorch_lightning.callbacks import ModelCheckpoint
 
 from anomalib.config import get_configurable_parameters, update_nncf_config
 from anomalib.data import TaskType, get_datamodule
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
+from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.callbacks import get_callbacks
 from anomalib.utils.callbacks.visualizer import BaseVisualizerCallback
 
@@ -113,7 +114,7 @@ def setup_model_train(
         config.trainer.max_epochs = 1
         config.trainer.check_val_every_n_epoch = 1
 
-    trainer = Trainer(callbacks=callbacks, **config.trainer)
+    trainer = AnomalibTrainer(callbacks=callbacks, **config.trainer)
     trainer.fit(model=model, datamodule=datamodule)
     return config, datamodule, model, trainer
 
@@ -141,7 +142,7 @@ def model_load_test(config: Union[DictConfig, ListConfig], datamodule: Lightning
             break
 
     # create new trainer object with LoadModel callback (assumes it is present)
-    trainer = Trainer(callbacks=callbacks, **config.trainer)
+    trainer = AnomalibTrainer(callbacks=callbacks, **config.trainer)
     # Assumes the new model has LoadModel callback and the old one had ModelCheckpoint callback
     new_results = trainer.test(model=loaded_model, datamodule=datamodule)[0]
     assert np.isclose(

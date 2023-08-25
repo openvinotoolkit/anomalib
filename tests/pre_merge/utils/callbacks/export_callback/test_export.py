@@ -2,18 +2,16 @@ import os
 import tempfile
 
 import pytest
-import pytorch_lightning as pl
-from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 
 from anomalib.data.mvtec import MVTec
 from anomalib.data.utils import random_split
 from anomalib.deploy import ExportMode
+from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.callbacks.export import ExportCallback
 from tests.helpers.config import get_test_configurable_parameters
 from tests.helpers.dataset import get_dataset_path
-from tests.pre_merge.utils.callbacks.export_callback.dummy_lightning_model import (
-    DummyLightningModule,
-)
+from tests.pre_merge.utils.callbacks.export_callback.dummy_lightning_model import DummyLightningModule
 
 
 # TODO: This is temporarily here. Move it to conftest.py in integration tests.
@@ -54,7 +52,7 @@ def test_export_model_callback(dummy_datamodule: MVTec, export_mode):
             ),
             EarlyStopping(monitor=config.model.metric),
         ]
-        trainer = pl.Trainer(
+        trainer = AnomalibTrainer(
             gpus=1,
             callbacks=model.callbacks,
             logger=False,

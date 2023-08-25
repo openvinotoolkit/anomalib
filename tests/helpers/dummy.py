@@ -2,7 +2,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
-import pytorch_lightning as pl
+import lightning.pytorch as pl
 import torch
 import torch.nn.functional as F
 from torch import nn
