@@ -195,8 +195,6 @@ def anomaly_map_to_color_map(
 ) -> np.ndarray:
     """Compute anomaly color heatmap.
 
-    Gets an array of anomaly scores maps and returns a color map according to a normalized scale.
-
     Args:
         anomaly_map (np.ndarray): Final anomaly map computed by the distance metric.
         normalize (bool | tuple[float, float], optional): it can work on three modes:
@@ -256,6 +254,7 @@ def superimpose_anomaly_map(
     ignore_low_scores: bool = True,
 ) -> np.ndarray:
     """Superimpose anomaly map on top of in the input image.
+
     Args:
         anomaly_map (np.ndarray): Anomaly map
         image (np.ndarray): Input image
