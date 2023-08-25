@@ -6,16 +6,8 @@ import numpy as np
 import pytest
 
 from anomalib.config import update_input_size_config
-from anomalib.data import (
-    Avenue,
-    BTech,
-    Folder,
-    MVTec,
-    ShanghaiTech,
-    UCSDped,
-    Visa,
-    get_datamodule,
-)
+from anomalib.data import Avenue, BTech, Folder, MVTec, ShanghaiTech, UCSDped, Visa, get_datamodule
+from anomalib.data.utils import DirType
 from anomalib.pre_processing.transforms import Denormalize, ToNumpy
 from tests.helpers.config import get_test_configurable_parameters
 from tests.helpers.dataset import TestDataset, get_dataset_path
@@ -90,9 +82,10 @@ def make_folder_data_module(
     abnormal_dir="broken_large",
     normal_test_dir="good_test",
     mask_dir="ground_truth/broken_large",
+    dataset_name="bottle",
 ):
     """Create Folder Data Module."""
-    root = get_dataset_path(dataset="bottle")
+    root = get_dataset_path(dataset=dataset_name)
     data_module = Folder(
         root=root,
         normal_dir=normal_dir,
@@ -248,6 +241,39 @@ class TestDataModule:
         assert all(
             data_module.val_data.samples["image_path"].values == data_module.test_data.samples["image_path"].values
         )
+
+    def test_folder_sequence_inputs(self, make_data_module, dataset):
+        """This test ensures that the list folder input is working well."""
+        if dataset == "folder":
+            get_length = lambda datamodule: len(
+                datamodule.val_data.samples.loc[datamodule.val_data.samples.label == DirType.ABNORMAL]
+            ) + len(datamodule.test_data.samples.loc[datamodule.test_data.samples.label == DirType.ABNORMAL])
+
+            _colour = make_data_module(
+                dataset=dataset,
+                abnormal_dir="colour",
+                dataset_name="hazelnut_toy",
+                normal_test_dir="good",
+                mask_dir=None,
+            )
+            len_colour = get_length(_colour)
+            _crack = make_data_module(
+                dataset=dataset,
+                abnormal_dir="crack",
+                dataset_name="hazelnut_toy",
+                normal_test_dir="good",
+                mask_dir=None,
+            )
+            len_crack = get_length(_crack)
+            data_module = make_data_module(
+                dataset=dataset,
+                abnormal_dir=["colour", "crack"],
+                dataset_name="hazelnut_toy",
+                normal_test_dir="good",
+                mask_dir=None,
+            )
+            len_merged = get_length(data_module)
+            assert len_merged == len_colour + len_crack
 
 
 class TestDenormalize:

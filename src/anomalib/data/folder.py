@@ -8,6 +8,7 @@ This script creates a custom dataset from a folder.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Sequence
 
 import albumentations as A
 from pandas import DataFrame
@@ -27,23 +28,23 @@ from anomalib.data.utils.path import _prepare_files_labels, _resolve_path
 
 
 def make_folder_dataset(
-    normal_dir: str | Path,
+    normal_dir: str | Path | Sequence[str | Path],
     root: str | Path | None = None,
-    abnormal_dir: str | Path | None = None,
-    normal_test_dir: str | Path | None = None,
-    mask_dir: str | Path | None = None,
+    abnormal_dir: str | Path | Sequence[str | Path] | None = None,
+    normal_test_dir: str | Path | Sequence[str | Path] | None = None,
+    mask_dir: str | Path | Sequence[str | Path] | None = None,
     split: str | Split | None = None,
     extensions: tuple[str, ...] | None = None,
 ) -> DataFrame:
     """Make Folder Dataset.
     Args:
-        normal_dir (str | Path): Path to the directory containing normal images.
+        normal_dir (str | Path | Sequence): Path to the directory containing normal images.
         root (str | Path | None): Path to the root directory of the dataset.
-        abnormal_dir (str | Path | None, optional): Path to the directory containing abnormal images.
-        normal_test_dir (str | Path | None, optional): Path to the directory containing
+        abnormal_dir (str | Path | Sequence | None, optional): Path to the directory containing abnormal images.
+        normal_test_dir (str | Path | Sequence | None, optional): Path to the directory containing
             normal images for the test dataset. Normal test images will be a split of `normal_dir`
             if `None`. Defaults to None.
-        mask_dir (str | Path | None, optional): Path to the directory containing
+        mask_dir (str | Path | Sequence | None, optional): Path to the directory containing
             the mask annotations. Defaults to None.
         split (str | Split | None, optional): Dataset split (ie., Split.FULL, Split.TRAIN or Split.TEST).
             Defaults to None.
@@ -52,11 +53,29 @@ def make_folder_dataset(
     Returns:
         DataFrame: an output dataframe containing samples for the requested split (ie., train or test)
     """
-    normal_dir = _resolve_path(normal_dir, root)
-    abnormal_dir = _resolve_path(abnormal_dir, root) if abnormal_dir is not None else None
-    normal_test_dir = _resolve_path(normal_test_dir, root) if normal_test_dir is not None else None
-    mask_dir = _resolve_path(mask_dir, root) if mask_dir is not None else None
-    assert normal_dir.is_dir(), "A folder location must be provided in normal_dir."
+
+    def _resolve_path_and_convert_to_list(path: str | Path | Sequence[str | Path] | None) -> list[Path]:
+        """Convert path to list of paths.
+        Args:
+            path (str | Path | Sequence | None): Path to replace with Sequence[str | Path].
+        Examples:
+            >>> _resolve_path_and_convert_to_list("dir")
+            [Path("path/to/dir")]
+            >>> _resolve_path_and_convert_to_list(["dir1", "dir2"])
+            [Path("path/to/dir1"), Path("path/to/dir2")]
+        Returns:
+            list[Path]: The result of path replaced by Sequence[str | Path].
+        """
+        if isinstance(path, Sequence) and not isinstance(path, str):
+            return [_resolve_path(dir_path, root) for dir_path in path]
+        return [_resolve_path(path, root)] if path is not None else []
+
+    # All paths are changed to the List[Path] type and used.
+    normal_dir = _resolve_path_and_convert_to_list(normal_dir)
+    abnormal_dir = _resolve_path_and_convert_to_list(abnormal_dir)
+    normal_test_dir = _resolve_path_and_convert_to_list(normal_test_dir)
+    mask_dir = _resolve_path_and_convert_to_list(mask_dir)
+    assert len(normal_dir) > 0, "A folder location must be provided in normal_dir."
 
     filenames = []
     labels = []
@@ -71,10 +90,11 @@ def make_folder_dataset(
     if mask_dir:
         dirs = {**dirs, **{DirType.MASK: mask_dir}}
 
-    for dir_type, path in dirs.items():
-        filename, label = _prepare_files_labels(path, dir_type, extensions)
-        filenames += filename
-        labels += label
+    for dir_type, paths in dirs.items():
+        for path in paths:
+            filename, label = _prepare_files_labels(path, dir_type, extensions)
+            filenames += filename
+            labels += label
 
     samples = DataFrame({"image_path": filenames, "label": labels})
     samples = samples.sort_values(by="image_path", ignore_index=True)
@@ -88,7 +108,7 @@ def make_folder_dataset(
 
     # If a path to mask is provided, add it to the sample dataframe.
 
-    if mask_dir is not None and abnormal_dir is not None:
+    if len(mask_dir) > 0 and len(abnormal_dir) > 0:
         samples.loc[samples.label == DirType.ABNORMAL, "mask_path"] = samples.loc[
             samples.label == DirType.MASK
         ].image_path.values
@@ -136,12 +156,12 @@ class FolderDataset(AnomalibDataset):
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (str | Split | None): Fixed subset split that follows from folder structure on file system.
             Choose from [Split.FULL, Split.TRAIN, Split.TEST]
-        normal_dir (str | Path): Path to the directory containing normal images.
+        normal_dir (str | Path | Sequence): Path to the directory containing normal images.
         root (str | Path | None): Root folder of the dataset.
-        abnormal_dir (str | Path | None, optional): Path to the directory containing abnormal images.
-        normal_test_dir (str | Path | None, optional): Path to the directory containing
+        abnormal_dir (str | Path | Sequence | None, optional): Path to the directory containing abnormal images.
+        normal_test_dir (str | Path | Sequence | None, optional): Path to the directory containing
             normal images for the test dataset. Defaults to None.
-        mask_dir (str | Path | None, optional): Path to the directory containing
+        mask_dir (str | Path | Sequence | None, optional): Path to the directory containing
             the mask annotations. Defaults to None.
         extensions (tuple[str, ...] | None, optional): Type of the image extensions to read from the
             directory.
@@ -155,11 +175,11 @@ class FolderDataset(AnomalibDataset):
         self,
         task: TaskType,
         transform: A.Compose,
-        normal_dir: str | Path,
+        normal_dir: str | Path | Sequence[str | Path],
         root: str | Path | None = None,
-        abnormal_dir: str | Path | None = None,
-        normal_test_dir: str | Path | None = None,
-        mask_dir: str | Path | None = None,
+        abnormal_dir: str | Path | Sequence[str | Path] | None = None,
+        normal_test_dir: str | Path | Sequence[str | Path] | None = None,
+        mask_dir: str | Path | Sequence[str | Path] | None = None,
         split: str | Split | None = None,
         extensions: tuple[str, ...] | None = None,
     ) -> None:
@@ -189,14 +209,14 @@ class FolderDataset(AnomalibDataset):
 class Folder(AnomalibDataModule):
     """Folder DataModule.
     Args:
-        normal_dir (str | Path): Name of the directory containing normal images.
+        normal_dir (str | Path | Sequence): Name of the directory containing normal images.
             Defaults to "normal".
         root (str | Path | None): Path to the root folder containing normal and abnormal dirs.
-        abnormal_dir (str | Path | None): Name of the directory containing abnormal images.
+        abnormal_dir (str | Path | None | Sequence): Name of the directory containing abnormal images.
             Defaults to "abnormal".
-        normal_test_dir (str | Path | None, optional): Path to the directory containing
+        normal_test_dir (str | Path | Sequence | None, optional): Path to the directory containing
             normal images for the test dataset. Defaults to None.
-        mask_dir (str | Path | None, optional): Path to the directory containing
+        mask_dir (str | Path | Sequence | None, optional): Path to the directory containing
             the mask annotations. Defaults to None.
         normal_split_ratio (float, optional): Ratio to split normal training images and add to the
             test set in case test set doesn't contain any normal images.
@@ -228,11 +248,11 @@ class Folder(AnomalibDataModule):
 
     def __init__(
         self,
-        normal_dir: str | Path,
+        normal_dir: str | Path | Sequence[str | Path],
         root: str | Path | None = None,
-        abnormal_dir: str | Path | None = None,
-        normal_test_dir: str | Path | None = None,
-        mask_dir: str | Path | None = None,
+        abnormal_dir: str | Path | Sequence[str | Path] | None = None,
+        normal_test_dir: str | Path | Sequence[str | Path] | None = None,
+        mask_dir: str | Path | Sequence[str | Path] | None = None,
         normal_split_ratio: float = 0.2,
         extensions: tuple[str] | None = None,
         image_size: int | tuple[int, int] | None = None,
@@ -261,8 +281,13 @@ class Folder(AnomalibDataModule):
             seed=seed,
         )
 
-        self.normal_split_ratio = normal_split_ratio
+        if task == TaskType.SEGMENTATION and test_split_mode == TestSplitMode.FROM_DIR and mask_dir is None:
+            raise ValueError(
+                f"Segmentation task requires mask directory if test_split_mode is {test_split_mode}. "
+                f"You could set test_split_mode to {TestSplitMode.NONE} or provide a mask directory."
+            )
 
+        self.normal_split_ratio = normal_split_ratio
         transform_train = get_transforms(
             config=transform_config_train,
             image_size=image_size,
