@@ -183,7 +183,7 @@ def _validate_and_convert_normalize(
         return (anomaly_map.min(), anomaly_map.max())
 
     if ((anomaly_map < 0) | (anomaly_map > 1)).any():
-        raise Exception("When `normalize` is False, anomaly map values are expected to be in [0, 1]")
+        raise ValueError("When `normalize` is False, anomaly map values are expected to be in [0, 1]")
 
     return None
 
@@ -284,7 +284,9 @@ def superimpose_anomaly_map(
     _validate_anomaly_map(anomaly_map)
 
     if anomaly_map.shape != image.shape[:2]:
-        raise Exception()
+        raise ValueError(
+            f"Anomaly map and image must have the same shape, but found {anomaly_map.shape} and {image.shape}"
+        )
 
     # there was a `anomaly_map.squeeze()` before --> do something about it? now it is validated to be squeezed
     color_map = anomaly_map_to_color_map(anomaly_map, normalize=normalize, saturation_colors=saturation_colors)
