@@ -84,72 +84,70 @@ def add_anomalous_label(image: np.ndarray, confidence: float | None = None) -> n
 
 
 def _validate_image(image: np.ndarray) -> None:
-    """TODO move to where? or use another existing one?
-    TODO write excepion messages
-    """
+    """TODO move to where? or use another existing one?"""
 
     if not isinstance(image, np.ndarray):
-        raise Exception()
+        raise ValueError(f"Expected a numpy array, but got {type(image).__name__}")
 
     if image.ndim != 3:
-        raise Exception()
+        raise ValueError(f"Expected a 3D array, but got {image.ndim}D array")
 
     if image.shape[2] != 3:
-        raise Exception()
+        raise ValueError(f"Expected a 3-channel image, but got {image.shape[2]} channels")
 
     if image.dtype != np.uint8:
-        raise Exception()
+        raise ValueError(f"Expected a uint8 image, but got {image.dtype} image")
 
 
 def _validate_anomaly_map(anomaly_map: np.ndarray) -> None:
-    """TODO move to where? or use another existing one?
-    TODO write excepion messages
-    """
+    """TODO move to where? or use another existing one?"""
 
     if not isinstance(anomaly_map, np.ndarray):
-        raise Exception()
+        raise ValueError(f"Expected a numpy array, but got {type(anomaly_map).__name__}")
 
     if anomaly_map.ndim != 2:
-        raise Exception()
+        raise ValueError(f"Expected a 2D array, but got {anomaly_map.ndim}D array")
 
-    # TODO assert it is float type
+    if not np.issubdtype(anomaly_map.dtype, np.floating):
+        raise ValueError(f"Expected a floating point array, but got {anomaly_map.dtype} array")
 
 
 def _validate_normalization_bounds(bounds: tuple[float, float]) -> None:
-    """TODO move to where? or use another existing one?
-    TODO write excepion messages
-    """
+    """TODO move to where? or use another existing one?"""
 
     if not isinstance(bounds, Sequence):
-        raise Exception()
+        raise ValueError(f"Expected a sequence, but got {type(bounds).__name__}")
 
     if len(bounds) != 2:
-        raise Exception()
+        raise ValueError(f"Expected a sequence of length 2, but got a sequence of length {len(bounds)}")
 
     lower_bound: float
     upper_bound: float
     lower_bound, upper_bound = bounds  # type:ignore
 
     if not isinstance(lower_bound, float) or not isinstance(upper_bound, float):
-        raise Exception()
+        raise ValueError(
+            "Expected lower/upper bounds to be floats, "
+            f"but got {type(lower_bound).__name__}/{type(upper_bound).__name__}"
+        )
 
     if upper_bound <= lower_bound:
-        raise Exception()
+        raise ValueError(
+            "Expected upper bound to be greater than lower bound, "
+            f"but got (uppper_bound={upper_bound}) <= (lower_bound={lower_bound})"
+        )
 
 
 def _validate_and_convert_normalize(
     normalize: bool | tuple[float, float], anomaly_map: np.ndarray
 ) -> tuple[float, float] | None:
-    """TODO move to where? or use another existing one?
-    TODO write excepion messages    superimposed_map = cv2.addWeighted(color_map, alpha, image, (1 - alpha), gamma)
-
-    """
+    """TODO move to where? or use another existing one?"""
 
     if normalize:
         return (anomaly_map.min(), anomaly_map.max())
 
     if ((anomaly_map < 0) | (anomaly_map > 1)).any():
-        raise Exception()
+        raise Exception("When `normalize` is False, anomaly map values are expected to be in [0, 1]")
 
     return None
 
