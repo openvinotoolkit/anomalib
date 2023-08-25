@@ -7,7 +7,6 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
 from enum import Enum
 
 import cv2
@@ -83,134 +82,32 @@ def add_anomalous_label(image: np.ndarray, confidence: float | None = None) -> n
     return add_label(image, "anomalous", (255, 100, 100), confidence)
 
 
-def _validate_image(image: np.ndarray) -> None:
-    """TODO move to where? or use another existing one?
-    TODO write excepion messages
-    """
-
-    if not isinstance(image, np.ndarray):
-        raise Exception()
-
-    if image.ndim != 3:
-        raise Exception()
-
-    if image.shape[2] != 3:
-        raise Exception()
-
-    if image.dtype != np.uint8:
-        raise Exception()
-
-
-def _validate_anomaly_map(anomaly_map: np.ndarray) -> None:
-    """TODO move to where? or use another existing one?
-    TODO write excepion messages
-    """
-
-    if not isinstance(anomaly_map, np.ndarray):
-        raise Exception()
-
-    if anomaly_map.ndim != 2:
-        raise Exception()
-
-    # TODO assert it is float type
-
-
-def _validate_normalization_bounds(bounds: tuple[float, float]) -> None:
-    """TODO move to where? or use another existing one?
-    TODO write excepion messages
-    """
-
-    if not isinstance(bounds, Sequence):
-        raise Exception()
-
-    if len(bounds) != 2:
-        raise Exception()
-
-    lower_bound: float
-    upper_bound: float
-    lower_bound, upper_bound = bounds  # type:ignore
-
-    if not isinstance(lower_bound, float) or not isinstance(upper_bound, float):
-        raise Exception()
-
-    if upper_bound <= lower_bound:
-        raise Exception()
-
-
-def _validate_and_convert_normalize(
-    normalize: bool | tuple[float, float], anomaly_map: np.ndarray
-) -> tuple[float, float] | None:
-    """TODO move to where? or use another existing one?
-    TODO write excepion messages    superimposed_map = cv2.addWeighted(color_map, alpha, image, (1 - alpha), gamma)
-
-    """
-
-    if normalize:
-        return (anomaly_map.min(), anomaly_map.max())
-
-    if ((anomaly_map < 0) | (anomaly_map > 1)).any():
-        raise Exception()
-
-    return None
-
-
-def anomaly_map_to_color_map(anomaly_map: np.ndarray, normalize: bool | tuple[float, float] = True) -> np.ndarray:
+def anomaly_map_to_color_map(anomaly_map: np.ndarray, normalize: bool = True) -> np.ndarray:
     """Compute anomaly color heatmap.
-
-    Gets an array of anomaly scores maps and returns a color map according to a normalized scale.
 
     Args:
         anomaly_map (np.ndarray): Final anomaly map computed by the distance metric.
-        normalize (bool | tuple[float, float], optional): it can work on three modes:
-            1) (default) bool and True: normalize the anomaly map with its own min/max
-            2) bool and False: values in `anomaly_map` are expected to be \\in [0, 1] (it will be asserted)
-            3) tuple[float, float]: values are expected to be anomaly scores lower and upper bounds; in this case
-                                    these values are used to rescale the scores \in [0, 1] and whatever is
-                                    below/above the lower/upper bound is coloured in black/white.
+        normalize (bool, optional): Bool to normalize the anomaly map prior to applying
+            the color map. Defaults to True.
+
     Returns:
         np.ndarray: [description]
     """
+    if normalize:
+        anomaly_map = (anomaly_map - anomaly_map.min()) / np.ptp(anomaly_map)
+    anomaly_map = anomaly_map * 255
+    anomaly_map = anomaly_map.astype(np.uint8)
 
-    _validate_anomaly_map(anomaly_map)
-
-    if isinstance(normalize, bool):
-        bounds = _validate_and_convert_normalize(normalize, anomaly_map)
-    else:
-        _validate_normalization_bounds(normalize)
-        bounds = normalize
-
-    if bounds is None:
-        anomaly_map_scaled = anomaly_map
-
-    else:
-        lower_bound, upper_bound = bounds  # normalize the anomaly map
-        anomaly_map_scaled = ((anomaly_map - lower_bound) / (upper_bound - lower_bound)).clip(0, 1)
-
-    color_map = cv2.applyColorMap((anomaly_map_scaled * 255).astype(np.uint8), cv2.COLORMAP_JET)
-    color_map = cv2.cvtColor(color_map, cv2.COLOR_BGR2RGB)  # TODO make colormap an opiton
-
-    if bounds is None:
-        return color_map
-
-    # saturations below and above the score bounds
-    over_mask = anomaly_map > upper_bound
-    under_mask = anomaly_map < lower_bound
-
-    color_map[over_mask, :] = 255  # white # TODO make saturation color an option
-    color_map[under_mask, :] = 0  # black
-
-    return color_map
+    anomaly_map = cv2.applyColorMap(anomaly_map, cv2.COLORMAP_JET)
+    anomaly_map = cv2.cvtColor(anomaly_map, cv2.COLOR_BGR2RGB)
+    return anomaly_map
 
 
 def superimpose_anomaly_map(
-    anomaly_map: np.ndarray,
-    image: np.ndarray,
-    alpha: float = 0.4,
-    gamma: int = 0,
-    normalize: bool | tuple[float, float] = False,
-    ignore_low_scores: bool = True,
+    anomaly_map: np.ndarray, image: np.ndarray, alpha: float = 0.4, gamma: int = 0, normalize: bool = False
 ) -> np.ndarray:
     """Superimpose anomaly map on top of in the input image.
+
     Args:
         anomaly_map (np.ndarray): Anomaly map
         image (np.ndarray): Input image
@@ -220,39 +117,16 @@ def superimpose_anomaly_map(
             to smooth the processing. Defaults to 0. Overall,
             the formula to compute the blended image is
             I' = (alpha*I1 + (1-alpha)*I2) + gamma
-        normalize (bool | tuple[float, float], optional): it can work on three modes:
-            1) (default) bool and True: normalize the anomaly map with its own min/max
-            2) bool and False: values in `anomaly_map` are expected to be \\in [0, 1] (it will be asserted)
-            3) tuple[float, float]: values are expected to be anomaly scores lower and upper bounds; in this case
-                                    these values are used to rescale the scores \in [0, 1] and whatever is
-                                    below/above the lower/upper bound is coloured in black/white.
-        ignore_low_scores (bool, optional): only used when `normalize` is in the case 3 above;
-                                            if true, any score below the lower bound is made transparent
+        normalize: whether or not the anomaly maps should
+            be normalized to image min-max
+
 
     Returns:
         np.ndarray: Image with anomaly map superimposed on top of it.
     """
 
-    _validate_image(image)
-    _validate_anomaly_map(anomaly_map)
-
-    if anomaly_map.shape != image.shape[:2]:
-        raise Exception()
-
-    # there was a `anomaly_map.squeeze()` before --> do something about it? now it is validated to be squeezed
-    color_map = anomaly_map_to_color_map(anomaly_map, normalize=normalize)
-    superimposed_map = cv2.addWeighted(color_map, alpha, image, (1 - alpha), gamma)
-
-    if isinstance(normalize, bool) or not ignore_low_scores:
-        return superimposed_map
-
-    # when bounds are given, make anything under the lower bound transparent
-    lower_bound, _ = normalize
-    under_mask = anomaly_map < lower_bound
-
-    # repaint the image over the pixels with score below the lower bound (as if the heatmap was transparent)
-    superimposed_map[under_mask] = image[under_mask]
-
+    anomaly_map = anomaly_map_to_color_map(anomaly_map.squeeze(), normalize=normalize)
+    superimposed_map = cv2.addWeighted(anomaly_map, alpha, image, (1 - alpha), gamma)
     return superimposed_map
 
 
