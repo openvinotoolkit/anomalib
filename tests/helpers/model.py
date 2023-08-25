@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import os
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -94,7 +94,7 @@ def setup_model_train(
                 callbacks.pop(index)
                 break
         model_checkpoint = ModelCheckpoint(
-            dirpath=os.path.join(config.project.path, "weights"),
+            dirpath=str(Path(config.project.path) / "weights"),
             filename="last",
             monitor=None,
             mode="max",
@@ -129,7 +129,7 @@ def model_load_test(config: Union[DictConfig, ListConfig], datamodule: Lightning
     """
     loaded_model = get_model(config)  # get new model
 
-    ckpt_path = str(os.path.join(config.project.path, "weights/last.ckpt"))
+    ckpt_path = str(Path(config.project.path) / "weights" / "last.ckpt")
 
     callbacks = get_callbacks(config)
 

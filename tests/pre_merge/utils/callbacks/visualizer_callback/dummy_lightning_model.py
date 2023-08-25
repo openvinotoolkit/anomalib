@@ -61,11 +61,5 @@ class DummyModule(AnomalyModule):
         )
         return outputs
 
-    def on_validation_epoch_end(self, outputs):
-        return None
-
-    def on_test_epoch_end(self, outputs):
-        return None
-
     def configure_optimizers(self):
         return None
