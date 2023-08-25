@@ -9,7 +9,46 @@ import warnings
 
 import numpy as np
 import torch
+from albumentations.core.transforms_interface import ImageOnlyTransform
 from torch import Tensor
+
+
+class BGRToRGB(ImageOnlyTransform):
+    """_summary_
+
+    Args:
+        always_apply (bool, optional): Always apply . Defaults to True.
+        p (float, optional): Probability. Defaults to 1.0.
+
+    Raises:
+        TypeError:
+
+    Examples:
+        >>> import cv2
+        >>> import numpy as np
+        >>> from anomalib.data.transforms import BGRToRGB
+
+        >>> bgr = np.random.randint(0, 255, (1080, 1920, 3), dtype=np.uint8)
+        >>> rgb = BGRToRGB()(image=bgr)["image"]
+        >>> expected_rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+        >>> np.allclose(rgb, expected_rgb)
+        True
+
+    Returns:
+        np.ndarray: RGB image converted from BGR.
+    """
+
+    def __init__(self, always_apply=True, p=1.0) -> None:
+        super(BGRToRGB, self).__init__(always_apply=always_apply, p=p)
+
+    def apply(self, img, **params) -> np.ndarray:
+        if len(img.shape) != 3 and img.shape[-1] != 3:
+            raise TypeError("BGR2RGB transformation expects 3-dim images with the last dimension equal to 3.")
+
+        return img[..., [2, 1, 0]]
+
+    def get_transform_init_args_names(self):
+        return ()
 
 
 class Denormalize:

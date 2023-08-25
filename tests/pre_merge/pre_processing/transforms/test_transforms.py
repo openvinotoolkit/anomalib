@@ -16,6 +16,7 @@ import skimage
 from torch import Tensor
 
 from anomalib.data.utils import get_transforms
+from anomalib.pre_processing.transforms import BGRToRGB
 
 
 def test_transforms_and_image_size_cannot_be_none():
@@ -98,3 +99,18 @@ def test_to_tensor_returns_correct_type():
     pre_processor = get_transforms(config=None, image_size=256, to_tensor=False)
     transformed = pre_processor(image=image)["image"]
     assert isinstance(transformed, np.ndarray)
+
+
+# Test bg2rgb conversion is working as expected with BGR2RGB transform
+def test_bgr2rgb_transform_converts_channels() -> None:
+    """Test that the BGR2RGB transform converts the channels in the correct order."""
+    # Create a random numpy image of size (1080, 1920, 3)
+    image = np.random.randint(0, 255, (1080, 1920, 3), dtype=np.uint8)
+
+    # Apply the transform
+    transformed_image = BGRToRGB()(image=image)["image"]
+
+    # Check the channels are in the correct order
+    assert (transformed_image[..., 0] == image[..., 2]).all()
+    assert (transformed_image[..., 1] == image[..., 1]).all()
+    assert (transformed_image[..., 2] == image[..., 0]).all()
