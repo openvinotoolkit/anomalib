@@ -20,8 +20,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Replace cdist in Patchcore by @blaz-r in https://github.com/openvinotoolkit/anomalib/pull/1267
 - Ignore hidden directories when creating Folder dataset by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1268
 
-### Deprecated
-
 ### Fixed
 
 - Fix typechecking error for toch.onnx.export by @ORippler in https://github.com/openvinotoolkit/anomalib/pull/1159
