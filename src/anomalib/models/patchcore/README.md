@@ -12,7 +12,7 @@ During inference this memory bank is coreset subsampled. Coreset subsampling gen
 
 ## Architecture
 
-![PatchCore Architecture](../../../../docs/source/images/patchcore/architecture.jpg "PatchCore Architecture")
+![PatchCore Architecture](https://raw.githubusercontent.com/openvinotoolkit/anomalib/main/docs/source/images/patchcore/architecture.jpg "PatchCore Architecture")
 
 ## Usage
 

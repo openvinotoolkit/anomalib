@@ -34,7 +34,7 @@
 /src/anomalib/models/cflow                                  @ashwinvaidya17
 /src/anomalib/models/csflow                                 @ashwinvaidya17
 /src/anomalib/models/dfkde                                  @djdameln
-/src/anomalib/models/dfm                                    @djdameln @nahuja-intel
+/src/anomalib/models/dfm                                    @djdameln
 /src/anomalib/models/draem                                  @djdameln
 /src/anomalib/models/fastflow                               @samet-akcay
 /src/anomalib/models/ganomaly                               @ashwinvaidya17

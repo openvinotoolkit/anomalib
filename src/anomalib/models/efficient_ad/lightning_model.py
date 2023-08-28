@@ -1,4 +1,4 @@
-"""EfficientAD: Accurate Visual Anomaly Detection at Millisecond-Level Latencies.
+"""EfficientAd: Accurate Visual Anomaly Detection at Millisecond-Level Latencies.
 https://arxiv.org/pdf/2303.14535.pdf
 """
 
@@ -24,7 +24,7 @@ from torchvision.datasets import ImageFolder
 from anomalib.data.utils import DownloadInfo, download_and_extract
 from anomalib.models.components import AnomalyModule
 
-from .torch_model import EfficientADModel, EfficientADModelSize
+from .torch_model import EfficientAdModel, EfficientAdModelSize, reduce_tensor_elems
 
 logger = logging.getLogger(__name__)
 
@@ -49,8 +49,8 @@ class TransformsWrapper:
         return self.transforms(image=np.array(img))
 
 
-class EfficientAD(AnomalyModule):
-    """PL Lightning Module for the EfficientAD algorithm.
+class EfficientAd(AnomalyModule):
+    """PL Lightning Module for the EfficientAd algorithm.
 
     Args:
         teacher_file_name (str): path to the pre-trained teacher model
@@ -60,6 +60,8 @@ class EfficientAD(AnomalyModule):
         lr (float): learning rate
         weight_decay (float): optimizer weight decay
         padding (bool): use padding in convoluional layers
+        pad_maps (bool): relevant if padding is set to False. In this case, pad_maps = True pads the
+            output anomaly maps so that their size matches the size in the padding = True case.
         batch_size (int): batch size for imagenet dataloader
     """
 
@@ -67,20 +69,22 @@ class EfficientAD(AnomalyModule):
         self,
         teacher_out_channels: int,
         image_size: tuple[int, int],
-        model_size: EfficientADModelSize = EfficientADModelSize.M,
+        model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         lr: float = 0.0001,
         weight_decay: float = 0.00001,
         padding: bool = False,
+        pad_maps: bool = True,
         batch_size: int = 1,
     ) -> None:
         super().__init__()
 
         self.model_size = model_size
-        self.model: EfficientADModel = EfficientADModel(
+        self.model: EfficientAdModel = EfficientAdModel(
             teacher_out_channels=teacher_out_channels,
             input_size=image_size,
             model_size=model_size,
             padding=padding,
+            pad_maps=pad_maps,
         )
         self.batch_size = batch_size
         self.image_size = image_size
@@ -120,7 +124,7 @@ class EfficientAD(AnomalyModule):
 
     @torch.no_grad()
     def teacher_channel_mean_std(self, dataloader: DataLoader) -> dict[str, Tensor]:
-        """Calculate the the mean and std of the teacher models activations.
+        """Calculate the mean and std of the teacher models activations.
 
         Args:
             dataloader (DataLoader): Dataloader of the respective dataset.
@@ -170,21 +174,37 @@ class EfficientAD(AnomalyModule):
                     map_ae = output["map_ae"]
                     maps_st.append(map_st)
                     maps_ae.append(map_ae)
-        maps_st = torch.cat(maps_st)
-        maps_ae = torch.cat(maps_ae)
-        qa_st = torch.quantile(maps_st, q=0.9).to(self.device)
-        qb_st = torch.quantile(maps_st, q=0.995).to(self.device)
-        qa_ae = torch.quantile(maps_ae, q=0.9).to(self.device)
-        qb_ae = torch.quantile(maps_ae, q=0.995).to(self.device)
+
+        qa_st, qb_st = self._get_quantiles_of_maps(maps_st)
+        qa_ae, qb_ae = self._get_quantiles_of_maps(maps_ae)
         return {"qa_st": qa_st, "qa_ae": qa_ae, "qb_st": qb_st, "qb_ae": qb_ae}
 
+    def _get_quantiles_of_maps(self, maps: list[Tensor]) -> tuple[Tensor, Tensor]:
+        """Calculate 90% and 99.5% quantiles of the given anomaly maps.
+
+        If the total number of elements in the given maps is larger than 16777216
+        the returned quantiles are computed on a random subset of the given
+        elements.
+
+        Args:
+            maps (list[Tensor]): List of anomaly maps.
+
+        Returns:
+            tuple[Tensor, Tensor]: Two scalars - the 90% and the 99.5% quantile.
+        """
+
+        maps_flat = reduce_tensor_elems(torch.cat(maps))
+        qa = torch.quantile(maps_flat, q=0.9).to(self.device)
+        qb = torch.quantile(maps_flat, q=0.995).to(self.device)
+        return qa, qb
+
     def configure_optimizers(self) -> optim.Optimizer:
-        optimizer = optim.AdamW(
+        optimizer = optim.Adam(
             list(self.model.student.parameters()) + list(self.model.ae.parameters()),
             lr=self.lr,
             weight_decay=self.weight_decay,
         )
-        num_steps = max(
+        num_steps = min(
             self.trainer.max_steps, self.trainer.max_epochs * len(self.trainer.datamodule.train_dataloader())
         )
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=int(0.95 * num_steps), gamma=0.1)
@@ -197,7 +217,7 @@ class EfficientAD(AnomalyModule):
             self.model.mean_std.update(channel_mean_std)
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> dict[str, Tensor]:
-        """Training step for EfficintAD returns the  student, autoencoder and combined loss.
+        """Training step for EfficientAd returns the student, autoencoder and combined loss.
 
         Args:
             batch (batch: dict[str, str | Tensor]): Batch containing image filename, image, label and mask
@@ -228,11 +248,11 @@ class EfficientAD(AnomalyModule):
         Calculate the feature map quantiles of the validation dataset and push to the model.
         """
         if (self.current_epoch + 1) == self.trainer.max_epochs:
-            map_norm_quantiles = self.map_norm_quantiles(self.trainer.datamodule.train_dataloader())
+            map_norm_quantiles = self.map_norm_quantiles(self.trainer.datamodule.val_dataloader())
             self.model.quantiles.update(map_norm_quantiles)
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
-        """Validation Step of EfficientAD returns anomaly maps for the input image batch
+        """Validation Step of EfficientAd returns anomaly maps for the input image batch
 
         Args:
           batch (dict[str, str | Tensor]): Input batch
@@ -247,8 +267,8 @@ class EfficientAD(AnomalyModule):
         return batch
 
 
-class EfficientadLightning(EfficientAD):
-    """PL Lightning Module for the EfficientAD Algorithm.
+class EfficientAdLightning(EfficientAd):
+    """PL Lightning Module for the EfficientAd Algorithm.
 
     Args:
         hparams (DictConfig | ListConfig): Model params
@@ -261,6 +281,7 @@ class EfficientadLightning(EfficientAD):
             lr=hparams.model.lr,
             weight_decay=hparams.model.weight_decay,
             padding=hparams.model.padding,
+            pad_maps=hparams.model.pad_maps,
             image_size=hparams.dataset.image_size,
             batch_size=hparams.dataset.train_batch_size,
         )
