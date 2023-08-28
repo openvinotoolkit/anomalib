@@ -125,9 +125,7 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
                 )
             )
         if config.optimization.export_mode is not None:
-            from .export import (  # pylint: disable=import-outside-toplevel
-                ExportCallback,
-            )
+            from .export import ExportCallback  # pylint: disable=import-outside-toplevel
 
             logger.info("Setting model export to %s", config.optimization.export_mode)
             callbacks.append(
@@ -178,10 +176,10 @@ def add_visualizer_callback(callbacks: list[Callback], config: DictConfig | List
             if "local" not in config.project.log_images_to or len(config.project.log_images_to) > 1:
                 config.visualization["log_images"] = True
         config.visualization.task = config.dataset.task
-        config.visualization.inputs_are_normalized = not config.model.normalization_method == "none"
+        config.visualization.normalize_images = config.model.normalization_method == "none"
     else:
         config.visualization.task = config.data.init_args.task
-        config.visualization.inputs_are_normalized = not config.post_processing.normalization_method == "none"
+        config.visualization.normalize_images = config.post_processing.normalization_method == "none"
 
     if config.visualization.log_images or config.visualization.save_images or config.visualization.show_images:
         image_save_path = config.visualization.image_save_path or config.project.path + "/images"
@@ -191,7 +189,7 @@ def add_visualizer_callback(callbacks: list[Callback], config: DictConfig | List
                     task=config.visualization.task,
                     mode=config.visualization.mode,
                     image_save_path=image_save_path,
-                    inputs_are_normalized=config.visualization.inputs_are_normalized,
+                    normalize_images=config.visualization.normalize_images,
                     show_images=config.visualization.show_images,
                     log_images=config.visualization.log_images,
                     save_images=config.visualization.save_images,

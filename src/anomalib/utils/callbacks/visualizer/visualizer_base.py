@@ -31,7 +31,7 @@ class BaseVisualizerCallback(Callback):
         task: TaskType,
         mode: VisualizationMode,
         image_save_path: str,
-        inputs_are_normalized: bool = True,
+        normalize_images: bool = True,
         show_images: bool = False,
         log_images: bool = True,
         save_images: bool = True,
@@ -45,13 +45,16 @@ class BaseVisualizerCallback(Callback):
                 f"Unknown task type: {mode}. Please choose one of ['classification', 'detection', 'segmentation']"
             )
         self.task = task
-        self.inputs_are_normalized = inputs_are_normalized
         self.show_images = show_images
         self.log_images = log_images
         self.save_images = save_images
         self.image_save_path = Path(image_save_path)
 
-        self.visualizer = Visualizer(mode, task)
+        self.visualizer = Visualizer(
+            mode,
+            task,
+            normalize_images,
+        )
 
     def _add_to_logger(
         self,

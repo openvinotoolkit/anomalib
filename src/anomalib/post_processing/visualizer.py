@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Iterator
@@ -26,29 +25,43 @@ from anomalib.post_processing.post_process import (
 )
 
 
-@dataclass
 class ImageResult:
     """Collection of data needed to visualize the predictions for an image."""
 
-    image: np.ndarray
-    pred_score: float
-    pred_label: str
-    anomaly_map: np.ndarray | None = None
-    gt_mask: np.ndarray | None = None
-    pred_mask: np.ndarray | None = None
-    gt_boxes: np.ndarray | None = None
-    pred_boxes: np.ndarray | None = None
-    box_labels: np.ndarray | None = None
+    def __init__(
+        self,
+        image: np.ndarray,
+        pred_score: float,
+        pred_label: str,
+        anomaly_map: np.ndarray | None = None,
+        gt_mask: np.ndarray | None = None,
+        pred_mask: np.ndarray | None = None,
+        gt_boxes: np.ndarray | None = None,
+        pred_boxes: np.ndarray | None = None,
+        box_labels: np.ndarray | None = None,
+        normalize: bool = False,
+    ):
+        self.image = image
+        self.pred_score = pred_score
+        self.pred_label = pred_label
+        self.anomaly_map = anomaly_map
+        self.gt_mask = gt_mask
+        self.pred_mask = pred_mask
+        self.gt_boxes = gt_boxes
+        self.pred_boxes = pred_boxes
+        self.box_labels = box_labels
+        self.normalize = normalize
 
-    heat_map: np.ndarray = field(init=False)
-    segmentations: np.ndarray = field(init=False)
-    normal_boxes: np.ndarray = field(init=False)
-    anomalous_boxes: np.ndarray = field(init=False)
+        self.heat_map: np.ndarray
+        self.segmentations: np.ndarray
+        self.normal_boxes: np.ndarray
+        self.anomalous_boxes: np.ndarray
+        self.initialize()
 
-    def __post_init__(self) -> None:
+    def initialize(self) -> None:
         """Generate heatmap overlay and segmentations, convert masks to images."""
         if self.anomaly_map is not None:
-            self.heat_map = superimpose_anomaly_map(self.anomaly_map, self.image, normalize=False)
+            self.heat_map = superimpose_anomaly_map(self.anomaly_map, self.image, normalize=self.normalize)
         if self.pred_mask is not None and self.pred_mask.max() <= 1.0:
             self.pred_mask *= 255
             self.segmentations = mark_boundaries(self.image, self.pred_mask, color=(1, 0, 0), mode="thick")
@@ -60,6 +73,20 @@ class ImageResult:
             assert self.box_labels is not None, "Box labels must be provided when box locations are provided."
             self.normal_boxes = self.pred_boxes[~self.box_labels.astype(bool)]
             self.anomalous_boxes = self.pred_boxes[self.box_labels.astype(bool)]
+
+    def __repr__(self) -> str:
+        """Return a string representation of the object."""
+        repr_str = (
+            f"ImageResult(image={self.image}, pred_score={self.pred_score}, pred_label={self.pred_label}, "
+            f"anomaly_map={self.anomaly_map}, gt_mask={self.gt_mask}, pred_mask={self.pred_mask}, "
+            f"gt_boxes={self.gt_boxes}, pred_boxes={self.pred_boxes}, box_labels={self.box_labels}"
+        )
+        repr_str += f", heat_map={self.heat_map}" if hasattr(self, "heat_map") else ""
+        repr_str += f", segmentations={self.segmentations}" if hasattr(self, "segmentations") else ""
+        repr_str += f", normal_boxes={self.normal_boxes}" if hasattr(self, "normal_boxes") else ""
+        repr_str += f", anomalous_boxes={self.anomalous_boxes}" if hasattr(self, "anomalous_boxes") else ""
+        repr_str += ")"
+        return repr_str
 
 
 class VisualizationMode(str, Enum):
@@ -75,9 +102,10 @@ class Visualizer:
     Args:
         mode (VisualizationMode): visualization mode, either "full" or "simple"
         task (TaskType): task type "segmentation", "detection" or "classification"
+        normalize (bool): whether to normalize the images or not. Defaults to False.
     """
 
-    def __init__(self, mode: VisualizationMode, task: TaskType) -> None:
+    def __init__(self, mode: VisualizationMode, task: TaskType, normalize: bool = False) -> None:
         if mode not in (VisualizationMode.FULL, VisualizationMode.SIMPLE):
             raise ValueError(f"Unknown visualization mode: {mode}. Please choose one of ['full', 'simple']")
         self.mode = mode
@@ -86,6 +114,7 @@ class Visualizer:
                 f"Unknown task type: {mode}. Please choose one of ['classification', 'detection', 'segmentation']"
             )
         self.task = task
+        self.normalize_images = normalize
 
     def visualize_batch(self, batch: dict) -> Iterator[np.ndarray]:
         """Generator that yields a visualization result for each item in the batch.
@@ -118,6 +147,7 @@ class Visualizer:
                 gt_boxes=batch["boxes"][i].cpu().numpy() if "boxes" in batch else None,
                 pred_boxes=batch["pred_boxes"][i].cpu().numpy() if "pred_boxes" in batch else None,
                 box_labels=batch["box_labels"][i].cpu().numpy() if "box_labels" in batch else None,
+                normalize=self.normalize_images,
             )
             yield self.visualize_image(image_result)
 
