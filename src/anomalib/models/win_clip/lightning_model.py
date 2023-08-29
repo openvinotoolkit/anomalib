@@ -33,7 +33,7 @@ class WinClip(AnomalyModule):
         n_shot: int,
     ) -> None:
         super().__init__()
-        self.model = WinClipAD(torch.device("cuda"))
+        self.model = WinClipAD()
         self.class_name = class_name
         self.n_shot = n_shot
 
