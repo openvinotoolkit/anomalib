@@ -37,7 +37,8 @@ class WinClip(AnomalyModule):
         self.class_name = class_name
         self.n_shot = n_shot
 
-    def on_fit_start(self) -> None:
+    def setup(self, stage) -> None:
+        del stage
         self.model.build_text_feature_gallery(self.class_name)
 
     @staticmethod
@@ -51,9 +52,6 @@ class WinClip(AnomalyModule):
         if self.n_shot:
             self.model.build_image_feature_gallery(batch["image"][: self.n_shot])
         return
-
-    def on_validation_start(self) -> None:
-        pass
 
     def validation_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Validation Step of WinCLIP"""

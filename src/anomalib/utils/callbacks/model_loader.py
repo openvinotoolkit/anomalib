@@ -28,5 +28,8 @@ class LoadModelCallback(Callback):
         """
         del trainer, stage  # These variables are not used.
 
-        logger.info("Loading the model from %s", self.weights_path)
-        pl_module.load_state_dict(torch.load(self.weights_path, map_location=pl_module.device)["state_dict"])
+        if not len(self.weights_path):
+            logger.warning("Weights path is empty. Not loading model from checkpoint.")
+        else:
+            logger.info("Loading the model from %s", self.weights_path)
+            pl_module.load_state_dict(torch.load(self.weights_path, map_location=pl_module.device)["state_dict"])
