@@ -7,6 +7,7 @@ import logging
 
 from lightning import Callback
 from lightning.pytorch import Trainer
+from lightning.pytorch.trainer.connectors.callback_connector import _CallbackConnector
 from omegaconf import DictConfig, ListConfig
 
 from anomalib.data import TaskType
@@ -14,7 +15,13 @@ from anomalib.models import AnomalyModule
 from anomalib.post_processing import NormalizationMethod
 from anomalib.utils.metrics.thresholding import BaseAnomalyThreshold, F1AdaptiveThreshold
 
-from .callbacks import MetricsManagerCallback, PostProcessorCallback, ThresholdingCallback, get_normalization_callback
+from .callbacks import (
+    MetricsManagerCallback,
+    PostProcessorCallback,
+    ThresholdingCallback,
+    get_normalization_callback,
+    get_visualization_callbacks,
+)
 
 log = logging.getLogger(__name__)
 
@@ -41,20 +48,23 @@ class AnomalibTrainer(Trainer):
         task: TaskType = TaskType.SEGMENTATION,
         image_metrics: list[str] | None = None,
         pixel_metrics: list[str] | None = None,
+        visualization: DictConfig | None = None,
         **kwargs,
     ) -> None:
+        super().__init__(callbacks=callbacks, **kwargs)
         self.normalizer = normalizer
         self.threshold = threshold
         self.task = task
         self.image_metric_names = image_metrics
         self.pixel_metric_names = pixel_metrics
-        super().__init__(callbacks=self._setup_callbacks(callbacks), **kwargs)
+        self.visualization = visualization
 
         self.lightning_module: AnomalyModule
 
-    def _setup_callbacks(self, callbacks: list[Callback]) -> list[Callback]:
+        self._setup_callbacks()
+
+    def _setup_callbacks(self):
         """Setup callbacks for the trainer."""
-        # Note: this needs to be changed when normalization is part of the trainer
         _callbacks: list[Callback] = [PostProcessorCallback()]
 
         normalization_callback = get_normalization_callback(self.normalizer)
@@ -63,4 +73,13 @@ class AnomalibTrainer(Trainer):
 
         _callbacks.append(ThresholdingCallback(self.threshold))
         _callbacks.append(MetricsManagerCallback(self.task, self.image_metric_names, self.pixel_metric_names))
-        return _callbacks + callbacks
+
+        if self.visualization is not None:
+            image_save_path = self.visualization.pop("image_save_path", None)
+            if image_save_path is None:
+                image_save_path = self.default_root_dir + "/images"
+            _callbacks += get_visualization_callbacks(
+                task=self.task, image_save_path=image_save_path, **self.visualization
+            )
+
+        self.callbacks = _CallbackConnector._reorder_callbacks(self.callbacks + _callbacks)

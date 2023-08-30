@@ -68,7 +68,8 @@ def train(args: Namespace):
         threshold=config.metrics.threshold,
         task=config.dataset.task,
         image_metrics=config.metrics.get("image", None),
-        pixel_metrics=config.metrics.get("pixel", None)
+        pixel_metrics=config.metrics.get("pixel", None),
+        visualization=config.visualization,
     )
 
     logger.info("Training the model.")
