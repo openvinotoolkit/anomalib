@@ -10,7 +10,7 @@ from lightning.pytorch import Trainer
 
 from anomalib.models import AnomalyModule
 
-from .processor import _ProcessorCallback
+from .callbacks import PostProcessorCallback
 
 log = logging.getLogger(__name__)
 
@@ -38,4 +38,4 @@ class AnomalibTrainer(Trainer):
     def _setup_callbacks(self, callbacks: list[Callback]) -> None:
         """Setup callbacks for the trainer."""
         # Note: this needs to be changed when normalization is part of the trainer
-        callbacks.insert(0, _ProcessorCallback())
+        callbacks.insert(0, PostProcessorCallback())

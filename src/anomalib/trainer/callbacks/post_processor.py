@@ -1,22 +1,61 @@
-"""Handles post-processing of the model's output."""
+"""Callback that attaches necessary pre/post-processing to the model."""
 
-# SPDX-License-Identifier: Apache-2.0
 # Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 
 from typing import Any
 
 import torch
+from lightning import Callback
 from lightning.pytorch import Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
+from anomalib import trainer
 from anomalib.data.utils import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
 from anomalib.models import AnomalyModule
 
 
-class PostProcessor:
-    """Callback that handles post-processing of the model outputs."""
+class PostProcessorCallback(Callback):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def on_validation_batch_end(
+        self,
+        trainer: "trainer.AnomalibTrainer",
+        pl_module: AnomalyModule,
+        outputs: STEP_OUTPUT | None,
+        batch: Any,
+        batch_idx: int,
+        dataloader_idx: int = 0,
+    ) -> None:
+        if outputs is not None:
+            self.process(trainer, pl_module, outputs)
+
+    def on_test_batch_end(
+        self,
+        trainer: "trainer.AnomalibTrainer",
+        pl_module: AnomalyModule,
+        outputs: STEP_OUTPUT | None,
+        batch: Any,
+        batch_idx: int,
+        dataloader_idx: int = 0,
+    ) -> None:
+        if outputs is not None:
+            self.process(trainer, pl_module, outputs)
+
+    def on_predict_batch_end(
+        self,
+        trainer: "trainer.AnomalibTrainer",
+        pl_module: AnomalyModule,
+        outputs: Any,
+        batch: Any,
+        batch_idx: int,
+        dataloader_idx: int = 0,
+    ) -> None:
+        if outputs is not None:
+            self.process(trainer, pl_module, outputs)
 
     def process(self, trainer: Trainer, pl_module: AnomalyModule, outputs: STEP_OUTPUT):
         if isinstance(outputs, dict):
