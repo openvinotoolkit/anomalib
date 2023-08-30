@@ -7,10 +7,12 @@ import logging
 
 from lightning import Callback
 from lightning.pytorch import Trainer
+from omegaconf import DictConfig
 
 from anomalib.models import AnomalyModule
+from anomalib.post_processing import NormalizationMethod
 
-from .callbacks import PostProcessorCallback
+from .callbacks import PostProcessorCallback, get_normalization_callback
 
 log = logging.getLogger(__name__)
 
@@ -28,14 +30,19 @@ class AnomalibTrainer(Trainer):
     def __init__(
         self,
         callbacks: list[Callback] = [],
+        normalizer: NormalizationMethod | DictConfig | Callback | str = NormalizationMethod.MIN_MAX,
         **kwargs,
     ) -> None:
-        self._setup_callbacks(callbacks)
-        super().__init__(callbacks=callbacks, **kwargs)
+        self.normalizer = normalizer
+        super().__init__(callbacks=self._setup_callbacks(callbacks), **kwargs)
 
         self.lightning_module: AnomalyModule
 
-    def _setup_callbacks(self, callbacks: list[Callback]) -> None:
+    def _setup_callbacks(self, callbacks: list[Callback]) -> list[Callback]:
         """Setup callbacks for the trainer."""
         # Note: this needs to be changed when normalization is part of the trainer
-        callbacks.insert(0, PostProcessorCallback())
+        _callbacks: list[Callback] = [PostProcessorCallback()]
+        normalization_callback = get_normalization_callback(self.normalizer)
+        if normalization_callback is not None:
+            _callbacks.append(normalization_callback)
+        return _callbacks + callbacks
