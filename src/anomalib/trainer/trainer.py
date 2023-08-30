@@ -9,11 +9,12 @@ from lightning import Callback
 from lightning.pytorch import Trainer
 from omegaconf import DictConfig, ListConfig
 
+from anomalib.data import TaskType
 from anomalib.models import AnomalyModule
 from anomalib.post_processing import NormalizationMethod
 from anomalib.utils.metrics.thresholding import BaseAnomalyThreshold, F1AdaptiveThreshold
 
-from .callbacks import PostProcessorCallback, ThresholdingCallback, get_normalization_callback
+from .callbacks import MetricsManagerCallback, PostProcessorCallback, ThresholdingCallback, get_normalization_callback
 
 log = logging.getLogger(__name__)
 
@@ -37,10 +38,16 @@ class AnomalibTrainer(Trainer):
         | DictConfig
         | ListConfig
         | str = F1AdaptiveThreshold(),
+        task: TaskType = TaskType.SEGMENTATION,
+        image_metrics: list[str] | None = None,
+        pixel_metrics: list[str] | None = None,
         **kwargs,
     ) -> None:
         self.normalizer = normalizer
         self.threshold = threshold
+        self.task = task
+        self.image_metric_names = image_metrics
+        self.pixel_metric_names = pixel_metrics
         super().__init__(callbacks=self._setup_callbacks(callbacks), **kwargs)
 
         self.lightning_module: AnomalyModule
@@ -55,4 +62,5 @@ class AnomalibTrainer(Trainer):
             _callbacks.append(normalization_callback)
 
         _callbacks.append(ThresholdingCallback(self.threshold))
+        _callbacks.append(MetricsManagerCallback(self.task, self.image_metric_names, self.pixel_metric_names))
         return _callbacks + callbacks

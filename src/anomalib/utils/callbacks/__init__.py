@@ -17,7 +17,6 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 from anomalib.deploy import ExportMode
 
 from .graph import GraphLogger
-from .metrics_configuration import MetricsConfigurationCallback
 from .model_loader import LoadModelCallback
 from .tiler_configuration import TilerConfigurationCallback
 from .timer import TimerCallback
@@ -27,7 +26,6 @@ __all__ = [
     "GraphLogger",
     "ImageVisualizerCallback",
     "LoadModelCallback",
-    "MetricsConfigurationCallback",
     "MetricVisualizerCallback",
     "TilerConfigurationCallback",
     "TimerCallback",
@@ -66,14 +64,6 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
     if "resume_from_checkpoint" in config.trainer.keys() and config.trainer.resume_from_checkpoint is not None:
         load_model = LoadModelCallback(config.trainer.resume_from_checkpoint)
         callbacks.append(load_model)
-
-    # Add metric configuration to the model via MetricsConfigurationCallback
-    metrics_callback = MetricsConfigurationCallback(
-        config.dataset.task,
-        config.metrics.get("image", None),
-        config.metrics.get("pixel", None),
-    )
-    callbacks.append(metrics_callback)
 
     add_visualizer_callback(callbacks, config)
 
