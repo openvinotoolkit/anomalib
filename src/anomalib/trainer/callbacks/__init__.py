@@ -5,5 +5,6 @@
 
 from .normalization import get_normalization_callback
 from .post_processor import PostProcessorCallback
+from .thresholding import ThresholdingCallback
 
-__all__ = ["PostProcessorCallback", "get_normalization_callback"]
+__all__ = ["PostProcessorCallback", "ThresholdingCallback", "get_normalization_callback"]
