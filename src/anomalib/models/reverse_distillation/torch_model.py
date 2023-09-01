@@ -45,12 +45,7 @@ class ReverseDistillationModel(nn.Module):
         self.bottleneck = get_bottleneck_layer(backbone)
         self.decoder = get_decoder(backbone)
 
-        if self.tiler:
-            image_size = (self.tiler.tile_size_h, self.tiler.tile_size_w)
-        else:
-            image_size = input_size
-
-        self.anomaly_map_generator = AnomalyMapGenerator(image_size=image_size, mode=anomaly_map_mode)
+        self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size, mode=anomaly_map_mode)
 
     def forward(self, images: Tensor) -> Tensor | list[Tensor] | tuple[list[Tensor]]:
         """Forward-pass images to the network.
@@ -73,11 +68,15 @@ class ReverseDistillationModel(nn.Module):
         encoder_features = list(encoder_features.values())
         decoder_features = self.decoder(self.bottleneck(encoder_features))
 
+        if self.tiler:
+            for i, features in enumerate(encoder_features):
+                encoder_features[i] = self.tiler.untile(features)
+            for i, features in enumerate(decoder_features):
+                decoder_features[i] = self.tiler.untile(features)
+
         if self.training:
             output = encoder_features, decoder_features
         else:
             output = self.anomaly_map_generator(encoder_features, decoder_features)
-            if self.tiler:
-                output = self.tiler.untile(output)
 
         return output
