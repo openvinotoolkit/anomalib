@@ -54,6 +54,8 @@ class EfficientAD(AnomalyModule):
     """PL Lightning Module for the EfficientAD algorithm.
 
     Args:
+        pretrained_models_dir (str): directory containing pre-trained teacher file
+        imagenette_dir(str): directory containing imagenette dataset
         teacher_file_name (str): path to the pre-trained teacher model
         teacher_out_channels (int): number of convolution output channels
         image_size (tuple): size of input images
@@ -67,6 +69,7 @@ class EfficientAD(AnomalyModule):
     def __init__(
         self,
         pretrained_models_dir: str,
+        imagenette_dir: str,
         teacher_out_channels: int,
         image_size: tuple[int, int],
         model_size: EfficientADModelSize = EfficientADModelSize.M,
@@ -89,6 +92,7 @@ class EfficientAD(AnomalyModule):
         self.lr = lr
         self.weight_decay = weight_decay
         self.pretrained_models_dir = Path(pretrained_models_dir)
+        self.imagenette_dir = Path(imagenette_dir)
 
         self.prepare_pretrained_model()
         self.prepare_imagenette_data()
@@ -115,10 +119,11 @@ class EfficientAD(AnomalyModule):
             ]
         )
 
-        imagenet_dir = Path("/home/apolidori/shared/generic/imagenette_efficientad")
-        if not imagenet_dir.is_dir():
-            download_and_extract(imagenet_dir, IMAGENETTE_DOWNLOAD_INFO)
-        imagenet_dataset = ImageFolder(imagenet_dir, transform=TransformsWrapper(t=self.data_transforms_imagenet))
+        if not self.imagenette_dir.is_dir():
+            download_and_extract(self.imagenette_dir, IMAGENETTE_DOWNLOAD_INFO)
+        imagenet_dataset = ImageFolder(
+            self.imagenette_dir, transform=TransformsWrapper(t=self.data_transforms_imagenet)
+        )
         self.imagenet_loader = DataLoader(imagenet_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True)
         self.imagenet_iterator = iter(self.imagenet_loader)
 
@@ -292,6 +297,7 @@ class EfficientadLightning(EfficientAD):
             image_size=hparams.model.image_size,
             batch_size=hparams.model.train_batch_size,
             pretrained_models_dir=hparams.model.pretrained_models_dir,
+            imagenette_dir=hparams.model.imagenette_dir,
         )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)

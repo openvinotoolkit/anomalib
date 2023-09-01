@@ -29,6 +29,7 @@ model:
   image_size: [256, 256]
   train_batch_size: 1
   pretrained_models_dir: ${oc.env:HOME}/shared/aigo-studio-models/efficient_ad
+  imagenette_dir: ${oc.env:HOME}/shared/generic/imagenette_efficientad
   # generic params
   normalization_method: min_max # options: [null, min_max, cdf]
 
