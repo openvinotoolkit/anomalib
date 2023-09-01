@@ -1,8 +1,8 @@
 dataset:
   name: mvtec
   format: mvtec
-  path: /home/apolidori/
-  category: ghidini
+  path: ./datasets/MVTec
+  category: bottle
   task: segmentation
   train_batch_size: 1
   eval_batch_size: 16
