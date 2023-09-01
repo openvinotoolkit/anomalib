@@ -32,7 +32,6 @@ def test_pro():
     # ground truth mask is int type
     labels = labels.type(torch.int32)
 
-
     preds = (torch.arange(10) / 10) + 0.05
     # metrics receive squeezed predictions (N, H, W)
     preds = preds.unsqueeze(1).repeat(1, 5).view(1, 10, 5)
