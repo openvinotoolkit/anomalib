@@ -22,6 +22,7 @@ from torch import Tensor, nn
 
 from anomalib.models.components.flow import AllInOneBlock
 from anomalib.models.fastflow.anomaly_map import AnomalyMapGenerator
+from anomalib.pre_processing import Tiler
 
 
 def subnet_conv_func(kernel_size: int, hidden_ratio: float) -> Callable:
@@ -99,6 +100,7 @@ class FastflowModel(nn.Module):
 
     Args:
         input_size (tuple[int, int]): Model input size.
+        image_size (tuple[int, int]): Original image size (needed in case of tiling).
         backbone (str): Backbone CNN network
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         flow_steps (int, optional): Flow steps.
@@ -112,6 +114,7 @@ class FastflowModel(nn.Module):
     def __init__(
         self,
         input_size: tuple[int, int],
+        image_size: tuple[int, int],
         backbone: str,
         pre_trained: bool = True,
         flow_steps: int = 8,
@@ -119,6 +122,7 @@ class FastflowModel(nn.Module):
         hidden_ratio: float = 1.0,
     ) -> None:
         super().__init__()
+        self.tiler: Tiler | None = None
 
         self.input_size = input_size
 
@@ -165,7 +169,7 @@ class FastflowModel(nn.Module):
                     flow_steps=flow_steps,
                 )
             )
-        self.anomaly_map_generator = AnomalyMapGenerator(input_size=input_size)
+        self.anomaly_map_generator = AnomalyMapGenerator(input_size=image_size)
 
     def forward(self, input_tensor: Tensor) -> Tensor | list[Tensor] | tuple[list[Tensor]]:
         """Forward-Pass the input to the FastFlow Model.
@@ -180,6 +184,9 @@ class FastflowModel(nn.Module):
         """
 
         return_val: Tensor | list[Tensor] | tuple[list[Tensor]]
+
+        if self.tiler:
+            input_tensor = self.tiler.tile(input_tensor)
 
         self.feature_extractor.eval()
         if isinstance(self.feature_extractor, VisionTransformer):
@@ -202,6 +209,11 @@ class FastflowModel(nn.Module):
         return_val = (hidden_variables, log_jacobians)
 
         if not self.training:
+            # only untile non-training data because Jacobians can't be untiled
+            if self.tiler:
+                for i, data in enumerate(hidden_variables):
+                    hidden_variables[i] = self.tiler.untile(data)
+
             return_val = self.anomaly_map_generator(hidden_variables)
 
         return return_val
