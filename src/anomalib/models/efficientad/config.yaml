@@ -1,8 +1,8 @@
 dataset:
   name: mvtec
   format: mvtec
-  path: ./datasets/MVTec
-  category: bottle
+  path: /home/apolidori/
+  category: ghidini
   task: segmentation
   train_batch_size: 1
   eval_batch_size: 16
@@ -18,6 +18,7 @@ dataset:
   val_split_mode: same_as_test # options: [same_as_test, from_test, synthetic]
   val_split_ratio: 0.5 # fraction of train/test images held out for validation (usage depends on val_split_mode)
 
+
 model:
   name: efficientad
   teacher_out_channels: 384
@@ -25,6 +26,9 @@ model:
   lr: 0.0001
   weight_decay: 0.00001
   padding: true
+  image_size: [256, 256]
+  train_batch_size: 1
+  pretrained_models_dir: ${oc.env:HOME}/shared/aigo-studio-models/efficient_ad
   # generic params
   normalization_method: min_max # options: [null, min_max, cdf]
 

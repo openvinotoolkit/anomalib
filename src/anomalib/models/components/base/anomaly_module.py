@@ -170,7 +170,7 @@ class AnomalyModule(pl.LightningModule, ABC):
             counter = 0
 
             for output in outputs:
-                for (anomaly_score, gt_label) in zip(output["pred_scores"], output["label"]):
+                for anomaly_score, gt_label in zip(output["pred_scores"], output["label"]):
                     pred_label = int(anomaly_score >= self.image_metrics.F1Score.threshold)
                     if gt_label == 0 and pred_label == 1:
                         self.false_bad += 1
@@ -178,7 +178,7 @@ class AnomalyModule(pl.LightningModule, ABC):
                         self.false_good += 1
 
                 if "mask" in output.keys():
-                    for (anomaly_map, mask) in zip(output["anomaly_maps"], output["mask"]):
+                    for anomaly_map, mask in zip(output["anomaly_maps"], output["mask"]):
                         dice_score += 1 - dice(anomaly_map >= self.pixel_metrics.F1Score.threshold, mask)
                         counter += 1
 

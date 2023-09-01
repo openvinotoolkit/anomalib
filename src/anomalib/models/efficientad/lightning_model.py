@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+import itertools
 import albumentations as A
 import numpy as np
 import torch
@@ -65,6 +66,7 @@ class EfficientAD(AnomalyModule):
 
     def __init__(
         self,
+        pretrained_models_dir: str,
         teacher_out_channels: int,
         image_size: tuple[int, int],
         model_size: EfficientADModelSize = EfficientADModelSize.M,
@@ -86,16 +88,16 @@ class EfficientAD(AnomalyModule):
         self.image_size = image_size
         self.lr = lr
         self.weight_decay = weight_decay
+        self.pretrained_models_dir = Path(pretrained_models_dir)
 
         self.prepare_pretrained_model()
         self.prepare_imagenette_data()
 
     def prepare_pretrained_model(self) -> None:
-        pretrained_models_dir = Path("./pre_trained/")
-        if not pretrained_models_dir.is_dir():
-            download_and_extract(pretrained_models_dir, WEIGHTS_DOWNLOAD_INFO)
+        if not self.pretrained_models_dir.is_dir():
+            download_and_extract(self.pretrained_models_dir, WEIGHTS_DOWNLOAD_INFO)
         teacher_path = (
-            pretrained_models_dir / "efficientad_pretrained_weights" / f"pretrained_teacher_{self.model_size}.pth"
+            self.pretrained_models_dir / "efficientad_pretrained_weights" / f"nelson_teacher_{self.model_size}.pth"
         )
         logger.info(f"Load pretrained teacher model from {teacher_path}")
         self.model.teacher.load_state_dict(torch.load(teacher_path, map_location=torch.device(self.device)))
@@ -106,12 +108,14 @@ class EfficientAD(AnomalyModule):
                 A.Resize(self.image_size[0] * 2, self.image_size[1] * 2),  # resizing it to 512 × 512,
                 A.ToGray(p=0.3),  # converting it to gray scale with a probability of 0.3
                 A.CenterCrop(self.image_size[0], self.image_size[1]),  # and cropping the center 256 × 256 pixels
-                A.ToFloat(always_apply=False, p=1.0, max_value=255),
+                # TODO: Anomalib version expects only a ToFloat. The Imagenet normalization is performed inside the forward
+                # A.ToFloat(always_apply=False, p=1.0, max_value=255),
+                A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
                 ToTensorV2(),
             ]
         )
 
-        imagenet_dir = Path("./datasets/imagenette")
+        imagenet_dir = Path("/home/apolidori/shared/generic/imagenette_efficientad")
         if not imagenet_dir.is_dir():
             download_and_extract(imagenet_dir, IMAGENETTE_DOWNLOAD_INFO)
         imagenet_dataset = ImageFolder(imagenet_dir, transform=TransformsWrapper(t=self.data_transforms_imagenet))
@@ -166,25 +170,48 @@ class EfficientAD(AnomalyModule):
             for img, label in zip(batch["image"], batch["label"]):
                 if label == 0:  # only use good images of validation set!
                     output = self.model(img.to(self.device))
-                    map_st = output["map_st"]
-                    map_ae = output["map_ae"]
+                    map_st = output[2]
+                    map_ae = output[3]
                     maps_st.append(map_st)
                     maps_ae.append(map_ae)
-        maps_st = torch.cat(maps_st)
-        maps_ae = torch.cat(maps_ae)
-        qa_st = torch.quantile(maps_st, q=0.9).to(self.device)
-        qb_st = torch.quantile(maps_st, q=0.995).to(self.device)
-        qa_ae = torch.quantile(maps_ae, q=0.9).to(self.device)
-        qb_ae = torch.quantile(maps_ae, q=0.995).to(self.device)
+        qa_st, qb_st = self._get_quantiles_of_maps(maps_st)
+        qa_ae, qb_ae = self._get_quantiles_of_maps(maps_ae)
         return {"qa_st": qa_st, "qa_ae": qa_ae, "qb_st": qb_st, "qb_ae": qb_ae}
 
+    def _get_quantiles_of_maps(self, maps: list[Tensor]) -> tuple[Tensor, Tensor]:
+        """Calculate 90% and 99.5% quantiles of the given anomaly maps.
+        If the total number of elements in the given maps is larger than 16777216
+        the returned quantiles are computed on a random subset of the given
+        elements.
+        Args:
+            maps (list[Tensor]): List of anomaly maps.
+        Returns:
+            tuple[Tensor, Tensor]: Two scalars - the 90% and the 99.5% quantile.
+        """
+        maps_flat = torch.flatten(torch.cat(maps))
+        # torch.quantile only works with input size up to 2**24 elements, see
+        # https://github.com/pytorch/pytorch/blob/b9f81a483a7879cd3709fd26bcec5f1ee33577e6/aten/src/ATen/native/Sorting.cpp#L291
+        # if we have more elements we need to decrease the size
+        # we do this by sampling random elements of maps_flat because then
+        # the locations of the quantiles (90% and 99.5%) will still be
+        # valid even though they might not be the exact quantiles.
+        max_input_size = 2**24
+        if len(maps_flat) > max_input_size:
+            # select a random subset with max_input_size elements.
+            perm = torch.randperm(len(maps_flat), device=self.device)
+            idx = perm[:max_input_size]
+            maps_flat = maps_flat[idx]
+        qa = torch.quantile(maps_flat, q=0.9).to(self.device)
+        qb = torch.quantile(maps_flat, q=0.995).to(self.device)
+        return qa, qb
+
     def configure_optimizers(self) -> optim.Optimizer:
-        optimizer = optim.AdamW(
-            list(self.model.student.parameters()) + list(self.model.ae.parameters()),
+        optimizer = torch.optim.Adam(
+            itertools.chain(self.model.student.parameters(), self.model.ae.parameters()),
             lr=self.lr,
             weight_decay=self.weight_decay,
         )
-        num_steps = max(
+        num_steps = min(
             self.trainer.max_steps, self.trainer.max_epochs * len(self.trainer.datamodule.train_dataloader())
         )
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=int(0.95 * num_steps), gamma=0.1)
@@ -228,6 +255,7 @@ class EfficientAD(AnomalyModule):
         Calculate the feature map quantiles of the validation dataset and push to the model.
         """
         if (self.current_epoch + 1) == self.trainer.max_epochs:
+            # TODO: if you use val_dataloader for map norm, you need to add a directory val/good
             map_norm_quantiles = self.map_norm_quantiles(self.trainer.datamodule.train_dataloader())
             self.model.quantiles.update(map_norm_quantiles)
 
@@ -242,7 +270,7 @@ class EfficientAD(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        batch["anomaly_maps"] = self.model(batch["image"])["anomaly_map_combined"]
+        batch["anomaly_maps"], _, _, _ = self.model(batch["image"])
 
         return batch
 
@@ -261,8 +289,9 @@ class EfficientadLightning(EfficientAD):
             lr=hparams.model.lr,
             weight_decay=hparams.model.weight_decay,
             padding=hparams.model.padding,
-            image_size=hparams.dataset.image_size,
-            batch_size=hparams.dataset.train_batch_size,
+            image_size=hparams.model.image_size,
+            batch_size=hparams.model.train_batch_size,
+            pretrained_models_dir=hparams.model.pretrained_models_dir,
         )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)

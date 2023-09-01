@@ -184,6 +184,87 @@ class AutoEncoder(nn.Module):
         return x
 
 
+# Adding Nelson's original models
+def get_pdn_small(out_channels=384, padding=False):
+    pad_mult = 1 if padding else 0
+    return nn.Sequential(
+        nn.Conv2d(in_channels=3, out_channels=128, kernel_size=4, padding=3 * pad_mult),
+        nn.ReLU(inplace=True),
+        nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult),
+        nn.Conv2d(in_channels=128, out_channels=256, kernel_size=4, padding=3 * pad_mult),
+        nn.ReLU(inplace=True),
+        nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult),
+        nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1 * pad_mult),
+        nn.ReLU(inplace=True),
+        nn.Conv2d(in_channels=256, out_channels=out_channels, kernel_size=4),
+    )
+
+
+def get_pdn_medium(out_channels=384, padding=False):
+    pad_mult = 1 if padding else 0
+    return nn.Sequential(
+        nn.Conv2d(in_channels=3, out_channels=256, kernel_size=4, padding=3 * pad_mult),
+        nn.ReLU(inplace=True),
+        nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult),
+        nn.Conv2d(in_channels=256, out_channels=512, kernel_size=4, padding=3 * pad_mult),
+        nn.ReLU(inplace=True),
+        nn.AvgPool2d(kernel_size=2, stride=2, padding=1 * pad_mult),
+        nn.Conv2d(in_channels=512, out_channels=512, kernel_size=1),
+        nn.ReLU(inplace=True),
+        nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1 * pad_mult),
+        nn.ReLU(inplace=True),
+        nn.Conv2d(in_channels=512, out_channels=out_channels, kernel_size=4),
+        nn.ReLU(inplace=True),
+        nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=1),
+    )
+
+
+def get_autoencoder(out_channels=384):
+    return nn.Sequential(
+        # encoder
+        nn.Conv2d(in_channels=3, out_channels=32, kernel_size=4, stride=2, padding=1),
+        nn.ReLU(inplace=True),
+        nn.Conv2d(in_channels=32, out_channels=32, kernel_size=4, stride=2, padding=1),
+        nn.ReLU(inplace=True),
+        nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2, padding=1),
+        nn.ReLU(inplace=True),
+        nn.Conv2d(in_channels=64, out_channels=64, kernel_size=4, stride=2, padding=1),
+        nn.ReLU(inplace=True),
+        nn.Conv2d(in_channels=64, out_channels=64, kernel_size=4, stride=2, padding=1),
+        nn.ReLU(inplace=True),
+        nn.Conv2d(in_channels=64, out_channels=64, kernel_size=8),
+        # decoder
+        nn.Upsample(size=3, mode="bilinear"),
+        nn.Conv2d(in_channels=64, out_channels=64, kernel_size=4, stride=1, padding=2),
+        nn.ReLU(inplace=True),
+        nn.Dropout(0.2),
+        nn.Upsample(size=8, mode="bilinear"),
+        nn.Conv2d(in_channels=64, out_channels=64, kernel_size=4, stride=1, padding=2),
+        nn.ReLU(inplace=True),
+        nn.Dropout(0.2),
+        nn.Upsample(size=15, mode="bilinear"),
+        nn.Conv2d(in_channels=64, out_channels=64, kernel_size=4, stride=1, padding=2),
+        nn.ReLU(inplace=True),
+        nn.Dropout(0.2),
+        nn.Upsample(size=32, mode="bilinear"),
+        nn.Conv2d(in_channels=64, out_channels=64, kernel_size=4, stride=1, padding=2),
+        nn.ReLU(inplace=True),
+        nn.Dropout(0.2),
+        nn.Upsample(size=63, mode="bilinear"),
+        nn.Conv2d(in_channels=64, out_channels=64, kernel_size=4, stride=1, padding=2),
+        nn.ReLU(inplace=True),
+        nn.Dropout(0.2),
+        nn.Upsample(size=127, mode="bilinear"),
+        nn.Conv2d(in_channels=64, out_channels=64, kernel_size=4, stride=1, padding=2),
+        nn.ReLU(inplace=True),
+        nn.Dropout(0.2),
+        nn.Upsample(size=56, mode="bilinear"),
+        nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1),
+        nn.ReLU(inplace=True),
+        nn.Conv2d(in_channels=64, out_channels=out_channels, kernel_size=3, stride=1, padding=1),
+    )
+
+
 class EfficientADModel(nn.Module):
     """EfficientAD model.
 
@@ -202,24 +283,39 @@ class EfficientADModel(nn.Module):
         input_size: tuple[int, int],
         model_size: EfficientADModelSize = EfficientADModelSize.M,
         padding=False,
+        anomalib_version=False,
     ) -> None:
         super().__init__()
 
-        self.teacher: PDN_M | PDN_S
-        self.student: PDN_M | PDN_S
+        self.teacher: PDN_M | PDN_S | nn.Sequential
+        self.student: PDN_M | PDN_S | nn.Sequential
 
         if model_size == EfficientADModelSize.M:
-            self.teacher = PDN_M(out_channels=teacher_out_channels, padding=padding).eval()
-            self.student = PDN_M(out_channels=teacher_out_channels * 2, padding=padding)
+            if anomalib_version:
+                self.teacher = PDN_M(out_channels=teacher_out_channels, padding=padding).eval()
+                self.student = PDN_M(out_channels=teacher_out_channels * 2, padding=padding)
+            else:
+                self.teacher = get_pdn_medium(out_channels=teacher_out_channels, padding=padding).eval()
+                self.student = get_pdn_medium(out_channels=teacher_out_channels * 2, padding=padding)
 
         elif model_size == EfficientADModelSize.S:
-            self.teacher = PDN_S(out_channels=teacher_out_channels, padding=padding).eval()
-            self.student = PDN_S(out_channels=teacher_out_channels * 2, padding=padding)
+            if anomalib_version:
+                self.teacher = PDN_S(out_channels=teacher_out_channels, padding=padding).eval()
+                self.student = PDN_S(out_channels=teacher_out_channels * 2, padding=padding)
+            else:
+                self.teacher = get_pdn_small(out_channels=teacher_out_channels, padding=padding).eval()
+                self.student = get_pdn_small(out_channels=teacher_out_channels * 2, padding=padding)
 
         else:
             raise ValueError(f"Unknown model size {model_size}")
 
-        self.ae: AutoEncoder = AutoEncoder(out_channels=teacher_out_channels, padding=padding, img_size=input_size[0])
+        if anomalib_version:
+            self.ae: AutoEncoder = AutoEncoder(
+                out_channels=teacher_out_channels, padding=padding, img_size=input_size[0]
+            )
+        else:
+            self.ae: nn.Sequential = get_autoencoder(out_channels=teacher_out_channels)
+
         self.teacher_out_channels: int = teacher_out_channels
         self.input_size: tuple[int, int] = input_size
 
@@ -245,6 +341,7 @@ class EfficientADModel(nn.Module):
                 return True
         return False
 
+    # TODO: This seems to be broken. We are not using it
     def choose_random_aug_image(self, image: Tensor) -> Tensor:
         transform_functions = [
             transforms.functional.adjust_brightness,
@@ -265,6 +362,11 @@ class EfficientADModel(nn.Module):
         Returns:
             Tensor: Predictions
         """
+        if len(batch.shape) < 4:
+            batch = batch.unsqueeze(0)
+        if batch_imagenet is not None:
+            if len(batch_imagenet.shape) < 4:
+                batch_imagenet = batch_imagenet.unsqueeze(0)
         with torch.no_grad():
             teacher_output = self.teacher(batch)
             if self.is_set(self.mean_std):
@@ -282,7 +384,8 @@ class EfficientADModel(nn.Module):
             loss_st = loss_hard + loss_penalty
 
             # Autoencoder and Student AE Loss
-            aug_img = self.choose_random_aug_image(batch)
+            # TODO: Anomalib choose_random_aug_image is broken. We ignore it for now
+            aug_img = batch  # self.choose_random_aug_image(batch)
             ae_output_aug = self.ae(aug_img)
 
             with torch.no_grad():
@@ -308,14 +411,16 @@ class EfficientADModel(nn.Module):
                 (ae_output - student_output[:, self.teacher_out_channels :]) ** 2, dim=1, keepdim=True
             )
 
-            map_st = F.interpolate(map_st, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
-            map_stae = F.interpolate(map_stae, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
-
             if self.is_set(self.quantiles):
                 map_st = 0.1 * (map_st - self.quantiles["qa_st"]) / (self.quantiles["qb_st"] - self.quantiles["qa_st"])
                 map_stae = (
                     0.1 * (map_stae - self.quantiles["qa_ae"]) / (self.quantiles["qb_ae"] - self.quantiles["qa_ae"])
                 )
-
+            # We interpolate after combining the maps, as it returns better results w/ the padding
             map_combined = 0.5 * map_st + 0.5 * map_stae
-            return {"anomaly_map_combined": map_combined, "map_st": map_st, "map_ae": map_stae}
+            map_combined = torch.nn.functional.pad(map_combined, (4, 4, 4, 4))
+            output = F.interpolate(map_combined, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
+
+            anomaly_score = output.reshape((output.shape[0], -1)).max(1)[0]
+
+            return output, anomaly_score, map_st, map_stae
