@@ -8,17 +8,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
-- AUPRO binning capability by @yann-cv
-- Add support for receiving dataset paths as a list by @harimkang in https://github.com/openvinotoolkit/anomalib/pull/1265
-
 ### Changed
-
-- Enable training with only normal images for MVTecv in https://github.com/openvinotoolkit/anomalib/pull/1241
-- Improve default settings of EfficientAD
 
 ### Deprecated
 
 ### Fixed
+
+## [v0.7.0] - 2023-08-28
+
+### Added
+
+- AUPRO binning capability by @yann-cv in https://github.com/openvinotoolkit/anomalib/pull/1145
+- Add support for receiving dataset paths as a list by @harimkang in https://github.com/openvinotoolkit/anomalib/pull/1265
+- Add modelAPI compatible OpenVINO export by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/1219
+
+### Changed
+
+- Enable training with only normal images for MVTec by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/1241
+- Improve default settings of EfficientAD in https://github.com/openvinotoolkit/anomalib/pull/1143
+- Added the tracer_kwargs to the TorchFXFeatureExtractor class by @JoaoGuibs in https://github.com/openvinotoolkit/anomalib/pull/1214
+- Replace cdist in Patchcore by @blaz-r in https://github.com/openvinotoolkit/anomalib/pull/1267
+- Ignore hidden directories when creating Folder dataset by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1268
+
+### Fixed
+
+- Fix typechecking error for toch.onnx.export by @ORippler in https://github.com/openvinotoolkit/anomalib/pull/1159
+- Fix benchmarking type error by @blaz-r in https://github.com/openvinotoolkit/anomalib/pull/1155
+- Fix incorrect shape mismatch between anomaly map and ground truth mask by @alexriedel1 in https://github.com/openvinotoolkit/anomalib/pull/1182
+- Fix dataset keys in benchmarking notebook by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1242
+- Remove config from argparse in OpenVINO inference script by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1257
+- Fix EfficientAD number of steps for optimizer lr change by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1266
+- Fix unable to read the mas image by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1277
 
 ## [v0.6.0] - 2023-06-15
 
