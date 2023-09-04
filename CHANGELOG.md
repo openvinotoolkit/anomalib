@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.6.0+obx.1.1.0]
+
+### Updated
+
+- Upgrade anomalib to v0.6.0
+- Change EfficientAD code to use nelson implementation for better results
+- Remove the usage of augmentation images during efficient ad training
+
 ## [v0.4.0+obx.1.0.2]
 
 ### Updated
