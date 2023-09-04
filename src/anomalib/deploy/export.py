@@ -25,8 +25,6 @@ logger = logging.getLogger("anomalib")
 
 if find_spec("openvino") is not None:
     from openvino.runtime import Core, serialize
-else:
-    logger.warning("OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.")
 
 
 class ExportMode(str, Enum):
