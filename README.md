@@ -286,7 +286,7 @@ Refer to the [Benchmarking Documentation](https://openvinotoolkit.github.io/anom
 
 # Experiment Management
 
-Anomablib is integrated with various libraries for experiment tracking such as Comet, tensorboard, and wandb through [pytorch lighting loggers](https://pytorch-lightning.readthedocs.io/en/stable/extensions/logging.html).
+Anomalib is integrated with various libraries for experiment tracking such as Comet, tensorboard, and wandb through [pytorch lighting loggers](https://pytorch-lightning.readthedocs.io/en/stable/extensions/logging.html).
 
 Below is an example of how to enable logging for hyper-parameters, metrics, model graphs, and predictions on images in the test data-set
 
