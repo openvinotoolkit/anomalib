@@ -65,10 +65,6 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
 
     callbacks.extend([checkpoint, TimerCallback()])
 
-    if "resume_from_checkpoint" in config.trainer.keys() and config.trainer.resume_from_checkpoint is not None:
-        load_model = LoadModelCallback(config.trainer.resume_from_checkpoint)
-        callbacks.append(load_model)
-
     # Add post-processing configurations to AnomalyModule.
     image_threshold = (
         config.metrics.threshold.manual_image if "manual_image" in config.metrics.threshold.keys() else None
