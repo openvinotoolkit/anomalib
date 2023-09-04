@@ -176,21 +176,37 @@ dataset:
 ```
 
 </details>
+
 By placing the above configuration to the `dataset` section of the `config.yaml` file, the model will be trained on the custom dataset.
 
 # Inference
 
-Anomalib includes multiple tools, including Lightning, Gradio, and OpenVINO inferencers, for performing inference with a trained model.
+Anomalib includes multiple inferencing scripts, including Torch, Lightning, Gradio, and OpenVINO inferencers, to perform inference using the trained/exported model. In this section, we will go over how to use these scripts to perform inference.
 
-The following command can be used to run PyTorch Lightning inference from the command line:
+<details>
+<summary>PyTorch Inference</summary>
 
 ```bash
-python tools/inference/lightning_inference.py -h
+# To get help about the arguments, run:
+python tools/inference/torch_inference.py --help
+
+# Example Torch inference command:
+python tools/inference/torch_inference.py \
+    --weights results/padim/mvtec/bottle/run/weights/torch/model.pt \
+    --input datasets/MVTec/bottle/test/broken_large/000.png \
+    --output results/padim/mvtec/bottle/images
 ```
 
-As a quick example:
+</details>
+
+<details>
+<summary>Lightning Inference</summary>
 
 ```bash
+# To get help about the arguments, run:
+python tools/inference/lightning_inference.py --help
+
+# Example Lightning inference command:
 python tools/inference/lightning_inference.py \
     --config src/anomalib/models/padim/config.yaml \
     --weights results/padim/mvtec/bottle/run/weights/model.ckpt \
@@ -198,9 +214,24 @@ python tools/inference/lightning_inference.py \
     --output results/padim/mvtec/bottle/images
 ```
 
-Example OpenVINO Inference:
+</details>
+
+<details>
+<summary>OpenVINO Inference</summary>
+
+To run the OpenVINO inference, you need to first export the PyTorch model to an OpenVINO model. ensure that `export_mode` is set to `"openvino"` in the respective model `config.yaml`.
+
+```yaml
+# Example config.yaml for OpenVINO
+optimization:
+  export_mode: "openvino" # options: openvino, onnx
+```
 
 ```bash
+# To get help about the arguments, run:
+python tools/inference/openvino_inference.py --help
+
+# Example OpenVINO inference command:
 python tools/inference/openvino_inference.py \
     --weights results/padim/mvtec/bottle/run/openvino/model.bin \
     --metadata results/padim/mvtec/bottle/run/openvino/metadata.json \
@@ -210,25 +241,25 @@ python tools/inference/openvino_inference.py \
 
 > Ensure that you provide path to `metadata.json` if you want the normalization to be applied correctly.
 
-You can also use Gradio Inference to interact with the trained models using a UI. Refer to our [guide](https://openvinotoolkit.github.io/anomalib/tutorials/inference.html#gradio-inference) for more details.
+</details>
 
-A quick example:
+<details>
+<summary>Gradio Inference</summary>
+
+You can also use Gradio Inference to interact with the trained models using a UI. Refer to our [guide](https://anomalib.readthedocs.io/en/latest/tutorials/inference.html#gradio-inference) for more details.
 
 ```bash
+# To get help about the arguments, run:
+python tools/inference/gradio_inference.py --help
+
+# Example Gradio inference command:
 python tools/inference/gradio_inference.py \
-        --weights results/padim/mvtec/bottle/run/weights/model.ckpt
+    --weights results/padim/mvtec/bottle/run/weights/model.ckpt \
+    --metadata results/padim/mvtec/bottle/run/openvino/metadata.json  \ # Optional
+    --share  # Optional to share the UI
 ```
 
-## Exporting Model to ONNX or OpenVINO IR
-
-It is possible to export your model to ONNX or OpenVINO IR
-
-If you want to export your PyTorch model to an OpenVINO model, ensure that `export_mode` is set to `"openvino"` in the respective model `config.yaml`.
-
-```yaml
-optimization:
-  export_mode: "openvino" # options: openvino, onnx
-```
+</details>
 
 # Hyperparameter Optimization
 
