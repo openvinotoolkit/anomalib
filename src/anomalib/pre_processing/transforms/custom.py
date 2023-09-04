@@ -14,7 +14,7 @@ from torch import Tensor
 
 
 class BGRToRGB(ImageOnlyTransform):
-    """_summary_
+    """Convert BGR image to RGB.
 
     Args:
         always_apply (bool, optional): Always apply . Defaults to True.
