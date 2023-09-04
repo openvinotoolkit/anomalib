@@ -32,23 +32,23 @@ class Fastflow(AnomalyModule):
     def __init__(
         self,
         input_size: tuple[int, int],
-        image_size: tuple[int, int],
         backbone: str,
         pre_trained: bool = True,
         flow_steps: int = 8,
         conv3x3_only: bool = False,
         hidden_ratio: float = 1.0,
+        image_size: tuple[int, int] | None = None,
     ) -> None:
         super().__init__()
 
         self.model = FastflowModel(
             input_size=input_size,
-            image_size=image_size,
             backbone=backbone,
             pre_trained=pre_trained,
             flow_steps=flow_steps,
             conv3x3_only=conv3x3_only,
             hidden_ratio=hidden_ratio,
+            image_size=image_size,
         )
         self.loss = FastflowLoss()
 

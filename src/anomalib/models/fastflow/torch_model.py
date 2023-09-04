@@ -100,12 +100,12 @@ class FastflowModel(nn.Module):
 
     Args:
         input_size (tuple[int, int]): Model input size.
-        image_size (tuple[int, int]): Original image size (needed in case of tiling).
         backbone (str): Backbone CNN network
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         flow_steps (int, optional): Flow steps.
         conv3x3_only (bool, optinoal): Use only conv3x3 in fast_flow model. Defaults to False.
         hidden_ratio (float, optional): Ratio to calculate hidden var channels. Defaults to 1.0.
+        image_size (tuple[int, int] | None): Original image size (needed in case of tiling).
 
     Raises:
         ValueError: When the backbone is not supported.
@@ -114,17 +114,19 @@ class FastflowModel(nn.Module):
     def __init__(
         self,
         input_size: tuple[int, int],
-        image_size: tuple[int, int],
         backbone: str,
         pre_trained: bool = True,
         flow_steps: int = 8,
         conv3x3_only: bool = False,
         hidden_ratio: float = 1.0,
+        image_size: tuple[int, int] | None = None,
     ) -> None:
         super().__init__()
         self.tiler: Tiler | None = None
 
         self.input_size = input_size
+        if not image_size:
+            image_size = input_size
 
         if backbone in ("cait_m48_448", "deit_base_distilled_patch16_384"):
             self.feature_extractor = timm.create_model(backbone, pretrained=pre_trained)
