@@ -27,7 +27,7 @@ Setting up tox is easy.
 
 .. code-block:: bash
 
-  $ conda create -n toxenv python=3.8
+  $ conda create -n toxenv python=3.10
 
 2. Activate the environment
 

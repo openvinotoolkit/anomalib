@@ -61,7 +61,7 @@ def test_stride_size_cannot_be_larger_than_tile_size():
     kernel_size = (128, 128)
     stride = 256
     with pytest.raises(StrideSizeError):
-        tiler = Tiler(tile_size=kernel_size, stride=stride)
+        Tiler(tile_size=kernel_size, stride=stride)
 
 
 def test_tile_size_cannot_be_larger_than_image_size():
@@ -86,7 +86,7 @@ def test_untile_non_overlapping_patches(tile_size, kernel_size, stride, image_si
 @pytest.mark.parametrize("mode", ["pad", "padded", "interpolate", "interplation"])
 def test_upscale_downscale_mode(mode):
     with pytest.raises(ValueError):
-        tiler = Tiler(tile_size=(512, 512), stride=(256, 256), mode=mode)
+        Tiler(tile_size=(512, 512), stride=(256, 256), mode=mode)
 
 
 @pytest.mark.parametrize("image_size, kernel_size, stride, tile_size, mode", overlapping_data)

@@ -13,7 +13,7 @@ git pull sync development
 git merge github master
 ```
 
-Current version (1.0.2) is synced with anomalib tag 0.4.0.
+Current version (1.1.0) is synced with anomalib tag 0.6.0.
 
 <div align="center">
 
@@ -61,15 +61,11 @@ Anomalib is a deep learning library that aims to collect state-of-the-art anomal
 
 # Getting Started
 
-To get an overview of all the devices where `anomalib` as been tested thoroughly, look at the [Supported Hardware](https://openvinotoolkit.github.io/anomalib/#supported-hardware) section in the documentation.
+Following is a guide on how to get started with `anomalib`. For more details, look at the [Documentation](https://openvinotoolkit.github.io/anomalib).
 
 ## Jupyter Notebooks
 
-For getting started with a Jupyter Notebook, please refer to the [Notebooks](./notebooks) folder of this repository. Additionally, you can refer to a few created by the community:
-
-<a href="https://colab.research.google.com/drive/1K4a4z2iZGBNhWdmt9Aqdld7kTAxBfAmi?usp=sharing" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> by [@bth5](https://github.com/bth5)
-
-<a target="_blank" href="https://www.kaggle.com/code/ipythonx/mvtec-ad-anomaly-detection-with-anomalib-library"><img src="https://kaggle.com/static/images/open-in-kaggle.svg" /></a> by [@innat](https://github.com/innat)
+For getting started with a Jupyter Notebook, please refer to the [Notebooks](notebooks) folder of this repository. Additionally, you can refer to a few created by the community:
 
 ## PyPI Install
 
@@ -84,7 +80,7 @@ pip install anomalib
 It is highly recommended to use virtual environment when installing anomalib. For instance, with [anaconda](https://www.anaconda.com/products/individual), `anomalib` could be installed as,
 
 ```bash
-yes | conda create -n anomalib_env python=3.8
+yes | conda create -n anomalib_env python=3.10
 conda activate anomalib_env
 git clone https://github.com/openvinotoolkit/anomalib.git
 cd anomalib
@@ -93,7 +89,7 @@ pip install -e .
 
 # Training
 
-By default [`python tools/train.py`](https://github.com/openvinotoolkit/anomalib/blob/main/tools/train.py)
+By default [`python tools/train.py`](tools/train.py)
 runs [PADIM](https://arxiv.org/abs/2011.08785) model on `leather` category from the [MVTec AD](https://www.mvtec.com/company/research/datasets/mvtec-ad) [(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/) dataset.
 
 ```bash
@@ -101,7 +97,7 @@ python tools/train.py    # Train PADIM on MVTec AD leather
 ```
 
 Training a model on a specific dataset and category requires further configuration. Each model has its own configuration
-file, [`config.yaml`](https://github.com/openvinotoolkit/anomalib/blob/main/configs/model/padim.yaml)
+file, [`config.yaml`](src/anomalib/models/padim/config.yaml)
 , which contains data, model and training configurable parameters. To train a specific model on a specific dataset and
 category, the config file is to be provided:
 
@@ -109,10 +105,10 @@ category, the config file is to be provided:
 python tools/train.py --config <path/to/model/config.yaml>
 ```
 
-For example, to train [PADIM](anomalib/models/padim) you can use
+For example, to train [PADIM](src/anomalib/models/padim) you can use
 
 ```bash
-python tools/train.py --config anomalib/models/padim/config.yaml
+python tools/train.py --config src/anomalib/models/padim/config.yaml
 ```
 
 Alternatively, a model name could also be provided as an argument, where the scripts automatically finds the corresponding config file.
@@ -123,17 +119,17 @@ python tools/train.py --model padim
 
 where the currently available models are:
 
-- [CFA](anomalib/models/cfa)
-- [CFlow](anomalib/models/cflow)
-- [DFKDE](anomalib/models/dfkde)
-- [DFM](anomalib/models/dfm)
-- [DRAEM](anomalib/models/draem)
-- [FastFlow](anomalib/models/fastflow)
-- [GANomaly](anomalib/models/ganomaly)
-- [PADIM](anomalib/models/padim)
-- [PatchCore](anomalib/models/patchcore)
-- [Reverse Distillation](anomalib/models/reverse_distillation)
-- [STFPM](anomalib/models/stfpm)
+- [CFA](src/anomalib/models/cfa)
+- [CFlow](src/anomalib/models/cflow)
+- [DFKDE](src/anomalib/models/dfkde)
+- [DFM](src/anomalib/models/dfm)
+- [DRAEM](src/anomalib/models/draem)
+- [FastFlow](src/anomalib/models/fastflow)
+- [GANomaly](src/anomalib/models/ganomaly)
+- [PADIM](src/anomalib/models/padim)
+- [PatchCore](src/anomalib/models/patchcore)
+- [Reverse Distillation](src/anomalib/models/reverse_distillation)
+- [STFPM](src/anomalib/models/stfpm)
 
 ## Feature extraction & (pre-trained) backbones
 
@@ -203,8 +199,8 @@ As a quick example:
 
 ```bash
 python tools/inference/lightning_inference.py \
-    --config anomalib/models/padim/config.yaml \
-    --weights results/padim/mvtec/bottle/weights/model.ckpt \
+    --config src/anomalib/models/padim/config.yaml \
+    --weights results/padim/mvtec/bottle/run/weights/model.ckpt \
     --input datasets/MVTec/bottle/test/broken_large/000.png \
     --output results/padim/mvtec/bottle/images
 ```
@@ -213,23 +209,21 @@ Example OpenVINO Inference:
 
 ```bash
 python tools/inference/openvino_inference.py \
-    --config anomalib/models/padim/config.yaml \
-    --weights results/padim/mvtec/bottle/openvino/openvino_model.bin \
-    --meta_data results/padim/mvtec/bottle/openvino/meta_data.json \
+    --weights results/padim/mvtec/bottle/run/openvino/model.bin \
+    --metadata results/padim/mvtec/bottle/run/openvino/metadata.json \
     --input datasets/MVTec/bottle/test/broken_large/000.png \
     --output results/padim/mvtec/bottle/images
 ```
 
-> Ensure that you provide path to `meta_data.json` if you want the normalization to be applied correctly.
+> Ensure that you provide path to `metadata.json` if you want the normalization to be applied correctly.
 
-You can also use Gradio Inference to interact with the trained models using a UI. Refer to our [guide](https://openvinotoolkit.github.io/anomalib/guides/inference.html#gradio-inference) for more details.
+You can also use Gradio Inference to interact with the trained models using a UI. Refer to our [guide](https://openvinotoolkit.github.io/anomalib/tutorials/inference.html#gradio-inference) for more details.
 
 A quick example:
 
 ```bash
 python tools/inference/gradio_inference.py \
-        --config ./anomalib/models/padim/config.yaml \
-        --weights ./results/padim/mvtec/bottle/weights/model.ckpt
+        --weights results/padim/mvtec/bottle/run/weights/model.ckpt
 ```
 
 ## Exporting Model to ONNX or OpenVINO IR
@@ -253,7 +247,7 @@ python tools/hpo/sweep.py \
     --sweep_config tools/hpo/sweep.yaml
 ```
 
-For more details refer the [HPO Documentation](https://openvinotoolkit.github.io/anomalib/guides/hyperparameter_optimization.html)
+For more details refer the [HPO Documentation](https://openvinotoolkit.github.io/anomalib/tutorials/hyperparameter_optimization.html)
 
 # Benchmarking
 
@@ -264,7 +258,7 @@ python tools/benchmarking/benchmark.py \
     --config <relative/absolute path>/<paramfile>.yaml
 ```
 
-Refer to the [Benchmarking Documentation](https://openvinotoolkit.github.io/anomalib/guides/benchmarking.html) for more details.
+Refer to the [Benchmarking Documentation](https://openvinotoolkit.github.io/anomalib/tutorials/benchmarking.html) for more details.
 
 # Experiment Management
 
@@ -282,7 +276,7 @@ visualization:
   log_graph: True
 ```
 
-For more information, refer to the [Logging Documentation](https://openvinotoolkit.github.io/anomalib/guides/logging.html)
+For more information, refer to the [Logging Documentation](https://openvinotoolkit.github.io/anomalib/tutorials/logging.html)
 
 Note: Set your API Key for [Comet.ml](https://www.comet.com/signup?utm_source=anomalib&utm_medium=referral) via `comet_ml.init()` in interactive python or simply run `export COMET_API_KEY=<Your API Key>`
 
@@ -377,3 +371,13 @@ If you use this library and love it, use this to cite it 🤗
       primaryClass={cs.CV}
 }
 ```
+
+# Contributing
+
+For those who would like to contribute to the library, see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+Thank you to all of the people who have already made a contribution - we appreciate your support!
+
+<a href="https://github.com/openvinotoolkit/anomalib/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=openvinotoolkit/anomalib" />
+</a>

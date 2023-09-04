@@ -20,7 +20,7 @@ def run_train_test(config):
 
 @TestDataset(num_train=200, num_test=30, path=get_dataset_path(), seed=42)
 def test_normalizer(path=get_dataset_path(), category="shapes"):
-    config = get_configurable_parameters(config_path="anomalib/models/padim/config.yaml")
+    config = get_configurable_parameters(config_path="src/anomalib/models/padim/config.yaml")
     config.dataset.path = path
     config.dataset.category = category
     config.metrics.threshold.method = "adaptive"

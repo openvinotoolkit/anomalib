@@ -103,7 +103,7 @@ def make_folder_data_module(
         image_size=(256, 256),
         train_batch_size=batch_size,
         eval_batch_size=batch_size,
-        num_workers=8,
+        num_workers=0,
         task=task,
         test_split_mode=test_split_mode,
         val_split_mode=val_split_mode,
@@ -190,7 +190,7 @@ def data_sample():
         image_size=(256, 256),
         train_batch_size=1,
         eval_batch_size=1,
-        num_workers=8,
+        num_workers=0,
         task="classification",
         val_split_mode="from_test",
     )

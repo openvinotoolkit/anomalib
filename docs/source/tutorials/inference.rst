@@ -44,7 +44,6 @@ To run OpenVINO inference, first make sure that your model has been exported to 
 +-----------+----------+--------------------------------------------------------------------------------------+
 | Parameter | Required |                                     Description                                      |
 +===========+==========+======================================================================================+
-| config    | True     | Path to the model config file.                                                       |
 +-----------+----------+--------------------------------------------------------------------------------------+
 | weights   | True     | Path to the OpenVINO IR model file (either ``.xml`` or ``.bin``)                     |
 +-----------+----------+--------------------------------------------------------------------------------------+
@@ -52,17 +51,17 @@ To run OpenVINO inference, first make sure that your model has been exported to 
 +-----------+----------+--------------------------------------------------------------------------------------+
 | save_data | False    | Path to which the output images should be saved. Leave empty for live visualization. |
 +-----------+----------+--------------------------------------------------------------------------------------+
-| meta_data | True     | Path to the JSON file containing the model's meta data (e.g. normalization           |
+| metadata | True     | Path to the JSON file containing the model's meta data (e.g. normalization           |
 |           |          | parameters and anomaly score threshold).                                             |
 +-----------+----------+--------------------------------------------------------------------------------------+
 | device    | False    | Device on which OpenVINO will perform the computations (``CPU``, ``GPU`` or ``VPU``) |
 +-----------+----------+--------------------------------------------------------------------------------------+
 
-For correct inference results, the ``meta_data`` argument should be specified and point to the ``meta_data.json`` file that was generated when exporting the OpenVINO IR model. The file is stored in the same folder as the ``.xml`` and ``.bin`` files of the model.
+For correct inference results, the ``metadata`` argument should be specified and point to the ``metadata.json`` file that was generated when exporting the OpenVINO IR model. The file is stored in the same folder as the ``.xml`` and ``.bin`` files of the model.
 
 As an example, OpenVINO inference can be triggered by the following command:
 
-``python tools/inference/openvino.py --config padim.yaml --weights results/openvino/model.xml --input image.png --meta_data results/openvino/meta_data.json``
+``python tools/inference/openvino.py --weights results/openvino/model.xml --input image.png --metadata results/openvino/metadata.json``
 
 Similar to PyTorch inference, the visualization results will be displayed on the screen, and optionally saved to the file system location specified by the ``save_data`` parameter.
 
@@ -76,11 +75,10 @@ The gradio inference is supported for both PyTorch and OpenVINO models.
 +-----------+----------+------------------------------------------------------------------+
 | Parameter | Required |                           Description                            |
 +===========+==========+==================================================================+
-| config    | True     | Path to the model config file.                                   |
 +-----------+----------+------------------------------------------------------------------+
 | weights   | True     | Path to the OpenVINO IR model file (either ``.xml`` or ``.bin``) |
 +-----------+----------+------------------------------------------------------------------+
-| meta_data | False    | Path to the JSON file containing the model's meta data.          |
+| metadata | False    | Path to the JSON file containing the model's meta data.          |
 |           |          | This is needed only for OpenVINO model.                          |
 +-----------+----------+------------------------------------------------------------------+
 | threshold | False    | Threshold value used for identifying anomalies. Range 1-100.     |
@@ -88,14 +86,13 @@ The gradio inference is supported for both PyTorch and OpenVINO models.
 | share     | False    | Share Gradio `share_url`                                         |
 +-----------+----------+------------------------------------------------------------------+
 
-To use gradio with OpenVINO model, first make sure that your model has been exported to the OpenVINO IR format and ensure that the `meta_data` argument points to the ``meta_data.json`` file that was generated when exporting the OpenVINO IR model. The file is stored in the same folder as the ``.xml`` and ``.bin`` files of the model.
+To use gradio with OpenVINO model, first make sure that your model has been exported to the OpenVINO IR format and ensure that the `metadata` argument points to the ``metadata.json`` file that was generated when exporting the OpenVINO IR model. The file is stored in the same folder as the ``.xml`` and ``.bin`` files of the model.
 
 As an example, PyTorch model can be used by the following command:
 
 .. code-block:: bash
 
     python tools/inference/gradio_inference.py \
-        --config ./anomalib/models/padim/config.yaml \
         --weights ./results/padim/mvtec/bottle/weights/model.ckpt
 
 Similarly, you can use OpenVINO model by the following command:
@@ -103,6 +100,5 @@ Similarly, you can use OpenVINO model by the following command:
 .. code-block:: bash
 
     python python tools/inference/gradio_inference.py \
-        --config ./anomalib/models/padim/config.yaml \
         --weights ./results/padim/mvtec/bottle/openvino/openvino_model.onnx \
-        --meta_data ./results/padim/mvtec/bottle/openvino/meta_data.json
+        --metadata ./results/padim/mvtec/bottle/openvino/metadata.json

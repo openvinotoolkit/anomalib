@@ -1,6 +1,6 @@
 """Anomalib Torch Inferencer Script.
 
-This script performs torch inference by reading model config files and weights
+This script performs torch inference by reading model weights
 from command line, and show the visualization results.
 """
 
@@ -13,23 +13,18 @@ from pathlib import Path
 
 import torch
 
-from anomalib.data.utils import (
-    generate_output_image_filename,
-    get_image_filenames,
-    read_image,
-)
+from anomalib.data.utils import generate_output_image_filename, get_image_filenames, read_image
 from anomalib.deploy import TorchInferencer
 from anomalib.post_processing import Visualizer
 
 
-def get_args() -> Namespace:
-    """Get command line arguments.
+def get_parser() -> ArgumentParser:
+    """Get parser.
 
     Returns:
-        Namespace: List of arguments.
+        ArgumentParser: The parser object.
     """
     parser = ArgumentParser()
-    parser.add_argument("--config", type=Path, required=True, help="Path to a config file")
     parser.add_argument("--weights", type=Path, required=True, help="Path to model weights")
     parser.add_argument("--input", type=Path, required=True, help="Path to an image to infer.")
     parser.add_argument("--output", type=Path, required=False, help="Path to save the output image.")
@@ -64,25 +59,22 @@ def get_args() -> Namespace:
         help="Show the visualized predictions on the screen.",
     )
 
-    args = parser.parse_args()
-
-    return args
+    return parser
 
 
-def infer() -> None:
+def infer(args: Namespace) -> None:
     """Infer predictions.
 
     Show/save the output if path is to an image. If the path is a directory, go over each image in the directory.
+
+    Args:
+        args (Namespace): The arguments from the command line.
     """
-    # Get the command line arguments, and config from the config.yaml file.
-    # This config file is also used for training and contains all the relevant
-    # information regarding the data, model, train and inference details.
-    args = get_args()
 
     torch.set_grad_enabled(False)
 
     # Create the inferencer and visualizer.
-    inferencer = TorchInferencer(config=args.config, model_source=args.weights, device=args.device)
+    inferencer = TorchInferencer(path=args.weights, device=args.device)
     visualizer = Visualizer(mode=args.visualization_mode, task=args.task)
 
     filenames = get_image_filenames(path=args.input)
@@ -106,4 +98,5 @@ def infer() -> None:
 
 
 if __name__ == "__main__":
-    infer()
+    args = get_parser().parse_args()
+    infer(args=args)

@@ -9,7 +9,7 @@ import pytest
 from omegaconf import OmegaConf
 
 try:
-    from wandb import init
+    from wandb import init  # noqa: F401
 
     wandb_installed = True
 except ImportError:

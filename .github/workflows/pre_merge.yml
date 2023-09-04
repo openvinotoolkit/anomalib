@@ -22,25 +22,39 @@ jobs:
     steps:
       - name: CHECKOUT REPOSITORY
         uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
       - name: Install Tox
         run: pip install tox
       - name: Code quality checks
         run: tox -e pre-commit
-  Tox:
+  Pre-Merge-Checks:
     runs-on: [self-hosted, linux, x64]
     needs: Code-Quality-Checks
     if: github.event.pull_request.draft == false
     strategy:
       max-parallel: 1
+      matrix:
+        include:
+          - python-version: "3.10"
+            tox-env: "py310"
     steps:
-      - name: CHECKOUT REPOSITORY
-        uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
       - name: Install Tox
         run: pip install tox
       - name: Link the dataset path to the dataset directory in the repository root.
-        run: ln -s $ANOMALIB_DATASET_PATH ./datasets
+        run: |
+          ln -s $ANOMALIB_DATASET_PATH ./datasets
+          ln -s $ANOMALIB_DATASET_PATH ./notebooks/datasets
       - name: Coverage
-        run: tox -e pre_merge
+        run: tox -e pre-merge-${{ matrix.tox-env }}
       - name: Upload coverage report
         run: |
           # If the workflow is triggered from PR then it gets the commit id from the PR.
@@ -52,8 +66,12 @@ jobs:
           else
             COMMIT_ID=${{ github.sha }}
           fi
-          # current version of codecov-action does not support uploading reports through the proxy
-          # so we use the latest version of codecov uploader binary
+          # Pass token from secrets if available. Otherwise it takes it from the environment variable of the CI
           curl -Os https://uploader.codecov.io/latest/linux/codecov
           chmod +x codecov
-          ./codecov -t ${{ secrets.CODECOV_TOKEN }} --sha $COMMIT_ID -Z true -U $HTTP_PROXY -f .tox/coverage.xml
+          if [ -n "${{ secrets.CODECOV_TOKEN }}" ]
+          then
+            ./codecov -t ${{ secrets.CODECOV_TOKEN }} --sha $COMMIT_ID -U $HTTP_PROXY -f .tox/coverage.xml
+          else
+            ./codecov -t "${CODECOV_TOKEN}"  --sha $COMMIT_ID -U $HTTP_PROXY -f .tox/coverage.xml
+          fi

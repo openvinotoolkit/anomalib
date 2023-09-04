@@ -18,6 +18,7 @@ This documentation is divided into the following sections:
    :name: start
    :caption: Contents
 
+   getting_started/index
    tutorials/index
    how_to_guides/index
    reference_guide/index

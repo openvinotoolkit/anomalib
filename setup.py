@@ -12,7 +12,7 @@ from types import ModuleType
 from setuptools import find_packages, setup
 
 
-def load_module(name: str = "anomalib/__init__.py") -> ModuleType:
+def load_module(name: str = "src/anomalib/__init__.py") -> ModuleType:
     """Load Python Module.
 
     Args:
@@ -45,7 +45,7 @@ def get_version() -> str:
     Returns:
         str: `anomalib` version.
     """
-    anomalib = load_module(name="anomalib/__init__.py")
+    anomalib = load_module(name="src/anomalib/__init__.py")
     version = anomalib.__version__
     return version
 
@@ -83,9 +83,10 @@ VERSION = get_version()
 LONG_DESCRIPTION = (Path(__file__).parent / "README.md").read_text(encoding="utf8")
 INSTALL_REQUIRES = get_required_packages(requirement_files=["base"])
 EXTRAS_REQUIRE = {
-    "extra": get_required_packages(requirement_files=["extras"]),
-    "full": get_required_packages(requirement_files=["docs", "openvino", "extras"]),
+    "loggers": get_required_packages(requirement_files=["loggers"]),
+    "notebooks": get_required_packages(requirement_files=["notebooks"]),
     "openvino": get_required_packages(requirement_files=["openvino"]),
+    "full": get_required_packages(requirement_files=["loggers", "notebooks", "openvino"]),
 }
 
 
@@ -102,9 +103,11 @@ setup(
     'Licensed under the Apache License, Version 2.0 (the "License")'
     "See LICENSE file for more details.",
     python_requires=">=3.7",
-    packages=find_packages(exclude=("tests",)),
+    package_dir={"": "src"},
+    packages=find_packages(where="src", include=["anomalib", "anomalib.*"]),
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRAS_REQUIRE,
+    include_package_data=True,
     package_data={"": ["config.yaml"]},
     entry_points={"console_scripts": ["anomalib=anomalib.utils.cli.cli:main"]},
 )

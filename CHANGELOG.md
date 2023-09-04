@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.6.0+obx.1.1.0]
+
+### Updated
+
+- Upgrade anomalib to v0.6.0
+- Change EfficientAD code to use nelson implementation for better results
+- Remove the usage of augmentation images during efficient ad training
+
 ## [v0.4.0+obx.1.0.2]
 
 ### Updated
@@ -14,7 +22,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - Remove faiss-gpu requirement to avoid problems with a windows installation
-
 ## [v0.4.0] - 2023-03-01
 
 ### Added
@@ -41,6 +48,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- Configure reference frame for multi-frame video clips (<https://github.com/openvinotoolkit/anomalib/pull/1023>)
 - Bump OpenVINO version to `2022.3.0` (<https://github.com/openvinotoolkit/anomalib/pull/932>)
 - Remove the dependecy on a specific `torchvision` and `torchmetrics` packages.
 - Bump PyTorch Lightning version to v.1.9.\* (<https://github.com/openvinotoolkit/anomalib/pull/870>)

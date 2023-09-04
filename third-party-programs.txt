@@ -38,3 +38,7 @@ terms are listed below.
 6. Reference aupro-implementation contained in ./tests/helpers/aupro_reference.py
    Copyright (c) 2021 @eliahuhorwitz, https://github.com/eliahuhorwitz/3D-ADS.
    SPDX-License-Identifier: MIT
+
+7. CLIP neural network used for deep feature extraction in AI-VAD model
+   Copyright (c) 2022 @openai, https://github.com/openai/CLIP.
+   SPDX-License-Identifier: MIT
