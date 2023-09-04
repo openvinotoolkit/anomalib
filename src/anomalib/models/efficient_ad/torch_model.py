@@ -312,6 +312,7 @@ class EfficientAdModel(nn.Module):
     ) -> None:
         super().__init__()
 
+        self.pad_maps = pad_maps
         self.teacher: PDN_M | PDN_S | nn.Sequential
         self.student: PDN_M | PDN_S | nn.Sequential
 
