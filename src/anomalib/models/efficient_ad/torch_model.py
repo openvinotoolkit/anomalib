@@ -287,8 +287,8 @@ def get_autoencoder(out_channels=384):
     )
 
 
-class EfficientADModel(nn.Module):
-    """EfficientAD model.
+class EfficientAdModel(nn.Module):
+    """EfficientAd model.
 
     Args:
         teacher_out_channels (int): number of convolution output channels of the pre-trained teacher model
@@ -307,6 +307,7 @@ class EfficientADModel(nn.Module):
         input_size: tuple[int, int],
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         padding: bool = False,
+        pad_maps: bool = True,
         anomalib_version: bool = False,
     ) -> None:
         super().__init__()
