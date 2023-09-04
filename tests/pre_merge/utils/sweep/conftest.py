@@ -7,6 +7,7 @@ from tempfile import TemporaryDirectory
 from typing import Optional, Union
 
 import pytest
+from lightning.pytorch import Trainer
 from omegaconf import DictConfig, ListConfig
 
 from anomalib.config import get_configurable_parameters

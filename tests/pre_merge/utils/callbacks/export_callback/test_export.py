@@ -1,6 +1,7 @@
 import os
 import tempfile
 
+import lightning.pytorch as pl
 import pytest
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 
@@ -53,7 +54,8 @@ def test_export_model_callback(dummy_datamodule: MVTec, export_mode):
             EarlyStopping(monitor=config.model.metric),
         ]
         trainer = AnomalibTrainer(
-            gpus=1,
+            accelerator="gpu",
+            devices=1,
             callbacks=model.callbacks,
             logger=False,
             enable_checkpointing=False,

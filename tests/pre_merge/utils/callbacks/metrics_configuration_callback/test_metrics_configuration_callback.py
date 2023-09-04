@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import lightning.pytorch as pl
 import pytest
 from omegaconf import OmegaConf
 
