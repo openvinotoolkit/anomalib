@@ -8,7 +8,7 @@
 
 [Key Features](#key-features) •
 [Getting Started](#getting-started) •
-[Docs](https://openvinotoolkit.github.io/anomalib) •
+[Docs](https://anomalib.readthedocs.io/en/latest/) •
 [License](https://github.com/openvinotoolkit/anomalib/blob/main/LICENSE)
 
 [![python](https://img.shields.io/badge/python-3.7%2B-green)]()
@@ -17,10 +17,9 @@
 [![comet](https://custom-icon-badges.herokuapp.com/badge/comet__ml-3.31.7-orange?logo=logo_comet_ml)](https://www.comet.com/site/products/ml-experiment-tracking/?utm_source=anomalib&utm_medium=referral)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/684927c1c76c4c5e94bb53480812fbbb)](https://www.codacy.com/gh/openvinotoolkit/anomalib/dashboard?utm_source=github.com&utm_medium=referral&utm_content=openvinotoolkit/anomalib&utm_campaign=Badge_Grade)
 [![black](https://img.shields.io/badge/code%20style-black-000000.svg)]()
-[![Nightly-Regression Test](https://github.com/openvinotoolkit/anomalib/actions/workflows/nightly.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/nightly.yml)
 [![Pre-Merge Checks](https://github.com/openvinotoolkit/anomalib/actions/workflows/pre_merge.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/pre_merge.yml)
 [![codecov](https://codecov.io/gh/openvinotoolkit/anomalib/branch/main/graph/badge.svg?token=Z6A07N1BZK)](https://codecov.io/gh/openvinotoolkit/anomalib)
-[![Docs](https://github.com/openvinotoolkit/anomalib/actions/workflows/docs.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/docs.yml)
+[![Documentation Status](https://readthedocs.org/projects/anomalib/badge/?version=latest)](https://anomalib.readthedocs.io/en/latest/?badge=latest)
 [![Downloads](https://static.pepy.tech/personalized-badge/anomalib?period=total&units=international_system&left_color=grey&right_color=green&left_text=PyPI%20Downloads)](https://pepy.tech/project/anomalib)
 
 </div>
@@ -140,6 +139,9 @@ model:
 
 It is also possible to train on a custom folder dataset. To do so, `data` section in `config.yaml` is to be modified as follows:
 
+<details>
+<summary>Configuration for Custom Dataset</summary>
+
 ```yaml
 dataset:
   name: <name-of-the-dataset>
@@ -172,6 +174,9 @@ dataset:
     use_random_tiling: False
     random_tile_count: 16
 ```
+
+</details>
+By placing the above configuration to the `dataset` section of the `config.yaml` file, the model will be trained on the custom dataset.
 
 # Inference
 
