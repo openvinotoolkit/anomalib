@@ -38,8 +38,7 @@ class PRO(Metric):
         target = dim_zero_cat(self.target)
         preds = dim_zero_cat(self.preds)
 
-        target = target.unsqueeze(1)  # kornia expects N1HW format
-        target = target.type(torch.float)  # kornia expects FloatTensor
+        target = target.unsqueeze(1).type(torch.float)  # kornia expects N1HW and FloatTensor format
         if target.is_cuda:
             comps = connected_components_gpu(target)
         else:
