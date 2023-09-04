@@ -70,10 +70,6 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
 
     callbacks.extend([checkpoint, TimerCallback()])
 
-    if "resume_from_checkpoint" in config.trainer.keys() and config.trainer.resume_from_checkpoint is not None:
-        load_model = LoadModelCallback(config.trainer.resume_from_checkpoint)
-        callbacks.append(load_model)
-
     # Add post-processing configurations to AnomalyModule.
     image_threshold = (
         config.metrics.threshold.manual_image if "manual_image" in config.metrics.threshold.keys() else None
@@ -125,9 +121,7 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
                 )
             )
         if config.optimization.export_mode is not None:
-            from .export import (  # pylint: disable=import-outside-toplevel
-                ExportCallback,
-            )
+            from .export import ExportCallback  # pylint: disable=import-outside-toplevel
 
             logger.info("Setting model export to %s", config.optimization.export_mode)
             callbacks.append(

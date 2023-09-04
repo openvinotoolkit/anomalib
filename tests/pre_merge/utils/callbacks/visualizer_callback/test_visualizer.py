@@ -3,8 +3,8 @@ import os
 import tempfile
 from pathlib import Path
 
+import lightning.pytorch as pl
 import pytest
-import pytorch_lightning as pl
 from omegaconf.omegaconf import OmegaConf
 
 from anomalib.utils.loggers import AnomalibTensorBoardLogger

@@ -204,7 +204,6 @@ def update_datasets_config(config: DictConfig | ListConfig) -> DictConfig | List
 def get_configurable_parameters(
     model_name: str | None = None,
     config_path: Path | str | None = None,
-    weight_file: str | None = None,
     config_filename: str | None = "config",
     config_file_extension: str | None = "yaml",
 ) -> DictConfig | ListConfig:
@@ -213,7 +212,6 @@ def get_configurable_parameters(
     Args:
         model_name: str | None:  (Default value = None)
         config_path: Path | str | None:  (Default value = None)
-        weight_file: Path to the weight file
         config_filename: str | None:  (Default value = "config")
         config_file_extension: str | None:  (Default value = "yaml")
 
@@ -291,9 +289,6 @@ def get_configurable_parameters(
 
     # loggers should write to results/model/dataset/category/ folder
     config.trainer.default_root_dir = str(project_path)
-
-    if weight_file:
-        config.trainer.resume_from_checkpoint = weight_file
 
     config = update_nncf_config(config)
 
