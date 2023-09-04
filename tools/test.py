@@ -36,7 +36,6 @@ def test(args: Namespace):
     config = get_configurable_parameters(
         model_name=args.model,
         config_path=args.config,
-        weight_file=args.weight_file,
     )
 
     if config.project.seed:
@@ -48,7 +47,7 @@ def test(args: Namespace):
     callbacks = get_callbacks(config)
 
     trainer = Trainer(callbacks=callbacks, **config.trainer)
-    trainer.test(model=model, datamodule=datamodule)
+    trainer.test(model=model, datamodule=datamodule, ckpt_path=args.weight_file)
 
 
 if __name__ == "__main__":
