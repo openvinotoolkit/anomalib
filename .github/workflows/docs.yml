@@ -8,66 +8,61 @@ on:
   workflow_dispatch: # run on request (no need for PR)
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
   Build-and-Publish-Documentation:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: [docs]
     steps:
       - name: CHECKOUT REPOSITORY
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
+
       - name: Install requirements
         run: |
           pip install -r requirements/docs.txt
-          pip install .[full]
+          pip install ".[full]"
+
       - name: Link dataset path to local directory as nbsphinx runs the notebook
         run: ln -s $ANOMALIB_DATASET_PATH ./datasets
       - name: Build and Commit Docs
         run: |
           cd docs
           make html
-      - name: Create gh-pages branch
-        run: |
-          echo ::set-output name=SOURCE_NAME::${GITHUB_REF#refs/*/}
-          echo ::set-output name=SOURCE_BRANCH::${GITHUB_REF#refs/heads/}
-          echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
+          cd ..
 
-          existed_in_remote=$(git ls-remote --heads origin gh-pages)
-
-          if [[ -z ${existed_in_remote} ]]; then
-            echo "Creating gh-pages branch"
-            git config --local user.email "action@github.com"
-            git config --local user.name "GitHub Action"
-            git checkout --orphan gh-pages
-            git reset --hard
-            touch .nojekyll
-            git add .nojekyll
-            git commit -m "Initializing gh-pages branch"
-            git push origin gh-pages
-            git checkout ${{steps.branch_name.outputs.SOURCE_NAME}}
-            echo "Created gh-pages branch"
-          else
-            echo "Branch gh-pages already exists"
-          fi
-      - name: Commit docs to gh-pages branch
+      - name: Clean directory
         run: |
-          git fetch
-          git checkout gh-pages
           mkdir -p /tmp/docs_build
           cp -r docs/build/html/* /tmp/docs_build/
           rm -rf ./*
           cp -r /tmp/docs_build/* ./
           rm -rf /tmp/docs_build
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add .
-          git commit -m "Update documentation" -a || true
-      - name: Push changes
-        uses: ad-m/github-push-action@master
+          touch .nojekyll
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v2
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: gh-pages
+          # Upload entire repository
+          path: "."
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1

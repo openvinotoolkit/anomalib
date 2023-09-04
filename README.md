@@ -156,6 +156,10 @@ dataset:
   train_batch_size: 32
   test_batch_size: 32
   num_workers: 8
+  normalization: imagenet # data distribution to which the images will be normalized: [none, imagenet]
+  test_split_mode: from_dir # options: [from_dir, synthetic]
+  val_split_mode: same_as_test # options: [same_as_test, from_test, sythetic]
+  val_split_ratio: 0.5 # fraction of train/test images held out for validation (usage depends on val_split_mode)
   transform_config:
     train: null
     val: null
