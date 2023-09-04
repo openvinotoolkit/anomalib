@@ -6,7 +6,6 @@ This dataset can be used when there is a lack of real anomalous data.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
 import math
@@ -131,7 +130,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         self.setup()
 
     @classmethod
-    def from_dataset(cls, dataset: AnomalibDataset) -> SyntheticAnomalyDataset:
+    def from_dataset(cls, dataset: AnomalibDataset) -> "SyntheticAnomalyDataset":
         """Create a synthetic anomaly dataset from an existing dataset of normal images.
 
         Args:
@@ -140,7 +139,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         """
         return cls(task=dataset.task, transform=dataset.transform, source_samples=dataset.samples)
 
-    def __copy__(self) -> SyntheticAnomalyDataset:
+    def __copy__(self) -> "SyntheticAnomalyDataset":
         """Returns a shallow copy of the dataset object and prevents cleanup when original object is deleted."""
         cls = self.__class__
         new = cls.__new__(cls)
@@ -148,7 +147,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         self._cleanup = False
         return new
 
-    def __deepcopy__(self, _memo: dict) -> SyntheticAnomalyDataset:
+    def __deepcopy__(self, _memo: dict) -> "SyntheticAnomalyDataset":
         """Returns a deep copy of the dataset object and prevents cleanup when original object is deleted."""
         cls = self.__class__
         new = cls.__new__(cls)

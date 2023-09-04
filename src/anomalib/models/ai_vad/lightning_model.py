@@ -6,7 +6,6 @@ Paper https://arxiv.org/pdf/2212.00789.pdf
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
 

@@ -1,6 +1,5 @@
 """Gaussian blurring via pytorch."""
 
-from __future__ import annotations
 
 from kornia.filters import get_gaussian_kernel2d
 from kornia.filters.filter import _compute_padding

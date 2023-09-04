@@ -11,10 +11,9 @@ Windows
 .. warning::
     The version of Python that is available in the Microsoft Store is not recommended. It may require installation of additional packages to work well with OpenVINO and the notebooks.
 
--  Download a Python installer from python.org. Choose Python 3.8,
-   3.9 or 3.10 and make sure to pick a 64 bit version. For example, this
-   3.8 installer:
-   https://www.python.org/ftp/python/3.8.8/python-3.8.8-amd64.exe
+-  Download a Python installer from python.org. Choose Python 3.10
+   and make sure to pick a 64 bit version. For example, this 3.10 installer:
+   https://www.python.org/ftp/python/3.10.0/python-3.10.0-embed-amd64.zip
 -  Double click on the installer to run it, and follow the steps in the
    installer. **Check the box to add Python to your PATH**, and to
    install ``py``. At the end of the installer, there is an option to
@@ -28,7 +27,7 @@ Windows
 -  Double click on the installer to run it, and follow the steps in the
    installer.
 
-3. Install C++ Redistributable (For Python 3.8)
+3. Install C++ Redistributable (For Python 3.10)
 -----------------------------------------------
 
 -  Download `Microsoft Visual C++
@@ -83,9 +82,9 @@ dependencies.
 Troubleshooting
 ---------------
 
--  If you have installed multiple versions of Python, use ``py -3.8``
+-  If you have installed multiple versions of Python, use ``py -3.10``
    when creating your virtual environment to specify a supported version
-   (in this case 3.7).
+   (in this case 3.10).
 
 -  If you use Anaconda, you may need to add OpenVINO to your Windows
    PATH. See the

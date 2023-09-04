@@ -7,7 +7,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import numpy as np
 import torch
@@ -91,7 +90,7 @@ class SparseRandomProjection:
         denominator = (eps**2 / 2) - (eps**3 / 3)
         return (4 * np.log(n_samples) / denominator).astype(np.int64)
 
-    def fit(self, embedding: Tensor) -> SparseRandomProjection:
+    def fit(self, embedding: Tensor) -> "SparseRandomProjection":
         """Generates sparse matrix from the embedding tensor.
 
         Args:

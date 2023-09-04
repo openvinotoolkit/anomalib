@@ -4,8 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from __future__ import annotations
-
 from matplotlib.figure import Figure
 from torch import Tensor
 from torchmetrics import PrecisionRecallCurve

@@ -4,8 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from __future__ import annotations
-
 import torch
 import torch.nn.functional as F
 from einops import rearrange

@@ -6,7 +6,6 @@
 # TODO: This would require a new design.
 # TODO: https://jira.devtools.intel.com/browse/IAAALD-149
 
-from __future__ import annotations
 
 import time
 import warnings

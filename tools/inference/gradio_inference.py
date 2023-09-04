@@ -6,7 +6,6 @@ This script provide a gradio web interface
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 from argparse import ArgumentParser
 from importlib import import_module

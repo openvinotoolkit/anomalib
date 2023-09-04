@@ -21,10 +21,10 @@ Step 1: Clone the Repository
 
    git clone https://github.com/openvinotoolkit/anomalib.git
 
-Step 2: Create a Conda Environment with Python 3.8
+Step 2: Create a Conda Environment with Python 3.10
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In this tutorial, we use Python 3.8. If you want to use a higher version, that is also possible.
+In this tutorial, we use Python 3.10. If you want to use a higher version, that is also possible.
 
 .. code:: bash
 

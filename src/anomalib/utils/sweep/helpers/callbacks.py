@@ -4,15 +4,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from __future__ import annotations
-
 from lightning.pytorch import Callback
 from omegaconf import DictConfig, ListConfig
 
-from anomalib.utils.callbacks import (
-    MetricsConfigurationCallback,
-    PostProcessingConfigurationCallback,
-)
+from anomalib.utils.callbacks import MetricsConfigurationCallback, PostProcessingConfigurationCallback
 from anomalib.utils.callbacks.timer import TimerCallback
 
 

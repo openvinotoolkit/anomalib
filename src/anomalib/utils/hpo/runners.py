@@ -3,25 +3,20 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import gc
 
 import lightning.pytorch as pl
 import torch
-import wandb
 from comet_ml import Optimizer
 from lightning.pytorch.loggers import CometLogger, WandbLogger
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
+import wandb
 from anomalib.config import update_input_size_config
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
-from anomalib.utils.sweep import (
-    flatten_sweep_params,
-    get_sweep_callbacks,
-    set_in_nested_config,
-)
+from anomalib.utils.sweep import flatten_sweep_params, get_sweep_callbacks, set_in_nested_config
 
 from .config import flatten_hpo_params
 
