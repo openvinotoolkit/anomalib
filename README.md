@@ -181,7 +181,7 @@ By placing the above configuration to the `dataset` section of the `config.yaml`
 
 # Inference
 
-Anomalib includes multiple inferencing scripts, including Torch, Lightning, Gradio, and OpenVINO inferencers, to perform inference using the trained/exported model. In this section, we will go over how to use these scripts to perform inference.
+Anomalib includes multiple inferencing scripts, including Torch, Lightning, Gradio, and OpenVINO inferencers to perform inference using the trained/exported model. In this section, we will go over how to use these scripts to perform inference.
 
 <details>
 <summary>PyTorch Inference</summary>
