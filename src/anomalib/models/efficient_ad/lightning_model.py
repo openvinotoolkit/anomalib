@@ -11,6 +11,7 @@ import logging
 from pathlib import Path
 
 import itertools
+from typing import Literal
 import albumentations as A
 import numpy as np
 import torch
@@ -22,7 +23,7 @@ from torch import Tensor, optim
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 
-from anomalib.data.utils import DownloadInfo, download_and_extract
+from anomalib.data.utils import DownloadInfo, download_and_extract, download_single_file
 from anomalib.models.components import AnomalyModule
 
 from .torch_model import EfficientAdModel, EfficientAdModelSize, reduce_tensor_elems
@@ -39,6 +40,18 @@ WEIGHTS_DOWNLOAD_INFO = DownloadInfo(
     name="efficientad_pretrained_weights.zip",
     url="https://github.com/openvinotoolkit/anomalib/releases/download/efficientad_pretrained_weights/efficientad_pretrained_weights.zip",
     hash="ec6113d728969cd233271eeed7d692f2",
+)
+
+NELSON_TEACHER_S = DownloadInfo(
+    name="teacher_small.pth",
+    url="https://raw.githubusercontent.com/nelson1425/EfficientAD/main/models/teacher_small.pth",
+    hash="31c3904bbb722addb96c45c0a469853f",
+)
+
+NELSON_TEACHER_M = DownloadInfo(
+    name="teacher_medium.pth",
+    url="https://raw.githubusercontent.com/nelson1425/EfficientAD/main/models/teacher_medium.pth",
+    hash="c3e413767011824b76cf23ae76ea329f",
 )
 
 
@@ -66,20 +79,22 @@ class EfficientAd(AnomalyModule):
         pad_maps (bool): relevant if padding is set to False. In this case, pad_maps = True pads the
             output anomaly maps so that their size matches the size in the padding = True case.
         batch_size (int): batch size for imagenet dataloader
+        pretrained_teacher_type (str): Type of pretrained model. Currently nelson and anomalib are supported.
     """
 
     def __init__(
         self,
-        pretrained_models_dir: str,
         imagenette_dir: str,
         teacher_out_channels: int,
         image_size: tuple[int, int],
+        pretrained_models_dir: str = "./efficient_ad_pretrained_models",
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         lr: float = 0.0001,
         weight_decay: float = 0.00001,
         padding: bool = False,
         pad_maps: bool = True,
         batch_size: int = 1,
+        pretrained_teacher_type: Literal["nelson", "anomalib"] = "nelson",
     ) -> None:
         super().__init__()
 
@@ -90,6 +105,7 @@ class EfficientAd(AnomalyModule):
             model_size=model_size,
             padding=padding,
             pad_maps=pad_maps,
+            pretrained_teacher_type=pretrained_teacher_type,
         )
         self.batch_size = batch_size
         self.image_size = image_size
@@ -102,11 +118,19 @@ class EfficientAd(AnomalyModule):
         self.prepare_imagenette_data()
 
     def prepare_pretrained_model(self) -> None:
-        if not self.pretrained_models_dir.is_dir():
+        if self.model.pretrained_teacher_type == "nelson":
+            if self.model.model_size == EfficientAdModelSize.S:
+                teacher_path = self.pretrained_models_dir / NELSON_TEACHER_S.name
+                download_single_file(self.pretrained_models_dir, NELSON_TEACHER_S)
+            else:
+                teacher_path = self.pretrained_models_dir / NELSON_TEACHER_M.name
+                download_single_file(self.pretrained_models_dir, NELSON_TEACHER_M)
+        else:
             download_and_extract(self.pretrained_models_dir, WEIGHTS_DOWNLOAD_INFO)
-        teacher_path = (
-            self.pretrained_models_dir / "efficientad_pretrained_weights" / f"nelson_teacher_{self.model_size}.pth"
-        )
+            teacher_path = (
+                self.pretrained_models_dir / "efficientad_pretrained_weights" / f"nelson_teacher_{self.model_size}.pth"
+            )
+
         logger.info(f"Load pretrained teacher model from {teacher_path}")
         self.model.teacher.load_state_dict(torch.load(teacher_path, map_location=torch.device(self.device)))
 
@@ -125,9 +149,11 @@ class EfficientAd(AnomalyModule):
 
         if not self.imagenette_dir.is_dir():
             download_and_extract(self.imagenette_dir, IMAGENETTE_DOWNLOAD_INFO)
+
         imagenet_dataset = ImageFolder(
             self.imagenette_dir, transform=TransformsWrapper(t=self.data_transforms_imagenet)
         )
+
         self.imagenet_loader = DataLoader(imagenet_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True)
         self.imagenet_iterator = iter(self.imagenet_loader)
 
@@ -298,6 +324,7 @@ class EfficientAdLightning(EfficientAd):
             pretrained_models_dir=hparams.model.pretrained_models_dir,
             imagenette_dir=hparams.model.imagenette_dir,
             pad_maps=hparams.model.pad_maps,
+            pretrained_teacher_type=hparams.model.pretrained_teacher_type,
         )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)

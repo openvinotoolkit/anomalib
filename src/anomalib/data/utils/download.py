@@ -273,7 +273,6 @@ def extract(file_name: Path, root: Path) -> None:
             members = tar_file.getmembers()
             safe_members = [member for member in members if not is_file_potentially_dangerous(member.name)]
             safe_extract(tar_file, root, safe_members)
-
     else:
         raise ValueError(f"Unrecognized file format: {file_name}")
 
@@ -310,6 +309,35 @@ def download_and_extract(root: Path, info: DownloadInfo) -> None:
         hash_check(downloaded_file_path, info.hash)
 
     extract(downloaded_file_path, root)
+
+
+def download_single_file(root: Path, info: DownloadInfo) -> None:
+    """Download a single file from the web and store it locally.
+
+    Args:
+        root (Path): Root directory where the dataset will be stored.
+        info (DownloadInfo): Info needed to download the dataset.
+    """
+    root.mkdir(parents=True, exist_ok=True)
+
+    # save the compressed file in the specified root directory, using the same file name as on the server
+    if info.filename:
+        downloaded_file_path = root / info.filename
+    else:
+        downloaded_file_path = root / info.url.split("/")[-1]
+
+    if downloaded_file_path.exists():
+        logger.info("Existing file found. Skipping download stage.")
+    else:
+        logger.info("Downloading the %s dataset.", info.name)
+        with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc=info.name) as progress_bar:
+            urlretrieve(  # nosec - suppress bandit warning (urls are hardcoded)
+                url=f"{info.url}",
+                filename=downloaded_file_path,
+                reporthook=progress_bar.update_to,
+            )
+        logger.info("Checking the hash of the downloaded file.")
+        hash_check(downloaded_file_path, info.hash)
 
 
 def is_within_directory(directory: Path, target: Path):

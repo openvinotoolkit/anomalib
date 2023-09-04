@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 import random
 from enum import Enum
+from typing import Literal
 
 import torch
 import torch.nn.functional as F
@@ -299,6 +300,9 @@ class EfficientAdModel(nn.Module):
         pad_maps (bool): relevant if padding is set to False. In this case, pad_maps = True pads the
             output anomaly maps so that their size matches the size in the padding = True case.
         device (str): which device the model should be loaded on
+        pretrained_teacher_type (str): which pretrained teacher model to use. Currently supported are:
+            - "nelson": Nelson's original models
+            - "anomalib": Anomalib's models
     """
 
     def __init__(
@@ -308,32 +312,34 @@ class EfficientAdModel(nn.Module):
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         padding: bool = False,
         pad_maps: bool = True,
-        anomalib_version: bool = False,
+        pretrained_teacher_type: Literal["anomalib", "nelson"] = "nelson",
     ) -> None:
         super().__init__()
 
         self.pad_maps = pad_maps
         self.teacher: PDN_M | PDN_S | nn.Sequential
         self.student: PDN_M | PDN_S | nn.Sequential
+        self.pretrained_teacher_type = pretrained_teacher_type
+        self.model_size = model_size
 
-        if model_size == EfficientAdModelSize.M:
-            if anomalib_version:
+        if self.model_size == EfficientAdModelSize.M:
+            if self.pretrained_teacher_type == "anomalib":
                 self.teacher = PDN_M(out_channels=teacher_out_channels, padding=padding).eval()
                 self.student = PDN_M(out_channels=teacher_out_channels * 2, padding=padding)
             else:
                 self.teacher = get_pdn_medium(out_channels=teacher_out_channels, padding=padding).eval()
                 self.student = get_pdn_medium(out_channels=teacher_out_channels * 2, padding=padding)
-        elif model_size == EfficientAdModelSize.S:
-            if anomalib_version:
+        elif self.model_size == EfficientAdModelSize.S:
+            if self.pretrained_teacher_type == "anomalib":
                 self.teacher = PDN_S(out_channels=teacher_out_channels, padding=padding).eval()
                 self.student = PDN_S(out_channels=teacher_out_channels * 2, padding=padding)
             else:
                 self.teacher = get_pdn_small(out_channels=teacher_out_channels, padding=padding).eval()
                 self.student = get_pdn_small(out_channels=teacher_out_channels * 2, padding=padding)
         else:
-            raise ValueError(f"Unknown model size {model_size}")
+            raise ValueError(f"Unknown model size {self.model_size}")
 
-        if anomalib_version:
+        if self.pretrained_teacher_type == "anomalib":
             self.ae: AutoEncoder = AutoEncoder(
                 out_channels=teacher_out_channels, padding=padding, img_size=input_size[0]
             )
@@ -450,9 +456,10 @@ class EfficientAdModel(nn.Module):
                 )
             # We interpolate after combining the maps, as it returns better results w/ the padding
             map_combined = 0.5 * map_st + 0.5 * map_stae
-            map_combined = torch.nn.functional.pad(map_combined, (4, 4, 4, 4))
-            output = F.interpolate(map_combined, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
 
-            anomaly_score = output.reshape((output.shape[0], -1)).max(1)[0]
+            # map_combined = torch.nn.functional.pad(map_combined, (4, 4, 4, 4))
+            # output = F.interpolate(map_combined, size=(self.input_size[0], self.input_size[1]), mode="bilinear")
 
-            return output, anomaly_score, map_st, map_stae
+            anomaly_score = map_combined.reshape((map_combined.shape[0], -1)).max(1)[0]
+
+            return map_combined, anomaly_score, map_st, map_stae
