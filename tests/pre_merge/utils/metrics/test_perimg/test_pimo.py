@@ -2,8 +2,8 @@ import tempfile
 from pathlib import Path
 
 import torch
-
-from anomalib.utils.metrics.perimg.pimo import AULogPImO, AUPImO, PImO
+import pytest
+from anomalib.utils.metrics.perimg.pimo import AULogPImO, AUPImO, PImO, PImOResult, AUPImOResult
 
 
 def pytest_generate_tests(metafunc):
@@ -240,24 +240,46 @@ def pytest_generate_tests(metafunc):
 def test_pimo(anomaly_maps, masks):
     # the expected values are already tested in test_aupimo
     pimo = PImO()
+
+    with pytest.raises(RuntimeError):
+        pimo.compute()  # empty
+
     pimo.update(anomaly_maps, masks)
     pimoresult = pimo.compute()
+
+    assert isinstance(pimoresult.shared_fpr_metric, str) and len(pimoresult.shared_fpr_metric) > 0
     assert pimoresult.thresholds.ndim == 1
     assert pimoresult.fprs.ndim == 2
     assert pimoresult.shared_fpr.ndim == 1
     assert pimoresult.tprs.ndim == 2
     assert pimoresult.image_classes.ndim == 1
+
     pimo.plot()
+
+    tup = pimoresult.to_tuple()
+    assert len(tup) == 5
+
+    dic = pimoresult.to_dict()
+    from_dict = PImOResult.from_dict(dic)
+
+    assert pimoresult.shared_fpr_metric == from_dict.shared_fpr_metric
+    assert torch.allclose(pimoresult.thresholds, from_dict.thresholds)
+    assert torch.allclose(pimoresult.fprs, from_dict.fprs, equal_nan=True)
+    assert torch.allclose(pimoresult.shared_fpr, from_dict.shared_fpr)
+    assert torch.allclose(pimoresult.tprs, from_dict.tprs, equal_nan=True)
+    assert torch.allclose(pimoresult.image_classes, from_dict.image_classes)
+
     with tempfile.TemporaryDirectory() as tmpdir:
         fpath = Path(tmpdir) / "pimo.pt"
-        pimo.save(fpath)
+        pimoresult.save(fpath)
         assert fpath.exists()
-        pimoresult_loaded = pimo.load(fpath)
-    assert torch.allclose(pimoresult.thresholds, pimoresult_loaded.thresholds)
-    assert torch.allclose(pimoresult.fprs, pimoresult_loaded.fprs, equal_nan=True)
-    assert torch.allclose(pimoresult.shared_fpr, pimoresult_loaded.shared_fpr)
-    assert torch.allclose(pimoresult.tprs, pimoresult_loaded.tprs, equal_nan=True)
-    assert torch.allclose(pimoresult.image_classes, pimoresult_loaded.image_classes)
+        from_load = PImOResult.load(fpath)
+
+    assert torch.allclose(pimoresult.thresholds, from_load.thresholds)
+    assert torch.allclose(pimoresult.fprs, from_load.fprs, equal_nan=True)
+    assert torch.allclose(pimoresult.shared_fpr, from_load.shared_fpr)
+    assert torch.allclose(pimoresult.tprs, from_load.tprs, equal_nan=True)
+    assert torch.allclose(pimoresult.image_classes, from_load.image_classes)
 
 
 def test_aupimo(
@@ -271,42 +293,62 @@ def test_aupimo(
     ubound,
 ):
     aupimo = AUPImO(num_thresholds=expected_thresholds.shape[0], ubound=ubound)
+
+    with pytest.raises(RuntimeError):
+        aupimo.compute()  # empty
+
     str(aupimo)
     aupimo.update(anomaly_maps, masks)
     # `com` stands for `computed`
-    pimoresult, com_aupimos = aupimo.compute()
-    (com_thresholds, _, com_shared_fpr, com_tprs, com_image_classes) = pimoresult
+    pimoresult, aucresult = aupimo.compute()
+
+    (com_thresholds, _, com_shared_fpr, com_tprs, com_image_classes) = pimoresult.to_tuple()
+
     assert pimoresult.thresholds.ndim == 1
     assert pimoresult.fprs.ndim == 2
     assert pimoresult.shared_fpr.ndim == 1
     assert pimoresult.tprs.ndim == 2
     assert pimoresult.image_classes.ndim == 1
-    assert com_aupimos.ndim == 1
+
     assert (com_thresholds == expected_thresholds).all()
     assert (com_shared_fpr == expected_fpr).all()
     assert torch.allclose(com_tprs, expected_tprs, equal_nan=True)
     assert (com_image_classes == expected_image_classes).all()
-    assert torch.allclose(com_aupimos, expected_aupimos, equal_nan=True)
+
+    assert isinstance(aucresult.shared_fpr_metric, str) and len(aucresult.shared_fpr_metric) > 0
+    assert isinstance(aucresult.shared_fpr_scale, str) and len(aucresult.shared_fpr_scale) > 0
+    assert aucresult.lbound.ndim == 0 and aucresult.lbound.is_floating_point()
+    assert aucresult.ubound.ndim == 0 and aucresult.ubound.is_floating_point()
+    com_aucs = aucresult.aucs
+    assert com_aucs.ndim == 1
+    assert torch.allclose(com_aucs, expected_aupimos, equal_nan=True)
 
     stats = aupimo.boxplot_stats()
     assert len(stats) > 0
 
+    dic = aucresult.to_dict()
+    from_dict = AUPImOResult.from_dict(dic)
+    assert aucresult.shared_fpr_metric == from_dict.shared_fpr_metric
+    assert aucresult.shared_fpr_scale == from_dict.shared_fpr_scale
+    assert torch.allclose(aucresult.lbound, from_dict.lbound)
+    assert torch.allclose(aucresult.ubound, from_dict.ubound)
+    assert torch.allclose(aucresult.lbound_threshold, from_dict.lbound_threshold)
+    assert torch.allclose(aucresult.ubound_threshold, from_dict.ubound_threshold)
+    assert torch.allclose(aucresult.aucs, from_dict.aucs, equal_nan=True)
+
     with tempfile.TemporaryDirectory() as tmpdir:
         fpath = Path(tmpdir) / "aupimo.json"
-        fpath_curve = aupimo.save(fpath, curve=True)
+        aucresult.save(fpath)
         assert fpath.exists()
-        assert fpath_curve is not None
-        assert fpath_curve.exists()
-        pimoresult_loaded, aupimo_loaded = aupimo.load(fpath, curve=True)
-    assert torch.allclose(pimoresult.thresholds, pimoresult_loaded.thresholds)
-    assert torch.allclose(pimoresult.fprs, pimoresult_loaded.fprs, equal_nan=True)
-    assert torch.allclose(pimoresult.shared_fpr, pimoresult_loaded.shared_fpr)
-    assert torch.allclose(pimoresult.tprs, pimoresult_loaded.tprs, equal_nan=True)
-    assert torch.allclose(pimoresult.image_classes, pimoresult_loaded.image_classes)
-    ubound_loaded = aupimo_loaded["ubound"]
-    assert ubound == ubound_loaded
-    aupimo_loaded = aupimo_loaded["aupimo"]
-    assert torch.allclose(com_aupimos, aupimo_loaded, equal_nan=True)
+        from_load = AUPImOResult.load(fpath)
+
+    assert aucresult.shared_fpr_metric == from_load.shared_fpr_metric
+    assert aucresult.shared_fpr_scale == from_load.shared_fpr_scale
+    assert torch.allclose(aucresult.lbound, from_load.lbound)
+    assert torch.allclose(aucresult.ubound, from_load.ubound)
+    assert torch.allclose(aucresult.lbound_threshold, from_load.lbound_threshold)
+    assert torch.allclose(aucresult.ubound_threshold, from_load.ubound_threshold)
+    assert torch.allclose(aucresult.aucs, from_load.aucs, equal_nan=True)
 
 
 def test_aupimo_plots(anomaly_maps, masks, ubound):
@@ -354,6 +396,10 @@ def test_aulogpimo(
     AULogPImO.random_model_auc_from_bounds(lbound, ubound)
 
     aulogpimo = AULogPImO(num_thresholds=expected_thresholds.shape[0], lbound=lbound, ubound=ubound)
+
+    with pytest.raises(RuntimeError):
+        aulogpimo.compute()
+
     str(aulogpimo)
     assert 0 < aulogpimo.max_primitive_auc
     assert 0 < aulogpimo.random_model_primitive_auc < aulogpimo.max_primitive_auc
@@ -361,39 +407,27 @@ def test_aulogpimo(
 
     aulogpimo.update(anomaly_maps, masks)
     # `com` stands for `computed`
-    pimoresult, com_aulogpimos = aulogpimo.compute()
-    (com_thresholds, _, com_shared_fpr, com_tprs, com_image_classes) = pimoresult
+    pimoresult, aucresult = aulogpimo.compute()
+
+    (com_thresholds, _, com_shared_fpr, com_tprs, com_image_classes) = pimoresult.to_tuple()
+
     assert pimoresult.thresholds.ndim == 1
     assert pimoresult.fprs.ndim == 2
     assert pimoresult.shared_fpr.ndim == 1
     assert pimoresult.tprs.ndim == 2
     assert pimoresult.image_classes.ndim == 1
-    assert com_aulogpimos.ndim == 1
+
     assert (com_thresholds == expected_thresholds).all()
     assert (com_shared_fpr == expected_fpr).all()
     assert torch.allclose(com_tprs, expected_tprs, equal_nan=True)
     assert (com_image_classes == expected_image_classes).all()
+
+    com_aulogpimos = aucresult.aucs
+    assert com_aulogpimos.ndim == 1
     assert torch.allclose(com_aulogpimos, expected_aulogpimos, equal_nan=True)
 
     stats = aulogpimo.boxplot_stats()
     assert len(stats) > 0
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        fpath = Path(tmpdir) / "aulogpimo.json"
-        fpath_curve = aulogpimo.save(fpath, curve=True)
-        assert fpath.exists()
-        assert fpath_curve is not None
-        assert fpath_curve.exists()
-        pimoresult_loaded, aulogpimo_loaded = aulogpimo.load(fpath, curve=True)
-    assert torch.allclose(pimoresult.thresholds, pimoresult_loaded.thresholds)
-    assert torch.allclose(pimoresult.fprs, pimoresult_loaded.fprs, equal_nan=True)
-    assert torch.allclose(pimoresult.shared_fpr, pimoresult_loaded.shared_fpr)
-    assert torch.allclose(pimoresult.tprs, pimoresult_loaded.tprs, equal_nan=True)
-    assert torch.allclose(pimoresult.image_classes, pimoresult_loaded.image_classes)
-    ubound_loaded = aulogpimo_loaded["ubound"]
-    assert ubound == ubound_loaded
-    aulogpimo_loaded = aulogpimo_loaded["aulogpimo"]
-    assert torch.allclose(com_aulogpimos, aulogpimo_loaded, equal_nan=True)
 
 
 def test_aulogpimo_plots(anomaly_maps, masks, lbound, ubound):

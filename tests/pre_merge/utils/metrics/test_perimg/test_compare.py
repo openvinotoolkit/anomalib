@@ -67,14 +67,15 @@ def test_compare_models_parametric(aucs_a, aucs_b, aucs_c):
     models = {"a": aucs_a, "b": aucs_b}
     table = compare_models_parametric(models, higher_is_better=True)
     assert table is not None
-    assert table.data.shape == (2, 2)
+    assert table.data.shape == (2, 1)
 
     models["c"] = aucs_c
     sorted_models, test_results = compare_models_parametric(models, higher_is_better=False, return_test_results=True)
     assert len(sorted_models) == 3
     assert len(test_results) == 3
-    for modelpair in (sorted_models[0:2], sorted_models[1:3]):
-        assert tuple(modelpair) in test_results
+    assert tuple(sorted_models[0:2]) in test_results
+    assert tuple(sorted_models[1:3]) in test_results
+    assert (sorted_models[0], sorted_models[2]) in test_results
 
 
 def test_compare_models_nonparametric(aucs_a, aucs_b, aucs_c):
@@ -82,15 +83,16 @@ def test_compare_models_nonparametric(aucs_a, aucs_b, aucs_c):
 
     table = compare_models_nonparametric(models, higher_is_better=True, atol=None)
     assert table is not None
-    assert table.data.shape == (2, 2)
+    assert table.data.shape == (2, 1)
 
     table = compare_models_nonparametric(models, higher_is_better=False)
     assert table is not None
-    assert table.data.shape == (2, 2)
+    assert table.data.shape == (2, 1)
 
     models["c"] = aucs_c
     sorted_models, test_results = compare_models_nonparametric(models, return_test_results=True, atol=0.05)
     assert len(sorted_models) == 3
     assert len(test_results) == 3
-    for modelpair in (sorted_models[0:2], sorted_models[1:3]):
-        assert tuple(modelpair) in test_results
+    assert tuple(sorted_models[0:2]) in test_results
+    assert tuple(sorted_models[1:3]) in test_results
+    assert (sorted_models[0], sorted_models[2]) in test_results

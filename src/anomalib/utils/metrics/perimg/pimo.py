@@ -212,17 +212,6 @@ class PImOResult:
         idx = self.threshold_index_at(shared_fpr_value)
         return self.thresholds[idx]
 
-    @classmethod
-    def empty(cls, shared_fpr_metric: str) -> "PImOResult":
-        return cls(
-            shared_fpr_metric,
-            torch.empty(0, dtype=torch.float32),
-            torch.empty(0, dtype=torch.float64),
-            torch.empty(0, dtype=torch.float64),
-            torch.empty(0, dtype=torch.float64),
-            torch.empty(0, dtype=torch.int32),
-        )
-
     def to_tuple(self) -> tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
         """Return computed attributes as a tuple. Useful to unpack them as variables."""
         return self.thresholds, self.fprs, self.shared_fpr, self.tprs, self.image_classes
@@ -318,9 +307,9 @@ class PImO(PerImageBinClfCurve):
         Returns: PImOResult
         See `anomalib.utils.metrics.perimg.pimo.PImOResult` for details.
         """
+
         if self.is_empty:
-            # `MEAN_PERIMAGE_FPR` is the only one implemented for now
-            return PImOResult.empty(SharedFPRMetric.MEAN_PERIMAGE_FPR)
+            raise RuntimeError("Cannot compute PImO curve without any data.")
 
         thresholds, binclf_curves, image_classes = super().compute()
 
@@ -423,12 +412,15 @@ class AUPImOResult:
 
         try:
             if self.shared_fpr_scale == SharedFPRScale.LOG:
-                self.lbound = _validate_and_convert_rate(self.lbound, nonone=True, nonzero=True)
+                self.lbound = _validate_and_convert_rate(self.lbound, nonone=True, nonzero=True).to(torch.float64)
             else:
-                self.lbound = _validate_and_convert_rate(self.lbound, nonone=True, nonzero=False)
-            self.ubound = _validate_and_convert_rate(self.ubound, nonzero=True, nonone=False)
+                self.lbound = _validate_and_convert_rate(self.lbound, nonone=True, nonzero=False).to(torch.float64)
+            self.ubound = _validate_and_convert_rate(self.ubound, nonzero=True, nonone=False).to(torch.float64)
 
-            self.aucs = _validate_and_convert_aucs(self.aucs, nan_allowed=True)
+            self.lbound_threshold = torch.as_tensor(self.lbound_threshold, dtype=torch.float32)
+            self.ubound_threshold = torch.as_tensor(self.ubound_threshold, dtype=torch.float32)
+
+            self.aucs = _validate_and_convert_aucs(self.aucs, nan_allowed=True).to(torch.float64)
 
             # TODO _validate_and_convert_threshold()
 
@@ -467,20 +459,6 @@ class AUPImOResult:
                 f"Inconsistent {self.__class__.__name__} object with respective {curves.__class__.__name__} object. "
                 "Expected `image_classes` to be the same but got, different values."
             )
-
-    @classmethod
-    def empty(
-        cls, shared_fpr_metric: str, shared_fpr_scale: str, lbound: float | Tensor, ubound: float | Tensor
-    ) -> "AUPImOResult":
-        return cls(
-            shared_fpr_metric,
-            shared_fpr_scale,
-            lbound,
-            ubound,
-            torch.empty(0, dtype=torch.float32),
-            torch.empty(0, dtype=torch.float32),
-            torch.empty(0, dtype=torch.float64),
-        )
 
     def to_dict(self, keeptensor: bool = False) -> dict[str, float | str]:
         lbound = self.lbound if keeptensor else self.lbound.item()
@@ -592,13 +570,7 @@ class AUPImO(PImO):
         """
 
         if self.is_empty:
-            return PImOResult.empty(SharedFPRMetric.MEAN_PERIMAGE_FPR), AUPImOResult.empty(
-                # `MEAN_PERIMAGE_FPR` is the only one implemented for now
-                SharedFPRMetric.MEAN_PERIMAGE_FPR,
-                SharedFPRScale.LINEAR,
-                0,
-                self.ubound,
-            )
+            raise RuntimeError("Cannot compute AUPImO without any data.")
 
         pimoresult = super().compute()
         _, __, shared_fpr, tprs, ___ = pimoresult.to_tuple()
@@ -905,10 +877,7 @@ class AULogPImO(PImO):
         """
 
         if self.is_empty:
-            # `MEAN_PERIMAGE_FPR` is the only one implemented for now
-            return PImOResult.empty(SharedFPRMetric.MEAN_PERIMAGE_FPR), AUPImOResult.empty(
-                SharedFPRMetric.MEAN_PERIMAGE_FPR, SharedFPRScale.LOG, self.lbound, self.ubound
-            )
+            raise RuntimeError("Cannot compute AULogPImO without any data.")
 
         pimoresult = super().compute()
         thresholds, _, shared_fpr, tprs, __ = pimoresult.to_tuple()
