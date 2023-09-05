@@ -9,6 +9,7 @@ Paper https://arxiv.org/abs/2303.14814
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 import torch
 from omegaconf import DictConfig, ListConfig
@@ -40,6 +41,10 @@ class WinClip(AnomalyModule):
     def setup(self, stage) -> None:
         del stage
         self.model.build_text_feature_gallery(self.class_name)
+
+    def on_fit_end(self) -> None:
+        model_path = Path(self.trainer.default_root_dir) / "weights/lightning/model.cpkt"
+        self.trainer.save_checkpoint(model_path, weights_only=True)
 
     @staticmethod
     def configure_optimizers() -> None:  # pylint: disable=arguments-differ
