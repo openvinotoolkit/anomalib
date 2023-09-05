@@ -153,13 +153,14 @@ def make_mvtec_dataset(
     ] = mask_samples.image_path.values
 
     # assert that the right mask files are associated with the right test images
-    assert (
-        samples.loc[samples.label_index == LabelName.ABNORMAL]
-        .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
-        .all()
-    ), "Mismatch between anomalous images and ground truth masks. Make sure the mask files in 'ground_truth' \
-              folder follow the same naming convention as the anomalous images in the dataset (e.g. image: '000.png', \
-              mask: '000.png' or '000_mask.png')."
+    if len(samples.loc[samples.label_index == LabelName.ABNORMAL]):
+        assert (
+            samples.loc[samples.label_index == LabelName.ABNORMAL]
+            .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
+            .all()
+        ), "Mismatch between anomalous images and ground truth masks. Make sure the mask files in 'ground_truth' \
+                folder follow the same naming convention as the anomalous images in the dataset (e.g. image: \
+                '000.png', mask: '000.png' or '000_mask.png')."
 
     if split:
         samples = samples[samples.split == split].reset_index(drop=True)

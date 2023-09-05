@@ -5,7 +5,7 @@
 
 from .augmenter import Augmenter
 from .boxes import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
-from .download import DownloadInfo, download_and_extract
+from .download import DownloadInfo, download_and_extract, download_single_file
 from .generators import random_2d_perlin
 from .image import (
     generate_output_image_filename,
@@ -52,4 +52,5 @@ __all__ = [
     "_check_and_convert_path",
     "_prepare_files_labels",
     "_resolve_path",
+    "download_single_file",
 ]

@@ -51,8 +51,6 @@ class TestOpenVINOInferenceEntrypoint:
 
         arguments = get_parser().parse_args(
             [
-                "--config",
-                "src/anomalib/models/padim/config.yaml",
                 "--weights",
                 project_path + "/weights/openvino/model.bin",
                 "--metadata",
@@ -60,7 +58,7 @@ class TestOpenVINOInferenceEntrypoint:
                 "--input",
                 get_dummy_inference_image,
                 "--output",
-                project_path + "/output",
+                project_path + "/output.png",
             ]
         )
         infer(arguments)

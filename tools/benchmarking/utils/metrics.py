@@ -87,7 +87,7 @@ def get_unique_key(str_len: int) -> str:
     Returns:
         str: Random string
     """
-    return "".join([random.choice(string.ascii_lowercase) for _ in range(str_len)])
+    return "".join([random.choice(string.ascii_lowercase) for _ in range(str_len)])  # nosec: B311
 
 
 def upload_to_wandb(

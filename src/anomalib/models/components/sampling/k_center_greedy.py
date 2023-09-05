@@ -10,6 +10,7 @@ from tqdm import tqdm
 import torch
 import torch.nn.functional as F
 from torch import Tensor
+from tqdm import tqdm
 
 from anomalib.models.components.dimensionality_reduction import SparseRandomProjection
 
