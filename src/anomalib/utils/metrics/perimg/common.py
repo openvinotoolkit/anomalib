@@ -136,7 +136,7 @@ def _validate_image_classes(image_classes: Tensor):
         )
 
 
-def _validate_and_convert_aucs(aucs: Tensor | Sequence, nan_allowed: bool = False):
+def _validate_and_convert_aucs(aucs: Tensor | Sequence, nan_allowed: bool = False) -> Tensor:
     """TODO rename to 'rates' with nonzero nonone allowed"""
     if isinstance(aucs, Sequence):
         aucs = torch.as_tensor(aucs)
@@ -416,6 +416,7 @@ def compare_models_parametric(
 
     # sort models by average value
     sorted_models_items = sorted(models.items(), key=lambda kv: kv[1].mean(), reverse=higher_is_better)
+    sorted_models_averages = [v.mean() for _, v in sorted_models_items]
 
     # model[0] > model[1], model[0] > model[2], model[1] > model[2], ...
     num_models = len(models)
@@ -446,8 +447,11 @@ def compare_models_parametric(
     df = pandas.DataFrame(confidences, index=["confidence"]).T
     df.index.names = ["model1", "model2"]
     df = df.pivot_table(index="model1", columns="model2", values="confidence", dropna=False)
-    df = df[sorted_models]  # sort columns
+    df = df[sorted_models[1:]]  # sort columns; [1:] because the first column is empty
     df = df.T[sorted_models].T  # sort rows
+
+    df["Average"] = numpy.array(sorted_models_averages)
+    df = df.set_index("Average", append=True)
 
     cmap = cm.inferno
     cmap.set_bad("black")
@@ -555,8 +559,11 @@ def compare_models_nonparametric(
     df = pandas.DataFrame(confidences, index=["confidence"]).T
     df.index.names = ["model1", "model2"]
     df = df.pivot_table(index="model1", columns="model2", values="confidence", dropna=False)
-    df = df[sorted_models]  # sort columns
+    df = df[sorted_models[1:]]  # sort columns; [1:] because the first column is empty
     df = df.T[sorted_models].T  # sort rows
+
+    df["Average Rank"] = numpy.array(val for _, val in avgrank_permodel_sorted)
+    df = df.set_index("Average Rank", append=True)
 
     cmap = cm.inferno
     cmap.set_bad("black")

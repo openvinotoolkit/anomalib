@@ -1020,6 +1020,7 @@ def plot_th_fpr_curves_norm_only(
 def compare_models_perimg(
     models: dict[str, Tensor],
     metric_name: str,
+    higher_is_better: bool = True,
     random_model_score: float | Tensor | None = None,
     ax: Axes | None = None,
 ) -> tuple[Figure, Axes]:
@@ -1030,6 +1031,7 @@ def compare_models_perimg(
     Args:
         models: dict of (model_name, metric_tensor) pairs
         metric_name: name of the metric
+        higher_is_better: whether a higher metric value means "better model"
         random_model_score: score of the random model (for reference; ex: 0.5 for AUROC)
                             if given, a horizontal line will be added at this score
         ax: matplotlib Axes
@@ -1067,8 +1069,11 @@ def compare_models_perimg(
     df = df.melt(id_vars=["index"], value_vars=list(models.keys()), var_name="model", value_name="metric")
     df.sort_values("model", inplace=True)
 
-    for modelidx, (model, df_model) in enumerate(df.groupby("model")):
-        avg = df_model["metric"].mean()
+    dfgb_avg = df.groupby("model")["metric"].mean().sort_values(ascending=not higher_is_better)
+
+    for modelidx, (model, avg) in enumerate(dfgb_avg.items()):
+        # avg = df_model["metric"].mean()
+        df_model = df.query("model == @model")
         scatter = ax.scatter(
             df_model["index"],
             df_model["metric"],
@@ -1083,7 +1088,7 @@ def compare_models_perimg(
     if random_model_score is not None:
         _add_avline_at_score_random_model(ax, random_model_score, axis=0, add_legend=False)
 
-    ax.legend(loc="lower right", title="Model")
+    ax.legend(loc="lower right", title="Model", ncol=len(models), fontsize="small", title_fontsize="small")
 
     # Y-axis
     _format_axis_rate_metric_linear(ax, axis=1)
@@ -1165,8 +1170,10 @@ def compare_models_perimg_rank(
     df = df.melt(id_vars=["index"], value_vars=list(models.keys()), var_name="model", value_name="rank")
     df.sort_values("model", inplace=True)
 
-    for modelidx, (model, df_model) in enumerate(df.groupby("model")):
-        avg = df_model["rank"].mean()
+    dfgb_avg = df.groupby("model")["rank"].mean().sort_values(ascending=True)
+
+    for modelidx, (model, avg) in enumerate(dfgb_avg.items()):
+        df_model = df.query("model == @model")
         scatter = ax.scatter(
             df_model["index"],
             df_model["rank"],

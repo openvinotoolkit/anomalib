@@ -27,8 +27,9 @@ Two variants of AUCs are implemented:
 from __future__ import annotations
 
 import json
-from collections import namedtuple
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import ClassVar
 
 import matplotlib.pyplot as plt
 import torch
@@ -36,6 +37,8 @@ from matplotlib.axes import Axes
 from matplotlib.pyplot import Figure
 from numpy import ndarray
 from torch import Tensor
+
+from anomalib.data.utils.image import duplicate_filename
 
 from .binclf_curve import PerImageBinClfCurve
 from .common import (
@@ -63,47 +66,227 @@ from .plot import (
     plot_th_fpr_curves_norm_only,
 )
 
+# =========================================== CONSTANTS ===========================================
+
+
+class SharedFPRMetric:
+    """Shared FPR metric (x-axis of the PImO curve).
+    A collection of constants to be used as the `shared_fpr_metric` argument of `PImO`.
+    """
+
+    MEAN_PERIMAGE_FPR: ClassVar[str] = "mean_perimage_fpr"
+
+
+class SharedFPRScale:
+    """Shared FPR scale (x-axis of the PImO curve).
+    A collection of constants to be used as the `shared_fpr_scale` argument of `PImO`.
+    """
+
+    LINEAR: ClassVar[str] = "linear"
+    LOG: ClassVar[str] = "log"
+
+
 # =========================================== METRICS ===========================================
 
-PImOResult = namedtuple(
-    "PImOResult",
-    [
-        "thresholds",
-        "fprs",
-        "shared_fpr",
-        "tprs",
-        "image_classes",
-    ],
-)
-PImOResult.__doc__ = """PImO result (from `PImO.compute()`).
 
-[0] thresholds: shape (num_thresholds,), a `float` dtype as given in update()
-[1] fprs: shape (num_images, num_thresholds), dtype `float64`, \\in [0, 1]
-[2] shared_fpr: shape (num_thresholds,), dtype `float64`, \\in [0, 1]
-[3] tprs: shape (num_images, num_thresholds), dtype `float64`, \\in [0, 1] for anom images, `nan` for norm images
-[4] image_classes: shape (num_images,), dtype `int32`, \\in {0, 1}
+class InvalidPImOResult(ValueError):
+    """Something is inconsistent in the PImO result."""
 
-- `num_thresholds` is an attribute of `PImO` and is given in the constructor (from parent class).
-- `num_images` depends on the data seen by the model at the update() calls.
-"""
+    pass
 
 
-def _validate_pimoresult(pimoresult: PImOResult):
-    if len(pimoresult) != 5:
-        raise ValueError(
-            f"Expected argument `pimoresult` to be a namedtuple with 5 elements, but got {len(pimoresult)}."
+# TODO review where this is used (check where compute() is called) and use it as type hint
+@dataclass
+class PImOResult:
+    """PImO result (from `PImO.compute()`).
+
+    The attribute `shared_fpr_metric` is a user-defined parameter of the curve.
+
+    thresholds: shape (num_thresholds,), a `float` dtype as given in update()
+    fprs: shape (num_images, num_thresholds), dtype `float64`, \\in [0, 1]
+    shared_fpr: shape (num_thresholds,), dtype `float64`, \\in [0, 1]
+    tprs: shape (num_images, num_thresholds), dtype `float64`, \\in [0, 1] for anom images, `nan` for norm images
+    image_classes: shape (num_images,), dtype `int32`, \\in {0, 1}
+
+    - `num_thresholds` comes from `PImO` and is given in the constructor (from parent class).
+    - `num_images` depends on the data seen by the model at the update() calls.
+    """
+
+    # params (user input)
+    shared_fpr_metric: str
+
+    # results (computed)
+    thresholds: Tensor = field(repr=False)
+    fprs: Tensor = field(repr=False)
+    shared_fpr: Tensor = field(repr=False)
+    tprs: Tensor = field(repr=False)
+    image_classes: Tensor = field(repr=False)
+
+    @property
+    def num_thresholds(self) -> int:
+        return self.thresholds.shape[0]
+
+    @property
+    def num_images(self) -> int:
+        return self.image_classes.shape[0]
+
+    def __post_init__(self):
+        if len(self.shared_fpr_metric) == 0:
+            raise InvalidPImOResult(f"Invalid {self.__class__.__name__} object. `shared_fpr_metric` cannot be empty.")
+
+        try:
+            _validate_thresholds(self.thresholds)
+            # anomalous images can have nan fprs if fully covered by 1s
+            _validate_perimg_rate_curves(self.fprs, nan_allowed=True)
+            _validate_rate_curve(self.shared_fpr, nan_allowed=False)
+            # normal images have nan tprs by definition
+            _validate_perimg_rate_curves(self.tprs, nan_allowed=True)
+            _validate_image_classes(self.image_classes)
+            _validate_atleast_one_anomalous_image(self.image_classes)
+            _validate_atleast_one_normal_image(self.image_classes)
+            _validate_perimg_rate_curves(self.fprs[self.image_classes == 0], nan_allowed=False)
+            _validate_perimg_rate_curves(self.tprs[self.image_classes == 1], nan_allowed=False)
+
+        except Exception as ex:
+            raise InvalidPImOResult(f"Invalid {self.__class__.__name__} object. {ex}") from ex
+
+        # `self.thresholds` and `self.image_classes` have been validated so
+        # they are used to validate the other attributes' shapes (`self.num_thresholds` and `self.num_images`)
+
+        if self.fprs.shape != (self.num_images, self.num_thresholds):
+            raise InvalidPImOResult(
+                f"Invalid {self.__class__.__name__} object. Attributes have inconsistent shapes: "
+                f"thresholds.shape={self.thresholds.shape}, image_classes.shape={self.image_classes.shape}, "
+                f"but fprs.shape={self.fprs.shape}."
+            )
+
+        if self.tprs.shape != (self.num_images, self.num_thresholds):
+            raise InvalidPImOResult(
+                f"Invalid {self.__class__.__name__} object. Attributes have inconsistent shapes: "
+                f"thresholds.shape={self.thresholds.shape}, image_classes.shape={self.image_classes.shape}, "
+                f"but tprs.shape={self.tprs.shape}."
+            )
+
+        if self.shared_fpr.shape != (self.num_thresholds,):
+            raise InvalidPImOResult(
+                f"Invalid {self.__class__.__name__} object. Attributes have inconsistent shapes: "
+                f"thresholds.shape={self.thresholds.shape}, but shared_fpr.shape={self.shared_fpr.shape}."
+            )
+
+    def threshold_index_at(self, shared_fpr_value: float | Tensor) -> int:
+        """Return the index of the threshold at the given shared FPR value.
+
+        Args:
+            shared_fpr_value: shared FPR value at which to get the threshold index.
+
+        Returns:
+            int: index of the threshold at the given shared FPR value.
+        """
+
+        shared_fpr_value = _validate_and_convert_rate(shared_fpr_value, nonone=False, nonzero=False)
+
+        if shared_fpr_value < self.shared_fpr.min():
+            raise ValueError(
+                f"Invalid `shared_fpr_value`. Expected a value in [{self.shared_fpr.min()}, {self.shared_fpr.max()}] "
+                f"but got {shared_fpr_value}."
+            )
+
+        if shared_fpr_value > self.shared_fpr.max():
+            raise ValueError(
+                f"Invalid `shared_fpr_value`. Expected a value in [{self.shared_fpr.min()}, {self.shared_fpr.max()}] "
+                f"but got {shared_fpr_value}."
+            )
+
+        return int(torch.argmin(torch.abs(self.shared_fpr - shared_fpr_value)).item())
+
+    def threshold_at(self, shared_fpr_value: float | Tensor) -> Tensor:
+        """Return the threshold at the given shared FPR value.
+
+        Args:
+            shared_fpr_value: shared FPR value at which to get the threshold.
+
+        Returns:
+            Tensor: 0D tensor, threshold at the given shared FPR value.
+        """
+        # validations are done in `self.threshold_index_at()`
+        idx = self.threshold_index_at(shared_fpr_value)
+        return self.thresholds[idx]
+
+    @classmethod
+    def empty(cls, shared_fpr_metric: str) -> "PImOResult":
+        return cls(
+            shared_fpr_metric,
+            torch.empty(0, dtype=torch.float32),
+            torch.empty(0, dtype=torch.float64),
+            torch.empty(0, dtype=torch.float64),
+            torch.empty(0, dtype=torch.float64),
+            torch.empty(0, dtype=torch.int32),
         )
 
-    thresholds, fprs, shared_fpr, tprs, image_classes = pimoresult
-    _validate_thresholds(thresholds)
-    _validate_perimg_rate_curves(fprs, nan_allowed=True)  # anomalous images can have nan fprs if fully covered by 1s
-    _validate_rate_curve(shared_fpr, nan_allowed=False)
-    _validate_perimg_rate_curves(tprs, nan_allowed=True)  # normal images have nan tprs by definition
-    _validate_image_classes(image_classes)
-    _validate_atleast_one_anomalous_image(image_classes)
-    _validate_atleast_one_normal_image(image_classes)
-    _validate_perimg_rate_curves(fprs[image_classes == 0], nan_allowed=False)
-    _validate_perimg_rate_curves(tprs[image_classes == 1], nan_allowed=False)
+    def to_tuple(self) -> tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
+        """Return computed attributes as a tuple. Useful to unpack them as variables."""
+        return self.thresholds, self.fprs, self.shared_fpr, self.tprs, self.image_classes
+
+    def to_dict(self) -> dict[str, Tensor | str]:
+        return {
+            # params (user input)
+            "shared_fpr_metric": self.shared_fpr_metric,
+            # results (computed)
+            "thresholds": self.thresholds,
+            "fprs": self.fprs,
+            "shared_fpr": self.shared_fpr,
+            "tprs": self.tprs,
+            "image_classes": self.image_classes,
+        }
+
+    @classmethod
+    def from_dict(cls, dic: dict[str, Tensor | str]) -> "PImOResult":
+        try:
+            obj = cls(
+                dic["shared_fpr_metric"],
+                dic["thresholds"],
+                dic["fprs"],
+                dic["shared_fpr"],
+                dic["tprs"],
+                dic["image_classes"],
+            )
+
+        except KeyError as ex:
+            raise InvalidPImOResult(f"Invalid {cls.__name__}, expected key not in dictionary.") from ex
+
+        except InvalidPImOResult as ex:
+            raise InvalidPImOResult(f"Invalid {cls.__name__} object from dictionary. {ex}") from ex
+
+        return obj
+
+    def save(self, fpath: str | Path) -> None:
+        """Save the PImO result to a `.pt` file.
+
+        Args:
+            fpath: path to the `.pt` file where to save the PImO result.
+                - must have a `.pt` extension or no extension (in which case `.pt` is added)
+                - if the file already exists, a numerical suffix is added to the filename
+        """
+        fpath = _validate_and_convert_fpath(fpath, extension=".pt")
+        fpath = duplicate_filename(fpath)
+        payload = self.to_dict()
+        torch.save(payload, fpath)
+
+    @classmethod
+    def load(cls, fpath: str | Path) -> "PImOResult":
+        """Load the PImO result from a `.pt` file.
+
+        Args:
+            fpath: path to the `.pt` file where to load the PImOResult.
+        """
+        fpath = _validate_and_convert_fpath(fpath, extension=".pt")
+        payload = torch.load(fpath)
+        if not isinstance(payload, dict):
+            raise InvalidPImOResult(f"Invalid {cls.__name__} object from file {fpath}, expected a dictionary.")
+        try:
+            return cls.from_dict(payload)
+        except InvalidPImOResult as ex:
+            raise InvalidPImOResult(f"Could not load {cls.__name__} from file {fpath}") from ex
 
 
 class PImO(PerImageBinClfCurve):
@@ -129,20 +312,15 @@ class PImO(PerImageBinClfCurve):
     TPR: True Positive Rate
     """
 
-    def compute(self) -> PImOResult:  # type: ignore
+    def compute(self) -> PImOResult:  # type: ignore[override]
         """Compute the PImO curve.
 
         Returns: PImOResult
         See `anomalib.utils.metrics.perimg.pimo.PImOResult` for details.
         """
         if self.is_empty:
-            return PImOResult(
-                torch.empty(0, dtype=torch.float32),
-                torch.empty(0, dtype=torch.float64),
-                torch.empty(0, dtype=torch.float64),
-                torch.empty(0, dtype=torch.float64),
-                torch.empty(0, dtype=torch.int32),
-            )
+            # `MEAN_PERIMAGE_FPR` is the only one implemented for now
+            return PImOResult.empty(SharedFPRMetric.MEAN_PERIMAGE_FPR)
 
         thresholds, binclf_curves, image_classes = super().compute()
 
@@ -158,7 +336,15 @@ class PImO(PerImageBinClfCurve):
         # see note about shared FPR alternatives in the class's docstring
         shared_fpr = fprs[image_classes == 0].mean(dim=0)  # shape: (num_thresholds,)
 
-        return PImOResult(thresholds, fprs, shared_fpr, tprs, image_classes)
+        return PImOResult(
+            # `MEAN_PERIMAGE_FPR` is the only one implemented for now
+            SharedFPRMetric.MEAN_PERIMAGE_FPR,
+            thresholds,
+            fprs,
+            shared_fpr,
+            tprs,
+            image_classes,
+        )
 
     def plot(
         self,
@@ -169,7 +355,7 @@ class PImO(PerImageBinClfCurve):
         if self.is_empty:
             return None, None
 
-        _, __, shared_fpr, tprs, image_classes = self.compute()
+        _, __, shared_fpr, tprs, image_classes = self.compute().to_tuple()
 
         fig, ax = plot_all_pimo_curves(
             shared_fpr,
@@ -177,57 +363,197 @@ class PImO(PerImageBinClfCurve):
             image_classes,
             ax=ax,
         )
+        # `MEAN_PERIMAGE_FPR` is the only one implemented for now
         ax.set_xlabel("Mean FPR on Normal Images")
 
         return fig, ax
 
-    @staticmethod
-    def _save(pimoresult: PImOResult, fpath: str | Path):
-        """Statict method, functional method so children classes can use it."""
-        fpath = _validate_and_convert_fpath(fpath, extension=".pt")
-        payload_curves = {
-            "shared_fpr_metric": "mean_inimage_fpr",
-            "thresholds": pimoresult.thresholds,
-            "fprs": pimoresult.fprs,
-            "shared_fpr": pimoresult.shared_fpr,
-            "tprs": pimoresult.tprs,
-            "image_classes": pimoresult.image_classes,
-        }
-        torch.save(payload_curves, fpath)
-
+    # TODO find where this is used and replace it
     def save(self, fpath: str | Path):
-        """Save the PImO curve to a `.pt` file.
+        raise NotImplementedError("This method was deleted. Use `PImOResult.save()` instead.")
 
-        Args:
-            fpath: path to the file where to save the curve.
-        """
-        pimoresult = self.compute()
-        self._save(pimoresult, fpath)
-
+    # TODO find where this is used and replace it
     @staticmethod
     def load(fpath: str | Path) -> PImOResult:
-        """Private method so children classes can use it.
-        Args:
-            fpath: path to the `.pt` file where to load the PImOResult.
-        """
-        fpath = _validate_and_convert_fpath(fpath, extension=".pt")
-        payload_curves = torch.load(fpath)
-        try:
-            pimoresult = PImOResult(
-                payload_curves["thresholds"],
-                payload_curves["fprs"],
-                payload_curves["shared_fpr"],
-                payload_curves["tprs"],
-                payload_curves["image_classes"],
-            )
-        except KeyError as ex:
-            raise KeyError(f"Invalid {PImOResult.__name__}, expected key {ex} in file {fpath}.") from ex
-        try:
-            _validate_pimoresult(pimoresult)
-        except Exception as ex:
-            raise RuntimeError(f"Invalid {PImOResult.__name__} in file {fpath}.") from ex
+        raise NotImplementedError("This method was deleted. Use `PImOResult.from_path()` instead.")
 
-        return pimoresult
+
+class InvalidAUPImOResult(ValueError):
+    """Something is inconsistent in the AUPImO result."""
+
+    pass
+
+
+@dataclass
+class AUPImOResult:
+    """Area Under the Per-Image Overlap (PImO) curve.
+
+    The attributes `shared_fpr_metric`, `shared_fpr_scale`, `lbound`, and `ubound` are
+    user-defined parameters of the metric.
+
+    aucs: shape (num_images,), dtype `float64`, \\in [0, 1] for anom images, `nan` for norm images
+    """
+
+    # params (user input)
+    shared_fpr_metric: str
+    shared_fpr_scale: str
+    lbound: Tensor
+    ubound: Tensor
+
+    # results (computed)
+    lbound_threshold: Tensor
+    ubound_threshold: Tensor
+    aucs: Tensor = field(repr=False)
+
+    @property
+    def image_classes(self) -> Tensor:
+        """Image classes are deduced from the AUCs (normals are `nan`)."""
+        return self.aucs.isnan().logical_not().to(torch.int32)
+
+    @property
+    def num_images(self) -> int:
+        return self.aucs.shape[0]
+
+    def __post_init__(self):
+        if len(self.shared_fpr_metric) == 0:
+            raise InvalidAUPImOResult(f"Invalid {self.__class__.__name__} object. `shared_fpr_metric` cannot be empty.")
+
+        if len(self.shared_fpr_scale) == 0:
+            raise InvalidAUPImOResult(f"Invalid {self.__class__.__name__} object. `shared_fpr_scale` cannot be empty.")
+
+        try:
+            if self.shared_fpr_scale == SharedFPRScale.LOG:
+                self.lbound = _validate_and_convert_rate(self.lbound, nonone=True, nonzero=True)
+            else:
+                self.lbound = _validate_and_convert_rate(self.lbound, nonone=True, nonzero=False)
+            self.ubound = _validate_and_convert_rate(self.ubound, nonzero=True, nonone=False)
+
+            self.aucs = _validate_and_convert_aucs(self.aucs, nan_allowed=True)
+
+            # TODO _validate_and_convert_threshold()
+
+        except ValueError as ex:
+            raise InvalidAUPImOResult(f"Invalid {self.__class__.__name__} object.") from ex
+
+        if self.lbound >= self.ubound:
+            raise InvalidAUPImOResult(
+                f"Invalid {self.__class__.__name__} object. Lower bound must be strictly smaller than upper bound."
+            )
+
+        # reminder: fpr lower/upper bound is threshold upper/lower bound
+        if self.ubound_threshold >= self.lbound_threshold:
+            raise InvalidAUPImOResult(
+                f"Invalid {self.__class__.__name__} object. "
+                "Upper bound threshold must be strictly smaller than lower bound threshold."
+            )
+
+    def validate_consistency_with_curves(self, curves: PImOResult) -> None:
+        if self.shared_fpr_metric != curves.shared_fpr_metric:
+            raise InvalidAUPImOResult(
+                f"Inconsistent {self.__class__.__name__} object with respective {curves.__class__.__name__} object. "
+                "Expected `shared_fpr_metric` to be the same but got, respectively, "
+                f"{self.shared_fpr_metric} and {curves.shared_fpr_metric}."
+            )
+
+        if self.num_images != curves.num_images:
+            raise InvalidAUPImOResult(
+                f"Inconsistent {self.__class__.__name__} object with respective {curves.__class__.__name__} object. "
+                "Expected `num_images` to be the same but got, respectively, "
+                f"{self.num_images} and {curves.num_images}."
+            )
+
+        if (self.image_classes != curves.image_classes).any():
+            raise InvalidAUPImOResult(
+                f"Inconsistent {self.__class__.__name__} object with respective {curves.__class__.__name__} object. "
+                "Expected `image_classes` to be the same but got, different values."
+            )
+
+    @classmethod
+    def empty(
+        cls, shared_fpr_metric: str, shared_fpr_scale: str, lbound: float | Tensor, ubound: float | Tensor
+    ) -> "AUPImOResult":
+        return cls(
+            shared_fpr_metric,
+            shared_fpr_scale,
+            lbound,
+            ubound,
+            torch.empty(0, dtype=torch.float32),
+            torch.empty(0, dtype=torch.float32),
+            torch.empty(0, dtype=torch.float64),
+        )
+
+    def to_dict(self, keeptensor: bool = False) -> dict[str, float | str]:
+        lbound = self.lbound if keeptensor else self.lbound.item()
+        ubound = self.ubound if keeptensor else self.ubound.item()
+        lbound_threshold = self.lbound_threshold if keeptensor else self.lbound_threshold.item()
+        ubound_threshold = self.ubound_threshold if keeptensor else self.ubound_threshold.item()
+        aucs = self.aucs if keeptensor else self.aucs.tolist()
+
+        return {
+            # params (user input)
+            "shared_fpr_metric": self.shared_fpr_metric,
+            "shared_fpr_scale": self.shared_fpr_scale,
+            "lbound": lbound,
+            "ubound": ubound,
+            # results (computed)
+            "lbound_threshold": lbound_threshold,
+            "ubound_threshold": ubound_threshold,
+            "aucs": aucs,
+        }
+
+    @classmethod
+    def from_dict(cls, dic: dict[str, float | str] | dict[str, Tensor | str]) -> "AUPImOResult":
+        try:
+            obj = cls(
+                # params (user input)
+                dic["shared_fpr_metric"],  # type: ignore
+                dic["shared_fpr_scale"],  # type: ignore
+                dic["lbound"],
+                dic["ubound"],
+                # results (computed)
+                dic["lbound_threshold"],
+                dic["ubound_threshold"],
+                dic["aucs"],
+            )
+
+        except KeyError as ex:
+            raise InvalidAUPImOResult(f"Invalid {cls.__name__}, expected key not in dictionary.") from ex
+
+        except InvalidAUPImOResult as ex:
+            raise InvalidAUPImOResult(f"Invalid {cls.__name__} object from dictionary. {ex}") from ex
+
+        return obj
+
+    def save(self, fpath: str | Path) -> None:
+        """Save the AUPImO result to a `.json` file.
+
+        Args:
+            fpath: path to the `.json` file where to save the AUPImO result.
+                - must have a `.json` extension or no extension (in which case `.json` is added)
+                - if the file already exists, a numerical suffix is added to the filename
+        """
+        fpath = _validate_and_convert_fpath(fpath, extension=".json")
+        fpath = duplicate_filename(fpath)
+        payload = self.to_dict(keeptensor=False)
+        with fpath.open("w") as f:
+            json.dump(payload, f, indent=4)
+
+    @classmethod
+    def load(cls, fpath: str | Path) -> "AUPImOResult":
+        """Load the AUPImO result from a `.json` file.
+
+        Args:
+            fpath: path to the `.json` file where to load the AUPImOResult.
+        """
+        fpath = _validate_and_convert_fpath(fpath, extension=".json")
+        with fpath.open("r") as f:
+            payload = json.load(f)
+        if not isinstance(payload, dict):
+            raise InvalidAUPImOResult(f"Invalid {cls.__name__} object from file {fpath}, expected a dictionary.")
+        try:
+            return cls.from_dict(payload)
+        except InvalidAUPImOResult as ex:
+            raise InvalidAUPImOResult(f"Could not load {cls.__name__} from file {fpath}") from ex
 
 
 class AUPImO(PImO):
@@ -257,29 +583,30 @@ class AUPImO(PImO):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(ubound={self.ubound})"
 
-    def compute(self) -> tuple[PImOResult, Tensor]:  # type: ignore
+    def compute(self) -> tuple[PImOResult, AUPImOResult]:  # type: ignore[override]
         """Compute the Area Under the Per-Image Overlap curves (AUPImO).
 
-        Returns: (PImOResult, aucs)
-            [0] PImOResult: PImOResult, see `anomalib.utils.metrics.perimg.pimo.PImOResult` for details.
-            [1] aucs: shape (num_images,), dtype `float64`, \\in [0, 1]
+        Returns:
+            [0] PImOResult (`anomalib.utils.metrics.perimg.pimo.PImOResult`)
+            [1] AUPImOResult (`anomalib.utils.metrics.perimg.pimo.AUPImOResult`)
         """
 
         if self.is_empty:
-            return PImOResult(
-                torch.empty(0, dtype=torch.float32),
-                torch.empty(0, dtype=torch.float64),
-                torch.empty(0, dtype=torch.float64),
-                torch.empty(0, dtype=torch.float64),
-                torch.empty(0, dtype=torch.int32),
-            ), torch.empty(0, dtype=torch.float64)
+            return PImOResult.empty(SharedFPRMetric.MEAN_PERIMAGE_FPR), AUPImOResult.empty(
+                # `MEAN_PERIMAGE_FPR` is the only one implemented for now
+                SharedFPRMetric.MEAN_PERIMAGE_FPR,
+                SharedFPRScale.LINEAR,
+                0,
+                self.ubound,
+            )
 
-        pimoresult = _, __, shared_fpr, tprs, ___ = super().compute()
+        pimoresult = super().compute()
+        _, __, shared_fpr, tprs, ___ = pimoresult.to_tuple()
 
         # get the index of the value in `shared_fpr` that is closest to `self.ubound in abs value
         # knwon issue: `shared_fpr[ubound_idx]` might not be exactly `self.ubound`
         # but it's ok because `num_thresholds` should be large enough so that the error is negligible
-        ubound_idx = torch.argmin(torch.abs(shared_fpr - self.ubound))
+        ubound_idx = pimoresult.threshold_index_at(self.ubound)
 
         # limit the curves to the integration range [0, ubound]
         # `shared_fpr` and `tprs` are in descending order; `flip()` reverts to ascending order
@@ -292,7 +619,16 @@ class AUPImO(PImO):
         # clip(0, 1) makes sure that the values are in [0, 1] (in case of numerical errors)
         aucs = (aucs / self.ubound).clip(0, 1)
 
-        return pimoresult, aucs
+        return pimoresult, AUPImOResult(
+            # `MEAN_PERIMAGE_FPR` is the only one implemented for now
+            SharedFPRMetric.MEAN_PERIMAGE_FPR,
+            SharedFPRScale.LINEAR,
+            0.0,
+            self.ubound,
+            pimoresult.threshold_at(0.0),
+            pimoresult.threshold_at(self.ubound),
+            aucs,
+        )
 
     def plot_all_pimo_curves(
         self,
@@ -305,7 +641,8 @@ class AUPImO(PImO):
         if self.is_empty:
             return None, None
 
-        (_, __, shared_fpr, tprs, image_classes), ___ = self.compute()
+        curves, _ = self.compute()
+        _, __, shared_fpr, tprs, image_classes = curves.to_tuple()
 
         fig, ax = plot_all_pimo_curves(
             shared_fpr,
@@ -327,8 +664,8 @@ class AUPImO(PImO):
             list[dict[str, str | int | float | None]]: List of AUCs statistics from a boxplot.
             refer to `anomalib.utils.metrics.perimg.common.perimg_boxplot_stats()` for the keys and values.
         """
-        (_, __, ___, ____, image_classes), aucs = self.compute()
-        stats = perimg_boxplot_stats(values=aucs, image_classes=image_classes, only_class=1)
+        _, aupimos = self.compute()
+        stats = perimg_boxplot_stats(values=aupimos.aucs, image_classes=aupimos.image_classes, only_class=1)
         return stats
 
     def plot_boxplot_pimo_curves(
@@ -343,7 +680,8 @@ class AUPImO(PImO):
         if self.is_empty:
             return None, None
 
-        (thresholds, fprs, shared_fpr, tprs, image_classes), aucs = self.compute()
+        curves, _ = self.compute()
+        thresholds, fprs, shared_fpr, tprs, image_classes = curves.to_tuple()
         fig, ax = plot_boxplot_pimo_curves(
             shared_fpr,
             tprs,
@@ -367,9 +705,9 @@ class AUPImO(PImO):
         if self.is_empty:
             return None, None
 
-        (thresholds, fprs, shared_fpr, tprs, image_classes), aucs = self.compute()
-        fig, ax = plot_aupimo_boxplot(aucs, image_classes, ax=ax)
-        _add_avline_at_score_random_model(ax, 0.5)
+        _, aupimos = self.compute()
+        fig, ax = plot_aupimo_boxplot(aupimos.aucs, aupimos.image_classes, ax=ax)
+        _add_avline_at_score_random_model(ax, 0.5)  # todo correct the random model score for ubound < 1
         return fig, ax
 
     def plot(
@@ -432,11 +770,11 @@ class AUPImO(PImO):
 
         ax = ax.flatten()
 
-        (thresholds, fprs, shared_fpr, tprs, image_classes), aucs = self.compute()
+        curves, _ = self.compute()
+        thresholds, fprs, shared_fpr, _, image_classes = curves.to_tuple()
 
         # FRP upper bound is threshold lower bound
-        thidx_lbound = torch.argmin(torch.abs(shared_fpr - self.ubound))
-        th_lbound = thresholds[thidx_lbound]
+        th_lbound = curves.threshold_at(self.ubound)
 
         plot_th_fpr_curves_norm_only(
             fprs, shared_fpr, thresholds, image_classes, th_lb_fpr_ub=(th_lbound, self.ubound), ax=ax[0]
@@ -447,63 +785,13 @@ class AUPImO(PImO):
 
         return fig, ax
 
-    @staticmethod
-    def _deduce_curves_fpath(fpath: Path):
-        return fpath.parent / f"{fpath.stem}_curves.pt"
-
+    # TODO remove this
     def save(self, fpath: str | Path, curve: bool = True):
-        """Save the AUPImO values (AUCs) in a JSON file.
-        Optionally, save the AUPImO curves in a `.pt` file.
-
-        Args:
-            fpath: path to the file where to save the AUPImO values.
-            curve: whether to save the AUPImO curves in a `.pt` file.
-        """
-        fpath = _validate_and_convert_fpath(fpath, extension=".json")
-        pimoresult, aucs = self.compute()
-        payload = {
-            "ubound": self.ubound.item(),
-            "aupimo": aucs.tolist(),
-        }
-        with fpath.open("w") as f:
-            json.dump(payload, f, indent=4)
-        if curve:
-            fpath_curves = AUPImO._deduce_curves_fpath(fpath)
-            PImO._save(pimoresult, fpath_curves)
-            return fpath_curves
+        raise NotImplementedError("This method was deleted. Use `AUPImOResult.save()` instead.")
 
     @staticmethod
     def load(fpath: str | Path, curve: bool = True) -> Tensor | tuple[PImOResult, Tensor]:  # type: ignore
-        """Load the AUPImO values (AUCs) from a JSON file.
-        Optionally, load the PImO curves from a `.pt` file (file name is deduced from the JSON file name).
-
-        Args:
-            fpath: path to the file where to load the AUPImO values.
-            curve: whether to load the PImO curves from a `.pt` file.
-        Returns:
-            Tensor: AUPImO values (AUCs)
-            or
-            tuple[PImOResult, Tensor]: (PImOResult, AUPImO values (AUCs)).
-        """
-
-        fpath = _validate_and_convert_fpath(fpath, extension=".json")
-        with fpath.open("r") as f:
-            loaded = json.load(f)
-        try:
-            ubound = loaded["ubound"]
-            aupimo = loaded["aupimo"]
-        except KeyError as ex:
-            raise KeyError(f"Invalid {AUPImO.__name__} saved AUCs, expected key {ex} in file {fpath}.") from ex
-        try:
-            loaded["ubound"] = _validate_and_convert_rate(ubound, nonzero=True)
-            loaded["aupimo"] = _validate_and_convert_aucs(aupimo, nan_allowed=True).to(torch.float64)
-        except Exception as ex:
-            raise RuntimeError(f"Invalid {AUPImO.__name__} saved AUCs in file {fpath}.") from ex
-        if curve:
-            curves_fpath = AUPImO._deduce_curves_fpath(fpath)
-            pimoresult = PImO.load(curves_fpath)
-            return pimoresult, loaded
-        return loaded
+        raise NotImplementedError("This method was deleted. Use `AUPImOResult.save()` instead.")
 
 
 class AULogPImO(PImO):
@@ -608,30 +896,28 @@ class AULogPImO(PImO):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(lbound={self.lbound}, ubound={self.ubound})"
 
-    def compute(self) -> tuple[PImOResult, Tensor]:  # type: ignore
+    def compute(self) -> tuple[PImOResult, AUPImOResult]:  # type: ignore[override]
         """Compute the Area Under the Log Per-Image Overlap curves (AULogPImO).
 
         Returns: (PImOResult, aucs)
-            [0] PImOResult: PImOResult, see `anomalib.utils.metrics.perimg.pimo.PImOResult` for details.
-            [1] aucs: shape (num_images,), dtype `float64`, \\in [0, 1]
+            [0] PImOResult (`anomalib.utils.metrics.perimg.pimo.PImOResult`)
+            [1] AUPImOResult (`anomalib.utils.metrics.perimg.pimo.AUPImOResult`)
         """
 
         if self.is_empty:
-            return PImOResult(
-                torch.empty(0, dtype=torch.float32),
-                torch.empty(0, dtype=torch.float64),
-                torch.empty(0, dtype=torch.float64),
-                torch.empty(0, dtype=torch.float64),
-                torch.empty(0, dtype=torch.int32),
-            ), torch.empty(0, dtype=torch.float64)
+            # `MEAN_PERIMAGE_FPR` is the only one implemented for now
+            return PImOResult.empty(SharedFPRMetric.MEAN_PERIMAGE_FPR), AUPImOResult.empty(
+                SharedFPRMetric.MEAN_PERIMAGE_FPR, SharedFPRScale.LOG, self.lbound, self.ubound
+            )
 
-        pimoresult = thresholds, _, shared_fpr, tprs, __ = super().compute()
+        pimoresult = super().compute()
+        thresholds, _, shared_fpr, tprs, __ = pimoresult.to_tuple()
 
         # get the index of the value in `shared_fpr` that is closest to `self.ubound in abs value
         # knwon issue: `shared_fpr[ubound_idx]` might not be exactly `self.ubound`
         # but it's ok because `num_thresholds` should be large enough so that the error is negligible
-        ubound_th_idx = torch.argmin(torch.abs(shared_fpr - self.ubound))
-        lbound_th_idx = torch.argmin(torch.abs(shared_fpr - self.lbound))
+        ubound_th_idx = pimoresult.threshold_index_at(self.ubound)
+        lbound_th_idx = pimoresult.threshold_index_at(self.lbound)
 
         # deal with edge cases
         # reminder: fpr lower/upper bound is threshold upper/lower bound
@@ -654,7 +940,16 @@ class AULogPImO(PImO):
         # normalize, then clip(0, 1) makes sure that the values are in [0, 1] in case of numerical errors
         aucs = (aucs / self.max_primitive_auc).clip(0, 1)
 
-        return pimoresult, aucs
+        return pimoresult, AUPImOResult(
+            # `MEAN_PERIMAGE_FPR` is the only one implemented for now
+            SharedFPRMetric.MEAN_PERIMAGE_FPR,
+            SharedFPRScale.LOG,
+            self.lbound,
+            self.ubound,
+            pimoresult.threshold_at(self.lbound),
+            pimoresult.threshold_at(self.ubound),
+            aucs,
+        )
 
     def plot_all_logpimo_curves(
         self,
@@ -665,7 +960,8 @@ class AULogPImO(PImO):
         if self.is_empty:
             return None, None
 
-        (_, __, shared_fpr, tprs, image_classes), ___ = self.compute()
+        curves, _ = self.compute()
+        _, __, shared_fpr, tprs, image_classes = curves.to_tuple()
 
         fig, ax = plot_all_pimo_curves(
             shared_fpr,
@@ -691,8 +987,8 @@ class AULogPImO(PImO):
             list[dict[str, str | int | float | None]]: List of AUCs statistics from a boxplot.
             refer to `anomalib.utils.metrics.perimg.common.perimg_boxplot_stats()` for the keys and values.
         """
-        (_, __, ___, ____, image_classes), aucs = self.compute()
-        stats = perimg_boxplot_stats(values=aucs, image_classes=image_classes, only_class=1)
+        _, aulogpimos = self.compute()
+        stats = perimg_boxplot_stats(values=aulogpimos.aucs, image_classes=aulogpimos.image_classes, only_class=1)
         return stats
 
     def plot_boxplot_logpimo_curves(
@@ -706,7 +1002,8 @@ class AULogPImO(PImO):
         if self.is_empty:
             return None, None
 
-        (_, __, shared_fpr, tprs, image_classes), ___ = self.compute()
+        curves, _ = self.compute()
+        _, __, shared_fpr, tprs, image_classes = curves.to_tuple()
         fig, ax = plot_boxplot_logpimo_curves(
             shared_fpr,
             tprs,
@@ -728,8 +1025,8 @@ class AULogPImO(PImO):
         if self.is_empty:
             return None, None
 
-        (_, __, ___, ____, image_classes), aucs = self.compute()
-        fig, ax = plot_aulogpimo_boxplot(aucs, image_classes, self.random_model_auc, ax=ax)
+        _, aulogpimos = self.compute()
+        fig, ax = plot_aulogpimo_boxplot(aulogpimos.aucs, aulogpimos.image_classes, self.random_model_auc, ax=ax)
         return fig, ax
 
     def plot(
@@ -794,15 +1091,14 @@ class AULogPImO(PImO):
 
         ax = ax.flatten()
 
-        (thresholds, fprs, shared_fpr, _, image_classes), __ = self.compute()
+        curves, __ = self.compute()
+        thresholds, fprs, shared_fpr, _, image_classes = curves.to_tuple()
 
         # FRP upper bound is threshold lower bound
-        thidx_lbound = torch.argmin(torch.abs(shared_fpr - self.ubound))
-        th_lbound = thresholds[thidx_lbound]
+        th_lbound = curves.threshold_at(self.ubound)
 
         # FPR lower bound is threshold upper bound
-        thidx_ubound = torch.argmin(torch.abs(shared_fpr - self.lbound))
-        th_ubound = thresholds[thidx_ubound]
+        th_ubound = curves.threshold_at(self.lbound)
 
         plot_th_fpr_curves_norm_only(
             fprs,
@@ -819,65 +1115,11 @@ class AULogPImO(PImO):
 
         return fig, ax
 
-    @staticmethod
-    def _deduce_curves_fpath(fpath: Path):
-        return fpath.parent / f"{fpath.stem}_curves.pt"
-
+    # TODO remove this
     def save(self, fpath: str | Path, curve: bool = True):
-        """Save the AULogPImO values (AUCs) in a JSON file.
-        Optionally, save the AUPImO curves in a `.pt` file.
+        raise NotImplementedError("Not implemented anymore, use `AUPImOResult.save()` instead.")
 
-        Args:
-            fpath: path to the file where to save the AULogPImO values.
-            curve: whether to save the AUPImO curves in a `.pt` file.
-        """
-        fpath = _validate_and_convert_fpath(fpath, extension=".json")
-        pimoresult, aucs = self.compute()
-        payload = {
-            "lbound": self.lbound.item(),
-            "ubound": self.ubound.item(),
-            "aulogpimo": aucs.tolist(),
-        }
-        with fpath.open("w") as f:
-            json.dump(payload, f, indent=4)
-        if curve:
-            fpath_curves = AULogPImO._deduce_curves_fpath(fpath)
-            PImO._save(pimoresult, fpath_curves)
-            return fpath_curves
-
+    # TODO remove this
     @staticmethod
     def load(fpath: str | Path, curve: bool = True) -> Tensor | tuple[PImOResult, Tensor]:  # type: ignore
-        """Load the AULogPImO values (AUCs) from a JSON file.
-        Optionally, load the PImO curves from a `.pt` file (file name is deduced from the JSON file name).
-
-        Args:
-            fpath: path to the file where to load the AULogPImO values.
-            curve: whether to load the PImO curves from a `.pt` file.
-        Returns:
-            Tensor: AULogPImO values (AUCs)
-            or
-            tuple[PImOResult, Tensor]: (PImOResult, AULogPImO values (AUCs)).
-        """
-
-        fpath = _validate_and_convert_fpath(fpath, extension=".json")
-        with fpath.open("r") as f:
-            loaded = json.load(f)
-        try:
-            lbound = loaded["lbound"]
-            ubound = loaded["ubound"]
-            aulogpimo = loaded["aulogpimo"]
-        except KeyError as ex:
-            raise KeyError(f"Invalid {AULogPImO.__name__} saved AUCs, expected key {ex} in file {fpath}.") from ex
-        try:
-            loaded["lbound"] = lbound = _validate_and_convert_rate(lbound, nonzero=True, nonone=True)
-            loaded["ubound"] = ubound = _validate_and_convert_rate(ubound, nonzero=True)
-            if lbound >= ubound:
-                raise ValueError(f"Expected argument `lbound` to be < `ubound`, but got {lbound} >= {ubound}.")
-            loaded["aulogpimo"] = _validate_and_convert_aucs(aulogpimo, nan_allowed=True).to(torch.float64)
-        except Exception as ex:
-            raise RuntimeError(f"Invalid {AULogPImO.__name__} saved AUCs in file {fpath}.") from ex
-        if curve:
-            curves_fpath = AULogPImO._deduce_curves_fpath(fpath)
-            pimoresult = PImO.load(curves_fpath)
-            return pimoresult, loaded
-        return loaded
+        raise NotImplementedError("Not implemented anymore, use `AUPImOResult.save()` instead.")
