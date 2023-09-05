@@ -1085,10 +1085,13 @@ def compare_models_perimg(
 
     # ** format **
 
+    legend_ncols = len(models)
+
     if random_model_score is not None:
         _add_avline_at_score_random_model(ax, random_model_score, axis=0, add_legend=False)
+        legend_ncols += 1
 
-    ax.legend(loc="lower right", title="Model", ncol=len(models), fontsize="small", title_fontsize="small")
+    ax.legend(loc="lower right", title="Model", ncol=legend_ncols, fontsize="small", title_fontsize="small")
 
     # Y-axis
     _format_axis_rate_metric_linear(ax, axis=1)
