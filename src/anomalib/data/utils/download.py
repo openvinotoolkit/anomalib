@@ -329,7 +329,7 @@ def download_single_file(root: Path, info: DownloadInfo) -> None:
     if downloaded_file_path.exists():
         logger.info("Existing file found. Skipping download stage.")
     else:
-        logger.info("Downloading the %s dataset.", info.name)
+        logger.info("Downloading %s", info.name)
         with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc=info.name) as progress_bar:
             urlretrieve(  # nosec - suppress bandit warning (urls are hardcoded)
                 url=f"{info.url}",
