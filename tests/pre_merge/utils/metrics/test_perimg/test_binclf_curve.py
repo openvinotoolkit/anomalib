@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 import torch
 
+from anomalib.utils.metrics.perimg._binclf_numba import _binclf_curve_numba, _binclf_curves_numba_parallel
 from anomalib.utils.metrics.perimg.binclf_curve import (
     PerImageBinClfCurve,
     __binclf_curves_ndarray_itertools,
@@ -38,7 +39,7 @@ def pytest_generate_tests(metafunc):
         axis=0,
     ).astype(int)
 
-    if metafunc.function is test___binclf_curves_ndarray_itertools:
+    if metafunc.function is test___binclf_curves_ndarray_itertools or metafunc.function is test__binclf_curve_numba:
         metafunc.parametrize(
             argnames=("pred", "mask", "thresholds", "expected"),
             argvalues=[
@@ -52,7 +53,10 @@ def pytest_generate_tests(metafunc):
     masks = np.stack([mask_anom, mask_norm], axis=0)
     expecteds = np.stack([expected_anom, expected_norm], axis=0)
 
-    if metafunc.function is test__binclf_curves_ndarray_itertools:
+    if (
+        metafunc.function is test__binclf_curves_ndarray_itertools
+        or metafunc.function is test__binclf_curves_numba_parallel
+    ):
         metafunc.parametrize(
             argnames=("preds", "masks", "thresholds", "expecteds"),
             argvalues=[
@@ -68,11 +72,23 @@ def pytest_generate_tests(metafunc):
 
     if metafunc.function is test__perimg_binclf_curve_compute_cpu:
         metafunc.parametrize(
-            argnames=("preds", "masks", "expected_thresholds", "expecteds"),
+            argnames=(
+                "preds",
+                "masks",
+                "expected_thresholds",
+                "expecteds",
+            ),
             argvalues=[
                 (preds[:1], masks[:1], thresholds, expecteds[:1]),
                 (preds, masks, thresholds, expecteds),
                 (preds.reshape(2, 2, 2), masks.reshape(2, 2, 2), thresholds, expecteds),
+            ],
+        )
+        metafunc.parametrize(
+            argnames=("algorithm",),
+            argvalues=[
+                ("itertools",),
+                ("numba-parallel",),
             ],
         )
 
@@ -88,16 +104,38 @@ def pytest_generate_tests(metafunc):
         )
 
 
-# with double `_`
+# ==================================================================================================
+# itertools version
+
+
+# with double `_` (for a single image)
 def test___binclf_curves_ndarray_itertools(pred, mask, thresholds, expected):
     computed = __binclf_curves_ndarray_itertools(pred, mask, thresholds)
     assert computed.shape == (thresholds.size, 2, 2)
     assert (computed == expected).all()
 
 
-# with single `_`
+# with single `_` (for a batch of images)
 def test__binclf_curves_ndarray_itertools(preds, masks, thresholds, expecteds):
     computed = _binclf_curves_ndarray_itertools(preds, masks, thresholds)
+    assert computed.shape == (preds.shape[0], thresholds.size, 2, 2)
+    assert (computed == expecteds).all()
+
+
+# ==================================================================================================
+# numba version
+
+
+# for a single image
+def test__binclf_curve_numba(pred, mask, thresholds, expected):
+    computed = _binclf_curve_numba(pred, mask, thresholds)
+    assert computed.shape == (thresholds.size, 2, 2)
+    assert (computed == expected).all()
+
+
+# for a batch of images
+def test__binclf_curves_numba_parallel(preds, masks, thresholds, expecteds):
+    computed = _binclf_curves_numba_parallel(preds, masks, thresholds)
     assert computed.shape == (preds.shape[0], thresholds.size, 2, 2)
     assert (computed == expecteds).all()
 
@@ -116,11 +154,15 @@ def test____binclf_curves_ndarray_itertools_validations():
         __binclf_curves_ndarray_itertools(np.arange(4), np.arange(4), np.arange(6).reshape(2, 3))
 
 
-def test__perimg_binclf_curve_compute_cpu(preds, masks, expected_thresholds, expecteds):
+def test__perimg_binclf_curve_compute_cpu(preds, masks, expected_thresholds, expecteds, algorithm):
     th_bounds = torch.tensor((expected_thresholds[0], expected_thresholds[-1]))
 
     computed_thresholds, computed = _perimg_binclf_curve_compute_cpu(
-        preds, masks, th_bounds, expected_thresholds.numel()
+        preds,
+        masks,
+        th_bounds,
+        expected_thresholds.numel(),
+        algorithm=algorithm,
     )
     assert computed.shape == expecteds.shape
     assert (computed == expecteds).all()

@@ -19,6 +19,8 @@ from torch import Tensor
 from torchmetrics import Metric
 from torchmetrics.utilities.data import dim_zero_cat
 
+from ._binclf_numba import _binclf_curves_numba_parallel
+
 # =========================================== ARGS VALIDATION ===========================================
 
 
@@ -261,6 +263,7 @@ def _perimg_binclf_curve_compute_cpu(
     masks: Tensor,
     threshold_bounds: Tensor | tuple[float, float],
     num_thresholds: int,
+    algorithm: str = "numba-parallel",
 ):
     """Compute the binary classification matrix for a range of thresholds.
 
@@ -278,6 +281,8 @@ def _perimg_binclf_curve_compute_cpu(
         masks (Tensor): Binary ground truth masks of shape (N, H, W)
         threshold_bounds (Tensor | tuple[float, float]): Lower and upper bounds for the thresholds.
         num_thresholds (int): Number of thresholds to compute between `threshold_bounds`.
+        algorithm (str): Algorithm to use for computing the binary classification matrix.
+                        Options: `itertools`, `numba-parallel`.
 
     Returns:
         (Tensor, Tensor[int64]):
@@ -315,9 +320,19 @@ def _perimg_binclf_curve_compute_cpu(
     )
 
     # *** update() ***
-    binclf_curve_ndarray = _binclf_curves_ndarray_itertools(
-        anomaly_maps.numpy(), masks.numpy().astype(bool), thresholds.numpy()
-    )
+    if algorithm == "itertools":
+        binclf_curve_ndarray = _binclf_curves_ndarray_itertools(
+            anomaly_maps.numpy(), masks.numpy().astype(bool), thresholds.numpy()
+        )
+
+    elif algorithm == "numba-parallel":
+        binclf_curve_ndarray = _binclf_curves_numba_parallel(
+            anomaly_maps.numpy(), masks.numpy().astype(bool), thresholds.numpy()
+        )
+
+    else:
+        raise ValueError(f"Algorithm {algorithm} not recognized.")
+
     return thresholds, torch.from_numpy(binclf_curve_ndarray).to(anomaly_maps.device).long()
 
 

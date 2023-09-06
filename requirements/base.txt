@@ -6,6 +6,7 @@ imgaug==0.4.0
 jsonargparse[signatures]>=4.3
 kornia>=0.6.6,<0.6.10
 matplotlib>=3.4.3
+numba==0.57.1
 omegaconf>=2.1.1
 opencv-python>=4.5.3.56
 pandas>=1.1.0
