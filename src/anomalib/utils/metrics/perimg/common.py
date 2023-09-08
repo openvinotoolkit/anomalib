@@ -230,9 +230,9 @@ def _perimg_boxplot_stats(
         records.append(
             dict(
                 statistic=stat_,
-                value=val_,
-                nearest=nearest,
-                imgidx=imgidx,
+                value=float(val_),
+                nearest=float(nearest),
+                imgidx=int(imgidx),
             )
         )
 
