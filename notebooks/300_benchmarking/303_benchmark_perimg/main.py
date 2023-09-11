@@ -40,7 +40,17 @@ DATADIR.mkdir(exist_ok=True, parents=True)
 if get_hostname() in ("musca-fon.mines-paristech.local",):
     DATASETSDIR = Path.home() / "data/datasets"
 
-elif get_hostname() in ("login-cmm-cuda",):
+# interactive, cpu cluster, gpu cluster
+elif get_hostname() in ("login-cmm-cuda",) + (
+    "node041",
+    "node042",
+    "node043",
+    "node044",
+) + (
+    "node061",
+    "node062",
+    "node063",
+):
     DATASETSDIR = Path.home() / "data-fon/datasets"
 
 else:
