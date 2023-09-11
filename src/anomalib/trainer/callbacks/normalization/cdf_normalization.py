@@ -11,7 +11,7 @@ from lightning.pytorch import Callback
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch.distributions import LogNormal
 
-from anomalib import trainer as t
+import anomalib
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
 from anomalib.post_processing.normalization.cdf import normalize, standardize
@@ -27,7 +27,7 @@ class CdfNormalizationCallback(Callback):
         self.image_dist: LogNormal | None = None
         self.pixel_dist: LogNormal | None = None
 
-    def setup(self, trainer: "t.AnomalibTrainer", pl_module: AnomalyModule, stage: str | None = None) -> None:
+    def setup(self, trainer: "anomalib.AnomalibTrainer", pl_module: AnomalyModule, stage: str | None = None) -> None:
         """Adds training_distribution metrics to normalization metrics."""
         del trainer, stage  # These variabels are not used.
 
@@ -39,7 +39,7 @@ class CdfNormalizationCallback(Callback):
                 f" got {type(pl_module.normalization_metrics)}"
             )
 
-    def on_test_start(self, trainer: "t.AnomalibTrainer", pl_module: AnomalyModule) -> None:
+    def on_test_start(self, trainer: "anomalib.AnomalibTrainer", pl_module: AnomalyModule) -> None:
         """Called when the test begins."""
         del trainer  # `trainer` variable is not used.
 
@@ -48,7 +48,7 @@ class CdfNormalizationCallback(Callback):
         if pl_module.pixel_metrics is not None:
             pl_module.pixel_metrics.set_threshold(0.5)
 
-    def on_validation_epoch_start(self, trainer: "t.AnomalibTrainer", pl_module: AnomalyModule) -> None:
+    def on_validation_epoch_start(self, trainer: "anomalib.AnomalibTrainer", pl_module: AnomalyModule) -> None:
         """Called when the validation starts after training.
 
         Use the current model to compute the anomaly score distributions
@@ -60,7 +60,7 @@ class CdfNormalizationCallback(Callback):
 
     def on_validation_batch_end(
         self,
-        trainer: "t.AnomalibTrainer",
+        trainer: "anomalib.AnomalibTrainer",
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
         batch: Any,
@@ -74,7 +74,7 @@ class CdfNormalizationCallback(Callback):
 
     def on_test_batch_end(
         self,
-        trainer: "t.AnomalibTrainer",
+        trainer: "anomalib.AnomalibTrainer",
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
         batch: Any,
@@ -89,7 +89,7 @@ class CdfNormalizationCallback(Callback):
 
     def on_predict_batch_end(
         self,
-        trainer: "t.AnomalibTrainer",
+        trainer: "anomalib.AnomalibTrainer",
         pl_module: AnomalyModule,
         outputs: dict,
         batch: Any,
@@ -103,14 +103,14 @@ class CdfNormalizationCallback(Callback):
         self._normalize_batch(outputs, pl_module)
         outputs["pred_labels"] = outputs["pred_scores"] >= 0.5
 
-    def _collect_stats(self, trainer: "t.AnomalibTrainer", pl_module: AnomalyModule) -> None:
+    def _collect_stats(self, trainer: "anomalib.AnomalibTrainer", pl_module: AnomalyModule) -> None:
         """Collect the statistics of the normal training data.
 
         Create a trainer and use it to predict the anomaly maps and scores of the normal training data. Then
          estimate the distribution of anomaly scores for normal data at the image and pixel level by computing
          the mean and standard deviations. A dictionary containing the computed statistics is stored in self.stats.
         """
-        predictions = t.AnomalibTrainer(
+        predictions = anomalib.AnomalibTrainer(
             accelerator=trainer.accelerator, devices=trainer.num_devices, normalizer="none"
         ).predict(model=self._create_inference_model(pl_module), dataloaders=trainer.datamodule.train_dataloader())
         pl_module.normalization_metrics.reset()

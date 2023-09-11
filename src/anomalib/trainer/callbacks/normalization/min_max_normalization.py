@@ -6,11 +6,11 @@
 
 from typing import Any
 
-import lightning.pytorch as pl
 import torch
 from lightning.pytorch import Callback
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
+import anomalib
 from anomalib.models.components import AnomalyModule
 from anomalib.post_processing.normalization.min_max import normalize
 from anomalib.utils.metrics import MinMax
@@ -19,7 +19,7 @@ from anomalib.utils.metrics import MinMax
 class MinMaxNormalizationCallback(Callback):
     """Callback that normalizes the image-level and pixel-level anomaly scores using min-max normalization."""
 
-    def setup(self, trainer: pl.Trainer, pl_module: AnomalyModule, stage: str | None = None) -> None:
+    def setup(self, trainer: "anomalib.AnomalibTrainer", pl_module: AnomalyModule, stage: str | None = None) -> None:
         """Adds min_max metrics to normalization metrics."""
         del trainer, stage  # These variables are not used.
 
@@ -30,7 +30,7 @@ class MinMaxNormalizationCallback(Callback):
                 f"Expected normalization_metrics to be of type MinMax, got {type(pl_module.normalization_metrics)}"
             )
 
-    def on_test_start(self, trainer: pl.Trainer, pl_module: AnomalyModule) -> None:
+    def on_test_start(self, trainer: "anomalib.AnomalibTrainer", pl_module: AnomalyModule) -> None:
         """Called when the test begins."""
         del trainer  # `trainer` variable is not used.
 
@@ -40,7 +40,7 @@ class MinMaxNormalizationCallback(Callback):
 
     def on_validation_batch_end(
         self,
-        trainer: pl.Trainer,
+        trainer: "anomalib.AnomalibTrainer",
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT,
         batch: Any,
@@ -61,7 +61,7 @@ class MinMaxNormalizationCallback(Callback):
 
     def on_test_batch_end(
         self,
-        trainer: pl.Trainer,
+        trainer: "anomalib.AnomalibTrainer",
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
         batch: Any,
@@ -75,7 +75,7 @@ class MinMaxNormalizationCallback(Callback):
 
     def on_predict_batch_end(
         self,
-        trainer: pl.Trainer,
+        trainer: "anomalib.AnomalibTrainer",
         pl_module: AnomalyModule,
         outputs: Any,
         batch: Any,
