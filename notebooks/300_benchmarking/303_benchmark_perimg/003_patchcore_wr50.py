@@ -112,7 +112,7 @@ from anomalib.models import Patchcore  # noqa: E402
 if DEBUG:
     MODELNAME = "debug"
 else:
-    MODELNAME = "patchcore_wr101"
+    MODELNAME = "patchcore_wr50"
 
 
 def get_model_trainer(logger=None):
