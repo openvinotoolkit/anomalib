@@ -5,7 +5,7 @@ ARG HTTP_PROXY
 ARG HTTPS_PROXY
 ARG NO_PROXY
 
-FROM nvidia/cuda:11.4.0-devel-ubuntu20.04 AS python_base_cuda11.4
+FROM nvidia/cuda:11.4.3-devel-ubuntu20.04 AS python_base_cuda11.4
 LABEL maintainer="Anomalib Development Team"
 
 # Setup proxies
