@@ -24,14 +24,25 @@ from anomalib.utils.metrics.perimg import AULogPImO
 # =============================================================================
 # CONSTANTS
 
+
+def get_hostname():
+    import socket
+
+    return socket.gethostname()
+
+
 DATADIR = Path(__file__).parent / "data"
 DATADIR.mkdir(exist_ok=True, parents=True)
-DATASETSDIR = Path.home() / "data/datasets"
 
-# DATADIR = Path("data/data-musca")
-# DATADIR = Path("data/data-fon")
 
-# DATASETSDIR = DATADIR / 'datasets'
+if get_hostname() in ("musca-fon.mines-paristech.local",):
+    DATASETSDIR = Path.home() / "data/datasets"
+
+elif get_hostname() in ("login-cmm-cuda",):
+    DATASETSDIR = Path.home() / "data-fon/datasets"
+
+else:
+    raise NotImplementedError(f"{get_hostname()=}")
 
 print(f"{DATADIR=}")
 print(f"{DATASETSDIR=}")
@@ -213,8 +224,12 @@ STANDARD_CALLBACKS = [METRICS_CALLBACK, POSTPROCESSING_CALLBACK]
 
 
 def train(dataset, category, datamodule, model, trainer, savedir):
+    print("train start")
+    print("fit")
     trainer.fit(datamodule=datamodule, model=model)
+    print("save")
     torch.save(model.state_dict(), savedir / "model_state_dict.pt")  # DEBUG
+    print("train end")
 
 
 # =============================================================================
@@ -224,6 +239,9 @@ def train(dataset, category, datamodule, model, trainer, savedir):
 def test(dataset, category, datamodule, model, trainer, savedir):
     # `asmap` stands for `Anomaly Score MAP`
     # `ascore` stands for `Anomaly Score`
+
+    print("test start")
+
     predictions = trainer.predict(model=model, dataloaders=datamodule.test_dataloader())
 
     asmaps = torch.concatenate(
@@ -258,8 +276,11 @@ def test(dataset, category, datamodule, model, trainer, savedir):
     asmaps = asmaps[df["index"].values]
     df = df.drop(columns=["index"]).reset_index(drop=False)
 
+    print("save")
     df.to_csv(savedir / "predictions.csv", index=False)
     torch.save(asmaps, savedir / "asmaps.pt")
+
+    print("test end")
 
     return df, asmaps, masks
 
