@@ -12,6 +12,7 @@ import pandas as pd
 import PIL
 import torch
 from pytorch_lightning import seed_everything
+from pytorch_lightning.loggers.logger import DummyLogger
 from skimage import morphology as skm
 
 from anomalib.data import MVTec, TaskType, Visa
@@ -307,6 +308,8 @@ def get_contour_mask(msk):
 
 
 def evaluate(imgpaths, ascores, imgclass, asmaps, masks, savedir, logger, debug):
+    logger = logger or DummyLogger()
+
     times = {}
 
     def logtime(f):
