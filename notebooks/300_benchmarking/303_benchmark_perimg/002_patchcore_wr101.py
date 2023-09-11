@@ -135,10 +135,6 @@ def get_model_trainer(logger=None):
         max_epochs=1,
         num_sanity_val_steps=0,  # does not work for padim
         accelerator="cpu",
-        # ---
-        # accelerator="gpu",
-        # strategy="ddp",
-        # strategy="ddp" if is_script() else "ddp_notebook",
     )
 
     return model, trainer
