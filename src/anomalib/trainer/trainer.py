@@ -19,7 +19,8 @@ class AnomalibTrainer(Trainer):
     """Anomalib trainer.
 
     Note:
-        Refer to PyTorch Lightning's Trainer for a list of parameters for details on other Trainer parameters.
+        Refer to PyTorch Lightning's [Trainer](https://lightning.ai/docs/pytorch/stable/common/trainer.html#trainer-class-api)
+         for a list of parameters for details on other Trainer parameters.
 
     Args:
         callbacks: Add a callback or list of callbacks.
