@@ -3,6 +3,7 @@
 
 import argparse
 import json
+import logging
 import socket
 from functools import lru_cache, wraps
 from pathlib import Path
@@ -22,6 +23,8 @@ from anomalib.post_processing import NormalizationMethod, ThresholdMethod, super
 from anomalib.utils.callbacks import MetricsConfigurationCallback, PostProcessingConfigurationCallback
 from anomalib.utils.metrics import AUPR, AUPRO, AUROC
 from anomalib.utils.metrics.perimg import AULogPImO
+
+logging.basicConfig(level=logging.INFO)
 
 # =============================================================================
 # CONSTANTS
