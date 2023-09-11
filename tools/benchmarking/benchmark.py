@@ -20,7 +20,7 @@ from tempfile import TemporaryDirectory
 from typing import cast
 
 import torch
-from lightning.pytorch import Trainer, seed_everything
+from lightning.pytorch import seed_everything
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from utils import upload_to_comet, upload_to_wandb, write_metrics
 
@@ -29,6 +29,7 @@ from anomalib.data import get_datamodule
 from anomalib.deploy import export
 from anomalib.deploy.export import ExportMode
 from anomalib.models import get_model
+from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.loggers import configure_logger
 from anomalib.utils.sweep import (
     get_openvino_throughput,
@@ -93,7 +94,7 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_met
 
         callbacks = get_sweep_callbacks(model_config)
 
-        trainer = Trainer(**model_config.trainer, logger=None, callbacks=callbacks)
+        trainer = AnomalibTrainer(**model_config.trainer, logger=None, callbacks=callbacks)
 
         start_time = time.time()
 

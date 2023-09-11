@@ -56,9 +56,9 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
 
     Example:
         >>> from anomalib.utils.loggers import AnomalibWandbLogger
-        >>> from lightning.pytorch import Trainer
+        >>> from anomalib.trainer import AnomalibTrainer
         >>> wandb_logger = AnomalibWandbLogger()
-        >>> trainer = Trainer(logger=wandb_logger)
+        >>> trainer =  AnomalibTrainer(logger=wandb_logger)
 
     Note: When logging manually through `wandb.log` or `trainer.logger.experiment.log`,
     make sure to use `commit=False` so the logging step does not increase.

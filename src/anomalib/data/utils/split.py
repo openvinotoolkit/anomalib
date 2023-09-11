@@ -15,12 +15,11 @@ These function are useful
 import math
 import warnings
 from enum import Enum
-from typing import TYPE_CHECKING, Sequence
+from typing import Sequence
 
 import torch
 
-if TYPE_CHECKING:
-    from anomalib.data import AnomalibDataset
+from anomalib import data
 
 
 class Split(str, Enum):
@@ -48,7 +47,7 @@ class ValSplitMode(str, Enum):
     SYNTHETIC = "synthetic"
 
 
-def concatenate_datasets(datasets: Sequence[AnomalibDataset]) -> AnomalibDataset:
+def concatenate_datasets(datasets: Sequence["data.AnomalibDataset"]) -> "data.AnomalibDataset":
     """Concatenate multiple datasets into a single dataset object.
 
     Args:
@@ -64,11 +63,11 @@ def concatenate_datasets(datasets: Sequence[AnomalibDataset]) -> AnomalibDataset
 
 
 def random_split(
-    dataset: AnomalibDataset,
+    dataset: "data.AnomalibDataset",
     split_ratio: float | Sequence[float],
     label_aware: bool = False,
     seed: int | None = None,
-) -> list[AnomalibDataset]:
+) -> list["data.AnomalibDataset"]:
     """Perform a random split of a dataset.
 
     Args:
@@ -97,7 +96,7 @@ def random_split(
         per_label_datasets = [dataset]
 
     # outer list: per-label unique, inner list: random subsets with the given ratio
-    subsets: list[list[AnomalibDataset]] = []
+    subsets: list[list["data.AnomalibDataset"]] = []
     # split each (label-aware) subset of source data
     for label_dataset in per_label_datasets:
         # get subset lengths
@@ -124,7 +123,7 @@ def random_split(
     return [concatenate_datasets(subset) for subset in subsets]
 
 
-def split_by_label(dataset: AnomalibDataset) -> tuple[AnomalibDataset, AnomalibDataset]:
+def split_by_label(dataset: "data.AnomalibDataset") -> tuple["data.AnomalibDataset", "data.AnomalibDataset"]:
     """Splits the dataset into the normal and anomalous subsets."""
     samples = dataset.samples
     normal_indices = samples[samples.label_index == 0].index

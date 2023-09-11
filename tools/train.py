@@ -12,13 +12,14 @@ import logging
 import warnings
 from argparse import ArgumentParser, Namespace
 
-from lightning.pytorch import Trainer, seed_everything
+from lightning.pytorch import seed_everything
 
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
 from anomalib.data.utils import TestSplitMode
 from anomalib.models import get_model
-from anomalib.utils.callbacks import LoadModelCallback, get_callbacks
+from anomalib.trainer import AnomalibTrainer
+from anomalib.utils.callbacks import get_callbacks
 from anomalib.utils.loggers import configure_logger, get_experiment_logger
 
 logger = logging.getLogger("anomalib")
@@ -59,19 +60,16 @@ def train(args: Namespace):
     experiment_logger = get_experiment_logger(config)
     callbacks = get_callbacks(config)
 
-    trainer = Trainer(**config.trainer, logger=experiment_logger, callbacks=callbacks)
+    trainer = AnomalibTrainer(**config.trainer, logger=experiment_logger, callbacks=callbacks)
+
     logger.info("Training the model.")
     trainer.fit(model=model, datamodule=datamodule)
-
-    logger.info("Loading the best model weights.")
-    load_model_callback = LoadModelCallback(weights_path=trainer.checkpoint_callback.best_model_path)
-    trainer.callbacks.insert(0, load_model_callback)  # pylint: disable=no-member
 
     if config.dataset.test_split_mode == TestSplitMode.NONE:
         logger.info("No test set provided. Skipping test stage.")
     else:
-        logger.info("Testing the model.")
-        trainer.test(model=model, datamodule=datamodule)
+        logger.info("Testing the model with best model weights.")
+        trainer.test(model=model, datamodule=datamodule, ckpt_path=trainer.checkpoint_callback.best_model_path)
 
 
 if __name__ == "__main__":

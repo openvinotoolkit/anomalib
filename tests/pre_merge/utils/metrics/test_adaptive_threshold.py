@@ -6,10 +6,10 @@ import random
 
 import pytest
 import torch
-from lightning.pytorch import Trainer
 
 from anomalib.data import get_datamodule
 from anomalib.models import get_model
+from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.callbacks import get_callbacks
 from anomalib.utils.metrics import AnomalyScoreThreshold
 from tests.helpers.config import get_test_configurable_parameters
@@ -55,7 +55,7 @@ def test_manual_threshold():
     datamodule = get_datamodule(config)
     callbacks = get_callbacks(config)
 
-    trainer = Trainer(**config.trainer, callbacks=callbacks)
+    trainer = AnomalibTrainer(**config.trainer, callbacks=callbacks)
     trainer.fit(model=model, datamodule=datamodule)
     assert trainer.model.image_metrics.F1Score.threshold == image_threshold
     assert trainer.model.pixel_metrics.F1Score.threshold == pixel_threshold

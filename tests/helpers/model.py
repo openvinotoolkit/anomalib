@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
-from lightning.pytorch import LightningDataModule, Trainer
+from lightning.pytorch import LightningDataModule
 from lightning.pytorch.callbacks import ModelCheckpoint
 from omegaconf import DictConfig, ListConfig
 
@@ -15,6 +15,7 @@ from anomalib.config import get_configurable_parameters, update_nncf_config
 from anomalib.data import TaskType, get_datamodule
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
+from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.callbacks import get_callbacks
 from anomalib.utils.callbacks.visualizer import BaseVisualizerCallback
 
@@ -30,7 +31,7 @@ def setup_model_train(
     dataset_task: Optional[TaskType] = None,
     visualizer_mode: Optional[str] = None,
     device: Union[List[int], int] = [0],
-) -> Tuple[Union[DictConfig, ListConfig], LightningDataModule, AnomalyModule, Trainer]:
+) -> Tuple[Union[DictConfig, ListConfig], LightningDataModule, AnomalyModule, AnomalibTrainer]:
     """Train the model based on the parameters passed.
 
     Args:
@@ -113,7 +114,7 @@ def setup_model_train(
         config.trainer.max_epochs = 1
         config.trainer.check_val_every_n_epoch = 1
 
-    trainer = Trainer(callbacks=callbacks, **config.trainer)
+    trainer = AnomalibTrainer(callbacks=callbacks, **config.trainer)
     trainer.fit(model=model, datamodule=datamodule)
     return config, datamodule, model, trainer
 
@@ -140,7 +141,7 @@ def model_load_test(config: Union[DictConfig, ListConfig], datamodule: Lightning
             break
 
     # create new trainer object with LoadModel callback (assumes it is present)
-    trainer = Trainer(callbacks=callbacks, **config.trainer)
+    trainer = AnomalibTrainer(callbacks=callbacks, **config.trainer)
     # Assumes the new model has LoadModel callback and the old one had ModelCheckpoint callback
     new_results = trainer.test(model=loaded_model, datamodule=datamodule, ckpt_path=ckpt_path)[0]
     assert np.isclose(

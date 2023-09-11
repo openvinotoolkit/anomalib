@@ -8,6 +8,7 @@ from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from anomalib.data.mvtec import MVTec
 from anomalib.data.utils import random_split
 from anomalib.deploy import ExportMode
+from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.callbacks.export import ExportCallback
 from tests.helpers.config import get_test_configurable_parameters
 from tests.helpers.dataset import get_dataset_path
@@ -52,7 +53,7 @@ def test_export_model_callback(dummy_datamodule: MVTec, export_mode):
             ),
             EarlyStopping(monitor=config.model.metric),
         ]
-        trainer = pl.Trainer(
+        trainer = AnomalibTrainer(
             accelerator="gpu",
             devices=1,
             callbacks=model.callbacks,

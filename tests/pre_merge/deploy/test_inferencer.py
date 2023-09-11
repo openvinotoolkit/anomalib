@@ -16,6 +16,7 @@ from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
 from anomalib.deploy import OpenVINOInferencer, TorchInferencer
 from anomalib.models import get_model
+from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.callbacks import get_callbacks
 from tests.helpers.dataset import TestDataset, get_dataset_path
 from tests.helpers.inference import MockImageLoader
@@ -65,7 +66,7 @@ def generate_results_dir():
             model = get_model(model_config)
             datamodule = get_datamodule(model_config)
             callbacks = get_callbacks(model_config)
-            trainer = Trainer(**model_config.trainer, logger=False, callbacks=callbacks)
+            trainer = AnomalibTrainer(**model_config.trainer, logger=False, callbacks=callbacks)
             trainer.fit(model=model, datamodule=datamodule)
 
             return model_config, model
