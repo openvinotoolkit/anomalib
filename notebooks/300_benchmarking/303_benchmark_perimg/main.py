@@ -44,7 +44,7 @@ if get_hostname() in ("musca-fon.mines-paristech.local",):
     DATASETSDIR = Path.home() / "data/datasets"
 
 # interactive, cpu cluster, gpu cluster
-elif get_hostname() in ("login-cmm-cuda",) + (
+elif get_hostname() in ("login-cmm-cuda", "login-cmm") + (
     "node041",
     "node042",
     "node043",
