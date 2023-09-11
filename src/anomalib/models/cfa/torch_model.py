@@ -14,6 +14,7 @@ import torch
 import torch.nn.functional as F
 import torchvision
 from einops import rearrange
+from sklearn.cluster import KMeans
 from torch import Tensor, nn
 from torch.fx.graph_module import GraphModule
 from torch.nn.common_types import _size_2_t
@@ -23,7 +24,6 @@ from tqdm import tqdm
 
 from anomalib.models.cfa.anomaly_map import AnomalyMapGenerator
 from anomalib.models.components import DynamicBufferModule
-from anomalib.models.components.cluster.kmeans import KMeans
 from anomalib.models.components.feature_extractors import dryrun_find_featuremap_dims
 
 SUPPORTED_BACKBONES = ("vgg19_bn", "resnet18", "wide_resnet50_2", "efficientnet_b5")
