@@ -56,6 +56,7 @@ from main import (  # noqa: E402
     STANDARD_CALLBACKS,
     evaluate,
     get_datamodule,
+    get_global_seeder,
     get_model_dir,
     parser,
     test,
@@ -64,8 +65,8 @@ from main import (  # noqa: E402
 
 # In[]:
 
-DEBUG = True
-OFFLINE = True
+DEBUG = False
+OFFLINE = False
 
 
 # In[]:
@@ -92,21 +93,13 @@ datasets_categories = cliargs.dataset_category
 seed_global = cliargs.seed_global
 seed_datamodule = cliargs.seed_datamodule
 
-# defa
-train_batch_size = 32
-eval_batch_size = 32
+# defaults
+train_batch_size = 4
+eval_batch_size = 4
 num_workers = 8
 
-# In[]:
+global_seeder = get_global_seeder(seed_global)
 
-# Setup (post-args)
-# Seed all
-
-import torch  # noqa: E402
-from pytorch_lightning import seed_everything  # noqa: E402
-
-torch.manual_seed(seed_global)
-seed_everything(seed_global, workers=True)
 
 # In[]:
 # Model
@@ -132,7 +125,7 @@ def get_model_trainer(logger=None):
             "layer3",
         ],
         pre_trained=True,
-        coreset_sampling_ratio=0.0001 if DEBUG else 0.01,
+        coreset_sampling_ratio=0.00003 if DEBUG else 0.01,
         num_neighbors=9,  # this only affects image-wise anomaly score
     )
 
@@ -163,6 +156,7 @@ except Exception as ex:
 # In[]:
 # Run
 
+import torch  # noqa: E402
 from progressbar import progressbar  # noqa: E402
 
 from anomalib.utils.loggers import AnomalibWandbLogger  # noqa: E402
@@ -176,6 +170,8 @@ for ds_cat in progressbar(datasets_categories):
 
     savedir = MODELDIR / dataset / category
     savedir.mkdir(exist_ok=True, parents=True)
+
+    global_seeder()
 
     datamodule = get_datamodule(
         dataset,
