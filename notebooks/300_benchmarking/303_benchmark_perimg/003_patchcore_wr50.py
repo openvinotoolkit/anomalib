@@ -65,8 +65,8 @@ from main import (  # noqa: E402
 
 # In[]:
 
-DEBUG = True
-OFFLINE = True
+DEBUG = False
+OFFLINE = False
 
 
 # In[]:
@@ -120,15 +120,11 @@ def get_model_trainer(logger=None):
         input_size=(INPUT_IMAGE_RESOLUTION, INPUT_IMAGE_RESOLUTION),
         backbone="wide_resnet50_2",
         layers=[
-            "layer1",
-        ]
-        if DEBUG
-        else [
             "layer2",
             "layer3",
         ],
         pre_trained=True,
-        coreset_sampling_ratio=0.00003 if DEBUG else 0.10,
+        coreset_sampling_ratio=0.0001 if DEBUG else 0.10,
         num_neighbors=9,  # this only affects image-wise anomaly score
     )
 
