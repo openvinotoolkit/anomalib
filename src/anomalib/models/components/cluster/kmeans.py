@@ -1,11 +1,13 @@
-"""
-    KMeans clustering algorithm implementation using PyTorch.
-"""
+"""KMeans clustering algorithm implementation using PyTorch."""
+
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 import torch
 
+
 class KMeans:
-    def __init__(self, n_clusters: int, max_iter:int = 10):
+    def __init__(self, n_clusters: int, max_iter: int = 10):
         """
         Initializes the KMeans object.
 
@@ -50,7 +52,7 @@ class KMeans:
                 mask = self.labels_ == j
                 if mask.any():
                     self.cluster_centers_[j] = inputs[mask].mean(dim=0)
-        #this line returns labels and centoids of the results
+        # this line returns labels and centoids of the results
         return self.labels_, self.cluster_centers_
 
     def predict(self, inputs):
