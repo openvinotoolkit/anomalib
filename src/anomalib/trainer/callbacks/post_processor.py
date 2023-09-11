@@ -8,11 +8,10 @@ from typing import Any
 
 import torch
 from lightning import Callback
-from lightning.pytorch import Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
-from anomalib import trainer
+from anomalib import trainer as t
 from anomalib.data.utils import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
 from anomalib.models import AnomalyModule
 
@@ -23,7 +22,7 @@ class PostProcessorCallback(Callback):
 
     def on_validation_batch_end(
         self,
-        trainer: "trainer.AnomalibTrainer",
+        trainer: "t.AnomalibTrainer",
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
         batch: Any,
@@ -35,7 +34,7 @@ class PostProcessorCallback(Callback):
 
     def on_test_batch_end(
         self,
-        trainer: "trainer.AnomalibTrainer",
+        trainer: "t.AnomalibTrainer",
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
         batch: Any,
@@ -47,7 +46,7 @@ class PostProcessorCallback(Callback):
 
     def on_predict_batch_end(
         self,
-        trainer: "trainer.AnomalibTrainer",
+        trainer: "t.AnomalibTrainer",
         pl_module: AnomalyModule,
         outputs: Any,
         batch: Any,
@@ -57,7 +56,7 @@ class PostProcessorCallback(Callback):
         if outputs is not None:
             self.post_process(trainer, pl_module, outputs)
 
-    def post_process(self, trainer: Trainer, pl_module: AnomalyModule, outputs: STEP_OUTPUT):
+    def post_process(self, trainer: "t.AnomalibTrainer", pl_module: AnomalyModule, outputs: STEP_OUTPUT):
         if isinstance(outputs, dict):
             self._post_process(outputs)
             if trainer.predicting or trainer.testing:
