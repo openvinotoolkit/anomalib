@@ -56,6 +56,7 @@ from main import (  # noqa: E402
     STANDARD_CALLBACKS,
     evaluate,
     get_datamodule,
+    get_global_seeder,
     get_model_dir,
     parser,
     test,
@@ -92,21 +93,14 @@ datasets_categories = cliargs.dataset_category
 seed_global = cliargs.seed_global
 seed_datamodule = cliargs.seed_datamodule
 
-# defa
+# defaults
 train_batch_size = 32
 eval_batch_size = 32
 num_workers = 8
 
-# In[]:
+# Seed
+global_seeder = get_global_seeder(seed_global)
 
-# Setup (post-args)
-# Seed all
-
-import torch  # noqa: E402
-from pytorch_lightning import seed_everything  # noqa: E402
-
-torch.manual_seed(seed_global)
-seed_everything(seed_global, workers=True)
 
 # In[]:
 # Model
@@ -157,6 +151,7 @@ except Exception as ex:
 # In[]:
 # Run
 
+import torch  # noqa: E402
 from progressbar import progressbar  # noqa: E402
 
 from anomalib.utils.loggers import AnomalibWandbLogger  # noqa: E402
@@ -170,6 +165,8 @@ for ds_cat in progressbar(datasets_categories):
 
     savedir = MODELDIR / dataset / category
     savedir.mkdir(exist_ok=True, parents=True)
+
+    global_seeder()
 
     datamodule = get_datamodule(
         dataset,
