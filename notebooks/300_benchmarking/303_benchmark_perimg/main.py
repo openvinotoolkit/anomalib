@@ -11,6 +11,7 @@ from time import time
 import pandas as pd
 import PIL
 import torch
+from pytorch_lightning import seed_everything
 from skimage import morphology as skm
 
 from anomalib.data import MVTec, TaskType, Visa
@@ -126,6 +127,18 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--dataset-category", "--dc", choices=DATASET_CATEGORY_CHOICES, nargs="*", required=True)
 parser.add_argument("--seed-global", type=int, default=0)
 parser.add_argument("--seed-datamodule", type=int, default=0)
+
+
+# =============================================================================
+# SEEDING
+
+
+def get_global_seeder(seed):
+    def global_seeder():
+        torch.manual_seed(seed)
+        seed_everything(seed, workers=True)
+
+    return global_seeder
 
 
 # =============================================================================
