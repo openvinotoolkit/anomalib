@@ -65,8 +65,8 @@ from main import (  # noqa: E402
 
 # In[]:
 
-DEBUG = False
-OFFLINE = False
+DEBUG = True
+OFFLINE = True
 
 
 # In[]:
@@ -121,6 +121,10 @@ def get_model_trainer(logger=None):
         backbone="wide_resnet101_2",
         layers=[
             "layer1",
+        ]
+        if DEBUG
+        else [
+            "layer1",
             "layer2",
             "layer3",
         ],
@@ -130,6 +134,7 @@ def get_model_trainer(logger=None):
     )
 
     trainer = Trainer(
+        enable_progress_bar=False,
         logger=logger,
         callbacks=STANDARD_CALLBACKS,
         max_epochs=1,
@@ -207,3 +212,5 @@ for ds_cat in progressbar(datasets_categories):
 
     finally:
         logger.experiment.finish()
+
+# %%
