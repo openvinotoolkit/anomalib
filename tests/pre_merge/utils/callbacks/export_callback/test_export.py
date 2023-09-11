@@ -53,7 +53,7 @@ def test_export_model_callback(dummy_datamodule: MVTec, export_mode):
             ),
             EarlyStopping(monitor=config.model.metric),
         ]
-        trainer = pl.Trainer(
+        trainer = AnomalibTrainer(
             accelerator="gpu",
             devices=1,
             callbacks=model.callbacks,

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
-from lightning.pytorch import LightningDataModule, Trainer
+from lightning.pytorch import LightningDataModule
 from lightning.pytorch.callbacks import ModelCheckpoint
 from omegaconf import DictConfig, ListConfig
 
@@ -31,7 +31,7 @@ def setup_model_train(
     dataset_task: Optional[TaskType] = None,
     visualizer_mode: Optional[str] = None,
     device: Union[List[int], int] = [0],
-) -> Tuple[Union[DictConfig, ListConfig], LightningDataModule, AnomalyModule, Trainer]:
+) -> Tuple[Union[DictConfig, ListConfig], LightningDataModule, AnomalyModule, AnomalibTrainer]:
     """Train the model based on the parameters passed.
 
     Args:
