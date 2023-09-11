@@ -7,7 +7,7 @@ The following code block shows the installation process in a nutshell. If you wa
 
 .. code-block:: bash
 
-    yes | conda create -n anomalib python=3.8
+    yes | conda create -n anomalib python=3.10
     conda activate anomalib
     pip install .[full]
 

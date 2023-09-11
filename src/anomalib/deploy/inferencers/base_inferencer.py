@@ -174,11 +174,11 @@ class Inferencer(ABC):
 
         return anomaly_maps, float(pred_scores)
 
-    def _load_metadata(self, path: str | Path | None = None) -> dict | DictConfig:
+    def _load_metadata(self, path: str | Path | dict | None = None) -> dict | DictConfig:
         """Loads the meta data from the given path.
 
         Args:
-            path (str | Path | None, optional): Path to JSON file containing the metadata.
+            path (str | Path | dict | None, optional): Path to JSON file containing the metadata.
                 If no path is provided, it returns an empty dict. Defaults to None.
 
         Returns:

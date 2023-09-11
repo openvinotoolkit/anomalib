@@ -44,7 +44,6 @@ To run OpenVINO inference, first make sure that your model has been exported to 
 +-----------+----------+--------------------------------------------------------------------------------------+
 | Parameter | Required |                                     Description                                      |
 +===========+==========+======================================================================================+
-| config    | True     | Path to the model config file.                                                       |
 +-----------+----------+--------------------------------------------------------------------------------------+
 | weights   | True     | Path to the OpenVINO IR model file (either ``.xml`` or ``.bin``)                     |
 +-----------+----------+--------------------------------------------------------------------------------------+
@@ -62,7 +61,7 @@ For correct inference results, the ``metadata`` argument should be specified and
 
 As an example, OpenVINO inference can be triggered by the following command:
 
-``python tools/inference/openvino.py --config padim.yaml --weights results/openvino/model.xml --input image.png --metadata results/openvino/metadata.json``
+``python tools/inference/openvino.py --weights results/openvino/model.xml --input image.png --metadata results/openvino/metadata.json``
 
 Similar to PyTorch inference, the visualization results will be displayed on the screen, and optionally saved to the file system location specified by the ``save_data`` parameter.
 
@@ -76,7 +75,6 @@ The gradio inference is supported for both PyTorch and OpenVINO models.
 +-----------+----------+------------------------------------------------------------------+
 | Parameter | Required |                           Description                            |
 +===========+==========+==================================================================+
-| config    | True     | Path to the model config file.                                   |
 +-----------+----------+------------------------------------------------------------------+
 | weights   | True     | Path to the OpenVINO IR model file (either ``.xml`` or ``.bin``) |
 +-----------+----------+------------------------------------------------------------------+
@@ -95,7 +93,6 @@ As an example, PyTorch model can be used by the following command:
 .. code-block:: bash
 
     python tools/inference/gradio_inference.py \
-        --config ./anomalib/models/padim/config.yaml \
         --weights ./results/padim/mvtec/bottle/weights/model.ckpt
 
 Similarly, you can use OpenVINO model by the following command:
@@ -103,6 +100,5 @@ Similarly, you can use OpenVINO model by the following command:
 .. code-block:: bash
 
     python python tools/inference/gradio_inference.py \
-        --config ./anomalib/models/padim/config.yaml \
         --weights ./results/padim/mvtec/bottle/openvino/openvino_model.onnx \
         --metadata ./results/padim/mvtec/bottle/openvino/metadata.json

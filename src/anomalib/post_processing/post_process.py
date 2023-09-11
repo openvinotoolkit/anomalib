@@ -166,6 +166,6 @@ def draw_boxes(image: np.ndarray, boxes: np.ndarray, color: tuple[int, int, int]
         np.ndarray: Image showing the bounding boxes drawn on top of the source image.
     """
     for box in boxes:
-        x_1, y_1, x_2, y_2 = box.astype(np.int)
+        x_1, y_1, x_2, y_2 = box.astype(int)
         image = cv2.rectangle(image, (x_1, y_1), (x_2, y_2), color=color, thickness=2)
     return image

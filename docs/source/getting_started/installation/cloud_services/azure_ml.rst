@@ -23,7 +23,7 @@ Step 1: Create a Conda Environment
 
 .. code:: bash
 
-   conda create --name anomalib_env python=3.8 -y
+   conda create --name anomalib_env python=3.10 -y
 
 Step 2: Activate the Environment
 --------------------------------

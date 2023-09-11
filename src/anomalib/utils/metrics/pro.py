@@ -38,10 +38,11 @@ class PRO(Metric):
         target = dim_zero_cat(self.target)
         preds = dim_zero_cat(self.preds)
 
+        target = target.unsqueeze(1).type(torch.float)  # kornia expects N1HW and FloatTensor format
         if target.is_cuda:
-            comps = connected_components_gpu(target.unsqueeze(1))
+            comps = connected_components_gpu(target)
         else:
-            comps = connected_components_cpu(target.unsqueeze(1))
+            comps = connected_components_cpu(target)
         pro = pro_score(preds, comps, threshold=self.threshold)
         return pro
 
@@ -63,6 +64,8 @@ def pro_score(predictions: Tensor, comps: Tensor, threshold: float = 0.5) -> Ten
     n_comps = len(comps.unique())
 
     preds = comps.clone()
+    # match the shapes in case one of the tensors is N1HW
+    preds = preds.reshape(predictions.shape)
     preds[~predictions] = 0
     if n_comps == 1:  # only background
         return torch.Tensor([1.0])

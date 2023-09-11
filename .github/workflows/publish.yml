@@ -1,7 +1,9 @@
 name: Upload Python Package
 on:
   release:
-    types: [created]
+    types: [published]
+  workflow_dispatch: # run on request (no need for PR)
+
 jobs:
   deploy:
     runs-on: ubuntu-20.04

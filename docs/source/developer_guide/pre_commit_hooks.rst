@@ -23,7 +23,7 @@ To install the development environment, including pre-commit, run the following 
 
 .. code-block:: bash
 
-  $ conda create -n anomalib_dev python=3.8
+  $ conda create -n anomalib_dev python=3.10
   $ conda activate anomalib_dev
   $ pip install -r requirements/base.txt -r requirements/dev.txt
   $ pre-commit install

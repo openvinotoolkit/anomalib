@@ -54,6 +54,8 @@ DOWNLOAD_INFO = DownloadInfo(
     hash="d8bb2800fbf3ac88e798da6ae10dc819",
 )
 
+CATEGORIES = ("bagel", "cable_gland", "carrot", "cookie", "dowel", "foam", "peach", "potato", "rope", "tire")
+
 
 def make_mvtec_3d_dataset(
     root: str | Path, split: str | Split | None = None, extensions: Sequence[str] | None = None

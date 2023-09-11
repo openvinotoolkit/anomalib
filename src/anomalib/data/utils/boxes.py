@@ -44,11 +44,12 @@ def masks_to_boxes(masks: Tensor, anomaly_maps: Tensor | None = None) -> tuple[l
         for label in labels[labels != 0]:
             y_loc, x_loc = torch.where(im_comps == label)
             # add box
-            im_boxes.append(Tensor([torch.min(x_loc), torch.min(y_loc), torch.max(x_loc), torch.max(y_loc)]))
+            box = Tensor([torch.min(x_loc), torch.min(y_loc), torch.max(x_loc), torch.max(y_loc)]).to(masks.device)
+            im_boxes.append(box)
             if anomaly_maps is not None:
                 im_scores.append(torch.max(anomaly_maps[im_idx, y_loc, x_loc]))
-        batch_boxes.append(torch.stack(im_boxes) if im_boxes else torch.empty((0, 4)))
-        batch_scores.append(torch.stack(im_scores) if im_scores else torch.empty(0))
+        batch_boxes.append(torch.stack(im_boxes) if im_boxes else torch.empty((0, 4), device=masks.device))
+        batch_scores.append(torch.stack(im_scores) if im_scores else torch.empty(0, device=masks.device))
 
     return batch_boxes, batch_scores
 
@@ -65,7 +66,7 @@ def boxes_to_masks(boxes: list[Tensor], image_size: tuple[int, int]) -> Tensor:
         Tensor: Tensor of shape (B, H, W) in which each slice is a binary mask showing the pixels contained by a
             bounding box.
     """
-    masks = torch.zeros((len(boxes),) + image_size)
+    masks = torch.zeros((len(boxes),) + image_size).to(boxes[0].device)
     for im_idx, im_boxes in enumerate(boxes):
         for box in im_boxes:
             x_1, y_1, x_2, y_2 = box.int()

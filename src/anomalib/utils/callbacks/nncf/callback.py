@@ -52,7 +52,10 @@ class NNCFCallback(Callback):
         config = register_default_init_args(self.config, init_loader)
 
         self.nncf_ctrl, pl_module.model = wrap_nncf_model(
-            model=pl_module.model, config=config, dataloader=trainer.datamodule.train_dataloader()  # type: ignore
+            model=pl_module.model,
+            config=config,
+            dataloader=trainer.datamodule.train_dataloader(),  # type: ignore
+            init_state_dict=None,  # type: ignore
         )
 
     def on_train_batch_start(

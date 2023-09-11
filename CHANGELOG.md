@@ -8,15 +8,157 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
-- Add `README.md` files to `notebooks` directories and its subdirectories (<https://github.com/openvinotoolkit/anomalib/issues/993>)
-
 ### Changed
-
-- Remove `config` flag from `OpenVINOInferencer` (<https://github.com/openvinotoolkit/anomalib/pull/939>)
 
 ### Deprecated
 
+### Fixed
+
+## [v0.7.0] - 2023-08-28
+
+### Added
+
+- AUPRO binning capability by @yann-cv in https://github.com/openvinotoolkit/anomalib/pull/1145
+- Add support for receiving dataset paths as a list by @harimkang in https://github.com/openvinotoolkit/anomalib/pull/1265
+- Add modelAPI compatible OpenVINO export by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/1219
+
+### Changed
+
+- Enable training with only normal images for MVTec by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/1241
+- Improve default settings of EfficientAD in https://github.com/openvinotoolkit/anomalib/pull/1143
+- Added the tracer_kwargs to the TorchFXFeatureExtractor class by @JoaoGuibs in https://github.com/openvinotoolkit/anomalib/pull/1214
+- Replace cdist in Patchcore by @blaz-r in https://github.com/openvinotoolkit/anomalib/pull/1267
+- Ignore hidden directories when creating Folder dataset by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1268
+
+### Fixed
+
+- Fix typechecking error for toch.onnx.export by @ORippler in https://github.com/openvinotoolkit/anomalib/pull/1159
+- Fix benchmarking type error by @blaz-r in https://github.com/openvinotoolkit/anomalib/pull/1155
+- Fix incorrect shape mismatch between anomaly map and ground truth mask by @alexriedel1 in https://github.com/openvinotoolkit/anomalib/pull/1182
+- Fix dataset keys in benchmarking notebook by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1242
+- Remove config from argparse in OpenVINO inference script by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1257
+- Fix EfficientAD number of steps for optimizer lr change by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1266
+- Fix unable to read the mas image by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1277
+
+## [v0.6.0] - 2023-06-15
+
+### Added
+
+- EfficientAD by @alexriedel1 in https://github.com/openvinotoolkit/anomalib/pull/1073
+- AI-VAD bbox post-processing by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/1103
+- Add dataset categories to data modules by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1105
+- Pass codedov token from environment by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/1102
+
+### Changed
+
+- OV API2.0 by @paularamo in https://github.com/openvinotoolkit/anomalib/pull/1098
+
+### Deprecated
+
+- OV API1.0 by @paularamo in https://github.com/openvinotoolkit/anomalib/pull/1098
+
 ###  Fixed
+
+- Fix Fastflow ONNX export. by @jasonvanzelm in https://github.com/openvinotoolkit/anomalib/pull/1108
+- Fix tile import typo by @xbkaishui in https://github.com/openvinotoolkit/anomalib/pull/1106
+- Fix `pre-commit` issues caused by the EfficientAD PR by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1114
+- Bump requests from 2.26.0 to 2.31.0 in /requirements by @dependabot in https://github.com/openvinotoolkit/anomalib/pull/1100
+
+### New Contributors
+
+- @xbkaishui made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/1106
+- @jasonvanzelm made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/1108
+
+**Full Changelog**: https://github.com/openvinotoolkit/anomalib/compare/v0.5.1...v0.6.0
+
+## [v0.5.1] - 2023-05-24
+
+### Added
+
+- 🧪 Add tests for tools by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/1069
+- Add kolektor dataset by @Ravindu987 in https://github.com/openvinotoolkit/anomalib/pull/983
+
+### Changed
+
+- Rename `metadata_path` to `metadata` in `OpenvinoInferencer` in https://github.com/openvinotoolkit/anomalib/pull/1101
+- 📝 [Notebooks] - Simplify the dobot notebooks. by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1084
+- Upgrade python to 3.10 by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1035
+- 📝 [Notebooks] - Install anomalib via pip in the Jupyter Notebooks by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1091
+- Update code-scan workflow to use Trivy by @yunchu in https://github.com/openvinotoolkit/anomalib/pull/1097
+
+### Fixed
+
+- Fix `init_state_dict` bug in `wrap_nncf_model` in https://github.com/openvinotoolkit/anomalib/pull/1101
+- Fix mypy pep561 by @WenjingKangIntel in https://github.com/openvinotoolkit/anomalib/pull/1088
+- 📝 [Notebooks] Fix the broken formatting by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1090
+
+## [v0.5.0] - 2023-05-09
+
+### Added
+
+- 📚 Add OpenVINO Inference to getting started notebook. by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/897
+- Mvtec 3d by @alexriedel1 in https://github.com/openvinotoolkit/anomalib/pull/907
+- MVTec 3D and Folder3D by @alexriedel1 in https://github.com/openvinotoolkit/anomalib/pull/942
+- add reorder=True argument in aupro by @triet1102 in https://github.com/openvinotoolkit/anomalib/pull/944
+- always reorder inputs when computing AUROC by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/945
+- always reorder for aupr metric by @triet1102 in https://github.com/openvinotoolkit/anomalib/pull/975
+- Add `README.md` files to `notebooks` directories and its subdirectories (<https://github.com/openvinotoolkit/anomalib/issues/993>)
+- Set transformations from the config file by @alexriedel1 in https://github.com/openvinotoolkit/anomalib/pull/990
+- Add contributors to `README.md` by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/995
+- Add codeowners file by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1019
+- Configure reference frame for multi-frame video clips by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/1023
+- [Algo] Attribute-based Representations for Accurate and Interpretable Video Anomaly Detection by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/1040
+
+### Changed
+
+- Switch to src layout by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/921
+- Remove `config` flag from `OpenVINOInferencer` (<https://github.com/openvinotoolkit/anomalib/pull/939>)
+- Add ruff as the main linter by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/936
+- Add a new workflow for code scanning by @yunchu in https://github.com/openvinotoolkit/anomalib/pull/940
+- Enable bandit scanning by @yunchu in https://github.com/openvinotoolkit/anomalib/pull/954
+- 🐳 Update Containers and Readme by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/952
+- Refactor AUPRO metric by @triet1102 in https://github.com/openvinotoolkit/anomalib/pull/991
+- enable auto-fixing for ruff in pre-commit by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/1004
+- Refactor strings and ints into enum.Enum by @WenjingKangIntel in https://github.com/openvinotoolkit/anomalib/pull/1044
+- Modify codecov upload by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/1080
+
+### Deprecated
+
+- Remove torchvision and torchtext by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/903
+- Remove codacy from ci docs by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/924
+- Remove config dependency from `OpenVINOInferencer` by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/939
+- Remove config from torch inferencer by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1001
+
+###  Fixed
+
+- Bugfix code logic to allow for passing of `nn.Module` to `TorchFXFeatureExtractor` by @ORippler in https://github.com/openvinotoolkit/anomalib/pull/935
+- fix broken links to tutorials (ex guides) by @sergiev in https://github.com/openvinotoolkit/anomalib/pull/957
+- Fixed outdated info in readme by @blaz-r in https://github.com/openvinotoolkit/anomalib/pull/969
+- Fix ruff isort integration by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/976
+- Fix/samples dataframe annotation by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/981
+- Fixed openvino_inferencer in gradio_inference by @blaz-r in https://github.com/openvinotoolkit/anomalib/pull/972
+- Fix issue in tutorial by @Ravindu987 in https://github.com/openvinotoolkit/anomalib/pull/997
+- Fix tarfile vulnerability by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/1003
+- Cuda 11.4 dockerfile fix by @phcarval in https://github.com/openvinotoolkit/anomalib/pull/1021
+- Make anomalib PEP 561 compliant for mypy by @WenjingKangIntel in https://github.com/openvinotoolkit/anomalib/pull/1038
+- [Bug: 839] Crop in SSPCAB implementation by @isaacncz in https://github.com/openvinotoolkit/anomalib/pull/1057
+- [Bug: 865] datamodule.setup() assertion failed by @isaacncz in https://github.com/openvinotoolkit/anomalib/pull/1058
+- Fix logger message for test_split_ratio by @ugotsoul in https://github.com/openvinotoolkit/anomalib/pull/1071
+- Fix notebook readme formatting by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1075
+
+### New Contributors
+
+- @triet1102 made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/944
+- @sergiev made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/957
+- @blaz-r made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/969
+- @ineiti made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/987
+- @Ravindu987 made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/997
+- @phcarval made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/1021
+- @WenjingKangIntel made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/1038
+- @isaacncz made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/1057
+- @ugotsoul made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/1071
+
+**Full Changelog**: https://github.com/openvinotoolkit/anomalib/compare/v0.4.0...v0.5.0
 
 ## [v0.4.0] - 2023-03-01
 

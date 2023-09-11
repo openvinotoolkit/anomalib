@@ -8,7 +8,7 @@ This script provide a gradio web interface
 
 from __future__ import annotations
 
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser
 from importlib import import_module
 from pathlib import Path
 
@@ -20,8 +20,8 @@ import numpy as np
 from anomalib.deploy import Inferencer
 
 
-def get_args() -> Namespace:
-    r"""Get command line arguments.
+def get_parser() -> ArgumentParser:
+    """Get command line arguments.
 
     Example:
 
@@ -30,22 +30,22 @@ def get_args() -> Namespace:
         ...     --weights ./results/padim/mvtec/bottle/weights/torch/model.pt
 
     Returns:
-        Namespace: List of arguments.
+        ArgumentParser: Argument parser for gradio inference.
     """
     parser = ArgumentParser()
     parser.add_argument("--weights", type=Path, required=True, help="Path to model weights")
     parser.add_argument("--metadata", type=Path, required=False, help="Path to a JSON file containing the metadata.")
     parser.add_argument("--share", type=bool, required=False, default=False, help="Share Gradio `share_url`")
 
-    return parser.parse_args()
+    return parser
 
 
-def get_inferencer(weight_path: Path, metadata_path: Path | None = None) -> Inferencer:
+def get_inferencer(weight_path: Path, metadata: Path | None = None) -> Inferencer:
     """Parse args and open inferencer.
 
     Args:
         weight_path (Path): Path to model weights.
-        metadata_path (Path | None, optional): Metadata is required for OpenVINO models. Defaults to None.
+        metadata (Path | None, optional): Metadata is required for OpenVINO models. Defaults to None.
 
     Raises:
         ValueError: If unsupported model weight is passed.
@@ -64,11 +64,11 @@ def get_inferencer(weight_path: Path, metadata_path: Path | None = None) -> Infe
         inferencer = torch_inferencer(path=weight_path)
 
     elif extension in (".onnx", ".bin", ".xml"):
-        if metadata_path is None:
+        if metadata is None:
             raise ValueError("When using OpenVINO Inferencer, the following arguments are required: --metadata")
 
         openvino_inferencer = getattr(module, "OpenVINOInferencer")
-        inferencer = openvino_inferencer(path=weight_path, metadata_path=metadata_path)
+        inferencer = openvino_inferencer(path=weight_path, metadata=metadata)
 
     else:
         raise ValueError(
@@ -96,7 +96,7 @@ def infer(image: np.ndarray, inferencer: Inferencer) -> tuple[np.ndarray, np.nda
 
 
 if __name__ == "__main__":
-    args = get_args()
+    args = get_parser().parse_args()
     gradio_inferencer = get_inferencer(args.weights, args.metadata)
 
     interface = gr.Interface(

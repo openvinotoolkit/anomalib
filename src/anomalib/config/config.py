@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import time
+import warnings
 from datetime import datetime
 from pathlib import Path
 from warnings import warn
@@ -224,6 +225,10 @@ def get_configurable_parameters(
             "Both model_name and model config path cannot be None! "
             "Please provide a model name or path to a config file!"
         )
+
+    if model_name == "efficientad":
+        warnings.warn("`efficientad` is deprecated as --model. Please use `efficient_ad` instead.", DeprecationWarning)
+        model_name = "efficient_ad"
 
     if config_path is None:
         config_path = Path(f"src/anomalib/models/{model_name}/{config_filename}.{config_file_extension}")

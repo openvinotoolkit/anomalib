@@ -40,6 +40,8 @@ DOWNLOAD_INFO = DownloadInfo(
     name="btech", url="https://avires.dimi.uniud.it/papers/btad/btad.zip", hash="c1fa4d56ac50dd50908ce04e81037a8e"
 )
 
+CATEGORIES = ("01", "02", "03")
+
 
 def make_btech_dataset(path: Path, split: str | Split | None = None) -> DataFrame:
     """Create BTech samples by parsing the BTech data file structure.
@@ -134,7 +136,7 @@ class BTechDataset(AnomalibDataset):
         >>> transform = get_transforms(image_size=256)
         >>> dataset = BTechDataset(
         ...     root='./datasets/BTech',
-        ...     category='leather',
+        ...     category='01',
         ...     transform=transform,
         ...     task="classification",
         ...     is_train=True,
@@ -215,13 +217,13 @@ class BTech(AnomalibDataModule):
         >>> from anomalib.data import BTech
         >>> datamodule = BTech(
         ...     root="./datasets/BTech",
-        ...     category="leather",
+        ...     category="01",
         ...     image_size=256,
         ...     train_batch_size=32,
-        ...     test_batch_size=32,
+        ...     eval_batch_size=32,
         ...     num_workers=8,
         ...     transform_config_train=None,
-        ...     transform_config_val=None,
+        ...     transform_config_eval=None,
         ... )
         >>> datamodule.setup()
 

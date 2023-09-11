@@ -5,7 +5,7 @@ dataset:
   task: segmentation
   category: bottle
   train_batch_size: 32
-  test_batch_size: 32
+  eval_batch_size: 32
   num_workers: 8
   image_size: 256 # dimensions to which images are resized (mandatory)
   center_crop: 224 # dimensions to which images are center-cropped after resizing (optional)

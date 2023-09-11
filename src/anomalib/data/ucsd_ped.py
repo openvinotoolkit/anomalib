@@ -18,6 +18,7 @@ from pandas import DataFrame
 from torch import Tensor
 
 from anomalib.data.base import AnomalibVideoDataModule, AnomalibVideoDataset
+from anomalib.data.base.video import VideoTargetFrame
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
     DownloadInfo,
@@ -37,6 +38,8 @@ DOWNLOAD_INFO = DownloadInfo(
     url="http://www.svcl.ucsd.edu/projects/anomaly/UCSD_Anomaly_Dataset.tar.gz",
     hash="5006421b89885f45a6f93b041145f2eb",
 )
+
+CATEGORIES = ("UCSDped1", "UCSDped2")
 
 
 def make_ucsd_dataset(path: Path, split: str | Split | None = None) -> DataFrame:
@@ -150,11 +153,12 @@ class UCSDpedDataset(AnomalibVideoDataset):
     Args:
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
         root (Path | str): Path to the root of the dataset
-        category (str): Sub-category of the dataset, e.g. 'bottle'
+        category (str): Sub-category of the dataset, e.g. "UCSDped1" or "UCSDped2"
         transform (A.Compose): Albumentations Compose object describing the transforms that are applied to the inputs.
         split (str | Split | None): Split of the dataset, usually Split.TRAIN or Split.TEST
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
+        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
     """
 
     def __init__(
@@ -166,8 +170,9 @@ class UCSDpedDataset(AnomalibVideoDataset):
         split: Split,
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
+        target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
     ) -> None:
-        super().__init__(task, transform, clip_length_in_frames, frames_between_clips)
+        super().__init__(task, transform, clip_length_in_frames, frames_between_clips, target_frame)
 
         self.root_category = Path(root) / category
         self.split = split
@@ -183,9 +188,10 @@ class UCSDped(AnomalibVideoDataModule):
 
     Args:
         root (Path | str): Path to the root of the dataset
-        category (str): Sub-category of the dataset, e.g. 'bottle'
+        category (str): Sub-category of the dataset, e.g. "UCSDped1" or "UCSDped2"
         clip_length_in_frames (int, optional): Number of video frames in each clip.
         frames_between_clips (int, optional): Number of frames between each consecutive video clip.
+        target_frame (VideoTargetFrame): Specifies the target frame in the video clip, used for ground truth retrieval
         task (TaskType): Task type, 'classification', 'detection' or 'segmentation'
         image_size (int | tuple[int, int] | None, optional): Size of the input image.
             Defaults to None.
@@ -215,6 +221,7 @@ class UCSDped(AnomalibVideoDataModule):
         category: str,
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
+        target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
         task: TaskType = TaskType.SEGMENTATION,
         image_size: int | tuple[int, int] | None = None,
         center_crop: int | tuple[int, int] | None = None,
@@ -258,6 +265,7 @@ class UCSDped(AnomalibVideoDataModule):
             transform=transform_train,
             clip_length_in_frames=clip_length_in_frames,
             frames_between_clips=frames_between_clips,
+            target_frame=target_frame,
             root=root,
             category=category,
             split=Split.TRAIN,
@@ -268,6 +276,7 @@ class UCSDped(AnomalibVideoDataModule):
             transform=transform_eval,
             clip_length_in_frames=clip_length_in_frames,
             frames_between_clips=frames_between_clips,
+            target_frame=target_frame,
             root=root,
             category=category,
             split=Split.TEST,
