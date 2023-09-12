@@ -19,7 +19,7 @@ from anomalib.deploy import ExportMode
 from .graph import GraphLogger
 from .metrics_configuration import MetricsConfigurationCallback
 from .model_loader import LoadModelCallback
-from .normalization import get_normalization_callback
+from .normalization import CdfNormalizationCallback, MinMaxNormalizationCallback, get_normalization_callback
 from .post_processing_configuration import PostProcessingConfigurationCallback
 from .tiler_configuration import TilerConfigurationCallback
 from .timer import TimerCallback
@@ -27,11 +27,13 @@ from .visualizer import ImageVisualizerCallback, MetricVisualizerCallback
 
 __all__ = [
     "get_normalization_callback",
+    "CdfNormalizationCallback",
     "GraphLogger",
     "ImageVisualizerCallback",
     "LoadModelCallback",
     "MetricsConfigurationCallback",
     "MetricVisualizerCallback",
+    "MinMaxNormalizationCallback",
     "PostProcessingConfigurationCallback",
     "TilerConfigurationCallback",
     "TimerCallback",
