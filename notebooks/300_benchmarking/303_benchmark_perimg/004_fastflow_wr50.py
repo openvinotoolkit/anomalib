@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import os
 
+os.environ["CUDA_LAUNCH_BLOCKING"] = "0"
 os.environ["CUDA_VISIBLE_DEVICES"] = "2"  # DEBUG
 
 os.environ["WANDB_NOTEBOOK_NAME"] = __file__
@@ -58,8 +59,9 @@ from main import (  # noqa: E402
 # In[]:
 
 DEBUG = True
-DEBUG_PARAMS = True
+DEBUG_PARAMS = False
 OFFLINE = False
+print(f"{DEBUG=} {DEBUG_PARAMS=} {OFFLINE=}")
 
 
 # In[]:
@@ -87,8 +89,10 @@ seed_global = cliargs.seed_global
 seed_datamodule = cliargs.seed_datamodule
 
 # defaults
-train_batch_size = 32
-eval_batch_size = 32
+# 32 in the paper but it would break the memory, 
+# so we use 16 with 2x gradient accumulation
+train_batch_size = 16
+eval_batch_size = 16
 num_workers = 8
 
 global_seeder = get_global_seeder(seed_global)
@@ -102,6 +106,7 @@ from functools import partial, update_wrapper  # noqa: E402
 from types import MethodType  # noqa: E402
 
 from pytorch_lightning import LightningModule, Trainer  # noqa: E402
+from pytorch_lightning.callbacks import GradientAccumulationScheduler  # noqa: E402
 from torch.optim import Adam, Optimizer  # noqa: E402
 
 from anomalib.models import Fastflow  # noqa: E402
@@ -154,36 +159,42 @@ def get_model_trainer(logger=None):
     trainer_params = (
         # DEBUG
         dict(
-            accelerator="cpu",
+            accelerator="gpu",
             devices=1,
-            max_epochs=1,
+            max_epochs=5,
         )
-        if DEBUG and DEBUG_PARAMS
-        else
+        if DEBUG else
         # PROD
         dict(
-            accelerator="cuda",
+            accelerator="gpu",
             devices=1,
             max_epochs=500,  # OK
         )
     )
 
     trainer = Trainer(
-        enable_progress_bar=True,  # TODO change me!
+        enable_progress_bar=DEBUG and OFFLINE and not is_script(),
         logger=logger,
-        callbacks=STANDARD_CALLBACKS,
+        callbacks=STANDARD_CALLBACKS + [
+            GradientAccumulationScheduler(scheduling={0: 2})
+        ],
         **trainer_params,
     )
     return model, trainer
 
 
 # just debug instanciating the model and trainer
-try:
-    model, trainer = get_model_trainer()
-    print(f"model={model.__class__.__name__}")
+if DEBUG:
+    try:
+        model, trainer = get_model_trainer()
 
-except Exception as ex:
-    raise RuntimeError("failed to instanciate model and trainer") from ex
+    except Exception as ex:
+        raise RuntimeError("failed to instanciate model and trainer") from ex
+
+    else:
+        del model, trainer
+        import torch
+        torch.cuda.empty_cache() 
 
 
 # In[]:
@@ -226,6 +237,9 @@ for ds_cat in progressbar(datasets_categories):
             "category": category,
             "seed_global": seed_global,
             "seed_datamodule": seed_datamodule,
+            "train_batch_size": train_batch_size,
+            "eval_batch_size": eval_batch_size,
+            "num_workers": num_workers,
             "modelname": MODELNAME,
             **get_slurm_envvars(),
         }
@@ -233,7 +247,10 @@ for ds_cat in progressbar(datasets_categories):
 
     try:
         model, trainer = get_model_trainer(logger=logger)
+        logger.experiment.config.update({"model_class": model.__class__.__name__})
+        if DEBUG: from time import time; ts = time(); print(f"train start {ts=}")
         train(dataset, category, datamodule, model, trainer, savedir)
+        if DEBUG: te = time(); sec = te - ts; print(f"train end {te=} {sec=}")
         df_preds, asmaps, masks = test(dataset, category, datamodule, model, trainer, savedir)
         ascores = torch.as_tensor(df_preds["ascore"].values)
         imgclass = torch.as_tensor(df_preds["imgclass"].values)
