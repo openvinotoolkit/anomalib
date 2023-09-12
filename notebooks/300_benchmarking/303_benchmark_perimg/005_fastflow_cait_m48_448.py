@@ -63,9 +63,9 @@ INPUT_IMAGE_RESOLUTION = 448  # CUSTOM
 
 # In[]:
 
-DEBUG = True
-DEBUG_PARAMS = True
-OFFLINE = True
+DEBUG = False
+DEBUG_PARAMS = False
+OFFLINE = False
 print(f"{DEBUG=} {DEBUG_PARAMS=} {OFFLINE=}")
 
 
@@ -164,7 +164,7 @@ def get_model_trainer(logger=None):
         dict(
             accelerator="gpu",
             devices=1,
-            max_epochs=5,
+            max_epochs=2,
         )
         if DEBUG
         else
@@ -230,6 +230,7 @@ for ds_cat in progressbar(datasets_categories):
         eval_batch_size=eval_batch_size,
         num_workers=num_workers,
         seed=seed_datamodule,
+        input_image_resolution=INPUT_IMAGE_RESOLUTION,
     )
 
     logger = AnomalibWandbLogger(
@@ -247,6 +248,7 @@ for ds_cat in progressbar(datasets_categories):
             "eval_batch_size": eval_batch_size,
             "num_workers": num_workers,
             "modelname": MODELNAME,
+            "input_image_resolution": INPUT_IMAGE_RESOLUTION,
             **get_slurm_envvars(),
         }
     )
