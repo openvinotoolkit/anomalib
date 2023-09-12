@@ -209,6 +209,7 @@ class AUPImO(PImO):
         ax: Axes | None = None,
     ) -> tuple[Figure | None, Axes]:
         """Plot shared FPR vs Per-Image Overlap (PImO) curves (boxplot images only).
+        
         The 'boxplot images' are those from the boxplot of AUPImO values (see `AUPImO.boxplot_stats()`).
         Integration range is shown when `self.ubound < 1`.
         """
