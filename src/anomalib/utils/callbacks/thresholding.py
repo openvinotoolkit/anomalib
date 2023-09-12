@@ -16,7 +16,12 @@ from anomalib.models import AnomalyModule
 from anomalib.utils.metrics.thresholding import BaseAnomalyThreshold, F1AdaptiveThreshold
 
 
-class ThresholdingCallback(Callback):
+class _ThresholdingCallback(Callback):
+    """Setup/apply thresholding.
+
+    Note: This callback is set within the AnomalibTrainer.
+    """
+
     def __init__(
         self,
         threshold: BaseAnomalyThreshold

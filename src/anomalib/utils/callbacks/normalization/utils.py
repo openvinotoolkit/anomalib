@@ -5,8 +5,8 @@ from omegaconf import DictConfig
 
 from anomalib.post_processing import NormalizationMethod
 
-from .cdf_normalization import CdfNormalizationCallback
-from .min_max_normalization import MinMaxNormalizationCallback
+from .cdf_normalization import _CdfNormalizationCallback
+from .min_max_normalization import _MinMaxNormalizationCallback
 
 
 def get_normalization_callback(
@@ -51,9 +51,9 @@ def _get_normalizer_from_method(normalization_method) -> Callback | None:
     if normalization_method == NormalizationMethod.NONE:
         normalizer = None
     elif normalization_method == NormalizationMethod.MIN_MAX:
-        normalizer = MinMaxNormalizationCallback()
+        normalizer = _MinMaxNormalizationCallback()
     elif normalization_method == NormalizationMethod.CDF:
-        normalizer = CdfNormalizationCallback()
+        normalizer = _CdfNormalizationCallback()
     else:
         raise ValueError(f"Unknown normalization method {normalization_method}")
     return normalizer
@@ -64,7 +64,7 @@ def _parse_normalizer_config(normalization_method: DictConfig) -> Callback:
     init_args = normalization_method.init_args
 
     if len(class_path.split(".")) == 1:
-        module_path = "anomalib.trainer.normalization"
+        module_path = "anomalib.utils.callbacks.normalization"
     else:
         module_path = ".".join(class_path.split(".")[:-1])
         class_path = class_path.split(".")[-1]

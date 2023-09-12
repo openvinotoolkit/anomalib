@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import os
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -31,7 +31,7 @@ def setup_model_train(
     dataset_task: Optional[TaskType] = None,
     visualizer_mode: Optional[str] = None,
     device: Union[List[int], int] = [0],
-) -> Tuple[Union[DictConfig, ListConfig], LightningDataModule, AnomalyModule, Trainer]:
+) -> Tuple[Union[DictConfig, ListConfig], LightningDataModule, AnomalyModule, AnomalibTrainer]:
     """Train the model based on the parameters passed.
 
     Args:
@@ -95,7 +95,7 @@ def setup_model_train(
                 callbacks.pop(index)
                 break
         model_checkpoint = ModelCheckpoint(
-            dirpath=os.path.join(config.project.path, "weights"),
+            dirpath=str(Path(config.project.path) / "weights"),
             filename="last",
             monitor=None,
             mode="max",
@@ -129,9 +129,8 @@ def model_load_test(config: Union[DictConfig, ListConfig], datamodule: Lightning
 
     """
     loaded_model = get_model(config)  # get new model
-    # Assing the weight file to resume_from_checkpoint. When trainer is initialized, Trainer
-    # object will automatically load the weights.
-    config.trainer.resume_from_checkpoint = os.path.join(config.project.path, "weights/last.ckpt")
+
+    ckpt_path = str(Path(config.project.path) / "weights" / "last.ckpt")
 
     callbacks = get_callbacks(config)
 
@@ -144,7 +143,7 @@ def model_load_test(config: Union[DictConfig, ListConfig], datamodule: Lightning
     # create new trainer object with LoadModel callback (assumes it is present)
     trainer = AnomalibTrainer(callbacks=callbacks, **config.trainer)
     # Assumes the new model has LoadModel callback and the old one had ModelCheckpoint callback
-    new_results = trainer.test(model=loaded_model, datamodule=datamodule)[0]
+    new_results = trainer.test(model=loaded_model, datamodule=datamodule, ckpt_path=ckpt_path)[0]
     assert np.isclose(
         results["image_AUROC"], new_results["image_AUROC"]
     ), f"Loaded model does not yield close performance results. {results['image_AUROC']} : {new_results['image_AUROC']}"

@@ -19,10 +19,14 @@ from .graph import GraphLogger
 from .model_loader import LoadModelCallback
 from .tiler_configuration import TilerConfigurationCallback
 from .timer import TimerCallback
+from .visualizer import ImageVisualizerCallback, MetricVisualizerCallback, get_visualization_callbacks
 
 __all__ = [
+    "get_visualization_callbacks",
     "GraphLogger",
+    "ImageVisualizerCallback",
     "LoadModelCallback",
+    "MetricVisualizerCallback",
     "TilerConfigurationCallback",
     "TimerCallback",
 ]

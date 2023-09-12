@@ -101,7 +101,7 @@ setup(
     license="Copyright (c) Intel - All Rights Reserved. "
     'Licensed under the Apache License, Version 2.0 (the "License")'
     "See LICENSE file for more details.",
-    python_requires=">=3.7",
+    python_requires=">=3.10",
     package_dir={"": "src"},
     packages=find_packages(where="src", include=["anomalib", "anomalib.*"]),
     install_requires=INSTALL_REQUIRES,

@@ -20,8 +20,11 @@ from anomalib.utils.metrics import AnomalibMetricCollection, create_metric_colle
 logger = logging.getLogger(__name__)
 
 
-class MetricsManagerCallback(Callback):
+class _MetricsManagerCallback(Callback):
     """Create image and pixel-level AnomalibMetricsCollection.
+
+
+    Note: This callback is set within the AnomalibTrainer.
 
     This callback creates AnomalibMetricsCollection based on the
         list of strings provided for image and pixel-level metrics.
