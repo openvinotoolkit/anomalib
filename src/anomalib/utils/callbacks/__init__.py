@@ -16,10 +16,8 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 
 from anomalib.deploy import ExportMode
 
-from .cdf_normalization import CdfNormalizationCallback
 from .graph import GraphLogger
 from .metrics_configuration import MetricsConfigurationCallback
-from .min_max_normalization import MinMaxNormalizationCallback
 from .model_loader import LoadModelCallback
 from .post_processing_configuration import PostProcessingConfigurationCallback
 from .tiler_configuration import TilerConfigurationCallback
@@ -27,13 +25,11 @@ from .timer import TimerCallback
 from .visualizer import ImageVisualizerCallback, MetricVisualizerCallback
 
 __all__ = [
-    "CdfNormalizationCallback",
     "GraphLogger",
     "ImageVisualizerCallback",
     "LoadModelCallback",
     "MetricsConfigurationCallback",
     "MetricVisualizerCallback",
-    "MinMaxNormalizationCallback",
     "PostProcessingConfigurationCallback",
     "TilerConfigurationCallback",
     "TimerCallback",
@@ -90,19 +86,6 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
         config.metrics.get("pixel", None),
     )
     callbacks.append(metrics_callback)
-
-    if "normalization_method" in config.model.keys() and not config.model.normalization_method == "none":
-        if config.model.normalization_method == "cdf":
-            if config.model.name in ("padim", "stfpm"):
-                if "nncf" in config.optimization and config.optimization.nncf.apply:
-                    raise NotImplementedError("CDF Score Normalization is currently not compatible with NNCF.")
-                callbacks.append(CdfNormalizationCallback())
-            else:
-                raise NotImplementedError("Score Normalization is currently supported for PADIM and STFPM only.")
-        elif config.model.normalization_method == "min_max":
-            callbacks.append(MinMaxNormalizationCallback())
-        else:
-            raise ValueError(f"Normalization method not recognized: {config.model.normalization_method}")
 
     add_visualizer_callback(callbacks, config)
 

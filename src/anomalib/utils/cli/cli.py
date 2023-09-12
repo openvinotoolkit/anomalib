@@ -15,17 +15,16 @@ from lightning.pytorch.cli import LightningArgumentParser, LightningCLI
 from omegaconf.omegaconf import OmegaConf
 
 from anomalib.utils.callbacks import (
-    CdfNormalizationCallback,
     ImageVisualizerCallback,
     LoadModelCallback,
     MetricsConfigurationCallback,
-    MinMaxNormalizationCallback,
     ModelCheckpoint,
     PostProcessingConfigurationCallback,
     TilerConfigurationCallback,
     TimerCallback,
     add_visualizer_callback,
 )
+from anomalib.utils.callbacks.normalization import _CdfNormalizationCallback, _MinMaxNormalizationCallback
 from anomalib.utils.loggers import configure_logger
 
 logger = logging.getLogger("anomalib.cli")
@@ -167,9 +166,9 @@ class AnomalibCLI(LightningCLI):
         normalization = config.post_processing.normalization_method
         if normalization:
             if normalization == "min_max":
-                callbacks.append(MinMaxNormalizationCallback())
+                callbacks.append(_MinMaxNormalizationCallback())
             elif normalization == "cdf":
-                callbacks.append(CdfNormalizationCallback())
+                callbacks.append(_CdfNormalizationCallback())
             else:
                 raise ValueError(
                     f"Unknown normalization type {normalization}. \n" "Available types are either None, min_max or cdf"

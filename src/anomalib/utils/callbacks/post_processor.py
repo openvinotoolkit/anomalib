@@ -12,18 +12,22 @@ from lightning.pytorch import Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
-import anomalib
 from anomalib.data.utils import boxes_to_anomaly_maps, boxes_to_masks, masks_to_boxes
 from anomalib.models import AnomalyModule
 
 
-class PostProcessorCallback(Callback):
+class _PostProcessorCallback(Callback):
+    """Applies post-processing to the model outputs.
+
+    Note: This callback is set within the AnomalibTrainer.
+    """
+
     def __init__(self) -> None:
         super().__init__()
 
     def on_validation_batch_end(
         self,
-        trainer: "anomalib.AnomalibTrainer",
+        trainer: Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
         batch: Any,
@@ -35,7 +39,7 @@ class PostProcessorCallback(Callback):
 
     def on_test_batch_end(
         self,
-        trainer: "anomalib.AnomalibTrainer",
+        trainer: Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
         batch: Any,
@@ -47,7 +51,7 @@ class PostProcessorCallback(Callback):
 
     def on_predict_batch_end(
         self,
-        trainer: "anomalib.AnomalibTrainer",
+        trainer: Trainer,
         pl_module: AnomalyModule,
         outputs: Any,
         batch: Any,
