@@ -19,7 +19,6 @@ from anomalib.utils.callbacks import (
     LoadModelCallback,
     MetricsConfigurationCallback,
     ModelCheckpoint,
-    PostProcessingConfigurationCallback,
     TilerConfigurationCallback,
     TimerCallback,
     add_visualizer_callback,
@@ -59,7 +58,6 @@ class AnomalibCLI(LightningCLI):
         parser.add_lightning_class_args(TilerConfigurationCallback, "tiling")  # type: ignore
         parser.set_defaults({"tiling.enable": False})
 
-        parser.add_lightning_class_args(PostProcessingConfigurationCallback, "post_processing")  # type: ignore
         parser.set_defaults(
             {
                 "post_processing.normalization_method": "min_max",
