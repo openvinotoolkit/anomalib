@@ -7,13 +7,17 @@ from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy
+import torch
 from matplotlib.axes import Axes
 from matplotlib.pyplot import Figure
 from matplotlib.ticker import FixedLocator, LogFormatter, PercentFormatter
 from torch import Tensor
 
 from .common import (
+    _perimg_boxplot_stats,
     _validate_atleast_one_anomalous_image,
+    _validate_aucs,
+    _validate_image_class,
     _validate_image_classes,
     _validate_perimg_rate_curves,
     _validate_rate_curve,
@@ -95,7 +99,92 @@ def _format_axis_rate_metric_log(ax: Axes, axis: int, lower_lim: float = 1e-3) -
         raise ValueError(f"`axis` must be 0 (X-axis) or 1 (Y-axis), but got {axis}.")
 
 
+def _bounded_lims(
+    ax: Axes, axis: int, bounds: tuple[float | None, float | None] = (None, None), lims_epsilon: float = 0.01
+):
+    """Snap X/Y-axis limits to stay within the given bounds."""
+
+    assert len(bounds) == 2, f"Expected argument `bounds` to be a tuple of size 2, but got size {len(bounds)}."
+    bounds = (
+        None if bounds[0] is None else bounds[0] - lims_epsilon,
+        None if bounds[1] is None else bounds[1] + lims_epsilon,
+    )
+
+    if axis == 0:
+        lims = ax.get_xlim()
+    elif axis == 1:
+        lims = ax.get_ylim()
+    else:
+        raise ValueError(f"Unknown axis {axis}. Must be 0 (X-axis) or 1 (Y-axis).")
+
+    newlims = list(lims)
+
+    if bounds[0] is not None and lims[0] < bounds[0]:
+        newlims[0] = bounds[0]
+
+    if bounds[1] is not None and lims[1] > bounds[1]:
+        newlims[1] = bounds[1]
+
+    if axis == 0:
+        ax.set_xlim(newlims)
+    else:
+        ax.set_ylim(newlims)
+
+
 # =========================================== GENERIC ===========================================
+
+
+def _plot_perimg_metric_boxplot(
+    ax: Axes,
+    values: Tensor,
+    image_classes: Tensor,
+    bp_stats: list,
+    only_class: int | None = None,
+):
+    _validate_image_classes(image_classes)
+    _validate_image_class(only_class)
+
+    if values.ndim != 1:
+        raise ValueError(f"Expected argument `values` to be a 1D tensor, but got {values.ndim}D tensor.")
+
+    if values.shape != image_classes.shape:
+        raise ValueError(
+            "Expected arguments `values` and `image_classes` to have the same shape, "
+            f"but got {values.shape} and {image_classes.shape}."
+        )
+
+    if only_class is not None and only_class not in image_classes:
+        raise ValueError(f"Argument `only_class` is {only_class}, but `image_classes` does not contain this class.")
+
+    # only consider images of the given class
+    imgs_mask = (
+        torch.ones_like(image_classes, dtype=torch.bool) if only_class is None else (image_classes == only_class)
+    )
+    imgs_idxs = torch.nonzero(imgs_mask).squeeze(1)
+
+    ax.boxplot(
+        values[imgs_mask],
+        vert=False,
+        widths=0.5,
+        showmeans=True,
+        showcaps=True,
+        notch=False,
+    )
+    _ = ax.set_yticks([])
+
+    num_images = len(imgs_idxs)
+    num_flierlo = len([s for s in bp_stats if s["statistic"] == "flierlo" and s["imgidx"] in imgs_idxs])
+    num_flierhi = len([s for s in bp_stats if s["statistic"] == "flierhi" and s["imgidx"] in imgs_idxs])
+
+    ax.annotate(
+        text=f"Number of images\n    total: {num_images}\n    fliers: {num_flierlo} low, {num_flierhi} high",
+        xy=(0.03, 0.95),
+        xycoords="axes fraction",
+        xytext=(0, 0),
+        textcoords="offset points",
+        annotation_clip=False,
+        verticalalignment="top",
+    )
 
 
 def _plot_perimg_curves(
@@ -163,6 +252,38 @@ def _plot_perimg_curves(
         ax.plot(x, y, **kw)
 
 
+# =========================================== BOXPLOTS ===========================================
+
+
+def plot_aupimo_boxplot(
+    aucs: Tensor,
+    image_classes: Tensor,
+    ax: Axes | None = None,
+) -> tuple[Figure | None, Axes]:
+    _validate_aucs(aucs, nan_allowed=True)
+    _validate_atleast_one_anomalous_image(image_classes)
+
+    fig, ax = plt.subplots() if ax is None else (None, ax)
+
+    bp_stats = _perimg_boxplot_stats(aucs, image_classes, only_class=1)
+
+    _plot_perimg_metric_boxplot(
+        ax=ax,
+        values=aucs,
+        image_classes=image_classes,
+        only_class=1,
+        bp_stats=bp_stats,
+    )
+
+    # don't go beyond the [0, 1]
+    _bounded_lims(ax, axis=0, bounds=(0, 1))
+    ax.xaxis.set_major_formatter(PercentFormatter(1))
+    ax.set_xlabel("AUPImO [%]")
+    ax.set_title("Area Under the Per-Image Overlap (AUPImO) Boxplot")
+
+    return fig, ax
+
+
 # =========================================== PImO ===========================================
 
 
@@ -221,5 +342,135 @@ def plot_all_pimo_curves(
     _format_axis_rate_metric_linear(ax, axis=1)
     ax.set_ylabel("Per-Image Overlap (in-image TPR)")
     ax.set_title("Per-Image Overlap Curves")
+
+    return fig, ax
+
+
+def plot_boxplot_pimo_curves(
+    shared_fpr,
+    tprs,
+    image_classes,
+    bp_stats: list[dict[str, str | int | float | None]],
+    ax: Axes | None = None,
+) -> tuple[Figure | None, Axes]:
+    """Plot shared FPR vs Per-Image Overlap (PImO) curves only for the boxplot stats cases.
+
+    Args:
+        ax: matplotlib Axes
+        shared_fpr: shape (num_thresholds,)
+        tprs: shape (num_images, num_thresholds)
+        image_classes: shape (num_images,)
+            The `image_classes` tensor is used to filter out the normal images, while making it possible to
+            keep the indices of the anomalous images.
+
+        bp_stats: list of dicts, each dict is a boxplot stat of AUPImO values
+                  refer to `anomalib.utils.metrics.perimg.common._perimg_boxplot_stats()`
+
+    Returns:
+        fig, ax
+    """
+
+    # ** validate **
+    _validate_rate_curve(shared_fpr)
+    _validate_perimg_rate_curves(tprs, nan_allowed=True)  # normal images have `nan`s
+    _validate_image_classes(image_classes)
+
+    if tprs.shape[0] != image_classes.shape[0]:
+        raise ValueError(
+            f"Expected argument `tprs` to have the same number of images as argument `image_classes`, "
+            f"but got {tprs.shape[0]} images and {image_classes.shape[0]} images, respectively."
+        )
+
+    _validate_atleast_one_anomalous_image(image_classes)
+    # there may be `nan`s but only in the normal images
+    # in the curves of anomalous images, there should NOT be `nan`s
+    _validate_perimg_rate_curves(tprs[image_classes == 1], nan_allowed=False)
+
+    if len(bp_stats) == 0:
+        raise ValueError("Expected argument `bp_stats` to have at least one dict, but got none.")
+
+    # ** kwargs_perimg **
+
+    # it is sorted so that only the first one has a label (others are plotted but don't show in the legend)
+    imgidxs_toplot_fliers: list[int] = sorted(
+        {s["imgidx"] for s in bp_stats if s["statistic"] in ("flierlo", "flierhi")}  # type: ignore
+    )
+    imgidxs_toplot_others = {s["imgidx"] for s in bp_stats if s["statistic"] not in ("flierlo", "flierhi")}
+
+    kwargs_perimg = []
+    num_images = len(image_classes)
+
+    for imgidx in range(num_images):
+        if imgidx in imgidxs_toplot_fliers:
+            kw = dict(linewidth=0.5, color="gray", alpha=0.8, linestyle="--")
+
+            # only one of them will show in the legend
+            if imgidx == imgidxs_toplot_fliers[0]:
+                kw["label"] = "flier"
+            else:
+                kw["label"] = None
+
+            kwargs_perimg.append(kw)
+
+            continue
+
+        if imgidx not in imgidxs_toplot_others:
+            # don't plot this curve
+            kwargs_perimg.append(None)  # type: ignore
+            continue
+
+        imgidx_stats = [s for s in bp_stats if s["imgidx"] == imgidx]
+        stat_dict = imgidx_stats[0]
+
+        # edge case where more than one stat falls on the same image
+        if len(imgidx_stats) > 1:
+            stat_dict["statistic"] = " & ".join(s["statistic"] for s in imgidx_stats)  # type: ignore
+
+        stat, nearest = stat_dict["statistic"], stat_dict["nearest"]
+        kwargs_perimg.append(dict(label=f"{stat} (AUPImO={nearest:.1%}) (imgidx={imgidx})"))
+
+    # ** plot **
+
+    fig, ax = plt.subplots(figsize=(7, 6)) if ax is None else (None, ax)
+
+    _plot_perimg_curves(ax, shared_fpr, tprs, *kwargs_perimg)
+
+    # ** legend **
+
+    def _sort_legend(handles: list, labels: list[str]):
+        """sort the legend by label and put 'flier' at the bottom
+        it makes the legend 'more deterministic'
+        """
+
+        # [(handle0, label0), (handle1, label1),...]
+        handles_labels = list(zip(handles, labels))
+        handles_labels = sorted(handles_labels, key=lambda tup: tup[1])
+
+        # ([handle0, handle1, ...], [label0, label1, ...])
+        handles, labels = tuple(map(list, zip(*handles_labels)))  # type: ignore
+
+        # put flier at the last position
+        if "flier" in labels:
+            idx = labels.index("flier")
+            handles.append(handles.pop(idx))
+            labels.append(labels.pop(idx))
+
+        return handles, labels
+
+    ax.legend(
+        *_sort_legend(*ax.get_legend_handles_labels()),
+        title="Boxplot Stats",
+        loc="lower right",
+        fontsize="small",
+        title_fontsize="small",
+    )
+
+    # ** format **
+
+    _format_axis_rate_metric_linear(ax, axis=0)
+    ax.set_xlabel("Shared FPR")
+    _format_axis_rate_metric_linear(ax, axis=1)
+    ax.set_ylabel("Per-Image Overlap (in-image TPR)")
+    ax.set_title("Per-Image Overlap Curves (AUC boxplot statistics)")
 
     return fig, ax

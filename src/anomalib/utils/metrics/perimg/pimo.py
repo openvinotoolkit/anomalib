@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from collections import namedtuple
 
+import matplotlib.pyplot as plt
 import torch
 from matplotlib.axes import Axes
 from matplotlib.pyplot import Figure
@@ -25,11 +26,14 @@ from torch import Tensor
 
 from .binclf_curve import PerImageBinClfCurve
 from .common import (
+    _perimg_boxplot_stats,
     _validate_atleast_one_anomalous_image,
     _validate_atleast_one_normal_image,
 )
 from .plot import (
     plot_all_pimo_curves,
+    plot_aupimo_boxplot,
+    plot_boxplot_pimo_curves,
 )
 
 # =========================================== METRICS ===========================================
@@ -47,10 +51,10 @@ PImOResult = namedtuple(
 PImOResult.__doc__ = """PImO result (from `PImO.compute()`).
 
 [0] thresholds: shape (num_thresholds,), a `float` dtype as given in update()
-[1] fprs: shape (num_images, num_thresholds), dtype `float64`, \in [0, 1]
-[2] shared_fpr: shape (num_thresholds,), dtype `float64`, \in [0, 1]
-[3] tprs: shape (num_images, num_thresholds), dtype `float64`, \in [0, 1] for anom images, `nan` for norm images
-[4] image_classes: shape (num_images,), dtype `int32`, \in {0, 1}
+[1] fprs: shape (num_images, num_thresholds), dtype `float64`, \\in [0, 1]
+[2] shared_fpr: shape (num_thresholds,), dtype `float64`, \\in [0, 1]
+[3] tprs: shape (num_images, num_thresholds), dtype `float64`, \\in [0, 1] for anom images, `nan` for norm images
+[4] image_classes: shape (num_images,), dtype `int32`, \\in {0, 1}
 
 - `num_thresholds` is an attribute of `PImO` and is given in the constructor (from parent class).
 - `num_images` depends on the data seen by the model at the update() calls.
@@ -144,7 +148,7 @@ class AUPImO(PImO):
 
         Returns: (PImOResult, aucs)
             [0] PImOResult: PImOResult, see `anomalib.utils.metrics.perimg.pimo.PImOResult` for details.
-            [1] aucs: shape (num_images,), dtype `float64`, \in [0, 1]
+            [1] aucs: shape (num_images,), dtype `float64`, \\in [0, 1]
         """
 
         if self.is_empty:
@@ -186,6 +190,56 @@ class AUPImO(PImO):
             ax=ax,
         )
         ax.set_xlabel("Mean FPR on Normal Images")
+
+        return fig, ax
+
+    def boxplot_stats(self) -> list[dict[str, str | int | float | None]]:
+        """Compute boxplot stats of AUPImO values (e.g. median, mean, quartiles, etc.).
+
+        Returns:
+            list[dict[str, str | int | float | None]]: List of AUCs statistics from a boxplot.
+            refer to `anomalib.utils.metrics.perimg.common._perimg_boxplot_stats()` for the keys and values.
+        """
+        (_, __, ___, ____, image_classes), aucs = self.compute()
+        stats = _perimg_boxplot_stats(values=aucs, image_classes=image_classes, only_class=1)
+        return stats
+
+    def plot_boxplot_pimo_curves(
+        self,
+        ax: Axes | None = None,
+    ) -> tuple[Figure | None, Axes]:
+        """Plot shared FPR vs Per-Image Overlap (PImO) curves (boxplot images only).
+        
+        The 'boxplot images' are those from the boxplot of AUPImO values (see `AUPImO.boxplot_stats()`).
+        Integration range is shown when `self.ubound < 1`.
+        """
+
+        if self.is_empty:
+            return None, None
+
+        (thresholds, fprs, shared_fpr, tprs, image_classes), aucs = self.compute()
+        fig, ax = plot_boxplot_pimo_curves(
+            shared_fpr,
+            tprs,
+            image_classes,
+            self.boxplot_stats(),
+            ax=ax,
+        )
+        ax.set_xlabel("Mean FPR on Normal Images")
+
+        return fig, ax
+
+    def plot_boxplot(
+        self,
+        ax: Axes | None = None,
+    ) -> tuple[Figure | None, Axes]:
+        """Plot boxplot of AUPImO values."""
+
+        if self.is_empty:
+            return None, None
+
+        (thresholds, fprs, shared_fpr, tprs, image_classes), aucs = self.compute()
+        fig, ax = plot_aupimo_boxplot(aucs, image_classes, ax=ax)
         return fig, ax
 
     def plot(
@@ -194,7 +248,33 @@ class AUPImO(PImO):
     ) -> tuple[Figure | None, Axes | ndarray]:
         """Plot AUPImO boxplot with its statistics' PImO curves."""
 
-        return self.plot_all_pimo_curves(ax)
+        if self.is_empty:
+            return None, None
+
+        if ax is None:
+            fig, ax = plt.subplots(1, 2, figsize=(14, 6), width_ratios=[6, 8])
+            fig.suptitle("Area Under the Per-Image Overlap (AUPImO) Curves")
+            fig.set_layout_engine("tight")
+        else:
+            fig, ax = (None, ax)
+
+        if isinstance(ax, Axes):
+            return self.plot_boxplot_pimo_curves(ax=ax)
+
+        if not isinstance(ax, ndarray):
+            raise ValueError(f"Expected argument `axes` to be a matplotlib Axes or ndarray, but got {type(ax)}.")
+
+        if ax.size != 2:
+            raise ValueError(
+                f"Expected argument `axes` , when type `ndarray`, to be of size 2, but got size {ax.size}."
+            )
+
+        ax = ax.flatten()
+        self.plot_boxplot(ax=ax[0])
+        ax[0].set_title("AUC Boxplot")
+        self.plot_boxplot_pimo_curves(ax=ax[1])
+        ax[1].set_title("Curves")
+        return fig, ax
 
 
 class AULogPImO(PImO):
