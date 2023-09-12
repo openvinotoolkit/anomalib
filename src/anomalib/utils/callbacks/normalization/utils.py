@@ -64,7 +64,7 @@ def _parse_normalizer_config(normalization_method: DictConfig) -> Callback:
     init_args = normalization_method.init_args
 
     if len(class_path.split(".")) == 1:
-        module_path = "anomalib.trainer.normalization"
+        module_path = "anomalib.utils.callbacks.normalization"
     else:
         module_path = ".".join(class_path.split(".")[:-1])
         class_path = class_path.split(".")[-1]
