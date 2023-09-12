@@ -10,19 +10,9 @@ from __future__ import annotations
 
 import os
 
-import pandas as pd
-from IPython.core.interactiveshell import InteractiveShell
-
-os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 os.environ["CUDA_VISIBLE_DEVICES"] = "2"  # DEBUG
 
 os.environ["WANDB_NOTEBOOK_NAME"] = __file__
-
-# make a cell print all the outputs instead of just the last one
-InteractiveShell.ast_node_interactivity = "all"
-
-# adjust the number of significant digits
-pd.set_option("display.precision", 5)
 
 
 def is_script():
@@ -44,9 +34,11 @@ if is_script():
 else:
     print("running as a notebook")
     from IPython import get_ipython
-
+    from IPython.core.interactiveshell import InteractiveShell
     get_ipython().run_line_magic("load_ext", "autoreload")
     get_ipython().run_line_magic("autoreload", "2")
+    # make a cell print all the outputs instead of just the last one
+    InteractiveShell.ast_node_interactivity = "all"
 
 
 from main import (  # noqa: E402
@@ -57,6 +49,7 @@ from main import (  # noqa: E402
     get_datamodule,
     get_global_seeder,
     get_model_dir,
+    get_slurm_envvars,
     parser,
     test,
     train,
@@ -65,8 +58,8 @@ from main import (  # noqa: E402
 # In[]:
 
 DEBUG = True
-DEBUG_PARAMS = False
-OFFLINE = True
+DEBUG_PARAMS = True
+OFFLINE = False
 
 
 # In[]:
@@ -234,6 +227,7 @@ for ds_cat in progressbar(datasets_categories):
             "seed_global": seed_global,
             "seed_datamodule": seed_datamodule,
             "modelname": MODELNAME,
+            **get_slurm_envvars(),
         }
     )
 

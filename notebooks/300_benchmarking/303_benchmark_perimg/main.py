@@ -4,6 +4,7 @@
 import argparse
 import json
 import logging
+import os
 import socket
 from functools import lru_cache, wraps
 from pathlib import Path
@@ -24,7 +25,30 @@ from anomalib.utils.callbacks import MetricsConfigurationCallback, PostProcessin
 from anomalib.utils.metrics import AUPR, AUPRO, AUROC
 from anomalib.utils.metrics.perimg import AULogPImO
 
+# =============================================================================
+# LOGGING
+
 logging.basicConfig(level=logging.INFO)
+
+
+# =============================================================================
+# ENV
+
+os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+
+
+def get_slurm_envvars():
+    return {
+        key: os.environ.get(key)
+        for key in [
+            "SLURM_JOB_NAME",
+            "SLURM_ARRAY_JOB_ID",
+            "SLURM_ARRAY_TASK_ID",
+            "SLURM_JOB_ID",
+            "NODE",
+        ]
+    }
+
 
 # =============================================================================
 # CONSTANTS
