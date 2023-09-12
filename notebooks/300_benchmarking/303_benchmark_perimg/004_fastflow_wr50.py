@@ -36,6 +36,7 @@ else:
     print("running as a notebook")
     from IPython import get_ipython
     from IPython.core.interactiveshell import InteractiveShell
+
     get_ipython().run_line_magic("load_ext", "autoreload")
     get_ipython().run_line_magic("autoreload", "2")
     # make a cell print all the outputs instead of just the last one
@@ -89,7 +90,7 @@ seed_global = cliargs.seed_global
 seed_datamodule = cliargs.seed_datamodule
 
 # defaults
-# 32 in the paper but it would break the memory, 
+# 32 in the paper but it would break the memory,
 # so we use 16 with 2x gradient accumulation
 train_batch_size = 16
 eval_batch_size = 16
@@ -163,7 +164,8 @@ def get_model_trainer(logger=None):
             devices=1,
             max_epochs=5,
         )
-        if DEBUG else
+        if DEBUG
+        else
         # PROD
         dict(
             accelerator="gpu",
@@ -175,9 +177,7 @@ def get_model_trainer(logger=None):
     trainer = Trainer(
         enable_progress_bar=DEBUG and OFFLINE and not is_script(),
         logger=logger,
-        callbacks=STANDARD_CALLBACKS + [
-            GradientAccumulationScheduler(scheduling={0: 2})
-        ],
+        callbacks=STANDARD_CALLBACKS + [GradientAccumulationScheduler(scheduling={0: 2})],
         **trainer_params,
     )
     return model, trainer
@@ -194,7 +194,8 @@ if DEBUG:
     else:
         del model, trainer
         import torch
-        torch.cuda.empty_cache() 
+
+        torch.cuda.empty_cache()
 
 
 # In[]:
@@ -248,9 +249,16 @@ for ds_cat in progressbar(datasets_categories):
     try:
         model, trainer = get_model_trainer(logger=logger)
         logger.experiment.config.update({"model_class": model.__class__.__name__})
-        if DEBUG: from time import time; ts = time(); print(f"train start {ts=}")
+        if DEBUG:
+            from time import time
+
+            ts = time()
+            print(f"train start {ts=}")
         train(dataset, category, datamodule, model, trainer, savedir)
-        if DEBUG: te = time(); sec = te - ts; print(f"train end {te=} {sec=}")
+        if DEBUG:
+            te = time()
+            sec = te - ts
+            print(f"train end {te=} {sec=}")
         df_preds, asmaps, masks = test(dataset, category, datamodule, model, trainer, savedir)
         ascores = torch.as_tensor(df_preds["ascore"].values)
         imgclass = torch.as_tensor(df_preds["imgclass"].values)
