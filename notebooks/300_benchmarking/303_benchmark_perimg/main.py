@@ -34,8 +34,6 @@ logging.basicConfig(level=logging.INFO)
 # =============================================================================
 # ENV
 
-os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
-
 
 def get_slurm_envvars():
     return {
