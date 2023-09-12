@@ -181,12 +181,19 @@ def get_global_seeder(seed):
 # DATA
 
 
-def get_datamodule_mvtec(category: str, train_batch_size: int, eval_batch_size: int, num_workers: int, seed: int):
+def get_datamodule_mvtec(
+    category: str,
+    train_batch_size: int,
+    eval_batch_size: int,
+    num_workers: int,
+    seed: int,
+    input_image_resolution: int = INPUT_IMAGE_RESOLUTION,
+):
     assert category in CATEGORY_CHOICES_MVTEC, f"{category=}"
     return MVTec(
         root=MVTECDIR,
         category=category,
-        image_size=INPUT_IMAGE_RESOLUTION,
+        image_size=input_image_resolution,
         train_batch_size=train_batch_size,
         eval_batch_size=eval_batch_size,
         num_workers=num_workers,
@@ -197,12 +204,19 @@ def get_datamodule_mvtec(category: str, train_batch_size: int, eval_batch_size: 
     )
 
 
-def get_datamodule_visa(category: str, train_batch_size: int, eval_batch_size: int, num_workers: int, seed: int):
+def get_datamodule_visa(
+    category: str,
+    train_batch_size: int,
+    eval_batch_size: int,
+    num_workers: int,
+    seed: int,
+    input_image_resolution: int = INPUT_IMAGE_RESOLUTION,
+):
     assert category in CATEGORY_CHOICES_VISA, f"{category=}"
     return Visa(
         root=VISADIR,
         category=category,
-        image_size=INPUT_IMAGE_RESOLUTION,
+        image_size=input_image_resolution,
         train_batch_size=train_batch_size,
         eval_batch_size=eval_batch_size,
         num_workers=num_workers,
