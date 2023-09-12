@@ -142,7 +142,7 @@ class EfficientAd(AnomalyModule):
                 y = self.model.teacher(batch["image"].to(self.device))
                 y_means.append(torch.mean(y, dim=[0, 2, 3]))
                 teacher_outputs.append(y)
-        except RuntimeError as e:
+        except RuntimeError:
             teacher_outputs = []
             y_means = []
             torch.cuda.empty_cache()
