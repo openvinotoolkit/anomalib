@@ -59,7 +59,7 @@ from main import (  # noqa: E402
 
 # In[]:
 
-DEBUG = True
+DEBUG = False
 DEBUG_PARAMS = False
 OFFLINE = False
 print(f"{DEBUG=} {DEBUG_PARAMS=} {OFFLINE=}")
@@ -249,16 +249,7 @@ for ds_cat in progressbar(datasets_categories):
     try:
         model, trainer = get_model_trainer(logger=logger)
         logger.experiment.config.update({"model_class": model.__class__.__name__})
-        if DEBUG:
-            from time import time
-
-            ts = time()
-            print(f"train start {ts=}")
         train(dataset, category, datamodule, model, trainer, savedir)
-        if DEBUG:
-            te = time()
-            sec = te - ts
-            print(f"train end {te=} {sec=}")
         df_preds, asmaps, masks = test(dataset, category, datamodule, model, trainer, savedir)
         ascores = torch.as_tensor(df_preds["ascore"].values)
         imgclass = torch.as_tensor(df_preds["imgclass"].values)
