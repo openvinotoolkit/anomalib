@@ -65,8 +65,9 @@ from main import (  # noqa: E402
 
 # In[]:
 
-DEBUG = True
-OFFLINE = True
+DEBUG = False
+OFFLINE = False
+print(f"{DEBUG=} {OFFLINE=}")
 
 
 # In[]:
