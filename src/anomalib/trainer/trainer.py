@@ -11,8 +11,9 @@ from omegaconf import DictConfig
 
 from anomalib.models import AnomalyModule
 from anomalib.post_processing import NormalizationMethod
+from anomalib.utils.callbacks import get_normalization_callback
 
-from .callbacks import PostProcessorCallback, get_normalization_callback
+from .callbacks import PostProcessorCallback
 
 log = logging.getLogger(__name__)
 
