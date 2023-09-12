@@ -11,9 +11,10 @@ from omegaconf import DictConfig, ListConfig
 
 from anomalib.models import AnomalyModule
 from anomalib.post_processing import NormalizationMethod
+from anomalib.utils.callbacks.normalization import get_normalization_callback
+from anomalib.utils.callbacks.post_processor import _PostProcessorCallback
+from anomalib.utils.callbacks.thresholding import _ThresholdingCallback
 from anomalib.utils.metrics.thresholding import BaseAnomalyThreshold, F1AdaptiveThreshold
-
-from .callbacks import PostProcessorCallback, ThresholdingCallback, get_normalization_callback
 
 log = logging.getLogger(__name__)
 
@@ -48,11 +49,10 @@ class AnomalibTrainer(Trainer):
     def _setup_callbacks(self, callbacks: list[Callback]) -> list[Callback]:
         """Setup callbacks for the trainer."""
         # Note: this needs to be changed when normalization is part of the trainer
-        _callbacks: list[Callback] = [PostProcessorCallback()]
-
+        _callbacks: list[Callback] = [_PostProcessorCallback()]
         normalization_callback = get_normalization_callback(self.normalizer)
         if normalization_callback is not None:
             _callbacks.append(normalization_callback)
 
-        _callbacks.append(ThresholdingCallback(self.threshold))
+        _callbacks.append(_ThresholdingCallback(self.threshold))
         return _callbacks + callbacks

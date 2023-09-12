@@ -3,6 +3,7 @@ import os
 import tempfile
 from pathlib import Path
 
+import lightning.pytorch as pl
 import pytest
 from omegaconf.omegaconf import OmegaConf
 
