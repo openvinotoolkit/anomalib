@@ -106,7 +106,6 @@ def get_model_dir(model: str):
 
 
 INPUT_IMAGE_RESOLUTION = 256
-print(f"{INPUT_IMAGE_RESOLUTION=}")
 
 DATASET_MVTEC = "mvtec"
 DATASET_VISA = "visa"
