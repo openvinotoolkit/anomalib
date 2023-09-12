@@ -133,35 +133,19 @@ class EfficientAd(AnomalyModule):
             dict[str, Tensor]: Dictionary of channel-wise mean and std
         """
         y_means = []
-        teacher_outputs = []
         means_distance = []
 
         logger.info("Calculate teacher channel mean and std")
-        try:
-            for batch in tqdm.tqdm(dataloader, desc="Calculate teacher channel mean", position=0, leave=True):
-                y = self.model.teacher(batch["image"].to(self.device))
-                y_means.append(torch.mean(y, dim=[0, 2, 3]))
-                teacher_outputs.append(y)
-        except RuntimeError:
-            teacher_outputs = []
-            y_means = []
-            torch.cuda.empty_cache()
-            logger.info("Recovering from OutOfMemory Exception by using workaround with longer runtime")
-            for batch in tqdm.tqdm(dataloader, desc="Calculate teacher channel mean", position=0, leave=True):
-                y = self.model.teacher(batch["image"].to(self.device))
-                y_means.append(torch.mean(y, dim=[0, 2, 3]))
+        for batch in tqdm.tqdm(dataloader, desc="Calculate teacher channel mean", position=0, leave=True):
+            y = self.model.teacher(batch["image"].to(self.device))
+            y_means.append(torch.mean(y, dim=[0, 2, 3]))
 
         channel_mean = torch.mean(torch.stack(y_means), dim=0)[None, :, None, None]
 
-        if len(teacher_outputs) > 0:
-            for y in tqdm.tqdm(teacher_outputs, desc="Calculate teacher channel std", position=0, leave=True):
-                distance = (y - channel_mean) ** 2
-                means_distance.append(torch.mean(distance, dim=[0, 2, 3]))
-        else:
-            for batch in tqdm.tqdm(dataloader, desc="Calculate teacher channel std", position=0, leave=True):
-                y = self.model.teacher(batch["image"].to(self.device))
-                distance = (y - channel_mean) ** 2
-                means_distance.append(torch.mean(distance, dim=[0, 2, 3]))
+        for batch in tqdm.tqdm(dataloader, desc="Calculate teacher channel std", position=0, leave=True):
+            y = self.model.teacher(batch["image"].to(self.device))
+            distance = (y - channel_mean) ** 2
+            means_distance.append(torch.mean(distance, dim=[0, 2, 3]))
 
         channel_var = torch.mean(torch.stack(means_distance), dim=0)[None, :, None, None]
         channel_std = torch.sqrt(channel_var)
