@@ -5,6 +5,7 @@
 
 
 import logging
+from enum import Enum
 from typing import Any
 
 import torch
@@ -20,7 +21,14 @@ from anomalib.utils.metrics import AnomalibMetricCollection, create_metric_colle
 logger = logging.getLogger(__name__)
 
 
-class _MetricsManagerCallback(Callback):
+class Device(str, Enum):
+    """Device on which to compute metrics."""
+
+    CPU = "cpu"
+    GPU = "gpu"
+
+
+class _MetricsCallback(Callback):
     """Create image and pixel-level AnomalibMetricsCollection.
 
     This callback creates AnomalibMetricsCollection based on the
@@ -30,20 +38,23 @@ class _MetricsManagerCallback(Callback):
 
     Args:
         task (TaskType): Task type of the current run.
-        image_metrics (list[str] | None): List of image-level metrics.
-        pixel_metrics (list[str] | None): List of pixel-level metrics.
+        image_metrics (list[str] | str | None): List of image-level metrics.
+        pixel_metrics (list[str] | str | None): List of pixel-level metrics.
+        device (str): Whether to compute metrics on cpu or gpu. Defaults to cpu.
     """
 
     def __init__(
         self,
         task: TaskType = TaskType.SEGMENTATION,
-        image_metrics: list[str] | None = None,
-        pixel_metrics: list[str] | None = None,
+        image_metrics: list[str] | str | None = None,
+        pixel_metrics: list[str] | str | None = None,
+        device: Device = Device.CPU,
     ) -> None:
         super().__init__()
         self.task = task
         self.image_metric_names = image_metrics
         self.pixel_metric_names = pixel_metrics
+        self.device = device
 
     def setup(
         self,
@@ -61,6 +72,8 @@ class _MetricsManagerCallback(Callback):
         del trainer, stage  # These variables are not used.
 
         image_metric_names = [] if self.image_metric_names is None else self.image_metric_names
+        if isinstance(image_metric_names, str):
+            image_metric_names = [image_metric_names]
 
         pixel_metric_names: list[str]
         if self.pixel_metric_names is None:
@@ -73,14 +86,14 @@ class _MetricsManagerCallback(Callback):
                 self.pixel_metric_names,
             )
         else:
-            pixel_metric_names = self.pixel_metric_names
+            pixel_metric_names = (
+                self.pixel_metric_names if not isinstance(self.pixel_metric_names, str) else [self.pixel_metric_names]
+            )
 
         if isinstance(pl_module, AnomalyModule):
             pl_module.image_metrics = create_metric_collection(image_metric_names, "image_")
             pl_module.pixel_metrics = create_metric_collection(pixel_metric_names, "pixel_")
-
-            pl_module.image_metrics.set_threshold(pl_module.image_threshold.value)
-            pl_module.pixel_metrics.set_threshold(pl_module.pixel_threshold.value)
+            self._set_threshold(pl_module)
 
     def on_validation_epoch_start(
         self,
@@ -100,15 +113,15 @@ class _MetricsManagerCallback(Callback):
         dataloader_idx: int = 0,
     ) -> None:
         if outputs is not None:
-            self._outputs_to_cpu(outputs)
-            self._collect_output(pl_module.image_metrics, pl_module.pixel_metrics, outputs)
+            self._outputs_to_device(outputs)
+            self._update_metrics(pl_module.image_metrics, pl_module.pixel_metrics, outputs)
 
     def on_validation_epoch_end(
         self,
         trainer: "trainer.AnomalibTrainer",
         pl_module: AnomalyModule,
     ) -> None:
-        self._update_metrics_threshold(pl_module)
+        self._set_threshold(pl_module)
         self._log_metrics(pl_module)
 
     def on_test_epoch_start(
@@ -129,8 +142,8 @@ class _MetricsManagerCallback(Callback):
         dataloader_idx: int = 0,
     ) -> None:
         if outputs is not None:
-            self._outputs_to_cpu(outputs)
-            self._collect_output(pl_module.image_metrics, pl_module.pixel_metrics, outputs)
+            self._outputs_to_device(outputs)
+            self._update_metrics(pl_module.image_metrics, pl_module.pixel_metrics, outputs)
 
     def on_test_epoch_end(
         self,
@@ -139,28 +152,28 @@ class _MetricsManagerCallback(Callback):
     ) -> None:
         self._log_metrics(pl_module)
 
-    def _update_metrics_threshold(self, pl_module: AnomalyModule) -> None:
+    def _set_threshold(self, pl_module: AnomalyModule) -> None:
         pl_module.image_metrics.set_threshold(pl_module.image_threshold.value.item())
         pl_module.pixel_metrics.set_threshold(pl_module.pixel_threshold.value.item())
 
-    @staticmethod
-    def _collect_output(
+    def _update_metrics(
+        self,
         image_metric: AnomalibMetricCollection,
         pixel_metric: AnomalibMetricCollection,
         output: STEP_OUTPUT,
     ) -> None:
-        image_metric.cpu()
+        image_metric.to(self.device)
         image_metric.update(output["pred_scores"], output["label"].int())
         if "mask" in output.keys() and "anomaly_maps" in output.keys():
-            pixel_metric.cpu()
+            pixel_metric.to(self.device)
             pixel_metric.update(torch.squeeze(output["anomaly_maps"]), torch.squeeze(output["mask"].int()))
 
-    def _outputs_to_cpu(self, output: STEP_OUTPUT):
+    def _outputs_to_device(self, output: STEP_OUTPUT):
         if isinstance(output, dict):
             for key, value in output.items():
-                output[key] = self._outputs_to_cpu(value)
+                output[key] = self._outputs_to_device(value)
         elif isinstance(output, Tensor):
-            output = output.cpu()
+            output = output.to(self.device)
         return output
 
     @staticmethod
