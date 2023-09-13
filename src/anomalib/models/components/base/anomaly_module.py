@@ -17,7 +17,7 @@ from torch import Tensor, nn
 from torchmetrics import Metric
 
 from anomalib.utils.metrics import AnomalibMetricCollection
-from anomalib.utils.metrics.thresholding import BaseAnomalyThreshold
+from anomalib.utils.metrics.threshold import BaseThreshold
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +37,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         self.loss: nn.Module
         self.callbacks: list[Callback]
 
-        self.image_threshold: BaseAnomalyThreshold
-        self.pixel_threshold: BaseAnomalyThreshold
+        self.image_threshold: BaseThreshold
+        self.pixel_threshold: BaseThreshold
 
         self.normalization_metrics: Metric
 
