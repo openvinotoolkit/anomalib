@@ -9,7 +9,7 @@ from typing import Any
 from torchmetrics import Metric
 
 
-class BaseAnomalyThreshold(Metric, ABC):
+class BaseThreshold(Metric, ABC):
     """Base class for thresholding metrics."""
 
     def __init__(self, **kwargs: Any) -> None:

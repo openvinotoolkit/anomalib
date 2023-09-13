@@ -6,10 +6,10 @@
 
 import torch
 
-from .base import BaseAnomalyThreshold
+from .base import BaseThreshold
 
 
-class ManualThreshold(BaseAnomalyThreshold):
+class ManualThreshold(BaseThreshold):
     def __init__(self, default_value: float = 0.5, **kwargs) -> None:
         """Initialize Manual Threshold.
 
@@ -37,3 +37,4 @@ class ManualThreshold(BaseAnomalyThreshold):
             *args: Any positional arguments.
             **kwargs: Any keyword arguments.
         """
+        return None
