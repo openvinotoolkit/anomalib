@@ -137,14 +137,14 @@ class _ThresholdCallback(Callback):
             >>> _get_threshold_from_config(F1AdaptiveThreshold)
             or
             >>> config = DictConfig({
-            ...                     "class_path": "ManualThreshold",
-            ...                     "init_args": {
-            ...                         "default_value": 0.7
-            ...                     }
-            ...                 })
+            ...    "class_path": "ManualThreshold",
+            ...    "init_args": {"default_value": 0.7}
+            ... })
             >>> __get_threshold_from_config(config)
             or
-            >>> config = DictConfig({"class_path": "anomalib.utils.metrics.threshold.F1AdaptiveThreshold"})
+            >>> config = DictConfig({
+            ...    "class_path": "anomalib.utils.metrics.threshold.F1AdaptiveThreshold"
+            ... })
             >>> __get_threshold_from_config(config)
 
         Returns:
