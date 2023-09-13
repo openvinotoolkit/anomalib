@@ -8,7 +8,7 @@
 
 [Key Features](#key-features) •
 [Getting Started](#getting-started) •
-[Docs](https://openvinotoolkit.github.io/anomalib) •
+[Docs](https://anomalib.readthedocs.io/en/latest/) •
 [License](https://github.com/openvinotoolkit/anomalib/blob/main/LICENSE)
 
 [![python](https://img.shields.io/badge/python-3.7%2B-green)]()
@@ -17,10 +17,9 @@
 [![comet](https://custom-icon-badges.herokuapp.com/badge/comet__ml-3.31.7-orange?logo=logo_comet_ml)](https://www.comet.com/site/products/ml-experiment-tracking/?utm_source=anomalib&utm_medium=referral)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/684927c1c76c4c5e94bb53480812fbbb)](https://www.codacy.com/gh/openvinotoolkit/anomalib/dashboard?utm_source=github.com&utm_medium=referral&utm_content=openvinotoolkit/anomalib&utm_campaign=Badge_Grade)
 [![black](https://img.shields.io/badge/code%20style-black-000000.svg)]()
-[![Nightly-Regression Test](https://github.com/openvinotoolkit/anomalib/actions/workflows/nightly.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/nightly.yml)
 [![Pre-Merge Checks](https://github.com/openvinotoolkit/anomalib/actions/workflows/pre_merge.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/pre_merge.yml)
 [![codecov](https://codecov.io/gh/openvinotoolkit/anomalib/branch/main/graph/badge.svg?token=Z6A07N1BZK)](https://codecov.io/gh/openvinotoolkit/anomalib)
-[![Docs](https://github.com/openvinotoolkit/anomalib/actions/workflows/docs.yml/badge.svg)](https://github.com/openvinotoolkit/anomalib/actions/workflows/docs.yml)
+[![Documentation Status](https://readthedocs.org/projects/anomalib/badge/?version=latest)](https://anomalib.readthedocs.io/en/latest/?badge=latest)
 [![Downloads](https://static.pepy.tech/personalized-badge/anomalib?period=total&units=international_system&left_color=grey&right_color=green&left_text=PyPI%20Downloads)](https://pepy.tech/project/anomalib)
 
 </div>
@@ -140,6 +139,9 @@ model:
 
 It is also possible to train on a custom folder dataset. To do so, `data` section in `config.yaml` is to be modified as follows:
 
+<details>
+<summary>Configuration for Custom Dataset</summary>
+
 ```yaml
 dataset:
   name: <name-of-the-dataset>
@@ -173,19 +175,38 @@ dataset:
     random_tile_count: 16
 ```
 
+</details>
+
+By placing the above configuration to the `dataset` section of the `config.yaml` file, the model will be trained on the custom dataset.
+
 # Inference
 
-Anomalib includes multiple tools, including Lightning, Gradio, and OpenVINO inferencers, for performing inference with a trained model.
+Anomalib includes multiple inferencing scripts, including Torch, Lightning, Gradio, and OpenVINO inferencers to perform inference using the trained/exported model. In this section, we will go over how to use these scripts to perform inference.
 
-The following command can be used to run PyTorch Lightning inference from the command line:
+<details>
+<summary>PyTorch Inference</summary>
 
 ```bash
-python tools/inference/lightning_inference.py -h
+# To get help about the arguments, run:
+python tools/inference/torch_inference.py --help
+
+# Example Torch inference command:
+python tools/inference/torch_inference.py \
+    --weights results/padim/mvtec/bottle/run/weights/torch/model.pt \
+    --input datasets/MVTec/bottle/test/broken_large/000.png \
+    --output results/padim/mvtec/bottle/images
 ```
 
-As a quick example:
+</details>
+
+<details>
+<summary>Lightning Inference</summary>
 
 ```bash
+# To get help about the arguments, run:
+python tools/inference/lightning_inference.py --help
+
+# Example Lightning inference command:
 python tools/inference/lightning_inference.py \
     --config src/anomalib/models/padim/config.yaml \
     --weights results/padim/mvtec/bottle/run/weights/model.ckpt \
@@ -193,9 +214,24 @@ python tools/inference/lightning_inference.py \
     --output results/padim/mvtec/bottle/images
 ```
 
-Example OpenVINO Inference:
+</details>
+
+<details>
+<summary>OpenVINO Inference</summary>
+
+To run the OpenVINO inference, you need to first export the PyTorch model to an OpenVINO model. ensure that `export_mode` is set to `"openvino"` in the respective model `config.yaml`.
+
+```yaml
+# Example config.yaml for OpenVINO
+optimization:
+  export_mode: "openvino" # options: openvino, onnx
+```
 
 ```bash
+# To get help about the arguments, run:
+python tools/inference/openvino_inference.py --help
+
+# Example OpenVINO inference command:
 python tools/inference/openvino_inference.py \
     --weights results/padim/mvtec/bottle/run/openvino/model.bin \
     --metadata results/padim/mvtec/bottle/run/openvino/metadata.json \
@@ -205,25 +241,25 @@ python tools/inference/openvino_inference.py \
 
 > Ensure that you provide path to `metadata.json` if you want the normalization to be applied correctly.
 
-You can also use Gradio Inference to interact with the trained models using a UI. Refer to our [guide](https://openvinotoolkit.github.io/anomalib/tutorials/inference.html#gradio-inference) for more details.
+</details>
 
-A quick example:
+<details>
+<summary>Gradio Inference</summary>
+
+You can also use Gradio Inference to interact with the trained models using a UI. Refer to our [guide](https://anomalib.readthedocs.io/en/latest/tutorials/inference.html#gradio-inference) for more details.
 
 ```bash
+# To get help about the arguments, run:
+python tools/inference/gradio_inference.py --help
+
+# Example Gradio inference command:
 python tools/inference/gradio_inference.py \
-        --weights results/padim/mvtec/bottle/run/weights/model.ckpt
+    --weights results/padim/mvtec/bottle/run/weights/model.ckpt \
+    --metadata results/padim/mvtec/bottle/run/openvino/metadata.json  \ # Optional
+    --share  # Optional to share the UI
 ```
 
-## Exporting Model to ONNX or OpenVINO IR
-
-It is possible to export your model to ONNX or OpenVINO IR
-
-If you want to export your PyTorch model to an OpenVINO model, ensure that `export_mode` is set to `"openvino"` in the respective model `config.yaml`.
-
-```yaml
-optimization:
-  export_mode: "openvino" # options: openvino, onnx
-```
+</details>
 
 # Hyperparameter Optimization
 
@@ -250,7 +286,7 @@ Refer to the [Benchmarking Documentation](https://openvinotoolkit.github.io/anom
 
 # Experiment Management
 
-Anomablib is integrated with various libraries for experiment tracking such as Comet, tensorboard, and wandb through [pytorch lighting loggers](https://pytorch-lightning.readthedocs.io/en/stable/extensions/logging.html).
+Anomalib is integrated with various libraries for experiment tracking such as Comet, tensorboard, and wandb through [pytorch lighting loggers](https://pytorch-lightning.readthedocs.io/en/stable/extensions/logging.html).
 
 Below is an example of how to enable logging for hyper-parameters, metrics, model graphs, and predictions on images in the test data-set
 
