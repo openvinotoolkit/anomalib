@@ -105,6 +105,7 @@ def get_model_dir(model: str):
     return d
 
 
+# TODO rename to `DEFAULT_INPUT_IMAGE_RESOLUTION`, but it breaks back compatibility with previous scripts
 INPUT_IMAGE_RESOLUTION = 256
 
 DATASET_MVTEC = "mvtec"
@@ -458,7 +459,7 @@ def evaluate(imgpaths, ascores, imgclass, asmaps, masks, savedir, logger, debug)
         filename = f"{idx:03}_{stat['statistic']}_imgidx={imgidx}_auc={stat['value']:.4f}.png"
 
         imgpath = imgpaths[imgidx]
-        img = read_image(imgpath, image_size=(INPUT_IMAGE_RESOLUTION, INPUT_IMAGE_RESOLUTION))
+        img = read_image(imgpath, image_size=tuple(asmaps.shape[-2:]))
 
         asmap = asmaps[imgidx].cpu().numpy()
         supimg = superimpose_anomaly_map(asmap, img, normalize=th_normalization, alpha=0.3)

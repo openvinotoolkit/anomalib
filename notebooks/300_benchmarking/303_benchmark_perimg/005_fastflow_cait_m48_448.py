@@ -12,7 +12,9 @@ import os
 
 # src: https://pytorch.org/docs/stable/notes/cuda.html#asynchronous-execution
 # os.environ["CUDA_LAUNCH_BLOCKING"] = "1"  # DEBUG
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"  # DEBUG
+# os.environ["CUDA_VISIBLE_DEVICES"] = "2"  # DEBUG
+# src: https://discuss.pytorch.org/t/how-does-reserved-in-total-by-pytorch-work/70172/33
+# os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:32"
 
 os.environ["WANDB_NOTEBOOK_NAME"] = __file__
 
@@ -81,7 +83,8 @@ if is_script():
 else:
     # `dc` stands for "dataset-category"
     if DEBUG:
-        argstr = "--dc " + " ".join(DATASET_CATEGORY_CHOICES[:1])
+        # argstr = "--dc " + " ".join(DATASET_CATEGORY_CHOICES[:1])
+        argstr = "--dc mvtec/hazelnut"  # hazelnut is the largest dataset 
     else:
         argstr = "--dc " + " ".join(DATASET_CATEGORY_CHOICES)
     print(f"{argstr=}")
@@ -110,6 +113,7 @@ from functools import partial, update_wrapper  # noqa: E402
 from types import MethodType  # noqa: E402
 
 from pytorch_lightning import LightningModule, Trainer  # noqa: E402
+from pytorch_lightning.callbacks import GradientAccumulationScheduler  # noqa: E402, F401
 from torch.optim import Adam, Optimizer  # noqa: E402
 
 from anomalib.models import Fastflow  # noqa: E402
@@ -162,16 +166,12 @@ def get_model_trainer(logger=None):
     trainer_params = (
         # DEBUG
         dict(
-            accelerator="gpu",
-            devices=1,
-            max_epochs=2,
+            max_epochs=1,
         )
         if DEBUG
         else
         # PROD
         dict(
-            accelerator="gpu",
-            devices=1,
             max_epochs=500,  # OK
         )
     )
@@ -179,6 +179,8 @@ def get_model_trainer(logger=None):
     trainer = Trainer(
         enable_progress_bar=DEBUG and OFFLINE and not is_script(),
         logger=logger,
+        accelerator="gpu",
+        devices=1,
         callbacks=STANDARD_CALLBACKS
         + [
             # GradientAccumulationScheduler(scheduling={0: 2})
@@ -198,9 +200,6 @@ if DEBUG:
 
     else:
         del model, trainer
-        import torch
-
-        torch.cuda.empty_cache()
 
 
 # In[]:
@@ -221,6 +220,7 @@ for ds_cat in progressbar(datasets_categories):
     savedir = MODELDIR / dataset / category
     savedir.mkdir(exist_ok=True, parents=True)
 
+    torch.cuda.empty_cache()
     global_seeder()
 
     datamodule = get_datamodule(
