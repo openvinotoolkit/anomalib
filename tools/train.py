@@ -61,7 +61,11 @@ def train(args: Namespace):
     callbacks = get_callbacks(config)
 
     trainer = AnomalibTrainer(
-        **config.trainer, logger=experiment_logger, callbacks=callbacks, normalizer=config.model.normalization_method
+        **config.trainer,
+        logger=experiment_logger,
+        callbacks=callbacks,
+        normalizer=config.model.normalization_method,
+        threshold=config.metrics.threshold
     )
 
     logger.info("Training the model.")

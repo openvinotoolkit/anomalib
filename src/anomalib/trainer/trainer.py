@@ -7,12 +7,14 @@ import logging
 
 from lightning import Callback
 from lightning.pytorch import Trainer
-from omegaconf import DictConfig
+from omegaconf import DictConfig, ListConfig
 
 from anomalib.models import AnomalyModule
 from anomalib.post_processing import NormalizationMethod
 from anomalib.utils.callbacks.normalization import get_normalization_callback
 from anomalib.utils.callbacks.post_processor import _PostProcessorCallback
+from anomalib.utils.callbacks.thresholding import _ThresholdCallback
+from anomalib.utils.metrics.threshold import BaseThreshold, F1AdaptiveThreshold
 
 log = logging.getLogger(__name__)
 
@@ -31,9 +33,15 @@ class AnomalibTrainer(Trainer):
         self,
         callbacks: list[Callback] = [],
         normalizer: NormalizationMethod | DictConfig | Callback | str = NormalizationMethod.MIN_MAX,
+        threshold: BaseThreshold
+        | tuple[BaseThreshold, BaseThreshold]
+        | DictConfig
+        | ListConfig
+        | str = F1AdaptiveThreshold(),
         **kwargs,
     ) -> None:
         self.normalizer = normalizer
+        self.threshold = threshold
         super().__init__(callbacks=self._setup_callbacks(callbacks), **kwargs)
 
         self.lightning_module: AnomalyModule
@@ -45,4 +53,6 @@ class AnomalibTrainer(Trainer):
         normalization_callback = get_normalization_callback(self.normalizer)
         if normalization_callback is not None:
             _callbacks.append(normalization_callback)
+
+        _callbacks.append(_ThresholdCallback(self.threshold))
         return _callbacks + callbacks

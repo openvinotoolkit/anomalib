@@ -42,10 +42,7 @@ metrics:
   pixel:
     - F1Score
     - AUROC
-  threshold:
-    method: adaptive #options: [adaptive, manual]
-    manual_image: null
-    manual_pixel: null
+  threshold: F1AdaptiveThreshold
 
 visualization:
   show_images: False # show images on the screen

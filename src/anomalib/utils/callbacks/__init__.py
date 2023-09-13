@@ -19,7 +19,6 @@ from anomalib.deploy import ExportMode
 from .graph import GraphLogger
 from .metrics_configuration import MetricsConfigurationCallback
 from .model_loader import LoadModelCallback
-from .post_processing_configuration import PostProcessingConfigurationCallback
 from .tiler_configuration import TilerConfigurationCallback
 from .timer import TimerCallback
 from .visualizer import ImageVisualizerCallback, MetricVisualizerCallback
@@ -30,7 +29,6 @@ __all__ = [
     "LoadModelCallback",
     "MetricsConfigurationCallback",
     "MetricVisualizerCallback",
-    "PostProcessingConfigurationCallback",
     "TilerConfigurationCallback",
     "TimerCallback",
 ]
@@ -65,19 +63,9 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
 
     callbacks.extend([checkpoint, TimerCallback()])
 
-    # Add post-processing configurations to AnomalyModule.
-    image_threshold = (
-        config.metrics.threshold.manual_image if "manual_image" in config.metrics.threshold.keys() else None
-    )
-    pixel_threshold = (
-        config.metrics.threshold.manual_pixel if "manual_pixel" in config.metrics.threshold.keys() else None
-    )
-    post_processing_callback = PostProcessingConfigurationCallback(
-        threshold_method=config.metrics.threshold.method,
-        manual_image_threshold=image_threshold,
-        manual_pixel_threshold=pixel_threshold,
-    )
-    callbacks.append(post_processing_callback)
+    if "resume_from_checkpoint" in config.trainer.keys() and config.trainer.resume_from_checkpoint is not None:
+        load_model = LoadModelCallback(config.trainer.resume_from_checkpoint)
+        callbacks.append(load_model)
 
     # Add metric configuration to the model via MetricsConfigurationCallback
     metrics_callback = MetricsConfigurationCallback(

@@ -5,7 +5,6 @@
 
 from .normalization import NormalizationMethod
 from .post_process import (
-    ThresholdMethod,
     add_anomalous_label,
     add_normal_label,
     anomaly_map_to_color_map,
@@ -24,5 +23,4 @@ __all__ = [
     "NormalizationMethod",
     "Visualizer",
     "VisualizationMode",
-    "ThresholdMethod",
 ]
