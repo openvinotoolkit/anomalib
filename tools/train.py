@@ -65,7 +65,10 @@ def train(args: Namespace):
         logger=experiment_logger,
         callbacks=callbacks,
         normalizer=config.model.normalization_method,
-        threshold=config.metrics.threshold
+        threshold=config.metrics.threshold,
+        task=config.dataset.task,
+        image_metrics=config.metrics.get("image", None),
+        pixel_metrics=config.metrics.get("pixel", None)
     )
 
     logger.info("Training the model.")
