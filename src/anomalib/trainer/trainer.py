@@ -62,7 +62,7 @@ class AnomalibTrainer(Trainer):
 
     def _setup_callbacks(self):
         """Setup callbacks for the trainer."""
-        # Note: this needs to be changed when normalization is part of the trainer
+
         _callbacks: list[Callback] = [_PostProcessorCallback()]
         normalization_callback = get_normalization_callback(self.normalizer)
         if normalization_callback is not None:
