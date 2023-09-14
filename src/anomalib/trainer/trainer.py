@@ -14,7 +14,7 @@ from anomalib.data import TaskType
 from anomalib.models import AnomalyModule
 from anomalib.post_processing import NormalizationMethod
 from anomalib.utils.callbacks import get_visualization_callbacks
-from anomalib.utils.callbacks.metrics_manager import _MetricsManagerCallback
+from anomalib.utils.callbacks.metrics import _MetricsCallback
 from anomalib.utils.callbacks.normalization import get_normalization_callback
 from anomalib.utils.callbacks.post_processor import _PostProcessorCallback
 from anomalib.utils.callbacks.thresholding import _ThresholdCallback
@@ -69,7 +69,7 @@ class AnomalibTrainer(Trainer):
             _callbacks.append(normalization_callback)
 
         _callbacks.append(_ThresholdCallback(self.threshold))
-        _callbacks.append(_MetricsManagerCallback(self.task, self.image_metric_names, self.pixel_metric_names))
+        _callbacks.append(_MetricsCallback(self.task, self.image_metric_names, self.pixel_metric_names))
 
         if self.visualization is not None:
             image_save_path = self.visualization.pop("image_save_path", None)
