@@ -105,7 +105,7 @@ class FastflowModel(nn.Module):
         flow_steps (int, optional): Flow steps.
         conv3x3_only (bool, optinoal): Use only conv3x3 in fast_flow model. Defaults to False.
         hidden_ratio (float, optional): Ratio to calculate hidden var channels. Defaults to 1.0.
-        image_size (tuple[int, int] | None): Original image size (needed in case of tiling).
+        anomaly_map_size (tuple[int, int] | None): Size of output the anomaly map, if None, it matches input_size.
 
     Raises:
         ValueError: When the backbone is not supported.
@@ -119,14 +119,14 @@ class FastflowModel(nn.Module):
         flow_steps: int = 8,
         conv3x3_only: bool = False,
         hidden_ratio: float = 1.0,
-        image_size: tuple[int, int] | None = None,
+        anomaly_map_size: tuple[int, int] | None = None,
     ) -> None:
         super().__init__()
         self.tiler: Tiler | None = None
 
         self.input_size = input_size
-        if not image_size:
-            image_size = input_size
+        if not anomaly_map_size:
+            anomaly_map_size = input_size
 
         if backbone in ("cait_m48_448", "deit_base_distilled_patch16_384"):
             self.feature_extractor = timm.create_model(backbone, pretrained=pre_trained)
@@ -171,7 +171,7 @@ class FastflowModel(nn.Module):
                     flow_steps=flow_steps,
                 )
             )
-        self.anomaly_map_generator = AnomalyMapGenerator(input_size=image_size)
+        self.anomaly_map_generator = AnomalyMapGenerator(input_size=anomaly_map_size)
 
     def forward(self, input_tensor: Tensor) -> Tensor | list[Tensor] | tuple[list[Tensor]]:
         """Forward-Pass the input to the FastFlow Model.

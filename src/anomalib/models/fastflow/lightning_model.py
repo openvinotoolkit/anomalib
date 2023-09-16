@@ -21,12 +21,12 @@ class Fastflow(AnomalyModule):
 
     Args:
         input_size (tuple[int, int]): Model input size.
-        image_size (tuple[int, int]): Original image size (needed in case of tiling).
         backbone (str): Backbone CNN network
         pre_trained (bool, optional): Boolean to check whether to use a pre_trained backbone.
         flow_steps (int, optional): Flow steps.
         conv3x3_only (bool, optinoal): Use only conv3x3 in fast_flow model. Defaults to False.
         hidden_ratio (float, optional): Ratio to calculate hidden var channels. Defaults to 1.0.
+        anomaly_map_size (tuple[int, int] | None): Size of the output anomaly map, if None, it matches input_size.
     """
 
     def __init__(
@@ -37,7 +37,7 @@ class Fastflow(AnomalyModule):
         flow_steps: int = 8,
         conv3x3_only: bool = False,
         hidden_ratio: float = 1.0,
-        image_size: tuple[int, int] | None = None,
+        anomaly_map_size: tuple[int, int] | None = None,
     ) -> None:
         super().__init__()
 
@@ -48,7 +48,7 @@ class Fastflow(AnomalyModule):
             flow_steps=flow_steps,
             conv3x3_only=conv3x3_only,
             hidden_ratio=hidden_ratio,
-            image_size=image_size,
+            anomaly_map_size=anomaly_map_size,
         )
         self.loss = FastflowLoss()
 
@@ -101,12 +101,12 @@ class FastflowLightning(Fastflow):
 
         super().__init__(
             input_size=input_size,
-            image_size=hparams.dataset.image_size,
             backbone=hparams.model.backbone,
             pre_trained=hparams.model.pre_trained,
             flow_steps=hparams.model.flow_steps,
             conv3x3_only=hparams.model.conv3x3_only,
             hidden_ratio=hparams.model.hidden_ratio,
+            anomaly_map_size=hparams.dataset.image_size,
         )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
