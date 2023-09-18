@@ -426,7 +426,16 @@ class EfficientAdModel(nn.Module):
 
             student_output_ae_aug = self.student(aug_img)[:, self.teacher_out_channels :, :, :]
 
+            if teacher_output_aug.shape != ae_output_aug.shape:
+                teacher_output_aug = F.interpolate(teacher_output_aug, size=ae_output_aug.shape[2:], mode="bilinear")
+
             distance_ae = torch.pow(teacher_output_aug - ae_output_aug, 2)
+
+            if student_output_ae_aug.shape != ae_output_aug.shape:
+                student_output_ae_aug = F.interpolate(
+                    student_output_ae_aug, size=ae_output_aug.shape[2:], mode="bilinear"
+                )
+
             distance_stae = torch.pow(ae_output_aug - student_output_ae_aug, 2)
 
             loss_ae = torch.mean(distance_ae)
@@ -438,6 +447,10 @@ class EfficientAdModel(nn.Module):
                 ae_output = self.ae(batch)
 
             map_st = torch.mean(distance_st, dim=1, keepdim=True)
+
+            if student_output.shape != ae_output.shape:
+                student_output = F.interpolate(student_output, size=ae_output.shape[2:], mode="bilinear")
+
             map_stae = torch.mean(
                 (ae_output - student_output[:, self.teacher_out_channels :]) ** 2, dim=1, keepdim=True
             )

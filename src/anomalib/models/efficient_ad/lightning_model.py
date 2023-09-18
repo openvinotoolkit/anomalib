@@ -71,7 +71,7 @@ class EfficientAd(AnomalyModule):
         imagenette_dir(str): directory containing imagenette dataset
         teacher_file_name (str): path to the pre-trained teacher model
         teacher_out_channels (int): number of convolution output channels
-        image_size (tuple): size of input images
+        input_size (tuple): size of input images
         model_size (str): size of student and teacher model
         lr (float): learning rate
         weight_decay (float): optimizer weight decay
@@ -86,7 +86,7 @@ class EfficientAd(AnomalyModule):
         self,
         imagenette_dir: str,
         teacher_out_channels: int,
-        image_size: tuple[int, int],
+        input_size: tuple[int, int],
         pretrained_models_dir: str = "./efficient_ad_pretrained_models",
         model_size: EfficientAdModelSize = EfficientAdModelSize.S,
         lr: float = 0.0001,
@@ -101,14 +101,14 @@ class EfficientAd(AnomalyModule):
         self.model_size = model_size
         self.model: EfficientAdModel = EfficientAdModel(
             teacher_out_channels=teacher_out_channels,
-            input_size=image_size,
+            input_size=input_size,
             model_size=model_size,
             padding=padding,
             pad_maps=pad_maps,
             pretrained_teacher_type=pretrained_teacher_type,
         )
         self.batch_size = batch_size
-        self.image_size = image_size
+        self.input_size = input_size
         self.lr = lr
         self.weight_decay = weight_decay
         self.pretrained_models_dir = Path(pretrained_models_dir)
@@ -137,9 +137,9 @@ class EfficientAd(AnomalyModule):
     def prepare_imagenette_data(self) -> None:
         self.data_transforms_imagenet = A.Compose(
             [  # We obtain an image P ∈ R 3×256×256 from ImageNet by choosing a random image,
-                A.Resize(self.image_size[0] * 2, self.image_size[1] * 2),  # resizing it to 512 × 512,
+                A.Resize(self.input_size[0] * 2, self.input_size[1] * 2),  # resizing it to 512 × 512,
                 A.ToGray(p=0.3),  # converting it to gray scale with a probability of 0.3
-                A.CenterCrop(self.image_size[0], self.image_size[1]),  # and cropping the center 256 × 256 pixels
+                A.CenterCrop(self.input_size[0], self.input_size[1]),  # and cropping the center 256 × 256 pixels
                 # TODO: Anomalib version expects only a ToFloat. The Imagenet normalization is performed inside the forward
                 # A.ToFloat(always_apply=False, p=1.0, max_value=255),
                 A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
@@ -319,7 +319,7 @@ class EfficientAdLightning(EfficientAd):
             lr=hparams.model.lr,
             weight_decay=hparams.model.weight_decay,
             padding=hparams.model.padding,
-            image_size=hparams.model.image_size,
+            input_size=hparams.model.input_size,
             batch_size=hparams.model.train_batch_size,
             pretrained_models_dir=hparams.model.pretrained_models_dir,
             imagenette_dir=hparams.model.imagenette_dir,

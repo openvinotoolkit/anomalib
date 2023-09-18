@@ -13,7 +13,7 @@ git pull sync development
 git merge github master
 ```
 
-Current version (1.2.0) is synced with anomalib tag 0.7.0.
+Current version (1.2.*) is synced with anomalib tag 0.7.0.
 
 <div align="center">
 

@@ -25,7 +25,7 @@ model:
   model_size: small # options: [small, medium]
   lr: 0.0001
   weight_decay: 0.00001
-  image_size: [256, 256]
+  input_size: [256, 256]
   train_batch_size: 1
   pretrained_models_dir:
   imagenette_dir: ${oc.env:HOME}/shared/generic/imagenette_efficientad
