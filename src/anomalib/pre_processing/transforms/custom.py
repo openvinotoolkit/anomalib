@@ -49,7 +49,7 @@ class ToRGB(ImageOnlyTransform):
     """
 
     def __init__(self, always_apply=True, p=1.0) -> None:
-        super(ToRGB, self).__init__(always_apply=always_apply, p=p)
+        super().__init__(always_apply=always_apply, p=p)
 
     def apply(self, img: np.ndarray, **params) -> np.ndarray:
         """Apply transformation.
@@ -63,6 +63,8 @@ class ToRGB(ImageOnlyTransform):
         Returns:
             np.ndarray: Transformed image.
         """
+        del params  # params parameter is required for apply method, but not used.
+
         # Check if image is 1-channel and convert to 3-channel to apply transformation.
         if len(img.shape) == 2:
             img = np.repeat(img[:, :, None], 3, axis=2)
