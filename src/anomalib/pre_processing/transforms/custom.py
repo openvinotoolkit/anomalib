@@ -13,7 +13,7 @@ from albumentations.core.transforms_interface import ImageOnlyTransform
 from torch import Tensor
 
 
-class BGRToRGB(ImageOnlyTransform):
+class ToRGB(ImageOnlyTransform):
     """Convert BGR image to RGB.
 
     Args:
@@ -26,12 +26,22 @@ class BGRToRGB(ImageOnlyTransform):
     Examples:
         >>> import cv2
         >>> import numpy as np
-        >>> from anomalib.data.transforms import BGRToRGB
+        >>> from anomalib.data.transforms import ToRGB
 
         >>> bgr = np.random.randint(0, 255, (1080, 1920, 3), dtype=np.uint8)
-        >>> rgb = BGRToRGB()(image=bgr)["image"]
+        >>> rgb = ToRGB()(image=bgr)["image"]
         >>> expected_rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
         >>> np.allclose(rgb, expected_rgb)
+        True
+
+        ToRGB also supports single channel images.
+        >>> img = np.random.randint(0, 255, (1080, 1920), dtype=np.uint8)
+        >>> rgb = ToRGB()(image=img)
+
+        Single channel images are converted to 3-channel images, so each channel is equal.
+        >>> (rgb[..., 0] == rgb[..., 1]).all()
+        True
+        >>> (rgb[..., 1] == rgb[..., 2]).all()
         True
 
     Returns:
@@ -39,11 +49,26 @@ class BGRToRGB(ImageOnlyTransform):
     """
 
     def __init__(self, always_apply=True, p=1.0) -> None:
-        super(BGRToRGB, self).__init__(always_apply=always_apply, p=p)
+        super(ToRGB, self).__init__(always_apply=always_apply, p=p)
 
-    def apply(self, img, **params) -> np.ndarray:
+    def apply(self, img: np.ndarray, **params) -> np.ndarray:
+        """Apply transformation.
+
+        Args:
+            img (np.ndarray): Image to transform.
+
+        Raises:
+            TypeError: When image is not 3-dim or last dimension is not equal to 3.
+
+        Returns:
+            np.ndarray: Transformed image.
+        """
+        # Check if image is 1-channel and convert to 3-channel to apply transformation.
+        if len(img.shape) == 2:
+            img = np.repeat(img[:, :, None], 3, axis=2)
+
         if len(img.shape) != 3 and img.shape[-1] != 3:
-            raise TypeError("BGR2RGB transformation expects 3-dim images with the last dimension equal to 3.")
+            raise TypeError("ToRGB transformation expects 3-dim images with the last dimension equal to 3.")
 
         return img[..., [2, 1, 0]]
 

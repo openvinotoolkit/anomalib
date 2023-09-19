@@ -3,6 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from .custom import BGRToRGB, Denormalize, ToNumpy
+from .custom import Denormalize, ToNumpy, ToRGB
 
-__all__ = ["BGRToRGB", "Denormalize", "ToNumpy"]
+__all__ = ["ToRGB", "Denormalize", "ToNumpy"]
