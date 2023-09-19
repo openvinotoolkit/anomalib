@@ -101,8 +101,8 @@ def test_to_tensor_returns_correct_type():
     assert isinstance(transformed, np.ndarray)
 
 
-class TestBGRToRGB:
-    """Test the ToRGB transform."""
+class TestToRGB:
+    """Test ToRGB transform."""
 
     def test_to_rgb_transform_converts_bgr_channels(self) -> None:
         """Test that the ToRGB transform converts the channels in the correct order."""
