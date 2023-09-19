@@ -11,7 +11,7 @@ from lightning.pytorch import Callback, Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch.distributions import LogNormal
 
-from anomalib import trainer as T  # TODO this is a temporary fix for circular import
+from anomalib import engine
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
 from anomalib.post_processing.normalization.cdf import normalize, standardize
@@ -113,10 +113,11 @@ class _CdfNormalizationCallback(Callback):
          estimate the distribution of anomaly scores for normal data at the image and pixel level by computing
          the mean and standard deviations. A dictionary containing the computed statistics is stored in self.stats.
         """
-        _trainer = T.AnomalibTrainer(accelerator=trainer.accelerator, devices=trainer.num_devices, normalizer="none")
-        predictions = _trainer.predict(
+        _engine = engine.Engine(accelerator=trainer.accelerator, devices=trainer.num_devices, normalizer="none")
+        predictions = _engine.predict(
             model=self._create_inference_model(pl_module), dataloaders=trainer.datamodule.train_dataloader()
         )
+        assert predictions, "engine.predict returned no predictions"
         pl_module.normalization_metrics.reset()
         for batch in predictions:
             if "pred_scores" in batch.keys():

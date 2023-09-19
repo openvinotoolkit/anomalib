@@ -3,6 +3,6 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from .trainer import AnomalibTrainer
+from .engine import Engine
 
-__all__ = ["AnomalibTrainer"]
+__all__ = ["Engine"]

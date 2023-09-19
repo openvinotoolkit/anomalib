@@ -4,8 +4,8 @@ import lightning.pytorch as pl
 import pytest
 from omegaconf import OmegaConf
 
+from anomalib.engine import Engine
 from anomalib.models.components import AnomalyModule
-from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.callbacks.metrics_configuration import MetricsConfigurationCallback
 from anomalib.utils.metrics.collection import AnomalibMetricCollection
 from tests.helpers.dummy import DummyDataModule, DummyLogger, DummyModel
@@ -51,7 +51,7 @@ def test_metric_collection_configuration_callback(config_from_yaml):
 
     dummy_logger = DummyLogger()
     dummy_anomaly_module = _DummyAnomalyModule()
-    trainer = AnomalibTrainer(
+    trainer = Engine(
         callbacks=[callback], logger=dummy_logger, enable_checkpointing=False, default_root_dir=dummy_logger.tempdir
     )
     callback.setup(trainer, dummy_anomaly_module, DummyDataModule())
