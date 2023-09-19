@@ -107,7 +107,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         embeddings = features[self.layers[0]]
         for layer in self.layers[1:]:
             layer_embedding = features[layer]
-            layer_embedding = F.interpolate(layer_embedding, size=embeddings.shape[-2:], mode="nearest")
+            layer_embedding = F.interpolate(layer_embedding, size=embeddings.shape[-2:], mode="bilinear")
             embeddings = torch.cat((embeddings, layer_embedding), 1)
 
         return embeddings
@@ -208,7 +208,10 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         # 3. Find the support samples of the nearest neighbor in the membank
         nn_sample = self.memory_bank[nn_index, :]  # m^* in the paper
         # indices of N_b(m^*) in the paper
-        _, support_samples = self.nearest_neighbors(nn_sample, n_neighbors=self.num_neighbors)
+        memory_bank_effective_size = self.memory_bank.shape[0]  # edge case when memory bank is too small
+        _, support_samples = self.nearest_neighbors(
+            nn_sample, n_neighbors=min(self.num_neighbors, memory_bank_effective_size)
+        )
         # 4. Find the distance of the patch features to each of the support samples
         distances = self.euclidean_dist(max_patches_features.unsqueeze(1), self.memory_bank[support_samples])
         # 5. Apply softmax to find the weights
