@@ -12,10 +12,10 @@ import torch
 from lightning.pytorch import Trainer
 from omegaconf import DictConfig, ListConfig
 
+from anomalib import Engine
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
 from anomalib.deploy import OpenVINOInferencer, TorchInferencer
-from anomalib.engine import Engine
 from anomalib.models import get_model
 from anomalib.utils.callbacks import get_callbacks
 from tests.helpers.dataset import TestDataset, get_dataset_path

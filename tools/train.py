@@ -13,18 +13,16 @@ import warnings
 from argparse import ArgumentParser, Namespace
 
 from lightning.pytorch import seed_everything
-from rich.logging import RichHandler
 
+from anomalib import Engine
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
 from anomalib.data.utils import TestSplitMode
-from anomalib.engine import Engine
 from anomalib.models import get_model
 from anomalib.utils.callbacks import get_callbacks
 from anomalib.utils.loggers import configure_logger, get_experiment_logger
 
 logger = logging.getLogger("anomalib")
-logger.addHandler(RichHandler())
 
 
 def get_parser() -> ArgumentParser:
@@ -66,7 +64,7 @@ def train(args: Namespace):
         **config.trainer,
         logger=experiment_logger,
         callbacks=callbacks,
-        normalizer=config.model.normalization_method,
+        normalization=config.model.normalization_method,
         threshold=config.metrics.threshold,
         task=config.dataset.task,
         image_metrics=config.metrics.get("image", None),

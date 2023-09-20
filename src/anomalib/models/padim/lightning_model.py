@@ -8,7 +8,6 @@ Paper https://arxiv.org/abs/2011.08785
 
 
 import logging
-from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
@@ -112,7 +111,7 @@ class Padim(AnomalyModule):
         return batch
 
     @property
-    def trainer_arguments(self) -> dict[str, Any]:
+    def trainer_arguments(self) -> dict[str, int | float]:
         return {"max_epochs": 1, "val_check_interval": 1.0}
 
 

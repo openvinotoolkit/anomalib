@@ -17,11 +17,9 @@ from omegaconf.omegaconf import OmegaConf
 from anomalib.utils.callbacks import (
     ImageVisualizerCallback,
     LoadModelCallback,
-    MetricsConfigurationCallback,
     ModelCheckpoint,
     TilerConfigurationCallback,
     TimerCallback,
-    add_visualizer_callback,
 )
 from anomalib.utils.callbacks.normalization import _CdfNormalizationCallback, _MinMaxNormalizationCallback
 from anomalib.utils.loggers import configure_logger
@@ -64,17 +62,6 @@ class AnomalibCLI(LightningCLI):
                 "post_processing.threshold_method": "adaptive",
                 "post_processing.manual_image_threshold": None,
                 "post_processing.manual_pixel_threshold": None,
-            }
-        )
-
-        # TODO: Assign these default values within the MetricsConfigurationCallback
-        #   - https://github.com/openvinotoolkit/anomalib/issues/384
-        parser.add_lightning_class_args(MetricsConfigurationCallback, "metrics")  # type: ignore
-        parser.set_defaults(
-            {
-                "metrics.task": "segmentation",
-                "metrics.image_metrics": ["F1Score", "AUROC"],
-                "metrics.pixel_metrics": ["F1Score", "AUROC"],
             }
         )
 
@@ -172,7 +159,6 @@ class AnomalibCLI(LightningCLI):
                     f"Unknown normalization type {normalization}. \n" "Available types are either None, min_max or cdf"
                 )
 
-        add_visualizer_callback(callbacks, config)
         self.config[subcommand].visualization = config.visualization
 
         # Export to OpenVINO

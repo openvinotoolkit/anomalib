@@ -8,10 +8,10 @@ from pathlib import Path
 
 from torch.utils.data import DataLoader
 
+from anomalib import Engine
 from anomalib.config import get_configurable_parameters
 from anomalib.data.inference import InferenceDataset
 from anomalib.data.utils import InputNormalizationMethod, get_transforms
-from anomalib.engine import Engine
 from anomalib.models import get_model
 from anomalib.utils.callbacks import get_callbacks
 

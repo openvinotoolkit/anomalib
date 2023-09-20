@@ -4,3 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 __version__ = "1.0.0dev"
+
+from .engine import Engine
+
+__all__ = ["Engine"]

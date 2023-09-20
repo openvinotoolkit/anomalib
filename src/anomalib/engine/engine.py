@@ -30,21 +30,38 @@ class UnassignedException(Exception):
     ...
 
 
-class _Cache:
+class _TrainerArgumentsCache:
     """Cache arguments.
+
+    Since the Engine class accepts PyTorch Lightning Trainer arguments, we store these arguments using this class
+    before the trainer is instantiated.
 
     Args:
         (**kwargs): Trainer arguments that are cached
 
     Example:
-        >>> cache = _Cache(max_epochs=100, devices=0)
-        >>> model = Padim()
+        >>> conf = OmegaConf.load("config.yaml")
+        >>> cache =  _TrainerArgumentsCache(**conf.trainer)
+        >>> cache.args
+        {
+            ...
+            'max_epochs': 100,
+            'val_check_interval': 0
+        }
+        >>> model = Padim(layers=["layer1", "layer2", "layer3"], input_size=(256, 256), backbone="resnet18")
         >>> cache.update(model)
-        >>> Trainer(**cache.params)
+        Overriding max_epochs from 100 with 1 for Padim
+        Overriding val_check_interval from 0 with 1.0 for Padim
+        >>> cache.args
+        {
+            ...
+            'max_epochs': 1,
+            'val_check_interval': 1.0
+        }
     """
 
     def __init__(self, **kwargs):
-        self._cache = {**kwargs}
+        self._cached_args = {**kwargs}
 
     def update(self, model: AnomalyModule):
         """Replace cached arguments with arguments retrieved from the model.
@@ -53,20 +70,22 @@ class _Cache:
             model (AnomalyModule): The model used for training
         """
         for key, value in model.trainer_arguments.items():
-            if key in self._cache:
-                if self._cache[key] != value:
-                    log.info(f"Overriding {key} from {self._cache[key]} with {value} for {model.__class__.__name__}")
-                self._cache[key] = value
+            if key in self._cached_args:
+                if self._cached_args[key] != value:
+                    log.info(
+                        f"Overriding {key} from {self._cached_args[key]} with {value} for {model.__class__.__name__}"
+                    )
+                self._cached_args[key] = value
 
-    def needs_override(self, model: AnomalyModule) -> bool:
+    def requires_update(self, model: AnomalyModule) -> bool:
         for key, value in model.trainer_arguments.items():
-            if key in self._cache and self._cache[key] != value:
+            if key in self._cached_args and self._cached_args[key] != value:
                 return True
         return False
 
     @property
-    def params(self) -> dict[str, Any]:
-        return self._cache
+    def args(self) -> dict[str, Any]:
+        return self._cached_args
 
 
 class Engine:
@@ -82,27 +101,26 @@ class Engine:
     def __init__(
         self,
         callbacks: list[Callback] = [],
-        normalizer: NormalizationMethod | DictConfig | Callback | str = NormalizationMethod.MIN_MAX,
+        normalization: NormalizationMethod | DictConfig | Callback | str = NormalizationMethod.MIN_MAX,
         threshold: BaseThreshold
         | tuple[BaseThreshold, BaseThreshold]
         | DictConfig
         | ListConfig
         | str = F1AdaptiveThreshold(),
         task: TaskType = TaskType.SEGMENTATION,
-        image_metrics: list[str] | None = None,
-        pixel_metrics: list[str] | None = None,
+        image_metrics: str | list[str] | None = None,
+        pixel_metrics: str | list[str] | None = None,
         visualization: DictConfig | None = None,
         **kwargs,
     ) -> None:
-        self._cache = _Cache(callbacks=[*callbacks, RichProgressBar()], **kwargs)
-        self.normalizer = normalizer
+        self._cache = _TrainerArgumentsCache(callbacks=[*callbacks, RichProgressBar()], **kwargs)
+        self.normalization = normalization
         self.threshold = threshold
         self.task = task
         self.image_metric_names = image_metrics
         self.pixel_metric_names = pixel_metrics
         self.visualization = visualization
 
-        self.lightning_module: AnomalyModule
         self._trainer: Trainer | None = None
 
     @property
@@ -114,17 +132,16 @@ class Engine:
 
     def _setup_trainer(self, model: AnomalyModule):
         """Instantiates the trainer based on the model parameters."""
-        if self._cache.needs_override(model) or self._trainer is None:
+        if self._cache.requires_update(model) or self._trainer is None:
             self._cache.update(model)
-            self._trainer = Trainer(**self._cache.params)
+            self._trainer = Trainer(**self._cache.args)
             # Callbacks need to be setup later as they depend on default_root_dir from the trainer
             self._setup_anomalib_callbacks()
 
     def _setup_anomalib_callbacks(self):
         """Setup callbacks for the trainer."""
-
         _callbacks: list[Callback] = [_PostProcessorCallback()]
-        normalization_callback = get_normalization_callback(self.normalizer)
+        normalization_callback = get_normalization_callback(self.normalization)
         if normalization_callback is not None:
             _callbacks.append(normalization_callback)
 
@@ -144,8 +161,8 @@ class Engine:
     def fit(
         self,
         model: AnomalyModule,
-        train_dataloaders: TRAIN_DATALOADERS | LightningDataModule = None,
-        val_dataloaders: EVAL_DATALOADERS = None,
+        train_dataloaders: TRAIN_DATALOADERS | LightningDataModule | None = None,
+        val_dataloaders: EVAL_DATALOADERS | None = None,
         datamodule: LightningDataModule | None = None,
         ckpt_path: str | None = None,
     ) -> None:
@@ -155,7 +172,7 @@ class Engine:
     def validate(
         self,
         model: AnomalyModule | None = None,
-        dataloaders: EVAL_DATALOADERS | LightningDataModule = None,
+        dataloaders: EVAL_DATALOADERS | LightningDataModule | None = None,
         ckpt_path: str | None = None,
         verbose: bool = True,
         datamodule: LightningDataModule | None = None,
@@ -167,7 +184,7 @@ class Engine:
     def test(
         self,
         model: AnomalyModule | None = None,
-        dataloaders: EVAL_DATALOADERS | LightningDataModule = None,
+        dataloaders: EVAL_DATALOADERS | LightningDataModule | None = None,
         ckpt_path: str | None = None,
         verbose: bool = True,
         datamodule: LightningDataModule | None = None,

@@ -7,7 +7,7 @@ import lightning.pytorch as pl
 import pytest
 from omegaconf.omegaconf import OmegaConf
 
-from anomalib.engine import Engine
+from anomalib import Engine
 from anomalib.utils.loggers import AnomalibTensorBoardLogger
 from tests.helpers.dummy import DummyDataModule
 

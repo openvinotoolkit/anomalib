@@ -7,8 +7,8 @@ import random
 import pytest
 import torch
 
+from anomalib import Engine
 from anomalib.data import get_datamodule
-from anomalib.engine import Engine
 from anomalib.models import get_model
 from anomalib.utils.callbacks import get_callbacks
 from anomalib.utils.metrics import AnomalyScoreThreshold

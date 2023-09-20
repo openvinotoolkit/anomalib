@@ -24,11 +24,11 @@ from lightning.pytorch import seed_everything
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from utils import upload_to_comet, upload_to_wandb, write_metrics
 
+from anomalib import Engine
 from anomalib.config import get_configurable_parameters, update_input_size_config
 from anomalib.data import get_datamodule
 from anomalib.deploy import export
 from anomalib.deploy.export import ExportMode
-from anomalib.engine import Engine
 from anomalib.models import get_model
 from anomalib.utils.loggers import configure_logger
 from anomalib.utils.sweep import (
