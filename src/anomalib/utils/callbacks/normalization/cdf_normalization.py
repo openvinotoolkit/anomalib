@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class _CdfNormalizationCallback(Callback):
     """Callback that standardizes the image-level and pixel-level anomaly scores.
 
-    Note: This callback is set within the AnomalibTrainer.
+    Note: This callback is set within the Engine.
     """
 
     def __init__(self) -> None:

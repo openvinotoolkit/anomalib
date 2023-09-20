@@ -51,7 +51,7 @@ def test_metric_collection_configuration_callback(config_from_yaml):
 
     dummy_logger = DummyLogger()
     dummy_anomaly_module = _DummyAnomalyModule()
-    trainer = Engine(
+    engine = Engine(
         callbacks=[callback], logger=dummy_logger, enable_checkpointing=False, default_root_dir=dummy_logger.tempdir
     )
     callback.setup(trainer, dummy_anomaly_module, DummyDataModule())

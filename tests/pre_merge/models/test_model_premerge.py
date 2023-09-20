@@ -37,7 +37,7 @@ class TestModel:
         """Test the models on only 1 epoch as a sanity check before merge."""
         with tempfile.TemporaryDirectory() as project_path:
             # Train test
-            config, datamodule, model, trainer = setup_model_train(
+            config, datamodule, model, engine = setup_model_train(
                 model_name,
                 dataset_path=path,
                 project_path=project_path,
@@ -45,7 +45,7 @@ class TestModel:
                 category=category,
                 fast_run=True,
             )
-            results = trainer.test(model=model, datamodule=datamodule)[0]
+            results = engine.test(model=model, datamodule=datamodule)[0]
 
             # Test model load
             model_load_test(config, datamodule, results)

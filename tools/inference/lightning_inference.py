@@ -59,7 +59,7 @@ def infer(args: Namespace):
     # create model and trainer
     model = get_model(config)
     callbacks = get_callbacks(config)
-    trainer = Engine(callbacks=callbacks, **config.trainer)
+    engine = Engine(callbacks=callbacks, **config.trainer)
 
     # get the transforms
     transform_config = config.dataset.transform_config.eval if "transform_config" in config.dataset.keys() else None
@@ -79,7 +79,7 @@ def infer(args: Namespace):
     dataloader = DataLoader(dataset)
 
     # generate predictions
-    trainer.predict(model=model, dataloaders=[dataloader], ckpt_path=str(args.weights))
+    engine.predict(model=model, dataloaders=[dataloader], ckpt_path=str(args.weights))
 
 
 if __name__ == "__main__":

@@ -61,7 +61,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         raise NotImplementedError
 
     def predict_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> Any:
-        """Step function called during :meth:`~lightning.pytorch.trainer.trainer.Trainer.predict`.
+        """Step function called during :meth:`~lightning.pytorch.trainer.Trainer.predict`.
 
         By default, it calls :meth:`~lightning.pytorch.core.lightning.LightningModule.forward`.
         Override to add any processing logic.

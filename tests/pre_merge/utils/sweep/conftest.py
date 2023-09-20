@@ -61,8 +61,8 @@ def generate_results_dir():
             model = get_model(model_config)
             datamodule = get_datamodule(model_config)
             callbacks = get_callbacks(model_config)
-            trainer = Engine(**model_config.trainer, logger=False, callbacks=callbacks)
-            trainer.fit(model=model, datamodule=datamodule)
+            engine = Engine(**model_config.trainer, logger=False, callbacks=callbacks)
+            engine.fit(model=model, datamodule=datamodule)
 
             return model_config
 

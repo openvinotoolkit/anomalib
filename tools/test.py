@@ -47,8 +47,8 @@ def test(args: Namespace):
 
     callbacks = get_callbacks(config)
 
-    trainer = Engine(callbacks=callbacks, **config.trainer)
-    trainer.test(model=model, datamodule=datamodule, ckpt_path=args.weight_file)
+    engine = Engine(callbacks=callbacks, **config.trainer)
+    engine.test(model=model, datamodule=datamodule, ckpt_path=args.weight_file)
 
 
 if __name__ == "__main__":

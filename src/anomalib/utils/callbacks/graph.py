@@ -6,11 +6,7 @@
 import torch
 from lightning.pytorch import Callback, LightningModule, Trainer
 
-from anomalib.utils.loggers import (
-    AnomalibCometLogger,
-    AnomalibTensorBoardLogger,
-    AnomalibWandbLogger,
-)
+from anomalib.utils.loggers import AnomalibCometLogger, AnomalibTensorBoardLogger, AnomalibWandbLogger
 
 
 class GraphLogger(Callback):

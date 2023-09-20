@@ -18,7 +18,7 @@ from anomalib.utils.metrics import MinMax
 class _MinMaxNormalizationCallback(Callback):
     """Callback that normalizes the image-level and pixel-level anomaly scores using min-max normalization.
 
-    Note: This callback is set within the AnomalibTrainer.
+    Note: This callback is set within the Engine.
     """
 
     def setup(self, trainer: Trainer, pl_module: AnomalyModule, stage: str | None = None) -> None:

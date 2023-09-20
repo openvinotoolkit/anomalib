@@ -13,9 +13,9 @@ def run_train_test(config):
     datamodule = get_datamodule(config)
     callbacks = get_callbacks(config)
 
-    trainer = Engine(**config.trainer, callbacks=callbacks)
-    trainer.fit(model=model, datamodule=datamodule)
-    results = trainer.test(model=model, datamodule=datamodule)
+    engine = Engine(**config.trainer, callbacks=callbacks)
+    engine.fit(model=model, datamodule=datamodule)
+    results = engine.test(model=model, datamodule=datamodule)
     return results
 
 

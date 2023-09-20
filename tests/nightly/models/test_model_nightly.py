@@ -73,7 +73,7 @@ class TestModel:
     def _test_metrics(self, trainer, config, model, datamodule):
         """Tests the model metrics but also acts as a setup."""
 
-        results = trainer.test(model=model, datamodule=datamodule)[0]
+        results = engine.test(model=model, datamodule=datamodule)[0]
 
         thresholds = OmegaConf.load("tests/nightly/models/performance_thresholds.yaml")
 
@@ -105,7 +105,7 @@ class TestModel:
 
         Args:
             config (Union[DictConfig, ListConfig]): Model config which is also added to csv for complete picture.
-            results (Dict): Metrics from trainer.test
+            results (Dict): Metrics from engine.test
         """
         # Save results in csv for tracking model drift
         model_metrics = flatten_sweep_params(config)
@@ -130,7 +130,7 @@ class TestModel:
                 with tempfile.TemporaryDirectory() as project_path:
                     # Fix seed
                     seed_everything(42, workers=True)
-                    config, datamodule, model, trainer = setup_model_train(
+                    config, datamodule, model, engine = setup_model_train(
                         model_name=model_name,
                         dataset_path=path,
                         nncf=nncf,

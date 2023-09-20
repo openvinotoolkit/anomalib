@@ -114,8 +114,8 @@ def setup_model_train(
         config.trainer.max_epochs = 1
         config.trainer.check_val_every_n_epoch = 1
 
-    trainer = Engine(callbacks=callbacks, **config.trainer)
-    trainer.fit(model=model, datamodule=datamodule)
+    engine = Engine(callbacks=callbacks, **config.trainer)
+    engine.fit(model=model, datamodule=datamodule)
     return config, datamodule, model, trainer
 
 
@@ -141,9 +141,9 @@ def model_load_test(config: Union[DictConfig, ListConfig], datamodule: Lightning
             break
 
     # create new trainer object with LoadModel callback (assumes it is present)
-    trainer = Engine(callbacks=callbacks, **config.trainer)
+    engine = Engine(callbacks=callbacks, **config.trainer)
     # Assumes the new model has LoadModel callback and the old one had ModelCheckpoint callback
-    new_results = trainer.test(model=loaded_model, datamodule=datamodule, ckpt_path=ckpt_path)[0]
+    new_results = engine.test(model=loaded_model, datamodule=datamodule, ckpt_path=ckpt_path)[0]
     assert np.isclose(
         results["image_AUROC"], new_results["image_AUROC"]
     ), f"Loaded model does not yield close performance results. {results['image_AUROC']} : {new_results['image_AUROC']}"

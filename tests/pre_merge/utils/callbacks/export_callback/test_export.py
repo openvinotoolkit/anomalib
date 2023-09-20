@@ -53,7 +53,7 @@ def test_export_model_callback(dummy_datamodule: MVTec, export_mode):
             ),
             EarlyStopping(monitor=config.model.metric),
         ]
-        trainer = Engine(
+        engine = Engine(
             accelerator="gpu",
             devices=1,
             callbacks=model.callbacks,
@@ -61,7 +61,7 @@ def test_export_model_callback(dummy_datamodule: MVTec, export_mode):
             enable_checkpointing=False,
             max_epochs=1,
         )
-        trainer.fit(model, datamodule=dummy_datamodule)
+        engine.fit(model, datamodule=dummy_datamodule)
 
         if export_mode == ExportMode.OPENVINO:
             assert os.path.exists(

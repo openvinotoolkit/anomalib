@@ -19,7 +19,7 @@ from anomalib.models import AnomalyModule
 class _PostProcessorCallback(Callback):
     """Applies post-processing to the model outputs.
 
-    Note: This callback is set within the AnomalibTrainer.
+    Note: This callback is set within the Engine.
     """
 
     def __init__(self) -> None:
