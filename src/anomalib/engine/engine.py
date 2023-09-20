@@ -196,7 +196,7 @@ class Engine:
     def predict(
         self,
         model: AnomalyModule | None = None,
-        dataloaders: EVAL_DATALOADERS | LightningDataModule = None,
+        dataloaders: EVAL_DATALOADERS | LightningDataModule | None = None,
         datamodule: LightningDataModule | None = None,
         return_predictions: bool | None = None,
         ckpt_path: str | None = None,
