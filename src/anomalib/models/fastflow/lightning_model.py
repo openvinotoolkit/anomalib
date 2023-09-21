@@ -26,7 +26,6 @@ class Fastflow(AnomalyModule):
         flow_steps (int, optional): Flow steps.
         conv3x3_only (bool, optinoal): Use only conv3x3 in fast_flow model. Defaults to False.
         hidden_ratio (float, optional): Ratio to calculate hidden var channels. Defaults to 1.0.
-        anomaly_map_size (tuple[int, int] | None): Size of the output anomaly map, if None, it matches input_size.
     """
 
     def __init__(
@@ -37,7 +36,6 @@ class Fastflow(AnomalyModule):
         flow_steps: int = 8,
         conv3x3_only: bool = False,
         hidden_ratio: float = 1.0,
-        anomaly_map_size: tuple[int, int] | None = None,
     ) -> None:
         super().__init__()
 
@@ -48,7 +46,6 @@ class Fastflow(AnomalyModule):
             flow_steps=flow_steps,
             conv3x3_only=conv3x3_only,
             hidden_ratio=hidden_ratio,
-            anomaly_map_size=anomaly_map_size,
         )
         self.loss = FastflowLoss()
 
@@ -93,20 +90,13 @@ class FastflowLightning(Fastflow):
     """
 
     def __init__(self, hparams: DictConfig | ListConfig) -> None:
-        # if we use tiling, input size of model needs to be same as tile size
-        if hparams.dataset.tiling.apply:
-            input_size = hparams.dataset.tiling.tile_size
-        else:
-            input_size = hparams.model.input_size
-
         super().__init__(
-            input_size=input_size,
+            input_size=hparams.model.input_size,
             backbone=hparams.model.backbone,
             pre_trained=hparams.model.pre_trained,
             flow_steps=hparams.model.flow_steps,
             conv3x3_only=hparams.model.conv3x3_only,
             hidden_ratio=hparams.model.hidden_ratio,
-            anomaly_map_size=hparams.dataset.image_size,
         )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
