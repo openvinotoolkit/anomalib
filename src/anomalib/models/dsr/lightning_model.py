@@ -98,9 +98,7 @@ class Dsr(AnomalyModule):
         if self.current_epoch == self.second_phase:
             logger.info("Now training upsampling module.")
 
-    def training_step(
-        self, batch: dict[str, str | Tensor]
-    ) -> STEP_OUTPUT:
+    def training_step(self, batch: dict[str, str | Tensor]) -> STEP_OUTPUT:
         """Training Step of DSR.
 
         Feeds the original image and the simulated anomaly mask during first phase. During
