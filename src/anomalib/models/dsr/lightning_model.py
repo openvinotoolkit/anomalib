@@ -137,7 +137,7 @@ class Dsr(AnomalyModule):
             ph1_opt.zero_grad()
             self.manual_backward(loss)
             ph1_opt.step()
-            
+
         else:
             # we are training the upsampling module
             input_image = batch["image"]
