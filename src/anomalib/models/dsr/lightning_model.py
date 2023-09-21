@@ -44,6 +44,8 @@ class Dsr(AnomalyModule):
     def __init__(self, anom_par: float = 0.2) -> None:
         super().__init__()
 
+        self.automatic_optimization = False
+
         self.quantized_anomaly_generator = DsrAnomalyGenerator()
         self.perlin_generator = Augmenter()
         self.model = DsrModel(anom_par)
@@ -97,7 +99,7 @@ class Dsr(AnomalyModule):
             logger.info("Now training upsampling module.")
 
     def training_step(
-        self, batch: dict[str, str | Tensor], batch_idx: int, optimizer_idx: int, *args, **kwargs
+        self, batch: dict[str, str | Tensor]
     ) -> STEP_OUTPUT:
         """Training Step of DSR.
 
@@ -110,48 +112,46 @@ class Dsr(AnomalyModule):
         Returns:
             STEP_OUTPUT: Loss dictionary
         """
-        del batch_idx, args, kwargs  # These variables are not used.
+        ph1_opt, ph2_opt = self.optimizers()
 
         if self.current_epoch < self.second_phase:
-            # we are not yet training the upsampling module
-            if optimizer_idx == 0:
-                # we are only using the first optimizer
-                input_image = batch["image"]
-                # Create anomaly masks
-                anomaly_mask = self.quantized_anomaly_generator.augment_batch(input_image)
-                # Generate model prediction
-                model_outputs = self.model(input_image, anomaly_mask)
-                # Compute loss
-                loss = self.second_loss(
-                    model_outputs["recon_feat_hi"],
-                    model_outputs["recon_feat_lo"],
-                    model_outputs["embedding_bot"],
-                    model_outputs["embedding_top"],
-                    input_image,
-                    model_outputs["obj_spec_image"],
-                    model_outputs["pred_mask"],
-                    model_outputs["true_mask"],
-                )
-            elif optimizer_idx == 1:
-                # we are not training the upsampling module
-                return None
-            else:
-                raise RuntimeError(f"Unknown optimizer_idx {optimizer_idx}.")
+            # we are not yet training the upsampling module: we are only using the first optimizer
+            input_image = batch["image"]
+            # Create anomaly masks
+            anomaly_mask = self.quantized_anomaly_generator.augment_batch(input_image)
+            # Generate model prediction
+            model_outputs = self.model(input_image, anomaly_mask)
+            # Compute loss
+            loss = self.second_loss(
+                model_outputs["recon_feat_hi"],
+                model_outputs["recon_feat_lo"],
+                model_outputs["embedding_bot"],
+                model_outputs["embedding_top"],
+                input_image,
+                model_outputs["obj_spec_image"],
+                model_outputs["pred_mask"],
+                model_outputs["true_mask"],
+            )
+
+            # compute manual optimizer step
+            ph1_opt.zero_grad()
+            self.manual_backward(loss)
+            ph1_opt.step()
+            
         else:
-            if optimizer_idx == 0:
-                # we are not training the anomaly detection and object specific modules
-                return None
-            elif optimizer_idx == 1:
-                # we are training the upsampling module
-                input_image = batch["image"]
-                # Generate anomalies
-                input_image, anomaly_maps = self.perlin_generator.augment_batch(input_image)
-                # Get model prediction
-                model_outputs = self.model(input_image)
-                # Calculate loss
-                loss = self.third_loss(model_outputs["pred_mask"], anomaly_maps)
-            else:
-                raise RuntimeError(f"Unknown optimizer_idx {optimizer_idx}.")
+            # we are training the upsampling module
+            input_image = batch["image"]
+            # Generate anomalies
+            input_image, anomaly_maps = self.perlin_generator.augment_batch(input_image)
+            # Get model prediction
+            model_outputs = self.model(input_image)
+            # Calculate loss
+            loss = self.third_loss(model_outputs["pred_mask"], anomaly_maps)
+
+            # compute manual optimizer step
+            ph2_opt.zero_grad()
+            self.manual_backward(loss)
+            ph2_opt.step()
 
         self.log("train_loss", loss.item(), on_epoch=True, prog_bar=True, logger=True)
         return {"loss": loss}
