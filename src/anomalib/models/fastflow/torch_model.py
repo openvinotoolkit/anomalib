@@ -22,7 +22,6 @@ from torch import Tensor, nn
 
 from anomalib.models.components.flow import AllInOneBlock
 from anomalib.models.fastflow.anomaly_map import AnomalyMapGenerator
-from anomalib.pre_processing import Tiler
 
 
 def subnet_conv_func(kernel_size: int, hidden_ratio: float) -> Callable:
@@ -121,6 +120,8 @@ class FastflowModel(nn.Module):
     ) -> None:
         super().__init__()
 
+        self.input_size = input_size
+
         if backbone in ("cait_m48_448", "deit_base_distilled_patch16_384"):
             self.feature_extractor = timm.create_model(backbone, pretrained=pre_trained)
             channels = [768]
@@ -180,9 +181,6 @@ class FastflowModel(nn.Module):
 
         return_val: Tensor | list[Tensor] | tuple[list[Tensor]]
 
-        if self.tiler:
-            input_tensor = self.tiler.tile(input_tensor)
-
         self.feature_extractor.eval()
         if isinstance(self.feature_extractor, VisionTransformer):
             features = self._get_vit_features(input_tensor)
@@ -204,11 +202,6 @@ class FastflowModel(nn.Module):
         return_val = (hidden_variables, log_jacobians)
 
         if not self.training:
-            # only untile non-training data because Jacobians can't be untiled
-            if self.tiler:
-                for i, data in enumerate(hidden_variables):
-                    hidden_variables[i] = self.tiler.untile(data)
-
             return_val = self.anomaly_map_generator(hidden_variables)
 
         return return_val
