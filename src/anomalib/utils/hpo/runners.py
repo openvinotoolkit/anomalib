@@ -12,9 +12,9 @@ from lightning.pytorch.loggers import CometLogger, WandbLogger
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
 import wandb
-from anomalib import Engine
 from anomalib.config import update_input_size_config
 from anomalib.data import get_datamodule
+from anomalib.engine import Engine
 from anomalib.models import get_model
 from anomalib.utils.sweep import flatten_sweep_params, get_sweep_callbacks, set_in_nested_config
 

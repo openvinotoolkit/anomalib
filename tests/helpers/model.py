@@ -11,9 +11,9 @@ from lightning.pytorch import LightningDataModule
 from lightning.pytorch.callbacks import ModelCheckpoint
 from omegaconf import DictConfig, ListConfig
 
-from anomalib import Engine
 from anomalib.config import get_configurable_parameters, update_nncf_config
 from anomalib.data import TaskType, get_datamodule
+from anomalib.engine import Engine
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
 from anomalib.utils.callbacks import get_callbacks

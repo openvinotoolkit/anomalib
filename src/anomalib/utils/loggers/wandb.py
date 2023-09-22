@@ -56,7 +56,7 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
 
     Example:
         >>> from anomalib.utils.loggers import AnomalibWandbLogger
-        >>> from anomalib import Engine
+        >>> from anomalib.engine import Engine
         >>> wandb_logger = AnomalibWandbLogger()
         >>> engine =  Engine(logger=wandb_logger)
 

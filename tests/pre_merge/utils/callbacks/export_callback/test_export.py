@@ -5,10 +5,10 @@ import lightning.pytorch as pl
 import pytest
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 
-from anomalib import Engine
 from anomalib.data.mvtec import MVTec
 from anomalib.data.utils import random_split
 from anomalib.deploy import ExportMode
+from anomalib.engine import Engine
 from anomalib.utils.callbacks.export import ExportCallback
 from tests.helpers.config import get_test_configurable_parameters
 from tests.helpers.dataset import get_dataset_path

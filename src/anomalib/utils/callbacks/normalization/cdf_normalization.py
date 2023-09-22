@@ -113,6 +113,9 @@ class _CdfNormalizationCallback(Callback):
          estimate the distribution of anomaly scores for normal data at the image and pixel level by computing
          the mean and standard deviations. A dictionary containing the computed statistics is stored in self.stats.
         """
+
+        # Since CDF callback is imported in `get_normalizers` which in-turn is imported by Engine, directly referring
+        # to engine here leads to circular import error
         _engine = engine.Engine(accelerator=trainer.accelerator, devices=trainer.num_devices, normalization="none")
         predictions = _engine.predict(
             model=self._create_inference_model(pl_module), dataloaders=trainer.datamodule.train_dataloader()

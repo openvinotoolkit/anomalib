@@ -4,7 +4,7 @@ import lightning.pytorch as pl
 import pytest
 from omegaconf import OmegaConf
 
-from anomalib import Engine
+from anomalib.engine import Engine
 from anomalib.models.components import AnomalyModule
 from anomalib.utils.callbacks.metrics_configuration import MetricsConfigurationCallback
 from anomalib.utils.metrics.collection import AnomalibMetricCollection
