@@ -108,11 +108,11 @@ class Patchcore(AnomalyModule):
         del args, kwargs
 
         # Get anomaly maps and predicted scores from the model.
-        anomaly_maps, pred_scores = self.model(batch["image"])
+        output = self.model(batch["image"])
 
         # Add anomaly maps and predicted scores to the batch.
-        batch["anomaly_maps"] = anomaly_maps
-        batch["pred_scores"] = pred_scores
+        batch["anomaly_maps"] = output["anomaly_map"]
+        batch["pred_scores"] = output["pred_score"]
 
         return batch
 
