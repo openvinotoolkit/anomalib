@@ -113,11 +113,13 @@ class TorchInferencer(Inferencer):
         """
         return self.model(image)
 
-    def post_process(self, predictions: Tensor, metadata: dict | DictConfig | None = None) -> dict[str, Any]:
+    def post_process(
+        self, predictions: Tensor | dict[str, Tensor], metadata: dict | DictConfig | None = None
+    ) -> dict[str, Any]:
         """Post process the output predictions.
 
         Args:
-            predictions (Tensor): Raw output predicted by the model.
+            predictions (Tensor | dict[str, Tensor]): Raw output predicted by the model.
             metadata (dict, optional): Meta data. Post-processing step sometimes requires
                 additional meta data such as image shape. This variable comprises such info.
                 Defaults to None.
@@ -128,21 +130,31 @@ class TorchInferencer(Inferencer):
         if metadata is None:
             metadata = self.metadata
 
+        # Some models return a Tensor while others return a dictionary. Handle both cases.
+        # TODO: This is a temporary fix. We will wrap this post-processing stage within the model's forward pass.
+
+        # Case I: Predictions could be a tensor.
+        #   This means the model only returns a anomaly map.
+        #   We could compute the prediction score from the anomaly map.
         if isinstance(predictions, Tensor):
             anomaly_map = predictions.detach().cpu().numpy()
             pred_score = anomaly_map.reshape(-1).max()
-        else:
-            # NOTE: Patchcore `forward`` returns heatmap and score.
-            #   We need to add the following check to ensure the variables
-            #   are properly assigned. Without this check, the code
-            #   throws an error regarding type mismatch torch vs np.
-            if isinstance(predictions[1], (Tensor)):
-                anomaly_map, pred_score = predictions
-                anomaly_map = anomaly_map.detach().cpu().numpy()
-                pred_score = pred_score.detach().cpu().numpy()
+
+        # Case II: Predictions could be a dictionary of tensors.
+        #   In such case, we need to extract the anomaly map and the prediction score.
+        elif isinstance(predictions, dict):
+            if "anomaly_map" in predictions:
+                anomaly_map = predictions["anomaly_map"].detach().cpu().numpy()
             else:
-                anomaly_map, pred_score = predictions
-                pred_score = pred_score.detach()
+                raise KeyError("``anomaly_map`` not found in the predictions.")
+
+            if "pred_score" in predictions:
+                pred_score = predictions["pred_score"].detach().cpu().numpy()
+            else:
+                raise KeyError("``pred_score`` not found in the predictions.")
+
+        else:
+            raise ValueError(f"Unknown prediction type {type(predictions)}. Expected Tensor or dict[str, Tensor].")
 
         # Common practice in anomaly detection is to assign anomalous
         # label to the prediction if the prediction score is greater
