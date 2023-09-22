@@ -79,13 +79,13 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             patch_scores = patch_scores.reshape((batch_size, -1))
             locations = locations.reshape((batch_size, -1))
             # compute anomaly score
-            anomaly_score = self.compute_anomaly_score(patch_scores, locations, embedding)
+            pred_score = self.compute_anomaly_score(patch_scores, locations, embedding)
             # reshape to w, h
             patch_scores = patch_scores.reshape((batch_size, 1, width, height))
             # get anomaly map
             anomaly_map = self.anomaly_map_generator(patch_scores)
 
-            output = {"anomaly_map": anomaly_map, "pred_score": anomaly_score}
+            output = {"anomaly_map": anomaly_map, "pred_score": pred_score}
 
         return output
 
