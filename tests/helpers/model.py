@@ -13,9 +13,9 @@ from omegaconf import DictConfig, ListConfig
 
 from anomalib.config import get_configurable_parameters, update_nncf_config
 from anomalib.data import TaskType, get_datamodule
+from anomalib.engine import Engine
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
-from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.callbacks import get_callbacks
 from anomalib.utils.callbacks.visualizer import BaseVisualizerCallback
 
@@ -31,7 +31,7 @@ def setup_model_train(
     dataset_task: Optional[TaskType] = None,
     visualizer_mode: Optional[str] = None,
     device: Union[List[int], int] = [0],
-) -> Tuple[Union[DictConfig, ListConfig], LightningDataModule, AnomalyModule, AnomalibTrainer]:
+) -> Tuple[Union[DictConfig, ListConfig], LightningDataModule, AnomalyModule, Engine]:
     """Train the model based on the parameters passed.
 
     Args:
@@ -114,8 +114,8 @@ def setup_model_train(
         config.trainer.max_epochs = 1
         config.trainer.check_val_every_n_epoch = 1
 
-    trainer = AnomalibTrainer(callbacks=callbacks, **config.trainer)
-    trainer.fit(model=model, datamodule=datamodule)
+    engine = Engine(callbacks=callbacks, **config.trainer)
+    engine.fit(model=model, datamodule=datamodule)
     return config, datamodule, model, trainer
 
 
@@ -141,9 +141,9 @@ def model_load_test(config: Union[DictConfig, ListConfig], datamodule: Lightning
             break
 
     # create new trainer object with LoadModel callback (assumes it is present)
-    trainer = AnomalibTrainer(callbacks=callbacks, **config.trainer)
+    engine = Engine(callbacks=callbacks, **config.trainer)
     # Assumes the new model has LoadModel callback and the old one had ModelCheckpoint callback
-    new_results = trainer.test(model=loaded_model, datamodule=datamodule, ckpt_path=ckpt_path)[0]
+    new_results = engine.test(model=loaded_model, datamodule=datamodule, ckpt_path=ckpt_path)[0]
     assert np.isclose(
         results["image_AUROC"], new_results["image_AUROC"]
     ), f"Loaded model does not yield close performance results. {results['image_AUROC']} : {new_results['image_AUROC']}"

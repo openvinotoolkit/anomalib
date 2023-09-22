@@ -48,7 +48,7 @@ class TestVisualizer:
         """Test combination of model/visualizer/mode on only 1 epoch as a sanity check before merge."""
         with tempfile.TemporaryDirectory() as project_path:
             # Train test
-            datamodule, model, trainer = setup_model_train(
+            datamodule, model, engine = setup_model_train(
                 model_name,
                 dataset_path=path,
                 project_path=project_path,
@@ -58,4 +58,4 @@ class TestVisualizer:
                 dataset_task=task,
                 visualizer_mode=mode,
             )[1:]
-            trainer.test(model=model, datamodule=datamodule)
+            engine.test(model=model, datamodule=datamodule)

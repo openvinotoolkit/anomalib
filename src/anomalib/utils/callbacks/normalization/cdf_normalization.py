@@ -11,7 +11,7 @@ from lightning.pytorch import Callback, Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch.distributions import LogNormal
 
-from anomalib import trainer as T  # TODO this is a temporary fix for circular import
+from anomalib import engine
 from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
 from anomalib.post_processing.normalization.cdf import normalize, standardize
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class _CdfNormalizationCallback(Callback):
     """Callback that standardizes the image-level and pixel-level anomaly scores.
 
-    Note: This callback is set within the AnomalibTrainer.
+    Note: This callback is set within the Engine.
     """
 
     def __init__(self) -> None:
@@ -113,10 +113,14 @@ class _CdfNormalizationCallback(Callback):
          estimate the distribution of anomaly scores for normal data at the image and pixel level by computing
          the mean and standard deviations. A dictionary containing the computed statistics is stored in self.stats.
         """
-        _trainer = T.AnomalibTrainer(accelerator=trainer.accelerator, devices=trainer.num_devices, normalizer="none")
-        predictions = _trainer.predict(
+
+        # Since CDF callback is imported in `get_normalizers` which in-turn is imported by Engine, directly referring
+        # to engine here leads to circular import error
+        _engine = engine.Engine(accelerator=trainer.accelerator, devices=trainer.num_devices, normalization="none")
+        predictions = _engine.predict(
             model=self._create_inference_model(pl_module), dataloaders=trainer.datamodule.train_dataloader()
         )
+        assert predictions, "engine.predict returned no predictions"
         pl_module.normalization_metrics.reset()
         for batch in predictions:
             if "pred_scores" in batch.keys():

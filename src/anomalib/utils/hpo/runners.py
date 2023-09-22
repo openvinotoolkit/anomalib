@@ -14,8 +14,8 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 import wandb
 from anomalib.config import update_input_size_config
 from anomalib.data import get_datamodule
+from anomalib.engine import Engine
 from anomalib.models import get_model
-from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.sweep import flatten_sweep_params, get_sweep_callbacks, set_in_nested_config
 
 from .config import flatten_hpo_params
@@ -72,8 +72,8 @@ class WandbSweep:
         # Disable saving checkpoints as all checkpoints from the sweep will get uploaded
         config.trainer.enable_checkpointing = False
 
-        trainer = AnomalibTrainer(**config.trainer, logger=wandb_logger, callbacks=callbacks)
-        trainer.fit(model, datamodule=datamodule)
+        engine = Engine(**config.trainer, logger=wandb_logger, callbacks=callbacks)
+        engine.fit(model, datamodule=datamodule)
 
         del model
         gc.collect()
@@ -130,5 +130,5 @@ class CometSweep:
             # Disable saving checkpoints as all checkpoints from the sweep will get uploaded
             config.trainer.enable_checkpointing = False
 
-            trainer = AnomalibTrainer(**config.trainer, logger=comet_logger, callbacks=callbacks)
-            trainer.fit(model, datamodule=datamodule)
+            engine = Engine(**config.trainer, logger=comet_logger, callbacks=callbacks)
+            engine.fit(model, datamodule=datamodule)

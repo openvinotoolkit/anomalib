@@ -12,8 +12,8 @@ from omegaconf import DictConfig, ListConfig
 
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
+from anomalib.engine import Engine
 from anomalib.models import get_model
-from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.callbacks import get_callbacks
 
 
@@ -61,8 +61,8 @@ def generate_results_dir():
             model = get_model(model_config)
             datamodule = get_datamodule(model_config)
             callbacks = get_callbacks(model_config)
-            trainer = AnomalibTrainer(**model_config.trainer, logger=False, callbacks=callbacks)
-            trainer.fit(model=model, datamodule=datamodule)
+            engine = Engine(**model_config.trainer, logger=False, callbacks=callbacks)
+            engine.fit(model=model, datamodule=datamodule)
 
             return model_config
 

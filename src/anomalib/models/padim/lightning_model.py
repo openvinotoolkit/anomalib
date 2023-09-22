@@ -110,6 +110,10 @@ class Padim(AnomalyModule):
         batch["anomaly_maps"] = self.model(batch["image"])
         return batch
 
+    @property
+    def trainer_arguments(self) -> dict[str, int | float]:
+        return {"max_epochs": 1, "val_check_interval": 1.0}
+
 
 class PadimLightning(Padim):
     """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.

@@ -1,6 +1,6 @@
 """Normalization callbacks.
 
-Note: These callbacks are used within AnomalibTrainer.
+Note: These callbacks are used within the Engine.
 """
 
 # Copyright (C) 2023 Intel Corporation

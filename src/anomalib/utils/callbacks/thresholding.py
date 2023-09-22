@@ -6,12 +6,11 @@
 import importlib
 from typing import Any
 
-from lightning.pytorch import Callback
+from lightning.pytorch import Callback, Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
-from anomalib import trainer
 from anomalib.models import AnomalyModule
 from anomalib.utils.metrics.threshold import BaseThreshold, F1AdaptiveThreshold
 
@@ -19,7 +18,7 @@ from anomalib.utils.metrics.threshold import BaseThreshold, F1AdaptiveThreshold
 class _ThresholdCallback(Callback):
     """Setup/apply thresholding.
 
-    Note: This callback is set within the AnomalibTrainer.
+    Note: This callback is set within the Engine.
     """
 
     def __init__(
@@ -35,18 +34,18 @@ class _ThresholdCallback(Callback):
         self.image_threshold: BaseThreshold
         self.pixel_threshold: BaseThreshold
 
-    def setup(self, trainer: "trainer.AnomalibTrainer", pl_module: AnomalyModule, stage: str) -> None:
+    def setup(self, trainer: Trainer, pl_module: AnomalyModule, stage: str) -> None:
         if not hasattr(pl_module, "image_threshold"):
             pl_module.image_threshold = self.image_threshold
         if not hasattr(pl_module, "pixel_threshold"):
             pl_module.pixel_threshold = self.pixel_threshold
 
-    def on_validation_epoch_start(self, trainer: "trainer.AnomalibTrainer", pl_module: AnomalyModule) -> None:
+    def on_validation_epoch_start(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
         self._reset(pl_module)
 
     def on_validation_batch_end(
         self,
-        trainer: "trainer.AnomalibTrainer",
+        trainer: Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
         batch: Any,
@@ -57,7 +56,7 @@ class _ThresholdCallback(Callback):
             self._outputs_to_cpu(outputs)
             self._update(pl_module, outputs)
 
-    def on_validation_epoch_end(self, trainer: "trainer.AnomalibTrainer", pl_module: AnomalyModule) -> None:
+    def on_validation_epoch_end(self, trainer: Trainer, pl_module: AnomalyModule) -> None:
         self._compute(pl_module)
 
     def _initialize_thresholds(

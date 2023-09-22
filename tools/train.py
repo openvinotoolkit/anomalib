@@ -17,8 +17,8 @@ from lightning.pytorch import seed_everything
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
 from anomalib.data.utils import TestSplitMode
+from anomalib.engine import Engine
 from anomalib.models import get_model
-from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.callbacks import get_callbacks
 from anomalib.utils.loggers import configure_logger, get_experiment_logger
 
@@ -60,11 +60,11 @@ def train(args: Namespace):
     experiment_logger = get_experiment_logger(config)
     callbacks = get_callbacks(config)
 
-    trainer = AnomalibTrainer(
+    engine = Engine(
         **config.trainer,
         logger=experiment_logger,
         callbacks=callbacks,
-        normalizer=config.model.normalization_method,
+        normalization=config.model.normalization_method,
         threshold=config.metrics.threshold,
         task=config.dataset.task,
         image_metrics=config.metrics.get("image", None),
@@ -73,13 +73,13 @@ def train(args: Namespace):
     )
 
     logger.info("Training the model.")
-    trainer.fit(model=model, datamodule=datamodule)
+    engine.fit(model=model, datamodule=datamodule)
 
     if config.dataset.test_split_mode == TestSplitMode.NONE:
         logger.info("No test set provided. Skipping test stage.")
     else:
         logger.info("Testing the model with best model weights.")
-        trainer.test(model=model, datamodule=datamodule, ckpt_path=trainer.checkpoint_callback.best_model_path)
+        engine.test(model=model, datamodule=datamodule, ckpt_path=engine.trainer.checkpoint_callback.best_model_path)
 
 
 if __name__ == "__main__":

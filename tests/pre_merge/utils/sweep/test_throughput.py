@@ -9,11 +9,8 @@ from albumentations.pytorch import ToTensorV2
 from anomalib.data import TaskType
 from anomalib.data.folder import FolderDataset
 from anomalib.deploy import ExportMode
-
-from anomalib.utils.sweep.helpers import get_torch_throughput, get_openvino_throughput
-
+from anomalib.utils.sweep.helpers import get_openvino_throughput, get_torch_throughput
 from tests.helpers.dataset import TestDataset
-
 
 transforms = A.Compose([A.ToFloat(max_value=255), ToTensorV2()])
 

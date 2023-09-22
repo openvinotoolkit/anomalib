@@ -28,8 +28,8 @@ from anomalib.config import get_configurable_parameters, update_input_size_confi
 from anomalib.data import get_datamodule
 from anomalib.deploy import export
 from anomalib.deploy.export import ExportMode
+from anomalib.engine import Engine
 from anomalib.models import get_model
-from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.loggers import configure_logger
 from anomalib.utils.sweep import (
     get_openvino_throughput,
@@ -94,11 +94,11 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_met
 
         callbacks = get_sweep_callbacks(model_config)
 
-        trainer = AnomalibTrainer(**model_config.trainer, logger=None, callbacks=callbacks)
+        engine = Engine(**model_config.trainer, logger=None, callbacks=callbacks)
 
         start_time = time.time()
 
-        trainer.fit(model=model, datamodule=datamodule)
+        engine.fit(model=model, datamodule=datamodule)
 
         # get start time
         training_time = time.time() - start_time
@@ -106,7 +106,7 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_met
         # Creating new variable is faster according to https://stackoverflow.com/a/4330829
         start_time = time.time()
         # get test results
-        test_results = trainer.test(model=model, datamodule=datamodule)
+        test_results = engine.test(model=model, datamodule=datamodule)
 
         # get testing time
         testing_time = time.time() - start_time
@@ -114,7 +114,7 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_met
         # Create dirs for torch export (as default only lighting model is produced)
         export(
             task=model_config.dataset.task,
-            transform=trainer.datamodule.test_data.transform.to_dict(),
+            transform=engine.trainer.datamodule.test_data.transform.to_dict(),
             input_size=model_config.model.input_size,
             model=model,
             export_mode=ExportMode.TORCH,
@@ -133,7 +133,7 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_met
             # Create dirs for openvino model export
             export(
                 task=model_config.dataset.task,
-                transform=trainer.datamodule.test_data.transform.to_dict(),
+                transform=engine.trainer.datamodule.test_data.transform.to_dict(),
                 input_size=model_config.model.input_size,
                 model=model,
                 export_mode=ExportMode.OPENVINO,

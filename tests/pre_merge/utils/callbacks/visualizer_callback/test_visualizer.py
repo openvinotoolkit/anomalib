@@ -7,7 +7,7 @@ import lightning.pytorch as pl
 import pytest
 from omegaconf.omegaconf import OmegaConf
 
-from anomalib.trainer import AnomalibTrainer
+from anomalib.engine import Engine
 from anomalib.utils.loggers import AnomalibTensorBoardLogger
 from tests.helpers.dummy import DummyDataModule
 
@@ -39,10 +39,10 @@ def test_add_images(task):
         )
         logger = get_dummy_logger(config, dir_loc)
         model = get_dummy_module(config)
-        trainer = AnomalibTrainer(
+        engine = Engine(
             callbacks=model.callbacks, logger=logger, enable_checkpointing=False, default_root_dir=config.project.path
         )
-        trainer.test(model=model, datamodule=DummyDataModule())
+        engine.test(model=model, datamodule=DummyDataModule())
         # test if images are logged
         if len(list(Path(dir_loc).glob("**/*.png"))) != 1:
             raise Exception("Failed to save to local path")

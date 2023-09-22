@@ -56,9 +56,9 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
 
     Example:
         >>> from anomalib.utils.loggers import AnomalibWandbLogger
-        >>> from anomalib.trainer import AnomalibTrainer
+        >>> from anomalib.engine import Engine
         >>> wandb_logger = AnomalibWandbLogger()
-        >>> trainer =  AnomalibTrainer(logger=wandb_logger)
+        >>> engine =  Engine(logger=wandb_logger)
 
     Note: When logging manually through `wandb.log` or `trainer.logger.experiment.log`,
     make sure to use `commit=False` so the logging step does not increase.

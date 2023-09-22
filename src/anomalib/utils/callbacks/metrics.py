@@ -9,11 +9,10 @@ from enum import Enum
 from typing import Any
 
 import torch
-from lightning.pytorch import Callback
+from lightning.pytorch import Callback, Trainer
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import Tensor
 
-from anomalib import trainer
 from anomalib.data import TaskType
 from anomalib.models import AnomalyModule
 from anomalib.utils.metrics import AnomalibMetricCollection, create_metric_collection
@@ -58,7 +57,7 @@ class _MetricsCallback(Callback):
 
     def setup(
         self,
-        trainer: "trainer.AnomalibTrainer",
+        trainer: Trainer,
         pl_module: AnomalyModule,
         stage: str | None = None,
     ) -> None:
@@ -97,7 +96,7 @@ class _MetricsCallback(Callback):
 
     def on_validation_epoch_start(
         self,
-        trainer: "trainer.AnomalibTrainer",
+        trainer: Trainer,
         pl_module: AnomalyModule,
     ) -> None:
         pl_module.image_metrics.reset()
@@ -105,7 +104,7 @@ class _MetricsCallback(Callback):
 
     def on_validation_batch_end(
         self,
-        trainer: "trainer.AnomalibTrainer",
+        trainer: Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
         batch: Any,
@@ -118,7 +117,7 @@ class _MetricsCallback(Callback):
 
     def on_validation_epoch_end(
         self,
-        trainer: "trainer.AnomalibTrainer",
+        trainer: Trainer,
         pl_module: AnomalyModule,
     ) -> None:
         self._set_threshold(pl_module)
@@ -126,7 +125,7 @@ class _MetricsCallback(Callback):
 
     def on_test_epoch_start(
         self,
-        trainer: "trainer.AnomalibTrainer",
+        trainer: Trainer,
         pl_module: AnomalyModule,
     ) -> None:
         pl_module.image_metrics.reset()
@@ -134,7 +133,7 @@ class _MetricsCallback(Callback):
 
     def on_test_batch_end(
         self,
-        trainer: "trainer.AnomalibTrainer",
+        trainer: Trainer,
         pl_module: AnomalyModule,
         outputs: STEP_OUTPUT | None,
         batch: Any,
@@ -147,7 +146,7 @@ class _MetricsCallback(Callback):
 
     def on_test_epoch_end(
         self,
-        trainer: "trainer.AnomalibTrainer",
+        trainer: Trainer,
         pl_module: AnomalyModule,
     ) -> None:
         self._log_metrics(pl_module)

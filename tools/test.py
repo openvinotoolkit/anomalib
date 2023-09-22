@@ -9,8 +9,8 @@ from lightning.pytorch import seed_everything
 
 from anomalib.config import get_configurable_parameters
 from anomalib.data import get_datamodule
+from anomalib.engine import Engine
 from anomalib.models import get_model
-from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.callbacks import get_callbacks
 
 
@@ -47,8 +47,8 @@ def test(args: Namespace):
 
     callbacks = get_callbacks(config)
 
-    trainer = AnomalibTrainer(callbacks=callbacks, **config.trainer)
-    trainer.test(model=model, datamodule=datamodule, ckpt_path=args.weight_file)
+    engine = Engine(callbacks=callbacks, **config.trainer)
+    engine.test(model=model, datamodule=datamodule, ckpt_path=args.weight_file)
 
 
 if __name__ == "__main__":

@@ -3,10 +3,9 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
 
 import logging
-from abc import ABC
+from abc import ABC, abstractproperty
 from typing import Any
 
 import lightning.pytorch as pl
@@ -62,7 +61,7 @@ class AnomalyModule(pl.LightningModule, ABC):
         raise NotImplementedError
 
     def predict_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> Any:
-        """Step function called during :meth:`~lightning.pytorch.trainer.trainer.Trainer.predict`.
+        """Step function called during :meth:`~lightning.pytorch.trainer.Trainer.predict`.
 
         By default, it calls :meth:`~lightning.pytorch.core.lightning.LightningModule.forward`.
         Override to add any processing logic.
@@ -93,3 +92,8 @@ class AnomalyModule(pl.LightningModule, ABC):
         del args, kwargs  # These variables are not used.
 
         return self.predict_step(batch, batch_idx)
+
+    @abstractproperty
+    def trainer_arguments(self) -> dict[str, Any]:
+        """Arguments used to override the trainer parameters so as to train the model correctly."""
+        raise NotImplementedError

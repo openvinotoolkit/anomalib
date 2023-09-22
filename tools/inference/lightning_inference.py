@@ -11,8 +11,8 @@ from torch.utils.data import DataLoader
 from anomalib.config import get_configurable_parameters
 from anomalib.data.inference import InferenceDataset
 from anomalib.data.utils import InputNormalizationMethod, get_transforms
+from anomalib.engine import Engine
 from anomalib.models import get_model
-from anomalib.trainer import AnomalibTrainer
 from anomalib.utils.callbacks import get_callbacks
 
 
@@ -59,7 +59,7 @@ def infer(args: Namespace):
     # create model and trainer
     model = get_model(config)
     callbacks = get_callbacks(config)
-    trainer = AnomalibTrainer(callbacks=callbacks, **config.trainer)
+    engine = Engine(callbacks=callbacks, **config.trainer)
 
     # get the transforms
     transform_config = config.dataset.transform_config.eval if "transform_config" in config.dataset.keys() else None
@@ -79,7 +79,7 @@ def infer(args: Namespace):
     dataloader = DataLoader(dataset)
 
     # generate predictions
-    trainer.predict(model=model, dataloaders=[dataloader], ckpt_path=str(args.weights))
+    engine.predict(model=model, dataloaders=[dataloader], ckpt_path=str(args.weights))
 
 
 if __name__ == "__main__":
