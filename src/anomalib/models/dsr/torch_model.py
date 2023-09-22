@@ -11,6 +11,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Callable, Dict
 
 import torch
@@ -80,9 +81,7 @@ class DsrModel(nn.Module):
     def load_pretrained_discrete_model_weights(self, ckpt: Path) -> None:
         self.discrete_latent_model.load_state_dict(torch.load(ckpt))
 
-    def forward(
-        self, batch: Tensor, anomaly_map_to_generate: Tensor | None = None
-    ) -> dict[str, Tensor]:
+    def forward(self, batch: Tensor, anomaly_map_to_generate: Tensor | None = None) -> dict[str, Tensor]:
         """Compute the anomaly mask from an input image.
 
         Args:
@@ -163,8 +162,12 @@ class DsrModel(nn.Module):
             # we are in phase two
 
             # Generate anomaly strength factors
-            anom_str_lo = (torch.rand(batch.shape[0]) * (1.0 - self.latent_anomaly_strength) + self.latent_anomaly_strength).cuda()
-            anom_str_hi = (torch.rand(batch.shape[0]) * (1.0 - self.latent_anomaly_strength) + self.latent_anomaly_strength).cuda()
+            anom_str_lo = (
+                torch.rand(batch.shape[0]) * (1.0 - self.latent_anomaly_strength) + self.latent_anomaly_strength
+            ).cuda()
+            anom_str_hi = (
+                torch.rand(batch.shape[0]) * (1.0 - self.latent_anomaly_strength) + self.latent_anomaly_strength
+            ).cuda()
 
             # Generate image through general object decoder, and defective & non defective quantized feature maps.
             with torch.no_grad():
