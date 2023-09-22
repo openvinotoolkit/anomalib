@@ -77,7 +77,7 @@ class DsrModel(nn.Module):
         for parameters in self.discrete_latent_model.parameters():
             parameters.requires_grad = False
 
-    def load_pretrained_discrete_model_weights(self, ckpt: str) -> None:
+    def load_pretrained_discrete_model_weights(self, ckpt: Path) -> None:
         self.discrete_latent_model.load_state_dict(torch.load(ckpt))
 
     def forward(
@@ -106,7 +106,7 @@ class DsrModel(nn.Module):
         """
         # top == lo
 
-        outputs = None
+        outputs: dict[str, Tensor]
 
         # Generate latent embeddings decoded image via general object decoder
         if anomaly_map_to_generate is None:
