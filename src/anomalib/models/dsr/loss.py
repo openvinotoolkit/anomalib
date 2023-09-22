@@ -7,7 +7,7 @@ from kornia.losses import FocalLoss
 from torch import Tensor, nn
 
 
-class DsrSecondLoss(nn.Module):
+class DsrSecondStageLoss(nn.Module):
     """Overall loss function of the second training phase of the DSR model.
 
     The total loss consists of:
@@ -56,7 +56,7 @@ class DsrSecondLoss(nn.Module):
         return l2_loss_hi_val + l2_loss_lo_val + l2_loss_img_val + focal_loss_val
 
 
-class DsrThirdLoss(nn.Module):
+class DsrThirdStageLoss(nn.Module):
     """Overall loss function of the third training phase of the DSR model.
 
     The loss consists of a focal loss between the computed segmentation mask and the ground truth mask.

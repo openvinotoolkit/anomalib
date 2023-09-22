@@ -25,7 +25,7 @@ class DsrModel(nn.Module):
     Args:
         embedding_dim (int): Dimension of codebook embeddings.
         num_embeddings (int): Number of embeddings.
-        anom_par (float):
+        latent_anomaly_strength (float): Strength of the generated anomalies in the latent space.
         num_hiddens (int): Number of output channels in residual layers.
         num_residual_layers (int): Number of residual layers.
         num_residual_hiddens (int): Number of intermediate channels.
@@ -33,7 +33,7 @@ class DsrModel(nn.Module):
 
     def __init__(
         self,
-        anom_par: float = 0.2,
+        latent_anomaly_strength: float = 0.2,
         embedding_dim: int = 128,
         num_embeddings: int = 4096,
         num_hiddens: int = 128,
@@ -44,7 +44,7 @@ class DsrModel(nn.Module):
 
         self.image_dim: int = 3
         self.anomaly_map_dim: int = 2
-        self.anom_par: float = anom_par
+        self.latent_anomaly_strength: float = latent_anomaly_strength
 
         self.discrete_latent_model = DiscreteLatentModel(
             num_hiddens=num_hiddens,
@@ -82,7 +82,7 @@ class DsrModel(nn.Module):
 
     def forward(
         self, batch: Tensor, anomaly_map_to_generate: Tensor | None = None
-    ) -> Tensor | tuple[Tensor, Tensor] | tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
+    ) -> dict[str, Tensor]:
         """Compute the anomaly mask from an input image.
 
         Args:
@@ -91,18 +91,19 @@ class DsrModel(nn.Module):
             If not training phase 2, should be None.
 
         Returns:
-            If training phase 3, tensor of reconstructed anomaly map
-            If testing, tuple of:
-                - Upsampled anomaly map
-                - Image score
-            If training phase 2, tuple of:
-                - Reconstructed non-quantized hi features of defect (F~_hi)
-                - Reconstructed non-quantized lo features of defect (F~_lo)
-                - Quantized features of non defective img (Q_hi)
-                - Quantized features of non defective img (Q_lo)
-                - Object-specific-decoded image (I_spc)
-                - Computed segmentation mask (M)
-                - Resized ground-truth anomaly map (M_gt)
+            If training phase 3:
+                - "pred_mask": Reconstructed anomaly map
+            If testing:
+                - "pred_mask": Upsampled anomaly map
+                - "score": Image score
+            If training phase 2:
+                - "recon_feat_hi": Reconstructed non-quantized hi features of defect (F~_hi)
+                - "recon_feat_lo": Reconstructed non-quantized lo features of defect (F~_lo)
+                - "embedding_bot": Quantized features of non defective img (Q_hi)
+                - "embedding_top": Quantized features of non defective img (Q_lo)
+                - "obj_spec_image": Object-specific-decoded image (I_spc)
+                - "pred_mask": Predicted segmentation mask (M)
+                - "true_mask": Resized ground-truth anomaly map (M_gt)
         """
         # top == lo
 
@@ -162,8 +163,8 @@ class DsrModel(nn.Module):
             # we are in phase two
 
             # Generate anomaly strength factors
-            anom_str_lo = (torch.rand(batch.shape[0]) * (1.0 - self.anom_par) + self.anom_par).cuda()
-            anom_str_hi = (torch.rand(batch.shape[0]) * (1.0 - self.anom_par) + self.anom_par).cuda()
+            anom_str_lo = (torch.rand(batch.shape[0]) * (1.0 - self.latent_anomaly_strength) + self.latent_anomaly_strength).cuda()
+            anom_str_hi = (torch.rand(batch.shape[0]) * (1.0 - self.latent_anomaly_strength) + self.latent_anomaly_strength).cuda()
 
             # Generate image through general object decoder, and defective & non defective quantized feature maps.
             with torch.no_grad():

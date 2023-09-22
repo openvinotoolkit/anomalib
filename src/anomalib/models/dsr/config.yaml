@@ -28,7 +28,7 @@ dataset:
 model:
   name: dsr
   lr: 0.0002
-  anom_par: 0.2
+  latent_anomaly_strength: 0.2
   upsampling_train_ratio: 0.83
   normalization_method: none # options: [none, min_max, cdf]
 

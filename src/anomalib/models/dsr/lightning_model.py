@@ -20,7 +20,7 @@ from anomalib.data.utils import DownloadInfo, download_and_extract
 from anomalib.data.utils.augmenter import Augmenter
 from anomalib.models.components import AnomalyModule
 from anomalib.models.dsr.anomaly_generator import DsrAnomalyGenerator
-from anomalib.models.dsr.loss import DsrSecondLoss, DsrThirdLoss
+from anomalib.models.dsr.loss import DsrSecondStageLoss, DsrThirdStageLoss
 from anomalib.models.dsr.torch_model import DsrModel
 
 __all__ = ["Dsr", "DsrLightning"]
@@ -38,19 +38,19 @@ class Dsr(AnomalyModule):
     """DSR: A Dual Subspace Re-Projection Network for Surface Anomaly Detection
 
     Args:
-        anom_par (float, optional): Parameter determining the strength of the generated anomalies.
+        latent_anomaly_strength (float, optional): Strength of the generated anomalies in the latent space.
     """
 
-    def __init__(self, anom_par: float = 0.2) -> None:
+    def __init__(self, latent_anomaly_strength: float = 0.2) -> None:
         super().__init__()
 
         self.automatic_optimization = False
 
         self.quantized_anomaly_generator = DsrAnomalyGenerator()
         self.perlin_generator = Augmenter()
-        self.model = DsrModel(anom_par)
-        self.second_loss = DsrSecondLoss()
-        self.third_loss = DsrThirdLoss()
+        self.model = DsrModel(latent_anomaly_strength)
+        self.second_stage_loss = DsrSecondStageLoss()
+        self.third_stage_loss = DsrThirdStageLoss()
 
         self.second_phase: int
 
@@ -120,7 +120,7 @@ class Dsr(AnomalyModule):
             # Generate model prediction
             model_outputs = self.model(input_image, anomaly_mask)
             # Compute loss
-            loss = self.second_loss(
+            loss = self.second_stage_loss(
                 model_outputs["recon_feat_hi"],
                 model_outputs["recon_feat_lo"],
                 model_outputs["embedding_bot"],
@@ -144,7 +144,7 @@ class Dsr(AnomalyModule):
             # Get model prediction
             model_outputs = self.model(input_image)
             # Calculate loss
-            loss = self.third_loss(model_outputs["pred_mask"], anomaly_maps)
+            loss = self.third_stage_loss(model_outputs["pred_mask"], anomaly_maps)
 
             # compute manual optimizer step
             ph2_opt.zero_grad()
@@ -179,6 +179,6 @@ class DsrLightning(Dsr):
     """
 
     def __init__(self, hparams: DictConfig | ListConfig) -> None:
-        super().__init__(anom_par=hparams.model.anom_par)
+        super().__init__(latent_anomaly_strength=hparams.model.latent_anomaly_strength)
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)
