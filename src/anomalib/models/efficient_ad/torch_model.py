@@ -147,7 +147,7 @@ class Decoder(nn.Module):
     def __init__(self, out_channels, padding, img_size, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.img_size = img_size
-       self.last_upsample = (
+        self.last_upsample = (
             int(img_size[0] / 4) if padding else int(img_size[0] / 4) - 8,
             int(img_size[1] / 4) if padding else int(img_size[1] / 4) - 8,
         )
