@@ -15,6 +15,7 @@ from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADER
 from torch.utils.data.dataloader import DataLoader, default_collate
 
 from anomalib.data.base.dataset import AnomalibDataset
+from anomalib.data.noise_type import NoiseType
 from anomalib.data.synthetic import SyntheticAnomalyDataset
 from anomalib.data.utils import (
     TestSplitMode,
@@ -75,6 +76,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         test_split_mode: TestSplitMode | None = None,
         test_split_ratio: float | None = None,
         seed: int | None = None,
+        noise_type: NoiseType = NoiseType.PERLIN_2D,
     ) -> None:
         super().__init__()
         self.train_batch_size = train_batch_size
@@ -85,6 +87,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self.val_split_mode = val_split_mode
         self.val_split_ratio = val_split_ratio
         self.seed = seed
+        self.noise_type = noise_type
 
         self.train_data: AnomalibDataset
         self.val_data: AnomalibDataset
@@ -139,7 +142,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         if self.test_split_mode == TestSplitMode.FROM_DIR:
             self.test_data += normal_test_data
         elif self.test_split_mode == TestSplitMode.SYNTHETIC:
-            self.test_data = SyntheticAnomalyDataset.from_dataset(normal_test_data)
+            self.test_data = SyntheticAnomalyDataset.from_dataset(normal_test_data, noise_type=self.noise_type)
         elif self.test_split_mode != TestSplitMode.NONE:
             raise ValueError(f"Unsupported Test Split Mode: {self.test_split_mode}")
 
@@ -156,7 +159,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         elif self.val_split_mode == ValSplitMode.SYNTHETIC:
             # converted from random training sample
             self.train_data, normal_val_data = random_split(self.train_data, self.val_split_ratio, seed=self.seed)
-            self.val_data = SyntheticAnomalyDataset.from_dataset(normal_val_data)
+            self.val_data = SyntheticAnomalyDataset.from_dataset(normal_val_data, noise_type=self.noise_type)
         elif self.val_split_mode != ValSplitMode.NONE:
             raise ValueError(f"Unknown validation split mode: {self.val_split_mode}")
 

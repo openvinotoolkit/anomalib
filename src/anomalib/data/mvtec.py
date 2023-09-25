@@ -33,6 +33,7 @@ import albumentations as A
 from pandas import DataFrame
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset
+from anomalib.data.noise_type import NoiseType
 from anomalib.data.task_type import TaskType
 from anomalib.data.utils import (
     DownloadInfo,
@@ -242,6 +243,7 @@ class MVTec(AnomalibDataModule):
         val_split_mode: ValSplitMode = ValSplitMode.SAME_AS_TEST,
         val_split_ratio: float = 0.5,
         seed: int | None = None,
+        noise_type: NoiseType = NoiseType.PERLIN_2D,
     ) -> None:
         super().__init__(
             train_batch_size=train_batch_size,
@@ -252,6 +254,7 @@ class MVTec(AnomalibDataModule):
             val_split_mode=val_split_mode,
             val_split_ratio=val_split_ratio,
             seed=seed,
+            noise_type=noise_type,
         )
 
         self.root = Path(root)

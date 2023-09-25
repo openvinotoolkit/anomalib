@@ -18,6 +18,7 @@ dataset:
   test_split_ratio: 0.2 # fraction of train images held out testing (usage depends on test_split_mode)
   val_split_mode: same_as_test # options: [same_as_test, from_test, synthetic]
   val_split_ratio: 0.5 # fraction of train/test images held out for validation (usage depends on val_split_mode)
+  noise_type: "perlin_2d"
   tiling:
     apply: false
     tile_size: 64

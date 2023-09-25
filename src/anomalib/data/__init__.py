@@ -18,6 +18,7 @@ from .folder_3d import Folder3D
 from .inference import InferenceDataset
 from .mvtec import MVTec
 from .mvtec_3d import MVTec3D
+from .noise_type import NoiseType
 from .shanghaitech import ShanghaiTech
 from .task_type import TaskType
 from .ucsd_ped import UCSDped
@@ -75,6 +76,7 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             test_split_ratio=config.dataset.test_split_ratio,
             val_split_mode=config.dataset.val_split_mode,
             val_split_ratio=config.dataset.val_split_ratio,
+            noise_type=config.dataset.noise_type,
         )
     elif config.dataset.format.lower() == DataFormat.MVTEC_3D:
         datamodule = MVTec3D(
@@ -93,6 +95,7 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             test_split_ratio=config.dataset.test_split_ratio,
             val_split_mode=config.dataset.val_split_mode,
             val_split_ratio=config.dataset.val_split_ratio,
+            noise_type=config.dataset.noise_type,
         )
     elif config.dataset.format.lower() == DataFormat.BTECH:
         datamodule = BTech(
@@ -111,6 +114,7 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             test_split_ratio=config.dataset.test_split_ratio,
             val_split_mode=config.dataset.val_split_mode,
             val_split_ratio=config.dataset.val_split_ratio,
+            noise_type=config.dataset.noise_type,
         )
     elif config.dataset.format.lower() == DataFormat.FOLDER:
         datamodule = Folder(
@@ -133,6 +137,7 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             test_split_ratio=config.dataset.test_split_ratio,
             val_split_mode=config.dataset.val_split_mode,
             val_split_ratio=config.dataset.val_split_ratio,
+            noise_type=config.dataset.noise_type,
         )
     elif config.dataset.format.lower() == DataFormat.FOLDER_3D:
         datamodule = Folder3D(
@@ -158,6 +163,7 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             test_split_ratio=config.dataset.test_split_ratio,
             val_split_mode=config.dataset.val_split_mode,
             val_split_ratio=config.dataset.val_split_ratio,
+            noise_type=config.dataset.noise_type,
         )
     elif config.dataset.format.lower() == DataFormat.UCSDPED:
         datamodule = UCSDped(
@@ -177,6 +183,7 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             num_workers=config.dataset.num_workers,
             val_split_mode=config.dataset.val_split_mode,
             val_split_ratio=config.dataset.val_split_ratio,
+            noise_type=config.dataset.noise_type,
         )
     elif config.dataset.format.lower() == DataFormat.AVENUE:
         datamodule = Avenue(
@@ -196,6 +203,7 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             num_workers=config.dataset.num_workers,
             val_split_mode=config.dataset.val_split_mode,
             val_split_ratio=config.dataset.val_split_ratio,
+            noise_type=config.dataset.noise_type,
         )
     elif config.dataset.format.lower() == DataFormat.VISA:
         datamodule = Visa(
@@ -214,6 +222,7 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             test_split_ratio=config.dataset.test_split_ratio,
             val_split_mode=config.dataset.val_split_mode,
             val_split_ratio=config.dataset.val_split_ratio,
+            noise_type=config.dataset.noise_type,
         )
     elif config.dataset.format.lower() == DataFormat.SHANGHAITECH:
         datamodule = ShanghaiTech(
@@ -233,6 +242,7 @@ def get_datamodule(config: DictConfig | ListConfig) -> AnomalibDataModule:
             num_workers=config.dataset.num_workers,
             val_split_mode=config.dataset.val_split_mode,
             val_split_ratio=config.dataset.val_split_ratio,
+            noise_type=config.dataset.noise_type,
         )
     else:
         raise ValueError(
@@ -258,4 +268,5 @@ __all__ = [
     "UCSDped",
     "TaskType",
     "ShanghaiTech",
+    "NoiseType",
 ]
