@@ -81,7 +81,11 @@ class DsrModel(nn.Module):
     def load_pretrained_discrete_model_weights(self, ckpt: Path) -> None:
         self.discrete_latent_model.load_state_dict(torch.load(ckpt))
 
-    def forward(self, batch: Tensor, anomaly_map_to_generate: Tensor | None = None) -> dict[str, Tensor]:
+    def forward(
+        self,
+        batch: Tensor,
+        anomaly_map_to_generate: Tensor | None = None
+    ) -> Tensor | tuple[Tensor, Tensor] | dict[str, Tensor]:
         """Compute the anomaly mask from an input image.
 
         Args:
@@ -90,12 +94,9 @@ class DsrModel(nn.Module):
             If not training phase 2, should be None.
 
         Returns:
-            If training phase 3:
-                - "pred_mask": Reconstructed anomaly map
-            If testing:
-                - "pred_mask": Upsampled anomaly map
-                - "score": Image score
-            If training phase 2:
+            If training phase 3, returns reconstructed anomaly map
+            If testing, returns tuple of upsampled anomaly map and image score
+            If training phase 2, returns dict:
                 - "recon_feat_hi": Reconstructed non-quantized hi features of defect (F~_hi)
                 - "recon_feat_lo": Reconstructed non-quantized lo features of defect (F~_lo)
                 - "embedding_bot": Quantized features of non defective img (Q_hi)
@@ -106,7 +107,7 @@ class DsrModel(nn.Module):
         """
         # top == lo
 
-        outputs: dict[str, Tensor]
+        outputs = None
 
         # Generate latent embeddings decoded image via general object decoder
         if anomaly_map_to_generate is None:
@@ -146,7 +147,7 @@ class DsrModel(nn.Module):
 
             # if training phase 3, return upsampled softmax mask
             if self.training:
-                outputs = {"pred_mask": out_mask_sm_up}
+                outputs = out_mask_sm_up
             # if testing, extract image score
             else:
                 out_mask_averaged = torch.nn.functional.avg_pool2d(
@@ -156,7 +157,7 @@ class DsrModel(nn.Module):
 
                 out_mask_cv = out_mask_sm_up[:, 1, :, :]
 
-                outputs = {"pred_mask": out_mask_cv, "score": image_score}
+                outputs = (out_mask_cv, image_score)
 
         elif anomaly_map_to_generate is not None and self.training:
             # we are in phase two

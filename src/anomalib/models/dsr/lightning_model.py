@@ -142,9 +142,9 @@ class Dsr(AnomalyModule):
             # Generate anomalies
             input_image, anomaly_maps = self.perlin_generator.augment_batch(input_image)
             # Get model prediction
-            model_outputs = self.model(input_image)
+            pred_mask = self.model(input_image)
             # Calculate loss
-            loss = self.third_stage_loss(model_outputs["pred_mask"], anomaly_maps)
+            loss = self.third_stage_loss(pred_mask, anomaly_maps)
 
             # compute manual optimizer step
             ph2_opt.zero_grad()
@@ -165,9 +165,9 @@ class Dsr(AnomalyModule):
         """
         del args, kwargs  # These variables are not used.
 
-        model_outputs = self.model(batch["image"])
-        batch["anomaly_maps"] = model_outputs["pred_mask"]
-        batch["pred_scores"] = model_outputs["score"]
+        anomaly_map, pred_score = self.model(batch["image"])
+        batch["anomaly_maps"] = anomaly_map
+        batch["pred_scores"] = pred_score
         return batch
 
 
