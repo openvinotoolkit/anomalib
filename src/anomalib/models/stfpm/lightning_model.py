@@ -7,6 +7,8 @@ https://arxiv.org/abs/2103.04257
 # SPDX-License-Identifier: Apache-2.0
 
 
+from typing import Any
+
 import torch
 from lightning.pytorch.callbacks import EarlyStopping
 from lightning.pytorch.utilities.types import STEP_OUTPUT
@@ -80,6 +82,10 @@ class Stfpm(AnomalyModule):
 
         batch["anomaly_maps"] = self.model(batch["image"])
         return batch
+
+    @property
+    def trainer_arguments(self) -> dict[str, Any]:
+        return {"gradient_clip_val": 0, "max_epochs": 100, "num_sanity_val_steps": 0}
 
 
 class StfpmLightning(Stfpm):

@@ -8,6 +8,7 @@ https://arxiv.org/pdf/2303.14535.pdf
 
 import logging
 from pathlib import Path
+from typing import Any
 
 import albumentations as A
 import numpy as np
@@ -264,6 +265,10 @@ class EfficientAd(AnomalyModule):
         batch["anomaly_maps"] = self.model(batch["image"])["anomaly_map_combined"]
 
         return batch
+
+    @property
+    def trainer_arguments(self) -> dict[str, Any]:
+        return {"gradient_clip_val": 0, "max_epochs": 200, "max_steps": 70000, "num_sanity_val_steps": 0}
 
 
 class EfficientAdLightning(EfficientAd):

@@ -8,6 +8,7 @@ Paper https://arxiv.org/pdf/2212.00789.pdf
 
 
 import logging
+from typing import Any
 
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig, ListConfig
@@ -121,6 +122,10 @@ class AiVad(AnomalyModule):
         batch["pred_scores"] = Tensor(image_scores).to(self.device)
 
         return batch
+
+    @property
+    def trainer_arguments(self) -> dict[str, Any]:
+        return {"gradient_clip_val": 0, "max_epochs": 1, "num_sanity_val_steps": 0}
 
 
 class AiVadLightning(AiVad):

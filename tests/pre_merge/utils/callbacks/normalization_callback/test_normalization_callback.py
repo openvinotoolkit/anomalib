@@ -13,7 +13,16 @@ def run_train_test(config):
     datamodule = get_datamodule(config)
     callbacks = get_callbacks(config)
 
-    engine = Engine(**config.trainer, callbacks=callbacks)
+    engine = Engine(
+        **config.trainer,
+        callbacks=callbacks,
+        normalization=config.model.normalization_method,
+        threshold=config.metrics.threshold,
+        task=config.dataset.task,
+        image_metrics=config.metrics.get("image", None),
+        pixel_metrics=config.metrics.get("pixel", None),
+        visualization=config.visualization,
+    )
     engine.fit(model=model, datamodule=datamodule)
     results = engine.test(model=model, datamodule=datamodule)
     return results
@@ -24,7 +33,7 @@ def test_normalizer(path=get_dataset_path(), category="shapes"):
     config = get_configurable_parameters(config_path="src/anomalib/models/padim/config.yaml")
     config.dataset.path = path
     config.dataset.category = category
-    config.metrics.threshold.method = "adaptive"
+    config.metrics.threshold = "F1AdaptiveThreshold"
     config.project.log_images_to = []
     config.metrics.image = ["F1Score", "AUROC"]
 
