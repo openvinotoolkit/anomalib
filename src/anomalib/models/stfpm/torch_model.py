@@ -40,13 +40,7 @@ class STFPMModel(nn.Module):
         for parameters in self.teacher_model.parameters():
             parameters.requires_grad = False
 
-        # Create the anomaly heatmap generator whether tiling is set.
-        # TODO: Check whether Tiler is properly initialized here.
-        if self.tiler:
-            image_size = (self.tiler.tile_size_h, self.tiler.tile_size_w)
-        else:
-            image_size = input_size
-        self.anomaly_map_generator = AnomalyMapGenerator(image_size=image_size)
+        self.anomaly_map_generator = AnomalyMapGenerator(image_size=input_size)
 
     def forward(self, images: Tensor) -> Tensor | dict[str, Tensor] | tuple[dict[str, Tensor]]:
         """Forward-pass images into the network.
@@ -64,11 +58,16 @@ class STFPMModel(nn.Module):
             images = self.tiler.tile(images)
         teacher_features: dict[str, Tensor] = self.teacher_model(images)
         student_features: dict[str, Tensor] = self.student_model(images)
+
+        if self.tiler:
+            for layer, data in teacher_features.items():
+                teacher_features[layer] = self.tiler.untile(data)
+            for layer, data in student_features.items():
+                student_features[layer] = self.tiler.untile(data)
+
         if self.training:
             output = teacher_features, student_features
         else:
             output = self.anomaly_map_generator(teacher_features=teacher_features, student_features=student_features)
-            if self.tiler:
-                output = self.tiler.untile(output)
 
         return output
