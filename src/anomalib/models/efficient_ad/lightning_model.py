@@ -63,6 +63,9 @@ class EfficientAd(AnomalyModule):
         pad_maps (bool): relevant if padding is set to False. In this case, pad_maps = True pads the
             output anomaly maps so that their size matches the size in the padding = True case.
         batch_size (int): batch size for imagenet dataloader
+        pretraining_images_dir (str): path to folder with images used to pretrain the teacher model
+            TODO note in PR: the vocabulary is not consistent with the paper, where they call it "pretraining dataset"
+                             and the code is calling it "imagenette", but it could be any dataset.
     """
 
     def __init__(
@@ -75,6 +78,7 @@ class EfficientAd(AnomalyModule):
         padding: bool = False,
         pad_maps: bool = True,
         batch_size: int = 1,
+        pretraining_images_dir: str = "./datasets/imagenette",
     ) -> None:
         super().__init__()
 
@@ -90,6 +94,7 @@ class EfficientAd(AnomalyModule):
         self.image_size = image_size
         self.lr = lr
         self.weight_decay = weight_decay
+        self.pretraining_images_dir = pretraining_images_dir
 
         self.prepare_pretrained_model()
         self.prepare_imagenette_data()
@@ -115,8 +120,9 @@ class EfficientAd(AnomalyModule):
             ]
         )
 
-        imagenet_dir = Path("./datasets/imagenette")
+        imagenet_dir = Path(self.pretraining_images_dir)
         if not imagenet_dir.is_dir():
+            raise FileNotFoundError(f"Imagenette dataset not found at {imagenet_dir}")
             download_and_extract(imagenet_dir, IMAGENETTE_DOWNLOAD_INFO)
         imagenet_dataset = ImageFolder(imagenet_dir, transform=TransformsWrapper(t=self.data_transforms_imagenet))
         self.imagenet_loader = DataLoader(imagenet_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True)
