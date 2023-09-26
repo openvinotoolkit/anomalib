@@ -46,6 +46,7 @@ class ValSplitMode(str, Enum):
     NONE = "none"
     SAME_AS_TEST = "same_as_test"
     FROM_TEST = "from_test"
+    FROM_TRAIN = "from_train"
     SYNTHETIC = "synthetic"
 
 
