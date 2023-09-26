@@ -11,7 +11,17 @@ from __future__ import annotations
 import os
 
 os.environ["CUDA_LAUNCH_BLOCKING"] = "0"
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"  # DEBUG
+
+
+def get_hostname():
+    import socket
+
+    return socket.gethostname()
+
+
+if "node" not in get_hostname():
+    print("not in a node, setting CUDA_VISIBLE_DEVICES=2")
+    os.environ["CUDA_VISIBLE_DEVICES"] = "2"  # DEBUG
 
 os.environ["WANDB_NOTEBOOK_NAME"] = __file__
 
@@ -45,6 +55,7 @@ else:
 
 from main import (  # noqa: E402
     DATASET_CATEGORY_CHOICES,
+    DATASETSDIR,
     INPUT_IMAGE_RESOLUTION,
     STANDARD_CALLBACKS,
     evaluate,
@@ -59,8 +70,8 @@ from main import (  # noqa: E402
 
 # In[]:
 
-DEBUG = True
-OFFLINE = True
+DEBUG = False
+OFFLINE = False
 print(f"{DEBUG=} {OFFLINE=}")
 
 
@@ -116,6 +127,7 @@ def get_model_trainer(logger=None):
         padding=False,  # deduced (see my notes)
         pad_maps=False,  # deduced (see my notes)
         batch_size=1,  # OK (appendix A.1)
+        pretraining_images_dir=DATASETSDIR / "imagenet/data/train",
     )
 
     trainer = Trainer(
@@ -127,7 +139,7 @@ def get_model_trainer(logger=None):
         **(
             # DEBUG
             dict(
-                max_steps=20,
+                max_steps=300,
             )
             if DEBUG
             else
