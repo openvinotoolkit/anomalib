@@ -188,6 +188,8 @@ def get_datamodule_mvtec(
     num_workers: int,
     seed: int,
     input_image_resolution: int = INPUT_IMAGE_RESOLUTION,
+    val_split_mode=ValSplitMode.SAME_AS_TEST,
+    val_split_ratio=0.5,
 ):
     assert category in CATEGORY_CHOICES_MVTEC, f"{category=}"
     return MVTec(
@@ -199,7 +201,8 @@ def get_datamodule_mvtec(
         num_workers=num_workers,
         task=TaskType.SEGMENTATION,
         test_split_mode=TestSplitMode.FROM_DIR,
-        val_split_mode=ValSplitMode.SAME_AS_TEST,
+        val_split_mode=val_split_mode,
+        val_split_ratio=val_split_ratio,
         seed=seed,
     )
 
@@ -211,6 +214,8 @@ def get_datamodule_visa(
     num_workers: int,
     seed: int,
     input_image_resolution: int = INPUT_IMAGE_RESOLUTION,
+    val_split_mode=ValSplitMode.SAME_AS_TEST,
+    val_split_ratio=0.5,
 ):
     assert category in CATEGORY_CHOICES_VISA, f"{category=}"
     return Visa(
@@ -222,7 +227,8 @@ def get_datamodule_visa(
         num_workers=num_workers,
         task=TaskType.SEGMENTATION,
         test_split_mode=TestSplitMode.FROM_DIR,
-        val_split_mode=ValSplitMode.SAME_AS_TEST,
+        val_split_mode=val_split_mode,
+        val_split_ratio=val_split_ratio,
         seed=seed,
     )
 
@@ -395,7 +401,8 @@ def evaluate(imgpaths, ascores, imgclass, asmaps, masks, savedir, logger, debug)
         "img_auroc": img_auroc,
         "img_aupr": img_aupr,
     }
-    pd.DataFrame.from_records([img_metrics]).to_csv(savedir / "img_metrics.csv", index=False)
+    if savedir is not None:
+        pd.DataFrame.from_records([img_metrics]).to_csv(savedir / "img_metrics.csv", index=False)
     logger.experiment.log(img_metrics)
 
     @logtime
@@ -429,7 +436,8 @@ def evaluate(imgpaths, ascores, imgclass, asmaps, masks, savedir, logger, debug)
         "pix_set_aupro": aupro,
     }
     logger.experiment.log(pix_set_metrics)
-    pd.DataFrame.from_records([pix_set_metrics]).to_csv(savedir / "pix_set_metrics.csv", index=False)
+    if savedir is not None:
+        pd.DataFrame.from_records([pix_set_metrics]).to_csv(savedir / "pix_set_metrics.csv", index=False)
 
     @logtime
     def get_aulogpimo(asmaps, masks):
@@ -440,6 +448,9 @@ def evaluate(imgpaths, ascores, imgclass, asmaps, masks, savedir, logger, debug)
 
     aulogpimo, (pimoresult, aucresult) = get_aulogpimo(asmaps, masks)
     boxplot_stats = sorted(aulogpimo.boxplot_stats(), key=lambda x: x["value"])
+
+    if savedir is None:
+        return img_metrics, pix_set_metrics, times, aucresult.aucs
 
     aulogpimo_dir = savedir / "aulogpimo_001_1"
     aulogpimo_dir.mkdir(exist_ok=True, parents=True)
