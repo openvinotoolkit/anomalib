@@ -148,7 +148,7 @@ class TorchInferencer(Inferencer):
             if "pred_score" in predictions:
                 pred_score = predictions["pred_score"].detach().cpu().numpy()
             else:
-                raise KeyError("``pred_score`` not found in the predictions.")
+                pred_score = anomaly_map.reshape(-1).max()
 
         # Case III: Predictions could be a list of tensors.
         elif isinstance(predictions, Sequence):
