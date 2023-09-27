@@ -13,7 +13,7 @@
 
 [![python](https://img.shields.io/badge/python-3.7%2B-green)]()
 [![pytorch](https://img.shields.io/badge/pytorch-1.8.1%2B-orange)]()
-[![openvino](https://img.shields.io/badge/openvino-2021.4.2-purple)]()
+[![openvino](https://img.shields.io/badge/openvino-2022.3.0-purple)]()
 [![comet](https://custom-icon-badges.herokuapp.com/badge/comet__ml-3.31.7-orange?logo=logo_comet_ml)](https://www.comet.com/site/products/ml-experiment-tracking/?utm_source=anomalib&utm_medium=referral)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/684927c1c76c4c5e94bb53480812fbbb)](https://www.codacy.com/gh/openvinotoolkit/anomalib/dashboard?utm_source=github.com&utm_medium=referral&utm_content=openvinotoolkit/anomalib&utm_campaign=Badge_Grade)
 [![black](https://img.shields.io/badge/code%20style-black-000000.svg)]()
