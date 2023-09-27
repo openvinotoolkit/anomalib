@@ -13,7 +13,7 @@ runs `STFPM <https://arxiv.org/pdf/2103.04257.pdf>`__ model
 
 Training a model on a specific dataset and category requires further
 configuration. Each model has its own configuration file,
-`config.yaml <https://gitlab-icv.inn.intel.com/algo_rnd_team/anomaly/blob/samet/stfpm/anomalib/models/stfpm/config.yaml>`__,
+`config.yaml <https://github.com/openvinotoolkit/anomalib/blob/main/src/anomalib/models/stfpm/config.yaml>`__,
 which contains data, model and training configurable parameters. To
 train a specific model on a specific dataset and category, the config
 file is to be provided:

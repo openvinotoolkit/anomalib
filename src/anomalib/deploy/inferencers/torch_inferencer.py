@@ -36,7 +36,8 @@ class TorchInferencer(Inferencer):
     ) -> None:
         self.device = self._get_device(device)
 
-        # Load the model weights.
+        # Load the model weights, metadata and data transforms.
+        self.checkpoint = self._load_checkpoint(path)
         self.model = self.load_model(path)
         self.metadata = self._load_metadata(path)
         self.transform = A.from_dict(self.metadata["transform"])
@@ -60,6 +61,24 @@ class TorchInferencer(Inferencer):
             device = "cuda"
         return torch.device(device)
 
+    def _load_checkpoint(self, path: str | Path) -> dict:
+        """Load the checkpoint.
+
+        Args:
+            path (str | Path): Path to the torch ckpt file.
+
+        Returns:
+            dict: Dictionary containing the model and metadata.
+        """
+        if isinstance(path, str):
+            path = Path(path)
+
+        if path.suffix not in (".pt", ".pth"):
+            raise ValueError(f"Unknown torch checkpoint file format {path.suffix}. Make sure you save the Torch model.")
+
+        checkpoint = torch.load(path, map_location=self.device)
+        return checkpoint
+
     def _load_metadata(self, path: str | Path | dict | None = None) -> dict | DictConfig:
         """Load metadata from file.
 
@@ -69,20 +88,40 @@ class TorchInferencer(Inferencer):
         Returns:
             dict: Dictionary containing the metadata.
         """
-        metadata = torch.load(path, map_location=self.device)["metadata"] if path else {}
+        metadata: dict | DictConfig
+
+        if isinstance(path, dict):
+            metadata = path
+        elif isinstance(path, (str, Path)):
+            checkpoint = self._load_checkpoint(path)
+
+            # Torch model should ideally contain the metadata in the checkpoint.
+            # Check if the metadata is present in the checkpoint.
+            if "metadata" not in checkpoint.keys():
+                raise KeyError(
+                    "``metadata`` is not found in the checkpoint. Please ensure that you save the model as Torch model."
+                )
+            metadata = checkpoint["metadata"]
+        else:
+            raise ValueError(f"Unknown ``path`` type {type(path)}")
+
         return metadata
 
     def load_model(self, path: str | Path) -> nn.Module:
         """Load the PyTorch model.
 
         Args:
-            path (str | Path): Path to model ckpt file.
+            path (str | Path): Path to the Torch model.
 
         Returns:
-            (AnomalyModule): PyTorch Lightning model.
+            (nn.Module): Torch model.
         """
 
-        model = torch.load(path, map_location=self.device)["model"]
+        checkpoint = self._load_checkpoint(path)
+        if "model" not in checkpoint.keys():
+            raise KeyError("``model`` is not found in the checkpoint. Please check the checkpoint file.")
+
+        model = checkpoint["model"]
         model.eval()
         return model.to(self.device)
 
