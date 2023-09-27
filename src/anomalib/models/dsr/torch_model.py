@@ -81,11 +81,7 @@ class DsrModel(nn.Module):
     def load_pretrained_discrete_model_weights(self, ckpt: Path) -> None:
         self.discrete_latent_model.load_state_dict(torch.load(ckpt))
 
-    def forward(
-        self,
-        batch: Tensor,
-        anomaly_map_to_generate: Tensor | None = None
-    ) -> Tensor | tuple[Tensor, Tensor] | dict[str, Tensor]:
+    def forward(self, batch: Tensor, anomaly_map_to_generate: Tensor | None = None) -> dict[str, Tensor]:
         """Compute the anomaly mask from an input image.
 
         Args:
@@ -94,20 +90,23 @@ class DsrModel(nn.Module):
             If not training phase 2, should be None.
 
         Returns:
-            If training phase 3, returns reconstructed anomaly map
-            If testing, returns tuple of upsampled anomaly map and image score
-            If training phase 2, returns dict:
+            If testing:
+                - "anomaly_map": Upsampled anomaly map
+                - "pred_score": Image score
+            If training phase 2:
                 - "recon_feat_hi": Reconstructed non-quantized hi features of defect (F~_hi)
                 - "recon_feat_lo": Reconstructed non-quantized lo features of defect (F~_lo)
                 - "embedding_bot": Quantized features of non defective img (Q_hi)
                 - "embedding_top": Quantized features of non defective img (Q_lo)
                 - "obj_spec_image": Object-specific-decoded image (I_spc)
-                - "pred_mask": Predicted segmentation mask (M)
+                - "anomaly_map": Predicted segmentation mask (M)
                 - "true_mask": Resized ground-truth anomaly map (M_gt)
+            If training phase 3:
+                - "anomaly_map": Reconstructed anomaly map
         """
         # top == lo
 
-        outputs = None
+        outputs: dict[str, Tensor]
 
         # Generate latent embeddings decoded image via general object decoder
         if anomaly_map_to_generate is None:
@@ -147,7 +146,7 @@ class DsrModel(nn.Module):
 
             # if training phase 3, return upsampled softmax mask
             if self.training:
-                outputs = out_mask_sm_up
+                outputs = {"anomaly_map", out_mask_sm_up}
             # if testing, extract image score
             else:
                 out_mask_averaged = torch.nn.functional.avg_pool2d(
@@ -157,7 +156,7 @@ class DsrModel(nn.Module):
 
                 out_mask_cv = out_mask_sm_up[:, 1, :, :]
 
-                outputs = (out_mask_cv, image_score)
+                outputs = {"anomaly_map": out_mask_cv, "pred_score": image_score}
 
         elif anomaly_map_to_generate is not None and self.training:
             # we are in phase two
@@ -176,7 +175,7 @@ class DsrModel(nn.Module):
                     batch, anomaly_map_to_generate, anom_str_lo, anom_str_hi
                 )
             gen_image_def = latent_model_outputs["recon_image"]
-            anomaly_map = latent_model_outputs["anomaly_mask"]
+            true_anomaly_map = latent_model_outputs["anomaly_mask"]
             embd_top = latent_model_outputs["quantized_t"]
             embd_bot = latent_model_outputs["quantized_b"]
             embd_top_def = latent_model_outputs["anomaly_embedding_lo"]
@@ -207,8 +206,8 @@ class DsrModel(nn.Module):
                 "embedding_bot": embd_bot,
                 "embedding_top": embd_top,
                 "obj_spec_image": spec_image_def,
-                "pred_mask": out_mask_sm,
-                "true_mask": anomaly_map,
+                "anomaly_map": out_mask_sm,
+                "true_anomaly_map": true_anomaly_map,
             }
         else:
             raise RuntimeError("There should not be an anomaly map to generate when not training")
