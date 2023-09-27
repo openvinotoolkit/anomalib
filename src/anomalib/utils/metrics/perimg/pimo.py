@@ -249,7 +249,7 @@ class AUPImO(PImO):
         ax: Axes | None = None,
     ) -> tuple[Figure | None, Axes]:
         """Plot shared FPR vs Per-Image Overlap (PImO) curves (boxplot images only).
-        
+
         The 'boxplot images' are those from the boxplot of AUPImO values (see `AUPImO.boxplot_stats()`).
         Integration range is shown when `self.ubound < 1`.
         """
@@ -342,7 +342,7 @@ class AUPImO(PImO):
 
         (thresholds, fprs, shared_fpr, tprs, image_classes), aucs = self.compute()
 
-        # FRP upper bound is threshold lower bound
+        # FPR upper bound is threshold lower bound
         thidx_lbound = torch.argmin(torch.abs(shared_fpr - self.ubound))
         th_lbound = thresholds[thidx_lbound]
 

@@ -222,8 +222,9 @@ def _perimg_boxplot_stats(
     records = []
 
     def append_record(stat_, val_):
-        # make sure to use a value that is actually in the array
-        # because some statistics (e.g. 'mean') are not guaranteed to be in the array
+        """Make sure to use a value that is actually in the array.
+        Some statistics (e.g. 'mean') are not guaranteed to be in the array.
+        """
         invalues_idx = arg_find_nearest(val_)
         nearest = values[invalues_idx]
         imgidx = imgs_idxs[invalues_idx]
