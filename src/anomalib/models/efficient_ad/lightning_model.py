@@ -64,7 +64,6 @@ class EfficientAd(AnomalyModule):
             output anomaly maps so that their size matches the size in the padding = True case.
         batch_size (int): batch size for imagenet dataloader
         pretraining_images_dir (str): path to folder with images used to pretrain the teacher model
-            TODO note in PR: the vocabulary is not consistent with the paper, where they call it "pretraining dataset"
                              and the code is calling it "imagenette", but it could be any dataset.
     """
 
