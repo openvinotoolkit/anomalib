@@ -348,4 +348,4 @@ class EfficientAdModel(nn.Module):
                 )
 
             map_combined = 0.5 * map_st + 0.5 * map_stae
-            return {"anomaly_map_combined": map_combined, "map_st": map_st, "map_ae": map_stae}
+            return {"anomaly_map": map_combined, "map_st": map_st, "map_ae": map_stae}
