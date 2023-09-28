@@ -13,6 +13,7 @@ from typing import Iterable
 from lightning.pytorch.loggers import CSVLogger, Logger
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
+from rich.logging import RichHandler
 
 from .comet import AnomalibCometLogger
 from .tensorboard import AnomalibTensorBoardLogger
@@ -52,11 +53,13 @@ def configure_logger(level: int | str = logging.INFO) -> None:
 
     format_string = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     logging.basicConfig(format=format_string, level=level)
+    logging.getLogger().addHandler(RichHandler(rich_tracebacks=True))
 
     # Set Pytorch Lightning logs to have a the consistent formatting with anomalib.
     for handler in logging.getLogger("lightning.pytorch").handlers:
         handler.setFormatter(logging.Formatter(format_string))
         handler.setLevel(level)
+    logging.getLogger("lightning.pytorch").addHandler(RichHandler(rich_tracebacks=True))
 
 
 def get_experiment_logger(

@@ -86,7 +86,7 @@ class _ThresholdCallback(Callback):
         # >>> _initialize_thresholds(F1AdaptiveThreshold())
         if isinstance(threshold, BaseThreshold):
             self.image_threshold = threshold
-            self.pixel_threshold = threshold
+            self.pixel_threshold = threshold.clone()
 
         # When a tuple of threshold classes are passed
         # >>> _initialize_thresholds((ManualThreshold(0.5), ManualThreshold(0.5)))

@@ -112,7 +112,7 @@ class Padim(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, int | float]:
-        return {"max_epochs": 1, "val_check_interval": 1.0}
+        return {"max_epochs": 1, "val_check_interval": 1.0, "num_sanity_val_steps": 0}
 
 
 class PadimLightning(Padim):
