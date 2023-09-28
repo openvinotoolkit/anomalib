@@ -9,11 +9,7 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from anomalib.models.components import (
-    DynamicBufferModule,
-    FeatureExtractor,
-    KCenterGreedy,
-)
+from anomalib.models.components import DynamicBufferModule, FeatureExtractor, KCenterGreedy
 from anomalib.models.patchcore.anomaly_map import AnomalyMapGenerator
 from anomalib.pre_processing import Tiler
 
@@ -44,7 +40,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
         self.register_buffer("memory_bank", Tensor())
         self.memory_bank: Tensor
 
-    def forward(self, input_tensor: Tensor) -> Tensor | tuple[Tensor, Tensor]:
+    def forward(self, input_tensor: Tensor) -> Tensor | dict[str, Tensor]:
         """Return Embedding during training, or a tuple of anomaly map and anomaly score during testing.
 
         Steps performed:
@@ -56,7 +52,7 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             input_tensor (Tensor): Input tensor
 
         Returns:
-            Tensor | tuple[Tensor, Tensor]: Embedding for training,
+            Tensor | dict[str, Tensor]: Embedding for training,
                 anomaly map and anomaly score for testing.
         """
         if self.tiler:
@@ -83,13 +79,13 @@ class PatchcoreModel(DynamicBufferModule, nn.Module):
             patch_scores = patch_scores.reshape((batch_size, -1))
             locations = locations.reshape((batch_size, -1))
             # compute anomaly score
-            anomaly_score = self.compute_anomaly_score(patch_scores, locations, embedding)
+            pred_score = self.compute_anomaly_score(patch_scores, locations, embedding)
             # reshape to w, h
             patch_scores = patch_scores.reshape((batch_size, 1, width, height))
             # get anomaly map
             anomaly_map = self.anomaly_map_generator(patch_scores)
 
-            output = (anomaly_map, anomaly_score)
+            output = {"anomaly_map": anomaly_map, "pred_score": pred_score}
 
         return output
 
