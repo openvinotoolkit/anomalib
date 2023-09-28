@@ -21,11 +21,11 @@ Each subsection in the section ``metrics`` of the config file can have a differe
          F1Score:
             class_path: torchmetrics.F1Score
             init_args:
-            compute_on_cpu: true
+               compute_on_cpu: true
          AUROC:
             class_path: anomalib.utils.metrics.AUROC
             init_args:
-            compute_on_cpu: true
+               compute_on_cpu: true
 
 List of metric names
 --------------------
