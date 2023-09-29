@@ -64,7 +64,11 @@ class OptimalF1(Metric):
         else:
             precision, recall, thresholds = self.precision_recall_curve.compute()
             f1_score = (2 * precision * recall) / (precision + recall + 1e-10)
-            self.threshold = thresholds[torch.argmax(f1_score)]
+            if thresholds.nelement() == 1:
+                # Particular case when f1 score is 1 and the threshold is unique
+                self.threshold = thresholds
+            else:
+                self.threshold = thresholds[torch.argmax(f1_score)]
             optimal_f1_score = torch.max(f1_score)
             return optimal_f1_score
 
