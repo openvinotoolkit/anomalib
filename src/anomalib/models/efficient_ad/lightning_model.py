@@ -59,9 +59,7 @@ class EfficientAd(AnomalyModule):
         model_size (str): size of student and teacher model
         lr (float): learning rate
         weight_decay (float): optimizer weight decay
-        padding (bool): use padding in convoluional layers
-        pad_maps (bool): relevant if padding is set to False. In this case, pad_maps = True pads the
-            output anomaly maps so that their size matches the size in the padding = True case.
+        padding (bool): use padding in convoluional layers of the student/teacher architecture
         batch_size (int): batch size for imagenet dataloader
         pretraining_images_dir (str): path to folder with images used to pretrain the teacher model
                              and the code is calling it "imagenette", but it could be any dataset.
@@ -75,7 +73,6 @@ class EfficientAd(AnomalyModule):
         lr: float = 0.0001,
         weight_decay: float = 0.00001,
         padding: bool = False,
-        pad_maps: bool = True,
         batch_size: int = 1,
         pretraining_images_dir: str = "./datasets/imagenette",
     ) -> None:
@@ -87,7 +84,6 @@ class EfficientAd(AnomalyModule):
             input_size=image_size,
             model_size=model_size,
             padding=padding,
-            pad_maps=pad_maps,
         )
         self.batch_size = batch_size
         self.image_size = image_size
@@ -285,7 +281,6 @@ class EfficientAdLightning(EfficientAd):
             lr=hparams.model.lr,
             weight_decay=hparams.model.weight_decay,
             padding=hparams.model.padding,
-            pad_maps=hparams.model.pad_maps,
             image_size=hparams.dataset.image_size,
             batch_size=hparams.dataset.train_batch_size,
         )
