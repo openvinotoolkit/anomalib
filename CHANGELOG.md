@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.7.0+obx.1.2.2]
+- Fix bug in optimal f1 score computation when a single class is used for testing.
+
 ## [v0.7.0+obx.1.2.1]
 
 ### Updated
