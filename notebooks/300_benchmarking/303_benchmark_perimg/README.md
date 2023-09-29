@@ -1,1 +1,0 @@
-# Benchmarking Per-Image Metrics
