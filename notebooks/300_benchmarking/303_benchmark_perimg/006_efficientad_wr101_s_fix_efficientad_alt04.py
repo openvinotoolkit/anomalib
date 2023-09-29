@@ -55,7 +55,6 @@ else:
 
 from main import (  # noqa: E402
     DATASET_CATEGORY_CHOICES,
-    DATASETSDIR,
     INPUT_IMAGE_RESOLUTION,
     STANDARD_CALLBACKS,
     evaluate,
@@ -118,6 +117,7 @@ else:
     # MODELNAME = "efficientad_wr101_s_alt01"
     # MODELNAME = "efficientad_wr101_s_alt02_padding"
     MODELNAME = "efficientad_wr101_s_alt03_pretraining_images_dir"
+    MODELNAME = "efficientad_wr101_s_alt04_pad_maps"
 
 
 def get_model_trainer(logger=None):
@@ -127,8 +127,9 @@ def get_model_trainer(logger=None):
         model_size="small",
         lr=1e-4,  # OK (appendix A.1)
         weight_decay=1e-5,  # OK (appendix A.1), it has a decay at step 66.5k (95% of 70k)
-        padding=True,  # deduced (see my notes)
-        pad_maps=False,  # deduced (see my notes)
+        padding=False,  # deduced (see my notes)
+        # alt 04
+        pad_maps=True,  # deduced (see my notes)
         batch_size=1,  # OK (appendix A.1)
         # alt 03
         # pretraining_images_dir=DATASETSDIR / "imagenet/data/train",
@@ -203,7 +204,6 @@ for ds_cat in progressbar(datasets_categories):
         # "official" attempt
         val_split_mode=ValSplitMode.FROM_TRAIN,
         val_split_ratio=0.5,
-        
         # alt 01)
         # val_split_mode=ValSplitMode.SAME_AS_TEST,
         # val_split_ratio  is ignored

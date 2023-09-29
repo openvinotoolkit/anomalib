@@ -115,7 +115,8 @@ if DEBUG:
     MODELNAME = "debug"
 else:
     # MODELNAME = "efficientad_wr101_s"
-    MODELNAME = "efficientad_wr101_s_alt01"
+    # MODELNAME = "efficientad_wr101_s_alt01"
+    MODELNAME = "efficientad_wr101_s_alt02_padding"
 
 
 def get_model_trainer(logger=None):
@@ -125,7 +126,7 @@ def get_model_trainer(logger=None):
         model_size="small",
         lr=1e-4,  # OK (appendix A.1)
         weight_decay=1e-5,  # OK (appendix A.1), it has a decay at step 66.5k (95% of 70k)
-        padding=False,  # deduced (see my notes)
+        padding=True,  # deduced (see my notes)
         pad_maps=False,  # deduced (see my notes)
         batch_size=1,  # OK (appendix A.1)
         pretraining_images_dir=DATASETSDIR / "imagenet/data/train",
@@ -198,11 +199,10 @@ for ds_cat in progressbar(datasets_categories):
         seed=seed_datamodule,
         # CUSTOM
         # "official" attempt
-        # val_split_mode=ValSplitMode.FROM_TRAIN,
-        # val_split_ratio=0.5,
-        
+        val_split_mode=ValSplitMode.FROM_TRAIN,
+        val_split_ratio=0.5,
         # alt 01)
-        val_split_mode=ValSplitMode.SAME_AS_TEST,
+        # val_split_mode=ValSplitMode.SAME_AS_TEST,
         # val_split_ratio  is ignored
     )
 
