@@ -146,7 +146,7 @@ class DsrModel(nn.Module):
 
             # if training phase 3, return upsampled softmax mask
             if self.training:
-                outputs = {"anomaly_map", out_mask_sm_up}
+                outputs = {"anomaly_map": out_mask_sm_up}
             # if testing, extract image score
             else:
                 out_mask_averaged = torch.nn.functional.avg_pool2d(
