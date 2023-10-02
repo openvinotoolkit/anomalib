@@ -18,6 +18,7 @@ from anomalib.engine import Engine
 from anomalib.models import AnomalyModule
 from anomalib.utils.callbacks import get_callbacks, get_visualization_callbacks
 from anomalib.utils.callbacks.normalization import get_normalization_callback
+from anomalib.utils.hpo import Sweep, get_hpo_parser
 from anomalib.utils.loggers import configure_logger
 from anomalib.utils.metrics.threshold import BaseThreshold
 
@@ -135,18 +136,11 @@ class AnomalibCLI(LightningCLI):
 
     def add_hpo_arguments(self, parser: LightningArgumentParser) -> None:
         """Add hyperparameter optimization arguments."""
-        # parser = get_hpo_parser(parser)
+        parser = get_hpo_parser(parser)
 
     def add_benchmark_arguments(self, parser: LightningArgumentParser) -> None:
         """Adds benchmark arguments to the parser."""
         parser.add_argument("--config", type=Path, help="Path to the benchmark config.", required=True)
-
-    def parse_arguments(self, parser: LightningArgumentParser, args: ArgsType) -> None:
-        """Parse arguments depending on the subcommand.
-
-        For export and hpo we do not want to check parameters such as model, datamodule, trainer, etc.
-        """
-        super().parse_arguments(parser, args)
 
     def before_instantiate_classes(self) -> None:
         """Modify the configuration to properly instantiate classes and sets up tiler."""
@@ -232,6 +226,17 @@ class AnomalibCLI(LightningCLI):
             fn(**fn_kwargs)
         else:
             getattr(self, f"run_{subcommand}")()
+
+    def run_hpo(self) -> None:
+        """Run hpo subcommand."""
+        config = self.config["hpo"]
+        sweep = Sweep(
+            model=config.model,
+            model_config=config.model_config,
+            sweep_config=config.sweep_config,
+            backend=config.backend,
+        )
+        sweep.run()
 
 
 def main() -> None:

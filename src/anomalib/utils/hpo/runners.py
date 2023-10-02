@@ -51,7 +51,7 @@ class WandbSweep:
         self.sweep_config.parameters = flattened_hpo_params
         sweep_id = wandb.sweep(
             OmegaConf.to_object(self.sweep_config),
-            project=f"{self.config.model.name}_{self.config.dataset.name}",
+            project=f"{self.config.model.class_path.split('.')[-1]}_{self.config.data.class_path.split('.')[-1]}",
             entity=self.entity,
         )
         wandb.agent(sweep_id, function=self.sweep, count=self.observation_budget)

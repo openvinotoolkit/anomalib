@@ -44,7 +44,7 @@ def to_yaml(config: Namespace | ListConfig | DictConfig) -> str:
     Returns:
         str: YAML string
     """
-    _config = config.clone()
+    _config = config.clone() if isinstance(config, Namespace) else config.copy()
     if "config" in _config.keys():
         del _config["config"]
 
