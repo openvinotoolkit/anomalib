@@ -22,7 +22,7 @@ from .helpers import to_yaml
 logger = logging.getLogger(__name__)
 
 
-def get_default_root_directory(config: DictConfig | ListConfig) -> Path:
+def get_default_root_directory(config: DictConfig | ListConfig) -> str:
     """Sets the default root directory."""
     root_dir = config.results_dir.path if config.results_dir.path else "./results"
     model_name = config.model.class_path.split(".")[-1].lower()
@@ -31,7 +31,7 @@ def get_default_root_directory(config: DictConfig | ListConfig) -> Path:
     time_stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S") if config.results_dir.unique else ""
     default_root_dir = Path(root_dir, model_name, data_name, category, time_stamp)
 
-    return default_root_dir
+    return str(default_root_dir)
 
 
 def update_config(config: DictConfig | ListConfig | Namespace) -> DictConfig | ListConfig | Namespace:
@@ -53,8 +53,8 @@ def update_config(config: DictConfig | ListConfig | Namespace) -> DictConfig | L
     config = update_input_size_config(config)
 
     # Project Configs
-    project_path = get_default_root_directory(config)
-    logger.info(f"Project path set to {str(project_path)}")
+    project_path = Path(get_default_root_directory(config))
+    logger.info(f"Project path set to {(project_path)}")
 
     (project_path / "weights").mkdir(parents=True, exist_ok=True)
     (project_path / "images").mkdir(parents=True, exist_ok=True)
@@ -67,13 +67,14 @@ def update_config(config: DictConfig | ListConfig | Namespace) -> DictConfig | L
 
     # loggers should write to results/model/dataset/category/ folder
     config.trainer.default_root_dir = str(project_path)
+    config.results_dir.path = str(project_path)
 
     config = update_nncf_config(config)
 
     # write the original config for eventual debug (modified config at the end of the function)
-    (Path(config.trainer.default_root_dir) / "config_original.yaml").write_text(to_yaml(config_original))
+    (project_path / "config_original.yaml").write_text(to_yaml(config_original))
 
-    (Path(config.trainer.default_root_dir) / "config.yaml").write_text(to_yaml(config))
+    (project_path / "config.yaml").write_text(to_yaml(config))
 
     return config
 

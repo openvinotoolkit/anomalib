@@ -3,11 +3,36 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from pathlib import Path
-from typing import Any
+from pathlib import Path, PosixPath
+from typing import Type
 
+import yaml
 from jsonargparse import Namespace
 from omegaconf import DictConfig, ListConfig, OmegaConf
+from omegaconf._utils import OmegaConfDumper
+
+
+class _YAMLDumper(OmegaConfDumper):
+    path_representation_added = False
+
+    @staticmethod
+    def path_representer(dumper: yaml.Dumper, data: Path | PosixPath) -> yaml.ScalarNode:
+        return dumper.represent_scalar(
+            yaml.resolver.BaseResolver.DEFAULT_SCALAR_TAG,
+            str(data),
+        )
+
+
+def _get_dumper() -> Type[_YAMLDumper]:
+    """YAML serializer for path."""
+    if not _YAMLDumper.str_representer_added:
+        _YAMLDumper.add_representer(str, _YAMLDumper.str_representer)
+        _YAMLDumper.str_representer_added = True
+    if not _YAMLDumper.path_representation_added:
+        _YAMLDumper.add_representer(Path, _YAMLDumper.path_representer)
+        _YAMLDumper.add_representer(PosixPath, _YAMLDumper.path_representer)
+        _YAMLDumper.path_representation_added = True
+    return _YAMLDumper
 
 
 def to_yaml(config: Namespace | ListConfig | DictConfig) -> str:
@@ -19,55 +44,11 @@ def to_yaml(config: Namespace | ListConfig | DictConfig) -> str:
     Returns:
         str: YAML string
     """
-    _config = {}
-    if isinstance(config, Namespace):
-        for key, value in config.items():
-            if key == "config":
-                continue
-            if isinstance(value, Path):
-                value = str(value)
-            _config[key] = value
-        _config = flattened_to_nested(_config)
-    else:
-        _config = config
+    _config = config.clone()
+    if "config" in _config.keys():
+        del _config["config"]
 
-    return OmegaConf.to_yaml(_config)
-
-
-def flattened_to_nested(flat_dict: dict) -> dict:
-    """Converts a flattened dict to a nested dict.
-
-    {
-        "key1.a": 1
-        "key1.b: 2
-    }
-
-    to
-
-    {
-        "key1":
-        {
-            "a": 1,
-            "b: 2
-        }
-    }
-
-    Args:
-        flat_dict (dict): Flattened dict
-
-    Returns:
-        dict: Nested dict
-    """
-    nested_dict: dict[str, Any] = {}
-    for key, value in flat_dict.items():
-        keys = key.split(".")
-        current_level = nested_dict
-
-        for k in keys[:-1]:
-            if k not in current_level:
-                current_level[k] = {}
-            current_level = current_level[k]
-
-        current_level[keys[-1]] = value
-
-    return nested_dict
+    if isinstance(_config, Namespace):
+        _config = OmegaConf.create(_config.as_dict())
+    container = OmegaConf.to_container(_config, enum_to_str=True)
+    return yaml.dump(container, default_flow_style=False, allow_unicode=True, sort_keys=False, Dumper=_get_dumper())

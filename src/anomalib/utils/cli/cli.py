@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-import sys
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Type, Union
 
@@ -17,7 +16,7 @@ from anomalib.config.config import update_config
 from anomalib.data import AnomalibDataModule, TaskType
 from anomalib.engine import Engine
 from anomalib.models import AnomalyModule
-from anomalib.utils.callbacks import get_visualization_callbacks
+from anomalib.utils.callbacks import get_callbacks, get_visualization_callbacks
 from anomalib.utils.callbacks.normalization import get_normalization_callback
 from anomalib.utils.loggers import configure_logger
 from anomalib.utils.metrics.threshold import BaseThreshold
@@ -99,6 +98,7 @@ class AnomalibCLI(LightningCLI):
         parser.add_argument("metrics.image", type=list[str] | str | None, default=["F1Score", "AUROC"])
         parser.add_argument("metrics.pixel", type=list[str] | str | None, default=["F1Score", "AUROC"])
         parser.add_argument("metrics.threshold", type=BaseThreshold, default="F1AdaptiveThreshold")
+        parser.add_argument("--logging.log_graph", type=bool, help="Log the model to the logger", default=False)
         parser.link_arguments("data.init_args.image_size", "model.init_args.input_size")
         parser.link_arguments("task", "data.init_args.task")
         parser.add_argument("--results_dir.path", type=Path, help="Path to save the results.")
@@ -146,9 +146,6 @@ class AnomalibCLI(LightningCLI):
 
         For export and hpo we do not want to check parameters such as model, datamodule, trainer, etc.
         """
-        if len(sys.argv) > 1 and sys.argv[1] in self.anomalib_subcommands():
-            # this ensures that lightning parameters are not checked in the parser
-            parser._choices.clear()  # pylint: disable=protected-access
         super().parse_arguments(parser, args)
 
     def before_instantiate_classes(self) -> None:
@@ -205,6 +202,7 @@ class AnomalibCLI(LightningCLI):
                     **self.save_config_kwargs,
                 )
                 trainer_config[key].append(config_callback)
+        trainer_config[key].extend(get_callbacks(self.config[self.subcommand]))
         return Engine(**trainer_config)
 
     @property
