@@ -104,11 +104,15 @@ class Patchcore(AnomalyModule):
         Returns:
             dict[str, Any]: Image filenames, test images, GT and predicted label/masks
         """
-        del args, kwargs  # These variables are not used.
+        # These variables are not used.
+        del args, kwargs
 
-        anomaly_maps, anomaly_score = self.model(batch["image"])
-        batch["anomaly_maps"] = anomaly_maps
-        batch["pred_scores"] = anomaly_score
+        # Get anomaly maps and predicted scores from the model.
+        output = self.model(batch["image"])
+
+        # Add anomaly maps and predicted scores to the batch.
+        batch["anomaly_maps"] = output["anomaly_map"]
+        batch["pred_scores"] = output["pred_score"]
 
         return batch
 

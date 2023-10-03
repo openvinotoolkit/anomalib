@@ -159,6 +159,7 @@ def export_to_onnx(model: AnomalyModule, input_size: tuple[int, int], export_pat
         torch.zeros((1, 3, *input_size)).to(model.device),
         str(onnx_path),
         opset_version=11,
+        dynamic_axes={"input": {0: "batch_size"}, "output": {0: "batch_size"}},
         input_names=["input"],
         output_names=["output"],
     )
