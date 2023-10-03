@@ -17,7 +17,7 @@ from pathlib import Path
 from jsonargparse import Namespace
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
-from .helpers import to_yaml
+from .helpers import to_tuple, to_yaml
 
 logger = logging.getLogger(__name__)
 
@@ -105,29 +105,27 @@ def update_input_size_config(config: DictConfig | ListConfig | Namespace) -> Dic
     # linking from the cli.
     model_module = import_module(".".join(config.model.class_path.split(".")[:-1]))
     model_class = getattr(model_module, config.model.class_path.split(".")[-1])
+
+    # Assign center crop
+    center_crop = config.data.init_args.get("center_crop", None)
+    if center_crop:
+        config.data.init_args.center_crop = to_tuple(center_crop)
+    config.data.init_args.image_size = to_tuple(config.data.init_args.image_size)
+
     if "input_size" in inspect.signature(model_class).parameters:
         if "input_size" in config.model.init_args:
-            logger.warn(
-                "Model input size should not be configured explicitly. Use the image size from the data instead."
-                f" Overriding model input size {config.model.init_args.input_size} with"
-                f" {config.data.init_args.image_size}."
-            )
-        # Center crop: Ensure value is in the form [height, width], and update input_size
-        center_crop = config.data.init_args.get("center_crop", None)
-        if center_crop is None:
-            config.model.init_args.input_size = config.data.init_args.image_size
-        else:
-            if isinstance(center_crop, int):
-                config.dataset.center_crop = (center_crop,) * 2
-                config.model.init_args.input_size = config.dataset.center_crop
-            elif isinstance(center_crop, ListConfig):
-                assert (
-                    len(center_crop) == 2
-                ), "center_crop must be a single integer or tuple of length 2 for width and height."
+            # Center crop: Ensure value is in the form [height, width], and update input_size
+            if center_crop is not None:
                 config.model.init_args.input_size = center_crop
-            else:
-                raise ValueError(f"center_crop must be either int or ListConfig, got {type(center_crop)}")
-            logger.info(f"Setting model size to crop size {config.model.init_args.input_size}")
+                logger.info(f"Setting model size to crop size {center_crop}")
+            elif config.model.init_args.input_size != config.data.init_args.image_size:
+                logger.warn(
+                    "Model input size should not be configured explicitly. Use the image size from the data instead."
+                    f" Overriding model input size {config.model.init_args.input_size} with"
+                    f" {config.data.init_args.image_size}."
+                )
+                config.model.init_args.input_size = config.data.init_args.image_size
+            config.model.init_args.input_size = to_tuple(config.model.init_args.input_size)
 
     elif "input_size" in config.model.init_args:
         # argument linking adds model input size even if it is not present for that model

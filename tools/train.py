@@ -52,8 +52,8 @@ def train(args: Namespace):
         warnings.filterwarnings("ignore")
 
     config = get_configurable_parameters(model_name=args.model, config_path=args.config)
-    if config.project.get("seed") is not None:
-        seed_everything(config.project.seed)
+    if config.get("seed_everything", None) is not None:
+        seed_everything(config.seed_everything)
 
     datamodule = get_datamodule(config)
     model = get_model(config)
@@ -64,9 +64,9 @@ def train(args: Namespace):
         **config.trainer,
         logger=experiment_logger,
         callbacks=callbacks,
-        normalization=config.model.normalization_method,
+        normalization=config.normalization.normalization_method,
         threshold=config.metrics.threshold,
-        task=config.dataset.task,
+        task=config.task,
         image_metrics=config.metrics.get("image", None),
         pixel_metrics=config.metrics.get("pixel", None),
         visualization=config.visualization,
@@ -75,7 +75,7 @@ def train(args: Namespace):
     logger.info("Training the model.")
     engine.fit(model=model, datamodule=datamodule)
 
-    if config.dataset.test_split_mode == TestSplitMode.NONE:
+    if config.data.init_args.test_split_mode == TestSplitMode.NONE:
         logger.info("No test set provided. Skipping test stage.")
     else:
         logger.info("Testing the model with best model weights.")

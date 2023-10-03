@@ -16,6 +16,7 @@ from anomalib.config.config import update_config
 from anomalib.data import AnomalibDataModule, TaskType
 from anomalib.engine import Engine
 from anomalib.models import AnomalyModule
+from anomalib.utils.benchmarking import distribute
 from anomalib.utils.callbacks import get_callbacks, get_visualization_callbacks
 from anomalib.utils.callbacks.normalization import get_normalization_callback
 from anomalib.utils.hpo import Sweep, get_hpo_parser
@@ -237,6 +238,11 @@ class AnomalibCLI(LightningCLI):
             backend=config.backend,
         )
         sweep.run()
+
+    def run_benchmark(self) -> None:
+        """Run benchmark subcommand."""
+        config = self.config["benchmark"]
+        distribute(config.config)
 
 
 def main() -> None:

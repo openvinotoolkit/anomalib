@@ -6,7 +6,6 @@
 
 import logging
 import os
-import warnings
 from pathlib import Path
 from typing import Iterable
 
@@ -77,18 +76,6 @@ def get_experiment_logger(
         Logger | Iterable[Logger] | bool]: Logger
     """
     logger.info("Loading the experiment logger(s)")
-
-    # TODO remove when logger is deprecated from project
-    if "logger" in config.project.keys():
-        warnings.warn(
-            "'logger' key will be deprecated from 'project' section of the config file."
-            " Please use the logging section in config file.",
-            DeprecationWarning,
-        )
-        if "logging" not in config:
-            config.logging = {"logger": config.project.logger, "log_graph": False}
-        else:
-            config.logging.logger = config.project.logger
 
     if config.logging.logger in (None, False):
         return False
