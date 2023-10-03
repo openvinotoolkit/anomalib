@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Type, Union
 
 from jsonargparse import ArgumentParser
+from jsonargparse._actions import _ActionSubCommands
 from lightning.pytorch import Trainer
 from lightning.pytorch.cli import ArgsType, LightningArgumentParser, LightningCLI, SaveConfigCallback
 from openvino.tools.mo.utils.cli_parser import get_onnx_cli_parser
@@ -110,23 +111,35 @@ class AnomalibCLI(LightningCLI):
 
     def add_export_arguments(self, parser: LightningArgumentParser) -> None:
         """Adds export arguments to the parser."""
-        subcommands = parser.add_subcommands(dest="export_mode", help="Export mode. ONNX or OpenVINO")
+        subcommand = parser.add_subcommands(dest="export_mode", help="Export mode.")
         # Add export mode sub parsers
-        onnx_parser = LightningArgumentParser(description="Export to ONNX format")
-        subcommands.add_subcommand("onnx", onnx_parser)
-        onnx_parser.add_argument("--weights", type=Path, help="Path to the torch model weights.", required=True)
-        onnx_parser.add_argument("--model_config", type=Path, help="Path to the model config.", required=True)
-        onnx_parser.add_argument("--export_path", type=Path, help="Path to save the exported model.")
+        self._add_torch_export_arguments(subcommand)
+        self._add_onnx_export_arguments(subcommand)
+        self._add_openvino_export_arguments(subcommand)
 
-        openvino_parser = LightningArgumentParser(description="Export to OpenVINO format")
-        subcommands.add_subcommand("openvino", openvino_parser)
-        openvino_parser.add_argument(
+    def _add_torch_export_arguments(self, subcommand: _ActionSubCommands):
+        parser = LightningArgumentParser(description="Export to ONNX format")
+        parser.add_argument("--weights", type=Path, help="Path to the torch model weights.", required=True)
+        parser.add_argument("--model_config", type=Path, help="Path to the model config.", required=True)
+        parser.add_argument("--export_path", type=Path, help="Path to save the exported model.")
+        subcommand.add_subcommand("torch", parser)
+
+    def _add_onnx_export_arguments(self, subcommand: _ActionSubCommands):
+        parser = LightningArgumentParser(description="Export to ONNX format")
+        parser.add_argument("--weights", type=Path, help="Path to the torch model weights.", required=True)
+        parser.add_argument("--model_config", type=Path, help="Path to the model config.", required=True)
+        parser.add_argument("--export_path", type=Path, help="Path to save the exported model.")
+        subcommand.add_subcommand("onnx", parser)
+
+    def _add_openvino_export_arguments(self, subcommand: _ActionSubCommands):
+        parser = LightningArgumentParser(description="Export to OpenVINO format")
+        parser.add_argument(
             "--export_path",
             type=str,
             help="Path to save the exported model.",
         )
-        openvino_parser.add_argument("--input_model", type=Path, help="Path to the torch model weights.", required=True)
-        group = openvino_parser.add_argument_group("OpenVINO Model Optimizer arguments (optional)")
+        parser.add_argument("--input_model", type=Path, help="Path to the torch model weights.", required=True)
+        group = parser.add_argument_group("OpenVINO Model Optimizer arguments (optional)")
         mo_parser = get_onnx_cli_parser()
 
         # remove redundant keys from mo keys
@@ -134,6 +147,7 @@ class AnomalibCLI(LightningCLI):
             if arg.dest in ("help", "input_model", "output_dir"):
                 continue
             group.add_argument(f"--mo.{arg.dest}", type=arg.type, default=arg.default, help=arg.help)
+        subcommand.add_subcommand("openvino", parser)
 
     def add_hpo_arguments(self, parser: LightningArgumentParser) -> None:
         """Add hyperparameter optimization arguments."""
@@ -243,6 +257,19 @@ class AnomalibCLI(LightningCLI):
         """Run benchmark subcommand."""
         config = self.config["benchmark"]
         distribute(config.config)
+
+    def run_export(self) -> None:
+        """Run export."""
+        config = self.config["export"]
+        match config.export_mode:
+            case "torch":
+                ...
+            case "onnx":
+                ...
+            case "openvino":
+                ...
+            case _:
+                raise ValueError("Unknown export mode.")
 
 
 def main() -> None:
