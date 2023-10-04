@@ -29,9 +29,12 @@ def test_pro():
             ]
         ]
     )
+    # ground truth mask is int type
+    labels = labels.type(torch.int32)
 
     preds = (torch.arange(10) / 10) + 0.05
-    preds = preds.unsqueeze(1).repeat(1, 5).view(1, 1, 10, 5)
+    # metrics receive squeezed predictions (N, H, W)
+    preds = preds.unsqueeze(1).repeat(1, 5).view(1, 10, 5)
 
     thresholds = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
     targets = [1.0, 0.8, 0.6, 0.4, 0.2, 0.0]
@@ -49,8 +52,10 @@ def test_device_consistency():
     batch = torch.zeros((32, 256, 256))
     for i in range(batch.shape[0]):
         batch[i, ...] = random_2d_perlin((256, 256), (torch.tensor(4), torch.tensor(4))) > 0.5
+    # ground truth mask is int type
+    batch = batch.type(torch.int32)
 
-    preds = transform(batch).unsqueeze(1)
+    preds = transform(batch)
 
     pro_cpu = PRO()
     pro_gpu = PRO()
