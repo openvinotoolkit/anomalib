@@ -68,6 +68,11 @@ class Padim(AnomalyModule):
         """PADIM doesn't require optimization, therefore returns no optimizers."""
         return None
 
+    def on_train_epoch_start(self) -> None:
+        self.embeddings = []
+        self.stats = []
+        return super().on_train_epoch_start()
+
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
         """Training Step of PADIM. For each batch, hierarchical features are extracted from the CNN.
 
@@ -94,7 +99,12 @@ class Padim(AnomalyModule):
         # NOTE: Previous anomalib versions fit Gaussian at the end of the epoch.
         #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
         #   is run within train epoch.
+        if len(self.embeddings) == 0:
+            logger.warning("No embeddings were extracted from the training set. Skipping Gaussian fitting.")
+            return
+
         logger.info("Aggregating the embedding extracted from the training set.")
+
         embeddings = torch.vstack(self.embeddings)
 
         logger.info("Fitting a Gaussian to the embedding collected from the training set.")

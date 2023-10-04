@@ -13,7 +13,7 @@ import logging
 import torch
 from torch import nn
 from omegaconf import DictConfig, ListConfig
-from pytorch_lightning.utilities.types import STEP_OUTPUT
+from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -79,6 +79,10 @@ class Patchcore(AnomalyModule):
         """
         return None
 
+    def on_train_epoch_start(self) -> None:
+        self.embeddings = []
+        return super().on_train_epoch_start()
+
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> None:
         """Generate feature embedding of the batch.
 
@@ -104,6 +108,16 @@ class Patchcore(AnomalyModule):
         # NOTE: Previous anomalib versions fit subsampling at the end of the epoch.
         #   This is not possible anymore with PyTorch Lightning v1.4.0 since validation
         #   is run within train epoch.
+        if len(self.embeddings) == 0:
+            # This is a workaround to allow automatic batch computation using lightning
+            train_dl = self.trainer.datamodule.train_dataloader()
+            batch = next(iter(train_dl))
+
+            batch = {k: v.to(self.device) for k, v in batch.items()}
+            self.model.train()
+            self.training_step(batch)
+            self.model.eval()
+
         logger.info("Aggregating the embedding extracted from the training set.")
         embeddings = torch.vstack(self.embeddings)
 
