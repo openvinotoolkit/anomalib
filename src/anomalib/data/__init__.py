@@ -10,7 +10,7 @@ from enum import Enum
 
 from omegaconf import DictConfig, ListConfig
 
-from anomalib.config.helpers import to_tuple
+from anomalib.config.utils import to_tuple
 
 from .avenue import Avenue
 from .base import AnomalibDataModule, AnomalibDataset

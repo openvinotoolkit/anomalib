@@ -112,6 +112,8 @@ class Padim(AnomalyModule):
 
     @property
     def trainer_arguments(self) -> dict[str, int | float]:
+        # Since the model does not require training, we limit the max_epochs to 1.
+        # Since we need to run training epoch before validation, we also set the sanity steps to 0
         return {"max_epochs": 1, "val_check_interval": 1.0, "num_sanity_val_steps": 0}
 
 

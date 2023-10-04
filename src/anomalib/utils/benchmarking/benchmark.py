@@ -55,7 +55,7 @@ def hide_output(func):
         func (function): Hides output of this function.
 
     Raises:
-        Exception: Incase the execution of function fails, it raises an exception.
+        Exception: In case the execution of function fails, it raises an exception.
 
     Returns:
         object of the called function
@@ -67,8 +67,8 @@ def hide_output(func):
         sys.stdout = buf = io.StringIO()
         try:
             value = func(*args, **kwargs)
-        except Exception as exp:
-            raise Exception(buf.getvalue()) from exp
+        except Exception as exception:
+            raise Exception(buf.getvalue()) from exception
         sys.stdout = std_out
         return value
 
@@ -157,7 +157,9 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_met
 def compute_on_cpu(sweep_config: DictConfig | ListConfig, folder: str | None = None):
     """Compute all run configurations over a sigle CPU."""
     for run_config in get_run_config(sweep_config.grid_search):
-        model_metrics = sweep(run_config, 0, sweep_config.seed_everything, False)
+        model_metrics = sweep(
+            run_config=run_config, device=0, seed=sweep_config.seed_everything, convert_openvino=False
+        )
         write_metrics(model_metrics, sweep_config.writer, folder)
 
 
@@ -181,7 +183,7 @@ def compute_on_gpu(
     """
     for run_config in run_configs:
         if isinstance(run_config, (DictConfig, ListConfig)):
-            model_metrics = sweep(run_config, device, seed, compute_openvino)
+            model_metrics = sweep(run_config=run_config, device=device, seed=seed, convert_openvino=compute_openvino)
             write_metrics(model_metrics, writers, folder)
         else:
             raise ValueError(
@@ -196,13 +198,13 @@ def distribute_over_gpus(sweep_config: DictConfig | ListConfig, folder: str | No
     ) as executor:
         run_configs = list(get_run_config(sweep_config.grid_search))
         jobs = []
-        for device_id, run_split in enumerate(
-            range(0, len(run_configs), math.ceil(len(run_configs) / torch.cuda.device_count()))
-        ):
+        num_gpus = torch.cuda.device_count()
+        chunk_size = math.ceil(len(run_configs) / num_gpus)
+        for device_id, run_split in enumerate(range(0, len(run_configs), chunk_size)):
             jobs.append(
                 executor.submit(
                     compute_on_gpu,
-                    run_configs[run_split : run_split + math.ceil(len(run_configs) / torch.cuda.device_count())],
+                    run_configs[run_split : run_split + chunk_size],
                     device_id + 1,
                     sweep_config.seed_everything,
                     sweep_config.writer,
@@ -217,7 +219,7 @@ def distribute_over_gpus(sweep_config: DictConfig | ListConfig, folder: str | No
                 raise Exception(f"Error occurred while computing benchmark on GPU {job}") from exc
 
 
-def distribute(config_path: Path):
+def distribute(config_path: Path) -> None:
     """Run all cpu experiments on a single process. Distribute gpu experiments over all available gpus.
 
     Args:

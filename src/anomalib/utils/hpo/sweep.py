@@ -6,7 +6,6 @@
 from argparse import ArgumentParser
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Union
 
 from lightning.pytorch import seed_everything
 from lightning.pytorch.cli import LightningArgumentParser
@@ -28,7 +27,7 @@ class HPOBackend(str, Enum):
         return self.value
 
 
-def get_hpo_parser(parser: Optional[Union[ArgumentParser, LightningArgumentParser]] = None):
+def get_hpo_parser(parser: ArgumentParser | LightningArgumentParser | None = None):
     """Gets the HPO parser."""
     if parser is None:
         parser = ArgumentParser()
@@ -54,23 +53,24 @@ class Sweep:
     """HPO class to run hyperparameter optimization.
 
     Args:
-        model (str): Name of the algorithm to train/test. If not provided, the model name is read from the model config.
-        model_config (Optional[Union[Path, str]]): Path to a model config file. If not provided, the model is loaded
+        model (str | None): Name of the algorithm to train/test. If not provided, the model name is read from the model
+         config.
+        model_config (Path | str | None): Path to a model config file. If not provided, the model is loaded
             based on the model name.
-        sweep_config (Optional[Union[Path, str]]): Path to sweep configuration. The configuration depends on the type
+        sweep_config (Path | str): Path to sweep configuration. The configuration depends on the type
             of backend.
         backend (HPOBackend): HPO backend to use. Defaults to ```Backend.COMET```.
-        entity (Optional[str]): Username or workspace where you want to send your runs to. If not set, the default
+        entity (str | None): Username or workspace where you want to send your runs to. If not set, the default
             workspace is used.
     """
 
     def __init__(
         self,
-        model: Optional[str],
-        model_config: Optional[Union[Path, str]],
-        sweep_config: Union[Path, str],
+        model: str | None,
+        model_config: Path | str | None,
+        sweep_config: Path | str,
         backend: HPOBackend = HPOBackend.COMET,
-        entity: Optional[str] = "",
+        entity: str = "",
     ):
         if model is None and model_config is None:
             raise ValueError("Either model or model_config must be provided.")
@@ -81,9 +81,9 @@ class Sweep:
 
         self.runner = self.get_runner(backend)
 
-    def get_runner(self, backend: HPOBackend) -> Union[CometSweep, WandbSweep]:
+    def get_runner(self, backend: HPOBackend) -> CometSweep | WandbSweep:
         """Gets the runner for the specified backend."""
-        runner: Union[CometSweep, WandbSweep]
+        runner: CometSweep | WandbSweep
         if backend == HPOBackend.COMET:
             runner = CometSweep(self.model_config, self.sweep_config, self.entity)
         elif backend == HPOBackend.WANDB:

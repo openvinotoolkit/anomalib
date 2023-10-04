@@ -5,7 +5,7 @@
 
 import logging
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Type, Union
+from typing import Any, Callable, Dict, Type
 
 from jsonargparse import ArgumentParser
 from jsonargparse._actions import _ActionSubCommands
@@ -38,12 +38,12 @@ class AnomalibCLI(LightningCLI):
 
     def __init__(
         self,
-        save_config_callback: Optional[Type[SaveConfigCallback]] = SaveConfigCallback,
-        save_config_kwargs: Optional[Dict[str, Any]] = None,
-        trainer_class: Union[Type[Trainer], Callable[..., Trainer]] = Trainer,
-        trainer_defaults: Optional[Dict[str, Any]] = None,
-        seed_everything_default: Union[bool, int] = True,
-        parser_kwargs: Optional[Union[Dict[str, Any], Dict[str, Dict[str, Any]]]] = None,
+        save_config_callback: Type[SaveConfigCallback] = SaveConfigCallback,
+        save_config_kwargs: Dict[str, Any] | None = None,
+        trainer_class: Type[Trainer] | Callable[..., Trainer] = Trainer,
+        trainer_defaults: Dict[str, Any] | None = None,
+        seed_everything_default: bool | int = True,
+        parser_kwargs: Dict[str, Any] | Dict[str, Dict[str, Any]] | None = None,
         args: ArgsType = None,
         run: bool = True,
         auto_configure_optimizers: bool = True,

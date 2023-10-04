@@ -13,25 +13,28 @@ import warnings
 from datetime import datetime
 from importlib import import_module
 from pathlib import Path
+from typing import Sequence
 
 from jsonargparse import Namespace
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
-from .helpers import to_tuple, to_yaml
+from .utils import to_tuple, to_yaml
 
 logger = logging.getLogger(__name__)
 
 
-def get_default_root_directory(config: DictConfig | ListConfig) -> str:
+def get_default_root_directory(config: DictConfig | ListConfig) -> Path:
     """Sets the default root directory."""
     root_dir = config.results_dir.path if config.results_dir.path else "./results"
     model_name = config.model.class_path.split(".")[-1].lower()
     data_name = config.data.class_path.split(".")[-1].lower()
     category = config.data.init_args.category if "category" in config.data.init_args else ""
+    # add datetime folder to the path as well so that runs with same configuration are not overwritten
     time_stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S") if config.results_dir.unique else ""
+    # loggers should write to results/model/dataset/category/ folder
     default_root_dir = Path(root_dir, model_name, data_name, category, time_stamp)
 
-    return str(default_root_dir)
+    return default_root_dir
 
 
 def update_config(config: DictConfig | ListConfig | Namespace) -> DictConfig | ListConfig | Namespace:
@@ -53,7 +56,7 @@ def update_config(config: DictConfig | ListConfig | Namespace) -> DictConfig | L
     config = update_input_size_config(config)
 
     # Project Configs
-    project_path = Path(get_default_root_directory(config))
+    project_path = get_default_root_directory(config)
     logger.info(f"Project path set to {(project_path)}")
 
     (project_path / "weights").mkdir(parents=True, exist_ok=True)
@@ -65,7 +68,6 @@ def update_config(config: DictConfig | ListConfig | Namespace) -> DictConfig | L
     ):
         config.visualization.image_save_path = str(project_path / "images")
 
-    # loggers should write to results/model/dataset/category/ folder
     config.trainer.default_root_dir = str(project_path)
     config.results_dir.path = str(project_path)
 
@@ -95,7 +97,7 @@ def update_input_size_config(config: DictConfig | ListConfig | Namespace) -> Dic
     image_size = config.data.init_args.get("image_size")
     if isinstance(image_size, int):
         config.data.init_args.image_size = (image_size,) * 2
-    elif isinstance(image_size, (ListConfig, tuple)):
+    elif isinstance(image_size, (ListConfig, Sequence)):
         assert len(image_size) == 2, "image_size must be a single integer or tuple of length 2 for width and height."
     else:
         raise ValueError(f"image_size must be either int or ListConfig, got {type(image_size)}")
