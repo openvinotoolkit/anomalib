@@ -11,7 +11,7 @@ from anomalib.data import get_datamodule
 from anomalib.engine import Engine
 from anomalib.models import get_model
 from anomalib.utils.callbacks import get_callbacks
-from anomalib.utils.metrics import AnomalyScoreThreshold
+from anomalib.utils.metrics import F1AdaptiveThreshold
 from tests.helpers.config import get_test_configurable_parameters
 
 
@@ -25,7 +25,7 @@ from tests.helpers.config import get_test_configurable_parameters
 def test_adaptive_threshold(labels, preds, target_threshold):
     """Test if the adaptive threshold computation returns the desired value."""
 
-    adaptive_threshold = AnomalyScoreThreshold(default_value=0.5)
+    adaptive_threshold = F1AdaptiveThreshold(default_value=0.5)
     adaptive_threshold.update(preds, labels)
     threshold_value = adaptive_threshold.compute()
 
@@ -41,21 +41,30 @@ def test_manual_threshold():
 
     config.dataset.num_workers = 0
     config.model.normalization_method = "none"
-    config.metrics.threshold.method = "manual"
     config.trainer.fast_dev_run = True
     config.metrics.image = ["F1Score"]
     config.metrics.pixel = ["F1Score"]
 
-    image_threshold = random.random()  # nosec: B311
-    pixel_threshold = random.random()  # nosec: B311
-    config.metrics.threshold.manual_image = image_threshold
-    config.metrics.threshold.manual_pixel = pixel_threshold
+    image_threshold = 0.12345  # random.random()  # nosec: B311
+    pixel_threshold = 0.189761  # random.random()  # nosec: B311
+    config.metrics.threshold = [
+        {"class_path": "ManualThreshold", "init_args": {"default_value": image_threshold}},
+        {"class_path": "ManualThreshold", "init_args": {"default_value": pixel_threshold}},
+    ]
 
     model = get_model(config)
     datamodule = get_datamodule(config)
     callbacks = get_callbacks(config)
 
-    engine = Engine(**config.trainer, callbacks=callbacks)
+    engine = Engine(
+        **config.trainer,
+        callbacks=callbacks,
+        normalization=config.model.normalization_method,
+        threshold=config.metrics.threshold,
+        image_metrics=config.metrics.get("image", None),
+        pixel_metrics=config.metrics.get("pixel", None),
+        visualization=config.visualization,
+    )
     engine.fit(model=model, datamodule=datamodule)
-    assert trainer.model.image_metrics.F1Score.threshold == image_threshold
-    assert trainer.model.pixel_metrics.F1Score.threshold == pixel_threshold
+    assert engine.trainer.model.image_metrics.F1Score.threshold == image_threshold
+    assert engine.trainer.model.pixel_metrics.F1Score.threshold == pixel_threshold

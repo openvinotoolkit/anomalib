@@ -34,7 +34,7 @@ class TestTrainEntrypoint:
             train(args)
 
             # Don't run fit and test the second time
-            with patch("tools.train.Trainer"):
+            with patch("tools.train.Engine"):
                 # Test when config key is passed
                 args = get_parser().parse_args(["--config", "src/anomalib/models/padim/config.yaml"])
 

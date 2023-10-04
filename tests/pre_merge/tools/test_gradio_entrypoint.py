@@ -12,6 +12,7 @@ import pytest
 from anomalib.data import TaskType
 from anomalib.deploy import ExportMode, OpenVINOInferencer, TorchInferencer, export
 from anomalib.models import get_model
+from anomalib.utils.metrics.threshold import F1AdaptiveThreshold
 
 sys.path.append("tools/inference")
 
@@ -36,6 +37,8 @@ class TestGradioInferenceEntrypoint:
         """Test gradio_inference.py"""
         parser, inferencer = get_functions
         model = get_model(get_config("padim"))
+        model.image_threshold = F1AdaptiveThreshold()
+        model.pixel_threshold = F1AdaptiveThreshold()
 
         # export torch model
         export(
@@ -59,6 +62,8 @@ class TestGradioInferenceEntrypoint:
         """Test gradio_inference.py"""
         parser, inferencer = get_functions
         model = get_model(get_config("padim"))
+        model.image_threshold = F1AdaptiveThreshold()
+        model.pixel_threshold = F1AdaptiveThreshold()
 
         # export OpenVINO model
         export(

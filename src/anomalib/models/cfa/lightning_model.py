@@ -10,6 +10,7 @@ Paper https://arxiv.org/abs/2206.04325
 
 
 import logging
+from typing import Any
 
 import torch
 from lightning.pytorch import Callback
@@ -112,6 +113,10 @@ class Cfa(AnomalyModule):
 
         # TODO: Investigate why retain_graph is needed.
         loss.backward(retain_graph=True)
+
+    @property
+    def trainer_arguments(self) -> dict[str, Any]:
+        return {"gradient_clip_val": 0, "max_epochs": 30, "num_sanity_val_steps": 0}
 
 
 class CfaLightning(Cfa):

@@ -7,7 +7,7 @@ Paper https://arxiv.org/abs/2108.07610
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import Callable
+from typing import Any, Callable
 
 import torch
 from lightning.pytorch.callbacks import EarlyStopping
@@ -110,6 +110,10 @@ class Draem(AnomalyModule):
         prediction = self.model(batch["image"])
         batch["anomaly_maps"] = prediction
         return batch
+
+    @property
+    def trainer_arguments(self) -> dict[str, Any]:
+        return {"gradient_clip_val": 0, "max_epochs": 700, "num_sanity_val_steps": 0}
 
 
 class DraemLightning(Draem):

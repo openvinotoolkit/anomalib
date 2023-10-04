@@ -66,7 +66,17 @@ def generate_results_dir():
             model = get_model(model_config)
             datamodule = get_datamodule(model_config)
             callbacks = get_callbacks(model_config)
-            engine = Engine(**model_config.trainer, logger=False, callbacks=callbacks)
+            engine = Engine(
+                **model_config.trainer,
+                logger=False,
+                callbacks=callbacks,
+                normalization=model_config.model.normalization_method,
+                threshold=model_config.metrics.threshold,
+                task=model_config.dataset.task,
+                image_metrics=model_config.metrics.get("image", None),
+                pixel_metrics=model_config.metrics.get("pixel", None),
+                visualization=model_config.visualization
+            )
             engine.fit(model=model, datamodule=datamodule)
 
             return model_config, model

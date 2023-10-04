@@ -40,7 +40,13 @@ def test_add_images(task):
         logger = get_dummy_logger(config, dir_loc)
         model = get_dummy_module(config)
         engine = Engine(
-            callbacks=model.callbacks, logger=logger, enable_checkpointing=False, default_root_dir=config.project.path
+            logger=logger,
+            enable_checkpointing=False,
+            default_root_dir=config.project.path,
+            task=config.dataset.task,
+            image_metrics=config.metrics.get("image", None),
+            pixel_metrics=config.metrics.get("pixel", None),
+            visualization=config.visualization,
         )
         engine.test(model=model, datamodule=DummyDataModule())
         # test if images are logged

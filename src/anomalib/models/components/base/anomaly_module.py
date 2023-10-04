@@ -3,9 +3,10 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
+import importlib
 import logging
 from abc import ABC, abstractproperty
+from collections import OrderedDict
 from typing import Any
 
 import lightning.pytorch as pl
@@ -97,3 +98,27 @@ class AnomalyModule(pl.LightningModule, ABC):
     def trainer_arguments(self) -> dict[str, Any]:
         """Arguments used to override the trainer parameters so as to train the model correctly."""
         raise NotImplementedError
+
+    def _save_to_state_dict(self, destination: OrderedDict, prefix: str, keep_vars: bool):
+        destination[
+            "image_threshold_class"
+        ] = f"{self.image_threshold.__class__.__module__}.{self.image_threshold.__class__.__name__}"
+        destination[
+            "pixel_threshold_class"
+        ] = f"{self.pixel_threshold.__class__.__module__}.{self.pixel_threshold.__class__.__name__}"
+        return super()._save_to_state_dict(destination, prefix, keep_vars)
+
+    def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True):
+        """Initialize auxiliary object."""
+        if "image_threshold_class" in state_dict:
+            self.image_threshold = self._get_threshold_instance(state_dict, "image")
+        if "pixel_threshold_class" in state_dict:
+            self.pixel_threshold = self._get_threshold_instance(state_dict, "pixel")
+
+        return super().load_state_dict(state_dict, strict)
+
+    def _get_threshold_instance(self, state_dict: OrderedDict[str, Any], threshold_key: str) -> BaseThreshold:
+        """Get the threshold class from the ``state_dict``"""
+        class_path = state_dict.pop(f"{threshold_key}_threshold_class")
+        module = importlib.import_module(".".join(class_path.split(".")[:-1]))
+        return getattr(module, class_path.split(".")[-1])()

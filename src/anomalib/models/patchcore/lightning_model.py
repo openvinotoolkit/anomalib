@@ -7,6 +7,7 @@ Paper https://arxiv.org/abs/2106.08265.
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
@@ -102,13 +103,25 @@ class Patchcore(AnomalyModule):
         Returns:
             dict[str, Any]: Image filenames, test images, GT and predicted label/masks
         """
-        del args, kwargs  # These variables are not used.
+        # These variables are not used.
+        del args, kwargs
 
-        anomaly_maps, anomaly_score = self.model(batch["image"])
-        batch["anomaly_maps"] = anomaly_maps
-        batch["pred_scores"] = anomaly_score
+        # Get anomaly maps and predicted scores from the model.
+        output = self.model(batch["image"])
+
+        # Add anomaly maps and predicted scores to the batch.
+        batch["anomaly_maps"] = output["anomaly_map"]
+        batch["pred_scores"] = output["pred_score"]
 
         return batch
+
+    @property
+    def trainer_arguments(self) -> dict[str, Any]:
+        return {
+            "gradient_clip_val": 0,
+            "max_epochs": 1,
+            "num_sanity_val_steps": 0,
+        }
 
 
 class PatchcoreLightning(Patchcore):
