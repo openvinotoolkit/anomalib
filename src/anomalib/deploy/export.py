@@ -6,7 +6,6 @@
 
 import json
 import logging
-import subprocess  # nosec
 from enum import Enum
 from importlib.util import find_spec
 from pathlib import Path
@@ -25,6 +24,7 @@ logger = logging.getLogger("anomalib")
 
 if find_spec("openvino") is not None:
     from openvino.runtime import Core, serialize
+    from openvino.tools.mo.convert import convert_model
 else:
     logger.warning("OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.")
 
@@ -120,9 +120,9 @@ def export(
             json.dump(metadata, metadata_file, ensure_ascii=False, indent=4)
 
         # Export model to onnx and convert to OpenVINO IR if export mode is set to OpenVINO.
-        onnx_path = export_to_onnx(model, input_size, export_path)
+        onnx_path = export_to_onnx(model=model, input_size=input_size, export_path=export_path)
         if export_mode == ExportMode.OPENVINO:
-            export_to_openvino(export_path, onnx_path, metadata, input_size)
+            export_to_openvino(export_path=export_path, input_model=onnx_path, metadata=metadata, input_size=input_size)
 
     else:
         raise ValueError(f"Unknown export mode {export_mode}")
@@ -167,19 +167,24 @@ def export_to_onnx(model: AnomalyModule, input_size: tuple[int, int], export_pat
 
 
 def export_to_openvino(
-    export_path: str | Path, onnx_path: Path, metadata: dict[str, Any], input_size: tuple[int, int]
+    export_path: str | Path, input_model: Path, metadata: dict[str, Any], input_size: tuple[int, int], **kwargs
 ) -> None:
     """Convert onnx model to OpenVINO IR.
 
     Args:
-        export_path (str | Path): Path to the root folder of the exported model.
-        onnx_path (Path): Path to the exported onnx model.
+        export_path (Path): Path to the export folder.
+        input_model (str | Path): Path to the model weights. Can be either Torch weights or ONNX model.
         metadata (dict[str, Any]): Metadata for the exported model.
         input_size (tuple[int, int]): Input size of the model. Used for adding metadata to the IR.
+        **kwargs: Other arguments for OpenVINO model conversion.
     """
-    optimize_command = ["mo", "--input_model", str(onnx_path), "--output_dir", str(export_path)]
-    subprocess.run(optimize_command, check=True)  # nosec
-    _add_metadata_to_ir(str(export_path) + f"/{onnx_path.with_suffix('.xml').name}", metadata, input_size)
+    if convert_model is not None and serialize is not None:
+        model = convert_model(input_model=input_model, output_dir=str(export_path), **kwargs)
+        serialize(model, input_model.with_suffix(".xml"))
+        _add_metadata_to_ir(str(export_path) + f"/{input_model.with_suffix('.xml').name}", metadata, input_size)
+    else:
+        logger.exception("Could not find OpenVINO methods. Please check OpenVINO installation.")
+        raise ModuleNotFoundError
 
 
 def _add_metadata_to_ir(xml_file: str, metadata: dict[str, Any], input_size: tuple[int, int]) -> None:

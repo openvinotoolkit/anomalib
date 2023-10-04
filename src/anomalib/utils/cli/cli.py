@@ -8,10 +8,8 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Type
 
 from jsonargparse import ArgumentParser
-from jsonargparse._actions import _ActionSubCommands
 from lightning.pytorch import Trainer
 from lightning.pytorch.cli import ArgsType, LightningArgumentParser, LightningCLI, SaveConfigCallback
-from openvino.tools.mo.utils.cli_parser import get_onnx_cli_parser
 
 from anomalib.config.config import update_config
 from anomalib.data import AnomalibDataModule, TaskType
@@ -23,6 +21,13 @@ from anomalib.utils.callbacks.normalization import get_normalization_callback
 from anomalib.utils.hpo import Sweep, get_hpo_parser
 from anomalib.utils.loggers import configure_logger
 from anomalib.utils.metrics.threshold import BaseThreshold
+
+from .subcommands import (
+    add_onnx_export_arguments,
+    add_openvino_export_arguments,
+    add_torch_export_arguments,
+    run_export,
+)
 
 logger = logging.getLogger("anomalib.cli")
 
@@ -113,41 +118,9 @@ class AnomalibCLI(LightningCLI):
         """Adds export arguments to the parser."""
         subcommand = parser.add_subcommands(dest="export_mode", help="Export mode.")
         # Add export mode sub parsers
-        self._add_torch_export_arguments(subcommand)
-        self._add_onnx_export_arguments(subcommand)
-        self._add_openvino_export_arguments(subcommand)
-
-    def _add_torch_export_arguments(self, subcommand: _ActionSubCommands):
-        parser = LightningArgumentParser(description="Export to ONNX format")
-        parser.add_argument("--weights", type=Path, help="Path to the torch model weights.", required=True)
-        parser.add_argument("--model_config", type=Path, help="Path to the model config.", required=True)
-        parser.add_argument("--export_path", type=Path, help="Path to save the exported model.")
-        subcommand.add_subcommand("torch", parser)
-
-    def _add_onnx_export_arguments(self, subcommand: _ActionSubCommands):
-        parser = LightningArgumentParser(description="Export to ONNX format")
-        parser.add_argument("--weights", type=Path, help="Path to the torch model weights.", required=True)
-        parser.add_argument("--model_config", type=Path, help="Path to the model config.", required=True)
-        parser.add_argument("--export_path", type=Path, help="Path to save the exported model.")
-        subcommand.add_subcommand("onnx", parser)
-
-    def _add_openvino_export_arguments(self, subcommand: _ActionSubCommands):
-        parser = LightningArgumentParser(description="Export to OpenVINO format")
-        parser.add_argument(
-            "--export_path",
-            type=str,
-            help="Path to save the exported model.",
-        )
-        parser.add_argument("--input_model", type=Path, help="Path to the torch model weights.", required=True)
-        group = parser.add_argument_group("OpenVINO Model Optimizer arguments (optional)")
-        mo_parser = get_onnx_cli_parser()
-
-        # remove redundant keys from mo keys
-        for arg in mo_parser._actions:
-            if arg.dest in ("help", "input_model", "output_dir"):
-                continue
-            group.add_argument(f"--mo.{arg.dest}", type=arg.type, default=arg.default, help=arg.help)
-        subcommand.add_subcommand("openvino", parser)
+        add_torch_export_arguments(subcommand)
+        add_onnx_export_arguments(subcommand)
+        add_openvino_export_arguments(subcommand)
 
     def add_hpo_arguments(self, parser: LightningArgumentParser) -> None:
         """Add hyperparameter optimization arguments."""
@@ -214,6 +187,18 @@ class AnomalibCLI(LightningCLI):
         trainer_config[key].extend(get_callbacks(self.config[self.subcommand]))
         return Engine(**trainer_config)
 
+    def _run_subcommand(self, subcommand: str) -> None:
+        """Run subcommand depending on the subcommand.
+
+        This overrides the original ``_run_subcommand`` to run the ``Engine`` method rather than the ``Train`` method
+        """
+        if self.config["subcommand"] not in self.anomalib_subcommands():
+            fn = getattr(self.engine, subcommand)
+            fn_kwargs = self._prepare_subcommand_kwargs(subcommand)
+            fn(**fn_kwargs)
+        else:
+            getattr(self, f"{subcommand}")()
+
     @property
     def fit(self):
         return self.engine.fit
@@ -230,19 +215,7 @@ class AnomalibCLI(LightningCLI):
     def predict(self):
         return self.engine.predict
 
-    def _run_subcommand(self, subcommand: str) -> None:
-        """Run subcommand depending on the subcommand.
-
-        This overrides the original ``_run_subcommand`` to run the ``Engine`` method rather than the ``Train`` method
-        """
-        if self.config["subcommand"] not in self.anomalib_subcommands():
-            fn = getattr(self.engine, subcommand)
-            fn_kwargs = self._prepare_subcommand_kwargs(subcommand)
-            fn(**fn_kwargs)
-        else:
-            getattr(self, f"run_{subcommand}")()
-
-    def run_hpo(self) -> None:
+    def hpo(self) -> None:
         """Run hpo subcommand."""
         config = self.config["hpo"]
         sweep = Sweep(
@@ -253,23 +226,14 @@ class AnomalibCLI(LightningCLI):
         )
         sweep.run()
 
-    def run_benchmark(self) -> None:
+    def benchmark(self) -> None:
         """Run benchmark subcommand."""
         config = self.config["benchmark"]
         distribute(config.config)
 
-    def run_export(self) -> None:
+    def export(self) -> None:
         """Run export."""
-        config = self.config["export"]
-        match config.export_mode:
-            case "torch":
-                ...
-            case "onnx":
-                ...
-            case "openvino":
-                ...
-            case _:
-                raise ValueError("Unknown export mode.")
+        run_export(self.config)
 
 
 def main() -> None:
