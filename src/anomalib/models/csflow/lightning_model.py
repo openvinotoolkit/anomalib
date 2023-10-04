@@ -8,6 +8,7 @@ https://arxiv.org/pdf/2110.02855.pdf
 
 
 import logging
+from typing import Any
 
 import torch
 from lightning.pytorch.callbacks import Callback, EarlyStopping
@@ -87,6 +88,10 @@ class Csflow(AnomalyModule):
         batch["anomaly_maps"] = anomaly_maps
         batch["pred_scores"] = anomaly_scores
         return batch
+
+    @property
+    def trainer_arguments(self) -> dict[str, Any]:
+        return {"gradient_clip_val": 1, "max_epochs": 240, "num_sanity_val_steps": 0}
 
 
 class CsflowLightning(Csflow):

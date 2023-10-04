@@ -50,7 +50,7 @@ def setup_model_train(
         device (List[int], int, optional): Select which device you want to train the model on. Defaults to first GPU.
 
     Returns:
-        Tuple[DictConfig, LightningDataModule, AnomalyModule, Trainer]: config, datamodule, trained model, trainer
+        Tuple[DictConfig, LightningDataModule, AnomalyModule, Engine]: config, datamodule, trained model, engine
     """
     config = get_configurable_parameters(model_name=model_name)
     if score_type is not None:
@@ -116,7 +116,7 @@ def setup_model_train(
 
     engine = Engine(callbacks=callbacks, **config.trainer)
     engine.fit(model=model, datamodule=datamodule)
-    return config, datamodule, model, trainer
+    return config, datamodule, model, engine
 
 
 def model_load_test(config: Union[DictConfig, ListConfig], datamodule: LightningDataModule, results: Dict):
@@ -140,7 +140,7 @@ def model_load_test(config: Union[DictConfig, ListConfig], datamodule: Lightning
             callbacks.pop(index)
             break
 
-    # create new trainer object with LoadModel callback (assumes it is present)
+    # create new engine object with LoadModel callback (assumes it is present)
     engine = Engine(callbacks=callbacks, **config.trainer)
     # Assumes the new model has LoadModel callback and the old one had ModelCheckpoint callback
     new_results = engine.test(model=loaded_model, datamodule=datamodule, ckpt_path=ckpt_path)[0]

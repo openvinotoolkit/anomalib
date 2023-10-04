@@ -8,6 +8,7 @@ https://arxiv.org/abs/1805.06725
 
 
 import logging
+from typing import Any
 
 import torch
 from lightning.pytorch.callbacks import Callback, EarlyStopping
@@ -193,6 +194,10 @@ class Ganomaly(AnomalyModule):
             self.max_scores.to(scores.device) - self.min_scores.to(scores.device)
         )
         return scores
+
+    @property
+    def trainer_arguments(self) -> dict[str, Any]:
+        return {"gradient_clip_val": 0, "max_epochs": 100, "num_sanity_val_steps": 0}
 
 
 class GanomalyLightning(Ganomaly):

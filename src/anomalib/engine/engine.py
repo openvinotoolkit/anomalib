@@ -8,7 +8,6 @@ from typing import Any
 
 from lightning import Callback
 from lightning.pytorch import LightningDataModule, Trainer
-from lightning.pytorch.callbacks import RichProgressBar
 from lightning.pytorch.trainer.connectors.callback_connector import _CallbackConnector
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
 from omegaconf import DictConfig, ListConfig
@@ -113,7 +112,7 @@ class Engine:
         visualization: DictConfig | None = None,
         **kwargs,
     ) -> None:
-        self._cache = _TrainerArgumentsCache(callbacks=[*callbacks, RichProgressBar()], **kwargs)
+        self._cache = _TrainerArgumentsCache(callbacks=[*callbacks], **kwargs)
         self.normalization = normalization
         self.threshold = threshold
         self.task = task

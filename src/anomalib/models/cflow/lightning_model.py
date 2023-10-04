@@ -7,6 +7,8 @@ https://arxiv.org/pdf/2107.12571v1.pdf
 # SPDX-License-Identifier: Apache-2.0
 
 
+from typing import Any
+
 import einops
 import torch
 import torch.nn.functional as F
@@ -172,6 +174,10 @@ class Cflow(AnomalyModule):
 
         batch["anomaly_maps"] = self.model(batch["image"])
         return batch
+
+    @property
+    def trainer_arguments(self) -> dict[str, Any]:
+        return {"gradient_clip_val": 0, "max_epochs": 50, "num_sanity_val_steps": 0}
 
 
 class CflowLightning(Cflow):

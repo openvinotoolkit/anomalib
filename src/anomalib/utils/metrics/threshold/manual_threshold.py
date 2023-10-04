@@ -17,8 +17,8 @@ class ManualThreshold(BaseThreshold):
             default_value (float, optional): Default threshold value. Defaults to 0.5.
         """
         super().__init__(**kwargs)
-        self.add_state("value", default=torch.tensor(default_value), persistent=True)
-        self.value = torch.tensor(default_value)
+        self.add_state("value", default=torch.tensor(default_value, dtype=torch.float64), persistent=True)
+        self.value = torch.tensor(default_value, dtype=torch.float64)
 
     def compute(self) -> torch.Tensor:
         """Compute the threshold.

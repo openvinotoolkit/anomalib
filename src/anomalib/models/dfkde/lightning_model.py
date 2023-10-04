@@ -5,6 +5,7 @@
 
 
 import logging
+from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
@@ -106,6 +107,10 @@ class Dfkde(AnomalyModule):
 
         batch["pred_scores"] = self.model(batch["image"])
         return batch
+
+    @property
+    def trainer_arguments(self) -> dict[str, Any]:
+        return {"gradient_clip_val": 0, "max_epochs": 1, "num_sanity_val_steps": 0}
 
 
 class DfkdeLightning(Dfkde):
