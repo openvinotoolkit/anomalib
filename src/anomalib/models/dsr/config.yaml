@@ -9,7 +9,7 @@ dataset:
   num_workers: 8
   image_size: 256 # dimensions to which images are resized (mandatory)
   center_crop: null # dimensions to which images are center-cropped after resizing (optional)
-  normalization: imagenet # data distribution to which the images will be normalized: [none, imagenet]
+  normalization: none # data distribution to which the images will be normalized: [none, imagenet]
   transform_config:
     train: null
     eval: null
@@ -29,7 +29,7 @@ model:
   name: dsr
   lr: 0.0002
   latent_anomaly_strength: 0.2
-  upsampling_train_ratio: 0.83
+  upsampling_train_ratio: 0.7
   normalization_method: none # options: [none, min_max, cdf]
 
 metrics:
@@ -76,9 +76,9 @@ trainer:
   check_val_every_n_epoch: 1 # Don't validate before extracting features.
   fast_dev_run: false
   accumulate_grad_batches: 1
-  max_epochs: -1
+  max_epochs: 700
   min_epochs: null
-  max_steps: 120000
+  max_steps: -1
   min_steps: null
   max_time: null
   limit_train_batches: 1.0
