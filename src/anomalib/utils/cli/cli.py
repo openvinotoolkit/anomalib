@@ -5,7 +5,7 @@
 
 import logging
 from pathlib import Path
-from typing import Any, Callable, Dict, Type
+from typing import Any, Callable, Type
 
 from jsonargparse import ArgumentParser
 from lightning.pytorch import Trainer
@@ -44,11 +44,11 @@ class AnomalibCLI(LightningCLI):
     def __init__(
         self,
         save_config_callback: Type[SaveConfigCallback] = SaveConfigCallback,
-        save_config_kwargs: Dict[str, Any] | None = None,
+        save_config_kwargs: dict[str, Any] | None = None,
         trainer_class: Type[Trainer] | Callable[..., Trainer] = Trainer,
-        trainer_defaults: Dict[str, Any] | None = None,
+        trainer_defaults: dict[str, Any] | None = None,
         seed_everything_default: bool | int = True,
-        parser_kwargs: Dict[str, Any] | Dict[str, Dict[str, Any]] | None = None,
+        parser_kwargs: dict[str, Any] | dict[str, dict[str, Any]] | None = None,
         args: ArgsType = None,
         run: bool = True,
         auto_configure_optimizers: bool = True,
@@ -110,7 +110,7 @@ class AnomalibCLI(LightningCLI):
         parser.link_arguments("data.init_args.image_size", "model.init_args.input_size")
         parser.link_arguments("task", "data.init_args.task")
         parser.add_argument("--results_dir.path", type=Path, help="Path to save the results.")
-        parser.add_argument("--results_dir.unique", type=bool, help="Whether to create a unique folder.", default=False)
+        parser.add_argument("--results_dir.unique", type=bool, help="Whether to create a unique folder.", default=True)
         parser.link_arguments("results_dir.path", "trainer.default_root_dir")
         # TODO tiling should also be a category of its own
 
@@ -140,7 +140,8 @@ class AnomalibCLI(LightningCLI):
         """Instantiate classes depending on the subcommand.
 
         For trainer related commands it instantiates all the model, datamodule and trainer classes.
-        But for export and hpo we do not want to instantiate any classes.
+        But for subcommands we do not want to instantiate any trainer specific classes such as datamodule, model, etc
+        This is because the subcommand is responsible for instantiating and executing code based on the passed config
         """
         if self.config["subcommand"] not in self.anomalib_subcommands():
             # since all classes are instantiated, the LightningCLI also creates an unused ``Trainer`` object.
@@ -204,12 +205,12 @@ class AnomalibCLI(LightningCLI):
         return self.engine.fit
 
     @property
-    def test(self):
-        return self.engine.test
-
-    @property
     def validate(self):
         return self.engine.validate
+
+    @property
+    def test(self):
+        return self.engine.test
 
     @property
     def predict(self):
