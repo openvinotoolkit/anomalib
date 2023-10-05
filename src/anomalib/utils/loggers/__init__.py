@@ -6,13 +6,13 @@
 
 import logging
 import os
-import warnings
 from pathlib import Path
 from typing import Iterable
 
 from lightning.pytorch.loggers import CSVLogger, Logger
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
+from rich.logging import RichHandler
 
 from .comet import AnomalibCometLogger
 from .tensorboard import AnomalibTensorBoardLogger
@@ -52,11 +52,13 @@ def configure_logger(level: int | str = logging.INFO) -> None:
 
     format_string = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     logging.basicConfig(format=format_string, level=level)
+    logging.getLogger().addHandler(RichHandler(rich_tracebacks=True))
 
     # Set Pytorch Lightning logs to have a the consistent formatting with anomalib.
     for handler in logging.getLogger("lightning.pytorch").handlers:
         handler.setFormatter(logging.Formatter(format_string))
         handler.setLevel(level)
+    logging.getLogger("lightning.pytorch").addHandler(RichHandler(rich_tracebacks=True))
 
 
 def get_experiment_logger(
@@ -74,18 +76,6 @@ def get_experiment_logger(
         Logger | Iterable[Logger] | bool]: Logger
     """
     logger.info("Loading the experiment logger(s)")
-
-    # TODO remove when logger is deprecated from project
-    if "logger" in config.project.keys():
-        warnings.warn(
-            "'logger' key will be deprecated from 'project' section of the config file."
-            " Please use the logging section in config file.",
-            DeprecationWarning,
-        )
-        if "logging" not in config:
-            config.logging = {"logger": config.project.logger, "log_graph": False}
-        else:
-            config.logging.logger = config.project.logger
 
     if config.logging.logger in (None, False):
         return False

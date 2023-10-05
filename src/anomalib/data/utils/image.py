@@ -7,6 +7,7 @@
 import math
 import warnings
 from pathlib import Path
+from typing import Sequence
 
 import cv2
 import numpy as np
@@ -142,14 +143,14 @@ def generate_output_image_filename(input_path: str | Path, output_path: str | Pa
     return file_path
 
 
-def get_image_height_and_width(image_size: int | tuple[int, int]) -> tuple[int, int]:
+def get_image_height_and_width(image_size: int | Sequence[int]) -> tuple[int, int]:
     """Get image height and width from ``image_size`` variable.
 
     Args:
-        image_size (int | tuple[int, int] | None, optional): Input image size.
+        image_size (int | Sequence[int] | None, optional): Input image size.
 
     Raises:
-        ValueError: Image size not None, int or tuple.
+        ValueError: Image size not None, int or Sequence of values.
 
     Examples:
         >>> get_image_height_and_width(image_size=256)
@@ -172,7 +173,7 @@ def get_image_height_and_width(image_size: int | tuple[int, int]) -> tuple[int, 
     """
     if isinstance(image_size, int):
         height_and_width = (image_size, image_size)
-    elif isinstance(image_size, tuple):
+    elif isinstance(image_size, Sequence):
         height_and_width = int(image_size[0]), int(image_size[1])
     else:
         raise ValueError("``image_size`` could be either int or tuple[int, int]")

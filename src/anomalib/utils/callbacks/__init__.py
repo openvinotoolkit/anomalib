@@ -10,6 +10,7 @@ import warnings
 from importlib import import_module
 
 import yaml
+from jsonargparse import Namespace
 from lightning.pytorch.callbacks import Callback, ModelCheckpoint
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
@@ -35,11 +36,11 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
+def get_callbacks(config: DictConfig | ListConfig | Namespace) -> list[Callback]:
     """Return base callbacks for all the lightning models.
 
     Args:
-        config (DictConfig): Model config
+        config (DictConfig | ListConfig | Namespace): Model config
 
     Return:
         (list[Callback]): List of callbacks.
@@ -48,11 +49,13 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
 
     callbacks: list[Callback] = []
 
-    monitor_metric = None if "early_stopping" not in config.model.keys() else config.model.early_stopping.metric
-    monitor_mode = "max" if "early_stopping" not in config.model.keys() else config.model.early_stopping.mode
+    monitor_metric = (
+        None if "early_stopping" not in config.model.init_args.keys() else config.model.init_args.early_stopping.metric
+    )
+    monitor_mode = "max" if "early_stopping" not in config.model.init_args.keys() else config.model.early_stopping.mode
 
     checkpoint = ModelCheckpoint(
-        dirpath=os.path.join(config.project.path, "weights", "lightning"),
+        dirpath=os.path.join(config.trainer.default_root_dir, "weights", "lightning"),
         filename="model",
         monitor=monitor_metric,
         mode=monitor_mode,
@@ -61,8 +64,8 @@ def get_callbacks(config: DictConfig | ListConfig) -> list[Callback]:
 
     callbacks.extend([checkpoint, TimerCallback()])
 
-    if "resume_from_checkpoint" in config.trainer.keys() and config.trainer.resume_from_checkpoint is not None:
-        load_model = LoadModelCallback(config.trainer.resume_from_checkpoint)
+    if "ckpt_path" in config.trainer.keys() and config.ckpt_path is not None:
+        load_model = LoadModelCallback(config.ckpt_path)
         callbacks.append(load_model)
 
     if "optimization" in config.keys():

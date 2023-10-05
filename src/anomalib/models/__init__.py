@@ -123,15 +123,15 @@ def get_model(config: DictConfig | ListConfig) -> AnomalyModule:
         AnomalyModule: Anomaly Model
     """
     logger.info("Loading the model.")
-
     model: AnomalyModule
 
-    if config.model.name in get_available_models():
-        module = import_module(f"anomalib.models.{config.model.name}")
-        model = getattr(module, f"{convert_snake_to_pascal_case(config.model.name)}Lightning")(config)
-
-    else:
-        raise ValueError(f"Unknown model {config.model.name}!")
+    try:
+        module = import_module(".".join(config.model.class_path.split(".")[:-1]))
+        model = getattr(module, config.model.class_path.split(".")[-1])
+        model = model(**config.model.init_args)
+    except ModuleNotFoundError as exception:
+        logger.error("Could not find the model class: %s", config.model.class_path)
+        raise exception
 
     if "init_weights" in config.keys() and config.init_weights:
         model.load_state_dict(load(os.path.join(config.project.path, config.init_weights))["state_dict"], strict=False)

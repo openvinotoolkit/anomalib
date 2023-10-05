@@ -1,4 +1,4 @@
-seed: 42
+seed_everything: 42
 compute_openvino: false
 hardware:
   - cpu
@@ -7,7 +7,7 @@ writer:
   - wandb
   - tensorboard
 grid_search:
-  dataset:
+  data:
     category:
       - bottle
       - cable

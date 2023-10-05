@@ -1,39 +1,36 @@
-dataset:
-  name: mvtec
-  format: mvtec
-  path: ./datasets/MVTec
-  category: bottle
-  task: segmentation
-  train_batch_size: 32
-  eval_batch_size: 32
-  num_workers: 8
-  image_size: 256 # dimensions to which images are resized (mandatory)
-  center_crop: null # dimensions to which images are center-cropped after resizing (optional)
-  normalization: imagenet # data distribution to which the images will be normalized: [none, imagenet]
-  transform_config:
-    train: null
-    eval: null
-  test_split_mode: from_dir # options: [from_dir, synthetic]
-  test_split_ratio: 0.2 # fraction of train images held out testing (usage depends on test_split_mode)
-  val_split_mode: same_as_test # options: [same_as_test, from_test, synthetic]
-  val_split_ratio: 0.5 # fraction of train/test images held out for validation (usage depends on val_split_mode)
-  tiling:
-    apply: false
-    tile_size: null
-    stride: null
-    remove_border_count: 0
-    use_random_tiling: False
-    random_tile_count: 16
+data:
+  class_path: anomalib.data.MVTec
+  init_args:
+    root: ./datasets/MVTec
+    category: bottle
+    image_size: [256, 256]
+    center_crop: null
+    normalization: imagenet
+    train_batch_size: 32
+    eval_batch_size: 32
+    num_workers: 8
+    task: segmentation
+    transform_config_train: null
+    transform_config_eval: null
+    test_split_mode: from_dir
+    test_split_ratio: 0.2
+    val_split_mode: same_as_test
+    val_split_ratio: 0.5
+    seed: null
+
+task: segmentation
 
 model:
-  name: padim
-  backbone: resnet18
-  pre_trained: true
-  layers:
-    - layer1
-    - layer2
-    - layer3
-  normalization_method: min_max # options: [none, min_max, cdf]
+  class_path: anomalib.models.Padim
+  init_args:
+    layers:
+      - layer1
+      - layer2
+      - layer3
+    input_size: null
+    backbone: resnet18
+    pre_trained: true
+    n_features: null
 
 metrics:
   image:
@@ -42,18 +39,22 @@ metrics:
   pixel:
     - F1Score
     - AUROC
-  threshold: F1AdaptiveThreshold
+  threshold:
+    class_path: anomalib.utils.metrics.F1AdaptiveThreshold
+normalization:
+  normalization_method: min_max
 
 visualization:
-  show_images: False # show images on the screen
-  save_images: True # save images to the file system
-  log_images: True # log images to the available loggers (if any)
-  image_save_path: null # path to which images will be saved
-  mode: full # options: ["full", "simple"]
+  mode: full
+  image_save_path: ./results
+  inputs_are_normalized: true
+  show_images: false
+  log_images: true
+  save_images: true
 
-project:
-  seed: 42
+results_dir:
   path: ./results
+  unique: false
 
 logging:
   logger: [] # options: [comet, tensorboard, wandb, csv] or combinations.
