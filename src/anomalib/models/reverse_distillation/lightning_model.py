@@ -151,4 +151,3 @@ class ReverseDistillationLightning(ReverseDistillation):
             return [early_stopping]
         else:
             return []
-
