@@ -8,10 +8,6 @@ from pathlib import Path
 from anomalib.utils.benchmarking import distribute
 
 if __name__ == "__main__":
-    # Benchmarking entry point.
-    # Spawn multiple processes one for cpu and rest for the number of gpus available in the system.
-    # The idea is to distribute metrics collection over all the available devices.
-
     parser = ArgumentParser()
     parser.add_argument("--config", type=Path, help="Path to sweep configuration")
     _args = parser.parse_args()

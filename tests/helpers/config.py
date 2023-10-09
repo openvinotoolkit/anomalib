@@ -31,6 +31,6 @@ def get_test_configurable_parameters(
     config = get_configurable_parameters(model_name, config_path, config_filename, config_file_extension)
 
     # Update path to match the dataset path in the test image/runner
-    config.dataset.path = get_dataset_path() if dataset_path is None else dataset_path
+    config.data.init_args.root = get_dataset_path() if dataset_path is None else dataset_path
 
     return config

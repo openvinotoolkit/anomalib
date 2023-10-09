@@ -39,8 +39,8 @@ def test_manual_threshold():
     """
     config = get_test_configurable_parameters(config_path="src/anomalib/models/padim/config.yaml")
 
-    config.dataset.num_workers = 0
-    config.model.normalization_method = "none"
+    config.data.init_args.num_workers = 0
+    config.normalization.normalization_method = "none"
     config.trainer.fast_dev_run = True
     config.metrics.image = ["F1Score"]
     config.metrics.pixel = ["F1Score"]
@@ -59,7 +59,7 @@ def test_manual_threshold():
     engine = Engine(
         **config.trainer,
         callbacks=callbacks,
-        normalization=config.model.normalization_method,
+        normalization=config.normalization.normalization_method,
         threshold=config.metrics.threshold,
         image_metrics=config.metrics.get("image", None),
         pixel_metrics=config.metrics.get("pixel", None),

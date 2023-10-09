@@ -346,8 +346,8 @@ class TestConfigToDataModule:
     def test_image_size(self, input_size, effective_image_size, category="shapes", path=None):
         """Test if the image size parameter works as expected."""
         configurable_parameters = get_test_configurable_parameters(dataset_path=path, model_name="stfpm")
-        configurable_parameters.dataset.category = category
-        configurable_parameters.dataset.image_size = input_size
+        configurable_parameters.data.init_args.category = category
+        configurable_parameters.data.init_args.image_size = input_size
         configurable_parameters = update_input_size_config(configurable_parameters)
 
         data_module = get_datamodule(configurable_parameters)

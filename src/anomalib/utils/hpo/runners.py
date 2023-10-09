@@ -109,7 +109,7 @@ class CometSweep:
 
         opt = Optimizer(std_dict)
 
-        project_name = f"{self.config.model.name}_{self.config.dataset.name}"
+        project_name = f"{self.config.model.name}_{self.config.data.class_path.split('.')[-1]}"
 
         for experiment in opt.get_experiments(project_name=project_name):
             comet_logger = CometLogger(workspace=self.entity)

@@ -11,7 +11,6 @@ import logging
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
 from anomalib.models.components import AnomalyModule
@@ -19,7 +18,7 @@ from anomalib.models.padim.torch_model import PadimModel
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["Padim", "PadimLightning"]
+__all__ = ["Padim"]
 
 
 class Padim(AnomalyModule):
@@ -115,22 +114,3 @@ class Padim(AnomalyModule):
         # Since the model does not require training, we limit the max_epochs to 1.
         # Since we need to run training epoch before validation, we also set the sanity steps to 0
         return {"max_epochs": 1, "val_check_interval": 1.0, "num_sanity_val_steps": 0}
-
-
-class PadimLightning(Padim):
-    """PaDiM: a Patch Distribution Modeling Framework for Anomaly Detection and Localization.
-
-    Args:
-        hparams (DictConfig | ListConfig): Model params
-    """
-
-    def __init__(self, hparams: DictConfig | ListConfig) -> None:
-        super().__init__(
-            input_size=hparams.model.input_size,
-            layers=hparams.model.layers,
-            backbone=hparams.model.backbone,
-            pre_trained=hparams.model.pre_trained,
-            n_features=hparams.model.n_features if "n_features" in hparams.model else None,
-        )
-        self.hparams: DictConfig | ListConfig  # type: ignore
-        self.save_hyperparameters(hparams)

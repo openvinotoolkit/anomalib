@@ -115,7 +115,7 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_met
         export(
             task=model_config.dataset.task,
             transform=engine.trainer.datamodule.test_data.transform.to_dict(),
-            input_size=model_config.model.input_size,
+            input_size=model_config.model.init_args.input_size,
             model=model,
             export_mode=ExportMode.TORCH,
             export_root=project_path,
@@ -134,7 +134,7 @@ def get_single_model_metrics(model_config: DictConfig | ListConfig, openvino_met
             export(
                 task=model_config.dataset.task,
                 transform=engine.trainer.datamodule.test_data.transform.to_dict(),
-                input_size=model_config.model.input_size,
+                input_size=model_config.model.init_args.input_size,
                 model=model,
                 export_mode=ExportMode.OPENVINO,
                 export_root=project_path,
@@ -294,7 +294,7 @@ def sweep(
     if run_config.model_name in ["patchcore", "cflow"]:
         convert_openvino = False  # `torch.cdist` is not supported by onnx version 11
         # TODO Remove this line when issue #40 is fixed https://github.com/openvinotoolkit/anomalib/issues/40
-        if model_config.model.input_size != (224, 224):
+        if model_config.model.init_args.input_size != (224, 224):
             return {}  # go to next run
 
     # Run benchmarking for current config

@@ -16,9 +16,9 @@ def run_train_test(config):
     engine = Engine(
         **config.trainer,
         callbacks=callbacks,
-        normalization=config.model.normalization_method,
+        normalization=config.normalization.normalization_method,
         threshold=config.metrics.threshold,
-        task=config.dataset.task,
+        task=config.data.init_args.task,
         image_metrics=config.metrics.get("image", None),
         pixel_metrics=config.metrics.get("pixel", None),
         visualization=config.visualization,
@@ -31,24 +31,23 @@ def run_train_test(config):
 @TestDataset(num_train=200, num_test=30, path=get_dataset_path(), seed=42)
 def test_normalizer(path=get_dataset_path(), category="shapes"):
     config = get_configurable_parameters(config_path="src/anomalib/models/padim/config.yaml")
-    config.dataset.path = path
-    config.dataset.category = category
+    config.data.init_args.root = path
+    config.data.init_args.category = category
     config.metrics.threshold = "F1AdaptiveThreshold"
-    config.project.log_images_to = []
     config.metrics.image = ["F1Score", "AUROC"]
 
     # run without normalization
-    config.model.normalization_method = "none"
+    config.normalization.normalization_method = "none"
     seed_everything(42)
     results_without_normalization = run_train_test(config)
 
     # run with cdf normalization
-    config.model.normalization_method = "cdf"
+    config.normalization.normalization_method = "cdf"
     seed_everything(42)
     results_with_cdf_normalization = run_train_test(config)
 
     # run without normalization
-    config.model.normalization_method = "min_max"
+    config.normalization.normalization_method = "min_max"
     seed_everything(42)
     results_with_minmax_normalization = run_train_test(config)
 
