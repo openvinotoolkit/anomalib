@@ -97,7 +97,8 @@ def get_callbacks(config: DictConfig | ListConfig | Namespace) -> list[Callback]
             warnings.warn(f"Export option: {config.optimization.export_mode} not found. Defaulting to no model export")
 
     # Add callback to log graph to loggers
-    if config.logging.log_graph not in (None, False):
-        callbacks.append(GraphLogger())
+    # TODO find a place for this key
+    # if config.logging.log_graph not in (None, False):
+    #     callbacks.append(GraphLogger())
 
     return callbacks

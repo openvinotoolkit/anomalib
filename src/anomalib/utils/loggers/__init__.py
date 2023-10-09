@@ -77,7 +77,7 @@ def get_experiment_logger(
     """
     logger.info("Loading the experiment logger(s)")
 
-    if config.trainer.logger in (None, False):
+    if "logger" not in config.trainer or config.trainer.logger in (None, False):
         return False
 
     logger_list: list[Logger] = []
@@ -130,5 +130,8 @@ def get_experiment_logger(
                 f"To enable the logger, set `project.logger` to `true` or use one of available loggers in config.yaml\n"
                 f"To disable the logger, set `project.logger` to `false`."
             )
+
+    # TODO remove this method and set these values in ``update_config``
+    del config.trainer.logger
 
     return logger_list
