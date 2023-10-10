@@ -11,7 +11,6 @@ import torch
 from lightning.pytorch.loggers import CometLogger, WandbLogger
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
-import wandb
 from anomalib.config import update_input_size_config
 from anomalib.data import get_datamodule
 from anomalib.engine import Engine
@@ -22,6 +21,10 @@ from .config import flatten_hpo_params
 
 logger = logging.getLogger(__name__)
 
+try:
+    import wandb
+except ImportError:
+    logger.warn("Could not find wandb. To log to wandb, ensure that you have wandb installed.")
 try:
     from comet_ml import Optimizer
 except ImportError:

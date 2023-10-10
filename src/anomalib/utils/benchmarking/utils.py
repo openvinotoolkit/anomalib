@@ -11,10 +11,13 @@ from pathlib import Path
 
 import pandas as pd
 
-import wandb
-
 logger = logging.getLogger(__name__)
 
+
+try:
+    import wandb
+except ImportError:
+    logger.warn("Could not find wandb. To log to wandb, ensure that you have wandb installed.")
 try:
     from comet_ml import Experiment
 except ImportError:
