@@ -5,10 +5,10 @@
 
 
 import torch
-import torch.nn.functional as F
 from einops import rearrange
 from omegaconf import ListConfig
 from torch import Tensor, nn
+from torch.nn import functional as F  # noqa: N812
 
 from anomalib.models.components import GaussianBlur2d
 

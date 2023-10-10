@@ -12,8 +12,8 @@ from typing import Sequence
 import cv2
 import numpy as np
 import tifffile as tiff
-import torch.nn.functional as F
 from torch import Tensor
+from torch.nn import functional as F  # noqa: N812
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
 

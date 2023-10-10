@@ -14,7 +14,7 @@ import logging
 import shutil
 from pathlib import Path
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 import cv2
 import pandas as pd
 from pandas.core.frame import DataFrame

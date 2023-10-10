@@ -16,12 +16,12 @@ line-length = 120
 [tool.ruff]
 # Enable rules
 select = [
-    # "F",    # Pyflakes (`F`)
-    # "E",    # pycodestyle error (`E`)
-    # "W",    # pycodestyle warning (`W`)
+    "F",    # Pyflakes (`F`)
+    "E",    # pycodestyle error (`E`)
+    "W",    # pycodestyle warning (`W`)
     # "C90",  # mccabe (`C90`)  - 1 issue
-    # "I",    # isort (`I`)
-    # "N",    # pep8-naming (`N`)
+    "I",    # isort (`I`)
+    "N",    # pep8-naming (`N`)
     # "D",    # pydocstyle (`D`)
     # "UP",   # pyupgrade (`UP`)
     # "YTT",  # flake8-2020 (`YTT`)

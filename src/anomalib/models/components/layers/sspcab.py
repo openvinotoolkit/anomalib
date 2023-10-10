@@ -7,8 +7,8 @@ Paper https://arxiv.org/abs/2111.09099
 # SPDX-License-Identifier: Apache-2.0
 
 import torch
-import torch.nn.functional as F
 from torch import Tensor, nn
+from torch.nn import functional as F  # noqa: N812
 
 
 class AttentionModule(nn.Module):

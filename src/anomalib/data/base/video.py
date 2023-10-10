@@ -5,7 +5,7 @@ from abc import ABC
 from enum import Enum
 from typing import Callable
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 import torch
 from pandas import DataFrame
 from torch import Tensor

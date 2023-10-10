@@ -10,9 +10,9 @@ from math import ceil
 from typing import Sequence
 
 import torch
-import torchvision.transforms as T
+import torchvision.transforms as T  # noqa: N812
 from torch import Tensor
-from torch.nn import functional as F
+from torch.nn import functional as F  # noqa: N812
 
 
 class ImageUpscaleMode(str, Enum):

@@ -9,7 +9,7 @@ from pathlib import Path
 from shutil import move
 from typing import Any, Callable
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 import cv2
 import numpy as np
 import torch

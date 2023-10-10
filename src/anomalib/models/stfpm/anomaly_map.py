@@ -5,9 +5,9 @@
 
 
 import torch
-import torch.nn.functional as F
 from omegaconf import ListConfig
 from torch import Tensor, nn
+from torch.nn import functional as F  # noqa: N812
 
 
 class AnomalyMapGenerator(nn.Module):

@@ -23,7 +23,7 @@ if wandb_installed:
             AnomalibCometLogger,
             AnomalibTensorBoardLogger,
             AnomalibWandbLogger,
-            UnknownLogger,
+            UnknownLoggerError,
             get_experiment_logger,
         )
 else:
@@ -33,7 +33,7 @@ else:
         AnomalibCometLogger,
         AnomalibTensorBoardLogger,
         AnomalibWandbLogger,
-        UnknownLogger,
+        UnknownLoggerError,
         get_experiment_logger,
     )
 
@@ -89,6 +89,6 @@ def test_get_experiment_logger():
         assert isinstance(logger[3], AnomalibCometLogger)
 
         # raise unknown
-        with pytest.raises(UnknownLogger):
+        with pytest.raises(UnknownLoggerError):
             config.trainer.logger = "randomlogger"
             logger = get_experiment_logger(config=config)

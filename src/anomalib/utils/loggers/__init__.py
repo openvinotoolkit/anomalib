@@ -33,7 +33,7 @@ AVAILABLE_LOGGERS = ["tensorboard", "wandb", "csv", "comet"]
 logger = logging.getLogger(__name__)
 
 
-class UnknownLogger(Exception):
+class UnknownLoggerError(Exception):
     """This is raised when the logger option in `config.yaml` file is set incorrectly."""
 
 
@@ -124,7 +124,7 @@ def get_experiment_logger(
         elif experiment_logger == "csv":
             logger_list.append(CSVLogger(save_dir=os.path.join(config.project.path, "logs")))
         else:
-            raise UnknownLogger(
+            raise UnknownLoggerError(
                 f"Unknown logger type: {config.trainer.logger}. "
                 f"Available loggers are: {AVAILABLE_LOGGERS}.\n"
                 f"To enable the logger, set `project.logger` to `true` or use one of available loggers in config.yaml\n"

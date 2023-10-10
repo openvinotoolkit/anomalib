@@ -7,7 +7,7 @@
 import logging
 from enum import Enum
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 from albumentations.pytorch import ToTensorV2
 from omegaconf import DictConfig
 
@@ -61,7 +61,7 @@ def get_transforms(
 
 
         Transforms could be read from albumentations Compose object.
-        >>> import albumentations as A
+        >>> import albumentations as A  # noqa: N812
         >>> from albumentations.pytorch import ToTensorV2
         >>> config = A.Compose([A.Resize(512, 512), ToTensorV2()])
         >>> transforms = get_transforms(config=config, to_tensor=False)

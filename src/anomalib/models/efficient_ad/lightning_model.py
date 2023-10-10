@@ -10,7 +10,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 import numpy as np
 import torch
 import tqdm
