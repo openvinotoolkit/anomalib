@@ -165,6 +165,32 @@ class Engine:
         datamodule: LightningDataModule | None = None,
         ckpt_path: str | None = None,
     ) -> None:
+        """
+        Trains the given `model` using the provided training and validation dataloaders.
+
+        Args:
+            model (AnomalyModule): The model to train.
+            train_dataloaders (TRAIN_DATALOADERS | LightningDataModule | None, optional): The training dataloaders.
+                Defaults to None.
+            val_dataloaders (EVAL_DATALOADERS | None, optional): The validation dataloaders. Defaults to None.
+            datamodule (LightningDataModule | None, optional): The LightningDataModule to use for training.
+                Defaults to None.
+            ckpt_path (str | None, optional): The path to a checkpoint to load before training. Defaults to None.
+
+        CLI Usage:
+            1. you can pick a model, and you can run through the MVTec dataset.
+                ```python
+                anomalib fit --model anomalib.models.Padim
+                ```
+            2. Of course, you can override the various values with commands.
+                ```python
+                anomalib fit --model anomalib.models.Padim --data <CONFIG | CLASS_PATH_OR_NAME> --trainer.max_epochs 3
+                ```
+            4. If you have a ready configuration file, run it like this.
+                ```python
+                anomalib fit --config <config_file_path>
+                ```
+        """
         self._setup_trainer(model)
         self.trainer.fit(model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)
 
@@ -176,6 +202,38 @@ class Engine:
         verbose: bool = True,
         datamodule: LightningDataModule | None = None,
     ) -> _EVALUATE_OUTPUT | None:
+        """
+        Validates the given anomaly model on the specified dataloaders.
+
+        Args:
+            model: AnomalyModule, optional
+                The anomaly model to validate. If not provided, the previously set model will be used.
+            dataloaders: EVAL_DATALOADERS | LightningDataModule, optional
+                The dataloaders to use for validation. If not provided, the previously set dataloaders will be used.
+            ckpt_path: str, optional
+                The path to the checkpoint to use for validation. If not provided, the best checkpoint will be used.
+            verbose: bool, optional
+                Whether to print validation progress to the console. Defaults to True.
+            datamodule: LightningDataModule, optional
+                The datamodule to use for validation. If not provided, the previously set datamodule will be used.
+
+        Returns:
+            The output of the validation step, or None if validation failed.
+
+        CLI Usage:
+            1. you can pick a model.
+                ```python
+                anomalib validate --model anomalib.models.Padim
+                ```
+            2. Of course, you can override the various values with commands.
+                ```python
+                anomalib validate --model anomalib.models.Padim --data <CONFIG | CLASS_PATH_OR_NAME>
+                ```
+            4. If you have a ready configuration file, run it like this.
+                ```python
+                anomalib validate --config <config_file_path>
+                ```
+        """
         if model:
             self._setup_trainer(model)
         return self.trainer.validate(model, dataloaders, ckpt_path, verbose, datamodule)
@@ -188,6 +246,33 @@ class Engine:
         verbose: bool = True,
         datamodule: LightningDataModule | None = None,
     ) -> _EVALUATE_OUTPUT:
+        """
+        Test the given anomaly model on the specified dataloaders.
+
+        Args:
+            model: Anomaly model to test. If None, the previously set model will be used.
+            dataloaders: Dataloaders to use for testing. If None, the previously set dataloaders will be used.
+            ckpt_path: Path to a checkpoint to use for testing. If None, the latest checkpoint will be used.
+            verbose: Whether to print detailed information during testing.
+            datamodule: LightningDataModule to use for testing. If None, the previously set datamodule will be used.
+
+        Returns:
+            The evaluation results as a dictionary.
+
+        CLI Usage:
+            1. you can pick a model.
+                ```python
+                anomalib test --model anomalib.models.Padim
+                ```
+            2. Of course, you can override the various values with commands.
+                ```python
+                anomalib test --model anomalib.models.Padim --data <CONFIG | CLASS_PATH_OR_NAME>
+                ```
+            4. If you have a ready configuration file, run it like this.
+                ```python
+                anomalib test --config <config_file_path>
+                ```
+        """
         if model:
             self._setup_trainer(model)
         return self.trainer.test(model, dataloaders, ckpt_path, verbose, datamodule)
@@ -200,6 +285,34 @@ class Engine:
         return_predictions: bool | None = None,
         ckpt_path: str | None = None,
     ) -> _PREDICT_OUTPUT | None:
+        """
+        Generates predictions for the given model and data.
+
+        Args:
+            model: The anomaly model to use for prediction. If None, the previously set model will be used.
+            dataloaders: The data loaders to use for prediction. If None, the previously set data loaders will be used.
+            datamodule: The data module to use for prediction. If None, the previously set data module will be used.
+            return_predictions: Whether to return the predictions or not. If None, the default value is used.
+            ckpt_path: The path to the checkpoint to use for prediction.
+                If None, the previously set checkpoint will be used.
+
+        Returns:
+            The predictions generated by the model, or None if `return_predictions` is False.
+
+        CLI Usage:
+            1. you can pick a model.
+                ```python
+                anomalib predict --model anomalib.models.Padim
+                ```
+            2. Of course, you can override the various values with commands.
+                ```python
+                anomalib predict --model anomalib.models.Padim --data <CONFIG | CLASS_PATH_OR_NAME>
+                ```
+            4. If you have a ready configuration file, run it like this.
+                ```python
+                anomalib predict --config <config_file_path> --return_predictions
+                ```
+        """
         if model:
             self._setup_trainer(model)
         return self.trainer.predict(model, dataloaders, datamodule, return_predictions, ckpt_path)
