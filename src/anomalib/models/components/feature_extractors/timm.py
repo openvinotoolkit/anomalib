@@ -42,7 +42,7 @@ class TimmFeatureExtractor(nn.Module):
             [torch.Size([32, 64, 64, 64]), torch.Size([32, 128, 32, 32]), torch.Size([32, 256, 16, 16])]
     """
 
-    def __init__(self, backbone: str, layers: list[str], pre_trained: bool = True, requires_grad: bool = False):
+    def __init__(self, backbone: str, layers: list[str], pre_trained: bool = True, requires_grad: bool = False) -> None:
         super().__init__()
 
         # Extract backbone-name and weight-URI from the backbone string.
@@ -119,7 +119,7 @@ class FeatureExtractor(TimmFeatureExtractor):
     See :class:`anomalib.models.components.feature_extractors.timm.TimmFeatureExtractor` for more details.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         logger.warning(
             "FeatureExtractor is deprecated. Use TimmFeatureExtractor instead."
             " Both FeatureExtractor and TimmFeatureExtractor will be removed in a future release."

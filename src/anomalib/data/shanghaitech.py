@@ -200,7 +200,7 @@ class ShanghaiTechDataset(AnomalibVideoDataset):
         clip_length_in_frames: int = 1,
         frames_between_clips: int = 1,
         target_frame: VideoTargetFrame = VideoTargetFrame.LAST,
-    ):
+    ) -> None:
         super().__init__(task, transform, clip_length_in_frames, frames_between_clips, target_frame)
 
         self.root = root
@@ -261,7 +261,7 @@ class ShanghaiTech(AnomalibVideoDataModule):
         val_split_mode: ValSplitMode = ValSplitMode.FROM_TEST,
         val_split_ratio: float = 0.5,
         seed: int | None = None,
-    ):
+    ) -> None:
         super().__init__(
             train_batch_size=train_batch_size,
             eval_batch_size=eval_batch_size,

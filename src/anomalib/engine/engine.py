@@ -59,7 +59,7 @@ class _TrainerArgumentsCache:
         }
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         self._cached_args = {**kwargs}
 
     def update(self, model: AnomalyModule):

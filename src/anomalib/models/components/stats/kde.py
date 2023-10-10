@@ -19,7 +19,7 @@ class GaussianKDE(DynamicBufferModule):
         dataset (Tensor | None, optional): Dataset on which to fit the KDE model. Defaults to None.
     """
 
-    def __init__(self, dataset: Tensor | None = None):
+    def __init__(self, dataset: Tensor | None = None) -> None:
         super().__init__()
 
         if dataset is not None:

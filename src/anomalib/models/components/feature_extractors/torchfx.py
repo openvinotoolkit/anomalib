@@ -94,7 +94,7 @@ class TorchFXFeatureExtractor(nn.Module):
         weights: str | WeightsEnum | None = None,
         requires_grad: bool = False,
         tracer_kwargs: dict | None = None,
-    ):
+    ) -> None:
         super().__init__()
         if isinstance(backbone, dict):
             backbone = BackboneParams(**backbone)

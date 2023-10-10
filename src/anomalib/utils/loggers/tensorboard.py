@@ -63,7 +63,7 @@ class AnomalibTensorBoardLogger(ImageLoggerBase, TensorBoardLogger):
         default_hp_metric: bool = True,
         prefix: str = "",
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(
             save_dir,
             name=name,

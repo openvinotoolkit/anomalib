@@ -22,7 +22,7 @@ class HPOBackend(str, Enum):
     COMET = "comet"
     WANDB = "wandb"
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return the string representation of the enum value."""
         return self.value
 
@@ -71,7 +71,7 @@ class Sweep:
         sweep_config: Path | str,
         backend: HPOBackend = HPOBackend.COMET,
         entity: str = "",
-    ):
+    ) -> None:
         if model is None and model_config is None:
             raise ValueError("Either model or model_config must be provided.")
 

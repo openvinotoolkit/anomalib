@@ -98,7 +98,7 @@ class AllInOneBlock(InvertibleModule):
         permute_soft: bool = False,
         learned_householder_permutation: int = 0,
         reverse_permutation: bool = False,
-    ):
+    ) -> None:
         """
         Args:
           subnet_constructor:

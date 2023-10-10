@@ -23,7 +23,7 @@ logger = logging.getLogger(name="NNCF compression")
 class InitLoader(PTInitializingDataLoader):
     """Initializing data loader for NNCF to be used with unsupervised training algorithms."""
 
-    def __init__(self, data_loader: DataLoader):
+    def __init__(self, data_loader: DataLoader) -> None:
         super().__init__(data_loader)
         self._data_loader_iter: Iterator
 

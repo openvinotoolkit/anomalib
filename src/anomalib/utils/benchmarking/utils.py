@@ -4,11 +4,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-import random
 import string
 from glob import glob
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import wandb
 from comet_ml import Experiment
@@ -86,7 +86,7 @@ def get_unique_key(str_len: int) -> str:
     Returns:
         str: Random string
     """
-    return "".join([random.choice(string.ascii_lowercase) for _ in range(str_len)])  # nosec: B311
+    return "".join([np.random.default_rng().choice(string.ascii_lowercase) for _ in range(str_len)])
 
 
 def upload_to_wandb(

@@ -42,7 +42,7 @@ WEIGHTS_DOWNLOAD_INFO = DownloadInfo(
 
 
 class TransformsWrapper:
-    def __init__(self, t: A.Compose):
+    def __init__(self, t: A.Compose) -> None:
         self.transforms = t
 
     def __call__(self, img, *args, **kwargs):
