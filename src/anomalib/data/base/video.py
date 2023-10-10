@@ -121,7 +121,7 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         # apply transforms
         if "mask" in item and item["mask"] is not None:
             processed_frames = [
-                self.transform(image=frame.numpy(), mask=mask, strict=True)
+                self.transform(image=frame.numpy(), mask=mask)
                 for frame, mask in zip(item["image"], item["mask"], strict=True)
             ]
             item["image"] = torch.stack([item["image"] for item in processed_frames]).squeeze(0)
