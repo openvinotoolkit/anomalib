@@ -98,7 +98,7 @@ class _PostProcessorCallback(Callback):
             elif "pred_scores" not in outputs and "box_scores" in outputs:
                 # infer image score from bbox confidence scores
                 outputs["pred_scores"] = torch.zeros_like(outputs["label"]).float()
-                for idx, (boxes, scores) in enumerate(zip(outputs["pred_boxes"], outputs["box_scores"])):
+                for idx, (boxes, scores) in enumerate(zip(outputs["pred_boxes"], outputs["box_scores"], strict=True)):
                     if boxes.numel():
                         outputs["pred_scores"][idx] = scores.max().item()
 

@@ -166,7 +166,7 @@ class EfficientAd(AnomalyModule):
         maps_ae = []
         logger.info("Calculate Validation Dataset Quantiles")
         for batch in tqdm.tqdm(dataloader, desc="Calculate Validation Dataset Quantiles", position=0, leave=True):
-            for img, label in zip(batch["image"], batch["label"]):
+            for img, label in zip(batch["image"], batch["label"], strict=True):
                 if label == 0:  # only use good images of validation set!
                     output = self.model(img.to(self.device))
                     map_st = output["map_st"]

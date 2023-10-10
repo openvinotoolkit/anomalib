@@ -21,11 +21,13 @@ class OptimalF1(Metric):
 
     def __init__(self, num_classes: int, **kwargs) -> None:
         warnings.warn(
-            DeprecationWarning(
+            message=(
                 "OptimalF1 metric is deprecated and will be removed in a future release. The optimal F1 score for "
                 "Anomalib predictions can be obtained by computing the adaptive threshold with the "
                 "AnomalyScoreThreshold metric and setting the computed threshold value in TorchMetrics F1Score metric."
-            )
+            ),
+            category=DeprecationWarning,
+            stacklevel=1,
         )
         super().__init__(**kwargs)
 

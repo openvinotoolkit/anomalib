@@ -73,7 +73,7 @@ def get_callbacks(config: DictConfig | ListConfig | Namespace) -> list[Callback]
             # NNCF wraps torch's jit which conflicts with kornia's jit calls.
             # Hence, nncf is imported only when required
             nncf_module = import_module("anomalib.utils.callbacks.nncf.callback")
-            nncf_callback = getattr(nncf_module, "NNCFCallback")
+            nncf_callback = nncf_module.NNCFCallback
             nncf_config = yaml.safe_load(OmegaConf.to_yaml(config.optimization.nncf))
             callbacks.append(
                 nncf_callback(
@@ -94,7 +94,10 @@ def get_callbacks(config: DictConfig | ListConfig | Namespace) -> list[Callback]
                 )
             )
         else:
-            warnings.warn(f"Export option: {config.optimization.export_mode} not found. Defaulting to no model export")
+            warnings.warn(
+                f"Export option: {config.optimization.export_mode} not found. Defaulting to no model export",
+                stacklevel=2,
+            )
 
     # Add callback to log graph to loggers
     # TODO find a place for this key

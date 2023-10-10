@@ -71,7 +71,7 @@ def infer(args: Namespace) -> None:
         args (Namespace): The arguments from the command line.
     """
 
-    torch.set_grad_enabled(False)
+    torch.set_grad_enabled(mode=False)
 
     # Create the inferencer and visualizer.
     inferencer = TorchInferencer(path=args.weights, device=args.device)
@@ -85,7 +85,8 @@ def infer(args: Namespace) -> None:
 
         if args.output is None and args.show is False:
             warnings.warn(
-                "Neither output path is provided nor show flag is set. Inferencer will run but return nothing."
+                "Neither output path is provided nor show flag is set. Inferencer will run but return nothing.",
+                stacklevel=3,
             )
 
         if args.output:

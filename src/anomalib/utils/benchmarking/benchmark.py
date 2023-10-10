@@ -67,7 +67,7 @@ def hide_output(func):
         sys.stdout = buf = io.StringIO()
         try:
             value = func(*args, **kwargs)
-        except Exception as exception:
+        except Exception as exception:  # noqa: BLE001
             raise Exception(buf.getvalue()) from exception
         sys.stdout = std_out
         return value
@@ -215,8 +215,8 @@ def distribute_over_gpus(sweep_config: DictConfig | ListConfig, folder: str | No
         for job in jobs:
             try:
                 job.result()
-            except Exception as exc:
-                raise Exception(f"Error occurred while computing benchmark on GPU {job}") from exc
+            except Exception as exception:  # noqa: BLE001
+                raise Exception(f"Error occurred while computing benchmark on GPU {job}") from exception
 
 
 def distribute(config_path: Path) -> None:
@@ -240,7 +240,7 @@ def distribute(config_path: Path) -> None:
             for job in as_completed(jobs):
                 try:
                     job.result()
-                except Exception as exception:
+                except Exception as exception:  # noqa: BLE001
                     raise Exception(f"Error occurred while computing benchmark on device {job}") from exception
     elif "cpu" in devices:
         compute_on_cpu(config, folder=runs_folder)

@@ -114,10 +114,12 @@ def get_transforms(
         torch.Size([3, 1024, 1024])
     """
     warnings.warn(
-        DeprecationWarning(
+        message=(
             "The function anomalib.pre_processing.pre_process.get_transforms is deprecated and will be removed in a "
             "future release. Please use anomalib.data.utils.transform.get_transforms instead."
-        )
+        ),
+        category=DeprecationWarning,
+        stacklevel=2,
     )
 
     if config is None is image_size:
@@ -219,10 +221,12 @@ class PreProcessor:
         to_tensor: bool = True,
     ) -> None:
         warnings.warn(
-            DeprecationWarning(
+            message=(
                 "The PreProcessor class is deprecated and will be removed in a future release. You can now directly "
                 "pass the A.Compose object to your Anomalib datasets using the 'transform' keyword argument."
-            )
+            ),
+            category=DeprecationWarning,
+            stacklevel=2,
         )
         self.config = config
         self.image_size = image_size

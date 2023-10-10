@@ -13,7 +13,7 @@ from torchmetrics import PrecisionRecallCurve
 from .base import BaseThreshold
 
 
-class F1AdaptiveThreshold(PrecisionRecallCurve, BaseThreshold):
+class F1AdaptiveThreshold(BaseThreshold, PrecisionRecallCurve):
     """Anomaly Score Threshold.
     This class computes/stores the threshold that determines the anomalous label
     given anomaly scores.
@@ -45,7 +45,8 @@ class F1AdaptiveThreshold(PrecisionRecallCurve, BaseThreshold):
                 "The validation set does not contain any anomalous images. As a result, the adaptive threshold will "
                 "take the value of the highest anomaly score observed in the normal validation images, which may lead "
                 "to poor predictions. For a more reliable adaptive threshold computation, please add some anomalous "
-                "images to the validation set."
+                "images to the validation set.",
+                stacklevel=2,
             )
 
         precision, recall, thresholds = super().compute()

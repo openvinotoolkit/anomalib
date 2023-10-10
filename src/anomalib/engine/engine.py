@@ -99,19 +99,20 @@ class Engine:
 
     def __init__(
         self,
-        callbacks: list[Callback] = [],
+        callbacks: list[Callback] | None = None,
         normalization: NormalizationMethod | DictConfig | Callback | str = NormalizationMethod.MIN_MAX,
-        threshold: BaseThreshold
-        | tuple[BaseThreshold, BaseThreshold]
-        | DictConfig
-        | ListConfig
-        | str = F1AdaptiveThreshold(),
+        threshold: BaseThreshold | tuple[BaseThreshold, BaseThreshold] | DictConfig | ListConfig
+        # TODO: Remove this noqa.
+        | str = F1AdaptiveThreshold(),  # noqa: B008
         task: TaskType = TaskType.SEGMENTATION,
         image_metrics: str | list[str] | None = None,
         pixel_metrics: str | list[str] | None = None,
         visualization: DictConfig | None = None,
         **kwargs,
     ) -> None:
+        if callbacks is None:
+            callbacks = []
+
         self._cache = _TrainerArgumentsCache(callbacks=[*callbacks], **kwargs)
         self.normalization = normalization
         self.threshold = threshold

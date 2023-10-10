@@ -27,9 +27,9 @@ select = [
     "YTT",  # flake8-2020 (`YTT`)
     # "ANN",  # flake8-annotations (`ANN`)
     "S",    # flake8-bandit (`S`)
-    # "BLE",  # flake8-blind-except (`BLE`)
-    # "FBT",  # flake8-boolean-trap (`FBT`)
-    # "B",    # flake8-bugbear (`B`)    #! 4 errors left
+    "BLE",  # flake8-blind-except (`BLE`)
+    "FBT",  # flake8-boolean-trap (`FBT`)
+    "B",    # flake8-bugbear (`B`)
     # "A",    # flake8-builtins (`A`)
     # "COM",  # flake8-commas (`COM`)
     # "CPY",  # flake8-copyright (`CPY`)
@@ -95,8 +95,8 @@ ignore = [
     "S101", # Use of assert detected.
 
     # flake8-boolean-trap (`FBT`)
-    # "FBT001",   # Boolean positional arg in function definition
-    # "FBT002",   # Boolean default value in function definition
+    "FBT001",   # Boolean positional arg in function definition
+    "FBT002",   # Boolean default value in function definition
 
     # flake8-type-checking
     # "TCH001",   # typing-only-first-party-import, Sometimes this causes an incorrect error.

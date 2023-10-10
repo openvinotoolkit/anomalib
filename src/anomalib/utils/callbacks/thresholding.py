@@ -23,11 +23,9 @@ class _ThresholdCallback(Callback):
 
     def __init__(
         self,
-        threshold: BaseThreshold
-        | tuple[BaseThreshold, BaseThreshold]
-        | DictConfig
-        | ListConfig
-        | str = F1AdaptiveThreshold(),
+        threshold: BaseThreshold | tuple[BaseThreshold, BaseThreshold] | DictConfig | ListConfig
+        # TODO: Remove this noqa
+        | str = F1AdaptiveThreshold(),  # noqa: B008
     ) -> None:
         super().__init__()
         self._initialize_thresholds(threshold)

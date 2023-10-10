@@ -68,7 +68,7 @@ class Inferencer(ABC):
         """
         if metadata is None:
             if hasattr(self, "metadata"):
-                metadata = getattr(self, "metadata")
+                metadata = self.metadata
             else:
                 metadata = {}
         if isinstance(image, str | Path):

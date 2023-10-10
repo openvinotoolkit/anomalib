@@ -89,7 +89,7 @@ class TimmFeatureExtractor(nn.Module):
             try:
                 idx.append(list(dict(features.named_children()).keys()).index(i) - offset)
             except ValueError:
-                warnings.warn(f"Layer {i} not found in model {self.backbone}")
+                warnings.warn(f"Layer {i} not found in model {self.backbone}", stacklevel=1)
                 # Remove unfound key from layer dict
                 self.layers.remove(i)
 
@@ -105,11 +105,11 @@ class TimmFeatureExtractor(nn.Module):
             Feature map extracted from the CNN
         """
         if self.requires_grad:
-            features = dict(zip(self.layers, self.feature_extractor(inputs)))
+            features = dict(zip(self.layers, self.feature_extractor(inputs), strict=True))
         else:
             self.feature_extractor.eval()
             with torch.no_grad():
-                features = dict(zip(self.layers, self.feature_extractor(inputs)))
+                features = dict(zip(self.layers, self.feature_extractor(inputs), strict=True))
         return features
 
 

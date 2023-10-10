@@ -243,7 +243,11 @@ def get_configurable_parameters(
         )
 
     if model_name == "efficientad":
-        warnings.warn("`efficientad` is deprecated as --model. Please use `efficient_ad` instead.", DeprecationWarning)
+        warnings.warn(
+            message="`efficientad` is deprecated as --model. Please use `efficient_ad` instead.",
+            category=DeprecationWarning,
+            stacklevel=1,
+        )
         model_name = "efficient_ad"
 
     if config_path is None:

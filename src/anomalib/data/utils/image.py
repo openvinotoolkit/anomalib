@@ -137,7 +137,7 @@ def generate_output_image_filename(input_path: str | Path, output_path: str | Pa
     file_path.parent.mkdir(parents=True, exist_ok=True)
 
     if file_path.is_file():
-        warnings.warn(f"{output_path} already exists. Renaming the file to avoid overwriting.")
+        warnings.warn(f"{output_path} already exists. Renaming the file to avoid overwriting.", stacklevel=2)
         file_path = duplicate_filename(file_path)
 
     return file_path

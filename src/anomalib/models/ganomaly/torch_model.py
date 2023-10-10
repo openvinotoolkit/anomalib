@@ -138,7 +138,7 @@ class Decoder(nn.Module):
             ),
         )
         self.latent_input.add_module(f"initial-{n_input_features}-batchnorm", nn.BatchNorm2d(n_input_features))
-        self.latent_input.add_module(f"initial-{n_input_features}-relu", nn.ReLU(True))
+        self.latent_input.add_module(f"initial-{n_input_features}-relu", nn.ReLU(inplace=True))
 
         # Create inverse pyramid
         self.inverse_pyramid = nn.Sequential()
@@ -158,7 +158,7 @@ class Decoder(nn.Module):
                 ),
             )
             self.inverse_pyramid.add_module(f"pyramid-{out_features}-batchnorm", nn.BatchNorm2d(out_features))
-            self.inverse_pyramid.add_module(f"pyramid-{out_features}-relu", nn.ReLU(True))
+            self.inverse_pyramid.add_module(f"pyramid-{out_features}-relu", nn.ReLU(inplace=True))
             n_input_features = out_features
             pyramid_dim = pyramid_dim // 2
 

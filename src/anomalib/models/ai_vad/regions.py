@@ -123,7 +123,7 @@ class RegionExtractor(nn.Module):
         batch_boxes, _ = masks_to_boxes(foreground_map)
 
         # append foreground detections to region extractor detections
-        for im_regions, boxes, pixel_mask in zip(regions, batch_boxes, foreground_map):
+        for im_regions, boxes, pixel_mask in zip(regions, batch_boxes, foreground_map, strict=True):
             if boxes.shape[0] == 0:
                 continue
 

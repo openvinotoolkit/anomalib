@@ -89,7 +89,7 @@ class AllInOneBlock(InvertibleModule):
     def __init__(
         self,
         dims_in,
-        dims_c=[],
+        dims_c: list | None = None,
         subnet_constructor: Callable | None = None,
         affine_clamping: float = 2.0,
         gin_block: bool = False,
@@ -127,7 +127,8 @@ class AllInOneBlock(InvertibleModule):
             Reverse the permutation before the block, as introduced by Putzky
             et al, 2019. Turns on the :math:`R^{-1} V^{-1}` pre-multiplication above.
         """
-
+        if dims_c is None:
+            dims_c = []
         super().__init__(dims_in, dims_c)
 
         channels = dims_in[0][0]
@@ -153,7 +154,7 @@ class AllInOneBlock(InvertibleModule):
         try:
             self.permute_function = {0: F.linear, 1: F.conv1d, 2: F.conv2d, 3: F.conv3d}[self.input_rank]
         except KeyError:
-            raise ValueError(f"Data is {1 + self.input_rank}D. Must be 1D-4D.")
+            raise ValueError(f"Data is {1 + self.input_rank}D. Must be 1D-4D.") from None
 
         self.in_channels = channels
         self.clamp = affine_clamping
@@ -164,7 +165,8 @@ class AllInOneBlock(InvertibleModule):
         if permute_soft and channels > 512:
             warnings.warn(
                 "Soft permutation will take a very long time to initialize "
-                f"with {channels} feature channels. Consider using hard permutation instead."
+                f"with {channels} feature channels. Consider using hard permutation instead.",
+                stacklevel=2,
             )
 
         # global_scale is used as the initial value for the global affine scale
@@ -222,7 +224,7 @@ class AllInOneBlock(InvertibleModule):
         for vk in self.vk_householder:
             w = torch.mm(w, torch.eye(self.in_channels).to(w.device) - 2 * torch.ger(vk, vk) / torch.dot(vk, vk))
 
-        for i in range(self.input_rank):
+        for _i in range(self.input_rank):
             w = w.unsqueeze(-1)
         return w
 
@@ -268,8 +270,11 @@ class AllInOneBlock(InvertibleModule):
         else:
             return ((x - a[:, ch:]) * torch.exp(-sub_jac), -torch.sum(sub_jac, dim=self.sum_dims))
 
-    def forward(self, x, c=[], rev=False, jac=True):
+    def forward(self, x, c: list | None = None, rev: bool = False, jac: bool = True):
         """See base class docstring"""
+        if c is None:
+            c = []
+
         if self.householder:
             self.w_perm = self._construct_householder_permutation()
             if rev or self.reverse_pre_permute:

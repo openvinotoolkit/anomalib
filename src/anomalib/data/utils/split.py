@@ -107,7 +107,8 @@ def random_split(
         if 0 in subset_lengths:
             warnings.warn(
                 "Zero subset length encountered during splitting. This means one of your subsets might be"
-                " empty or devoid of either normal or anomalous images."
+                " empty or devoid of either normal or anomalous images.",
+                stacklevel=2,
             )
 
         # perform random subsampling
@@ -119,7 +120,7 @@ def random_split(
 
     # invert outer/inner lists
     # outer list: subsets with the given ratio, inner list: per-label unique
-    subsets = list(map(list, zip(*subsets)))
+    subsets = list(map(list, zip(*subsets, strict=True)))
     return [concatenate_datasets(subset) for subset in subsets]
 
 
