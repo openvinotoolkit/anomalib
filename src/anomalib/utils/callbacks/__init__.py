@@ -78,7 +78,7 @@ def get_callbacks(config: DictConfig | ListConfig | Namespace) -> list[Callback]
             callbacks.append(
                 nncf_callback(
                     config=nncf_config,
-                    export_dir=os.path.join(config.project.path, "compressed"),
+                    export_dir=os.path.join(config.trainer.default_root_dir, "compressed"),
                 )
             )
         if config.optimization.export_mode is not None:
@@ -87,8 +87,8 @@ def get_callbacks(config: DictConfig | ListConfig | Namespace) -> list[Callback]
             logger.info("Setting model export to %s", config.optimization.export_mode)
             callbacks.append(
                 ExportCallback(
-                    input_size=config.model.input_size,
-                    dirpath=config.project.path,
+                    input_size=config.model.init_args.input_size,
+                    dirpath=config.trainer.default_root_dir,
                     filename="model",
                     export_mode=ExportMode(config.optimization.export_mode),
                 )
@@ -97,7 +97,8 @@ def get_callbacks(config: DictConfig | ListConfig | Namespace) -> list[Callback]
             warnings.warn(f"Export option: {config.optimization.export_mode} not found. Defaulting to no model export")
 
     # Add callback to log graph to loggers
-    if config.logging.log_graph not in (None, False):
-        callbacks.append(GraphLogger())
+    # TODO find a place for this key
+    # if config.logging.log_graph not in (None, False):
+    #     callbacks.append(GraphLogger())
 
     return callbacks

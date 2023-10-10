@@ -115,19 +115,17 @@ def update_input_size_config(config: DictConfig | ListConfig | Namespace) -> Dic
     config.data.init_args.image_size = to_tuple(config.data.init_args.image_size)
 
     if "input_size" in inspect.signature(model_class).parameters:
-        if "input_size" in config.model.init_args:
-            # Center crop: Ensure value is in the form [height, width], and update input_size
-            if center_crop is not None:
-                config.model.init_args.input_size = center_crop
-                logger.info(f"Setting model size to crop size {center_crop}")
-            elif config.model.init_args.input_size != config.data.init_args.image_size:
-                logger.warn(
-                    "Model input size should not be configured explicitly. Use the image size from the data instead."
-                    f" Overriding model input size {config.model.init_args.input_size} with"
-                    f" {config.data.init_args.image_size}."
-                )
-                config.model.init_args.input_size = config.data.init_args.image_size
-            config.model.init_args.input_size = to_tuple(config.model.init_args.input_size)
+        # Center crop: Ensure value is in the form [height, width], and update input_size
+        if center_crop is not None:
+            config.model.init_args.input_size = center_crop
+            logger.info(f"Setting model size to crop size {center_crop}")
+        else:
+            logger.info(
+                f" Setting model input size {config.model.init_args.get('input_size', None)} to"
+                f" dataset size {config.data.init_args.image_size}."
+            )
+            config.model.init_args.input_size = config.data.init_args.image_size
+        config.model.init_args.input_size = to_tuple(config.model.init_args.input_size)
 
     elif "input_size" in config.model.init_args:
         # argument linking adds model input size even if it is not present for that model

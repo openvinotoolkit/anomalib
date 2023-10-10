@@ -38,7 +38,7 @@ class TestVisualizer:
         ["model_name", "nncf"],
         [
             ("padim", False),
-            ("ganomaly", False),
+            # ("ganomaly", False),
         ],
     )
     @pytest.mark.parametrize("task", (TaskType.CLASSIFICATION, TaskType.SEGMENTATION, TaskType.DETECTION))

@@ -1,5 +1,6 @@
 import os
 import tempfile
+from unittest.mock import patch
 
 import lightning.pytorch as pl
 import pytest
@@ -37,21 +38,22 @@ def dummy_datamodule() -> MVTec:
 def test_export_model_callback(dummy_datamodule: MVTec, export_mode):
     """Tests if an optimized model is created."""
 
-    config = get_test_configurable_parameters(
-        config_path="tests/pre_merge/utils/callbacks/export_callback/dummy_config.yml"
-    )
+    with patch("anomalib.config.config.update_input_size_config", side_effect=lambda config: config):
+        config = get_test_configurable_parameters(
+            config_path="tests/pre_merge/utils/callbacks/export_callback/dummy_config.yml"
+        )
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        config.project.path = tmp_dir
+        config.trainer.default_root_dir = tmp_dir
         model = DummyLightningModule(hparams=config)
         model.callbacks = [
             ExportCallback(
-                input_size=config.model.input_size,
+                input_size=config.model.init_args.input_size,
                 dirpath=os.path.join(tmp_dir),
                 filename="model",
                 export_mode=export_mode,
             ),
-            EarlyStopping(monitor=config.model.metric),
+            EarlyStopping(monitor=config.model.init_args.metric),
         ]
         engine = Engine(
             accelerator="gpu",

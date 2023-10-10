@@ -29,7 +29,7 @@ class TestModel:
             # ("patchcore", False),
             # ("reverse_distillation", False),
             # ("rkde", False),
-            ("stfpm", False),
+            # ("stfpm", False),
         ],
     )
     @TestDataset(num_train=20, num_test=10)

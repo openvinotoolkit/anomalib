@@ -52,8 +52,8 @@ class DummyLightningModule(pl.LightningModule):
         self.save_hyperparameters(hparams)
         self.loss_fn = nn.NLLLoss()
 
-        self.image_threshold = F1AdaptiveThreshold(hparams.model.threshold.image_default).cpu()
-        self.pixel_threshold = F1AdaptiveThreshold(hparams.model.threshold.pixel_default).cpu()
+        self.image_threshold = F1AdaptiveThreshold(hparams.model.init_args.threshold.image_default).cpu()
+        self.pixel_threshold = F1AdaptiveThreshold(hparams.model.init_args.threshold.pixel_default).cpu()
 
         self.training_distribution = AnomalyScoreDistribution().cpu()
         self.min_max = MinMax().cpu()
@@ -77,9 +77,9 @@ class DummyLightningModule(pl.LightningModule):
     def configure_optimizers(self):
         return optim.SGD(
             self.parameters(),
-            lr=self.hparams.model.lr,
-            momentum=self.hparams.model.momentum,
-            weight_decay=self.hparams.model.weight_decay,
+            lr=self.hparams.model.init_args.lr,
+            momentum=self.hparams.model.init_args.momentum,
+            weight_decay=self.hparams.model.init_args.weight_decay,
         )
 
     @property

@@ -77,7 +77,7 @@ class TestModel:
 
         thresholds = OmegaConf.load("tests/nightly/models/performance_thresholds.yaml")
 
-        threshold = thresholds[config.model.name][config.dataset.category]
+        threshold = thresholds[config.model.name][config.data.init_args.category]
         if "optimization" in config.keys() and "nncf" in config.optimization.keys() and config.optimization.nncf.apply:
             threshold = threshold.nncf
         if not (
@@ -89,7 +89,7 @@ class TestModel:
                 f"threshold['image_AUROC']: {threshold['image_AUROC']}"
             )
 
-        if config.dataset.task == "segmentation":
+        if config.task == "segmentation":
             if not (
                 np.isclose(results["pixel_AUROC"], threshold["pixel_AUROC"], rtol=0.05)
                 or (results["pixel_AUROC"] >= threshold["pixel_AUROC"])

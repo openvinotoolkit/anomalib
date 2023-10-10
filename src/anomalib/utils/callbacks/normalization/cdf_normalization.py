@@ -12,7 +12,6 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch.distributions import LogNormal
 
 from anomalib import engine
-from anomalib.models import get_model
 from anomalib.models.components import AnomalyModule
 from anomalib.post_processing.normalization.cdf import normalize, standardize
 from anomalib.utils.metrics import AnomalyScoreDistribution
@@ -130,9 +129,9 @@ class _CdfNormalizationCallback(Callback):
         pl_module.normalization_metrics.compute()
 
     @staticmethod
-    def _create_inference_model(pl_module):
+    def _create_inference_model(pl_module: AnomalyModule):
         """Create a duplicate of the PL module that can be used to perform inference on the training set."""
-        new_model = get_model(pl_module.hparams)
+        new_model = pl_module.__class__(**pl_module.hparams)
         new_model.normalization_metrics = AnomalyScoreDistribution().cpu()
         new_model.load_state_dict(pl_module.state_dict())
         return new_model

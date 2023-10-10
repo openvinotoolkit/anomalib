@@ -1,46 +1,38 @@
-dataset:
-  name: mvtec
-  format: mvtec
-  path: ./datasets/MVTec
-  category: bottle
-  task: segmentation
-  train_batch_size: 32
-  eval_batch_size: 32
-  inference_batch_size: 32
-  num_workers: 8
-  image_size: 256 # dimensions to which images are resized (mandatory)
-  center_crop: null # dimensions to which images are center-cropped after resizing (optional)
-  normalization: imagenet # data distribution to which the images will be normalized: [none, imagenet]
-  transform_config:
-    train: null
-    eval: null
-  test_split_mode: from_dir # options: [from_dir, synthetic]
-  test_split_ratio: 0.2 # fraction of train images held out testing (usage depends on test_split_mode)
-  val_split_mode: same_as_test # options: [same_as_test, from_test, synthetic]
-  val_split_ratio: 0.5 # fraction of train/test images held out for validation (usage depends on val_split_mode)
-  tiling:
-    apply: false
-    tile_size: null
-    stride: null
-    remove_border_count: 0
-    use_random_tiling: False
-    random_tile_count: 16
+data:
+  class_path: anomalib.data.MVTec
+  init_args:
+    root: ./datasets/MVTec
+    category: bottle
+    image_size: [256, 256]
+    center_crop: null
+    normalization: imagenet
+    train_batch_size: 32
+    eval_batch_size: 32
+    num_workers: 8
+    task: segmentation
+    transform_config_train: null
+    transform_config_eval: null
+    test_split_mode: from_dir
+    test_split_ratio: 0.2
+    val_split_mode: same_as_test
+    val_split_ratio: 0.5
+    seed: null
 
 model:
-  name: stfpm
-  backbone: resnet18
-  layers:
-    - layer1
-    - layer2
-    - layer3
-  lr: 0.4
-  momentum: 0.9
-  weight_decay: 0.0001
-  early_stopping:
-    patience: 5
-    metric: pixel_AUROC
-    mode: max
-  normalization_method: min_max # options: [null, min_max, cdf]
+  class_path: anomalib.models.Stfpm
+  init_args:
+    backbone: resnet18
+    layers:
+      - layer1
+      - layer2
+      - layer3
+  optimizer:
+    class_path: torch.optim.SGD
+    init_args:
+      lr: 0.4
+      momentum: 0.9
+      dampening: 0.0
+      weight_decay: 0.0001
 
 metrics:
   image:
@@ -61,9 +53,9 @@ visualization:
   image_save_path: null # path to which images will be saved
   mode: full # options: ["full", "simple"]
 
-project:
-  seed: 0
-  path: ./results
+results_dir:
+  path: results/new_cli
+  unique: false
 
 logging:
   logger: [] # options: [comet, tensorboard, wandb, csv] or combinations.
@@ -73,6 +65,12 @@ optimization:
   export_mode: null # options: torch, onnx, openvino
 # PL Trainer Args. Don't add extra parameter here.
 trainer:
+  callbacks:
+    - class_path: lightning.pytorch.callbacks.EarlyStopping
+      init_args:
+        patience: 5
+        monitor: pixel_AUROC
+        mode: max
   enable_checkpointing: true
   default_root_dir: null
   gradient_clip_val: 0

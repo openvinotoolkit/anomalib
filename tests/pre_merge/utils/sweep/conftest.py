@@ -26,10 +26,10 @@ def get_model_config(
     export_mode: Optional[str] = None,
 ):
     model_config = get_configurable_parameters(model_name=model_name)
-    model_config.project.path = project_path
-    model_config.dataset.task = task
-    model_config.dataset.path = dataset_path
-    model_config.dataset.category = category
+    model_config.trainer.default_root_dir = project_path
+    model_config.data.init_args.task = task
+    model_config.data.init_args.root = dataset_path
+    model_config.data.init_args.category = category
     model_config.trainer.fast_dev_run = True
     model_config.trainer.max_epochs = 1
     model_config.trainer.devices = 1

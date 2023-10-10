@@ -34,7 +34,7 @@ def test_torch_throughput(generate_results_dir, path: str = None, category: str 
     dataset.setup()
 
     # run procedure using torch inferencer
-    get_torch_throughput(model_config.project.path, dataset, device=model_config.trainer.accelerator)
+    get_torch_throughput(model_config.trainer.default_root_dir, dataset, device=model_config.trainer.accelerator)
 
 
 @TestDataset(num_train=20, num_test=10)
@@ -56,4 +56,4 @@ def test_openvino_throughput(generate_results_dir, path: str = None, category: s
     dataset.setup()
 
     # run procedure using openvino inferencer
-    get_openvino_throughput(model_config.project.path, dataset)
+    get_openvino_throughput(model_config.trainer.default_root_dir, dataset)
