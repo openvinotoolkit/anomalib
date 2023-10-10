@@ -7,7 +7,6 @@
 import json
 import logging
 from enum import Enum
-from importlib.util import find_spec
 from pathlib import Path
 from typing import Any
 from warnings import warn
@@ -19,14 +18,13 @@ from torch.types import Number
 
 from anomalib.data.task_type import TaskType
 from anomalib.models.components import AnomalyModule
+from anomalib.utils.exceptions import try_import
 
 logger = logging.getLogger("anomalib")
 
-if find_spec("openvino") is not None:
+if try_import("openvino"):
     from openvino.runtime import Core, serialize
     from openvino.tools.mo.convert import convert_model
-else:
-    logger.warning("OpenVINO is not installed. Please install OpenVINO to use OpenVINOInferencer.")
 
 
 class ExportMode(str, Enum):

@@ -11,10 +11,10 @@ from lightning.pytorch.loggers.wandb import WandbLogger
 from lightning.pytorch.utilities import rank_zero_only
 from matplotlib.figure import Figure
 
-try:
+from anomalib.utils.exceptions import try_import
+
+if try_import("wandb"):
     import wandb
-except ModuleNotFoundError:
-    print("To use wandb logger install it using `pip install wandb`")
 
 from .base import ImageLoggerBase
 

@@ -15,20 +15,18 @@ from anomalib.config import update_input_size_config
 from anomalib.data import get_datamodule
 from anomalib.engine import Engine
 from anomalib.models import get_model
+from anomalib.utils.exceptions import try_import
 from anomalib.utils.sweep import flatten_sweep_params, get_sweep_callbacks, set_in_nested_config
 
 from .config import flatten_hpo_params
 
 logger = logging.getLogger(__name__)
 
-try:
+
+if try_import("wandb"):
     import wandb
-except ImportError:
-    logger.warn("Could not find wandb. To log to wandb, ensure that you have wandb installed.")
-try:
+if try_import("comet_ml"):
     from comet_ml import Optimizer
-except ImportError:
-    logger.warn("Could not find comet_ml. To log to comet, ensure that you have comet_ml installed.")
 
 
 class WandbSweep:

@@ -3,7 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import logging
 import random
 import string
 from glob import glob
@@ -11,21 +10,14 @@ from pathlib import Path
 
 import pandas as pd
 
-logger = logging.getLogger(__name__)
+from anomalib.utils.exceptions import try_import
 
-
-try:
+if try_import("wandb"):
     import wandb
-except ImportError:
-    logger.warn("Could not find wandb. To log to wandb, ensure that you have wandb installed.")
-try:
+if try_import("comet_ml"):
     from comet_ml import Experiment
-except ImportError:
-    logger.warn("Could not find comet_ml. To log to comet, ensure that you have comet_ml installed.")
-try:
+if try_import("torch.utils.tensorboard.writer"):
     from torch.utils.tensorboard.writer import SummaryWriter
-except ImportError:
-    logger.warn("Could not find tensorboard. To log to tensorboard, ensure that it is installed on your system.")
 
 
 def write_metrics(

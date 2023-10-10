@@ -16,14 +16,15 @@ from anomalib.config.config import get_configurable_parameters
 from anomalib.data.utils.transform import get_transforms
 from anomalib.deploy import export_to_onnx, export_to_openvino, export_to_torch, get_metadata
 from anomalib.models import get_model
+from anomalib.utils.exceptions import try_import
 
 logger = logging.getLogger(__name__)
 
-try:
+
+if try_import("openvino"):
     from openvino.tools.mo.utils.cli_parser import get_common_cli_parser
-except ImportError:
+else:
     get_common_cli_parser = None
-    logger.warn("Could not find OpenVINO. To export to OpenVINO IR, ensure that you have OpenVINO installed.")
 
 
 def add_torch_export_arguments(subcommand: _ActionSubCommands):
