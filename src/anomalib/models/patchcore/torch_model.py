@@ -4,8 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import torch
-import torch.nn.functional as F
 from torch import Tensor, nn
+from torch.nn import functional as F  # noqa: N812
 
 from anomalib.models.components import DynamicBufferModule, FeatureExtractor, KCenterGreedy
 from anomalib.models.patchcore.anomaly_map import AnomalyMapGenerator

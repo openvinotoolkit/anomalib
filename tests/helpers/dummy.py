@@ -4,8 +4,8 @@ from pathlib import Path
 
 import lightning.pytorch as pl
 import torch
-import torch.nn.functional as F
 from torch import nn
+from torch.nn import functional as F  # noqa: N812
 from torch.utils.data import DataLoader, Dataset
 
 from anomalib.utils.loggers.tensorboard import AnomalibTensorBoardLogger

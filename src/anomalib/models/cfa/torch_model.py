@@ -10,12 +10,12 @@ Paper https://arxiv.org/abs/2206.04325
 
 
 import torch
-import torch.nn.functional as F
 import torchvision
 from einops import rearrange
 from sklearn.cluster import KMeans
 from torch import Tensor, nn
 from torch.fx.graph_module import GraphModule
+from torch.nn import functional as F  # noqa: N812
 from torch.nn.common_types import _size_2_t
 from torch.utils.data import DataLoader
 from torchvision.models.feature_extraction import create_feature_extractor

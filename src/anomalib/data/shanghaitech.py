@@ -19,7 +19,7 @@ from pathlib import Path
 from shutil import move
 from typing import Any
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 import numpy as np
 import pandas as pd
 import torch

@@ -7,8 +7,8 @@
 
 
 import torch
-import torch.nn.functional as F
 from torch import Tensor
+from torch.nn import functional as F  # noqa: N812
 from tqdm import tqdm
 
 from anomalib.models.components.dimensionality_reduction import SparseRandomProjection

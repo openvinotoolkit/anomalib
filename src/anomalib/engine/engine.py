@@ -25,7 +25,7 @@ from anomalib.utils.metrics.threshold import BaseThreshold, F1AdaptiveThreshold
 log = logging.getLogger(__name__)
 
 
-class UnassignedException(Exception):
+class UnassignedError(Exception):
     ...
 
 
@@ -126,7 +126,7 @@ class Engine:
     def trainer(self):
         if not self._trainer:
             msg = "``self.trainer`` is not assigned yet."
-            raise UnassignedException(msg)
+            raise UnassignedError(msg)
         return self._trainer
 
     def _setup_trainer(self, model: AnomalyModule):

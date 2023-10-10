@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Sequence
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 import cv2
 import numpy as np
 import pandas as pd

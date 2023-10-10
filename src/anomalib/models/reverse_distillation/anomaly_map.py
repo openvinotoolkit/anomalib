@@ -13,10 +13,10 @@
 from enum import Enum
 
 import torch
-import torch.nn.functional as F
 from kornia.filters import gaussian_blur2d
 from omegaconf import ListConfig
 from torch import Tensor, nn
+from torch.nn import functional as F  # noqa: N812
 
 
 class AnomalyMapGenerationMode(str, Enum):

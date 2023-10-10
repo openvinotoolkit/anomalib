@@ -27,7 +27,7 @@ import logging
 import shutil
 from pathlib import Path
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 import cv2
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDataset

@@ -9,8 +9,8 @@ import random
 from enum import Enum
 
 import torch
-import torch.nn.functional as F
 from torch import Tensor, nn
+from torch.nn import functional as F  # noqa: N812
 from torchvision import transforms
 
 logger = logging.getLogger(__name__)
@@ -53,7 +53,7 @@ class EfficientAdModelSize(str, Enum):
     S = "small"
 
 
-class PDN_S(nn.Module):
+class SmallPatchDescriptionNetwork(nn.Module):
     """Patch Description Network small
 
     Args:
@@ -81,7 +81,7 @@ class PDN_S(nn.Module):
         return x
 
 
-class PDN_M(nn.Module):
+class MediumPatchDescriptionNetwork(nn.Module):
     """Patch Description Network medium
 
     Args:
@@ -235,16 +235,16 @@ class EfficientAdModel(nn.Module):
         super().__init__()
 
         self.pad_maps = pad_maps
-        self.teacher: PDN_M | PDN_S
-        self.student: PDN_M | PDN_S
+        self.teacher: MediumPatchDescriptionNetwork | SmallPatchDescriptionNetwork
+        self.student: MediumPatchDescriptionNetwork | SmallPatchDescriptionNetwork
 
         if model_size == EfficientAdModelSize.M:
-            self.teacher = PDN_M(out_channels=teacher_out_channels, padding=padding).eval()
-            self.student = PDN_M(out_channels=teacher_out_channels * 2, padding=padding)
+            self.teacher = MediumPatchDescriptionNetwork(out_channels=teacher_out_channels, padding=padding).eval()
+            self.student = MediumPatchDescriptionNetwork(out_channels=teacher_out_channels * 2, padding=padding)
 
         elif model_size == EfficientAdModelSize.S:
-            self.teacher = PDN_S(out_channels=teacher_out_channels, padding=padding).eval()
-            self.student = PDN_S(out_channels=teacher_out_channels * 2, padding=padding)
+            self.teacher = SmallPatchDescriptionNetwork(out_channels=teacher_out_channels, padding=padding).eval()
+            self.student = SmallPatchDescriptionNetwork(out_channels=teacher_out_channels * 2, padding=padding)
 
         else:
             raise ValueError(f"Unknown model size {model_size}")

@@ -11,10 +11,10 @@ import warnings
 from typing import Callable
 
 import torch
-import torch.nn.functional as F
 from FrEIA.modules import InvertibleModule
 from scipy.stats import special_ortho_group
 from torch import Tensor, nn
+from torch.nn import functional as F  # noqa: N812
 
 
 def _global_scale_sigmoid_activation(input: Tensor) -> Tensor:

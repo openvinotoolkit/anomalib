@@ -3,7 +3,7 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 from albumentations.pytorch import ToTensorV2
 
 from anomalib.data import TaskType
