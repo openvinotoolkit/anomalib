@@ -28,9 +28,9 @@ def get_config(project_path):
     ):
         """Gets config for testing."""
         config = get_configurable_parameters(model_name, config_path)
-        config.dataset.image_size = (100, 100)
-        config.model.input_size = (100, 100)
-        config.project.path = project_path
+        config.data.init_args.image_size = (100, 100)
+        config.model.init_args.input_size = (100, 100)
+        config.trainer.default_root_dir = project_path
         config.trainer.max_epochs = 1
         config.trainer.check_val_every_n_epoch = 1
         config.trainer.limit_train_batches = 1

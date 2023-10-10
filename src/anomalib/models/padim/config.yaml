@@ -56,10 +56,6 @@ results_dir:
   path: ./results
   unique: false
 
-logging:
-  logger: [] # options: [comet, tensorboard, wandb, csv] or combinations.
-  log_graph: false # Logs the model graph to respective logger.
-
 optimization:
   export_mode: null # options: torch, onnx, openvino
 

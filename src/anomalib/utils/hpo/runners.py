@@ -7,11 +7,11 @@
 import gc
 
 import torch
+import wandb
 from comet_ml import Optimizer
 from lightning.pytorch.loggers import CometLogger, WandbLogger
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
-import wandb
 from anomalib.config import update_input_size_config
 from anomalib.data import get_datamodule
 from anomalib.engine import Engine
@@ -109,7 +109,7 @@ class CometSweep:
 
         opt = Optimizer(std_dict)
 
-        project_name = f"{self.config.model.name}_{self.config.dataset.name}"
+        project_name = f"{self.config.model.name}_{self.config.data.class_path.split('.')[-1]}"
 
         for experiment in opt.get_experiments(project_name=project_name):
             comet_logger = CometLogger(workspace=self.entity)

@@ -39,8 +39,8 @@ def test(args: Namespace):
         config_path=args.config,
     )
 
-    if config.project.seed:
-        seed_everything(config.project.seed)
+    if config.get("seed_everything", None) is not None:
+        seed_everything(config.seed_everything)
 
     datamodule = get_datamodule(config)
     model = get_model(config)

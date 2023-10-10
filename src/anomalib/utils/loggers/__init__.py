@@ -77,33 +77,33 @@ def get_experiment_logger(
     """
     logger.info("Loading the experiment logger(s)")
 
-    if config.logging.logger in (None, False):
+    if "logger" not in config.trainer or config.trainer.logger in (None, False):
         return False
 
     logger_list: list[Logger] = []
-    if isinstance(config.logging.logger, str):
-        config.logging.logger = [config.logging.logger]
+    if isinstance(config.trainer.logger, str):
+        config.trainer.logger = [config.trainer.logger]
 
-    for experiment_logger in config.logging.logger:
+    for experiment_logger in config.trainer.logger:
         if experiment_logger == "tensorboard":
             logger_list.append(
                 AnomalibTensorBoardLogger(
                     name="Tensorboard Logs",
                     save_dir=os.path.join(config.project.path, "logs"),
-                    log_graph=config.logging.log_graph,
+                    log_graph=False,  # TODO: find location for log_graph key
                 )
             )
         elif experiment_logger == "wandb":
             wandb_logdir = os.path.join(config.project.path, "logs")
             Path(wandb_logdir).mkdir(parents=True, exist_ok=True)
             name = (
-                config.model.name
-                if "category" not in config.dataset.keys()
-                else f"{config.dataset.category} {config.model.name}"
+                config.model.class_path.split(".")[-1]
+                if "category" not in config.data.init_args.keys()
+                else f"{config.data.init_args.category} {config.model.class_path.split('.')[-1]}"
             )
             logger_list.append(
                 AnomalibWandbLogger(
-                    project=config.dataset.name,
+                    project=config.data.class_path.split(".")[-1],
                     name=name,
                     save_dir=wandb_logdir,
                 )
@@ -113,20 +113,25 @@ def get_experiment_logger(
             Path(comet_logdir).mkdir(parents=True, exist_ok=True)
             run_name = (
                 config.model.name
-                if "category" not in config.dataset.keys()
-                else f"{config.dataset.category} {config.model.name}"
+                if "category" not in config.data.init_args.keys()
+                else f"{config.data.init_args.category} {config.model.class_path.split('.')[-1]}"
             )
             logger_list.append(
-                AnomalibCometLogger(project_name=config.dataset.name, experiment_name=run_name, save_dir=comet_logdir)
+                AnomalibCometLogger(
+                    project_name=config.data.class_path.split(".")[-1], experiment_name=run_name, save_dir=comet_logdir
+                )
             )
         elif experiment_logger == "csv":
             logger_list.append(CSVLogger(save_dir=os.path.join(config.project.path, "logs")))
         else:
             raise UnknownLogger(
-                f"Unknown logger type: {config.logging.logger}. "
+                f"Unknown logger type: {config.trainer.logger}. "
                 f"Available loggers are: {AVAILABLE_LOGGERS}.\n"
                 f"To enable the logger, set `project.logger` to `true` or use one of available loggers in config.yaml\n"
                 f"To disable the logger, set `project.logger` to `false`."
             )
+
+    # TODO remove this method and set these values in ``update_config``
+    del config.trainer.logger
 
     return logger_list

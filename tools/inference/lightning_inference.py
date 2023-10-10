@@ -62,19 +62,21 @@ def infer(args: Namespace):
     engine = Engine(callbacks=callbacks, **config.trainer)
 
     # get the transforms
-    transform_config = config.dataset.transform_config.eval if "transform_config" in config.dataset.keys() else None
-    image_size = (config.dataset.image_size[0], config.dataset.image_size[1])
-    center_crop = config.dataset.get("center_crop")
+    transform_config = (
+        config.data.init_args.transform_config.eval if "transform_config" in config.data.init_args.keys() else None
+    )
+    image_size = (config.data.init_args.image_size[0], config.data.init_args.image_size[1])
+    center_crop = config.data.init_args.get("center_crop")
     if center_crop is not None:
         center_crop = tuple(center_crop)
-    normalization = InputNormalizationMethod(config.dataset.normalization)
+    normalization = InputNormalizationMethod(config.data.init_args.normalization)
     transform = get_transforms(
         config=transform_config, image_size=image_size, center_crop=center_crop, normalization=normalization
     )
 
     # create the dataset
     dataset = InferenceDataset(
-        args.input, image_size=tuple(config.dataset.image_size), transform=transform  # type: ignore
+        args.input, image_size=tuple(config.data.init_args.image_size), transform=transform  # type: ignore
     )
     dataloader = DataLoader(dataset)
 

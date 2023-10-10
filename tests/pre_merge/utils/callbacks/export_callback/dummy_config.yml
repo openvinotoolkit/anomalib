@@ -1,21 +1,25 @@
-dataset:
-  name: FakeData
-  category: fakedata
-  image_size: 32
+data:
+  class_path: FakeData
+  init_args:
+    category: fakedata
+    image_size: 32
 
 model:
-  dropout: 0
-  lr: 1e-3
-  metric: loss
-  momentum: 0.9
-  name: DummyModel
-  weight_decay: 1e-4
-  threshold:
-    image_default: 0.0
-    pixel_default: 0.0
+  class_path: anomalib.models.DummyModel
+  init_args:
+    input_size: [32, 32]
+    dropout: 0
+    lr: 1e-3
+    metric: loss
+    momentum: 0.9
+    weight_decay: 1e-4
+    threshold:
+      image_default: 0
+      pixel_default: 0
 
-project:
+results_dir:
   path: ./results
+  unique: false
 
 optimization:
   export_mode: "openvino"

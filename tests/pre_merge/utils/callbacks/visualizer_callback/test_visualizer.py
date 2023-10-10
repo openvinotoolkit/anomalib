@@ -29,7 +29,7 @@ def test_add_images(task):
     with tempfile.TemporaryDirectory() as dir_loc:
         config = OmegaConf.create(
             {
-                "dataset": {"task": task},
+                "task": task,
                 "model": {"threshold": {"image_default": 0.5, "pixel_default": 0.5, "adaptive": True}},
                 "project": {"path": dir_loc},
                 "logging": {"logger": ["tensorboard"]},
@@ -43,7 +43,7 @@ def test_add_images(task):
             logger=logger,
             enable_checkpointing=False,
             default_root_dir=config.project.path,
-            task=config.dataset.task,
+            task=config.task,
             image_metrics=config.metrics.get("image", None),
             pixel_metrics=config.metrics.get("pixel", None),
             visualization=config.visualization,

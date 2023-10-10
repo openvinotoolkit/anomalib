@@ -55,15 +55,14 @@ def setup_model_train(
     config = get_configurable_parameters(model_name=model_name)
     if score_type is not None:
         config.model.score_type = score_type
-    config.project.seed = 42
-    config.dataset.format = "mvtec"
-    config.dataset.category = category
-    config.dataset.path = dataset_path
-    config.project.log_images_to = []
+    config.seed_everything = 42
+    config.data.init_args.category = category
+    config.data.init_args.root = dataset_path
+    config.visualization.image_save_path = []
     config.trainer.devices = device
     config.trainer.accelerator = "gpu" if device != 0 else "cpu"
     if dataset_task is not None:
-        config.dataset.task = dataset_task
+        config.data.init_args.task = dataset_task
     if visualizer_mode is not None:
         config.visualization.mode = visualizer_mode
         config.visualization.save_images = True  # Enforce processing by Visualizer
@@ -81,7 +80,7 @@ def setup_model_train(
         config.init_weights = None
 
     # reassign project path as config is updated in `update_config_for_nncf`
-    config.project.path = project_path
+    config.trainer.default_root_dir = project_path
 
     datamodule = get_datamodule(config)
     model = get_model(config)
@@ -95,7 +94,7 @@ def setup_model_train(
                 callbacks.pop(index)
                 break
         model_checkpoint = ModelCheckpoint(
-            dirpath=str(Path(config.project.path) / "weights"),
+            dirpath=str(Path(config.trainer.default_root_dir) / "weights"),
             filename="last",
             monitor=None,
             mode="max",
@@ -114,7 +113,15 @@ def setup_model_train(
         config.trainer.max_epochs = 1
         config.trainer.check_val_every_n_epoch = 1
 
-    engine = Engine(callbacks=callbacks, **config.trainer)
+    engine = Engine(
+        callbacks=callbacks,
+        normalization=config.normalization.normalization_method,
+        threshold=config.metrics.threshold,
+        task=config.task,
+        image_metrics=config.metrics.get("image", None),
+        pixel_metrics=config.metrics.get("pixel", None),
+        **config.trainer,
+    )
     engine.fit(model=model, datamodule=datamodule)
     return config, datamodule, model, engine
 
@@ -130,7 +137,7 @@ def model_load_test(config: Union[DictConfig, ListConfig], datamodule: Lightning
     """
     loaded_model = get_model(config)  # get new model
 
-    ckpt_path = str(Path(config.project.path) / "weights" / "last.ckpt")
+    ckpt_path = str(Path(config.trainer.default_root_dir) / "weights" / "last.ckpt")
 
     callbacks = get_callbacks(config)
 
@@ -141,13 +148,21 @@ def model_load_test(config: Union[DictConfig, ListConfig], datamodule: Lightning
             break
 
     # create new engine object with LoadModel callback (assumes it is present)
-    engine = Engine(callbacks=callbacks, **config.trainer)
+    engine = Engine(
+        callbacks=callbacks,
+        normalization=config.normalization.normalization_method,
+        threshold=config.metrics.threshold,
+        task=config.task,
+        image_metrics=config.metrics.get("image", None),
+        pixel_metrics=config.metrics.get("pixel", None),
+        **config.trainer,
+    )
     # Assumes the new model has LoadModel callback and the old one had ModelCheckpoint callback
     new_results = engine.test(model=loaded_model, datamodule=datamodule, ckpt_path=ckpt_path)[0]
     assert np.isclose(
         results["image_AUROC"], new_results["image_AUROC"]
     ), f"Loaded model does not yield close performance results. {results['image_AUROC']} : {new_results['image_AUROC']}"
-    if config.dataset.task == "segmentation":
+    if config.task == "segmentation":
         assert np.isclose(
             results["pixel_AUROC"], new_results["pixel_AUROC"]
         ), "Loaded model does not yield close performance results"
