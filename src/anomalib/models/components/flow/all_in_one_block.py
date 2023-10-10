@@ -111,7 +111,7 @@ class AllInOneBlock(InvertibleModule):
             Turn the block into a GIN block from Sorrenson et al, 2019.
             Makes it so that the coupling operations as a whole is volume preserving.
           global_affine_init:
-            Initial value for the global affine scaling :math:`s_\mathrm{global}`.
+            Initial value for the global affine scaling :math:`s_\\mathrm{global}`.
           global_affine_init:
             ``'SIGMOID'``, ``'SOFTPLUS'``, or ``'EXP'``. Defines the activation to be used
             on the beta for the global affine scaling (:math:`\\Psi` above).
