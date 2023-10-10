@@ -23,7 +23,7 @@ select = [
     "I",    # isort (`I`)
     "N",    # pep8-naming (`N`)
     # "D",    # pydocstyle (`D`)
-    # "UP",   # pyupgrade (`UP`)
+    "UP",   # pyupgrade (`UP`)
     # "YTT",  # flake8-2020 (`YTT`)
     # "ANN",  # flake8-annotations (`ANN`)
     # "S",    # flake8-bandit (`S`)

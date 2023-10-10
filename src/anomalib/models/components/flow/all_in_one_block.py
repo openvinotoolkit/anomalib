@@ -8,7 +8,7 @@
 
 
 import warnings
-from typing import Callable
+from collections.abc import Callable
 
 import torch
 from FrEIA.modules import InvertibleModule
@@ -163,10 +163,8 @@ class AllInOneBlock(InvertibleModule):
 
         if permute_soft and channels > 512:
             warnings.warn(
-                (
-                    "Soft permutation will take a very long time to initialize "
-                    f"with {channels} feature channels. Consider using hard permutation instead."
-                )
+                "Soft permutation will take a very long time to initialize "
+                f"with {channels} feature channels. Consider using hard permutation instead."
             )
 
         # global_scale is used as the initial value for the global affine scale

@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import Sequence
+from collections.abc import Sequence
 
 import lightning.pytorch as pl
 from lightning.pytorch.callbacks import Callback

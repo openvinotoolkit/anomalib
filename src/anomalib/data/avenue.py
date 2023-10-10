@@ -16,9 +16,9 @@ Reference:
 
 import logging
 import math
+from collections.abc import Callable
 from pathlib import Path
 from shutil import move
-from typing import Callable
 
 import albumentations as A  # noqa: N812
 import cv2

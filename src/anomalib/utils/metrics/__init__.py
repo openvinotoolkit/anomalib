@@ -79,14 +79,14 @@ def _validate_metrics_dict(metrics: dict[str, dict[str, Any]]) -> None:
         isinstance(metric, str) for metric in metrics.keys()
     ), f"All keys (metric names) must be strings, found {sorted(metrics.keys())}"
     assert all(
-        isinstance(metric, (dict, DictConfig)) for metric in metrics.values()
+        isinstance(metric, dict | DictConfig) for metric in metrics.values()
     ), f"All values must be dictionaries, found {list(metrics.values())}"
     assert all("class_path" in metric and isinstance(metric["class_path"], str) for metric in metrics.values()), (
         "All internal dictionaries must have a 'class_path' key whose value is of type str, "
         f"found {list(metrics.values())}"
     )
     assert all(
-        "init_args" in metric and isinstance(metric["init_args"], (dict, DictConfig)) for metric in metrics.values()
+        "init_args" in metric and isinstance(metric["init_args"], dict | DictConfig) for metric in metrics.values()
     ), (
         "All internal dictionaries must have a 'init_args' key whose value is of type dict, "
         f"found {list(metrics.values())}"
@@ -176,11 +176,11 @@ def create_metric_collection(
     """
     # fallback is using the names
 
-    if isinstance(metrics, (ListConfig, list)):
+    if isinstance(metrics, ListConfig | list):
         assert all(isinstance(metric, str) for metric in metrics), f"All metrics must be strings, found {metrics}"
         return metric_collection_from_names(metrics, prefix)
 
-    if isinstance(metrics, (DictConfig, dict)):
+    if isinstance(metrics, DictConfig | dict):
         _validate_metrics_dict(metrics)
         return metric_collection_from_dicts(metrics, prefix)
 

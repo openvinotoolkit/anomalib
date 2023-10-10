@@ -7,8 +7,8 @@
 import copy
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 import albumentations as A  # noqa: N812
 import cv2

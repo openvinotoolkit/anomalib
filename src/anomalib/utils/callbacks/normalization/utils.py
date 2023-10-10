@@ -36,7 +36,7 @@ def get_normalization_callback(
         >>> normalizer = get_normalization_callback(MinMaxNormalizationCallback())
     """
     normalizer: Callback | None
-    if isinstance(normalization_method, (NormalizationMethod, str)):
+    if isinstance(normalization_method, NormalizationMethod | str):
         normalizer = _get_normalizer_from_method(NormalizationMethod(normalization_method))
     elif isinstance(normalization_method, Callback):
         normalizer = normalization_method

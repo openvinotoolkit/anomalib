@@ -10,10 +10,10 @@ import logging
 import os
 import re
 import tarfile
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from tarfile import TarFile, TarInfo
-from typing import Iterable
 from urllib.request import urlretrieve
 from zipfile import ZipFile
 

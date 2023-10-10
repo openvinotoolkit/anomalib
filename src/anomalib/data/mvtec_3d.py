@@ -22,8 +22,8 @@ Reference:
 
 
 import logging
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 import albumentations as A  # noqa: N812
 from pandas import DataFrame

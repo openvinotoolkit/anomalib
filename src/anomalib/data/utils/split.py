@@ -14,8 +14,8 @@ These function are useful
 
 import math
 import warnings
+from collections.abc import Sequence
 from enum import Enum
-from typing import Sequence
 
 import torch
 

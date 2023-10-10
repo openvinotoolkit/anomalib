@@ -182,7 +182,7 @@ def compute_on_gpu(
         compute_openvino (bool, optional): Compute OpenVINO throughput. Defaults to False.
     """
     for run_config in run_configs:
-        if isinstance(run_config, (DictConfig, ListConfig)):
+        if isinstance(run_config, DictConfig | ListConfig):
             model_metrics = sweep(run_config=run_config, device=device, seed=seed, convert_openvino=compute_openvino)
             write_metrics(model_metrics, writers, folder)
         else:

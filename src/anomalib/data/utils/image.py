@@ -6,8 +6,8 @@
 
 import math
 import warnings
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 import cv2
 import numpy as np

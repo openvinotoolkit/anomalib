@@ -6,8 +6,8 @@ This script creates a custom dataset from a folder.
 # SPDX-License-Identifier: Apache-2.0
 
 
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 import albumentations as A  # noqa: N812
 from pandas import DataFrame

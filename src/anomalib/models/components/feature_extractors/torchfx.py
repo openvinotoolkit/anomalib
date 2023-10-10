@@ -5,8 +5,8 @@
 
 
 import importlib
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable
 
 import torch
 from torch import Tensor, nn
@@ -100,7 +100,7 @@ class TorchFXFeatureExtractor(nn.Module):
             backbone = BackboneParams(**backbone)
         elif isinstance(backbone, str):
             backbone = BackboneParams(class_path=backbone)
-        elif not isinstance(backbone, (nn.Module, BackboneParams)):
+        elif not isinstance(backbone, nn.Module | BackboneParams):
             raise ValueError(
                 f"backbone needs to be of type str | BackboneParams | dict | nn.Module, but was type {type(backbone)}"
             )

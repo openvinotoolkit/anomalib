@@ -6,8 +6,8 @@
 
 import logging
 import os
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 from lightning.pytorch.loggers import CSVLogger, Logger
 from omegaconf.dictconfig import DictConfig

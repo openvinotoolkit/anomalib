@@ -94,7 +94,7 @@ class _ThresholdCallback(Callback):
             self.image_threshold = threshold[0]
             self.pixel_threshold = threshold[1]
         # When the passed threshold is not an instance of a Threshold class.
-        elif isinstance(threshold, (str, DictConfig, ListConfig)):
+        elif isinstance(threshold, str | DictConfig | ListConfig):
             self._load_from_config(threshold)
         else:
             raise ValueError(f"Invalid threshold type {type(threshold)}")
@@ -120,7 +120,7 @@ class _ThresholdCallback(Callback):
                         -
                 - class_path: F1AdaptiveThreshold
         """
-        if isinstance(threshold, (str, DictConfig)):
+        if isinstance(threshold, str | DictConfig):
             self.image_threshold = self._get_threshold_from_config(threshold)
             self.pixel_threshold = self.image_threshold.clone()
         elif isinstance(threshold, ListConfig):

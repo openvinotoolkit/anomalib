@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import List, cast
+from typing import cast
 
 import torch
 from omegaconf import ListConfig
@@ -79,7 +79,7 @@ class AnomalyMapGenerator(nn.Module):
             raise KeyError(f"Expected keys `distribution`, `height` and `width`. Found {kwargs.keys()}")
 
         # placate mypy
-        distribution: list[Tensor] = cast(List[Tensor], kwargs["distribution"])
-        height: list[int] = cast(List[int], kwargs["height"])
-        width: list[int] = cast(List[int], kwargs["width"])
+        distribution: list[Tensor] = cast(list[Tensor], kwargs["distribution"])
+        height: list[int] = cast(list[int], kwargs["height"])
+        width: list[int] = cast(list[int], kwargs["width"])
         return self.compute_anomaly_map(distribution, height, width)

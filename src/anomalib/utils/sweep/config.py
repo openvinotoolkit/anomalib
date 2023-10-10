@@ -6,9 +6,9 @@
 
 import itertools
 import operator
-from collections.abc import Iterable, ValuesView
+from collections.abc import Generator, Iterable, ValuesView
 from functools import reduce
-from typing import Any, Generator
+from typing import Any
 
 from omegaconf import DictConfig
 

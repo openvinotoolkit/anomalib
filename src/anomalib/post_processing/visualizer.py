@@ -4,10 +4,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Iterator
 
 import cv2
 import matplotlib.figure

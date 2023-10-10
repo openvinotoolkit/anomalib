@@ -57,14 +57,14 @@ def write_to_tensorboard(
     scalar_prefixes: list[str] = []
     string_metrics = {}
     for key, metric in model_metrics.items():
-        if isinstance(metric, (int, float, bool)):
+        if isinstance(metric, int | float | bool):
             scalar_metrics[key] = metric
         else:
             string_metrics[key] = metric
             scalar_prefixes.append(metric)
     writer = SummaryWriter(f"runs/{model_metrics['model_name']}_{model_metrics['device']}")
     for key, metric in model_metrics.items():
-        if isinstance(metric, (int, float, bool)):
+        if isinstance(metric, int | float | bool):
             scalar_metrics[key.replace(".", "/")] = metric  # need to join by / for tensorboard grouping
             writer.add_scalar(key, metric)
         else:

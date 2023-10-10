@@ -4,10 +4,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from collections.abc import Sequence
 from enum import Enum
 from itertools import product
 from math import ceil
-from typing import Sequence
 
 import torch
 import torchvision.transforms as T  # noqa: N812

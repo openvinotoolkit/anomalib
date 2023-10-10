@@ -2,8 +2,8 @@
 
 
 from abc import ABC
+from collections.abc import Callable
 from enum import Enum
-from typing import Callable
 
 import albumentations as A  # noqa: N812
 import torch
