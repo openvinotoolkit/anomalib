@@ -29,7 +29,12 @@ DOCSTRING_USAGE = {
 }
 
 
-def get_verbosity_subcommand() -> tuple:
+def pre_parse_arguments() -> dict:
+    """Pre-parse arguments.
+
+    Returns:
+        dict[str, str]: Pased arguments.
+    """
     arguments: dict = {"subcommand": None}
     i = 1
     while i < len(sys.argv):
@@ -50,7 +55,22 @@ def get_verbosity_subcommand() -> tuple:
         elif i == 1:
             arguments["subcommand"] = sys.argv[i]
         i += 1
+    return arguments
 
+
+def get_verbosity_subcommand() -> tuple:
+    """
+    Returns a tuple containing the verbosity level and the subcommand name.
+
+    The verbosity level is determined by the command line arguments passed to the script.
+    If the subcommand requires additional arguments, the verbosity level is only set if the
+    help option is specified. The verbosity level can be set to 0 (no output), 1 (normal output),
+    or 2 (verbose output).
+
+    Returns:
+        A tuple containing the verbosity level (int) and the subcommand name (str).
+    """
+    arguments = pre_parse_arguments()
     verbosity = 2
     if arguments["subcommand"] in REQUIRED_ARGUMENTS:
         if "h" in arguments or "help" in arguments:
@@ -149,8 +169,6 @@ def render_guide(subcommand: str | None = None) -> list:
         return []
     contents = [get_intro()]
     target_command = DOCSTRING_USAGE[subcommand]
-    if target_command is None:
-        pass
     cli_usage = get_cli_usage_docstring(target_command)
     if cli_usage is not None:
         cli_usage += f"\n{get_verbose_usage(subcommand)}"
