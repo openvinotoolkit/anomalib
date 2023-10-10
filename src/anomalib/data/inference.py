@@ -7,7 +7,7 @@
 from pathlib import Path
 from typing import Any
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 from torch.utils.data.dataset import Dataset
 
 from anomalib.data.utils import get_image_filenames, get_transforms, read_image

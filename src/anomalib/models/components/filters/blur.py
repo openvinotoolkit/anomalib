@@ -5,7 +5,7 @@ from kornia.filters import get_gaussian_kernel2d
 from kornia.filters.filter import _compute_padding
 from kornia.filters.kernels import normalize_kernel2d
 from torch import Tensor, nn
-from torch.nn import functional as F
+from torch.nn import functional as F  # noqa: N812
 
 
 def compute_kernel_size(sigma_val: float) -> int:

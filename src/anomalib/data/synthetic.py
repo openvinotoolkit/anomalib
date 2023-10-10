@@ -14,7 +14,7 @@ from copy import deepcopy
 from pathlib import Path
 from tempfile import mkdtemp
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 import cv2
 import pandas as pd
 from albumentations.pytorch import ToTensorV2

@@ -9,7 +9,7 @@ This test contains the following test:
 
 import tempfile
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 import numpy as np
 import pytest
 import skimage

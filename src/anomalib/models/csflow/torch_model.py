@@ -15,10 +15,10 @@ from math import exp
 
 import numpy as np
 import torch
-import torch.nn.functional as F
 from FrEIA.framework import GraphINN, InputNode, Node, OutputNode
 from FrEIA.modules import InvertibleModule
 from torch import Tensor, nn
+from torch.nn import functional as F  # noqa: N812
 from torchvision.models.efficientnet import EfficientNet_B5_Weights
 
 from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor

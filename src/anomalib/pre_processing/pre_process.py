@@ -12,7 +12,7 @@ import logging
 import warnings
 from typing import Any
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 from albumentations.pytorch import ToTensorV2
 
 logger = logging.getLogger(__name__)
@@ -95,7 +95,7 @@ def get_transforms(
 
 
         Transforms could be read from albumentations Compose object.
-        >>> import albumentations as A
+        >>> import albumentations as A  # noqa: N812
         >>> from albumentations.pytorch import ToTensorV2
         >>> config = A.Compose([A.Resize(512, 512), ToTensorV2()])
         >>> transforms = get_transforms(config=config, to_tensor=False)
@@ -193,7 +193,7 @@ class PreProcessor:
 
 
         Transforms could be read from albumentations Compose object.
-            >>> import albumentations as A
+            >>> import albumentations as A  # noqa: N812
             >>> from albumentations.pytorch import ToTensorV2
             >>> config = A.Compose([A.Resize(512, 512), ToTensorV2()])
             >>> pre_processor = PreProcessor(config=config, to_tensor=False)

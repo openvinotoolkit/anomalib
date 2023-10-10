@@ -9,7 +9,7 @@ This script creates a custom dataset from a folder.
 
 from pathlib import Path
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 from pandas import DataFrame, isna
 
 from anomalib.data.base import AnomalibDataModule, AnomalibDepthDataset

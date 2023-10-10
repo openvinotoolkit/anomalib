@@ -9,7 +9,7 @@ from importlib.util import find_spec
 from pathlib import Path
 from typing import Any
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 import cv2
 import numpy as np
 from omegaconf import DictConfig

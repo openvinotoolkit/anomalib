@@ -11,10 +11,10 @@ import warnings
 from typing import Callable
 
 import torch
-import torch.nn.functional as F
 from FrEIA.modules import InvertibleModule
 from scipy.stats import special_ortho_group
 from torch import Tensor, nn
+from torch.nn import functional as F  # noqa: N812
 
 
 def _global_scale_sigmoid_activation(input: Tensor) -> Tensor:
@@ -111,7 +111,7 @@ class AllInOneBlock(InvertibleModule):
             Turn the block into a GIN block from Sorrenson et al, 2019.
             Makes it so that the coupling operations as a whole is volume preserving.
           global_affine_init:
-            Initial value for the global affine scaling :math:`s_\mathrm{global}`.
+            Initial value for the global affine scaling :math:`s_\\mathrm{global}`.
           global_affine_init:
             ``'SIGMOID'``, ``'SOFTPLUS'``, or ``'EXP'``. Defines the activation to be used
             on the beta for the global affine scaling (:math:`\\Psi` above).

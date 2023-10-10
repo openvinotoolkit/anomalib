@@ -4,9 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-import torch.nn.functional as F
 from omegaconf import ListConfig
 from torch import Tensor, nn
+from torch.nn import functional as F  # noqa: N812
 
 from anomalib.models.components import GaussianBlur2d
 

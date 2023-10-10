@@ -20,7 +20,7 @@ Reference:
 import logging
 from pathlib import Path
 
-import albumentations as A
+import albumentations as A  # noqa: N812
 import numpy as np
 from cv2 import imread
 from pandas import DataFrame
