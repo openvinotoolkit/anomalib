@@ -94,7 +94,8 @@ def upscale_image(image: Tensor, size: tuple, mode: ImageUpscaleMode = ImageUpsc
     elif mode == ImageUpscaleMode.INTERPOLATION:
         image = F.interpolate(input=image, size=(resize_h, resize_w))
     else:
-        raise ValueError(f"Unknown mode {mode}. Only padding and interpolation is available.")
+        msg = f"Unknown mode {mode}. Only padding and interpolation is available."
+        raise ValueError(msg)
 
     return image
 
@@ -172,13 +173,17 @@ class Tiler:
         self.mode = mode
 
         if self.stride_h > self.tile_size_h or self.stride_w > self.tile_size_w:
-            raise StrideSizeError(
+            msg = (
                 "Larger stride size than kernel size produces unreliable tiling results. "
-                "Please ensure stride size is less than or equal than tiling size.",
+                "Please ensure stride size is less than or equal than tiling size."
+            )
+            raise StrideSizeError(
+                msg,
             )
 
         if self.mode not in (ImageUpscaleMode.PADDING, ImageUpscaleMode.INTERPOLATION):
-            raise ValueError(f"Unknown tiling mode {self.mode}. Available modes are padding and interpolation")
+            msg = f"Unknown tiling mode {self.mode}. Available modes are padding and interpolation"
+            raise ValueError(msg)
 
         self.batch_size: int
         self.num_channels: int
@@ -202,10 +207,12 @@ class Tiler:
         elif isinstance(parameter, Sequence):
             output = (parameter[0], parameter[1])
         else:
-            raise ValueError(f"Unknown type {type(parameter)} for tile or stride size. Could be int or Sequence type.")
+            msg = f"Unknown type {type(parameter)} for tile or stride size. Could be int or Sequence type."
+            raise ValueError(msg)
 
         if len(output) != 2:
-            raise ValueError(f"Length of the size type must be 2 for height and width. Got {len(output)} instead.")
+            msg = f"Length of the size type must be 2 for height and width. Got {len(output)} instead."
+            raise ValueError(msg)
 
         return output
 
@@ -369,9 +376,12 @@ class Tiler:
         self.batch_size, self.num_channels, self.input_h, self.input_w = image.shape
 
         if self.input_h < self.tile_size_h or self.input_w < self.tile_size_w:
+            msg = (
+                f"One of the edges of the tile size {self.tile_size_h, self.tile_size_w} is larger than "
+                f"that of the image {{self.input_h, self.input_w}}."
+            )
             raise ValueError(
-                f"One of the edges of the tile size {self.tile_size_h, self.tile_size_w} "
-                "is larger than that of the image {self.input_h, self.input_w}.",
+                msg,
             )
 
         self.resized_h, self.resized_w = compute_new_image_size(

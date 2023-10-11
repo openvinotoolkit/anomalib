@@ -88,7 +88,8 @@ class ImageVisualizerCallback(BaseVisualizerCallback):
                 suffix = f"{str(outputs['frames'][i].int().item()).zfill(zero_fill)}.png"
                 filename = Path(outputs["video_path"][i]) / suffix
             else:
-                raise KeyError("Batch must have either 'image_path' or 'video_path' defined.")
+                msg = "Batch must have either 'image_path' or 'video_path' defined."
+                raise KeyError(msg)
 
             if self.save_images:
                 file_path = self.image_save_path / filename.parent.name / filename.name

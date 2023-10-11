@@ -165,7 +165,8 @@ class Augmenter:
             beta = torch.rand(batch_size) * (self.beta[1] - self.beta[0]) + self.beta[0]
             beta = beta.view(batch_size, 1, 1, 1).expand_as(batch).to(batch.device)  # type: ignore
         else:
-            raise ValueError("Beta must be either float or tuple of floats")
+            msg = "Beta must be either float or tuple of floats"
+            raise ValueError(msg)
 
         augmented_batch = batch * (1 - masks) + (beta) * perturbations + (1 - beta) * batch * (masks)
 

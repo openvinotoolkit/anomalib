@@ -65,7 +65,8 @@ def _prepare_files_labels(
         if f.suffix in extensions and not f.is_dir() and not any(part.startswith(".") for part in f.parts)
     ]
     if not filenames:
-        raise RuntimeError(f"Found 0 {path_type} images in {path}")
+        msg = f"Found 0 {path_type} images in {path}"
+        raise RuntimeError(msg)
 
     labels = [path_type] * len(filenames)
 

@@ -97,7 +97,8 @@ class _ThresholdCallback(Callback):
         elif isinstance(threshold, str | DictConfig | ListConfig):
             self._load_from_config(threshold)
         else:
-            raise ValueError(f"Invalid threshold type {type(threshold)}")
+            msg = f"Invalid threshold type {type(threshold)}"
+            raise ValueError(msg)
 
     def _load_from_config(self, threshold: DictConfig | str | ListConfig) -> None:
         """Loads the thresholding class based on the config.
@@ -127,7 +128,8 @@ class _ThresholdCallback(Callback):
             self.image_threshold = self._get_threshold_from_config(threshold[0])
             self.pixel_threshold = self._get_threshold_from_config(threshold[1])
         else:
-            raise ValueError(f"Invalid threshold config {threshold}")
+            msg = f"Invalid threshold config {threshold}"
+            raise ValueError(msg)
 
     def _get_threshold_from_config(self, threshold: DictConfig | str) -> BaseThreshold:
         """Return the instantiated threshold object.

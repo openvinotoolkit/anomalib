@@ -79,7 +79,8 @@ class AnomalyMapGenerator(nn.Module):
             torch.Tensor: anomaly map
         """
         if not ("distribution" in kwargs and "height" in kwargs and "width" in kwargs):
-            raise KeyError(f"Expected keys `distribution`, `height` and `width`. Found {kwargs.keys()}")
+            msg = f"Expected keys `distribution`, `height` and `width`. Found {kwargs.keys()}"
+            raise KeyError(msg)
 
         # placate mypy
         distribution: list[Tensor] = cast(list[Tensor], kwargs["distribution"])

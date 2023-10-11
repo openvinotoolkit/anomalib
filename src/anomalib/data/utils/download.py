@@ -274,7 +274,8 @@ def extract(file_name: Path, root: Path) -> None:
             safe_extract(tar_file, root, safe_members)
 
     else:
-        raise ValueError(f"Unrecognized file format: {file_name}")
+        msg = f"Unrecognized file format: {file_name}"
+        raise ValueError(msg)
 
     logger.info("Cleaning up files.")
     file_name.unlink()

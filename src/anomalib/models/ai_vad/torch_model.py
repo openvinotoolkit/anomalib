@@ -60,7 +60,8 @@ class AiVadModel(nn.Module):
     ) -> None:
         super().__init__()
         if not any((use_velocity_features, use_pose_features, use_deep_features)):
-            raise ValueError("Select at least one feature type.")
+            msg = "Select at least one feature type."
+            raise ValueError(msg)
 
         # initialize flow extractor
         self.flow_extractor = FlowExtractor()

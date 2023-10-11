@@ -81,7 +81,8 @@ class Sweep:
         entity: str = "",
     ) -> None:
         if model is None and model_config is None:
-            raise ValueError("Either model or model_config must be provided.")
+            msg = "Either model or model_config must be provided."
+            raise ValueError(msg)
 
         self.model_config = get_configurable_parameters(model_name=model, config_path=model_config)
         self.sweep_config = OmegaConf.load(sweep_config)
@@ -97,7 +98,8 @@ class Sweep:
         elif backend == HPOBackend.WANDB:
             runner = WandbSweep(self.model_config, self.sweep_config, self.entity)
         else:
-            raise ValueError(f"Unknown backend {backend}")
+            msg = f"Unknown backend {backend}"
+            raise ValueError(msg)
         return runner
 
     def run(self):

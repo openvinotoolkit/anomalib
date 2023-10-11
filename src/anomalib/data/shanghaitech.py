@@ -163,7 +163,8 @@ class ShanghaiTechTestClipsIndexer(ClipsIndexer):
             video_idx (int): index of the video in `video_paths`
         """
         if idx >= self.num_clips():
-            raise IndexError(f"Index {idx} out of range ({self.num_clips()} number of clips)")
+            msg = f"Index {idx} out of range ({self.num_clips()} number of clips)"
+            raise IndexError(msg)
         video_idx, clip_idx = self.get_clip_location(idx)
         video_path = self.video_paths[video_idx]
         clip_pts = self.clips[video_idx][clip_idx]

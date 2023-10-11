@@ -156,7 +156,8 @@ class AllInOneBlock(InvertibleModule):
         try:
             self.permute_function = {0: F.linear, 1: F.conv1d, 2: F.conv2d, 3: F.conv3d}[self.input_rank]
         except KeyError:
-            raise ValueError(f"Data is {1 + self.input_rank}D. Must be 1D-4D.") from None
+            msg = f"Data is {1 + self.input_rank}D. Must be 1D-4D."
+            raise ValueError(msg) from None
 
         self.in_channels = channels
         self.clamp = affine_clamping
@@ -167,7 +168,7 @@ class AllInOneBlock(InvertibleModule):
         if permute_soft and channels > 512:
             msg = (
                 "Soft permutation will take a very long time to initialize "
-                f"with {channels} feature channels. Consider using hard permutation instead.",
+                f"with {channels} feature channels. Consider using hard permutation instead."
             )
             logger.warn(msg)
 
@@ -186,7 +187,8 @@ class AllInOneBlock(InvertibleModule):
             global_scale = torch.log(torch.tensor(global_affine_init))
             self.global_scale_activation = _global_scale_exp_activation
         else:
-            raise ValueError('Global affine activation must be "SIGMOID", "SOFTPLUS" or "EXP"')
+            message = 'Global affine activation must be "SIGMOID", "SOFTPLUS" or "EXP"'
+            raise ValueError(message)
 
         self.global_scale = nn.Parameter(torch.ones(1, self.in_channels, *([1] * self.input_rank)) * global_scale)
         self.global_offset = nn.Parameter(torch.zeros(1, self.in_channels, *([1] * self.input_rank)))
@@ -217,7 +219,8 @@ class AllInOneBlock(InvertibleModule):
             )
 
         if subnet_constructor is None:
-            raise ValueError("Please supply a callable subnet_constructor" "function or object (see docstring)")
+            message = "Please supply a callable subnet_constructor" "function or object (see docstring)"
+            raise ValueError(message)
         self.subnet = subnet_constructor(self.splits[0] + self.condition_channels, 2 * self.splits[1])
         self.last_jac = None
 

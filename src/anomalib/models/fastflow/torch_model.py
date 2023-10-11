@@ -146,10 +146,11 @@ class FastflowModel(nn.Module):
                     ),
                 )
         else:
-            raise ValueError(
+            msg = (
                 f"Backbone {backbone} is not supported. List of available backbones are "
-                "[cait_m48_448, deit_base_distilled_patch16_384, resnet18, wide_resnet50_2].",
+                "[cait_m48_448, deit_base_distilled_patch16_384, resnet18, wide_resnet50_2]."
             )
+            raise ValueError(msg)
 
         for parameter in self.feature_extractor.parameters():
             parameter.requires_grad = False

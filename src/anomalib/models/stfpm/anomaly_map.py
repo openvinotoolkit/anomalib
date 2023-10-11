@@ -78,7 +78,8 @@ class AnomalyMapGenerator(nn.Module):
         """
 
         if not ("teacher_features" in kwargs and "student_features" in kwargs):
-            raise ValueError(f"Expected keys `teacher_features` and `student_features. Found {kwargs.keys()}")
+            msg = f"Expected keys `teacher_features` and `student_features. Found {kwargs.keys()}"
+            raise ValueError(msg)
 
         teacher_features: dict[str, Tensor] = kwargs["teacher_features"]
         student_features: dict[str, Tensor] = kwargs["student_features"]

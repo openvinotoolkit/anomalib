@@ -78,10 +78,11 @@ class PadimModel(nn.Module):
         n_features = n_features or _N_FEATURES_DEFAULTS.get(self.backbone)
 
         if n_features is None:
-            raise ValueError(
+            msg = (
                 f"n_features must be specified for backbone {self.backbone}. "
-                f"Default values are available for: {sorted(_N_FEATURES_DEFAULTS.keys())}",
+                f"Default values are available for: {sorted(_N_FEATURES_DEFAULTS.keys())}"
             )
+            raise ValueError(msg)
 
         assert (
             0 < n_features <= self.n_features_original

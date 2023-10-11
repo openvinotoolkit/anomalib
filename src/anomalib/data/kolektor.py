@@ -109,7 +109,8 @@ def make_kolektor_dataset(
     masks_list = [(str(root),) + f.parts[-2:] for f in root.glob(r"**/*") if f.suffix == ".bmp"]
 
     if not samples_list:
-        raise RuntimeError(f"Found 0 images in {root}")
+        msg = f"Found 0 images in {root}"
+        raise RuntimeError(msg)
 
     # Create dataframes
     samples = DataFrame(samples_list, columns=["path", "item", "image_path"])

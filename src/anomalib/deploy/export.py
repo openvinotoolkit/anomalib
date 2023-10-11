@@ -124,7 +124,8 @@ def export(
             export_to_openvino(export_path=export_path, input_model=onnx_path, metadata=metadata, input_size=input_size)
 
     else:
-        raise ValueError(f"Unknown export mode {export_mode}")
+        msg = f"Unknown export mode {export_mode}"
+        raise ValueError(msg)
 
 
 def export_to_torch(model: AnomalyModule, metadata: dict[str, Any], export_path: Path) -> None:

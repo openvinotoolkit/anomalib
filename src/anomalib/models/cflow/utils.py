@@ -48,7 +48,8 @@ def positional_encoding_2d(condition_vector: int, height: int, width: int) -> Te
         Tensor: condition_vector x HEIGHT x WIDTH position matrix
     """
     if condition_vector % 4 != 0:
-        raise ValueError(f"Cannot use sin/cos positional encoding with odd dimension (got dim={condition_vector})")
+        msg = f"Cannot use sin/cos positional encoding with odd dimension (got dim={condition_vector})"
+        raise ValueError(msg)
     pos_encoding = torch.zeros(condition_vector, height, width)
     # Each dimension use half of condition_vector
     condition_vector = condition_vector // 2

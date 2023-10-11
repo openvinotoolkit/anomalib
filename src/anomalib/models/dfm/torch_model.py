@@ -144,7 +144,8 @@ class DFMModel(nn.Module):
             score_map = F.interpolate(fre_map, size=self.input_size, mode="bilinear", align_corners=False)
             score = torch.sum(torch.square(features - feats_reconstructed), dim=1)
         else:
-            raise ValueError(f"unsupported score type: {self.score_type}")
+            msg = f"unsupported score type: {self.score_type}"
+            raise ValueError(msg)
 
         if self.score_type == "nll":
             output = score

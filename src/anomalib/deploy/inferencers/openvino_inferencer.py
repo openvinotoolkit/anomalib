@@ -80,7 +80,8 @@ class OpenVINOInferencer(Inferencer):
             elif path.suffix == ".onnx":
                 model = ie_core.read_model(path)
             else:
-                raise ValueError(f"Path must be .onnx, .bin or .xml file. Got {path.suffix}")
+                msg = f"Path must be .onnx, .bin or .xml file. Got {path.suffix}"
+                raise ValueError(msg)
         # Create cache folder
         cache_folder = Path("cache")
         cache_folder.mkdir(exist_ok=True)
@@ -183,7 +184,8 @@ class OpenVINOInferencer(Inferencer):
                 if pred_mask is not None:
                     pred_mask = cv2.resize(pred_mask, (image_width, image_height))
         else:
-            raise ValueError(f"Unknown task type: {task}")
+            msg = f"Unknown task type: {task}"
+            raise ValueError(msg)
 
         if self.task == TaskType.DETECTION:
             pred_boxes = self._get_boxes(pred_mask)

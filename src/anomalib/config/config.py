@@ -99,7 +99,8 @@ def update_input_size_config(config: DictConfig | ListConfig | Namespace) -> Dic
     elif isinstance(image_size, ListConfig | Sequence):
         assert len(image_size) == 2, "image_size must be a single integer or tuple of length 2 for width and height."
     else:
-        raise ValueError(f"image_size must be either int or ListConfig, got {type(image_size)}")
+        msg = f"image_size must be either int or ListConfig, got {type(image_size)}"
+        raise ValueError(msg)
 
     # Use input size from data to model input. If model input size is defined, warn and override.
     # If input_size is not part of the model parameters, remove it from the config. This is required due to argument
@@ -188,8 +189,9 @@ def update_multi_gpu_training_config(config: DictConfig | ListConfig) -> DictCon
                 )
                 config.trainer.accelerator = "ddp"
             else:
+                msg = f"Unsupported accelerator found: {config.trainer.accelerator}. Should be one of [null, ddp]"
                 raise ValueError(
-                    f"Unsupported accelerator found: {config.trainer.accelerator}. Should be one of [null, ddp]",
+                    msg,
                 )
     # Increase learning rate
     # since pytorch averages the gradient over devices, the idea is to
@@ -236,9 +238,12 @@ def get_configurable_parameters(
         DictConfig | ListConfig: Configurable parameters in DictConfig object.
     """
     if model_name is None and config_path is None:
-        raise ValueError(
+        msg = (
             "Both model_name and model config path cannot be None! "
-            "Please provide a model name or path to a config file!",
+            "Please provide a model name or path to a config file!"
+        )
+        raise ValueError(
+            msg,
         )
 
     if model_name == "efficientad":

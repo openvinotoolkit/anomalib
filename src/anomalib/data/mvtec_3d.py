@@ -118,7 +118,8 @@ def make_mvtec_3d_dataset(
     root = Path(root)
     samples_list = [(str(root),) + f.parts[-4:] for f in root.glob(r"**/*") if f.suffix in extensions]
     if not samples_list:
-        raise RuntimeError(f"Found 0 images in {root}")
+        msg = f"Found 0 images in {root}"
+        raise RuntimeError(msg)
 
     samples = DataFrame(samples_list, columns=["path", "split", "label", "type", "file_name"])
 

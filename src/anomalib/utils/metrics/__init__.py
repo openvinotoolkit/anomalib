@@ -189,4 +189,5 @@ def create_metric_collection(
         _validate_metrics_dict(metrics)
         return metric_collection_from_dicts(metrics, prefix)
 
-    raise ValueError(f"metrics must be a list or a dict, found {type(metrics)}")
+    msg = f"metrics must be a list or a dict, found {type(metrics)}"
+    raise ValueError(msg)

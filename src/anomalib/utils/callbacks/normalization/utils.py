@@ -43,7 +43,8 @@ def get_normalization_callback(
     elif isinstance(normalization_method, DictConfig):
         normalizer = _parse_normalizer_config(normalization_method)
     else:
-        raise ValueError(f"Unknown normalizer type {normalization_method}")
+        msg = f"Unknown normalizer type {normalization_method}"
+        raise ValueError(msg)
     return normalizer
 
 
@@ -55,7 +56,8 @@ def _get_normalizer_from_method(normalization_method) -> Callback | None:
     elif normalization_method == NormalizationMethod.CDF:
         normalizer = _CdfNormalizationCallback()
     else:
-        raise ValueError(f"Unknown normalization method {normalization_method}")
+        msg = f"Unknown normalization method {normalization_method}"
+        raise ValueError(msg)
     return normalizer
 
 

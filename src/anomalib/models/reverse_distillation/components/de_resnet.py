@@ -53,9 +53,11 @@ class DecoderBasicBlock(nn.Module):
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
         if groups != 1 or base_width != 64:
-            raise ValueError("BasicBlock only supports groups=1 and base_width=64")
+            msg = "BasicBlock only supports groups=1 and base_width=64"
+            raise ValueError(msg)
         if dilation > 1:
-            raise NotImplementedError("Dilation > 1 not supported in BasicBlock")
+            msg = "Dilation > 1 not supported in BasicBlock"
+            raise NotImplementedError(msg)
         # Both self.conv1 and self.downsample layers downsample the input when stride != 2
         if stride == 2:
             self.conv1 = nn.ConvTranspose2d(
@@ -351,5 +353,6 @@ def get_decoder(name: str) -> ResNet:
     ):
         decoder = globals()[f"de_{name}"]
     else:
-        raise ValueError(f"Decoder with architecture {name} not supported")
+        msg = f"Decoder with architecture {name} not supported"
+        raise ValueError(msg)
     return decoder()

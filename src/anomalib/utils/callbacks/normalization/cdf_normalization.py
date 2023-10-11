@@ -36,9 +36,12 @@ class _CdfNormalizationCallback(Callback):
         if not hasattr(pl_module, "normalization_metrics"):
             pl_module.normalization_metrics = AnomalyScoreDistribution().cpu()
         elif not isinstance(pl_module.normalization_metrics, AnomalyScoreDistribution):
+            msg = (
+                "Expected normalization_metrics to be of type AnomalyScoreDistribution, "
+                f"got {type(pl_module.normalization_metrics)}"
+            )
             raise AttributeError(
-                f"Expected normalization_metrics to be of type AnomalyScoreDistribution,"
-                f" got {type(pl_module.normalization_metrics)}",
+                msg,
             )
 
     def on_test_start(self, trainer: Trainer, pl_module: AnomalyModule) -> None:

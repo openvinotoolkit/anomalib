@@ -86,7 +86,8 @@ def random_2d_perlin(
     elif isinstance(res[0], Tensor):
         result = _rand_perlin_2d(shape, res, fade)
     else:
-        raise TypeError(f"got scales of type {type(res[0])}")
+        msg = f"got scales of type {type(res[0])}"
+        raise TypeError(msg)
     return result
 
 

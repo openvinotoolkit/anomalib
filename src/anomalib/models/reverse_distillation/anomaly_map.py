@@ -52,7 +52,8 @@ class AnomalyMapGenerator(nn.Module):
         self.kernel_size = 2 * int(4.0 * sigma + 0.5) + 1
 
         if mode not in (AnomalyMapGenerationMode.ADD, AnomalyMapGenerationMode.MULTIPLY):
-            raise ValueError(f"Found mode {mode}. Only multiply and add are supported.")
+            msg = f"Found mode {mode}. Only multiply and add are supported."
+            raise ValueError(msg)
         self.mode = mode
 
     def forward(self, student_features: list[Tensor], teacher_features: list[Tensor]) -> Tensor:

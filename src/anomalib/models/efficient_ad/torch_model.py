@@ -247,7 +247,8 @@ class EfficientAdModel(nn.Module):
             self.student = SmallPatchDescriptionNetwork(out_channels=teacher_out_channels * 2, padding=padding)
 
         else:
-            raise ValueError(f"Unknown model size {model_size}")
+            msg = f"Unknown model size {model_size}"
+            raise ValueError(msg)
 
         self.ae: AutoEncoder = AutoEncoder(out_channels=teacher_out_channels, padding=padding, img_size=input_size)
         self.teacher_out_channels: int = teacher_out_channels

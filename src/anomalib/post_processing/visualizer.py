@@ -78,11 +78,13 @@ class Visualizer:
 
     def __init__(self, mode: VisualizationMode, task: TaskType) -> None:
         if mode not in (VisualizationMode.FULL, VisualizationMode.SIMPLE):
-            raise ValueError(f"Unknown visualization mode: {mode}. Please choose one of ['full', 'simple']")
+            msg = f"Unknown visualization mode: {mode}. Please choose one of ['full', 'simple']"
+            raise ValueError(msg)
         self.mode = mode
         if task not in (TaskType.CLASSIFICATION, TaskType.DETECTION, TaskType.SEGMENTATION):
+            msg = f"Unknown task type: {mode}. Please choose one of ['classification', 'detection', 'segmentation']"
             raise ValueError(
-                f"Unknown task type: {mode}. Please choose one of ['classification', 'detection', 'segmentation']",
+                msg,
             )
         self.task = task
 
@@ -105,7 +107,8 @@ class Visualizer:
                 image = batch["original_image"][i].squeeze().numpy()
                 image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_AREA)
             else:
-                raise KeyError("Batch must have either 'image_path' or 'video_path' defined.")
+                msg = "Batch must have either 'image_path' or 'video_path' defined."
+                raise KeyError(msg)
 
             image_result = ImageResult(
                 image=image,
@@ -133,7 +136,8 @@ class Visualizer:
             return self._visualize_full(image_result)
         if self.mode == VisualizationMode.SIMPLE:
             return self._visualize_simple(image_result)
-        raise ValueError(f"Unknown visualization mode: {self.mode}")
+        msg = f"Unknown visualization mode: {self.mode}"
+        raise ValueError(msg)
 
     def _visualize_full(self, image_result: ImageResult) -> np.ndarray:
         """Generate the full set of visualization for an image.
@@ -215,7 +219,8 @@ class Visualizer:
             else:
                 image_classified = add_normal_label(image_result.image, 1 - image_result.pred_score)
             return image_classified
-        raise ValueError(f"Unknown task type: {self.task}")
+        msg = f"Unknown task type: {self.task}"
+        raise ValueError(msg)
 
     @staticmethod
     def show(title: str, image: np.ndarray, delay: int = 0) -> None:

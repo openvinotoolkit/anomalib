@@ -80,7 +80,8 @@ class RegionExtractor(nn.Module):
                  and where each row describes the index of the image in the batch and the 4 bounding box coordinates.
         """
         if self.training:
-            raise ValueError("Should not be in training mode")
+            msg = "Should not be in training mode"
+            raise ValueError(msg)
 
         if self.stage == RoiStage.RCNN:
             # get rois from rcnn output
@@ -97,7 +98,8 @@ class RegionExtractor(nn.Module):
             all_regions = [scale_boxes(boxes, images.tensors.shape[-2:], batch.shape[-2:]) for boxes in all_regions]
             all_scores = [torch.ones(boxes.shape[0]).to(boxes.device) for boxes in all_regions]
         else:
-            raise ValueError(f"Unknown region extractor stage: {self.stage}")
+            msg = f"Unknown region extractor stage: {self.stage}"
+            raise ValueError(msg)
 
         regions = self.post_process_box_predictions(all_regions, all_scores)
 

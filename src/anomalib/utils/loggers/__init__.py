@@ -126,11 +126,13 @@ def get_experiment_logger(
         elif experiment_logger == "csv":
             logger_list.append(CSVLogger(save_dir=os.path.join(config.project.path, "logs")))
         else:
+            msg = (
+                f"Unknown logger type: {config.trainer.logger}. Available loggers are: {AVAILABLE_LOGGERS}.\n"
+                "To enable the logger, set `project.logger` to `true` or use one of available loggers in "
+                "config.yaml\nTo disable the logger, set `project.logger` to `false`."
+            )
             raise UnknownLoggerError(
-                f"Unknown logger type: {config.trainer.logger}. "
-                f"Available loggers are: {AVAILABLE_LOGGERS}.\n"
-                f"To enable the logger, set `project.logger` to `true` or use one of available loggers in config.yaml\n"
-                f"To disable the logger, set `project.logger` to `false`.",
+                msg,
             )
 
     # TODO remove this method and set these values in ``update_config``

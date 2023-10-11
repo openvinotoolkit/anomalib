@@ -47,7 +47,8 @@ class Denormalize:
             if tensor.size(0):
                 tensor = tensor.squeeze(0)
             else:
-                raise ValueError(f"Tensor has batch size of {tensor.size(0)}. Only single batch is supported.")
+                msg = f"Tensor has batch size of {tensor.size(0)}. Only single batch is supported."
+                raise ValueError(msg)
 
         denormalized_per_channel = [
             (tnsr * std) + mean for tnsr, mean, std in zip(tensor, self.mean, self.std, strict=True)

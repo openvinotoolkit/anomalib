@@ -96,7 +96,8 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         elif self.target_frame == VideoTargetFrame.MID:
             idx = int(self.clip_length_in_frames / 2)
         else:
-            raise ValueError(f"Unknown video target frame: {self.target_frame}")
+            msg = f"Unknown video target frame: {self.target_frame}"
+            raise ValueError(msg)
 
         if item.get("mask") is not None:
             item["mask"] = item["mask"][idx, ...]
@@ -163,6 +164,7 @@ class AnomalibVideoDataModule(AnomalibDataModule):
         self.test_data.setup()
 
         if self.val_split_mode == ValSplitMode.SYNTHETIC:
-            raise ValueError(f"Val split mode {self.test_split_mode} not supported for video datasets.")
+            msg = f"Val split mode {self.test_split_mode} not supported for video datasets."
+            raise ValueError(msg)
 
         self._create_val_split()

@@ -23,7 +23,8 @@ def standardize(
     elif isinstance(targets, Tensor):
         targets = torch.log(targets)
     else:
-        raise ValueError(f"Targets must be either Tensor or Numpy array. Received {type(targets)}")
+        msg = f"Targets must be either Tensor or Numpy array. Received {type(targets)}"
+        raise ValueError(msg)
     standardized = (targets - mean) / std
     if center_at:
         standardized -= (center_at - mean) / std
@@ -36,7 +37,8 @@ def normalize(targets: np.ndarray | Tensor, threshold: float | np.ndarray | Tens
         return normalize_torch(targets, threshold)
     if isinstance(targets, np.ndarray):
         return normalize_numpy(targets, threshold)
-    raise ValueError(f"Targets must be either Tensor or Numpy array. Received {type(targets)}")
+    msg = f"Targets must be either Tensor or Numpy array. Received {type(targets)}"
+    raise ValueError(msg)
 
 
 def normalize_torch(targets: Tensor, threshold: Tensor) -> Tensor:

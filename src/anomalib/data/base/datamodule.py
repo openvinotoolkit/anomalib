@@ -135,7 +135,8 @@ class AnomalibDataModule(LightningDataModule, ABC):
         elif self.test_split_mode == TestSplitMode.SYNTHETIC:
             self.test_data = SyntheticAnomalyDataset.from_dataset(normal_test_data)
         elif self.test_split_mode != TestSplitMode.NONE:
-            raise ValueError(f"Unsupported Test Split Mode: {self.test_split_mode}")
+            msg = f"Unsupported Test Split Mode: {self.test_split_mode}"
+            raise ValueError(msg)
 
     def _create_val_split(self) -> None:
         """Obtain the validation set based on the settings in the config."""
@@ -155,7 +156,8 @@ class AnomalibDataModule(LightningDataModule, ABC):
             self.train_data, normal_val_data = random_split(self.train_data, self.val_split_ratio, seed=self.seed)
             self.val_data = SyntheticAnomalyDataset.from_dataset(normal_val_data)
         elif self.val_split_mode != ValSplitMode.NONE:
-            raise ValueError(f"Unknown validation split mode: {self.val_split_mode}")
+            msg = f"Unknown validation split mode: {self.val_split_mode}"
+            raise ValueError(msg)
 
     @property
     def is_setup(self) -> bool:

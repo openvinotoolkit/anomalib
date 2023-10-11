@@ -62,6 +62,7 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
                 boxes, _ = masks_to_boxes(item["mask"])
                 item["boxes"] = boxes[0]
         else:
-            raise ValueError(f"Unknown task type: {self.task}")
+            msg = f"Unknown task type: {self.task}"
+            raise ValueError(msg)
 
         return item
