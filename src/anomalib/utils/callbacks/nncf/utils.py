@@ -128,9 +128,9 @@ def compose_nncf_config(nncf_config: dict, enabled_options: list[str]) -> dict:
         assert isinstance(order_of_parts, list), 'The field "order_of_parts" in optimisation config should be a list'
 
         for part in enabled_options:
-            assert part in order_of_parts, (
-                f"The part {part} is selected, " "but it is absent in order_of_parts={order_of_parts}"
-            )
+            assert (
+                part in order_of_parts
+            ), f"The part {part} is selected, but it is absent in order_of_parts={order_of_parts}"
 
         optimisation_parts_to_choose = [part for part in order_of_parts if part in enabled_options]
 

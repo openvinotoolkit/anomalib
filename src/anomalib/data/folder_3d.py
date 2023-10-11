@@ -79,22 +79,22 @@ def make_folder3d_dataset(
     dirs = {DirType.NORMAL: normal_dir}
 
     if abnormal_dir:
-        dirs = {**dirs, **{DirType.ABNORMAL: abnormal_dir}}
+        dirs[DirType.ABNORMAL] = abnormal_dir
 
     if normal_test_dir:
-        dirs = {**dirs, **{DirType.NORMAL_TEST: normal_test_dir}}
+        dirs[DirType.NORMAL_TEST] = normal_test_dir
 
     if normal_depth_dir:
-        dirs = {**dirs, **{DirType.NORMAL_DEPTH: normal_depth_dir}}
+        dirs[DirType.NORMAL_DEPTH] = normal_depth_dir
 
     if abnormal_depth_dir:
-        dirs = {**dirs, **{DirType.ABNORMAL_DEPTH: abnormal_depth_dir}}
+        dirs[DirType.ABNORMAL_DEPTH] = abnormal_depth_dir
 
     if normal_test_depth_dir:
-        dirs = {**dirs, **{DirType.NORMAL_TEST_DEPTH: normal_test_depth_dir}}
+        dirs[DirType.NORMAL_TEST_DEPTH] = normal_test_depth_dir
 
     if mask_dir:
-        dirs = {**dirs, **{DirType.MASK: mask_dir}}
+        dirs[DirType.MASK] = mask_dir
 
     for dir_type, path in dirs.items():
         filename, label = _prepare_files_labels(path, dir_type, extensions)
