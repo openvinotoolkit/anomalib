@@ -10,10 +10,10 @@ import logging
 import os
 import re
 import tarfile
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from tarfile import TarFile, TarInfo
-from typing import Iterable
 from urllib.request import urlretrieve
 from zipfile import ZipFile
 
@@ -156,7 +156,7 @@ class DownloadProgressBar(tqdm):
         delay: float | None = 0,
         gui: bool | None = False,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(
             iterable=iterable,
             desc=desc,
@@ -300,7 +300,7 @@ def download_and_extract(root: Path, info: DownloadInfo) -> None:
     else:
         logger.info("Downloading the %s dataset.", info.name)
         with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc=info.name) as progress_bar:
-            urlretrieve(  # nosec - suppress bandit warning (urls are hardcoded)
+            urlretrieve(  # noqa: S310
                 url=f"{info.url}",
                 filename=downloaded_file_path,
                 reporthook=progress_bar.update_to,

@@ -4,8 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Type
+from typing import Any
 
 from jsonargparse import ArgumentParser
 from lightning.pytorch import Trainer
@@ -43,9 +44,9 @@ class AnomalibCLI(LightningCLI):
 
     def __init__(
         self,
-        save_config_callback: Type[SaveConfigCallback] = SaveConfigCallback,
+        save_config_callback: type[SaveConfigCallback] = SaveConfigCallback,
         save_config_kwargs: dict[str, Any] | None = None,
-        trainer_class: Type[Trainer] | Callable[..., Trainer] = Trainer,
+        trainer_class: type[Trainer] | Callable[..., Trainer] = Trainer,
         trainer_defaults: dict[str, Any] | None = None,
         seed_everything_default: bool | int = True,
         parser_kwargs: dict[str, Any] | dict[str, dict[str, Any]] | None = None,

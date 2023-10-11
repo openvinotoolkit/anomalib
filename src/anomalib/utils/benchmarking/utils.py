@@ -4,11 +4,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-import random
 import string
 from glob import glob
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import wandb
 from comet_ml import Experiment
@@ -57,14 +57,14 @@ def write_to_tensorboard(
     scalar_prefixes: list[str] = []
     string_metrics = {}
     for key, metric in model_metrics.items():
-        if isinstance(metric, (int, float, bool)):
+        if isinstance(metric, int | float | bool):
             scalar_metrics[key] = metric
         else:
             string_metrics[key] = metric
             scalar_prefixes.append(metric)
     writer = SummaryWriter(f"runs/{model_metrics['model_name']}_{model_metrics['device']}")
     for key, metric in model_metrics.items():
-        if isinstance(metric, (int, float, bool)):
+        if isinstance(metric, int | float | bool):
             scalar_metrics[key.replace(".", "/")] = metric  # need to join by / for tensorboard grouping
             writer.add_scalar(key, metric)
         else:
@@ -86,7 +86,7 @@ def get_unique_key(str_len: int) -> str:
     Returns:
         str: Random string
     """
-    return "".join([random.choice(string.ascii_lowercase) for _ in range(str_len)])  # nosec: B311
+    return "".join([np.random.default_rng().choice(string.ascii_lowercase) for _ in range(str_len)])
 
 
 def upload_to_wandb(

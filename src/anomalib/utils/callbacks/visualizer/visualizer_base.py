@@ -69,7 +69,8 @@ class BaseVisualizerCallback(Callback):
         """
         # Store names of logger and the logger in a dict
         available_loggers = {
-            type(logger).__name__.lower().rstrip("logger").lstrip("anomalib"): logger for logger in trainer.loggers
+            type(logger).__name__.lower().replace("logger", "").replace("anomalib", ""): logger
+            for logger in trainer.loggers
         }
         # save image to respective logger
         if self.log_images:

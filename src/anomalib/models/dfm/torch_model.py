@@ -16,7 +16,7 @@ from anomalib.models.components import PCA, DynamicBufferModule, FeatureExtracto
 class SingleClassGaussian(DynamicBufferModule):
     """Model Gaussian distribution over a set of points."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.register_buffer("mean_vec", Tensor())
         self.register_buffer("u_mat", Tensor())
@@ -93,7 +93,7 @@ class DFMModel(nn.Module):
         pooling_kernel_size: int = 4,
         n_comps: float = 0.97,
         score_type: str = "fre",
-    ):
+    ) -> None:
         super().__init__()
         self.backbone = backbone
         self.pooling_kernel_size = pooling_kernel_size

@@ -23,13 +23,13 @@ select = [
     "I",    # isort (`I`)
     "N",    # pep8-naming (`N`)
     # "D",    # pydocstyle (`D`)
-    # "UP",   # pyupgrade (`UP`)
-    # "YTT",  # flake8-2020 (`YTT`)
+    "UP",   # pyupgrade (`UP`)
+    "YTT",  # flake8-2020 (`YTT`)
     # "ANN",  # flake8-annotations (`ANN`)
-    # "S",    # flake8-bandit (`S`)
-    # "BLE",  # flake8-blind-except (`BLE`)
-    # "FBT",  # flake8-boolean-trap (`FBT`)
-    # "B",    # flake8-bugbear (`B`)    #! 4 errors left
+    "S",    # flake8-bandit (`S`)
+    "BLE",  # flake8-blind-except (`BLE`)
+    "FBT",  # flake8-boolean-trap (`FBT`)
+    "B",    # flake8-bugbear (`B`)
     # "A",    # flake8-builtins (`A`)
     # "COM",  # flake8-commas (`COM`)
     # "CPY",  # flake8-copyright (`CPY`)
@@ -90,12 +90,13 @@ ignore = [
     # "ANN101",   # Missing-type-self
     # "ANN002",   # Missing type annotation for *args
     # "ANN003",   # Missing type annotation for **kwargs
+
     # flake8-bandit (`S`)
-    # "S101", # Use of assert detected.
+    "S101", # Use of assert detected.
 
     # flake8-boolean-trap (`FBT`)
-    # "FBT001",   # Boolean positional arg in function definition
-    # "FBT002",   # Boolean default value in function definition
+    "FBT001",   # Boolean positional arg in function definition
+    "FBT002",   # Boolean default value in function definition
 
     # flake8-type-checking
     # "TCH001",   # typing-only-first-party-import, Sometimes this causes an incorrect error.

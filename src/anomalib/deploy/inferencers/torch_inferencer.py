@@ -4,8 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 import albumentations as A  # noqa: N812
 import cv2
@@ -91,7 +92,7 @@ class TorchInferencer(Inferencer):
 
         if isinstance(path, dict):
             metadata = path
-        elif isinstance(path, (str, Path)):
+        elif isinstance(path, str | Path):
             checkpoint = self._load_checkpoint(path)
 
             # Torch model should ideally contain the metadata in the checkpoint.

@@ -9,11 +9,10 @@
 
 import inspect
 import logging
-import warnings
+from collections.abc import Sequence
 from datetime import datetime
 from importlib import import_module
 from pathlib import Path
-from typing import Sequence
 
 from jsonargparse import Namespace
 from omegaconf import DictConfig, ListConfig, OmegaConf
@@ -50,7 +49,7 @@ def update_config(config: DictConfig | ListConfig | Namespace) -> DictConfig | L
 
     # keep track of the original config file because it will be modified
     config_original: DictConfig | ListConfig | Namespace = (
-        config.copy() if isinstance(config, (DictConfig, ListConfig)) else config.clone()
+        config.copy() if isinstance(config, DictConfig | ListConfig) else config.clone()
     )
 
     config = update_input_size_config(config)
@@ -97,7 +96,7 @@ def update_input_size_config(config: DictConfig | ListConfig | Namespace) -> Dic
     image_size = config.data.init_args.get("image_size")
     if isinstance(image_size, int):
         config.data.init_args.image_size = (image_size,) * 2
-    elif isinstance(image_size, (ListConfig, Sequence)):
+    elif isinstance(image_size, ListConfig | Sequence):
         assert len(image_size) == 2, "image_size must be a single integer or tuple of length 2 for width and height."
     else:
         raise ValueError(f"image_size must be either int or ListConfig, got {type(image_size)}")
@@ -243,7 +242,8 @@ def get_configurable_parameters(
         )
 
     if model_name == "efficientad":
-        warnings.warn("`efficientad` is deprecated as --model. Please use `efficient_ad` instead.", DeprecationWarning)
+        msg = "`efficientad` is deprecated as --model. Please use `efficient_ad` instead."
+        logger.warn(msg)
         model_name = "efficient_ad"
 
     if config_path is None:

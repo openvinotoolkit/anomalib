@@ -4,7 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import torch
 from matplotlib.figure import Figure

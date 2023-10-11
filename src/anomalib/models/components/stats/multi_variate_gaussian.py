@@ -13,7 +13,7 @@ from torch import Tensor, nn
 class MultiVariateGaussian(nn.Module):
     """Multi Variate Gaussian Distribution."""
 
-    def __init__(self, n_features, n_patches):
+    def __init__(self, n_features, n_patches) -> None:
         super().__init__()
 
         self.register_buffer("mean", torch.zeros(n_features, n_patches))

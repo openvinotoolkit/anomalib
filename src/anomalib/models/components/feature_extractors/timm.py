@@ -8,7 +8,6 @@ This script extracts features from a CNN network
 
 
 import logging
-import warnings
 
 import timm
 import torch
@@ -42,7 +41,7 @@ class TimmFeatureExtractor(nn.Module):
             [torch.Size([32, 64, 64, 64]), torch.Size([32, 128, 32, 32]), torch.Size([32, 256, 16, 16])]
     """
 
-    def __init__(self, backbone: str, layers: list[str], pre_trained: bool = True, requires_grad: bool = False):
+    def __init__(self, backbone: str, layers: list[str], pre_trained: bool = True, requires_grad: bool = False) -> None:
         super().__init__()
 
         # Extract backbone-name and weight-URI from the backbone string.
@@ -89,7 +88,8 @@ class TimmFeatureExtractor(nn.Module):
             try:
                 idx.append(list(dict(features.named_children()).keys()).index(i) - offset)
             except ValueError:
-                warnings.warn(f"Layer {i} not found in model {self.backbone}")
+                msg = f"Layer {i} not found in model {self.backbone}"
+                logger.warn(msg)
                 # Remove unfound key from layer dict
                 self.layers.remove(i)
 
@@ -105,11 +105,11 @@ class TimmFeatureExtractor(nn.Module):
             Feature map extracted from the CNN
         """
         if self.requires_grad:
-            features = dict(zip(self.layers, self.feature_extractor(inputs)))
+            features = dict(zip(self.layers, self.feature_extractor(inputs), strict=True))
         else:
             self.feature_extractor.eval()
             with torch.no_grad():
-                features = dict(zip(self.layers, self.feature_extractor(inputs)))
+                features = dict(zip(self.layers, self.feature_extractor(inputs), strict=True))
         return features
 
 
@@ -119,7 +119,7 @@ class FeatureExtractor(TimmFeatureExtractor):
     See :class:`anomalib.models.components.feature_extractors.timm.TimmFeatureExtractor` for more details.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         logger.warning(
             "FeatureExtractor is deprecated. Use TimmFeatureExtractor instead."
             " Both FeatureExtractor and TimmFeatureExtractor will be removed in a future release."

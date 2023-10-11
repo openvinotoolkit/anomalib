@@ -2,8 +2,8 @@
 
 
 from abc import ABC
+from collections.abc import Callable
 from enum import Enum
-from typing import Callable
 
 import albumentations as A  # noqa: N812
 import torch
@@ -121,7 +121,8 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
         # apply transforms
         if "mask" in item and item["mask"] is not None:
             processed_frames = [
-                self.transform(image=frame.numpy(), mask=mask) for frame, mask in zip(item["image"], item["mask"])
+                self.transform(image=frame.numpy(), mask=mask)
+                for frame, mask in zip(item["image"], item["mask"], strict=True)
             ]
             item["image"] = torch.stack([item["image"] for item in processed_frames]).squeeze(0)
             mask = torch.as_tensor(item["mask"])

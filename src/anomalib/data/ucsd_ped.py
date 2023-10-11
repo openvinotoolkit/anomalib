@@ -5,9 +5,10 @@
 
 
 import logging
+from collections.abc import Callable
 from pathlib import Path
 from shutil import move
-from typing import Any, Callable
+from typing import Any
 
 import albumentations as A  # noqa: N812
 import cv2

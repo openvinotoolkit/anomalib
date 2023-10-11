@@ -5,9 +5,9 @@
 
 
 import logging
-import random
 from enum import Enum
 
+import numpy as np
 import torch
 from torch import Tensor, nn
 from torch.nn import functional as F  # noqa: N812
@@ -282,8 +282,8 @@ class EfficientAdModel(nn.Module):
             transforms.functional.adjust_saturation,
         ]
         # Sample an augmentation coefficient λ from the uniform distribution U(0.8, 1.2)
-        coefficient = random.uniform(0.8, 1.2)  # nosec: B311
-        transform_function = random.choice(transform_functions)  # nosec: B311
+        coefficient = np.random.default_rng().uniform(0.8, 1.2)
+        transform_function = np.random.default_rng().choice(transform_functions)
         return transform_function(image, coefficient)
 
     def forward(self, batch: Tensor, batch_imagenet: Tensor = None) -> Tensor | dict:
@@ -352,4 +352,5 @@ class EfficientAdModel(nn.Module):
                 )
 
             map_combined = 0.5 * map_st + 0.5 * map_stae
+            return {"anomaly_map": map_combined, "map_st": map_st, "map_ae": map_stae}
             return {"anomaly_map": map_combined, "map_st": map_st, "map_ae": map_stae}

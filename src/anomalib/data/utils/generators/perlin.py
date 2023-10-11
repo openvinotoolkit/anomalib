@@ -81,7 +81,7 @@ def random_2d_perlin(
     Returns:
         np.ndarray | Tensor: Random 2d-array/tensor generated using perlin noise.
     """
-    if isinstance(res[0], int):
+    if isinstance(res[0], int | np.integer):
         result = _rand_perlin_2d_np(shape, res, fade)
     elif isinstance(res[0], Tensor):
         result = _rand_perlin_2d(shape, res, fade)

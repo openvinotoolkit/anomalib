@@ -88,9 +88,9 @@ def boxes_to_anomaly_maps(boxes: Tensor, scores: Tensor, image_size: tuple[int, 
             anomaly score of the bounding box. In the case of overlapping bounding boxes, the highest score is used.
     """
     anomaly_maps = torch.zeros((len(boxes),) + image_size).to(boxes[0].device)
-    for im_idx, (im_boxes, im_scores) in enumerate(zip(boxes, scores)):
+    for im_idx, (im_boxes, im_scores) in enumerate(zip(boxes, scores, strict=False)):
         im_map = torch.zeros((im_boxes.shape[0],) + image_size)
-        for box_idx, (box, score) in enumerate(zip(im_boxes, im_scores)):
+        for box_idx, (box, score) in enumerate(zip(im_boxes, im_scores, strict=True)):
             x_1, y_1, x_2, y_2 = box.int()
             im_map[box_idx, y_1 : y_2 + 1, x_1 : x_2 + 1] = score
             anomaly_maps[im_idx], _ = im_map.max(dim=0)

@@ -16,9 +16,9 @@ Reference:
 
 import logging
 import math
+from collections.abc import Callable
 from pathlib import Path
 from shutil import move
-from typing import Callable
 
 import albumentations as A  # noqa: N812
 import cv2
@@ -272,7 +272,7 @@ class Avenue(AnomalibVideoDataModule):
 
             # move contents to root
             folder_names = ["Avenue Dataset", "ground_truth_demo"]
-            for root, folder_name in zip([self.root, self.gt_dir], folder_names):
+            for root, folder_name in zip([self.root, self.gt_dir], folder_names, strict=True):
                 extracted_folder = root / folder_name
                 for filename in extracted_folder.glob("*"):
                     move(str(filename), str(root / filename.name))
@@ -299,7 +299,7 @@ class Avenue(AnomalibVideoDataModule):
         if not all(folder.exists() for folder in mask_folders):
             # convert mask files to images
             logger.info("converting mat files to .png format.")
-            for mat_file, mask_folder in zip(mat_files, mask_folders):
+            for mat_file, mask_folder in zip(mat_files, mask_folders, strict=True):
                 mat = scipy.io.loadmat(mat_file)
                 mask_folder.mkdir(parents=True, exist_ok=True)
                 masks = mat["volLabel"].squeeze()

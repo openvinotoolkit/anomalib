@@ -9,7 +9,6 @@ to an input image before the forward-pass stage.
 
 
 import logging
-import warnings
 from typing import Any
 
 import albumentations as A  # noqa: N812
@@ -113,12 +112,11 @@ def get_transforms(
         >>> output["image"].shape
         torch.Size([3, 1024, 1024])
     """
-    warnings.warn(
-        DeprecationWarning(
-            "The function anomalib.pre_processing.pre_process.get_transforms is deprecated and will be removed in a "
-            "future release. Please use anomalib.data.utils.transform.get_transforms instead."
-        )
+    msg = (
+        "The function anomalib.pre_processing.pre_process.get_transforms is deprecated and will be removed in a "
+        "future release. Please use anomalib.data.utils.transform.get_transforms instead."
     )
+    logger.warning(msg)
 
     if config is None is image_size:
         raise ValueError(
@@ -218,12 +216,11 @@ class PreProcessor:
         image_size: int | tuple | None = None,
         to_tensor: bool = True,
     ) -> None:
-        warnings.warn(
-            DeprecationWarning(
-                "The PreProcessor class is deprecated and will be removed in a future release. You can now directly "
-                "pass the A.Compose object to your Anomalib datasets using the 'transform' keyword argument."
-            )
+        msg = (
+            "The PreProcessor class is deprecated and will be removed in a future release. You can now directly "
+            "pass the A.Compose object to your Anomalib datasets using the 'transform' keyword argument."
         )
+        logging.warn(msg)
         self.config = config
         self.image_size = image_size
         self.to_tensor = to_tensor

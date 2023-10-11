@@ -3,8 +3,9 @@
 # Copyright (C) 2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Sequence, cast
+from typing import Any, cast
 
 from jsonargparse import Namespace
 from jsonargparse import Path as JSONArgparsePath
@@ -35,7 +36,7 @@ def _convert_nested_path_to_str(config: Any) -> Any:
     elif isinstance(config, list):
         for i, item in enumerate(config):
             config[i] = _convert_nested_path_to_str(item)
-    elif isinstance(config, (Path, JSONArgparsePath)):
+    elif isinstance(config, Path | JSONArgparsePath):
         config = str(config)
     return config
 
@@ -61,7 +62,7 @@ def to_tuple(input_size: int | ListConfig) -> tuple[int, int]:
     ret_val: tuple[int, int]
     if isinstance(input_size, int):
         ret_val = cast(tuple[int, int], (input_size,) * 2)
-    elif isinstance(input_size, (ListConfig, Sequence)):
+    elif isinstance(input_size, ListConfig | Sequence):
         assert len(input_size) == 2, "Expected a single integer or tuple of length 2 for width and height."
         ret_val = cast(tuple[int, int], tuple(input_size))
     else:

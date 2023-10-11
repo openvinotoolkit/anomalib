@@ -68,10 +68,10 @@ class Inferencer(ABC):
         """
         if metadata is None:
             if hasattr(self, "metadata"):
-                metadata = getattr(self, "metadata")
+                metadata = self.metadata
             else:
                 metadata = {}
-        if isinstance(image, (str, Path)):
+        if isinstance(image, str | Path):
             image_arr: np.ndarray = read_image(image)
         else:  # image is already a numpy array. Kept for mypy compatibility.
             image_arr = image

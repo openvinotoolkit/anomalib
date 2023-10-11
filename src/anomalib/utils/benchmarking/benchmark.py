@@ -3,7 +3,6 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import functools
 import io
 import logging
@@ -67,7 +66,7 @@ def hide_output(func):
         sys.stdout = buf = io.StringIO()
         try:
             value = func(*args, **kwargs)
-        except Exception as exception:
+        except Exception as exception:  # noqa: BLE001
             raise Exception(buf.getvalue()) from exception
         sys.stdout = std_out
         return value
@@ -182,7 +181,7 @@ def compute_on_gpu(
         compute_openvino (bool, optional): Compute OpenVINO throughput. Defaults to False.
     """
     for run_config in run_configs:
-        if isinstance(run_config, (DictConfig, ListConfig)):
+        if isinstance(run_config, DictConfig | ListConfig):
             model_metrics = sweep(run_config=run_config, device=device, seed=seed, convert_openvino=compute_openvino)
             write_metrics(model_metrics, writers, folder)
         else:
@@ -215,8 +214,8 @@ def distribute_over_gpus(sweep_config: DictConfig | ListConfig, folder: str | No
         for job in jobs:
             try:
                 job.result()
-            except Exception as exc:
-                raise Exception(f"Error occurred while computing benchmark on GPU {job}") from exc
+            except Exception as exception:  # noqa: BLE001
+                raise Exception(f"Error occurred while computing benchmark on GPU {job}") from exception
 
 
 def distribute(config_path: Path) -> None:
@@ -240,7 +239,7 @@ def distribute(config_path: Path) -> None:
             for job in as_completed(jobs):
                 try:
                     job.result()
-                except Exception as exception:
+                except Exception as exception:  # noqa: BLE001
                     raise Exception(f"Error occurred while computing benchmark on device {job}") from exception
     elif "cpu" in devices:
         compute_on_cpu(config, folder=runs_folder)

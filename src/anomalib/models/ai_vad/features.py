@@ -93,7 +93,9 @@ class FeatureExtractor(nn.Module):
             feature_dict[FeatureType.DEEP] = [deep_features[indices == i] for i in range(batch_size)]
 
         # dict of lists to list of dicts
-        feature_collection = [dict(zip(feature_dict, item)) for item in zip(*feature_dict.values())]
+        feature_collection = [
+            dict(zip(feature_dict, item, strict=True)) for item in zip(*feature_dict.values(), strict=True)
+        ]
 
         return feature_collection
 
@@ -163,7 +165,7 @@ class VelocityExtractor(nn.Module):
 
         # compute velocity histogram
         velocity_histograms = []
-        for mag, theta in zip(mag_batch, theta_batch):
+        for mag, theta in zip(mag_batch, theta_batch, strict=True):
             histogram_mag = torch.histogram(
                 input=theta.cpu(), bins=self.n_bins, range=(-torch.pi, torch.pi), weight=mag.cpu()
             ).hist
@@ -226,9 +228,11 @@ class PoseExtractor(nn.Module):
         features = self.backbone(images.tensors)
 
         image_sizes = [b.shape[-2:] for b in batch]
-        scales = [Tensor(new) / Tensor([orig[0], orig[1]]) for orig, new in zip(image_sizes, images.image_sizes)]
+        scales = [
+            Tensor(new) / Tensor([orig[0], orig[1]]) for orig, new in zip(image_sizes, images.image_sizes, strict=True)
+        ]
 
-        boxes = [box * scale.repeat(2).to(box.device) for box, scale in zip(boxes, scales)]
+        boxes = [box * scale.repeat(2).to(box.device) for box, scale in zip(boxes, scales, strict=True)]
 
         keypoint_features = self.roi_heads.keypoint_roi_pool(features, boxes, images.image_sizes)
         keypoint_features = self.roi_heads.keypoint_head(keypoint_features)
@@ -236,7 +240,7 @@ class PoseExtractor(nn.Module):
         keypoints_probs, _ = keypointrcnn_inference(keypoint_logits, boxes)
 
         keypoint_detections = self.transform.postprocess(
-            [{"keypoints": keypoints, "boxes": box} for keypoints, box in zip(keypoints_probs, boxes)],
+            [{"keypoints": keypoints, "boxes": box} for keypoints, box in zip(keypoints_probs, boxes, strict=True)],
             images.image_sizes,
             image_sizes,
         )

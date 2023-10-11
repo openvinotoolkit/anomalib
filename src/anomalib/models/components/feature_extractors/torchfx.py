@@ -5,8 +5,8 @@
 
 
 import importlib
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable
 
 import torch
 from torch import Tensor, nn
@@ -94,13 +94,13 @@ class TorchFXFeatureExtractor(nn.Module):
         weights: str | WeightsEnum | None = None,
         requires_grad: bool = False,
         tracer_kwargs: dict | None = None,
-    ):
+    ) -> None:
         super().__init__()
         if isinstance(backbone, dict):
             backbone = BackboneParams(**backbone)
         elif isinstance(backbone, str):
             backbone = BackboneParams(class_path=backbone)
-        elif not isinstance(backbone, (nn.Module, BackboneParams)):
+        elif not isinstance(backbone, nn.Module | BackboneParams):
             raise ValueError(
                 f"backbone needs to be of type str | BackboneParams | dict | nn.Module, but was type {type(backbone)}"
             )
@@ -162,7 +162,7 @@ class TorchFXFeatureExtractor(nn.Module):
         if not requires_grad:
             feature_extractor.eval()
             for param in feature_extractor.parameters():
-                param.requires_grad_(False)
+                param.requires_grad_(False)  # noqa: FBT003
 
         return feature_extractor
 

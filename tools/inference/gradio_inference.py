@@ -59,14 +59,14 @@ def get_inferencer(weight_path: Path, metadata: Path | None = None) -> Inference
     inferencer: Inferencer
     module = import_module("anomalib.deploy")
     if extension in (".pt", ".pth", ".ckpt"):
-        torch_inferencer = getattr(module, "TorchInferencer")
+        torch_inferencer = module.TorchInferencer
         inferencer = torch_inferencer(path=weight_path)
 
     elif extension in (".onnx", ".bin", ".xml"):
         if metadata is None:
             raise ValueError("When using OpenVINO Inferencer, the following arguments are required: --metadata")
 
-        openvino_inferencer = getattr(module, "OpenVINOInferencer")
+        openvino_inferencer = module.OpenVINOInferencer
         inferencer = openvino_inferencer(path=weight_path, metadata=metadata)
 
     else:

@@ -74,7 +74,7 @@ class AnomalyMapGenerator(nn.Module):
                 [student_features[0].shape[0], 1, *self.image_size], device=student_features[0].device
             )
 
-        for student_feature, teacher_feature in zip(student_features, teacher_features):
+        for student_feature, teacher_feature in zip(student_features, teacher_features, strict=True):
             distance_map = 1 - F.cosine_similarity(student_feature, teacher_feature)
             distance_map = torch.unsqueeze(distance_map, dim=1)
             distance_map = F.interpolate(distance_map, size=self.image_size, mode="bilinear", align_corners=True)

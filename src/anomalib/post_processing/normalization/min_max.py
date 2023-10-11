@@ -17,7 +17,7 @@ def normalize(
 ) -> np.ndarray | Tensor:
     """Apply min-max normalization and shift the values such that the threshold value is centered at 0.5."""
     normalized = ((targets - threshold) / (max_val - min_val)) + 0.5
-    if isinstance(targets, (np.ndarray, np.float32, np.float64)):
+    if isinstance(targets, np.ndarray | np.float32 | np.float64):
         normalized = np.minimum(normalized, 1)
         normalized = np.maximum(normalized, 0)
     elif isinstance(targets, Tensor):

@@ -3,11 +3,13 @@
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import warnings
+import logging
 
 import torch
 from torch import Tensor
 from torchmetrics import Metric, PrecisionRecallCurve
+
+logger = logging.getLogger(__name__)
 
 
 class OptimalF1(Metric):
@@ -20,13 +22,12 @@ class OptimalF1(Metric):
     full_state_update: bool = False
 
     def __init__(self, num_classes: int, **kwargs) -> None:
-        warnings.warn(
-            DeprecationWarning(
-                "OptimalF1 metric is deprecated and will be removed in a future release. The optimal F1 score for "
-                "Anomalib predictions can be obtained by computing the adaptive threshold with the "
-                "AnomalyScoreThreshold metric and setting the computed threshold value in TorchMetrics F1Score metric."
-            )
+        msg = (
+            "OptimalF1 metric is deprecated and will be removed in a future release. The optimal F1 score for "
+            "Anomalib predictions can be obtained by computing the adaptive threshold with the "
+            "AnomalyScoreThreshold metric and setting the computed threshold value in TorchMetrics F1Score metric."
         )
+        logger.warn(msg)
         super().__init__(**kwargs)
 
         self.precision_recall_curve = PrecisionRecallCurve(num_classes=num_classes)

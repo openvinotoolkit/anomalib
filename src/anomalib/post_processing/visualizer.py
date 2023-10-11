@@ -4,10 +4,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Iterator
 
 import cv2
 import matplotlib.figure
@@ -274,9 +274,9 @@ class ImageGrid:
         self.figure.subplots_adjust(right=0.9)
 
         axes = self.axis if isinstance(self.axis, np.ndarray) else np.array([self.axis])
-        for axis, image_dict in zip(axes, self.images):
-            axis.axes.xaxis.set_visible(False)
-            axis.axes.yaxis.set_visible(False)
+        for axis, image_dict in zip(axes, self.images, strict=True):
+            axis.axes.xaxis.set_visible(b=False)
+            axis.axes.yaxis.set_visible(b=False)
             axis.imshow(image_dict["image"], image_dict["color_map"], vmin=0, vmax=255)
             if image_dict["title"] is not None:
                 axis.title.set_text(image_dict["title"])

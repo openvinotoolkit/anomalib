@@ -4,10 +4,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from collections.abc import Sequence
 from enum import Enum
 from itertools import product
 from math import ceil
-from typing import Sequence
 
 import torch
 import torchvision.transforms as T  # noqa: N812
@@ -251,6 +251,7 @@ class Tiler:
                 range(0, image_h - self.tile_size_h + 1, self.stride_h),
                 range(0, image_w - self.tile_size_w + 1, self.stride_w),
             ),
+            strict=True,
         ):
             tiles[tile_i, tile_j, :] = tensor[
                 :, :, loc_i : (loc_i + self.tile_size_h), loc_j : (loc_j + self.tile_size_w)
@@ -327,6 +328,7 @@ class Tiler:
                     int(self.stride_w * scale_w),
                 ),
             ),
+            strict=True,
         ):
             img[:, :, loc_i : (loc_i + reduced_tile_h), loc_j : (loc_j + reduced_tile_w)] += patch
             lookup[:, :, loc_i : (loc_i + reduced_tile_h), loc_j : (loc_j + reduced_tile_w)] += ones

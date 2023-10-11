@@ -57,7 +57,7 @@ class AiVadModel(nn.Module):
         n_components_velocity: int = 5,
         n_neighbors_pose: int = 1,
         n_neighbors_deep: int = 1,
-    ):
+    ) -> None:
         super().__init__()
         if not any((use_velocity_features, use_pose_features, use_deep_features)):
             raise ValueError("Select at least one feature type.")

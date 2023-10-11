@@ -7,7 +7,8 @@ Paper https://arxiv.org/abs/2108.07610
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import torch
 from lightning.pytorch.callbacks import EarlyStopping

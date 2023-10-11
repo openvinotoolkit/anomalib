@@ -4,10 +4,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+import logging
 import math
-import warnings
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 import cv2
 import numpy as np
@@ -15,6 +15,8 @@ import tifffile as tiff
 from torch import Tensor
 from torch.nn import functional as F  # noqa: N812
 from torchvision.datasets.folder import IMG_EXTENSIONS
+
+logger = logging.getLogger(__name__)
 
 
 def get_image_filenames(path: str | Path) -> list[Path]:
@@ -137,7 +139,8 @@ def generate_output_image_filename(input_path: str | Path, output_path: str | Pa
     file_path.parent.mkdir(parents=True, exist_ok=True)
 
     if file_path.is_file():
-        warnings.warn(f"{output_path} already exists. Renaming the file to avoid overwriting.")
+        msg = f"{output_path} already exists. Renaming the file to avoid overwriting."
+        logger.warning(msg)
         file_path = duplicate_filename(file_path)
 
     return file_path

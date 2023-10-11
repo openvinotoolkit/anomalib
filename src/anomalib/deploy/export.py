@@ -10,7 +10,6 @@ from enum import Enum
 from importlib.util import find_spec
 from pathlib import Path
 from typing import Any
-from warnings import warn
 
 import numpy as np
 import torch
@@ -220,7 +219,8 @@ def _add_metadata_to_ir(xml_file: str, metadata: dict[str, Any], input_size: tup
                 _metadata[("model_info", "orig_height")] = transform_dict["height"]
                 _metadata[("model_info", "orig_width")] = transform_dict["width"]
             else:
-                warn(f"Transform {transform} is not supported currently")
+                msg = f"Transform {transform} is not supported currently"
+                logger.warn(msg)
 
     # Since we only need the diff of max and min, we fuse the min and max into one op
     if "min" in metadata and "max" in metadata:

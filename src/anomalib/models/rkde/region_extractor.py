@@ -121,7 +121,7 @@ class RegionExtractor(nn.Module):
         """
 
         processed_boxes: list[Tensor] = []
-        for boxes, scores in zip(pred_boxes, pred_scores):
+        for boxes, scores in zip(pred_boxes, pred_scores, strict=True):
             # remove small boxes
             keep = box_ops.remove_small_boxes(boxes, min_size=self.min_size)
             boxes, scores = boxes[keep], scores[keep]

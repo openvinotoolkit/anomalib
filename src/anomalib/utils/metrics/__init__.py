@@ -5,7 +5,7 @@
 
 
 import importlib
-import warnings
+import logging
 from typing import Any
 
 import torchmetrics
@@ -34,6 +34,8 @@ __all__ = [
     "PRO",
 ]
 
+logger = logging.getLogger(__name__)
+
 
 def metric_collection_from_names(metric_names: list[str], prefix: str | None) -> AnomalibMetricCollection:
     """Create a metric collection from a list of metric names.
@@ -59,9 +61,11 @@ def metric_collection_from_names(metric_names: list[str], prefix: str | None) ->
                 metric_cls = getattr(torchmetrics, metric_name)
                 metrics.add_metrics(metric_cls())
             except TypeError:
-                warnings.warn(f"Incorrect constructor arguments for {metric_name} metric from TorchMetrics package.")
+                msg = f"Incorrect constructor arguments for {metric_name} metric from TorchMetrics package."
+                logger.warn(msg)
         else:
-            warnings.warn(f"No metric with name {metric_name} found in Anomalib metrics or TorchMetrics.")
+            msg = f"No metric with name {metric_name} found in Anomalib metrics or TorchMetrics."
+            logger.warn(msg)
     return metrics
 
 
@@ -79,14 +83,14 @@ def _validate_metrics_dict(metrics: dict[str, dict[str, Any]]) -> None:
         isinstance(metric, str) for metric in metrics.keys()
     ), f"All keys (metric names) must be strings, found {sorted(metrics.keys())}"
     assert all(
-        isinstance(metric, (dict, DictConfig)) for metric in metrics.values()
+        isinstance(metric, dict | DictConfig) for metric in metrics.values()
     ), f"All values must be dictionaries, found {list(metrics.values())}"
     assert all("class_path" in metric and isinstance(metric["class_path"], str) for metric in metrics.values()), (
         "All internal dictionaries must have a 'class_path' key whose value is of type str, "
         f"found {list(metrics.values())}"
     )
     assert all(
-        "init_args" in metric and isinstance(metric["init_args"], (dict, DictConfig)) for metric in metrics.values()
+        "init_args" in metric and isinstance(metric["init_args"], dict | DictConfig) for metric in metrics.values()
     ), (
         "All internal dictionaries must have a 'init_args' key whose value is of type dict, "
         f"found {list(metrics.values())}"
@@ -176,11 +180,11 @@ def create_metric_collection(
     """
     # fallback is using the names
 
-    if isinstance(metrics, (ListConfig, list)):
+    if isinstance(metrics, ListConfig | list):
         assert all(isinstance(metric, str) for metric in metrics), f"All metrics must be strings, found {metrics}"
         return metric_collection_from_names(metrics, prefix)
 
-    if isinstance(metrics, (DictConfig, dict)):
+    if isinstance(metrics, DictConfig | dict):
         _validate_metrics_dict(metrics)
         return metric_collection_from_dicts(metrics, prefix)
 

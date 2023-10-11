@@ -7,13 +7,15 @@ file system, and show the visualization results.
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import warnings
+import logging
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
 from anomalib.data.utils import generate_output_image_filename, get_image_filenames, read_image
 from anomalib.deploy import OpenVINOInferencer
 from anomalib.post_processing import Visualizer
+
+logger = logging.getLogger(__name__)
 
 
 def get_parser() -> ArgumentParser:
@@ -80,9 +82,8 @@ def infer(args: Namespace) -> None:
         output = visualizer.visualize_image(predictions)
 
         if args.output is None and args.show is False:
-            warnings.warn(
-                "Neither output path is provided nor show flag is set. Inferencer will run but return nothing."
-            )
+            msg = "Neither output path is provided nor show flag is set. Inferencer will run but return nothing."
+            logger.warn(msg)
 
         if args.output:
             file_path = generate_output_image_filename(input_path=filename, output_path=args.output)

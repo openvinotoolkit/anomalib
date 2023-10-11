@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-import warnings
+from venv import logger
 
 import numpy as np
 import torch
@@ -21,7 +21,9 @@ class Denormalize:
             mean: Mean
             std: Standard deviation.
         """
-        warnings.warn("Denormalize is no longer used and will be deprecated in v0.4.0")
+        msg = "Denormalize is no longer used and will be deprecated in v0.4.0"
+        logger.warn(msg)
+
         # If no mean and std provided, assign ImageNet values.
         if mean is None:
             mean = [0.485, 0.456, 0.406]
@@ -47,7 +49,9 @@ class Denormalize:
             else:
                 raise ValueError(f"Tensor has batch size of {tensor.size(0)}. Only single batch is supported.")
 
-        denormalized_per_channel = [(tnsr * std) + mean for tnsr, mean, std in zip(tensor, self.mean, self.std)]
+        denormalized_per_channel = [
+            (tnsr * std) + mean for tnsr, mean, std in zip(tensor, self.mean, self.std, strict=True)
+        ]
         denormalized_tensor = torch.stack(denormalized_per_channel)
 
         denormalized_array = (denormalized_tensor * 255).permute(1, 2, 0).cpu().numpy().astype(np.uint8)

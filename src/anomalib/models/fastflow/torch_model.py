@@ -10,7 +10,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import Callable
+from collections.abc import Callable
 
 import timm
 import torch
@@ -138,7 +138,7 @@ class FastflowModel(nn.Module):
             # for transformers, use their pretrained norm w/o grad
             # for resnets, self.norms are trainable LayerNorm
             self.norms = nn.ModuleList()
-            for channel, scale in zip(channels, scales):
+            for channel, scale in zip(channels, scales, strict=True):
                 self.norms.append(
                     nn.LayerNorm(
                         [channel, int(input_size[0] / scale), int(input_size[1] / scale)],
@@ -155,7 +155,7 @@ class FastflowModel(nn.Module):
             parameter.requires_grad = False
 
         self.fast_flow_blocks = nn.ModuleList()
-        for channel, scale in zip(channels, scales):
+        for channel, scale in zip(channels, scales, strict=True):
             self.fast_flow_blocks.append(
                 create_fast_flow_block(
                     input_dimensions=[channel, int(input_size[0] / scale), int(input_size[1] / scale)],
@@ -193,7 +193,7 @@ class FastflowModel(nn.Module):
         # NOTE: output variable has z, and jacobian tuple for each fast-flow blocks.
         hidden_variables: list[Tensor] = []
         log_jacobians: list[Tensor] = []
-        for fast_flow_block, feature in zip(self.fast_flow_blocks, features):
+        for fast_flow_block, feature in zip(self.fast_flow_blocks, features, strict=True):
             hidden_variable, log_jacobian = fast_flow_block(feature)
             hidden_variables.append(hidden_variable)
             log_jacobians.append(log_jacobian)
