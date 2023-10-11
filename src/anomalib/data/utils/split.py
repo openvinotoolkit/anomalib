@@ -85,7 +85,7 @@ def random_split(
     if isinstance(split_ratio, float):
         split_ratio = [1 - split_ratio, split_ratio]
 
-    assert (
+    assert (  # noqa: PT018
         math.isclose(sum(split_ratio), 1) and sum(split_ratio) <= 1
     ), f"split ratios must sum to 1, found {sum(split_ratio)}"
     assert all(0 < ratio < 1 for ratio in split_ratio), f"all split ratios must be between 0 and 1, found {split_ratio}"
