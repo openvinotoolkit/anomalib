@@ -162,7 +162,7 @@ class TorchFXFeatureExtractor(nn.Module):
         if not requires_grad:
             feature_extractor.eval()
             for param in feature_extractor.parameters():
-                param.requires_grad_(mode=False)
+                param.requires_grad_(False)  # noqa: FBT003
 
         return feature_extractor
 
