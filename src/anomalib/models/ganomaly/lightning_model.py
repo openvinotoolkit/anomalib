@@ -154,7 +154,7 @@ class Ganomaly(AnomalyModule):
             prog_bar=True,
             logger=True,
         )
-        # return {"loss": loss}
+        return {"generator_loss": g_loss, "discriminator_loss": d_loss}
 
     def on_validation_start(self) -> None:
         """Reset min and max values for current validation epoch."""
