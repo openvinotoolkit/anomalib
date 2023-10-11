@@ -32,12 +32,20 @@ def get_hpo_parser(parser: ArgumentParser | LightningArgumentParser | None = Non
     if parser is None:
         parser = ArgumentParser()
     parser.add_argument(
-        "--model", type=str, default="padim", help="Name of the algorithm to train/test", required=False
+        "--model",
+        type=str,
+        default="padim",
+        help="Name of the algorithm to train/test",
+        required=False,
     )
     parser.add_argument("--model_config", type=Path, required=False, help="Path to a model config file")
     parser.add_argument("--sweep_config", type=Path, required=True, help="Path to sweep configuration")
     parser.add_argument(
-        "--backend", type=HPOBackend, default=HPOBackend.WANDB, help="HPO backend to use", required=False
+        "--backend",
+        type=HPOBackend,
+        default=HPOBackend.WANDB,
+        help="HPO backend to use",
+        required=False,
     )
     parser.add_argument(
         "--entity",

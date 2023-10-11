@@ -122,7 +122,7 @@ def get_transforms(
         raise ValueError(
             "Both config and image_size cannot be `None`. "
             "Provide either config file to de-serialize transforms "
-            "or image_size to get the default transformations"
+            "or image_size to get the default transformations",
         )
 
     transforms: A.Compose
@@ -136,7 +136,7 @@ def get_transforms(
                 A.Resize(height=height, width=width, always_apply=True),
                 A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
                 ToTensorV2(),
-            ]
+            ],
         )
 
     if config is not None:

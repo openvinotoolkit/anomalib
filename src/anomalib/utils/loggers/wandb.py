@@ -75,7 +75,7 @@ class AnomalibWandbLogger(ImageLoggerBase, WandbLogger):
         name: str | None = None,
         save_dir: str | None = None,
         offline: bool | None = False,
-        id: str | None = None,  # kept to match wandb init pylint: disable=redefined-builtin
+        id: str | None = None,  # kept to match wandb init # noqa: A002
         anonymous: bool | None = None,
         version: str | None = None,
         project: str | None = None,

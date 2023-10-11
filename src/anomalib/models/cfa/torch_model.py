@@ -128,14 +128,15 @@ class CfaModel(DynamicBufferModule):
             self.scale = resolution
         else:
             raise ValueError(
-                f"Unknown type {type(resolution)} for `resolution`. Expected types are either int or tuple[int, int]."
+                f"Unknown type {type(resolution)} for `resolution`. Expected types are either int or tuple[int, int].",
             )
 
         self.descriptor = Descriptor(self.gamma_d, backbone)
         self.radius = torch.ones(1, requires_grad=True) * radius
 
         self.anomaly_map_generator = AnomalyMapGenerator(
-            image_size=input_size, num_nearest_neighbors=num_nearest_neighbors
+            image_size=input_size,
+            num_nearest_neighbors=num_nearest_neighbors,
         )
 
     def initialize_centroid(self, data_loader: DataLoader) -> None:

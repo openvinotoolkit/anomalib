@@ -102,11 +102,15 @@ class TorchFXFeatureExtractor(nn.Module):
             backbone = BackboneParams(class_path=backbone)
         elif not isinstance(backbone, nn.Module | BackboneParams):
             raise ValueError(
-                f"backbone needs to be of type str | BackboneParams | dict | nn.Module, but was type {type(backbone)}"
+                f"backbone needs to be of type str | BackboneParams | dict | nn.Module, but was type {type(backbone)}",
             )
 
         self.feature_extractor = self.initialize_feature_extractor(
-            backbone, return_nodes, weights, requires_grad, tracer_kwargs
+            backbone,
+            return_nodes,
+            weights,
+            requires_grad,
+            tracer_kwargs,
         )
 
     def initialize_feature_extractor(
@@ -201,7 +205,7 @@ class TorchFXFeatureExtractor(nn.Module):
                 backbone_class = getattr(models, backbone)
         except ModuleNotFoundError as exception:
             raise ModuleNotFoundError(
-                f"Backbone {backbone} not found in torchvision.models nor in {backbone} module."
+                f"Backbone {backbone} not found in torchvision.models nor in {backbone} module.",
             ) from exception
 
         return backbone_class

@@ -117,7 +117,7 @@ class OCBE(nn.Module):
                 self.base_width,
                 previous_dilation,
                 norm_layer,
-            )
+            ),
         )
         self.inplanes = planes * block.expansion
         for _ in range(1, blocks):
@@ -129,7 +129,7 @@ class OCBE(nn.Module):
                     base_width=self.base_width,
                     dilation=self.dilation,
                     norm_layer=norm_layer,
-                )
+                ),
             )
 
         return nn.Sequential(*layers)

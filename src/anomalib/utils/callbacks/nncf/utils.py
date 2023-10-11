@@ -58,7 +58,10 @@ class InitLoader(PTInitializingDataLoader):
 
 
 def wrap_nncf_model(
-    model: nn.Module, config: dict, dataloader: DataLoader, init_state_dict: dict
+    model: nn.Module,
+    config: dict,
+    dataloader: DataLoader,
+    init_state_dict: dict,
 ) -> tuple[CompressionAlgorithmController, NNCFNetwork]:
     """Wrap model by NNCF.
 
@@ -74,7 +77,7 @@ def wrap_nncf_model(
         logger.warning(
             "Either dataloader or NNCF pre-trained "
             "model checkpoint should be set. Without this, "
-            "quantizers will not be initialized"
+            "quantizers will not be initialized",
         )
 
     compression_state = None
@@ -88,7 +91,10 @@ def wrap_nncf_model(
         nncf_config = register_default_init_args(nncf_config, init_loader)
 
     nncf_ctrl, nncf_model = create_compressed_model(
-        model=model, config=nncf_config, dump_graphs=False, compression_state=compression_state
+        model=model,
+        config=nncf_config,
+        dump_graphs=False,
+        compression_state=compression_state,
     )
 
     if resuming_state_dict:

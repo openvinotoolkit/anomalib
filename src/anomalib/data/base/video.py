@@ -133,7 +133,7 @@ class AnomalibVideoDataset(AnomalibDataset, ABC):
                 item["boxes"] = item["boxes"][0] if len(item["boxes"]) == 1 else item["boxes"]
         else:
             item["image"] = torch.stack(
-                [self.transform(image=frame.numpy())["image"] for frame in item["image"]]
+                [self.transform(image=frame.numpy())["image"] for frame in item["image"]],
             ).squeeze(0)
 
         # include only target frame in gt

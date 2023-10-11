@@ -94,7 +94,11 @@ def anomaly_map_to_color_map(anomaly_map: np.ndarray, normalize: bool = True) ->
 
 
 def superimpose_anomaly_map(
-    anomaly_map: np.ndarray, image: np.ndarray, alpha: float = 0.4, gamma: int = 0, normalize: bool = False
+    anomaly_map: np.ndarray,
+    image: np.ndarray,
+    alpha: float = 0.4,
+    gamma: int = 0,
+    normalize: bool = False,
 ) -> np.ndarray:
     """Superimpose anomaly map on top of in the input image.
 

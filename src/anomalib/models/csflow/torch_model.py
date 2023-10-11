@@ -114,11 +114,21 @@ class CrossConvolutions(nn.Module):
         self.upsample = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False)
 
         self.up_conv10 = nn.Conv2d(
-            channels_hidden, channels, kernel_size=kernel_size, padding=pad, bias=True, padding_mode=pad_mode
+            channels_hidden,
+            channels,
+            kernel_size=kernel_size,
+            padding=pad,
+            bias=True,
+            padding_mode=pad_mode,
         )
 
         self.up_conv21 = nn.Conv2d(
-            channels_hidden, channels, kernel_size=kernel_size, padding=pad, bias=True, padding_mode=pad_mode
+            channels_hidden,
+            channels,
+            kernel_size=kernel_size,
+            padding=pad,
+            bias=True,
+            padding_mode=pad_mode,
         )
 
         self.down_conv01 = nn.Conv2d(
@@ -388,7 +398,11 @@ class CrossScaleFlow(nn.Module):
     """
 
     def __init__(
-        self, input_dims: tuple[int, int, int], n_coupling_blocks: int, clamp: float, cross_conv_hidden_channels: int
+        self,
+        input_dims: tuple[int, int, int],
+        n_coupling_blocks: int,
+        clamp: float,
+        cross_conv_hidden_channels: int,
     ) -> None:
         super().__init__()
         self.input_dims = input_dims
@@ -471,7 +485,9 @@ class MultiScaleFeatureExtractor(nn.Module):
         self.n_scales = n_scales
         self.input_size = input_size
         self.feature_extractor = TorchFXFeatureExtractor(
-            backbone="efficientnet_b5", weights=EfficientNet_B5_Weights.DEFAULT, return_nodes=["features.6.8"]
+            backbone="efficientnet_b5",
+            weights=EfficientNet_B5_Weights.DEFAULT,
+            return_nodes=["features.6.8"],
         )
 
     def forward(self, input_tensor: Tensor) -> list[Tensor]:
@@ -487,7 +503,8 @@ class MultiScaleFeatureExtractor(nn.Module):
         for scale in range(self.n_scales):
             feat_s = (
                 F.interpolate(
-                    input_tensor, size=(self.input_size[0] // (2**scale), self.input_size[1] // (2**scale))
+                    input_tensor,
+                    size=(self.input_size[0] // (2**scale), self.input_size[1] // (2**scale)),
                 )
                 if scale > 0
                 else input_tensor

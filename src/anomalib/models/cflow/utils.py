@@ -84,7 +84,11 @@ def subnet_fc(dims_in: int, dims_out: int) -> nn.Sequential:
 
 
 def cflow_head(
-    condition_vector: int, coupling_blocks: int, clamp_alpha: float, n_features: int, permute_soft: bool = False
+    condition_vector: int,
+    coupling_blocks: int,
+    clamp_alpha: float,
+    n_features: int,
+    permute_soft: bool = False,
 ) -> SequenceINN:
     """Create invertible decoder network.
 

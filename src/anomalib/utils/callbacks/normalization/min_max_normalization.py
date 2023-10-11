@@ -29,7 +29,7 @@ class _MinMaxNormalizationCallback(Callback):
             pl_module.normalization_metrics = MinMax().cpu()
         elif not isinstance(pl_module.normalization_metrics, MinMax):
             raise AttributeError(
-                f"Expected normalization_metrics to be of type MinMax, got {type(pl_module.normalization_metrics)}"
+                f"Expected normalization_metrics to be of type MinMax, got {type(pl_module.normalization_metrics)}",
             )
 
     def on_test_start(self, trainer: Trainer, pl_module: AnomalyModule) -> None:

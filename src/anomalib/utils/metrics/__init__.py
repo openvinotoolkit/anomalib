@@ -159,7 +159,8 @@ def metric_collection_from_dicts(metrics: dict[str, dict[str, Any]], prefix: str
 
 
 def create_metric_collection(
-    metrics: list[str] | dict[str, dict[str, Any]], prefix: str | None
+    metrics: list[str] | dict[str, dict[str, Any]],
+    prefix: str | None,
 ) -> AnomalibMetricCollection:
     """Create a metric collection from a list of metric names or dictionaries.
 

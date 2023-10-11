@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 DOWNLOAD_INFO = DownloadInfo(
     name="kolektor",
     url="https://go.vicos.si/kolektorsdd",
-    hash="2b094030343c1cd59df02203ac6c57a0",
+    checksum="2b094030343c1cd59df02203ac6c57a0",
     filename="KolektorSDD.zip",
 )
 
@@ -139,7 +139,9 @@ def make_kolektor_dataset(
 
     # Divide 'good' images to train/test on 0.8/0.2 ratio
     train_samples, test_samples = train_test_split(
-        samples[samples.label == "Good"], train_size=train_split_ratio, random_state=42
+        samples[samples.label == "Good"],
+        train_size=train_split_ratio,
+        random_state=42,
     )
     samples.loc[train_samples.index, "split"] = "train"
     samples.loc[test_samples.index, "split"] = "test"

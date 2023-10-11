@@ -117,7 +117,7 @@ def random_split(
         random_state = torch.Generator().manual_seed(seed) if seed else None
         indices = torch.randperm(len(label_dataset.samples), generator=random_state)
         subsets.append(
-            [label_dataset.subsample(subset_indices) for subset_indices in torch.split(indices, subset_lengths)]
+            [label_dataset.subsample(subset_indices) for subset_indices in torch.split(indices, subset_lengths)],
         )
 
     # invert outer/inner lists

@@ -37,7 +37,9 @@ def _check_and_convert_path(path: str | Path) -> Path:
 
 
 def _prepare_files_labels(
-    path: str | Path, path_type: str, extensions: tuple[str, ...] | None = None
+    path: str | Path,
+    path_type: str,
+    extensions: tuple[str, ...] | None = None,
 ) -> tuple[list, list]:
     """Return a list of filenames and list corresponding labels.
 

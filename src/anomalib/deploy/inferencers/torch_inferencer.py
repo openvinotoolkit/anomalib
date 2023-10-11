@@ -99,7 +99,8 @@ class TorchInferencer(Inferencer):
             # Check if the metadata is present in the checkpoint.
             if "metadata" not in checkpoint.keys():
                 raise KeyError(
-                    "``metadata`` is not found in the checkpoint. Please ensure that you save the model as Torch model."
+                    "``metadata`` is not found in the checkpoint. "
+                    "Please ensure that you save the model as Torch model.",
                 )
             metadata = checkpoint["metadata"]
         else:
@@ -153,7 +154,9 @@ class TorchInferencer(Inferencer):
         return self.model(image)
 
     def post_process(
-        self, predictions: Tensor | list[Tensor] | dict[str, Tensor], metadata: dict | DictConfig | None = None
+        self,
+        predictions: Tensor | list[Tensor] | dict[str, Tensor],
+        metadata: dict | DictConfig | None = None,
     ) -> dict[str, Any]:
         """Post process the output predictions.
 
@@ -200,7 +203,7 @@ class TorchInferencer(Inferencer):
                 pred_score = pred_score.detach()
         else:
             raise ValueError(
-                f"Unknown prediction type {type(predictions)}. Expected Tensor, List[Tensor] or dict[str, Tensor]."
+                f"Unknown prediction type {type(predictions)}. Expected Tensor, List[Tensor] or dict[str, Tensor].",
             )
 
         # Common practice in anomaly detection is to assign anomalous

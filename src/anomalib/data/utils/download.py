@@ -28,7 +28,7 @@ class DownloadInfo:
 
     name: str
     url: str
-    hash: str
+    checksum: str
     filename: str | None = None
 
 
@@ -306,7 +306,7 @@ def download_and_extract(root: Path, info: DownloadInfo) -> None:
                 reporthook=progress_bar.update_to,
             )
         logger.info("Checking the hash of the downloaded file.")
-        hash_check(downloaded_file_path, info.hash)
+        hash_check(downloaded_file_path, info.checksum)
 
     extract(downloaded_file_path, root)
 

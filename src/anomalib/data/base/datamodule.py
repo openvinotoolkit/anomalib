@@ -142,7 +142,10 @@ class AnomalibDataModule(LightningDataModule, ABC):
         if self.val_split_mode == ValSplitMode.FROM_TEST:
             # randomly sampled from test set
             self.test_data, self.val_data = random_split(
-                self.test_data, self.val_split_ratio, label_aware=True, seed=self.seed
+                self.test_data,
+                self.val_split_ratio,
+                label_aware=True,
+                seed=self.seed,
             )
         elif self.val_split_mode == ValSplitMode.SAME_AS_TEST:
             # equal to test set
@@ -171,7 +174,10 @@ class AnomalibDataModule(LightningDataModule, ABC):
     def train_dataloader(self) -> TRAIN_DATALOADERS:
         """Get train dataloader."""
         return DataLoader(
-            dataset=self.train_data, shuffle=True, batch_size=self.train_batch_size, num_workers=self.num_workers
+            dataset=self.train_data,
+            shuffle=True,
+            batch_size=self.train_batch_size,
+            num_workers=self.num_workers,
         )
 
     def val_dataloader(self) -> EVAL_DATALOADERS:

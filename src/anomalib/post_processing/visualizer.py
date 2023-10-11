@@ -82,7 +82,7 @@ class Visualizer:
         self.mode = mode
         if task not in (TaskType.CLASSIFICATION, TaskType.DETECTION, TaskType.SEGMENTATION):
             raise ValueError(
-                f"Unknown task type: {mode}. Please choose one of ['classification', 'detection', 'segmentation']"
+                f"Unknown task type: {mode}. Please choose one of ['classification', 'detection', 'segmentation']",
             )
         self.task = task
 
@@ -194,14 +194,19 @@ class Visualizer:
         if self.task == TaskType.DETECTION:
             # return image with bounding boxes augmented
             image_with_boxes = draw_boxes(
-                image=np.copy(image_result.image), boxes=image_result.anomalous_boxes, color=(0, 0, 255)
+                image=np.copy(image_result.image),
+                boxes=image_result.anomalous_boxes,
+                color=(0, 0, 255),
             )
             if image_result.gt_boxes is not None:
                 image_with_boxes = draw_boxes(image=image_with_boxes, boxes=image_result.gt_boxes, color=(255, 0, 0))
             return image_with_boxes
         if self.task == TaskType.SEGMENTATION:
             visualization = mark_boundaries(
-                image_result.heat_map, image_result.pred_mask, color=(1, 0, 0), mode="thick"
+                image_result.heat_map,
+                image_result.pred_mask,
+                color=(1, 0, 0),
+                mode="thick",
             )
             return (visualization * 255).astype(np.uint8)
         if self.task == TaskType.CLASSIFICATION:

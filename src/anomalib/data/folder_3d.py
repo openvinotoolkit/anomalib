@@ -106,7 +106,8 @@ def make_folder3d_dataset(
 
     # Create label index for normal (0) and abnormal (1) images.
     samples.loc[
-        (samples.label == DirType.NORMAL) | (samples.label == DirType.NORMAL_TEST), "label_index"
+        (samples.label == DirType.NORMAL) | (samples.label == DirType.NORMAL_TEST),
+        "label_index",
     ] = LabelName.NORMAL
     samples.loc[(samples.label == DirType.ABNORMAL), "label_index"] = LabelName.ABNORMAL
     samples.label_index = samples.label_index.astype("Int64")
@@ -135,7 +136,7 @@ def make_folder3d_dataset(
             (e.g. image: '000.png', depth: '000.tiff')."
 
         assert samples.depth_path.apply(
-            lambda x: Path(x).exists() if not isna(x) else True
+            lambda x: Path(x).exists() if not isna(x) else True,
         ).all(), "missing depth image files"
 
         samples = samples.astype({"depth_path": "str"})
@@ -150,7 +151,7 @@ def make_folder3d_dataset(
 
         # make sure all the files exist
         assert samples.mask_path.apply(
-            lambda x: Path(x).exists() if x != "" else True
+            lambda x: Path(x).exists() if x != "" else True,
         ).all(), f"missing mask files, mask_dir={mask_dir}"
     else:
         samples["mask_path"] = ""

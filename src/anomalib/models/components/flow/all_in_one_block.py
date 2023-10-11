@@ -19,41 +19,41 @@ from torch.nn import functional as F  # noqa: N812
 logger = logging.getLogger(__name__)
 
 
-def _global_scale_sigmoid_activation(input: Tensor) -> Tensor:
+def _global_scale_sigmoid_activation(input_tensor: Tensor) -> Tensor:
     """Global scale sigmoid activation.
 
     Args:
-        input (Tensor): Input tensor
+        input_tensor (Tensor): Input tensor
 
     Returns:
         Tensor: Sigmoid activation
     """
-    return 10 * torch.sigmoid(input - 2.0)
+    return 10 * torch.sigmoid(input_tensor - 2.0)
 
 
-def _global_scale_softplus_activation(input: Tensor) -> Tensor:
+def _global_scale_softplus_activation(input_tensor: Tensor) -> Tensor:
     """Global scale softplus activation.
 
     Args:
-        input (Tensor): Input tensor
+        input_tensor (Tensor): Input tensor
 
     Returns:
         Tensor: Softplus activation
     """
     softplus = nn.Softplus(beta=0.5)
-    return 0.1 * softplus(input)
+    return 0.1 * softplus(input_tensor)
 
 
-def _global_scale_exp_activation(input: Tensor) -> Tensor:
+def _global_scale_exp_activation(input_tensor: Tensor) -> Tensor:
     """Global scale exponential activation.
 
     Args:
-        input (Tensor): Input tensor
+        input_tensor (Tensor): Input tensor
 
     Returns:
         Tensor: Exponential activation
     """
-    return torch.exp(input)
+    return torch.exp(input_tensor)
 
 
 class AllInOneBlock(InvertibleModule):
@@ -144,7 +144,7 @@ class AllInOneBlock(InvertibleModule):
             self.condition_channels = 0
         else:
             assert tuple(dims_c[0][1:]) == tuple(
-                dims_in[0][1:]
+                dims_in[0][1:],
             ), f"Dimensions of input and condition don't agree: {dims_c} vs {dims_in}."
             self.conditional = True
             self.condition_channels = sum(dc[0] for dc in dims_c)
@@ -208,10 +208,12 @@ class AllInOneBlock(InvertibleModule):
             self.w_0 = nn.Parameter(torch.FloatTensor(w), requires_grad=False)
         else:
             self.w_perm = nn.Parameter(
-                torch.FloatTensor(w).view(channels, channels, *([1] * self.input_rank)), requires_grad=False
+                torch.FloatTensor(w).view(channels, channels, *([1] * self.input_rank)),
+                requires_grad=False,
             )
             self.w_perm_inv = nn.Parameter(
-                torch.FloatTensor(w.T).view(channels, channels, *([1] * self.input_rank)), requires_grad=False
+                torch.FloatTensor(w.T).view(channels, channels, *([1] * self.input_rank)),
+                requires_grad=False,
             )
 
         if subnet_constructor is None:

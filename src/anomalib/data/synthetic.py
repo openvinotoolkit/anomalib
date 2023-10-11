@@ -31,7 +31,10 @@ ROOT = "./.tmp/synthetic_anomaly"
 
 
 def make_synthetic_dataset(
-    source_samples: DataFrame, image_dir: Path, mask_dir: Path, anomalous_ratio: float = 0.5
+    source_samples: DataFrame,
+    image_dir: Path,
+    mask_dir: Path,
+    anomalous_ratio: float = 0.5,
 ) -> DataFrame:
     """Convert a set of normal samples into a mixed set of normal and synthetic anomalous samples.
 

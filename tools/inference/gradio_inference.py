@@ -72,7 +72,7 @@ def get_inferencer(weight_path: Path, metadata: Path | None = None) -> Inference
     else:
         raise ValueError(
             f"Model extension is not supported. Torch Inferencer exptects a .ckpt file,"
-            f"OpenVINO Inferencer expects either .onnx, .bin or .xml file. Got {extension}"
+            f"OpenVINO Inferencer expects either .onnx, .bin or .xml file. Got {extension}",
         )
 
     return inferencer
@@ -102,7 +102,12 @@ if __name__ == "__main__":
         fn=lambda image: infer(image, gradio_inferencer),
         inputs=[
             gradio.inputs.Image(
-                shape=None, image_mode="RGB", source="upload", tool="editor", type="numpy", label="Image"
+                shape=None,
+                image_mode="RGB",
+                source="upload",
+                tool="editor",
+                type="numpy",
+                label="Image",
             ),
         ],
         outputs=[

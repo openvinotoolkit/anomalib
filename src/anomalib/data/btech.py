@@ -36,7 +36,9 @@ from anomalib.data.utils import (
 logger = logging.getLogger(__name__)
 
 DOWNLOAD_INFO = DownloadInfo(
-    name="btech", url="https://avires.dimi.uniud.it/papers/btad/btad.zip", hash="c1fa4d56ac50dd50908ce04e81037a8e"
+    name="btech",
+    url="https://avires.dimi.uniud.it/papers/btad/btad.zip",
+    checksum="c1fa4d56ac50dd50908ce04e81037a8e",
 )
 
 CATEGORIES = ("01", "02", "03")
@@ -286,10 +288,18 @@ class BTech(AnomalibDataModule):
         )
 
         self.train_data = BTechDataset(
-            task=task, transform=transform_train, split=Split.TRAIN, root=root, category=category
+            task=task,
+            transform=transform_train,
+            split=Split.TRAIN,
+            root=root,
+            category=category,
         )
         self.test_data = BTechDataset(
-            task=task, transform=transform_eval, split=Split.TEST, root=root, category=category
+            task=task,
+            transform=transform_eval,
+            split=Split.TEST,
+            root=root,
+            category=category,
         )
 
     def prepare_data(self) -> None:

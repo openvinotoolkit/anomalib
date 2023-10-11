@@ -84,7 +84,7 @@ class AUPRO(Metric):
         if target.min() < 0 or target.max() > 1:
             raise ValueError(
                 f"kornia.contrib.connected_components expects input to lie in the interval [0, 1], but found "
-                f"interval was [{target.min()}, {target.max()}]."
+                f"interval was [{target.min()}, {target.max()}].",
             )
         target = target.unsqueeze(1)  # kornia expects N1HW format
         target = target.type(torch.float)  # kornia expects FloatTensor

@@ -169,7 +169,9 @@ class OpenVINOInferencer(Inferencer):
                 pred_mask = (anomaly_map >= metadata["pixel_threshold"]).astype(np.uint8)
 
             anomaly_map, pred_score = self._normalize(
-                pred_scores=pred_score, anomaly_maps=anomaly_map, metadata=metadata
+                pred_scores=pred_score,
+                anomaly_maps=anomaly_map,
+                metadata=metadata,
             )
             assert anomaly_map is not None
 

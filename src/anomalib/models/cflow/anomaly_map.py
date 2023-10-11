@@ -46,8 +46,11 @@ class AnomalyMapGenerator(nn.Module):
             # upsample
             layer_maps.append(
                 F.interpolate(
-                    layer_map.unsqueeze(1), size=self.image_size, mode="bilinear", align_corners=True
-                ).squeeze(1)
+                    layer_map.unsqueeze(1),
+                    size=self.image_size,
+                    mode="bilinear",
+                    align_corners=True,
+                ).squeeze(1),
             )
         # score aggregation
         score_map = torch.zeros_like(layer_maps[0])

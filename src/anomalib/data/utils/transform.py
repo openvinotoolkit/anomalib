@@ -120,7 +120,7 @@ def get_transforms(
             raise ValueError(
                 "Both config and image_size cannot be `None`. "
                 "Provide either config file to de-serialize transforms "
-                "or image_size to get the default transformations"
+                "or image_size to get the default transformations",
             )
         resize_height, resize_width = get_image_height_and_width(image_size)
         transforms_list.append(A.Resize(height=resize_height, width=resize_width, always_apply=True))

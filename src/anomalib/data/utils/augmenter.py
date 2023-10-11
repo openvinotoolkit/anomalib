@@ -78,7 +78,10 @@ class Augmenter:
         return aug
 
     def generate_perturbation(
-        self, height: int, width: int, anomaly_source_path: str | None
+        self,
+        height: int,
+        width: int,
+        anomaly_source_path: str | None,
     ) -> tuple[np.ndarray, np.ndarray]:
         """Generate an image containing a random anomalous perturbation using a source image.
 
@@ -99,7 +102,8 @@ class Augmenter:
         perlin_scaley = 2 ** np.random.default_rng().integers(min_perlin_scale, perlin_scale)
 
         perlin_noise = random_2d_perlin((nextpow2(height), nextpow2(width)), (perlin_scalex, perlin_scaley))[
-            :height, :width
+            :height,
+            :width,
         ]
         perlin_noise = self.rot(image=perlin_noise)
 

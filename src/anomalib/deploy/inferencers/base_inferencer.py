@@ -162,7 +162,10 @@ class Inferencer(ABC):
         if "pixel_mean" in metadata.keys() and "pixel_std" in metadata.keys():
             if anomaly_maps is not None:
                 anomaly_maps = standardize(
-                    anomaly_maps, metadata["pixel_mean"], metadata["pixel_std"], center_at=metadata["image_mean"]
+                    anomaly_maps,
+                    metadata["pixel_mean"],
+                    metadata["pixel_std"],
+                    center_at=metadata["image_mean"],
                 )
                 anomaly_maps = normalize_cdf(anomaly_maps, metadata["pixel_threshold"])
 

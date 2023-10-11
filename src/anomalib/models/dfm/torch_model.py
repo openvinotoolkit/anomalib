@@ -104,7 +104,9 @@ class DFMModel(nn.Module):
         self.layer = layer
         self.input_size = input_size if isinstance(input_size, tuple) else tuple(input_size)
         self.feature_extractor = FeatureExtractor(
-            backbone=self.backbone, pre_trained=pre_trained, layers=[layer]
+            backbone=self.backbone,
+            pre_trained=pre_trained,
+            layers=[layer],
         ).eval()
 
     def fit(self, dataset: Tensor) -> None:

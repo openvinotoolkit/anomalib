@@ -58,7 +58,12 @@ class NNCFCallback(Callback):
         )
 
     def on_train_batch_start(
-        self, trainer: pl.Trainer, pl_module: pl.LightningModule, batch: Any, batch_idx: int, unused: int = 0
+        self,
+        trainer: pl.Trainer,
+        pl_module: pl.LightningModule,
+        batch: Any,
+        batch_idx: int,
+        unused: int = 0,
     ) -> None:
         """Call when the train batch begins.
 

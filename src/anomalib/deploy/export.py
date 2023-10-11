@@ -166,7 +166,11 @@ def export_to_onnx(model: AnomalyModule, input_size: tuple[int, int], export_pat
 
 
 def export_to_openvino(
-    export_path: str | Path, input_model: Path, metadata: dict[str, Any], input_size: tuple[int, int], **kwargs
+    export_path: str | Path,
+    input_model: Path,
+    metadata: dict[str, Any],
+    input_size: tuple[int, int],
+    **kwargs,
 ) -> None:
     """Convert onnx model to OpenVINO IR.
 

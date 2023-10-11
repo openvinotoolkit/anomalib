@@ -174,7 +174,7 @@ class Tiler:
         if self.stride_h > self.tile_size_h or self.stride_w > self.tile_size_w:
             raise StrideSizeError(
                 "Larger stride size than kernel size produces unreliable tiling results. "
-                "Please ensure stride size is less than or equal than tiling size."
+                "Please ensure stride size is less than or equal than tiling size.",
             )
 
         if self.mode not in (ImageUpscaleMode.PADDING, ImageUpscaleMode.INTERPOLATION):
@@ -241,7 +241,8 @@ class Tiler:
 
         # create an empty torch tensor for output
         tiles = torch.zeros(
-            (self.num_patches_h, self.num_patches_w, batch, channels, self.tile_size_h, self.tile_size_w), device=device
+            (self.num_patches_h, self.num_patches_w, batch, channels, self.tile_size_h, self.tile_size_w),
+            device=device,
         )
 
         # fill-in output tensor with spatial patches extracted from the image
@@ -254,7 +255,10 @@ class Tiler:
             strict=True,
         ):
             tiles[tile_i, tile_j, :] = tensor[
-                :, :, loc_i : (loc_i + self.tile_size_h), loc_j : (loc_j + self.tile_size_w)
+                :,
+                :,
+                loc_i : (loc_i + self.tile_size_h),
+                loc_j : (loc_j + self.tile_size_w),
             ]
 
         # rearrange the tiles in order [tile_count * batch, channels, tile_height, tile_width]
@@ -367,7 +371,7 @@ class Tiler:
         if self.input_h < self.tile_size_h or self.input_w < self.tile_size_w:
             raise ValueError(
                 f"One of the edges of the tile size {self.tile_size_h, self.tile_size_w} "
-                "is larger than that of the image {self.input_h, self.input_w}."
+                "is larger than that of the image {self.input_h, self.input_w}.",
             )
 
         self.resized_h, self.resized_w = compute_new_image_size(

@@ -23,7 +23,9 @@ _N_FEATURES_DEFAULTS = {
 
 
 def _deduce_dims(
-    feature_extractor: FeatureExtractor, input_size: tuple[int, int], layers: list[str]
+    feature_extractor: FeatureExtractor,
+    input_size: tuple[int, int],
+    layers: list[str],
 ) -> tuple[int, int]:
     """Run a dry run to deduce the dimensions of the extracted features.
 
@@ -78,7 +80,7 @@ class PadimModel(nn.Module):
         if n_features is None:
             raise ValueError(
                 f"n_features must be specified for backbone {self.backbone}. "
-                f"Default values are available for: {sorted(_N_FEATURES_DEFAULTS.keys())}"
+                f"Default values are available for: {sorted(_N_FEATURES_DEFAULTS.keys())}",
             )
 
         assert (
@@ -135,7 +137,9 @@ class PadimModel(nn.Module):
             output = embeddings
         else:
             output = self.anomaly_map_generator(
-                embedding=embeddings, mean=self.gaussian.mean, inv_covariance=self.gaussian.inv_covariance
+                embedding=embeddings,
+                mean=self.gaussian.mean,
+                inv_covariance=self.gaussian.inv_covariance,
             )
         return output
 

@@ -67,11 +67,13 @@ class AnomalyMapGenerator(nn.Module):
         """
         if self.mode == AnomalyMapGenerationMode.MULTIPLY:
             anomaly_map = torch.ones(
-                [student_features[0].shape[0], 1, *self.image_size], device=student_features[0].device
+                [student_features[0].shape[0], 1, *self.image_size],
+                device=student_features[0].device,
             )  # b c h w
         elif self.mode == AnomalyMapGenerationMode.ADD:
             anomaly_map = torch.zeros(
-                [student_features[0].shape[0], 1, *self.image_size], device=student_features[0].device
+                [student_features[0].shape[0], 1, *self.image_size],
+                device=student_features[0].device,
             )
 
         for student_feature, teacher_feature in zip(student_features, teacher_features, strict=True):
@@ -84,7 +86,9 @@ class AnomalyMapGenerator(nn.Module):
                 anomaly_map += distance_map
 
         anomaly_map = gaussian_blur2d(
-            anomaly_map, kernel_size=(self.kernel_size, self.kernel_size), sigma=(self.sigma, self.sigma)
+            anomaly_map,
+            kernel_size=(self.kernel_size, self.kernel_size),
+            sigma=(self.sigma, self.sigma),
         )
 
         return anomaly_map

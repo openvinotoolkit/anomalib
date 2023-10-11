@@ -65,7 +65,9 @@ class SparseRandomProjection:
                 # pylint: disable=not-callable
                 c_idx = torch.tensor(
                     sample_without_replacement(
-                        n_population=n_features, n_samples=nnz_idx, random_state=self.random_state
+                        n_population=n_features,
+                        n_samples=nnz_idx,
+                        random_state=self.random_state,
                     ),
                     dtype=torch.int64,
                 )

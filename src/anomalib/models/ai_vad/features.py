@@ -76,7 +76,8 @@ class FeatureExtractor(nn.Module):
         # convert from list of [N, 4] tensors to single [N, 5] tensor where each row is [index-in-batch, x1, y1, x2, y2]
         boxes_list = [batch_item["boxes"] for batch_item in regions]
         indices = torch.repeat_interleave(
-            torch.arange(len(regions)), Tensor([boxes.shape[0] for boxes in boxes_list]).int()
+            torch.arange(len(regions)),
+            Tensor([boxes.shape[0] for boxes in boxes_list]).int(),
         )
         boxes = torch.cat([indices.unsqueeze(1).to(rgb_batch.device), torch.cat(boxes_list)], dim=1)
 
@@ -167,7 +168,10 @@ class VelocityExtractor(nn.Module):
         velocity_histograms = []
         for mag, theta in zip(mag_batch, theta_batch, strict=True):
             histogram_mag = torch.histogram(
-                input=theta.cpu(), bins=self.n_bins, range=(-torch.pi, torch.pi), weight=mag.cpu()
+                input=theta.cpu(),
+                bins=self.n_bins,
+                range=(-torch.pi, torch.pi),
+                weight=mag.cpu(),
             ).hist
             histogram_counts = torch.histogram(input=theta.cpu(), bins=self.n_bins, range=(-torch.pi, torch.pi)).hist
             final_histogram = torch.zeros_like(histogram_mag)
