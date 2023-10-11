@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-import warnings
+from venv import logger
 
 import numpy as np
 import torch
@@ -21,11 +21,9 @@ class Denormalize:
             mean: Mean
             std: Standard deviation.
         """
-        warnings.warn(
-            message="Denormalize is no longer used and will be deprecated in v0.4.0",
-            category=DeprecationWarning,
-            stacklevel=2,
-        )
+        msg = "Denormalize is no longer used and will be deprecated in v0.4.0"
+        logger.warn(msg)
+
         # If no mean and std provided, assign ImageNet values.
         if mean is None:
             mean = [0.485, 0.456, 0.406]

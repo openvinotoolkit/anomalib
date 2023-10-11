@@ -8,7 +8,6 @@ This script extracts features from a CNN network
 
 
 import logging
-import warnings
 
 import timm
 import torch
@@ -89,7 +88,8 @@ class TimmFeatureExtractor(nn.Module):
             try:
                 idx.append(list(dict(features.named_children()).keys()).index(i) - offset)
             except ValueError:
-                warnings.warn(f"Layer {i} not found in model {self.backbone}", stacklevel=1)
+                msg = f"Layer {i} not found in model {self.backbone}"
+                logger.warn(msg)
                 # Remove unfound key from layer dict
                 self.layers.remove(i)
 

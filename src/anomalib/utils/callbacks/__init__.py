@@ -6,7 +6,6 @@
 
 import logging
 import os
-import warnings
 from importlib import import_module
 
 import yaml
@@ -94,10 +93,8 @@ def get_callbacks(config: DictConfig | ListConfig | Namespace) -> list[Callback]
                 )
             )
         else:
-            warnings.warn(
-                f"Export option: {config.optimization.export_mode} not found. Defaulting to no model export",
-                stacklevel=2,
-            )
+            msg = f"Export option: {config.optimization.export_mode} not found. Defaulting to no model export"
+            logger.warn(msg)
 
     # Add callback to log graph to loggers
     # TODO find a place for this key

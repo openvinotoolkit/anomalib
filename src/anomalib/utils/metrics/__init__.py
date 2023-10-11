@@ -5,7 +5,7 @@
 
 
 import importlib
-import warnings
+import logging
 from typing import Any
 
 import torchmetrics
@@ -34,6 +34,8 @@ __all__ = [
     "PRO",
 ]
 
+logger = logging.getLogger(__name__)
+
 
 def metric_collection_from_names(metric_names: list[str], prefix: str | None) -> AnomalibMetricCollection:
     """Create a metric collection from a list of metric names.
@@ -59,11 +61,11 @@ def metric_collection_from_names(metric_names: list[str], prefix: str | None) ->
                 metric_cls = getattr(torchmetrics, metric_name)
                 metrics.add_metrics(metric_cls())
             except TypeError:
-                warnings.warn(
-                    f"Incorrect constructor arguments for {metric_name} metric from TorchMetrics package.", stacklevel=1
-                )
+                msg = f"Incorrect constructor arguments for {metric_name} metric from TorchMetrics package."
+                logger.warn(msg)
         else:
-            warnings.warn(f"No metric with name {metric_name} found in Anomalib metrics or TorchMetrics.", stacklevel=3)
+            msg = f"No metric with name {metric_name} found in Anomalib metrics or TorchMetrics."
+            logger.warn(msg)
     return metrics
 
 
@@ -186,4 +188,5 @@ def create_metric_collection(
         _validate_metrics_dict(metrics)
         return metric_collection_from_dicts(metrics, prefix)
 
+    raise ValueError(f"metrics must be a list or a dict, found {type(metrics)}")
     raise ValueError(f"metrics must be a list or a dict, found {type(metrics)}")

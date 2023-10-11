@@ -9,7 +9,6 @@
 
 import inspect
 import logging
-import warnings
 from collections.abc import Sequence
 from datetime import datetime
 from importlib import import_module
@@ -243,11 +242,8 @@ def get_configurable_parameters(
         )
 
     if model_name == "efficientad":
-        warnings.warn(
-            message="`efficientad` is deprecated as --model. Please use `efficient_ad` instead.",
-            category=DeprecationWarning,
-            stacklevel=1,
-        )
+        msg = "`efficientad` is deprecated as --model. Please use `efficient_ad` instead."
+        logger.warn(msg)
         model_name = "efficient_ad"
 
     if config_path is None:

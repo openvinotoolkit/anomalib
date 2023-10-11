@@ -12,7 +12,7 @@ from omegaconf import DictConfig, ListConfig
 from torch import Tensor
 
 from anomalib.models import AnomalyModule
-from anomalib.utils.metrics.threshold import BaseThreshold, F1AdaptiveThreshold
+from anomalib.utils.metrics.threshold import BaseThreshold
 
 
 class _ThresholdCallback(Callback):
@@ -23,9 +23,11 @@ class _ThresholdCallback(Callback):
 
     def __init__(
         self,
-        threshold: BaseThreshold | tuple[BaseThreshold, BaseThreshold] | DictConfig | ListConfig
-        # TODO: Remove this noqa
-        | str = F1AdaptiveThreshold(),  # noqa: B008
+        threshold: BaseThreshold
+        | tuple[BaseThreshold, BaseThreshold]
+        | DictConfig
+        | ListConfig
+        | str = "F1AdaptiveThreshold",
     ) -> None:
         super().__init__()
         self._initialize_thresholds(threshold)

@@ -4,8 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+import logging
 import math
-import warnings
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -15,6 +15,8 @@ import tifffile as tiff
 from torch import Tensor
 from torch.nn import functional as F  # noqa: N812
 from torchvision.datasets.folder import IMG_EXTENSIONS
+
+logger = logging.getLogger(__name__)
 
 
 def get_image_filenames(path: str | Path) -> list[Path]:
@@ -137,7 +139,8 @@ def generate_output_image_filename(input_path: str | Path, output_path: str | Pa
     file_path.parent.mkdir(parents=True, exist_ok=True)
 
     if file_path.is_file():
-        warnings.warn(f"{output_path} already exists. Renaming the file to avoid overwriting.", stacklevel=2)
+        msg = f"{output_path} already exists. Renaming the file to avoid overwriting."
+        logger.warning(msg)
         file_path = duplicate_filename(file_path)
 
     return file_path
@@ -242,4 +245,5 @@ def pad_nextpow2(batch: Tensor) -> Tensor:
     padding_w = [math.ceil((l_dim - batch.shape[-2]) / 2), math.floor((l_dim - batch.shape[-2]) / 2)]
     padding_h = [math.ceil((l_dim - batch.shape[-1]) / 2), math.floor((l_dim - batch.shape[-1]) / 2)]
     padded_batch = F.pad(batch, pad=[*padding_h, *padding_w])
+    return padded_batch
     return padded_batch

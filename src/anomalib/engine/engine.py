@@ -20,7 +20,7 @@ from anomalib.utils.callbacks.metrics import _MetricsCallback
 from anomalib.utils.callbacks.normalization import get_normalization_callback
 from anomalib.utils.callbacks.post_processor import _PostProcessorCallback
 from anomalib.utils.callbacks.thresholding import _ThresholdCallback
-from anomalib.utils.metrics.threshold import BaseThreshold, F1AdaptiveThreshold
+from anomalib.utils.metrics.threshold import BaseThreshold
 
 log = logging.getLogger(__name__)
 
@@ -101,9 +101,11 @@ class Engine:
         self,
         callbacks: list[Callback] | None = None,
         normalization: NormalizationMethod | DictConfig | Callback | str = NormalizationMethod.MIN_MAX,
-        threshold: BaseThreshold | tuple[BaseThreshold, BaseThreshold] | DictConfig | ListConfig
-        # TODO: Remove this noqa.
-        | str = F1AdaptiveThreshold(),  # noqa: B008
+        threshold: BaseThreshold
+        | tuple[BaseThreshold, BaseThreshold]
+        | DictConfig
+        | ListConfig
+        | str = "F1AdaptiveThreshold",
         task: TaskType = TaskType.SEGMENTATION,
         image_metrics: str | list[str] | None = None,
         pixel_metrics: str | list[str] | None = None,

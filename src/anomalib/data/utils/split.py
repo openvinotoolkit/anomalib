@@ -12,14 +12,16 @@ These function are useful
 # SPDX-License-Identifier: Apache-2.0
 
 
+import logging
 import math
-import warnings
 from collections.abc import Sequence
 from enum import Enum
 
 import torch
 
 from anomalib import data
+
+logger = logging.getLogger(__name__)
 
 
 class Split(str, Enum):
@@ -105,11 +107,11 @@ def random_split(
             subset_idx = i % sum(subset_lengths)
             subset_lengths[subset_idx] += 1
         if 0 in subset_lengths:
-            warnings.warn(
+            msg = (
                 "Zero subset length encountered during splitting. This means one of your subsets might be"
                 " empty or devoid of either normal or anomalous images.",
-                stacklevel=2,
             )
+            logger.warn(msg)
 
         # perform random subsampling
         random_state = torch.Generator().manual_seed(seed) if seed else None
@@ -132,4 +134,5 @@ def split_by_label(dataset: "data.AnomalibDataset") -> tuple["data.AnomalibDatas
 
     normal_subset = dataset.subsample(list(normal_indices))
     anomalous_subset = dataset.subsample(list(anomalous_indices))
+    return normal_subset, anomalous_subset
     return normal_subset, anomalous_subset

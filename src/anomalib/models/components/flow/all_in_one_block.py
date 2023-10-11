@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-import warnings
+import logging
 from collections.abc import Callable
 
 import torch
@@ -15,6 +15,8 @@ from FrEIA.modules import InvertibleModule
 from scipy.stats import special_ortho_group
 from torch import Tensor, nn
 from torch.nn import functional as F  # noqa: N812
+
+logger = logging.getLogger(__name__)
 
 
 def _global_scale_sigmoid_activation(input: Tensor) -> Tensor:
@@ -163,11 +165,11 @@ class AllInOneBlock(InvertibleModule):
         self.householder = learned_householder_permutation
 
         if permute_soft and channels > 512:
-            warnings.warn(
+            msg = (
                 "Soft permutation will take a very long time to initialize "
                 f"with {channels} feature channels. Consider using hard permutation instead.",
-                stacklevel=2,
             )
+            logger.warn(msg)
 
         # global_scale is used as the initial value for the global affine scale
         # (pre-activation). It is computed such that
@@ -224,7 +226,7 @@ class AllInOneBlock(InvertibleModule):
         for vk in self.vk_householder:
             w = torch.mm(w, torch.eye(self.in_channels).to(w.device) - 2 * torch.ger(vk, vk) / torch.dot(vk, vk))
 
-        for _i in range(self.input_rank):
+        for _ in range(self.input_rank):
             w = w.unsqueeze(-1)
         return w
 

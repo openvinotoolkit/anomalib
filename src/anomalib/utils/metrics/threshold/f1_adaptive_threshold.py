@@ -4,13 +4,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-import warnings
+import logging
 
 import torch
 from torch import Tensor
 from torchmetrics import PrecisionRecallCurve
 
 from .base import BaseThreshold
+
+logger = logging.getLogger(__name__)
 
 
 class F1AdaptiveThreshold(PrecisionRecallCurve, BaseThreshold):
@@ -42,13 +44,13 @@ class F1AdaptiveThreshold(PrecisionRecallCurve, BaseThreshold):
         thresholds: Tensor
 
         if not any(1 in batch for batch in self.target):
-            warnings.warn(
+            msg = (
                 "The validation set does not contain any anomalous images. As a result, the adaptive threshold will "
                 "take the value of the highest anomaly score observed in the normal validation images, which may lead "
                 "to poor predictions. For a more reliable adaptive threshold computation, please add some anomalous "
-                "images to the validation set.",
-                stacklevel=2,
+                "images to the validation set."
             )
+            logging.warn(msg)
 
         precision, recall, thresholds = super().compute()
         f1_score = (2 * precision * recall) / (precision + recall + 1e-10)
