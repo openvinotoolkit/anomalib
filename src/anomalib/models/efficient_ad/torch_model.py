@@ -326,12 +326,12 @@ class EfficientAdModel(nn.Module):
         with torch.no_grad():
             ae_output = self.ae(batch)
 
-        map_st = torch.mean(distance_st, dim=1, keepdim=True)
-        map_stae = torch.mean(
-            (ae_output - student_output[:, self.teacher_out_channels :]) ** 2,
-            dim=1,
-            keepdim=True,
-        )
+            map_st = torch.mean(distance_st, dim=1, keepdim=True)
+            map_stae = torch.mean(
+                (ae_output - student_output[:, self.teacher_out_channels :]) ** 2,
+                dim=1,
+                keepdim=True,
+            )
 
         if self.pad_maps:
             map_st = F.pad(map_st, (4, 4, 4, 4))
