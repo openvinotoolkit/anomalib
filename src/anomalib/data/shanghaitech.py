@@ -343,7 +343,7 @@ class ShanghaiTech(AnomalibVideoDataModule):
             video_folder (Path): Path to the folder of training videos.
             target_folder (Path): File system location where the converted videos will be stored.
         """
-        training_videos = sorted(list(video_folder.glob("*")))
+        training_videos = sorted(video_folder.glob("*"))
         for video_idx, video_path in enumerate(training_videos):
             logger.info("Converting training video %s (%i/%i)...", video_path.name, video_idx + 1, len(training_videos))
             file_name = video_path.name

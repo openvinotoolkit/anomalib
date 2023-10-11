@@ -59,13 +59,13 @@ class ClipsIndexer(VideoClips, ABC):
         video_path = self.video_paths[video_idx]
         clip_pts = self.clips[video_idx][clip_idx]
 
-        item = dict(
-            image=clip,
-            mask=self.get_mask(idx),
-            video_path=video_path,
-            frames=clip_pts,
-            last_frame=self.last_frame_idx(video_idx),
-        )
+        item = {
+            "image": clip,
+            "mask": self.get_mask(idx),
+            "video_path": video_path,
+            "frames": clip_pts,
+            "last_frame": self.last_frame_idx(video_idx),
+        }
 
         return item
 

@@ -36,7 +36,7 @@ class AnomalibDepthDataset(AnomalibDataset, ABC):
 
         image = read_image(image_path)
         depth_image = read_depth_image(depth_path)
-        item = dict(image_path=image_path, depth_path=depth_path, label=label_index)
+        item = {"image_path": image_path, "depth_path": depth_path, "label": label_index}
 
         if self.task == TaskType.CLASSIFICATION:
             transformed = self.transform(image=image, depth_image=depth_image)

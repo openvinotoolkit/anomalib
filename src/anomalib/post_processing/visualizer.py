@@ -264,7 +264,7 @@ class ImageGrid:
           title (str): Image title shown on the plot.
           color_map (str | None): Name of matplotlib color map used to map scalar data to colours. Defaults to None.
         """
-        image_data = dict(image=image, title=title, color_map=color_map)
+        image_data = {"image": image, "title": title, "color_map": color_map}
         self.images.append(image_data)
 
     def generate(self) -> np.ndarray:
